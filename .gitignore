@@ -1,0 +1,11 @@
+node_modules
+dist
+.turbo
+*.tsbuildinfo
+.env
+.env.local
+coverage
+.pg-data
+.minio-data
+test-results
+playwright-report

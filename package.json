@@ -1,0 +1,26 @@
+{
+  "name": "oto-platform",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.33.0",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint .",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @oto/db generate",
+    "db:migrate": "pnpm --filter @oto/db migrate",
+    "db:seed": "pnpm --filter @oto/db seed",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "prettier": "^3.8.3",
+    "turbo": "^2.6.3",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4"
+  }
+}
