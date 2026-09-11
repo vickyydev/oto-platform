@@ -243,9 +243,12 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
   const T1H = wwp(b(690));
   const T2H = wwp(b(890));
   const TFD = wwp(b(1090));
+  // Full display translations (5 customer languages) — real copy, extending
+  // the prototype's seeded zh/th/ru/fr names to every package + descriptions.
   const packages = [
     {
       name: '1 Hour Play',
+      description: 'One hour of play — perfect for a quick visit.',
       durationLabel: '1 Hour',
       hours: 1,
       prices: { tourist: T1H, expat: expatFromTourist(T1H), thai: wwp(b(420), b(520)) },
@@ -253,24 +256,31 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
       creditRule: ADULTS_FULL_CREDIT,
       gateAccess: true,
       translations: {
-        zh: { name: '1小时畅玩' },
-        th: { name: 'เล่น 1 ชั่วโมง' },
-        ru: { name: 'Игра 1 час' },
-        fr: { name: 'Jeu 1 heure' },
+        zh: { name: '1小时畅玩', description: '畅玩一小时——适合短暂到访。' },
+        th: { name: 'เล่น 1 ชั่วโมง', description: 'เล่นสนุก 1 ชั่วโมง เหมาะกับการแวะมาเล่นสั้น ๆ' },
+        ru: { name: 'Игра 1 час', description: 'Один час игры — идеально для короткого визита.' },
+        fr: { name: 'Jeu 1 heure', description: 'Une heure de jeu — parfait pour une visite rapide.' },
       },
     },
     {
       name: '2 Hours Play',
+      description: 'Two full hours in the park.',
       durationLabel: '2 Hours',
       hours: 2,
       prices: { tourist: T2H, expat: expatFromTourist(T2H), thai: wwp(b(520), b(620)) },
       adultRules: STANDARD_ADULT_RULES,
       creditRule: ADULTS_FULL_CREDIT,
       gateAccess: true,
-      translations: null,
+      translations: {
+        zh: { name: '2小时畅玩', description: '在乐园尽情玩两小时。' },
+        th: { name: 'เล่น 2 ชั่วโมง', description: 'สนุกเต็มที่ 2 ชั่วโมงในสวนสนุก' },
+        ru: { name: 'Игра 2 часа', description: 'Два полных часа в парке.' },
+        fr: { name: 'Jeu 2 heures', description: 'Deux heures complètes dans le parc.' },
+      },
     },
     {
       name: 'Full Day Pass',
+      description: 'Unlimited play from open to close.',
       durationLabel: 'All Day',
       hours: 8,
       prices: { tourist: TFD, expat: expatFromTourist(TFD), thai: wwp(b(620), b(720)) },
@@ -282,10 +292,16 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
       },
       creditRule: ADULTS_FULL_CREDIT,
       gateAccess: true,
-      translations: null,
+      translations: {
+        zh: { name: '全日通票', description: '从开园玩到闭园，不限时畅玩。' },
+        th: { name: 'บัตรเล่นทั้งวัน', description: 'เล่นไม่จำกัดตั้งแต่เปิดถึงปิด' },
+        ru: { name: 'Билет на весь день', description: 'Неограниченная игра с открытия до закрытия.' },
+        fr: { name: 'Pass journée complète', description: "Jeu illimité de l'ouverture à la fermeture." },
+      },
     },
     {
       name: 'Eat & Play Kids Pass',
+      description: "All-day play plus a kids' meal — the full ticket value comes back as F&B credit.",
       durationLabel: 'All Day + Meal',
       hours: 8,
       prices: { tourist: wwp(b(1300)), expat: wwp(b(1300)), thai: wwp(b(1300)) },
@@ -297,7 +313,12 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
       },
       creditRule: { appliesTo: 'both', basis: 'full_price' },
       gateAccess: true,
-      translations: null,
+      translations: {
+        zh: { name: '吃喝玩乐儿童通票', description: '全天畅玩加儿童餐，票面金额全额返还为餐饮额度。' },
+        th: { name: 'บัตรเด็ก กิน & เล่น', description: 'เล่นทั้งวันพร้อมอาหารเด็ก รับเครดิตอาหารเต็มมูลค่าบัตร' },
+        ru: { name: 'Детский билет «Ешь и играй»', description: 'Игра весь день и детское питание; стоимость билета возвращается кредитом на еду.' },
+        fr: { name: 'Pass enfant Manger & Jouer', description: 'Jeu toute la journée avec repas enfant — valeur du billet créditée en restauration.' },
+      },
     },
   ];
   for (const p of packages) {

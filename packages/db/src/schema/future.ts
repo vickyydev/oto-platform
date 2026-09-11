@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { archivedAt, idPk, timestamps } from './helpers';
@@ -37,6 +38,7 @@ export const booking = pgTable(
     index('booking_member_idx').on(t.memberId),
     index('booking_operator_idx').on(t.operatorId),
     index('booking_date_idx').on(t.bookingDate),
+    uniqueIndex('booking_reference_unique').on(t.operatorId, t.reference),
   ],
 );
 

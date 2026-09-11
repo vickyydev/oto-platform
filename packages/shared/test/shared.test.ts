@@ -105,3 +105,44 @@ describe('ids', () => {
     expect(a).not.toBe(b);
   });
 });
+
+describe('ticket pricing port (prototype lib/pricing.ts semantics)', () => {
+  const ADMISSION = { weekday: 35000, weekend: 50000 };
+  const pkg = {
+    prices: {
+      tourist: { weekday: 69000, weekend: 69000 },
+      thai: { weekday: 42000, weekend: 52000 },
+    },
+    adultRules: {
+      tourist: { kind: 'set_price' as const, price: ADMISSION },
+      thai: {
+        kind: 'free_adults' as const,
+        freeAdults: 1,
+        overflow: 'set_price' as const,
+        price: ADMISSION,
+      },
+    },
+  };
+  it('set_price adults pay the flat admission (weekday/weekend aware)', async () => {
+    const { resolveAdultLine } = await import('../src/pricing');
+    expect(resolveAdultLine(pkg, 'tourist', 2, 'weekday')).toMatchObject({ paidCount: 2, total: 70000 });
+    expect(resolveAdultLine(pkg, 'tourist', 2, 'weekend').total).toBe(100000);
+  });
+  it('free_adults: first free per LINE, overflow at the set price (D5)', async () => {
+    const { resolveAdultLine } = await import('../src/pricing');
+    const r = resolveAdultLine(pkg, 'thai', 3, 'weekday');
+    expect(r.freeCount).toBe(1);
+    expect(r.paidCount).toBe(2);
+    expect(r.total).toBe(70000);
+  });
+  it('absent rule defaults to same_as_kid; unpriced tier resolves to 0', async () => {
+    const { resolveAdultLine, computeTicketLine } = await import('../src/pricing');
+    const bare = { prices: { tourist: { weekday: 10000, weekend: 12000 } } };
+    expect(resolveAdultLine(bare, 'tourist', 2, 'weekday').total).toBe(20000);
+    expect(resolveAdultLine(bare, 'expat', 2, 'weekday').total).toBe(0);
+    const line = computeTicketLine({ pkg, tier: 'thai', kids: 2, adults: 2 }, 'weekend');
+    expect(line.kidsTotal).toBe(104000); // 2 × ฿520
+    expect(line.adults.total).toBe(50000); // 1 free + 1 × ฿500
+    expect(line.lineTotal).toBe(154000);
+  });
+});

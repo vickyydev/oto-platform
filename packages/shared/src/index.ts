@@ -5,3 +5,4 @@ export * from './dates';
 export * from './pricing-mode';
 export * from './permissions';
 export * from './catalog-shapes';
+export * from './pricing';

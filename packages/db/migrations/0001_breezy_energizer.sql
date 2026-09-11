@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "booking_reference_unique" ON "booking" USING btree ("operator_id","reference");
