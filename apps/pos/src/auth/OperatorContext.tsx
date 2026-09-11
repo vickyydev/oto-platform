@@ -35,6 +35,12 @@ interface OperatorContextValue {
   secondsLeft: number;
   /** Keep the operator logged in (resets the inactivity timer). */
   stayActive: () => void;
+  /**
+   * False until the on-mount session resume has finished. Gates (e.g. the
+   * admin console) wait for this before deciding between sign-in and content,
+   * so a reload inside a valid session doesn't flash the lock screen.
+   */
+  sessionResolved: boolean;
 }
 
 const OperatorContext = createContext<OperatorContextValue | null>(null);
@@ -55,6 +61,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const [operator, setOperator] = useState<Operator | null>(null);
   const [warningActive, setWarningActive] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [sessionResolved, setSessionResolved] = useState(false);
 
   const [, setStaffTheme] = useStaffTheme();
   const [, setCustomerTheme] = useCustomerTheme();
@@ -161,6 +168,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         applyThemePrefs(op.id);
       } catch {
         /* not signed in */
+      } finally {
+        if (!cancelled) setSessionResolved(true);
       }
     })();
     return () => {
@@ -200,7 +209,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
 
   return (
     <OperatorContext.Provider
-      value={{ operator, signIn, login, logout, warningActive, secondsLeft, stayActive }}
+      value={{ operator, signIn, login, logout, warningActive, secondsLeft, stayActive, sessionResolved }}
     >
       {children}
     </OperatorContext.Provider>

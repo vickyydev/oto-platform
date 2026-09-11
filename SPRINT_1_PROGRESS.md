@@ -200,8 +200,9 @@ The prototype was copied verbatim into `apps/pos` (316 files) and wired:
 3. "Who's visiting today?" children confirm/edit modal (`VisitChildrenModal`) — SCRUM-32
 4. Admin → Access → Login Users panel (invite, scoped role, activate/deactivate, temp password, effective-permissions viewer) — SCRUM-21/22/28
 5. Admin → Access → Operators panel (create/archive operators, assign administrators) — SCRUM-27
-6. Label correction: Tickets panel footnote now says edits persist (the in-memory note became false).
+6. Label correction: Tickets panel footnote now says edits persist (the in-memory note became false); same fix later applied to the Members and Tax panel footnotes once those were DB-wired.
 7. Profile photo upload UI deferred (endpoints + tests complete; no natural prototype home — see Deferred).
+8. Admin console auth wall (`AdminAccessGate`, client-reported gap after sprint close): `/admin` no longer renders without a session. Signed out → the standard lock-screen sign-in form; signed in as staff → full-page "Manager access required" screen with Back to POS / switch-account actions; manager → console. `OperatorContext` gained `sessionResolved` so a reload inside a valid session shows a spinner, not a lock-screen flash. Header's amber "Temporary dev access" badge replaced with the signed-in "name · Manager" chip; lock-screen link relabelled "Open admin console (manager sign-in)". (Server-side authorization was already enforced per route — this closes the client-side console shell that rendered before sign-in and toasted "Couldn't load members / Not signed in".)
 
 ## Backlog candidates
 - Fix prototype Admin → Tickets table rendering "Adults ฿[object Object]" (`admin/tickets/TicketsPanel` stringifies the adult-rule price object) — cosmetic, in the ported UI worth fixing when SCRUM-35 touches that table.

@@ -14,6 +14,7 @@ import Messages from "@/pages/Messages";
 import Book from "@/pages/Book";
 import StationSetup from "@/pages/StationSetup";
 import Admin from "@/pages/Admin";
+import { AdminAccessGate } from "@/components/admin/AdminAccessGate";
 import { MobileStock } from "@/components/mobile/stock/MobileStock";
 import { OperatorProvider, useOperator } from "@/auth/OperatorContext";
 import { StationProvider } from "@/station/StationContext";
@@ -95,10 +96,13 @@ function App() {
                 <Switch>
                   {/* Public, self-driven customer booking engine — no operator login. */}
                   <Route path="/book" component={Book} />
-                  {/* Admin console: a separate, responsive back-office site. Sits
-                      OUTSIDE the POS AuthGate so the TEMP lock-screen button can
-                      reach it; in production it has its own auth + manager gating. */}
-                  <Route path="/admin" component={Admin} />
+                  {/* Admin console: a separate, responsive back-office site with
+                      its own auth wall — signed-in manager-role operators only. */}
+                  <Route path="/admin">
+                    <AdminAccessGate>
+                      <Admin />
+                    </AdminAccessGate>
+                  </Route>
                   <Route>
                     <AuthGate />
                   </Route>

@@ -259,14 +259,14 @@ export function LockScreen() {
           Open customer booking site (temp)
         </Link>
 
-        {/* TEMP: dev access to admin. In production admin is a separate site with
-            its own auth, not reached from the POS lock screen. */}
+        {/* Admin console entry — /admin has its own auth wall (AdminAccessGate):
+            it asks for sign-in and admits manager-role operators only. */}
         <Link
           href="/admin"
           className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
         >
           <Settings className="w-4 h-4" />
-          Open admin console (temp)
+          Open admin console (manager sign-in)
         </Link>
 
         {/* Staff stock module — reached from here instead of the POS bottom nav.

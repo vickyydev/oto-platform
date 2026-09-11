@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { Link } from 'wouter';
-import { Menu, X, ArrowLeft, ShieldAlert, ChevronDown } from 'lucide-react';
+import { Menu, X, ArrowLeft, ShieldCheck, ChevronDown } from 'lucide-react';
 import { adminNav, panelGroupMap, type AdminNavEntry } from './adminSections';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { countRestockAlerts } from '@/lib/inventory';
@@ -148,11 +148,11 @@ export function AdminLayout({ activeId, onSelect, children }: AdminLayoutProps) 
           <span className="text-lg font-black tracking-tight">Oto Admin Console</span>
           <span className="text-xs text-foreground/40">Back-office settings</span>
         </div>
-        {/* TEMP: dev access to admin. In production admin is a separate site with its
-            own auth, not reached from the POS lock screen. */}
-        <span className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
-          <ShieldAlert className="w-3.5 h-3.5" />
-          Temporary dev access
+        {/* Access is gated by AdminAccessGate (signed-in manager only); show
+            who is signed in rather than the old "temporary dev access" badge. */}
+        <span className="ml-2 hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300">
+          <ShieldCheck className="w-3.5 h-3.5" />
+          {operator?.name} · Manager
         </span>
         <Link
           href="/"

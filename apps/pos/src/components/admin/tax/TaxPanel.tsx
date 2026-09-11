@@ -623,7 +623,7 @@ export function TaxPanel() {
 
       <p className="flex items-center gap-2 text-xs text-foreground/40">
         <Info className="w-3.5 h-3.5 shrink-0" />
-        Changes are kept in memory for this prototype and reset on page reload.
+        Changes are saved to the database and audited.
       </p>
     </div>
   );
