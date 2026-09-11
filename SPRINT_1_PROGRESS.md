@@ -1,10 +1,10 @@
 # Sprint 1 progress
 
 ## Status
-- Current checkpoint: past CP3 (user waived checkpoint stops on 2026-09-11 — "record and keep going"; questions collected below for end-of-sprint review)
-- Last completed ticket: SCRUM-37 (backend); POS port in progress
-- Next ticket: POS wiring (apps/pos) → acceptance run → CP5
-- Resume instructions: backend complete and green. `cd oto-platform && docker compose -f infra/docker-compose.yml up -d && pnpm db:migrate && pnpm db:seed`, dev accounts: platform admin `+66900000001` / `admin1234`, reception `+66900000002` / `reception1234`. Tests: `TEST_DATABASE_URL=postgres://oto:oto@localhost:5433/postgres pnpm test` (66 green). Remaining: copy prototype into `apps/pos`, wire lock screen/membership check/pricing chip/admin panels per Screen inventory, Playwright smoke, acceptance checklist, `SPRINT_1_REPORT.md`, tag `sprint-1`.
+- Current checkpoint: **CP5 — sprint complete, awaiting client review** (CP2–CP4 stops waived by the client on 2026-09-11 — "record and keep going"; their questions live in SPRINT_1_REPORT.md)
+- Last completed ticket: all 22 (SCRUM-7…37) + acceptance run + SPRINT_1_REPORT.md; tagged `sprint-1`
+- Next ticket: none — Sprint 2 pending client review of the report + Q1–Q5
+- Resume instructions: `cd oto-platform && pnpm install && docker compose -f infra/docker-compose.yml up -d && pnpm db:migrate && pnpm db:seed && pnpm dev` (API :3001, POS :25741). Admin `+66900000001`/`admin1234`, reception `+66900000002`/`reception1234`. Tests: `TEST_DATABASE_URL=postgres://oto:oto@localhost:5433/postgres pnpm test`; smoke: `pnpm --filter @oto/pos exec playwright test` with the stack running. Nothing half-done.
 
 ## Verified prototype layout
 Verified 2026-09-11 by running the app and walking every screen. Matches `CLAUDE.md` §2, with additions:
