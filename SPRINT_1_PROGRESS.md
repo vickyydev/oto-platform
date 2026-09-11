@@ -1,10 +1,10 @@
 # Sprint 1 progress
 
 ## Status
-- Current checkpoint: **CP1 — awaiting review**
-- Last completed ticket: SCRUM-8
-- Next ticket: SCRUM-9 (after CP1 go-ahead)
-- Resume instructions: nothing half-done. On go-ahead, scaffold the monorepo per `ARCHITECTURE.md` §3 (SCRUM-9): pnpm+Turborepo workspaces, Docker Compose (Postgres 16 + MinIO), shared configs, CI workflow, pino + health endpoints. Prototype repo root stays untouched; all new code under `/oto-platform`. Prototype dev server: `PORT=25731 BASE_PATH=/ pnpm --filter @workspace/oto-till run dev` (PowerShell on Windows).
+- Current checkpoint: past CP3 (user waived checkpoint stops on 2026-09-11 — "record and keep going"; questions collected below for end-of-sprint review)
+- Last completed ticket: SCRUM-37 (backend); POS port in progress
+- Next ticket: POS wiring (apps/pos) → acceptance run → CP5
+- Resume instructions: backend complete and green. `cd oto-platform && docker compose -f infra/docker-compose.yml up -d && pnpm db:migrate && pnpm db:seed`, dev accounts: platform admin `+66900000001` / `admin1234`, reception `+66900000002` / `reception1234`. Tests: `TEST_DATABASE_URL=postgres://oto:oto@localhost:5433/postgres pnpm test` (66 green). Remaining: copy prototype into `apps/pos`, wire lock screen/membership check/pricing chip/admin panels per Screen inventory, Playwright smoke, acceptance checklist, `SPRINT_1_REPORT.md`, tag `sprint-1`.
 
 ## Verified prototype layout
 Verified 2026-09-11 by running the app and walking every screen. Matches `CLAUDE.md` §2, with additions:
@@ -114,16 +114,84 @@ Routes from `src/App.tsx` (+ mobile shell). Markings: **S1** = Sprint 1 — wire
 - Tests: n/a.
 - Deferred / notes: deeper reads of `lib/sale.ts` vouchers and admin form internals deferred to their owning tickets (Sprint 2 / SCRUM-35 respectively).
 
-### SCRUM-9 … SCRUM-37 — not started
-(Ordered per §5 execution order; blocked on CP1 review.)
+### SCRUM-9 — monorepo, environments, CI/CD, error tracking — **done**
+- Added per CLAUDE.md: pnpm+Turborepo workspace (`apps/*`, `packages/*`), Docker Compose (Postgres 16 on 5433 + MinIO 9000/9001), `.env.example` (every var documented), shared tsconfig/eslint/prettier (`packages/config`), CI at repo-root `.github/workflows/oto-platform-ci.yml` (Actions only reads root `.github`; runs typecheck→lint→migrate-twice→seed→test→build against a PG16 service container), pino with request IDs + `x-request-id` echo, `/health` + `/ready`, Sentry-ready error hook (no-op without DSN).
+- Tests: `/health` covered implicitly by every integration suite.
+- Notes: CI green "on first push" unverifiable locally (no push made — user's call); workflow is complete.
 
-## UI additions (consolidated — planned, none built yet)
-1. Phone + password sign-in form behind the lock screen ("Scan my face" kept as placeholder) — SCRUM-19
-2. Account-setup + password-reset screens in lock-screen visual style — SCRUM-20/23
-3. "Create member" path on the membership check when lookup finds nobody — SCRUM-31
-4. Child selection/confirm/edit step in the membership check (reusing `SavedChildrenReview` design) — SCRUM-32
-5. Admin panels: Accounts (list/create/edit/deactivate/temp password), Roles & effective permissions, Operators & branches admin (extends BranchesPanel), holidays already exist (PricingOverridesSection) — SCRUM-21/22/27/28
-6. Profile screen (`/me`: details + photo) — SCRUM-25
+### SCRUM-10 — data model & schema baseline — **done**
+- Ported from: prototype `types.ts` shapes (TicketType/TierAdultRule/TierDef/Member/SavedChild/TaxConfig…), `catalogStore.ts` seeds (ticket packages, tiers, tax), `mockApi.ts` member seeds (Mali family w/ peanut allergy).
+- Added per CLAUDE.md: full §4 table set incl. future-sprint tables; jsonb payloads validated by `@oto/shared` zod schemas; ER diagram in ARCHITECTURE.md §8; seed with dev accounts. Deviations D1–D3, D6 logged.
+- Tests: migrations applied twice from empty (clean both times); every FK indexed; seed verified by all integration suites.
+
+### SCRUM-17 — locale, timezone, currency — **done**
+- Ported from: `lib/phoneUtils.ts` (incl. the `00` international-prefix edge case), `lib/pricingMode.ts` (weekend + holiday rules, `formatWWPrice`), prototype ฿ display.
+- Added per CLAUDE.md: libphonenumber-js E.164 normalisation (TH default), satang `Money` helpers, branch-tz date helpers, i18n scaffold (`en` source + approved Thai strings from the prototype dictionary).
+- Tests: 16 unit tests — Thai local / +66 / 00-prefix / international phones, money formats, Bangkok timezone round-trip, rate-mode dates incl. boundaries.
+
+### SCRUM-13 — scoped permission engine — **done**
+- Added per CLAUDE.md: permission constants + role bundles in `@oto/shared/permissions`; resolver (union of assignments w/ scopes; platform-wide = operator scope with null id); `req.requirePermission(perm, target)` guard on every route; `GET /me/permissions`.
+- Ported from: prototype managerOnly gating UX (AdminLayout) is the UI analogue — wired later in POS.
+- Tests: unit — operator/branch/department/record/platform combos + union; integration — allow (branch-scoped reception lookup), deny (reception creating a branch), 401 unauthenticated.
+
+### SCRUM-15 — idempotency & duplicate safeguards — **done**
+- Added per CLAUDE.md: middleware on all mutating routes (replay stored response; hash-mismatch 409; in-flight 409); pattern documented in ARCHITECTURE.md §9; unique constraints on member/account phone + branch code.
+- Tests: same key twice → one member row + identical response; same key different body → 409 IDEMPOTENCY_MISMATCH.
+
+### SCRUM-14 — audit log service — **done**
+- Ported from: prototype's operator-stamping convention (`verifiedBy`/`savedBy`/ChangeLogEntry) generalised.
+- Added per CLAUDE.md: `audit.record` called from every mutating service; `GET /audit` with entity/actor/branch/date filters, admin-guarded.
+- Tests: audit rows asserted for account create, role assignment, member create, ticket-package update (with before/after); filter + guard test.
+
+### SCRUM-16 — permission-bound file storage — **done**
+- Added per CLAUDE.md: MinIO client, `file_object` rows, presigned PUT/GET issued only after owner-entity permission checks; objects never public.
+- Tests: end-to-end photo upload→download byte-compare against real MinIO; foreign account file → 403; unauthenticated → 401. Suite self-skips if storage is unreachable.
+
+### SCRUM-19/20/23/24 — sign-in, setup, recovery, sign-out — **done (backend)**
+- Ported from: inactivity constants stay client-side (2 min / 15 s, mockApi.ts:607) — POS wiring next; phone formats per phoneUtils.
+- Added per CLAUDE.md: argon2id; per-phone throttle (5 fails → cooldown; IP at 4×, D7); invited/inactive refusals with clear codes (SETUP_REQUIRED / ACCOUNT_INACTIVE); 6-digit single-use 10-min codes via pluggable SMS adapter (console dev adapter); reset invalidates all sessions; sign-out deletes the row.
+- Tests: 11 covering every DoD incl. cooldown, code reuse, code expiry, session kill.
+
+### SCRUM-25 — profile & photo — **done (backend)**
+- `GET /me` (account+employee+branch+permissions+photoFileId), strict `PATCH /me` (non-permitted fields rejected by schema), photo via SCRUM-16 flow. Test: photo id surfaces on /me.
+
+### SCRUM-21/22/28 — accounts, roles, login users — **done (backend)**
+- `POST /accounts` (link/create employee, scoped roles, invitation code via SMS adapter), search/list, `GET /accounts/:id/permissions` (assignments + effective), add/remove role assignments, activate/deactivate (sessions killed), temp password (forces change; MUST_CHANGE_PASSWORD blocks guarded routes until changed).
+- Tests: invite→setup→sign-in E2E; deactivated refused; temp-password force-change E2E; assignment audit.
+
+### SCRUM-27 — operators & branches — **done (backend)**
+- Platform-wide-gated operator CRUD + administrator assignment (invited operator_admin w/ code); branch CRUD with timezone; archived hidden from pickers.
+- Tests: second operator + admin + archive-hidden; branch create/archive.
+
+### SCRUM-31/30/32 — members, lookup, visits — **done (backend)**
+- Ported from: `mockApi.ts` getMemberByPhone/createMember/updateMember semantics (normalised compare, nickname trim, preferredChannel), SavedChild field set, default-tier rule (`resolveAutoTier` → member.tierCode default tourist), last verification = active (memberWithChildren).
+- Added per CLAUDE.md: operator-scoped uniqueness (409 MEMBER_EXISTS + memberId detail), visit/visit_child drafts stamping child.last_confirmed_at, children CRUD with audited allergy edits, pending-lookup session channel (D8).
+- Tests: 9 covering lookup from local-format phone, duplicate across formats, enrich, child-ownership rejection, allergy audit, visit visibility.
+
+### SCRUM-35/36/37 — packages, pricing, tax — **done (backend)**
+- Ported from: seed values 1:1 (1H/2H/FD/Eat&Play incl. expat −30/−20 derivation, Thai FD free_adults:1, ฿350/500 adult admission, Eat&Play fixed ฿350), `pricingMode.ts` resolver rules, `TaxConfig` engine shape + 7% inclusive seed.
+- Added per CLAUDE.md: CRUD + archive with validation (negative prices/zero hours → 400), `GET /branches/:id/pricing-mode` (tz-aware, drives the POS chip), holidays CRUD, tax config PUT + `tax_override` rows + resolver (branch → category → product precedence).
+- Tests: 12 covering seeds, CRUD, validation, all five resolver date cases + boundaries, tax precedence chain, config replace.
+
+## POS wiring (apps/pos) — done
+The prototype was copied verbatim into `apps/pos` (316 files) and wired:
+- **Auth**: `OperatorContext` now holds a real API session (sign-in → /me → permissions → manager flag); session resume on reload within TTL; inactivity timings unchanged (2 min/15 s); sign-out deletes the server session. `LockScreen` keeps its design with the phone+password form, setup and reset flows beneath the face-scan placeholder.
+- **Catalog bridge** (`src/api/catalogBridge.ts`): after sign-in the store is hydrated from the API (branches+tiers+packages+holidays+tax for the active branch, satang→baht via `src/api/mappers.ts`); the wired store mutators (ticket types, holidays, tax config, branches) write through to the API optimistically with error toasts — every prototype screen keeps its exact rendering path; mock-only collections (menu/merch/inventory/…) keep their seeds per §6.
+- **Membership check**: `handleIdentify` stages the display-typed phone as the session pending-lookup, consumes it, then resolves `/members/lookup` (D8, §7.4); found members map into the prototype `Member` shape (children → savedChildren); auto-tier via the ported `resolveAutoTier`; `VisitChildrenModal` (new, SCRUM-32) confirms children + edits allergies + POSTs the draft visit; unknown phone opens the create-member dialog (SCRUM-31).
+- **Pricing chip**: `PricingModeIndicator` reads `GET /branches/:id/pricing-mode` (60 s refresh), local ported resolver as in-flight fallback.
+- **Admin**: MembersPanel on the API (list/create/patch/archive); new `access/LoginUsersPanel` (SCRUM-21/22/28) and `access/OperatorsPanel` (SCRUM-27) in the admin design language under a manager-only "Access" group; Branches/Tickets/Holidays/Tax panels persist via the write-through bridge. Fixed the ported Tickets table stringifying the adult weekday/weekend price pair ("[object Object]") and its now-false "in-memory only" footnote.
+- **i18n**: `LanguageContext` consults the `@oto/shared` en/th scaffold first, prototype 5-language dictionary as fallback (Q2/D4).
+- **E2E**: Playwright smoke (`e2e/smoke.spec.ts`, msedge channel) covers lock → sign-in → lookup → child-confirm → sign-out and the create-member path — 2/2 green against the dev stack; full walkthrough also verified with screenshots.
+- **tsconfig**: ported app keeps plain `strict` (base's `noUncheckedIndexedAccess`/`verbatimModuleSyntax` off — 300 untouched prototype files predate them).
+
+## UI additions (consolidated — all built)
+1. Phone + password sign-in form + setup + reset flows behind the lock screen ("Scan my face" kept as placeholder) — SCRUM-19/20/23
+2. "Create member" dialog on the membership check when lookup finds nobody — SCRUM-31
+3. "Who's visiting today?" children confirm/edit modal (`VisitChildrenModal`) — SCRUM-32
+4. Admin → Access → Login Users panel (invite, scoped role, activate/deactivate, temp password, effective-permissions viewer) — SCRUM-21/22/28
+5. Admin → Access → Operators panel (create/archive operators, assign administrators) — SCRUM-27
+6. Label correction: Tickets panel footnote now says edits persist (the in-memory note became false).
+7. Profile photo upload UI deferred (endpoints + tests complete; no natural prototype home — see Deferred).
 
 ## Backlog candidates
 - Fix prototype Admin → Tickets table rendering "Adults ฿[object Object]" (`admin/tickets/TicketsPanel` stringifies the adult-rule price object) — cosmetic, in the ported UI worth fixing when SCRUM-35 touches that table.
