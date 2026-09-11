@@ -822,11 +822,13 @@ export const removeSavedChild = (memberId: string, childId: string): void => {
   member.savedChildren = member.savedChildren.filter((c) => c.id !== childId);
 };
 
-// Proof types staff can record when verifying a discounted tier.
+// Proof types staff can record when verifying a discounted tier. 'Other'
+// prompts for a short description of the document (saved with the record).
 export const getProofTypes = (): string[] => [
   'Passport',
   'Residence certificate',
   'School card',
+  'Other',
 ];
 
 /**

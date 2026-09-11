@@ -61,7 +61,7 @@ export interface ApiMember {
   name: string | null;
   email: string | null;
   tierCode: string;
-  preferredChannel: 'whatsapp' | 'telegram' | null;
+  preferredChannel: 'whatsapp' | 'telegram' | 'line' | null;
   notes: string | null;
   tierVerification: {
     tier: string;
@@ -96,7 +96,7 @@ export const membersApi = {
     api.get<{ members: ApiMember[] }>(`/members${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   archive: (id: string) => api.delete<{ ok: true }>(`/members/${id}`),
   get: (id: string) => api.get<{ member: ApiMember }>(`/members/${id}`),
-  create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' }) =>
+  create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' | 'line' }) =>
     api.post<{ member: ApiMember }>('/members', body, { idempotencyKey: idemKey() }),
   update: (id: string, patch: Record<string, unknown>) =>
     api.patch<{ member: ApiMember }>(`/members/${id}`, patch),
@@ -202,7 +202,7 @@ export const publicApi = {
           memberId: string;
           nickname: string;
           tierCode: string;
-          preferredChannel: 'whatsapp' | 'telegram' | null;
+          preferredChannel: 'whatsapp' | 'telegram' | 'line' | null;
         }
     >(`/public/member-tier?phone=${encodeURIComponent(phone)}`),
   createBooking: (body: {
@@ -212,7 +212,7 @@ export const publicApi = {
     tier: string;
     visitDate?: string;
     lines: Array<{ packageId: string; kids: number; adults: number }>;
-    contactChannel?: 'whatsapp' | 'telegram';
+    contactChannel?: 'whatsapp' | 'telegram' | 'line';
     locale?: string;
     clientSnapshot?: unknown;
   }) =>

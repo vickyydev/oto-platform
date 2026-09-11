@@ -40,7 +40,7 @@ export const tier = pgTable(
 );
 
 export const memberCreatedVia = pgEnum('member_created_via', ['pos', 'booking', 'import']);
-export const contactChannel = pgEnum('contact_channel', ['whatsapp', 'telegram']);
+export const contactChannel = pgEnum('contact_channel', ['whatsapp', 'telegram', 'line']);
 
 export const member = pgTable(
   'member',

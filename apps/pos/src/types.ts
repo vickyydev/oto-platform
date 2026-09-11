@@ -71,7 +71,7 @@ export interface TierVerification {
 // Single source of truth for the messaging channels the POS/parent app can use
 // to reach a contact. Absent/legacy data always defaults to WhatsApp — see
 // normalizeChannel() in lib/contactChannel.ts.
-export type ContactChannel = 'whatsapp' | 'telegram';
+export type ContactChannel = 'whatsapp' | 'telegram' | 'line';
 
 export interface Member {
   id: string;

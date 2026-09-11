@@ -184,7 +184,7 @@ export async function memberRoutes(app: App): Promise<void> {
         body: z.object({
           phone: z.string(),
           nickname: z.string().min(1),
-          preferredChannel: z.enum(['whatsapp', 'telegram']).optional(),
+          preferredChannel: z.enum(['whatsapp', 'telegram', 'line']).optional(),
           createdVia: z.enum(['pos', 'booking', 'import']).default('pos'),
         }),
       },
@@ -239,7 +239,7 @@ export async function memberRoutes(app: App): Promise<void> {
             name: z.string().optional().nullable(),
             email: z.string().email().optional().nullable(),
             notes: z.string().optional().nullable(),
-            preferredChannel: z.enum(['whatsapp', 'telegram']).optional().nullable(),
+            preferredChannel: z.enum(['whatsapp', 'telegram', 'line']).optional().nullable(),
             phone: z.string().optional(),
           })
           .strict(),

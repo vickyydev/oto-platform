@@ -15,6 +15,13 @@
       "when": 1789111234608,
       "tag": "0001_breezy_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789121014211,
+      "tag": "0002_add-line-contact-channel",
+      "breakpoints": true
     }
   ]
 }

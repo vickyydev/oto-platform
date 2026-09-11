@@ -99,7 +99,10 @@ export function TierVerificationsPanel() {
                         <span className="font-semibold">{tierLabel(r.toTier)}</span>
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm">{r.evidenceType}</TableCell>
+                    <TableCell className="text-sm">
+                      {r.evidenceType}
+                      {r.note && <div className="text-xs text-foreground/50">{r.note}</div>}
+                    </TableCell>
                     <TableCell>
                       {r.evidenceExpiresAt ? (
                         <span
@@ -149,7 +152,10 @@ export function TierVerificationsPanel() {
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-foreground/70">
-                  <span>{r.evidenceType}</span>
+                  <span>
+                    {r.evidenceType}
+                    {r.note ? ` — ${r.note}` : ''}
+                  </span>
                   {r.evidenceExpiresAt && (
                     <span className={r.expired ? 'font-semibold text-destructive' : ''}>
                       expires {r.evidenceExpiresAt}

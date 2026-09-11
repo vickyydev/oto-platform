@@ -137,7 +137,7 @@ export async function publicRoutes(app: App): Promise<void> {
           tier: z.string(),
           visitDate: z.string().optional(),
           lines: z.array(BookingLine).min(1).max(10),
-          contactChannel: z.enum(['whatsapp', 'telegram']).optional(),
+          contactChannel: z.enum(['whatsapp', 'telegram', 'line']).optional(),
           locale: z.string().max(8).optional(),
           /** Client-side extras snapshot (drop-off, passes) — stored, not priced here. */
           clientSnapshot: z.unknown().optional(),
