@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { toast } from '@/hooks/use-toast';
 import { adminApi } from '@/api/platform';
@@ -23,6 +33,7 @@ export function OperatorsPanel() {
   const [busy, setBusy] = useState(false);
   const [newName, setNewName] = useState('');
 
+  const [pendingArchive, setPendingArchive] = useState<{ id: string; name: string } | null>(null);
   const [adminFor, setAdminFor] = useState<{ id: string; name: string } | null>(null);
   const [adminName, setAdminName] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
@@ -134,7 +145,7 @@ export function OperatorsPanel() {
                 size="sm"
                 className="text-destructive"
                 title="Archive (hidden from pickers)"
-                onClick={() => void archive(o.id)}
+                onClick={() => setPendingArchive(o)}
               >
                 <Archive className="w-4 h-4" />
               </Button>
@@ -147,6 +158,30 @@ export function OperatorsPanel() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={pendingArchive !== null} onOpenChange={(o) => !o && setPendingArchive(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive operator "{pendingArchive?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The operator disappears from every picker. Its data is kept (soft delete) and a
+              platform admin can unarchive it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingArchive) void archive(pendingArchive.id);
+                setPendingArchive(null);
+              }}
+            >
+              Archive operator
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={adminFor !== null} onOpenChange={(o) => !busy && !o && setAdminFor(null)}>
         <DialogContent className="max-w-md">

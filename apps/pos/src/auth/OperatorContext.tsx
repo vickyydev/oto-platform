@@ -185,6 +185,19 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     };
   }, [operator, armTimers, clearTimers]);
 
+  // Session died server-side (expiry, deactivation, password reset elsewhere):
+  // any API 401 locks the POS immediately instead of leaving dead screens.
+  useEffect(() => {
+    if (!operator) return;
+    const onUnauthorized = () => {
+      clearTimers();
+      setWarningActive(false);
+      setOperator(null);
+    };
+    window.addEventListener('oto:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('oto:unauthorized', onUnauthorized);
+  }, [operator, clearTimers]);
+
   return (
     <OperatorContext.Provider
       value={{ operator, signIn, login, logout, warningActive, secondsLeft, stayActive }}

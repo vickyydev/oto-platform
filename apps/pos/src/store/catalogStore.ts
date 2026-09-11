@@ -1813,7 +1813,8 @@ export const branchHasCatalogData = (branchId: string): boolean => {
 // collections still on mock (menu, merch, inventory, …) keep their seeds.
 
 export function hydrateFromApi(data: {
-  branches: Branch[];
+  /** Omit to keep the current branch list (public /book hydration). */
+  branches?: Branch[];
   /** Patches keyed by branch slug (Branch.id). */
   perBranch: Record<string, Partial<BranchCatalog>>;
   pricingOverrides?: PricingOverride[];
@@ -1824,7 +1825,7 @@ export function hydrateFromApi(data: {
   }
   state = {
     ...state,
-    branches: data.branches,
+    ...(data.branches ? { branches: data.branches } : {}),
     branchCatalogs,
     ...(data.pricingOverrides ? { pricingOverrides: data.pricingOverrides } : {}),
   };

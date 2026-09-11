@@ -3,6 +3,16 @@ import { CalendarRange, Plus, Trash2, Pencil, X, Check } from 'lucide-react';
 import type { PricingOverride } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Field, TextInput } from '@/components/admin/discounts/fields';
 
 interface DraftForm {
@@ -67,6 +77,9 @@ export function PricingOverridesSection() {
     setError(undefined);
   };
 
+  // Deleting a holiday range flips its dates back to weekday pricing —
+  // destructive enough to warrant a confirm (failing-case rule).
+  const [pendingDelete, setPendingDelete] = useState<PricingOverride | null>(null);
   const remove = (id: string) => mutators.deletePricingOverride(id);
 
   return (
@@ -163,7 +176,7 @@ export function PricingOverridesSection() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => remove(o.id)}
+                onClick={() => setPendingDelete(o)}
                 aria-label={`Remove ${o.name}`}
                 className="text-rose-300 hover:text-rose-200"
               >
@@ -173,6 +186,30 @@ export function PricingOverridesSection() {
           </div>
         ))}
       </div>
+      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove "{pendingDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete
+                ? `${pendingDelete.startDate} – ${pendingDelete.endDate} will bill at normal weekday/weekend rates again.`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingDelete) remove(pendingDelete.id);
+                setPendingDelete(null);
+              }}
+            >
+              Remove holiday
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

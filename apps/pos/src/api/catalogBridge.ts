@@ -52,6 +52,37 @@ export async function loadCatalogFromApi(activeSlug?: string): Promise<void> {
   hydrateFromApi({ branches: mapped, perBranch, pricingOverrides });
 }
 
+/**
+ * Public /book hydration (no session): pull the branch's active packages +
+ * tiers + holidays through the public endpoint so the customer site prices
+ * from the database. Returns the catalog for direct use (rate mode etc.).
+ */
+export async function loadPublicCatalog(branchCode: string) {
+  const { publicApi } = await import('./platform');
+  const cat = await publicApi.catalog(branchCode);
+  hydrateFromApi({
+    perBranch: {
+      [cat.branch.code]: {
+        tiers: cat.tiers.map((t, i) => ({
+          id: t.id,
+          name: t.name,
+          isDefault: t.isDefault,
+          requiresVerification: t.requiresVerification,
+          sortOrder: i,
+        })),
+        ticketTypes: cat.packages.map(apiPackageToTicketType),
+      },
+    },
+    pricingOverrides: cat.holidays.map((h, i) => ({
+      id: `pub-${i}`,
+      name: h.name,
+      startDate: h.startsOn,
+      endDate: h.endsOn,
+    })),
+  });
+  return cat;
+}
+
 // --- Write-through helpers (called by CatalogStoreContext wrappers) ---------
 
 export async function saveTicketTypeToApi(branchSlug: string, t: TicketType, exists: boolean): Promise<void> {

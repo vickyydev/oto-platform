@@ -157,6 +157,49 @@ export const catalogApi = {
     api.put<{ ok: true }>(`/branches/${branchId}/tax-config`, config),
 };
 
+// --- public booking site (no session) ---------------------------------------
+export interface PublicCatalog {
+  branch: { code: string; name: string; timezone: string };
+  tiers: Array<{ id: string; name: string; isDefault: boolean; requiresVerification: boolean }>;
+  packages: ApiTicketPackage[];
+  rateMode: { date: string; mode: 'weekday' | 'weekend'; reason: string; overrideName?: string };
+  holidays: Array<{ name: string; startsOn: string; endsOn: string }>;
+}
+
+export const publicApi = {
+  catalog: (branchCode: string) => api.get<PublicCatalog>(`/public/branches/${branchCode}/catalog`),
+  memberTier: (phone: string) =>
+    api.get<
+      | { found: false }
+      | {
+          found: true;
+          memberId: string;
+          nickname: string;
+          tierCode: string;
+          preferredChannel: 'whatsapp' | 'telegram' | null;
+        }
+    >(`/public/member-tier?phone=${encodeURIComponent(phone)}`),
+  createBooking: (body: {
+    branchCode: string;
+    phone?: string;
+    parentName: string;
+    tier: string;
+    visitDate?: string;
+    lines: Array<{ packageId: string; kids: number; adults: number }>;
+    contactChannel?: 'whatsapp' | 'telegram';
+    locale?: string;
+    clientSnapshot?: unknown;
+  }) =>
+    api.post<{
+      id: string;
+      reference: string;
+      visitDate: string;
+      rateMode: 'weekday' | 'weekend';
+      totalSatang: number;
+      lines: unknown[];
+    }>('/public/bookings', body, { idempotencyKey: idemKey() }),
+};
+
 // --- admin: accounts / roles / operators ------------------------------------
 export const adminApi = {
   accounts: (q?: string) =>

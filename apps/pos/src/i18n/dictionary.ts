@@ -237,6 +237,7 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'book.tickets.beforePayment': { en: 'Before payment', zh: '付款前', th: 'ก่อนชำระเงิน', ru: 'Перед оплатой', fr: 'Avant le paiement' },
   'book.tickets.continueChildDetails': { en: 'Continue to child details', zh: '继续填写孩子信息', th: 'ดำเนินการต่อไปยังข้อมูลเด็ก', ru: 'Продолжить к данным ребёнка', fr: "Continuer vers les détails de l'enfant" },
   'book.tickets.continuePayment': { en: 'Continue to payment', zh: '继续付款', th: 'ดำเนินการต่อไปยังการชำระเงิน', ru: 'Перейти к оплате', fr: 'Continuer vers le paiement' },
+  'book.tickets.perPerson': { en: 'per person', zh: '每人', th: 'ต่อคน', ru: 'с человека', fr: 'par personne' },
   'book.tickets.perPersonRate': { en: '฿{{price}} per person · {{tier}} rate', zh: '每人 ฿{{price}} · {{tier}} 价格', th: '฿{{price}} ต่อคน · ราคา {{tier}}', ru: '฿{{price}} с человека · тариф {{tier}}', fr: '฿{{price}} par personne · tarif {{tier}}' },
   'book.tickets.kids': { en: 'Kids', zh: '儿童', th: 'เด็ก', ru: 'Дети', fr: 'Enfants' },
   'book.tickets.kidsDesc': { en: "We'll ask each child's name & age", zh: '我们会询问每个孩子的姓名和年龄', th: 'เราจะถามชื่อและอายุของเด็กแต่ละคน', ru: 'Мы спросим имя и возраст каждого ребёнка', fr: "Nous demanderons le nom et l'âge de chaque enfant" },

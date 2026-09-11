@@ -35,6 +35,11 @@ async function request<T>(
     | null;
   if (!res.ok) {
     const err = data?.error;
+    // Session died mid-use (expiry, deactivation, reset elsewhere): tell the
+    // shell so the POS returns to the lock screen instead of failing quietly.
+    if (res.status === 401 && !path.startsWith('/auth') && !path.startsWith('/public')) {
+      window.dispatchEvent(new CustomEvent('oto:unauthorized'));
+    }
     throw new ApiError(res.status, err?.code ?? 'UNKNOWN', err?.message ?? res.statusText, err?.details);
   }
   return data as T;

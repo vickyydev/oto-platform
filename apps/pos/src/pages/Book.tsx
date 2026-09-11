@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AddOn, Booking, CartLine, ContactChannel, CustomerTier, Member, OtoEvent, SelectedAddOn, TicketType } from '@/types';
 import {
-  getMemberByPhone,
   getMemberById,
   addSavedChild,
   updateSavedChild,
@@ -39,6 +38,9 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { publicApi } from '@/api/platform';
+import { loadPublicCatalog } from '@/api/catalogBridge';
+import { toast } from '@/hooks/use-toast';
 
 type Stage = 'identify' | 'tickets' | 'pass' | 'savedChildren' | 'supervise' | 'pay' | 'confirmation';
 
@@ -234,13 +236,32 @@ export default function Book() {
   // mount. getSupervisionPolicy() returns a stable reference until a mutation.
   useSyncExternalStore(subscribeCatalog, () => null);
   const policy = getSupervisionPolicy();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const [stage, setStage] = useState<Stage>('identify');
   const [member, setMember] = useState<Member | null>(null);
   const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
   const [contactChannel, setContactChannel] = useState<ContactChannel>('whatsapp');
+
+  // Live catalog: /book is public (no session), so it hydrates the store from
+  // the public endpoint itself — packages, tiers, holiday rate mode all come
+  // from the database. If the API is unreachable the page still works on the
+  // last seeds, with a visible notice (failing-case rule).
+  const [liveCatalog, setLiveCatalog] = useState<'loading' | 'ready' | 'offline'>('loading');
+  useEffect(() => {
+    let cancelled = false;
+    loadPublicCatalog(getActiveBranch().id)
+      .then(() => {
+        if (!cancelled) setLiveCatalog('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setLiveCatalog('offline');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Same "save per member" behaviour as the till: persist the new preference
   // immediately if this booking belongs to an already-identified member.
@@ -362,19 +383,54 @@ export default function Book() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
+  // Customer self-identification against the platform API (public endpoint):
+  // phone → nickname + verified tier ONLY (no PII). A found member's stored
+  // tier drives the prices they see; lookup failures degrade to guest with a
+  // visible notice — the flow never dead-ends on a network error.
   const handleIdentify = (enteredPhone: string, nick: string, channel: ContactChannel) => {
-    const found = enteredPhone.trim() ? getMemberByPhone(enteredPhone, nick) : null;
-    setMember(found);
-    const resolvedName = found?.nickname ?? nick.trim();
-    setNickname(resolvedName);
-    setParentName(resolvedName);
-    setPhone(enteredPhone.trim());
-    // `channel` already reflects BookIdentify's pre-select-then-let-the-user-override
-    // resolution — never re-overwrite it with the stored preference here, or a manual
-    // change made right before tapping Continue would be silently discarded.
-    setContactChannel(channel);
-    if (found && found.preferredChannel !== channel) updateMember(found.id, { preferredChannel: channel });
-    setStage('tickets');
+    const typed = enteredPhone.trim();
+    void (async () => {
+      let found: Member | null = null;
+      if (typed) {
+        try {
+          const res = await publicApi.memberTier(typed);
+          if (res.found) {
+            found = {
+              id: res.memberId,
+              phone: typed,
+              nickname: res.nickname,
+              preferredChannel: res.preferredChannel ?? undefined,
+              tierVerification:
+                res.tierCode && res.tierCode !== 'tourist'
+                  ? {
+                      tier: res.tierCode,
+                      proofType: 'Member record',
+                      verifiedBy: 'OTO',
+                      verifiedById: 'api',
+                      verifiedAt: new Date().toISOString(),
+                    }
+                  : undefined,
+            };
+          }
+        } catch {
+          toast({
+            title: 'Membership check unavailable',
+            description: 'Continuing as a guest — standard rates apply.',
+            variant: 'destructive',
+          });
+        }
+      }
+      setMember(found);
+      const resolvedName = found?.nickname ?? nick.trim();
+      setNickname(resolvedName);
+      setParentName(resolvedName);
+      setPhone(typed);
+      // `channel` already reflects BookIdentify's pre-select-then-let-the-user-override
+      // resolution — never re-overwrite it with the stored preference here, or a manual
+      // change made right before tapping Continue would be silently discarded.
+      setContactChannel(channel);
+      setStage('tickets');
+    })();
   };
 
   const handleAddLine = (
@@ -531,7 +587,51 @@ export default function Book() {
 
   const handleRemovePass = (id: string) => setPasses((prev) => prev.filter((p) => p.id !== id));
 
+  const [bookingBusy, setBookingBusy] = useState(false);
+
   const handlePay = (paymentMethod: 'card' | 'promptpay') => {
+    if (bookingBusy) return; // double-submit guard
+    setBookingBusy(true);
+    void (async () => {
+      // Persist the booking on the platform API FIRST — the server recomputes
+      // the ticket total from the database packages (client figure untrusted)
+      // and issues the canonical reference. Failure keeps the customer on the
+      // payment step with a clear message instead of a phantom booking.
+      const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(v);
+      const serverLines = normalizedLines
+        .filter((l) => !l.promoItem && !l.dropOff && isUuid(l.ticketType.id) && (l.kids > 0 || l.adults > 0))
+        .map((l) => ({ packageId: l.ticketType.id, kids: l.kids, adults: l.adults }));
+      let serverReference: string | null = null;
+      if (serverLines.length > 0) {
+        try {
+          const res = await publicApi.createBooking({
+            branchCode: getActiveBranch().id,
+            phone: phone || undefined,
+            parentName: parentName.trim() || nickname.trim() || 'Guest',
+            tier,
+            lines: serverLines,
+            contactChannel,
+            locale: lang,
+            clientSnapshot: { totalTHB: total, passCount: passes.length },
+          });
+          serverReference = res.reference;
+        } catch (err) {
+          setBookingBusy(false);
+          toast({
+            title: "We couldn't confirm your booking",
+            description:
+              err instanceof Error ? err.message : 'Please check your connection and try again.',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+      finalizeBooking(paymentMethod, serverReference);
+      setBookingBusy(false);
+    })();
+  };
+
+  const finalizeBooking = (paymentMethod: 'card' | 'promptpay', serverReference: string | null) => {
     // Save / update each supervised child against the member's profile so they
     // pre-fill next time. Photo is never saved (re-taken each visit); a slot
     // linked to a saved child updates it, otherwise it's added new. Stamped as an
@@ -569,6 +669,8 @@ export default function Book() {
         priceTHB: resolveRateToday(p.event.entryPriceTHB),
       })),
     });
+    // The database reference is the one printed on the QR / told to reception.
+    if (serverReference) made.reference = serverReference;
     setBooking(made);
     setStage('confirmation');
   };
@@ -592,6 +694,12 @@ export default function Book() {
 
   return (
     <div className="light min-h-[100dvh] w-full bg-gradient-to-b from-sky-100 via-sky-50 to-sky-50 text-slate-900 relative">
+      {liveCatalog === 'offline' && (
+        <div className="sticky top-0 z-50 bg-amber-100 border-b border-amber-300 text-amber-900 text-xs font-semibold text-center px-4 py-2">
+          Live prices are temporarily unavailable — showing standard rates. Bookings may not go
+          through until the connection returns.
+        </div>
+      )}
       {stage !== 'supervise' && (
         <div className="absolute top-4 right-4 z-40">
           <LanguageSwitcher variant="light" />

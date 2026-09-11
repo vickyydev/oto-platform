@@ -16,6 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { toast } from '@/hooks/use-toast';
 import { adminApi } from '@/api/platform';
@@ -48,6 +58,13 @@ export function LoginUsersPanel() {
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState<(typeof ROLES)[number]>('reception');
   const [newBranch, setNewBranch] = useState<string>('');
+
+  /** Confirm-first for destructive/sensitive actions (deactivate, temp password). */
+  const [pendingAction, setPendingAction] = useState<
+    | { kind: 'deactivate'; account: AccountRow }
+    | { kind: 'temp-password'; account: AccountRow }
+    | null
+  >(null);
 
   const [permsFor, setPermsFor] = useState<AccountRow | null>(null);
   const [perms, setPerms] = useState<{
@@ -190,7 +207,12 @@ export function LoginUsersPanel() {
                     <Button variant="ghost" size="sm" title="Effective permissions" onClick={() => showPerms(a)}>
                       <ShieldCheck className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" title="Temporary password" onClick={() => void tempPassword(a)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Temporary password"
+                      onClick={() => setPendingAction({ kind: 'temp-password', account: a })}
+                    >
                       <KeyRound className="w-4 h-4" />
                     </Button>
                     {a.status === 'inactive' ? (
@@ -203,7 +225,7 @@ export function LoginUsersPanel() {
                         size="sm"
                         title="Deactivate"
                         className="text-destructive"
-                        onClick={() => void setStatus(a, 'inactive')}
+                        onClick={() => setPendingAction({ kind: 'deactivate', account: a })}
                       >
                         <UserX className="w-4 h-4" />
                       </Button>
@@ -274,6 +296,41 @@ export function LoginUsersPanel() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmations for sensitive account actions */}
+      <AlertDialog open={pendingAction !== null} onOpenChange={(o) => !o && setPendingAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction?.kind === 'deactivate'
+                ? `Deactivate ${pendingAction.account.employee?.name ?? pendingAction.account.phone}?`
+                : `Issue a temporary password for ${pendingAction?.account.employee?.name ?? pendingAction?.account.phone}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction?.kind === 'deactivate'
+                ? 'They are signed out everywhere immediately and cannot sign in until reactivated.'
+                : 'Their current password stops working, every session is signed out, and they must set a new password at next sign-in.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={
+                pendingAction?.kind === 'deactivate'
+                  ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                  : undefined
+              }
+              onClick={() => {
+                if (pendingAction?.kind === 'deactivate') void setStatus(pendingAction.account, 'inactive');
+                if (pendingAction?.kind === 'temp-password') void tempPassword(pendingAction.account);
+                setPendingAction(null);
+              }}
+            >
+              {pendingAction?.kind === 'deactivate' ? 'Deactivate' : 'Issue temporary password'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Effective permissions dialog (SCRUM-22) */}
       <Dialog open={permsFor !== null} onOpenChange={(o) => !o && setPermsFor(null)}>
