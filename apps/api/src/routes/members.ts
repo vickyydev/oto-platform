@@ -108,14 +108,36 @@ export async function memberRoutes(app: App): Promise<void> {
             .where(and(base, or(ilike(member.nickname, `%${req.query.q}%`), ilike(member.phone, `%${req.query.q}%`))))
             .limit(50)
         : await app.db.select().from(member).where(base).limit(50);
-      return {
-        members: rows.map((m) => ({
-          id: m.id,
-          phone: m.phone,
-          nickname: m.nickname,
-          tierCode: m.tierCode,
-        })),
-      };
+      // Full objects (children + active verification) — the admin panel edits in place.
+      const full = await Promise.all(rows.map((m) => memberWithChildren(app, m.id)));
+      return { members: full.filter((m) => m !== null) };
+    },
+  );
+
+  // Soft delete (archive) — no hard deletes of business records (CLAUDE.md §3).
+  app.delete(
+    '/:id',
+    { schema: { description: 'Archive a member', params: z.object({ id: z.string().uuid() }) } },
+    async (req) => {
+      const auth = await req.requirePermission('pos:member:update');
+      const [before] = await app.db
+        .select()
+        .from(member)
+        .where(and(eq(member.id, req.params.id), eq(member.operatorId, auth.operatorId)))
+        .limit(1);
+      if (!before) throw errors.notFound('Member not found');
+      await app.db.update(member).set({ archivedAt: new Date() }).where(eq(member.id, req.params.id));
+      await audit.record(app.db, {
+        actorAccountId: auth.accountId,
+        operatorId: auth.operatorId,
+        branchId: auth.branchId,
+        action: 'member.archive',
+        entityType: 'member',
+        entityId: req.params.id,
+        before,
+        requestId: req.id,
+      });
+      return { ok: true };
     },
   );
 

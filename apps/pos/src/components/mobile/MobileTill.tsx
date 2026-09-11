@@ -1,0 +1,1530 @@
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useLocation } from 'wouter';
+import {
+  CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, TicketType,
+  Member, TierVerification, DropOffServiceType, SelectedAddOn, Booking,
+} from '@/types';
+import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
+import { useStation } from '@/station/StationContext';
+import { dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
+import { takeCorrectedOrder } from '@/lib/correctedOrder';
+import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
+import { computeLineTotal, computeLineBreakdown, priceForTier } from '@/lib/pricing';
+import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
+import { resolveGroupRequirements, effectiveRequirement, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
+import { buildSale, computeTotals } from '@/lib/sale';
+import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
+import { resolveAutoTier, tierLabel } from '@/lib/membership';
+import {
+  getDiscountReasons, getMemberByPhone, createMember, updateMember,
+  verifyMemberTier, recordSale, getTicketTypes, getDropOffPricing,
+  getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier,
+  getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver,
+  getPrintTemplate, redeemBooking, pushWristband, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, getDiscountByCode, incrementPromoUsage,
+  type CheckInPaymentInput,
+} from '@/mockApi';
+import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
+import { paymentMethodKind, paymentMethodLabel } from '@/lib/payments';
+import { summarizeTax, roundTHB } from '@/lib/tax';
+import { subscribeCatalog } from '@/store/catalogStore';
+
+import { useOperator } from '@/auth/OperatorContext';
+import { toast } from '@/hooks/use-toast';
+import { useLanguage } from '@/i18n/LanguageContext';
+
+import { StepCustomerType } from '@/components/till/StepCustomerType';
+import { StepAddTicket } from '@/components/till/StepAddTicket';
+import { DropOffLineConfig, type DropOffLineUpdate } from '@/components/till/DropOffLineConfig';
+import { AddDropOffModal } from '@/components/till/AddDropOffModal';
+import { StepPayment } from '@/components/till/StepPayment';
+import { SupervisionGate, slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate';
+import { ConsentCapture } from '@/components/till/ConsentCapture';
+import { CustomerDisplay } from '@/components/till/CustomerDisplay';
+import { OrderSummary } from '@/components/till/OrderSummary';
+import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
+import { VerifyTierModal } from '@/components/shared/VerifyTierModal';
+import { QrCode } from '@/components/till/QrCode';
+import { RedeemBookingModal } from '@/components/till/RedeemBookingModal';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
+
+import { HandToCustomer } from './HandToCustomer';
+import { MobileCartSheet } from './MobileCartSheet';
+
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { ArrowLeft, CheckCircle2, Baby, User, UtensilsCrossed, Printer, QrCode as QrCodeIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+// ─── Mobile step types ────────────────────────────────────────────────────────
+
+type MobileStep =
+  | 'tier'
+  | 'tickets'
+  | 'configure'
+  | 'dropoff-config'
+  | 'supervision'
+  | 'review'
+  | 'payment'
+  | 'done';
+
+/** Which customer-facing content to show in the hand-to-customer overlay. */
+type HandoffMode = 'input' | 'consent' | 'qr' | null;
+
+// ─── Mobile confirmation screen ───────────────────────────────────────────────
+
+function MobileConfirmation({ sale, onNewSale }: { sale: Sale; onNewSale: () => void }) {
+  const braceletRows = sale.lines.flatMap((line) => {
+    const rows: { id: string; kind: 'child' | 'adult'; count: number; ticket: string; duration: string }[] = [];
+    if (line.kids > 0)
+      rows.push({ id: `${line.id}-c`, kind: 'child', count: line.kids, ticket: line.ticketType.name, duration: line.ticketType.durationLabel });
+    if (line.adults > 0)
+      rows.push({ id: `${line.id}-a`, kind: 'adult', count: line.adults, ticket: line.ticketType.name, duration: line.ticketType.durationLabel });
+    return rows;
+  });
+
+  const { taxBreakdown } = computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts);
+  const taxRows = summarizeTax(taxBreakdown);
+  const receiptTpl = getPrintTemplate('receipt');
+  const showCreditInfo = receiptTpl ? !!receiptTpl.fields.voucherInfo : true;
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="shrink-0 p-5 text-center border-b">
+        <div className="w-14 h-14 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-3">
+          <CheckCircle2 className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold tracking-tight">Payment Successful</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Order #{sale.id} · ฿{sale.total} · {paymentMethodLabel(sale.paymentMethod ?? '')}
+        </p>
+        {taxRows.length > 0 && (
+          <p className="text-muted-foreground/70 mt-0.5 text-[11px]">
+            {taxRows.map((r) => `${r.label} ฿${roundTHB(r.amount)}`).join(' · ')}
+          </p>
+        )}
+      </div>
+
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-5">
+          {/* Bracelets */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Printer className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-bold">Bracelets to Print</h3>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {sale.bracelets.children + sale.bracelets.adults} total
+              </span>
+            </div>
+            <div className="space-y-2">
+              {braceletRows.map((row) => (
+                <div key={row.id} className="flex items-center gap-3 bg-card border rounded-xl p-3">
+                  <div
+                    className={cn(
+                      'w-9 h-9 rounded-full flex items-center justify-center shrink-0',
+                      row.kind === 'child' ? 'bg-primary/15 text-primary' : 'bg-sky-500/15 text-sky-400',
+                    )}
+                  >
+                    {row.kind === 'child' ? <Baby className="w-4.5 h-4.5" /> : <User className="w-4.5 h-4.5" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm">
+                      {row.count}× {row.kind === 'child' ? 'Child' : 'Adult'} bracelet
+                      {row.count !== 1 ? 's' : ''}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {row.duration} · {row.ticket}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Credit grants */}
+          {showCreditInfo && sale.creditGrants.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <UtensilsCrossed className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-bold">Credit grants</h3>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {sale.creditGrants.length} total
+                </span>
+              </div>
+              <div className="space-y-2">
+                {sale.creditGrants.map((v, i) => (
+                  <div key={v.id} className="flex items-center gap-3 bg-card border rounded-xl p-3">
+                    <QrCode seed={v.id} className="w-10 h-10 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs text-muted-foreground truncate">{v.label}</div>
+                      {v.type === 'fnb_credit' ? (
+                        <div className="font-bold text-primary">฿{v.valueTHB} credit</div>
+                      ) : (
+                        <div className="font-bold">×{v.quantity}</div>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground shrink-0">#{i + 1}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+
+      <div className="shrink-0 p-4 border-t">
+        <Button size="lg" className="w-full h-14 text-lg font-bold" onClick={onNewSale}>
+          Start New Sale
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Line discount components helper ─────────────────────────────────────────
+
+function lineDiscountComponents(line: CartLine): DiscountComponentOption[] {
+  return computeLineBreakdown(line).map((item) => ({
+    target:
+      item.kind === 'addon'
+        ? { kind: 'addon' as const, addOnId: item.key }
+        : { kind: item.kind as 'kids' | 'adults' | 'socks' },
+    label: item.quantity > 1 ? `${item.label} × ${item.quantity}` : item.label,
+    amount: item.subtotal,
+  }));
+}
+
+// ─── Step titles ──────────────────────────────────────────────────────────────
+
+const STEP_TITLE: Record<MobileStep, string> = {
+  tier: 'Customer Type',
+  tickets: 'Add to Sale',
+  configure: 'Configure Ticket',
+  'dropoff-config': 'Configure Drop-Off',
+  supervision: 'Children Playing Alone',
+  review: 'Review Order',
+  payment: 'Payment',
+  done: 'Sale Complete',
+};
+
+function getHandoffCfg(
+  t: (key: string) => string,
+): Record<NonNullable<HandoffMode>, { title: string; subtitle: string; handBackLabel: string }> {
+  return {
+    input: {
+      title: t('handToCustomer.inputTitle'),
+      subtitle: t('handToCustomer.inputSubtitle'),
+      handBackLabel: t('handToCustomer.handBackDefault'),
+    },
+    consent: {
+      title: t('handToCustomer.consentTitle'),
+      subtitle: t('handToCustomer.consentSubtitle'),
+      handBackLabel: t('handToCustomer.handBackDefault'),
+    },
+    qr: {
+      title: t('handToCustomer.qrTitle'),
+      subtitle: t('handToCustomer.qrSubtitle'),
+      handBackLabel: t('handToCustomer.paymentConfirmedHandBack'),
+    },
+  };
+}
+
+// ─── MobileTill ───────────────────────────────────────────────────────────────
+
+/**
+ * Self-contained mobile Till page. Mirrors all state and business logic from
+ * the iPad Till.tsx (same lib/ functions, same mockApi mutators, same types)
+ * but renders a portrait single-column wizard instead of the split-screen layout.
+ *
+ * Customer-facing moments (contact input, consent capture, QR payment) become
+ * "hand to customer" full-screen takeovers on the single device.
+ */
+export default function MobileTill() {
+  const { operator } = useOperator();
+  const { station } = useStation();
+  const { t } = useLanguage();
+  const [, navigate] = useLocation();
+
+  // ── Mobile-specific step & overlay state ──────────────────────────────────
+  const [mStep, setMStep] = useState<MobileStep>('tier');
+  const [handoffMode, setHandoffMode] = useState<HandoffMode>(null);
+  const [showCartSheet, setShowCartSheet] = useState(false);
+
+  // ── Sale state (same pattern as Till.tsx) ─────────────────────────────────
+  const [tier, setTier] = useState<CustomerTier | null>(null);
+  const [lines, setLines] = useState<CartLine[]>([]);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerNickname, setCustomerNickname] = useState('');
+  const [customerContactChannel, setCustomerContactChannel] = useState<ContactChannel>('whatsapp');
+
+  // Same "save per member" behaviour as Till.tsx: persist the new preference
+  // immediately if the person is already an identified member.
+  const handleCustomerContactChannelChange = (channel: ContactChannel) => {
+    setCustomerContactChannel(channel);
+    if (member) updateMember(member.id, { preferredChannel: channel });
+  };
+  const [activeLineId, setActiveLineId] = useState<string | null>(null);
+  const [member, setMember] = useState<Member | null>(null);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyTier, setVerifyTier] = useState<CustomerTier | null>(null);
+  const [pendingVerification, setPendingVerification] = useState<TierVerification | null>(null);
+  const [showManualDiscountModal, setShowManualDiscountModal] = useState(false);
+  const [showAddDropOff, setShowAddDropOff] = useState(false);
+  const [saleResult, setSaleResult] = useState<Sale | null>(null);
+  const [pendingPaymentMethod, setPendingPaymentMethod] = useState<string | null>(null);
+  const [promoError, setPromoError] = useState<string>('');
+
+  // ── Booking redemption flow ───────────────────────────────────────────────
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
+  const [pendingDropOffRegistration, setPendingDropOffRegistration] = useState<{
+    registrationId: string;
+    childNames: string[];
+  } | null>(null);
+
+  // ── Supervision state ─────────────────────────────────────────────────────
+  const [superSlots, setSuperSlots] = useState<SupervisedSlot[]>([]);
+  const [superParentName, setSuperParentName] = useState('');
+  const [superConsentAck, setSuperConsentAck] = useState(false);
+  const [superAcknowledgedConfirmationIds, setSuperAcknowledgedConfirmationIds] = useState<string[]>([]);
+  const [supervisionResolved, setSupervisionResolved] = useState(false);
+
+  const dropOffPricing = useMemo(() => resolveDropOffPricing(getDropOffPricing()), []);
+  // Subscribe to catalog mutations so live Admin edits to the supervision
+  // policy flow into the mobile till instead of a stale mount-time snapshot.
+  useSyncExternalStore(subscribeCatalog, () => null);
+  const supervisionPolicy = getSupervisionPolicy();
+
+  // ── Handoff corrections (same as Till.tsx) ────────────────────────────────
+
+  useEffect(() => {
+    const correction = takeCorrectedOrder();
+    if (!correction || correction.kind !== 'ticket') return;
+    setTier(correction.tier);
+    setLines(
+      correction.lines.map((l) => ({
+        ...l,
+        id: Math.random().toString(36).substring(7),
+      })),
+    );
+    if (correction.customerPhone) setCustomerPhone(correction.customerPhone);
+    if (correction.customerNickname) setCustomerNickname(correction.customerNickname);
+    setMStep('tickets');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Shared helper: load a drop-off registration into the till as drop-off lines.
+  // Used by both the handoff useEffect and the booking redemption "Check in now" flow.
+  const loadDropOffRegistration = (registrationId: string) => {
+    const children = getCheckInsByRegistration(registrationId).filter(
+      (c) => c.status === 'registered',
+    );
+    if (children.length === 0) return;
+    const phone = children[0]?.phone ?? '';
+    const found = phone ? getMemberByPhone(phone) : null;
+    const resolvedTier = found ? resolveAutoTier(found) : getDefaultTier().id;
+    const defaultTicket = getTicketTypes()[0];
+    setMember(found);
+    if (phone) setCustomerPhone(phone);
+    if (found?.nickname) setCustomerNickname(found.nickname);
+    if (found?.preferredChannel) setCustomerContactChannel(found.preferredChannel);
+    setTier(resolvedTier);
+    const dropOffLines = normalizeDropOffFees(
+      children.map((ci) =>
+        makeDropOffLine({
+          ci,
+          ticket: defaultTicket,
+          tier: resolvedTier,
+          service: ci.serviceType,
+          lengthChosen: false,
+          nannyId: ci.assignedNannyId,
+          nannyName: ci.assignedNannyName,
+          pricing: dropOffPricing,
+        }),
+      ),
+      dropOffPricing,
+    );
+    setLines(dropOffLines);
+    setActiveLineId(dropOffLines[0].id);
+    // Land on tier so staff confirm rate before configuring
+    setMStep('tier');
+  };
+
+  useEffect(() => {
+    const registrationId = takeDropOffHandoff();
+    if (!registrationId) return;
+    loadDropOffRegistration(registrationId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Handlers (same logic as Till.tsx, mobile-specific step transitions) ───
+
+  const resetSale = () => {
+    setMStep('tier');
+    setHandoffMode(null);
+    setTier(null);
+    setLines([]);
+    setDiscounts([]);
+    setManualDiscounts([]);
+    setCustomerPhone('');
+    setCustomerNickname('');
+    setCustomerContactChannel('whatsapp');
+    setActiveLineId(null);
+    setSaleResult(null);
+    setPendingPaymentMethod(null);
+    setMember(null);
+    setShowVerifyModal(false);
+    setVerifyTier(null);
+    setPendingVerification(null);
+    setSuperSlots([]);
+    setSuperParentName('');
+    setSuperConsentAck(false);
+    setSupervisionResolved(false);
+    setShowCartSheet(false);
+  };
+
+  // Staff confirmed a paid booking in the RedeemBookingModal. Build + record the
+  // regular-guest sale (drop-off lines are excluded — they get their own check-in
+  // flow), issue wristbands, dispatch print jobs, mark the booking as redeemed,
+  // then offer to check in any drop-off children via the existing registration flow.
+  // Mirrors handleRedeemConfirm in the iPad Till.tsx exactly.
+  const handleRedeemConfirm = (booking: Booking) => {
+    if (!operator) return;
+
+    const regularLines = booking.lines.filter((l) => !l.dropOff);
+    const regularAdults = regularLines.reduce((s, l) => s + l.adults, 0);
+    const regularKids = regularLines.reduce((s, l) => s + l.kids, 0);
+
+    const mintedCodes: string[] = [];
+    if (regularLines.length > 0) {
+      const sale = buildSale({
+        operatorId: operator.id,
+        operatorName: operator.name,
+        tier: booking.tier,
+        lines: regularLines,
+        discounts: booking.promoDiscount ? [booking.promoDiscount] : [],
+        manualDiscounts: [],
+        memberId: booking.memberId,
+        customerPhone: '',
+        customerNickname: '',
+        paymentMethod: booking.paymentMethod,
+        bookingReference: booking.reference,
+      });
+      recordSale(sale);
+      // Track usage for promo codes embedded in the booking at redemption time.
+      if (booking.promoDiscount) {
+        incrementPromoUsage(booking.promoDiscount.code, customerPhone || member?.phone || undefined);
+      }
+
+      // Mint every wristband for the booking from each ticket's own package
+      // (mirrors Till.tsx): credit-earning persons get a scannable wallet band,
+      // everyone else a 0-balance gate/plain band; gate access from the ticket.
+      mintedCodes.push(...issueBookingBands(sale, operator?.name));
+
+      if (station) {
+        dispatchPrintJobs(ticketPrintJobs(station, sale));
+      }
+    }
+
+    // Atomic guard: redeemBooking returns null if already redeemed by a concurrent
+    // confirmation. Abort before showing a success toast.
+    const redeemed = redeemBooking(booking.reference, mintedCodes);
+    if (!redeemed) {
+      toast({
+        title: 'Already redeemed',
+        description: `${booking.reference} was already redeemed. No additional wristbands issued.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Booking redeemed',
+      description: `${booking.reference} — ${mintedCodes.length} wristband(s) issued.`,
+    });
+
+    // If the booking has drop-off children, prompt staff to check them in now.
+    if (booking.registrationId) {
+      const dropOffNames = booking.lines.flatMap((l) => (l.dropOff ? [l.dropOff.childName] : []));
+      setPendingDropOffRegistration({ registrationId: booking.registrationId, childNames: dropOffNames });
+    }
+  };
+
+  const restateLinesToTier = (t: CustomerTier) => {
+    setLines((prev) =>
+      normalizeDropOffFees(
+        prev.map((l) => ({
+          ...l,
+          tier: t,
+          lineTotal: l.dropOff ? l.lineTotal : computeLineTotal({ ...l, tier: t }),
+        })),
+        dropOffPricing,
+      ),
+    );
+  };
+
+  const handlePickTier = (t: CustomerTier) => {
+    setTier(t);
+    restateLinesToTier(t);
+    setMStep('tickets');
+  };
+
+  const handleRequestVerify = (t: CustomerTier) => {
+    setVerifyTier(t);
+    setShowVerifyModal(true);
+  };
+
+  const handleVerified = ({
+    member: verified,
+    verification,
+  }: {
+    member: Member | null;
+    verification: TierVerification;
+  }) => {
+    setTier(verification.tier);
+    restateLinesToTier(verification.tier);
+    if (verified) {
+      setMember(verified);
+      if (verified.phone) setCustomerPhone(verified.phone);
+      if (verified.nickname) setCustomerNickname(verified.nickname);
+    } else {
+      setPendingVerification(verification);
+    }
+    setMStep('tickets');
+  };
+
+  const handleRemoveLine = (id: string) => {
+    setSupervisionResolved(false);
+    setLines((prev) => {
+      const next = normalizeDropOffFees(prev.filter((l) => l.id !== id), dropOffPricing);
+      setManualDiscounts((mds) => dropOrphanedDiscounts(mds, next));
+      return next;
+    });
+    setActiveLineId((prev) => (prev === id ? null : prev));
+  };
+
+  const handleApplyManualDiscount = (md: ManualDiscount) => {
+    setManualDiscounts((prev) => [...prev, md]);
+  };
+
+  const handleRemoveManualDiscount = (id: string) => {
+    setManualDiscounts((prev) => prev.filter((md) => md.id !== id));
+  };
+
+  const handleApplyPromoCode = (code: string) => {
+    const promo = getDiscountByCode(code);
+    if (!promo) {
+      setPromoError(`Code "${code.toUpperCase()}" was not found.`);
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const custKey = customerPhone || member?.phone || undefined;
+    const result = validatePromoCode(promo, lines, today, custKey, discounts);
+    if (!result.ok) {
+      setPromoError(result.reason);
+      return;
+    }
+    setPromoError('');
+    if (promo.type === 'free_item') {
+      const item = resolveFreeItem(promo);
+      if (!item) { setPromoError(`Code "${code.toUpperCase()}" item is no longer available.`); return; }
+      const resolvedPromo = { ...promo, value: item.priceTHB };
+      const stubTicketType = lines.find(l => !l.promoItem)!.ticketType;
+      // Tie the synthetic line to its code so removing one of several stacked
+      // promos drops exactly that promo's free-item line.
+      const promoLine: CartLine = {
+        id: `promo-${promo.code}`,
+        ticketType: stubTicketType,
+        tier: tier!,
+        kids: 0, adults: 0, socks: 0, addOns: [],
+        lineTotal: item.priceTHB,
+        promoItem: { itemId: promo.freeItemId!, itemKind: promo.freeItemKind ?? 'menu', name: item.name, priceTHB: item.priceTHB },
+      };
+      setLines(prev => [...prev, promoLine]);
+      setDiscounts(prev => [...prev, resolvedPromo]);
+    } else {
+      setDiscounts(prev => [...prev, promo]);
+    }
+  };
+
+  /** Remove one applied promo code (and its free-item line, if any). */
+  const handleRemoveDiscount = (code: string) => {
+    setDiscounts(prev => prev.filter(d => d.code !== code));
+    setLines(prev => prev.filter(l => l.id !== `promo-${code}`));
+    setPromoError('');
+  };
+
+  const handleSelectTicket = (ticket: TicketType) => {
+    if (!tier) return;
+    const id = Math.random().toString(36).substring(7);
+    const base = { ticketType: ticket, tier, kids: 1, adults: 1, socks: 0, addOns: [] };
+    const line: CartLine = { id, ...base, lineTotal: computeLineTotal(base) };
+    setLines((prev) => [...prev, line]);
+    setActiveLineId(id);
+    setSupervisionResolved(false);
+    setMStep('configure');
+  };
+
+  const handleAttachDropOff = (
+    children: CheckIn[],
+    serviceOverride?: DropOffServiceType,
+  ) => {
+    const activeTier = tier ?? getDefaultTier().id;
+    if (!tier) setTier(activeTier);
+    const defaultTicket = getTicketTypes()[0];
+    setLines((prev) => {
+      const present = new Set(prev.filter((l) => l.dropOff).map((l) => l.dropOff!.checkInId));
+      const template = prev.find((l) => l.dropOff?.lengthChosen);
+      const additions = children
+        .filter((ci) => !present.has(ci.id))
+        .map((ci) =>
+          makeDropOffLine({
+            ci,
+            ticket: template ? template.ticketType : defaultTicket,
+            tier: activeTier,
+            service: serviceOverride ?? template?.dropOff?.service ?? ci.serviceType,
+            lengthChosen: !!template,
+            nannyId: ci.assignedNannyId,
+            nannyName: ci.assignedNannyName,
+            pricing: dropOffPricing,
+          }),
+        );
+      if (additions.length > 0) setActiveLineId(additions[0].id);
+      return normalizeDropOffFees([...prev, ...additions], dropOffPricing);
+    });
+    setShowAddDropOff(false);
+    setMStep('dropoff-config');
+  };
+
+  const cartNannyLoadsFor = (lineId: string): Record<string, number> => {
+    const loads: Record<string, number> = {};
+    for (const l of lines) {
+      if (l.id === lineId) continue;
+      const nid = l.dropOff?.service === 'nanny' ? l.dropOff.nannyId : undefined;
+      if (nid) loads[nid] = (loads[nid] ?? 0) + 1;
+    }
+    return loads;
+  };
+
+  const handleAssignNannyToAll = (nannyId: string, nannyName: string) => {
+    setLines((prev) =>
+      normalizeDropOffFees(
+        prev.map((l) =>
+          l.dropOff?.service === 'nanny'
+            ? { ...l, dropOff: { ...l.dropOff, nannyId, nannyName } }
+            : l,
+        ),
+        dropOffPricing,
+      ),
+    );
+  };
+
+  const handleUpdateDropOffLine = (id: string, update: DropOffLineUpdate) => {
+    setLines((prev) =>
+      normalizeDropOffFees(
+        prev.map((l) => {
+          if (l.id !== id || !l.dropOff) return l;
+          const ticketType = update.ticketType ?? l.ticketType;
+          const lengthChosen = update.ticketType ? true : l.dropOff.lengthChosen;
+          const service = update.service ?? l.dropOff.service;
+          const nannyId =
+            service === 'nanny' ? update.nannyId ?? l.dropOff.nannyId : undefined;
+          const nannyName =
+            service === 'nanny' ? update.nannyName ?? l.dropOff.nannyName : undefined;
+          return {
+            ...l,
+            ticketType,
+            dropOff: {
+              ...l.dropOff,
+              service,
+              hours: ticketType.hours,
+              lengthChosen,
+              nannyId,
+              nannyName,
+            },
+          };
+        }),
+        dropOffPricing,
+      ),
+    );
+  };
+
+  const handleUpdateDropOffExtras = (
+    id: string,
+    updates: { socks?: number; addOns?: SelectedAddOn[] },
+  ) => {
+    setLines((prev) =>
+      normalizeDropOffFees(
+        prev.map((l) => (l.id === id && l.dropOff ? { ...l, ...updates } : l)),
+        dropOffPricing,
+      ),
+    );
+  };
+
+  const handleConfigureLine = (id: string) => {
+    const line = lines.find((l) => l.id === id);
+    setActiveLineId(id);
+    setMStep(line?.dropOff ? 'dropoff-config' : 'configure');
+  };
+
+  const siblingNannyFor = (lineId: string): { id: string; name: string } | undefined => {
+    for (const l of lines) {
+      if (l.id === lineId) continue;
+      if (l.dropOff?.service === 'nanny' && l.dropOff.nannyId) {
+        return { id: l.dropOff.nannyId, name: l.dropOff.nannyName ?? '' };
+      }
+    }
+    return undefined;
+  };
+
+  const handleDropOffLineDone = () => {
+    const nextUnconfigured = lines.find(
+      (l) =>
+        l.id !== activeLineId &&
+        l.dropOff &&
+        (!l.dropOff.lengthChosen || (l.dropOff.service === 'nanny' && !l.dropOff.nannyId)),
+    );
+    if (nextUnconfigured) {
+      setActiveLineId(nextUnconfigured.id);
+      return;
+    }
+    handleBackToGrid();
+  };
+
+  const handleUpdateLine = (
+    id: string,
+    updates: Partial<Pick<CartLine, 'kids' | 'adults' | 'socks' | 'addOns'>>,
+  ) => {
+    setSupervisionResolved(false);
+    setLines((prev) => {
+      const next = prev.flatMap((l) => {
+        if (l.id !== id) return [l];
+        const merged = { ...l, ...updates };
+        if (merged.kids + merged.adults === 0) return [];
+        return [{ ...merged, lineTotal: computeLineTotal(merged) }];
+      });
+      setManualDiscounts((mds) => dropOrphanedDiscounts(mds, next));
+      return next;
+    });
+    setActiveLineId((prev) => {
+      if (prev !== id) return prev;
+      const target = lines.find((l) => l.id === id);
+      if (!target) return prev;
+      const kids = updates.kids ?? target.kids;
+      const adults = updates.adults ?? target.adults;
+      return kids + adults === 0 ? null : prev;
+    });
+  };
+
+  const dropEmptyActiveLine = () => {
+    setLines((prev) => {
+      const next = prev.filter((l) => l.id !== activeLineId || l.kids + l.adults > 0);
+      setManualDiscounts((mds) => dropOrphanedDiscounts(mds, next));
+      return next;
+    });
+  };
+
+  const handleBackToGrid = () => {
+    dropEmptyActiveLine();
+    setActiveLineId(null);
+    setMStep('tickets');
+  };
+
+  const evaluateUnaccompanied = () =>
+    lines.filter((l) => !l.dropOff).reduce((a, l) => a + l.adults, 0) === 0 &&
+    lines.filter((l) => !l.dropOff).reduce((a, l) => a + l.kids, 0) > 0;
+
+  const openSupervisionGate = () => {
+    const slots: SupervisedSlot[] = [];
+    for (const l of lines) {
+      if (l.dropOff) continue;
+      for (let i = 0; i < l.kids; i++) {
+        slots.push({
+          id: `slot-${Math.random().toString(36).substring(2, 9)}`,
+          sourceLineId: l.id,
+          ticketType: l.ticketType,
+          name: '',
+          age: '',
+          waived: false,
+          allergiesMedical: '',
+          foodRestrictions: '',
+          // Default: food not authorized until the parent explicitly chooses a
+          // prepaid mode. mayOrderFood is derived from foodProvision.mode at registration.
+          mayOrderFood: false,
+          foodProvision: { mode: 'none', paidTHB: 0 },
+          childPhotoUrl: undefined,
+          // Unaccompanied kids always run the full safety flow; a no-fee child
+          // is auto-enrolled at ฿0 (no opt-in button). See Till.openSupervisionGate.
+          optIn: true,
+        });
+      }
+    }
+    setSuperSlots(slots);
+    setSuperParentName('');
+    setSuperConsentAck(false);
+    setSuperAcknowledgedConfirmationIds([]);
+    setMStep('supervision');
+  };
+
+  const handleUpdateSlot = (id: string, patch: Partial<SupervisedSlot>) =>
+    setSuperSlots((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, ...patch } : s));
+      const resolved = resolveGroupRequirements(
+        next
+          .filter((s) => slotAge(s) !== null)
+          .map((s) => ({ id: s.id, age: slotAge(s)! })),
+        supervisionPolicy,
+      );
+      const eligibleById = new Map(resolved.map((r) => [r.id, r.waiverEligible]));
+      return next.map((s) =>
+        s.waived && !eligibleById.get(s.id) ? { ...s, waived: false } : s,
+      );
+    });
+
+  const handleToggleWaiver = (id: string) =>
+    setSuperSlots((prev) => prev.map((s) => (s.id === id ? { ...s, waived: !s.waived } : s)));
+
+  const handleToggleConfirmation = (id: string) =>
+    setSuperAcknowledgedConfirmationIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+
+  /**
+   * Mobile-specific supervision continue: redirects to the consent handoff if
+   * any supervised child still needs photo + consent before resolving the gate.
+   * After consent is captured, a second tap on "Continue" runs the full
+   * handleSupervisionContinue logic with mobile-specific step transitions.
+   */
+  const handleMobileSupervisionContinue = () => {
+    const resolvedReqs = resolveGroupRequirements(
+      superSlots
+        .filter((s) => slotAge(s) !== null)
+        .map((s) => ({ id: s.id, age: slotAge(s)! })),
+      supervisionPolicy,
+    );
+    const byId = new Map(resolvedReqs.map((r) => [r.id, r]));
+
+    const needsConsentCapture = superSlots.some((s) => {
+      if (slotAge(s) === null) return false;
+      const r = byId.get(s.id);
+      const outcome = resolveSupervisionOutcome(r?.requirement ?? 'none', s.waived, s.optIn);
+      return (
+        outcome.needsConsent &&
+        (!s.childPhotoUrl || !superConsentAck || !superParentName.trim())
+      );
+    }) || (superSlots.length > 0 && !confirmationsSatisfied(supervisionPolicy, superAcknowledgedConfirmationIds));
+
+    if (needsConsentCapture) {
+      setHandoffMode('consent');
+      return;
+    }
+
+    // All consent captured — resolve supervision (same logic as Till.tsx).
+    if (!tier || !operator) return;
+    const policy = supervisionPolicy;
+    const resolved2 = resolveGroupRequirements(
+      superSlots.map((s) => ({ id: s.id, age: slotAge(s) ?? -1 })),
+      policy,
+    );
+    const reqById = new Map(resolved2.map((r) => [r.id, r.requirement]));
+
+    const supervised: { slot: SupervisedSlot; service: DropOffServiceType }[] = [];
+    const plainBySource = new Map<string, number>();
+    const waiversToAudit: { slot: SupervisedSlot; covering: SupervisedSlot }[] = [];
+
+    for (const slot of superSlots) {
+      const base = reqById.get(slot.id) ?? 'none';
+      const outcome = resolveSupervisionOutcome(base, slot.waived, slot.optIn);
+      if (slot.waived && base !== 'none') {
+        const covering = superSlots
+          .filter(
+            (o) =>
+              o.id !== slot.id &&
+              (slotAge(o) ?? -1) >= policy.siblingWaiver.guardianMinAge,
+          )
+          .sort((a, b) => (slotAge(b) ?? 0) - (slotAge(a) ?? 0))[0];
+        if (covering) waiversToAudit.push({ slot, covering });
+      }
+      if (outcome.service !== null) {
+        supervised.push({ slot, service: outcome.service });
+      } else {
+        plainBySource.set(slot.sourceLineId, (plainBySource.get(slot.sourceLineId) ?? 0) + 1);
+      }
+    }
+
+    const created = registerWalkInChildren(
+      supervised.map(({ slot, service }) => ({
+        name: slot.name,
+        age: slotAge(slot) ?? 0,
+        dateOfBirth: slot.dateOfBirth,
+        service,
+        parentName: superParentName,
+        allergiesMedical: slot.allergiesMedical,
+        foodRestrictions: slot.foodRestrictions,
+        mayOrderFood: slot.mayOrderFood,
+        foodProvision: slot.foodProvision,
+        childPhotoUrl: slot.childPhotoUrl,
+      })),
+      {
+        operatorName: operator.name,
+        acknowledgedConfirmations: buildAcknowledgedConfirmations(supervisionPolicy, superAcknowledgedConfirmationIds),
+      },
+    );
+
+    for (const { slot, covering } of waiversToAudit) {
+      recordSupervisionWaiver(
+        {
+          childName: slot.name.trim() || 'Child',
+          childAge: slotAge(slot) ?? 0,
+          waivedRequirement: (reqById.get(slot.id) ?? 'drop_off') as 'drop_off' | 'nanny',
+          coveringSiblingName: covering.name.trim() || 'Sibling',
+          coveringSiblingAge: slotAge(covering) ?? 0,
+        },
+        { operatorName: operator.name, operatorId: operator.id },
+      );
+    }
+
+    const sourceIds = new Set(superSlots.map((s) => s.sourceLineId));
+    const carryExtras = new Map<string, { socks: number; addOns: SelectedAddOn[] }>();
+    for (const l of lines) {
+      if (l.dropOff || !sourceIds.has(l.id)) continue;
+      if ((plainBySource.get(l.id) ?? 0) === 0 && (l.socks > 0 || l.addOns.length > 0)) {
+        carryExtras.set(l.id, { socks: l.socks, addOns: l.addOns });
+      }
+    }
+
+    const usedCarry = new Set<string>();
+    const dropLines: CartLine[] = supervised.map(({ slot, service }, i) => {
+      let line = makeDropOffLine({
+        ci: created[i],
+        ticket: slot.ticketType,
+        tier,
+        service,
+        lengthChosen: true,
+        pricing: dropOffPricing,
+      });
+      const carry = carryExtras.get(slot.sourceLineId);
+      if (carry && !usedCarry.has(slot.sourceLineId)) {
+        usedCarry.add(slot.sourceLineId);
+        const withExtras = { ...line, socks: carry.socks, addOns: carry.addOns };
+        // Must preserve the prepaid food charge — computeLineTotal only sees the
+        // ticket + extras; food provision rides on top just like the service fee.
+        const foodTHB = line.dropOff?.foodProvision?.paidTHB ?? 0;
+        line = {
+          ...withExtras,
+          lineTotal: computeLineTotal(withExtras) + line.dropOff!.serviceFeeTHB + foodTHB,
+        };
+      }
+      return line;
+    });
+
+    const residual: CartLine[] = [];
+    for (const l of lines) {
+      if (l.dropOff || !sourceIds.has(l.id)) {
+        residual.push(l);
+        continue;
+      }
+      const plainCount = plainBySource.get(l.id) ?? 0;
+      if (plainCount > 0) {
+        const kept = { ...l, kids: plainCount };
+        residual.push({ ...kept, lineTotal: computeLineTotal(kept) });
+      }
+    }
+    setLines(normalizeDropOffFees([...residual, ...dropLines], dropOffPricing));
+    setSupervisionResolved(true);
+
+    const firstNanny = dropLines.find((d) => d.dropOff!.service === 'nanny' && !d.dropOff!.nannyId);
+    if (firstNanny) {
+      setActiveLineId(firstNanny.id);
+      setMStep('dropoff-config');
+    } else {
+      setActiveLineId(null);
+      setMStep('review');
+    }
+  };
+
+  const handleDoneAdding = () => {
+    dropEmptyActiveLine();
+    setActiveLineId(null);
+
+    if (!supervisionResolved && evaluateUnaccompanied()) {
+      openSupervisionGate();
+      return;
+    }
+    // Known member or supervision already resolved → skip contact handoff.
+    if (member || supervisionResolved) {
+      setMStep('review');
+    } else {
+      setHandoffMode('input');
+    }
+  };
+
+  const handleCustomerDone = () => {
+    if (pendingVerification && !member && customerPhone.trim()) {
+      const target =
+        getMemberByPhone(customerPhone, customerNickname) ??
+        createMember(customerPhone, customerNickname, customerContactChannel);
+      verifyMemberTier(target.id, pendingVerification);
+      setMember(target);
+      setPendingVerification(null);
+    }
+    setHandoffMode(null);
+    setMStep('review');
+  };
+
+  /** Intercept payment method selection: QR triggers "show QR to customer" handoff. */
+  const handleMobileSelectMethod = (method: string) => {
+    setPendingPaymentMethod(method);
+    if (paymentMethodKind(method) === 'qr') {
+      setHandoffMode('qr');
+    }
+  };
+
+  const handleCompletePayment = () => {
+    if (!supervisionResolved && evaluateUnaccompanied()) {
+      openSupervisionGate();
+      return;
+    }
+    if (!tier || !pendingPaymentMethod || !operator) return;
+
+    const dropOffs = lines.filter((l) => l.dropOff);
+    const lengthsOk = dropOffs.every((l) => l.dropOff!.lengthChosen);
+    const nanniesOk = dropOffs
+      .filter((l) => l.dropOff!.service === 'nanny')
+      .every((l) => !!l.dropOff!.nannyId);
+    if (!lengthsOk || !nanniesOk) {
+      toast({
+        title: 'Finish drop-off setup',
+        description:
+          'Every drop-off child needs a play-ticket length, and each nanny child needs a nanny assigned.',
+        variant: 'destructive',
+      });
+      setMStep('dropoff-config');
+      return;
+    }
+    if (!station) {
+      promptSetupStation(navigate);
+      return;
+    }
+
+    const dropOffLines = lines.filter((l) => l.dropOff);
+    if (dropOffLines.length > 0) {
+      const items = dropOffLines.map((l) => {
+        const d = l.dropOff!;
+        const input: CheckInPaymentInput = {
+          ticketTypeId: l.ticketType.id,
+          ticketName: l.ticketType.name,
+          tier,
+          ticketPriceTHB: priceForTier(l.ticketType, tier),
+          serviceType: d.service,
+          serviceFeeTHB: d.serviceFeeTHB,
+          durationHours: l.ticketType.hours,
+          totalTHB: l.lineTotal,
+          paymentMethod: pendingPaymentMethod,
+          nannyId: d.service === 'nanny' ? d.nannyId : undefined,
+          foodProvision: d.foodProvision,
+        };
+        return { checkInId: d.checkInId, input };
+      });
+      const checkedIn = checkInFamilyWithPayment(items, {
+        operatorName: operator.name,
+        operatorId: operator.id,
+      });
+      if (!checkedIn) {
+        toast({
+          title: 'Could not check in',
+          description:
+            'A nanny is no longer available, or a child was already checked in.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    const newSale = buildSale({
+      operatorId: operator.id,
+      operatorName: operator.name,
+      tier,
+      lines,
+      discounts,
+      manualDiscounts,
+      memberId: member?.id,
+      customerPhone,
+      customerNickname,
+      paymentMethod: pendingPaymentMethod,
+    });
+    recordSale(newSale);
+    // Increment each applied promo's usage counter after the sale is committed.
+    // Use the same identity key as validatePromoCode for consistent per-customer tracking.
+    discounts.forEach((d) =>
+      incrementPromoUsage(d.code, customerPhone || member?.phone || undefined)
+    );
+    // Stamp each drop-off child's checkInSale with the real sale ID so the
+    // checkout flow can issue a deterministic refund via linkCheckInSaleId.
+    for (const l of lines) {
+      if (l.dropOff?.checkInId) linkCheckInSaleId(l.dropOff.checkInId, newSale.id);
+    }
+    // Walk-in F&B credit: mint ONE QR-keyed wallet per fnb_credit grant at sale time
+    // (mirrors Till.tsx). The printed voucher is scannable at F&B immediately.
+    newSale.creditGrants.forEach((grant, i) => {
+      if (grant.type === 'fnb_credit' && (grant.valueTHB ?? 0) > 0) {
+        ensureSaleGrantWallet(newSale.id, i, grant.valueTHB ?? 0, operator.name, grant.gateAccess ?? false);
+      }
+    });
+    // Mint the sale's remaining gate bands (persons without a credit wallet) —
+    // mirrors Till.tsx so mobile sales are gate-resolvable.
+    issueWalkInBands(newSale);
+    setSaleResult(newSale);
+    setHandoffMode(null);
+    setMStep('done');
+    dispatchPrintJobs(ticketPrintJobs(station, newSale));
+  };
+
+  // ── Derived ───────────────────────────────────────────────────────────────
+
+  const { total } = computeTotals(lines, discounts, manualDiscounts);
+  const dropOffCartLines = lines.filter((l) => l.dropOff);
+  const allLengthsChosen = dropOffCartLines.every((l) => l.dropOff!.lengthChosen);
+  const nannyDropOffLines = lines.filter((l) => l.dropOff?.service === 'nanny');
+  const allNanniesAssigned = nannyDropOffLines.every((l) => !!l.dropOff!.nannyId);
+  const canPay =
+    lines.some((l) => l.kids + l.adults > 0) && allLengthsChosen && allNanniesAssigned;
+
+  const liveSale: Sale =
+    saleResult ??
+    buildSale({
+      id: 'PREVIEW',
+      operatorId: operator?.id ?? '',
+      operatorName: operator?.name ?? '',
+      tier: tier ?? getDefaultTier().id,
+      lines,
+      discounts,
+      manualDiscounts,
+      memberId: member?.id,
+      customerPhone,
+      customerNickname,
+      paymentMethod: pendingPaymentMethod ?? undefined,
+    });
+
+  const displayName = customerNickname.trim() || member?.nickname || '';
+
+  // Back-nav behaviour per step
+  const canGoBack = (
+    ['tickets', 'configure', 'dropoff-config', 'supervision', 'review', 'payment'] as MobileStep[]
+  ).includes(mStep);
+
+  const handleBack = () => {
+    switch (mStep) {
+      case 'tickets': setMStep('tier'); break;
+      case 'configure': handleBackToGrid(); break;
+      case 'dropoff-config': handleBackToGrid(); break;
+      case 'supervision': setMStep('tickets'); break;
+      case 'review': setMStep('tickets'); break;
+      case 'payment': setPendingPaymentMethod(null); setMStep('review'); break;
+    }
+  };
+
+  // Show the compact cart bar only while building the order
+  const showCartBar = (
+    ['tier', 'tickets', 'configure', 'dropoff-config', 'supervision'] as MobileStep[]
+  ).includes(mStep);
+
+  // ── Step renderers ────────────────────────────────────────────────────────
+
+  const activeLine = lines.find((l) => l.id === activeLineId) ?? null;
+
+  const renderStep = () => {
+    switch (mStep) {
+      case 'tier':
+        return (
+          <div className="h-full flex flex-col p-4">
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <StepCustomerType
+                member={member}
+                selectedTier={tier ?? getDefaultTier().id}
+                onPickTier={handlePickTier}
+                onRequestVerify={handleRequestVerify}
+              />
+            </div>
+            {lines.length === 0 && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full mt-3 h-14 shrink-0 flex items-center justify-center gap-2 border-primary/40 text-primary hover:bg-primary/5 hover:text-primary"
+                onClick={() => setShowRedeemModal(true)}
+              >
+                <QrCodeIcon className="w-5 h-5" />
+                Redeem Online Booking
+              </Button>
+            )}
+          </div>
+        );
+
+      case 'tickets':
+        return (
+          <div className="h-full overflow-y-auto p-4">
+            <StepAddTicket
+              tier={tier!}
+              activeLine={null}
+              hasLines={lines.length > 0}
+              onSelectTicket={handleSelectTicket}
+              onUpdateLine={handleUpdateLine}
+              onAddDropOff={() => setShowAddDropOff(true)}
+              onBackToGrid={handleBackToGrid}
+              onDone={handleDoneAdding}
+            />
+          </div>
+        );
+
+      case 'configure':
+        return (
+          <div className="h-full overflow-y-auto p-4">
+            <StepAddTicket
+              tier={tier!}
+              activeLine={activeLine}
+              hasLines={lines.length > 0}
+              onSelectTicket={handleSelectTicket}
+              onUpdateLine={handleUpdateLine}
+              onAddDropOff={() => setShowAddDropOff(true)}
+              onBackToGrid={handleBackToGrid}
+              onDone={handleDoneAdding}
+            />
+          </div>
+        );
+
+      case 'dropoff-config':
+        if (!activeLine?.dropOff) return null;
+        return (
+          <div className="h-full overflow-y-auto p-4">
+            <DropOffLineConfig
+              line={activeLine}
+              tier={tier!}
+              cartNannyLoads={cartNannyLoadsFor(activeLine.id)}
+              onUpdate={handleUpdateDropOffLine}
+              onUpdateExtras={handleUpdateDropOffExtras}
+              onAssignNannyToAll={handleAssignNannyToAll}
+              siblingNanny={siblingNannyFor(activeLine.id)}
+              onBackToGrid={handleBackToGrid}
+              onDone={handleDropOffLineDone}
+            />
+          </div>
+        );
+
+      case 'supervision':
+        return (
+          <div className="h-full overflow-y-auto p-4">
+            <SupervisionGate
+              slots={superSlots}
+              parentName={superParentName}
+              consentAck={superConsentAck}
+              policy={supervisionPolicy}
+              acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
+              onUpdateSlot={handleUpdateSlot}
+              onToggleWaiver={handleToggleWaiver}
+              onBack={() => setMStep('tickets')}
+              onContinue={handleMobileSupervisionContinue}
+            />
+          </div>
+        );
+
+      case 'review':
+        return (
+          <div className="h-full overflow-y-auto p-4">
+            <OrderSummary
+              tier={tier}
+              customerName={displayName}
+              lines={lines}
+              activeLineId={activeLineId}
+              discounts={discounts}
+              manualDiscounts={manualDiscounts}
+              onUpdateLine={handleUpdateLine}
+              onConfigureLine={handleConfigureLine}
+              onRemoveLine={handleRemoveLine}
+              onRemoveDiscount={handleRemoveDiscount}
+              onApplyPromoCode={handleApplyPromoCode}
+              promoError={promoError}
+              onAddManualDiscount={() => setShowManualDiscountModal(true)}
+              onRemoveManualDiscount={handleRemoveManualDiscount}
+              onPay={() => setMStep('payment')}
+              onCancel={resetSale}
+              canPay={canPay}
+            />
+          </div>
+        );
+
+      case 'payment':
+        return (
+          <div className="h-full overflow-y-auto p-4">
+            <StepPayment
+              total={total}
+              selectedMethod={pendingPaymentMethod}
+              onSelectMethod={handleMobileSelectMethod}
+              onComplete={handleCompletePayment}
+              onBack={() => { setPendingPaymentMethod(null); setMStep('review'); }}
+            />
+          </div>
+        );
+
+      case 'done':
+        return saleResult ? (
+          <MobileConfirmation sale={saleResult} onNewSale={resetSale} />
+        ) : null;
+    }
+  };
+
+  // ── Hand-to-customer overlay content ─────────────────────────────────────
+
+  const renderHandoffContent = () => {
+    switch (handoffMode) {
+      case 'input':
+        return (
+          <CustomerDisplay
+            stage="input"
+            sale={liveSale}
+            phone={customerPhone}
+            nickname={customerNickname}
+            member={member}
+            onPhoneChange={setCustomerPhone}
+            onNicknameChange={setCustomerNickname}
+            onIdentify={() => {}}
+            onSkipIdentify={() => {}}
+            onCustomerDone={handleCustomerDone}
+            contactChannel={customerContactChannel}
+            onContactChannelChange={handleCustomerContactChannelChange}
+          />
+        );
+      case 'consent':
+        return (
+          <ConsentCapture
+            slots={superSlots}
+            parentName={superParentName}
+            consentAck={superConsentAck}
+            policy={supervisionPolicy}
+            parentPhone={customerPhone}
+            parentContactMethod={customerContactChannel}
+            onParentPhoneChange={setCustomerPhone}
+            onParentContactMethodChange={handleCustomerContactChannelChange}
+            onParentNameChange={setSuperParentName}
+            onConsentAckChange={setSuperConsentAck}
+            onUpdateChild={handleUpdateSlot}
+            acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
+            onToggleConfirmation={handleToggleConfirmation}
+          />
+        );
+      case 'qr':
+        return (
+          <CustomerDisplay
+            stage="payment"
+            sale={liveSale}
+            phone={customerPhone}
+            nickname={customerNickname}
+            member={member}
+            onPhoneChange={() => {}}
+            onNicknameChange={() => {}}
+            onIdentify={() => {}}
+            onSkipIdentify={() => {}}
+            onCustomerDone={() => {}}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="h-full flex flex-col bg-background overflow-hidden">
+
+      {/* Step nav bar (hidden on 'done' — the confirmation is full-page) */}
+      {mStep !== 'done' && (
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b bg-card/20">
+          {canGoBack ? (
+            <button
+              type="button"
+              onClick={handleBack}
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors shrink-0"
+              aria-label="Back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          ) : (
+            <div className="w-9 shrink-0" />
+          )}
+
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold leading-tight truncate">
+              {STEP_TITLE[mStep]}
+            </div>
+            {tier && mStep !== 'tier' && (
+              <div className="text-[11px] text-muted-foreground leading-tight">
+                {tierLabel(tier)}
+              </div>
+            )}
+          </div>
+
+          {mStep !== 'payment' && lines.length > 0 && (
+            <button
+              type="button"
+              onClick={resetSale}
+              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded shrink-0"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Step content */}
+      <div className="flex-1 min-h-0">
+        {renderStep()}
+      </div>
+
+      {/* Compact cart bar — shows during ticket-building steps */}
+      {showCartBar && (
+        <MobileCartSheet
+          open={showCartSheet}
+          onOpenChange={setShowCartSheet}
+          tier={tier}
+          customerName={displayName}
+          lines={lines}
+          activeLineId={activeLineId}
+          discounts={discounts}
+          manualDiscounts={manualDiscounts}
+          onUpdateLine={handleUpdateLine}
+          onConfigureLine={handleConfigureLine}
+          onRemoveLine={handleRemoveLine}
+          onRemoveDiscount={handleRemoveDiscount}
+          onApplyPromoCode={handleApplyPromoCode}
+          promoError={promoError}
+          onAddManualDiscount={() => setShowManualDiscountModal(true)}
+          onRemoveManualDiscount={handleRemoveManualDiscount}
+          onPay={() => {
+            setShowCartSheet(false);
+            handleDoneAdding();
+          }}
+          onCancel={() => {
+            setShowCartSheet(false);
+            resetSale();
+          }}
+          canPay={canPay}
+        />
+      )}
+
+      {/* Hand-to-customer overlay */}
+      {handoffMode !== null && (() => {
+        const cfg = getHandoffCfg(t)[handoffMode];
+        return (
+          <HandToCustomer
+            title={cfg.title}
+            subtitle={cfg.subtitle}
+            handBackLabel={cfg.handBackLabel}
+            onDone={() => {
+              // For QR: return to payment step so staff can confirm receipt.
+              // For consent: return to supervision so staff can tap Continue.
+              // For input: advance to review.
+              if (handoffMode === 'input') {
+                setHandoffMode(null);
+                setMStep('review');
+              } else {
+                setHandoffMode(null);
+              }
+            }}
+            onCancel={() => setHandoffMode(null)}
+          >
+            {renderHandoffContent()}
+          </HandToCustomer>
+        );
+      })()}
+
+      {/* ── Shared modals (dialogs rendered in portal, work on mobile) ── */}
+
+      {operator && verifyTier && (
+        <VerifyTierModal
+          open={showVerifyModal}
+          onOpenChange={setShowVerifyModal}
+          tier={verifyTier}
+          member={member}
+          operatorId={operator.id}
+          operatorName={operator.name}
+          onConfirm={handleVerified}
+        />
+      )}
+
+      {operator && (
+        <ManualDiscountModal
+          open={showManualDiscountModal}
+          onOpenChange={setShowManualDiscountModal}
+          subtotal={lines.reduce((acc, l) => acc + l.lineTotal, 0)}
+          lines={lines.map((l) => ({
+            id: l.id,
+            label: `${l.ticketType.name} · ${l.kids + l.adults} ppl`,
+            amount: l.lineTotal,
+            components: l.dropOff ? undefined : lineDiscountComponents(l),
+          }))}
+          reasons={getDiscountReasons()}
+          operatorId={operator.id}
+          operatorName={operator.name}
+          onApply={handleApplyManualDiscount}
+        />
+      )}
+
+      <AddDropOffModal
+        open={showAddDropOff}
+        onOpenChange={setShowAddDropOff}
+        attachedCheckInIds={lines.filter((l) => l.dropOff).map((l) => l.dropOff!.checkInId)}
+        onAttach={handleAttachDropOff}
+      />
+
+      <RedeemBookingModal
+        open={showRedeemModal}
+        onOpenChange={setShowRedeemModal}
+        onConfirm={handleRedeemConfirm}
+      />
+
+      {/* Drop-off check-in proposal: shown after a booking with drop-off children is redeemed. */}
+      <Dialog
+        open={pendingDropOffRegistration !== null}
+        onOpenChange={(o) => { if (!o) setPendingDropOffRegistration(null); }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Baby className="w-5 h-5 text-primary" />
+              Check in drop-off child{pendingDropOffRegistration && pendingDropOffRegistration.childNames.length > 1 ? 'ren' : ''}?
+            </DialogTitle>
+            <DialogDescription>
+              This booking includes a registered drop-off:{' '}
+              <span className="font-medium text-foreground">
+                {pendingDropOffRegistration?.childNames.join(', ')}
+              </span>
+              . Load the registration into the till to complete check-in now.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setPendingDropOffRegistration(null)}
+            >
+              Skip for now
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => {
+                if (pendingDropOffRegistration) {
+                  loadDropOffRegistration(pendingDropOffRegistration.registrationId);
+                  setPendingDropOffRegistration(null);
+                }
+              }}
+            >
+              Check in now
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

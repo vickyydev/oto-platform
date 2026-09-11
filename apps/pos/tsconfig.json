@@ -1,0 +1,19 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "include": ["src/**/*", "vite.config.ts"],
+  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "jsx": "preserve",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "types": ["node", "vite/client"],
+    // The ported prototype was authored under plain `strict`; these two extras
+    // from the platform base would force edits across ~300 untouched files.
+    "noUncheckedIndexedAccess": false,
+    "verbatimModuleSyntax": false,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
