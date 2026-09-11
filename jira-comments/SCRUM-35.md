@@ -1,0 +1,5 @@
+SCRUM-35 — Configure a ticket package
+Verified 2026-09-11 on commit tagged sprint-1+ (branch main), local stack: Fastify API :3001 + Postgres 16 (Docker) + MinIO + ported POS :25741. Full suites: 19 shared unit tests, 57 API integration tests (real Postgres per run), 2 Playwright smoke flows, plus scripted live-browser walkthroughs with screenshots (headless Edge).
+
+Integration: the 4 seeded prototype packages come back with exact per-tier satang prices (expat −30%/−20% derivation, Thai Full-Day free_adults rule); create/edit/archive; negative price and zero hours rejected (400).
+Live browser (the full user story): Admin → Tickets → "Add ticket type" → filled name "3 Hours Play", duration, hours=3, base ฿990/฿1,090 → saved → row appears in the table → Postgres row {"weekday":99000,"weekend":109000} → visible in the PUBLIC /book catalog immediately → archived via the trash + confirmation dialog → soft-deleted (active=f, archived_at set) and gone from lists. Also fixed the ported panel's "[object Object]" adult-price chip.

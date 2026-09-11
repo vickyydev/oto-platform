@@ -1,0 +1,4 @@
+SCRUM-37 — Branch tax & service rules
+Verified 2026-09-11 on commit tagged sprint-1+ (branch main), local stack: Fastify API :3001 + Postgres 16 (Docker) + MinIO + ported POS :25741. Full suites: 19 shared unit tests, 57 API integration tests (real Postgres per run), 2 Playwright smoke flows, plus scripted live-browser walkthroughs with screenshots (headless Edge).
+
+Integration (DoD precedence chain): branch default from the per-category engine config (tickets → 7% inclusive VAT, 700bp, service 0); category override (500bp VAT + 1000bp service) beats branch; product override (0bp VAT) beats category while inheriting the category's service charge; PUT tax-config replaces the engine config (F&B service 10% verified via resolver) and is audited. Admin Tax panel persists through the write-through bridge.
