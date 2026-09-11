@@ -15,6 +15,8 @@ import {
   Boxes,
   KeyRound,
   Phone as PhoneIcon,
+  ShieldCheck,
+  ArrowLeft,
 } from 'lucide-react';
 
 type Mode = 'signin' | 'setup' | 'reset';
@@ -24,8 +26,13 @@ type Mode = 'signin' | 'setup' | 'reset';
  * placeholder for later face auth (CLAUDE.md §6); beneath it sits the real
  * phone + password sign-in (SCRUM-19), with links into first-time setup
  * (SCRUM-20) and password recovery (SCRUM-23) in the same visual style.
+ *
+ * `adminMode` renders the same form as the ADMIN CONSOLE sign-in wall
+ * (/admin): distinct title + restricted-area chip so staff can tell it apart
+ * from the shift sign-in, and a "Back to POS sign-in" link instead of the
+ * temp module links.
  */
-export function LockScreen() {
+export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
   const { signIn } = useOperator();
   const [, navigate] = useLocation();
 
@@ -112,13 +119,23 @@ export function LockScreen() {
     <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-background text-foreground px-6 overflow-y-auto">
       <div className="w-full max-w-md flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-500 py-8">
         <div className="relative w-24 h-24 rounded-[2rem] bg-primary flex items-center justify-center text-primary-foreground mb-6 shadow-2xl shadow-primary/30">
-          <ScanFace className="w-12 h-12" />
+          {adminMode ? <Settings className="w-12 h-12" /> : <ScanFace className="w-12 h-12" />}
         </div>
 
-        <h1 className="text-4xl font-black tracking-tight mb-2">Oto POS is locked</h1>
+        <h1 className="text-4xl font-black tracking-tight mb-2">
+          {adminMode ? 'Admin Console' : 'Oto POS is locked'}
+        </h1>
+        {adminMode && (
+          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-300">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Restricted — manager sign-in only
+          </span>
+        )}
         <p className="text-lg text-foreground/60 mb-8">
           {mode === 'signin'
-            ? 'Sign in with your phone to start your shift.'
+            ? adminMode
+              ? 'Sign in with your manager account to open back-office settings.'
+              : 'Sign in with your phone to start your shift.'
             : mode === 'setup'
               ? 'First shift? Set up your account.'
               : 'Reset your password.'}
@@ -251,34 +268,48 @@ export function LockScreen() {
           </form>
         )}
 
-        <Link
-          href="/book"
-          className="mt-8 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
-        >
-          <Smartphone className="w-4 h-4" />
-          Open customer booking site (temp)
-        </Link>
+        {adminMode ? (
+          /* Escape hatch for staff who landed here by accident — back to the
+             regular shift sign-in without editing the URL. */
+          <Link
+            href="/"
+            className="mt-8 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to POS sign-in
+          </Link>
+        ) : (
+          <>
+            <Link
+              href="/book"
+              className="mt-8 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
+            >
+              <Smartphone className="w-4 h-4" />
+              Open customer booking site (temp)
+            </Link>
 
-        {/* Admin console entry — /admin has its own auth wall (AdminAccessGate):
-            it asks for sign-in and admits manager-role operators only. */}
-        <Link
-          href="/admin"
-          className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
-        >
-          <Settings className="w-4 h-4" />
-          Open admin console (manager sign-in)
-        </Link>
+            {/* Admin console entry — /admin has its own auth wall (AdminAccessGate):
+                it asks for sign-in and admits manager-role operators only. */}
+            <Link
+              href="/admin"
+              className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
+            >
+              <Settings className="w-4 h-4" />
+              Open admin console (manager sign-in)
+            </Link>
 
-        {/* Staff stock module — reached from here instead of the POS bottom nav.
-            Signing in below lands on /stock. */}
-        <button
-          type="button"
-          onClick={() => showFaceHint('/stock')}
-          className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
-        >
-          <Boxes className="w-4 h-4" />
-          Open stock module (temp)
-        </button>
+            {/* Staff stock module — reached from here instead of the POS bottom nav.
+                Signing in below lands on /stock. */}
+            <button
+              type="button"
+              onClick={() => showFaceHint('/stock')}
+              className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
+            >
+              <Boxes className="w-4 h-4" />
+              Open stock module (temp)
+            </button>
+          </>
+        )}
 
         <div className="flex items-center gap-2 mt-10 text-foreground/30 text-sm">
           <Lock className="w-4 h-4" />

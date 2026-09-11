@@ -24,7 +24,7 @@ export function AdminAccessGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!operator) return <LockScreen />;
+  if (!operator) return <LockScreen adminMode />;
 
   if (operator.role !== 'manager') {
     return (

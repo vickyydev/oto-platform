@@ -90,8 +90,15 @@ export function StepCustomerType({
         )}
       </div>
 
-      <ScrollArea className="flex-1 min-h-0 -mx-2 px-2">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Padding lives INSIDE the scroll viewport (the wrapper div below), not
+          on the ScrollArea root — root padding puts the clip edge flush against
+          the cards and cuts off their selection ring and hover lift. */}
+      <ScrollArea className="flex-1 min-h-0 -mx-3">
+      {/* @container: column count follows the PANEL width, not the viewport —
+          in the split till view the panel is far narrower than the screen and
+          a viewport-keyed md:grid-cols-3 overflowed and clipped the cards. */}
+      <div className="px-3 py-2 @container">
+      <div className="grid grid-cols-1 @xl:grid-cols-3 gap-6">
         {getTiers().map((t) => {
           const tier = t.id;
           const isDefault = isDefaultTier(tier);
@@ -165,6 +172,7 @@ export function StepCustomerType({
           </div>
         </div>
       )}
+      </div>
       </ScrollArea>
     </div>
   );
