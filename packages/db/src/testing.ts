@@ -35,6 +35,9 @@ async function ensureServer(): Promise<string> {
     password: 'oto',
     port,
     persistent: false,
+    // Windows initdb defaults to the OS locale (e.g. WIN1252), which cannot
+    // store the seed's zh/th/ru translations — force UTF8 like production.
+    initdbFlags: ['--encoding=UTF8', '--locale=C'],
   });
   await instance.initialise();
   await instance.start();

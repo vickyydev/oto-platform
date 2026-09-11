@@ -81,7 +81,18 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   app.decorate('env', opts.env);
   app.decorate('reporter', buildErrorReporter(opts.env.SENTRY_DSN || undefined, log));
   app.decorate('fileStorage', opts.fileStorage ?? null);
-  app.decorate('sms', buildSmsSender(opts.env.SMS_ADAPTER, log));
+  app.decorate(
+    'sms',
+    buildSmsSender(
+      {
+        adapter: opts.env.SMS_ADAPTER,
+        twilioAccountSid: opts.env.TWILIO_ACCOUNT_SID || undefined,
+        twilioAuthToken: opts.env.TWILIO_AUTH_TOKEN || undefined,
+        twilioFrom: opts.env.TWILIO_FROM || undefined,
+      },
+      log,
+    ),
+  );
 
   await app.register(cookie);
 

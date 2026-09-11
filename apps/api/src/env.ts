@@ -28,6 +28,9 @@ const EnvSchema = z.object({
   MINIO_SECRET_KEY: z.string().default('otosecret123'),
   MINIO_BUCKET: z.string().default('oto-files'),
   SMS_ADAPTER: z.string().default('console'),
+  TWILIO_ACCOUNT_SID: z.string().optional().or(z.literal('')),
+  TWILIO_AUTH_TOKEN: z.string().optional().or(z.literal('')),
+  TWILIO_FROM: z.string().optional().or(z.literal('')),
   SENTRY_DSN: z.string().optional().or(z.literal('')),
 });
 
