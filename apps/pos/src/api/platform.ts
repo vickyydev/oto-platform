@@ -63,8 +63,30 @@ export interface ApiMember {
   tierCode: string;
   preferredChannel: 'whatsapp' | 'telegram' | null;
   notes: string | null;
-  tierVerification: { tier: string; proofType: string; verifiedAt: string } | null;
+  tierVerification: {
+    tier: string;
+    proofType: string;
+    verifiedAt: string;
+    /** Staff who checked the document — stamped server-side from the session. */
+    verifiedBy: string | null;
+    /** Document expiry (YYYY-MM-DD); the API hides expired verifications. */
+    expiresAt: string | null;
+  } | null;
   children: ApiChild[];
+}
+
+export interface ApiTierVerificationRecord {
+  id: string;
+  member: { id: string; nickname: string; phone: string };
+  fromTier: string;
+  toTier: string;
+  evidenceType: string;
+  evidenceExpiresAt: string | null;
+  expired: boolean;
+  verifiedBy: string | null;
+  branch: string | null;
+  note: string | null;
+  verifiedAt: string;
 }
 
 export const membersApi = {
@@ -82,6 +104,10 @@ export const membersApi = {
     api.post<{ child: ApiChild }>(`/members/${memberId}/children`, body, { idempotencyKey: idemKey() }),
   updateChild: (childId: string, patch: Record<string, unknown>) =>
     api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch),
+  verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt: string; note?: string }) =>
+    api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, { idempotencyKey: idemKey() }),
+  tierVerifications: () =>
+    api.get<{ verifications: ApiTierVerificationRecord[] }>('/members/tier-verifications'),
 };
 
 export const visitsApi = {

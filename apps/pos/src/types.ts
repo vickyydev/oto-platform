@@ -65,6 +65,7 @@ export interface TierVerification {
   verifiedBy: string; // operator name (from auth context)
   verifiedById: string;
   verifiedAt: string; // ISO
+  expiresAt?: string; // document expiry, YYYY-MM-DD (required by the platform API)
 }
 
 // Single source of truth for the messaging channels the POS/parent app can use

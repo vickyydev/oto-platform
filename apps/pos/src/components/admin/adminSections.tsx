@@ -1,5 +1,6 @@
 import {
   Ticket,
+  BadgeCheck,
   PlusCircle,
   UtensilsCrossed,
   ShoppingBag,
@@ -207,6 +208,16 @@ export const adminNav: AdminNavEntry[] = [
       label: 'Members',
       icon: Users,
       description: 'View and manage member verified tiers.',
+    },
+  },
+  {
+    kind: 'panel',
+    panel: {
+      id: 'tier-verifications',
+      label: 'Tier Verifications',
+      icon: BadgeCheck,
+      description:
+        'Record checking: every tier upgrade with the document, expiry date, verifying staff and time.',
     },
   },
   // Access management (Sprint 1 rebuild): real accounts, roles and operators

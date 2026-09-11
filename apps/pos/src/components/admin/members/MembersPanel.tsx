@@ -256,11 +256,16 @@ function TierBadge({ member }: { member: Member }) {
   }
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 px-2.5 py-0.5 text-xs font-medium text-emerald-300"
-      title={`${verification.proofType} • verified by ${verification.verifiedBy}`}
+      className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-300"
+      title={`${verification.proofType} • verified by ${verification.verifiedBy}${
+        verification.expiresAt ? ` • expires ${verification.expiresAt}` : ''
+      }`}
     >
       <Check className="w-3 h-3" />
       {tierLabel(verification.tier)}
+      {verification.expiresAt && (
+        <span className="font-normal opacity-70">· exp {verification.expiresAt}</span>
+      )}
     </span>
   );
 }

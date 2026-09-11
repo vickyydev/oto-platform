@@ -14,6 +14,7 @@ import { CategoriesPanel } from '@/components/admin/categories/CategoriesPanel';
 import { ModifiersPanel } from '@/components/admin/modifiers/ModifiersPanel';
 import { TemplatesPanel } from '@/components/admin/templates/TemplatesPanel';
 import { MembersPanel } from '@/components/admin/members/MembersPanel';
+import { TierVerificationsPanel } from '@/components/admin/members/TierVerificationsPanel';
 import { SupervisionPanel } from '@/components/admin/supervision/SupervisionPanel';
 import { InventoryPanel } from '@/components/admin/inventory/InventoryPanel';
 import { BranchesPanel } from '@/components/admin/branches/BranchesPanel';
@@ -82,6 +83,8 @@ export default function Admin() {
           <TemplatesPanel />
         ) : activeId === 'members' ? (
           <MembersPanel />
+        ) : activeId === 'tier-verifications' ? (
+          <TierVerificationsPanel />
         ) : activeId === 'login-users' ? (
           <LoginUsersPanel />
         ) : activeId === 'operators' ? (

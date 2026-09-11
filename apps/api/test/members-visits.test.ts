@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { child, visit, visitChild } from '@oto/db';
+import { auditLog, child, memberTierVerification, visit, visitChild } from '@oto/db';
+import { newId } from '@oto/shared';
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 let ctx: TestContext;
@@ -170,5 +171,122 @@ describe('SCRUM-32 — children and the visit draft', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().visit.children).toHaveLength(1);
+  });
+});
+
+describe('Tier verification — proof checked at the counter (client extension)', () => {
+  let memberId: string;
+
+  it('records the verification with the staff account stamped server-side', async () => {
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      headers: { cookie },
+      payload: { phone: '0633334444', nickname: 'Tier Test' },
+    });
+    memberId = created.json().member.id as string;
+
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/members/${memberId}/tier-verification`,
+      headers: { cookie },
+      payload: { toTier: 'expat', evidenceType: 'Passport', evidenceExpiresAt: '2030-01-01' },
+    });
+    expect(res.statusCode).toBe(200);
+    const m = res.json().member;
+    expect(m.tierCode).toBe('expat'); // member upgraded
+    expect(m.tierVerification.tier).toBe('expat');
+    expect(m.tierVerification.proofType).toBe('Passport');
+    expect(m.tierVerification.expiresAt).toBe('2030-01-01');
+    // WHO checked comes from the session, never from the request body.
+    expect(m.tierVerification.verifiedBy).toBeTruthy();
+  });
+
+  it('the record appears in the record-checking list with staff, time and expiry', async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/members/tier-verifications',
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const row = res
+      .json()
+      .verifications.find((v: { member: { phone: string } }) => v.member.phone === '+66633334444');
+    expect(row).toBeTruthy();
+    expect(row.fromTier).toBe('tourist');
+    expect(row.toTier).toBe('expat');
+    expect(row.evidenceType).toBe('Passport');
+    expect(row.evidenceExpiresAt).toBe('2030-01-01');
+    expect(row.expired).toBe(false);
+    expect(row.verifiedBy).toBeTruthy();
+    expect(row.verifiedAt).toBeTruthy();
+  });
+
+  it('writes an audit row for the verification', async () => {
+    const rows = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.action, 'member.tier_verify'));
+    expect(rows.length).toBeGreaterThan(0);
+    expect((rows[0]!.after as { toTier: string }).toTier).toBe('expat');
+    expect(rows[0]!.actorAccountId).toBeTruthy();
+  });
+
+  it('rejects an already-expired document', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/members/${memberId}/tier-verification`,
+      headers: { cookie },
+      payload: { toTier: 'thai', evidenceType: 'Thai ID', evidenceExpiresAt: '2020-01-01' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/expired/i);
+  });
+
+  it('rejects an unknown tier', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/members/${memberId}/tier-verification`,
+      headers: { cookie },
+      payload: { toTier: 'vip', evidenceType: 'Passport', evidenceExpiresAt: '2030-01-01' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('hides an expired verification from the member (rate must be re-proven)', async () => {
+    // Write an old verification directly — as if the document expired long ago.
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      headers: { cookie },
+      payload: { phone: '0633335555', nickname: 'Expired Test' },
+    });
+    const expiredMemberId = created.json().member.id as string;
+    await ctx.db.insert(memberTierVerification).values({
+      id: newId(),
+      memberId: expiredMemberId,
+      fromTier: 'tourist',
+      toTier: 'expat',
+      evidenceType: 'Residence certificate',
+      evidenceExpiresAt: new Date('2024-01-01T00:00:00Z'),
+    });
+
+    const lookup = await ctx.app.inject({
+      method: 'GET',
+      url: '/members/lookup?phone=0633335555',
+      headers: { cookie },
+    });
+    expect(lookup.json().member.tierVerification).toBeNull(); // no discount without valid proof
+
+    // …but the record stays visible for record checking, flagged expired.
+    const list = await ctx.app.inject({
+      method: 'GET',
+      url: '/members/tier-verifications',
+      headers: { cookie },
+    });
+    const row = list
+      .json()
+      .verifications.find((v: { member: { phone: string } }) => v.member.phone === '+66633335555');
+    expect(row.expired).toBe(true);
   });
 });

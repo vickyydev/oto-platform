@@ -140,7 +140,7 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
   };
 
   // Known local-dev passwords (documented in .env.example / SPRINT_1_REPORT).
-  await mkAccount(empAnan, '+66900000001', 'admin1234', [
+  const adminAccountId = await mkAccount(empAnan, '+66900000001', 'admin1234', [
     { role: 'platform_admin', scopeType: 'operator', scopeId: null }, // platform-wide
     { role: 'operator_admin', scopeType: 'operator', scopeId: operatorId },
   ]);
@@ -175,12 +175,18 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
       createdVia: 'import',
     });
     if (m.tier && m.tier !== 'tourist' && m.evidence) {
+      // Demo records carry the full audit shape the counter flow now writes:
+      // who checked (the seeded admin), where, and a document expiry.
+      const expires = new Date();
+      expires.setUTCFullYear(expires.getUTCFullYear() + 2);
       await db.insert(s.memberTierVerification).values({
         id: newId(),
         memberId: id,
         fromTier: 'tourist',
         toTier: m.tier,
         evidenceType: m.evidence,
+        evidenceExpiresAt: expires,
+        verifiedByAccountId: adminAccountId,
         branchId,
       });
     }

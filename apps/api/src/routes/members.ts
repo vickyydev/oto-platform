@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm';
-import { child, member, memberTierVerification } from '@oto/db';
+import { account, branch, child, employee, member, memberTierVerification, tier } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
@@ -34,6 +34,24 @@ function serializeChild(c: typeof child.$inferSelect) {
   };
 }
 
+/** The document stays valid through the whole expiry DAY it names. */
+function isEvidenceExpired(expiresAt: Date | null): boolean {
+  if (!expiresAt) return false;
+  return Date.now() >= expiresAt.getTime() + 24 * 60 * 60 * 1000;
+}
+
+/** Display name of the staff account that checked the document. */
+async function staffName(app: App, accountId: string | null): Promise<string | null> {
+  if (!accountId) return null;
+  const [row] = await app.db
+    .select({ phone: account.phone, name: employee.name })
+    .from(account)
+    .leftJoin(employee, eq(account.employeeId, employee.id))
+    .where(eq(account.id, accountId))
+    .limit(1);
+  return row ? (row.name ?? row.phone) : null;
+}
+
 async function memberWithChildren(app: App, memberId: string) {
   const [m] = await app.db.select().from(member).where(eq(member.id, memberId)).limit(1);
   if (!m) return null;
@@ -47,6 +65,9 @@ async function memberWithChildren(app: App, memberId: string) {
     .where(eq(memberTierVerification.memberId, memberId))
     .orderBy(desc(memberTierVerification.createdAt))
     .limit(1);
+  // An expired document no longer entitles the discounted rate: the POS sees
+  // no verification and asks for fresh proof (the row itself stays for audit).
+  const active = verification && !isEvidenceExpired(verification.evidenceExpiresAt) ? verification : null;
   return {
     id: m.id,
     phone: m.phone,
@@ -56,11 +77,13 @@ async function memberWithChildren(app: App, memberId: string) {
     tierCode: m.tierCode,
     preferredChannel: m.preferredChannel,
     notes: m.notes,
-    tierVerification: verification
+    tierVerification: active
       ? {
-          tier: verification.toTier,
-          proofType: verification.evidenceType,
-          verifiedAt: verification.createdAt.toISOString(),
+          tier: active.toTier,
+          proofType: active.evidenceType,
+          verifiedAt: active.createdAt.toISOString(),
+          verifiedBy: await staffName(app, active.verifiedByAccountId),
+          expiresAt: active.evidenceExpiresAt?.toISOString().slice(0, 10) ?? null,
         }
       : null,
     children: children.map(serializeChild),
@@ -255,6 +278,122 @@ export async function memberRoutes(app: App): Promise<void> {
         requestId: req.id,
       });
       return { member: await memberWithChildren(app, req.params.id) };
+    },
+  );
+
+  // Tier verification (client extension): staff checked a discount-tier proof
+  // document at the counter. WHO checked is stamped server-side from the
+  // session — the client cannot supply or spoof it — along with branch + time.
+  app.post(
+    '/:id/tier-verification',
+    {
+      schema: {
+        description: 'Record a checked tier proof document (verifier stamped from the session)',
+        params: z.object({ id: z.string().uuid() }),
+        body: z
+          .object({
+            toTier: z.string().min(1),
+            evidenceType: z.string().min(1),
+            evidenceExpiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+            note: z.string().optional(),
+          })
+          .strict(),
+      },
+    },
+    async (req) => {
+      const auth = await req.requirePermission('pos:member:update');
+      const [m] = await app.db
+        .select()
+        .from(member)
+        .where(and(eq(member.id, req.params.id), eq(member.operatorId, auth.operatorId), isNull(member.archivedAt)))
+        .limit(1);
+      if (!m) throw errors.notFound('Member not found');
+
+      // Tiers are data (D2) — the target tier must exist for this operator.
+      const [tierRow] = await app.db
+        .select()
+        .from(tier)
+        .where(and(eq(tier.operatorId, auth.operatorId), eq(tier.code, req.body.toTier)))
+        .limit(1);
+      if (!tierRow) throw errors.badRequest(`Unknown tier "${req.body.toTier}"`);
+
+      const expires = new Date(`${req.body.evidenceExpiresAt}T00:00:00Z`);
+      if (isEvidenceExpired(expires)) {
+        throw errors.badRequest('The document has already expired — it cannot verify a discounted rate');
+      }
+
+      const id = newId();
+      await app.db.insert(memberTierVerification).values({
+        id,
+        memberId: m.id,
+        fromTier: m.tierCode,
+        toTier: req.body.toTier,
+        evidenceType: req.body.evidenceType,
+        evidenceExpiresAt: expires,
+        verifiedByAccountId: auth.accountId,
+        branchId: auth.branchId,
+        note: req.body.note ?? null,
+      });
+      await app.db.update(member).set({ tierCode: req.body.toTier }).where(eq(member.id, m.id));
+      await audit.record(app.db, {
+        actorAccountId: auth.accountId,
+        operatorId: auth.operatorId,
+        branchId: auth.branchId,
+        action: 'member.tier_verify',
+        entityType: 'member_tier_verification',
+        entityId: id,
+        before: { tierCode: m.tierCode },
+        after: {
+          memberId: m.id,
+          toTier: req.body.toTier,
+          evidenceType: req.body.evidenceType,
+          evidenceExpiresAt: req.body.evidenceExpiresAt,
+        },
+        requestId: req.id,
+      });
+      return { member: await memberWithChildren(app, m.id) };
+    },
+  );
+
+  // Admin record-checking: every tier upgrade with document, expiry, the staff
+  // member who checked it, branch and timestamp (newest first).
+  app.get(
+    '/tier-verifications',
+    { schema: { description: 'List tier verification records for record checking' } },
+    async (req) => {
+      const auth = await req.requirePermission('pos:member:read');
+      const rows = await app.db
+        .select({
+          v: memberTierVerification,
+          memberNickname: member.nickname,
+          memberPhone: member.phone,
+          staffPhone: account.phone,
+          staffName: employee.name,
+          branchName: branch.name,
+        })
+        .from(memberTierVerification)
+        .innerJoin(member, eq(memberTierVerification.memberId, member.id))
+        .leftJoin(account, eq(memberTierVerification.verifiedByAccountId, account.id))
+        .leftJoin(employee, eq(account.employeeId, employee.id))
+        .leftJoin(branch, eq(memberTierVerification.branchId, branch.id))
+        .where(eq(member.operatorId, auth.operatorId))
+        .orderBy(desc(memberTierVerification.createdAt))
+        .limit(200);
+      return {
+        verifications: rows.map((r) => ({
+          id: r.v.id,
+          member: { id: r.v.memberId, nickname: r.memberNickname, phone: r.memberPhone },
+          fromTier: r.v.fromTier,
+          toTier: r.v.toTier,
+          evidenceType: r.v.evidenceType,
+          evidenceExpiresAt: r.v.evidenceExpiresAt?.toISOString().slice(0, 10) ?? null,
+          expired: isEvidenceExpired(r.v.evidenceExpiresAt),
+          verifiedBy: r.staffName ?? r.staffPhone ?? null,
+          branch: r.branchName ?? null,
+          note: r.v.note,
+          verifiedAt: r.v.createdAt.toISOString(),
+        })),
+      };
     },
   );
 
