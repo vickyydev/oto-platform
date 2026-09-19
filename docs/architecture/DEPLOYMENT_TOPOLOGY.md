@@ -125,3 +125,36 @@ production. Far cheaper than the isolation would cost on self-managed servers.
   never receive that cookie.
 - Imported apps keep separate backends at first, so some logic is duplicated
   until convergence. That is the price of lifting them quickly and safely.
+
+## What the first deploy actually does (S2-01c, 2026-09-20)
+
+`render.yaml` at the repository root declares the staging environment: the api
+web service, the POS static site and one managed Postgres in Singapore with
+point-in-time recovery. It departs from the shape above in four places, each
+reversible by configuration rather than by a rewrite, and each also recorded in
+`SPRINT_2_PROGRESS.md`.
+
+1. **`edge` and `jobs` run inside the `api` service**, selected by
+   `PROCESS_ROLES=api,edge,jobs`, instead of being their own deployables. One
+   park with one virtual box does not yet justify three services. The blueprint
+   carries a commented-out `worker` service as the split's target; enabling it
+   means uncommenting it and removing `jobs` from the api's roles.
+2. **One database login, not one per service.** There is one service to fence
+   off from today. The per-service logins with their own connection limits
+   arrive with the lifted apps, which is when a runaway query in one of them
+   could actually starve another.
+3. **Paths within a site, not only subdomains.** Each frontend is still its own
+   static site on its own host, but each carries a rewrite `/api/*` to the api
+   rather than calling an `api.` host directly. There is no shared reverse
+   proxy in front of everything — the thing item 3 warns against — because the
+   rewrite belongs to the site and fails with it. The reasoning is in
+   `ARCHITECTURE.md` §16.
+4. **No parent-domain cookie, and none planned as the mechanism.** Item 4
+   assumed one. `*.onrender.com` cannot carry one and the booking site will sit
+   on another domain in any case, so the launcher's signed per-origin hand-off
+   token (S2-02) is the permanent answer; a parent-domain cookie becomes an
+   optional shortcut behind the same adapter once a real domain exists.
+
+Deploys are gated on CI rather than on the push: every service sets
+`autoDeploy: false` and the `deploy` job in `.github/workflows/ci.yml` calls
+Render's deploy hooks only after the build is green on `main`.

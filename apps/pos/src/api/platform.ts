@@ -307,3 +307,20 @@ export const adminApi = {
   assignOperatorAdmin: (id: string, body: { phone: string; name: string }) =>
     api.post<{ accountId: string }>(`/operators/${id}/administrators`, body, { idempotencyKey: idemKey() }),
 };
+
+// --- ops: staging-only controls (S2-01c) ------------------------------------
+export const opsApi = {
+  /**
+   * Answers rather than refuses, so a console that is not entitled to the
+   * control simply never renders it. `available` is false both for a caller
+   * who is not a platform admin and on a deployment that did not opt in.
+   */
+  demoResetStatus: () =>
+    api.get<{ available: boolean; confirmationPhrase: string }>('/ops/demo-reset'),
+  demoReset: (confirm: string) =>
+    api.post<{ deleted: Record<string, number> }>(
+      '/ops/demo-reset',
+      { confirm },
+      { idempotencyKey: idemKey() },
+    ),
+};

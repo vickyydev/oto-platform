@@ -1,0 +1,334 @@
+# OTO Platform — Render blueprint (S2-01c)
+#
+# This file declares the staging environment: the api web service, the POS
+# static site and the managed Postgres they share. It is the whole deployment,
+# in one file, in the repository — which is the trade DEPLOYMENT_TOPOLOGY.md
+# accepts for having many small deployables instead of one server.
+#
+# How to apply it: Render dashboard → New → Blueprint → point it at this repo.
+# Render creates everything below and prompts for each value marked
+# `sync: false`. Nothing here contains a secret; the values live only in the
+# dashboard.
+#
+# Two things will NOT work until the owner acts, and both are called out again
+# where they appear:
+#   1. MINIO_* must point at a real S3-compatible bucket. The api refuses to
+#      boot in production on the development storage keys (apps/api/src/env.ts,
+#      `assertProductionSafe`) — deliberately, so a deploy cannot quietly put
+#      customer files somewhere wrong.
+#   2. ALLOWED_ORIGINS must carry the POS site's origin once Render has issued
+#      it, or every write from the till is refused with ORIGIN_NOT_ALLOWED.
+#
+# Production is a second environment, added when the park cuts over: the same
+# services with `SEED_PROFILE`/`OPS_TEST_CONTROLS` dropped, real SMS and
+# payment credentials, and its own database. It is not declared yet — staging
+# is what the client plays with during Sprint 2.
+#
+# Deploys are gated on CI, not on the push: every service sets
+# `autoDeploy: false` and .github/workflows/ci.yml fires the deploy hooks only
+# after the ci job is green on main. A red build therefore never reaches the
+# client's staging URL.
+
+databases:
+  - name: oto-db-staging
+    databaseName: oto
+    # One login per service is the target (DEPLOYMENT_TOPOLOGY.md item 5) so a
+    # connection leak in one app cannot starve the others. Today there is one
+    # service, so there is one login; the split happens as the lifted apps land
+    # and each gets its own role with its own connection limit.
+    user: oto_platform
+    region: singapore
+    postgresMajorVersion: '16'
+    # Point-in-time recovery is a property of the instance type, not a flag:
+    # every PAID Render Postgres instance keeps daily backups plus PITR (the
+    # free instance type keeps neither, and expires). `basic_1gb` is therefore
+    # the floor for a database holding member and child records, even on
+    # staging. Confirm the retention window in the dashboard after the first
+    # deploy — that is where Render shows it.
+    plan: basic_1gb
+    # Empty = no connections from the public internet; only services in this
+    # Render workspace can reach it. To run a one-off psql or the demo seed
+    # from a laptop, add that address here temporarily and remove it after.
+    ipAllowList: []
+
+services:
+  # ---------------------------------------------------------------------------
+  # api — Fastify 5. One process, three roles (PROCESS_ROLES below).
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: oto-api-staging
+    runtime: node
+    region: singapore
+    # `starter` rather than `free`: free instances spin down when idle, which
+    # would make the first till request of the morning wait for a cold start,
+    # and a pre-deploy command needs a paid instance type in any case.
+    plan: starter
+    branch: main
+    # The repository root, because this is a pnpm workspace: the api's
+    # dependencies are resolved from the root lockfile and half of what it
+    # imports lives in packages/.
+    rootDir: .
+    # `--prod=false` is load-bearing. NODE_ENV=production is set below, and
+    # pnpm would otherwise skip devDependencies — which is where tsx (the
+    # runtime for the start command) and drizzle-kit (the migrator for the
+    # pre-deploy command) live. The install would succeed and the start would
+    # fail with "tsx: not found".
+    # `corepack enable` takes the pnpm version from package.json's
+    # `packageManager` field. If the build image ever refuses it, the
+    # equivalent is `npm i -g pnpm@10.33.0` — keep it pinned either way.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
+    # Runs after the build, before the new instance takes traffic, with this
+    # service's environment. Two steps, in this order:
+    #   db:migrate       forward-only Drizzle migrations; expand/contract from
+    #                    0006 onward, so the OLD instance keeps serving happily
+    #                    while this runs (CONTRIBUTING.md).
+    #   db:platform-sync the re-runnable half of the seed — system roles and
+    #                    their permissions converge on every deploy, so a
+    #                    permission added to a bundle actually reaches staging.
+    #                    It touches no demo rows, so a password changed on
+    #                    staging survives.
+    # When S2-03 adds pg-boss, its own migration goes here as a third step: it
+    # owns the `pgboss` schema, outside Drizzle's schemaFilter.
+    # A failure here cancels the deploy and leaves the previous instance
+    # serving — a migration that will not apply never becomes an outage.
+    preDeployCommand: pnpm db:migrate && pnpm db:platform-sync
+    # index.ts drains on SIGTERM so a deploy does not drop a request mid-sale.
+    # That depends on the signal reaching it through the pnpm wrapper: if the
+    # logs ever show a restart without the "shutting down" line, the wrapper is
+    # the suspect and the fix is to invoke tsx directly.
+    startCommand: pnpm --filter @oto/api start
+    # /ready checks the database (`select 1`) and answers 503 when it cannot
+    # reach it, so Render holds traffic off an instance that cannot serve.
+    # /health answers without touching the database — use that one for uptime
+    # pings, or every outage becomes two alerts.
+    healthCheckPath: /ready
+    # Exactly one. The api process also runs `edge` (the cloud virtual box, one
+    # station session per station) and `jobs` (pg-boss under advisory locks);
+    # both assume a single process, and a second instance would give the box a
+    # second brain. Scale by splitting the roles out — see the commented worker
+    # at the foot of this file — not by raising this number.
+    numInstances: 1
+    autoDeploy: false
+    envVars:
+      # -- runtime ----------------------------------------------------------
+      - key: NODE_VERSION
+        # package.json engines requires >=22.12; the 22 line satisfies it and
+        # matches what CI installs.
+        value: '22'
+      - key: NODE_ENV
+        value: production
+      # WHICH deployment this is, as distinct from how the code is built.
+      # Staging runs the production build against throwaway data, so this -
+      # not NODE_ENV - is what keeps the demo controls off production.
+      - key: DEPLOY_ENV
+        value: staging
+      - key: TZ
+        # Every process stores UTC and converts at the edge using the branch
+        # timezone. A server on Asia/Bangkok would make `business_date` depend
+        # on where the code happens to run.
+        value: UTC
+      # PORT is injected by Render and wins over API_PORT in apps/api/src/index.ts,
+      # so API_PORT is deliberately not set here — it is the local-dev default only.
+      - key: LOG_LEVEL
+        value: info
+      - key: PROCESS_ROLES
+        # A recorded deviation from DEPLOYMENT_TOPOLOGY.md: edge and jobs run
+        # inside the api service instead of their own, because one park with
+        # one virtual box does not justify three services yet. It is a
+        # configuration change to undo, not a rewrite.
+        value: api,edge,jobs
+
+      # -- how the api sits behind Render's proxy ----------------------------
+      - key: TRUST_PROXY
+        # One hop: Render's load balancer. req.ip then reads the entry before
+        # Render's own, which is the client — and a forged X-Forwarded-For
+        # cannot move a caller into a fresh rate-limit bucket.
+        value: '1'
+      - key: COOKIE_SECURE
+        # HTTPS only. The api refuses to boot in production without this.
+        value: 'true'
+      - key: ALLOWED_ORIGINS
+        # BLOCKS THE FIRST DEPLOY IF LEFT BLANK. The POS is served from the
+        # static site's origin and reaches the api through that site's /api
+        # rewrite, so a browser write arrives with Origin = the POS site and
+        # Host = this service. They differ, so the same-origin fallback in
+        # apps/api/src/app.ts does not apply and the origin must be listed
+        # here explicitly. Value: the POS site's URL, scheme and host, no
+        # trailing slash — e.g. https://oto-pos-staging.onrender.com. Comma
+        # -separated as the launcher and console sites land.
+        sync: false
+
+      # -- database ----------------------------------------------------------
+      - key: DATABASE_URL
+        fromDatabase:
+          name: oto-db-staging
+          # The internal connection string: a direct connection inside Render's
+          # private network, not a transaction pooler. Radar's advisory locks
+          # and our session-level settings need a direct connection.
+          property: connectionString
+
+      # -- sessions, throttles and replay ------------------------------------
+      - key: SESSION_TTL_HOURS
+        value: '12'
+      - key: AUTH_MAX_FAILURES
+        value: '5'
+      - key: AUTH_COOLDOWN_SECONDS
+        value: '300'
+      - key: CODE_MAX_ATTEMPTS
+        value: '5'
+      - key: RATE_LIMIT_IP_MAX
+        # Generous on purpose: a shopping mall shares very few public
+        # addresses, so the tight bucket is the per-phone one below.
+        value: '120'
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: '60'
+      - key: RATE_LIMIT_CODE_MAX
+        value: '5'
+      - key: RATE_LIMIT_CODE_WINDOW_SECONDS
+        value: '900'
+      - key: IDEMPOTENCY_TTL_HOURS
+        value: '24'
+
+      # -- object storage ----------------------------------------------------
+      # There is no MinIO on Render; MinIO is the local stand-in for whatever
+      # S3-compatible bucket this points at (Cloudflare R2, AWS S3, Backblaze
+      # B2 — the client is generic). The api REFUSES TO BOOT in production
+      # while the access key or secret is still the development default, so
+      # these four block the first deploy until the owner creates a bucket.
+      - key: MINIO_ENDPOINT
+        # Host only, no scheme and no bucket, e.g. s3.ap-southeast-1.amazonaws.com
+        sync: false
+      - key: MINIO_PORT
+        value: '443'
+      - key: MINIO_USE_SSL
+        value: 'true'
+      - key: MINIO_ACCESS_KEY
+        sync: false
+      - key: MINIO_SECRET_KEY
+        sync: false
+      - key: MINIO_BUCKET
+        # Suggested: oto-files-staging. Keep staging and production in
+        # different buckets — the demo reset must never reach a real file.
+        sync: false
+
+      # -- staging profile ---------------------------------------------------
+      # These four are what make this deployment a place the client can play
+      # with, and they are the four to change when production is declared.
+      #
+      # Note what they are NOT gated on. This service runs NODE_ENV=production
+      # — it is the real build, with the real hardening: no development
+      # database, no demo storage keys, a secure cookie, or it does not start.
+      # "Production build" and "throwaway data" are therefore different
+      # questions, and each flag below answers the second one explicitly rather
+      # than being inferred from NODE_ENV. Anything inferred would either lock
+      # staging out of its own controls or hand them to production by accident.
+      - key: SEED_PROFILE
+        # `staging` seeds the demo tenant and marks this database a playground.
+        # `production` on a real deployment.
+        value: staging
+      - key: SMS_ADAPTER
+        # Verification and reset codes go to the api log, not to a phone. The
+        # adapter logs a phone hash, never the number. `twilio` in production.
+        value: console
+      - key: ALERT_CHANNELS
+        # console until the owner names a channel (open decision 17). Read by
+        # the alerting built in S2-03.
+        value: console
+      - key: OPS_TEST_CONTROLS
+        # Opens the destructive operational controls: "Reset demo data" today,
+        # device fault injection and "expire hand-off now" as they land. FALSE
+        # ON A REAL DEPLOYMENT — this is the flag that lets a platform admin
+        # wipe the facts out of a database.
+        value: 'true'
+
+      # -- SMS, when it stops being the console adapter ------------------------
+      # Left blank on staging. Fill all three and switch SMS_ADAPTER to
+      # `twilio` when real codes are needed; the api warns and falls back to
+      # console if any of them is missing.
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM
+        sync: false
+
+      # -- error reporting -----------------------------------------------------
+      - key: SENTRY_DSN
+        # Optional. The error hook is a no-op while this is empty.
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # POS — static site. Till, customer display and the Sprint 1 admin panels.
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: oto-pos-staging
+    runtime: static
+    branch: main
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @oto/pos build
+    staticPublishPath: apps/pos/dist/public
+    autoDeploy: false
+    routes:
+      # THE POS AND THE API ARE ONE ORIGIN IN THE BROWSER. apps/pos/src/api/client.ts
+      # calls `/api/...` relative, so this rewrite is what makes the session
+      # cookie work: the browser only ever sees the POS origin, the cookie
+      # stays httpOnly SameSite=Lax, and no CORS is involved. The rejected
+      # alternative (SameSite=None + an allow-list across two origins) is
+      # recorded in docs/architecture/ARCHITECTURE.md §16.
+      #
+      # The `*` carries the rest of the path across, so /api/members/lookup
+      # arrives at the api as /members/lookup — the same strip the dev proxy
+      # does in apps/pos/vite.config.ts, so the two behave identically.
+      #
+      # CHECK THIS HOST AFTER THE FIRST DEPLOY. onrender.com subdomains are
+      # globally unique: if `oto-api-staging` is taken, Render issues a
+      # suffixed hostname and this line must be corrected to match. A blueprint
+      # cannot reference another service's URL, so it is a literal.
+      - type: rewrite
+        source: /api/*
+        destination: https://oto-api-staging.onrender.com/*
+      # Client-side routing: /admin, /display and the rest are routes inside
+      # one bundle, not files on disk. Must stay BELOW the /api rule — Render
+      # takes the first match.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+
+# -----------------------------------------------------------------------------
+# worker — the future home of PROCESS_ROLES=jobs. Not enabled yet.
+#
+# Today the api process runs the jobs role itself: pg-boss under advisory
+# locks, the watchdog, the analytics rollups and the housekeeping sweeps. That
+# is fine while the jobs are small and the api is one instance, and it is wrong
+# the moment a rollup's memory or a long sweep starts costing a till its
+# response time.
+#
+# To split it out: uncomment this block, remove `jobs` from the api's
+# PROCESS_ROLES (or the same job runs in two processes and fights itself over
+# the locks), and give this service the same DATABASE_URL and storage
+# variables. It needs no health check and no public URL — a worker has no port.
+# The same pattern splits `edge` out later.
+#
+#  - type: worker
+#    name: oto-jobs-staging
+#    runtime: node
+#    region: singapore
+#    plan: starter
+#    branch: main
+#    rootDir: .
+#    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
+#    startCommand: pnpm --filter @oto/api start
+#    numInstances: 1
+#    autoDeploy: false
+#    envVars:
+#      - key: PROCESS_ROLES
+#        value: jobs
+#      - key: DATABASE_URL
+#        fromDatabase:
+#          name: oto-db-staging
+#          property: connectionString
+#      # …plus NODE_VERSION, NODE_ENV, TZ, LOG_LEVEL and the MINIO_* group,
+#      # copied from the api service above.

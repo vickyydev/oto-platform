@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Archive, Building2, Loader2, Plus, UserPlus } from 'lucide-react';
+import { Archive, Building2, Loader2, Plus, RotateCcw, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { toast } from '@/hooks/use-toast';
-import { adminApi } from '@/api/platform';
+import { adminApi, opsApi } from '@/api/platform';
 
 /**
  * SCRUM-27 — platform admin: operators (tenants) and their administrators.
@@ -38,6 +38,13 @@ export function OperatorsPanel() {
   const [adminName, setAdminName] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
 
+  // Staging-only demo reset (S2-01c). The API answers whether this caller on
+  // this deployment may reset, so the control is absent — not merely disabled
+  // — on production and for anyone who is not a platform admin.
+  const [resetPhrase, setResetPhrase] = useState<string | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [typedPhrase, setTypedPhrase] = useState('');
+
   const apiFail = (title: string) => (err: unknown) =>
     toast({ title, description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
 
@@ -52,6 +59,10 @@ export function OperatorsPanel() {
 
   useEffect(() => {
     void refresh();
+    void opsApi
+      .demoResetStatus()
+      .then((r) => setResetPhrase(r.available ? r.confirmationPhrase : null))
+      .catch(() => setResetPhrase(null));
   }, []);
 
   const create = async () => {
@@ -92,6 +103,25 @@ export function OperatorsPanel() {
       setAdminPhone('');
     } catch (err) {
       apiFail("Couldn't assign the administrator")(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetDemoData = async () => {
+    if (!resetPhrase || busy) return;
+    setBusy(true);
+    try {
+      const { deleted } = await opsApi.demoReset(resetPhrase);
+      const rows = Object.values(deleted).reduce((sum, n) => sum + n, 0);
+      toast({
+        title: 'Demo data reset',
+        description: `${rows} record${rows === 1 ? '' : 's'} cleared. Accounts and the catalogue are untouched.`,
+      });
+      setResetOpen(false);
+      setTypedPhrase('');
+    } catch (err) {
+      apiFail("Couldn't reset the demo data")(err);
     } finally {
       setBusy(false);
     }
@@ -159,6 +189,29 @@ export function OperatorsPanel() {
         )}
       </div>
 
+      {resetPhrase && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/[0.03] px-4 py-3">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10">
+            <RotateCcw className="w-5 h-5 text-destructive" />
+          </span>
+          <div className="min-w-[16rem] flex-1">
+            <p className="font-semibold">Reset demo data</p>
+            <p className="text-xs text-foreground/50">
+              Staging only. Clears visits, bookings, sales, wallets, wristbands, stock counts and the
+              members added while playing. Login users, roles, branches and the catalogue are kept.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive"
+            onClick={() => setResetOpen(true)}
+          >
+            Reset demo data
+          </Button>
+        </div>
+      )}
+
       <AlertDialog open={pendingArchive !== null} onOpenChange={(o) => !o && setPendingArchive(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -209,6 +262,45 @@ export function OperatorsPanel() {
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
               Invite administrator
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={resetOpen}
+        onOpenChange={(o) => {
+          if (busy || o) return;
+          setResetOpen(false);
+          setTypedPhrase('');
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset the demo data?</DialogTitle>
+            <DialogDescription>
+              Every visit, booking, sale, payment, wallet, wristband and stock count goes, along with
+              the members added during the session. Login users, roles, operators, branches, tickets,
+              prices and tax settings stay exactly as they are. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <label className="text-sm font-semibold text-foreground/60">
+              Type <span className="font-mono text-foreground">{resetPhrase}</span> to confirm
+            </label>
+            <input
+              value={typedPhrase}
+              onChange={(e) => setTypedPhrase(e.target.value)}
+              placeholder={resetPhrase ?? ''}
+              className="w-full h-11 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <Button
+              className="mt-2 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void resetDemoData()}
+              disabled={busy || typedPhrase !== resetPhrase}
+            >
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+              Reset demo data
             </Button>
           </div>
         </DialogContent>

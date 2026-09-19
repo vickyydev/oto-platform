@@ -33,6 +33,7 @@ import { catalogRoutes } from './routes/catalog';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { publicRoutes } from './routes/public';
+import { opsRoutes } from './routes/ops';
 import { sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -277,6 +278,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(catalogRoutes);
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
+  await app.register(opsRoutes, { prefix: '/ops' });
   await app.register(publicRoutes);
 
   return app;
