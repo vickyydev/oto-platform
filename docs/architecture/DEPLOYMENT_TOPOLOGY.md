@@ -1,7 +1,8 @@
 # Deployment topology — recommendation
 
-**Status:** proposed 2026-09-19, awaiting owner approval. To be confirmed once
-the real apps have been reviewed.
+**Status:** agreed in principle by the owner 2026-09-19 (many small
+deployables, not one server). Refined the same day after the imported apps were
+reviewed — see "Refinements after the intake" below.
 
 **Requirement (owner):** one repository; the whole system must never go down at
 once; deploying one app must not affect the others.
@@ -70,12 +71,39 @@ any module takes all apps down, and any change anywhere redeploys everyone.
    their boxes (local-first). A cloud outage or a bad deploy delays sync and
    reports; it does not stop selling, printing, card payments or child release.
 
+## Refinements after the intake (2026-09-19)
+
+Reviewing the real apps changed three details; the principle stands.
+
+1. **A lifted app is one deployable, not two.** OTO App and Radar each serve
+   their UI and API from the same process, and their clients make ~660
+   same-origin relative `/api` calls (about 40 of them would lose the session
+   if the API moved to another origin). Each therefore deploys as **one Docker
+   web service on its own subdomain** — `team.…`, `radar.…` — rather than a
+   static site plus a backend. Isolation is unchanged: each is still its own
+   deployable with its own database login.
+2. **Both lifted apps run exactly one always-on instance.** They keep
+   in-process timers (OTO App: midnight auto clock-out, recurring tasks,
+   no-show alerts; Radar: the five-minute POS sync) and per-process state.
+   Autoscale is what causes Radar's sync gaps today. `TZ=UTC` on both.
+3. **Radar's database login needs a direct connection**, not a
+   transaction-mode pooler: its sync uses session-level advisory locks. It
+   also creates tables at runtime, so its login owns its schema.
+
+Sizing note: OTO App renders PDFs with headless Chromium — give it 2 GB RAM.
+The sum of per-login connection limits must stay under the database plan's
+limit (each lifted app defaults to a pool of 10).
+
+The diagram above still holds with `team.…` and `radar.…` read as services
+rather than static sites, and with two additions: `console.…` (super admin,
+static) and the booth game, which is served locally by each booth box.
+
 ## What goes down with what
 
 | Failure | Affected | Not affected |
 |---|---|---|
 | Bad deploy of one frontend | That app only (instant rollback) | Everything else |
-| Crash of one imported app's backend | That app's data screens | POS, launcher, other apps, boxes |
+| Crash or deploy of a lifted app (OTO App, Radar) | That app only, for the length of a restart | POS, launcher, console, the other lifted app, boxes |
 | Crash/deploy of `api` | Sign-in, launcher tiles list, POS cloud screens for ~seconds | Park counters (on boxes), static shells, other app backends for already-signed-in users |
 | Deploy of `edge` | Box sync pauses and resumes; boxes queue locally | All selling at the park, all apps |
 | Database outage | All cloud apps (the one true shared dependency) | Park counters keep trading offline and sync afterwards |
