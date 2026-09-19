@@ -17,6 +17,28 @@ const EnvSchema = z.object({
     .transform((v) => v === 'true'),
   AUTH_MAX_FAILURES: z.coerce.number().int().default(5),
   AUTH_COOLDOWN_SECONDS: z.coerce.number().int().default(300),
+  /** Wrong codes accepted before every outstanding code is invalidated. */
+  CODE_MAX_ATTEMPTS: z.coerce.number().int().default(5),
+  /**
+   * How many proxy hops in front of the api are ours (S2-01a). 0 = none:
+   * `req.ip` is the socket address and a forged X-Forwarded-For changes
+   * nothing. On Render this is 1 — the client ip is then the first hop the
+   * platform did not add, i.e. the entry before our own.
+   */
+  TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
+  /**
+   * Browser origins allowed to send state-changing requests. Empty = same
+   * origin only (the POS is served through the api's own origin rewrite).
+   * Comma-separated, scheme + host + port, no trailing slash.
+   */
+  ALLOWED_ORIGINS: z.string().default(''),
+  /** Secondary per-IP bucket on unauthenticated routes: generous, so one
+   *  reception NAT is not locked out by one customer. */
+  RATE_LIMIT_IP_MAX: z.coerce.number().int().default(120),
+  RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().default(60),
+  /** Primary per-phone/per-account bucket on code-issuing routes. */
+  RATE_LIMIT_CODE_MAX: z.coerce.number().int().default(5),
+  RATE_LIMIT_CODE_WINDOW_SECONDS: z.coerce.number().int().default(900),
   IDEMPOTENCY_TTL_HOURS: z.coerce.number().default(24),
   MINIO_ENDPOINT: z.string().default('localhost'),
   MINIO_PORT: z.coerce.number().int().default(9000),

@@ -89,6 +89,27 @@ async function loadAuth(db: Db, token: string): Promise<AuthContext | null> {
   };
 }
 
+/**
+ * Routes a session may call while it is locked or while the account still
+ * owes a password change (S2-01a). Everything else on `requireAuth` is
+ * business and is refused, exactly as `requirePermission` refuses it — the
+ * Sprint 1 gap was that a temp-password account could reach every
+ * requireAuth-only route by simply not calling a permissioned one.
+ */
+const SESSION_STATE_EXEMPT = new Set([
+  'POST:/auth/sign-out',
+  'POST:/auth/lock',
+  'POST:/auth/unlock',
+  'POST:/auth/change-password',
+  'GET:/me',
+  'GET:/me/permissions',
+]);
+
+function isExempt(req: FastifyRequest): boolean {
+  const url = (req.routeOptions?.url ?? req.url).replace(/\/$/, '') || '/';
+  return SESSION_STATE_EXEMPT.has(`${req.method}:${url}`);
+}
+
 export const sessionPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest('auth', null);
 
@@ -105,20 +126,22 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
 
     req.requireAuth = () => {
       if (!req.auth) throw errors.unauthorized();
+      // A locked session exists but may do no business, and a temp-password
+      // account must change it first. Both checks live here rather than only
+      // in requirePermission so that requireAuth-only routes are covered too.
+      if (!isExempt(req)) {
+        if (req.auth.lockedAt) {
+          throw new AppError(423, 'SESSION_LOCKED', 'This session is locked — unlock to continue');
+        }
+        if (req.auth.mustChangePassword) {
+          throw new AppError(403, 'MUST_CHANGE_PASSWORD', 'Password change required before continuing');
+        }
+      }
       return req.auth;
     };
 
     req.requirePermission = async (permission, target = {}) => {
       const auth = req.requireAuth();
-      // A locked session exists but may do no business: the unlock route is
-      // the only way back in (it uses requireAuth, not requirePermission).
-      if (auth.lockedAt) {
-        throw new AppError(423, 'SESSION_LOCKED', 'This session is locked — unlock to continue');
-      }
-      // A temp-password account must change it before doing anything else.
-      if (auth.mustChangePassword) {
-        throw new AppError(403, 'MUST_CHANGE_PASSWORD', 'Password change required before continuing');
-      }
       const effective = await req.effectivePermissions();
       const fullTarget: ScopeTarget = {
         operatorId: target.operatorId ?? auth.operatorId,

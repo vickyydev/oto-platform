@@ -4,7 +4,7 @@ import { schema, type Db } from '@oto/db';
 import { createTestDatabase, stopTestServer } from '@oto/db/testing';
 import { seed } from '@oto/db/seed';
 import { buildApp, type App } from '../src/app';
-import { loadEnv } from '../src/env';
+import { loadEnv, type Env } from '../src/env';
 import type { SmsSender } from '../src/services/sms';
 import { _resetThrottle } from '../src/services/auth';
 import { buildFileStorage } from '../src/services/files';
@@ -13,11 +13,19 @@ export interface TestContext {
   app: App;
   db: Db;
   smsLog: string[];
+  /**
+   * Throw the api away and build a new one on the SAME database — what a
+   * Render "Restart" or a deploy does. Anything that must survive a restart
+   * (the auth throttle, S2-01a) is asserted across this call.
+   */
+  restart: () => Promise<void>;
   close: () => Promise<void>;
 }
 
 /** Fresh database + migrations + seed + app instance. */
-export async function createTestContext(opts: { files?: boolean } = {}): Promise<TestContext> {
+export async function createTestContext(
+  opts: { files?: boolean; env?: Partial<Record<keyof Env, string>> } = {},
+): Promise<TestContext> {
   const { url, drop } = await createTestDatabase();
   const pool = new pg.Pool({ connectionString: url });
   const db = drizzle(pool, { schema }) as Db;
@@ -33,25 +41,33 @@ export async function createTestContext(opts: { files?: boolean } = {}): Promise
     },
   };
 
-  const env = loadEnv({ NODE_ENV: 'test', DATABASE_URL: url });
-  const app = await buildApp({
-    env,
-    db,
-    fileStorage: opts.files ? buildFileStorage(env) : null,
-  });
-  // Replace the console SMS adapter with the capturing one.
-  (app as { sms: SmsSender }).sms = sms;
+  const build = async (): Promise<App> => {
+    const env = loadEnv({ NODE_ENV: 'test', DATABASE_URL: url, ...opts.env });
+    const app = await buildApp({
+      env,
+      db,
+      fileStorage: opts.files ? buildFileStorage(env) : null,
+    });
+    // Replace the console SMS adapter with the capturing one.
+    (app as { sms: SmsSender }).sms = sms;
+    return app;
+  };
 
-  return {
-    app,
+  const ctx: TestContext = {
+    app: await build(),
     db,
     smsLog,
+    restart: async () => {
+      await ctx.app.close();
+      ctx.app = await build();
+    },
     close: async () => {
-      await app.close();
+      await ctx.app.close();
       await pool.end();
       await drop();
     },
   };
+  return ctx;
 }
 
 export function lastCode(smsLog: string[]): string {

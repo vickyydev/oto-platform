@@ -199,7 +199,9 @@ export async function memberRoutes(app: App): Promise<void> {
         .where(and(eq(member.operatorId, auth.operatorId), eq(member.phone, phone)))
         .limit(1);
       if (existing) {
-        throw errors.conflict('MEMBER_EXISTS', 'A member with this phone already exists', {
+        // Same code the unique-violation mapper produces when two tills race
+        // past this check (S2-01a) — one condition, one code, either path.
+        throw errors.conflict('MEMBER_PHONE_EXISTS', 'A member with this phone already exists', {
           memberId: existing.id,
         });
       }

@@ -86,7 +86,10 @@ export async function accountRoutes(app: App): Promise<void> {
         .from(account)
         .where(and(eq(account.operatorId, auth.operatorId), eq(account.phone, phone)))
         .limit(1);
-      if (existing) throw errors.conflict('ACCOUNT_EXISTS', 'An account with this phone already exists');
+      // Same code the unique-violation mapper produces on the racing path.
+      if (existing) {
+        throw errors.conflict('ACCOUNT_PHONE_EXISTS', 'An account with this phone already exists');
+      }
 
       let employeeId = req.body.employeeId ?? null;
       if (!employeeId && req.body.employeeName) {
@@ -376,20 +379,19 @@ export async function accountRoutes(app: App): Promise<void> {
         auth.operatorId,
         req.params.id,
       );
-      const ended = await app.db
-        .delete(session)
-        .where(eq(session.accountId, req.params.id))
-        .returning({ id: session.id });
+      // Revoked, not deleted: "who was evicted, when and by whom" has to
+      // survive for audit, and loadAuth refuses a revoked session anyway.
+      const ended = await invalidateAllSessions(app.db, req.params.id, 'force_sign_out');
       await audit.record(app.db, {
         actorAccountId: auth.accountId,
         operatorId: auth.operatorId,
         action: 'session.force_sign_out',
         entityType: 'account',
         entityId: req.params.id,
-        after: { sessionsEnded: ended.length },
+        after: { sessionsEnded: ended },
         requestId: req.id,
       });
-      return { sessionsEnded: ended.length };
+      return { sessionsEnded: ended };
     },
   );
 }

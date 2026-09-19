@@ -35,6 +35,8 @@ import { fileRoutes } from './routes/files';
 import { publicRoutes } from './routes/public';
 import { sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
+import { rateLimitPlugin } from './plugins/rate-limit';
+import { isPgError, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
 import type { FileStorage } from './services/files';
 import { buildSmsSender, type SmsSender } from './services/sms';
 
@@ -64,14 +66,33 @@ export interface BuildAppOptions {
   fileStorage?: FileStorage | null;
 }
 
+/**
+ * A caller-supplied request id is echoed into every log line and the response
+ * header, so it is only accepted in a shape that cannot forge a log entry or
+ * smuggle a header (S2-01a).
+ */
+const REQUEST_ID = /^[A-Za-z0-9._-]{8,64}$/;
+
 export async function buildApp(opts: BuildAppOptions): Promise<App> {
   const log = buildLogger(opts.env.NODE_ENV);
   // Cast: the concrete pino logger generic differs from FastifyBaseLogger in
   // the instance type parameters; behaviour is identical.
   const app = Fastify({
     loggerInstance: log,
-    genReqId: (req) => (req.headers['x-request-id'] as string | undefined) ?? randomUUID(),
-    disableRequestLogging: opts.env.NODE_ENV === 'test',
+    genReqId: (req) => {
+      const supplied = req.headers['x-request-id'];
+      return typeof supplied === 'string' && REQUEST_ID.test(supplied) ? supplied : randomUUID();
+    },
+    /**
+     * Fastify's own request/response lines carry the full URL, and the URL
+     * carries phone numbers (`/members/lookup?phone=…`). They are replaced
+     * below by one completion line with the query string stripped. S2-03
+     * takes this over with the telemetry package.
+     */
+    disableRequestLogging: true,
+    // Cast: Fastify's types omit the documented hop-count form ("trust N hops
+    // from the front-facing proxy"), which proxy-addr accepts underneath.
+    trustProxy: (opts.env.TRUST_PROXY > 0 ? opts.env.TRUST_PROXY : false) as unknown as boolean,
   }).withTypeProvider<ZodTypeProvider>() as unknown as App;
 
   app.setValidatorCompiler(validatorCompiler);
@@ -108,6 +129,48 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     reply.header('x-request-id', req.id);
   });
 
+  /**
+   * Origin check on state-changing requests (S2-01a). The session cookie is
+   * SameSite=Lax, which already stops cross-site form posts, but the POS and
+   * the console will be served from sibling Render hosts and one day a real
+   * domain — so the rule is stated here rather than left to the cookie.
+   * A request with no Origin (server-to-server, curl, the test harness) is
+   * allowed; a browser always sends one on a cross-origin write.
+   */
+  const allowedOrigins = new Set(
+    opts.env.ALLOWED_ORIGINS.split(',')
+      .map((o) => o.trim().replace(/\/$/, ''))
+      .filter(Boolean),
+  );
+  const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+  app.addHook('onRequest', async (req) => {
+    if (!WRITE_METHODS.has(req.method)) return;
+    const origin = req.headers.origin;
+    if (!origin) return;
+    if (allowedOrigins.has(origin.replace(/\/$/, ''))) return;
+    const host = req.headers.host;
+    if (host && origin.replace(/\/$/, '').endsWith(`://${host}`)) return;
+    throw new AppError(403, 'ORIGIN_NOT_ALLOWED', 'Request origin is not allowed');
+  });
+
+  /**
+   * One completion line per request, with the query string stripped. Phone
+   * numbers, verification codes and search terms live in query strings.
+   */
+  app.addHook('onResponse', async (req, reply) => {
+    req.log.info(
+      {
+        method: req.method,
+        url: scrubUrl(req.url),
+        statusCode: reply.statusCode,
+        ms: Math.round(reply.elapsedTime),
+        accountId: req.auth?.accountId,
+        reqId: req.id,
+      },
+      'request completed',
+    );
+  });
+
   // Error envelope { error: { code, message, details? } } — CLAUDE.md §3.
   app.setErrorHandler((err: unknown, req, reply) => {
     if (err instanceof AppError) {
@@ -124,17 +187,40 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
         },
       });
     }
+    // A unique violation that reached here is a business conflict, not a
+    // server fault: 409 with the constraint name — never the value, which is
+    // what Postgres puts in `detail` (S2-01a).
+    const conflict = uniqueViolationToAppError(err);
+    if (conflict) {
+      req.log.warn({ pg: scrubPgError(err as never), reqId: req.id }, 'unique violation');
+      return reply
+        .status(conflict.statusCode)
+        .send({ error: { code: conflict.code, message: conflict.message, details: conflict.details } });
+    }
     const fe = err as FastifyError;
     if (fe.statusCode && fe.statusCode < 500) {
       return reply
         .status(fe.statusCode)
         .send({ error: { code: fe.code ?? 'BAD_REQUEST', message: fe.message } });
     }
-    app.reporter.report(err, { requestId: req.id, url: req.url });
-    req.log.error({ err }, 'request failed');
+    // Scrubbed both ways: the reporter is an external service, and the log is
+    // a hosted stream. A pg error is reduced to its structural fields.
+    const safeUrl = scrubUrl(req.url);
+    if (isPgError(err)) {
+      app.reporter.report(new Error('database error'), {
+        requestId: req.id,
+        url: safeUrl,
+        pg: scrubPgError(err),
+      });
+      req.log.error({ pg: scrubPgError(err), url: safeUrl, reqId: req.id }, 'request failed');
+    } else {
+      app.reporter.report(err, { requestId: req.id, url: safeUrl });
+      req.log.error({ err, url: safeUrl, reqId: req.id }, 'request failed');
+    }
     return reply.status(500).send({ error: { code: 'INTERNAL', message: 'Internal server error' } });
   });
 
+  await app.register(rateLimitPlugin);
   await app.register(sessionPlugin);
   await app.register(idempotencyPlugin);
 

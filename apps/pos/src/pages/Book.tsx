@@ -393,7 +393,7 @@ export default function Book() {
       let found: Member | null = null;
       if (typed) {
         try {
-          const res = await publicApi.memberTier(typed);
+          const res = await publicApi.memberTier(typed, getActiveBranch().id);
           if (res.found) {
             found = {
               id: res.memberId,

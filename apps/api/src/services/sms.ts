@@ -1,4 +1,5 @@
 import type { Logger } from 'pino';
+import { phoneHash } from '../lib/scrub';
 
 /**
  * SMS adapter seam (SCRUM-20): a pluggable provider interface behind
@@ -21,10 +22,18 @@ export interface SmsConfig {
   twilioFrom?: string;
 }
 
+/**
+ * The recipient is never logged in the clear (S2-01a) — only a stable hash,
+ * which still answers "did this number get its code?" without putting a
+ * customer's or a staff member's phone in a hosted log stream.
+ */
 function consoleSender(log: Logger): SmsSender {
   return {
+    // The dev adapter deliberately keeps the message: it IS how the setup and
+    // reset codes are delivered locally. The recipient is hashed.
     async send(phone, message) {
-      log.info({ sms: { phone, message } }, `SMS to ${phone}: ${message}`);
+      const to = phoneHash(phone);
+      log.info({ sms: { to, message } }, `SMS to ${to}: ${message}`);
     },
   };
 }
@@ -34,6 +43,7 @@ function twilioSender(sid: string, token: string, from: string, log: Logger): Sm
   const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
   return {
     async send(phone, message) {
+      const to = phoneHash(phone);
       const params = new URLSearchParams({ To: phone, Body: message });
       // A Messaging Service SID routes via the service; otherwise From number.
       params.set(from.startsWith('MG') ? 'MessagingServiceSid' : 'From', from);
@@ -44,11 +54,12 @@ function twilioSender(sid: string, token: string, from: string, log: Logger): Sm
       });
       if (!res.ok) {
         // Never log the message body here — it contains the verification code.
-        const detail = (await res.text().catch(() => '')).slice(0, 300);
-        log.error({ sms: { phone, status: res.status, detail } }, `Twilio send to ${phone} failed`);
+        // Twilio's own error text can quote the recipient, so it is dropped
+        // and only the HTTP status is kept.
+        log.error({ sms: { to, status: res.status } }, `Twilio send to ${to} failed`);
         throw new Error('SMS delivery failed');
       }
-      log.info({ sms: { phone } }, `SMS sent to ${phone} via Twilio`);
+      log.info({ sms: { to } }, `SMS sent to ${to} via Twilio`);
     },
   };
 }

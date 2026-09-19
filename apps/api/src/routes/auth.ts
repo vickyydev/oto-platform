@@ -16,6 +16,8 @@ import {
   unlockSession,
 } from '../services/auth';
 import { audit } from '../services/audit';
+import { limitPrincipal } from '../services/throttle';
+import { ipLimited } from '../plugins/rate-limit';
 import { verify } from '@node-rs/argon2';
 
 const PhoneSchema = z.string().min(6).max(32);
@@ -92,9 +94,20 @@ export async function authRoutes(app: App): Promise<void> {
   // SCRUM-20 — invited account setup: request the verification code…
   app.post(
     '/setup/start',
-    { schema: { description: 'Send the setup code to an invited account', body: z.object({ phone: PhoneSchema }) } },
+    {
+      config: ipLimited,
+      schema: { description: 'Send the setup code to an invited account', body: z.object({ phone: PhoneSchema }) },
+    },
     async (req) => {
       const { account: acc, phone } = await findAccountByPhone(app.db, req.body.phone);
+      // Counted for every phone, existing or not: an SMS costs money and a
+      // differing response would itself tell an attacker which phones exist.
+      await limitPrincipal(
+        app.db,
+        `setup:${phone}`,
+        app.env.RATE_LIMIT_CODE_MAX,
+        app.env.RATE_LIMIT_CODE_WINDOW_SECONDS,
+      );
       if (!acc || acc.status !== 'invited') {
         // Do not leak which phones exist — same response either way.
         return { ok: true };
@@ -108,6 +121,7 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/setup/complete',
     {
+      config: ipLimited,
       schema: {
         description: 'Verify phone with the code and set the first password',
         body: z.object({ phone: PhoneSchema, code: z.string().length(6), password: z.string().min(8) }),
@@ -116,7 +130,7 @@ export async function authRoutes(app: App): Promise<void> {
     async (req) => {
       const { account: acc } = await findAccountByPhone(app.db, req.body.phone);
       if (!acc || acc.status !== 'invited') throw errors.badRequest('No pending setup for this phone');
-      await consumeCode(app.db, acc.id, 'setup', req.body.code);
+      await consumeCode(app.db, acc.id, 'setup', req.body.code, app.env.CODE_MAX_ATTEMPTS);
       await setPassword(app.db, acc.id, req.body.password);
       await app.db
         .update(account)
@@ -137,9 +151,18 @@ export async function authRoutes(app: App): Promise<void> {
   // SCRUM-23 — password recovery.
   app.post(
     '/password-reset/request',
-    { schema: { description: 'Send a reset code to a verified phone', body: z.object({ phone: PhoneSchema }) } },
+    {
+      config: ipLimited,
+      schema: { description: 'Send a reset code to a verified phone', body: z.object({ phone: PhoneSchema }) },
+    },
     async (req) => {
       const { account: acc, phone } = await findAccountByPhone(app.db, req.body.phone);
+      await limitPrincipal(
+        app.db,
+        `reset:${phone}`,
+        app.env.RATE_LIMIT_CODE_MAX,
+        app.env.RATE_LIMIT_CODE_WINDOW_SECONDS,
+      );
       if (acc && acc.status === 'active' && acc.phoneVerifiedAt) {
         await issueCode(app.db, app.sms, acc.id, phone, 'password_reset', req.id);
       }
@@ -150,6 +173,7 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/password-reset/complete',
     {
+      config: ipLimited,
       schema: {
         description: 'Reset the password with the code; invalidates every session',
         body: z.object({ phone: PhoneSchema, code: z.string().length(6), password: z.string().min(8) }),
@@ -158,7 +182,7 @@ export async function authRoutes(app: App): Promise<void> {
     async (req) => {
       const { account: acc } = await findAccountByPhone(app.db, req.body.phone);
       if (!acc) throw errors.badRequest('Invalid code');
-      await consumeCode(app.db, acc.id, 'password_reset', req.body.code);
+      await consumeCode(app.db, acc.id, 'password_reset', req.body.code, app.env.CODE_MAX_ATTEMPTS);
       await setPassword(app.db, acc.id, req.body.password);
       await invalidateAllSessions(app.db, acc.id);
       await audit.record(app.db, {

@@ -194,7 +194,8 @@ export interface PublicCatalog {
 
 export const publicApi = {
   catalog: (branchCode: string) => api.get<PublicCatalog>(`/public/branches/${branchCode}/catalog`),
-  memberTier: (phone: string) =>
+  /** `branchCode` scopes the lookup to one operator — required by the API. */
+  memberTier: (phone: string, branchCode: string) =>
     api.get<
       | { found: false }
       | {
@@ -204,7 +205,9 @@ export const publicApi = {
           tierCode: string;
           preferredChannel: 'whatsapp' | 'telegram' | 'line' | null;
         }
-    >(`/public/member-tier?phone=${encodeURIComponent(phone)}`),
+    >(
+      `/public/member-tier?phone=${encodeURIComponent(phone)}&branch=${encodeURIComponent(branchCode)}`,
+    ),
   createBooking: (body: {
     branchCode: string;
     phone?: string;

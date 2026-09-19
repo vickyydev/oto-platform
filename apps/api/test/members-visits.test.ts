@@ -63,7 +63,7 @@ describe('SCRUM-31 — create and enrich', () => {
       payload: { phone: '+66 62 222 2333', nickname: 'Fern Again' },
     });
     expect(res.statusCode).toBe(409);
-    expect(res.json().error.code).toBe('MEMBER_EXISTS');
+    expect(res.json().error.code).toBe('MEMBER_PHONE_EXISTS');
   });
 
   it('enriches via PATCH', async () => {

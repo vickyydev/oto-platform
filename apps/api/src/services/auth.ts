@@ -12,6 +12,7 @@ import {
 import { newId, normalizePhone } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
+import { bumpWindow } from './throttle';
 import type { SmsSender } from './sms';
 import { hashToken, newSessionToken } from '../plugins/session';
 
@@ -65,6 +66,8 @@ export async function _resetThrottle(db: Db): Promise<void> {
 
 // --- Verification codes (SCRUM-20/23) --------------------------------------
 
+const CODE_TTL_MS = 10 * 60_000;
+
 const hashCode = (code: string): string => createHash('sha256').update(code).digest('hex');
 
 export async function issueCode(
@@ -81,8 +84,10 @@ export async function issueCode(
     accountId,
     purpose,
     codeHash: hashCode(code),
-    expiresAt: new Date(Date.now() + 10 * 60_000),
+    expiresAt: new Date(Date.now() + CODE_TTL_MS),
   });
+  // A newly issued code gets a fresh guess budget.
+  await throttleClear(db, [`code:${accountId}:${purpose}`]);
   void requestId;
   await sms.send(
     phone,
@@ -92,13 +97,22 @@ export async function issueCode(
   );
 }
 
-/** Verify + consume a single-use, time-limited code. Throws when invalid. */
+/**
+ * Verify + consume a single-use, time-limited code. Throws when invalid.
+ *
+ * A six-digit code is one in a million, which a script exhausts in minutes if
+ * guesses are free. After `maxAttempts` wrong ones every outstanding code for
+ * that account and purpose is invalidated (S2-01a), so the attacker has to go
+ * back through the per-phone rate limit to get another.
+ */
 export async function consumeCode(
   db: Db,
   accountId: string,
   purpose: 'setup' | 'password_reset',
   code: string,
+  maxAttempts = 5,
 ): Promise<void> {
+  const attemptKey = `code:${accountId}:${purpose}`;
   const rows = await db
     .select()
     .from(verificationCode)
@@ -112,12 +126,31 @@ export async function consumeCode(
     )
     .limit(1);
   const row = rows[0];
-  if (!row) throw errors.badRequest('Invalid code');
+  if (!row) {
+    // The window matches the code's own lifetime: a fresh code starts a
+    // fresh budget of guesses, it does not inherit the old one's.
+    const { current } = await bumpWindow(db, attemptKey, CODE_TTL_MS);
+    if (current >= maxAttempts) {
+      await db
+        .update(verificationCode)
+        .set({ consumedAt: new Date() })
+        .where(
+          and(
+            eq(verificationCode.accountId, accountId),
+            eq(verificationCode.purpose, purpose),
+            isNull(verificationCode.consumedAt),
+          ),
+        );
+      throw errors.badRequest('Too many wrong codes — request a new one');
+    }
+    throw errors.badRequest('Invalid code');
+  }
   if (row.expiresAt < new Date()) throw errors.badRequest('Code expired — request a new one');
   await db
     .update(verificationCode)
     .set({ consumedAt: new Date() })
     .where(eq(verificationCode.id, row.id));
+  await throttleClear(db, [attemptKey]);
 }
 
 // --- Accounts & sessions ----------------------------------------------------

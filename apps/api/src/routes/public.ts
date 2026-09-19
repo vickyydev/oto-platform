@@ -20,6 +20,7 @@ import {
 } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
+import { ipLimited } from '../plugins/rate-limit';
 import { audit } from '../services/audit';
 
 /**
@@ -46,6 +47,7 @@ export async function publicRoutes(app: App): Promise<void> {
   app.get(
     '/public/branches/:code/catalog',
     {
+      config: ipLimited,
       schema: {
         description: 'Public booking catalog: branch, tiers, active packages, rate mode',
         params: z.object({ code: z.string() }),
@@ -95,18 +97,29 @@ export async function publicRoutes(app: App): Promise<void> {
   app.get(
     '/public/member-tier',
     {
+      config: ipLimited,
       schema: {
         description: 'Customer self-identification: phone → nickname + verified tier only',
-        querystring: z.object({ phone: z.string() }),
+        // `branch` is required (S2-01a): phone is unique PER OPERATOR, so an
+        // unscoped lookup on a shared deployment could answer with another
+        // tenant's member. The booking site always knows its branch.
+        querystring: z.object({ phone: z.string(), branch: z.string() }),
       },
     },
     async (req) => {
+      const br = await loadBranchByCode(req.query.branch);
       const phone = normalizePhone(req.query.phone);
       if (!phone) return { found: false as const };
       const [m] = await app.db
         .select({ id: member.id, nickname: member.nickname, tierCode: member.tierCode, preferredChannel: member.preferredChannel })
         .from(member)
-        .where(and(eq(member.phone, phone), isNull(member.archivedAt)))
+        .where(
+          and(
+            eq(member.operatorId, br.operatorId),
+            eq(member.phone, phone),
+            isNull(member.archivedAt),
+          ),
+        )
         .limit(1);
       if (!m) return { found: false as const };
       return {
@@ -128,6 +141,9 @@ export async function publicRoutes(app: App): Promise<void> {
   app.post(
     '/public/bookings',
     {
+      // Tighter than the read endpoints: a booking writes rows and costs the
+      // park a held slot, so one address gets far fewer of them.
+      config: { rateLimit: { max: 20, timeWindow: 60_000 } },
       schema: {
         description: 'Create a customer booking; total computed server-side',
         body: z.object({

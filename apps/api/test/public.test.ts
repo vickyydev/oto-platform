@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { attendee, auditLog, booking } from '@oto/db';
+import { attendee, auditLog, booking, branch, operator } from '@oto/db';
+import { newId } from '@oto/shared';
 import { createTestContext, teardownAll, type TestContext } from './helpers';
 
 let ctx: TestContext;
@@ -37,7 +38,10 @@ describe('public catalog (customer /book site)', () => {
 
 describe('public member-tier lookup', () => {
   it('returns nickname + tier ONLY — never children or other PII', async () => {
-    const res = await ctx.app.inject({ method: 'GET', url: '/public/member-tier?phone=0811111111' });
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/public/member-tier?phone=0811111111&branch=hkt-central',
+    });
     const body = res.json();
     expect(body).toMatchObject({ found: true, nickname: 'Mali', tierCode: 'thai' });
     expect(body.children).toBeUndefined();
@@ -45,7 +49,32 @@ describe('public member-tier lookup', () => {
   });
 
   it('unknown phone → found:false', async () => {
-    const res = await ctx.app.inject({ method: 'GET', url: '/public/member-tier?phone=0600000000' });
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/public/member-tier?phone=0600000000&branch=hkt-central',
+    });
+    expect(res.json()).toEqual({ found: false });
+  });
+
+  // S2-01a: phone is unique PER OPERATOR, so the lookup must be scoped. An
+  // unscoped call is refused outright rather than answered from whichever
+  // tenant happens to match first.
+  it('requires the branch scope', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/public/member-tier?phone=0811111111' });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('VALIDATION');
+  });
+
+  it('does not answer from another operator', async () => {
+    const [other] = await ctx.db.insert(operator).values({ id: newId(), name: 'Other Co' }).returning();
+    const [otherBranch] = await ctx.db
+      .insert(branch)
+      .values({ id: newId(), operatorId: other!.id, name: 'Other Branch', code: 'other-one' })
+      .returning();
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/public/member-tier?phone=0811111111&branch=${otherBranch!.code}`,
+    });
     expect(res.json()).toEqual({ found: false });
   });
 });
