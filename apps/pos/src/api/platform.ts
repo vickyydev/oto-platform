@@ -1,5 +1,6 @@
 // Typed calls to the Sprint 1 API surface, with mapping between the API's
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
+import { newId as newRecordId } from '@oto/shared';
 import { api, idemKey } from './client';
 
 // --- auth / me -------------------------------------------------------------
@@ -101,8 +102,14 @@ export const membersApi = {
     api.get<{ members: ApiMember[] }>(`/members${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   archive: (id: string) => api.delete<{ ok: true }>(`/members/${id}`),
   get: (id: string) => api.get<{ member: ApiMember }>(`/members/${id}`),
+  /**
+   * The till mints the member's id (S2-01b). A retry through a dropped
+   * connection then carries the same id, and the API answers with the member
+   * that already exists instead of creating a second one — belt to the
+   * Idempotency-Key's braces, and the one that survives a client restart.
+   */
   create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' | 'line' }) =>
-    api.post<{ member: ApiMember }>('/members', body, { idempotencyKey: idemKey() }),
+    api.post<{ member: ApiMember }>('/members', { id: newRecordId(), ...body }, { idempotencyKey: idemKey() }),
   update: (id: string, patch: Record<string, unknown>) =>
     api.patch<{ member: ApiMember }>(`/members/${id}`, patch),
   addChild: (memberId: string, body: Record<string, unknown>) =>
@@ -116,10 +123,13 @@ export const membersApi = {
 };
 
 export const visitsApi = {
+  /** Client-minted id, for the reason given on membersApi.create. */
   create: (body: { memberId?: string | null; childIds: string[] }) =>
-    api.post<{ id: string; visitDate: string; status: string }>('/visits', body, {
-      idempotencyKey: idemKey(),
-    }),
+    api.post<{ id: string; visitDate: string; status: string }>(
+      '/visits',
+      { id: newRecordId(), ...body },
+      { idempotencyKey: idemKey() },
+    ),
 };
 
 // --- branches / catalog -----------------------------------------------------
