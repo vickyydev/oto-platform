@@ -1,7 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-20 (Sprint 2 plan v2 — the whole suite, in the owner's
-priority order; awaiting approval)_
+_Last updated: 2026-09-20 (building — S2-01a done, S2-01b next)_
 
 > **Resuming?** The precise checkpoint — what is done, what is pending in
 > order, and what the owner still has to supply — is in
@@ -42,55 +41,57 @@ priority order; awaiting approval)_
   `../architecture/DEVELOPMENT_PLAN.md` (how an agent builds it),
   `../architecture/PAYMENT_GATEWAY.md` (2C2P), `../architecture/DEVICE_INVENTORY.md`.
 
-**Nothing of Sprint 2 is built.** The Jira board is loaded and waiting: sprint
-"Sprint 2 - Complete build" (future state) holds the 24 stories under four
-epics with their sub-tasks, and the 177 pre-existing issues were labelled, not
-deleted (`SPRINT_2_JIRA_MAP.md`). Building starts at S2-01a / SCRUM-186 on the
-owner's go-ahead.
+**Building has started.** The Jira board holds sprint "Sprint 2 - Complete
+build" with the 24 stories under four epics and their sub-tasks; the 177
+pre-existing issues were labelled, not deleted (`SPRINT_2_JIRA_MAP.md`).
+**S2-01a (SCRUM-186) is done** on `feat/s2-01a-security-lock-model` — the
+role-assignment privilege hole, the lock model, the public-deploy fencing and
+the PII leaks, with 81 API tests green. **S2-01b (SCRUM-187) is next.**
 
 ## Waiting on the owner
 
-1. **Approval of `SPRINT_2_PLAN.md`**, including the "Deferred — owner
-   confirms" column of its contract-coverage table and Open decisions 29–32
-   (OTO App face clock-in on staging; the contract list; the Inbox brief
-   conflicts; gateway credentials).
-2. **Which gateway portal the park holds** — a 2C2P sandbox merchant
+1. **Which gateway portal the park holds** — a 2C2P sandbox merchant
    (developer.2c2p.com, the link the owner sent) or an SCB Developer Portal
    application — and its sandbox credentials into `.env` (`PGW_*`), never
    into the repository.
-3. The four gate PDFs and the voucher sample image dropped into
+2. The four gate PDFs and the voucher sample image dropped into
    `imports/_vendor-docs/` (content already captured); a printed sale
    receipt when convenient.
-4. Render account access — needed at S2-01c.
-5. Later: real dumps of Radar's and the wheel's databases; Pisell/Papaya
+3. Render account access — needed at S2-01c.
+4. Later: real dumps of Radar's and the wheel's databases; Pisell/Papaya
    credentials from Replit Secrets (history export before any cancellation);
    S3 contents; DNS for the `otoplay` domains; a Raspberry Pi 5 on the desk.
 
-## Next steps once approved, in order
+## Build order
 
-1. Create the Sprint 2 Jira tickets from `SPRINT_2_PLAN.md` (one issue per
-   ticket, lettered parts as sub-tasks; descriptions, acceptance criteria and
-   QA steps copied; statuses never changed by us).
-2. Build in the plan's order: S2-01 → S2-02 → S2-03 → S2-17a → **CP1** →
-   S2-04…S2-07 → **CP2** → S2-08…S2-11 → **CP3, POS play-test opens** →
-   S2-12…S2-15 → **CP4** → S2-17b/c → **CP5** → S2-18, S2-19 → **CP6** →
-   S2-16 → **CP7**. Every function committed as it lands; the ticket log in
-   `SPRINT_2_PROGRESS.md` updated in the same commit series.
-3. Sprint 3: live messaging channels, events tab and kiosk surfaces, staff
-   benefits checkout, migration rehearsals and cutover
-   (`../architecture/PLATFORM_PLAN.md` §12).
+S2-01 → S2-02 → S2-03 → S2-17a → **CP1** → S2-04…S2-07 → **CP2** →
+S2-08…S2-11 → **CP3, POS play-test opens** → S2-12…S2-15 → **CP4** →
+S2-17b/c → **CP5** → S2-18, S2-19 → **CP6** → S2-16 → **CP7**. (The full
+order with every lettered part is at the end of `SPRINT_2_PLAN.md`.) Every
+function committed as it lands; the ticket log in `SPRINT_2_PROGRESS.md`
+updated in the same commit series; Jira statuses never changed by us.
 
-## Known defects to fix first (S2-01a/b)
+## Known defects — the Sprint 1 list S2-01 exists to fix
 
-- `apps/api/src/routes/accounts.ts`: anyone holding `admin:role:assign` can
-  grant any role at any scope; temp-password and phone-change routes have the
-  same missing dominance check.
+Fixed in **S2-01a** (2026-09-20):
+
+- ~~`accounts.ts`: anyone holding `admin:role:assign` could grant any role at
+  any scope~~ — tenancy, scope-ownership and dominance rules now guard role
+  assignment, temp passwords, phone changes and permission reads.
+- ~~The POS inactivity lock signed the session out server-side~~ — it locks;
+  the session survives and the password unlocks it.
+- ~~Phone numbers reach the logs (request URL, SMS adapter, pg error
+  detail)~~ — URLs are scrubbed, the SMS adapter logs a hash, pg errors keep
+  only `code`/`constraint`.
+- ~~Fastify runs without `trustProxy`~~ — `TRUST_PROXY` hop count, and the
+  throttle counters moved from memory to Postgres so a restart no longer
+  clears a cooldown.
+
+Still open, in **S2-01b**:
+
 - No database transactions anywhere in `apps/api`; audit rows are not atomic
   with the change they describe.
-- The POS inactivity lock signs the session out server-side, which prevents
-  the offline unlock the target design requires.
-- Phone numbers reach the logs (request URL, SMS adapter, pg error detail);
-  the idempotency claim is not atomic; Fastify runs without `trustProxy`.
+- The idempotency claim is not atomic: the same key can run a handler twice.
 
 ## Working rules that are easy to forget
 

@@ -2,34 +2,27 @@
 
 ## Status
 
-- Current checkpoint: **ready to build. Plan v3 complete (24 tickets,
-  CP1-CP8) and loaded into Jira; waiting for the owner's go-ahead before the
-  first line of code.** Nothing of Sprint 2 is built.
-- Jira: sprint **"Sprint 2 - Complete build"** (id 3, future) on board 1 of
-  project SCRUM holds the 24 stories under four epics, with 16 sub-tasks;
-  the pre-existing 177 issues were labelled rather than deleted. Keys and the
+- Current checkpoint: **building. S2-01a (SCRUM-186) is code-complete on
+  `feat/s2-01a-security-lock-model`** — three commits, 81 API tests green,
+  typecheck/lint/build clean. Next in the execution order: S2-01b.
+- Jira: sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of project
+  SCRUM holds the 24 stories under four epics, with 16 sub-tasks; the
+  pre-existing 177 issues were labelled rather than deleted. Keys and the
   full account of what was done: `SPRINT_2_JIRA_MAP.md`.
-- Last completed step: plan v3 — the owner removed Sprint 3 (2026-09-20
-  later), so all the software lands in this sprint and what follows is
-  on-site testing. New tickets S2-20 events/parties/camps and kiosk, S2-21
-  staff benefits, S2-22 the production restore, S2-23 the Console as the
-  owner control surface, S2-24 box image and the on-site bring-up runbook;
-  the remaining proposal items folded into S2-09b, S2-14a, S2-14b, S2-15a;
-  S2-19 became the full Inbox. Earlier: plan v2 complete for the owner's 2026-09-20 direction
-  (POS + booth first, then OTO App, Radar, Inbox; 2C2P sandbox for real QR;
-  real device protocols) with `PAYMENT_GATEWAY.md` and `DEVICE_INVENTORY.md`
-  finished and their facts carried into the tickets (see "Done on
-  2026-09-20").
-- Next step: the owner's approval of plan v3; on approval create the 24 Jira
-  tickets and start S2-01a.
+- Last completed step: S2-01a — the role-assignment privilege hole, the lock
+  model, the public-deploy fencing and the PII leaks (see the ticket log).
+- Next step: **S2-01b** (SCRUM-187): transactions (`withTx`), the schema
+  move to `core/crm/pos/promo/booth/analytics/edge`, the atomic idempotency
+  claim, the extended permission vocabulary, and the pool/process hardening.
+  Then S2-01c (Render deploy, owner-blockable on the Render account).
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
-  source), `docs/briefs/OWNER_DIRECTION.md` (section 2026-09-20 wins),
-  `docs/architecture/DEVICE_INVENTORY.md`, `docs/briefs/AGENCY_PROPOSAL.md`
-  §6–§7, `docs/features/inbox.md`, and the two research notes in
-  `docs/architecture/research/`. Work on `main` (docs only so far); commit per
+  source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
+  recipe, plus `docs/briefs/OWNER_DIRECTION.md` (section 2026-09-20 wins).
+  Branch `feat/s2-01a-security-lock-model` off `main`; commit per
   `CONTRIBUTING.md`, no attribution lines; never commit `imports/` beyond its
-  READMEs.
+  READMEs. `pnpm test` needs no Docker — the API tests start an embedded
+  Postgres per file.
 
 ## Done on 2026-09-20 (all committed)
 
@@ -85,12 +78,11 @@ AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
 1. **Done 2026-09-20:** the Jira board is set up — sprint 3 "Sprint 2 -
    Complete build", four epics, 24 stories in execution order, 16 sub-tasks,
    old issues labelled and explained (`SPRINT_2_JIRA_MAP.md`).
-2. **Waiting on the owner's go-ahead.** Nothing is built until he says so.
-3. On his word: start the sprint in Jira (it is in *future* state), then
-   S2-01a (SCRUM-186). From then on the ticket log below is the record,
-   updated in the same commit series as the code, and an evidence comment
-   goes on each story or sub-task as its work merges. We never change a
-   ticket's status.
+2. **Done 2026-09-20:** S2-01a (SCRUM-186) — see the ticket log.
+3. **Next: S2-01b** (SCRUM-187) then S2-01c (SCRUM-188, owner-blockable on
+   the Render account). The ticket log below is the record, updated in the
+   same commit series as the code, and an evidence comment goes on each story
+   or sub-task as its work merges. We never change a ticket's status.
 
 ## Owner inputs needed (asked 2026-09-20)
 
@@ -132,8 +124,93 @@ AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
 
 ## Ticket log
 
-(Empty until building starts. One entry per ticket: ported from, added per
-the plan, UI additions, tests, deferred/notes — as in `SPRINT_1_PROGRESS.md`.)
+### S2-01a — Security and lock-model fixes (SCRUM-186) — **done**
+
+Branch `feat/s2-01a-security-lock-model`; commits `84010cb`, `12753a3`,
+`52a7a11`, `d130cb1`. 81 API tests + 19 shared tests green; typecheck, lint
+and build clean.
+
+**Role assignment and account actions.** New
+`apps/api/src/services/access-control.ts` holds the three rules the plan
+names — tenancy (another operator's account is **404**, never 403, so an id
+cannot be confirmed), scope ownership (a branch/department must belong to the
+caller's operator; the platform-wide scope only from a platform-wide caller),
+and dominance (you cannot grant, or strip, a role carrying a permission you
+do not hold at a covering scope). Applied to POST and DELETE
+`/accounts/:id/role-assignments`, PATCH `/accounts/:id`,
+`/accounts/:id/temp-password` and GET `/accounts/:id/permissions`. Codes:
+`ROLE_NOT_DOMINATED`, `SCOPE_NOT_OWNED`, `ACCOUNT_NOT_FOUND`. Roles are now
+validated **before** the account row is inserted, so a bad role no longer
+leaves an account behind.
+
+Order note: the platform-wide scope (`scopeType: operator`, `scopeId: null`)
+is refused by scope ownership **before** dominance is weighed, so that case
+answers `SCOPE_NOT_OWNED`; an operator-scoped grant of a role the caller does
+not hold answers `ROLE_NOT_DOMINATED` as the ticket describes. Both are
+covered by tests.
+
+**Lock model.** `session` gained `class`, `locked_at`, `revoked_at`,
+`revoked_reason` (migration `0003_session_lock_model`, plus a CHECK on the
+class). `POST /auth/lock` and `POST /auth/unlock` (unlock re-verifies the
+password against the SAME session, under the sign-in throttle keyed
+`unlock:<sessionId>` and `unlock-account:<accountId>`). Sign-out and force
+sign-out **revoke** rather than delete, so "who ended this session, when and
+why" survives; `loadAuth` refuses a revoked session like an expired one. On
+the POS, inactivity now locks: the lock screen names who is signed in and
+asks only for the password, a 423 from any call puts the POS into that
+state, and a reload inside a locked session comes back locked
+(`/me.sessionLocked`). Sign out is the only user sign-out. Inactivity
+timings moved from `mockApi.ts` to `apps/pos/src/auth/timings.ts`.
+
+**Public-deploy security.** `TRUST_PROXY` (hop count) decides `req.ip`; with
+it at 0 a forged `X-Forwarded-For` cannot move a caller into a fresh bucket.
+The sign-in throttle and the new rate limits both count in Postgres
+(`auth_throttle`, migrations `0003`/`0004`), so a Render restart no longer
+clears a cooldown — the Sprint 1 counters were a `Map`. Two buckets by
+design: a tight per-phone bucket first (`limitPrincipal`, 5 in 15 min) and a
+generous per-IP bucket behind it (`@fastify/rate-limit` on a Postgres store,
+120/min), because the mall shares very few public addresses. Five wrong
+setup/reset codes invalidate every outstanding code for that account and
+purpose; a newly issued code starts a fresh budget. Origin check on
+state-changing requests (`ALLOWED_ORIGINS`, same-origin allowed, no Origin
+allowed). `x-request-id` only honoured as `^[A-Za-z0-9._-]{8,64}$`.
+`findAccountByPhone` takes an optional operator, and `/public/member-tier`
+now **requires** its branch — phone is unique per operator, so the unscoped
+lookup could have answered from another tenant. `mustChangePassword` and the
+session lock are enforced in `requireAuth`, not only `requirePermission`,
+with a small exempt list (sign-out, lock, unlock, change-password, GET `/me`
+and `/me/permissions`) — otherwise a temp-password account reached every
+requireAuth-only route.
+
+**PII.** Fastify's own request logging is off in favour of one completion
+line per request with the query string stripped (`scrubUrl`); the error
+reporter gets the same scrubbed URL; the SMS adapter logs `phoneHash` only
+(the console adapter still prints the message — that is how dev codes are
+delivered); pg errors are reduced to `code`/`constraint`/`table`/`routine`
+before reaching a log or the reporter (`detail` is where Postgres puts
+`Key (phone)=(+66…)`); a unique violation becomes a typed 409 naming the
+constraint, never the value. `MEMBER_EXISTS`/`ACCOUNT_EXISTS` renamed to
+`MEMBER_PHONE_EXISTS`/`ACCOUNT_PHONE_EXISTS` so the pre-check and the racing
+path answer with one code.
+
+**Denials.** Every refusal by a known caller writes an `access.denied` audit
+row (code, message, method, scrubbed URL); `GET /audit` gained an `action`
+filter; the Login Users panel shows the last ten as "Recent denials", plus a
+per-account session list and "Sign out everywhere".
+
+**UI additions** (CLAUDE.md §7.2): locked state on the lock screen; Sessions
+dialog, "Sign out everywhere" and "Recent denials" on the Login Users panel.
+
+**Tests** (`apps/api/test/security.test.ts`, 17 cases): dominance (three
+refusals), denial rows, forged XFF (nine forged addresses, one bucket keyed
+`ip:127.0.0.1`), throttle surviving an api rebuild on the same database,
+pg-error redaction from a 23505 fixture, duplicate member → 409 without the
+phone, per-phone reset limit, code invalidation, origin refusal, request-id
+validation, locked and temp-password sessions, force sign-out. `helpers.ts`
+gained `restart()` and per-test env overrides.
+
+**Deferred to S2-01b, as the ticket says:** transactions (`withTx`), the
+schema move, and the atomic idempotency claim.
 
 ## Deviations recorded
 
