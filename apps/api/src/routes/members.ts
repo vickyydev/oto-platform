@@ -9,7 +9,11 @@ import { opCtx, withTx } from '../services/tx';
 
 const ChildBody = z.object({
   name: z.string().min(1),
-  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  dateOfBirth: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
   ageYears: z.number().int().min(0).max(17).optional().nullable(),
   allergies: z.string().optional().nullable(),
   medicalNotes: z.string().optional().nullable(),
@@ -68,7 +72,8 @@ async function memberWithChildren(app: App, memberId: string) {
     .limit(1);
   // An expired document no longer entitles the discounted rate: the POS sees
   // no verification and asks for fresh proof (the row itself stays for audit).
-  const active = verification && !isEvidenceExpired(verification.evidenceExpiresAt) ? verification : null;
+  const active =
+    verification && !isEvidenceExpired(verification.evidenceExpiresAt) ? verification : null;
   return {
     id: m.id,
     phone: m.phone,
@@ -111,7 +116,11 @@ export async function memberRoutes(app: App): Promise<void> {
         .select()
         .from(member)
         .where(
-          and(eq(member.operatorId, auth.operatorId), eq(member.phone, phone), isNull(member.archivedAt)),
+          and(
+            eq(member.operatorId, auth.operatorId),
+            eq(member.phone, phone),
+            isNull(member.archivedAt),
+          ),
         )
         .limit(1);
       if (!m) return { member: null };
@@ -122,7 +131,13 @@ export async function memberRoutes(app: App): Promise<void> {
   // Admin list/search.
   app.get(
     '/',
-    { config: { permission: 'pos:member:read' }, schema: { description: 'List/search members', querystring: z.object({ q: z.string().optional() }) } },
+    {
+      config: { permission: 'pos:member:read' },
+      schema: {
+        description: 'List/search members',
+        querystring: z.object({ q: z.string().optional() }),
+      },
+    },
     async (req) => {
       const auth = req.requireAuth();
       const base = and(eq(member.operatorId, auth.operatorId), isNull(member.archivedAt));
@@ -130,7 +145,15 @@ export async function memberRoutes(app: App): Promise<void> {
         ? await app.db
             .select()
             .from(member)
-            .where(and(base, or(ilike(member.nickname, `%${req.query.q}%`), ilike(member.phone, `%${req.query.q}%`))))
+            .where(
+              and(
+                base,
+                or(
+                  ilike(member.nickname, `%${req.query.q}%`),
+                  ilike(member.phone, `%${req.query.q}%`),
+                ),
+              ),
+            )
             .limit(50)
         : await app.db.select().from(member).where(base).limit(50);
       // Full objects (children + active verification) — the admin panel edits in place.
@@ -142,7 +165,10 @@ export async function memberRoutes(app: App): Promise<void> {
   // Soft delete (archive) — no hard deletes of business records (CLAUDE.md §3).
   app.delete(
     '/:id',
-    { config: { permission: 'pos:member:update' }, schema: { description: 'Archive a member', params: z.object({ id: z.string().uuid() }) } },
+    {
+      config: { permission: 'pos:member:update' },
+      schema: { description: 'Archive a member', params: z.object({ id: z.string().uuid() }) },
+    },
     async (req) => {
       const auth = req.requireAuth();
       const [before] = await app.db
@@ -151,24 +177,32 @@ export async function memberRoutes(app: App): Promise<void> {
         .where(and(eq(member.id, req.params.id), eq(member.operatorId, auth.operatorId)))
         .limit(1);
       if (!before) throw errors.notFound('Member not found');
-      await app.db.update(member).set({ archivedAt: new Date() }).where(eq(member.id, req.params.id));
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: auth.branchId,
-        action: 'member.archive',
-        entityType: 'member',
-        entityId: req.params.id,
-        before,
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'member.archive', async (tx) => {
+        await tx.update(member).set({ archivedAt: new Date() }).where(eq(member.id, req.params.id));
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: auth.branchId,
+          action: 'member.archive',
+          entityType: 'member',
+          entityId: req.params.id,
+          before,
+          requestId: req.id,
+        });
+        return { ok: true as const };
       });
-      return { ok: true };
     },
   );
 
   app.get(
     '/:id',
-    { config: { permission: 'pos:member:read' }, schema: { description: 'Member detail with children', params: z.object({ id: z.string().uuid() }) } },
+    {
+      config: { permission: 'pos:member:read' },
+      schema: {
+        description: 'Member detail with children',
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
     async (req) => {
       req.requireAuth();
       const m = await memberWithChildren(app, req.params.id);
@@ -292,17 +326,23 @@ export async function memberRoutes(app: App): Promise<void> {
         if (!p) throw errors.badRequest('Invalid phone number');
         patch.phone = p;
       }
-      const [after] = await app.db.update(member).set(patch).where(eq(member.id, req.params.id)).returning();
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: auth.branchId,
-        action: 'member.update',
-        entityType: 'member',
-        entityId: req.params.id,
-        before,
-        after,
-        requestId: req.id,
+      await withTx(app.db, opCtx(req), 'member.update', async (tx) => {
+        const [after] = await tx
+          .update(member)
+          .set(patch)
+          .where(eq(member.id, req.params.id))
+          .returning();
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: auth.branchId,
+          action: 'member.update',
+          entityType: 'member',
+          entityId: req.params.id,
+          before,
+          after,
+          requestId: req.id,
+        });
       });
       return { member: await memberWithChildren(app, req.params.id) };
     },
@@ -333,7 +373,13 @@ export async function memberRoutes(app: App): Promise<void> {
       const [m] = await app.db
         .select()
         .from(member)
-        .where(and(eq(member.id, req.params.id), eq(member.operatorId, auth.operatorId), isNull(member.archivedAt)))
+        .where(
+          and(
+            eq(member.id, req.params.id),
+            eq(member.operatorId, auth.operatorId),
+            isNull(member.archivedAt),
+          ),
+        )
         .limit(1);
       if (!m) throw errors.notFound('Member not found');
 
@@ -347,37 +393,43 @@ export async function memberRoutes(app: App): Promise<void> {
 
       const expires = new Date(`${req.body.evidenceExpiresAt}T00:00:00Z`);
       if (isEvidenceExpired(expires)) {
-        throw errors.badRequest('The document has already expired — it cannot verify a discounted rate');
+        throw errors.badRequest(
+          'The document has already expired — it cannot verify a discounted rate',
+        );
       }
 
       const id = newId();
-      await app.db.insert(memberTierVerification).values({
-        id,
-        memberId: m.id,
-        fromTier: m.tierCode,
-        toTier: req.body.toTier,
-        evidenceType: req.body.evidenceType,
-        evidenceExpiresAt: expires,
-        verifiedByAccountId: auth.accountId,
-        branchId: auth.branchId,
-        note: req.body.note ?? null,
-      });
-      await app.db.update(member).set({ tierCode: req.body.toTier }).where(eq(member.id, m.id));
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: auth.branchId,
-        action: 'member.tier_verify',
-        entityType: 'member_tier_verification',
-        entityId: id,
-        before: { tierCode: m.tierCode },
-        after: {
+      // The evidence and the tier it grants are one act: a member must never
+      // hold a discounted tier with no document behind it, or the reverse.
+      await withTx(app.db, opCtx(req), 'member.tier_verify', async (tx) => {
+        await tx.insert(memberTierVerification).values({
+          id,
           memberId: m.id,
+          fromTier: m.tierCode,
           toTier: req.body.toTier,
           evidenceType: req.body.evidenceType,
-          evidenceExpiresAt: req.body.evidenceExpiresAt,
-        },
-        requestId: req.id,
+          evidenceExpiresAt: expires,
+          verifiedByAccountId: auth.accountId,
+          branchId: auth.branchId,
+          note: req.body.note ?? null,
+        });
+        await tx.update(member).set({ tierCode: req.body.toTier }).where(eq(member.id, m.id));
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: auth.branchId,
+          action: 'member.tier_verify',
+          entityType: 'member_tier_verification',
+          entityId: id,
+          before: { tierCode: m.tierCode },
+          after: {
+            memberId: m.id,
+            toTier: req.body.toTier,
+            evidenceType: req.body.evidenceType,
+            evidenceExpiresAt: req.body.evidenceExpiresAt,
+          },
+          requestId: req.id,
+        });
       });
       return { member: await memberWithChildren(app, m.id) };
     },
@@ -387,7 +439,10 @@ export async function memberRoutes(app: App): Promise<void> {
   // member who checked it, branch and timestamp (newest first).
   app.get(
     '/tier-verifications',
-    { config: { permission: 'pos:member:read' }, schema: { description: 'List tier verification records for record checking' } },
+    {
+      config: { permission: 'pos:member:read' },
+      schema: { description: 'List tier verification records for record checking' },
+    },
     async (req) => {
       const auth = req.requireAuth();
       const rows = await app.db
@@ -441,29 +496,31 @@ export async function memberRoutes(app: App): Promise<void> {
       const [m] = await app.db.select().from(member).where(eq(member.id, req.params.id)).limit(1);
       if (!m || m.operatorId !== auth.operatorId) throw errors.notFound('Member not found');
       const id = newId();
-      await app.db.insert(child).values({
-        id,
-        memberId: req.params.id,
-        name: req.body.name.trim(),
-        dateOfBirth: req.body.dateOfBirth ?? null,
-        ageYears: req.body.ageYears ?? null,
-        allergies: req.body.allergies ?? null,
-        medicalNotes: req.body.medicalNotes ?? null,
-        medicalAlert: req.body.medicalAlert ?? Boolean(req.body.allergies),
-        dietary: req.body.dietary ?? null,
-        foodRestrictions: req.body.foodRestrictions ?? null,
-        notes: req.body.notes ?? null,
-        consentRecordedAt: new Date(),
-      });
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: auth.branchId,
-        action: 'child.create',
-        entityType: 'child',
-        entityId: id,
-        after: req.body,
-        requestId: req.id,
+      await withTx(app.db, opCtx(req), 'child.create', async (tx) => {
+        await tx.insert(child).values({
+          id,
+          memberId: req.params.id,
+          name: req.body.name.trim(),
+          dateOfBirth: req.body.dateOfBirth ?? null,
+          ageYears: req.body.ageYears ?? null,
+          allergies: req.body.allergies ?? null,
+          medicalNotes: req.body.medicalNotes ?? null,
+          medicalAlert: req.body.medicalAlert ?? Boolean(req.body.allergies),
+          dietary: req.body.dietary ?? null,
+          foodRestrictions: req.body.foodRestrictions ?? null,
+          notes: req.body.notes ?? null,
+          consentRecordedAt: new Date(),
+        });
+        await audit.record(app.db, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: auth.branchId,
+          action: 'child.create',
+          entityType: 'child',
+          entityId: id,
+          after: req.body,
+          requestId: req.id,
+        });
       });
       const [c] = await app.db.select().from(child).where(eq(child.id, id)).limit(1);
       return { child: serializeChild(c!) };
@@ -482,9 +539,17 @@ export async function memberRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      const [before] = await app.db.select().from(child).where(eq(child.id, req.params.childId)).limit(1);
+      const [before] = await app.db
+        .select()
+        .from(child)
+        .where(eq(child.id, req.params.childId))
+        .limit(1);
       if (!before) throw errors.notFound('Child not found');
-      const [owner] = await app.db.select().from(member).where(eq(member.id, before.memberId)).limit(1);
+      const [owner] = await app.db
+        .select()
+        .from(member)
+        .where(eq(member.id, before.memberId))
+        .limit(1);
       if (!owner || owner.operatorId !== auth.operatorId) throw errors.notFound('Child not found');
       const patch: Partial<typeof child.$inferInsert> = {};
       const b = req.body;
@@ -500,19 +565,25 @@ export async function memberRoutes(app: App): Promise<void> {
       if (b.dietary !== undefined) patch.dietary = b.dietary;
       if (b.foodRestrictions !== undefined) patch.foodRestrictions = b.foodRestrictions;
       if (b.notes !== undefined) patch.notes = b.notes;
-      const [after] = await app.db.update(child).set(patch).where(eq(child.id, req.params.childId)).returning();
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: auth.branchId,
-        action: 'child.update',
-        entityType: 'child',
-        entityId: req.params.childId,
-        before,
-        after,
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'child.update', async (tx) => {
+        const [after] = await tx
+          .update(child)
+          .set(patch)
+          .where(eq(child.id, req.params.childId))
+          .returning();
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: auth.branchId,
+          action: 'child.update',
+          entityType: 'child',
+          entityId: req.params.childId,
+          before,
+          after,
+          requestId: req.id,
+        });
+        return { child: serializeChild(after!) };
       });
-      return { child: serializeChild(after!) };
     },
   );
 }
