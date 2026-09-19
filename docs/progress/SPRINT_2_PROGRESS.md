@@ -59,6 +59,12 @@
 
 ## Pending — in this order
 
+_Checkpoint 2026-09-20 (second session): items 1, 2 and 4 are being written
+by agents that save their files incrementally (`PAYMENT_GATEWAY.md`,
+`DEVICE_INVENTORY.md` §2/§4/§9, `DEVELOPMENT_PLAN.md`); if a file exists in
+DRAFT state, finish it from its own headings rather than restarting. S2-06
+already carries the researched printer/scanner facts (commit 460779c)._
+
 1. **Re-run the 2C2P research** (agent cut off by the session limit before
    writing): developer.2c2p.com — API 4.x Payment Token, Do Payment for
    PromptPay/Thai QR (channel codes, `type: "URL"` vs raw payload, expiry),
