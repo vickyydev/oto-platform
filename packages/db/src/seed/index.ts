@@ -522,13 +522,31 @@ export async function seed(db: Db = getDb()): Promise<void> {
   console.log('Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog.');
 }
 
-// Run directly: `pnpm db:seed`, or `--platform-only` for the sync a deploy
-// runs against a real database (system roles and their permissions, nothing
-// demo).
+/**
+ * Run directly. One command is correct on every deployment, because the
+ * deployment says which it is:
+ *
+ *   SEED_PROFILE=staging     the demo tenant as well, so there is something
+ *                            to sign in as and play with
+ *   SEED_PROFILE=production  the platform's own rows only — system roles and
+ *                            their permissions. A real branch's data arrives
+ *                            by restore (S2-22), never from a fixture file.
+ *
+ * `--platform-only` forces the second regardless, and `--demo` the first, for
+ * the times a person wants one without changing the environment.
+ */
 const isMain = process.argv[1]?.replace(/\\/g, '/').endsWith('seed/index.ts');
 if (isMain) {
-  const run = process.argv.includes('--platform-only') ? platformSync() : seed();
-  run
+  const forcedPlatform = process.argv.includes('--platform-only');
+  const forcedDemo = process.argv.includes('--demo');
+  const profile = process.env.SEED_PROFILE ?? 'staging';
+  const platformOnly = forcedPlatform || (!forcedDemo && profile === 'production');
+  console.log(
+    platformOnly
+      ? `Platform sync only (SEED_PROFILE=${profile}): system roles and permissions.`
+      : `Full seed (SEED_PROFILE=${profile}): platform rows plus the demo tenant.`,
+  );
+  (platformOnly ? platformSync() : seed())
     .then(() => closeDb())
     .catch((err) => {
       console.error(err);

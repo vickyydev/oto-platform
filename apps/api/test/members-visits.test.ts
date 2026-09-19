@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, child, memberTierVerification, visit, visitChild } from '@oto/db';
+import { auditLog, child, member, memberTierVerification, operator, visit, visitChild } from '@oto/db';
 import { newId } from '@oto/shared';
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
@@ -174,7 +174,7 @@ describe('SCRUM-32 — children and the visit draft', () => {
   });
 });
 
-describe('Tier verification — proof checked at the counter (client extension)', () => {
+describe('Tier verification — proof checked at the counter (beyond the prototype)', () => {
   let memberId: string;
 
   it('records the verification with the staff account stamped server-side', async () => {
@@ -288,5 +288,138 @@ describe('Tier verification — proof checked at the counter (client extension)'
       .json()
       .verifications.find((v: { member: { phone: string } }) => v.member.phone === '+66633335555');
     expect(row.expired).toBe(true);
+  });
+});
+
+/**
+ * S2-01d, finding B4 — a member id is not permission to read that member.
+ * Ids travel: into a copied URL, a support request, an audit row, the memory
+ * of somebody who used to work at the other operator. Reception here holds
+ * every member and child permission there is, and still must not reach a
+ * record belonging to another operator.
+ *
+ * Every refusal is 404 and not 403. The existence of another tenant's record
+ * is not ours to confirm, and the answer must be the same as for an id that
+ * was never real.
+ */
+describe('tenancy — another operator\'s member (S2-01d)', () => {
+  let strangerMemberId: string;
+  let strangerChildId: string;
+
+  beforeAll(async () => {
+    const [other] = await ctx.db
+      .insert(operator)
+      .values({ id: newId(), name: 'Other Park Co' })
+      .returning();
+    const [m] = await ctx.db
+      .insert(member)
+      .values({
+        id: newId(),
+        operatorId: other!.id,
+        phone: '+66899999999',
+        nickname: 'Not ours',
+        notes: 'Reception at the other operator wrote this',
+      })
+      .returning();
+    strangerMemberId = m!.id;
+    const [c] = await ctx.db
+      .insert(child)
+      .values({
+        id: newId(),
+        memberId: strangerMemberId,
+        name: 'Not our child',
+        // The one class of data that must never cross a tenancy boundary.
+        allergies: 'Cashew — EpiPen',
+        medicalNotes: 'Asthma inhaler in the blue bag',
+        medicalAlert: true,
+      })
+      .returning();
+    strangerChildId = c!.id;
+  });
+
+  it('does not read the member, the notes or the medical data by id', async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/members/${strangerMemberId}`,
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('NOT_FOUND');
+    expect(res.body).not.toContain('Cashew');
+    expect(res.body).not.toContain('Asthma');
+  });
+
+  it('does not find the member by phone', async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/members/lookup?phone=0899999999',
+      headers: { cookie },
+    });
+    expect(res.json().member).toBeNull();
+  });
+
+  it('does not list the member', async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/members?q=Not ours',
+      headers: { cookie },
+    });
+    expect(res.json().members).toHaveLength(0);
+  });
+
+  it('does not enrich or archive the member', async () => {
+    const patched = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/members/${strangerMemberId}`,
+      headers: { cookie },
+      payload: { notes: 'overwritten' },
+    });
+    expect(patched.statusCode).toBe(404);
+
+    const archived = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/members/${strangerMemberId}`,
+      headers: { cookie },
+    });
+    expect(archived.statusCode).toBe(404);
+
+    const [after] = await ctx.db.select().from(member).where(eq(member.id, strangerMemberId));
+    expect(after!.notes).toBe('Reception at the other operator wrote this');
+    expect(after!.archivedAt).toBeNull();
+  });
+
+  it('does not upgrade the member to a discounted tier', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/members/${strangerMemberId}/tier-verification`,
+      headers: { cookie },
+      payload: { toTier: 'thai', evidenceType: 'Thai ID', evidenceExpiresAt: '2030-01-01' },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('does not add a child to the member', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/members/${strangerMemberId}/children`,
+      headers: { cookie },
+      payload: { name: 'Planted' },
+    });
+    expect(res.statusCode).toBe(404);
+    const rows = await ctx.db.select().from(child).where(eq(child.memberId, strangerMemberId));
+    expect(rows).toHaveLength(1);
+  });
+
+  it('does not edit the child, whose id carries no operator of its own', async () => {
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/members/children/${strangerChildId}`,
+      headers: { cookie },
+      payload: { allergies: 'none' },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('NOT_FOUND');
+    const [after] = await ctx.db.select().from(child).where(eq(child.id, strangerChildId));
+    expect(after!.allergies).toBe('Cashew — EpiPen');
   });
 });

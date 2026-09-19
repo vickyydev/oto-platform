@@ -260,7 +260,14 @@ export const adminApi = {
     phone: string;
     employeeName?: string;
     roles: Array<{ roleName: string; scopeType: string; scopeId: string | null }>;
-  }) => api.post<{ id: string; status: string }>('/accounts', body, { idempotencyKey: idemKey() }),
+  }) =>
+    /** `codeSent` is false when the account was created but the text did not
+     *  go out — the account exists and the code can be re-sent (S2-01c). */
+    api.post<{ id: string; status: string; codeSent: boolean; warning?: string }>(
+      '/accounts',
+      body,
+      { idempotencyKey: idemKey() },
+    ),
   updateAccount: (id: string, patch: { status?: 'active' | 'inactive'; phone?: string }) =>
     api.patch<{ ok: true }>(`/accounts/${id}`, patch),
   tempPassword: (id: string) => api.post<{ temporaryPassword: string }>(`/accounts/${id}/temp-password`),
@@ -305,7 +312,11 @@ export const adminApi = {
     api.post<{ id: string }>('/operators', { name }, { idempotencyKey: idemKey() }),
   archiveOperator: (id: string) => api.patch<{ ok: true }>(`/operators/${id}`, { archived: true }),
   assignOperatorAdmin: (id: string, body: { phone: string; name: string }) =>
-    api.post<{ accountId: string }>(`/operators/${id}/administrators`, body, { idempotencyKey: idemKey() }),
+    api.post<{ accountId: string; codeSent: boolean; warning?: string }>(
+      `/operators/${id}/administrators`,
+      body,
+      { idempotencyKey: idemKey() },
+    ),
 };
 
 // --- ops: staging-only controls (S2-01c) ------------------------------------

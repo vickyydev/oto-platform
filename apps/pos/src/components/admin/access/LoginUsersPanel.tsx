@@ -148,14 +148,23 @@ export function LoginUsersPanel() {
         newRole === 'operator_admin'
           ? { scopeType: 'operator', scopeId: null }
           : { scopeType: 'branch', scopeId: branch?.apiId ?? null };
-      await adminApi.createAccount({
+      const res = await adminApi.createAccount({
         phone: newPhone,
         employeeName: newName.trim(),
         roles: [{ roleName: newRole, ...scope }],
       });
+      // The code goes to the phone on every deployment — no log to fall back
+      // on — so the toast tells reception what to tell the person in front of
+      // them. Ten minutes is CODE_TTL_MS in apps/api/src/services/auth.ts.
+      // The account exists either way; only the text may have failed, and
+      // saying it went when it did not leaves someone waiting for nothing.
       toast({
         title: 'Account invited',
-        description: 'The setup code was sent via SMS (dev: see the API console log).',
+        description: res.codeSent
+          ? 'A six-digit setup code has been texted to that number. It lasts 10 minutes and works once — they enter it on the lock screen to set their password.'
+          : (res.warning ??
+            'The account was created, but the setup code could not be texted. Send it again from the lock screen.'),
+        variant: res.codeSent ? undefined : 'destructive',
       });
       setCreateOpen(false);
       setNewName('');

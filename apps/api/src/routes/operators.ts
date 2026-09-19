@@ -7,7 +7,7 @@ import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { opCtx, withTx } from '../services/tx';
 import { isPlatformWide } from '../services/permissions';
-import { issueCode } from '../services/auth';
+import { deliverCode, mintCode, type PendingCode } from '../services/auth';
 
 /** SCRUM-27 — platform admin: operators and their administrators. */
 export async function operatorRoutes(app: App): Promise<void> {
@@ -118,7 +118,10 @@ export async function operatorRoutes(app: App): Promise<void> {
       if (!adminRole) throw errors.badRequest('operator_admin role missing — seed the database');
       // Employee, account, the operator_admin grant and the setup code are
       // one act: a half-made administrator is an account nobody can finish.
-      return withTx(app.db, opCtx(req), 'operator.assign_admin', async (tx) => {
+      // Sending the code is not part of that act (see `mintCode`), so it is
+      // carried out of the transaction and delivered after the commit.
+      let pending!: PendingCode;
+      const created = await withTx(app.db, opCtx(req), 'operator.assign_admin', async (tx) => {
         await tx
           .insert(employee)
           .values({ id: employeeId, operatorId: req.params.id, name: req.body.name, phone });
@@ -132,7 +135,7 @@ export async function operatorRoutes(app: App): Promise<void> {
           scopeType: 'operator',
           scopeId: req.params.id,
         });
-        await issueCode(tx, app.sms, accountId, phone, 'setup', req.id);
+        pending = await mintCode(tx, accountId, phone, 'setup');
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: req.params.id,
@@ -144,6 +147,9 @@ export async function operatorRoutes(app: App): Promise<void> {
         });
         return { accountId };
       });
+      // The administrator exists whatever the provider does next; a failed
+      // send is reported, never rolled back.
+      return { ...created, ...(await deliverCode(app.sms, pending, req.log)) };
     },
   );
 }

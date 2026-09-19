@@ -13,6 +13,9 @@ const productionEnv = (overrides: Partial<Env> = {}): Env =>
     DEPLOY_ENV: 'production',
     DATABASE_URL: 'postgres://oto_app:s3cret@dpg-xyz.singapore-postgres.render.com:5432/oto',
     COOKIE_SECURE: true,
+    MINIO_ENDPOINT: 'abc123.r2.cloudflarestorage.com',
+    MINIO_PORT: 443,
+    MINIO_USE_SSL: true,
     MINIO_ACCESS_KEY: 'AKIAREAL',
     MINIO_SECRET_KEY: 'a-real-secret',
     OPS_TEST_CONTROLS: false,
@@ -27,7 +30,6 @@ const stagingEnv = (overrides: Partial<Env> = {}): Env =>
     DEPLOY_ENV: 'staging',
     OPS_TEST_CONTROLS: true,
     SEED_PROFILE: 'staging',
-    SMS_ADAPTER: 'console',
     ...overrides,
   });
 
@@ -99,7 +101,7 @@ describe('production boot guard (S2-01b)', () => {
  * NODE_ENV cannot be what decides whether the playground controls exist.
  */
 describe('staging versus production (S2-01c)', () => {
-  it('lets staging keep the demo reset, the seeded tenant and console codes', () => {
+  it('lets staging keep the demo reset and the seeded tenant', () => {
     expect(() => assertProductionSafe(stagingEnv())).not.toThrow();
   });
 
@@ -121,9 +123,107 @@ describe('staging versus production (S2-01c)', () => {
     );
   });
 
+  /**
+   * Staging is not a rehearsal for this one. People sign up on it with their
+   * real phones, so a code that only reaches the log is a person who cannot
+   * finish setting up their account.
+   */
+  it('refuses to print verification codes to the log on staging either', () => {
+    expect(() => assertProductionSafe(stagingEnv({ SMS_ADAPTER: 'console' }))).toThrow(
+      /SMS_ADAPTER/,
+    );
+  });
+
+  it('leaves the console adapter alone on a local machine', () => {
+    expect(() =>
+      assertProductionSafe(
+        productionEnv({
+          NODE_ENV: 'development',
+          DEPLOY_ENV: 'local',
+          DATABASE_URL: 'postgres://oto:oto@localhost:5432/oto',
+          SMS_ADAPTER: 'console',
+        }),
+      ),
+    ).not.toThrow();
+  });
+
   it('still refuses a development default on staging', () => {
     expect(() => assertProductionSafe(stagingEnv({ MINIO_ACCESS_KEY: 'oto' }))).toThrow(
       /MINIO_ACCESS_KEY/,
     );
+  });
+});
+
+/**
+ * S2-01d — the storage endpoint is the variable a deploy leaves at its
+ * default without anything complaining: the api boots clean and healthy, and
+ * the first profile photo discovers there is no object storage on this host.
+ */
+describe('object storage on a deployment (S2-01d)', () => {
+  it('refuses storage on localhost', () => {
+    expect(() => assertProductionSafe(productionEnv({ MINIO_ENDPOINT: 'localhost' }))).toThrow(
+      /MINIO_ENDPOINT/,
+    );
+    expect(() => assertProductionSafe(productionEnv({ MINIO_ENDPOINT: '127.0.0.1' }))).toThrow(
+      /MINIO_ENDPOINT/,
+    );
+  });
+
+  it('refuses storage on localhost on staging too', () => {
+    expect(() => assertProductionSafe(stagingEnv({ MINIO_ENDPOINT: 'localhost' }))).toThrow(
+      /MINIO_ENDPOINT/,
+    );
+  });
+
+  // A presigned URL is a bearer credential for the object it names.
+  it('refuses presigned URLs over plain HTTP', () => {
+    expect(() => assertProductionSafe(productionEnv({ MINIO_USE_SSL: false }))).toThrow(
+      /MINIO_USE_SSL/,
+    );
+    expect(() => assertProductionSafe(stagingEnv({ MINIO_USE_SSL: false }))).toThrow(
+      /MINIO_USE_SSL/,
+    );
+  });
+
+  /**
+   * The value is a host. Pasted from a storage console it arrives as a URL,
+   * and the storage client refuses it before anything of ours runs — a boot
+   * crash with a stack trace where a named refusal belongs.
+   */
+  it('refuses an endpoint pasted in as a URL', () => {
+    expect(() =>
+      assertProductionSafe(
+        productionEnv({ MINIO_ENDPOINT: 'https://abc123.r2.cloudflarestorage.com' }),
+      ),
+    ).toThrow(/MINIO_ENDPOINT is a URL/);
+    expect(() =>
+      assertProductionSafe(
+        productionEnv({ MINIO_ENDPOINT: 'abc123.r2.cloudflarestorage.com/oto-files' }),
+      ),
+    ).toThrow(/MINIO_ENDPOINT is a URL/);
+  });
+
+  // The port rides inside every presigned URL, so a wrong one fails in the
+  // visitor's browser rather than here.
+  it('refuses the local MinIO port', () => {
+    expect(() => assertProductionSafe(productionEnv({ MINIO_PORT: 9000 }))).toThrow(/MINIO_PORT/);
+  });
+
+  it('leaves the MinIO container on a local machine alone', () => {
+    expect(() =>
+      assertProductionSafe(
+        productionEnv({
+          NODE_ENV: 'development',
+          DEPLOY_ENV: 'local',
+          DATABASE_URL: 'postgres://oto:oto@localhost:5432/oto',
+          SMS_ADAPTER: 'console',
+          MINIO_ENDPOINT: 'localhost',
+          MINIO_PORT: 9000,
+          MINIO_USE_SSL: false,
+          MINIO_ACCESS_KEY: 'oto',
+          MINIO_SECRET_KEY: 'otosecret123',
+        }),
+      ),
+    ).not.toThrow();
   });
 });

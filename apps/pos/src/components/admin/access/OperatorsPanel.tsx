@@ -93,10 +93,18 @@ export function OperatorsPanel() {
     if (!adminFor || busy || !adminName.trim() || !adminPhone.trim()) return;
     setBusy(true);
     try {
-      await adminApi.assignOperatorAdmin(adminFor.id, { phone: adminPhone, name: adminName.trim() });
+      const res = await adminApi.assignOperatorAdmin(adminFor.id, {
+        phone: adminPhone,
+        name: adminName.trim(),
+      });
+      // The administrator exists either way; only the text may have failed.
       toast({
         title: 'Administrator invited',
-        description: 'Setup code sent via SMS (dev: see the API console log).',
+        description: res.codeSent
+          ? 'A six-digit setup code has been texted to that number. It lasts 10 minutes and works once.'
+          : (res.warning ??
+            'The administrator was created, but the setup code could not be texted. Send it again from the lock screen.'),
+        variant: res.codeSent ? undefined : 'destructive',
       });
       setAdminFor(null);
       setAdminName('');

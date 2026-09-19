@@ -1,5 +1,6 @@
 import { hash, verify } from '@node-rs/argon2';
 import { createHash, randomInt } from 'node:crypto';
+import type { FastifyBaseLogger } from 'fastify';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
@@ -56,7 +57,7 @@ export async function throttleFail(
   }
 }
 
-export async function throttleClear(db: Db, keys: string[]): Promise<void> {
+export async function throttleClear(db: Exec, keys: string[]): Promise<void> {
   if (keys.length) await db.delete(authThrottle).where(inArray(authThrottle.key, keys));
 }
 
@@ -71,14 +72,55 @@ const CODE_TTL_MS = 10 * 60_000;
 
 const hashCode = (code: string): string => createHash('sha256').update(code).digest('hex');
 
-export async function issueCode(
-  db: Db,
-  sms: SmsSender,
+export type CodePurpose = 'setup' | 'password_reset';
+
+/**
+ * A code that has been stored but not yet delivered.
+ *
+ * `message` holds the code in the clear. It travels from `mintCode` to the
+ * SMS adapter and nowhere else: never a log line, never a response body,
+ * never an audit row, never the stored idempotent response.
+ */
+export interface PendingCode {
+  accountId: string;
+  phone: string;
+  purpose: CodePurpose;
+  message: string;
+}
+
+const codeMessage = (purpose: CodePurpose, code: string): string =>
+  purpose === 'setup'
+    ? `Your OTO account setup code is ${code}`
+    : `Your OTO password reset code is ${code}`;
+
+/** What reception is told when the account is there but the code is not. */
+const UNDELIVERED: Record<CodePurpose, string> = {
+  setup:
+    'The account was created, but its setup code could not be sent. Ask them to tap ' +
+    '"First shift? Set up account" on the sign-in screen for a new code, or issue a ' +
+    'temporary password.',
+  password_reset: 'The reset code could not be sent — ask for a new one in a moment.',
+};
+
+/**
+ * Mint a verification code and store it, WITHOUT sending it.
+ *
+ * Takes an `Exec` so the row can be written inside the transaction that
+ * creates the account: the code is part of that account existing. Delivery is
+ * deliberately left to the caller, after the commit. A send is an HTTPS call
+ * to Twilio with a ten-second deadline and up to three attempts — about
+ * thirty-one seconds in the worst case — while
+ * `idle_in_transaction_session_timeout` is thirty. Sending from inside the
+ * transaction therefore pinned a pool connection for the length of a
+ * third-party call and, past the timeout, lost the whole account to a
+ * rollback with the SMS already on its way to the phone.
+ */
+export async function mintCode(
+  db: Exec,
   accountId: string,
   phone: string,
-  purpose: 'setup' | 'password_reset',
-  requestId?: string,
-): Promise<void> {
+  purpose: CodePurpose,
+): Promise<PendingCode> {
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
   await db.insert(verificationCode).values({
     id: newId(),
@@ -89,13 +131,70 @@ export async function issueCode(
   });
   // A newly issued code gets a fresh guess budget.
   await throttleClear(db, [`code:${accountId}:${purpose}`]);
-  void requestId;
-  await sms.send(
-    phone,
-    purpose === 'setup'
-      ? `Your OTO account setup code is ${code}`
-      : `Your OTO password reset code is ${code}`,
-  );
+  return { accountId, phone, purpose, message: codeMessage(purpose, code) };
+}
+
+export interface CodeDelivery {
+  /** False when the row is committed but the provider did not take it. */
+  codeSent: boolean;
+  /** Present only when it did not go out: what happened and what to do. */
+  warning?: { code: string; message: string };
+}
+
+/**
+ * Deliver a code minted inside a transaction that has now committed.
+ *
+ * A failure here is not a failure of the operation: the account exists and
+ * cannot be taken back, so the send is reported rather than thrown. Answering
+ * 5xx would both contradict the account's existence and make the retry worse
+ * — the idempotency plugin releases the key on a 5xx, so an identical retry
+ * would run again, find the phone taken and answer 409 without ever
+ * re-sending anything.
+ */
+export async function deliverCode(
+  sms: SmsSender,
+  pending: PendingCode,
+  log: FastifyBaseLogger,
+): Promise<CodeDelivery> {
+  try {
+    await sms.send(pending.phone, pending.message);
+    return { codeSent: true };
+  } catch (err) {
+    // The adapter has already logged the provider's side against a phone
+    // hash; this line names the account, which is what an administrator acts
+    // on. `err` itself is never logged: undici hangs the request off it, and
+    // the request body is the code.
+    log.error(
+      { accountId: pending.accountId, reason: err instanceof AppError ? err.code : 'UNKNOWN' },
+      'row committed but the verification code could not be delivered',
+    );
+    return {
+      codeSent: false,
+      warning: { code: 'SMS_DELIVERY_FAILED', message: UNDELIVERED[pending.purpose] },
+    };
+  }
+}
+
+/**
+ * Mint and send in one step, for the two callers that hold no transaction:
+ * `/auth/setup/start` and `/auth/password-reset/request`.
+ *
+ * Those two wait for the provider — up to about thirty-one seconds when
+ * Twilio is degraded — and that is deliberate. They hold an HTTP request
+ * open, not a transaction and not a pool connection (each statement returns
+ * its connection before the send begins), and the person who just pressed
+ * "Send code" is entitled to be told the code is not coming rather than left
+ * watching a phone that will never buzz.
+ */
+export async function issueCode(
+  db: Exec,
+  sms: SmsSender,
+  accountId: string,
+  phone: string,
+  purpose: CodePurpose,
+): Promise<void> {
+  const pending = await mintCode(db, accountId, phone, purpose);
+  await sms.send(pending.phone, pending.message);
 }
 
 /**
@@ -109,7 +208,7 @@ export async function issueCode(
 export async function consumeCode(
   db: Db,
   accountId: string,
-  purpose: 'setup' | 'password_reset',
+  purpose: CodePurpose,
   code: string,
   maxAttempts = 5,
 ): Promise<void> {

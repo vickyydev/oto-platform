@@ -130,9 +130,9 @@ production. Far cheaper than the isolation would cost on self-managed servers.
 
 `render.yaml` at the repository root declares the staging environment: the api
 web service, the POS static site and one managed Postgres in Singapore with
-point-in-time recovery. It departs from the shape above in four places, each
-reversible by configuration rather than by a rewrite, and each also recorded in
-`SPRINT_2_PROGRESS.md`.
+point-in-time recovery. It departs from the shape above — or settles something
+the shape left open — in six places, each reversible by configuration rather
+than by a rewrite, and each also recorded in `SPRINT_2_PROGRESS.md`.
 
 1. **`edge` and `jobs` run inside the `api` service**, selected by
    `PROCESS_ROLES=api,edge,jobs`, instead of being their own deployables. One
@@ -154,6 +154,37 @@ reversible by configuration rather than by a rewrite, and each also recorded in
    on another domain in any case, so the launcher's signed per-origin hand-off
    token (S2-02) is the permanent answer; a parent-domain cookie becomes an
    optional shortcut behind the same adapter once a real domain exists.
+5. **The api is sized to autoscale and pinned to one instance.** The instance
+   type is Standard (1 CPU, 2 GB), chosen for argon2id — every sign-in and
+   unlock costs 19 MiB and two passes on a thread-pool thread, and reception
+   signing on at opening is when that lands hardest — and because autoscaling
+   on Render starts at Standard, so the switch is later a line rather than a
+   plan migration. The switch is not thrown yet: the api carries `edge` and
+   `jobs` in-process (item 1), and both assume a single process. A second
+   instance would give the virtual box a second brain and run every schedule
+   once per container. The blueprint therefore holds `numInstances: 1` and
+   carries the `scaling` block beside it, commented, with the order that
+   unlocks it — split `jobs` into the worker service, split `edge` out or
+   move the box's state into a row, then swap the two settings.
+   `maxInstances` is capped at 3 by arithmetic, not by preference: the pool is
+   10 connections per instance, so three instances take 30 of a budget that
+   also has to cover the pre-deploy migration, the future jobs worker and the
+   lifted apps' own pools against the database's connection ceiling. The
+   database is `basic_4gb` for the same reason plus two others — the S2-22
+   restore runs a scratch copy and a `pg_restore -j4` on this server, and
+   Radar's rollups want the sales tables in cache. Going past three instances
+   needs a smaller per-instance pool or a pooler, and a transaction-mode
+   pooler is exactly what item 3 of the refinements above rules out for the
+   logins that take advisory locks.
+6. **Staging sends real SMS.** Setup and reset codes go to a phone here as
+   they will in production, not to the log. A code in a hosted log stream is a
+   live credential sitting where anyone with log access can read it, and a
+   delivery path exercised only in production is one nobody has tested. The
+   api refuses to start on a deployment that has no way to send a message, so
+   the Twilio credentials are a precondition of the first deploy rather than a
+   later improvement. The cost is a few satang a code; the alternative was an
+   account takeover path that only existed on the environment people are
+   invited to play with.
 
 Deploys are gated on CI rather than on the push: every service sets
 `autoDeploy: false` and the `deploy` job in `.github/workflows/ci.yml` calls

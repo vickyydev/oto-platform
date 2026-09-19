@@ -62,7 +62,7 @@ export async function opsRoutes(app: App): Promise<void> {
         throw errors.badRequest(`Type "${DEMO_RESET_CONFIRMATION}" to confirm`);
       }
       // One transaction: a reset that half ran would leave the deployment in a
-      // state neither the client nor the seed can describe.
+      // state neither the seed nor the person who ran it can describe.
       return withTx(app.db, opCtx(req), 'ops.demo_reset', async (tx) => {
         const deleted = await resetDemoData(tx);
         await audit.record(tx, {

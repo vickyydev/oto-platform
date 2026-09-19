@@ -3,8 +3,9 @@ import { eq } from 'drizzle-orm';
 import { fileObject } from '@oto/db';
 import { newId } from '@oto/shared';
 import type { App } from '../app';
-import { errors } from '../lib/errors';
+import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { storageFailureReason } from '../services/files';
 import type { AuthContext } from '../plugins/session';
 import type { FastifyRequest } from 'fastify';
 
@@ -13,6 +14,38 @@ import type { FastifyRequest } from 'fastify';
  * via presigned GET, both issued only after a permission check on the OWNING
  * entity. Objects are never public.
  */
+
+/**
+ * Storage that is not configured is the server's fault, not the caller's, so
+ * it answers 503 like any other storage failure rather than 400.
+ */
+const notConfigured = (): AppError =>
+  new AppError(503, 'STORAGE_NOT_CONFIGURED', 'File storage is not configured');
+
+/**
+ * A storage failure reaches the caller as a clean 503 (services/files.ts);
+ * the reason behind it rides on the error and is dropped there, so this is
+ * the one place that still has the request id to log it against.
+ */
+async function withStorageLog<T>(
+  req: FastifyRequest,
+  operation: string,
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await run();
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'STORAGE_UNAVAILABLE') {
+      req.log.error(
+        { storage: { operation, reason: storageFailureReason(err) }, reqId: req.id },
+        'object storage failed',
+      );
+    }
+    throw err;
+  }
+}
+
+/** Who may see or replace the file, decided on the entity that owns it. */
 async function checkOwnerAccess(
   req: FastifyRequest,
   auth: AuthContext,
@@ -38,6 +71,41 @@ async function checkOwnerAccess(
 }
 
 export async function fileRoutes(app: App): Promise<void> {
+  /**
+   * One probe at boot, and nothing on the request path (S2-01d, finding B1).
+   *
+   * Worth keeping: signing is local arithmetic now, so the upload route
+   * never touches storage and can no longer tell anyone that storage is
+   * wrong — the browser's own PUT would be the first thing to find out. This
+   * probe is what answers "can this deployment store a photo?" before
+   * somebody at reception discovers it by failing to upload one, and it costs
+   * a single HEAD per start.
+   *
+   * It is deliberately not awaited, and deliberately not part of `/ready`:
+   * the till is the service, and a park must not lose it because a photo
+   * bucket is unreachable. The worst a failed probe can do is write a line.
+   */
+  app.addHook('onReady', async () => {
+    const storage = app.fileStorage;
+    if (!storage) return;
+    void storage.probe().then((result) => {
+      const bucket = storage.bucket;
+      if (result.state === 'ready') {
+        app.log.info({ storage: { bucket } }, 'object storage ready');
+      } else if (result.state === 'no-bucket') {
+        app.log.warn(
+          { storage: { bucket } },
+          `object storage: bucket "${bucket}" does not exist — it is created once by hand, and uploads fail until it is`,
+        );
+      } else {
+        app.log.warn(
+          { storage: { bucket, reason: result.reason } },
+          'object storage did not answer the bucket probe',
+        );
+      }
+    });
+  });
+
   app.post(
     '/',
     {
@@ -55,16 +123,18 @@ export async function fileRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await checkOwnerAccess(req, auth, req.body.ownerEntityType, req.body.ownerEntityId, 'write');
-      if (!app.fileStorage) throw errors.badRequest('File storage is not configured');
+      const storage = app.fileStorage;
+      if (!storage) throw notConfigured();
       const id = newId();
       const ext = req.body.filename?.split('.').pop()?.toLowerCase() ?? 'bin';
       const objectKey = `${auth.operatorId}/${req.body.ownerEntityType}/${req.body.ownerEntityId}/${id}.${ext}`;
-      await app.fileStorage.ensureBucket();
-      const uploadUrl = await app.fileStorage.presignedPut(objectKey);
+      const uploadUrl = await withStorageLog(req, 'presign upload', () =>
+        storage.presignedPut(objectKey),
+      );
       await app.db.insert(fileObject).values({
         id,
         operatorId: auth.operatorId,
-        bucket: app.fileStorage.bucket,
+        bucket: storage.bucket,
         objectKey,
         contentType: req.body.contentType,
         ownerEntityType: req.body.ownerEntityType,
@@ -98,8 +168,11 @@ export async function fileRoutes(app: App): Promise<void> {
       const [row] = await app.db.select().from(fileObject).where(eq(fileObject.id, req.params.id)).limit(1);
       if (!row || row.operatorId !== auth.operatorId) throw errors.notFound('File not found');
       await checkOwnerAccess(req, auth, row.ownerEntityType, row.ownerEntityId, 'read');
-      if (!app.fileStorage) throw errors.badRequest('File storage is not configured');
-      const url = await app.fileStorage.presignedGet(row.objectKey);
+      const storage = app.fileStorage;
+      if (!storage) throw notConfigured();
+      const url = await withStorageLog(req, 'presign download', () =>
+        storage.presignedGet(row.objectKey),
+      );
       return { url, contentType: row.contentType };
     },
   );

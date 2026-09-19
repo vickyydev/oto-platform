@@ -152,9 +152,9 @@ SPRINT_2_PLAN > this document > CLAUDE.md §4 schema sketch.**
 | `docs/architecture/ARCHITECTURE.md` | Sprint 1 decisions restated, the verified prototype layout, the entity diagram, the idempotency pattern, and **the decisions log (§10, D1–D10)** where every new decision is appended | Memory |
 | `docs/architecture/DEVICE_INVENTORY.md` | The park's real devices, addresses, protocols, values and "confirm on site" items; what each simulator must reproduce | Any guess about a device |
 | `docs/architecture/PAYMENT_GATEWAY.md` | The 2C2P integration: endpoints, envelope, response codes, credential checklist, `PGW_*` names | Any guess about payments |
-| `docs/architecture/EXISTING_SYSTEMS.md` | What the client actually runs today (verified 2026-09-19) | Assumptions about the legacy estate |
+| `docs/architecture/EXISTING_SYSTEMS.md` | What the park actually runs today (verified 2026-09-19) | Assumptions about the legacy estate |
 | `docs/architecture/intake-2026-09-19/*` | The eight intake notes on the exported apps, including the OTO App re-hosting work list (`01-oto-app-backend.md` §10) and the Radar work list (`05-radar-api-auth-env-schema.md` §9) | Any guess about a foreign app |
-| `docs/briefs/AGENCY_PROPOSAL.md` | **Contract scope, not design.** §6 is our reading of what the agency's proposal shows as not yet built; §7 are the proposal's own open questions. It tells you *what is owed*, never *how to build it* — and the owner must confirm the §6 list before S2-17c starts (Open decision 30) | Nothing; it is an input to scope, mapped to tickets in the plan's "Contract coverage" table |
+| `docs/briefs/AGENCY_PROPOSAL.md` | **Contract scope, not design.** §6 is our reading of what the delivery proposal shows as not yet built; §7 are the proposal's own open questions. It tells you *what is owed*, never *how to build it* — and the owner must confirm the §6 list before S2-17c starts (Open decision 30) | Nothing; it is an input to scope, mapped to tickets in the plan's "Contract coverage" table |
 | `docs/features/*.md` | Per-feature status: what exists, what the ticket adds, where the code lives | Stale assumptions about progress |
 | `CLAUDE.md` | §3 stack, §7 UI rules, §8 engineering standards — still binding. §4's schema sketch is superseded wherever the prototype's shapes differ (ARCHITECTURE D1, D3). §5–§10 are superseded for Sprint 2 by §0 above | Nothing in Sprint 2 scope |
 | `CONTRIBUTING.md` | Commit format, branch rules, what is never committed | `CLAUDE.md` §8's commit rule |
@@ -516,14 +516,14 @@ sign-on proven at the front door. S2-17a is a schema, a middleware and a
 provisioning route — not the lift. The lift (S2-17b/c) and Radar (S2-18) wait
 until the POS is complete, as directed.
 
-Why the money path is ordered the way it is: S2-01 must precede anything
-client-facing (the privilege hole, non-atomic writes, PII in logs, the
-idempotency race). S2-02/S2-03 put the suite and its evidence surface on
+Why the money path is ordered the way it is: S2-01 must precede any deployment
+the park's team can reach (the privilege hole, non-atomic writes, PII in logs,
+the idempotency race). S2-02/S2-03 put the suite and its evidence surface on
 Render. S2-04..S2-06 build the station/box model everything else sits on. The
 booth follows immediately because it needs only the box agent, the print core
 and the scanner. S2-11 is what makes a sale print and appear in History, which
-is the honest point to hand the client a play-test — hence CP3 sits there, not
-at the first sale.
+is the honest point to hand the park's team a play-test — hence CP3 sits there,
+not at the first sale.
 
 ### 4.2 Checkpoints
 
@@ -535,7 +535,7 @@ review**. Do not proceed past a checkpoint without an explicit go-ahead.
 |---|---|---|
 | **CP1** | S2-17a | Security fixes visible from the UI (dominance, force sign-out, lock model); the schema move and transactional services (dev evidence); API + POS + launcher + console + shells on Render with the same-origin `/api` rule; the log-line contract, `ops_run` and the Activity / Failures / Health / Integrations pages; the PII fixes; and the OTO App opened from the launcher, on the shared database, by an admin-created user with no second password |
 | **CP2** | S2-07b | The station model live: stations, virtual boxes, the offline toggle, the sync ledger with epochs and quarantine, the print core and simulators, the PWA; and the Lucky Wheel playable end to end with its admin panel |
-| **CP3** | S2-11 | Two-device POS, the first real sale across all tenders, voucher and legacy-code redemption, receipts, bands, History, refunds. **The client play-test opens here**; the pricing regression fixtures are reviewed |
+| **CP3** | S2-11 | Two-device POS, the first real sale across all tenders, voucher and legacy-code redemption, receipts, bands, History, refunds. **The park's play-test opens here**; the pricing regression fixtures are reviewed |
 | **CP4** | S2-15b | The full POS: arrival and gate, check-in with offline release, wallets and stock, cash / EOD / settlement, the analytics rows and the multi-branch summary |
 | **CP5** | S2-17c | The OTO App lifted with every module walked through on staging, the POS seams, and the confirmed contract features built |
 | **CP6** | S2-19 | Radar live with the per-branch source preference (a POS sale visible in it), plus the Inbox pillars and shell |
@@ -741,7 +741,7 @@ reopen anything.
 
 ## 6. How each foreign app is lifted
 
-Three apps the client already runs come onto the platform in this sprint. The
+Three apps the park already runs come onto the platform in this sprint. The
 principle is the same for all three and is set by `PLATFORM_PLAN.md` §12:
 **each app gets its own schema in the one central database, each app's own
 migration tool runs inside that schema through `search_path`, additively, so
@@ -756,9 +756,9 @@ Source: `imports/oto-app/` — Express 4 + Passport-local + Drizzle, **796
 routes** (517 of them in one 25,504-line `routes.ts`), `storage.ts` 12,253
 lines / 452 methods, **184 tables**, a React front end with 122 routes, no
 unit tests. The intake's verdict stands: **lift as-is first**, because 1,400+
-references to `requireAuth`/`req.user`/`req.userWithAccess` and a codebase the
-client still commits to daily (2,920 commits in 8 months) make a rewrite a
-fork from a moving upstream. Work list:
+references to `requireAuth`/`req.user`/`req.userWithAccess` and a codebase
+still under daily commits (2,920 in 8 months) make a rewrite a fork from a
+moving upstream. Work list:
 `docs/architecture/intake-2026-09-19/01-oto-app-backend.md` §10; front-end
 seams: `02-oto-app-frontend.md` §8; status table:
 `docs/features/oto-app.md`.
@@ -817,8 +817,8 @@ set.
 
 **Secrets.** New `SESSION_SECRET`, `SESSION_PEPPER`, `KIOSK_CODE_PEPPER` and
 `PIN_FINGERPRINT_SECRET` values mean the branch check-in QR codes must be
-reprinted, every kiosk re-activated and advisor PINs reset — unless the agency
-hands the originals over (`STATUS.md` waiting-on-owner list).
+reprinted, every kiosk re-activated and advisor PINs reset — unless the
+original values are handed over (`STATUS.md` waiting-on-owner list).
 
 **Replit pieces to remove:** the `replit_integrations` directory, the
 `AI_INTEGRATIONS_*` naming, the hard-coded Xero redirect URI and the Nix
@@ -941,7 +941,7 @@ routes.
 
 ### 6.3 Unified Inbox — pillars and a shell (S2-19)
 
-Source: `imports/oto-asset-manager/` — the client's Replit prototype: a React
+Source: `imports/oto-asset-manager/` — the park's Replit prototype: a React
 front end on 17 hard-coded conversations, an Express skeleton with one health
 route, an empty Drizzle schema, no auth and no channel code. The briefs,
 screenshots and the in-app "IT Brief" are catalogued in
@@ -973,7 +973,7 @@ with two reception queues that are never merged; Marketing) and the routing
 rules from the IT Brief, ten fictional example conversations across the
 channels, templates and tags.
 
-**Shell.** `apps/inbox` is a static site in the client's design language —
+**Shell.** `apps/inbox` is a static site in the prototype's design language —
 Inter, white cards on a faint slate gradient, the three-column workspace
 (220 px rail / 360 px list / chat panel), the six-metric dashboard and the
 category colours (violet Birthdays & Events, sky General, pink Marketing) —
@@ -1082,10 +1082,12 @@ notice a job that stopped running, not only one that failed.
 variables, never constants in code: `BOX_OFFLINE_AFTER_S` (180),
 `PAIRING_CODE_TTL_S` (600), `HANDOFF_TOKEN_TTL_S` (60), `SYNC_STALE_AFTER_S`
 (900), `PAYMENT_PENDING_MIN` (10), `ROLLUP_INTERVAL_S`, `SLOW_REQUEST_MS`.
-Test controls live behind `OPS_TEST_CONTROLS`. **The api refuses to boot when
-`NODE_ENV=production` and any of `OPS_TEST_CONTROLS`, `SEED_PROFILE=staging`,
-`SMS_ADAPTER=console` or the dev database/MinIO defaults are set** — there is
-a test for that refusal.
+Test controls live behind `OPS_TEST_CONTROLS`. **The api refuses to boot on a
+configuration that does not belong to the deployment it is running as**
+(`assertProductionSafe`, `apps/api/src/env.ts`) — three separate refusals, not
+one, because staging is a production *build* against throwaway data and a
+single `NODE_ENV` test would either lock staging out of its own controls or
+hand them to production. §8.12 lists them; there is a test for each.
 
 **Migrations.** Forward-only, generated, committed, never edited once applied.
 `0003` is the last migration allowed to break the previous release;
@@ -1150,7 +1152,7 @@ GitHub Actions job environment.
 | `NODE_ENV` | development / test / production; gates the boot refusal below | Render, .env, CI |
 | `PORT` / `API_PORT` | Listen port; Render injects `PORT`, local dev uses `API_PORT` | Render, .env |
 | `PROCESS_ROLES` | Which roles this process runs: `api`, `edge`, `jobs` (staging runs all three in one service) | Render, .env |
-| `TRUST_PROXY` | Proxy hop count behind Render's load balancer, so `req.ip` is the client | Render |
+| `TRUST_PROXY` | Proxy hop count behind Render's load balancer, so `req.ip` is the caller | Render |
 | `LOG_LEVEL` | pino level | Render, .env |
 | `SLOW_REQUEST_MS` | Threshold above which a request line is flagged `slow` | Render, .env |
 | `TZ` | Always `UTC` on every service | Render |
@@ -1233,8 +1235,8 @@ page — so CI and a fresh checkout never need the sandbox.
 
 | Name | Meaning | Set in |
 |---|---|---|
-| `SMS_ADAPTER` | `console` (dev and staging — logs a phone **hash**, never the number) or `twilio` | Render, .env |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Twilio credentials when the adapter is `twilio` | Render |
+| `SMS_ADAPTER` | `twilio` on every deployment, staging included. `console` (logs a phone **hash** and the message) only where `DEPLOY_ENV=local`; the api refuses to boot with it anywhere else | Render, .env |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Twilio credentials. All three required when the adapter is `twilio` — a missing one throws at boot, so a deployment does not start without a way to reach a phone | Render |
 
 ### 8.8 Box agent and edge thresholds
 
@@ -1314,21 +1316,34 @@ what S2-18 adds. All set on the `radar` Render service.
 
 ### 8.11 Inbox
 
-The client's prototype has no secrets and no channel code. This sprint adds
+The Inbox prototype has no secrets and no channel code. This sprint adds
 only what the read-only shell and the console adapter need; live channel
 credentials (WhatsApp Business / LINE OA / Instagram / email) are Sprint 3 and
 are listed there by **kind**, never by value.
 
 ### 8.12 The boot-refusal rule
 
-`apps/api` **refuses to start** when `NODE_ENV=production` and any of the
-following is true — there is a test for it (`S2-01c`):
+`apps/api` **refuses to start** on a configuration that does not belong to the
+deployment it is running as (`assertProductionSafe`, `apps/api/src/env.ts`).
+Three refusals, keyed on two different variables, because there are three
+different mistakes — `apps/api/test/boot-guard.test.ts` covers each:
 
-- `OPS_TEST_CONTROLS` is set;
-- `SEED_PROFILE=staging`;
-- `SMS_ADAPTER=console`;
-- `DATABASE_URL` or the MinIO credentials still hold the development defaults
-  baked into `apps/api/src/env.ts`.
+- **`NODE_ENV=production`** — a development default: `DATABASE_URL` pointing at
+  localhost or still carrying the `oto:oto` credentials, the object-storage
+  access key or secret still the demo value, `COOKIE_SECURE` false. The failure
+  it prevents is quiet: a service that starts happily against the wrong
+  database and only reveals it once real data is in it.
+- **`DEPLOY_ENV=production`** — a setting that makes a deployment a playground:
+  `OPS_TEST_CONTROLS` set, or `SEED_PROFILE=staging`. Keyed on `DEPLOY_ENV` and
+  not on `NODE_ENV` precisely because staging runs the production build and
+  carries both of them deliberately.
+- **`DEPLOY_ENV` anything but `local`** — `SMS_ADAPTER=console`, on staging as
+  much as on production. A verification code written to a hosted log stream is
+  two failures at once: a live credential where every log reader can see it,
+  and a person who cannot finish setting up their account because the code
+  never reached their phone. `buildSmsSender` refuses the matching mistake at
+  the same moment — `SMS_ADAPTER=twilio` with any of `TWILIO_ACCOUNT_SID`,
+  `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` missing throws rather than falling back.
 
 The same rule is why "Reset demo data" is platform_admin only, typed
 confirmation, and audited `ops.demo_reset`.
@@ -1347,7 +1362,7 @@ still show as open, and they win.
 | Question | Answer | Source |
 |---|---|---|
 | Which payment gateway? | **2C2P, not SCB direct.** The owner said "the SCB payment gateway" and then pointed at `developer.2c2p.com`: 2C2P is the gateway, SCB is the acquiring bank behind the park's merchant account. `PROJECT_CONTEXT.md` §7.2 therefore stands. An SCB Developer Portal application, if the park holds one, is added as a second `QrPayment` provider, never a replacement | `OWNER_DIRECTION.md` 2026-09-20; `research/2026-09-20-scb-direct-api-research.md` header; `PAYMENT_GATEWAY.md` |
-| Rebuild the OTO App? | **No — it exists and is lifted, not rebuilt.** 796 routes, 184 tables, a client still committing to it weekly; a rewrite forks from a moving upstream. One Docker service, handlers untouched, the platform session mapped in before Passport | `intake-2026-09-19/01-oto-app-backend.md` §10; `SPRINT_2_PLAN.md` S2-17 |
+| Rebuild the OTO App? | **No — it exists and is lifted, not rebuilt.** 796 routes, 184 tables, and weekly commits still landing on it; a rewrite forks from a moving upstream. One Docker service, handlers untouched, the platform session mapped in before Passport | `intake-2026-09-19/01-oto-app-backend.md` §10; `SPRINT_2_PLAN.md` S2-17 |
 | Where does the scanner live? | **On the box, not the iPad.** The box reads the Zebra over HID (with an exclusive evdev grab) or USB-CDC and publishes scans on the station channel, so till, display, gate and kiosk all receive scans identically, online or offline | `DEVICE_INVENTORY.md` §4 D2, §9.2; `research/2026-09-20-device-research.md` |
 | How does the gate work? | **The QR reader posts to us over HTTP; the HX-X1 controller talks serial.** The gate box hosts `checkCard`/`heartbeat`, answers `code "1"`/`"0"` with a short message, pulses a dry contact, and reads passage feedback over RS232/RS485 19200 N81. Occupancy counts passage events, never open commands | `DEVICE_INVENTORY.md` §6; `PROJECT_CONTEXT.md` §7.5 |
 | What is revenue? | **Exactly what Radar's code computes** — formula v30 for Floresta-style branches, v21 for Chalong-style — recorded as `formula_version` on every summary row, with a parity test proving the platform rollup reproduces it | `OWNER_DIRECTION.md` 2026-09-20; `intake-2026-09-19/03-…` and `04-…`; Open decision 15 |
@@ -1396,7 +1411,7 @@ in the front end** (§18), a suggested build order (§19) and the design
 principles worth preserving (§20). It **ranks equal with the prototype code**;
 where they differ the code wins.
 
-**`AGENCY_PROPOSAL.md`** — a 2026-09-20 capture of the agency's proposal site:
+**`AGENCY_PROPOSAL.md`** — a 2026-09-20 capture of the delivery proposal site:
 24 features, 121 stories, 33 workflows, a 20-week roadmap, and its own
 technical claims (SvelteKit + Python + AWS, which the owner has since
 replaced). Its **§6 is the contract-scope list** — fourteen groups, 6.1
@@ -1455,7 +1470,7 @@ running neighbour (additive first); and the park does not depend on any of it
 minute to minute. Plus a "what goes down with what" table and the refinement
 that a lifted app is **one** deployable running **one always-on instance**.
 
-**`EXISTING_SYSTEMS.md`** — what the client actually runs, verified
+**`EXISTING_SYSTEMS.md`** — what the park actually runs, verified
 2026-09-19 against the exports, the production schema and the git histories.
 One tenant, three branches (Central Floresta, Robinson Chalong, Head Office),
 72 login users, 69 employees. Pisell at Floresta and Papaya at Chalong are two
@@ -1566,8 +1581,8 @@ Note that paths inside these documents use the pre-restructure layout.
 **`README.md`** — the index and the handling rules for the three Replit
 exports and two database files. **Confidential**: it describes unfixed
 weaknesses in live systems. It records that both database files were exported
-from catalog `oto_staging` and hold live data — **the environment the agency
-calls "staging" is production** — and lists what is still missing (a real
+from catalog `oto_staging` and hold live data — **the environment labelled
+"staging" upstream is production** — and lists what is still missing (a real
 `pg_dump` of Radar's published database and of the wheel's, the Pisell/Papaya
 credentials, DNS ownership, the S3 bucket contents, the four OTO App secrets).
 
@@ -1751,7 +1766,7 @@ What is in it, in short:
   return URLs, into `.env` as `PGW_*`.
 
 A second list, **`docs/briefs/AGENCY_PROPOSAL.md` §7**, holds sixteen
-questions the agency's own proposal raises — the story list as contract, the
+questions the delivery proposal itself raises — the story list as contract, the
 stack, payments, face identification, which five languages, messaging channels
 and providers, the accounting provider, which workflows must work offline,
 hardware coverage, modules outside the proposal, supervision values, benefit
@@ -1845,5 +1860,5 @@ sprint", plus each ticket's own Acceptance criteria. This is the short form.
       (redaction test plus a manual grep of staging logs).
 - [ ] Tag `sprint-2`; `SPRINT_2_REPORT.md` written;
       `SPRINT_2_PROGRESS.md` closed; `ARCHITECTURE.md` and this document
-      current; every feature page and `STATUS.md` updated; the client
+      current; every feature page and `STATUS.md` updated; the park's
       play-test guide issued with demo accounts delivered out of band.

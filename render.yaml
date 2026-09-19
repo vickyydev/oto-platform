@@ -10,24 +10,27 @@
 # `sync: false`. Nothing here contains a secret; the values live only in the
 # dashboard.
 #
-# Two things will NOT work until the owner acts, and both are called out again
-# where they appear:
+# Three things will NOT work until the owner acts, and each is called out again
+# where it appears:
 #   1. MINIO_* must point at a real S3-compatible bucket. The api refuses to
 #      boot in production on the development storage keys (apps/api/src/env.ts,
 #      `assertProductionSafe`) — deliberately, so a deploy cannot quietly put
-#      customer files somewhere wrong.
-#   2. ALLOWED_ORIGINS must carry the POS site's origin once Render has issued
+#      a member's files somewhere wrong.
+#   2. TWILIO_* must carry a real Twilio sender. Verification and reset codes
+#      go to a phone on every deployment, staging included, and the api
+#      refuses to start on a deployment that has no way to send one.
+#   3. ALLOWED_ORIGINS must carry the POS site's origin once Render has issued
 #      it, or every write from the till is refused with ORIGIN_NOT_ALLOWED.
 #
 # Production is a second environment, added when the park cuts over: the same
-# services with `SEED_PROFILE`/`OPS_TEST_CONTROLS` dropped, real SMS and
-# payment credentials, and its own database. It is not declared yet — staging
-# is what the client plays with during Sprint 2.
+# services with `SEED_PROFILE`/`OPS_TEST_CONTROLS` dropped, its own Twilio
+# sender and payment credentials, and its own database. It is not declared yet
+# — staging is where the park's team play during Sprint 2.
 #
 # Deploys are gated on CI, not on the push: every service sets
 # `autoDeploy: false` and .github/workflows/ci.yml fires the deploy hooks only
 # after the ci job is green on main. A red build therefore never reaches the
-# client's staging URL.
+# staging URL.
 
 databases:
   - name: oto-db-staging
@@ -41,10 +44,46 @@ databases:
     postgresMajorVersion: '16'
     # Point-in-time recovery is a property of the instance type, not a flag:
     # every PAID Render Postgres instance keeps daily backups plus PITR (the
-    # free instance type keeps neither, and expires). `basic_1gb` is therefore
-    # the floor for a database holding member and child records, even on
-    # staging. Confirm the retention window in the dashboard after the first
+    # free instance type keeps neither, and expires). Any paid type is
+    # therefore the floor for a database holding member and child records, even
+    # on staging. Confirm the retention window in the dashboard after the first
     # deploy — that is where Render shows it.
+    #
+    # `basic_4gb` rather than the cheapest paid type, for three reasons that
+    # are all work this database is already scheduled to do:
+    #   - S2-22 restores the park's own data here: a 33 MB dump of 184 tables
+    #     and 519 foreign keys, loaded into a scratch database on THIS server,
+    #     renamed, dumped again and restored with `pg_restore -j4`. Two copies
+    #     of the data and four parallel workers want more than half a core.
+    #   - Radar's rollups (S2-18) and the analytics summary (S2-15b) scan the
+    #     sales tables on a schedule, beside the till's own queries. 4 GB keeps
+    #     that working set in cache instead of on disk.
+    #   - the connection ceiling, which the api's maxInstances is derived from.
+    #
+    # CONNECTION CEILING — the api's scaling block depends on this number.
+    # Render publishes a fixed limit per instance type and the basic range
+    # carries the smallest. Everything below is budgeted against 97, the lowest
+    # figure any paid type carries, so the arithmetic holds even if this
+    # instance turns out to be on the smaller number. Confirm the real limit in
+    # the dashboard after the first deploy, and raise the budget then — never
+    # lower it silently.
+    #
+    #   superuser reserve + Render's own monitoring            ~5
+    #   api web service, pool of 10 x 3 instances               30
+    #   pre-deploy migration (overlaps the running instances)    1
+    #   jobs worker, once it splits out of the api              10
+    #   lifted OTO App (S2-17b) and Radar (S2-18), 10 each      20
+    #   a person on psql, or a one-off seed                      2
+    #                                                     total 68  of 97
+    #
+    # A fourth api instance takes that to 78 and a fifth to 88, which is too
+    # close to the ceiling to spend on a guess.
+    #
+    # Storage is deliberately not declared. Render sizes the disk with the
+    # instance type and grows it from the dashboard, and a disk can never be
+    # shrunk — a number guessed in a blueprint is a number you live with. The
+    # S2-22 restore holds the data twice over while it runs, so check the disk
+    # before running it rather than after.
     plan: basic_1gb
     # Empty = no connections from the public internet; only services in this
     # Render workspace can reach it. To run a one-off psql or the demo seed
@@ -59,10 +98,24 @@ services:
     name: oto-api-staging
     runtime: node
     region: singapore
-    # `starter` rather than `free`: free instances spin down when idle, which
-    # would make the first till request of the morning wait for a cold start,
-    # and a pre-deploy command needs a paid instance type in any case.
-    plan: starter
+    # `standard` (1 CPU, 2 GB) rather than `starter` (0.5 CPU, 512 MB). What
+    # the process actually does decides it:
+    #   - every sign-in and every unlock runs argon2id (@node-rs/argon2 at its
+    #     defaults: 19 MiB and two passes per hash) and the binding runs on
+    #     libuv's thread pool, so four concurrent hashes are ~80 MiB of
+    #     transient memory and four threads of pure CPU. On half a core that
+    #     contends with the till's own requests; on 512 MB it sits next to the
+    #     V8 heap and the pg pool. Reception signing on at opening is exactly
+    #     when both happen at once.
+    #   - one process also carries `edge` and `jobs` (PROCESS_ROLES below), so
+    #     a rollup's memory and a sale's latency share a container.
+    #   - autoscaling on Render starts at `standard`. Choosing it now means the
+    #     scaling block below is uncommented when the roles split out, instead
+    #     of a plan change made under pressure.
+    # `free` is not a candidate at all: free instances spin down when idle, so
+    # the first till request of the morning would wait for a cold start, and a
+    # pre-deploy command needs a paid instance type in any case.
+    plan: standard
     branch: main
     # The repository root, because this is a pnpm workspace: the api's
     # dependencies are resolved from the root lockfile and half of what it
@@ -102,12 +155,41 @@ services:
     # /health answers without touching the database — use that one for uptime
     # pings, or every outage becomes two alerts.
     healthCheckPath: /ready
-    # Exactly one. The api process also runs `edge` (the cloud virtual box, one
-    # station session per station) and `jobs` (pg-boss under advisory locks);
-    # both assume a single process, and a second instance would give the box a
-    # second brain. Scale by splitting the roles out — see the commented worker
-    # at the foot of this file — not by raising this number.
+    # ONE INSTANCE, DELIBERATELY. The autoscaling that replaces it is written
+    # out below rather than left to be invented later under pressure.
+    #
+    # Why one: this process carries three roles (PROCESS_ROLES below). `edge`
+    # is the cloud virtual box and holds one station session per station in
+    # memory; `jobs` is the scheduled runner — pg-boss under advisory locks,
+    # the watchdog, the rollups, the housekeeping sweeps (S2-03). Neither
+    # survives being run twice. A second instance gives the box a second brain
+    # and runs every schedule once per instance, and autoscaling would not
+    # announce that: it would simply start happening on the first busy
+    # afternoon and show up as duplicated rollups.
+    #
+    # What unlocks the scaling block, in order:
+    #   1. enable the `worker` service at the foot of this file and remove
+    #      `jobs` from PROCESS_ROLES below;
+    #   2. give `edge` the same treatment — its own service, `edge` removed
+    #      from PROCESS_ROLES — or make the virtual box's state a database row
+    #      that any instance can serve;
+    #   3. delete `numInstances` and uncomment `scaling`.
+    # Until all three are done, raising this number is a bug, not a scale-up.
     numInstances: 1
+    # maxInstances is the database's arithmetic, not a preference: the pool is
+    # 10 connections per instance (packages/db/src/index.ts, `max`), so three
+    # instances hold the 30 budgeted on the database above. Going past three
+    # means lowering that pool or putting a pooler in front — and a
+    # transaction-mode pooler is not free here, because Radar's advisory locks
+    # and our session-level settings need a direct connection.
+    # CPU is the signal that matters: argon2id makes sign-in CPU-bound, while
+    # memory stays flat because nothing large is held between requests. The
+    # memory target is a backstop, not the trigger.
+    # scaling:
+    #   minInstances: 1
+    #   maxInstances: 3
+    #   targetCPUPercent: 60
+    #   targetMemoryPercent: 70
     autoDeploy: false
     envVars:
       # -- runtime ----------------------------------------------------------
@@ -135,14 +217,16 @@ services:
         # A recorded deviation from DEPLOYMENT_TOPOLOGY.md: edge and jobs run
         # inside the api service instead of their own, because one park with
         # one virtual box does not justify three services yet. It is a
-        # configuration change to undo, not a rewrite.
+        # configuration change to undo, not a rewrite — and it is also what
+        # holds this service at one instance, so undoing it is what buys
+        # horizontal scale.
         value: api,edge,jobs
 
       # -- how the api sits behind Render's proxy ----------------------------
       - key: TRUST_PROXY
         # One hop: Render's load balancer. req.ip then reads the entry before
-        # Render's own, which is the client — and a forged X-Forwarded-For
-        # cannot move a caller into a fresh rate-limit bucket.
+        # Render's own, which is the caller — and a forged X-Forwarded-For
+        # cannot move that caller into a fresh rate-limit bucket.
         value: '1'
       - key: COOKIE_SECURE
         # HTTPS only. The api refuses to boot in production without this.
@@ -192,9 +276,9 @@ services:
       # -- object storage ----------------------------------------------------
       # There is no MinIO on Render; MinIO is the local stand-in for whatever
       # S3-compatible bucket this points at (Cloudflare R2, AWS S3, Backblaze
-      # B2 — the client is generic). The api REFUSES TO BOOT in production
-      # while the access key or secret is still the development default, so
-      # these four block the first deploy until the owner creates a bucket.
+      # B2 — the SDK is generic). The api REFUSES TO BOOT in production while
+      # the access key or secret is still the development default, so these
+      # four block the first deploy until the owner creates a bucket.
       - key: MINIO_ENDPOINT
         # Host only, no scheme and no bucket, e.g. s3.ap-southeast-1.amazonaws.com
         sync: false
@@ -206,14 +290,19 @@ services:
         sync: false
       - key: MINIO_SECRET_KEY
         sync: false
+      # Cloudflare R2 wants `auto`. Set explicitly so the SDK never probes for
+      # the region — presigning then touches the network not at all.
+      - key: MINIO_REGION
+        value: auto
       - key: MINIO_BUCKET
         # Suggested: oto-files-staging. Keep staging and production in
         # different buckets — the demo reset must never reach a real file.
         sync: false
 
       # -- staging profile ---------------------------------------------------
-      # These four are what make this deployment a place the client can play
-      # with, and they are the four to change when production is declared.
+      # These three are what make this deployment a playground, and they are
+      # the three to change when production is declared. SMS used to be a
+      # fourth; it is not any more — see the block below.
       #
       # Note what they are NOT gated on. This service runs NODE_ENV=production
       # — it is the real build, with the real hardening: no development
@@ -226,10 +315,6 @@ services:
         # `staging` seeds the demo tenant and marks this database a playground.
         # `production` on a real deployment.
         value: staging
-      - key: SMS_ADAPTER
-        # Verification and reset codes go to the api log, not to a phone. The
-        # adapter logs a phone hash, never the number. `twilio` in production.
-        value: console
       - key: ALERT_CHANNELS
         # console until the owner names a channel (open decision 17). Read by
         # the alerting built in S2-03.
@@ -241,15 +326,34 @@ services:
         # wipe the facts out of a database.
         value: 'true'
 
-      # -- SMS, when it stops being the console adapter ------------------------
-      # Left blank on staging. Fill all three and switch SMS_ADAPTER to
-      # `twilio` when real codes are needed; the api warns and falls back to
-      # console if any of them is missing.
+      # -- SMS ---------------------------------------------------------------
+      # Real SMS, on staging as much as on production. A setup code, a password
+      # reset, anything that proves a phone belongs to the person holding it —
+      # all of it goes to the phone.
+      #
+      # This was the console adapter, and the argument for it was that staging
+      # could complete a sign-up without an SMS bill. The argument against is
+      # the stronger one: a verification code printed into a hosted log stream
+      # is a live credential sitting where everyone with log access can read
+      # it, and a delivery path exercised only in production is a delivery path
+      # nobody has tested. Staging runs the production build; it runs the
+      # production SMS route too.
+      #
+      # THE SERVICE WILL NOT START UNTIL ALL THREE ARE SET, and that is the
+      # point: a deployment with no way to reach a phone would otherwise fall
+      # back to logging codes and look perfectly healthy doing it.
+      - key: SMS_ADAPTER
+        value: twilio
       - key: TWILIO_ACCOUNT_SID
+        # console.twilio.com → Account SID, begins "AC".
         sync: false
       - key: TWILIO_AUTH_TOKEN
         sync: false
       - key: TWILIO_FROM
+        # An SMS-capable Twilio number in E.164, or a Messaging Service SID
+        # beginning "MG". A trial account can only text numbers verified in the
+        # Twilio console, so check the phones used for a walkthrough are on
+        # that list before the walkthrough rather than during it.
         sync: false
 
       # -- error reporting -----------------------------------------------------
@@ -259,6 +363,18 @@ services:
 
   # ---------------------------------------------------------------------------
   # POS — static site. Till, customer display and the Sprint 1 admin panels.
+  #
+  # Nothing here is upgraded for the paid workspace, and that is the answer
+  # rather than an omission: a static site is built once and served from
+  # Render's CDN, so there is no instance to size, nothing to autoscale and no
+  # health check to run. The paid plan already gives it the only two things it
+  # consumes — build minutes and bandwidth — without a line in this file.
+  #
+  # No `buildFilter` either, though DEPLOYMENT_TOPOLOGY item 1 asks for one. A
+  # build filter only decides whether a COMMIT triggers a build, and
+  # `autoDeploy: false` means no commit ever does: CI calls the deploy hook and
+  # a hook always builds. The filter becomes worth adding the day auto-deploy
+  # is turned on, and would be dead configuration until then.
   # ---------------------------------------------------------------------------
   - type: web
     name: oto-pos-staging
@@ -304,7 +420,8 @@ services:
 # locks, the watchdog, the analytics rollups and the housekeeping sweeps. That
 # is fine while the jobs are small and the api is one instance, and it is wrong
 # the moment a rollup's memory or a long sweep starts costing a till its
-# response time.
+# response time. It is also step 1 of what lets the api autoscale at all — see
+# the note above `numInstances`.
 #
 # To split it out: uncomment this block, remove `jobs` from the api's
 # PROCESS_ROLES (or the same job runs in two processes and fights itself over
@@ -312,10 +429,16 @@ services:
 # variables. It needs no health check and no public URL — a worker has no port.
 # The same pattern splits `edge` out later.
 #
+# This service stays at one instance for the reason the api does: the schedule
+# must run once, not once per container. Its pool of 10 is already inside the
+# connection budget on the database above.
+#
 #  - type: worker
 #    name: oto-jobs-staging
 #    runtime: node
 #    region: singapore
+#    # Smaller than the api: no argon2id, no request latency to protect — just
+#    # the rollups. Raise it if a rollup starts running out of memory.
 #    plan: starter
 #    branch: main
 #    rootDir: .

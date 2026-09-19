@@ -59,7 +59,7 @@
   design, `PGW_*` variable names, the owner's checklist, the SCB direct API as
   the alternative provider; UNCERTAIN items listed (first: how the sandbox
   marks a PromptPay QR as paid).
-- `docs/briefs/AGENCY_PROPOSAL.md` (new, 991 lines): the agency proposal site
+- `docs/briefs/AGENCY_PROPOSAL.md` (new, 991 lines): the delivery proposal site
   captured in full (24 features, 121 stories, 33 workflows, roadmap), each
   story assessed against the OTO App export, §6 "what remains", §7 questions.
 - `docs/features/inbox.md` (new): the unified-inbox import reviewed (briefs,
@@ -77,14 +77,32 @@
 
 Built by two parallel agents on Opus 5 and reviewed here. Commit `9f3488d`.
 
-**`render.yaml`.** One api web service (`PROCESS_ROLES=api,edge,jobs`, one
-instance, health check on `/ready`, `TRUST_PROXY=1`), with `pnpm db:migrate
-&& pnpm db:platform-sync` as its pre-deploy step; the POS as a static site
-that rewrites `/api/*` to the api, so the session cookie stays same-origin
-and dev and production are one code path; a Singapore Postgres on a paid
-plan for its backups and recovery window; a commented-out worker for when
-`jobs` splits out of the api — enabling it means removing `jobs` from the
-api's roles, or the runner competes with itself for its own locks.
+**`render.yaml`.** One staging environment, three resources, all in the
+`singapore` region and all named `-staging`, so a production environment of
+the same shape sits beside them later instead of colliding with them:
+
+- `oto-api-staging` — a `standard` web service, not `starter`: argon2id on
+  every sign-in and unlock makes this process CPU-bound, one container also
+  carries `edge` and `jobs` (`PROCESS_ROLES=api,edge,jobs`), and Render's
+  autoscaling starts at `standard`. One instance, health check on `/ready`,
+  `TRUST_PROXY=1`, and `pnpm db:migrate && pnpm db:platform-sync` as its
+  pre-deploy step. The scaling block that replaces `numInstances: 1` is
+  written out beside it, commented, with the three things that must happen
+  first — so it is not invented under pressure on a busy afternoon.
+- `oto-pos-staging` — a static site that rewrites `/api/*` to the api, so the
+  session cookie stays same-origin and dev and production are one code path.
+  Nothing to size: a static site is built once and served from the CDN.
+- `oto-db-staging` — Postgres 16 on `basic_4gb`, not the cheapest paid type.
+  It is sized for work already scheduled: the S2-22 restore holds the 33 MB
+  production dump twice while `pg_restore -j4` runs, the Radar and analytics
+  rollups scan the sales tables beside the till's own queries, and the
+  connection ceiling is what the api's commented `maxInstances: 3` is budgeted
+  against (a pool of 10 per instance; 68 of 97 accounted for, written out in
+  the file).
+
+Plus a commented-out worker for when `jobs` splits out of the api — enabling
+it means removing `jobs` from the api's roles, or the runner competes with
+itself for its own locks.
 
 Two findings worth keeping. `--prod=false` on the install is load-bearing:
 `NODE_ENV=production` is set on the service and both `tsx` (the start
@@ -115,14 +133,27 @@ but the staging service is `NODE_ENV=production` with exactly those three,
 because staging runs the production *build* against throwaway data. Taken
 literally, staging could not start. Resolved with a separate discriminator:
 `DEPLOY_ENV=local|staging|production`. A development default is still
-refused on any deployment; the three playground settings are refused on
-`DEPLOY_ENV=production` only. Twelve boot-guard tests cover both halves.
+refused on any deployment; the two playground settings — `OPS_TEST_CONTROLS`
+and `SEED_PROFILE=staging` — are refused on `DEPLOY_ENV=production` only,
+because staging is entitled to both. `SMS_ADAPTER=console` turned out not to
+belong in that group at all: it is refused on every deployment, staging
+included (see below). `apps/api/test/boot-guard.test.ts` covers each refusal —
+seven cases for the development defaults under `NODE_ENV=production`, eight
+for the staging-versus-production split and the SMS adapter.
 
-**Still needed from the owner, and nothing else:** a Render API key in the
-gitignored `.env`, and an S3-compatible bucket — there is no MinIO on
-Render, and `assertProductionSafe` refuses to boot while the object-storage
-keys are still the demo ones. Twilio and Sentry stay blank on staging by
-design: the staging SMS adapter prints codes to the log.
+**Still needed from the owner:** a Render API key in the gitignored `.env`; an
+S3-compatible bucket, because there is no MinIO on Render and
+`assertProductionSafe` refuses to boot while the object-storage keys are still
+the demo ones; and a Twilio sender. The SMS credentials are no longer
+optional. Staging sends real codes to real phones: `buildSmsSender` throws at
+boot when `SMS_ADAPTER=twilio` and any of `TWILIO_ACCOUNT_SID`,
+`TWILIO_AUTH_TOKEN` or `TWILIO_FROM` is missing, and `assertProductionSafe`
+refuses `SMS_ADAPTER=console` whenever `DEPLOY_ENV` is not `local` — so the
+service does not start until all three are set. The reason it stopped being a
+staging convenience: a verification code in a hosted log stream is a live
+credential where every log reader can see it, and a delivery path exercised
+only in production is a delivery path nobody has tested. Sentry is still
+optional — the error hook is a no-op while `SENTRY_DSN` is empty.
 
 ## Pending — in this order
 
@@ -240,8 +271,9 @@ requireAuth-only route.
 **PII.** Fastify's own request logging is off in favour of one completion
 line per request with the query string stripped (`scrubUrl`); the error
 reporter gets the same scrubbed URL; the SMS adapter logs `phoneHash` only
-(the console adapter still prints the message — that is how dev codes are
-delivered); pg errors are reduced to `code`/`constraint`/`table`/`routine`
+(the console adapter still prints the message — that is how a code is
+delivered on a developer's machine, and S2-01c went on to refuse that adapter
+on any deployment); pg errors are reduced to `code`/`constraint`/`table`/`routine`
 before reaching a log or the reporter (`detail` is where Postgres puts
 `Key (phone)=(+66…)`); a unique violation becomes a typed 409 naming the
 constraint, never the value. `MEMBER_EXISTS`/`ACCOUNT_EXISTS` renamed to

@@ -122,7 +122,9 @@ export async function authRoutes(app: App): Promise<void> {
         // Do not leak which phones exist — same response either way.
         return { ok: true };
       }
-      await issueCode(app.db, app.sms, acc.id, phone, 'setup', req.id);
+      // No transaction is open here, so the wait on the provider costs an
+      // HTTP request and nothing else — see `issueCode`.
+      await issueCode(app.db, app.sms, acc.id, phone, 'setup');
       return { ok: true };
     },
   );
@@ -174,7 +176,7 @@ export async function authRoutes(app: App): Promise<void> {
         app.env.RATE_LIMIT_CODE_WINDOW_SECONDS,
       );
       if (acc && acc.status === 'active' && acc.phoneVerifiedAt) {
-        await issueCode(app.db, app.sms, acc.id, phone, 'password_reset', req.id);
+        await issueCode(app.db, app.sms, acc.id, phone, 'password_reset');
       }
       return { ok: true }; // never leak account existence
     },

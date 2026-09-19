@@ -50,41 +50,19 @@ jobs:
       - name: Build
         run: pnpm build
 
-  # Staging deploys are gated on CI, not on the push: every service in
-  # render.yaml sets `autoDeploy: false`, so Render does nothing until a hook
-  # below is called. A red build therefore never reaches the client's staging
-  # URL. Nothing is configured yet — the owner has no Render account connected
-  # — and until the secrets exist this job is a green no-op.
-  deploy:
-    needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    # Two pushes landing together would otherwise race two deploys through the
-    # same pre-deploy migration step. Queue them instead of cancelling: the
-    # second push still has to reach staging.
-    concurrency:
-      group: deploy-staging
-      cancel-in-progress: false
-    # Secrets cannot be read from a job-level `if`, so they come in as env and
-    # each step skips itself when its hook is unset. Skipped, not failed.
-    env:
-      RENDER_DEPLOY_HOOK_API: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
-      RENDER_DEPLOY_HOOK_POS: ${{ secrets.RENDER_DEPLOY_HOOK_POS }}
-    steps:
-      # The api goes first: its pre-deploy step runs the migrations, and the
-      # POS is built against whatever the api then serves. The hook returns as
-      # soon as Render accepts the deploy, so this does not wait for either to
-      # go live — it triggers, it does not verify. Verifying needs a Render API
-      # key and a poll, which is worth adding once there is an account to test
-      # it against.
-      - name: Deploy the api
-        if: env.RENDER_DEPLOY_HOOK_API != ''
-        run: curl --fail --silent --show-error --output /dev/null "$RENDER_DEPLOY_HOOK_API"
-      - name: Deploy the POS
-        if: env.RENDER_DEPLOY_HOOK_POS != ''
-        run: curl --fail --silent --show-error --output /dev/null "$RENDER_DEPLOY_HOOK_POS"
-      # Says so in the log rather than leaving a job of nothing but skipped
-      # steps, which reads like a broken workflow.
-      - name: No deploy target configured
-        if: env.RENDER_DEPLOY_HOOK_API == '' && env.RENDER_DEPLOY_HOOK_POS == ''
-        run: echo "No Render deploy hooks configured — nothing to deploy. Set RENDER_DEPLOY_HOOK_API and RENDER_DEPLOY_HOOK_POS once the Render blueprint is applied."
+
+# Staging deploys are not a job here, and deliberately so.
+#
+# Both Render services are set to auto-deploy with the trigger `checksPass`:
+# Render watches this repository, waits for the commit status of the `ci` job
+# above, and deploys only when it is green. A red build therefore never
+# reaches the staging URL the park team opens, and the deploy needs no
+# credential on this side — the alternative, a deploy hook or an API key in
+# repository secrets, would put a key to the whole Render workspace in reach
+# of anyone who can push a workflow file.
+#
+# The api deploys first on its own: its pre-deploy step runs the migrations
+# and the platform sync before the new instance serves anything.
+#
+# To see or change it: Render dashboard -> the service -> Settings -> Build &
+# Deploy -> Auto-Deploy.

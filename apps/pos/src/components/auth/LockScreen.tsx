@@ -85,7 +85,7 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
       if (mode === 'setup') await authApi.setupStart(phone);
       else await authApi.resetRequest(phone);
       setCodeSent(true);
-      setNotice('Code sent by SMS. (Dev: it appears in the API console log.)');
+      setNotice('Code sent by SMS. It lasts 10 minutes and works once.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the code');
     } finally {

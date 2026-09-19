@@ -34,7 +34,7 @@ once so nobody re-derives an answer. Where this plan departs from
 `OWNER_DIRECTION.md`; the deviations are listed in "Scope" and are recorded in
 `docs/progress/SPRINT_2_PROGRESS.md` on the first build day.
 
-**Sprint goal.** Put a client-playable OTO suite on Render, in this order of
+**Sprint goal.** Put an OTO suite the park's team can play with on Render, in this order of
 priority: (1) a styled launcher with one sign-in and the **POS complete** —
 till and customer display as separate devices linked through a cloud-hosted
 "virtual box", the prototype's admin panels, booking-site screen and stock
@@ -53,7 +53,7 @@ branch preference; (4) the **Unified Inbox** data pillars and a mockup shell.
 (5) the remaining feature areas the contract names — events, parties and
 camps, the self-service kiosk, staff benefits; (6) the **Console**, the
 owner's own super-admin control surface over all apps; (7) the real
-production data restored under it all, so the client plays with his own
+production data restored under it all, so the owner plays with his own
 figures; (8) the branch-box image and the on-site bring-up runbook, ready for
 the day the hardware is connected.
 
@@ -66,37 +66,37 @@ lands and recorded so any agent can resume.
 **After this sprint there is no further development sprint.** The next phase
 is on-site: connect the real printers, terminals, scanner and gate, work
 through the "confirm on site" list in `DEVICE_INVENTORY.md`, fix what the
-real world breaks, and let the client use the suite against the real backend.
-The Render environment keeps the name *staging* and the staging safeties
-while the agency's system is still live, but the code in it is the production
-code.
+real world breaks, and let the park's team use the suite against the real
+backend. The Render environment keeps the name *staging* and the staging
+safeties while the outgoing system is still live, but the code in it is the
+production code.
 
-## What the client will be able to do
+## What the park's team will be able to do
 
 Each milestone is what is clickable on the Render URLs after the named ticket
 merges. The ordering pulls the wheel forward (ticket 7) and puts the first real
 sale at ticket 10; the POS play-test opens after S2-11, when a sale also prints
-and appears in History, so the client is not asked to judge a till that prints
+and appears in History, so nobody is asked to judge a till that prints
 nothing. The OTO App, Radar and Inbox milestones follow the POS.
 
-| Milestone | After | What the client can click |
+| Milestone | After | What the park's team can click |
 |---|---|---|
 | M0 — front door | S2-03 | Open the launcher URL — an OTO-Park-styled landing page listing POS, OTO App, Radar, Lucky Wheel, Console and Inbox — sign in once, land in the POS without a second password; the OTO App tile already proves the shared database (S2-17a, pulled forward before CP1: its schema is in the central database and an admin-created user opens the OTO App through the launcher with no second password); Radar and Inbox tiles open "coming soon" shells; the console tile opens Console v1 with Activity, Failures, Health and Integrations pages showing the sign-in and a member lookup as rows; Sprint 1 membership check works against the Render API. |
 | M1 — stations and boxes | S2-05 | Admin creates a station on the virtual box in Console > Devices and assigns simulated devices; staff sign in and pick the station; Health shows the box heartbeat; toggling the virtual box offline lets the till create a member from the cache, and the member syncs once when the box returns. |
 | M2 — Lucky Wheel | S2-07b | Open the virtual booth from the launcher's demo tile, press the button key, the wheel spins and a voucher with Thai/English prize and QR renders in the printer simulator; the booth admin panel changes prize weights and the booth picks the new version up within a minute; the booth keeps issuing while offline and syncs on return; Health shows the booth, its printer and alerts. |
 | M3 — two-device POS | S2-08 | The customer display pairs to a station by 6-digit code on a second device; a phone typed on the display makes the till show the member and children; the display never receives allergy text. |
-| M4 — first sale and redemption (internal) | S2-10b | Ticket, F&B and shop carts price server-side with tier, adult rules, add-ons, promo codes, manual discounts and VAT; cash, simulated card on the NEXGO/PAX dialects (approve / decline / no-response → inquiry), a **real 2C2P sandbox QR** on the display confirmed by 2C2P's backend notification, the PAX terminal's QR when the box is offline; a printed booth voucher and a legacy code redeem inside a sale. **Not yet the client play-test:** no receipts, no wristbands, no History and no refunds until M5, so feedback on those would be noise. |
-| M5 — paper and corrections (client play-test opens) | S2-11 | Receipts, kitchen/bar tickets and kids/adult wristbands with scannable signed codes render in the printer simulator; History lists real sales; refunds, voids and reprints work with manager approval. The play-test guide is issued here. |
+| M4 — first sale and redemption (internal) | S2-10b | Ticket, F&B and shop carts price server-side with tier, adult rules, add-ons, promo codes, manual discounts and VAT; cash, simulated card on the NEXGO/PAX dialects (approve / decline / no-response → inquiry), a **real 2C2P sandbox QR** on the display confirmed by 2C2P's backend notification, the PAX terminal's QR when the box is offline; a printed booth voucher and a legacy code redeem inside a sale. **Not yet the park's play-test:** no receipts, no wristbands, no History and no refunds until M5, so feedback on those would be noise. |
+| M5 — paper and corrections (the park's play-test opens) | S2-11 | Receipts, kitchen/bar tickets and kids/adult wristbands with scannable signed codes render in the printer simulator; History lists real sales; refunds, voids and reprints work with manager approval. The play-test guide is issued here. |
 | M6 — arrival and children | S2-13 | Online booking paid on the 2C2P sandbox hosted page (cards, PromptPay, wallets) produces a signed QR; the till redeems it and issues bands; the gate simulator — the GE-X2/HX-X1 controller and its network QR reader speaking their real protocols — admits adults with anti-passback and live occupancy; an unaccompanied child triggers the supervision gate, consent on the display, the check-in board with timers, and release with a collector photo while the box is offline. |
 | M7 — money and day close | S2-15b | Wallet credit spent at F&B with the offline cap; stock decrements, transfers and stock take; cash session with float, paid-outs and safe drops; End of Day per tender and TID with settlement export; Today and History on real data; daily analytics rows per branch/day/source with the marketing-channel breakdown. |
 | M8 — POS complete | S2-21 | Everything the contract names on the POS side works: events, parties and camps with attendee records and passes, the self-service kiosk redeeming a booking on its own, and staff benefit profiles applied at checkout. |
-| M9 — the client's own data | S2-22 | The suite runs on the real production data: the OTO App's live rows restored into the central database, members and employees the client recognises, Radar showing real figures. |
+| M9 — the park's own data | S2-22 | The suite runs on the real production data: the OTO App's live rows restored into the central database, members and employees the park's team recognise, Radar showing real figures. |
 | M10 — OTO App on the platform | S2-17c | The live OTO App runs from the launcher on the central database with one sign-on: every module the export has works against the `otoapp` schema, the POS-facing seams (members, events, employees) read the same rows the POS writes, and the contract features listed in `docs/briefs/AGENCY_PROPOSAL.md` §6 are built. |
 | M11 — Radar live | S2-18 | Radar opens from the launcher; each branch has a source preference — legacy (seeded Pisell/Papaya-shaped fixtures) or OTO POS — and a demo sale made on the staging POS changes the Radar dashboard for that branch within the rollup interval. |
-| M12 — Inbox working | S2-19 | The Inbox tile opens the client's design backed by the `inbox` schema: conversations route by category to the right team, an owner and support assignees, reply and Handled, templates, the dashboard; messages flow through the channel adapters end to end on the simulator, and a real WhatsApp/Instagram/LINE account is connected by configuration when the business accounts exist. |
+| M12 — Inbox working | S2-19 | The Inbox tile opens the prototype's design backed by the `inbox` schema: conversations route by category to the right team, an owner and support assignees, reply and Handled, templates, the dashboard; messages flow through the channel adapters end to end on the simulator, and a real WhatsApp/Instagram/LINE account is connected by configuration when the business accounts exist. |
 | M13 — the owner's console | S2-23 | One place that controls everything: every account and app grant across the suite, activity and data-access logs, failures and alerts, health, boxes and devices, integrations, analytics sources, money oversight, support tools (cross-app lookup, audited impersonation, "what happened to this sale"), release flags and kill switches. |
 | M14 — ready for the park | S2-24 | The branch-box image builds and boots, the on-site bring-up runbook is written against the real device list, and every simulator has a documented switch to its real transport. |
-| M15 — acceptance | S2-16 | Full acceptance checklist run from a clean database on refreshed staging, load and soak checks, tag `sprint-2`, evidence comment on every story, client play-test guide. |
+| M15 — acceptance | S2-16 | Full acceptance checklist run from a clean database on refreshed staging, load and soak checks, tag `sprint-2`, evidence comment on every story, the park's play-test guide. |
 
 ## Readiness — what exists, what is new
 
@@ -117,16 +117,16 @@ what the reports say.
 | Booking site | `/book` wizard (`pages/Book.tsx`) loads the public catalogue and calls `POST /public/bookings`, but the mock `createBooking` still produces the confirmation QR and the till's `RedeemBookingModal` reads mock bookings only; no payment. | 2C2P Redirect (sandbox or simulator), signed booking QR, redemption at the till and kiosk-ready redemption service. |
 | OTO App (`imports/oto-app/`) | Export of the live system: Express 4 + Passport-local + Drizzle, 796 routes (517 in one 25,504-line `routes.ts`), 184 tables, React front end with 122 routes, Dockerfile present, scrypt password hashes, S3 storage without endpoint option, four local-disk writers, Replit-keyed cookie security; the intake's re-hosting work list and sign-on swap are in `docs/architecture/intake-2026-09-19/01-oto-app-backend.md` §10. Not on the platform. | S2-17: `otoapp` schema on the central database, hand-off sign-on middleware + `platform_user_id`, provisioning from the Console, Docker service on Render, storage on the platform bucket, jobs under `ops_run`, POS seam views, contract features from the proposal. |
 | Radar (`imports/oto-radar/`) | Export of the live dashboard: Express + React, 107 routes (96 public, no auth), Pisell (v30) and Papaya (v21) sync pipelines with credentials in Replit Secrets, structure-only database listing, dev-to-prod push routes that leak data; work list in `05-radar-api-auth-env-schema.md` §9. Not on the platform. | S2-18: `radar` schema, sign-on in front of everything private, push/wipe routes deleted, per-branch source preference, fixture adapters for the legacy pulls, OTO POS figures from `GET /analytics/summary`, parity test. |
-| Inbox (`imports/oto-asset-manager/`) | Client's Replit prototype: React front end on 17 hard-coded conversations, Express skeleton with one health route, empty Drizzle schema, no auth, no channel code; briefs and screenshots in `attached_assets/` (`docs/features/inbox.md`). | S2-19: `inbox` schema and permissions, seed, read-only routes, static shell in the client's design, `MessagingChannel` contract with a console adapter. |
+| Inbox (`imports/oto-asset-manager/`) | The park's Replit prototype: React front end on 17 hard-coded conversations, Express skeleton with one health route, empty Drizzle schema, no auth, no channel code; briefs and screenshots in `attached_assets/` (`docs/features/inbox.md`). | S2-19: `inbox` schema and permissions, seed, read-only routes, static shell in the prototype's design, `MessagingChannel` contract with a console adapter. |
 | Payment gateway | Nothing: `POST /public/bookings` marks bookings paid with no payment; PROJECT_CONTEXT §7.2 chose 2C2P; no credentials. | `packages/payments-2c2p` (Payment Token, Do Payment PromptPay QR, Redirect API, backend notification, Payment Inquiry, Payment Maintenance) on the sandbox with real QR codes, a gateway simulator for CI, `PGW_*` variables (`docs/architecture/PAYMENT_GATEWAY.md`). |
-| Deployment and CI | `.github/workflows/ci.yml` (typecheck, lint, migrate twice, test on a Postgres service container, build); `infra/docker-compose.yml` for Postgres 16 + MinIO; `.env.example` (missing `NODE_ENV`, `LOG_LEVEL`, `TEST_DATABASE_URL`); `env.ts` bakes dev MinIO credentials as defaults. No `render.yaml`, nothing deployed. | `render.yaml` (one api web service running `PROCESS_ROLES=api,edge,jobs` at `numInstances: 1`, static sites with `/api/*` rewrites for launcher/POS/console/booth/shells, managed Postgres Singapore with PITR, a commented-out worker service), CI-gated deploy, migrations + `platform:sync` on deploy, staging profile (`SMS_ADAPTER=console`, `ALERT_CHANNELS=console,webhook`) with an audited "Reset demo data" action. |
+| Deployment and CI | `.github/workflows/ci.yml` (typecheck, lint, migrate twice, test on a Postgres service container, build); `infra/docker-compose.yml` for Postgres 16 + MinIO; `.env.example` (missing `NODE_ENV`, `LOG_LEVEL`, `TEST_DATABASE_URL`); `env.ts` bakes dev MinIO credentials as defaults. No `render.yaml`, nothing deployed. | `render.yaml` (one api web service running `PROCESS_ROLES=api,edge,jobs` at `numInstances: 1`, static sites with `/api/*` rewrites for launcher/POS/console/booth/shells, managed Postgres in Singapore on a paid instance type for its backups and PITR, a commented-out worker service — every service `-staging`-named in one region, with production as a second environment of the same shape later), CI-gated deploy, migrations + `platform:sync` on deploy, staging profile (`DEPLOY_ENV=staging`, `SMS_ADAPTER=twilio`, `ALERT_CHANNELS=console,webhook`) with an audited "Reset demo data" action. |
 | Tests | 63 API integration cases (`apps/api/test/*.test.ts`), 19 shared unit tests (one file, `packages/shared/test/shared.test.ts`), 2 Playwright smokes (`apps/pos/e2e/smoke.spec.ts`); the two file-storage tests self-skip without MinIO. | Regression fixtures from the prototype pricing/tax functions, redaction (incl. pg error and terminal response fixtures) and OTel span tests, idempotency concurrency test, sync idempotency/poison/epoch tests, 200-spin distribution test, boot-refusal test, schema_version replay test, Playwright smokes against two origins for launcher → station → sale, display pairing, booth → redemption, booking → gate, check-in → offline release; k6 load and 24 h soak. |
 
 ## Scope
 
 ### In scope
 
-- Fix the known defects before anything client-facing is deployed:
+- Fix the known defects before any deployment the park's team can reach:
   role-assignment privilege hole, no database transactions, inactivity lock
   signing out server-side, PII in request/SMS/pg-error logs, idempotency race,
   proxy-blind rate limiting.
@@ -150,7 +150,7 @@ what the reports say.
   per-branch source preference (legacy | OTO POS), seeded Pisell/Papaya-shaped
   legacy fixtures for the demo, and the OTO POS branch reading the analytics
   rows the POS writes, so a demo sale on staging shows up in Radar.
-- Unified Inbox (S2-19): schema `inbox`, the client's design, routing by
+- Unified Inbox (S2-19): schema `inbox`, the prototype's design, routing by
   category to the four teams, primary and support assignees, reply, Handled,
   templates, tags, the management dashboard, and the channel adapters
   (WhatsApp Business, Instagram, LINE, email, web form) wired end to end
@@ -227,7 +227,7 @@ what the reports say.
   data, daily/hourly analytics summaries with per-branch source switch,
   marketing-channel breakdown and a multi-branch summary API.
 - Acceptance run from a clean database on Render, load and soak checks,
-  `sprint-2` tag, `SPRINT_2_REPORT.md`, evidence per Jira story, client
+  `sprint-2` tag, `SPRINT_2_REPORT.md`, evidence per Jira story, the park's
   play-test guide.
 - Working method for the whole sprint: every function is committed when it
   lands (conventional commits per `CONTRIBUTING.md`), the ticket log in
@@ -257,9 +257,9 @@ is connecting, not coding.
 | Audit log partitioning and long-term archive export | BRIN indexes, the `station_event` split, category retention and the purge job (S2-03) | Partitioning when the volume warrants it; the retention policy itself is Open decision 33 |
 | Overstay billing, wallet expiry policy, tier evidence list | Overstay shown and billable by configuration; wallet expiry, reactivation and the liability report built (S2-14a); the tier evidence list editable data | The owner's numbers and policy choices (Open decisions 12, 13, 14) |
 
-## Contract coverage — the agency proposal mapped to tickets
+## Contract coverage — the delivery proposal mapped to tickets
 
-`docs/briefs/AGENCY_PROPOSAL.md` captures the agency's proposal (24
+`docs/briefs/AGENCY_PROPOSAL.md` captures the delivery proposal (24
 features, 121 stories) and, in its §6, what the proposal shows as not yet
 built. Most of that is the POS — the proposal's "New functionality" is the
 system this sprint builds — and the rest are gaps in the live OTO App. The
@@ -522,10 +522,13 @@ into Open decisions 29–31.
 - **Test controls and demo safety.** Thresholds are environment variables
   (`BOX_OFFLINE_AFTER_S` 180, `PAIRING_CODE_TTL_S` 600, `HANDOFF_TOKEN_TTL_S`
   60, `SYNC_STALE_AFTER_S` 900). When `OPS_TEST_CONTROLS=true` the console
-  offers the controls listed in each ticket. The api refuses to boot when
-  `NODE_ENV=production` and any of `OPS_TEST_CONTROLS`, `SEED_PROFILE=staging`,
-  `SMS_ADAPTER=console` or dev DB/MinIO defaults are set; "Reset demo data" is
-  platform_admin only, typed confirmation, audited `ops.demo_reset`.
+  offers the controls listed in each ticket. The api refuses to boot on a
+  configuration that does not belong to its deployment: dev DB/object-storage
+  defaults or an insecure cookie under `NODE_ENV=production`, the playground
+  settings `OPS_TEST_CONTROLS` and `SEED_PROFILE=staging` under
+  `DEPLOY_ENV=production`, and `SMS_ADAPTER=console` under any `DEPLOY_ENV`
+  but `local` (DEVELOPMENT_PLAN §8.12); "Reset demo data" is platform_admin
+  only, typed confirmation, audited `ops.demo_reset`.
 - **Non-functional targets** (dev evidence in S2-16): API p95 < 300 ms per
   route class; WS snapshot delivery p95 < 500 ms with 10 stations; sync push
   ≥ 200 events/s per batch; display QR render < 2 s; POS first load < 3 s on an
@@ -697,15 +700,19 @@ Depends on: S2-01a. Size: M.
 Includes:
 - `render.yaml`: one api web service (`PROCESS_ROLES=api,edge,jobs`,
   `numInstances: 1`, health check on `/ready`, `TRUST_PROXY=1`), POS static
-  site with rewrite `/api/* → api`, managed Postgres Singapore with
-  point-in-time recovery on, a commented-out worker service as the future
-  target; env variable names only; CI-gated deploy running migrations
-  (including the pg-boss step) + `platform:sync`.
-- Staging profile: `SEED_PROFILE=staging`, `SMS_ADAPTER=console`,
-  `ALERT_CHANNELS=console`, `OPS_TEST_CONTROLS=true`; boot-refusal test for
-  the production guard; "Reset demo data" action (platform_admin, typed
-  confirmation, audit `ops.demo_reset`, wipes facts, keeps accounts and
-  catalogue).
+  site with rewrite `/api/* → api`, managed Postgres in Singapore on a paid
+  instance type — which is what carries the daily backups and point-in-time
+  recovery, since the blueprint schema has no PITR flag — and a commented-out
+  worker service as the future target. Every service in the environment is
+  named `-staging` and sits in one region; production is declared later as a
+  second environment of the same shape. Env variable names only; CI-gated
+  deploy running migrations (including the pg-boss step) + `platform:sync`.
+- Staging profile: `DEPLOY_ENV=staging`, `SEED_PROFILE=staging`,
+  `ALERT_CHANNELS=console`, `OPS_TEST_CONTROLS=true`, and `SMS_ADAPTER=twilio`
+  with real credentials — a deployment refuses to boot on the console adapter,
+  so staging sends real codes to real phones. Boot-refusal tests for all three
+  guards; "Reset demo data" action (platform_admin, typed confirmation, audit
+  `ops.demo_reset`, wipes facts, keeps accounts and catalogue).
 - Transport decision recorded in ARCHITECTURE.md (same-origin `/api` rewrite;
   alternative `SameSite=None` + allow-list documented as rejected); the
   Playwright smoke runs against the two Render origins, not the dev proxy.
@@ -1547,7 +1554,7 @@ Includes:
   lock/change, apply promo, manual discount with reason); display shows the
   itemised order (stage `order`).
 - Member tier change per PROJECT_CONTEXT §10: one `member.tier_change` service
-  for upgrade and downgrade with evidence type from the client list and
+  for upgrade and downgrade with evidence type from the owner's list and
   optional expiry; downgrade requires `pos:member:tier_downgrade`
   (branch_manager and above); `job:tier.expiry` daily sets
   `member.tier_review_required` instead of downgrading, and the till shows
@@ -1852,7 +1859,7 @@ History tab (`pages/History.tsx`, `components/history/TransactionDetail.tsx`)
 moves to the sale API with the prototype's refund rules
 (`mockApi.ts:recordRefund`), voids routed by the original tender's window, and
 reprints per `recordReprint`. Manager approval for refunds
-(`pos:refund:approve`) is a recorded addition. This is where the client
+(`pos:refund:approve`) is a recorded addition. This is where the park's
 play-test opens.
 
 Includes:
@@ -2368,17 +2375,17 @@ Rules: conflicts C10 (events mastered by OTO App), C13 (benefits hang off the HR
 
 Description. The live OTO App (Express 4 + Passport-local + Drizzle, 796
 routes, 184 tables, React front end with 122 routes; `imports/oto-app/`) is
-the client's daily HR and operations system. The owner wants it on the central
+the park's daily HR and operations system. The owner wants it on the central
 database in this sprint, in three steps that each ship: (a) its schema in the
 platform database and its login replaced by the launcher hand-off, so an
 admin-created platform user opens the OTO App with no second password — the
 proof that the apps share one database and one sign-on; (b) the whole app
 lifted onto Render against that schema with every module the export has; (c)
-the features the contract still owes, taken from the agency's proposal
+the features the contract still owes, taken from the delivery proposal
 (`docs/briefs/AGENCY_PROPOSAL.md` §6), built inside the lifted app. The
 intake's verdict stands: **lift as-is first** — one Docker web service, the
 handlers untouched, the platform session mapped in before Passport — because a
-rewrite would fork from code the client still commits to. The OTO App keeps
+rewrite would fork from code still under daily commits. The OTO App keeps
 its own admin controls; the POS keeps its own admin panels; the Console links
 both.
 
@@ -2523,7 +2530,7 @@ QA / demo steps:
 
 Depends on: S2-17a. Size: XL.
 
-#### S2-17c — Contract features from the agency proposal
+#### S2-17c — Contract features from the delivery proposal
 
 Includes:
 - One sub-task per OTO App item in `docs/briefs/AGENCY_PROPOSAL.md` §6
@@ -2581,7 +2588,7 @@ Rules: PLATFORM_PLAN §5 (analytics continuity), OWNER_DIRECTION 2026-09-19 (ana
 
 Description. Radar (Express + React, 107 routes of which 96 are public, its
 own Postgres on Replit; `imports/oto-radar/`) is the revenue dashboard the
-client reads every day. It computes per-branch daily summaries from Pisell
+owner reads every day. It computes per-branch daily summaries from Pisell
 (Floresta, formula v30) and Papaya (Chalong, formula v21). The owner wants it
 active on the platform now with two sources per branch: the legacy figures
 (seeded, because the Pisell/Papaya credentials are still in Replit Secrets)
@@ -2662,19 +2669,19 @@ QA / demo steps:
 
 Depends on: S2-15b, S2-17a (sign-on pattern). Size: L.
 
-### S2-19 — Unified Inbox: the client's design working end to end on the `inbox` schema, with channel adapters ready for a real account
+### S2-19 — Unified Inbox: the prototype's design working end to end on the `inbox` schema, with channel adapters ready for a real account
 
 Feature area: Inbox
 
 Rules: `docs/features/inbox.md` (briefs, design language, proposed placement); OWNER_DIRECTION 2026-09-20 item 4; PROJECT_CONTEXT §1 (messaging channels).
 
-Description. The client's Replit prototype (`imports/oto-asset-manager/`,
+Description. The park's Replit prototype (`imports/oto-asset-manager/`,
 front end on sample data) shows how the park wants one inbox for WhatsApp,
 Instagram, Facebook and a web form, with an AI first responder, three
 categories owned by four teams, a primary owner plus support assignees,
 "handled" with confirmation and management dashboards. It is milestone 4; the
 owner wants its data pillars in the central database now and a shell on the
-launcher so the client sees it is part of the plan. No live channel is
+launcher so the park's team see it is part of the plan. No live channel is
 connected this sprint.
 
 Includes:
@@ -2691,7 +2698,7 @@ Includes:
 - Seed: the four teams, the three categories and routing rules from the IT
   Brief, ten example conversations (fictional) across the channels, templates
   and tags.
-- `apps/inbox` static shell in the client's design language (Inter, white
+- `apps/inbox` static shell in the prototype's design language (Inter, white
   cards on slate, three-column workspace, six-metric dashboard, category
   colours) reading the seeded rows through `GET /inbox/*` read-only routes:
   list, thread view, assignment display, dashboard counts; every write action
@@ -3148,7 +3155,7 @@ QA / demo steps:
 
 Depends on: S2-09b, S2-10a, S2-17b. Size: L.
 
-### S2-22 — The client's own data: production restore into the central database, platform seeding from it, Radar on real figures, cutover rehearsal
+### S2-22 — The park's own data: production restore into the central database, platform seeding from it, Radar on real figures, cutover rehearsal
 
 Feature area: Data and cutover
 
@@ -3158,7 +3165,7 @@ Description. The dump we hold is
 `imports/_db/db-structure-with-data-dump-for-oto-app.sql`: 33 MB of live
 production rows, exported by Navicat as plain `INSERT`s that hard-code
 `"public".` in every statement. The owner's direction is to start from it, so
-the client opens the suite and sees the branches, staff and figures he
+the owner opens the suite and sees the branches, staff and figures he
 recognises. This ticket turns that one-off into a scripted, repeatable
 procedure — scratch database, schema rename, load order, sequence check,
 post-import fixes, verification counts — run against the private staging
@@ -3305,7 +3312,7 @@ Includes:
   the credentials arrive. HKT Central's
   `analytics.branch_source_switch.preference` is set to `oto_pos`, so a sale
   made on the staging POS moves its figures within `ROLLUP_INTERVAL_S`; the
-  second demo branch is set to `legacy`, so the client sees restored history
+  second demo branch is set to `legacy`, so the park's team see restored history
   beside live POS numbers.
 - Data handling, enforced rather than only written down:
   - The dump and everything derived from it stay on the owner's machine and in
@@ -3319,17 +3326,20 @@ Includes:
     `imports/_db/README.md`) — never into the repository, never into a shared
     scratch directory. Run reports carry counts, hashes and status, never
     values.
-  - Outbound messaging stays off. The restore refuses to run unless
-    `SMS_ADAPTER=console`, `ALERT_CHANNELS` names no channel that reaches a
-    real person, and the new `OUTBOUND_MESSAGING=off` is set, which makes every
-    SMS, email and chat adapter a no-op that records only what it would have
-    sent; and unless the OTO App service has `LOG_RESPONSE_BODY=false` (it is
-    `"true"` in the agency's AWS, which writes PII, reset tokens and kiosk
-    codes into the logs — intake §11 item 6) with its Twilio, SMTP and LINE
-    variables unset. After the restore, any table holding queued outbound
-    messages is listed and emptied.
+  - Outbound messaging stays off. The restore refuses to run unless the new
+    `OUTBOUND_MESSAGING=off` is set, which makes every SMS, email and chat
+    adapter a no-op that records only what it would have sent, and unless
+    `ALERT_CHANNELS` names no channel that reaches a real person. It cannot
+    ask for `SMS_ADAPTER=console` instead: the api refuses to boot on the
+    console adapter anywhere but a local machine, so on staging
+    `OUTBOUND_MESSAGING` is the only switch there is — which is why it exists.
+    It also refuses unless the OTO App service has `LOG_RESPONSE_BODY=false`
+    (it is `"true"` in the live AWS deployment, which writes PII, reset tokens
+    and kiosk codes into the logs — intake §11 item 6) with its Twilio, SMTP
+    and LINE variables unset. After the restore, any table holding queued
+    outbound messages is listed and emptied.
   - Face recognition is not migrated. The templates are not in the dump at all
-    — they live in the agency's Rekognition collections (intake §9) — so "not
+    — they live in the live system's Rekognition collections (intake §9) — so "not
     migrated" is made concrete: no collection is created in our account, no
     re-enrolment is run, `OTOAPP_FACE_CLOCKIN` stays false on staging and the
     face routes stay **removed or disabled, not merely unset** (unsetting
@@ -3369,7 +3379,7 @@ Includes:
   (`console:data:reset_demo`, platform_admin, typed confirmation, audited
   `ops.demo_reset`) is extended: under `staging` it behaves as today; under
   `restored` it is refused with "this database holds restored production data —
-  rebuild it with `pnpm data:restore`", so nobody wipes the client's figures
+  rebuild it with `pnpm data:restore`", so nobody wipes the park's figures
   with a button. Going back the other way is `pnpm data:reset-to-demo`, which
   drops the `crm`, `pos`, `promo`, `booth`, `analytics`, `edge` and `otoapp`
   content, re-runs `platform:sync` and `seed:demo-day`, records the new profile
@@ -3386,7 +3396,7 @@ Includes:
   runs match"). The output is `docs/qa/CUTOVER_RUNBOOK.md`: the ordered steps
   with their exact commands, who runs each, the expected duration, the
   verification queries with their expected answers, the go / no-go checks, and
-  the rollback — which is simply that the agency's system stays untouched and
+  the rollback — which is simply that the live system stays untouched and
   DNS is the only switch (PLATFORM_PLAN §13, Stage A).
 - Docs: `docs/qa/CUTOVER_RUNBOOK.md`; the `.env.example` block for
   `OTOAPP_DUMP_PATH`, `RESTORE_WORK_DIR`, `DATA_CLASSIFICATION`,
@@ -3412,7 +3422,7 @@ Acceptance criteria:
       unique constraints), with the four missing composite primary keys and the
       `pl_facts` unique index now present.
 - [ ] An administrator opens the OTO App from the launcher and sees the
-      client's real branches, departments and employee list; opening the same
+      park's real branches, departments and employee list; opening the same
       employee in the Console shows the linked platform account and its Apps
       tab row.
 - [ ] A restored employee whose `phone_e164` is set signs in on the launcher
@@ -4125,8 +4135,8 @@ QA / demo steps:
 Depends on: S2-03 (Console v1, telemetry, audit extensions, alerts), S2-04
 (boxes, stations, devices and their commands), S2-15b (analytics summary
 contract), S2-17c, S2-18 and S2-19 (every app must exist before the layer
-above them is real), S2-22 (so the money and analytics pages show the
-client's own figures). Size: XL.
+above them is real), S2-22 (so the money and analytics pages show the park's
+own figures). Size: XL.
 
 ### S2-24 — Branch box image and on-site readiness: the bring-up runbook and the switch from simulator to real device
 
@@ -4406,7 +4416,7 @@ Description. Closes the sprint the way Sprint 1 closed: the full acceptance
 checklist run from a clean database on refreshed Render staging, defects
 fixed, non-functional checks recorded, the commit tagged `sprint-2`,
 `SPRINT_2_REPORT.md` written, and an evidence comment posted on every Jira
-story. It also finalises the client play-test guide.
+story. It also finalises the park's play-test guide.
 
 Includes:
 - `docs/qa/SPRINT_2_ACCEPTANCE.md` listing every story's QA steps with
@@ -4474,18 +4484,18 @@ provisioning route, not the lift. The lift (S2-17b/c), Radar (S2-18) and the
 Inbox (S2-19) wait until the POS is complete, as directed. The Console
 (S2-23) comes after every app exists, because it is the layer above them, and
 the production restore (S2-22) comes after the Console so that the data-access
-log and the money pages are there to watch the client's own rows from the
+log and the money pages are there to watch the park's own rows from the
 first minute. S2-24 is last before acceptance: by then every simulator has a
 documented real counterpart to switch to.
 
-Rationale: S2-01 must precede any client-facing deploy (privilege hole,
+Rationale: S2-01 must precede any deploy the park's team can reach (privilege hole,
 non-atomic writes, PII in logs, idempotency race). S2-02/S2-03 put the suite
 and its evidence surface on Render at M0. S2-04..S2-06 build the station/box
 model the money path and the booth sit on. The booth (S2-07) follows
 immediately because it needs only the box agent, the print core and the
 scanner. S2-08..S2-10 are the first sale and redemption; S2-11 makes the sale
-print and appear in History, which is the honest point to hand the client a
-play-test, so CP3 sits after S2-11. S2-12..S2-15 finish the money and arrival
+print and appear in History, which is the honest point to hand the park's team
+a play-test, so CP3 sits after S2-11. S2-12..S2-15 finish the money and arrival
 path and S2-20/S2-21 finish the sell side, so the POS is complete at CP5.
 S2-17b..S2-19 put the other three apps on the platform. S2-23 and S2-22 give
 the owner the control surface and his own data under it. S2-24 turns the
@@ -4515,11 +4525,11 @@ Parallelisable streams (once their dependencies are merged):
 |---|---|---|
 | CP1 | S2-17a | Security fixes from the UI, schema move and transactional services (dev evidence), lock model, Render deploy of API + POS + launcher + console + shells with the same-origin `/api` rule; the log-line contract, `ops_run`, Activity/Failures/Health/Integrations pages; PII fixes; the OTO App opened from the launcher on the shared database by an admin-created user. |
 | CP2 | S2-07b | Station model live on Render: stations, virtual boxes, offline toggle, sync ledger with epochs and quarantine, print core and simulators, PWA; the Lucky Wheel playable end to end with its admin panel. |
-| CP3 | S2-11 | Two-device POS, first real sale across tenders, voucher and legacy code redemption, receipts, bands, History, refunds; **client play-test opens**; regression fixtures reviewed. |
+| CP3 | S2-11 | Two-device POS, first real sale across tenders, voucher and legacy code redemption, receipts, bands, History, refunds; **the park's play-test opens**; regression fixtures reviewed. |
 | CP4 | S2-15b | Full POS: arrival and gate, check-in with offline release, wallets and stock, cash/EOD/settlement, analytics rows and the multi-branch summary. |
 | CP5 | S2-21 | **The POS is complete**: events, parties and camps against the OTO App master, the self-service kiosk redeeming a booking on its own, staff benefit profiles applied at checkout. |
 | CP6 | S2-19 | Every app on the platform: the OTO App lifted with each module walked through and its contract features built, Radar live with the per-branch source preference (a POS sale visible in it), the Inbox working end to end on the channel simulator. |
-| CP7 | S2-22 | The owner's Console across the whole suite — and the client's own production data under it: real members, employees and figures, the data-access log watching them, the cutover rehearsal timed and written up. |
+| CP7 | S2-22 | The owner's Console across the whole suite — and the park's own production data under it: real members, employees and figures, the data-access log watching them, the cutover rehearsal timed and written up. |
 | CP8 | S2-16 | Acceptance checklist from a clean database on staging, load and soak results, the on-site bring-up runbook, tag, report, Jira evidence, play-test guide. |
 
 Render deployments: the first deploy (API + POS) happens at S2-01c; launcher
@@ -4528,7 +4538,7 @@ S2-17a; the booth static site at S2-07a; the kiosk surface at S2-20; Radar at
 S2-18; the Inbox at S2-19.
 From then on every merge to `main` deploys after CI (migrations + `platform:sync`
 run on deploy). Staging gets a fresh migrate + seed at each checkpoint and the
-audited "Reset demo data" action between client sessions. The final refresh
+audited "Reset demo data" action between play-test sessions. The final refresh
 is part of S2-16.
 
 ## Open decisions
@@ -4585,7 +4595,7 @@ chose them and the owner may change them at any time.
 14. **Wallet expiry, refund of unused credit and the offline cap.** Default:
     no expiry rule runs; unused prepaid credit follows the check-in policy
     (refund); offline cap ฿300 per wallet per day (*unsourced default* — to
-    be confirmed with the client before S2-09a freezes the ledger fields).
+    be confirmed with the owner before S2-09a freezes the ledger fields).
 15. **Revenue definition for analytics.** Resolved 2026-09-20 by the owner:
     revenue is computed exactly as Radar's code computes it — formula v30 for
     Floresta-style branches and v21 for Chalong-style (intake notes 03/04
@@ -4695,7 +4705,7 @@ Added 2026-09-20:
   on refreshed Render staging with zero open blockers; `seed:demo-day`
   reproduces the M5 demo in under 10 minutes; the restore procedure
   (`pnpm data:restore`) runs green on the production dump and the result is
-  what the client play-tests.
+  what the park's team play-test.
 - `docs/qa/ON_SITE_BRINGUP.md` written and reviewed: every device in
   `DEVICE_INVENTORY.md` has its switch from simulator to real transport, its
   smoke test and its confirm-on-site questions, so the park visit is a
@@ -4715,7 +4725,7 @@ Added 2026-09-20:
   static sites with `/api` rewrites, one platform api web service, the OTO
   App and Radar as Docker web services on their own schemas of the one
   managed Postgres (PITR), the 2C2P sandbox wired with real QR codes; `render.yaml`, `.env.example` and the Integrations page agree on
-  variable names; the client play-test guide and feedback template delivered.
+  variable names; the park's play-test guide and feedback template delivered.
 - Docs current: `docs/features/pos.md`, `booth.md`, `console.md`,
   `docs/progress/STATUS.md`, `SPRINT_2_PROGRESS.md` (status block closed,
   deviations recorded: booth order, Pi image, edge + jobs inside api, face-scan

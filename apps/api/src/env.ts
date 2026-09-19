@@ -13,7 +13,7 @@ const EnvSchema = z.object({
    * (S2-01c). Staging runs the production build — same bundle, same
    * optimisations, same secure cookie — against throwaway data, so
    * `NODE_ENV` cannot be the thing that decides whether the demo controls
-   * exist. Everything that must never be true in front of real customers is
+   * exist. Everything that must never be true in front of a live branch is
    * gated on this instead.
    */
   DEPLOY_ENV: z.enum(['local', 'staging', 'production']).default('local'),
@@ -31,7 +31,7 @@ const EnvSchema = z.object({
   /**
    * How many proxy hops in front of the api are ours (S2-01a). 0 = none:
    * `req.ip` is the socket address and a forged X-Forwarded-For changes
-   * nothing. On Render this is 1 — the client ip is then the first hop the
+   * nothing. On Render this is 1 — the caller's ip is then the first hop the
    * platform did not add, i.e. the entry before our own.
    */
   TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
@@ -61,7 +61,7 @@ const EnvSchema = z.object({
     .transform((v) => v === 'true'),
   /**
    * Whether a deploy seeds the demo tenant after migrating. `staging` gives
-   * the client something to play with; `production` starts empty and is
+   * the park's team something to play with; `production` starts empty and is
    * filled by the real data restore (S2-22).
    */
   SEED_PROFILE: z.enum(['staging', 'production']).default('staging'),
@@ -82,6 +82,12 @@ const EnvSchema = z.object({
   MINIO_ACCESS_KEY: z.string().default('oto'),
   MINIO_SECRET_KEY: z.string().default('otosecret123'),
   MINIO_BUCKET: z.string().default('oto-files'),
+  /**
+   * Signing region. Set explicitly so the storage client never has to ask the bucket
+   * where it lives before signing (S2-01d). The default is what that question
+   * already resolved to against local MinIO; Cloudflare R2 wants `auto`.
+   */
+  MINIO_REGION: z.string().default('us-east-1'),
   SMS_ADAPTER: z.string().default('console'),
   TWILIO_ACCOUNT_SID: z.string().optional().or(z.literal('')),
   TWILIO_AUTH_TOKEN: z.string().optional().or(z.literal('')),
@@ -101,18 +107,26 @@ const DEV_DEFAULTS = {
  * Refuse to boot on a configuration that does not belong to this deployment
  * (S2-01b, extended in S2-01c).
  *
- * Two different refusals, because there are two different mistakes:
+ * Three refusals, because there are three different mistakes:
  *
  *  - ON ANY DEPLOYMENT (`NODE_ENV=production`), a development default. The
  *    failure it prevents is quiet and expensive: a service that starts
  *    happily against the local Postgres, or with the demo object-storage
  *    credentials, and only reveals it once real data is in the wrong place.
  *  - ON PRODUCTION ONLY (`DEPLOY_ENV=production`), anything that makes a
- *    deployment a playground. Staging deliberately carries the demo reset,
- *    the seeded tenant and an SMS adapter that prints codes to the log; in
- *    front of real customers each of those is a way to lose their data or
- *    their account. `NODE_ENV` cannot make this distinction — staging IS a
+ *    deployment a playground. Staging deliberately carries the demo reset and
+ *    the seeded tenant; in front of a real branch each of those is a way to
+ *    lose its data. `NODE_ENV` cannot make this distinction — staging IS a
  *    production build — so `DEPLOY_ENV` does.
+ *  - ON EVERY DEPLOYMENT, STAGING INCLUDED (`DEPLOY_ENV` other than `local`),
+ *    a dependency that only exists on a developer's machine: an SMS adapter
+ *    that only writes to the log, or object storage on localhost. Staging is
+ *    where people sign up with their real
+ *    phones to try the system, so a code that reaches nothing but a log
+ *    stream is a person who cannot finish setting up their account — and the
+ *    code itself sitting somewhere it must never be. These are properties of
+ *    the deployment rather than of the build, which is why they are tested on
+ *    `DEPLOY_ENV` and not on `NODE_ENV` (S2-01d, finding B2).
  */
 export function assertProductionSafe(env: Env): void {
   const problems: string[] = [];
@@ -139,13 +153,60 @@ export function assertProductionSafe(env: Env): void {
 
   if (env.DEPLOY_ENV === 'production') {
     if (env.OPS_TEST_CONTROLS) {
-      problems.push('OPS_TEST_CONTROLS is true — "Reset demo data" would be live for real customers');
+      problems.push('OPS_TEST_CONTROLS is true — "Reset demo data" would be live on a real branch');
     }
     if (env.SEED_PROFILE === 'staging') {
       problems.push('SEED_PROFILE is staging — the demo tenant would be seeded into production');
     }
+  }
+
+  if (env.DEPLOY_ENV !== 'local') {
     if (env.SMS_ADAPTER === 'console') {
-      problems.push('SMS_ADAPTER is console — verification codes would go to the log, not the customer');
+      problems.push(
+        'SMS_ADAPTER is console — verification codes would go to the log, not to the phone, ' +
+          'so nobody reaching this deployment could finish setting up an account or reset a password',
+      );
+    }
+    /**
+     * The endpoint is the variable a deploy is most likely to leave at its
+     * default, because it is the one nothing complains about: the api boots
+     * clean and healthy, and the first profile photo is what discovers that
+     * there is no object storage on this host at all.
+     */
+    if (env.MINIO_ENDPOINT === 'localhost' || env.MINIO_ENDPOINT === '127.0.0.1') {
+      problems.push(
+        'MINIO_ENDPOINT is localhost — there is no object storage on a deployment host, ' +
+          'so every profile photo would fail against a port nothing answers on',
+      );
+    }
+    /**
+     * A host, not a URL: the scheme is MINIO_USE_SSL and the port is
+     * MINIO_PORT. Pasting the endpoint as it appears in a storage console
+     * takes the api down at boot — the storage client refuses the value before
+     * anything of ours runs — so it is named here instead.
+     */
+    if (env.MINIO_ENDPOINT.includes('://') || env.MINIO_ENDPOINT.includes('/')) {
+      problems.push(
+        'MINIO_ENDPOINT is a URL — it must be the bare host, e.g. ' +
+          '<account>.r2.cloudflarestorage.com, with the scheme in MINIO_USE_SSL and the port in MINIO_PORT',
+      );
+    }
+    /**
+     * 9000 is the port the local MinIO container listens on and nothing
+     * else. It is also embedded in every presigned URL, so getting it wrong
+     * fails in the visitor's browser rather than here.
+     */
+    if (env.MINIO_PORT === 9000) {
+      problems.push(
+        'MINIO_PORT is 9000, the local MinIO default — an S3 endpoint over TLS answers on 443',
+      );
+    }
+    // A presigned URL carries its own signature: it is a bearer credential
+    // for the object, and plain HTTP hands it to anyone on the path.
+    if (!env.MINIO_USE_SSL) {
+      problems.push(
+        'MINIO_USE_SSL is false — presigned upload and download URLs would travel in the clear',
+      );
     }
   }
 
@@ -157,7 +218,21 @@ export function assertProductionSafe(env: Env): void {
 }
 
 export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env {
-  const env = EnvSchema.parse({ ...process.env, ...overrides });
+  const raw: Record<string, unknown> = { ...process.env, ...overrides };
+  /**
+   * A test process is not a deployment, and it must never depend on what a
+   * developer happens to have in `.env`: real Twilio credentials there would
+   * let `pnpm test` send real messages and spend real money, and half-filled
+   * ones would stop every test building an app at all, now that a missing
+   * credential refuses to boot instead of falling back. The harness swaps in
+   * a capturing adapter anyway; a test that wants something else passes it
+   * explicitly and that is honoured.
+   */
+  if (raw.NODE_ENV === 'test') {
+    if (overrides.SMS_ADAPTER === undefined) raw.SMS_ADAPTER = 'console';
+    if (overrides.DEPLOY_ENV === undefined) raw.DEPLOY_ENV = 'local';
+  }
+  const env = EnvSchema.parse(raw);
   assertProductionSafe(env);
   return env;
 }

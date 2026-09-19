@@ -8,7 +8,7 @@ import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { opCtx, withTx } from '../services/tx';
-import { invalidateAllSessions, issueCode } from '../services/auth';
+import { deliverCode, invalidateAllSessions, mintCode, type PendingCode } from '../services/auth';
 import { resolveEffectivePermissions } from '../services/permissions';
 import {
   assertDominatesAccount,
@@ -107,9 +107,14 @@ export async function accountRoutes(app: App): Promise<void> {
       }
 
       // Employee, account, role assignments, the setup code and the audit row
-      // are one operation: a failure at any point leaves no trace of it.
+      // are one operation: a failure at any point leaves no trace of it. The
+      // SMS is not part of it — see below.
       const id = newId();
-      return withTx(app.db, opCtx(req), 'account.create', async (tx) => {
+      // Assigned inside the transaction; the code it carries deliberately
+      // never joins the value that transaction returns, because `withTx`
+      // stores that value in `idempotency_key.response_body`.
+      let pending!: PendingCode;
+      const created = await withTx(app.db, opCtx(req), 'account.create', async (tx) => {
         let employeeId = req.body.employeeId ?? null;
         if (!employeeId && req.body.employeeName) {
           employeeId = newId();
@@ -130,7 +135,7 @@ export async function accountRoutes(app: App): Promise<void> {
             scopeId: r.scopeId,
           });
         }
-        await issueCode(tx, app.sms, id, phone, 'setup', req.id);
+        pending = await mintCode(tx, id, phone, 'setup');
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
@@ -142,6 +147,13 @@ export async function accountRoutes(app: App): Promise<void> {
         });
         return { id, status: 'invited' as const };
       });
+      // Committed first, sent second. The account is real whatever the
+      // provider does next, so a failed send is reported in the answer
+      // instead of thrown — `deliverCode` explains why a 5xx would be the
+      // wrong one. A replay of the same idempotency key answers with the
+      // stored `{ id, status }`: the warning belongs to the attempt that did
+      // the work, not to the record of it.
+      return { ...created, ...(await deliverCode(app.sms, pending, req.log)) };
     },
   );
 

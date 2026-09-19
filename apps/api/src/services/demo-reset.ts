@@ -21,10 +21,10 @@ import type { Exec } from './tx';
 /**
  * "Reset demo data" — S2-01c.
  *
- * The client is meant to play with the staging deployment: ring sales up,
- * book, check children in, make a mess. What they must never lose doing it is
- * the way back in and the prices they configured. So the reset separates the
- * two by OWNER rather than by age:
+ * The park's team are meant to play with the staging deployment: ring sales
+ * up, book, check children in, make a mess. What they must never lose doing
+ * it is the way back in and the prices they configured. So the reset
+ * separates the two by OWNER rather than by age:
  *
  *   facts         what a day of play produces — visits, bookings, sales,
  *                 payments, wallets, bands, stock counts, and the members

@@ -57,8 +57,20 @@ async function staffName(app: App, accountId: string | null): Promise<string | n
   return row ? (row.name ?? row.phone) : null;
 }
 
-async function memberWithChildren(app: App, memberId: string) {
-  const [m] = await app.db.select().from(member).where(eq(member.id, memberId)).limit(1);
+/**
+ * Always by member id AND operator (S2-01d, finding B4). A member id is not
+ * proof of anything: it is copied into support requests, audit rows and URLs,
+ * and this helper returns the member's phone, notes and every child's
+ * allergies and medical notes. Taking the operator as a required argument
+ * means a call site cannot forget the scope — it has to pass one, and the only
+ * one it has is the caller's own session.
+ */
+async function memberWithChildren(app: App, memberId: string, operatorId: string) {
+  const [m] = await app.db
+    .select()
+    .from(member)
+    .where(and(eq(member.id, memberId), eq(member.operatorId, operatorId)))
+    .limit(1);
   if (!m) return null;
   const children = await app.db
     .select()
@@ -108,10 +120,9 @@ export async function memberRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      req.requireAuth();
+      const auth = req.requireAuth();
       const phone = normalizePhone(req.query.phone);
       if (!phone) return { member: null };
-      const auth = req.auth!;
       const [m] = await app.db
         .select()
         .from(member)
@@ -124,7 +135,7 @@ export async function memberRoutes(app: App): Promise<void> {
         )
         .limit(1);
       if (!m) return { member: null };
-      return { member: await memberWithChildren(app, m.id) };
+      return { member: await memberWithChildren(app, m.id, auth.operatorId) };
     },
   );
 
@@ -157,7 +168,7 @@ export async function memberRoutes(app: App): Promise<void> {
             .limit(50)
         : await app.db.select().from(member).where(base).limit(50);
       // Full objects (children + active verification) — the admin panel edits in place.
-      const full = await Promise.all(rows.map((m) => memberWithChildren(app, m.id)));
+      const full = await Promise.all(rows.map((m) => memberWithChildren(app, m.id, auth.operatorId)));
       return { members: full.filter((m) => m !== null) };
     },
   );
@@ -204,8 +215,10 @@ export async function memberRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      req.requireAuth();
-      const m = await memberWithChildren(app, req.params.id);
+      const auth = req.requireAuth();
+      // 404 rather than 403 when the member belongs to another operator: the
+      // existence of another tenant's record is not ours to confirm.
+      const m = await memberWithChildren(app, req.params.id, auth.operatorId);
       if (!m) throw errors.notFound('Member not found');
       return { member: m };
     },
@@ -245,7 +258,7 @@ export async function memberRoutes(app: App): Promise<void> {
           .limit(1);
         if (already) {
           reply.header('x-oto-replay', 'true');
-          return { member: await memberWithChildren(app, already.id) };
+          return { member: await memberWithChildren(app, already.id, auth.operatorId) };
         }
       }
 
@@ -282,7 +295,7 @@ export async function memberRoutes(app: App): Promise<void> {
           requestId: req.id,
         });
       });
-      return { member: await memberWithChildren(app, id) };
+      return { member: await memberWithChildren(app, id, auth.operatorId) };
     },
   );
 
@@ -344,13 +357,13 @@ export async function memberRoutes(app: App): Promise<void> {
           requestId: req.id,
         });
       });
-      return { member: await memberWithChildren(app, req.params.id) };
+      return { member: await memberWithChildren(app, req.params.id, auth.operatorId) };
     },
   );
 
-  // Tier verification (client extension): staff checked a discount-tier proof
-  // document at the counter. WHO checked is stamped server-side from the
-  // session — the client cannot supply or spoof it — along with branch + time.
+  // Tier verification (beyond the prototype): staff checked a discount-tier
+  // proof document at the counter. WHO checked is stamped server-side from the
+  // session — the caller cannot supply or spoof it — along with branch + time.
   app.post(
     '/:id/tier-verification',
     {
@@ -431,7 +444,7 @@ export async function memberRoutes(app: App): Promise<void> {
           requestId: req.id,
         });
       });
-      return { member: await memberWithChildren(app, m.id) };
+      return { member: await memberWithChildren(app, m.id, auth.operatorId) };
     },
   );
 
@@ -493,8 +506,14 @@ export async function memberRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      const [m] = await app.db.select().from(member).where(eq(member.id, req.params.id)).limit(1);
-      if (!m || m.operatorId !== auth.operatorId) throw errors.notFound('Member not found');
+      // The guardian proves the tenancy: a child is only reachable through a
+      // member of the caller's own operator.
+      const [m] = await app.db
+        .select()
+        .from(member)
+        .where(and(eq(member.id, req.params.id), eq(member.operatorId, auth.operatorId)))
+        .limit(1);
+      if (!m) throw errors.notFound('Member not found');
       const id = newId();
       await withTx(app.db, opCtx(req), 'child.create', async (tx) => {
         await tx.insert(child).values({
@@ -545,12 +564,15 @@ export async function memberRoutes(app: App): Promise<void> {
         .where(eq(child.id, req.params.childId))
         .limit(1);
       if (!before) throw errors.notFound('Child not found');
+      // A child id carries no operator, so the guardian is what proves the
+      // caller may touch this record — and the refusal is the same 404 as an
+      // id that does not exist at all.
       const [owner] = await app.db
         .select()
         .from(member)
-        .where(eq(member.id, before.memberId))
+        .where(and(eq(member.id, before.memberId), eq(member.operatorId, auth.operatorId)))
         .limit(1);
-      if (!owner || owner.operatorId !== auth.operatorId) throw errors.notFound('Child not found');
+      if (!owner) throw errors.notFound('Child not found');
       const patch: Partial<typeof child.$inferInsert> = {};
       const b = req.body;
       if (b.name !== undefined) patch.name = b.name;
