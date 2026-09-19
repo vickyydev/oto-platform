@@ -488,7 +488,7 @@ into Open decisions 29–31.
 
 ## Tickets
 
-Sixteen tickets (Jira epics). Where review asked for it a ticket is split into
+Nineteen tickets (Jira issues). Where review asked for it a ticket is split into
 lettered stories; each story has its own acceptance criteria, QA steps and
 evidence comment. QA steps are tagged **QA (UI)** or **Dev evidence**.
 Shared test controls, all behind `OPS_TEST_CONTROLS`, are listed in the story
@@ -1806,8 +1806,12 @@ Includes:
   notes and order note; merch: receipt; receipt content: receipt number,
   tender lines, VAT rows from `summarizeTax`, abbreviated tax-invoice header,
   member nickname, band codes; printing works offline (jobs queue on the box).
-- `band` + `band_event`; Code128 on the TSPL band readable by the scanner
-  simulator; verifiable offline on the box; band handler registered.
+- `band` + `band_event`; the signed band code printed as a **QR** on the
+  TSPL band (the signature does not fit a 1D strip) with a short Code 128 /
+  human-readable line beneath (DEVICE_INVENTORY §4 D4), both readable by the
+  scanner simulator; verifiable offline on the box; band handler registered.
+  The band artwork (QR + short code) is shown to the owner at CP3 because the
+  earlier design review recorded a 1D-only band as the approved look.
 - History tab wired: branch-scoped list with universal search, detail with
   lines, tenders, attempts, refunds, reprints; band and phone lookups.
 - `refund` table (own series, reason, approver); whole / by item / custom
@@ -2528,7 +2532,9 @@ Includes:
   interval; Health shows "Radar last refreshed".
 - Booth feed: the wheel's spin/voucher rows come from the platform booth
   tables (S2-07) through the same summary contract instead of Radar's own
-  `spinRewardsRoutes`.
+  `spinRewardsRoutes`; those routes and the `SPIN_WIN_REDEEM_KEY` that
+  gates them are kept only until the legacy wheel URL is retired at cutover,
+  then deleted.
 - Docs: `docs/features/oto-radar.md` status; `.env.example` block.
 
 Excludes: live Pisell/Papaya pulls on staging; the real Radar dump restore
@@ -2833,26 +2839,6 @@ chose them and the owner may change them at any time.
     the 2C2P docs serve for the first test).
 20. **Business day start.** Default: 05:00 Asia/Bangkok (*unsourced default*)
     so late parties fall on the previous trading day.
-29. **OTO App face clock-in.** The live app clocks staff in by face
-    recognition (`face-recognition.ts`, kiosk); PROJECT_CONTEXT §13 bans
-    biometrics for the POS. The lift keeps the module as it is behind
-    `OTOAPP_FACE_CLOCKIN=true` (off on staging: PIN and phone clock-in only)
-    until the owner decides for production; re-enrolment on new
-    infrastructure is part of that decision.
-30. **The contract feature list.** `docs/briefs/AGENCY_PROPOSAL.md` §6 is
-    our reading of what the proposal shows as not yet built. The owner
-    confirms or trims that list before S2-17c starts; each confirmed item
-    becomes a Jira sub-task.
-31. **Inbox brief conflicts.** The May briefs and the in-app IT Brief
-    disagree (statuses, tabs, role views, staffing model, EN/RU primary,
-    language handling, complaint routing — `docs/features/inbox.md`). The
-    schema in S2-19 follows the IT Brief as the latest word; the owner
-    confirms before the live channels are built.
-32. **2C2P merchant credentials.** The sandbox merchant id and secret for the
-    park's SCB-acquired 2C2P account (or the public demo pair for the first
-    test), the enabled QR channel, and the return URLs — into `.env` as
-    `PGW_*` (`docs/architecture/PAYMENT_GATEWAY.md`). Production credentials
-    later.
 21. **Other unsourced defaults, chosen by us.** Hand-off TTL 60 s, pairing TTL
     600 s, lease 15 s/60 s, `BOX_OFFLINE_AFTER_S` 180, `SYNC_STALE_AFTER_S`
     900, `PAYMENT_PENDING_MIN` 10, not-found budget 5/min → 10-min lock,
@@ -2883,6 +2869,38 @@ Questions the previous developer's document itself raises
     Default: yes.
 28. **Benefit QR source** (C13): the employee master stays in OTO App and the
     platform issues the badge credential. Default: yes (Sprint 3).
+
+Added 2026-09-20:
+
+29. **OTO App face clock-in.** The live app clocks staff in by face
+    recognition (`face-recognition.ts`, kiosk); PROJECT_CONTEXT §13 bans
+    biometrics for the POS. The lift keeps the module as it is behind
+    `OTOAPP_FACE_CLOCKIN=true` (off on staging: PIN and phone clock-in only)
+    until the owner decides for production; re-enrolment on new
+    infrastructure is part of that decision.
+30. **The contract feature list.** `docs/briefs/AGENCY_PROPOSAL.md` §6 is
+    our reading of what the proposal shows as not yet built. The owner
+    confirms or trims that list before S2-17c starts; each confirmed item
+    becomes a Jira sub-task.
+31. **Inbox brief conflicts.** The May briefs and the in-app IT Brief
+    disagree (statuses, tabs, role views, staffing model, EN/RU primary,
+    language handling, complaint routing — `docs/features/inbox.md`). The
+    schema in S2-19 follows the IT Brief as the latest word; the owner
+    confirms before the live channels are built.
+32. **2C2P merchant credentials.** The sandbox merchant id and secret for the
+    park's SCB-acquired 2C2P account (or the public demo pair for the first
+    test), the enabled QR channel, and the return URLs — into `.env` as
+    `PGW_*` (`docs/architecture/PAYMENT_GATEWAY.md`). Production credentials
+    later.
+33. **Audit retention.** PROJECT_CONTEXT §9 archives audit rows after 12
+    months; the ops review argued for at least five years on financial and
+    child-release rows. Default: no purge of any audit row this sprint; the
+    retention job (S2-03) is configured per category later, with financial
+    and release categories never below five years.
+34. **Foreign-app schema names.** `otoapp`, `radar`, `inbox` (the earlier
+    PLATFORM_PLAN and intake notes wrote `oto_app`; the database role that
+    owns the OTO App schema keeps the name `oto_app`, the schema is
+    `otoapp`). Cosmetic; recorded so nobody creates both.
 
 ## Definition of done for the sprint
 

@@ -9,8 +9,8 @@
   real device protocols) with `PAYMENT_GATEWAY.md` and `DEVICE_INVENTORY.md`
   finished and their facts carried into the tickets (see "Done on
   2026-09-20").
-- Next step: `docs/architecture/DEVELOPMENT_PLAN.md` (in flight), then the
-  approval summary to the owner, then the Jira tickets and S2-01a.
+- Next step: the owner's approval of plan v2 (approval summary given in chat
+  2026-09-20); on approval create the Jira tickets and start S2-01a.
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source), `docs/briefs/OWNER_DIRECTION.md` (section 2026-09-20 wins),
@@ -67,28 +67,16 @@
 
 ## Pending — in this order
 
-_Checkpoint 2026-09-20, second session (commits 5dabf05 → 45d3997): the
-earlier items 1 and 2 are done — `docs/architecture/PAYMENT_GATEWAY.md`
-(3f8827d) and `docs/architecture/DEVICE_INVENTORY.md` §2/§4/§9 (beb9385);
-tickets S2-06 (460779c), S2-10a and S2-15a (45d3997) carry the researched
-values; STATUS.md rewritten (d0d31c9); feature pages and the docs index point
-at the tickets (36b02d7)._
+_Plan v2 is complete as of commit set 5dabf05 → this one: SPRINT_2_PLAN.md,
+DEVELOPMENT_PLAN.md (1,849 lines), PAYMENT_GATEWAY.md, DEVICE_INVENTORY.md,
+AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
 
-1. `docs/architecture/DEVELOPMENT_PLAN.md` — being written by an agent that
-   saves incrementally (DRAFT line at the top until it finishes). If it is
-   still marked DRAFT when resuming, finish it from its own headings:
-   resume protocol, sources and precedence, target architecture, work order,
-   per-ticket recipe, how each foreign app is lifted, conventions, env
-   registry, research index, open-questions register, definition of done.
-2. Read the finished development plan once against `SPRINT_2_PLAN.md` and
-   fix any inconsistency it reports; commit.
-3. Present the approval summary to the owner: readiness answers, the 19
-   tickets with milestones and checkpoints, the contract-coverage map with
-   the deferred items to confirm, open decisions 29–32, the inputs needed
-   (gateway portal question first).
-4. On approval: create the Jira tickets (descriptions, acceptance criteria,
-   QA steps; never change statuses) and start S2-01a; from then on the
-   ticket log below is the record.
+1. Owner approval of  (see "Owner inputs needed").
+2. On approval: create the Jira tickets (one issue per ticket, lettered parts
+   as sub-tasks; descriptions, acceptance criteria and QA steps copied from
+   the plan; statuses never changed by us).
+3. Start S2-01a; from then on the ticket log below is the record, updated in
+   the same commit series as the code.
 
 ## Owner inputs needed (asked 2026-09-20)
 

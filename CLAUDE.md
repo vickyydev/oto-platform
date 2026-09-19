@@ -12,6 +12,15 @@
 > **Commits follow `CONTRIBUTING.md`** (conventional `type(scope): summary` subject,
 > bullet-point body, `Refs:` footer, no attribution lines). That supersedes the commit
 > rule in section 8 below.
+>
+> **Sprint 2 (from 2026-09-20).** Sections 5, 6, 9, 10 and 11 below are the Sprint 1
+> brief and are superseded for Sprint 2 by `docs/progress/SPRINT_2_PLAN.md` (what to
+> build: 19 tickets, checkpoints, open decisions) and
+> `docs/architecture/DEVELOPMENT_PLAN.md` (how to build it: resume protocol, target
+> architecture, per-ticket recipe, conventions, environment registry, research
+> conclusions). Sections 3, 7 and 8 stay in force. Resume every session from
+> `docs/progress/STATUS.md` → `docs/progress/SPRINT_2_PROGRESS.md` (Status block).
+> Checkpoint after every substantial step: update the progress file, commit, push.
 
 # OTO Platform — Agent Context and Sprint 1 Brief
 
