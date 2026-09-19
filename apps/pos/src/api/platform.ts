@@ -15,12 +15,17 @@ export interface MeResponse {
   branch: { id: string; name: string; code: string; timezone: string } | null;
   isPlatformAdmin: boolean;
   photoFileId: string | null;
+  /** True when this session is locked on inactivity (S2-01a). */
+  sessionLocked: boolean;
 }
 
 export const authApi = {
   signIn: (phone: string, password: string) =>
     api.post<{ accountId: string; mustChangePassword: boolean }>('/auth/sign-in', { phone, password }),
   signOut: () => api.post<{ ok: true }>('/auth/sign-out'),
+  /** Inactivity lock: the session survives, business routes refuse (S2-01a). */
+  lock: () => api.post<{ locked: true }>('/auth/lock'),
+  unlock: (password: string) => api.post<{ locked: false }>('/auth/unlock', { password }),
   me: () => api.get<MeResponse>('/me'),
   permissions: () =>
     api.get<{ permissions: Array<{ permission: string; scopeType: string; scopeId: string | null }> }>(
@@ -258,6 +263,33 @@ export const adminApi = {
     api.post<{ id: string }>(`/accounts/${id}/role-assignments`, body, { idempotencyKey: idemKey() }),
   removeAssignment: (accountId: string, assignmentId: string) =>
     api.delete<{ ok: true }>(`/accounts/${accountId}/role-assignments/${assignmentId}`),
+  /** S2-01a — sessions an account holds, for the Login Users panel. */
+  accountSessions: (id: string) =>
+    api.get<{
+      sessions: Array<{
+        id: string;
+        branchId: string | null;
+        stationId: string | null;
+        lockedAt: string | null;
+        lastSeenAt: string;
+        expiresAt: string;
+        createdAt: string;
+      }>;
+    }>(`/accounts/${id}/sessions`),
+  /** S2-01a — "Sign out everywhere": end every session this account holds. */
+  revokeSessions: (id: string) =>
+    api.post<{ sessionsEnded: number }>(`/accounts/${id}/sessions/revoke`),
+  /** S2-01a — refusals recorded by the API, newest first. */
+  recentDenials: (limit = 10) =>
+    api.get<{
+      entries: Array<{
+        id: string;
+        actorAccountId: string | null;
+        requestId: string | null;
+        after: { code: string; message: string; method: string; url: string } | null;
+        createdAt: string;
+      }>;
+    }>(`/audit?action=access.denied&limit=${limit}`),
   operators: () => api.get<{ operators: Array<{ id: string; name: string }> }>('/operators'),
   createOperator: (name: string) =>
     api.post<{ id: string }>('/operators', { name }, { idempotencyKey: idemKey() }),

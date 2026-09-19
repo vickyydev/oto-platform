@@ -33,7 +33,7 @@ type Mode = 'signin' | 'setup' | 'reset';
  * temp module links.
  */
 export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
-  const { signIn } = useOperator();
+  const { signIn, locked, operator, unlock, logout } = useOperator();
   const [, navigate] = useLocation();
 
   const [mode, setMode] = useState<Mode>('signin');
@@ -114,6 +114,81 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
     setFaceHint(true);
     window.setTimeout(() => setFaceHint(false), 2600);
   };
+
+  /**
+   * Locked on inactivity (S2-01a): the shift is still signed in, so the only
+   * thing asked for is the password — no phone, no re-selecting the branch,
+   * no lost till. "Sign out" is the way to hand the till to someone else.
+   */
+  const doUnlock = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (busy || !password) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await unlock(password);
+      setPassword('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not unlock');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (locked && operator) {
+    return (
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-background text-foreground px-6 overflow-y-auto">
+        <div className="w-full max-w-md flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-500 py-8">
+          <div className="relative w-24 h-24 rounded-[2rem] bg-primary flex items-center justify-center text-primary-foreground mb-6 shadow-2xl shadow-primary/30">
+            <Lock className="w-12 h-12" />
+          </div>
+          <h1 className="text-4xl font-black tracking-tight mb-2">Locked</h1>
+          <p className="text-lg text-foreground/60 mb-8">
+            {operator.name} is still signed in — enter your password to continue.
+          </p>
+
+          <form onSubmit={doUnlock} className="w-full flex flex-col gap-3 text-left">
+            <label className="text-sm font-semibold text-foreground/60 flex items-center gap-2">
+              <KeyRound className="w-4 h-4" /> Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              autoFocus
+              className="w-full h-14 rounded-2xl border border-input bg-background px-4 text-lg focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button
+              type="submit"
+              size="lg"
+              className="h-16 text-lg gap-3 rounded-2xl w-full mt-2"
+              disabled={busy || !password}
+            >
+              {busy ? <Loader2 className="w-6 h-6 animate-spin" /> : <Lock className="w-6 h-6" />}
+              {busy ? 'Unlocking…' : 'Unlock'}
+            </Button>
+          </form>
+
+          <button
+            type="button"
+            onClick={logout}
+            className="mt-8 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Sign out and hand over the till
+          </button>
+
+          <div className="flex items-center gap-2 mt-10 text-foreground/30 text-sm">
+            <Lock className="w-4 h-4" />
+            The shift stays open while the till is locked
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-background text-foreground px-6 overflow-y-auto">

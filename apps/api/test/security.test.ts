@@ -121,6 +121,26 @@ describe('privilege dominance (S2-01a)', () => {
     expect(res.json().error.code).toBe('ROLE_NOT_DOMINATED');
   });
 
+  it('records each refusal so the Login Users panel can show it', async () => {
+    const adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/audit?action=access.denied&limit=10',
+      headers: { cookie: adminCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const entries = res.json().entries as Array<{
+      actorAccountId: string;
+      after: { code: string; method: string; url: string };
+    }>;
+    // The two refusals above, attributed to the manager who was refused.
+    const codes = entries.map((e) => e.after.code);
+    expect(codes).toContain('ROLE_NOT_DOMINATED');
+    expect(entries.every((e) => e.actorAccountId === managerId)).toBe(true);
+    // The recorded URL never carries a query string.
+    expect(entries.every((e) => !e.after.url.includes('phone='))).toBe(true);
+  });
+
   it('hides an account belonging to another operator behind a 404', async () => {
     const [other] = await ctx.db
       .insert(operator)

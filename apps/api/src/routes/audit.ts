@@ -11,6 +11,7 @@ export async function auditRoutes(app: App): Promise<void> {
       schema: {
         description: 'Query the audit log',
         querystring: z.object({
+          action: z.string().optional(),
           entityType: z.string().optional(),
           entityId: z.string().optional(),
           actorAccountId: z.string().uuid().optional(),
@@ -25,6 +26,7 @@ export async function auditRoutes(app: App): Promise<void> {
       const auth = await req.requirePermission('admin:audit:read');
       const clauses: SQL[] = [eq(auditLog.operatorId, auth.operatorId)];
       const q = req.query;
+      if (q.action) clauses.push(eq(auditLog.action, q.action));
       if (q.entityType) clauses.push(eq(auditLog.entityType, q.entityType));
       if (q.entityId) clauses.push(eq(auditLog.entityId, q.entityId));
       if (q.actorAccountId) clauses.push(eq(auditLog.actorAccountId, q.actorAccountId));

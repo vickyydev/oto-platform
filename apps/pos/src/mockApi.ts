@@ -603,9 +603,8 @@ export const setOperatorThemePref = (
   customer: 'dark' | 'light',
 ): void => { _operatorThemePrefs.set(operatorId, { staff, customer }); };
 
-// Auto-logout configuration (single source of truth).
-export const INACTIVITY_TIMEOUT_MS = 120000; // 2 minutes of no interaction -> lock
-export const INACTIVITY_WARNING_MS = 15000; // show "Locking soon…" in the last 15s
+// Inactivity timings moved to src/auth/timings.ts (S2-01a): a security
+// control does not belong in the prototype's fixture module.
 
 // --- Members / verified pricing tier (mocked) -----------------------------
 // A member's discounted tier is a VERIFIED attribute.

@@ -37,6 +37,7 @@ import { sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
 import { isPgError, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
+import { audit } from './services/audit';
 import type { FileStorage } from './services/files';
 import { buildSmsSender, type SmsSender } from './services/sms';
 
@@ -171,9 +172,48 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     );
   });
 
+  /**
+   * Refusals worth a record: an administrator being told "no" is exactly the
+   * signal the Login Users panel's "Recent denials" list shows, and the first
+   * thing to look at if someone is probing (S2-01a).
+   */
+  const DENIAL_CODES = new Set([
+    'FORBIDDEN',
+    'ROLE_NOT_DOMINATED',
+    'SCOPE_NOT_OWNED',
+    'ACCOUNT_NOT_FOUND',
+    'SESSION_LOCKED',
+    'MUST_CHANGE_PASSWORD',
+    'ORIGIN_NOT_ALLOWED',
+  ]);
+
   // Error envelope { error: { code, message, details? } } — CLAUDE.md §3.
-  app.setErrorHandler((err: unknown, req, reply) => {
+  app.setErrorHandler(async (err: unknown, req, reply) => {
     if (err instanceof AppError) {
+      // Only for a known caller: anonymous traffic is the rate limiter's
+      // problem, and writing a row per anonymous 403 is a free write amplifier.
+      if (DENIAL_CODES.has(err.code) && req.auth) {
+        try {
+          await audit.record(app.db, {
+            actorAccountId: req.auth.accountId,
+            operatorId: req.auth.operatorId,
+            branchId: req.auth.branchId,
+            action: 'access.denied',
+            entityType: 'request',
+            entityId: req.id,
+            after: {
+              code: err.code,
+              message: err.message,
+              method: req.method,
+              url: scrubUrl(req.url),
+            },
+            requestId: req.id,
+          });
+        } catch (auditErr) {
+          // A failed audit write must never turn a 403 into a 500.
+          req.log.error({ err: auditErr, reqId: req.id }, 'denial audit failed');
+        }
+      }
       return reply
         .status(err.statusCode)
         .send({ error: { code: err.code, message: err.message, details: err.details } });

@@ -54,9 +54,11 @@ function Router() {
 // On narrow phone viewports (< 768 px) the MobileShell is rendered in place of
 // the standard iPad Router — same provider tree, additive only.
 function AuthGate() {
-  const { operator } = useOperator();
+  const { operator, locked } = useOperator();
   const isMobile = useIsMobile();
-  if (!operator) return <LockScreen />;
+  // Signed out → sign in. Signed in but locked → unlock the same session
+  // with the password (S2-01a); the shift is not ended by inactivity.
+  if (!operator || locked) return <LockScreen />;
   if (isMobile) {
     return (
       <>

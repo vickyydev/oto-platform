@@ -2,9 +2,13 @@ import { useOperator } from '@/auth/OperatorContext';
 import { Button } from '@/components/ui/button';
 import { TimerReset } from 'lucide-react';
 
-/** Brief "Locking soon…" prompt shown in the final seconds before auto-logout. */
+/**
+ * Brief "Locking soon…" prompt shown in the final seconds before the till
+ * locks. "Lock now" locks the session (S2-01a) — it no longer signs the
+ * operator out, so unlocking needs only the password.
+ */
 export function InactivityWarning() {
-  const { warningActive, secondsLeft, stayActive, logout } = useOperator();
+  const { warningActive, secondsLeft, stayActive, lockNow } = useOperator();
   if (!warningActive) return null;
 
   return (
@@ -22,7 +26,7 @@ export function InactivityWarning() {
         <Button size="sm" className="h-9" onClick={stayActive}>
           Stay
         </Button>
-        <Button size="sm" variant="ghost" className="h-9 text-foreground/60" onClick={logout}>
+        <Button size="sm" variant="ghost" className="h-9 text-foreground/60" onClick={lockNow}>
           Lock now
         </Button>
       </div>

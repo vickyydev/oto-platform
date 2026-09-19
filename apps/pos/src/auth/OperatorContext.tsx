@@ -8,26 +8,38 @@ import {
   type ReactNode,
 } from 'react';
 import { Operator } from '@/types';
-import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS, getOperatorThemePref } from '@/mockApi';
+import { getOperatorThemePref } from '@/mockApi';
+import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS } from '@/auth/timings';
 import { useStaffTheme, useCustomerTheme } from '@/lib/themePref';
 import { authApi } from '@/api/platform';
 import { loadCatalogFromApi } from '@/api/catalogBridge';
 
 /**
- * Operator session — Sprint 1 rebuild: the "operator" (prototype term for the
- * signed-in STAFF member) is now backed by a real API session (phone +
- * password, httpOnly cookie). The inactivity lock keeps the prototype's
- * exact timings (2 min + 15 s warning, mockApi constants); "Scan my face"
- * remains a placeholder for later face auth.
+ * Operator session — the "operator" (prototype term for the signed-in STAFF
+ * member) is backed by a real API session (phone + password, httpOnly
+ * cookie). "Scan my face" remains a placeholder for later face auth.
+ *
+ * S2-01a changed what inactivity does. Sprint 1 signed the operator OUT after
+ * two minutes, which deleted the server session — so coming back needed the
+ * network, and a till on a dropped connection was dead until it returned.
+ * Now it LOCKS: the session stays, the same password unlocks it, and Sign out
+ * is the only action that ends a session. That distinction is what lets a
+ * box unlock a till offline later (S2-06).
  */
 interface OperatorContextValue {
-  /** The operator currently logged in, or null when the POS is locked. */
+  /** The operator currently signed in, or null at the sign-in screen. */
   operator: Operator | null;
+  /** True while the session is locked on inactivity — still signed in. */
+  locked: boolean;
   /** Sign in with phone + password against the platform API. */
   signIn: (phone: string, password: string) => Promise<Operator>;
+  /** Re-enter the password to unlock the SAME session. */
+  unlock: (password: string) => Promise<void>;
+  /** Lock now, without waiting for the timer. */
+  lockNow: () => void;
   /** Legacy face-scan entry — kept as a placeholder (throws to the caller). */
   login: () => Operator | null;
-  /** Lock the POS immediately, deleting the server-side session. */
+  /** End the session on the server and return to the sign-in screen. */
   logout: () => void;
   /** True while the pre-logout inactivity warning is showing. */
   warningActive: boolean;
@@ -59,6 +71,7 @@ function toOperator(me: Awaited<ReturnType<typeof authApi.me>>, isManager: boole
 
 export function OperatorProvider({ children }: { children: ReactNode }) {
   const [operator, setOperator] = useState<Operator | null>(null);
+  const [locked, setLocked] = useState(false);
   const [warningActive, setWarningActive] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [sessionResolved, setSessionResolved] = useState(false);
@@ -82,9 +95,25 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     clearTimers();
     setWarningActive(false);
+    setLocked(false);
     setOperator(null);
     void authApi.signOut().catch(() => {
-      // Session may already be gone (expiry, deactivation) — locked either way.
+      // Session may already be gone (expiry, deactivation) — signed out either way.
+    });
+  }, [clearTimers]);
+
+  /**
+   * Inactivity reached, or the operator locked deliberately. The screen locks
+   * immediately — before the API call resolves — so a till left alone is
+   * never showing customer data while a request is in flight.
+   */
+  const lockNow = useCallback(() => {
+    clearTimers();
+    setWarningActive(false);
+    setLocked(true);
+    void authApi.lock().catch(() => {
+      // Offline or already locked: the screen is locked regardless, and the
+      // unlock below re-verifies against the server when it answers again.
     });
   }, [clearTimers]);
 
@@ -119,11 +148,17 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         // Catalog load failing must not block the lock screen → surfaced by panels.
       });
       setOperator(op);
+      setLocked(false);
       applyThemePrefs(op.id);
       return op;
     },
     [applyThemePrefs],
   );
+
+  const unlock = useCallback(async (password: string): Promise<void> => {
+    await authApi.unlock(password);
+    setLocked(false);
+  }, []);
 
   // Legacy face-scan seam: face auth arrives with the branch agent (M3+).
   const login = useCallback((): Operator | null => null, []);
@@ -142,12 +177,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       }, 1000);
     }, warnAfter);
 
-    logoutTimer.current = window.setTimeout(logout, INACTIVITY_TIMEOUT_MS);
-  }, [clearTimers, logout]);
+    logoutTimer.current = window.setTimeout(lockNow, INACTIVITY_TIMEOUT_MS);
+  }, [clearTimers, lockNow]);
 
   const stayActive = useCallback(() => {
-    if (operator) armTimers();
-  }, [operator, armTimers]);
+    if (operator && !locked) armTimers();
+  }, [operator, locked, armTimers]);
 
   // On mount, resume a still-valid server session (e.g. an accidental reload
   // inside the TTL). Failing quietly keeps the lock screen as the default.
@@ -165,6 +200,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         const op = toOperator(me, isManager);
         setOperator(op);
+        // A reload inside a locked session comes back locked.
+        setLocked(me.sessionLocked);
         applyThemePrefs(op.id);
       } catch {
         /* not signed in */
@@ -177,9 +214,11 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     };
   }, [applyThemePrefs]);
 
-  // While logged in, listen for activity and reset the inactivity timer.
+  // While signed in and unlocked, listen for activity and reset the timer.
+  // A locked till must NOT re-arm on touch: tapping the lock screen is not a
+  // reason to keep the session alive.
   useEffect(() => {
-    if (!operator) {
+    if (!operator || locked) {
       clearTimers();
       return;
     }
@@ -192,24 +231,47 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       ACTIVITY_EVENTS.forEach((e) => window.removeEventListener(e, onActivity));
       clearTimers();
     };
-  }, [operator, armTimers, clearTimers]);
+  }, [operator, locked, armTimers, clearTimers]);
 
-  // Session died server-side (expiry, deactivation, password reset elsewhere):
-  // any API 401 locks the POS immediately instead of leaving dead screens.
+  // Session died server-side (expiry, deactivation, force sign-out, password
+  // reset elsewhere): any API 401 returns the POS to the SIGN-IN screen —
+  // not the lock screen, because there is no session left to unlock.
   useEffect(() => {
     if (!operator) return;
     const onUnauthorized = () => {
       clearTimers();
       setWarningActive(false);
+      setLocked(false);
       setOperator(null);
     };
     window.addEventListener('oto:unauthorized', onUnauthorized);
     return () => window.removeEventListener('oto:unauthorized', onUnauthorized);
   }, [operator, clearTimers]);
 
+  // A request refused with 423 means the server considers this session
+  // locked (another tab locked it, or the box did). Follow it.
+  useEffect(() => {
+    if (!operator) return;
+    const onLocked = () => setLocked(true);
+    window.addEventListener('oto:session-locked', onLocked);
+    return () => window.removeEventListener('oto:session-locked', onLocked);
+  }, [operator]);
+
   return (
     <OperatorContext.Provider
-      value={{ operator, signIn, login, logout, warningActive, secondsLeft, stayActive, sessionResolved }}
+      value={{
+        operator,
+        locked,
+        signIn,
+        unlock,
+        lockNow,
+        login,
+        logout,
+        warningActive,
+        secondsLeft,
+        stayActive,
+        sessionResolved,
+      }}
     >
       {children}
     </OperatorContext.Provider>

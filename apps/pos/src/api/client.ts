@@ -40,6 +40,11 @@ async function request<T>(
     if (res.status === 401 && !path.startsWith('/auth') && !path.startsWith('/public')) {
       window.dispatchEvent(new CustomEvent('oto:unauthorized'));
     }
+    // 423: the session is alive but locked (another tab, or the box). Show
+    // the lock screen rather than an error the operator cannot act on.
+    if (res.status === 423) {
+      window.dispatchEvent(new CustomEvent('oto:session-locked'));
+    }
     throw new ApiError(res.status, err?.code ?? 'UNKNOWN', err?.message ?? res.statusText, err?.details);
   }
   return data as T;

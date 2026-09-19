@@ -38,6 +38,9 @@ export async function meRoutes(app: App): Promise<void> {
       branch: br ? { id: br.id, name: br.name, code: br.code, timezone: br.timezone } : null,
       isPlatformAdmin: isPlatformWide(permissions),
       photoFileId: photo?.id ?? null,
+      // So a reload inside a locked session comes back LOCKED rather than
+      // opening the till (S2-01a).
+      sessionLocked: auth.lockedAt !== null,
     };
   });
 
