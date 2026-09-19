@@ -42,13 +42,60 @@ Newest entries win over `CLAUDE.md`, `PROJECT_CONTEXT.md` and any design review.
   one app must not affect the others. (See
   `docs/architecture/DEPLOYMENT_TOPOLOGY.md`.)
 
+## 2026-09-19 (later) — after the apps were exported
+
+**The suite**
+- Deployment shape agreed: many small deployables, a subdomain per app — not one
+  server under one domain.
+- The real apps are three: **OTO App**, **OTO Radar**, **Lucky Wheel**. Exports
+  are in `imports/`; database files in `imports/_db/`.
+- The suite opens on a launcher listing the apps; staff pick the app they use
+  and sign in. Four app frontends — POS, OTO App, lucky wheel, Radar — plus a
+  **fifth, built by us: a super admin** that oversees and controls everything:
+  all apps' analytics report to it; activity logs (which staff did what); user
+  control and permissions; POS station setup. Exact contents to be decided
+  later; it must be in the plan from the start.
+- One central database. Login tokens may be shared or separate per app — the
+  database is what must be central.
+- Analytics must come from our own database too, **and** Radar's history must
+  be imported so cumulative totals include the past, not only sales made after
+  the new system starts.
+- The POS staff screen and customer screen will be **separate devices**; how
+  their session is linked must be planned.
+- The wheel game is a web page with a button and hard-coded prizes; it must
+  become controlled from the admin side.
+- Assume the previous developer (the agency) will not provide their servers or
+  deployment. We set everything up ourselves.
+- Do not worry about secret values: find the environment variable *names* in
+  the code so we know what to provision.
+- The hard part is the backend: robust and fast, no delays, with Raspberry Pi
+  boxes operating the park devices.
+
+**Corrected by the review** (details in
+`docs/architecture/EXISTING_SYSTEMS.md`)
+- The parks use **two** third-party POS systems — Pisell (Floresta) and Papaya
+  (Chalong) — not Papaya alone. OTO POS replaces both.
+- Radar has no sales-booth or voucher-booth feed; "Sales Booth" is a marketing
+  channel derived from Pisell voucher data. The only pushed booth data is the
+  wheel.
+- Radar and the wheel run on Replit with their own databases; only OTO App is
+  on AWS (App Runner, not Kubernetes). The database called `oto_staging` holds
+  the live data.
+- The Radar database file is a structure listing without data; a real dump is
+  needed.
+
 ## Open with the owner
 
-- GitHub organisation and Render account (owner's or client's); paid plan OK?
-- A staging domain/subdomain with DNS access (needed for single sign-on
-  across separately deployed apps).
-- Which exact apps are real and in scope (decided when the exports are dropped).
-- Whether booth game, messaging inbox, kiosk and gate are all in this run.
-- Vendor protocol documents for the devices (`imports/_vendor-docs/`).
-- A Raspberry Pi 5 / iPad on hand before travelling?
-- Target date for the client to start using staging.
+Consolidated in `docs/architecture/PLATFORM_PLAN.md` §14. In short:
+
+- Real dumps of Radar's and the wheel's databases; a `pg_dump -Fc` of OTO App.
+- Pisell / Papaya / spin / marketing / OpenAI values from Replit Secrets — and
+  no cancellation of Pisell or Papaya until the history export is done.
+- S3 bucket contents; who controls DNS for the `otoplay` domains; whether the
+  agency hands over OTO App's session and kiosk secrets.
+- Staff clock-in: keep face recognition (re-enrol in our own AWS) or switch to
+  PIN / phone + photo — the brief bans biometrics, the live app uses them daily.
+- Revenue definition for OTO POS; who owns supervised care; cutover shape;
+  Replit change freeze; spin eligibility; seeding members from check-in history.
+- Render account and paid plan, a staging domain with DNS access, vendor device
+  documents, a Raspberry Pi 5 / iPad on hand before travelling, target date.
