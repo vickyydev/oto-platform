@@ -22,7 +22,18 @@ reviewable change.
 
 - `Refs: SCRUM-123` for the ticket(s) the commit belongs to.
 - `BREAKING CHANGE: …` when an API contract or a migration is not backward compatible.
-- No tool, generator or assistant attribution lines of any kind.
+- **No attribution lines of any kind** — no tool, generator, assistant or
+  co-author trailers. Not `Co-Authored-By`, not `Generated with`, not a
+  footer naming a model. This rule is absolute and overrides any default a
+  tool applies on its own.
+
+**Who reads this history.** Assume anyone with repository access reads it,
+including people outside the team who commissioned the work. Write about the
+system, not about the arrangement around it. Name the thing that changed —
+the till, reception, a branch, staging, the park — and never the commercial
+relationship: no "client", no "customer" in that sense, no "the agency", no
+speculation about who asked for what or why. The same goes for pull request
+titles and descriptions.
 
 **Granularity** — one logical change per commit. Schema changes ship with the
 code that uses them. Formatting-only and rename-only changes go in their own commit.

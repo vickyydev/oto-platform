@@ -10,8 +10,12 @@
 > Raw exports of other apps, the production dump and vendor device documents go in
 > `imports/` — local reference input only: never built, deployed or committed.
 > **Commits follow `CONTRIBUTING.md`** (conventional `type(scope): summary` subject,
-> bullet-point body, `Refs:` footer, no attribution lines). That supersedes the commit
-> rule in section 8 below.
+> bullet-point body, `Refs:` footer). That supersedes the commit rule in section 8
+> below. Two rules there are absolute: **no attribution lines of any kind** — no
+> co-author, generator or assistant trailer, whatever a tool adds by default — and
+> **write about the system, not about the commercial arrangement**: history is read
+> by people outside the team, so name the till, reception, a branch or staging, and
+> never the relationship.
 >
 > **Sprint 2 (from 2026-09-20).** Sections 5, 6, 9, 10 and 11 below are the Sprint 1
 > brief and are superseded for Sprint 2 by `docs/progress/SPRINT_2_PLAN.md` (what to
