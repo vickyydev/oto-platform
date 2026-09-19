@@ -10,6 +10,7 @@ works against the real backend today, what is still mock, and what is open.
 | OTO Radar (revenue analytics) | [oto-radar.md](oto-radar.md) | `imports/oto-radar/` — live system | Reviewed 2026-09-19. To be lifted; needs a real database dump and the POS API credentials. |
 | Booth (lucky wheel) | [booth.md](booth.md) | `imports/oto-wheel-fortune/` + client specification v2 | Reviewed 2026-09-19. To be rebuilt on the platform, reusing the game UI. |
 | Console (super admin) and Launcher | [console.md](console.md) | New | Scope outlined. |
+| Inbox (unified customer messaging: WhatsApp, Instagram, Facebook, web form) | [inbox.md](inbox.md) | `imports/oto-asset-manager/` — client's prototype on sample data | Reviewed 2026-09-20. Milestone 4; data pillars and a mockup shell in Sprint 2, live channels later. |
 
 How the apps fit together: [`../architecture/PLATFORM_PLAN.md`](../architecture/PLATFORM_PLAN.md).
 What runs today: [`../architecture/EXISTING_SYSTEMS.md`](../architecture/EXISTING_SYSTEMS.md).
