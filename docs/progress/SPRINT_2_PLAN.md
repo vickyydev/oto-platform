@@ -1628,8 +1628,16 @@ Includes:
   reasons, revenue categories; Tiers write-through fixed.
 - `MobileTill`, `PartyTicketModal`, `BookIdentify` and the Till's event-pass
   path moved to `membersApi` so one member record exists.
+- **Branch catalogue clone** (R-03, proposal §6.4): "Clone from another
+  branch" copies tickets, menus, prices, tax configuration, supervision
+  policy, inventory definitions, promotions, benefits, payment methods and
+  print templates into the target branch with fresh ids, all-or-nothing in
+  one transaction, with no later sync between the two; a preview lists what
+  will be created and what already exists; audited `catalog.clone` with the
+  source branch and the counts per entity.
 
-Excludes: stock levels, out-of-stock and low-stock behaviour (S2-14b — the
+Excludes: cloning into a branch that has sales (refused with the reason);
+stock levels, out-of-stock and low-stock behaviour (S2-14b — the
 shop sells without a stock check until then); wallets (S2-14a); printing
 (S2-11).
 
@@ -2136,8 +2144,21 @@ Includes:
 - Wallet tender in the S2-10a state machine; offline spend up to the cap,
   above it "online only"; refunds restore credit first (S2-11 hook); prepaid
   child provision loads the child wallet at check-in.
+- **Expiry and reactivation** (proposal §6.6): a job expires unused credit
+  and meal provisions at the branch's end of day, writing an `expiry` ledger
+  entry that keeps the history; the policy is configuration per branch
+  (`wallet_policy`: same-day | n days | never, seeded same-day per the
+  proposal and changeable without a deploy — Open decision 14); reactivation
+  needs `pos:wallet:reactivate` and a typed reason, is audited, and appears
+  in the ledger as its own entry.
+- **Promotional vouchers** (proposal §6.6): voucher definitions that target a
+  category, an item or a free item, with global and per-customer limits, a
+  validity window, tax placement per the S2-09a engine, and issuance either
+  printed at the till or minted for a campaign; redemption inside a sale
+  through the S2-10b path; reporting shows them as foregone revenue, separate
+  from discounts, in the S2-15b promotions and comps report.
 
-Excludes: wallet expiry policy (owner question); staff benefits; kiosk.
+Excludes: staff benefits (S2-21); kiosk (S2-20).
 
 Acceptance criteria:
 - [ ] An Eat & Play sale for 1 kid + 1 adult grants full-price credit to both
@@ -2178,8 +2199,22 @@ Includes:
   point cascading; refund restores; mobile Stock module tabs wired; restock
   alerts and the POS-wide low-stock strip; stock-take variance > 3 eaches
   requires `pos:stock:approve` (recorded decision).
+- **Pack conversions and supplier fields** (proposal §6.11): purchase unit to
+  stocking unit to selling unit with a conversion factor per item, par level,
+  reorder point, lead time, supplier and cost, all branch-scoped; receiving a
+  pack converts to eaches in one movement row.
+- **Deduplicated low-stock attention**: one attention item per item and
+  branch (never one per location) offering Transfer or Reorder, showing the
+  rule that produced it (below par, below reorder point, or the consumption
+  trend over the lead time), suppressed while a purchase order covering it is
+  open; the trend rule starts from the static reorder point and switches to
+  the consumption estimate once 30 days of movements exist (Open decision 27).
+- **Inventory-linked booth prizes**: a booth prize may name a stock item; the
+  booth's published config drops that prize from the wheel when the linked
+  item's sellable stock reaches zero and restores it when stock returns, with
+  the change visible in the booth admin and recorded as a config version.
 
-Excludes: supplier integrations, reorder prediction; inventory-linked booth
+Excludes: supplier integrations (ordering by email or portal); booth
 prizes.
 
 Acceptance criteria:
@@ -2238,6 +2273,13 @@ Includes:
   to attempts by `invoiceNo`/`tranRef` and flags the rest.
 - `seed:demo-day` run as the QA fixture (cash, card on two TIDs, QR, wallet,
   voucher sales, one refund).
+- **End-of-day occupancy closure** (proposal §6.8): the stranded list — bands
+  still counted inside the park at close, and children still checked in —
+  with, per row, the last gate event, the sale and the guardian; an
+  operator-and-reason manual resolution (left without scanning, band lost,
+  gate fault) that clears the count and is audited `gate.manual_resolution`;
+  closing the day keeps the history and never silently zeroes occupancy;
+  unresolved rows block the close until a manager overrides with a reason.
 
 Excludes: analytics summaries, Today > Performance, booth report (S2-15b);
 real settlement files.
@@ -2618,7 +2660,7 @@ QA / demo steps:
 
 Depends on: S2-15b, S2-17a (sign-on pattern). Size: L.
 
-### S2-19 — Unified Inbox: `inbox` schema pillars, seeded threads, mockup shell in the client's design
+### S2-19 — Unified Inbox: the client's design working end to end on the `inbox` schema, with channel adapters ready for a real account
 
 Feature area: Inbox
 
