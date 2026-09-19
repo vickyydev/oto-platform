@@ -1,28 +1,20 @@
-import {
-  boolean,
-  index,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core';
-import { archivedAt, idPk, timestamps } from './helpers';
+import { sql } from 'drizzle-orm';
+import { boolean, check, index, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { archivedAt, core, idPk, timestamps } from './helpers';
 
-// --- Tenancy ---------------------------------------------------------------
+// --- Tenancy (schema `core`) -----------------------------------------------
 // Row-scoped multi-tenancy (CLAUDE.md §3): "operator" here is the TENANT
 // (e.g. the OTO company) — NOT the prototype's logged-in staff member, which
 // maps to `account`. See ARCHITECTURE.md §7.
 
-export const operator = pgTable('operator', {
+export const operator = core.table('operator', {
   id: idPk(),
   name: text('name').notNull(),
   ...timestamps,
   ...archivedAt,
 });
 
-export const branch = pgTable(
+export const branch = core.table(
   'branch',
   {
     id: idPk(),
@@ -44,7 +36,7 @@ export const branch = pgTable(
   ],
 );
 
-export const department = pgTable(
+export const department = core.table(
   'department',
   {
     id: idPk(),
@@ -59,7 +51,7 @@ export const department = pgTable(
   (t) => [index('department_operator_idx').on(t.operatorId), index('department_branch_idx').on(t.branchId)],
 );
 
-export const employee = pgTable(
+export const employee = core.table(
   'employee',
   {
     id: idPk(),
@@ -84,9 +76,16 @@ export const employee = pgTable(
   ],
 );
 
-export const accountStatus = pgEnum('account_status', ['invited', 'active', 'inactive']);
+/**
+ * Enumerations are text + CHECK rather than pg enums (S2-01b). Adding a value
+ * to a pg enum takes a DDL lock and cannot be done inside a transaction that
+ * also uses it; a CHECK is replaced in one statement. The set is still
+ * enforced by the database, which is the point of having it there at all.
+ */
+export const ACCOUNT_STATUSES = ['invited', 'active', 'inactive'] as const;
+export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 
-export const account = pgTable(
+export const account = core.table(
   'account',
   {
     id: idPk(),
@@ -98,7 +97,7 @@ export const account = pgTable(
     phone: text('phone').notNull(),
     passwordHash: text('password_hash'),
     phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true, mode: 'date' }),
-    status: accountStatus('status').notNull().default('invited'),
+    status: text('status').$type<AccountStatus>().notNull().default('invited'),
     mustChangePassword: boolean('must_change_password').notNull().default(false),
     ...timestamps,
   },
@@ -106,10 +105,11 @@ export const account = pgTable(
     uniqueIndex('account_phone_unique').on(t.operatorId, t.phone),
     index('account_operator_idx').on(t.operatorId),
     index('account_employee_idx').on(t.employeeId),
+    check('account_status_check', sql`${t.status} in ('invited','active','inactive')`),
   ],
 );
 
-export const role = pgTable(
+export const role = core.table(
   'role',
   {
     id: idPk(),
@@ -117,12 +117,31 @@ export const role = pgTable(
     operatorId: uuid('operator_id').references(() => operator.id),
     name: text('name').notNull(),
     description: text('description'),
+    /**
+     * A seeded bundle the platform owns. System roles are re-synced by
+     * `platform:sync` and an operator may not edit or delete one; an
+     * operator's own role with the same name is a different row, which is
+     * why the uniqueness below is per operator rather than global (S2-01b).
+     */
+    isSystem: boolean('is_system').notNull().default(false),
     ...timestamps,
   },
-  (t) => [index('role_operator_idx').on(t.operatorId), uniqueIndex('role_name_unique').on(t.name)],
+  (t) => [
+    index('role_operator_idx').on(t.operatorId),
+    uniqueIndex('role_name_unique').on(t.operatorId, t.name),
+    /**
+     * An operator's roles are unique within that operator — but `operator_id`
+     * is null on a system role, and Postgres treats nulls as distinct, so the
+     * index above would happily allow two system roles called `reception`.
+     * This partial index closes that (S2-01b).
+     */
+    uniqueIndex('role_system_name_unique')
+      .on(t.name)
+      .where(sql`${t.operatorId} is null`),
+  ],
 );
 
-export const rolePermission = pgTable(
+export const rolePermission = core.table(
   'role_permission',
   {
     id: idPk(),
@@ -137,9 +156,10 @@ export const rolePermission = pgTable(
   ],
 );
 
-export const scopeType = pgEnum('scope_type', ['operator', 'branch', 'department', 'record']);
+export const SCOPE_TYPES = ['operator', 'branch', 'department', 'record'] as const;
+export type ScopeTypeValue = (typeof SCOPE_TYPES)[number];
 
-export const roleAssignment = pgTable(
+export const roleAssignment = core.table(
   'role_assignment',
   {
     id: idPk(),
@@ -149,22 +169,31 @@ export const roleAssignment = pgTable(
     roleId: uuid('role_id')
       .notNull()
       .references(() => role.id),
-    scopeType: scopeType('scope_type').notNull(),
+    scopeType: text('scope_type').$type<ScopeTypeValue>().notNull(),
     /**
      * Target of the scope: branch/department/record id, or the operator id.
      * Null with scope_type 'operator' = platform-wide (platform_admin only).
      */
     scopeId: uuid('scope_id'),
     ...timestamps,
+    /** Withdrawn rather than deleted, so "who held what, when" survives. */
+    ...archivedAt,
   },
   (t) => [
     index('role_assignment_account_idx').on(t.accountId),
     index('role_assignment_role_idx').on(t.roleId),
     uniqueIndex('role_assignment_unique').on(t.accountId, t.roleId, t.scopeType, t.scopeId),
+    check(
+      'role_assignment_scope_check',
+      sql`${t.scopeType} in ('operator','branch','department','record')`,
+    ),
   ],
 );
 
-export const session = pgTable(
+export const SESSION_CLASSES = ['staff', 'display', 'box', 'kiosk'] as const;
+export type SessionClass = (typeof SESSION_CLASSES)[number];
+
+export const session = core.table(
   'session',
   {
     id: idPk(),
@@ -179,18 +208,16 @@ export const session = pgTable(
     /**
      * Short-lived membership lookup handed from the customer display to the
      * till through the API (CLAUDE.md §7.4) — consumed by the till, never
-     * shared browser state.
+     * shared browser state. Retired by the station session document (S2-05).
      */
     pendingLookupPhone: text('pending_lookup_phone'),
     pendingLookupAt: timestamp('pending_lookup_at', { withTimezone: true, mode: 'date' }),
     /**
      * What holds this session (S2-01a). 'staff' is a person signed in at a
-     * till or on the console; later classes cover a paired display, a box
+     * till or on the console; the other classes cover a paired display, a box
      * and a kiosk, each fenced by its own credential.
-     * text + CHECK rather than a pg enum: migration 0003 moves the whole
-     * schema to that convention and adding a value must not need a DDL lock.
      */
-    sessionClass: text('class').notNull().default('staff'),
+    sessionClass: text('class').$type<SessionClass>().notNull().default('staff'),
     /**
      * Set while the POS is locked on inactivity. A locked session still
      * exists — unlocking re-verifies the password against it — which is what
@@ -214,23 +241,28 @@ export const session = pgTable(
     index('session_account_idx').on(t.accountId),
     index('session_expires_idx').on(t.expiresAt),
     index('session_account_live_idx').on(t.accountId, t.revokedAt),
+    check('session_class_check', sql`${t.sessionClass} in ('staff','display','box','kiosk')`),
   ],
 );
 
-export const verificationPurpose = pgEnum('verification_purpose', ['setup', 'password_reset']);
+export const VERIFICATION_PURPOSES = ['setup', 'password_reset'] as const;
+export type VerificationPurpose = (typeof VERIFICATION_PURPOSES)[number];
 
-export const verificationCode = pgTable(
+export const verificationCode = core.table(
   'verification_code',
   {
     id: idPk(),
     accountId: uuid('account_id')
       .notNull()
       .references(() => account.id, { onDelete: 'cascade' }),
-    purpose: verificationPurpose('purpose').notNull(),
+    purpose: text('purpose').$type<VerificationPurpose>().notNull(),
     codeHash: text('code_hash').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     consumedAt: timestamp('consumed_at', { withTimezone: true, mode: 'date' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
-  (t) => [index('verification_code_account_idx').on(t.accountId)],
+  (t) => [
+    index('verification_code_account_idx').on(t.accountId),
+    check('verification_code_purpose_check', sql`${t.purpose} in ('setup','password_reset')`),
+  ],
 );

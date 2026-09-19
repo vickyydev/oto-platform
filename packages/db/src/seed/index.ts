@@ -377,7 +377,9 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
   });
 
   // A first till station for the branch.
-  await db.insert(s.station).values({ id: newId(), branchId, name: 'Reception Till 1', kind: 'till' });
+  await db
+    .insert(s.station)
+    .values({ id: newId(), operatorId, branchId, name: 'Reception Till 1', kind: 'till' });
 
   console.log('Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog.');
 }

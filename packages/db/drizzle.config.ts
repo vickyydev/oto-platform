@@ -9,6 +9,13 @@ export default defineConfig({
   out: './migrations',
   dialect: 'postgresql',
   dbCredentials: { url: process.env.DATABASE_URL },
+  /**
+   * Only the schemas this package owns (S2-01b). Everything else on the same
+   * database — the lifted apps' schemas (`otoapp`, `radar`, `inbox`) and the
+   * job runner's managed `pgboss` — is migrated by its own tool, and without
+   * this filter a Drizzle diff would offer to drop every one of them.
+   */
+  schemaFilter: ['core', 'crm', 'pos', 'promo', 'booth', 'analytics', 'edge'],
   strict: true,
   verbose: true,
 });

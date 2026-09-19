@@ -36,6 +36,13 @@
       "when": 1789849493252,
       "tag": "0004_auth_throttle",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789849494252,
+      "tag": "0005_schema_move",
+      "breakpoints": true
     }
   ]
 }

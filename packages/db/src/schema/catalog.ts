@@ -4,13 +4,17 @@ import {
   index,
   integer,
   jsonb,
-  pgTable,
   text,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { archivedAt, idPk, timestamps } from './helpers';
+import { archivedAt, idPk, pos, timestamps } from './helpers';
 import { branch, operator } from './tenancy';
+
+// --- The catalogue (schema `pos`) ------------------------------------------
+// What the till sells and the rules that price it. It sits with the sales it
+// prices rather than with tenancy configuration: a package, its holiday
+// calendar and its tax rules are only ever read together, and only by the POS.
 
 // --- Ticket packages -------------------------------------------------------
 // Shape follows the prototype's approved pricing model (ARCHITECTURE.md D1),
@@ -19,7 +23,7 @@ import { branch, operator } from './tenancy';
 // rules / freebies / F&B credit rule. The jsonb payloads are validated by zod
 // schemas in @oto/shared (catalog-shapes) at the API boundary.
 
-export const ticketPackage = pgTable(
+export const ticketPackage = pos.table(
   'ticket_package',
   {
     id: idPk(),
@@ -61,7 +65,7 @@ export const ticketPackage = pgTable(
 );
 
 /** Named inclusive date range that bills at weekend rates (prototype PricingOverride). */
-export const branchHoliday = pgTable(
+export const branchHoliday = pos.table(
   'branch_holiday',
   {
     id: idPk(),
@@ -72,6 +76,9 @@ export const branchHoliday = pgTable(
     startsOn: date('starts_on').notNull(),
     endsOn: date('ends_on').notNull(),
     ...timestamps,
+    /** Withdrawn rather than deleted (S2-01b): last year's calendar still has
+     *  to explain last year's prices. */
+    ...archivedAt,
   },
   (t) => [index('branch_holiday_branch_idx').on(t.branchId), index('branch_holiday_dates_idx').on(t.startsOn, t.endsOn)],
 );
@@ -82,7 +89,7 @@ export const branchHoliday = pgTable(
 // config row per branch. `tax_override` (CLAUDE.md §4) then applies
 // product-category / product precedence on top.
 
-export const branchTaxConfig = pgTable(
+export const branchTaxConfig = pos.table(
   'branch_tax_config',
   {
     id: idPk(),
@@ -96,7 +103,7 @@ export const branchTaxConfig = pgTable(
   (t) => [uniqueIndex('branch_tax_config_unique').on(t.branchId)],
 );
 
-export const productCategory = pgTable(
+export const productCategory = pos.table(
   'product_category',
   {
     id: idPk(),
@@ -112,7 +119,7 @@ export const productCategory = pgTable(
   (t) => [index('product_category_operator_idx').on(t.operatorId)],
 );
 
-export const product = pgTable(
+export const product = pos.table(
   'product',
   {
     id: idPk(),
@@ -139,7 +146,7 @@ export const product = pgTable(
  * VAT / service-charge override for a product category or a single product.
  * Resolver precedence (SCRUM-37): product > category > branch config rule.
  */
-export const taxOverride = pgTable(
+export const taxOverride = pos.table(
   'tax_override',
   {
     id: idPk(),

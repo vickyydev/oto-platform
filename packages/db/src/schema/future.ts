@@ -4,21 +4,23 @@ import {
   index,
   integer,
   jsonb,
-  pgTable,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { archivedAt, idPk, timestamps } from './helpers';
+import { archivedAt, idPk, pos, timestamps } from './helpers';
 import { branch, operator, account } from './tenancy';
 import { member } from './members';
 
-// --- Present but unused until later sprints (CLAUDE.md §4) -----------------
-// Created now so the Sprint 1 data model accommodates M2–M4; columns are the
-// sensible minimum and WILL be extended by their owning tickets.
+// --- Sales and money (schema `pos`) ----------------------------------------
+// Created in Sprint 1 so the data model accommodated M2–M4; the tickets that
+// own them extend the columns. S2-01b renamed them to the names the rest of
+// the sprint uses — `sale`, `sale_line`, `payment_attempt`, `band`,
+// `stock_item` — while they are still empty, which is the only cheap moment
+// to do it.
 
-export const booking = pgTable(
+export const booking = pos.table(
   'booking',
   {
     id: idPk(),
@@ -42,7 +44,7 @@ export const booking = pgTable(
   ],
 );
 
-export const attendee = pgTable(
+export const attendee = pos.table(
   'attendee',
   {
     id: idPk(),
@@ -56,8 +58,9 @@ export const attendee = pgTable(
   (t) => [index('attendee_booking_idx').on(t.bookingId)],
 );
 
-export const transaction = pgTable(
-  'transaction',
+/** The sale the till rings up (Sprint 1 `transaction`). */
+export const sale = pos.table(
+  'sale',
   {
     id: idPk(),
     operatorId: uuid('operator_id').notNull().references(() => operator.id),
@@ -71,18 +74,23 @@ export const transaction = pgTable(
     ...timestamps,
   },
   (t) => [
-    index('transaction_branch_idx').on(t.branchId),
-    index('transaction_member_idx').on(t.memberId),
-    index('transaction_operator_idx').on(t.operatorId),
-    index('transaction_account_idx').on(t.createdByAccountId),
+    index('sale_branch_idx').on(t.branchId),
+    index('sale_member_idx').on(t.memberId),
+    index('sale_operator_idx').on(t.operatorId),
+    index('sale_account_idx').on(t.createdByAccountId),
   ],
 );
 
-export const transactionLine = pgTable(
-  'transaction_line',
+/**
+ * A line of a sale (Sprint 1 `transaction_line`). No CASCADE (S2-01b): a
+ * ledger is never deleted out from under itself, and a delete that would
+ * take lines with it should fail loudly instead.
+ */
+export const saleLine = pos.table(
+  'sale_line',
   {
     id: idPk(),
-    transactionId: uuid('transaction_id').notNull().references(() => transaction.id, { onDelete: 'cascade' }),
+    saleId: uuid('sale_id').notNull().references(() => sale.id),
     kind: text('kind').notNull(),
     label: text('label').notNull(),
     quantity: integer('quantity').notNull().default(1),
@@ -91,24 +99,30 @@ export const transactionLine = pgTable(
     payload: jsonb('payload'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
-  (t) => [index('transaction_line_tx_idx').on(t.transactionId)],
+  (t) => [index('sale_line_sale_idx').on(t.saleId)],
 );
 
-export const payment = pgTable(
-  'payment',
+/**
+ * One attempt to take money (Sprint 1 `payment`). "Attempt" is deliberate:
+ * a card can be declined, a QR can expire, and a sale can carry several
+ * attempts before one succeeds — all of which have to survive for the day's
+ * reconciliation (S2-10).
+ */
+export const paymentAttempt = pos.table(
+  'payment_attempt',
   {
     id: idPk(),
-    transactionId: uuid('transaction_id').references(() => transaction.id),
+    saleId: uuid('sale_id').references(() => sale.id),
     method: text('method').notNull(),
     amountSatang: bigint('amount_satang', { mode: 'number' }).notNull().default(0),
     status: text('status').notNull().default('recorded'),
     payload: jsonb('payload'),
     ...timestamps,
   },
-  (t) => [index('payment_tx_idx').on(t.transactionId)],
+  (t) => [index('payment_attempt_sale_idx').on(t.saleId)],
 );
 
-export const wallet = pgTable(
+export const wallet = pos.table(
   'wallet',
   {
     id: idPk(),
@@ -120,11 +134,12 @@ export const wallet = pgTable(
   (t) => [index('wallet_member_idx').on(t.memberId), index('wallet_operator_idx').on(t.operatorId)],
 );
 
-export const walletEntry = pgTable(
+/** Wallet ledger. No CASCADE, for the reason given on `sale_line`. */
+export const walletEntry = pos.table(
   'wallet_entry',
   {
     id: idPk(),
-    walletId: uuid('wallet_id').notNull().references(() => wallet.id, { onDelete: 'cascade' }),
+    walletId: uuid('wallet_id').notNull().references(() => wallet.id),
     amountSatang: bigint('amount_satang', { mode: 'number' }).notNull(),
     kind: text('kind').notNull(),
     payload: jsonb('payload'),
@@ -133,8 +148,9 @@ export const walletEntry = pgTable(
   (t) => [index('wallet_entry_wallet_idx').on(t.walletId)],
 );
 
-export const wristband = pgTable(
-  'wristband',
+/** The wristband a visitor wears (Sprint 1 `wristband`). */
+export const band = pos.table(
+  'band',
   {
     id: idPk(),
     operatorId: uuid('operator_id').notNull().references(() => operator.id),
@@ -145,11 +161,16 @@ export const wristband = pgTable(
     payload: jsonb('payload'),
     ...timestamps,
   },
-  (t) => [index('wristband_branch_idx').on(t.branchId), index('wristband_code_idx').on(t.code), index('wristband_operator_idx').on(t.operatorId)],
+  (t) => [
+    index('band_branch_idx').on(t.branchId),
+    index('band_code_idx').on(t.code),
+    index('band_operator_idx').on(t.operatorId),
+  ],
 );
 
-export const item = pgTable(
-  'item',
+/** A stocked thing (Sprint 1 `item`) — renamed away from the bare word. */
+export const stockItem = pos.table(
+  'stock_item',
   {
     id: idPk(),
     operatorId: uuid('operator_id').notNull().references(() => operator.id),
@@ -159,10 +180,10 @@ export const item = pgTable(
     ...timestamps,
     ...archivedAt,
   },
-  (t) => [index('item_operator_idx').on(t.operatorId)],
+  (t) => [index('stock_item_operator_idx').on(t.operatorId)],
 );
 
-export const stockLocation = pgTable(
+export const stockLocation = pos.table(
   'stock_location',
   {
     id: idPk(),
@@ -173,14 +194,17 @@ export const stockLocation = pgTable(
   (t) => [index('stock_location_branch_idx').on(t.branchId)],
 );
 
-export const stockLevel = pgTable(
+export const stockLevel = pos.table(
   'stock_level',
   {
     id: idPk(),
     stockLocationId: uuid('stock_location_id').notNull().references(() => stockLocation.id),
-    itemId: uuid('item_id').notNull().references(() => item.id),
+    stockItemId: uuid('stock_item_id').notNull().references(() => stockItem.id),
     quantity: integer('quantity').notNull().default(0),
     ...timestamps,
   },
-  (t) => [index('stock_level_location_idx').on(t.stockLocationId), index('stock_level_item_idx').on(t.itemId)],
+  (t) => [
+    index('stock_level_location_idx').on(t.stockLocationId),
+    index('stock_level_item_idx').on(t.stockItemId),
+  ],
 );
