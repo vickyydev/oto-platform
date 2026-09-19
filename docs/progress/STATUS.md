@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-20 (building — S2-01a done, S2-01b next)_
+_Last updated: 2026-09-20 (first deploy: POS live on Render, api awaiting SMS credentials)_
 
 > **Resuming?** The precise checkpoint — what is done, what is pending in
 > order, and what the owner still has to supply — is in
@@ -47,6 +47,16 @@ pre-existing issues were labelled, not deleted (`SPRINT_2_JIRA_MAP.md`).
 **S2-01a (SCRUM-186) is done** on `feat/s2-01a-security-lock-model` — the
 role-assignment privilege hole, the lock model, the public-deploy fencing and
 the PII leaks, with 81 API tests green. **S2-01b (SCRUM-187) is next.**
+
+## The staging deployment
+
+Render project **OTO Platform** in the Oto dev workspace, environment
+: Postgres 16 (migrated and seeded), the api, and the POS at
+<https://oto-pos-staging.onrender.com> which is **live**. The api builds,
+migrates and seeds but does not start until three Twilio values are set —
+by design, since a deployment must never print verification codes to a log.
+Both services deploy automatically on a push to , but only once CI is
+green. The full account is .
 
 ## Waiting on the owner
 
