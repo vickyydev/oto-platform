@@ -95,13 +95,14 @@ export async function memberRoutes(app: App): Promise<void> {
   app.get(
     '/lookup',
     {
+      config: { permission: 'pos:member:read' },
       schema: {
         description: 'Look up a member by phone, with children and tier verification',
         querystring: z.object({ phone: z.string() }),
       },
     },
     async (req) => {
-      await req.requirePermission('pos:member:read');
+      req.requireAuth();
       const phone = normalizePhone(req.query.phone);
       if (!phone) return { member: null };
       const auth = req.auth!;
@@ -120,9 +121,9 @@ export async function memberRoutes(app: App): Promise<void> {
   // Admin list/search.
   app.get(
     '/',
-    { schema: { description: 'List/search members', querystring: z.object({ q: z.string().optional() }) } },
+    { config: { permission: 'pos:member:read' }, schema: { description: 'List/search members', querystring: z.object({ q: z.string().optional() }) } },
     async (req) => {
-      const auth = await req.requirePermission('pos:member:read');
+      const auth = req.requireAuth();
       const base = and(eq(member.operatorId, auth.operatorId), isNull(member.archivedAt));
       const rows = req.query.q
         ? await app.db
@@ -140,9 +141,9 @@ export async function memberRoutes(app: App): Promise<void> {
   // Soft delete (archive) — no hard deletes of business records (CLAUDE.md §3).
   app.delete(
     '/:id',
-    { schema: { description: 'Archive a member', params: z.object({ id: z.string().uuid() }) } },
+    { config: { permission: 'pos:member:update' }, schema: { description: 'Archive a member', params: z.object({ id: z.string().uuid() }) } },
     async (req) => {
-      const auth = await req.requirePermission('pos:member:update');
+      const auth = req.requireAuth();
       const [before] = await app.db
         .select()
         .from(member)
@@ -166,9 +167,9 @@ export async function memberRoutes(app: App): Promise<void> {
 
   app.get(
     '/:id',
-    { schema: { description: 'Member detail with children', params: z.object({ id: z.string().uuid() }) } },
+    { config: { permission: 'pos:member:read' }, schema: { description: 'Member detail with children', params: z.object({ id: z.string().uuid() }) } },
     async (req) => {
-      await req.requirePermission('pos:member:read');
+      req.requireAuth();
       const m = await memberWithChildren(app, req.params.id);
       if (!m) throw errors.notFound('Member not found');
       return { member: m };
@@ -179,6 +180,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.post(
     '/',
     {
+      config: { permission: 'pos:member:create' },
       schema: {
         description: 'Create a member (phone + name only)',
         body: z.object({
@@ -190,7 +192,7 @@ export async function memberRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('pos:member:create');
+      const auth = req.requireAuth();
       const phone = normalizePhone(req.body.phone);
       if (!phone) throw errors.badRequest('Invalid phone number');
       const [existing] = await app.db
@@ -232,6 +234,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.patch(
     '/:id',
     {
+      config: { permission: 'pos:member:update' },
       schema: {
         description: 'Enrich a member',
         params: z.object({ id: z.string().uuid() }),
@@ -248,7 +251,7 @@ export async function memberRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('pos:member:update');
+      const auth = req.requireAuth();
       const [before] = await app.db
         .select()
         .from(member)
@@ -289,6 +292,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.post(
     '/:id/tier-verification',
     {
+      config: { permission: 'pos:member:update' },
       schema: {
         description: 'Record a checked tier proof document (verifier stamped from the session)',
         params: z.object({ id: z.string().uuid() }),
@@ -303,7 +307,7 @@ export async function memberRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('pos:member:update');
+      const auth = req.requireAuth();
       const [m] = await app.db
         .select()
         .from(member)
@@ -361,9 +365,9 @@ export async function memberRoutes(app: App): Promise<void> {
   // member who checked it, branch and timestamp (newest first).
   app.get(
     '/tier-verifications',
-    { schema: { description: 'List tier verification records for record checking' } },
+    { config: { permission: 'pos:member:read' }, schema: { description: 'List tier verification records for record checking' } },
     async (req) => {
-      const auth = await req.requirePermission('pos:member:read');
+      const auth = req.requireAuth();
       const rows = await app.db
         .select({
           v: memberTierVerification,
@@ -403,6 +407,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.post(
     '/:id/children',
     {
+      config: { permission: 'pos:child:create' },
       schema: {
         description: 'Add a child to a member',
         params: z.object({ id: z.string().uuid() }),
@@ -410,7 +415,7 @@ export async function memberRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('pos:child:create');
+      const auth = req.requireAuth();
       const [m] = await app.db.select().from(member).where(eq(member.id, req.params.id)).limit(1);
       if (!m || m.operatorId !== auth.operatorId) throw errors.notFound('Member not found');
       const id = newId();
@@ -446,6 +451,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.patch(
     '/children/:childId',
     {
+      config: { permission: 'pos:child:update' },
       schema: {
         description: 'Update a child (allergies etc.) — audited',
         params: z.object({ childId: z.string().uuid() }),
@@ -453,7 +459,7 @@ export async function memberRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('pos:child:update');
+      const auth = req.requireAuth();
       const [before] = await app.db.select().from(child).where(eq(child.id, req.params.childId)).limit(1);
       if (!before) throw errors.notFound('Child not found');
       const [owner] = await app.db.select().from(member).where(eq(member.id, before.memberId)).limit(1);

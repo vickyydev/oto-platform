@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { account, employee, operator, role, roleAssignment } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
@@ -18,15 +18,22 @@ export async function operatorRoutes(app: App): Promise<void> {
     return auth;
   };
 
-  app.get('/', { schema: { description: 'List operators (archived hidden by default)' } }, async (req) => {
-    await requirePlatform(req);
-    const rows = await app.db.select().from(operator).where(isNull(operator.archivedAt));
-    return { operators: rows.map((o) => ({ id: o.id, name: o.name })) };
-  });
+  app.get(
+    '/',
+    { config: { platformWide: true }, schema: { description: 'List operators (archived hidden by default)' } },
+    async (req) => {
+      await requirePlatform(req);
+      const rows = await app.db.select().from(operator).where(isNull(operator.archivedAt));
+      return { operators: rows.map((o) => ({ id: o.id, name: o.name })) };
+    },
+  );
 
   app.post(
     '/',
-    { schema: { description: 'Create an operator', body: z.object({ name: z.string().min(1) }) } },
+    {
+      config: { platformWide: true },
+      schema: { description: 'Create an operator', body: z.object({ name: z.string().min(1) }) },
+    },
     async (req) => {
       const auth = await requirePlatform(req);
       const id = newId();
@@ -47,6 +54,7 @@ export async function operatorRoutes(app: App): Promise<void> {
   app.patch(
     '/:id',
     {
+      config: { platformWide: true },
       schema: {
         description: 'Rename or archive/unarchive an operator',
         params: z.object({ id: z.string().uuid() }),
@@ -79,6 +87,7 @@ export async function operatorRoutes(app: App): Promise<void> {
   app.post(
     '/:id/administrators',
     {
+      config: { platformWide: true },
       schema: {
         description: 'Create/assign an operator administrator',
         params: z.object({ id: z.string().uuid() }),
@@ -100,7 +109,13 @@ export async function operatorRoutes(app: App): Promise<void> {
       await app.db
         .insert(account)
         .values({ id: accountId, operatorId: req.params.id, employeeId, phone, status: 'invited' });
-      const [adminRole] = await app.db.select().from(role).where(eq(role.name, 'operator_admin')).limit(1);
+      // The system role, not an operator's own role of the same name: roles
+      // are unique per operator since S2-01b, so the name alone is ambiguous.
+      const [adminRole] = await app.db
+        .select()
+        .from(role)
+        .where(and(eq(role.name, 'operator_admin'), isNull(role.operatorId)))
+        .limit(1);
       if (!adminRole) throw errors.badRequest('operator_admin role missing — seed the database');
       await app.db.insert(roleAssignment).values({
         id: newId(),

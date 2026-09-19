@@ -11,13 +11,14 @@ export async function branchRoutes(app: App): Promise<void> {
   app.get(
     '/',
     {
+      config: { permission: 'admin:branch:read' },
       schema: {
         description: 'List branches (archived hidden unless includeArchived)',
         querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:branch:read');
+      const auth = req.requireAuth();
       const where = req.query.includeArchived
         ? eq(branch.operatorId, auth.operatorId)
         : and(eq(branch.operatorId, auth.operatorId), isNull(branch.archivedAt));
@@ -38,6 +39,7 @@ export async function branchRoutes(app: App): Promise<void> {
   app.post(
     '/',
     {
+      config: { permission: 'admin:branch:create' },
       schema: {
         description: 'Create a branch',
         body: z.object({
@@ -53,7 +55,7 @@ export async function branchRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:branch:create');
+      const auth = req.requireAuth();
       const id = newId();
       await app.db.insert(branch).values({ id, operatorId: auth.operatorId, ...req.body });
       await audit.record(app.db, {
@@ -73,6 +75,7 @@ export async function branchRoutes(app: App): Promise<void> {
   app.patch(
     '/:id',
     {
+      config: { permission: 'admin:branch:update', target: { branchId: 'params.id' } },
       schema: {
         description: 'Update or archive a branch',
         params: z.object({ id: z.string().uuid() }),
@@ -88,7 +91,7 @@ export async function branchRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:branch:update', { branchId: req.params.id });
+      const auth = req.requireAuth();
       const [before] = await app.db
         .select()
         .from(branch)

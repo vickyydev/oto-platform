@@ -27,6 +27,9 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/sign-in',
     {
+      // Open by definition: this is where a session comes from. Fenced by
+      // the Postgres-backed failure throttle rather than by a permission.
+      config: { public: true },
       schema: {
         description: 'Sign in with phone + password; sets the session cookie.',
         body: z.object({ phone: PhoneSchema, password: z.string().min(1) }),
@@ -51,7 +54,10 @@ export async function authRoutes(app: App): Promise<void> {
   // SCRUM-24 — sign out. This is the ONLY user action that ends a session
   // (S2-01a): the POS inactivity timer locks instead, so unlocking never
   // needs the network — the rule an offline box depends on later.
-  app.post('/sign-out', { schema: { description: 'Sign out' } }, async (req, reply) => {
+  app.post(
+    '/sign-out',
+    { config: { public: true }, schema: { description: 'Sign out' } },
+    async (req, reply) => {
     const auth = req.auth;
     if (auth) await signOut(app.db, auth.sessionId, auth.accountId, req.id);
     clearSessionCookie(reply, app.env.COOKIE_SECURE);
@@ -60,7 +66,10 @@ export async function authRoutes(app: App): Promise<void> {
 
   // S2-01a — lock: the session survives, but may do no business until it is
   // unlocked with the password.
-  app.post('/lock', { schema: { description: 'Lock this session (inactivity)' } }, async (req) => {
+  app.post(
+    '/lock',
+    { config: { auth: 'session' }, schema: { description: 'Lock this session (inactivity)' } },
+    async (req) => {
     const auth = req.requireAuth();
     await lockSession(app.db, auth.sessionId, auth.accountId, req.id);
     return { locked: true };
@@ -71,6 +80,7 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/unlock',
     {
+      config: { auth: 'session' },
       schema: {
         description: 'Unlock this session by re-entering the password',
         body: z.object({ password: z.string().min(1) }),
@@ -95,7 +105,7 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/setup/start',
     {
-      config: ipLimited,
+      config: { ...ipLimited, public: true },
       schema: { description: 'Send the setup code to an invited account', body: z.object({ phone: PhoneSchema }) },
     },
     async (req) => {
@@ -121,7 +131,7 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/setup/complete',
     {
-      config: ipLimited,
+      config: { ...ipLimited, public: true },
       schema: {
         description: 'Verify phone with the code and set the first password',
         body: z.object({ phone: PhoneSchema, code: z.string().length(6), password: z.string().min(8) }),
@@ -152,7 +162,7 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/password-reset/request',
     {
-      config: ipLimited,
+      config: { ...ipLimited, public: true },
       schema: { description: 'Send a reset code to a verified phone', body: z.object({ phone: PhoneSchema }) },
     },
     async (req) => {
@@ -173,7 +183,7 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/password-reset/complete',
     {
-      config: ipLimited,
+      config: { ...ipLimited, public: true },
       schema: {
         description: 'Reset the password with the code; invalidates every session',
         body: z.object({ phone: PhoneSchema, code: z.string().length(6), password: z.string().min(8) }),
@@ -201,6 +211,7 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/change-password',
     {
+      config: { auth: 'session' },
       schema: {
         description: 'Change the password of the signed-in account',
         body: z.object({ currentPassword: z.string().min(1), password: z.string().min(8) }),

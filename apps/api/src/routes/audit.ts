@@ -8,6 +8,7 @@ export async function auditRoutes(app: App): Promise<void> {
   app.get(
     '/',
     {
+      config: { permission: 'admin:audit:read' },
       schema: {
         description: 'Query the audit log',
         querystring: z.object({
@@ -23,7 +24,7 @@ export async function auditRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:audit:read');
+      const auth = req.requireAuth();
       const clauses: SQL[] = [eq(auditLog.operatorId, auth.operatorId)];
       const q = req.query;
       if (q.action) clauses.push(eq(auditLog.action, q.action));

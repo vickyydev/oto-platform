@@ -16,6 +16,7 @@ export async function visitRoutes(app: App): Promise<void> {
   app.post(
     '/',
     {
+      config: { permission: 'pos:visit:create' },
       schema: {
         description: 'Create a draft visit with confirmed children',
         body: z.object({
@@ -27,7 +28,7 @@ export async function visitRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('pos:visit:create');
+      const auth = req.requireAuth();
       const branchId = req.body.branchId ?? auth.branchId;
       if (!branchId) throw errors.badRequest('No active branch on this session');
       const [br] = await app.db.select().from(branch).where(eq(branch.id, branchId)).limit(1);
@@ -82,9 +83,9 @@ export async function visitRoutes(app: App): Promise<void> {
 
   app.get(
     '/:id',
-    { schema: { description: 'Visit detail', params: z.object({ id: z.string().uuid() }) } },
+    { config: { permission: 'pos:visit:read' }, schema: { description: 'Visit detail', params: z.object({ id: z.string().uuid() }) } },
     async (req) => {
-      const auth = await req.requirePermission('pos:visit:read');
+      const auth = req.requireAuth();
       const [v] = await app.db.select().from(visit).where(eq(visit.id, req.params.id)).limit(1);
       if (!v || v.operatorId !== auth.operatorId) throw errors.notFound('Visit not found');
       const children = await app.db

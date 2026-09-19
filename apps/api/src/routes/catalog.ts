@@ -38,8 +38,8 @@ const BranchParams = z.object({ branchId: z.string().uuid() });
 
 export async function catalogRoutes(app: App): Promise<void> {
   // Tiers (read path — SCRUM-35 packages reference them; CRUD stays mock, Q4).
-  app.get('/tiers', { schema: { description: 'Operator tier definitions' } }, async (req) => {
-    const auth = await req.requirePermission('catalog:package:read');
+  app.get('/tiers', { config: { permission: 'catalog:package:read' }, schema: { description: 'Operator tier definitions' } }, async (req) => {
+    const auth = req.requireAuth();
     const rows = await app.db
       .select()
       .from(tier)
@@ -60,6 +60,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.get(
     '/branches/:branchId/ticket-packages',
     {
+      config: { permission: 'catalog:package:read', target: { branchId: 'params.branchId' } },
       schema: {
         description: 'Ticket packages for a branch',
         params: BranchParams,
@@ -67,7 +68,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('catalog:package:read', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const where = req.query.includeArchived
         ? eq(ticketPackage.branchId, req.params.branchId)
@@ -80,6 +81,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.post(
     '/branches/:branchId/ticket-packages',
     {
+      config: { permission: 'catalog:package:create', target: { branchId: 'params.branchId' } },
       schema: {
         description: 'Create a ticket package',
         params: BranchParams,
@@ -87,7 +89,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('catalog:package:create', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const id = newId();
       await app.db.insert(ticketPackage).values({
@@ -115,6 +117,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.patch(
     '/branches/:branchId/ticket-packages/:id',
     {
+      config: { permission: 'catalog:package:update', target: { branchId: 'params.branchId' } },
       schema: {
         description: 'Update a ticket package',
         params: BranchParams.extend({ id: z.string().uuid() }),
@@ -122,7 +125,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('catalog:package:update', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       const [before] = await app.db
         .select()
         .from(ticketPackage)
@@ -152,13 +155,14 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.delete(
     '/branches/:branchId/ticket-packages/:id',
     {
+      config: { permission: 'catalog:package:update', target: { branchId: 'params.branchId' } },
       schema: {
         description: 'Archive a ticket package (soft delete)',
         params: BranchParams.extend({ id: z.string().uuid() }),
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('catalog:package:update', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       const [before] = await app.db
         .select()
         .from(ticketPackage)
@@ -186,9 +190,9 @@ export async function catalogRoutes(app: App): Promise<void> {
   // --- SCRUM-36: holidays + the pricing-mode resolver ----------------------
   app.get(
     '/branches/:branchId/holidays',
-    { schema: { description: 'Holiday (weekend-pricing) ranges', params: BranchParams } },
+    { config: { permission: 'catalog:holiday:read', target: { branchId: 'params.branchId' } }, schema: { description: 'Holiday (weekend-pricing) ranges', params: BranchParams } },
     async (req) => {
-      const auth = await req.requirePermission('catalog:holiday:read', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const rows = await app.db
         .select()
@@ -202,6 +206,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.post(
     '/branches/:branchId/holidays',
     {
+      config: { permission: 'catalog:holiday:manage', target: { branchId: 'params.branchId' } },
       schema: {
         description: 'Add a holiday range (inclusive, forces weekend pricing)',
         params: BranchParams,
@@ -215,7 +220,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('catalog:holiday:manage', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const id = newId();
       await app.db.insert(branchHoliday).values({ id, branchId: req.params.branchId, ...req.body });
@@ -235,9 +240,9 @@ export async function catalogRoutes(app: App): Promise<void> {
 
   app.delete(
     '/branches/:branchId/holidays/:id',
-    { schema: { description: 'Remove a holiday range', params: BranchParams.extend({ id: z.string().uuid() }) } },
+    { config: { permission: 'catalog:holiday:manage', target: { branchId: 'params.branchId' } }, schema: { description: 'Remove a holiday range', params: BranchParams.extend({ id: z.string().uuid() }) } },
     async (req) => {
-      const auth = await req.requirePermission('catalog:holiday:manage', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       const [before] = await app.db
         .select()
         .from(branchHoliday)
@@ -267,6 +272,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.get(
     '/branches/:branchId/pricing-mode',
     {
+      config: { permission: 'catalog:package:read', target: { branchId: 'params.branchId' } },
       schema: {
         description: 'Rate mode for a date (default: today in the branch timezone)',
         params: BranchParams,
@@ -274,7 +280,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('catalog:package:read', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       const br = await loadBranch(app, req.params.branchId, auth.operatorId);
       const date = req.query.date ?? branchToday(br.timezone);
       if (!isIsoDate(date)) throw errors.badRequest('date must be yyyy-mm-dd');
@@ -293,9 +299,9 @@ export async function catalogRoutes(app: App): Promise<void> {
   // --- SCRUM-37: tax config + overrides + resolver -------------------------
   app.get(
     '/branches/:branchId/tax-config',
-    { schema: { description: 'Branch tax configuration', params: BranchParams } },
+    { config: { permission: 'catalog:tax:read', target: { branchId: 'params.branchId' } }, schema: { description: 'Branch tax configuration', params: BranchParams } },
     async (req) => {
-      const auth = await req.requirePermission('catalog:tax:read', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const [row] = await app.db
         .select()
@@ -308,9 +314,9 @@ export async function catalogRoutes(app: App): Promise<void> {
 
   app.put(
     '/branches/:branchId/tax-config',
-    { schema: { description: 'Replace the branch tax configuration', params: BranchParams, body: TaxConfigSchema } },
+    { config: { permission: 'catalog:tax:manage', target: { branchId: 'params.branchId' } }, schema: { description: 'Replace the branch tax configuration', params: BranchParams, body: TaxConfigSchema } },
     async (req) => {
-      const auth = await req.requirePermission('catalog:tax:manage', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const [existing] = await app.db
         .select()
@@ -344,9 +350,9 @@ export async function catalogRoutes(app: App): Promise<void> {
 
   app.get(
     '/branches/:branchId/tax-overrides',
-    { schema: { description: 'Category/product tax overrides', params: BranchParams } },
+    { config: { permission: 'catalog:tax:read', target: { branchId: 'params.branchId' } }, schema: { description: 'Category/product tax overrides', params: BranchParams } },
     async (req) => {
-      const auth = await req.requirePermission('catalog:tax:read', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const rows = await app.db.select().from(taxOverride).where(eq(taxOverride.branchId, req.params.branchId));
       return { overrides: rows };
@@ -356,6 +362,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.post(
     '/branches/:branchId/tax-overrides',
     {
+      config: { permission: 'catalog:tax:manage', target: { branchId: 'params.branchId' } },
       schema: {
         description: 'Add a tax override (category- or product-scoped)',
         params: BranchParams,
@@ -370,7 +377,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('catalog:tax:manage', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const id = newId();
       await app.db.insert(taxOverride).values({
@@ -399,6 +406,7 @@ export async function catalogRoutes(app: App): Promise<void> {
   app.get(
     '/branches/:branchId/tax-resolve',
     {
+      config: { permission: 'catalog:tax:read', target: { branchId: 'params.branchId' } },
       schema: {
         description: 'Effective VAT + service charge for a taxable area / category / product',
         params: BranchParams,
@@ -410,7 +418,7 @@ export async function catalogRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('catalog:tax:read', { branchId: req.params.branchId });
+      const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       return resolveTax(app.db, {
         branchId: req.params.branchId,
@@ -422,8 +430,8 @@ export async function catalogRoutes(app: App): Promise<void> {
   );
 
   // Product categories/products read (targets for overrides).
-  app.get('/product-categories', { schema: { description: 'Product categories' } }, async (req) => {
-    const auth = await req.requirePermission('catalog:tax:read');
+  app.get('/product-categories', { config: { permission: 'catalog:tax:read' }, schema: { description: 'Product categories' } }, async (req) => {
+    const auth = req.requireAuth();
     const cats = await app.db
       .select()
       .from(productCategory)

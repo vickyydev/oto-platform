@@ -41,6 +41,7 @@ export async function fileRoutes(app: App): Promise<void> {
   app.post(
     '/',
     {
+      config: { dynamicPermission: true },
       schema: {
         description: 'Register a file and get a presigned upload URL',
         body: z.object({
@@ -86,6 +87,7 @@ export async function fileRoutes(app: App): Promise<void> {
   app.get(
     '/:id/url',
     {
+      config: { dynamicPermission: true },
       schema: {
         description: 'Presigned download URL (permission-checked on the owner entity)',
         params: z.object({ id: z.string().uuid() }),

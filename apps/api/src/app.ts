@@ -36,6 +36,7 @@ import { publicRoutes } from './routes/public';
 import { sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
+import { permissionPlugin } from './plugins/permission';
 import { isPgError, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
 import { audit } from './services/audit';
 import type { FileStorage } from './services/files';
@@ -262,6 +263,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
 
   await app.register(rateLimitPlugin);
   await app.register(sessionPlugin);
+  await app.register(permissionPlugin);
   await app.register(idempotencyPlugin);
 
   await app.register(healthRoutes);

@@ -47,7 +47,7 @@ export async function publicRoutes(app: App): Promise<void> {
   app.get(
     '/public/branches/:code/catalog',
     {
-      config: ipLimited,
+      config: { ...ipLimited, public: true },
       schema: {
         description: 'Public booking catalog: branch, tiers, active packages, rate mode',
         params: z.object({ code: z.string() }),
@@ -97,7 +97,7 @@ export async function publicRoutes(app: App): Promise<void> {
   app.get(
     '/public/member-tier',
     {
-      config: ipLimited,
+      config: { ...ipLimited, public: true },
       schema: {
         description: 'Customer self-identification: phone → nickname + verified tier only',
         // `branch` is required (S2-01a): phone is unique PER OPERATOR, so an
@@ -143,7 +143,7 @@ export async function publicRoutes(app: App): Promise<void> {
     {
       // Tighter than the read endpoints: a booking writes rows and costs the
       // park a held slot, so one address gets far fewer of them.
-      config: { rateLimit: { max: 20, timeWindow: 60_000 } },
+      config: { public: true, rateLimit: { max: 20, timeWindow: 60_000 } },
       schema: {
         description: 'Create a customer booking; total computed server-side',
         body: z.object({

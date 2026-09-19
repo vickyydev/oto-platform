@@ -9,7 +9,7 @@ import { isPlatformWide } from '../services/permissions';
 
 export async function meRoutes(app: App): Promise<void> {
   // SCRUM-25 / SCRUM-19 — who am I: account, employee, branch, permissions.
-  app.get('/', { schema: { description: 'Current account profile' } }, async (req) => {
+  app.get('/', { config: { auth: 'session' }, schema: { description: 'Current account profile' } }, async (req) => {
     const auth = req.requireAuth();
     const [acc] = await app.db.select().from(account).where(eq(account.id, auth.accountId)).limit(1);
     if (!acc) throw errors.unauthorized();
@@ -45,7 +45,7 @@ export async function meRoutes(app: App): Promise<void> {
   });
 
   // SCRUM-13 — effective permissions with scopes.
-  app.get('/permissions', { schema: { description: 'Effective permissions with scopes' } }, async (req) => {
+  app.get('/permissions', { config: { auth: 'session' }, schema: { description: 'Effective permissions with scopes' } }, async (req) => {
     req.requireAuth();
     const permissions = await req.effectivePermissions();
     return { permissions };
@@ -56,6 +56,7 @@ export async function meRoutes(app: App): Promise<void> {
   app.patch(
     '/',
     {
+      config: { auth: 'session' },
       schema: {
         description: 'Update permitted profile fields',
         body: z
@@ -104,7 +105,7 @@ export async function meRoutes(app: App): Promise<void> {
   // Active branch switcher (session-scoped).
   app.put(
     '/session/branch',
-    { schema: { description: 'Switch the active branch', body: z.object({ branchId: z.string().uuid() }) } },
+    { config: { auth: 'session' }, schema: { description: 'Switch the active branch', body: z.object({ branchId: z.string().uuid() }) } },
     async (req) => {
       const auth = req.requireAuth();
       const [br] = await app.db
@@ -125,7 +126,7 @@ export async function meRoutes(app: App): Promise<void> {
   // the till THROUGH THE API: a short-lived pending lookup on the session.
   app.put(
     '/session/pending-lookup',
-    { schema: { description: 'Customer display: stage a membership lookup', body: z.object({ phone: z.string() }) } },
+    { config: { auth: 'session' }, schema: { description: 'Customer display: stage a membership lookup', body: z.object({ phone: z.string() }) } },
     async (req) => {
       const auth = req.requireAuth();
       await app.db
@@ -138,7 +139,7 @@ export async function meRoutes(app: App): Promise<void> {
 
   app.post(
     '/session/pending-lookup/consume',
-    { schema: { description: 'Till: consume the staged lookup (30s TTL)' } },
+    { config: { auth: 'session' }, schema: { description: 'Till: consume the staged lookup (30s TTL)' } },
     async (req) => {
       const auth = req.requireAuth();
       const [row] = await app.db

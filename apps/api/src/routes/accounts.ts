@@ -28,13 +28,14 @@ export async function accountRoutes(app: App): Promise<void> {
   app.get(
     '/',
     {
+      config: { permission: 'admin:account:read' },
       schema: {
         description: 'List/search accounts',
         querystring: z.object({ q: z.string().optional() }),
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:account:read');
+      const auth = req.requireAuth();
       const filters = [eq(account.operatorId, auth.operatorId)];
       const rows = await app.db
         .select({ a: account, e: employee })
@@ -66,6 +67,7 @@ export async function accountRoutes(app: App): Promise<void> {
   app.post(
     '/',
     {
+      config: { permission: 'admin:account:create' },
       schema: {
         description: 'Create a staff account and assign scoped roles',
         body: z.object({
@@ -77,7 +79,7 @@ export async function accountRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:account:create');
+      const auth = req.requireAuth();
       const phone = normalizePhone(req.body.phone);
       if (!phone) throw errors.badRequest('Invalid phone number');
 
@@ -144,9 +146,9 @@ export async function accountRoutes(app: App): Promise<void> {
   // SCRUM-22 — an account's assignments + the resulting effective permissions.
   app.get(
     '/:id/permissions',
-    { schema: { description: 'Roles and effective permissions', params: z.object({ id: z.string().uuid() }) } },
+    { config: { permission: 'admin:role:read' }, schema: { description: 'Roles and effective permissions', params: z.object({ id: z.string().uuid() }) } },
     async (req) => {
-      const auth = await req.requirePermission('admin:role:read');
+      const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
       await assertDominatesAccount(
         app.db,
@@ -176,6 +178,7 @@ export async function accountRoutes(app: App): Promise<void> {
   app.post(
     '/:id/role-assignments',
     {
+      config: { permission: 'admin:role:assign' },
       schema: {
         description: 'Assign a role with a scope',
         params: z.object({ id: z.string().uuid() }),
@@ -183,7 +186,7 @@ export async function accountRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:role:assign');
+      const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
       const roleRow = await loadRoleForOperator(app.db, auth.operatorId, req.body.roleName);
       const scope = { scopeType: req.body.scopeType, scopeId: req.body.scopeId };
@@ -214,13 +217,14 @@ export async function accountRoutes(app: App): Promise<void> {
   app.delete(
     '/:id/role-assignments/:assignmentId',
     {
+      config: { permission: 'admin:role:assign' },
       schema: {
         description: 'Remove a role assignment',
         params: z.object({ id: z.string().uuid(), assignmentId: z.string().uuid() }),
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:role:assign');
+      const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
       const [before] = await app.db
         .select()
@@ -255,6 +259,7 @@ export async function accountRoutes(app: App): Promise<void> {
   app.patch(
     '/:id',
     {
+      config: { permission: 'admin:account:update' },
       schema: {
         description: 'Update an account (activate/deactivate, phone)',
         params: z.object({ id: z.string().uuid() }),
@@ -264,7 +269,7 @@ export async function accountRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:account:update');
+      const auth = req.requireAuth();
       const before = await loadTargetAccount(app.db, auth.operatorId, req.params.id);
       await assertDominatesAccount(
         app.db,
@@ -298,9 +303,9 @@ export async function accountRoutes(app: App): Promise<void> {
   // SCRUM-28 — temporary password forcing a change at next sign-in.
   app.post(
     '/:id/temp-password',
-    { schema: { description: 'Issue a temporary password', params: z.object({ id: z.string().uuid() }) } },
+    { config: { permission: 'admin:account:update' }, schema: { description: 'Issue a temporary password', params: z.object({ id: z.string().uuid() }) } },
     async (req) => {
-      const auth = await req.requirePermission('admin:account:update');
+      const auth = req.requireAuth();
       const acc = await loadTargetAccount(app.db, auth.operatorId, req.params.id);
       // A temporary password is a full takeover of that account: the caller
       // must dominate every role it holds.
@@ -336,9 +341,9 @@ export async function accountRoutes(app: App): Promise<void> {
   // S2-01a — the sessions an account currently holds, for the Login Users panel.
   app.get(
     '/:id/sessions',
-    { schema: { description: 'Sessions held by an account', params: z.object({ id: z.string().uuid() }) } },
+    { config: { permission: 'admin:account:read' }, schema: { description: 'Sessions held by an account', params: z.object({ id: z.string().uuid() }) } },
     async (req) => {
-      const auth = await req.requirePermission('admin:account:read');
+      const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
       const rows = await app.db
         .select()
@@ -365,13 +370,14 @@ export async function accountRoutes(app: App): Promise<void> {
   app.post(
     '/:id/sessions/revoke',
     {
+      config: { permission: 'admin:account:update' },
       schema: {
         description: 'Force sign-out: end every session this account holds',
         params: z.object({ id: z.string().uuid() }),
       },
     },
     async (req) => {
-      const auth = await req.requirePermission('admin:account:update');
+      const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
       await assertDominatesAccount(
         app.db,
