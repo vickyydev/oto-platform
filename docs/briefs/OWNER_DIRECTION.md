@@ -84,9 +84,69 @@ Newest entries win over `CLAUDE.md`, `PROJECT_CONTEXT.md` and any design review.
 - The Radar database file is a structure listing without data; a real dump is
   needed.
 
+## 2026-09-20 — scope of Sprint 2 widened; decisions changed
+
+Stated after reading the first Sprint 2 proposal. These win over
+`PROJECT_CONTEXT.md` §7.2 (2C2P) and over the earlier "OTO App in Sprint 3".
+
+**Order of work inside the sprint** (priority, not separate sprints):
+1. **POS first**, complete: everything the prototype has — the till, the
+   customer display, the POS's own admin panels, the booking-site screen, the
+   inventory/stock controls — plus the **Lucky Wheel voucher game** with its
+   admin control panel. Every function is committed as it lands and recorded in
+   the progress log so any new agent resumes exactly where the last one
+   stopped.
+2. **OTO App**: its tables go into the central database **now** (its own
+   schema), so the demo can prove one sign-on across apps and one database: an
+   admin creates a user, the user opens the OTO App through the launcher. Then
+   the whole live app is lifted onto the platform, improved where it can be,
+   and the features still owed under the contract — taken from the agency's
+   proposal site (`docs/briefs/AGENCY_PROPOSAL.md`) — are built. The POS keeps
+   its own admin; the OTO App keeps its own admin controls. Both in this sprint.
+3. **Radar active at the same time**: legacy Pisell/Papaya figures as seeded
+   mock data, and **live analytics from our POS** — a demo sale made on staging
+   must appear in Radar when the branch's source preference is "OTO POS".
+4. **Unified Inbox** (the client's work in progress, imported as
+   `imports/oto-asset-manager/`; milestone 4): its data pillars are laid in the
+   central database now and a mockup shell sits on the launcher, styled per the
+   client's design.
+
+**Launcher**: the first screen is a styled, OTO-Park-themed landing page
+listing the apps (POS, OTO App, Radar, Lucky Wheel, Console, Inbox) with
+"coming soon" placeholders where an app is not ready; it is also where the
+central login is tested.
+
+**Payments**: QR payments are integrated for real through the park's payment
+gateway sandbox, not simulated. The owner first called it "the SCB payment
+gateway" and then pointed at `developer.2c2p.com`: the gateway is **2C2P**
+(SCB is the acquiring bank behind the park's merchant account), so
+PROJECT_CONTEXT §7.2 stands — 2C2P Payment Token / Do Payment for the QR on
+the customer display, the Redirect API for the booking site, sandbox first
+with real QR codes, production by configuration. The owner supplies the
+merchant credentials; the plan lists exactly what is needed
+(`docs/architecture/PAYMENT_GATEWAY.md`). If the park also holds an SCB
+Developer Portal application (direct PromptPay API), it is added as a second
+`QrPayment` provider, not a replacement. Card payments stay on the EDC
+terminals through their ECR specifications.
+
+**Devices**: the park's hardware reference and the gate documents (GE-X2
+protocol, HX-X1 manual, supplier answers, reader HTTP spec) are on file; the
+adapters and simulators use the real models, protocols and values
+(`docs/architecture/DEVICE_INVENTORY.md`).
+
+**Revenue, prices, receipts**: use the Replit code as the definition — Radar's
+formula for revenue, the prototype's price list and tiers, the prototype's
+receipt layout and the voucher sample for print templates. No accountant
+session now; corrections are entered later as data.
+
+**Process**: besides the ticket plan, a development and technical plan must
+exist for AI agents with all context, research and conclusions, so an agent
+can always resume with enough context.
+
 ## Open with the owner
 
-Consolidated in `docs/architecture/PLATFORM_PLAN.md` §14. In short:
+Consolidated in `docs/architecture/PLATFORM_PLAN.md` §14 and
+`docs/progress/SPRINT_2_PLAN.md` "Open decisions". In short:
 
 - Real dumps of Radar's and the wheel's databases; a `pg_dump -Fc` of OTO App.
 - Pisell / Papaya / spin / marketing / OpenAI values from Replit Secrets — and
