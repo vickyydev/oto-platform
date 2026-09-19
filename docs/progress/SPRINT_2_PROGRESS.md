@@ -2,7 +2,7 @@
 
 ## Status
 
-- Current checkpoint: **pre-build — Sprint 2 plan v2 in revision, awaiting
+- Current checkpoint: **pre-build — Sprint 2 plan v2 complete, awaiting
   owner approval.** Nothing of Sprint 2 is built.
 - Last completed step: plan v2 complete for the owner's 2026-09-20 direction
   (POS + booth first, then OTO App, Radar, Inbox; 2C2P sandbox for real QR;
@@ -71,7 +71,8 @@ _Plan v2 is complete as of commit set 5dabf05 → this one: SPRINT_2_PLAN.md,
 DEVELOPMENT_PLAN.md (1,849 lines), PAYMENT_GATEWAY.md, DEVICE_INVENTORY.md,
 AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
 
-1. Owner approval of  (see "Owner inputs needed").
+1. Owner approval of `docs/progress/SPRINT_2_PLAN.md` (see "Owner inputs
+   needed").
 2. On approval: create the Jira tickets (one issue per ticket, lettered parts
    as sub-tasks; descriptions, acceptance criteria and QA steps copied from
    the plan; statuses never changed by us).
