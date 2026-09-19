@@ -3148,6 +3148,319 @@ QA / demo steps:
 
 Depends on: S2-09b, S2-10a, S2-17b. Size: L.
 
+### S2-22 — The client's own data: production restore into the central database, platform seeding from it, Radar on real figures, cutover rehearsal
+
+Feature area: Data and cutover
+
+Rules: R-94 (access log on child health reads); OWNER_DIRECTION 2026-09-20 (later), "Start from the real production data"; PLATFORM_PLAN §13 (cutover stages A and B) and §14 (owner inputs; decision 8, seeding members from check-in history); PROJECT_CONTEXT §12 (a repeatable migration run from a restore, never against production, reconciled until two runs match); intake notes `docs/architecture/intake-2026-09-19/01-oto-app-backend.md` §7 (schema shape and drift), §8 (POS and revenue touchpoints), §9 (biometrics), §10 (restore recipe, load order, hash import) and `05-radar-api-auth-env-schema.md` §9; `imports/_db/README.md`.
+
+Description. The dump we hold is
+`imports/_db/db-structure-with-data-dump-for-oto-app.sql`: 33 MB of live
+production rows, exported by Navicat as plain `INSERT`s that hard-code
+`"public".` in every statement. The owner's direction is to start from it, so
+the client opens the suite and sees the branches, staff and figures he
+recognises. This ticket turns that one-off into a scripted, repeatable
+procedure — scratch database, schema rename, load order, sequence check,
+post-import fixes, verification counts — run against the private staging
+database; seeds the platform's own tables from the rows where identity is
+genuinely shared; gives Radar real figures in place of S2-18's fixtures; and
+rehearses the cutover against a fresh dump until two timed runs agree. The
+data is real staff, children's and customer data, so the handling section is
+part of the ticket, not a footnote. Where the OTO App has no source table —
+members and children — the derivation is built but left in preview until the
+owner answers PLATFORM_PLAN §14 decision 8.
+
+Includes:
+- Restore procedure, one command (`pnpm data:restore` →
+  `tools/data/restore-otoapp.ts`), every step timed and recorded in
+  `ops_import_run` / `ops_import_step` beside the existing `ops_run`: (1)
+  refuse to run unless `DATA_CLASSIFICATION=production`,
+  `NODE_ENV != production` and the outbound checks below pass; (2) create the
+  scratch database `otoapp_scratch_<utc>` on the same server; (3)
+  `psql -v ON_ERROR_STOP=1 -f $OTOAPP_DUMP_PATH` into it; (4)
+  `ALTER SCHEMA public RENAME TO otoapp` — this is why the scratch step exists,
+  the Navicat file hard-codes `"public".` (intake §10 item 2); (5)
+  `pg_dump -Fc -n otoapp` into `$RESTORE_WORK_DIR`, outside the repository; (6)
+  on the platform database, behind a typed confirmation,
+  `DROP SCHEMA IF EXISTS otoapp CASCADE` then
+  `pg_restore --no-owner --no-privileges -j4`; (7) the post-import script; (8)
+  verification; (9) drop the scratch database; (10) write the run report.
+- Load order: the whole-schema path restores structure and data together and
+  needs no ordering, but the top-up path — a fresh dump's rows into an
+  existing structure, and the rehearsal's second pass — uses the
+  foreign-key-safe table order already written in
+  `imports/oto-app/server/prod-sync.ts:7+`, captured as
+  `tools/data/otoapp-load-order.json` with a test that re-derives the order
+  from the restored schema's 519 foreign keys and fails when the file has
+  drifted from it.
+- Post-import (`tools/data/postimport-otoapp.sql`, re-runnable): add the four
+  composite primary keys the app's invalid Drizzle syntax never created —
+  `xero_tracking_categories`, `xero_tracking_options`, `cash_txns`,
+  `cash_daily` — and a unique index on `pl_facts`, without which Finance
+  Sync's `ON CONFLICT` upserts fail at runtime (intake §7, Drift); keep the
+  restored `drizzle.__drizzle_migrations` rows so the app's own migrator does
+  not try to re-create what the dump already holds; re-apply the platform's
+  additive migrations on top (`otoapp.users.platform_user_id`, unique and
+  nullable, plus anything else S2-17a/b added); `ALTER ROLE oto_app SET
+  search_path = otoapp`; grants — `oto_app` owns `otoapp`, and the platform
+  api role gets `USAGE` plus `SELECT` on the `otoapp_v.*` seam views only,
+  never on the tables; and a file-reference prefix census (`/api/files/`,
+  `/objects/`, `/uploads/`, `uploads/employee-documents/`, `/<bucket>/`)
+  written into the run report, so broken media links are known before anyone
+  clicks one.
+- Sequences: the export declares none — no extensions, sequences, functions,
+  triggers or views, and ids are `gen_random_uuid()` or varchar UUIDs (intake
+  §7) — so the step asserts
+  `SELECT count(*) FROM information_schema.sequences WHERE
+  sequence_schema = 'otoapp'` is zero and **fails loudly** if a later dump
+  introduces one, rather than silently skipping a reset that would by then be
+  needed.
+- Verification (`pnpm data:verify` → `tools/data/verify-restore.ts`), its
+  output shown on Console > Data > Imports: per-table row counts compared
+  across the dump's own `INSERT` counts, the scratch database and the target
+  for all 184 tables; the structural counts from intake §7 asserted (184
+  tables, 65 enums, 179 primary keys, 519 foreign keys, 370 indexes, 27 unique
+  constraints, plus the five constraints the post-import script adds); a
+  per-table content checksum over a stable key ordering; and ten spot-check
+  records compared field by field, reported as hashes and "same / differs" so
+  that no person's data is printed.
+- Platform seeding (`pnpm data:seed-platform` →
+  `tools/data/seed-platform-from-otoapp.ts`), idempotent, every row recorded in
+  `core.import_map(run_id, source_app, source_table, source_id, target_schema,
+  target_table, target_id)` so a second run updates instead of duplicating, and
+  every write audited with `category = 'data_import'`. The mapping, source to
+  target:
+  - `otoapp.tenants` + `otoapp.operators` → `core.operator`, one per
+    `operators` row, `tenants.slug` kept as `external_ref`. Certain.
+  - `otoapp.branches` → `core.branch`: name, address, `timezone` (the source
+    defaults to Asia/Bangkok). Certain except `branch.code`, for which the OTO
+    App has no column — generated from the name and listed in the report for
+    the owner to rename.
+  - `otoapp.departments` → `core.department`: tenant-wide in the source, so
+    `branch_id` stays null. Certain.
+  - `otoapp.employees` joined to `otoapp.people` on `employees.person_id`
+    (unique) → `core.employee`: `thai_name`, `nickname`, phones normalised to
+    E.164, `primary_department_id`, `branch_id`, and `employment_state`
+    (ACTIVE / LEAVING / LEFT) → `employee.status`. `employees.email` is **not**
+    unique in the source, so duplicate addresses are listed in the report and
+    never merged. Certain.
+  - `otoapp.users` → `core.account`: `phone_e164` (unique in the source) is the
+    platform's sign-in identity; `is_active` → status and
+    `must_change_password` carried; the scrypt `password` imported verbatim
+    behind a scheme prefix (`scrypt$…`) so an existing password keeps working
+    beside argon2id (intake §10 item 6), the verifier picking the scheme from
+    the prefix and re-hashing to argon2id on the next successful sign-in. A
+    user with no `phone_e164` cannot have a platform account: listed as "needs
+    a phone before sign-on", never invented. Certain.
+  - one `core.app_identity(app = 'oto_app', account_id, external_user_id =
+    users.id)` per imported user, with `otoapp.users.platform_user_id` written
+    back — exactly what S2-17a's hand-off middleware resolves on.
+    `otoapp.users.id` is never rewritten: 127 foreign keys reference it.
+  - `otoapp.access_policies` (`access_level` STAFF / MANAGER / ADMIN,
+    `modules`, `branch_scope`, `branch_ids`), `user_branch_access` and
+    `user_module_overrides` → `core.role_assignment`, through a declared
+    `tools/data/role-map.json` naming every source value and the platform role
+    and scope it becomes. Nothing is inferred: a source value missing from the
+    map fails the run. **Needs the owner's yes** before the seeded assignments
+    are treated as live.
+  - **Members and children have no source table.** Intake §8 is explicit: the
+    OTO App has no customers, members or children table, and a "child" is
+    `(lower(child_full_name), emergency_contact_number)` deduplicated over
+    `camp_registrations` (`imports/oto-app/server/routes.ts:16605-16668`). So
+    `crm.member` and `crm.child` are **derived**, not copied, from
+    `camp_registrations` (child name, date of birth, allergies, behavioural
+    notes, guardian and pickup persons), `dropoff_checkins.children` (jsonb),
+    `service_checkins`, `nanny_reservations`, `core_events` (`child_name`,
+    `parent_name`, WhatsApp phone) and `studio_event_bookings`. Governed by
+    `MEMBER_SEED_FROM_CHECKIN_HISTORY = off | preview | apply`, default
+    `preview`: the preview writes a report — candidate members, phone-collision
+    groups, records with no usable phone, children recovered with and without
+    allergies — and writes no rows. This is PLATFORM_PLAN §14 decision 8 and it
+    is still open; the preview is this ticket's deliverable and `apply` is one
+    command afterwards.
+  - Guardians and authorised pickups, from `camp_registrations` pickup persons
+    and `service_checkins` consent records, map to the guardian tables S2-13
+    creates — but **the consent basis for re-using them in the POS is not
+    determined by any source we hold**, so it is raised as a question, seeded
+    only under `apply`, and never with the source's stored photos.
+  - Not seeded, and listed as such in the report: payroll, leave, contracts,
+    tasks, Xero and vault rows stay only in `otoapp`, which owns them;
+    `otoapp.session` is not imported, so everybody signs in again; and the
+    vault's plaintext passwords (intake §11 item 5) are excluded from every
+    query, export and report, with the seeding run failing if `vault_` appears
+    in a generated statement.
+- Radar on real figures, without redoing S2-18: a loader
+  (`tools/data/seed-analytics-from-otoapp.ts`) turns the restored event, BEO,
+  camp and studio revenue — `beo_event_billing.package_price` and its deposit
+  fields, `event_line_items.unit_price_inc_vat`,
+  `studio_event_bookings.amount_total` and `amount_paid`, `camp_attendance`'s
+  per-day payments, `core_events.total_value` and `prepayment_*` (intake §8) —
+  into `analytics.daily_summary` rows with `source = 'legacy'` and
+  `formula_version = 'otoapp-events-v1'`, per branch and business date,
+  replacing S2-18's fixture rows for the days they cover. Stated plainly on
+  the Console page and in the report: these are the park's **event, party and
+  camp** takings, which is the revenue the OTO App actually holds; admissions
+  and F&B revenue lived in Pisell and Papaya and are not in this dump, so
+  those lines stay on the fixtures until the Radar dump (Open decision 18) or
+  the credentials arrive. HKT Central's
+  `analytics.branch_source_switch.preference` is set to `oto_pos`, so a sale
+  made on the staging POS moves its figures within `ROLLUP_INTERVAL_S`; the
+  second demo branch is set to `legacy`, so the client sees restored history
+  beside live POS numbers.
+- Data handling, enforced rather than only written down:
+  - The dump and everything derived from it stay on the owner's machine and in
+    the private staging database. `imports/_db/` is already git-ignored; this
+    ticket adds the CI job `guard:no-production-data` and a matching
+    pre-commit hook that fail on any `.sql`, `.dump` or `.csv` over 1 MB, on
+    any path matching the known dump names, and on any diff adding a
+    phone-shaped or Thai-name literal outside `packages/db/src/seed`.
+  - Intermediate files are written only to `RESTORE_WORK_DIR`, whose
+    documented default is outside the repository and outside OneDrive (per
+    `imports/_db/README.md`) — never into the repository, never into a shared
+    scratch directory. Run reports carry counts, hashes and status, never
+    values.
+  - Outbound messaging stays off. The restore refuses to run unless
+    `SMS_ADAPTER=console`, `ALERT_CHANNELS` names no channel that reaches a
+    real person, and the new `OUTBOUND_MESSAGING=off` is set, which makes every
+    SMS, email and chat adapter a no-op that records only what it would have
+    sent; and unless the OTO App service has `LOG_RESPONSE_BODY=false` (it is
+    `"true"` in the agency's AWS, which writes PII, reset tokens and kiosk
+    codes into the logs — intake §11 item 6) with its Twilio, SMTP and LINE
+    variables unset. After the restore, any table holding queued outbound
+    messages is listed and emptied.
+  - Face recognition is not migrated. The templates are not in the dump at all
+    — they live in the agency's Rekognition collections (intake §9) — so "not
+    migrated" is made concrete: no collection is created in our account, no
+    re-enrolment is run, `OTOAPP_FACE_CLOCKIN` stays false on staging and the
+    face routes stay **removed or disabled, not merely unset** (unsetting
+    `USE_AWS_REKOGNITION` makes the mock return the first enrolled employee for
+    any face — intake §9), the restored `face_id`, `confidence_score` and
+    `liveness_score` columns are inert and are **never copied into any platform
+    table**, the enrolment photos the source kept in a public `profile-photos`
+    folder land in the private platform bucket with signed-URL access only, and
+    the run fails if any `AWS_REKOGNITION_*` variable or collection name is
+    configured.
+  - PDPA and retention: every derived `crm.member` and `crm.child` row carries
+    `source = 'otoapp_import'`, `source_record_ref`, `consent_basis` and
+    `retention_until`, and the imported categories are added to
+    `core.retention_policy` so `job:housekeeping.retention` (S2-03) covers
+    them, under S2-23's floor rule that financial and child-release categories
+    cannot be set below five years. Child health text is masked at write in
+    logs and at read in `audit_log`, as S2-01a already requires; `imports/`
+    stays local reference input only, per `CLAUDE.md`.
+  - Who looked at what: every read of an imported person's record through the
+    POS, the Console or an export writes an `audit_log` row with
+    `category = 'data_access'` — the category S2-23 adds — carrying the actor,
+    the entity type and id, the app, the station and the box. This ticket adds
+    the imported-record reads to the Console's data-access preset on
+    `/activity` (`console:activity:read`; unmasked values need
+    `admin:audit:read_sensitive`) and an "imported records" filter there. Bulk
+    extracts go through `POST /admin/data/exports` (permission
+    `console:data:export`), which records what was exported, by whom and why
+    and returns a signed URL that expires; there is no unaudited download path.
+- Demo data and how the two profiles coexist: `SEED_PROFILE` gains `restored`
+  beside the existing `staging` value that seeds demo data. `staging` =
+  `platform:sync` plus `seed:demo-day`; `restored` = `platform:sync` plus the
+  restore and seeding above, and it refuses to run `seed:demo-day`. The two
+  never share a database: the applied profile is recorded in `ops_seed_state
+  (profile, applied_at, run_id)` and the api refuses to start when the
+  requested profile differs from the recorded one, unless `SEED_PROFILE_SWITCH
+  =true` is set deliberately. "Reset demo data" on Console > Data
+  (`console:data:reset_demo`, platform_admin, typed confirmation, audited
+  `ops.demo_reset`) is extended: under `staging` it behaves as today; under
+  `restored` it is refused with "this database holds restored production data —
+  rebuild it with `pnpm data:restore`", so nobody wipes the client's figures
+  with a button. Going back the other way is `pnpm data:reset-to-demo`, which
+  drops the `crm`, `pos`, `promo`, `booth`, `analytics`, `edge` and `otoapp`
+  content, re-runs `platform:sync` and `seed:demo-day`, records the new profile
+  and is audited.
+- Cutover rehearsal (`pnpm data:rehearse`, also the button behind S2-23's
+  `console:data:migration_rehearse`): take a fresh dump — a `pg_dump -Fc` once
+  the owner supplies one (PLATFORM_PLAN §14 item 1), otherwise a fresh Navicat
+  export — and run the whole procedure end to end against a clean staging
+  database with a stopwatch: per-step durations into `ops_import_run`, the
+  verification above, the ten spot checks, and a schema diff of the new dump
+  against the last one (`tools/data/schema-drift.ts`), so drift is caught
+  before the day rather than on it. Two consecutive runs must agree on counts
+  and on durations within a stated tolerance (PROJECT_CONTEXT §12, "until two
+  runs match"). The output is `docs/qa/CUTOVER_RUNBOOK.md`: the ordered steps
+  with their exact commands, who runs each, the expected duration, the
+  verification queries with their expected answers, the go / no-go checks, and
+  the rollback — which is simply that the agency's system stays untouched and
+  DNS is the only switch (PLATFORM_PLAN §13, Stage A).
+- Docs: `docs/qa/CUTOVER_RUNBOOK.md`; the `.env.example` block for
+  `OTOAPP_DUMP_PATH`, `RESTORE_WORK_DIR`, `DATA_CLASSIFICATION`,
+  `OUTBOUND_MESSAGING`, `MEMBER_SEED_FROM_CHECKIN_HISTORY`, `SEED_PROFILE`,
+  `SEED_PROFILE_SWITCH`; and the decision entry in `ARCHITECTURE.md` recording
+  that the platform's password verifier accepts two hash schemes.
+
+Excludes: the real DNS switch and Stage B, the branch-by-branch POS
+replacement (on-site and owner steps, not code); live Pisell and Papaya pulls;
+the Radar and wheel database restores until those dumps arrive (Open decision
+18); re-enrolling face templates anywhere; importing the OTO App's drop-off and
+nanny history into the platform's check-in module (Open decision 25, who owns
+supervised care); Xero production credentials; any change to the OTO App's own
+modules (S2-17b).
+
+Acceptance criteria:
+- [ ] `pnpm data:restore` against a clean staging database completes with no
+      hand-editing of the dump, and Console > Data > Imports shows the run with
+      its per-step durations, 184 tables restored and no failed step.
+- [ ] The verification report on that page shows every table's row count equal
+      between the dump and `otoapp`, and the structural counts matching (184
+      tables, 65 enums, 179 primary keys, 519 foreign keys, 370 indexes, 27
+      unique constraints), with the four missing composite primary keys and the
+      `pl_facts` unique index now present.
+- [ ] An administrator opens the OTO App from the launcher and sees the
+      client's real branches, departments and employee list; opening the same
+      employee in the Console shows the linked platform account and its Apps
+      tab row.
+- [ ] A restored employee whose `phone_e164` is set signs in on the launcher
+      with their existing OTO App password and is asked for nothing else; the
+      report lists every user without a phone as "needs a phone before
+      sign-on", and none of them has an account.
+- [ ] The member and child preview report is produced and no `crm.member` or
+      `crm.child` row exists while `MEMBER_SEED_FROM_CHECKIN_HISTORY=preview`;
+      switching it to `apply` creates them, and each created member's page
+      shows `source = otoapp_import` with its source record reference.
+- [ ] Radar shows real event, party and camp figures for the restored branch,
+      labelled as event revenue only, and HKT Central's figures move within
+      `ROLLUP_INTERVAL_S` after a cash ticket sale on the staging POS.
+- [ ] Opening a restored child's record writes a row on the Console's
+      data-access view naming the staff member, the record and the time, and
+      the child's allergy text appears in neither Activity nor any log line.
+- [ ] "Reset demo data" is refused on a `restored` database with the message
+      naming `pnpm data:restore`, and still works on a `staging` database;
+      `pnpm data:reset-to-demo` returns a `restored` database to seeded demo
+      data and the Console shows the new profile.
+- [ ] Dev evidence: two consecutive `pnpm data:rehearse` runs against a fresh
+      dump with matching counts and recorded durations, plus the CI
+      `guard:no-production-data` job failing on a deliberately staged commit
+      that adds a dump file.
+
+QA / demo steps:
+1. QA (UI): On the Console open Data > Imports, start the restore with the
+   typed confirmation, and screenshot the finished run with its step durations
+   and the verification report.
+2. QA (UI): Open the OTO App from the launcher; screenshot the real branch and
+   employee lists; open one of those employees in the Console and screenshot
+   the Apps tab and the linked account.
+3. QA (UI): Sign in on the launcher as a restored employee using their existing
+   password; screenshot the landing page; screenshot the report line for a user
+   who has no phone.
+4. QA (UI): Screenshot the member and child preview report; switch the flag to
+   `apply`, re-run, and screenshot one created member showing
+   `source = otoapp_import` and one child with an allergy note.
+5. QA (UI): Screenshot Radar for the restored branch with its event-revenue
+   label; make a cash ticket sale on the POS; wait the interval and screenshot
+   the changed HKT Central figure.
+6. QA (UI): Open a restored child's record, then screenshot the data-access row
+   on Activity; attempt "Reset demo data" and screenshot the refusal.
+7. Dev evidence: the two rehearsal run logs with their durations and counts,
+   and the CI `guard:no-production-data` job output.
+
+Depends on: S2-17b, S2-18, S2-23. Size: L.
+
 ### S2-23 — Console: the owner's super-admin control surface across the whole suite
 
 Feature area: Console (super admin)
@@ -3815,6 +4128,276 @@ contract), S2-17c, S2-18 and S2-19 (every app must exist before the layer
 above them is real), S2-22 (so the money and analytics pages show the
 client's own figures). Size: XL.
 
+### S2-24 — Branch box image and on-site readiness: the bring-up runbook and the switch from simulator to real device
+
+Feature area: Box image and on-site
+
+Rules: OWNER_DIRECTION 2026-09-20 (later) — there is no Sprint 3, what follows this sprint is on-site testing with the real devices, so this ticket is what makes that phase short; PROJECT_CONTEXT §2 (nothing may block on hardware), §4 (box image, agent and station model), §5 (PWA and station pick), §6 (network, DNS-01, dnsmasq) and §14 (build order, step 1); `docs/architecture/DEVICE_INVENTORY.md` in full — §1 and §2 (network and devices), §6 (the gate), §9.1-§9.6 (per-device facts and the "confirm on site" lists) and §9.7 (what each ticket takes from it).
+
+Description. Every device in this sprint runs against a simulator. The phase
+after the sprint is a park visit with real printers, terminals, a scanner and a
+gate, and its length is decided almost entirely by what is written down before
+it starts. This ticket produces three things. A branch-box image that builds in
+CI and boots on a Raspberry Pi 5 with the agent, watchdog, certificates, local
+DNS, log shipping, time discipline and first-boot registration already in it. A
+documented per-device switch from each simulator to its real transport — for
+every device in `DEVICE_INVENTORY.md`, the exact setting that flips it and the
+smoke test that proves it. And `docs/qa/ON_SITE_BRINGUP.md`, a runbook that
+walks the visit device by device with every "confirm on site" question from
+`DEVICE_INVENTORY.md` as a checkbox, what to measure, what to photograph and
+what to do when a device disagrees with the document. A fault-injection
+rehearsal on the simulators means the on-site team meets no failure mode for
+the first time at the park. S2-04 built the cloud side of boxes, stations and
+devices and explicitly excluded the Pi image; this is that image and the paper
+around it.
+
+Includes:
+- Image (`infra/box-image/`, built by the CI job `box-image` on a tag and
+  publishing `oto-box-<version>.img.xz` with its SHA-256 and a package
+  manifest): Raspberry Pi OS Lite 64-bit (Debian Bookworm) for the Pi 5 with
+  NVMe boot; **read-only root** through overlayfs with a writable `/data` ext4
+  partition holding the box `Store` (SQLite), cache bundles, the outbox,
+  pending release photos and the certificate store; `journald` with
+  `Storage=persistent` and `SystemMaxUse=200M` on `/data`; unattended upgrades
+  off, because the image is the update unit.
+- Watchdog and service: the Pi hardware watchdog (`bcm2835_wdt`) with
+  `RuntimeWatchdogSec=15` and `RebootWatchdogSec=2min`;
+  `oto-box-agent.service` as `Type=notify`, `WatchdogSec=30`,
+  `Restart=always`, `RestartSec=5`, `User=otobox` in group `dialout`,
+  `After=network-online.target`; devices discovered by udev event and opened by
+  `/dev/serial/by-id/…`, never by a fixed `/dev/ttyACM*` number; ModemManager
+  disabled, brltty absent, and the `ENV{ID_MM_DEVICE_IGNORE}="1"` rules for
+  `05e0:1701` (scanner CDC), `2fb8` (PAX) and the NEXGO VID once it is known
+  (DEVICE_INVENTORY §9.6).
+- Time: `chrony` with `makestep`, the mall's upstream plus pool servers, and
+  the clock offset already reported on `POST /box/v1/heartbeat` (S2-04)
+  stamping `clock_trust` (`good` | `low`) on box facts. The Pi 5 has no RTC
+  battery by default (§9.6), so `/data/last-known-time` is restored at boot and
+  a box that boots with an implausible clock refuses to mint band codes until
+  the first successful sync or an audited operator override.
+- Certificates and names: Caddy with the DNS-01 provider module issuing for the
+  box's name under `central.otoplay.co`, account and certificates on `/data`;
+  90-day certificates, so an internet outage never invalidates them
+  (PROJECT_CONTEXT §6). dnsmasq on the counter-1 and gate boxes answers the
+  park's names and forwards everything else upstream, with its zone generated
+  from `GET /box/v1/config` so adding a box needs no hand-editing.
+- Log shipping and version reporting: the agent ships `ops_run`,
+  `station_event` and its own health over the existing sync channel — no second
+  pipe — and `@oto/telemetry`'s `register.ts` sends traces and logs when
+  `OTEL_EXPORTER_OTLP_ENDPOINT` is set. The heartbeat gains `image_version`,
+  `schema_version` and `/data` free space beside the `agent_version`, uptime,
+  temperature, outbox depth and device status S2-04 already sends. The cloud
+  refuses `POST /box/v1/register` and `POST /box/v1/sync/push` from an agent
+  below the station config's `min_supported_agent_version` (set from
+  `MIN_BOX_AGENT_VERSION`) with `BOX_AGENT_TOO_OLD`, and S2-04's existing
+  "agent below min supported version" watchdog rule raises the alert naming
+  the box and both versions; conversely the agent refuses to start against a
+  cloud `schema_version` it cannot migrate on read, and says which it needs.
+- First-boot registration: `oto-box-register.service` (one-shot, ordered before
+  the agent) reads `/data/provision.json` (branch, box role
+  `counter` | `gate` | `booth` | `kiosk` | `standby`, claim code) or prompts on
+  the HDMI console; calls `POST /box/v1/register` with the claim code; receives
+  the box id, the per-box secret (only its hash kept in the cloud), epoch 1 and
+  the station config; writes `/data/box.json` mode 0600 and never logs the
+  secret. An unregistered image shows one screen on HDMI: "not yet registered —
+  enter claim code". After the `reset_store` command the box re-registers and
+  takes the new epoch, as S2-04 and the sprint's sync rules require, audited
+  `box.register`.
+- Per-device switch from simulator to real transport. `core.device` already
+  carries `kind`, `transport`, `address`, `model` and serial / TID / MID
+  (S2-04); this ticket adds `device.config` (jsonb, validated by a per-kind zod
+  schema) for the remaining settings and makes `device.transport` the switch.
+  All of it is edited in Console > Devices and in the station setup wizard;
+  `transport: simulator` is the default and the only value CI ever uses. Per
+  device kind, the setting that flips it and the smoke test that proves it:
+  - **Receipt printers** — Welltech G4 at `192.168.88.202` and the three
+    Xprinter XP-80 units at `.206`, `.207`, `.208`: `transport: tcp`, `host`,
+    `port: 9100`, `language: escpos`, `dots_per_line: 576 | 512`,
+    `thai_mode: raster`, `cut: partial`, `drawer: {pin, on_ms, off_ms}`. Smoke:
+    the `test_print` box command from Console > Devices renders the fixture
+    receipt including its Thai line; the health card shows `DLE EOT 1..4`
+    returning the idle `0x12`; the drawer kicks on the counter unit only.
+  - **Wristband printers** — 4B-2082A at `192.168.88.204` (kids) and `.210`
+    (adults): `transport: tcp`, `host`, `port: 9100`, `language: tspl2` (ZPL
+    kept as the switch), `dpi: 203`,
+    `media: {width_mm, length_mm, gap_mm, sensing: gap | bline}`, `density`,
+    `speed`. Smoke: `~!T` returns the model string on the health card; one gap
+    calibration; one band printed and then read back by the scanner into the
+    till.
+  - **Scanner** — Zebra DS2278 with the CR2278-PC cradle, attached to the box:
+    `transport: usb-cdc` (recommended) or `usb-hid`, `path` as
+    `/dev/serial/by-id/…` or `/dev/input/by-id/…-event-kbd` with an exclusive
+    evdev grab, `delimiters: ["\r\n", "\r", "\n"]`, `quiet_gap_ms: 500`,
+    `min_len: 6`, `symbologies: [code128, qr]`. Smoke: scanning a printed band
+    raises exactly one scan event on the station channel; a person typing the
+    same characters slowly raises none.
+  - **Card terminal** — NEXGO N5, TID `65703235` and `65703236`:
+    `transport: serial`, `path`, `baud: 9600`, `data_bits: 8`,
+    `parity: none | odd` (the question still open in §5), `stop_bits: 1`,
+    `dialect: ghl-linkpos`, `pos_ref_len: 12`, `tid`. Smoke: a ฿1 card sale
+    approves and then voids before settlement; a sale with no response puts the
+    till into the staff-confirm path, because LinkPOS cannot QUERY a card sale.
+  - **QR and wallet terminal** — PAX A920Pro, SN `1854355548` and `1854355549`:
+    `transport: serial`, `path`, `baud: 9600`, `8N1`, `dialect: digio-direct`,
+    `serial_no`, `ref_counter`. Smoke: the T0/T1 terminal-info reply carries the
+    serial printed on the unit; a ฿1 PromptPay sale (A3) returns the QR payload
+    (A18), is inquired successfully, and voids (A11).
+  - **Gate** — GE-X2 with the HX-X1 driver and the network QR reader.
+    Controller: `transport: serial`, `path`, `baud: 19200`, `parity: N81`,
+    `machine_id` (`L-30`), `upload_mode: 1` (`L-34`, push on state change),
+    `open: dry-contact ~1 s on L-OP / R-OP / COM`. Reader: `base_url` set to
+    the gate box's own `https://gate1.central.otoplay.co/interaction/Api`,
+    `serial`, `reader: 0 | 1`, and the bilingual
+    `messages: {allow, deny_band, deny_adult_only}`. Smoke: the reader's
+    `heartbeat` posts arrive and are answered `{"code":"1"}`; a valid band gets
+    `code "1"` and a `61` / `62` passage event that moves occupancy by exactly
+    one; an invalid band shows the refusal text on the reader; occupancy never
+    moves on an open command alone.
+  - **Booth** — USB dome button and the booth's ESC/POS printer:
+    `button.transport: evdev | simulator`, `button.path`
+    (`/dev/input/by-id/…`), `button.keycode`, plus the printer settings above.
+    Smoke: one press spins once, a held key does not repeat-spin, and a voucher
+    prints.
+  - **Cash drawer** — kicked through the receipt printer: `drawer.pin: 2 | 5`,
+    `on_ms`, `off_ms` (the park's drawer may need 100 ms or more). Smoke: the
+    drawer opens on a cash sale and `DLE EOT 1` bit 2 reports it open, then
+    closed.
+- Station-level switch: `station.device_mode` (`simulator` | `real`) with a
+  per-device override, changed from Console > Devices and audited
+  `station.device_mode.change`. A station in `real` mode with an unreachable
+  device starts **degraded, with an alert** rather than refusing to sell, and
+  the till header names the device that is down — the park must keep taking
+  money while somebody fixes a cable.
+- `docs/qa/ON_SITE_BRINGUP.md`, ordered as the visit runs: record the network
+  before touching anything; then the counter boxes, the gate box, the booth
+  box; then device by device in the order above. Each device section carries
+  the addresses and identifiers from `DEVICE_INVENTORY.md` §2 and that device's
+  "confirm on site" questions as checkboxes — the six numbered lists in
+  §9.1-§9.6 (thirty items) plus the markers in §2 (which scanner model, which
+  Xprinter model), §4 (D1 label language, D6 exact model), §5 (the NEXGO
+  parity), §6.1 (the reader's heartbeat interval), §6.2 (the TTL-to-Ethernet
+  module), §6.5 (the six the supplier did not answer) and §7 (band stock
+  colours). Each section also names:
+  - **What to measure:** the self-test page values (model, firmware, dpi, dots
+    per line, code page list, current IP) for every printer; the band media
+    width, length and gap in millimetres, and the darkness and speed that give
+    a scannable Code 128 at 8 ips on the park's stock; the scan-to-Enter
+    latency and whether characters are lost at "No Delay"; the `lsusb` VID and
+    PID of each terminal in ECR mode; the drawer pulse that actually opens the
+    park's drawer; the reader's heartbeat interval; and what a second TCP
+    connection does during a print job.
+  - **What to photograph:** every self-test page, the rear panel of every
+    printer, each terminal's dock and cable, the gate's terminal block and the
+    reader's mounting, the band stock label, the router's reservation list, and
+    each box's port and power. Standing rule, printed in the runbook: no
+    photograph may contain a customer, a child, a member's data or a screen
+    showing them.
+  - **What to do on a disagreement:** write the observed value into that
+    device's row in `DEVICE_INVENTORY.md` during the same visit, strike the old
+    value through with the date, raise a ticket only when an adapter must
+    change, and never change code on site before the note goes in.
+  - A closing "before you leave" page: the cables and spares to take (USB-A to
+    micro-B for the NEXGO, USB-C for the PAX, a USB-RS485 adapter, a spare
+    imaged NVMe, a labelled Ethernet cable, a band roll), the credentials
+    needed on the day (Console platform_admin, router admin, printer web
+    pages), and the support lines already on file — Digio 02-026-3485 and SCB
+    merchant 02-777-7444.
+- Network prerequisites, as a one-page checklist the mall's IT can action
+  before the visit: a DHCP reservation by MAC for every printer at the
+  addresses in §2 and for each box (counter 1 at the reference's
+  `192.168.88.100`, the rest assigned and recorded), with iPads left on DHCP;
+  the gate reader pointed at the gate box's **name**, not an address;
+  `central.otoplay.co` A records pointing at the boxes' LAN addresses, with the
+  DNS-01 API token present in the box environment; the router handing out
+  counter 1 and the gate box as both DNS servers; and the firewall — boxes
+  outbound 443 only, nothing inbound from the internet, printers reachable only
+  from the box's subnet, port 9100 never routed. Each line notes that this is
+  the mall's managed network today (§1), so it needs the mall's agreement and a
+  stated fallback if refused.
+- Fault-injection rehearsal (`pnpm drill:onsite`, driven from S2-06's simulator
+  control panel under `OPS_TEST_CONTROLS`), run on staging before anybody
+  travels, covering every failure the team can meet: paper out, head open and a
+  jam mid-job; a printer unreachable, and a second TCP connection during a job
+  because port 9100 is single-session; a terminal not ready, busy, a customer
+  taking 90 seconds, and a hot-plug that renumbers `ttyACM`; a scanner out of
+  range that batch-flushes on return, and a double trigger within one second;
+  the gate's fire-alarm input, power loss, tailgating `93`, wrong direction
+  `83` and fault codes E5, E9 and E30; the box offline through a sale, a
+  check-in and a release, then reconnect; a clock skew (S2-04's "Advance box
+  clock" control); an agent below the minimum version; and `/data` nearly full.
+  Each row names the expected behaviour and the alert that should appear on
+  Failures, and the drill writes a pass mark per row into a checklist page the
+  runbook carries.
+- Docs: `docs/qa/ON_SITE_BRINGUP.md`; the `.env.example` block for
+  `MIN_BOX_AGENT_VERSION`, `BOX_IMAGE_CHANNEL`, `DNS01_PROVIDER` and
+  `DNS01_API_TOKEN`; and the decisions entry in `ARCHITECTURE.md` recording
+  the read-only-root layout and the degraded-station rule.
+
+Excludes: flashing and booting hardware at the park and answering the "confirm
+on site" questions — that is the on-site phase itself; buying the Pi 5s, NVMe
+drives, UPS and cables; the park-router decision (PROJECT_CONTEXT §6 open
+item); the DNS zone for a real domain; the physical gate wiring, which the
+supplier has not documented (§6.5); device adapter and simulator behaviour,
+which belongs to S2-04, S2-06, S2-10a and S2-12; and the branch cutover itself
+(S2-22).
+
+Acceptance criteria:
+- [ ] A fresh `oto-box-<version>.img.xz` boots with a read-only root and a
+      writable `/data`, and shows the "not yet registered — enter claim code"
+      screen on the attached display.
+- [ ] Entering a claim code on that screen registers the box: it appears in
+      Console > Devices with its branch, role, `agent_version`,
+      `image_version` and free space, and Health shows its heartbeat within 60
+      seconds.
+- [ ] Pulling the box's power mid-sale and restoring it brings the agent back
+      with the same box id and epoch and the unsynced sale still in its outbox,
+      which then syncs exactly once; killing the agent three times shows the
+      watchdog restarting it, with the restarts visible on Failures.
+- [ ] Console > Devices flips one device from simulator to real, showing
+      exactly the fields named above for that device kind, and its smoke-test
+      button reports pass or fail with a reason; setting a station to `real`
+      with one device unreachable leaves the till selling and names the device
+      that is down.
+- [ ] `docs/qa/ON_SITE_BRINGUP.md` can be followed by a reviewer who has never
+      seen the park: every device in `DEVICE_INVENTORY.md` §2 and §6 has a
+      section, every "confirm on site" item in §9.1-§9.6 and in §2, §4, §5,
+      §6.1, §6.2, §6.5 and §7 appears as a checkbox, and every section names
+      what to measure, what to photograph and what to do on a disagreement.
+- [ ] The network prerequisite checklist is one page that can be handed to the
+      mall's IT without further explanation, and names the box addresses, the
+      reservations, the DNS records and the firewall rules.
+- [ ] `pnpm drill:onsite` completes on the simulators with a pass mark on every
+      listed fault, each raising its expected alert on Failures, and the
+      resulting checklist page is attached to the runbook.
+- [ ] An agent below `MIN_BOX_AGENT_VERSION` is refused at register and at sync
+      with `BOX_AGENT_TOO_OLD`, and the refusal appears on Failures naming the
+      box and both versions.
+- [ ] Dev evidence: the CI `box-image` job log showing the published artefact,
+      its SHA-256 and the package manifest.
+
+QA / demo steps:
+1. QA (UI): Boot the image; screenshot the "not yet registered" screen; enter
+   the claim code; screenshot the box on Console > Devices and its heartbeat on
+   Health.
+2. QA (UI): Start a sale, pull the box's power, restore it; screenshot the
+   recovered outbox and the synced sale; kill the agent three times and
+   screenshot the watchdog restarts on Failures.
+3. QA (UI): Flip the counter receipt printer from simulator to real, pointing
+   it at the printer simulator's TCP endpoint as a stand-in; screenshot the
+   settings form and the smoke-test result; make it unreachable and screenshot
+   the degraded station and its alert.
+4. QA (UI): Open `docs/qa/ON_SITE_BRINGUP.md`, work one device section end to
+   end against the simulators, and screenshot the completed section with its
+   ticked "confirm on site" boxes.
+5. QA (UI): Run `pnpm drill:onsite` from the simulator control panel;
+   screenshot the pass table and two of the alerts it raised on Failures.
+6. QA (UI): Use the test control to report an old agent version; screenshot the
+   `BOX_AGENT_TOO_OLD` refusal on Failures.
+7. Dev evidence: the CI `box-image` job log with the artefact, its SHA-256 and
+   the package manifest.
+
+Depends on: S2-05, S2-06, S2-07b, S2-12. Size: L.
+
 ### S2-16 — Sprint 2 acceptance run, load and soak checks, Render staging refresh, sprint-2 tag, SPRINT_2_REPORT.md and Jira evidence per story
 
 Feature area: Acceptance and delivery
@@ -3876,18 +4459,24 @@ Depends on: S2-15b, S2-17c, S2-18, S2-19. Size: M.
 
 ## Execution order and checkpoints
 
-Order (the owner's priority: POS and booth first, then OTO App, Radar, Inbox):
+Order (the owner's priority: POS and booth first, then the other apps, then
+the owner's console and his own data, then on-site readiness):
 
 S2-01a → S2-01b → S2-01c → S2-02 → S2-03 → S2-17a → **CP1** → S2-04 → S2-05 →
 S2-06 → S2-07a → S2-07b → **CP2** → S2-08 → S2-09a → S2-09b → S2-10a →
 S2-10b → S2-11 → **CP3** → S2-12 → S2-13 → S2-14a → S2-14b → S2-15a →
-S2-15b → **CP4** → S2-17b → S2-17c → **CP5** → S2-18 → S2-19 → **CP6** →
-S2-16 → **CP7**.
+S2-15b → **CP4** → S2-20 → S2-21 → **CP5** → S2-17b → S2-17c → S2-18 →
+S2-19 → **CP6** → S2-23 → S2-22 → **CP7** → S2-24 → S2-16 → **CP8**.
 
 S2-17a sits before CP1 because the owner wants the shared database and one
 sign-on proven at the front door; it is a schema, a middleware and a
-provisioning route, not the lift. The lift (S2-17b/c) and Radar (S2-18) wait
-until the POS is complete, as directed.
+provisioning route, not the lift. The lift (S2-17b/c), Radar (S2-18) and the
+Inbox (S2-19) wait until the POS is complete, as directed. The Console
+(S2-23) comes after every app exists, because it is the layer above them, and
+the production restore (S2-22) comes after the Console so that the data-access
+log and the money pages are there to watch the client's own rows from the
+first minute. S2-24 is last before acceptance: by then every simulator has a
+documented real counterpart to switch to.
 
 Rationale: S2-01 must precede any client-facing deploy (privilege hole,
 non-atomic writes, PII in logs, idempotency race). S2-02/S2-03 put the suite
@@ -3896,15 +4485,23 @@ model the money path and the booth sit on. The booth (S2-07) follows
 immediately because it needs only the box agent, the print core and the
 scanner. S2-08..S2-10 are the first sale and redemption; S2-11 makes the sale
 print and appear in History, which is the honest point to hand the client a
-play-test, so CP3 sits after S2-11. S2-12..S2-15 complete the POS. This
-deviates from PROJECT_CONTEXT §14 (booth at step 5; Pi image in step 1) and is
-recorded in `SPRINT_2_PROGRESS.md`.
+play-test, so CP3 sits after S2-11. S2-12..S2-15 finish the money and arrival
+path and S2-20/S2-21 finish the sell side, so the POS is complete at CP5.
+S2-17b..S2-19 put the other three apps on the platform. S2-23 and S2-22 give
+the owner the control surface and his own data under it. S2-24 turns the
+simulator work into an on-site plan. This deviates from PROJECT_CONTEXT §14
+(booth at step 5; Pi image in step 1) and is recorded in
+`SPRINT_2_PROGRESS.md`.
 
 Parallelisable streams (once their dependencies are merged):
 - After S2-03: the box agent skeleton (S2-04) is independent of remaining
   console polish; S2-17a is independent of both.
-- After S2-15b: S2-17b, S2-18 and S2-19 are independent of each other (S2-18
-  and S2-19 borrow the sign-on middleware from S2-17a).
+- After S2-15b: S2-20 and S2-21 are independent of each other; S2-20's kiosk
+  surface only needs S2-12's redemption service and S2-06's print pipeline.
+- After CP5: S2-17b, S2-18 and S2-19 are independent of each other (S2-18 and
+  S2-19 borrow the sign-on middleware from S2-17a); S2-24's image work can
+  start any time after S2-06 and only its device switch-over sections need
+  the later tickets.
 - After S2-06: the booth game (S2-07a) and the customer display (S2-08) are
   independent; S2-09a can start its engine port and regression fixtures at
   any time.
@@ -3920,14 +4517,15 @@ Parallelisable streams (once their dependencies are merged):
 | CP2 | S2-07b | Station model live on Render: stations, virtual boxes, offline toggle, sync ledger with epochs and quarantine, print core and simulators, PWA; the Lucky Wheel playable end to end with its admin panel. |
 | CP3 | S2-11 | Two-device POS, first real sale across tenders, voucher and legacy code redemption, receipts, bands, History, refunds; **client play-test opens**; regression fixtures reviewed. |
 | CP4 | S2-15b | Full POS: arrival and gate, check-in with offline release, wallets and stock, cash/EOD/settlement, analytics rows and the multi-branch summary. |
-| CP5 | S2-17c | OTO App lifted with every module walked through on staging, POS seams, and the confirmed contract features built. |
-| CP6 | S2-19 | Radar live with the per-branch source preference (a POS sale visible), the Inbox pillars and shell. |
-| CP7 | S2-16 | Acceptance checklist from a clean database on staging, load and soak results, tag, report, Jira evidence, play-test guide. |
+| CP5 | S2-21 | **The POS is complete**: events, parties and camps against the OTO App master, the self-service kiosk redeeming a booking on its own, staff benefit profiles applied at checkout. |
+| CP6 | S2-19 | Every app on the platform: the OTO App lifted with each module walked through and its contract features built, Radar live with the per-branch source preference (a POS sale visible in it), the Inbox working end to end on the channel simulator. |
+| CP7 | S2-22 | The owner's Console across the whole suite — and the client's own production data under it: real members, employees and figures, the data-access log watching them, the cutover rehearsal timed and written up. |
+| CP8 | S2-16 | Acceptance checklist from a clean database on staging, load and soak results, the on-site bring-up runbook, tag, report, Jira evidence, play-test guide. |
 
 Render deployments: the first deploy (API + POS) happens at S2-01c; launcher
 and shells at S2-02; the console at S2-03; the OTO App Docker service at
-S2-17a; the booth static site at S2-07a; Radar at S2-18; the Inbox shell at
-S2-19.
+S2-17a; the booth static site at S2-07a; the kiosk surface at S2-20; Radar at
+S2-18; the Inbox at S2-19.
 From then on every merge to `main` deploys after CI (migrations + `platform:sync`
 run on deploy). Staging gets a fresh migrate + seed at each checkpoint and the
 audited "Reset demo data" action between client sessions. The final refresh
@@ -4082,7 +4680,7 @@ Added 2026-09-20:
 
 ## Definition of done for the sprint
 
-- Every story S2-01a..S2-19 merged with its acceptance criteria checked, its
+- Every story S2-01a..S2-24 merged with its acceptance criteria checked, its
   audit/`ops_run` evidence visible on Activity/Failures/Health, and an
   evidence comment on the Jira story in the Sprint 1 format; every QA step
   tagged QA (UI) or Dev evidence with at most one dev-evidence step per story.
@@ -4095,7 +4693,13 @@ Added 2026-09-20:
   spin-distribution, business-date and pricing-regression tests.
 - Full acceptance run (`docs/qa/SPRINT_2_ACCEPTANCE.md`) from a clean database
   on refreshed Render staging with zero open blockers; `seed:demo-day`
-  reproduces the M5 demo in under 10 minutes.
+  reproduces the M5 demo in under 10 minutes; the restore procedure
+  (`pnpm data:restore`) runs green on the production dump and the result is
+  what the client play-tests.
+- `docs/qa/ON_SITE_BRINGUP.md` written and reviewed: every device in
+  `DEVICE_INVENTORY.md` has its switch from simulator to real transport, its
+  smoke test and its confirm-on-site questions, so the park visit is a
+  checklist rather than an investigation.
 - Playwright smokes pass on the Render origins: launcher → station pick;
   till + display membership; cash ticket sale; 2C2P sandbox QR sale; booth
   spin → voucher → redemption; booking QR → gate; check-in → offline release;
