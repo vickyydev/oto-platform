@@ -1631,9 +1631,10 @@ Includes:
   cash tendered/change, status created|sent_to_terminal|approved|declined|
   cancelled|unknown|inquiring|not_found|awaiting_staff_confirmation|
   awaiting_settlement, device, provider simulator|ghl|digio|2c2p|manual,
-  terminal_ref, TID, MID, approval code, last4, 2C2P invoice/QR url/expires,
-  staff_confirmed_by, offline flag, paid_at, box_seq); split tenders; an
-  "Attempts" list on the Sale detail view.
+  terminal_ref, TID, MID, approval code, last4, gateway `invoice_no`
+  (≤ 20 alphanumeric for QR, unique forever), `tran_ref`, `payment_id`,
+  raw QR payload, expires_at, staff_confirmed_by, offline flag, paid_at,
+  box_seq); split tenders; an "Attempts" list on the Sale detail view.
 - `terminal_counter (device_id, next_ref)` on the box: 6-digit rolling refs
   for QR/Digio devices, 12-char `pos_ref_no` for card/GHL devices, mapped to
   the attempt id; test that refs are unique per terminal per day.
@@ -1649,15 +1650,33 @@ Includes:
   Direct Terminal `3E55`-framed BER-TLV with satang amounts and per-type action
   codes — against fixtures taken from `imports/_vendor-docs/`; the simulator
   answers on those same messages, so only the serial link changes on site.
-- QR: 2C2P client behind `QrPayment` (the sandbox — real QR codes — when `PGW_*` is set, simulator
-  otherwise) incl. `refund` through the Payment Maintenance API (JWE/JWS,
-  `PGW_MAINT_*` key names) honoured by the simulator; JWT-verified backend notification,
-  idempotent on invoice number + status; status poll; PAX QR payload from the
-  terminal simulator when the box or cloud is unreachable, attempt flagged
-  `awaiting_settlement`; `job:payments.pending` flags any attempt in
-  `sent_to_terminal|unknown|inquiring` older than `PAYMENT_PENDING_MIN` (10)
-  on Failures; 2C2P simulator panel with "customer paid" and "Suppress
-  webhook".
+- QR: `packages/payments-2c2p` behind `QrPayment` per
+  `docs/architecture/PAYMENT_GATEWAY.md` — the sandbox (real QR codes) when
+  `PGW_*` is set, the gateway simulator otherwise. Payment Token (JWT HS256
+  envelope, `invoiceNo` one per attempt in the `[prefix]STATION+YYMMDD+SEQ`
+  form, `currencyCode "THB"`, `paymentExpiry` from `PGW_PAYMENT_EXPIRY_MIN`)
+  → Do Payment on channel `PPQR` (configurable; the Payment Option call
+  confirms it) with `qrType RAW` so the EMVCo payload is rendered on the
+  customer display locally with the `expiryTimer` countdown; the backend
+  notification (`POST /webhooks/2c2p/payment`: signature verified, merchant
+  checked, `ops_run` recorded, idempotent on `invoiceNo` + `tranRef`,
+  amount compared, sale marked paid inside the sale transaction; fields
+  `respCode`, `tranRef`, `approvalCode`, `channelCode`, `agentCode`,
+  masked `accountNo`) with Payment Inquiry polled every
+  `PGW_INQUIRY_INTERVAL_S` up to `PGW_INQUIRY_MAX_MIN` as the safety net;
+  `respCode` mapping (0000 paid, 0001/2001 pending, 0003 cancelled, 9020/5009
+  expired, 5015/5016 amount mismatch → `awaiting_staff_confirmation`); void
+  same day (`processType V`) and refund after settlement (`processType R`)
+  through Payment Maintenance on its own host with the `PGW_MAINT_*` RSA keys,
+  honoured by the simulator; PAX QR payload from the terminal simulator when
+  the box or cloud is unreachable, attempt flagged `awaiting_settlement`;
+  `job:payments.pending` flags any attempt in `sent_to_terminal|unknown|
+  inquiring` older than `PAYMENT_PENDING_MIN` (10) on Failures; gateway
+  simulator panel with "customer paid", "decline", "expire", "late payment"
+  and "Suppress webhook". How the 2C2P sandbox marks a PromptPay QR as paid is
+  UNCERTAIN in the public docs (PAYMENT_GATEWAY §2.9) — the first sandbox
+  session settles it with 2C2P support; until then the acceptance runs on our
+  simulator and on the sandbox's own inquiry.
 - Adapter payloads stored after the allow-list projection; every adapter call
   an `ops_run` kind device/integration under the action id.
 - Payment methods admin (prototype `PaymentMethodsSection`) wired.
@@ -2162,8 +2181,10 @@ Includes:
 - Settlement: adapter `settle()` per terminal (simulator returns a batch),
   `settlement_batch`/`settlement_line`, CSV keyed by TID and 2C2P
   `invoiceNo`/`tranRef`, reconciliation match view, PAX `awaiting_settlement`
-  attempts reconciled here; a 2C2P settlement fixture shaped like the
-  merchant-portal report.
+  attempts reconciled here; a 2C2P settlement fixture shaped like the daily
+  reconciliation file 2C2P pushes over SFTP (`Reconcile2c2p_B_v2.4_…csv`,
+  H/D records — PAYMENT_GATEWAY §2.11), imported by a job that matches lines
+  to attempts by `invoiceNo`/`tranRef` and flags the rest.
 - `seed:demo-day` run as the QA fixture (cash, card on two TIDs, QR, wallet,
   voucher sales, one refund).
 
