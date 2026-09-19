@@ -42,7 +42,11 @@ priority order; awaiting approval)_
   `../architecture/DEVELOPMENT_PLAN.md` (how an agent builds it),
   `../architecture/PAYMENT_GATEWAY.md` (2C2P), `../architecture/DEVICE_INVENTORY.md`.
 
-**Nothing of Sprint 2 is built.** Building starts at S2-01a on approval.
+**Nothing of Sprint 2 is built.** The Jira board is loaded and waiting: sprint
+"Sprint 2 - Complete build" (future state) holds the 24 stories under four
+epics with their sub-tasks, and the 177 pre-existing issues were labelled, not
+deleted (`SPRINT_2_JIRA_MAP.md`). Building starts at S2-01a / SCRUM-186 on the
+owner's go-ahead.
 
 ## Waiting on the owner
 

@@ -2,8 +2,13 @@
 
 ## Status
 
-- Current checkpoint: **pre-build — Sprint 2 plan v3 complete (24 tickets,
-  CP1-CP8), awaiting owner approval.** Nothing of Sprint 2 is built.
+- Current checkpoint: **ready to build. Plan v3 complete (24 tickets,
+  CP1-CP8) and loaded into Jira; waiting for the owner's go-ahead before the
+  first line of code.** Nothing of Sprint 2 is built.
+- Jira: sprint **"Sprint 2 - Complete build"** (id 3, future) on board 1 of
+  project SCRUM holds the 24 stories under four epics, with 16 sub-tasks;
+  the pre-existing 177 issues were labelled rather than deleted. Keys and the
+  full account of what was done: `SPRINT_2_JIRA_MAP.md`.
 - Last completed step: plan v3 — the owner removed Sprint 3 (2026-09-20
   later), so all the software lands in this sprint and what follows is
   on-site testing. New tickets S2-20 events/parties/camps and kiosk, S2-21
@@ -77,13 +82,15 @@ _Plan v2 is complete as of commit set 5dabf05 → this one: SPRINT_2_PLAN.md,
 DEVELOPMENT_PLAN.md (1,849 lines), PAYMENT_GATEWAY.md, DEVICE_INVENTORY.md,
 AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
 
-1. Owner approval of `docs/progress/SPRINT_2_PLAN.md` (see "Owner inputs
-   needed").
-2. On approval: create the Jira tickets (one issue per ticket, lettered parts
-   as sub-tasks; descriptions, acceptance criteria and QA steps copied from
-   the plan; statuses never changed by us).
-3. Start S2-01a; from then on the ticket log below is the record, updated in
-   the same commit series as the code.
+1. **Done 2026-09-20:** the Jira board is set up — sprint 3 "Sprint 2 -
+   Complete build", four epics, 24 stories in execution order, 16 sub-tasks,
+   old issues labelled and explained (`SPRINT_2_JIRA_MAP.md`).
+2. **Waiting on the owner's go-ahead.** Nothing is built until he says so.
+3. On his word: start the sprint in Jira (it is in *future* state), then
+   S2-01a (SCRUM-186). From then on the ticket log below is the record,
+   updated in the same commit series as the code, and an evidence comment
+   goes on each story or sub-task as its work merges. We never change a
+   ticket's status.
 
 ## Owner inputs needed (asked 2026-09-20)
 
