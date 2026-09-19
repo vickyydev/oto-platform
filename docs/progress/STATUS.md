@@ -1,6 +1,16 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-19 (after the app intake)_
+_Last updated: 2026-09-20 (Sprint 2 plan widened; revision paused mid-way)_
+
+> **Resuming?** The precise checkpoint — what is done, what is pending in
+> order, which research must be re-run, and what the owner still has to
+> supply — is in `SPRINT_2_PROGRESS.md` (Status block first). The sprint
+> scope changed on 2026-09-20: POS and booth first, then the OTO App on the
+> central database (its schema and sign-on before CP1), Radar live with a
+> per-branch source preference, and the Inbox pillars; QR payments through
+> the 2C2P sandbox for real; adapters on the park's real devices
+> (`../architecture/DEVICE_INVENTORY.md`). The plan is `SPRINT_2_PLAN.md`
+> (19 tickets, CP1–CP7), still awaiting the owner's approval.
 
 ## Where we are
 

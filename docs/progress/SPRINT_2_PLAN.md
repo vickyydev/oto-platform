@@ -1,19 +1,29 @@
-# Sprint 2 plan — POS, booth and the suite front door
+# Sprint 2 plan — the OTO suite: POS and booth first, then OTO App, Radar and the Inbox
 
-Status: proposed 2026-09-19, revised after review — awaiting owner approval. Once
-approved, the sixteen tickets below become the Sprint 2 Jira tickets, one issue
-per ticket. Where a ticket is split into lettered parts (S2-01a/b/c, S2-07a/b,
-S2-09a/b, S2-10a/b, S2-14a/b, S2-15a/b) the parts are sub-tasks or sections of
-that one issue, each with its own acceptance criteria and QA steps, and
-evidence is posted per part as in Sprint 1 (`docs/qa/jira-comments/`). Every
-QA step is tagged **QA (UI)** (a non-developer can do it from a browser) or
-**Dev evidence** (test output, migration log, one per part at most).
+Status: proposed 2026-09-19; widened 2026-09-20 after the owner's review
+(`docs/briefs/OWNER_DIRECTION.md`, section 2026-09-20) — awaiting owner
+approval. Once approved, the nineteen tickets below become the Sprint 2 Jira
+tickets, one issue per ticket. Where a ticket is split into lettered parts
+(S2-01a/b/c, S2-07a/b, S2-09a/b, S2-10a/b, S2-14a/b, S2-15a/b, S2-17a/b/c) the
+parts are sub-tasks or sections of that one issue, each with its own acceptance
+criteria and QA steps, and evidence is posted per part as in Sprint 1
+(`docs/qa/jira-comments/`). Every QA step is tagged **QA (UI)** (a
+non-developer can do it from a browser) or **Dev evidence** (test output,
+migration log, one per part at most). The technical plan that tells an agent
+how to build each ticket — architecture, conventions, research conclusions,
+resume protocol — is `docs/architecture/DEVELOPMENT_PLAN.md`; the live log is
+`docs/progress/SPRINT_2_PROGRESS.md`.
 
 Sources, in order of precedence: `docs/briefs/OWNER_DIRECTION.md` (newest,
 wins), `docs/briefs/PROJECT_CONTEXT.md` (the target system),
 `docs/briefs/POS_BACKEND_LOGIC.md` (the previous developer's explanation of
 the prototype's rules — ranks with the prototype code),
-`docs/architecture/PLATFORM_PLAN.md`, `docs/features/booth.md`. Rule ids
+`docs/briefs/AGENCY_PROPOSAL.md` (what the OTO App contract still owes),
+`docs/architecture/PLATFORM_PLAN.md`, `docs/architecture/DEVICE_INVENTORY.md`
+(the park's real devices, protocols and values),
+`docs/architecture/PAYMENT_GATEWAY.md` (the 2C2P integration),
+`docs/features/booth.md`, `docs/features/oto-app.md`,
+`docs/features/oto-radar.md`, `docs/features/inbox.md`. Rule ids
 `R-nn` and conflict ids `C-nn` cited on the tickets refer to
 `docs/architecture/POS_RULES_RECONCILIATION.md`, which reconciles those sources
 once so nobody re-derives an answer. Where this plan departs from
@@ -21,38 +31,50 @@ once so nobody re-derives an answer. Where this plan departs from
 `OWNER_DIRECTION.md`; the deviations are listed in "Scope" and are recorded in
 `docs/progress/SPRINT_2_PROGRESS.md` on the first build day.
 
-**Sprint goal.** Put a client-playable OTO suite on Render: a launcher with one
-sign-in, a POS whose till and customer display are separate devices linked
-through a cloud-hosted "virtual box", a complete money path (ticket, F&B and
-shop checkout; cash, simulated EDC terminal, simulated 2C2P QR with PAX QR
-fallback; receipts and signed wristbands on a printer simulator), the Lucky
-Wheel booth issuing printed vouchers that the till redeems (legacy codes
-included), then arrival, child check-in with offline release, wallets, stock
-and day-close reporting that writes the analytics rows Radar will later read.
+**Sprint goal.** Put a client-playable OTO suite on Render, in this order of
+priority: (1) a styled launcher with one sign-in and the **POS complete** —
+till and customer display as separate devices linked through a cloud-hosted
+"virtual box", the prototype's admin panels, booking-site screen and stock
+controls, a complete money path (ticket, F&B and shop checkout; cash, EDC
+terminals through their real ECR dialects on simulators, **real Thai QR
+through the 2C2P sandbox** (the park's SCB-acquired gateway) with the PAX
+terminal's own QR as the offline fallback; receipts and signed wristbands on simulators of the park's real
+printers), the **Lucky Wheel booth** issuing printed vouchers that the till
+redeems, then arrival with the real gate protocol, child check-in with offline
+release, wallets, stock and day-close reporting; (2) the **OTO App** on the
+central database with one sign-on — its schema first, so an admin-created user
+opens it from the launcher, then the whole live app lifted and the features
+still owed under the contract built; (3) **Radar** live on the platform,
+showing seeded legacy Pisell/Papaya figures or the real OTO POS analytics per
+branch preference; (4) the **Unified Inbox** data pillars and a mockup shell.
 All of it on a hardened, transactional platform where every API call, service
 operation, job and device call is logged, silent failures are detectable, and
 health is visible on admin pages that plug into HyperDX or any OpenTelemetry
-tool through environment variables alone.
+tool through environment variables alone; every function committed as it
+lands and recorded so any agent can resume.
 
 ## What the client will be able to do
 
 Each milestone is what is clickable on the Render URLs after the named ticket
 merges. The ordering pulls the wheel forward (ticket 7) and puts the first real
-sale at ticket 10; the client play-test opens after S2-11, when a sale also
-prints and appears in History, so the client is not asked to judge a till that
-prints nothing.
+sale at ticket 10; the POS play-test opens after S2-11, when a sale also prints
+and appears in History, so the client is not asked to judge a till that prints
+nothing. The OTO App, Radar and Inbox milestones follow the POS.
 
 | Milestone | After | What the client can click |
 |---|---|---|
-| M0 — front door | S2-03 | Open the launcher URL, sign in once, land in the POS without a second password; OTO App and Radar tiles open placeholder shells; the console tile opens Console v1 with Activity, Failures, Health and Integrations pages showing the sign-in and a member lookup as rows; Sprint 1 membership check works against the Render API. |
+| M0 — front door | S2-03 | Open the launcher URL — an OTO-Park-styled landing page listing POS, OTO App, Radar, Lucky Wheel, Console and Inbox — sign in once, land in the POS without a second password; the OTO App tile already proves the shared database (S2-17a, pulled forward before CP1: its schema is in the central database and an admin-created user opens the OTO App through the launcher with no second password); Radar and Inbox tiles open "coming soon" shells; the console tile opens Console v1 with Activity, Failures, Health and Integrations pages showing the sign-in and a member lookup as rows; Sprint 1 membership check works against the Render API. |
 | M1 — stations and boxes | S2-05 | Admin creates a station on the virtual box in Console > Devices and assigns simulated devices; staff sign in and pick the station; Health shows the box heartbeat; toggling the virtual box offline lets the till create a member from the cache, and the member syncs once when the box returns. |
 | M2 — Lucky Wheel | S2-07b | Open the virtual booth from the launcher's demo tile, press the button key, the wheel spins and a voucher with Thai/English prize and QR renders in the printer simulator; the booth admin panel changes prize weights and the booth picks the new version up within a minute; the booth keeps issuing while offline and syncs on return; Health shows the booth, its printer and alerts. |
 | M3 — two-device POS | S2-08 | The customer display pairs to a station by 6-digit code on a second device; a phone typed on the display makes the till show the member and children; the display never receives allergy text. |
-| M4 — first sale and redemption (internal) | S2-10b | Ticket, F&B and shop carts price server-side with tier, adult rules, add-ons, promo codes, manual discounts and VAT; cash, simulated card (approve / decline / no-response → inquiry), simulated 2C2P QR paid on the display, PAX QR when offline; a printed booth voucher and a legacy code redeem inside a sale. **Not yet the client play-test:** no receipts, no wristbands, no History and no refunds until M5, so feedback on those would be noise. |
+| M4 — first sale and redemption (internal) | S2-10b | Ticket, F&B and shop carts price server-side with tier, adult rules, add-ons, promo codes, manual discounts and VAT; cash, simulated card on the NEXGO/PAX dialects (approve / decline / no-response → inquiry), a **real 2C2P sandbox QR** on the display confirmed by 2C2P's backend notification, the PAX terminal's QR when the box is offline; a printed booth voucher and a legacy code redeem inside a sale. **Not yet the client play-test:** no receipts, no wristbands, no History and no refunds until M5, so feedback on those would be noise. |
 | M5 — paper and corrections (client play-test opens) | S2-11 | Receipts, kitchen/bar tickets and kids/adult wristbands with scannable signed codes render in the printer simulator; History lists real sales; refunds, voids and reprints work with manager approval. The play-test guide is issued here. |
-| M6 — arrival and children | S2-13 | Online booking paid on the 2C2P simulator produces a signed QR; the till redeems it and issues bands; the gate simulator admits adults with anti-passback and live occupancy; an unaccompanied child triggers the supervision gate, consent on the display, the check-in board with timers, and release with a collector photo while the box is offline. |
+| M6 — arrival and children | S2-13 | Online booking paid on the 2C2P sandbox hosted page (cards, PromptPay, wallets) produces a signed QR; the till redeems it and issues bands; the gate simulator — the GE-X2/HX-X1 controller and its network QR reader speaking their real protocols — admits adults with anti-passback and live occupancy; an unaccompanied child triggers the supervision gate, consent on the display, the check-in board with timers, and release with a collector photo while the box is offline. |
 | M7 — money and day close | S2-15b | Wallet credit spent at F&B with the offline cap; stock decrements, transfers and stock take; cash session with float, paid-outs and safe drops; End of Day per tender and TID with settlement export; Today and History on real data; daily analytics rows per branch/day/source with the marketing-channel breakdown. |
-| M8 — acceptance | S2-16 | Full acceptance checklist run from a clean database on refreshed staging, load and soak checks, tag `sprint-2`, evidence comment on every story, client play-test guide. |
+| M8 — OTO App on the platform | S2-17c | The live OTO App runs from the launcher on the central database with one sign-on: every module the export has works against the `otoapp` schema, the POS-facing seams (members, events, employees) read the same rows the POS writes, and the contract features listed in `docs/briefs/AGENCY_PROPOSAL.md` §6 are built. |
+| M9 — Radar live | S2-18 | Radar opens from the launcher; each branch has a source preference — legacy (seeded Pisell/Papaya-shaped fixtures) or OTO POS — and a demo sale made on the staging POS changes the Radar dashboard for that branch within the rollup interval. |
+| M10 — Inbox pillars | S2-19 | The Inbox tile opens the client-styled mockup shell backed by the `inbox` schema (conversations, messages, channels, assignments) with seeded example threads; no live channel yet. |
+| M11 — acceptance | S2-16 | Full acceptance checklist run from a clean database on refreshed staging, load and soak checks, tag `sprint-2`, evidence comment on every story, client play-test guide. |
 
 ## Readiness — what exists, what is new
 
@@ -71,6 +93,10 @@ what the reports say.
 | POS frontend — wired to the API | `apps/pos` (325 files; React 19 + Vite 7 + wouter). Wired: lock screen sign-in/setup/reset/sign-out (`components/auth/LockScreen.tsx`), session resume, Tickets-tab membership check, create member, children re-confirm + draft visit (`pages/Till.tsx` lines 317-390, `components/till/VisitChildrenModal.tsx`), tier verification (upgrade with expiry only; no downgrade, no expiry job), pricing-mode chip, catalogue hydration (`api/catalogBridge.ts`), 7 admin panels (Tickets, holidays, Tax, Members, Tier Verifications, Login Users, Operators). 13 files import `src/api/*`. | Station pick, `/display` route, cart/session document over WebSocket, tenders, printing, History, check-in, wallets, stock, Today/EOD, catalogue admin panels, tier downgrade and review flag, PWA. |
 | POS frontend — still on mock | `apps/pos/src/mockApi.ts` (5,837 lines, 141 exports, imported by 80 files) + `store/catalogStore.ts` (1,837 lines, 27 importers): selling (`recordSale`, wallets, wristbands, `lib/printRouting.tsx`), F&B, Shop, Events, Check-in, History, Today/EOD, Messages, Stock, and 20+ admin panels; the split-view customer display shares React state by props; the "pending lookup" round trip is staged and consumed by the same browser and cookie (`routes/me.ts` lines 121-154); `MobileTill`, `BookIdentify`, `PartyTicketModal` and the Till's event-pass path still read mock members. | Every tab except Events/parties and Messages is wired; those two stay on mock behind the existing flag and are labelled as such in the play-test guide. |
 | Booking site | `/book` wizard (`pages/Book.tsx`) loads the public catalogue and calls `POST /public/bookings`, but the mock `createBooking` still produces the confirmation QR and the till's `RedeemBookingModal` reads mock bookings only; no payment. | 2C2P Redirect (sandbox or simulator), signed booking QR, redemption at the till and kiosk-ready redemption service. |
+| OTO App (`imports/oto-app/`) | Export of the live system: Express 4 + Passport-local + Drizzle, 796 routes (517 in one 25,504-line `routes.ts`), 184 tables, React front end with 122 routes, Dockerfile present, scrypt password hashes, S3 storage without endpoint option, four local-disk writers, Replit-keyed cookie security; the intake's re-hosting work list and sign-on swap are in `docs/architecture/intake-2026-09-19/01-oto-app-backend.md` §10. Not on the platform. | S2-17: `otoapp` schema on the central database, hand-off sign-on middleware + `platform_user_id`, provisioning from the Console, Docker service on Render, storage on the platform bucket, jobs under `ops_run`, POS seam views, contract features from the proposal. |
+| Radar (`imports/oto-radar/`) | Export of the live dashboard: Express + React, 107 routes (96 public, no auth), Pisell (v30) and Papaya (v21) sync pipelines with credentials in Replit Secrets, structure-only database listing, dev-to-prod push routes that leak data; work list in `05-radar-api-auth-env-schema.md` §9. Not on the platform. | S2-18: `radar` schema, sign-on in front of everything private, push/wipe routes deleted, per-branch source preference, fixture adapters for the legacy pulls, OTO POS figures from `GET /analytics/summary`, parity test. |
+| Inbox (`imports/oto-asset-manager/`) | Client's Replit prototype: React front end on 17 hard-coded conversations, Express skeleton with one health route, empty Drizzle schema, no auth, no channel code; briefs and screenshots in `attached_assets/` (`docs/features/inbox.md`). | S2-19: `inbox` schema and permissions, seed, read-only routes, static shell in the client's design, `MessagingChannel` contract with a console adapter. |
+| Payment gateway | Nothing: `POST /public/bookings` marks bookings paid with no payment; PROJECT_CONTEXT §7.2 chose 2C2P; no credentials. | `packages/payments-2c2p` (Payment Token, Do Payment PromptPay QR, Redirect API, backend notification, Payment Inquiry, Payment Maintenance) on the sandbox with real QR codes, a gateway simulator for CI, `PGW_*` variables (`docs/architecture/PAYMENT_GATEWAY.md`). |
 | Deployment and CI | `.github/workflows/ci.yml` (typecheck, lint, migrate twice, test on a Postgres service container, build); `infra/docker-compose.yml` for Postgres 16 + MinIO; `.env.example` (missing `NODE_ENV`, `LOG_LEVEL`, `TEST_DATABASE_URL`); `env.ts` bakes dev MinIO credentials as defaults. No `render.yaml`, nothing deployed. | `render.yaml` (one api web service running `PROCESS_ROLES=api,edge,jobs` at `numInstances: 1`, static sites with `/api/*` rewrites for launcher/POS/console/booth/shells, managed Postgres Singapore with PITR, a commented-out worker service), CI-gated deploy, migrations + `platform:sync` on deploy, staging profile (`SMS_ADAPTER=console`, `ALERT_CHANNELS=console,webhook`) with an audited "Reset demo data" action. |
 | Tests | 63 API integration cases (`apps/api/test/*.test.ts`), 19 shared unit tests (one file, `packages/shared/test/shared.test.ts`), 2 Playwright smokes (`apps/pos/e2e/smoke.spec.ts`); the two file-storage tests self-skip without MinIO. | Regression fixtures from the prototype pricing/tax functions, redaction (incl. pg error and terminal response fixtures) and OTel span tests, idempotency concurrency test, sync idempotency/poison/epoch tests, 200-spin distribution test, boot-refusal test, schema_version replay test, Playwright smokes against two origins for launcher → station → sale, display pairing, booth → redemption, booking → gate, check-in → offline release; k6 load and 24 h soak. |
 
@@ -84,11 +110,27 @@ what the reports say.
   proxy-blind rate limiting.
 - Named database schemas and the placeholder renames while the database holds
   only seed data.
-- Launcher with centralised sign-in (a signed hand-off token per app origin —
+- Launcher: an OTO-Park-styled landing page listing every app (POS, OTO App,
+  Radar, Lucky Wheel, Console, Inbox) with "coming soon" tiles until an app is
+  ready, and centralised sign-in (a signed hand-off token per app origin —
   works on `*.onrender.com` today and on any future domain, so it is the
   permanent mechanism; a parent-domain cookie becomes an optional shortcut once
-  a real domain exists), placeholder shells for OTO App and Radar; Console v1
-  as its own deployable (built in S2-03).
+  a real domain exists); Console v1 as its own deployable (built in S2-03).
+- OTO App on the central database: its schema (`otoapp`) migrated into the
+  platform database and the app's sign-on replaced by the launcher hand-off
+  first (S2-17a, before CP1, so an admin-created user proves the shared
+  database and one login), then the whole live app lifted onto Render against
+  that schema with every module the export has (S2-17b), then the features the
+  contract still owes, taken from `docs/briefs/AGENCY_PROPOSAL.md` §6
+  (S2-17c). The OTO App keeps its own admin controls; the POS keeps its own
+  admin panels.
+- Radar live on the platform (S2-18): schema `radar`, sign-on required, a
+  per-branch source preference (legacy | OTO POS), seeded Pisell/Papaya-shaped
+  legacy fixtures for the demo, and the OTO POS branch reading the analytics
+  rows the POS writes, so a demo sale on staging shows up in Radar.
+- Unified Inbox pillars (S2-19): schema `inbox` with conversation, message,
+  channel, participant, assignment and template tables seeded with example
+  threads, and a mockup shell in the client's design opened from the launcher.
 - Observability: every request, service operation, job, webhook, sync batch,
   device call and client-side failure logged and, where it can fail silently,
   recorded in `ops_run`; watchdog, alerts (console, email, generic webhook),
@@ -100,8 +142,12 @@ what the reports say.
 - Box agent runtime: station session document with lease fencing, cache
   bundles, durable outbox and sync ledger with cloud-issued epochs, signed
   staff token, PWA shell, print pipeline, scanning service, and a simulator for
-  every device (printer, EDC terminal, 2C2P PGW, PAX QR payload, scanner, gate,
-  USB button, badge/PIN, cash drawer).
+  every device the park owns (Welltech G4 and Xprinter ESC/POS receipt printers,
+  4B-2082A wristband printers, NEXGO N5 and PAX A920Pro terminals in their ECR
+  dialects, the 2C2P gateway, the PAX terminal's own QR payload, the Zebra
+  scanner on the box, the GE-X2/HX-X1 gate with its network QR reader, USB
+  button, badge/PIN, cash drawer) — models, protocols and values from
+  `docs/architecture/DEVICE_INVENTORY.md`.
 - Lucky Wheel booth: game app, booth box role, spins and vouchers, voucher
   printing, offline operation, heartbeat and alerts, booth admin control panel,
   voucher definitions with campaign and marketing channel, POS redemption
@@ -112,16 +158,22 @@ what the reports say.
   promo and tax rules ported to satang; member tier change (upgrade and
   downgrade, manager gate, expiry review flag); sale facts carrying the
   analytics fields from the first sale.
-- Tenders: cash, EDC terminal simulator with the inquiry rule and per-terminal
-  reference counters, 2C2P sandbox or simulator QR on the display with PAX QR
-  fallback, manual recording, refunds (incl. `QrPayment.refund`) and voids by
-  tender kind, online-only with manager approval.
+- Tenders: cash, EDC terminal simulators with the inquiry rule and
+  per-terminal reference counters, **real Thai QR through the 2C2P sandbox**
+  (Payment Token → Do Payment on the PromptPay QR channel, shown on the
+  display, confirmed by 2C2P's backend notification with Payment Inquiry as
+  the safety net; the gateway simulator only when no credentials are
+  configured) with the PAX terminal's QR as the offline fallback, manual
+  recording, refunds (Payment Maintenance) and voids by tender kind,
+  online-only with manager approval.
 - Printing: receipts with cloud-issued series, kitchen/bar tickets, kids/adult
   wristbands with signed codes, credit/item vouchers, templates admin,
   reprints, printer health; all provable offline.
-- Arrival: online booking payment (2C2P Redirect sandbox or simulator), signed
-  booking QR, redemption at the till, gate simulator with anti-passback and
-  live occupancy.
+- Arrival: online booking payment through the 2C2P Redirect API sandbox
+  (hosted page: cards, PromptPay QR, wallets), signed booking QR, redemption at
+  the till,
+  gate simulator speaking the GE-X2/HX-X1 protocol and the reader's HTTP
+  contract, anti-passback and live occupancy.
 - Child check-in and supervision with offline check-in and offline release
   (photo captured on the box, uploaded on reconnect).
 - Wallets (credit grants, band-keyed spend with offline cap) and stock
@@ -132,17 +184,23 @@ what the reports say.
 - Acceptance run from a clean database on Render, load and soak checks,
   `sprint-2` tag, `SPRINT_2_REPORT.md`, evidence per Jira story, client
   play-test guide.
+- Working method for the whole sprint: every function is committed when it
+  lands (conventional commits per `CONTRIBUTING.md`), the ticket log in
+  `docs/progress/SPRINT_2_PROGRESS.md` is updated in the same commit series,
+  and every decision or deviation is written to the decisions log in
+  `docs/architecture/ARCHITECTURE.md`, so any agent resumes from the log
+  without re-deriving anything (`docs/architecture/DEVELOPMENT_PLAN.md` §1).
 
 ### Out of scope / deferred
 
 | Item | Target | Reason |
 |---|---|---|
-| OTO App and Radar lifts, their sign-on adapter, module switches | Sprint 3 | OWNER_DIRECTION ranks working layouts of the other apps below POS and wheel; the launcher opens placeholder shells and the POS writes the analytics rows Radar will read, so nothing is blocked. The lifts also need the Radar/wheel dumps and AWS access not yet supplied. Deviation from PROJECT_CONTEXT §2/§14 ("all remaining software"). |
-| Analytics unification stream 8: Radar's data-source switch, parity tests, the settings tables (`targets`, `forecast_setting`, `calendar_note`, `locked_period`) and the Console analytics overview | Sprint 3 | S2-15b writes the summaries, `dim_date` and the contract Radar will call; the settings that today live in Radar's code move when Radar is lifted. |
-| Messaging inbox and real WhatsApp / LINE / Instagram adapters | Sprint 3 | No business accounts or BSP exist; the check-in flow needs only the console adapter to prove the connection-check rule. Messages tab stays on mock. |
-| Production data migration (Pisell/Papaya/OTO App dumps), Radar history restore, cutover runbook | Sprint 3 / stabilisation | Requires real dumps and credentials (STATUS.md blockers) and the check-in ownership decision. Legacy voucher codes and reservations come from a fixture in S2-10b so the importer is proven. |
+| Live channel adapters for the Inbox (WhatsApp Business, LINE Official Account, Instagram, email) and the POS Messages tab on real channels | Sprint 3 | No business accounts or BSP exist yet; the Inbox pillars, the mockup shell and the console adapter for check-in messages are built this sprint (S2-19, S2-13). |
+| Radar's live Pisell/Papaya pulls on staging and the Console analytics overview | Sprint 3 | The Pisell/Papaya credentials are not available (Replit Secrets); the lifted Radar runs its sync jobs against seeded fixtures on staging and switches to real pulls by configuration when the credentials arrive. Parity tests between the legacy formula and the OTO POS rollup are part of S2-18. |
+| Production data migration (Pisell/Papaya/OTO App dumps), Radar history restore, cutover runbook | Sprint 3 / stabilisation | Requires real dumps and credentials (STATUS.md blockers) and the check-in ownership decision. Legacy voucher codes and reservations come from a fixture in S2-10b so the importer is proven; the OTO App lift (S2-17) uses the export's seed and a structure-only copy of the production dump, never the real rows. |
+| 2C2P production go-live (production merchant credentials, PromptPay QR channel enabled on the merchant, return URLs registered, Payment Maintenance keys) | When the park's 2C2P merchant account is confirmed | The sandbox integration is complete this sprint; production differs only by base URL, credentials and the registered URLs (`docs/architecture/PAYMENT_GATEWAY.md`). |
 | Kiosk UI (self-service booking redemption surface) | Sprint 3 | The redemption service and device credentials are built in S2-12/S2-04 so the kiosk becomes a thin surface; its hardware arrives in stabilisation. |
-| Real device transports: serial links to the NEXGO N5 and PAX A920Pro terminals, 2C2P production, ESC/POS/TSPL on physical printers, HX-X1 gate serial, Zebra scanners; agent rollout to Pi boxes | Stabilisation, on site | Owner constraint: all devices via simulators now. The two terminal specifications are on disk (`imports/_vendor-docs/`: GHL LinkPOS XML for the NEXGO, Digio Direct Terminal BER-TLV for the PAX), so the terminal simulators speak the real message dialects and only the serial transport is stubbed; the gate, printer and scanner manuals are still awaited. Every adapter interface ships with a simulator and manual payment recording is first-class. |
+| Real device transports: serial links to the NEXGO N5 and PAX A920Pro terminals, raw TCP 9100 to the physical Welltech/Xprinter/4B-2082A printers, the HX-X1 serial line and the gate reader on the LAN, the Zebra scanner on a real box; agent rollout to Pi boxes | Stabilisation, on site | Owner constraint: all devices via simulators now. The terminal specifications, the park's hardware reference and the four gate documents are on file (`docs/architecture/DEVICE_INVENTORY.md`), so every simulator speaks the real message dialect and the adapters are written against the real models; only the physical link (serial port, LAN socket, HID device) is stubbed. Printer command manuals and the scanner programming guide are still wanted to close the "confirm on site" items. Manual payment recording is first-class. |
 | Pi image (read-only root, watchdog, systemd agent, Caddy DNS-01, dnsmasq) | As soon as a Pi 5 is on hand (the owner can order one for the desk; otherwise stabilisation) | **Recorded deviation from PROJECT_CONTEXT §14 step 1.** An image built in CI cannot be proven without booting it against the watchdog, DNS-01 and LAN-discovery behaviour it exists for; building it blind would be re-done on hardware. The agent's `Store` interface (SQLite implementation included), `schema_version` rules, `agent_version` reporting and min-supported-version config are built now so the image is only packaging later. |
 | Events / parties tab wiring and the staff benefits engine | Sprint 3 | Both are 100 % mock and off the critical path; keeping them on mock keeps S2-09 provable. The play-test guide labels them mock. Events stay mastered by OTO App (conflict C10); benefits hang off the mirrored HR record (C13). |
 | Branch catalogue cloning ("Clone from another branch", R-03) and the per-channel messaging handles (C16) | Sprint 3 | Needed when the second branch is configured and when the messaging adapters land; both are additive. |
@@ -152,6 +210,38 @@ what the reports say.
 | Thai TV fonts, Benzin font / dragon art / audio licences, seasonal wheel layouts beyond the first template | Owner questions | Not needed for the simulator demo. |
 | Spin eligibility modes `band` and `phone` on the booth | When the park booth exists | Publishing them is refused this sprint ("not available until the park booth exists"); the mall booth runs `none`. |
 | Overstay billing, wallet expiry policy, tier evidence list, revenue definition | Owner decisions | Safe defaults ship (see Open decisions). |
+
+## Contract coverage — the agency proposal mapped to tickets
+
+`docs/briefs/AGENCY_PROPOSAL.md` captures the agency's proposal (24
+features, 121 stories) and, in its §6, what the proposal shows as not yet
+built. Most of that is the POS — the proposal's "New functionality" is the
+system this sprint builds — and the rest are gaps in the live OTO App. The
+map below is what the owner reviews for Open decision 30; the last column
+names what this plan defers and needs a yes or no.
+
+| Proposal §6 group | Covered by | Deferred in this plan — owner confirms |
+|---|---|---|
+| 6.1 Accounts, access, platform administration | Sprint 1 (verify error-text parity, department/record scope UI, temp-password enforcement in S2-01a) | — |
+| 6.2 Timekeeping and daily-operations gaps in the OTO App | S2-17c (the seven items become its sub-tasks) | — |
+| 6.3 Members and visitor details | Sprint 1 + S2-09a (tier verification UI incl. revoke across branches, unknown-birth-year path, field change history, concurrent-edit warning) | — |
+| 6.4 Branch catalog, pricing, checkout | S2-09a/b (quote, tax modes and discount placement, manual discounts), S2-10a (payment recording, split parts, external-handling confirmation), S2-11 (credits/refunds with tax, wallet and stock reversal) | Branch catalog clone (R-03) — Sprint 3 in this plan |
+| 6.5 Sales and transaction records | S2-15a/b (Today with freshness and states), S2-11 (History with filters, detail links, frozen totals, logged lookups) | — |
+| 6.6 Wallets and promotions | S2-14a (issuance, band/QR keys, atomic spend, liability report), S2-09a (promo codes) | End-of-day expiry with reactivation, and category/item-targeted promotional vouchers with per-customer limits and foregone-revenue reporting (plan ships no expiry rule; owner question 13/14) |
+| 6.7 Food and beverage | S2-09b (menu, modifiers, cart), S2-11 (paid-only routing, multi-station tickets, no duplicate on print failure), S2-14a (child order from a band scan with allergy alert) | — |
+| 6.8 Gate access and occupancy | S2-11 (band issuance, gate rights, group linkage), S2-12 (live occupancy, asymmetric rules, exceptions) | End-of-day stranded list and manual resolution history — add to S2-15a if confirmed |
+| 6.9 Child supervision and release | S2-13 (all items) | — |
+| 6.10 Booking and admission redemption | S2-12 (public booking, signed QR, exactly-once redemption, separate admission/drop-off redemption) | Unified attendee record, flat-price event pass sale and event check-in (Events tab, Sprint 3 in this plan; C10); self-service kiosk surface (Sprint 3 in this plan) |
+| 6.11 Inventory and purchasing | S2-14b (items, variants, locations, transfers, stock take, purchase orders) | Predictive low-stock thresholds and pack conversions (static reorder point ships; Open decision 27) |
+| 6.12 Printing, scanning, hardware | S2-04 (printer roles), S2-06 (scanning), S2-11 (receipts, bands, vouchers, reprints) | — |
+| 6.13 Reporting and employee benefits | S2-15b (sales and ticket-mix report, wallet liability report) | HR-linked benefit profiles and benefit application at checkout (Sprint 3 in this plan; C13) |
+| 6.14 Customer messaging | S2-19 (inbox pillars, shell, console adapter) | Live WhatsApp/Instagram channels, AI classification and translation, chat-photo promotion (Sprint 3 in this plan; no business accounts yet) |
+
+The proposal also carries decisions the owner has already changed
+(payments recorded manually → 2C2P and EDC ECR integration; SvelteKit +
+Python + AWS → TypeScript on Render; face identification → banned for the
+POS, open for the OTO App) and questions of its own (§7), which are folded
+into Open decisions 29–31.
 
 ## Design decisions this sprint locks in
 
@@ -246,6 +336,65 @@ what the reports say.
   MID, approval code, last4, amount, status, invoice number); the raw frame is
   kept only by the simulator. No PAN or track data is ever stored (PCI posture
   documented in ARCHITECTURE.md).
+- **QR payments are real, through the 2C2P sandbox.** Owner decision
+  2026-09-20 (OWNER_DIRECTION): the gateway the park uses is 2C2P with SCB as
+  the acquirer, so PROJECT_CONTEXT §7.2 stands and the QR is never a mock
+  when credentials exist. `QrPayment` is implemented by a 2C2P client
+  (`packages/payments-2c2p`): Payment Token (JWT HS256 with the merchant
+  secret; `invoiceNo` unique per payment attempt) → Do Payment on the
+  PromptPay QR channel → QR rendered on the customer display (and on the
+  booking site via the Redirect API's hosted page) → 2C2P's backend
+  notification received on the api (`POST /webhooks/2c2p/payment`, JWT
+  verified, matched to the attempt by `invoiceNo`) with Payment Inquiry
+  polled as the safety net and for unresolved attempts; refunds and voids
+  through Payment Maintenance. Sandbox and production differ only by
+  `PGW_ENV`, base URL, credentials and the registered return URLs
+  (`PGW_*` variables replace the `2C2P_*` names used in earlier drafts —
+  shell-safe). When no gateway credentials are configured the gateway
+  simulator (same request/response shapes, "customer paid" and "late payment"
+  buttons on the Console) answers instead, so CI and a fresh checkout never
+  need the sandbox. Offline: the box cannot reach 2C2P, so the tender falls
+  back to the PAX terminal's own QR (Digio A3) or cash automatically. Field
+  names, sandbox simulation and the credential checklist:
+  `docs/architecture/PAYMENT_GATEWAY.md`.
+- **Foreign apps as their own schemas on the one database.** OTO App, Radar
+  and the Inbox each get a schema (`otoapp`, `radar`, `inbox`) in the
+  central Postgres; each app's own migration tool runs inside its schema
+  (`search_path`), additively, so the app's code stays lift-compatible with
+  its Replit original and the production dump can be restored into the same
+  tables at cutover (PLATFORM_PLAN §12). Cross-app links are by identity, not
+  foreign keys: `core.app_identity(app, account_id, external_user_id)` maps a
+  platform account to the app's own user row; the POS-facing seams read
+  through views owned by the platform (members and events from OTO App,
+  analytics summaries into Radar). Each app's Passport/session login is
+  replaced by the launcher hand-off; the legacy password login stays behind a
+  flag for the cutover rehearsal only. No app reads another app's tables
+  directly.
+- **Radar reads one contract.** Each branch has `analytics_source`
+  (`legacy` | `oto_pos` | `both`) with a switch date. Radar's dashboards call
+  `GET /analytics/summary` for OTO POS branches and its own legacy rows for
+  legacy branches; the legacy rows on staging come from seeded fixtures shaped
+  like the Pisell and Papaya pipelines (intake notes 03/04) until the
+  credentials exist. Revenue is defined exactly as Radar's code defines it
+  (formula v30 Floresta / v21 Chalong), recorded as `formula_version` on every
+  summary row, so the two sources are comparable; the revenue-definition
+  question is closed by the owner (2026-09-20).
+- **Launcher is the brand's front door.** `apps/launcher` is designed, not a
+  list: OTO Park colours, type and imagery taken from the prototype's design
+  tokens (`imports/oto-pos/artifacts/oto-till/src/index.css`, logo assets in
+  `attached_assets/`), one tile per app with state (open / coming soon /
+  no access), the signed-in user and branch, and admin badges from S2-03. The
+  same design language is reused by the Console and the Inbox shell.
+- **Adapters are written against the park's real devices.** The models,
+  addresses, protocols and "confirm on site" items in
+  `docs/architecture/DEVICE_INVENTORY.md` are the reference for every adapter
+  and simulator: ESC/POS over TCP 9100 for the Welltech G4 and the Xprinters
+  (status polling, Thai code page, drawer kick, cut), the 4B-2082A wristband
+  printers in their documented label language, the Zebra scanner **attached to
+  the box** (HID or USB-CDC) with scans published on the station channel, the
+  GE-X2/HX-X1 gate (reader HTTP `checkCard`/`heartbeat` hosted on the gate
+  box, dry-contact open, passage feedback over serial), the NEXGO and PAX
+  terminals over USB serial in their ECR dialects.
 - **Sign-in on Render.** Every static site has a rewrite rule `/api/* →`
   api service, so each app is same-origin with its API path, the session
   cookie stays `SameSite=Lax` and no CORS is needed; the hand-off token exists
@@ -536,15 +685,19 @@ QA / demo steps:
 
 Depends on: S2-01b; owner-blockable (Render account). Size: S.
 
-### S2-02 — Suite launcher, centralised sign-in with signed hand-off, placeholder shells for OTO App and Radar
+### S2-02 — Suite launcher: OTO-styled landing page, centralised sign-in with signed hand-off, app tiles with "coming soon" shells
 
 Feature area: Launcher and sign-on
 
 Rules: R-14 (station pick follows sign-in, built in S2-04); conflict C1 (face-scan placeholder removed).
 
 Description. The owner's first screen is a launcher where the user picks POS,
-OTO App, Radar, the admin dashboard or the Lucky Wheel (OWNER_DIRECTION "The
-suite"; PLATFORM_PLAN §1 and §4). The production design is one platform
+OTO App, Radar, the admin dashboard, the Lucky Wheel or the Inbox
+(OWNER_DIRECTION "The suite" and 2026-09-20 "Launcher"; PLATFORM_PLAN §1 and
+§4). It is a designed, OTO-Park-themed landing page — the brand's front door —
+not a list of links: tiles carry an icon, a one-line purpose, the app's state
+(open / coming soon / no access) and, for admins, the open-alert badge. It is
+also where the central login is tested. The production design is one platform
 session shared by every app. A parent-domain cookie is impossible on
 `*.onrender.com` (DEPLOYMENT_TOPOLOGY item 4) and would not cover the booking
 site's separate domain anyway, so the launcher issues a short-lived signed
@@ -554,11 +707,14 @@ mechanism; a parent-domain cookie can shortcut it later. The console shell is
 built with its pages in S2-03; this ticket links to it.
 
 Includes:
-- `apps/launcher` (static site with the `/api` rewrite): sign-in in the POS
-  lock-screen design language (phone + password, setup and reset flows reused),
-  tiles filtered by `app:<name>:access`, open-alert badge for admins (from
-  S2-03 once it lands), an account page listing the session's app cookies with
-  "sign out everywhere".
+- `apps/launcher` (static site with the `/api` rewrite): landing page in
+  the OTO Park design language (colours, type and logo from the prototype's
+  design tokens and assets; responsive from phone to iPad landscape), sign-in
+  in the POS lock-screen style (phone + password, setup and reset flows
+  reused), tiles for POS, OTO App, Radar, Lucky Wheel, Console and Inbox
+  filtered by `app:<name>:access` and showing each app's state, open-alert
+  badge for admins (from S2-03 once it lands), an account page listing the
+  session's app cookies with "sign out everywhere".
 - API: `POST /auth/handoff` (JWS signed with `HANDOFF_SIGNING_KEY`, kid, 60 s
   TTL, jti), token carried in the URL fragment `#handoff=…`;
   `POST /auth/handoff/exchange` consumes it atomically (`UPDATE … WHERE jti=$1
@@ -571,15 +727,18 @@ Includes:
   a direct sign-in fallback; "Back to launcher" link; the "Scan my face"
   button is removed (PROJECT_CONTEXT §13 bans biometrics; recorded under "UI
   additions/removals" in `SPRINT_2_PROGRESS.md`).
-- Placeholder shells for OTO App and Radar (name, description, signed-in
-  user, "not lifted yet", link to the legacy URL from env).
+- "Coming soon" shells for Radar and the Inbox (same design language; name,
+  purpose, signed-in user, planned milestone, link to the legacy URL from env
+  where one exists); the OTO App tile points at the lifted app's origin as
+  soon as S2-17a lands (before CP1) and at a shell until then.
 - Demo-only "Lucky Wheel (virtual booth)" tile visible to admins.
-- `render.yaml` entries for launcher and the two shells (each with the `/api`
-  rewrite); `TZ=UTC`, `COOKIE_SECURE=true`.
+- `render.yaml` entries for the launcher and the shells (each with the
+  `/api` rewrite); `TZ=UTC`, `COOKIE_SECURE=true`.
 
-Excludes: parent-domain cookie and real domain; OTO App and Radar lifts;
-station pick after sign-in (S2-04); console shell and pages (S2-03); moving
-the Sprint 1 admin panels out of the POS (Sprint 3).
+Excludes: parent-domain cookie and real domain; the OTO App, Radar and Inbox
+lifts themselves (S2-17, S2-18, S2-19); station pick after sign-in (S2-04);
+console shell and pages (S2-03); moving the Sprint 1 admin panels out of the
+POS (Sprint 3).
 
 Acceptance criteria:
 - [ ] The launcher URL unauthenticated shows sign-in; after sign-in reception
@@ -594,8 +753,10 @@ Acceptance criteria:
       account page's "recent rejections" list (and in Activity after S2-03).
 - [ ] Sign out on the launcher revokes the session; the POS returns to its
       lock screen requiring a fresh sign-in on its next request.
-- [ ] OTO App and Radar tiles open their shells; the wheel tile is hidden for
-      non-admins; the POS lock screen shows no face-scan button.
+- [ ] The landing page renders the OTO brand (logo, colours, type) at phone
+      and iPad widths without horizontal scroll; every tile shows its state;
+      Radar and Inbox tiles open their "coming soon" shells; the wheel tile is
+      hidden for non-admins; the POS lock screen shows no face-scan button.
 
 QA / demo steps:
 1. QA (UI): Open the Render launcher URL; sign in as reception
@@ -605,8 +766,8 @@ QA / demo steps:
 3. QA (UI): Press "Expire hand-off now" on the account page (test control),
    then open the POS tile again; screenshot the rejection notice and the
    recent-rejections entry.
-4. QA (UI): Sign in as platform admin (`+66900000001`); screenshot all tiles;
-   open the OTO App and Radar shells.
+4. QA (UI): Sign in as platform admin (`+66900000001`); screenshot all tiles
+   at desktop and phone width; open the Radar and Inbox shells.
 5. QA (UI): Sign out on the launcher; reload the POS tab; screenshot the lock
    screen requiring a fresh sign-in (not just unlock).
 
@@ -670,7 +831,8 @@ Includes:
   the entity), Failures (grouped by name + fingerprint, tabs API errors / Jobs /
   Quarantine / Client, retry, acknowledge), Health (service tiles, jobs, open
   alerts; box and booth sections filled by S2-04/S2-07a), Integrations (env
-  presence flags — never values — for 2C2P, 2C2P maintenance keys, SMS, MinIO,
+  presence flags — never values — for the 2C2P gateway (`PGW_*`), its
+  maintenance keys, SMS, MinIO,
   OTel, Sentry, alert channels, HyperDX; webhook endpoints with last delivery
   from `ops_run`; "variables to provision" list generated from `env.ts`);
   links to the POS `/admin` panels; gate by `app:console:access`.
@@ -1446,7 +1608,7 @@ is preserved; behind it the brief's payment machinery replaces the mock
 (PROJECT_CONTEXT §7.1-7.2). Redemption of booth vouchers and legacy codes is a
 separate story so the tender path does not wait for the booth.
 
-#### S2-10a — Tenders: cash, EDC terminal simulator with inquiry-on-no-response, 2C2P sandbox/simulator QR with PAX QR offline fallback, manual recording, payment methods admin
+#### S2-10a — Tenders: cash, EDC terminal simulators in the NEXGO and PAX dialects with inquiry-on-no-response, real 2C2P sandbox QR with PAX QR offline fallback, manual recording, payment methods admin
 
 Includes:
 - `payment_attempt` (method cash|card|qr|wallet|voucher|transfer, amount,
@@ -1471,9 +1633,9 @@ Includes:
   Direct Terminal `3E55`-framed BER-TLV with satang amounts and per-type action
   codes — against fixtures taken from `imports/_vendor-docs/`; the simulator
   answers on those same messages, so only the serial link changes on site.
-- QR: 2C2P client behind `QrPayment` (sandbox when `2C2P_*` set, simulator
+- QR: 2C2P client behind `QrPayment` (the sandbox — real QR codes — when `PGW_*` is set, simulator
   otherwise) incl. `refund` through the Payment Maintenance API (JWE/JWS,
-  `2C2P_MAINT_*` key names) honoured by the simulator; HMAC-verified webhook,
+  `PGW_MAINT_*` key names) honoured by the simulator; JWT-verified backend notification,
   idempotent on invoice number + status; status poll; PAX QR payload from the
   terminal simulator when the box or cloud is unreachable, attempt flagged
   `awaiting_settlement`; `job:payments.pending` flags any attempt in
@@ -1673,7 +1835,7 @@ QA / demo steps:
 
 Depends on: S2-06, S2-10a. Size: L.
 
-### S2-12 — Arrival: online booking checkout via 2C2P Redirect (sandbox/simulator), signed booking QR, redemption at the till issuing bands, gate simulator with anti-passback and live occupancy
+### S2-12 — Arrival: online booking checkout via the 2C2P Redirect API sandbox, signed booking QR, redemption at the till issuing bands, GE-X2/HX-X1 gate simulator with its QR reader, anti-passback and live occupancy
 
 Feature area: Arrival
 
@@ -1682,7 +1844,7 @@ Rules: R-43, R-78 to R-84; conflicts C8 (PC gate mechanism wins; group rule kept
 Description. Today `POST /public/bookings` marks the booking `paid` without
 payment (`apps/api/src/routes/public.ts` line 230) and the till's
 `RedeemBookingModal` reads mock bookings. This ticket completes the booking
-site's pay step through 2C2P Redirect (sandbox or simulator), issues a signed
+site's pay step through the 2C2P Redirect API (sandbox; simulator only without credentials), issues a signed
 booking QR the box verifies locally, ports the prototype's redemption
 (`mockApi.ts:redeemBooking`, `issueBookingBands`) and adds the gate simulator
 with per-band anti-passback and occupancy from passage events (§7.5). The
@@ -1695,17 +1857,32 @@ Includes:
   snapshot, redeemed_at/station); unpaid bookings expire; existing rows
   migrated.
 - Booking site pay step: server-side quote through the S2-09a engine, 2C2P
-  Redirect (sandbox or simulator page with pay/fail), HMAC-verified return and
-  webhook, confirmation with a real signed QR (replacing `lib/qr.ts`),
+  Redirect API (Payment Token → hosted page on the sandbox; the simulator page
+  with pay/fail only when no credentials are configured), JWT-verified
+  frontend return and backend notification, Payment Inquiry before the booking
+  is marked paid, confirmation with a real signed QR (replacing `lib/qr.ts`),
   business date from the chosen visit date (no override needed for weekend
   pricing); confirmation via the console adapter; public rate limiting.
 - Redemption service shared with the kiosk later: verify signature + status +
   local redemption log on the box, create the sale with `bookingReference` and
   the booking's tender, mint and print bands per S2-11, mark redeemed;
   cross-station double use flagged at sync.
-- Gate simulator + adapter (relay pulse, passage events, fire alarm) in the
-  Simulators panel; gate box role; access decision on the box; `band_event`
-  entry|exit|denied; deny list from voided bands synced down.
+- Gate adapter and simulator built on the real protocols
+  (`docs/architecture/DEVICE_INVENTORY.md` §6): the gate box hosts the
+  reader's HTTP contract (`POST /interaction/Api/checkCard` with base64 card
+  or QR, entry/exit reader, string values; `/heartbeat`), answers
+  `code "1"`/`"0"` with a short bilingual message, pulses the dry contact
+  (L-OP/R-OP) through the relay abstraction, and reads GE-X2 passage feedback
+  over the serial abstraction (`61`/`62` passed, `63`/`64` timeout,
+  `73`/`74` loitering, `83`/`84` wrong direction, `93`/`94` tailgating,
+  `95` beam blocked); door and infrared status queries; machine id and baud
+  from config (`L-30`, `L-31`). The simulator in the Simulators panel plays
+  both the reader (scan a band, entry or exit) and the controller (person
+  passes / does not pass / tailgates / reverses; fire alarm; power loss; fault
+  codes E1–E30); gate box role; access decision on the box (signature check,
+  anti-passback, adults-only at the reader per C8, deny list of voided bands
+  synced down); `band_event` entry|exit|denied|timeout|alarm; occupancy
+  counted from passage feedback only, never from the open command.
 - Live occupancy per branch: `OccupancyChip` preserved; Health;
   `fact_occupancy_15min`.
 - Gate admin and bookings admin list.
@@ -1716,7 +1893,8 @@ passes; real gate controller.
 Acceptance criteria:
 - [ ] A booking for 2 kids + 2 adults for the seeded holiday date is quoted
       server-side including socks at weekend prices, paid on the 2C2P
-      simulator, stored `paid` with a signed QR; a failed or expired payment
+      sandbox hosted page, stored `paid` only after the backend notification
+      (or inquiry) confirms it, with a signed QR; a failed or expired payment
       stays unpaid and is refused at the till with "booking not paid".
 - [ ] Scanning the QR creates a sale with `bookingReference` and the booking's
       tender, mints 2 kid + 2 adult bands, prints them, marks the booking
@@ -1724,12 +1902,16 @@ Acceptance criteria:
       refused with the box offline.
 - [ ] With the box offline, a booking paid earlier and present in the cached
       today's-bookings bundle still redeems; the redemption syncs once.
-- [ ] Adult band A at the gate simulator opens the relay and occupancy shows
-      1; A again before an exit is denied `ANTI_PASSBACK`; exit shows 0; a
-      kid band without gate rights and a voided band are denied with their
-      reasons in Activity.
-- [ ] `OccupancyChip` updates within 5 s of a passage event; fire-alarm state
-      opens the gate and opens a `gate.fire_alarm` alert.
+- [ ] Adult band A scanned at the entry reader posts `checkCard`, the box
+      answers `code "1"`, the simulated controller reports `61` and occupancy
+      shows 1; A again before an exit is denied `ANTI_PASSBACK` (`code "0"`
+      with the message on the reader); an exit passage (`62`) shows 0; a
+      `63` timeout after an open leaves occupancy unchanged; a kid band and a
+      voided band are denied with their reasons in Activity.
+- [ ] `OccupancyChip` updates within 5 s of a passage event; a scripted
+      tailgating event (`93`) opens a `gate.tailgating` alert; fire-alarm
+      state opens the gate, holds it open and opens a `gate.fire_alarm`
+      alert; a scripted controller fault (E30) shows on Health.
 - [ ] Bookings, redemptions and gate decisions are audited with station and
       box ids (spot check three).
 
@@ -1742,9 +1924,12 @@ QA / demo steps:
 3. QA (UI): Make a booking online, wait for the cache pull (Devices shows the
    bundle version), toggle offline, redeem; screenshot; toggle online and show
    the synced redemption.
-4. QA (UI): On the gate simulator scan adult band A (relay, occupancy 1), A
-   again (denied), exit, then a kid band (denied); screenshot each.
-5. QA (UI): Trigger the fire alarm; screenshot the gate state and the alert.
+4. QA (UI): On the gate simulator scan adult band A at the entry reader
+   (reader shows the welcome message, controller reports passed, occupancy
+   1), A again (denied with the message), exit, then a kid band (denied);
+   screenshot each including the reader message and the feedback frame.
+5. QA (UI): Trigger a tailgating event, then the fire alarm; screenshot the
+   gate state, the alerts and the Health fault row.
 
 Depends on: S2-11. Size: L.
 
@@ -1959,9 +2144,10 @@ Includes:
   day, provisional until every box has synced and no box has unresolved low
   clock trust, second close refused, EOD receipt print.
 - Settlement: adapter `settle()` per terminal (simulator returns a batch),
-  `settlement_batch`/`settlement_line`, CSV keyed by TID and 2C2P invoice
-  number, reconciliation match view, PAX `awaiting_settlement` attempts
-  reconciled here; a 2C2P simulated settlement fixture.
+  `settlement_batch`/`settlement_line`, CSV keyed by TID and 2C2P
+  `invoiceNo`/`tranRef`, reconciliation match view, PAX `awaiting_settlement`
+  attempts reconciled here; a 2C2P settlement fixture shaped like the
+  merchant-portal report.
 - `seed:demo-day` run as the QA fixture (cash, card on two TIDs, QR, wallet,
   voucher sales, one refund).
 
@@ -2044,6 +2230,370 @@ QA / demo steps:
 
 Depends on: S2-07b, S2-10b, S2-15a. Size: M.
 
+### S2-17 — OTO App on the platform: schema and sign-on first, then the full lift, then the contract features
+
+Feature area: OTO App
+
+Rules: conflicts C10 (events mastered by OTO App), C13 (benefits hang off the HR record); OWNER_DIRECTION 2026-09-20 item 2; intake notes `docs/architecture/intake-2026-09-19/01-oto-app-backend.md` §10 (re-hosting work list, sign-on swap) and `02-oto-app-frontend.md`.
+
+Description. The live OTO App (Express 4 + Passport-local + Drizzle, 796
+routes, 184 tables, React front end with 122 routes; `imports/oto-app/`) is
+the client's daily HR and operations system. The owner wants it on the central
+database in this sprint, in three steps that each ship: (a) its schema in the
+platform database and its login replaced by the launcher hand-off, so an
+admin-created platform user opens the OTO App with no second password — the
+proof that the apps share one database and one sign-on; (b) the whole app
+lifted onto Render against that schema with every module the export has; (c)
+the features the contract still owes, taken from the agency's proposal
+(`docs/briefs/AGENCY_PROPOSAL.md` §6), built inside the lifted app. The
+intake's verdict stands: **lift as-is first** — one Docker web service, the
+handlers untouched, the platform session mapped in before Passport — because a
+rewrite would fork from code the client still commits to. The OTO App keeps
+its own admin controls; the POS keeps its own admin panels; the Console links
+both.
+
+#### S2-17a — `otoapp` schema on the central database, hand-off sign-on, user provisioning from the platform (pulled forward before CP1)
+
+Includes:
+- Schema: the export's Drizzle schema run into schema `otoapp` of the
+  platform database through `search_path` (the app emits unqualified names;
+  `ALTER ROLE oto_app SET search_path = otoapp`), from generated SQL
+  migrations checked into the app's folder — never `drizzle-kit push`, never
+  the reset scripts (both destroy a shared database; the api refuses to start
+  if the app's `post-merge.sh` is present in the image). The `session` and
+  `drizzle.__drizzle_migrations` tables follow the search path. Seed: the
+  export's seed, structure-only; no production rows.
+- Identity: `core.app_identity(app, account_id, external_user_id, created_by,
+  created_at)`; `otoapp.users.platform_user_id` (unique, nullable) added by
+  an additive migration; a provisioning service on the platform api
+  (`POST /admin/apps/oto_app/users`) that creates the platform account if
+  needed, grants `app:oto_app:access`, creates or links the `otoapp.users`
+  row with the chosen OTO role, branch scope and tenant, and writes both
+  audit rows (`app_identity.link`). Console/POS admin: an "Apps" tab on the
+  account page listing linked app identities with link/unlink.
+- Sign-on: one Express middleware before `passport.session()` that exchanges
+  the launcher hand-off token (S2-02 contract) for an OTO App session by
+  `platform_user_id` and calls `req.login()`; `getUserWithBranchAccess`
+  keeps resolving role, branch scope and tenant, so no handler changes.
+  Legacy Passport-local login stays behind `OTOAPP_LEGACY_LOGIN=true` (off on
+  staging) for the cutover rehearsal only. Logout: the app's `/logout`
+  revokes its own session and the launcher's "sign out everywhere" reaches it
+  through a back-channel revoke list polled on session load. Kiosk bearer
+  tokens and public tokens (parent portal, guest invites, signing links) stay
+  outside the sign-on.
+- Deploy: `render.yaml` Docker web service `oto-app` from the export's
+  Dockerfile (2 GB, one instance, health `/api/status`, `TZ=UTC`,
+  `LOG_RESPONSE_BODY=false`, cookie `secure` keyed on `NODE_ENV` instead of
+  Replit variables, `trust proxy`), object storage pointed at the platform
+  bucket (`S3_ENDPOINT` added to the four `S3Client` constructions),
+  `replit_integrations` removed, `AI_INTEGRATIONS_*` renamed; new
+  `SESSION_SECRET`, `SESSION_PEPPER`, `KIOSK_CODE_PEPPER`,
+  `PIN_FINGERPRINT_SECRET` values (kiosks re-activate, check-in QR codes
+  reprint); launcher tile switched from shell to the app's origin.
+- Logging: the app's pino output carries `x-request-id` from the launcher
+  hand-off onward and the same redaction list as `@oto/telemetry`; its
+  `/api/status` is included in the platform watchdog and the Integrations
+  page shows its variable presence flags.
+
+Excludes: the modules' behaviour (unchanged), the contract features (S2-17c),
+production data, face clock-in decision (Open decision 29), Xero live
+credentials.
+
+Acceptance criteria:
+- [ ] `\dn` on the platform database lists `otoapp` with the export's tables
+      and `otoapp.users.platform_user_id`; the platform migrations and the
+      app's migrations both run twice cleanly from empty (dev evidence).
+- [ ] A platform admin creates an account with OTO App access and role
+      "branch manager, HKT Central" on the Console; the account appears in
+      the OTO App's own user list with that role; Activity shows
+      `app_identity.link`.
+- [ ] That user opens the OTO App tile from the launcher and lands signed in
+      with no second password; the OTO App's session row exists in
+      `otoapp.session`; the same user cannot sign in with the legacy login
+      form on staging.
+- [ ] "Sign out everywhere" on the launcher ends the OTO App session on its
+      next request.
+- [ ] The OTO App's health is a row on Health; its environment variable
+      presence flags are on Integrations; no secret value is ever logged
+      (redaction test on the app's logger config).
+
+QA / demo steps:
+1. QA (UI): On the Console create the user; screenshot the Apps tab and the
+   OTO App user list.
+2. QA (UI): Sign in on the launcher as that user; open the OTO App tile;
+   screenshot the landing without a second prompt; try the legacy login form;
+   screenshot the refusal.
+3. QA (UI): Sign out everywhere on the launcher; reload the OTO App;
+   screenshot the sign-in prompt.
+4. Dev evidence: migration logs (both migrators, twice) and the schema
+   listing.
+
+Depends on: S2-02, S2-03. Size: L.
+
+#### S2-17b — The whole live OTO App lifted: every module working on Render against `otoapp`, POS seams
+
+Includes:
+- Every module in the intake's module map working against the central
+  database: auth/users/permissions, org structure, HR employees, contracts
+  and e-sign PDFs, templates, policies, letters, employee documents, assets,
+  offboarding, kiosk devices and reception, kiosk clock (face/PIN/phone —
+  see Open decision 29), timekeeping, scheduling, leave and holidays, tasks
+  and ops board, checklists and media, announcements and notifications,
+  SOP/KB/training, Ask OTO and AI helpers, fix reports and supplier portal,
+  events core, BEO/packages/menus, parent portal and RSVP, camps and
+  children, drop-off/nanny/public check-in, drop-off form builder, staff
+  vouchers, casual workers, payroll, org chart, attention engine and activity
+  log, Xero (sandbox), vault, directory API, data admin, files and settings.
+- Object storage: the four `S3Client` constructions and the four local-disk
+  writers on the platform bucket; PDF and media paths rewritten; Chromium
+  for PDF rendering in the image (`sharp`, `ffmpeg` declared).
+- Background work: the app's scheduled jobs (nightly departed-account
+  deactivation, attention engine, finance sync) run under the platform job
+  runner's advisory locks with `ops_run` rows, or inside the app with the
+  same `ops_run` contract via the directory API — one of the two, recorded.
+- POS seams: platform-owned views `otoapp_v.events`, `otoapp_v.employees`,
+  `otoapp_v.children` read by the POS for the Events tab (later), staff
+  benefits (C13) and the check-in ownership question; the OTO App's own
+  check-in module and the POS check-in (S2-13) coexist on staging with the
+  ownership decision recorded (Open decision 25).
+- Cutover-compatibility: additive migrations only; a rehearsal script that
+  restores a structure-only copy of the production dump into a scratch
+  database, renames `public` to `otoapp` and loads it (intake §10 step 2),
+  run in CI against the sample.
+- Docs: `docs/features/oto-app.md` status per module (working / working with
+  caveats / disabled on staging and why); `.env.example` block for the app.
+
+Excludes: contract features (S2-17c); production data; real Twilio/LINE
+sending (console adapters); Xero production; face recognition enrolment on
+new infrastructure unless decision 29 says keep.
+
+Acceptance criteria:
+- [ ] A module walk-through script (one page per module in
+      `docs/qa/SPRINT_2_ACCEPTANCE.md`) passes on staging for every module
+      listed above, with screenshots; modules disabled on staging are named
+      with the reason.
+- [ ] Contract e-sign, letter e-sign and BEO PDFs render and are stored in
+      the platform bucket with signed-URL access only (test).
+- [ ] Two scheduled jobs are visible on Health with last-success times and a
+      forced failure shows on Failures.
+- [ ] The rehearsal restore script completes in CI and the row counts match
+      the sample.
+- [ ] The POS reads `otoapp_v.events` for the seeded events (dev evidence:
+      test) without touching `otoapp` tables directly (grep test on the POS
+      api).
+
+QA / demo steps:
+1. QA (UI): Run the module walk-through on staging; screenshot each module's
+   main screen and one write action per module.
+2. QA (UI): Sign a contract and a letter; screenshot the PDFs opening from
+   signed URLs.
+3. QA (UI): On Health, screenshot the OTO App jobs; force a failure with the
+   test control; screenshot Failures.
+4. Dev evidence: CI log of the rehearsal restore and the POS seam test.
+
+Depends on: S2-17a. Size: XL.
+
+#### S2-17c — Contract features from the agency proposal
+
+Includes:
+- One sub-task per OTO App item in `docs/briefs/AGENCY_PROPOSAL.md` §6
+  (the POS items are covered by the POS tickets — see "Contract coverage"),
+  each with the proposal's wording, our reading of "done", the module it
+  lands in, and its own acceptance and QA steps; mirrored as Jira sub-tasks
+  when the owner confirms the list (Open decision 30). The OTO App items as
+  read today (§6.2):
+  1. Missed/unscheduled attendance request with an attached photo or
+     document, visible before submission.
+  2. Live presence rows showing notification pending / delivered / failed.
+  3. Employee spreadsheet import preview with New, Changed, Unchanged,
+     Invalid and Matched statuses and per-row results.
+  4. SOP articles with revision history, archive and restore.
+  5. Fix routing with a preview of the staff who will receive matching
+     reports.
+  6. Camp registration: six-digit SMS code before a returning family's saved
+     details are shown or changed (closes the children's-data exposure).
+  7. Reviews and movements: explicit approval step and approved history
+     (verify first; may already be met).
+  Plus, from §6.13, the HR-linked **benefit profiles** (person or role; free
+  items, credit, discount, categories, periods; effective dates; benefit QR)
+  as the OTO App half of staff benefits, if the owner confirms it for this
+  sprint (the POS checkout half is C13 / Sprint 3 in this plan).
+- Each feature built inside the lifted app in its module's style (Express
+  route + React page), on the `otoapp` schema, audited through the app's
+  activity log and the platform audit where it touches shared identities,
+  with `ops_run` for anything that can fail silently.
+- Advancements the owner asked for where cheap: central sign-on (done in
+  S2-17a), platform file storage, platform logging and health (S2-17a/b), the
+  Console's Activity page reading the app's activity log.
+
+Excludes: anything the owner does not confirm as in the contract; features
+that depend on paid third-party accounts not yet opened (recorded per item).
+
+Acceptance criteria:
+- [ ] Every confirmed §6 item has a merged sub-task with its acceptance
+      criteria checked and a screenshot on staging.
+- [ ] `docs/briefs/AGENCY_PROPOSAL.md` §2 assessment column reads "Built"
+      for each confirmed item, with the route/page reference.
+
+QA / demo steps:
+1. QA (UI): For each sub-task, follow its QA steps on staging and attach the
+   screenshot to the sub-task.
+
+Depends on: S2-17b, Open decision 30. Size: L–XL (by the confirmed list).
+
+### S2-18 — Radar live on the platform: `radar` schema, sign-on, per-branch source preference, seeded legacy figures, OTO POS analytics from the rollup
+
+Feature area: Radar
+
+Rules: PLATFORM_PLAN §5 (analytics continuity), OWNER_DIRECTION 2026-09-19 (analytics from our database plus Radar's history) and 2026-09-20 item 3; intake notes `03-radar-pisell-pipeline.md`, `04-radar-papaya-pipeline.md`, `05-radar-api-auth-env-schema.md`, `06-radar-frontend.md`.
+
+Description. Radar (Express + React, 107 routes of which 96 are public, its
+own Postgres on Replit; `imports/oto-radar/`) is the revenue dashboard the
+client reads every day. It computes per-branch daily summaries from Pisell
+(Floresta, formula v30) and Papaya (Chalong, formula v21). The owner wants it
+active on the platform now with two sources per branch: the legacy figures
+(seeded, because the Pisell/Papaya credentials are still in Replit Secrets)
+and the real OTO POS analytics, so a demo sale on the staging POS shows up in
+Radar when that branch prefers OTO POS. Revenue is defined exactly as Radar's
+code defines it (Open decision 15, closed).
+
+Includes:
+- Lift: schema `radar` on the central database (restore of the structure
+  listing; the real dump replaces it when it arrives, Open decision 18),
+  Docker web service `radar` (`TZ=UTC`, `trust proxy`, `/healthz` added,
+  Replit pieces removed, source maps off), the five push/import/wipe routes
+  deleted, auth in front of every route except the public campaign/survey/
+  redeem/report routes and the key-protected ones, sign-on through the
+  launcher hand-off (same middleware pattern as S2-17a; `radar` has no user
+  table, so the platform session is the identity and `app:radar:access`
+  gates it), the staff-auth and seed-admin credentials rotated, Sentry DSN
+  removed, the OpenAI key env names corrected (`routes.ts:2575`, `2843`).
+- Source preference: `analytics.branch_source_switch` gains
+  `preference` (`legacy` | `oto_pos` | `both`) editable on the Console
+  (Integrations > Analytics sources) and on Radar's config tab; the dashboard,
+  trends, calendar and cash-report queries take the branch's preference: for
+  `oto_pos` they read `GET /analytics/summary` (S2-15b) through a small
+  adapter module in Radar (`server/sources/otoPos.ts`), for `legacy` they
+  read Radar's own tables, for `both` they show the two side by side with a
+  parity delta.
+- Legacy figures on staging: the Pisell and Papaya sync jobs run against
+  **fixture adapters** (`FUNTOPIA_MODE=fixture`, `PAPAYA_MODE=fixture`) that
+  replay two frozen months shaped like each pipeline's real responses (from
+  the intake notes' shapes; no real data), producing daily summaries with
+  the right `formula_version`; switching to live pulls is configuration when
+  the credentials arrive.
+- Rollup parity: a test computes one seeded day both ways (Radar's formula on
+  a fixture, the platform rollup on the same sales expressed as POS facts)
+  and asserts equality field by field; `formula_version` on every row.
+- Freshness: the platform rollup (`job:rollup.daily`, hourly summariser)
+  runs every 15 minutes on staging (`ROLLUP_INTERVAL_S`) and marks
+  `dirty_date` on late syncs, so a demo sale reaches Radar within that
+  interval; Health shows "Radar last refreshed".
+- Booth feed: the wheel's spin/voucher rows come from the platform booth
+  tables (S2-07) through the same summary contract instead of Radar's own
+  `spinRewardsRoutes`.
+- Docs: `docs/features/oto-radar.md` status; `.env.example` block.
+
+Excludes: live Pisell/Papaya pulls on staging; the real Radar dump restore
+(when it arrives); moving Radar's settings tables to the platform; the
+Console analytics overview (Sprint 3); Radar UI changes beyond the source
+switch and sign-on.
+
+Acceptance criteria:
+- [ ] The Radar tile opens Radar signed in through the launcher; an
+      unauthenticated request to a dashboard route is refused; the public
+      campaign, survey and redeem routes still work (test list).
+- [ ] With HKT Central set to `oto_pos` and Demo Branch 2 to `legacy`, the
+      dashboard shows the seeded legacy month for Demo Branch 2 and the
+      platform rollup for HKT Central; a cash ticket sale on the staging POS
+      appears in HKT Central's figures within `ROLLUP_INTERVAL_S` (QA times
+      it); setting HKT Central to `both` shows the parity delta.
+- [ ] The parity test passes (dev evidence) and every summary row carries
+      `formula_version`.
+- [ ] The fixture sync jobs appear on Health with last-success times; a
+      forced failure shows on Failures; no Replit push/import/wipe route
+      exists (route-enumeration test).
+- [ ] The booth report in Radar reads the platform booth rows.
+
+QA / demo steps:
+1. QA (UI): Open Radar from the launcher; screenshot the dashboard for both
+   branches; open a dashboard URL in a private window; screenshot the
+   refusal.
+2. QA (UI): Make a cash ticket sale on the POS; wait for the interval;
+   screenshot the changed HKT Central figures; switch to `both`; screenshot
+   the parity view.
+3. QA (UI): On Health screenshot the fixture sync jobs and the "Radar last
+   refreshed" row.
+4. Dev evidence: the parity test and the route-enumeration test output.
+
+Depends on: S2-15b, S2-17a (sign-on pattern). Size: L.
+
+### S2-19 — Unified Inbox: `inbox` schema pillars, seeded threads, mockup shell in the client's design
+
+Feature area: Inbox
+
+Rules: `docs/features/inbox.md` (briefs, design language, proposed placement); OWNER_DIRECTION 2026-09-20 item 4; PROJECT_CONTEXT §1 (messaging channels).
+
+Description. The client's Replit prototype (`imports/oto-asset-manager/`,
+front end on sample data) shows how the park wants one inbox for WhatsApp,
+Instagram, Facebook and a web form, with an AI first responder, three
+categories owned by four teams, a primary owner plus support assignees,
+"handled" with confirmation and management dashboards. It is milestone 4; the
+owner wants its data pillars in the central database now and a shell on the
+launcher so the client sees it is part of the plan. No live channel is
+connected this sprint.
+
+Includes:
+- Schema `inbox`: `channel_account`, `contact` (joined to `crm.member` by
+  E.164 phone when known), `team`, `routing_rule`, `conversation`,
+  `message` (direction, channel, body, media `file_object`, AI/human
+  author), `participant`, `assignment` (primary/support, history),
+  `template`, `tag`/`conversation_tag`, `sla_policy`, `event`
+  (append-only), `webhook_receipt` (raw inbound, for replay) — columns and
+  constraints as proposed in `docs/features/inbox.md`; permissions
+  `inbox:conversation:{read,reply,assign,move,handle,reopen}`,
+  `inbox:template:manage`, `inbox:channel:manage`, `inbox:dashboard:read`;
+  retention/erasure fields for PDPA.
+- Seed: the four teams, the three categories and routing rules from the IT
+  Brief, ten example conversations (fictional) across the channels, templates
+  and tags.
+- `apps/inbox` static shell in the client's design language (Inter, white
+  cards on slate, three-column workspace, six-metric dashboard, category
+  colours) reading the seeded rows through `GET /inbox/*` read-only routes:
+  list, thread view, assignment display, dashboard counts; every write action
+  present but disabled with "coming with the channel connection"; launcher
+  tile via `app:inbox:access`.
+- Channel adapter interface `MessagingChannel` in `packages/contracts`
+  (receive webhook, send, media fetch) with a console adapter only; the
+  check-in flow's console adapter (S2-13) writes into `inbox.message` so
+  outbound messages from the POS already appear in the shell.
+- Docs: `docs/features/inbox.md` status; the brief conflicts listed there
+  become Open decision 31.
+
+Excludes: live WhatsApp/Instagram/Facebook/LINE connections, AI responder,
+translation, audio, assignment logic execution, notifications (Sprint 3+).
+
+Acceptance criteria:
+- [ ] Migration adds the `inbox` schema (twice cleanly); permissions exist;
+      seed loads the teams, rules and ten threads.
+- [ ] The Inbox tile opens the shell signed in through the launcher; the
+      three-column workspace lists the seeded threads by category, opens a
+      thread, shows its assignment and the dashboard counts; write actions
+      are visibly disabled with the message.
+- [ ] A check-in confirmation sent from the POS (console adapter) appears as
+      an outbound message in the matching contact's thread.
+- [ ] Reads are audited (`inbox.conversation.read` category access, sampled)
+      and the shell passes the phone-width check.
+
+QA / demo steps:
+1. QA (UI): Open the Inbox tile; screenshot the dashboard and a thread in
+   each category; press a disabled action; screenshot the message.
+2. QA (UI): Trigger a check-in confirmation on the POS; screenshot the
+   thread showing it.
+3. Dev evidence: migration log and the seed output.
+
+Depends on: S2-02, S2-13 (for the console adapter link; the shell itself only on S2-03). Size: M.
+
 ### S2-16 — Sprint 2 acceptance run, load and soak checks, Render staging refresh, sprint-2 tag, SPRINT_2_REPORT.md and Jira evidence per story
 
 Feature area: Acceptance and delivery
@@ -2059,8 +2609,10 @@ Includes:
   pass/fail and screenshots; `seed:demo-day` (built S2-09a..S2-13) run, not
   extended, here.
 - Playwright smokes against the Render origins: launcher sign-in → POS station
-  pick; till + display membership; ticket sale cash; booth spin → voucher →
-  redemption; booking QR → gate; check-in → offline release.
+  pick; till + display membership; ticket sale cash; ticket sale 2C2P sandbox
+  QR; booth spin → voucher → redemption; booking QR → gate; check-in →
+  offline release; launcher → OTO App signed in; launcher → Radar with a POS
+  sale visible; launcher → Inbox shell.
 - Non-functional checks (dev evidence): the targets in Design decisions
   measured with k6/autocannon (10 tills × 5 min) and a 24 h soak on staging;
   POS at 1024 px iPad landscape and the < 768 px mobile shell without
@@ -2071,7 +2623,8 @@ Includes:
   schema_version and concurrency checks; `render.yaml` final; env names
   verified against `.env.example` and the Integrations page.
 - Tag `sprint-2`; `SPRINT_2_REPORT.md`; `SPRINT_2_PROGRESS.md` closed;
-  ARCHITECTURE.md current; `docs/features/pos.md`, `booth.md`, `console.md`,
+  ARCHITECTURE.md and DEVELOPMENT_PLAN.md current; `docs/features/pos.md`,
+  `booth.md`, `console.md`, `oto-app.md`, `oto-radar.md`, `inbox.md`,
   `STATUS.md` updated; play-test guide with demo accounts (values out of band)
   and feedback template; Jira evidence per story; owner questions
   consolidated.
@@ -2098,14 +2651,22 @@ QA / demo steps:
 4. Dev evidence: the GitHub Actions run for the tag, the k6 report and the
    soak summary.
 
-Depends on: S2-15b. Size: M.
+Depends on: S2-15b, S2-17c, S2-18, S2-19. Size: M.
 
 ## Execution order and checkpoints
 
-Order: S2-01a → S2-01b → S2-01c → S2-02 → S2-03 → **CP1** → S2-04 → S2-05 →
+Order (the owner's priority: POS and booth first, then OTO App, Radar, Inbox):
+
+S2-01a → S2-01b → S2-01c → S2-02 → S2-03 → S2-17a → **CP1** → S2-04 → S2-05 →
 S2-06 → S2-07a → S2-07b → **CP2** → S2-08 → S2-09a → S2-09b → S2-10a →
 S2-10b → S2-11 → **CP3** → S2-12 → S2-13 → S2-14a → S2-14b → S2-15a →
-S2-15b → **CP4** → S2-16 → **CP5**.
+S2-15b → **CP4** → S2-17b → S2-17c → **CP5** → S2-18 → S2-19 → **CP6** →
+S2-16 → **CP7**.
+
+S2-17a sits before CP1 because the owner wants the shared database and one
+sign-on proven at the front door; it is a schema, a middleware and a
+provisioning route, not the lift. The lift (S2-17b/c) and Radar (S2-18) wait
+until the POS is complete, as directed.
 
 Rationale: S2-01 must precede any client-facing deploy (privilege hole,
 non-atomic writes, PII in logs, idempotency race). S2-02/S2-03 put the suite
@@ -2120,7 +2681,9 @@ recorded in `SPRINT_2_PROGRESS.md`.
 
 Parallelisable streams (once their dependencies are merged):
 - After S2-03: the box agent skeleton (S2-04) is independent of remaining
-  console polish.
+  console polish; S2-17a is independent of both.
+- After S2-15b: S2-17b, S2-18 and S2-19 are independent of each other (S2-18
+  and S2-19 borrow the sign-on middleware from S2-17a).
 - After S2-06: the booth game (S2-07a) and the customer display (S2-08) are
   independent; S2-09a can start its engine port and regression fixtures at
   any time.
@@ -2132,14 +2695,18 @@ Parallelisable streams (once their dependencies are merged):
 
 | Checkpoint | After | Owner reviews |
 |---|---|---|
-| CP1 | S2-03 | Security fixes from the UI, schema move and transactional services (dev evidence), lock model, Render deploy of API + POS + launcher + console + shells with the same-origin `/api` rule; the log-line contract, `ops_run`, Activity/Failures/Health/Integrations pages; PII fixes. |
+| CP1 | S2-17a | Security fixes from the UI, schema move and transactional services (dev evidence), lock model, Render deploy of API + POS + launcher + console + shells with the same-origin `/api` rule; the log-line contract, `ops_run`, Activity/Failures/Health/Integrations pages; PII fixes; the OTO App opened from the launcher on the shared database by an admin-created user. |
 | CP2 | S2-07b | Station model live on Render: stations, virtual boxes, offline toggle, sync ledger with epochs and quarantine, print core and simulators, PWA; the Lucky Wheel playable end to end with its admin panel. |
 | CP3 | S2-11 | Two-device POS, first real sale across tenders, voucher and legacy code redemption, receipts, bands, History, refunds; **client play-test opens**; regression fixtures reviewed. |
 | CP4 | S2-15b | Full POS: arrival and gate, check-in with offline release, wallets and stock, cash/EOD/settlement, analytics rows and the multi-branch summary. |
-| CP5 | S2-16 | Acceptance checklist from a clean database on staging, load and soak results, tag, report, Jira evidence, play-test guide. |
+| CP5 | S2-17c | OTO App lifted with every module walked through on staging, POS seams, and the confirmed contract features built. |
+| CP6 | S2-19 | Radar live with the per-branch source preference (a POS sale visible), the Inbox pillars and shell. |
+| CP7 | S2-16 | Acceptance checklist from a clean database on staging, load and soak results, tag, report, Jira evidence, play-test guide. |
 
 Render deployments: the first deploy (API + POS) happens at S2-01c; launcher
-and shells at S2-02; the console at S2-03; the booth static site at S2-07a.
+and shells at S2-02; the console at S2-03; the OTO App Docker service at
+S2-17a; the booth static site at S2-07a; Radar at S2-18; the Inbox shell at
+S2-19.
 From then on every merge to `main` deploys after CI (migrations + `platform:sync`
 run on deploy). Staging gets a fresh migrate + seed at each checkpoint and the
 audited "Reset demo data" action between client sessions. The final refresh
@@ -2185,8 +2752,10 @@ chose them and the owner may change them at any time.
    mystery box, 14-day expiry, no daily caps; button key configurable per
    booth, seed F8 (*unsourced default*, never Enter). Owner confirms the real
    key the USB button emits and the cost per prize.
-10. **OTO App and Radar tiles.** Default: placeholder shells with a
-    configurable link to the live legacy URL.
+10. **OTO App, Radar and Inbox tiles.** Resolved 2026-09-20: OTO App and
+    Radar are lifted in this sprint (S2-17, S2-18); the Inbox gets its schema
+    and a shell (S2-19). Until each lands its tile is a "coming soon" shell
+    with a configurable link to the live legacy URL.
 11. **Fresh offline sign-in.** Default: allowed for staff seen on that box in
     the last 30 days, flagged with an offline banner.
 12. **Child photos, consent and retention.** Default: `CHILD_PHOTOS_ENABLED`
@@ -2198,14 +2767,18 @@ chose them and the owner may change them at any time.
     no expiry rule runs; unused prepaid credit follows the check-in policy
     (refund); offline cap ฿300 per wallet per day (*unsourced default* — to
     be confirmed with the client before S2-09a freezes the ledger fields).
-15. **Revenue definition for analytics.** Default: `formula_version=1` =
-    cash-collected, VAT-inclusive, net of refunds, wallet settlement excluded
-    (Floresta style). Alternative: order total (Chalong style).
-16. **Receipt and tax-invoice numbering.** Default:
-    `{branch}{station}-{series}-{seq}` per station with cloud-issued series
-    (*unsourced format* — to be confirmed with the accountant before S2-09a);
-    abbreviated tax-invoice header templated now; full buyer details deferred
-    to the accountant session.
+15. **Revenue definition for analytics.** Resolved 2026-09-20 by the owner:
+    revenue is computed exactly as Radar's code computes it — formula v30 for
+    Floresta-style branches and v21 for Chalong-style (intake notes 03/04
+    document both) — and `formula_version` records which; the OTO POS
+    rollup reproduces the same definition from POS facts and a parity test
+    proves it (S2-18).
+16. **Receipt and tax-invoice numbering.** Resolved 2026-09-20: no
+    accountant session now. The prototype's receipt component is the layout
+    source, the per-station series `{branch}{station}-{series}-{seq}` ships,
+    the abbreviated tax-invoice header is templated with the seeded branch
+    tax id, and the owner's printed bill (to be shared) corrects any field
+    later as data.
 17. **Monitoring and alert channel.** Default: no HyperDX purchase this
     sprint (variables only); alerts to console, email simulator and a generic
     webhook URL the owner supplies (Slack/Discord/LINE Notify); LINE adapter
@@ -2214,14 +2787,35 @@ chose them and the owner may change them at any time.
     including reservations until the dump arrives; the importer is the real
     one; legacy 4-digit codes need the campaign window or manager
     confirmation.
-19. **Remaining vendor documents and the 2C2P sandbox.** The two terminal
-    specifications are in `imports/_vendor-docs/` and drive the terminal
-    simulators. Still wanted: gate controller (GE-X2 / HX-X1), wristband
-    printer TSPL manual, receipt printer ESC/POS manual, scanner guide, and
-    2C2P sandbox credentials (into `.env`); until they arrive those simulators
-    follow the brief's summaries and are refined in stabilisation.
+19. **Remaining vendor documents and the 2C2P sandbox.** The terminal
+    specifications, the park's hardware reference and the four gate documents
+    are on file and drive the simulators. Still wanted: the 4B-2082A command
+    manual, the Welltech/Xprinter ESC/POS manuals, the Zebra programming
+    guide, the gate reader's own manual, and the park's 2C2P sandbox merchant
+    credentials (into `.env` as `PGW_*`; the public demo credentials from
+    the 2C2P docs serve for the first test).
 20. **Business day start.** Default: 05:00 Asia/Bangkok (*unsourced default*)
     so late parties fall on the previous trading day.
+29. **OTO App face clock-in.** The live app clocks staff in by face
+    recognition (`face-recognition.ts`, kiosk); PROJECT_CONTEXT §13 bans
+    biometrics for the POS. The lift keeps the module as it is behind
+    `OTOAPP_FACE_CLOCKIN=true` (off on staging: PIN and phone clock-in only)
+    until the owner decides for production; re-enrolment on new
+    infrastructure is part of that decision.
+30. **The contract feature list.** `docs/briefs/AGENCY_PROPOSAL.md` §6 is
+    our reading of what the proposal shows as not yet built. The owner
+    confirms or trims that list before S2-17c starts; each confirmed item
+    becomes a Jira sub-task.
+31. **Inbox brief conflicts.** The May briefs and the in-app IT Brief
+    disagree (statuses, tabs, role views, staffing model, EN/RU primary,
+    language handling, complaint routing — `docs/features/inbox.md`). The
+    schema in S2-19 follows the IT Brief as the latest word; the owner
+    confirms before the live channels are built.
+32. **2C2P merchant credentials.** The sandbox merchant id and secret for the
+    park's SCB-acquired 2C2P account (or the public demo pair for the first
+    test), the enabled QR channel, and the return URLs — into `.env` as
+    `PGW_*` (`docs/architecture/PAYMENT_GATEWAY.md`). Production credentials
+    later.
 21. **Other unsourced defaults, chosen by us.** Hand-off TTL 60 s, pairing TTL
     600 s, lease 15 s/60 s, `BOX_OFFLINE_AFTER_S` 180, `SYNC_STALE_AFTER_S`
     900, `PAYMENT_PENDING_MIN` 10, not-found budget 5/min → 10-min lock,
@@ -2232,16 +2826,13 @@ chose them and the owner may change them at any time.
 Questions the previous developer's document itself raises
 (`POS_RULES_RECONCILIATION.md` §4), with the default that ships:
 
-22. **Inclusive-tax decomposition and rounding** (BL §4.2–4.3): the unwind
-    order for inclusive-of-VAT and inclusive-of-VAT-and-service, whether the
-    service charge sits inside the VAT base, and which mode each category uses.
-    Default: the prototype's `lib/tax.ts` order, captured in regression
-    fixtures; an accountant session before S2-09a freezes the ledger (this
-    also settles decision 16).
-23. **Reference prices and expat derivation** (BL §3.4): confirm the printed
-    price list against the seed ported from the prototype, and whether expat
-    prices are derived (tourist −30 % weekday / −20 % weekend) or explicit.
-    Default: the prototype seed as it is; tier rules stay editable data.
+22. **Inclusive-tax decomposition and rounding** (BL §4.2–4.3). Resolved
+    2026-09-20: the prototype's `lib/tax.ts` order is the definition,
+    captured in regression fixtures; no accountant session; corrections
+    later as data.
+23. **Reference prices and expat derivation** (BL §3.4). Resolved
+    2026-09-20: the prototype's price list, tiers and derivations are the
+    definition (seeded as they are); tier rules stay editable data.
 24. **Telegram** (C16): keep the contact-channel value with no adapter, or drop
     it. Default: keep the value, no adapter.
 25. **Event check-in state** (C10): OTO App stays the source of truth for
@@ -2258,13 +2849,13 @@ Questions the previous developer's document itself raises
 
 ## Definition of done for the sprint
 
-- Every story S2-01a..S2-15b merged with its acceptance criteria checked, its
+- Every story S2-01a..S2-19 merged with its acceptance criteria checked, its
   audit/`ops_run` evidence visible on Activity/Failures/Health, and an
   evidence comment on the Jira story in the Sprint 1 format; every QA step
   tagged QA (UI) or Dev evidence with at most one dev-evidence step per story.
 - `pnpm install && docker compose up -d && pnpm db:migrate && pnpm db:seed &&
-  pnpm dev` brings up API, POS, launcher, console and booth from a clean
-  checkout; `pnpm db:migrate` runs twice cleanly from empty; CI green on the
+  pnpm dev` brings up API, POS, launcher, console, booth, the Inbox shell and
+  (with Docker) the OTO App and Radar from a clean checkout; `pnpm db:migrate` runs twice cleanly from empty; CI green on the
   tagged commit including the route-enumeration, redaction (with pg-error and
   terminal fixtures), OTel span/log, idempotency-concurrency,
   sync-idempotency/poison/epoch, schema_version replay, boot-refusal,
@@ -2273,22 +2864,26 @@ Questions the previous developer's document itself raises
   on refreshed Render staging with zero open blockers; `seed:demo-day`
   reproduces the M5 demo in under 10 minutes.
 - Playwright smokes pass on the Render origins: launcher → station pick;
-  till + display membership; cash ticket sale; booth spin → voucher →
-  redemption; booking QR → gate; check-in → offline release.
+  till + display membership; cash ticket sale; 2C2P sandbox QR sale; booth
+  spin → voucher → redemption; booking QR → gate; check-in → offline release;
+  launcher → OTO App; launcher → Radar with a POS sale visible; launcher →
+  Inbox shell.
 - Non-functional checks recorded: the targets in Design decisions measured by
   k6 and the 24 h soak; POS usable at iPad landscape and the mobile shell;
   console at 1280 px; PWA loads offline; an api redeploy loses no open session
   or queued outbox; the offline capability matrix passes row by row; no
   phone, name or child data in any log line or span (redaction test plus a
   manual grep of staging logs).
-- Deployed on Render: launcher, POS, console, booth, OTO App and Radar shells
-  as static sites with `/api` rewrites, one api web service, managed Postgres
-  with PITR; `render.yaml`, `.env.example` and the Integrations page agree on
+- Deployed on Render: launcher, POS, console, booth and the Inbox shell as
+  static sites with `/api` rewrites, one platform api web service, the OTO
+  App and Radar as Docker web services on their own schemas of the one
+  managed Postgres (PITR), the 2C2P sandbox wired with real QR codes; `render.yaml`, `.env.example` and the Integrations page agree on
   variable names; the client play-test guide and feedback template delivered.
 - Docs current: `docs/features/pos.md`, `booth.md`, `console.md`,
   `docs/progress/STATUS.md`, `SPRINT_2_PROGRESS.md` (status block closed,
   deviations recorded: booth order, Pi image, edge + jobs inside api, face-scan
-  removal, occupancy model), `SPRINT_2_REPORT.md`, `ARCHITECTURE.md` (schema
+  removal, occupancy model, OTO App lifted as-is, 2C2P kept over a bank API),
+  `SPRINT_2_REPORT.md`, `DEVELOPMENT_PLAN.md`, `ARCHITECTURE.md` (schema
   map and placement, withTx, ids and idempotency, sync epochs, station session
   and leases, adapters and PCI posture, transport and hand-off, observability,
   lock model, offline capability matrix, receipt numbering); tag `sprint-2`.
