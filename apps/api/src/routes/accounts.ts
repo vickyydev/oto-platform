@@ -196,23 +196,25 @@ export async function accountRoutes(app: App): Promise<void> {
       await assertScopeOwned(app.db, callerEffective, auth.operatorId, scope);
       await assertRoleDominated(app.db, callerEffective, auth.operatorId, roleRow.id, scope);
       const id = newId();
-      await app.db.insert(roleAssignment).values({
-        id,
-        accountId: req.params.id,
-        roleId: roleRow.id,
-        scopeType: req.body.scopeType,
-        scopeId: req.body.scopeId,
+      return withTx(app.db, opCtx(req), 'role_assignment.create', async (tx) => {
+        await tx.insert(roleAssignment).values({
+          id,
+          accountId: req.params.id,
+          roleId: roleRow.id,
+          scopeType: req.body.scopeType,
+          scopeId: req.body.scopeId,
+        });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'role_assignment.create',
+          entityType: 'role_assignment',
+          entityId: id,
+          after: { accountId: req.params.id, ...req.body },
+          requestId: req.id,
+        });
+        return { id };
       });
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        action: 'role_assignment.create',
-        entityType: 'role_assignment',
-        entityId: id,
-        after: { accountId: req.params.id, ...req.body },
-        requestId: req.id,
-      });
-      return { id };
     },
   );
 
@@ -243,17 +245,19 @@ export async function accountRoutes(app: App): Promise<void> {
         before.roleId,
         { scopeType: before.scopeType, scopeId: before.scopeId },
       );
-      await app.db.delete(roleAssignment).where(eq(roleAssignment.id, req.params.assignmentId));
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        action: 'role_assignment.delete',
-        entityType: 'role_assignment',
-        entityId: req.params.assignmentId,
-        before,
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'role_assignment.delete', async (tx) => {
+        await tx.delete(roleAssignment).where(eq(roleAssignment.id, req.params.assignmentId));
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'role_assignment.delete',
+          entityType: 'role_assignment',
+          entityId: req.params.assignmentId,
+          before,
+          requestId: req.id,
+        });
+        return { ok: true as const };
       });
-      return { ok: true };
     },
   );
 
@@ -286,19 +290,23 @@ export async function accountRoutes(app: App): Promise<void> {
         if (!p) throw errors.badRequest('Invalid phone number');
         patch.phone = p;
       }
-      const [after] = await app.db.update(account).set(patch).where(eq(account.id, req.params.id)).returning();
-      if (req.body.status === 'inactive') await invalidateAllSessions(app.db, req.params.id);
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        action: 'account.update',
-        entityType: 'account',
-        entityId: req.params.id,
-        before: { status: before.status, phone: before.phone },
-        after: { status: after?.status, phone: after?.phone },
-        requestId: req.id,
+      // Deactivating also ends every session: the change and the eviction
+      // must not be able to come apart.
+      return withTx(app.db, opCtx(req), 'account.update', async (tx) => {
+        const [after] = await tx.update(account).set(patch).where(eq(account.id, req.params.id)).returning();
+        if (req.body.status === 'inactive') await invalidateAllSessions(tx, req.params.id, 'deactivated');
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'account.update',
+          entityType: 'account',
+          entityId: req.params.id,
+          before: { status: before.status, phone: before.phone },
+          after: { status: after?.status, phone: after?.phone },
+          requestId: req.id,
+        });
+        return { ok: true as const };
       });
-      return { ok: true };
     },
   );
 
@@ -318,25 +326,30 @@ export async function accountRoutes(app: App): Promise<void> {
         req.params.id,
       );
       const temp = randomBytes(6).toString('base64url'); // 8 chars
-      await app.db
-        .update(account)
-        .set({
-          passwordHash: await hash(temp),
-          mustChangePassword: true,
-          status: acc.status === 'invited' ? 'active' : acc.status,
-          phoneVerifiedAt: acc.phoneVerifiedAt ?? new Date(),
-        })
-        .where(eq(account.id, req.params.id));
-      await invalidateAllSessions(app.db, req.params.id);
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        action: 'account.temp_password',
-        entityType: 'account',
-        entityId: req.params.id,
-        requestId: req.id,
+      const passwordHash = await hash(temp);
+      // The new password, the forced change and the eviction of every live
+      // session are one act of taking the account over.
+      return withTx(app.db, opCtx(req), 'account.temp_password', async (tx) => {
+        await tx
+          .update(account)
+          .set({
+            passwordHash,
+            mustChangePassword: true,
+            status: acc.status === 'invited' ? 'active' : acc.status,
+            phoneVerifiedAt: acc.phoneVerifiedAt ?? new Date(),
+          })
+          .where(eq(account.id, req.params.id));
+        await invalidateAllSessions(tx, req.params.id, 'temp_password');
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'account.temp_password',
+          entityType: 'account',
+          entityId: req.params.id,
+          requestId: req.id,
+        });
+        return { temporaryPassword: temp };
       });
-      return { temporaryPassword: temp };
     },
   );
 
@@ -389,17 +402,19 @@ export async function accountRoutes(app: App): Promise<void> {
       );
       // Revoked, not deleted: "who was evicted, when and by whom" has to
       // survive for audit, and loadAuth refuses a revoked session anyway.
-      const ended = await invalidateAllSessions(app.db, req.params.id, 'force_sign_out');
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        action: 'session.force_sign_out',
-        entityType: 'account',
-        entityId: req.params.id,
-        after: { sessionsEnded: ended },
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'session.force_sign_out', async (tx) => {
+        const ended = await invalidateAllSessions(tx, req.params.id, 'force_sign_out');
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'session.force_sign_out',
+          entityType: 'account',
+          entityId: req.params.id,
+          after: { sessionsEnded: ended },
+          requestId: req.id,
+        });
+        return { sessionsEnded: ended };
       });
-      return { sessionsEnded: ended };
     },
   );
 }

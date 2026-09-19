@@ -12,6 +12,7 @@ import {
 import { newId, normalizePhone } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
+import type { Exec } from './tx';
 import { bumpWindow } from './throttle';
 import type { SmsSender } from './sms';
 import { hashToken, newSessionToken } from '../plugins/session';
@@ -264,7 +265,7 @@ export async function signOut(db: Db, sessionId: string, actorAccountId: string,
 
 /** Revoke every live session an account holds. Returns how many were ended. */
 export async function invalidateAllSessions(
-  db: Db,
+  db: Exec,
   accountId: string,
   reason = 'invalidated',
 ): Promise<number> {

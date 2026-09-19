@@ -5,6 +5,7 @@ import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { opCtx, withTx } from '../services/tx';
 import { isPlatformWide } from '../services/permissions';
 import { issueCode } from '../services/auth';
 
@@ -37,17 +38,19 @@ export async function operatorRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = await requirePlatform(req);
       const id = newId();
-      await app.db.insert(operator).values({ id, name: req.body.name });
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: id,
-        action: 'operator.create',
-        entityType: 'operator',
-        entityId: id,
-        after: { name: req.body.name },
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'operator.create', async (tx) => {
+        await tx.insert(operator).values({ id, name: req.body.name });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: id,
+          action: 'operator.create',
+          entityType: 'operator',
+          entityId: id,
+          after: { name: req.body.name },
+          requestId: req.id,
+        });
+        return { id };
       });
-      return { id };
     },
   );
 
@@ -68,18 +71,20 @@ export async function operatorRoutes(app: App): Promise<void> {
       const patch: Partial<typeof operator.$inferInsert> = {};
       if (req.body.name !== undefined) patch.name = req.body.name;
       if (req.body.archived !== undefined) patch.archivedAt = req.body.archived ? new Date() : null;
-      const [after] = await app.db.update(operator).set(patch).where(eq(operator.id, req.params.id)).returning();
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: req.params.id,
-        action: 'operator.update',
-        entityType: 'operator',
-        entityId: req.params.id,
-        before,
-        after,
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'operator.update', async (tx) => {
+        const [after] = await tx.update(operator).set(patch).where(eq(operator.id, req.params.id)).returning();
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: req.params.id,
+          action: 'operator.update',
+          entityType: 'operator',
+          entityId: req.params.id,
+          before,
+          after,
+          requestId: req.id,
+        });
+        return { ok: true as const };
       });
-      return { ok: true };
     },
   );
 
@@ -102,13 +107,7 @@ export async function operatorRoutes(app: App): Promise<void> {
       if (!op || op.archivedAt) throw errors.notFound('Operator not found');
 
       const employeeId = newId();
-      await app.db
-        .insert(employee)
-        .values({ id: employeeId, operatorId: req.params.id, name: req.body.name, phone });
       const accountId = newId();
-      await app.db
-        .insert(account)
-        .values({ id: accountId, operatorId: req.params.id, employeeId, phone, status: 'invited' });
       // The system role, not an operator's own role of the same name: roles
       // are unique per operator since S2-01b, so the name alone is ambiguous.
       const [adminRole] = await app.db
@@ -117,24 +116,34 @@ export async function operatorRoutes(app: App): Promise<void> {
         .where(and(eq(role.name, 'operator_admin'), isNull(role.operatorId)))
         .limit(1);
       if (!adminRole) throw errors.badRequest('operator_admin role missing — seed the database');
-      await app.db.insert(roleAssignment).values({
-        id: newId(),
-        accountId,
-        roleId: adminRole.id,
-        scopeType: 'operator',
-        scopeId: req.params.id,
+      // Employee, account, the operator_admin grant and the setup code are
+      // one act: a half-made administrator is an account nobody can finish.
+      return withTx(app.db, opCtx(req), 'operator.assign_admin', async (tx) => {
+        await tx
+          .insert(employee)
+          .values({ id: employeeId, operatorId: req.params.id, name: req.body.name, phone });
+        await tx
+          .insert(account)
+          .values({ id: accountId, operatorId: req.params.id, employeeId, phone, status: 'invited' });
+        await tx.insert(roleAssignment).values({
+          id: newId(),
+          accountId,
+          roleId: adminRole.id,
+          scopeType: 'operator',
+          scopeId: req.params.id,
+        });
+        await issueCode(tx, app.sms, accountId, phone, 'setup', req.id);
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: req.params.id,
+          action: 'operator.assign_admin',
+          entityType: 'account',
+          entityId: accountId,
+          after: { phone, name: req.body.name },
+          requestId: req.id,
+        });
+        return { accountId };
       });
-      await issueCode(app.db, app.sms, accountId, phone, 'setup', req.id);
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: req.params.id,
-        action: 'operator.assign_admin',
-        entityType: 'account',
-        entityId: accountId,
-        after: { phone, name: req.body.name },
-        requestId: req.id,
-      });
-      return { accountId };
     },
   );
 }
