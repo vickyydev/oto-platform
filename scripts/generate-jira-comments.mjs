@@ -1,4 +1,4 @@
-// Generates jira-comments/SCRUM-<n>.md — the test-evidence comment for each
+// Generates docs/qa/jira-comments/SCRUM-<n>.md — the test-evidence comment for each
 // Sprint 1 ticket. Run `node scripts/post-jira-comments.mjs` afterwards to
 // post them (needs JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN in the env or
 // /oto-platform/.env).
@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'jira-comments');
+const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'qa', 'jira-comments');
 mkdirSync(OUT, { recursive: true });
 
 const RUN = `Verified 2026-09-11 on commit tagged sprint-1+ (branch main), local stack: Fastify API :3001 + Postgres 16 (Docker) + MinIO + ported POS :25741. Full suites: 19 shared unit tests, 57 API integration tests (real Postgres per run), 2 Playwright smoke flows, plus scripted live-browser walkthroughs with screenshots (headless Edge).`;
@@ -132,4 +132,4 @@ Integration (DoD precedence chain): branch default from the per-category engine 
 for (const [num, body] of Object.entries(tickets)) {
   writeFileSync(join(OUT, `SCRUM-${num}.md`), body + '\n');
 }
-console.log(`Wrote ${Object.keys(tickets).length} comment files to jira-comments/`);
+console.log(`Wrote ${Object.keys(tickets).length} comment files to docs/qa/jira-comments/`);

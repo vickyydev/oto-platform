@@ -1,7 +1,7 @@
 import { defineConfig } from 'drizzle-kit';
 
 if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL must be set (see /oto-platform/.env.example)');
+  throw new Error('DATABASE_URL must be set (see .env.example at the repository root)');
 }
 
 export default defineConfig({

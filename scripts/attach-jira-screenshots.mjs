@@ -1,4 +1,4 @@
-// Uploads each ticket's screenshots from jira-comments/attachments/SCRUM-<n>/
+// Uploads each ticket's screenshots from docs/qa/jira-comments/attachments/SCRUM-<n>/
 // as REAL Jira attachments and posts one "Screenshot evidence" comment per
 // ticket with the images embedded (they render as previews in the comment).
 //
@@ -35,7 +35,7 @@ const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const only = args.filter((a) => a.includes('-') && !a.startsWith('--'));
 
-const attachRoot = join(ROOT, 'jira-comments', 'attachments');
+const attachRoot = join(ROOT, 'docs', 'qa', 'jira-comments', 'attachments');
 const ticketDirs = readdirSync(attachRoot)
   .filter((d) => d.match(/^SCRUM-\d+$/))
   .sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]));

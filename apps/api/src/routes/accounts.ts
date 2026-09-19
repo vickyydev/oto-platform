@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
-import { and, eq, ilike, or } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { account, employee, role, roleAssignment } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';

@@ -1,4 +1,4 @@
-// Posts each jira-comments/SCRUM-<n>.md as a comment on the matching Jira
+// Posts each docs/qa/jira-comments/SCRUM-<n>.md as a comment on the matching Jira
 // issue. Credentials come from the environment or /oto-platform/.env:
 //   JIRA_BASE_URL  e.g. https://yourteam.atlassian.net
 //   JIRA_EMAIL     the Atlassian account email
@@ -32,7 +32,7 @@ const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const only = args.filter((a) => a.startsWith('SCRUM-'));
 
-const dir = join(ROOT, 'jira-comments');
+const dir = join(ROOT, 'docs', 'qa', 'jira-comments');
 const files = readdirSync(dir)
   .filter((f) => f.match(/^SCRUM-\d+\.md$/))
   .sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]));
@@ -61,7 +61,7 @@ for (const file of files) {
   if (only.length > 0 && !only.includes(key) && !only.includes(ticket)) continue;
   let body = readFileSync(join(dir, file), 'utf8').trim();
 
-  // Screenshot evidence: upload everything in jira-comments/attachments/<ticket>/
+  // Screenshot evidence: upload everything in docs/qa/jira-comments/attachments/<ticket>/
   // and embed it in the comment (wiki markup).
   const attachDir = join(dir, 'attachments', ticket);
   const shots = existsSync(attachDir) ? readdirSync(attachDir).filter((f) => f.endsWith('.png')) : [];

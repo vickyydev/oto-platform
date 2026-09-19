@@ -1,6 +1,10 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore: ['imports/**', 'docs/**']
+  pull_request:
+    paths-ignore: ['imports/**', 'docs/**']
 
 jobs:
   ci:

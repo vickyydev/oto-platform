@@ -1,3 +1,15 @@
+> **Repository layout changed on 2026-09-19 — read this before the brief below.**
+> The platform is now the **repository root** (what this brief calls `/oto-platform`
+> is `/`). The Replit prototype this brief says sits at the repo root now lives,
+> read-only, in **`imports/oto-pos/`** (the app itself: `imports/oto-pos/artifacts/oto-till/`).
+> Documents moved: `ARCHITECTURE.md` → `docs/architecture/`, `SPRINT_1_PROGRESS.md` and
+> `SPRINT_1_REPORT.md` → `docs/progress/`, `TEST_CASES.md` and Jira evidence → `docs/qa/`.
+> **Read next, in this order:** `docs/briefs/OWNER_DIRECTION.md` (newest decisions, wins
+> on any conflict) → `docs/briefs/PROJECT_CONTEXT.md` (the target system for Sprint 2) →
+> `docs/README.md` (where everything is). New progress files go in `docs/progress/`.
+> Raw exports of other apps, the production dump and vendor device documents go in
+> `imports/` — reference input only, never built or deployed.
+
 # OTO Platform — Agent Context and Sprint 1 Brief
 
 You are the coding agent for the rebuild of OTO Park's operations platform. This document is your complete context. Read it fully before writing any code. Everything you need to know about the business, the existing prototype, the target architecture, and the Sprint 1 scope is here. Where something is not covered, ask before assuming.

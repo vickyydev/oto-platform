@@ -14,7 +14,7 @@ let _db: Db | null = null;
 export function getDb(databaseUrl = process.env.DATABASE_URL): Db {
   if (_db) return _db;
   if (!databaseUrl) {
-    throw new Error('DATABASE_URL must be set (see /oto-platform/.env.example)');
+    throw new Error('DATABASE_URL must be set (see .env.example at the repository root)');
   }
   _pool = new pg.Pool({ connectionString: databaseUrl });
   _db = drizzle(_pool, { schema });

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
 
-// .env lives at the /oto-platform root; entrypoints may run from any package cwd.
+// .env lives at the repository root; entrypoints may run from any package cwd.
 loadDotenv({ path: join(dirname(fileURLToPath(import.meta.url)), '../../../.env'), quiet: true });
 
 const EnvSchema = z.object({

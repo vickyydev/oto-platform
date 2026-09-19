@@ -10,10 +10,29 @@ export default tseslint.config(
       // The ported prototype UI keeps its original style; linted separately later.
       'apps/pos/**',
       '**/migrations/**',
+      // Raw Replit exports are reference material, never part of the build.
+      'imports/**',
+      'docs/**',
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // Repo tooling scripts run on Node 22 (global fetch/FormData/Blob included).
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        fetch: 'readonly',
+        FormData: 'readonly',
+        Blob: 'readonly',
+        URL: 'readonly',
+        setTimeout: 'readonly',
+      },
+    },
+  },
   {
     rules: {
       // `any` requires a justifying comment per engineering standards — surfaced

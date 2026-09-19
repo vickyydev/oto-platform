@@ -9,3 +9,33 @@ coverage
 .minio-data
 test-results
 playwright-report
+
+# System / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# --- imports/ safety rules -------------------------------------------------
+# Database schema/data dumps contain real customer, child and staff data.
+# Everything in imports/_db is ignored except its README, so a dump dropped
+# there can never be committed or pushed.
+imports/_db/*
+!imports/_db/README.md
+# Belt and braces: dump-looking files anywhere in the repo.
+*.dump
+*.backup
+*.pgdump
+*.sql.gz
+*.sql.zip
+# Secrets that ride along inside Replit exports.
+imports/**/.env
+imports/**/.env.*
+imports/**/*.pem
+imports/**/*.p8
+imports/**/*.p12
+imports/**/.cache/
+imports/**/.local/
+imports/**/.upm/
+imports/**/.config/
