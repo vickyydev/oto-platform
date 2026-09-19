@@ -1,5 +1,7 @@
-import type { Db } from '@oto/db';
+import { and, eq } from 'drizzle-orm';
+import { idempotencyKey, type Db } from '@oto/db';
 import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
+import type { IdempotencyClaim } from '../plugins/idempotency';
 import { audit } from './audit';
 
 /**
@@ -37,6 +39,13 @@ export interface OpContext {
   branchId?: string | null;
   /** Request logger, so the operation line carries the request id. */
   log?: FastifyBaseLogger;
+  /**
+   * The claimed idempotency key, if the caller sent one. The response is
+   * stored inside this transaction so "the work happened" and "this is what
+   * we answered" commit together — a crash between the two cannot leave a
+   * retry re-running work that already succeeded.
+   */
+  idempotency?: IdempotencyClaim;
 }
 
 /**
@@ -52,7 +61,25 @@ export async function withTx<T>(
 ): Promise<T> {
   const started = Date.now();
   try {
-    const result = await db.transaction(async (tx) => fn(tx));
+    const result = await db.transaction(async (tx) => {
+      const value = await fn(tx);
+      const claim = ctx.idempotency;
+      // Only when the operation produced its own response inside the
+      // transaction. An operation that reads its response back afterwards
+      // (because it needs the committed row) has it stored by the onSend
+      // hook instead, and its client-minted id covers the gap between the
+      // commit and that write.
+      if (claim && value !== undefined) {
+        await tx
+          .update(idempotencyKey)
+          .set({ statusCode: 200, responseBody: (value ?? null) as never })
+          .where(
+            and(eq(idempotencyKey.accountId, claim.accountId), eq(idempotencyKey.key, claim.key)),
+          );
+        claim.stored = true;
+      }
+      return value;
+    });
     ctx.log?.debug({ op: opName, ms: Date.now() - started, reqId: ctx.requestId }, 'op ok');
     return result;
   } catch (err) {
@@ -86,6 +113,7 @@ export function opCtx(req: FastifyRequest): OpContext {
     operatorId: req.auth?.operatorId ?? null,
     branchId: req.auth?.branchId ?? null,
     log: req.log,
+    idempotency: req.idempotency,
   };
 }
 

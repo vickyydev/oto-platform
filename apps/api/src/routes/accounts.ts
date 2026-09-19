@@ -109,7 +109,7 @@ export async function accountRoutes(app: App): Promise<void> {
       // Employee, account, role assignments, the setup code and the audit row
       // are one operation: a failure at any point leaves no trace of it.
       const id = newId();
-      await withTx(app.db, opCtx(req), 'account.create', async (tx) => {
+      return withTx(app.db, opCtx(req), 'account.create', async (tx) => {
         let employeeId = req.body.employeeId ?? null;
         if (!employeeId && req.body.employeeName) {
           employeeId = newId();
@@ -140,8 +140,8 @@ export async function accountRoutes(app: App): Promise<void> {
           after: { phone, employeeId, roles: req.body.roles },
           requestId: req.id,
         });
+        return { id, status: 'invited' as const };
       });
-      return { id, status: 'invited' };
     },
   );
 

@@ -239,7 +239,7 @@ export async function publicRoutes(app: App): Promise<void> {
       const reference = `OTO-${String(randomInt(0, 36 ** 4)).padStart(4, '0')}-${randomInt(1000, 9999)}`;
       // Booking, attendees and the audit row are one operation: a booking
       // whose attendees are missing is a family turned away at the door.
-      await withTx(app.db, opCtx(req), 'booking.create', async (tx) => {
+      return withTx(app.db, opCtx(req), 'booking.create', async (tx) => {
         await tx.insert(booking).values({
           id,
           operatorId: br.operatorId,
@@ -281,8 +281,8 @@ export async function publicRoutes(app: App): Promise<void> {
           after: { reference, totalSatang, tier: req.body.tier, visitDate },
           requestId: req.id,
         });
+        return { id, reference, visitDate, rateMode: rate.mode, totalSatang, lines: computedLines };
       });
-      return { id, reference, visitDate, rateMode: rate.mode, totalSatang, lines: computedLines };
     },
   );
 }

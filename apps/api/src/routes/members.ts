@@ -5,6 +5,7 @@ import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { opCtx, withTx } from '../services/tx';
 
 const ChildBody = z.object({
   name: z.string().min(1),
@@ -184,6 +185,12 @@ export async function memberRoutes(app: App): Promise<void> {
       schema: {
         description: 'Create a member (phone + name only)',
         body: z.object({
+          /**
+           * Client-minted UUIDv7 (S2-01b). A till that mints the id can retry
+           * a create through a dropped connection without risking a second
+           * member: sending the same id again returns the row that exists.
+           */
+          id: z.string().uuid().optional(),
           phone: z.string(),
           nickname: z.string().min(1),
           preferredChannel: z.enum(['whatsapp', 'telegram', 'line']).optional(),
@@ -191,10 +198,23 @@ export async function memberRoutes(app: App): Promise<void> {
         }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       const phone = normalizePhone(req.body.phone);
       if (!phone) throw errors.badRequest('Invalid phone number');
+
+      if (req.body.id) {
+        const [already] = await app.db
+          .select()
+          .from(member)
+          .where(and(eq(member.id, req.body.id), eq(member.operatorId, auth.operatorId)))
+          .limit(1);
+        if (already) {
+          reply.header('x-oto-replay', 'true');
+          return { member: await memberWithChildren(app, already.id) };
+        }
+      }
+
       const [existing] = await app.db
         .select()
         .from(member)
@@ -207,24 +227,26 @@ export async function memberRoutes(app: App): Promise<void> {
           memberId: existing.id,
         });
       }
-      const id = newId();
-      await app.db.insert(member).values({
-        id,
-        operatorId: auth.operatorId,
-        phone,
-        nickname: req.body.nickname.trim(),
-        preferredChannel: req.body.preferredChannel ?? null,
-        createdVia: req.body.createdVia,
-      });
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: auth.branchId,
-        action: 'member.create',
-        entityType: 'member',
-        entityId: id,
-        after: { phone, nickname: req.body.nickname.trim() },
-        requestId: req.id,
+      const id = req.body.id ?? newId();
+      await withTx(app.db, opCtx(req), 'member.create', async (tx) => {
+        await tx.insert(member).values({
+          id,
+          operatorId: auth.operatorId,
+          phone,
+          nickname: req.body.nickname.trim(),
+          preferredChannel: req.body.preferredChannel ?? null,
+          createdVia: req.body.createdVia,
+        });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: auth.branchId,
+          action: 'member.create',
+          entityType: 'member',
+          entityId: id,
+          after: { phone, nickname: req.body.nickname.trim() },
+          requestId: req.id,
+        });
       });
       return { member: await memberWithChildren(app, id) };
     },

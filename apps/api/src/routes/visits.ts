@@ -21,6 +21,8 @@ export async function visitRoutes(app: App): Promise<void> {
       schema: {
         description: 'Create a draft visit with confirmed children',
         body: z.object({
+          /** Client-minted UUIDv7: re-sending it returns the visit that exists. */
+          id: z.string().uuid().optional(),
           memberId: z.string().uuid().nullable().optional(),
           branchId: z.string().uuid().optional(),
           childIds: z.array(z.string().uuid()).default([]),
@@ -28,8 +30,19 @@ export async function visitRoutes(app: App): Promise<void> {
         }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
+      if (req.body.id) {
+        const [already] = await app.db
+          .select()
+          .from(visit)
+          .where(and(eq(visit.id, req.body.id), eq(visit.operatorId, auth.operatorId)))
+          .limit(1);
+        if (already) {
+          reply.header('x-oto-replay', 'true');
+          return { id: already.id, visitDate: already.visitDate, status: already.status };
+        }
+      }
       const branchId = req.body.branchId ?? auth.branchId;
       if (!branchId) throw errors.badRequest('No active branch on this session');
       const [br] = await app.db.select().from(branch).where(eq(branch.id, branchId)).limit(1);
@@ -47,13 +60,13 @@ export async function visitRoutes(app: App): Promise<void> {
         }
       }
 
-      const id = newId();
+      const id = req.body.id ?? newId();
       const visitDate = req.body.visitDate ?? branchToday(br.timezone);
       const now = new Date();
       // The visit, who is on it, their re-confirmation stamps and the audit
       // row are one operation: a visit with half its children on it would be
       // a child nobody knows is in the park.
-      await withTx(app.db, opCtx(req), 'visit.create', async (tx) => {
+      return withTx(app.db, opCtx(req), 'visit.create', async (tx) => {
         await tx.insert(visit).values({
           id,
           operatorId: auth.operatorId,
@@ -82,8 +95,8 @@ export async function visitRoutes(app: App): Promise<void> {
           after: { memberId: req.body.memberId ?? null, childIds: req.body.childIds, visitDate },
           requestId: req.id,
         });
+        return { id, visitDate, status: 'draft' as const };
       });
-      return { id, visitDate, status: 'draft' };
     },
   );
 

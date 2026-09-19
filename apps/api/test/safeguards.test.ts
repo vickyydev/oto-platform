@@ -1,6 +1,8 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, member } from '@oto/db';
+import { auditLog, idempotencyKey, member } from '@oto/db';
+import { newId } from '@oto/shared';
+import { purgeExpiredIdempotencyKeys } from '../src/plugins/idempotency';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 let ctx: TestContext;
@@ -41,6 +43,94 @@ describe('SCRUM-15 — idempotency', () => {
     });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe('IDEMPOTENCY_MISMATCH');
+  });
+
+  // S2-01b — the race Sprint 1 could lose: read-then-write let two retries
+  // both decide they were first. The claim is one statement now.
+  it('two identical requests sent at once produce one member and one winner', async () => {
+    const payload = { phone: '+66611114444', nickname: 'RaceTest' };
+    const headers = { cookie: reception, 'idempotency-key': 'idem-race' };
+    const [a, b] = await Promise.all([
+      ctx.app.inject({ method: 'POST', url: '/members', payload, headers }),
+      ctx.app.inject({ method: 'POST', url: '/members', payload, headers }),
+    ]);
+
+    const rows = await ctx.db.select().from(member).where(eq(member.phone, '+66611114444'));
+    expect(rows).toHaveLength(1);
+
+    const codes = [a.statusCode, b.statusCode].sort();
+    // One did the work. The other either replayed the stored response or was
+    // told the original is still running — never a second member.
+    expect(codes[0]).toBe(200);
+    expect([200, 409]).toContain(codes[1]);
+    const loser = [a, b].find((r) => r.statusCode === 409);
+    if (loser) {
+      expect(loser.json().error.code).toBe('IDEMPOTENCY_IN_FLIGHT');
+      expect(loser.headers['retry-after']).toBe('1');
+    }
+  });
+
+  it('a 5xx releases the key so a real retry runs', async () => {
+    const headers = { cookie: admin, 'idempotency-key': 'idem-after-500' };
+    // Force the failure inside the create, exactly as transactions.test.ts does.
+    await ctx.db.execute(sql`
+      create or replace function oto_idem_fail() returns trigger as $fn$
+      begin raise exception 'forced'; end $fn$ language plpgsql;
+    `);
+    await ctx.db.execute(
+      sql.raw(`create trigger oto_idem_fail_trg after insert on core.audit_log
+               for each row when (new.action = 'member.create') execute function oto_idem_fail();`),
+    );
+    const payload = { phone: '+66611115555', nickname: 'AfterFailure' };
+    const failed = await ctx.app.inject({ method: 'POST', url: '/members', payload, headers });
+    expect(failed.statusCode).toBe(500);
+    await ctx.db.execute(sql`drop trigger oto_idem_fail_trg on core.audit_log;`);
+
+    // The same key again does the work rather than replaying the failure.
+    const retried = await ctx.app.inject({ method: 'POST', url: '/members', payload, headers });
+    expect(retried.statusCode).toBe(200);
+    const rows = await ctx.db.select().from(member).where(eq(member.phone, '+66611115555'));
+    expect(rows).toHaveLength(1);
+  });
+
+  it('a client-minted id makes a retry return the row that exists', async () => {
+    const id = newId();
+    const payload = { id, phone: '+66611116666', nickname: 'ClientId' };
+    const first = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      payload,
+      headers: { cookie: reception },
+    });
+    expect(first.statusCode).toBe(200);
+    expect(first.json().member.id).toBe(id);
+
+    // No idempotency key this time — the id alone is enough.
+    const retry = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      payload,
+      headers: { cookie: reception },
+    });
+    expect(retry.statusCode).toBe(200);
+    expect(retry.headers['x-oto-replay']).toBe('true');
+    expect(retry.json().member.id).toBe(id);
+    const rows = await ctx.db.select().from(member).where(eq(member.phone, '+66611116666'));
+    expect(rows).toHaveLength(1);
+  });
+
+  it('expired keys are purged', async () => {
+    await ctx.db
+      .update(idempotencyKey)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(idempotencyKey.key, 'idem-1'));
+    const purged = await purgeExpiredIdempotencyKeys(ctx.db);
+    expect(purged).toBeGreaterThan(0);
+    const left = await ctx.db
+      .select()
+      .from(idempotencyKey)
+      .where(eq(idempotencyKey.key, 'idem-1'));
+    expect(left).toHaveLength(0);
   });
 });
 
