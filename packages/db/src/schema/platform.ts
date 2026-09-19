@@ -99,3 +99,25 @@ export const fileObject = pgTable(
     index('file_object_operator_idx').on(t.operatorId),
   ],
 );
+
+/**
+ * Failure throttle for sign-in, unlock and code verification (S2-01a).
+ *
+ * Sprint 1 kept these counters in a Map, which a Render restart wiped — an
+ * attacker only had to wait for a deploy. Postgres makes the cooldown
+ * survive restarts and, later, hold across more than one api instance.
+ *
+ * `key` is the bucket: "phone:+66...", "ip:1.2.3.4", "unlock:<sessionId>",
+ * "code:<accountId>:<purpose>". Rows are disposable — the housekeeping job
+ * added in S2-03 deletes expired ones.
+ */
+export const authThrottle = pgTable(
+  'auth_throttle',
+  {
+    key: text('key').primaryKey(),
+    failures: integer('failures').notNull().default(0),
+    lockedUntil: timestamp('locked_until', { withTimezone: true, mode: 'date' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [index('auth_throttle_locked_until_idx').on(t.lockedUntil)],
+);

@@ -1,8 +1,9 @@
 import { hash, verify } from '@node-rs/argon2';
 import { createHash, randomInt } from 'node:crypto';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
+  authThrottle,
   branch,
   session as sessionTable,
   verificationCode,
@@ -14,48 +15,52 @@ import { audit } from './audit';
 import type { SmsSender } from './sms';
 import { hashToken, newSessionToken } from '../plugins/session';
 
-// --- Sign-in throttling (SCRUM-19): failures per phone and per IP ----------
-// In-memory by design — resets on restart, which only relaxes the limit.
-interface Bucket {
-  failures: number;
-  lockedUntil: number;
-}
-const buckets = new Map<string, Bucket>();
+// --- Failure throttling (SCRUM-19, hardened in S2-01a) ---------------------
+// Counters live in Postgres, not memory: a Render restart used to clear every
+// cooldown, so an attacker only had to wait for a deploy. Keys are buckets —
+// "phone:+66…", "ip:…", "unlock:<sessionId>", "code:<accountId>:<purpose>".
 
-export function throttleCheck(keys: string[], maxFailures: number, cooldownSeconds: number): void {
-  const now = Date.now();
-  for (const key of keys) {
-    const b = buckets.get(key);
-    if (b && b.lockedUntil > now) {
-      throw errors.tooMany(
-        `Too many failed sign-in attempts. Try again in ${Math.ceil((b.lockedUntil - now) / 1000)}s.`,
-      );
+export async function throttleCheck(db: Db, keys: string[]): Promise<void> {
+  const now = new Date();
+  const rows = await db.select().from(authThrottle).where(inArray(authThrottle.key, keys));
+  for (const r of rows) {
+    if (r.lockedUntil && r.lockedUntil > now) {
+      const seconds = Math.ceil((r.lockedUntil.getTime() - now.getTime()) / 1000);
+      throw errors.tooMany(`Too many failed attempts. Try again in ${seconds}s.`);
     }
-    void maxFailures;
-    void cooldownSeconds;
   }
 }
 
-export function throttleFail(keys: string[], maxFailures: number, cooldownSeconds: number): void {
-  const now = Date.now();
+export async function throttleFail(
+  db: Db,
+  keys: string[],
+  maxFailures: number,
+  cooldownSeconds: number,
+): Promise<void> {
+  const now = new Date();
   for (const key of keys) {
-    const b = buckets.get(key) ?? { failures: 0, lockedUntil: 0 };
-    b.failures += 1;
-    if (b.failures >= maxFailures) {
-      b.lockedUntil = now + cooldownSeconds * 1000;
-      b.failures = 0;
-    }
-    buckets.set(key, b);
+    // One statement, so two racing requests cannot both read "4 failures".
+    await db
+      .insert(authThrottle)
+      .values({ key, failures: 1, updatedAt: now })
+      .onConflictDoUpdate({
+        target: authThrottle.key,
+        set: {
+          failures: sql`case when ${authThrottle.lockedUntil} is not null and ${authThrottle.lockedUntil} <= now() then 1 else ${authThrottle.failures} + 1 end`,
+          lockedUntil: sql`case when (case when ${authThrottle.lockedUntil} is not null and ${authThrottle.lockedUntil} <= now() then 1 else ${authThrottle.failures} + 1 end) >= ${maxFailures} then now() + ${`${cooldownSeconds} seconds`}::interval else ${authThrottle.lockedUntil} end`,
+          updatedAt: now,
+        },
+      });
   }
 }
 
-export function throttleClear(keys: string[]): void {
-  for (const key of keys) buckets.delete(key);
+export async function throttleClear(db: Db, keys: string[]): Promise<void> {
+  if (keys.length) await db.delete(authThrottle).where(inArray(authThrottle.key, keys));
 }
 
 /** Test hook: wipe throttle state between cases. */
-export function _resetThrottle(): void {
-  buckets.clear();
+export async function _resetThrottle(db: Db): Promise<void> {
+  await db.delete(authThrottle);
 }
 
 // --- Verification codes (SCRUM-20/23) --------------------------------------
@@ -117,10 +122,20 @@ export async function consumeCode(
 
 // --- Accounts & sessions ----------------------------------------------------
 
-export async function findAccountByPhone(db: Db, rawPhone: string) {
+/**
+ * Look an account up by phone. `operatorId` scopes the search: phone is
+ * unique per operator, not globally, so an unscoped lookup could return
+ * another tenant's account (S2-01a). It stays optional because sign-in
+ * itself has no operator yet — a single-operator deployment today, and the
+ * route that needs scoping passes it.
+ */
+export async function findAccountByPhone(db: Db, rawPhone: string, operatorId?: string) {
   const phone = normalizePhone(rawPhone);
   if (!phone) throw errors.badRequest('Invalid phone number');
-  const rows = await db.select().from(account).where(eq(account.phone, phone)).limit(1);
+  const where = operatorId
+    ? and(eq(account.phone, phone), eq(account.operatorId, operatorId))
+    : eq(account.phone, phone);
+  const rows = await db.select().from(account).where(where).limit(1);
   return { phone, account: rows[0] ?? null };
 }
 
@@ -140,21 +155,22 @@ export async function signIn(
     maxFailures: number;
     cooldownSeconds: number;
     requestId?: string;
+    /** Scopes the phone lookup when the caller knows the tenant. */
+    operatorId?: string;
   },
 ): Promise<SignInResult> {
-  const { phone, account: acc } = await findAccountByPhone(db, opts.phone);
+  const { phone, account: acc } = await findAccountByPhone(db, opts.phone, opts.operatorId);
   // Per-phone at the configured limit; per-IP at 4× so one shared reception
   // IP isn't locked out by a single guessed phone (many tills share an IP).
-  throttleCheck([`phone:${phone}`], opts.maxFailures, opts.cooldownSeconds);
-  throttleCheck([`ip:${opts.ip}`], opts.maxFailures * 4, opts.cooldownSeconds);
+  await throttleCheck(db, [`phone:${phone}`, `ip:${opts.ip}`]);
 
-  const fail = (): never => {
-    throttleFail([`phone:${phone}`], opts.maxFailures, opts.cooldownSeconds);
-    throttleFail([`ip:${opts.ip}`], opts.maxFailures * 4, opts.cooldownSeconds);
+  const fail = async (): Promise<never> => {
+    await throttleFail(db, [`phone:${phone}`], opts.maxFailures, opts.cooldownSeconds);
+    await throttleFail(db, [`ip:${opts.ip}`], opts.maxFailures * 4, opts.cooldownSeconds);
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Phone or password is incorrect');
   };
 
-  if (!acc) fail();
+  if (!acc) await fail();
   // Status checks come BEFORE the password check so invited/inactive accounts
   // get their clear message (SCRUM-19) rather than a generic 401.
   if (acc!.status === 'invited') {
@@ -163,9 +179,9 @@ export async function signIn(
   if (acc!.status === 'inactive') {
     throw new AppError(403, 'ACCOUNT_INACTIVE', 'This account has been deactivated — contact a manager');
   }
-  if (!acc!.passwordHash || !(await verify(acc!.passwordHash, opts.password))) fail();
+  if (!acc!.passwordHash || !(await verify(acc!.passwordHash, opts.password))) await fail();
 
-  throttleClear([`phone:${phone}`, `ip:${opts.ip}`]);
+  await throttleClear(db, [`phone:${phone}`, `ip:${opts.ip}`]);
 
   // Active branch defaults to the operator's first active branch.
   const branches = await db
@@ -194,8 +210,16 @@ export async function signIn(
   return { token, accountId: acc!.id, mustChangePassword: acc!.mustChangePassword };
 }
 
+/**
+ * End one session. The row is revoked rather than deleted (S2-01a) so that
+ * "who ended this session, when and why" survives for audit; `loadAuth`
+ * refuses a revoked session exactly as it refuses an expired one.
+ */
 export async function signOut(db: Db, sessionId: string, actorAccountId: string, requestId?: string): Promise<void> {
-  await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
+  await db
+    .update(sessionTable)
+    .set({ revokedAt: new Date(), revokedReason: 'sign_out' })
+    .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.revokedAt)));
   await audit.record(db, {
     actorAccountId,
     action: 'auth.sign_out',
@@ -205,8 +229,89 @@ export async function signOut(db: Db, sessionId: string, actorAccountId: string,
   });
 }
 
-export async function invalidateAllSessions(db: Db, accountId: string): Promise<void> {
-  await db.delete(sessionTable).where(eq(sessionTable.accountId, accountId));
+/** Revoke every live session an account holds. Returns how many were ended. */
+export async function invalidateAllSessions(
+  db: Db,
+  accountId: string,
+  reason = 'invalidated',
+): Promise<number> {
+  const ended = await db
+    .update(sessionTable)
+    .set({ revokedAt: new Date(), revokedReason: reason })
+    .where(and(eq(sessionTable.accountId, accountId), isNull(sessionTable.revokedAt)))
+    .returning({ id: sessionTable.id });
+  return ended.length;
+}
+
+/** Lock a session on POS inactivity: it survives, but may do no business. */
+export async function lockSession(
+  db: Db,
+  sessionId: string,
+  actorAccountId: string,
+  requestId?: string,
+): Promise<void> {
+  await db
+    .update(sessionTable)
+    .set({ lockedAt: new Date() })
+    .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.lockedAt)));
+  await audit.record(db, {
+    actorAccountId,
+    action: 'auth.lock',
+    entityType: 'session',
+    entityId: sessionId,
+    requestId,
+  });
+}
+
+/**
+ * Unlock by re-entering the password on the SAME session. Throttled per
+ * session and per account so an unattended locked till cannot be guessed at;
+ * a wrong password never reveals whether the session or the account is at
+ * fault.
+ */
+export async function unlockSession(
+  db: Db,
+  opts: {
+    sessionId: string;
+    accountId: string;
+    password: string;
+    ip: string;
+    maxFailures: number;
+    cooldownSeconds: number;
+    requestId?: string;
+  },
+): Promise<void> {
+  const keys = [`unlock:${opts.sessionId}`, `unlock-account:${opts.accountId}`];
+  await throttleCheck(db, keys);
+
+  const [acc] = await db.select().from(account).where(eq(account.id, opts.accountId)).limit(1);
+  const ok = Boolean(acc?.passwordHash) && (await verify(acc!.passwordHash!, opts.password));
+  if (!ok) {
+    await throttleFail(db, keys, opts.maxFailures, opts.cooldownSeconds);
+    await audit.record(db, {
+      actorAccountId: opts.accountId,
+      operatorId: acc?.operatorId,
+      action: 'auth.unlock_failed',
+      entityType: 'session',
+      entityId: opts.sessionId,
+      requestId: opts.requestId,
+    });
+    throw new AppError(401, 'INVALID_CREDENTIALS', 'Password is incorrect');
+  }
+
+  await throttleClear(db, keys);
+  await db
+    .update(sessionTable)
+    .set({ lockedAt: null, lastSeenAt: new Date() })
+    .where(eq(sessionTable.id, opts.sessionId));
+  await audit.record(db, {
+    actorAccountId: opts.accountId,
+    operatorId: acc!.operatorId,
+    action: 'auth.unlock',
+    entityType: 'session',
+    entityId: opts.sessionId,
+    requestId: opts.requestId,
+  });
 }
 
 export async function setPassword(db: Db, accountId: string, password: string): Promise<void> {

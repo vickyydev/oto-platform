@@ -183,6 +183,28 @@ export const session = pgTable(
      */
     pendingLookupPhone: text('pending_lookup_phone'),
     pendingLookupAt: timestamp('pending_lookup_at', { withTimezone: true, mode: 'date' }),
+    /**
+     * What holds this session (S2-01a). 'staff' is a person signed in at a
+     * till or on the console; later classes cover a paired display, a box
+     * and a kiosk, each fenced by its own credential.
+     * text + CHECK rather than a pg enum: migration 0003 moves the whole
+     * schema to that convention and adding a value must not need a DDL lock.
+     */
+    sessionClass: text('class').notNull().default('staff'),
+    /**
+     * Set while the POS is locked on inactivity. A locked session still
+     * exists — unlocking re-verifies the password against it — which is what
+     * makes an offline unlock possible on a box later (S2-06). Sprint 1
+     * deleted the session on inactivity, so unlocking needed the network.
+     */
+    lockedAt: timestamp('locked_at', { withTimezone: true, mode: 'date' }),
+    /**
+     * Set by an explicit sign-out or a force sign-out. Kept (rather than the
+     * row deleted) so "who ended this session, and when" survives for audit;
+     * a revoked session is refused like an expired one.
+     */
+    revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
+    revokedReason: text('revoked_reason'),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
@@ -191,6 +213,7 @@ export const session = pgTable(
     uniqueIndex('session_token_unique').on(t.tokenHash),
     index('session_account_idx').on(t.accountId),
     index('session_expires_idx').on(t.expiresAt),
+    index('session_account_live_idx').on(t.accountId, t.revokedAt),
   ],
 );
 

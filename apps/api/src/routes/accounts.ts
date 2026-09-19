@@ -1,14 +1,21 @@
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
-import { and, eq } from 'drizzle-orm';
-import { account, employee, role, roleAssignment } from '@oto/db';
+import { and, desc, eq } from 'drizzle-orm';
+import { account, employee, role, roleAssignment, session } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { invalidateAllSessions, issueCode } from '../services/auth';
 import { resolveEffectivePermissions } from '../services/permissions';
+import {
+  assertDominatesAccount,
+  assertRoleDominated,
+  assertScopeOwned,
+  loadRoleForOperator,
+  loadTargetAccount,
+} from '../services/access-control';
 
 const RoleAssignmentInput = z.object({
   roleName: z.string(),
@@ -92,16 +99,26 @@ export async function accountRoutes(app: App): Promise<void> {
         });
       }
 
+      // Every requested role is checked BEFORE the account exists, so a
+      // refused grant cannot leave a half-created account behind.
+      const callerEffective = await req.effectivePermissions();
+      const resolved: { roleId: string; scopeType: (typeof req.body.roles)[number]['scopeType']; scopeId: string | null }[] = [];
+      for (const r of req.body.roles) {
+        const roleRow = await loadRoleForOperator(app.db, auth.operatorId, r.roleName);
+        const scope = { scopeType: r.scopeType, scopeId: r.scopeId };
+        await assertScopeOwned(app.db, callerEffective, auth.operatorId, scope);
+        await assertRoleDominated(app.db, callerEffective, auth.operatorId, roleRow.id, scope);
+        resolved.push({ roleId: roleRow.id, ...scope });
+      }
+
       const id = newId();
       await app.db.insert(account).values({ id, operatorId: auth.operatorId, employeeId, phone, status: 'invited' });
 
-      for (const r of req.body.roles) {
-        const [roleRow] = await app.db.select().from(role).where(eq(role.name, r.roleName)).limit(1);
-        if (!roleRow) throw errors.badRequest(`Unknown role ${r.roleName}`);
+      for (const r of resolved) {
         await app.db.insert(roleAssignment).values({
           id: newId(),
           accountId: id,
-          roleId: roleRow.id,
+          roleId: r.roleId,
           scopeType: r.scopeType,
           scopeId: r.scopeId,
         });
@@ -126,7 +143,14 @@ export async function accountRoutes(app: App): Promise<void> {
     '/:id/permissions',
     { schema: { description: 'Roles and effective permissions', params: z.object({ id: z.string().uuid() }) } },
     async (req) => {
-      await req.requirePermission('admin:role:read');
+      const auth = await req.requirePermission('admin:role:read');
+      await loadTargetAccount(app.db, auth.operatorId, req.params.id);
+      await assertDominatesAccount(
+        app.db,
+        await req.effectivePermissions(),
+        auth.operatorId,
+        req.params.id,
+      );
       const assignments = await app.db
         .select({ ra: roleAssignment, roleName: role.name })
         .from(roleAssignment)
@@ -157,8 +181,12 @@ export async function accountRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = await req.requirePermission('admin:role:assign');
-      const [roleRow] = await app.db.select().from(role).where(eq(role.name, req.body.roleName)).limit(1);
-      if (!roleRow) throw errors.badRequest(`Unknown role ${req.body.roleName}`);
+      await loadTargetAccount(app.db, auth.operatorId, req.params.id);
+      const roleRow = await loadRoleForOperator(app.db, auth.operatorId, req.body.roleName);
+      const scope = { scopeType: req.body.scopeType, scopeId: req.body.scopeId };
+      const callerEffective = await req.effectivePermissions();
+      await assertScopeOwned(app.db, callerEffective, auth.operatorId, scope);
+      await assertRoleDominated(app.db, callerEffective, auth.operatorId, roleRow.id, scope);
       const id = newId();
       await app.db.insert(roleAssignment).values({
         id,
@@ -190,12 +218,22 @@ export async function accountRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = await req.requirePermission('admin:role:assign');
+      await loadTargetAccount(app.db, auth.operatorId, req.params.id);
       const [before] = await app.db
         .select()
         .from(roleAssignment)
         .where(eq(roleAssignment.id, req.params.assignmentId))
         .limit(1);
       if (!before || before.accountId !== req.params.id) throw errors.notFound('Assignment not found');
+      // Removing a role is as privileged as granting it: you cannot strip a
+      // role you could not have handed out.
+      await assertRoleDominated(
+        app.db,
+        await req.effectivePermissions(),
+        auth.operatorId,
+        before.roleId,
+        { scopeType: before.scopeType, scopeId: before.scopeId },
+      );
       await app.db.delete(roleAssignment).where(eq(roleAssignment.id, req.params.assignmentId));
       await audit.record(app.db, {
         actorAccountId: auth.accountId,
@@ -224,8 +262,13 @@ export async function accountRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = await req.requirePermission('admin:account:update');
-      const [before] = await app.db.select().from(account).where(eq(account.id, req.params.id)).limit(1);
-      if (!before || before.operatorId !== auth.operatorId) throw errors.notFound('Account not found');
+      const before = await loadTargetAccount(app.db, auth.operatorId, req.params.id);
+      await assertDominatesAccount(
+        app.db,
+        await req.effectivePermissions(),
+        auth.operatorId,
+        req.params.id,
+      );
       const patch: Partial<typeof account.$inferInsert> = {};
       if (req.body.status) patch.status = req.body.status;
       if (req.body.phone) {
@@ -255,8 +298,15 @@ export async function accountRoutes(app: App): Promise<void> {
     { schema: { description: 'Issue a temporary password', params: z.object({ id: z.string().uuid() }) } },
     async (req) => {
       const auth = await req.requirePermission('admin:account:update');
-      const [acc] = await app.db.select().from(account).where(eq(account.id, req.params.id)).limit(1);
-      if (!acc || acc.operatorId !== auth.operatorId) throw errors.notFound('Account not found');
+      const acc = await loadTargetAccount(app.db, auth.operatorId, req.params.id);
+      // A temporary password is a full takeover of that account: the caller
+      // must dominate every role it holds.
+      await assertDominatesAccount(
+        app.db,
+        await req.effectivePermissions(),
+        auth.operatorId,
+        req.params.id,
+      );
       const temp = randomBytes(6).toString('base64url'); // 8 chars
       await app.db
         .update(account)
@@ -277,6 +327,69 @@ export async function accountRoutes(app: App): Promise<void> {
         requestId: req.id,
       });
       return { temporaryPassword: temp };
+    },
+  );
+
+  // S2-01a — the sessions an account currently holds, for the Login Users panel.
+  app.get(
+    '/:id/sessions',
+    { schema: { description: 'Sessions held by an account', params: z.object({ id: z.string().uuid() }) } },
+    async (req) => {
+      const auth = await req.requirePermission('admin:account:read');
+      await loadTargetAccount(app.db, auth.operatorId, req.params.id);
+      const rows = await app.db
+        .select()
+        .from(session)
+        .where(eq(session.accountId, req.params.id))
+        .orderBy(desc(session.lastSeenAt));
+      return {
+        sessions: rows.map((s) => ({
+          id: s.id,
+          branchId: s.branchId,
+          stationId: s.stationId,
+          lockedAt: s.lockedAt,
+          lastSeenAt: s.lastSeenAt,
+          expiresAt: s.expiresAt,
+          createdAt: s.createdAt,
+        })),
+      };
+    },
+  );
+
+  // S2-01a — "Sign out everywhere": end every session this account holds.
+  // Deliberately separate from deactivation: a manager may need to evict a
+  // forgotten till without disabling the person's account.
+  app.post(
+    '/:id/sessions/revoke',
+    {
+      schema: {
+        description: 'Force sign-out: end every session this account holds',
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const auth = await req.requirePermission('admin:account:update');
+      await loadTargetAccount(app.db, auth.operatorId, req.params.id);
+      await assertDominatesAccount(
+        app.db,
+        await req.effectivePermissions(),
+        auth.operatorId,
+        req.params.id,
+      );
+      const ended = await app.db
+        .delete(session)
+        .where(eq(session.accountId, req.params.id))
+        .returning({ id: session.id });
+      await audit.record(app.db, {
+        actorAccountId: auth.accountId,
+        operatorId: auth.operatorId,
+        action: 'session.force_sign_out',
+        entityType: 'account',
+        entityId: req.params.id,
+        after: { sessionsEnded: ended.length },
+        requestId: req.id,
+      });
+      return { sessionsEnded: ended.length };
     },
   );
 }

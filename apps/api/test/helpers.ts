@@ -18,11 +18,13 @@ export interface TestContext {
 
 /** Fresh database + migrations + seed + app instance. */
 export async function createTestContext(opts: { files?: boolean } = {}): Promise<TestContext> {
-  _resetThrottle();
   const { url, drop } = await createTestDatabase();
   const pool = new pg.Pool({ connectionString: url });
   const db = drizzle(pool, { schema }) as Db;
   await seed(db);
+  // Throttle counters live in Postgres now (S2-01a), so the reset needs the
+  // database and each test gets a fresh one anyway — this is belt and braces.
+  await _resetThrottle(db);
 
   const smsLog: string[] = [];
   const sms: SmsSender = {

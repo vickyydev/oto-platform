@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { account, session as sessionTable, type Db } from '@oto/db';
@@ -18,6 +18,8 @@ export interface AuthContext {
   status: 'invited' | 'active' | 'inactive';
   mustChangePassword: boolean;
   isPlatformAdmin: boolean;
+  /** Set while the POS is locked on inactivity; business routes refuse. */
+  lockedAt: Date | null;
 }
 
 declare module 'fastify' {
@@ -58,13 +60,20 @@ async function loadAuth(db: Db, token: string): Promise<AuthContext | null> {
     .select({ s: sessionTable, a: account })
     .from(sessionTable)
     .innerJoin(account, eq(sessionTable.accountId, account.id))
-    .where(and(eq(sessionTable.tokenHash, hashToken(token)), gt(sessionTable.expiresAt, now)))
+    .where(
+      and(
+        eq(sessionTable.tokenHash, hashToken(token)),
+        gt(sessionTable.expiresAt, now),
+        isNull(sessionTable.revokedAt), // signed out, or force signed-out
+      ),
+    )
     .limit(1);
   const row = rows[0];
   if (!row) return null;
   if (row.a.status !== 'active') return null; // deactivated mid-session → rejected
-  // Sliding last-seen, throttled to one write a minute.
-  if (now.getTime() - row.s.lastSeenAt.getTime() > 60_000) {
+  // Sliding last-seen, throttled to one write a minute. A locked session is
+  // not "seen": leaving a locked till open must not keep it alive for ever.
+  if (!row.s.lockedAt && now.getTime() - row.s.lastSeenAt.getTime() > 60_000) {
     await db.update(sessionTable).set({ lastSeenAt: now }).where(eq(sessionTable.id, row.s.id));
   }
   return {
@@ -76,6 +85,7 @@ async function loadAuth(db: Db, token: string): Promise<AuthContext | null> {
     status: row.a.status,
     mustChangePassword: row.a.mustChangePassword,
     isPlatformAdmin: false, // refined lazily by the permission resolver
+    lockedAt: row.s.lockedAt,
   };
 }
 
@@ -100,6 +110,11 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
 
     req.requirePermission = async (permission, target = {}) => {
       const auth = req.requireAuth();
+      // A locked session exists but may do no business: the unlock route is
+      // the only way back in (it uses requireAuth, not requirePermission).
+      if (auth.lockedAt) {
+        throw new AppError(423, 'SESSION_LOCKED', 'This session is locked — unlock to continue');
+      }
       // A temp-password account must change it before doing anything else.
       if (auth.mustChangePassword) {
         throw new AppError(403, 'MUST_CHANGE_PASSWORD', 'Password change required before continuing');

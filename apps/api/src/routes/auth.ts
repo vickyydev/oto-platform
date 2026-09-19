@@ -9,9 +9,11 @@ import {
   findAccountByPhone,
   invalidateAllSessions,
   issueCode,
+  lockSession,
   setPassword,
   signIn,
   signOut,
+  unlockSession,
 } from '../services/auth';
 import { audit } from '../services/audit';
 import { verify } from '@node-rs/argon2';
@@ -44,13 +46,48 @@ export async function authRoutes(app: App): Promise<void> {
     },
   );
 
-  // SCRUM-24 — sign out: delete the server-side session.
+  // SCRUM-24 — sign out. This is the ONLY user action that ends a session
+  // (S2-01a): the POS inactivity timer locks instead, so unlocking never
+  // needs the network — the rule an offline box depends on later.
   app.post('/sign-out', { schema: { description: 'Sign out' } }, async (req, reply) => {
     const auth = req.auth;
     if (auth) await signOut(app.db, auth.sessionId, auth.accountId, req.id);
     clearSessionCookie(reply, app.env.COOKIE_SECURE);
     return { ok: true };
   });
+
+  // S2-01a — lock: the session survives, but may do no business until it is
+  // unlocked with the password.
+  app.post('/lock', { schema: { description: 'Lock this session (inactivity)' } }, async (req) => {
+    const auth = req.requireAuth();
+    await lockSession(app.db, auth.sessionId, auth.accountId, req.id);
+    return { locked: true };
+  });
+
+  // S2-01a — unlock: re-verify the password against the SAME session, under
+  // the sign-in throttle so an unattended till cannot be brute-forced.
+  app.post(
+    '/unlock',
+    {
+      schema: {
+        description: 'Unlock this session by re-entering the password',
+        body: z.object({ password: z.string().min(1) }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      await unlockSession(app.db, {
+        sessionId: auth.sessionId,
+        accountId: auth.accountId,
+        password: req.body.password,
+        ip: req.ip,
+        maxFailures: app.env.AUTH_MAX_FAILURES,
+        cooldownSeconds: app.env.AUTH_COOLDOWN_SECONDS,
+        requestId: req.id,
+      });
+      return { locked: false };
+    },
+  );
 
   // SCRUM-20 — invited account setup: request the verification code…
   app.post(
