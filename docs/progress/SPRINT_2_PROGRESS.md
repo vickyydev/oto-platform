@@ -15,8 +15,8 @@
   real device protocols) with `PAYMENT_GATEWAY.md` and `DEVICE_INVENTORY.md`
   finished and their facts carried into the tickets (see "Done on
   2026-09-20").
-- Next step: the owner's approval of plan v2 (approval summary given in chat
-  2026-09-20); on approval create the Jira tickets and start S2-01a.
+- Next step: the owner's approval of plan v3; on approval create the 24 Jira
+  tickets and start S2-01a.
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source), `docs/briefs/OWNER_DIRECTION.md` (section 2026-09-20 wins),
@@ -93,12 +93,18 @@ AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
   a second provider if it exists. Sandbox merchant id + secret into `.env`
   (`PGW_*`), never into the repo.
 - Drop the four gate PDFs and the voucher sample image into
-  `imports/_vendor-docs/` (their content is already captured).
-- Confirm the "Deferred — owner confirms" column of the plan's "Contract
-  coverage" table (catalog clone, wallet expiry/promo vouchers, gate stranded
-  list, events/kiosk, predictive reorder, benefit profiles, live messaging).
-- Open decisions 29 (OTO App face clock-in on staging), 30 (contract list),
-  31 (Inbox brief conflicts), 32 (gateway credentials).
+  `imports/_vendor-docs/` — **archival only**; their content is already
+  captured in `DEVICE_INVENTORY.md` §6 and §7 and nothing waits on them.
+- Answered 2026-09-20 (later), no longer open: the deferred column (nothing
+  is deferred — there is no Sprint 3), decision 29 (face clock-in off behind
+  a flag), decision 30 (the whole proposal list is in), the production data
+  (use the real dump).
+- Still open: decision 31 (Inbox brief conflicts — the IT Brief is taken as
+  the latest word until the owner confirms), decision 32 (gateway
+  credentials), decision 14 (wallet expiry policy values), decision 17
+  (alert channel and recipients), the role map in S2-22 (which OTO App
+  access level becomes which platform role) and the consent basis for
+  re-using OTO App guardians and pickups in the POS.
 - A printed sale receipt (for the tax-invoice header) when convenient.
 
 ## Answers given to the owner on 2026-09-20 (for the record)
