@@ -143,6 +143,47 @@ session now; corrections are entered later as data.
 exist for AI agents with all context, research and conclusions, so an agent
 can always resume with enough context.
 
+## 2026-09-20 (later) — one sprint for all the software; no Sprint 3
+
+Given after reading plan v2. These decisions replace every "Sprint 3" in the
+earlier documents.
+
+- **There is no Sprint 3.** Sprint 2 finishes **all** the software. What
+  follows it is not another development sprint but **on-site testing with the
+  real devices at the park**: connect the hardware, fix what the real world
+  breaks, and let the client play with the whole suite against the real
+  backend. Anything the plan previously pushed to "Sprint 3" is either built
+  now or is an on-site/credential step — and must be labelled as such, never
+  as deferred development.
+- **Staging is production-grade.** The Render environment is called staging
+  and keeps the staging safeties, but the code in it is the production code.
+  It stays staging only because the agency's system is still live; when the
+  suite proves itself on site, that same build becomes production.
+- **Start from the real production data.** The OTO App dump already in
+  `imports/_db/db-structure-with-data-dump-for-oto-app.sql` (33 MB, live rows)
+  is the starting point for the OTO App on the central database. Radar is fed
+  real figures so it has something to show, and changes made on the POS show
+  up as effects.
+- **Data-source switch is an admin control.** An administrator — from the OTO
+  App's admin and from the Console — chooses per branch whether the analytics
+  shown are the current POS (Pisell/Papaya) or the new OTO POS.
+- **Face clock-in:** keep the module but **off behind a flag** on staging;
+  the flag is flipped later if the owner wants it (Open decision 29 closed).
+- **Payment gateway:** the bank confirmed that the URL the owner sent
+  (`developer.2c2p.com`) carries the sandbox API documentation. Build against
+  the real documented API now; the credentials arrive later and go into
+  `.env` as `PGW_*`. No mock QR where the real API can be used.
+- **Super admin (Console) is the owner's own control surface.** The POS keeps
+  its admin for POS operations and the OTO App keeps its admin for internal
+  operations; the Console is deliberately an addition *for the owner*, so that
+  future control is easy. We design it ourselves: think through every control
+  worth having across all apps, plan it properly, describe it fully in the
+  Jira ticket, and build it in this sprint.
+- Simulations must be built on the **real documents and data** already
+  captured, never on guesses: the gate protocol, the terminal dialects, the
+  printer command sets and the payment API are all on file
+  (`docs/architecture/DEVICE_INVENTORY.md`, `PAYMENT_GATEWAY.md`).
+
 ## Open with the owner
 
 Consolidated in `docs/architecture/PLATFORM_PLAN.md` §14 and

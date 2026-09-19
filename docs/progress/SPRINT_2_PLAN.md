@@ -2,8 +2,11 @@
 
 Status: proposed 2026-09-19; widened 2026-09-20 after the owner's review
 (`docs/briefs/OWNER_DIRECTION.md`, section 2026-09-20) — awaiting owner
-approval. Once approved, the nineteen tickets below become the Sprint 2 Jira
-tickets, one issue per ticket. Where a ticket is split into lettered parts
+approval. **There is no Sprint 3**: this sprint finishes all the software,
+and what follows it is on-site testing with the real devices, not more
+development (OWNER_DIRECTION 2026-09-20 later). Once approved, the
+twenty-four tickets below become the Sprint 2 Jira tickets, one issue per
+ticket. Where a ticket is split into lettered parts
 (S2-01a/b/c, S2-07a/b, S2-09a/b, S2-10a/b, S2-14a/b, S2-15a/b, S2-17a/b/c) the
 parts are sub-tasks or sections of that one issue, each with its own acceptance
 criteria and QA steps, and evidence is posted per part as in Sprint 1
@@ -47,11 +50,26 @@ opens it from the launcher, then the whole live app lifted and the features
 still owed under the contract built; (3) **Radar** live on the platform,
 showing seeded legacy Pisell/Papaya figures or the real OTO POS analytics per
 branch preference; (4) the **Unified Inbox** data pillars and a mockup shell.
+(5) the remaining feature areas the contract names — events, parties and
+camps, the self-service kiosk, staff benefits; (6) the **Console**, the
+owner's own super-admin control surface over all apps; (7) the real
+production data restored under it all, so the client plays with his own
+figures; (8) the branch-box image and the on-site bring-up runbook, ready for
+the day the hardware is connected.
+
 All of it on a hardened, transactional platform where every API call, service
 operation, job and device call is logged, silent failures are detectable, and
 health is visible on admin pages that plug into HyperDX or any OpenTelemetry
 tool through environment variables alone; every function committed as it
 lands and recorded so any agent can resume.
+
+**After this sprint there is no further development sprint.** The next phase
+is on-site: connect the real printers, terminals, scanner and gate, work
+through the "confirm on site" list in `DEVICE_INVENTORY.md`, fix what the
+real world breaks, and let the client use the suite against the real backend.
+The Render environment keeps the name *staging* and the staging safeties
+while the agency's system is still live, but the code in it is the production
+code.
 
 ## What the client will be able to do
 
@@ -71,10 +89,14 @@ nothing. The OTO App, Radar and Inbox milestones follow the POS.
 | M5 — paper and corrections (client play-test opens) | S2-11 | Receipts, kitchen/bar tickets and kids/adult wristbands with scannable signed codes render in the printer simulator; History lists real sales; refunds, voids and reprints work with manager approval. The play-test guide is issued here. |
 | M6 — arrival and children | S2-13 | Online booking paid on the 2C2P sandbox hosted page (cards, PromptPay, wallets) produces a signed QR; the till redeems it and issues bands; the gate simulator — the GE-X2/HX-X1 controller and its network QR reader speaking their real protocols — admits adults with anti-passback and live occupancy; an unaccompanied child triggers the supervision gate, consent on the display, the check-in board with timers, and release with a collector photo while the box is offline. |
 | M7 — money and day close | S2-15b | Wallet credit spent at F&B with the offline cap; stock decrements, transfers and stock take; cash session with float, paid-outs and safe drops; End of Day per tender and TID with settlement export; Today and History on real data; daily analytics rows per branch/day/source with the marketing-channel breakdown. |
-| M8 — OTO App on the platform | S2-17c | The live OTO App runs from the launcher on the central database with one sign-on: every module the export has works against the `otoapp` schema, the POS-facing seams (members, events, employees) read the same rows the POS writes, and the contract features listed in `docs/briefs/AGENCY_PROPOSAL.md` §6 are built. |
-| M9 — Radar live | S2-18 | Radar opens from the launcher; each branch has a source preference — legacy (seeded Pisell/Papaya-shaped fixtures) or OTO POS — and a demo sale made on the staging POS changes the Radar dashboard for that branch within the rollup interval. |
-| M10 — Inbox pillars | S2-19 | The Inbox tile opens the client-styled mockup shell backed by the `inbox` schema (conversations, messages, channels, assignments) with seeded example threads; no live channel yet. |
-| M11 — acceptance | S2-16 | Full acceptance checklist run from a clean database on refreshed staging, load and soak checks, tag `sprint-2`, evidence comment on every story, client play-test guide. |
+| M8 — POS complete | S2-21 | Everything the contract names on the POS side works: events, parties and camps with attendee records and passes, the self-service kiosk redeeming a booking on its own, and staff benefit profiles applied at checkout. |
+| M9 — the client's own data | S2-22 | The suite runs on the real production data: the OTO App's live rows restored into the central database, members and employees the client recognises, Radar showing real figures. |
+| M10 — OTO App on the platform | S2-17c | The live OTO App runs from the launcher on the central database with one sign-on: every module the export has works against the `otoapp` schema, the POS-facing seams (members, events, employees) read the same rows the POS writes, and the contract features listed in `docs/briefs/AGENCY_PROPOSAL.md` §6 are built. |
+| M11 — Radar live | S2-18 | Radar opens from the launcher; each branch has a source preference — legacy (seeded Pisell/Papaya-shaped fixtures) or OTO POS — and a demo sale made on the staging POS changes the Radar dashboard for that branch within the rollup interval. |
+| M12 — Inbox working | S2-19 | The Inbox tile opens the client's design backed by the `inbox` schema: conversations route by category to the right team, an owner and support assignees, reply and Handled, templates, the dashboard; messages flow through the channel adapters end to end on the simulator, and a real WhatsApp/Instagram/LINE account is connected by configuration when the business accounts exist. |
+| M13 — the owner's console | S2-23 | One place that controls everything: every account and app grant across the suite, activity and data-access logs, failures and alerts, health, boxes and devices, integrations, analytics sources, money oversight, support tools (cross-app lookup, audited impersonation, "what happened to this sale"), release flags and kill switches. |
+| M14 — ready for the park | S2-24 | The branch-box image builds and boots, the on-site bring-up runbook is written against the real device list, and every simulator has a documented switch to its real transport. |
+| M15 — acceptance | S2-16 | Full acceptance checklist run from a clean database on refreshed staging, load and soak checks, tag `sprint-2`, evidence comment on every story, client play-test guide. |
 
 ## Readiness — what exists, what is new
 
@@ -128,9 +150,32 @@ what the reports say.
   per-branch source preference (legacy | OTO POS), seeded Pisell/Papaya-shaped
   legacy fixtures for the demo, and the OTO POS branch reading the analytics
   rows the POS writes, so a demo sale on staging shows up in Radar.
-- Unified Inbox pillars (S2-19): schema `inbox` with conversation, message,
-  channel, participant, assignment and template tables seeded with example
-  threads, and a mockup shell in the client's design opened from the launcher.
+- Unified Inbox (S2-19): schema `inbox`, the client's design, routing by
+  category to the four teams, primary and support assignees, reply, Handled,
+  templates, tags, the management dashboard, and the channel adapters
+  (WhatsApp Business, Instagram, LINE, email, web form) wired end to end
+  against a channel simulator so connecting a real business account is
+  configuration, not code.
+- Events, parties and camps, and the self-service kiosk (S2-20): the unified
+  attendee record, flat-price event passes, event check-in with band rules,
+  party tabs and deposits, camp registration with the six-digit code, and the
+  kiosk surface that redeems a booking and prints bands on its own.
+- Staff benefits (S2-21): HR-linked benefit profiles (person or role; free
+  items, credit, discount, categories, periods, effective dates, benefit QR)
+  and their application at checkout in the canonical order with period resets
+  and concurrency-safe usage records.
+- The real production data (S2-22): the OTO App's live dump restored into the
+  central database as the starting point, the platform's own tables seeded
+  from it where they share identity (members, employees, branches), Radar
+  given real figures, and the cutover rehearsal proven end to end.
+- The Console as the owner's super-admin control surface (S2-23): tenancy and
+  org, people and access across every app, the app registry, activity and
+  data-access logs, failures and alerts, health, boxes and devices,
+  integrations, analytics sources, content and configuration, data tools,
+  money oversight, support tools and release controls.
+- The branch-box image and on-site readiness (S2-24): the box image, the
+  bring-up runbook against the real device list, and the documented switch
+  from every simulator to its real transport.
 - Observability: every request, service operation, job, webhook, sync batch,
   device call and client-side failure logged and, where it can fail silently,
   recorded in `ops_run`; watchdog, alerts (console, email, generic webhook),
@@ -191,25 +236,26 @@ what the reports say.
   `docs/architecture/ARCHITECTURE.md`, so any agent resumes from the log
   without re-deriving anything (`docs/architecture/DEVELOPMENT_PLAN.md` §1).
 
-### Out of scope / deferred
+### Not in this sprint's code, and why
 
-| Item | Target | Reason |
+There is no Sprint 3. Nothing below is deferred development: each row is
+either an **on-site step** (the phase that follows this sprint), a **credential
+or account** we do not hold yet, or an item genuinely waiting on the owner.
+Every one of them has its software built in this sprint, so the remaining work
+is connecting, not coding.
+
+| Item | What we build now | What is left, and when |
 |---|---|---|
-| Live channel adapters for the Inbox (WhatsApp Business, LINE Official Account, Instagram, email) and the POS Messages tab on real channels | Sprint 3 | No business accounts or BSP exist yet; the Inbox pillars, the mockup shell and the console adapter for check-in messages are built this sprint (S2-19, S2-13). |
-| Radar's live Pisell/Papaya pulls on staging and the Console analytics overview | Sprint 3 | The Pisell/Papaya credentials are not available (Replit Secrets); the lifted Radar runs its sync jobs against seeded fixtures on staging and switches to real pulls by configuration when the credentials arrive. Parity tests between the legacy formula and the OTO POS rollup are part of S2-18. |
-| Production data migration (Pisell/Papaya/OTO App dumps), Radar history restore, cutover runbook | Sprint 3 / stabilisation | Requires real dumps and credentials (STATUS.md blockers) and the check-in ownership decision. Legacy voucher codes and reservations come from a fixture in S2-10b so the importer is proven; the OTO App lift (S2-17) uses the export's seed and a structure-only copy of the production dump, never the real rows. |
-| 2C2P production go-live (production merchant credentials, PromptPay QR channel enabled on the merchant, return URLs registered, Payment Maintenance keys) | When the park's 2C2P merchant account is confirmed | The sandbox integration is complete this sprint; production differs only by base URL, credentials and the registered URLs (`docs/architecture/PAYMENT_GATEWAY.md`). |
-| Kiosk UI (self-service booking redemption surface) | Sprint 3 | The redemption service and device credentials are built in S2-12/S2-04 so the kiosk becomes a thin surface; its hardware arrives in stabilisation. |
-| Real device transports: serial links to the NEXGO N5 and PAX A920Pro terminals, raw TCP 9100 to the physical Welltech/Xprinter/4B-2082A printers, the HX-X1 serial line and the gate reader on the LAN, the Zebra scanner on a real box; agent rollout to Pi boxes | Stabilisation, on site | Owner constraint: all devices via simulators now. The terminal specifications, the park's hardware reference and the four gate documents are on file (`docs/architecture/DEVICE_INVENTORY.md`), so every simulator speaks the real message dialect and the adapters are written against the real models; only the physical link (serial port, LAN socket, HID device) is stubbed. Printer command manuals and the scanner programming guide are still wanted to close the "confirm on site" items. Manual payment recording is first-class. |
-| Pi image (read-only root, watchdog, systemd agent, Caddy DNS-01, dnsmasq) | As soon as a Pi 5 is on hand (the owner can order one for the desk; otherwise stabilisation) | **Recorded deviation from PROJECT_CONTEXT §14 step 1.** An image built in CI cannot be proven without booting it against the watchdog, DNS-01 and LAN-discovery behaviour it exists for; building it blind would be re-done on hardware. The agent's `Store` interface (SQLite implementation included), `schema_version` rules, `agent_version` reporting and min-supported-version config are built now so the image is only packaging later. |
-| Events / parties tab wiring and the staff benefits engine | Sprint 3 | Both are 100 % mock and off the critical path; keeping them on mock keeps S2-09 provable. The play-test guide labels them mock. Events stay mastered by OTO App (conflict C10); benefits hang off the mirrored HR record (C13). |
-| Branch catalogue cloning ("Clone from another branch", R-03) and the per-channel messaging handles (C16) | Sprint 3 | Needed when the second branch is configured and when the messaging adapters land; both are additive. |
-| Inventory-linked booth prizes (auto-remove at zero stock) | Sprint 3 | The wheel spec says inventory-linked prizes follow the inventory module; stock lands in S2-14b after the booth. |
-| Parent-domain cookie shortcut, real staging domain, per-service database logins beyond the api login, PWA re-pairing on the final domain, separate api/edge/worker services | When the domain arrives; the service split before production go-live | The parent-domain cookie cannot exist on `*.onrender.com` and is only an optimisation: the hand-off sign-on and the session model beneath it are the production design (the booking site will sit on another domain regardless). Running edge and jobs inside the single api instance is a staging shape and a recorded DEPLOYMENT_TOPOLOGY deviation; the split happens before any real box or production traffic. |
-| Audit log partitioning and long-term archive export | When volume warrants | Deferred by the ops review; BRIN index, `station_event` split and retention job cover this sprint. |
-| Thai TV fonts, Benzin font / dragon art / audio licences, seasonal wheel layouts beyond the first template | Owner questions | Not needed for the simulator demo. |
-| Spin eligibility modes `band` and `phone` on the booth | When the park booth exists | Publishing them is refused this sprint ("not available until the park booth exists"); the mall booth runs `none`. |
-| Overstay billing, wallet expiry policy, tier evidence list, revenue definition | Owner decisions | Safe defaults ship (see Open decisions). |
+| Real device transports: the serial links to the NEXGO N5 and PAX A920Pro, raw TCP 9100 to the physical Welltech/Xprinter/4B-2082A printers, the HX-X1 serial line and the gate reader on the LAN, the Zebra scanner on a real box | Every adapter written against the real protocol, every simulator speaking the real dialect, the "confirm on site" list in `DEVICE_INVENTORY.md`, and a bring-up runbook (S2-24) | Plugging the cables in at the park and working through the confirm-on-site list — the on-site testing phase, not a sprint |
+| The Pi 5 boxes themselves | The box image, the agent, the `Store` interface with its SQLite implementation, `schema_version` and version reporting (S2-24) | Flashing and booting real hardware; the image is proven on the first Pi that reaches a desk or the park |
+| 2C2P production go-live | The full 2C2P integration against the sandbox, real QR codes, webhook, inquiry, refunds, settlement import (S2-10a, S2-12, S2-15a) | Production merchant credentials, the QR channel enabled, return URLs registered — configuration only (`PAYMENT_GATEWAY.md` §5) |
+| Live WhatsApp Business, Instagram, LINE and email accounts | The channel adapters, inbound webhook receivers, outbound send, media handling and the whole Inbox against a channel simulator (S2-19) | Business accounts and BSP approval (weeks of paperwork, outside our control); connecting one is an environment variable and a webhook URL |
+| Radar's live Pisell and Papaya pulls | Both pipelines running against fixture adapters shaped like the real responses, the per-branch source switch, and the parity test (S2-18) | The Pisell and Papaya credentials, still in Replit Secrets; switching `*_MODE` from `fixture` to `live` |
+| Real staging domain, parent-domain cookie shortcut, separate api/edge/worker services, per-service database logins | The hand-off sign-on that works on any domain, `PROCESS_ROLES` as the split switch, the worker service present in `render.yaml` | DNS for the real domain; the service split is flipped before the suite carries production traffic |
+| Thai TV fonts, Benzin font, dragon art and audio licences; seasonal wheel layouts beyond the first | The layout engine, the publish/version pickup, one complete template (S2-07b) | The owner's licence decisions and artwork |
+| Spin eligibility modes `band` and `phone` | Both modes implemented and tested; publishing them refused with a clear message until a park booth exists (S2-07b) | A booth inside the park |
+| Audit log partitioning and long-term archive export | BRIN indexes, the `station_event` split, category retention and the purge job (S2-03) | Partitioning when the volume warrants it; the retention policy itself is Open decision 33 |
+| Overstay billing, wallet expiry policy, tier evidence list | Overstay shown and billable by configuration; wallet expiry, reactivation and the liability report built (S2-14a); the tier evidence list editable data | The owner's numbers and policy choices (Open decisions 12, 13, 14) |
 
 ## Contract coverage — the agency proposal mapped to tickets
 
@@ -220,24 +266,25 @@ system this sprint builds — and the rest are gaps in the live OTO App. The
 map below is what the owner reviews for Open decision 30; the last column
 names what this plan defers and needs a yes or no.
 
-| Proposal §6 group | Covered by | Deferred in this plan — owner confirms |
+| Proposal §6 group | Covered by | Note |
 |---|---|---|
 | 6.1 Accounts, access, platform administration | Sprint 1 (verify error-text parity, department/record scope UI, temp-password enforcement in S2-01a) | — |
 | 6.2 Timekeeping and daily-operations gaps in the OTO App | S2-17c (the seven items become its sub-tasks) | — |
 | 6.3 Members and visitor details | Sprint 1 + S2-09a (tier verification UI incl. revoke across branches, unknown-birth-year path, field change history, concurrent-edit warning) | — |
-| 6.4 Branch catalog, pricing, checkout | S2-09a/b (quote, tax modes and discount placement, manual discounts), S2-10a (payment recording, split parts, external-handling confirmation), S2-11 (credits/refunds with tax, wallet and stock reversal) | Branch catalog clone (R-03) — Sprint 3 in this plan |
+| 6.4 Branch catalog, pricing, checkout | S2-09a/b (quote, tax modes and discount placement, manual discounts, **branch catalog clone**), S2-10a (payment recording, split parts, external-handling confirmation), S2-11 (credits/refunds with tax, wallet and stock reversal) | Complete |
 | 6.5 Sales and transaction records | S2-15a/b (Today with freshness and states), S2-11 (History with filters, detail links, frozen totals, logged lookups) | — |
-| 6.6 Wallets and promotions | S2-14a (issuance, band/QR keys, atomic spend, liability report), S2-09a (promo codes) | End-of-day expiry with reactivation, and category/item-targeted promotional vouchers with per-customer limits and foregone-revenue reporting (plan ships no expiry rule; owner question 13/14) |
+| 6.6 Wallets and promotions | S2-14a (issuance, band/QR keys, atomic spend, liability report, **end-of-day expiry with permission-gated reactivation**, **targeted promotional vouchers with global and per-customer limits and foregone-revenue reporting**), S2-09a (promo codes) | Complete; the expiry *policy* values are the owner's (Open decision 14) |
 | 6.7 Food and beverage | S2-09b (menu, modifiers, cart), S2-11 (paid-only routing, multi-station tickets, no duplicate on print failure), S2-14a (child order from a band scan with allergy alert) | — |
-| 6.8 Gate access and occupancy | S2-11 (band issuance, gate rights, group linkage), S2-12 (live occupancy, asymmetric rules, exceptions) | End-of-day stranded list and manual resolution history — add to S2-15a if confirmed |
+| 6.8 Gate access and occupancy | S2-11 (band issuance, gate rights, group linkage), S2-12 (live occupancy, asymmetric rules, exceptions), S2-15a (**end-of-day stranded list, operator-and-reason manual resolutions, closure keeping history**) | Complete |
 | 6.9 Child supervision and release | S2-13 (all items) | — |
-| 6.10 Booking and admission redemption | S2-12 (public booking, signed QR, exactly-once redemption, separate admission/drop-off redemption) | Unified attendee record, flat-price event pass sale and event check-in (Events tab, Sprint 3 in this plan; C10); self-service kiosk surface (Sprint 3 in this plan) |
-| 6.11 Inventory and purchasing | S2-14b (items, variants, locations, transfers, stock take, purchase orders) | Predictive low-stock thresholds and pack conversions (static reorder point ships; Open decision 27) |
+| 6.10 Booking and admission redemption | S2-12 (public booking, signed QR, exactly-once redemption, separate admission/drop-off redemption), S2-20 (**unified attendee record, flat-price event passes, event check-in, party tabs and deposits, camp registration, self-service kiosk**) | Complete; events stay mastered by the OTO App (C10) with the POS reading through views |
+| 6.11 Inventory and purchasing | S2-14b (items, variants, **pack conversions**, locations, transfers, stock take, purchase orders, **deduplicated low-stock attention with the rule that produced it**) | Complete; the predictive threshold starts from the static reorder point until history accrues (Open decision 27) |
 | 6.12 Printing, scanning, hardware | S2-04 (printer roles), S2-06 (scanning), S2-11 (receipts, bands, vouchers, reprints) | — |
-| 6.13 Reporting and employee benefits | S2-15b (sales and ticket-mix report, wallet liability report) | HR-linked benefit profiles and benefit application at checkout (Sprint 3 in this plan; C13) |
-| 6.14 Customer messaging | S2-19 (inbox pillars, shell, console adapter) | Live WhatsApp/Instagram channels, AI classification and translation, chat-photo promotion (Sprint 3 in this plan; no business accounts yet) |
+| 6.13 Reporting and employee benefits | S2-15b (sales and ticket-mix report, wallet liability, promotions and comps report), S2-21 (**HR-linked benefit profiles and benefit application at checkout**) | Complete |
+| 6.14 Customer messaging | S2-19 (the whole Inbox: routing, assignment, reply, Handled, templates, dashboard, **channel adapters**, **AI classification and Thai-English translation behind the AI provider setting**, **guardian pickup-photo promotion into the registration**) | Complete in code; a live channel needs its business account (see "Not in this sprint's code") |
 
-The proposal also carries decisions the owner has already changed
+Nothing in the proposal's §6 is now deferred development. The proposal also
+carries decisions the owner has already changed
 (payments recorded manually → 2C2P and EDC ECR integration; SvelteKit +
 Python + AWS → TypeScript on Render; face identification → banned for the
 POS, open for the OTO App) and questions of its own (§7), which are folded
