@@ -1118,7 +1118,7 @@ Depends on: S2-04. Size: L.
 
 Feature area: Box agent and device simulators
 
-Rules: R-15, R-16, R-17, R-18, R-49, R-51.
+Rules: R-15, R-16, R-17, R-18, R-49, R-51; devices per `docs/architecture/DEVICE_INVENTORY.md` §2, §4 (D1, D2, D4, D6) and §9.
 
 Description. Everything the till and the booth need from the box beyond the
 session document. The prototype routes print jobs by station capability with
@@ -1126,10 +1126,15 @@ admin-editable templates (`lib/printRouting.tsx`, `types.ts PrintTemplate`,
 `catalogStore.seedPrintTemplates`) but every job ends in a toast; the brief
 wants one print pipeline on the box rendering ESC/POS and TSPL with Thai,
 Chinese and Cyrillic rasterised from bundled fonts (PROJECT_CONTEXT §7.3).
-Scanning needs one service routing any code (band, booking QR, voucher, legacy
-codes, staff badge, product barcode) from three input sources (§7.4). The
-inactivity lock needs an offline unlock (§5), and the PWA shell must load with
-no internet.
+The park's printers are known: the Welltech G4 (Xprinter XP-C260 family) and
+three Xprinter XP-80-series units speak ESC/POS over TCP 9100; the two
+4B-2082A wristband printers are TSPL2-native label printers (ZPL as an
+emulation switch, D1). Scanning needs one service routing any code (band,
+booking QR, voucher, legacy codes, staff badge, product barcode) from three
+input sources (§7.4); the Zebra DS2278 attaches to the **box** (USB HID with
+a programmed Enter suffix, or USB CDC serial), never to the iPad (D2). The
+inactivity lock needs an offline unlock (§5), and the PWA shell must load
+with no internet.
 
 Includes:
 - `packages/print`: template → layout model → ESC/POS or TSPL bytes → adapter;
@@ -1138,18 +1143,29 @@ Includes:
   voucher, test page); `print_job` table (station, box, device, kind, refs,
   status queued|printed|failed|skipped, error, `reprint_of`); one `ops_run` per
   failure.
-- Printer simulator: ESC/POS and TSPL over a TCP-9100-like channel, preview
-  rendered from the same bytes, unreachable and paper-out fault injection,
-  drawer kick event; printer health in the heartbeat; red indicator in the
+- Printer adapters and simulators on the real models: an ESC/POS adapter
+  parameterised per model (Welltech G4 / XP-C260 and XP-80 family: 576
+  dots/line, partial cut, drawer kick `ESC p`, real-time status `DLE EOT`,
+  Thai text rasterised rather than code-paged, per §9.3–9.4) and a TSPL2
+  label adapter for the 4B-2082A (band media size, QR + human-readable code,
+  status byte, per §9.1), each over a TCP-9100-like channel; the simulator
+  parses the same bytes into a preview, reports status the way the printer
+  does, injects unreachable / paper-out / cover-open faults and emits the
+  drawer-kick event; printer health in the heartbeat; red indicator in the
   station header; queued jobs retry when the printer returns; jobs to an
-  unassigned device skipped with "not printed" on the till.
+  unassigned device skipped with "not printed" on the till; printer identity
+  (model, address) comes from the S2-04 device record, seeded with the park's
+  six printers and addresses.
 - Print Templates admin panel wired; test print per template cloud → box →
   simulator uses the same renderer as the preview (the S2-04 test-print
   acceptance lands here).
-- Scanning service + `ScanInput` abstraction (camera, HID wedge, serial on the
-  box) with handlers registered by later tickets; scanner simulator (typed
-  code + Scan button, result shown in the Box log drawer); USB button =
-  configurable key, never Enter; badge/PIN input.
+- Scanning service + `ScanInput` abstraction on the box (USB HID keyboard
+  wedge with the Enter-suffix burst rule and USB CDC serial for the DS2278,
+  camera on the till/kiosk as fallback) publishing scan events on the station
+  channel with source and timestamp, handlers registered by later tickets;
+  scanner simulator (typed code + Scan button, HID-burst or serial mode,
+  result shown in the Box log drawer); USB button = configurable key, never
+  Enter; badge/PIN input.
 - Signed staff token minted at station pick (shift-length expiry, branch
   audience, jti; `STAFF_TOKEN_PRIVATE_KEY` in env), verified on the box with
   the public key; deny-list from the cache bundle; offline unlock verifies the
