@@ -59,53 +59,27 @@
 
 ## Pending — in this order
 
-_Checkpoint 2026-09-20 (second session): items 1, 2 and 4 are being written
-by agents that save their files incrementally (`PAYMENT_GATEWAY.md`,
-`DEVICE_INVENTORY.md` §2/§4/§9, `DEVELOPMENT_PLAN.md`); if a file exists in
-DRAFT state, finish it from its own headings rather than restarting. S2-06
-already carries the researched printer/scanner facts (commit 460779c)._
+_Checkpoint 2026-09-20, second session (commits 5dabf05 → 45d3997): items 1
+and 2 of the earlier list are done —  (3f8827d) and
+ §2/§4/§9 (beb9385); tickets S2-06 (460779c), S2-10a
+and S2-15a (45d3997) carry the researched values; STATUS.md rewritten
+(d0d31c9); feature pages and the docs index point at the tickets (36b02d7)._
 
-1. **Re-run the 2C2P research** (agent cut off by the session limit before
-   writing): developer.2c2p.com — API 4.x Payment Token, Do Payment for
-   PromptPay/Thai QR (channel codes, `type: "URL"` vs raw payload, expiry),
-   Redirect API for the booking site, backend notification (JWT, fields,
-   retries), Payment Inquiry codes, Payment Maintenance (refund/void, JWE/JWS
-   keys), sandbox base URL and demo credentials, **how a QR payment is
-   simulated in the sandbox**, invoiceNo/amount constraints, settlement
-   reports; then write `docs/architecture/PAYMENT_GATEWAY.md` (2C2P primary,
-   SCB direct as alternative from `research/2026-09-20-scb-direct-api-research.md`,
-   `PGW_*` variable names, credential checklist, design implications).
-2. Fold `research/2026-09-20-device-research.md` into
-   `DEVICE_INVENTORY.md` §9 (adapter parameter blocks, simulator duties,
-   unknowns) and correct §2 where the research changed a fact (Welltech G4 =
-   XP-C260 family, DS2278 cradle, NEXGO dock is a router, PAX Ethernet only
-   via the -BE/-BM base).
-3. Update ticket bodies in `SPRINT_2_PLAN.md` with the researched values:
-   S2-06 (printer/scanner adapters per device), S2-10a (2C2P sandbox flow
-   and simulator), S2-12 (Redirect API details), S2-15a (2C2P settlement
-   fixture).
-4. Write `docs/architecture/DEVELOPMENT_PLAN.md` — the technical plan for
-   agents: purpose and resume protocol; sources and precedence; target
-   architecture at the end of the sprint (deployables, schemas
-   `core/crm/pos/promo/booth/analytics/edge/otoapp/radar/inbox`, packages,
-   box agent, adapters ↔ real devices, payments, analytics contract,
-   observability, Render services, environment-variable registry by name);
-   work order P1–P4 and ticket map; how each foreign app is lifted (OTO App
-   lift-as-is with `search_path`, sign-on middleware, provisioning; Radar;
-   Inbox); engineering conventions (withTx, audit, idempotency, logging
-   contract, no PII, tests, migrations, flags); the commit-per-function and
-   record-keeping protocol (this file's ticket log, ARCHITECTURE decisions
-   log, Jira evidence, never changing Jira statuses); research index with
-   one-paragraph conclusions per document; open-questions register pointer.
-5. `docs/progress/STATUS.md` rewrite for the widened sprint; `docs/README.md`
-   mention of `research/`; `docs/features/pos.md`, `oto-app.md`,
-   `oto-radar.md` status lines pointing at S2-17/S2-18.
-6. Commit per CONTRIBUTING.md and push; update the agent memory.
-7. Present the approval summary to the owner (readiness answers, the ticket
-   list with milestones, the contract-coverage map with the deferred items
-   to confirm, open decisions 29–32, the inputs needed); on approval create
-   the Jira tickets (descriptions, acceptance criteria, QA steps; never
-   change statuses) and start S2-01a.
+1.  — being written by an agent that
+   saves incrementally (DRAFT line at the top until it finishes). If it is
+   still marked DRAFT when resuming, finish it from its own headings:
+   resume protocol, sources and precedence, target architecture, work order,
+   per-ticket recipe, how each foreign app is lifted, conventions, env
+   registry, research index, open-questions register, definition of done.
+2. Read the finished development plan once against  and
+   fix any inconsistency it reports; commit.
+3. Present the approval summary to the owner: readiness answers, the 19
+   tickets with milestones and checkpoints, the contract-coverage map with
+   the deferred items to confirm, open decisions 29–32, the inputs needed
+   (gateway portal question first).
+4. On approval: create the Jira tickets (descriptions, acceptance criteria,
+   QA steps; never change statuses) and start S2-01a; from then on the
+   ticket log below is the record.
 
 ## Owner inputs needed (asked 2026-09-20)
 
