@@ -2,8 +2,12 @@ import { expect, test } from '@playwright/test';
 
 /**
  * The CLAUDE.md §8 smoke flow: lock → sign-in → membership lookup → child
- * confirm — plus sign-out back to the lock screen. Runs against the seeded
- * dev database (reception account, member Mali +66811111111 with 2 children).
+ * confirm → lock → unlock → sign out. Runs against the seeded database
+ * (reception account, member Mali +66811111111 with 2 children).
+ *
+ * Set `SMOKE_BASE_URL` to run the same flows against a deployment, where the
+ * POS and the API are two services and the session cookie only survives
+ * because the static site rewrites `/api/*` to the api (S2-01c).
  */
 test('lock → sign in → membership lookup → child confirm → sign out', async ({ page }) => {
   await page.goto('/');
@@ -34,8 +38,18 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
   // Verified tier auto-applied from the member record.
   await expect(page.getByText('Thai · verified')).toBeVisible();
 
-  // SCRUM-24: sign out returns to the lock screen.
+  // S2-01a: the Lock button LOCKS the session rather than ending it. The
+  // shift stays signed in and the same password unlocks the same session.
   await page.getByLabel('Lock screen').click();
+  await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
+  await page.locator('input[type="password"]').fill('reception1234');
+  await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(page.getByText('Membership Check')).toBeVisible({ timeout: 15_000 });
+
+  // SCRUM-24: signing out is the only thing that ends the session, and it
+  // returns the till to the sign-in screen rather than the locked one.
+  await page.getByLabel('Lock screen').click();
+  await page.getByRole('button', { name: /Sign out and hand over the till/ }).click();
   await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible();
 });
 
