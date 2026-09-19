@@ -4,14 +4,13 @@
 
 - Current checkpoint: **pre-build — Sprint 2 plan v2 in revision, awaiting
   owner approval.** Nothing of Sprint 2 is built.
-- Last completed step: plan widened for the owner's 2026-09-20 direction
+- Last completed step: plan v2 complete for the owner's 2026-09-20 direction
   (POS + booth first, then OTO App, Radar, Inbox; 2C2P sandbox for real QR;
-  real device protocols); OTO App proposal captured; Inbox import reviewed;
-  device and gate references filed (see "Done on 2026-09-20").
-- Next step: finish the plan revision (list below), write
-  `docs/architecture/DEVELOPMENT_PLAN.md` and
-  `docs/architecture/PAYMENT_GATEWAY.md`, present the approval summary, then
-  create the Jira tickets and start S2-01a.
+  real device protocols) with `PAYMENT_GATEWAY.md` and `DEVICE_INVENTORY.md`
+  finished and their facts carried into the tickets (see "Done on
+  2026-09-20").
+- Next step: `docs/architecture/DEVELOPMENT_PLAN.md` (in flight), then the
+  approval summary to the owner, then the Jira tickets and S2-01a.
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source), `docs/briefs/OWNER_DIRECTION.md` (section 2026-09-20 wins),
@@ -40,9 +39,18 @@
   addresses/ids/roles, flows, the hardware note's open decisions D1–D6 and our
   resolutions, ECR facts, the full gate section (reader HTTP contract, HX-X1
   wiring/settings/faults, GE-X2 frames and passage feedback, simulator
-  duties, unknowns), voucher/wristband/receipt design references. **Section 9
-  (web research per device) is still "(pending)"** — the material is in
-  `research/2026-09-20-device-research.md`.
+  duties, unknowns), voucher/wristband/receipt design references; section 9
+  (web research per device: TSPL2 for the 4B-2082A, DS2278 in CDC host mode
+  on the box, XP-C260/XP-80 ESC/POS parameters, terminal cabling, host notes)
+  folded in from `research/2026-09-20-device-research.md`, with sections 2
+  and 4 corrected where the hardware note was wrong (beb9385).
+- `docs/architecture/PAYMENT_GATEWAY.md` (new, 3f8827d): 2C2P API 4.3 facts
+  with sources (JWT envelope, Payment Token, Do Payment on `PPQR` with the raw
+  EMVCo payload, notification field names, inquiry codes, Payment Maintenance,
+  Redirect API, sandbox, constraints, SFTP settlement file), our integration
+  design, `PGW_*` variable names, the owner's checklist, the SCB direct API as
+  the alternative provider; UNCERTAIN items listed (first: how the sandbox
+  marks a PromptPay QR as paid).
 - `docs/briefs/AGENCY_PROPOSAL.md` (new, 991 lines): the agency proposal site
   captured in full (24 features, 121 stories, 33 workflows, roadmap), each
   story assessed against the OTO App export, §6 "what remains", §7 questions.
@@ -59,19 +67,20 @@
 
 ## Pending — in this order
 
-_Checkpoint 2026-09-20, second session (commits 5dabf05 → 45d3997): items 1
-and 2 of the earlier list are done —  (3f8827d) and
- §2/§4/§9 (beb9385); tickets S2-06 (460779c), S2-10a
-and S2-15a (45d3997) carry the researched values; STATUS.md rewritten
-(d0d31c9); feature pages and the docs index point at the tickets (36b02d7)._
+_Checkpoint 2026-09-20, second session (commits 5dabf05 → 45d3997): the
+earlier items 1 and 2 are done — `docs/architecture/PAYMENT_GATEWAY.md`
+(3f8827d) and `docs/architecture/DEVICE_INVENTORY.md` §2/§4/§9 (beb9385);
+tickets S2-06 (460779c), S2-10a and S2-15a (45d3997) carry the researched
+values; STATUS.md rewritten (d0d31c9); feature pages and the docs index point
+at the tickets (36b02d7)._
 
-1.  — being written by an agent that
+1. `docs/architecture/DEVELOPMENT_PLAN.md` — being written by an agent that
    saves incrementally (DRAFT line at the top until it finishes). If it is
    still marked DRAFT when resuming, finish it from its own headings:
    resume protocol, sources and precedence, target architecture, work order,
    per-ticket recipe, how each foreign app is lifted, conventions, env
    registry, research index, open-questions register, definition of done.
-2. Read the finished development plan once against  and
+2. Read the finished development plan once against `SPRINT_2_PLAN.md` and
    fix any inconsistency it reports; commit.
 3. Present the approval summary to the owner: readiness answers, the 19
    tickets with milestones and checkpoints, the contract-coverage map with
