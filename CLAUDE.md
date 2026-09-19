@@ -8,7 +8,10 @@
 > on any conflict) → `docs/briefs/PROJECT_CONTEXT.md` (the target system for Sprint 2) →
 > `docs/README.md` (where everything is). New progress files go in `docs/progress/`.
 > Raw exports of other apps, the production dump and vendor device documents go in
-> `imports/` — reference input only, never built or deployed.
+> `imports/` — local reference input only: never built, deployed or committed.
+> **Commits follow `CONTRIBUTING.md`** (conventional `type(scope): summary` subject,
+> bullet-point body, `Refs:` footer, no attribution lines). That supersedes the commit
+> rule in section 8 below.
 
 # OTO Platform — Agent Context and Sprint 1 Brief
 

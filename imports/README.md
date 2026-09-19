@@ -1,17 +1,18 @@
 # imports/ — raw material from the existing OTO systems
 
-Everything in here is **reference input**, not part of the build. Nothing under
-`imports/` is in the pnpm workspace, the linter, CI or any deployment. Code is
-read here, then integrated into `apps/*` and `packages/*` deliberately.
+Everything in here is **reference input**, not part of the build, and **not
+versioned**: git ignores the whole folder except these README files. Nothing
+under `imports/` is in the pnpm workspace, the linter, CI or any deployment.
+Code is read here, then integrated into `apps/*` and `packages/*` deliberately.
 
 ## What goes where
 
-| Folder | Put here | Committed to git? |
-|---|---|---|
-| `imports/<app-name>/` | One Replit export per **real** app, unzipped as-is (e.g. `imports/oto-app/`, `imports/oto-radar/`). Keep Replit's own files (`.replit`, `replit.md`, `.agents/`) — they carry the app's design intent. | Yes (secrets excluded by `.gitignore`) |
-| `imports/_db/` | The production **schema** file and **data dump(s)** of the existing Postgres. | **No — never.** Ignored by git except its README. |
-| `imports/_vendor-docs/` | Device and provider documents: GHL LinkPOS spec, Digio Direct Terminal spec, gate controller protocol (GE-X2 / HX-X1), wristband + receipt printer command manuals, 2C2P docs / sandbox notes. | Yes, unless a document is marked confidential — then tell Claude and it stays local. |
-| `imports/oto-pos/` | Already here: the original Oto POS Replit prototype this platform's POS was ported from. | Yes |
+| Folder | Put here |
+|---|---|
+| `imports/<app-name>/` | One Replit export per **real** app, unzipped as-is (e.g. `imports/oto-app/`, `imports/oto-radar/`). Keep Replit's own files (`.replit`, `replit.md`, `.agents/`) — they carry the app's design intent. |
+| `imports/_db/` | The production **schema** file and **data dump(s)** of the existing Postgres. |
+| `imports/_vendor-docs/` | Device and provider documents: card terminal integration specs, gate controller protocol, wristband and receipt printer command manuals, 2C2P documentation. |
+| `imports/oto-pos/` | The original Oto POS Replit prototype that `apps/pos` was ported from. |
 
 ## Rules for a drop
 
@@ -19,14 +20,11 @@ read here, then integrated into `apps/*` and `packages/*` deliberately.
    merge two apps into one folder. Mockup-only projects do not need importing.
 2. **Do not run `npm install` / `pnpm install` inside an import** — no
    `node_modules` in here.
-3. **Re-exports overwrite the same folder.** If the client changes an app in
-   Replit later, export again into the same folder and commit; the git diff
-   then shows exactly what changed since the last import.
-4. Before committing an import, Claude scans it for secrets (`.env`, API keys,
-   tokens in source) and records the app in `docs/features/`.
+3. **Re-exports replace the same folder.** Record the export date in the app's
+   page under `docs/features/` so it is clear which version was reviewed.
 
 ## After a drop
 
-Tell Claude which folders are new. For each app it will: read the code and
-Replit notes, diff the app's own schema files against the real production
-schema in `imports/_db/`, and write an intake page under `docs/features/`.
+For each new app: read the code and its Replit notes, compare the app's own
+schema files against the real production schema in `imports/_db/`, and write
+an intake page under `docs/features/` from `_TEMPLATE.md`.
