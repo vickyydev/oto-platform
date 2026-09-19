@@ -25,10 +25,11 @@ the printers, card terminals, scanners and gate.
 | Tier verification (proof, expiry, verifying staff, records tab) | done | Proof types incl. "Other"; LINE/WhatsApp/Telegram contact channel |
 | Ticket packages, weekday/weekend/holiday pricing, tax rules | done | Server-side pricing; 5 customer languages |
 | Public booking `/book` with server-priced bookings | done (no payment yet) | |
-| Selling, payments, receipts, wristbands, history, end of day | **mock** | Sprint 2 — money path |
-| F&B, shop, stock, purchasing | **mock** | Sprint 2 |
-| Drop-off / nanny check-in, release, events, camps | **mock** | Sprint 2 — arrival + supervision |
-| Station setup, devices, printing | **mock** | Sprint 2 — box agent + device adapters with simulators |
+| Selling, payments, receipts, wristbands, history, end of day | **mock** | Sprint 2 — S2-09 (checkout), S2-10 (tenders: cash, EDC simulators in the NEXGO/PAX dialects, real 2C2P sandbox QR), S2-11 (receipts, bands, History), S2-15 (cash, EOD, analytics) |
+| F&B, shop, stock, purchasing | **mock** | Sprint 2 — S2-09b, S2-14b |
+| Drop-off / nanny check-in, release | **mock** | Sprint 2 — S2-12 (booking, gate on the GE-X2/HX-X1 protocol), S2-13 (supervision, offline release) |
+| Events, camps, staff benefits, Messages tab | **mock** | Events stay mastered by the OTO App (S2-17); wiring the tab, benefits checkout and live channels are Sprint 3 unless the owner confirms them (plan: Contract coverage) |
+| Station setup, devices, printing | **mock** | Sprint 2 — S2-04..S2-06: stations, virtual box, adapters and simulators on the park's real devices (`docs/architecture/DEVICE_INVENTORY.md`) |
 | Messages | **mock** | Sprint 2 — messaging |
 | PWA / offline shell, box transport | not started | Sprint 2 |
 

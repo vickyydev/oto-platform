@@ -103,11 +103,12 @@ parent-domain cookie exists.
 |---|---|---|
 | Code review of the export | done | 2026-09-19 |
 | Data profile (counts, structure only) | done | from the Navicat dump |
-| Vendor import into `apps/oto-app` | not started | |
-| Hosting, schema, storage | not started | |
-| Sign-on adapter | not started | |
-| Security fixes | not started | |
-| POS / member seams | not started | after POS core |
+| Agency proposal captured and assessed against the export | done | 2026-09-20, `docs/briefs/AGENCY_PROPOSAL.md` |
+| `otoapp` schema on the central database, launcher sign-on, user provisioning | planned | Sprint 2 — S2-17a, before CP1 (proves one database, one login) |
+| Full lift to Render (hosting, storage, jobs, security fixes) | planned | Sprint 2 — S2-17b, after the POS is complete |
+| Contract features from the proposal (§6.2 gaps, benefit profiles if confirmed) | planned | Sprint 2 — S2-17c, list confirmed by the owner (Open decision 30) |
+| POS / member / events seams | planned | Sprint 2 — S2-17b views; ownership of check-in is Open decision 25 |
+| Face clock-in on staging | owner decision | Open decision 29 |
 
 ## Open questions
 - Staff clock-in: the live system uses face recognition daily (60 of 69

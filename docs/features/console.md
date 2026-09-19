@@ -49,7 +49,8 @@ POS back office; HR settings in OTO App; formulas and targets in Radar.
 | Area | State | Notes |
 |---|---|---|
 | Scope outline | done | details to be agreed with the owner |
-| Everything else | not started | follows the platform foundation work |
+| Launcher as the styled OTO front door with app tiles and hand-off sign-on | planned | Sprint 2 — S2-02 |
+| Console v1: Activity, Failures, Health, Integrations, Devices, Booths | planned | Sprint 2 — S2-03, S2-04, S2-07b |
 
 ## Open questions
 - Exact list of module and feature switches the client wants per person.

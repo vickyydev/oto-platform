@@ -105,10 +105,10 @@ Forecast model, targets, pace, holidays and the two-branch merge are computed
 | Code review of the export | done | 2026-09-19 |
 | Real database dump | **missing** | structure listing only |
 | POS API credentials | **missing** | Replit Secrets |
-| Vendor import into `apps/radar` | not started | |
-| Hosting, schema, sign-on gate | not started | |
-| History restore and reconciliation | not started | needs the two items above |
-| Summary API on `analytics` | not started | after POS core |
+| Lift to Render: `radar` schema, sign-on gate, push/wipe routes removed | planned | Sprint 2 — S2-18 |
+| Per-branch source preference (legacy / OTO POS / both), seeded legacy fixtures, parity test | planned | Sprint 2 — S2-18; live Pisell/Papaya pulls when the credentials arrive |
+| Summary API on `analytics` (the contract Radar reads for OTO POS branches) | planned | Sprint 2 — S2-15b |
+| History restore and reconciliation | not started | needs the real dump; Sprint 3 |
 
 ## Open questions
 - Which database is authoritative, dev or published?

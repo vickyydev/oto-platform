@@ -107,10 +107,10 @@ credential, issued when the box is provisioned.
 | Area | State | Notes |
 |---|---|---|
 | Code review of the export and the specification | done | 2026-09-19 |
-| Booth agent role, game app | not started | after the box agent core |
-| Booth management (Console) | not started | |
-| Voucher printing | not started | shares the POS ESC/POS path |
-| POS redemption + legacy code import | not started | needs a dump of Radar's database |
+| Booth agent role, game app | planned | Sprint 2 — S2-07a, straight after the box agent core |
+| Booth management (Console) | planned | Sprint 2 — S2-07b |
+| Voucher printing | planned | Sprint 2 — S2-07a; template matches the voucher sample (`docs/architecture/DEVICE_INVENTORY.md` §7) |
+| POS redemption + legacy code import | planned | Sprint 2 — S2-10b from a fixture; the real dump when it arrives |
 
 ## Open questions
 - Spin eligibility: the brief says one spin per band or phone; the client's
