@@ -2,9 +2,15 @@
 
 ## Status
 
-- Current checkpoint: **pre-build — Sprint 2 plan v2 complete, awaiting
-  owner approval.** Nothing of Sprint 2 is built.
-- Last completed step: plan v2 complete for the owner's 2026-09-20 direction
+- Current checkpoint: **pre-build — Sprint 2 plan v3 complete (24 tickets,
+  CP1-CP8), awaiting owner approval.** Nothing of Sprint 2 is built.
+- Last completed step: plan v3 — the owner removed Sprint 3 (2026-09-20
+  later), so all the software lands in this sprint and what follows is
+  on-site testing. New tickets S2-20 events/parties/camps and kiosk, S2-21
+  staff benefits, S2-22 the production restore, S2-23 the Console as the
+  owner control surface, S2-24 box image and the on-site bring-up runbook;
+  the remaining proposal items folded into S2-09b, S2-14a, S2-14b, S2-15a;
+  S2-19 became the full Inbox. Earlier: plan v2 complete for the owner's 2026-09-20 direction
   (POS + booth first, then OTO App, Radar, Inbox; 2C2P sandbox for real QR;
   real device protocols) with `PAYMENT_GATEWAY.md` and `DEVICE_INVENTORY.md`
   finished and their facts carried into the tickets (see "Done on
