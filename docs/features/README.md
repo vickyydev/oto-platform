@@ -5,8 +5,14 @@ works against the real backend today, what is still mock, and what is open.
 
 | App / module | Page | Source | Status |
 |---|---|---|---|
-| Oto POS (till, customer display, admin console, booking site) | [pos.md](pos.md) | Ported from `imports/oto-pos/` | Sprint 1 done: accounts, permissions, members, children, catalog, tier verification. Selling, payments, printing, boxes: Sprint 2. |
-| *(other OTO apps)* | — | Awaiting Replit exports in `imports/` | Not yet reviewed |
+| Oto POS (till, customer display, back office, booking site) | [pos.md](pos.md) | Ported from `imports/oto-pos/` | Sprint 1 done: accounts, permissions, members, children, catalog, tier verification. Selling, payments, printing, boxes: next. **The only new product.** |
+| OTO App (HR, daily ops, events, camps, check-ins) | [oto-app.md](oto-app.md) | `imports/oto-app/` — live system | Reviewed 2026-09-19. To be lifted as its own service. |
+| OTO Radar (revenue analytics) | [oto-radar.md](oto-radar.md) | `imports/oto-radar/` — live system | Reviewed 2026-09-19. To be lifted; needs a real database dump and the POS API credentials. |
+| Booth (lucky wheel) | [booth.md](booth.md) | `imports/oto-wheel-fortune/` + client specification v2 | Reviewed 2026-09-19. To be rebuilt on the platform, reusing the game UI. |
+| Console (super admin) and Launcher | [console.md](console.md) | New | Scope outlined. |
+
+How the apps fit together: [`../architecture/PLATFORM_PLAN.md`](../architecture/PLATFORM_PLAN.md).
+What runs today: [`../architecture/EXISTING_SYSTEMS.md`](../architecture/EXISTING_SYSTEMS.md).
 
 When an app is dropped into `imports/`, copy [`_TEMPLATE.md`](_TEMPLATE.md) to
 `<app-name>.md` and fill in the intake section first.
