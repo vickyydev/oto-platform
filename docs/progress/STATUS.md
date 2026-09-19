@@ -51,12 +51,12 @@ the PII leaks, with 81 API tests green. **S2-01b (SCRUM-187) is next.**
 ## The staging deployment
 
 Render project **OTO Platform** in the Oto dev workspace, environment
-: Postgres 16 (migrated and seeded), the api, and the POS at
+`staging`: Postgres 16 (migrated and seeded), the api, and the POS at
 <https://oto-pos-staging.onrender.com> which is **live**. The api builds,
 migrates and seeds but does not start until three Twilio values are set —
 by design, since a deployment must never print verification codes to a log.
-Both services deploy automatically on a push to , but only once CI is
-green. The full account is .
+Both services deploy automatically on a push to `main`, but only once CI is
+green. The full account is `DEPLOYMENT_STAGING.md`.
 
 ## Waiting on the owner
 
