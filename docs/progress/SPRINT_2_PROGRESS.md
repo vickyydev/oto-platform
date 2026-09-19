@@ -2,19 +2,21 @@
 
 ## Status
 
-- Current checkpoint: **building. S2-01a (SCRUM-186) is code-complete on
-  `feat/s2-01a-security-lock-model`** — three commits, 81 API tests green,
-  typecheck/lint/build clean. Next in the execution order: S2-01b.
+- Current checkpoint: **building. S2-01a (SCRUM-186) is done and merged to
+  `main`; S2-01b (SCRUM-187) is in progress on
+  `feat/s2-01b-transactions-schema`** — the schema move and the declarative
+  permission guard are committed, 85 API tests green, typecheck/lint clean.
 - Jira: sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of project
   SCRUM holds the 24 stories under four epics, with 16 sub-tasks; the
   pre-existing 177 issues were labelled rather than deleted. Keys and the
   full account of what was done: `SPRINT_2_JIRA_MAP.md`.
 - Last completed step: S2-01a — the role-assignment privilege hole, the lock
   model, the public-deploy fencing and the PII leaks (see the ticket log).
-- Next step: **S2-01b** (SCRUM-187): transactions (`withTx`), the schema
-  move to `core/crm/pos/promo/booth/analytics/edge`, the atomic idempotency
-  claim, the extended permission vocabulary, and the pool/process hardening.
-  Then S2-01c (Render deploy, owner-blockable on the Render account).
+- Next step, inside **S2-01b**: wrap the mutating routes in `withTx` (the
+  helper is written and committed) and lift their bodies into services;
+  then the atomic idempotency claim, the extended permission vocabulary with
+  a re-runnable `platform:sync`, and the pool/process hardening. Then S2-01c
+  (Render deploy, owner-blockable on the Render account).
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
@@ -211,6 +213,73 @@ gained `restart()` and per-test env overrides.
 
 **Deferred to S2-01b, as the ticket says:** transactions (`withTx`), the
 schema move, and the atomic idempotency claim.
+
+### S2-01b — Transactions, schema move and idempotency (SCRUM-187) — **in progress**
+
+Branch `feat/s2-01b-transactions-schema`. Done so far, committed:
+
+**Named schemas (migration `0005_schema_move`).** `core` (tenancy, fleet and
+the platform's own records), `crm` (tiers, members, children, visits), `pos`
+(catalogue, bookings, sales, payments, bands, wallets, stock), plus empty
+`promo`, `booth`, `analytics`, `edge` for the tickets that fill them. Every
+table moved with `ALTER TABLE … SET SCHEMA`, so nothing is recreated and no
+data is lost. Two placement calls the plan left open, recorded here: the
+**catalogue sits in `pos`**, because a package, its holiday calendar and its
+tax rules are only ever read together and only by the POS; **`tier` sits in
+`crm`**, because a tier is what a person *is* and the catalogue merely prices
+by it.
+
+Renames while the tables are still empty: `transaction→sale`,
+`transaction_line→sale_line`, `payment→payment_attempt`, `wristband→band`,
+`item→stock_item`, with their columns, indexes and FK constraint names moved
+too (Postgres does not rename a constraint when its table is renamed).
+
+Constraint corrections: `child→member` is RESTRICT, so deleting a guardian
+cannot silently take a child's allergies with it; the wallet and sale ledgers
+lose CASCADE for the same reason; `station` carries its operator; `role`
+gains `is_system` and is unique per operator, with a **partial** unique index
+so two system roles cannot share a name (null operator ids are distinct in
+Postgres, which the plain index would have allowed); `role_assignment` and
+`branch_holiday` gain `archived_at`.
+
+**Enumerations became text + CHECK** — all seven, not only the two the plan
+named. Adding a value to a pg enum takes a DDL lock and cannot happen in a
+transaction that also reads the type; a CHECK is replaced in one statement.
+`station_kind` gains `booth`, `contact_channel` gains `instagram`.
+
+**How the migration is kept honest.** `drizzle-kit generate` answers a schema
+move with DROP + CREATE and, for a rename, asks table by table — and refuses
+to guess without a TTY. So the SQL is hand-written and two scripts stand
+behind it: `packages/db/scripts/snapshot.ts` writes the matching Drizzle
+snapshot without the prompts, and `packages/db/scripts/verify-schema.ts`
+(`pnpm --filter @oto/db verify-schema`) migrates a throwaway database
+**twice**, then compares the live catalogue with the snapshot — tables,
+columns, nullability, foreign-key names *and* their ON DELETE, indexes and
+their uniqueness, check constraints — and fails if anything of ours is left
+in `public`. `schemaFilter` keeps Drizzle away from the schemas other tools
+own (`otoapp`, `radar`, `inbox`, `pgboss`).
+
+**Permissions declared on the route.** `config: { permission, target }` with
+a preHandler that enforces it before the handler runs; scope targets are
+paths into the request (`params.branchId`). Routes that are deliberately
+open, need only a session, are gated platform-wide, or resolve their
+permission from the request each say which. `routes-guarded.test.ts` walks
+the registry and fails if a route declares none of those — a new route with
+no `config` fails on the day it is written — and a second case pins the open
+surface so widening it shows up in a diff.
+
+**`withTx(db, ctx, opName, fn)`** written: the success audit row is written
+inside the transaction by the service, the failure row after the rollback on
+a separate connection, and one log line carries the operation name.
+
+Still to do in this ticket: wrap the mutating routes in `withTx` and lift
+their bodies into services; the atomic idempotency claim with the in-flight
+409 and `x-oto-replay`; the extended permission vocabulary and a re-runnable
+`platform:sync`; the pool and process hardening; ARCHITECTURE.md.
+
+**Deviation recorded:** the plan calls this migration `0003`. S2-01a had
+already taken `0003` (the session lock model) and `0004` (the auth throttle),
+so the schema move is **`0005`**. Nothing else about it changed.
 
 ## Deviations recorded
 
