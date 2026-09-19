@@ -2544,10 +2544,12 @@ Includes:
      details are shown or changed (closes the children's-data exposure).
   7. Reviews and movements: explicit approval step and approved history
      (verify first; may already be met).
-  Plus, from §6.13, the HR-linked **benefit profiles** (person or role; free
-  items, credit, discount, categories, periods; effective dates; benefit QR)
-  as the OTO App half of staff benefits, if the owner confirms it for this
-  sprint (the POS checkout half is C13 / Sprint 3 in this plan).
+  The §6.13 benefit profiles are **not** here: S2-21 owns them end to end
+  (role templates, person profiles, the benefit credential and the checkout
+  application), reading the HR record this ticket mirrors. Item 6 above — the
+  camp six-digit code — is an OTO App flow (`/camp-register/:eventId` and the
+  unauthenticated camp-registration lookup at `routes.ts:15871-15915`), not a
+  POS one; S2-20 only asserts that the POS never calls that lookup.
 - Each feature built inside the lifted app in its module's style (Express
   route + React page), on the `otoapp` schema, audited through the app's
   activity log and the platform audit where it touches shared identities,
@@ -2725,6 +2727,1093 @@ QA / demo steps:
 3. Dev evidence: migration log and the seed output.
 
 Depends on: S2-02, S2-13 (for the console adapter link; the shell itself only on S2-03). Size: M.
+
+### S2-20 — Events, parties and camps wired to the OTO App, and the self-service kiosk
+
+Feature area: Events and kiosk
+
+Rules: R-50, R-53, R-68, R-80, R-96 to R-100; conflicts C10 (events stay mastered by the OTO App), C11.
+
+Description. The Events tab is the last wholly mock domain on the sell side:
+`pages/Events.tsx` and `components/parties/*` read
+`mockApi.ts:getEventsForDate`, `getEventById`, `getActiveEventPasses`,
+`addEventAttendee`, `checkInEventAttendee`, `checkOutEventAttendee`,
+`updateParty`, `addPartyExtraCharge` and `addPartyPayment`; the sell side runs
+on `lib/eventPass.ts:sellEventPass`, `checkInSoldPass` and
+`dispatchEventBracelets`, rosters on `lib/eventRoster.ts:bucketAttendee`,
+`groupAttendees`, `computeRosterStats`, and tab arithmetic on
+`lib/party.ts:computePartyTotal`, `computePartyOutstanding`. Conflict C10
+settles ownership: the OTO App's events core, BEO, parent portal and camps
+modules stay the master
+(`docs/architecture/intake-2026-09-19/01-oto-app-backend.md` §2), so the POS
+reads through the platform-owned views built in S2-17b (`otoapp_v.events`) and
+writes attendance and passes back through the OTO App's service-to-service
+directory API (`/api/directory/*`, intake §2), never by touching `otoapp`
+tables. The same ticket builds the self-service kiosk
+PROJECT_CONTEXT §7.6 requires — a device-credentialled surface on a box of its
+own (station kind `kiosk`) reusing the S2-12 redemption service and the S2-06
+print pipeline, so there is one redemption implementation and two surfaces.
+
+Includes:
+- Read seam: `otoapp_v.events` extended in S2-17b with the attendee and
+  per-day attendance columns the prototype's `OtoEvent` / `EventAttendee`
+  shapes need (`types.ts:1414-1500`), exposed as `GET /events?date=&branchId=
+  &type=`, `GET /events/:id`, `GET /events/passes?date=&branchId=` and
+  `GET /events/:id/roster?date=` — ports of `getEventsForDate`, `getEventById`,
+  `getActiveEventPasses` and the `eventRoster.ts` bucketing, with the party
+  exclusion on the passes list preserved (parties have no flat entry price).
+  A read-only repository module is the only place the views are queried.
+- Tables (`pos`): `event_attendee_link` (operator, branch, `otoapp_event_id`,
+  `otoapp_attendee_id`, event_type party|camp|event, `crm.child_id`,
+  `crm.member_id`, sale, sale_line, parent_attending, attendance_days date[],
+  price_snapshot_satang, source till|booking|kiosk|otoapp, account, station,
+  box, created_at, archived_at; `UNIQUE(otoapp_event_id, otoapp_attendee_id)`)
+  — the C10 link from an OTO App attendee to a `crm` child or member;
+  `event_checkin` (link, attendance_date, checked_in_at, checked_out_at,
+  kid_band_id, parent_band_id, account, station, box, origin, box_seq;
+  `UNIQUE(link_id, attendance_date)`) — the duplicate-prevention rule (R-97,
+  proposal §2.3 "duplicate same-day check-in blocked"); `event_drop_in_pricing`
+  (branch, camp_day, event_day, party_guest, each a weekday/weekend satang
+  pair) ported from `types.ts:EventDropInPricing` and
+  `mockApi.ts:getEventDropInPricing`/`updateEventDropInPricing`; `party_tab`
+  (branch, `otoapp_event_id`, status, base_price, line_items snapshot, deposit,
+  deposit_paid_at, locked_at), `party_charge` (tab, kind ticket|fnb, items
+  jsonb, total, sale, account, at) and `party_payment` (tab, method token,
+  amount, sale, payment_attempt, account, taken_at) — the POS-owned ledgers the
+  prototype already keeps separate from the Events-owned party record;
+  `kiosk_session` (station, device_credential, started_at, ended_at, booking,
+  outcome issued|handed_off|failed|abandoned, reason).
+- Write-back through the directory API, extended in S2-17b with
+  `POST /api/directory/events/:id/attendees` and
+  `POST /api/directory/events/:id/attendees/:attendeeId/checkins` behind
+  `X-HR-API-KEY`: the POS routes `POST /events/:id/attendees` (R-99, port of
+  `addEventAttendee` including the walk-up operator stamp and the camp
+  "register for the full range" vs "today only" `attendanceDays` rule),
+  `POST /events/:id/attendees/:attendeeId/checkin`,
+  `POST /events/:id/attendees/:attendeeId/checkout`. Each write is one
+  `withTx` service: mirror row first, directory call second, `ops_run`
+  kind `integration` under action id `otoapp:attendee.create` /
+  `otoapp:attendee.checkin`, retryable from Failures; a failed write-back
+  leaves the POS row with `sync_state=pending` and the roster shows it, never a
+  silent divergence. All calls carry the client-minted UUIDv7 so a retry is a
+  replay, not a second attendee.
+- Flat-price pass sale, `POST /events/:id/passes` — the port of
+  `lib/eventPass.ts:sellEventPass` with its invariants intact: price is the
+  event's flat `entryPriceTHB` resolved by the S2-09a rate-mode and
+  business-date engine (never tiered, R-98); a paid pass on a camp or event
+  requires a tender and creates nothing without one (no unpaid roster entry); a
+  free event (price 0) creates the attendee with no sale; a birthday walk-up
+  appends `party_charge` at `event_drop_in_pricing.party_guest` and takes no
+  door payment. The sale is an ordinary S2-09a/S2-10a sale with a synthetic
+  one-kid line (`svc-camp-pass` / `svc-event-pass`), `revenue_category=events`
+  and no credit grant, so tax, receipt and reporting need no special case.
+  `components/till/EventPassCard.tsx` and
+  `components/till/DoorCheckInChoiceModal.tsx` keep their design: the pass is
+  persisted before the "check in now / leave booked" choice, so dismissing the
+  choice can never undo a completed payment.
+- Event check-in with band rules: no supervision gate (R-97) — the S2-13 gate
+  is suppressed for pass lines and event check-ins, and a test asserts it;
+  bands minted and signed by the S2-11 band service and printed through the
+  S2-06 pipeline from `lib/printRouting.tsx:eventBraceletPrintJobs`; a kid band
+  always, a parent band only when `parentAttending`; the band carries event
+  title, date, dietary and allergy flags per R-50 and fires the F&B allergy
+  alert through the existing band lookup (R-68); camps check in per selected
+  day. Check-in and check-out are box facts so they queue offline.
+- Party tab: `GET /parties/:id`, `POST /parties/:id/charges`,
+  `POST /parties/:id/payments`, `PATCH /parties/:id` (only the POS-editable
+  fields `mockApi.ts:updateParty` already allows, written back through the
+  directory API). Deposit and balance follow `lib/party.ts`; party payments run
+  through the S2-10a tender machine and keep their own `party_prepay`
+  end-of-day channel (S2-15a), so a prepayment is never folded into cash or
+  card. `components/parties/PartyDetail.tsx`, `PartyBalanceModal.tsx`,
+  `PartyTicketModal.tsx`, `PartyFnbModal.tsx`, `AddAttendeeModal.tsx`,
+  `EventAttendeeList.tsx` and `PartySettlementCustomerScreen.tsx` are wired
+  unchanged.
+- Self-service kiosk: a new `/kiosk` route in `apps/pos` in the prototype's
+  design language (the redemption steps reuse
+  `components/till/RedeemBookingModal.tsx` and `components/shared/*`), running
+  full-screen on a box with `box.role=kiosk` and a `core.device_credential`
+  kind `kiosk` paired from Console > Devices (S2-04); `POST /kiosk/v1/session`,
+  `POST /kiosk/v1/redeem`, `GET /kiosk/v1/state`. Redemption calls the same
+  service as the till (S2-12) with `surface='kiosk'`: this branch, paid,
+  unredeemed, signature valid, local redemption log checked, bands and wallet
+  credit issued exactly once. Supervised-child cases are never issued at the
+  kiosk — the booking's drop-off and nanny items route to staff (R-80) and the
+  screen shows the staff desk. A mixed booking issues the self-service items
+  and shows the desk for the rest. Hand-off is recorded only after the
+  self-service half is actually issued and printed: a printer fault, paper-out
+  or offline box aborts the whole redemption, leaves the booking unredeemed and
+  writes `kiosk_session.outcome='failed'` with the reason — never a false
+  hand-off. Idle timeout returns to the attract screen and abandons the
+  session; nothing on the kiosk shows allergy, medical or contact data (R-58).
+- Admin and Console: a new "Events" panel under Operations in the prototype's
+  admin shell (`components/admin/adminSections.tsx`) holding drop-in pricing
+  (`GET/PUT /branches/:branchId/event-drop-in-pricing`) and the read-only event
+  list with its write-back health; Console > Devices gains the kiosk pairing
+  code and a "Kiosk" tile on Health (online, printer, paper, last redemption,
+  abandoned-session count).
+- Permissions: `pos:event:read`, `pos:event:attendee_create`,
+  `pos:event:pass_sell`, `pos:event:checkin`, `pos:party:charge`,
+  `pos:party:payment`, `admin:event_pricing:manage`; `pos:kiosk:redeem` is
+  carried by the kiosk device credential's scope, not by a staff account, and a
+  test asserts no human role holds it.
+- Audit and `ops_run`: audit actions `event.attendee_create`,
+  `event.pass_sell`, `event.checkin`, `event.checkout`, `party.charge`,
+  `party.payment`, `event_pricing.update`, `kiosk.redeem`, `kiosk.handoff`,
+  `kiosk.abort`, each stamped with station and box ids; `ops_run` kind
+  `integration` per directory call, kind `device` for the kiosk print, and
+  `job:events.cache_refresh` refreshing the box's today's-events bundle with an
+  `ops_expectation` so a stale bundle raises an alert.
+- Seed and simulators: `seed:demo-day` gains, written into `otoapp` through the
+  OTO App's own tables so the views return them, one five-day camp spanning the
+  seeded business date with six registered attendees (two allergy-flagged, one
+  `parentAttending`), one one-off event today with a weekday/weekend
+  `entryPriceTHB` pair, and one birthday party with a package base price, a paid
+  deposit and an open tab; branch drop-in pricing seeded from the prototype
+  values. The Simulators panel gains the kiosk box with its scanner and band
+  printer and controls "printer offline", "paper out" and "box offline".
+- The camp registration six-digit SMS code from proposal §6.2 is **not** built
+  here: it belongs to the OTO App's public camp-registration flow
+  (`/camp-register/:eventId`, `client/src/pages/public/camp-register.tsx:449`,
+  and the unauthenticated `GET /api/public/camp-registrations/lookup`,
+  `server/routes.ts:15871-15915`, intake §11 finding 2), so it is S2-17c item 6.
+  This ticket depends on it only in that the POS never calls that lookup — the
+  camp roster reads `otoapp_v.events` behind a permission — and the acceptance
+  run links to the S2-17c evidence.
+
+Excludes: event creation, registration and BEO in the OTO App (S2-17b/c); the
+camp six-digit SMS gate itself (S2-17c item 6); booking payment, booking QR and
+the gate (S2-12); supervision, consent and the drop-off board (S2-13); wallets
+and their expiry (S2-14a); staff benefits (S2-21); real kiosk hardware (S2-24).
+
+Acceptance criteria:
+- [ ] The Events tab for the seeded business date lists the camp, the one-off
+      event and the birthday party read from `otoapp_v.events`; the camp roster
+      shows per-day checked-in, outstanding and not-today counts, and the
+      Console shows no `otoapp` table access from the POS API.
+- [ ] Selling a pass for the seeded event takes a tender and creates the
+      attendee on the OTO App's own event screen; cancelling at the payment
+      step creates no attendee and no sale; the seeded free event creates the
+      attendee with no sale; a birthday walk-up adds a party-guest charge to the
+      tab and takes no door payment.
+- [ ] The party tab shows base price, deposit, POS charges and payments with
+      the outstanding balance; adding an F&B charge and taking a card payment
+      updates the balance, and the payment appears in End of Day under
+      `party_prepay`, not under card.
+- [ ] Checking in a camp attendee prints a kid band, and a parent band when the
+      parent is attending, both carrying the event title, date and dietary or
+      allergy flag; checking the same attendee in again the same day is refused
+      with "already checked in"; checking in the next camp day succeeds; no
+      supervision gate appears at any point.
+- [ ] At the kiosk, a paid unredeemed booking for this branch issues its bands
+      and wallet credit once and prints them; scanning it again shows
+      already-redeemed; a booking containing a drop-off child issues nothing and
+      shows the staff desk; a mixed booking issues the regular bands and shows
+      the desk for the rest.
+- [ ] With the kiosk printer forced offline the same redemption aborts: the
+      booking stays paid and unredeemed, the screen tells the guest to see the
+      staff desk, no hand-off is recorded, and the till can still redeem it.
+- [ ] Every action above has an Activity row with station and box ids (spot
+      check `event.pass_sell`, `event.checkin`, `party.payment`,
+      `kiosk.redeem`), and each write-back has an `ops_run` row under
+      `otoapp:attendee.*` that can be retried from Failures after a forced
+      failure.
+
+QA / demo steps:
+1. QA (UI): Open the Events tab on the seeded business date; screenshot the
+   three events, then the camp roster with its per-day counts; open the same
+   camp in the OTO App and screenshot the matching roster.
+2. QA (UI): Sell an event pass with cash and screenshot the sale, the new
+   attendee on both systems and the receipt; repeat and cancel at payment;
+   screenshot the unchanged roster; sell a free-event pass; add a walk-up guest
+   to the birthday party and screenshot the tab.
+3. QA (UI): On the party, add an F&B charge and take a card payment; screenshot
+   the balance and the End of Day `party_prepay` line.
+4. QA (UI): Check a camp attendee in; screenshot the printed kid and parent
+   bands in the printer simulator; check in again and screenshot the refusal;
+   advance to the next camp day and screenshot the successful check-in.
+5. QA (UI): At the kiosk, scan the seeded paid booking; screenshot the bands,
+   the wallet credit and the redeemed booking; scan again; scan the supervised
+   booking and screenshot the staff-desk screen; scan the mixed booking.
+6. QA (UI): Set the kiosk printer offline in the Simulators panel; scan a paid
+   booking; screenshot the abort message, the still-unpaid-out booking and the
+   `kiosk_session` outcome on Activity; force a directory write-back failure and
+   screenshot the retry on Failures.
+7. Dev evidence: test output for the no-supervision-gate rule on event lines,
+   the duplicate same-day check-in constraint, and the grep test asserting the
+   POS API reads events only through `otoapp_v.*` and the directory API.
+
+Depends on: S2-11, S2-12, S2-17b. Size: XL.
+
+### S2-21 — Staff benefits: HR-linked profiles and benefit application at checkout
+
+Feature area: Staff benefits
+
+Rules: R-70, R-107 to R-110, R-64; conflict C13 (the employee master stays in the OTO App; the profile hangs off the mirrored HR record and the badge credential is issued by the platform).
+
+Description. The prototype already carries the whole benefit engine, and it is
+pure: `lib/benefits.ts:applyStaffBenefits` applies comp, then periodic free
+items, then periodic credit, then the standing percentage, with
+`resolveEffectiveBenefitProfile`, `benefitPeriodKey`, `isEmptyBenefitProfile`
+and `emptyBenefitUsage` beside it, wired through
+`mockApi.ts:findOperatorByBenefitQrCode`, `getEffectiveBenefitProfile`,
+`getBenefitUsage`, `previewStaffBenefit`, `commitStaffBenefit`,
+`attachBenefitAuditOrderId`, `updateOperatorBenefits` and
+`getRoleBenefitTemplate`/`setRoleBenefitTemplate`, with the UI in
+`components/fnb/BenefitScanModal.tsx`,
+`components/fnb/StaffBenefitBreakdown.tsx` and
+`components/admin/staff-benefits/*` (`StaffBenefitsPanel`,
+`BenefitProfileFields`, `OperatorOverrideDialog`, `BenefitQrDialog`). Everything
+it holds — quotas, credit pools, the audit log — dies on reload, and the profile
+hangs off a mock `Operator`. Conflict C13 fixes the shape: employees are
+mastered in the OTO App, so the profile is keyed to the employee mirrored into
+`core.employee` from `otoapp_v.employees` (S2-17b), the benefit QR is a
+platform-issued badge credential and never a password or PIN, and usage and
+audit live on the platform. This ticket persists the profiles with effective
+dates and person-override-wins, mints and verifies the credential, applies
+benefits inside the S2-09a/S2-09b checkout with server-authoritative period
+resets and a concurrency-safe last use, and feeds the reporting that separates
+benefit cost from revenue (proposal §6.13).
+
+Includes:
+- Tables (`promo`): `benefit_role_template` (operator, role owner|manager|staff,
+  name, profile jsonb — `comp` / `free_items[]` / `credit` /
+  `standing_discount`, each targeted by the existing `DiscountTarget` shape so
+  there is no parallel scoping system, `types.ts:254`, `types.ts:469-510`,
+  effective_from, effective_to, updated_by, updated_at); `benefit_profile`
+  (operator, `core.employee_id`, role, profile jsonb holding only the
+  primitives overridden, effective_from, effective_to, archived_at, created_by)
+  — a person override replaces a primitive wholesale, never field by field
+  (R-109); `benefit_credential` (employee, `code_hash`, key id, signature
+  version, issued_by, issued_at, expires_at, revoked_at, last_seen_at);
+  `benefit_usage` (profile, employee, period_kind daily|monthly, period_key text
+  from `benefitPeriodKey`, benefit_item_id, qty_used, credit_used_satang,
+  version; `UNIQUE(employee_id, benefit_item_id, period_key)`);
+  `benefit_application` (sale, sale_line refs, beneficiary employee, profile
+  snapshot jsonb, processed_by_account, station, box, is_comp, comped,
+  free_items, credit and discount satang, total_relief_satang, occurred_at,
+  reversed_by_refund) — the persisted form of `types.ts:BenefitAuditEntry` and
+  `attachBenefitAuditOrderId`. `analytics.fact_benefit_daily` for the report.
+- Profiles and effective dates: `GET /benefits/templates`,
+  `PUT /benefits/templates/:role` (port of `getRoleBenefitTemplates` /
+  `setRoleBenefitTemplate`), `GET /benefits/profiles?employeeId=`,
+  `PUT /benefits/profiles/:employeeId` (port of `updateOperatorBenefits`),
+  `GET /benefits/profiles/:employeeId/effective?on=` returning the resolved
+  profile exactly as `resolveEffectiveBenefitProfile` does. The effective
+  profile at any instant is the role template in force on that date with the
+  person override in force on that date applied over it; a future-dated edit
+  never changes today's checkout, and history is kept by closing the previous
+  row's `effective_to` rather than updating it in place. Employees come from
+  `otoapp_v.employees`; the panel never creates or edits an employee, and a
+  scan for an employee not yet mirrored raises `ops_run` kind `integration`
+  under `otoapp:employee.sync` and refuses the benefit.
+- Benefit QR: minted in the cloud by `POST /benefits/credentials` as
+  `OTO-BEN:v1:<employeeId>:<credentialId>:<exp>` plus an Ed25519 signature over
+  that payload; the private half stays in the API, the public half reaches every
+  box in the config bundle through `core.signing_key` (S2-04), the same shape as
+  the signed booking QR and band HMAC (PROJECT_CONTEXT §8).
+  `POST /benefits/credentials/:id/revoke` revokes; the revocation list ships in
+  the box cache bundle and is checked on every scan. `GET
+  /benefits/credentials/:id/qr` returns the printable payload behind the
+  existing `BenefitQrDialog`. Verification happens on the box's scanning service
+  (S2-06) against the cached public key, so a scan resolves the beneficiary
+  offline; `POST /benefits/resolve` is the online equivalent and returns the
+  effective profile with the remaining quota. The credential grants no access
+  and opens no session — a test asserts a benefit payload is rejected by
+  sign-in and by the gate reader.
+- Application at checkout: `POST /sales/:saleId/benefit/preview` (port of
+  `previewStaffBenefit`) and `POST /sales/:saleId/benefit/apply` (port of
+  `commitStaffBenefit`), with `DELETE /sales/:saleId/benefit` before
+  finalisation. The engine moves to `packages/shared` unchanged so box and
+  cloud compute the same relief, and the canonical order is preserved: comp
+  short-circuits the whole bill, then free items consume quota line by line
+  capped by what each line's remaining value can fund, then the credit pool,
+  then the standing percentage against whatever is left. Relief is written as
+  discount-class allocations on `sale_line`, never as a tender, so the S2-09a
+  order holds: benefit relief first, then the sale's own manual discount, then
+  promo vouchers sequentially against the running balance, then tax with the
+  branch's inclusive unwind and discount placement, so receipt and VAT export
+  reconcile to the satang (R-36). A free-item benefit uses the same synthetic
+  ฿0 line plus offsetting discount that a free-item promo uses. Scope: R-70 and
+  the prototype restrict benefits to the F&B station while proposal §6.13 says
+  "at checkout"; both hold without a new mechanism because every primitive is
+  already scoped by `DiscountTarget` — the seeded profiles target `fnb`, so
+  behaviour is unchanged, and a profile targeting `everything` also reaches the
+  ticket till. Whether any seeded role should target `everything` is an owner
+  question and is listed as such, not decided here.
+- Wallets stay untouched: the staff credit pool is `benefit_usage`, not a
+  `pos.wallet`, so no wallet entry is written and wallet liability does not
+  move; a guest wallet (S2-14a) remains a tender applied after tax to whatever
+  the benefit left. Benefit relief is foregone revenue, reported beside promos
+  and comps and never as wallet spend (R-64).
+- Concurrency and period resets: the last free item or the last satang of
+  credit is claimed with a single conditional update
+  (`UPDATE … SET qty_used = qty_used + :n WHERE qty_used + :n <= :quota AND
+  version = :version`) inside the sale's `withTx`, so two simultaneous
+  attempts yield exactly one success and one `BENEFIT_QUOTA_EXHAUSTED`; the
+  application is idempotent on the client-minted id. Periods roll over by
+  `period_key`, so no reset job is needed to make a new day valid;
+  `job:benefit.period_rollover` runs at the branch day start only to write the
+  `fact_benefit_daily` row and close the previous period, with an
+  `ops_expectation` on Health.
+- Offline: comp and the standing percentage apply offline — they carry no quota
+  — and queue as box facts. Free items and periodic credit are quota-bearing
+  single-use value and follow R-48 exactly as wallet spend does: online only,
+  with the S2-14a "online only" message on the breakdown, nothing consumed. The
+  offline capability matrix (S2-05) records this.
+- Reporting: `GET /reports/benefits` (branch, date range, beneficiary, role)
+  feeding the prototype's Admin > Reporting > Discounts & Comps panel with the
+  relief split by comp, free items, credit and standing discount, and the
+  beneficiary, processing operator and sale on every row; the S2-15b sales
+  report keeps benefit cost out of revenue and out of wallet liability. A
+  refund of a benefited sale writes a `benefit.reverse` row, returns the
+  consumed quota to the period and reverses the allocation.
+- Permissions: `pos:benefit:apply`, `pos:benefit:comp` (a whole-bill comp needs
+  its own permission and its own audit class), `admin:benefit:read`,
+  `admin:benefit:manage` (templates, profiles, effective dates),
+  `admin:benefit:credential_issue` (mint and revoke the badge). Seeded onto
+  `reception`/`staff` (apply only), `branch_manager` (apply, comp, read) and
+  `operator_admin` (all).
+- Audit and `ops_run`: `benefit.template_update`, `benefit.profile_update`,
+  `benefit.credential_issue`, `benefit.credential_revoke`, `benefit.apply`,
+  `benefit.comp`, `benefit.reverse`, each with the beneficiary, the processing
+  operator, station and box; `benefit.comp` is classified sensitive so it
+  appears on the Activity "Admin log" preset and in the daily comp alert.
+- Seed: role templates per BL §15 — Owner unlimited comp; Manager ฿5,000
+  monthly F&B credit, then 30 % off F&B, plus 2 daily coffees; Staff 2 daily
+  coffees plus 30 % off F&B — attached to four employees mirrored from
+  `otoapp_v.employees` matching the prototype's `mockOperators` (Som and Nok
+  reception, Khun Lek manager, Khun Anan owner), each with an issued benefit
+  credential whose QR is scannable in the scanner simulator; Nok carries a
+  person override of 4 daily coffees to prove override-wins, and one
+  future-dated Manager template edit is seeded to prove effective dates.
+
+Excludes: the OTO App's own HR screens and staff vouchers (S2-17b); tier and
+member discounts (S2-09a); promotional vouchers and guest wallets (S2-14a);
+the booth voucher path (S2-07a/S2-10b); face or biometric staff identification
+(PROJECT_CONTEXT §13).
+
+Acceptance criteria:
+- [ ] Admin > Staff Benefits lists the three seeded role templates and the four
+      employees read from the mirrored HR record; the panel cannot create or
+      edit an employee; Nok's profile card shows 4 daily coffees from her person
+      override while the Staff template still reads 2.
+- [ ] Editing the Manager credit to ฿6,000 with an effective date of tomorrow
+      leaves a Manager checkout today at ฿5,000, shows both rows in the profile
+      history, and is audited as `benefit.profile_update`.
+- [ ] Scanning Khun Anan's QR on an F&B order comps it to ฿0; the receipt, the
+      till breakdown and the Activity row show beneficiary, processing operator,
+      sale and comped amount; reception without `pos:benefit:comp` gets a clear
+      refusal; a revoked credential is refused with "benefit revoked" and
+      changes nothing.
+- [ ] Scanning Khun Lek's QR on a mixed F&B order applies, in that order, the
+      2 daily coffees, the monthly credit and 30 % off the remainder; the
+      breakdown on the till and the customer display agree with the receipt to
+      the satang; scanning again for a third coffee the same day shows the
+      quota exhausted and still gives the 30 %.
+- [ ] Applying a benefit does not move any wallet balance: the Wallet & Promo
+      report is unchanged for the day, while Discounts & Comps shows the relief
+      split by comp, free items, credit and standing discount; refunding the
+      benefited sale returns the quota and shows the reversal.
+- [ ] With the box offline, comp and the standing percentage still apply and
+      sync once on reconnect; the free-item and credit stages show "online only"
+      and consume nothing; a benefit QR is refused at sign-in and at the gate
+      reader.
+- [ ] Two tills claiming the last free coffee at the same instant produce one
+      success, one `BENEFIT_QUOTA_EXHAUSTED` and exactly one usage row (dev
+      evidence: concurrency test).
+
+QA / demo steps:
+1. QA (UI): Open Admin > Staff Benefits; screenshot the three templates and the
+   four mirrored employees; screenshot Nok's override card beside the Staff
+   template; try to rename an employee and screenshot the read-only field.
+2. QA (UI): Edit the Manager credit with tomorrow's effective date; screenshot
+   the history; run a Manager checkout and screenshot the unchanged ฿5,000
+   credit and the Activity row.
+3. QA (UI): Build a ฿1,200 F&B order; scan Khun Lek's QR from the scanner
+   simulator; screenshot the four-stage breakdown, the customer display and the
+   receipt; scan again for a third coffee and screenshot the exhausted quota.
+4. QA (UI): Scan Khun Anan's QR on a new order; screenshot the ฿0 total, the
+   receipt and the sensitive Activity row; sign in as reception and repeat;
+   screenshot the refusal; revoke the credential and screenshot the rejection.
+5. QA (UI): Open Reporting > Wallet & Promo and Discounts & Comps; screenshot
+   both for the day; refund the benefited order and screenshot the reversal and
+   the restored quota.
+6. QA (UI): Toggle the box offline; scan the Owner QR and screenshot the comp;
+   scan the Manager QR and screenshot the "online only" message on the
+   free-item and credit stages; reconnect and screenshot the synced application.
+7. Dev evidence: concurrency test output for the last free item and the last
+   satang of credit, and the test asserting a benefit payload is rejected by
+   sign-in and by the gate reader.
+
+Depends on: S2-09b, S2-10a, S2-17b. Size: L.
+
+### S2-23 — Console: the owner's super-admin control surface across the whole suite
+
+Feature area: Console (super admin)
+
+Rules: R-08 (every mutation carries the acting account; audit is the
+control), R-16 (health indicators), R-58 and R-94 (child health data
+staff-only, masked, access-logged); conflicts C10 (events stay mastered by
+the OTO App), C13 (benefits hang off the HR record). Proposal aspects
+§4.3–4.5 (phone identity, scoped `service:resource:action` RBAC, activity
+and exception views, transaction safeguards, service-availability
+messages) and §6.1. Open decisions 2, 17, 33, and the three open questions
+in `docs/features/console.md`.
+
+Description. The owner's decision of 2026-09-20 (`OWNER_DIRECTION.md`,
+"Super admin (Console) is the owner's own control surface"): the POS keeps
+its admin for POS operations and the OTO App keeps its admin for internal
+operations, so the Console is deliberately **not** a third copy of either.
+It is the layer above them — the one place the owner and a platform
+administrator see and steer the whole suite, added for the owner's own
+benefit so future control is easy. S2-03 built Console v1 (`apps/console`
++ `packages/admin-ui`, static site with the `/api` rewrite, gated by
+`app:console:access`) with Activity, Failures, Health and Integrations;
+S2-04 added Devices and S2-07b added Booths. This ticket completes the
+surface: eleven further pages, the `console:*` permission vocabulary, a
+platform-owned app registry and feature-flag store, support tools
+(cross-app lookup, one-action-id trace, audited impersonation), data and
+release controls, and the danger rules for everything that can hurt. Each
+page answers the same two questions — what is true right now, and what can
+I change from here — and every control in the Includes names the ticket its
+data comes from, so no page is a mock. The fifteen areas become sub-tasks
+of this one issue, each with its own acceptance criteria and evidence
+comment in the Sprint 1 format.
+
+The rule that keeps it honest: **the Console never writes another app's
+tables directly.** Every action either writes a platform table the Console
+owns (`core`, plus `analytics` and `promo` configuration) or calls that
+app's own API as the acting user, so the OTO App's own permission model
+still applies — `requireAuth`, `requireManager`/`requireAdmin`, the 11
+module keys with their per-user overrides, `user_branch_access` and the
+advisor resolution documented in `intake-2026-09-19/01-oto-app-backend.md`
+§3 — and likewise Radar's sign-on gate (S2-18) and the Inbox's
+`inbox:*` permissions (S2-19). The one cross-app write the platform owns
+is the identity seam `core.app_identity` and `otoapp.users.platform_user_id`
+through the provisioning service built in S2-17a. Where a page cannot do
+something through an app's API it says so and links out rather than
+reaching into the schema; and where a setting belongs to another app, the
+Console shows it read-only, labelled "owned by <app>", with a deep link.
+
+Includes:
+
+- Tables — `core`: `app_registry` (key, name, purpose, origin url, tile
+  state open|coming_soon|hidden|maintenance, schema, owning service, health
+  url, version source, required permission, sort order,
+  `maintenance_message`, `archived_at`); `feature_flag` (key, kind
+  feature|kill_switch, scope_type platform|operator|branch|station,
+  scope_id, value jsonb, default value, `expires_at`, reason, updated_by,
+  updated_at — unique on key + scope); `impersonation_session` (actor,
+  subject, app, reason, reference, `write_allowed`, approver, started_at,
+  `expires_at`, ended_at, ended_by, action_count); `setting_registry`
+  (seeded index of every configurable setting: key, label, owning app,
+  owning page url, editable_here, permission, last_changed_at);
+  `retention_policy` (audit category, min age days, action
+  keep|anonymise|purge, enabled, updated_by); `erasure_request` (subject
+  kind member|child|contact, subject id, requester, reason, status
+  received|assessed|executed|refused, affected apps jsonb, evidence,
+  executed_at); `alert_recipient` (channel, address reference — an env
+  name, never a value, categories, branch scope, active); `deploy_event`
+  (app, version, commit, actor, status, deployed_at). Extensions:
+  `audit_log` gains `target_app` and `reason`, and the category
+  `data_access`; `ops_run` gains kinds `integration` and `console`.
+  Every table carries `operator_id` where it is operator-owned, plus
+  `created_at`/`updated_at`; ids are UUIDv7.
+
+- Suite overview (`/`, `console:overview:read`) — the screen the owner
+  opens first, one card per thing that can be wrong. Shows: each app from
+  `core.app_registry` with its tile state, version and health (its own
+  health url, polled by `job:apps.health`); today's money per branch and
+  the suite total (`analytics.daily_summary` for the business date, S2-15b,
+  with the "provisional / rolled up at HH:MM" freshness stamp); open alerts
+  by severity (`alert`, S2-03); boxes and booths online out of total
+  (`box_heartbeat`, S2-04/S2-07a); "needs a decision" — unresolved payment
+  attempts past `PAYMENT_PENDING_MIN` (S2-10a), `sync_quarantine` rows
+  (S2-05), cash variances above tolerance (S2-15a), late 2C2P payments
+  (PAYMENT_GATEWAY §3.7), stranded gate occupants (S2-15a), erasure
+  requests awaiting action, dual-control requests awaiting an approver.
+  Changes: nothing — every tile is a link to the page that can act. A
+  "Copy status summary" button produces a plain-text digest, and
+  `job:console.digest` posts the same digest to `ALERT_WEBHOOK_URL` each
+  morning at the branch business-day start when
+  `CONSOLE_DIGEST_ENABLED=true`.
+
+- Tenancy and organisation (`/org`, read `console:org:read`, write
+  `console:org:manage`; operator and branch creation still additionally
+  require the Sprint 1 `admin:operator:*` / `admin:branch:*`) — operators,
+  branches, departments in one tree. Shows and changes: operator name and
+  archive state; branch name, code, timezone, address, opening hours and
+  `business_day_start` (S2-04), archive; departments (Sprint 1 `department`,
+  plus the Inbox teams' department links from S2-19); `branch_holiday`
+  ranges (Sprint 1, S2-09a) with a preview of which dates flip to weekend
+  pricing; `branch_tax_rule` and `tax_override` shown read-only with a link
+  to the POS admin panel that owns them; per-branch feature flags from
+  `core.feature_flag` (for example `booth.enabled`, `gate.enabled`,
+  `wallet.offline_cap`, `checkin.offline_release`,
+  `analytics.source_switch_allowed`). Archiving an operator or branch
+  requires typed confirmation and refuses while a box, station or open cash
+  session belongs to it, naming what blocks it.
+
+- People and access across every app (`/people`, read `console:people:read`,
+  write `console:people:manage`, app grants `console:people:grant_app`,
+  session control `console:people:force_sign_out`) — the one account page
+  for the whole suite. Shows: account, linked employee, status, phone
+  verification, `must_change_password`, role assignments with their scope
+  (operator / branch / department / record), effective permissions with the
+  scope each comes from (`GET /me/permissions` resolver, Sprint 1), app
+  access grants (`app:pos:access`, `app:oto_app:access`, `app:radar:access`,
+  `app:inbox:access`, `app:console:access`, `app:booth:access`), linked app
+  identities (`core.app_identity`, S2-17a) with the role each app knows the
+  person by, active sessions with class, station, box, last seen and lock
+  state (S2-01a), and the account's own recent activity and denials
+  (`audit_log`). Changes: create an account or link one to an employee;
+  assign and remove roles within the dominance and scope-ownership rules
+  from S2-01a; issue an invitation or a temporary password (SMS adapter);
+  activate and deactivate; lock and unlock a session; force sign-out of one
+  session or everywhere (`POST /accounts/:id/sessions/revoke`); and
+  **provision a person into the OTO App, Radar or the Inbox in one action**
+  — one form that creates the platform account if needed, grants the app
+  permission and calls each app's provisioning path (S2-17a's
+  `POST /admin/apps/oto_app/users` for the OTO App with its role, branch
+  scope and tenant; a role assignment for Radar and the Inbox), writing one
+  audit row per app with `target_app`. Two additions: a **reverse
+  permission lookup** ("who holds `pos:refund:approve`, and at what
+  scope?") over `role_assignment` and `role_permission`, and an **effective
+  permission diff** that previews exactly which permissions a pending role
+  change adds or removes, at which scopes, before it is saved. Module-level
+  switches inside the OTO App are shown from its API and edited through it,
+  never by writing `otoapp` tables.
+
+- App registry (`/apps`, read `console:app_registry:read`, write
+  `console:app_registry:manage`) — the suite's own directory, and the table
+  the launcher reads. Shows and changes: each app's key, display name,
+  purpose line, origin url per environment, schema, owning service, version
+  (from `APP_VERSION`/`APP_CHANGE_ID` for the lifted services, `agent_version`
+  for boxes, the build id for the static sites), required permission, tile
+  state (open / coming soon / hidden) which drives the launcher tiles from
+  S2-02, sort order, and **maintenance mode** with a message: the app's tile
+  shows the message, its hand-off exchange is refused with
+  `APP_IN_MAINTENANCE`, and the api keeps serving everything else, honouring
+  the owner's rule that the suite never goes down at once. Maintenance mode
+  is `platform_admin` only, typed confirmation, and auto-expires after
+  `KILL_SWITCH_MAX_TTL_MIN`.
+
+- Activity, audit and data access (`/activity`, `console:activity:read`;
+  unmasked `admin:audit:read_sensitive`; export `console:activity:export`)
+  — extends the S2-03 page rather than repeating it. Adds: an **app
+  column and filter** over every source (`audit_log` from the platform, the
+  OTO App's request audit written by the sign-on adapter from S2-17a/b,
+  Radar from S2-18, `inbox.event` from S2-19, `station_event` and box
+  events from S2-05); a **data-access log** preset over category
+  `data_access` — every read of a child health note, a member's phone, a
+  pickup photo or an unmasked audit row, with who, when, which record and
+  from which app (R-94, S2-13); a **denials and failed sign-ins** preset
+  (`auth.sign_in_failed`, `auth.locked_out`, `auth.permission_denied`,
+  `auth.handoff_rejected`); a **target app** filter fed by the new
+  `audit_log.target_app`; and a CSV/NDJSON export that is itself audited
+  (`audit.export`) and masked unless the exporter holds
+  `admin:audit:read_sensitive`. Read-only apart from export. Retention is
+  set on the Data tools page, never here.
+
+- Failures and alerts (`/failures`, `console:alert:read`; acknowledge and
+  resolve `console:alert:manage`) — extends S2-03. Shows: `ops_run`
+  failures grouped by name and fingerprint across every kind (http, job,
+  client, device, sync, webhook, integration, console), the silent-failure
+  watchdog's view of `ops_expectation` versus `ops_last` (what should have
+  run and did not), `sync_quarantine` and `sync_anomaly` (S2-05), unmatched
+  payment webhooks and unresolved attempts (S2-10a, PAYMENT_GATEWAY §3.4),
+  print-job failures (S2-06/S2-11), and alert delivery history
+  (`alert_delivery`). Changes: acknowledge with a note, resolve, retry a
+  retryable run, mute a fingerprint for a bounded window with a reason, and
+  edit **alert channels and recipients** — `core.alert_recipient` maps an
+  alert category to a channel (console, email, webhook) and an address
+  reference, per branch or operator-wide, closing Open decision 17 as data
+  rather than code. "Send test alert" is kept from S2-03 and is gated by
+  `OPS_TEST_CONTROLS`.
+
+- Health (`/health`, `console:health:read`) — extends S2-03/S2-04. Shows,
+  in one place: api and each Docker service (`/ready` checks: db latency,
+  pool, storage, watchdog age, event-loop lag, WebSocket connections per
+  station), job runner and each defined job with its last run and next due,
+  boxes and booths (online, version, uptime, heartbeat age, outbox depth,
+  clock offset), devices per box with printer reachability and paper state
+  (R-16, S2-04/S2-06), gates and their readers (S2-12), sync lag per box and
+  per legacy source (Pisell/Papaya freshness from S2-18), queue depths,
+  database size and connection headroom, object-storage reachability and
+  bucket size, and the external pinger's last result. Read-only; every tile
+  links to the page that can act. Test controls ("Run watchdog now", "Stop
+  heartbeats", "Advance box clock", `job:demo.fail`) stay behind
+  `OPS_TEST_CONTROLS`.
+
+- Boxes, stations and devices (`/devices`, read `console:device:read`,
+  write `console:device:manage`, remote commands `console:device:command`)
+  — extends the S2-04 area. Shows and changes: box registration and claim
+  codes, the station setup wizard (what it does → choose the box → assign
+  devices → test print), device assignment and payment routing, pairing
+  codes for displays, kiosks and booths with revoke, config version per
+  station, receipt-series high-water marks (S2-11), and the simulator
+  control panel per box (S2-06/S2-10a: scripted outcomes, fault injection,
+  "customer paid" and "late payment" for the gateway simulator) behind
+  `OPS_TEST_CONTROLS`. Remote commands through `edge.box_command` (S2-04):
+  test print, re-pull config (`config.apply`), restart agent, clear cache
+  (re-pull the bundle whole), collect logs, go offline / go online, and
+  `reset_store` which mints a new `journal_epoch`. Each command shows its
+  queued / running / result state and its `ops_run` row; `reset_store` and
+  revoking a box credential need typed confirmation and refuse while the
+  box has an unsynced outbox, naming the depth.
+
+- Integrations (`/integrations`, read `console:integration:read`, test
+  `console:integration:test`) — extends S2-03. One row per integration:
+  the 2C2P gateway (`PGW_*`, including the separate Payment Maintenance
+  host), SMS (`SMS_ADAPTER`, Twilio), email (SMTP), messaging channels
+  (`inbox.channel_account` per channel and branch, S2-19), the AI provider
+  (S2-19), Xero (S2-17b), object storage, OTel/HyperDX
+  (`OTEL_EXPORTER_OTLP_*`, `TRACE_URL_TEMPLATE`), Sentry, the alert
+  webhook, and Radar's legacy sources (`FUNTOPIA_MODE`, `PAPAYA_MODE`,
+  S2-18). Each shows: **variable presence only, never a value** (generated
+  from `apps/api/src/env.ts` as in S2-03), which service reads it, whether
+  the provider or its simulator is active and why, last success and last
+  failure from `ops_last`/`ops_run` kind `integration`, a failure history
+  sparkline, and a **test button** that performs a harmless round trip
+  (Payment Token mint and immediate cancel; SMS to a staff phone; a
+  webhook ping; a MinIO put/get/delete of a scratch object; an OTLP export
+  probe) recorded as its own `ops_run` and audited. Added: a **credential
+  and certificate expiry watch** — any integration whose token or key has a
+  known lifetime (Meta channel tokens, 2C2P maintenance keys, the OTO App
+  Directory API key) carries an `expires_on` the owner sets, and the
+  watchdog opens an alert 30 and 7 days before. The "variables to
+  provision" list from S2-03 stays, now grouped by which app needs them.
+
+- Analytics and sources (`/analytics`, read `console:analytics:read`, source
+  switch `console:analytics:manage_source`, re-run
+  `console:analytics:rerun`) — the owner's data-source control
+  (OWNER_DIRECTION 2026-09-20 later: "an administrator — from the OTO App's
+  admin and from the Console — chooses per branch whether the analytics
+  shown are the current POS (Pisell/Papaya) or the new OTO POS"). Shows and
+  changes: `analytics.branch_source_switch` per branch — `legacy` |
+  `oto_pos` | `both` with its switch date, the effect previewed before
+  saving ("days before 2026-10-01 stay legacy; from that date OTO POS");
+  `formula_version` per source (v30 Floresta, v21 Chalong) and which rows
+  carry it; `dirty_date` queue depth and a **re-run rollup for a date or
+  range** (`job:rollup.daily`), refused for frozen legacy days unless a
+  platform admin unfreezes with a reason; cross-branch KPIs read from
+  `GET /analytics/summary?branches=…&group=day|total` (S2-15b) — revenue,
+  guests, kid/adult mix, tier mix, marketing-channel breakdown, booth
+  funnel and prize cost, wallet liability — with a parity delta column for
+  branches set to `both`; and a deep link into Radar for analysis, which
+  stays Radar's job.
+
+- Configuration and content (`/config`, read `console:config:read`, write
+  `console:config:manage`) — the index of every configurable thing in the
+  suite, from `core.setting_registry`, each row labelled **owned by app X**.
+  Editable here (platform-owned): print templates and their fixtures
+  (S2-06/S2-11), receipt and refund series per station (S2-11), voucher
+  definitions with campaign and marketing channel (S2-07b/S2-10b), prize
+  lists, weights, caps and booth layouts with publish and version pickup
+  (S2-07b), supervision policy, confirmations and drop-off pricing (S2-13),
+  offline capability values (wallet cap, cache max age, staff-token
+  expiry), languages and the `en`/`th` message files with a
+  missing-translation report (Sprint 1 i18n scaffold, S2-19 for the Inbox
+  strings). Read-only with a link out: POS catalogue, prices, tiers and tax
+  rules (POS `/admin`); HR settings, schedules and modules (OTO App);
+  formulas, targets and notes (Radar); Inbox routing rules and templates
+  (Inbox). Added: a **cross-app drift check** that compares the `core`
+  mirrors against their masters (branches, employees and accounts against
+  `otoapp`, S2-17b's views) and lists divergences with a "who wins" note,
+  so the mirror never silently rots.
+
+- Money oversight (`/money`, read `console:money:read`, investigate
+  `console:money:investigate`) — the owner's read-only view of the money,
+  across branches and tenders, with no ability to move any. Shows: sales
+  per branch, business date and revenue category (`pos.sale`, `sale_line`,
+  S2-09a/b); refunds and voids with the approving manager, reason and the
+  original sale (S2-11); discounts, comps and promotions with foregone
+  revenue (S2-09a, S2-14a); cash sessions with float, paid-outs, safe drops
+  and variance against the ฿1 tolerance (S2-15a); settlement status per
+  tender and TID — card batches and the 2C2P reconciliation file
+  (PAYMENT_GATEWAY §3.11) with unmatched lines in either direction; wallet
+  liability outstanding and its daily movement (S2-14a
+  `fact_wallet_liability_daily`); voucher and benefit cost (S2-07b, S2-21).
+  Added, because they are the failures that hide: a **money integrity
+  panel** — receipt-number gaps per station and series, sales with no
+  settled payment, payments with no sale, attempts stuck past
+  `PAYMENT_PENDING_MIN`, refunds exceeding their sale, and wallet entries
+  whose projection disagrees with the ledger — each row linking straight to
+  the support trace. Every read of this page is audited; nothing on it
+  writes.
+
+- Support tools (`/support`, lookup `console:support:lookup`, trace
+  `console:support:trace`, impersonation `console:support:impersonate`) —
+  three tools for "a customer is standing at the desk and something is
+  wrong".
+  - **Cross-app lookup**: one box that accepts a phone, a band code, a
+    receipt number, a booking reference, a voucher code, an account id or
+    an action id and returns everything the suite knows, each result
+    labelled with its app and permission-filtered — member and children
+    (`crm`, masked unless the viewer holds the sensitive permission),
+    visits and check-ins (S2-13), sales and payments (S2-09a/S2-10a),
+    bands and gate events (S2-11/S2-12), bookings (S2-12), wallet and
+    vouchers (S2-14a/S2-10b), OTO App records through its API
+    (`app_identity`, events, check-ins), Inbox conversations (S2-19). Every
+    lookup writes a `data_access` audit row.
+  - **"What happened to this sale"**: paste one `x-oto-action-id`, sale id
+    or receipt number and get a single vertical trace, ordered by time,
+    following that action through till intent → box session document and
+    lease → device adapter call (terminal frame or print job, projected,
+    never raw) → outbox event with epoch and sequence → cloud apply or
+    quarantine → audit row → payment webhook and inquiry → rollup effect,
+    with each step's `ops_run` and its latency, the gaps highlighted, and a
+    deep link to the external trace through `TRACE_URL_TEMPLATE` when OTel
+    is configured. Sources: S2-03 correlation ids, S2-04 box log, S2-05
+    sync ledger, S2-10a adapter runs, S2-15b rollups.
+  - **Audited, time-boxed impersonation**: "view as" a chosen account in
+    the POS, the OTO App, Radar or the Inbox. Read-only by default;
+    `write_allowed` requires a reason, a reference and a second approver
+    (`CONSOLE_DUAL_CONTROL`). Expires after `IMPERSONATION_MAX_MIN`
+    (default 15) or on sign-out, whichever first. **Refused** for any
+    subject holding `platform_admin` or any `console:*` permission, and
+    refused for an actor impersonating themselves or an already-impersonated
+    session. A fixed, non-dismissible banner names the actor and the
+    subject in every app for the whole window; every request in the window
+    carries `actor_type=impersonated` with `on_behalf_of`, so the row is
+    unmistakable in both the platform `audit_log` and the target app's own
+    audit; the subject sees the session on their own account page
+    afterwards and a `console.impersonation.start` alert is raised. The
+    hand-off token issued for an impersonation is audience-bound and
+    marked, so an app can refuse it (the OTO App refuses it for payroll and
+    contract routes).
+
+- Data tools (`/data`, read `console:data:read`; reset
+  `console:data:reset_demo`; retention `console:data:retention_manage`;
+  erasure `console:data:erasure`; rehearsal
+  `console:data:migration_rehearse`) — everything that touches data in
+  bulk, all of it `platform_admin` only and all of it typed-confirmation.
+  Shows and changes: **Reset demo data** (the audited `ops.demo_reset`
+  action from the Design decisions, `OPS_TEST_CONTROLS` only) with a
+  preview of exactly which schemas and row counts go; **seed profiles**
+  (`SEED_PROFILE`, `platform:sync`, `seed:demo-day`) with the last run and
+  a re-run button; **retention and purge policies** per audit category from
+  `core.retention_policy`, feeding `job:housekeeping.retention` (S2-03),
+  with the floor rule that financial and child-release categories cannot be
+  set below five years (Open decision 33) and a dry-run that reports what
+  would be removed; **PDPA erasure requests** — record a request, see every
+  app and table holding that subject (platform tables directly, other apps
+  through their APIs), run the anonymise-in-place path, and keep the
+  evidence, with audit rows that never copy the erased values; **backup and
+  restore status** — the managed Postgres PITR window, last backup, last
+  restore rehearsal, and the object-storage bucket versioning state, shown
+  with a link to Render rather than executed here; **migration rehearsal**
+  (S2-22) — trigger a dump-restore-post-import rehearsal into a scratch
+  database, with the schema-drift report and the two-run comparison as its
+  output.
+
+- Release controls (`/releases`, read `console:release:read`; flags
+  `console:release:flag_manage`; kill switches
+  `console:release:kill_switch`) — version and blast radius. Shows:
+  version, commit and deploy time per app and per box agent from
+  `core.deploy_event` and the heartbeat, with `MIN_SUPPORTED_AGENT_VERSION`
+  and which boxes are below it; deploy history with who triggered it and
+  whether CI was green; the feature flags and kill switches from
+  `core.feature_flag` with their scope, current value, who set it, why, and
+  when it expires. Changes: flip a feature flag at platform, operator,
+  branch or station scope; and the named **kill switches** — disable QR
+  tender, force manual payment recording, disable card tender, close the
+  gate (deny all, or exit-only), stop the booth, pause outbound messaging,
+  freeze analytics rollups, block new sign-ins for an app, put an app into
+  maintenance. Three rules make them safe: every kill switch **must** carry
+  an expiry (default 60 minutes, maximum `KILL_SWITCH_MAX_TTL_MIN`) and
+  auto-reverts with an alert when it lapses; a **blast-radius preview**
+  names what stops working, which branches and stations are affected and
+  how many sessions are open there, before the confirm button enables; and
+  each flip is `platform_admin` only, typed confirmation, a mandatory
+  reason, an audit row with `target_app`, an alert to every channel, and a
+  banner on the affected app.
+
+- Permission vocabulary — added to `packages/shared/src/permissions.ts`
+  alongside the Sprint 1 strings and the app-access grants
+  (`app:console:access` remains the gate on the whole console):
+  `console:overview:read`; `console:org:read`, `console:org:manage`;
+  `console:people:read`, `console:people:manage`,
+  `console:people:grant_app`, `console:people:force_sign_out`;
+  `console:app_registry:read`, `console:app_registry:manage`;
+  `console:activity:read`, `console:activity:export`;
+  `console:alert:read`, `console:alert:manage`; `console:health:read`;
+  `console:device:read`, `console:device:manage`, `console:device:command`;
+  `console:integration:read`, `console:integration:test`;
+  `console:analytics:read`, `console:analytics:manage_source`,
+  `console:analytics:rerun`; `console:config:read`,
+  `console:config:manage`; `console:money:read`,
+  `console:money:investigate`; `console:support:lookup`,
+  `console:support:trace`, `console:support:impersonate`;
+  `console:data:read`, `console:data:reset_demo`,
+  `console:data:retention_manage`, `console:data:erasure`,
+  `console:data:migration_rehearse`; `console:release:read`,
+  `console:release:flag_manage`, `console:release:kill_switch`. Unmasked
+  audit reads keep the existing `admin:audit:read_sensitive`. Role bundles:
+  `platform_admin` gets all of them; `operator_admin` gets every read plus
+  `console:org:manage`, `console:people:*`, `console:config:manage`,
+  `console:analytics:manage_source`, `console:alert:manage`; a new seed
+  role `support` gets `app:console:access`, the reads,
+  `console:support:lookup` and `console:support:trace` but never
+  `console:support:impersonate`; `branch_manager` gets
+  `console:overview:read`, `console:health:read`, `console:device:read`,
+  `console:money:read` and `console:activity:read`, branch-scoped. Every
+  route carries the permission as a route option, so the S2-01b
+  route-enumeration test covers the console routes too; scope is taken from
+  the branch, operator or station in the route, resolved by the Sprint 1
+  scoped resolver.
+
+- Cross-cutting rules, implemented once and tested once:
+  - **Read-only versus actionable.** Read-only pages: Suite overview,
+    Activity, Health, Money oversight, and the support lookup and trace.
+    Actionable pages: Tenancy, People, App registry, Devices, Integrations
+    (tests only), Analytics (source switch and re-run), Configuration
+    (platform-owned settings only), Data tools, Release controls, and
+    acknowledge/resolve on Failures. A page that is read-only carries no
+    write route at all, so the enumeration test proves it.
+  - **Audit.** Every Console mutation runs through `withTx` (S2-01b) and
+    records an audit row with `origin='console'`, the actor, `app` (the
+    console), the new `target_app` (which app the action reached into),
+    `reason` where the action demands one, before/after, request id, action
+    id, scope, and the outcome. Denials are recorded the same way
+    (`auth.permission_denied` with the attempted permission and scope).
+    Console reads that touch personal data are recorded under the
+    `data_access` category, sampled for list views and always for a
+    detail view.
+  - **Danger rules.** Typed confirmation (the exact name or code typed
+    back) for: archive operator or branch, revoke a box or device
+    credential, `reset_store`, maintenance mode, reset demo data, purge or
+    retention change, erasure execution, migration rehearsal, force
+    sign-out everywhere, and every kill switch. `platform_admin` only for:
+    reset demo data, retention, erasure, migration rehearsal, kill
+    switches, maintenance mode, impersonation with writes, and unfreezing a
+    legacy analytics day. `OPS_TEST_CONTROLS=true` gates every test and
+    destructive convenience: reset demo data, seed profile re-runs,
+    simulator fault injection, `job:demo.fail`, "Stop heartbeats", "Advance
+    box clock", "Expire hand-off now", synthetic gateway notifications.
+    When `NODE_ENV=production` nothing destructive exists: the api already
+    refuses to boot with `OPS_TEST_CONTROLS` set (DEVELOPMENT_PLAN §8.12),
+    each destructive route refuses at runtime with
+    `403 DESTRUCTIVE_DISABLED_IN_PRODUCTION`, and the Console hides the
+    whole group rather than showing buttons that fail.
+  - **Dual control (break-glass).** `CONSOLE_DUAL_CONTROL` names the
+    actions that need a second platform admin to approve within 10 minutes:
+    by default granting `app:console:access` or `platform_admin`,
+    impersonation with writes, kill switches, erasure execution and reset
+    demo data. The request, the approver and the reason are one audit row
+    pair; an unapproved request expires and is recorded as such. This
+    answers the open question in `docs/features/console.md`.
+  - **Unavailability, not silence.** Every page that reads another app
+    shows "OTO App unreachable — last successful read 14:02" rather than an
+    empty table (proposal §4.5 service availability), and the failure is an
+    `ops_run`.
+
+- Environment variables (names only, added to `.env.example` and to the
+  Integrations page's presence list): `IMPERSONATION_MAX_MIN` (default 15),
+  `CONSOLE_DUAL_CONTROL` (comma list of actions), `KILL_SWITCH_MAX_TTL_MIN`
+  (default 1440), `CONSOLE_DIGEST_ENABLED`, `RENDER_API_KEY` (read-only,
+  deploy history only; absent means the deploy list falls back to
+  `core.deploy_event` written by the deploy step). No new secret is ever
+  displayed.
+
+- Seed and navigation: `platform:sync` seeds `core.app_registry` with the
+  six apps and their tile states, `core.setting_registry` with every
+  setting the suite has, the default `retention_policy` rows (no purge,
+  five-year floors recorded), the `support` role, and the default
+  `alert_recipient` set (console channel, all categories). Console
+  navigation becomes four groups — Overview; Organisation (Tenancy,
+  People, Apps, Configuration); Operations (Devices, Booths, Health,
+  Failures, Integrations, Releases); Insight and support (Activity,
+  Analytics, Money, Support, Data) — in the `packages/admin-ui` layout, at
+  1280 px and usable at phone width. `docs/features/console.md` is rewritten
+  to match, and the decisions log in `ARCHITECTURE.md` records the
+  never-write-another-app's-tables rule.
+
+Excludes: moving the Sprint 1 POS admin panels into the Console — the POS
+keeps its own admin by the owner's decision, so Open decision 2's "move in
+Sprint 3" half lapses with Sprint 3 and the Console links to those panels
+instead; editing OTO App HR data, Radar formulas or POS catalogue and
+prices from the Console (read-only with links out); deep analytics, charts
+and forecasting (Radar's job); a general approval-workflow engine (only the
+named break-glass dual control); executing backups or restores (Render
+PITR does that; the Console shows status and links); automatic remediation
+of anything the Console detects; any display of a secret value; live
+channel credentials (S2-19 / on-site); the Pi image and the on-site
+bring-up runbook (S2-24); the production data restore itself (S2-22, whose
+results this page then shows).
+
+Acceptance criteria:
+- [ ] Migration adds the eight `core` tables and the `audit_log`
+      `target_app`/`reason` columns and applies twice cleanly from empty;
+      `platform:sync` seeds the app registry, the setting registry, the
+      retention defaults, the `support` role and the alert recipients, and
+      is a no-op on a second run.
+- [ ] Every new `console:*` permission exists in
+      `packages/shared/src/permissions.ts`, appears on
+      `GET /me/permissions` for the seeded roles, and the route-enumeration
+      test fails if any console route lacks a permission option; a
+      `support`-role account sees Overview, Activity, Health and Support
+      but gets 403 `PERMISSION_DENIED` on every write route and cannot see
+      the impersonation tool.
+- [ ] Suite overview from a clean seeded staging shows all six apps with
+      state and version, today's money per branch matching
+      `GET /analytics/summary`, the open-alert count matching the Failures
+      page, boxes online matching Health, and at least one item in "needs a
+      decision" after a deliberately unresolved payment attempt; every tile
+      links to the page that can act and the page issues no write request.
+- [ ] Creating a second operator with one branch, setting its timezone,
+      opening hours and business-day start, adding a holiday range and a
+      branch feature flag all save and are audited; archiving a branch that
+      still owns a box is refused, naming the box.
+- [ ] From the People page, one action provisions a new person into the
+      OTO App: the platform account is created, `app:oto_app:access` is
+      granted, `core.app_identity` and `otoapp.users.platform_user_id` are
+      linked through the S2-17a service, and the person opens the OTO App
+      from the launcher with no second password. Two audit rows exist, one
+      with `target_app=oto_app`. Attempting the same by writing `otoapp`
+      tables does not exist in the code (dev evidence: a test asserts no
+      query outside `core`/`crm`/`pos`/`promo`/`booth`/`analytics`/`edge`
+      is issued from console services).
+- [ ] The reverse permission lookup for `pos:refund:approve` lists exactly
+      the accounts holding it with their scopes; the effective-permission
+      diff previews the added and removed permissions of a pending role
+      change, and the saved change matches the preview.
+- [ ] Setting an app to maintenance mode with a message makes the launcher
+      tile show it and the hand-off exchange for that origin return
+      `APP_IN_MAINTENANCE`, while every other app keeps working; the mode
+      auto-expires and is audited on both transitions.
+- [ ] Activity's data-access preset shows a child health note read and an
+      unmasked audit read as `data_access` rows with actor, record and app;
+      the masked view hides phone and allergy text for an account without
+      `admin:audit:read_sensitive`; the CSV export is audited and masked
+      for that same account.
+- [ ] Adding an email alert recipient for the category `payments` and
+      forcing an unmatched webhook opens an alert delivered to that
+      recipient with an `alert_delivery` row; acknowledging and resolving
+      records the actor and note.
+- [ ] Integrations shows presence only for every `PGW_*`, SMS, storage,
+      OTel and channel variable; the gateway test performs a token mint and
+      cancel and records an `ops_run` kind `integration`; setting an
+      integration's `expires_on` 20 days ahead opens the 30-day expiry
+      alert on the next watchdog run.
+- [ ] Switching a branch from `legacy` to `oto_pos` with a switch date
+      previews the effect, saves, is audited, and makes Radar show that
+      branch's POS figures; re-running the rollup for a chosen date
+      recomputes only that date; a frozen legacy day refuses the re-run
+      until a platform admin unfreezes it with a reason.
+- [ ] Configuration lists every setting with its owning app; a
+      platform-owned setting (a print template, the supervision policy)
+      edits and is audited here; an app-owned setting (a POS price, an HR
+      policy) is read-only and links out; the drift check reports a
+      deliberately diverged branch name between `core` and `otoapp`.
+- [ ] Money oversight reconciles against the source screens: the day's
+      sales, refunds, cash variance and settlement status equal the POS
+      End-of-Day figures for the same business date; the money-integrity
+      panel lists a deliberately created receipt-number gap and a sale with
+      no settled payment, each linking to its trace.
+- [ ] Cross-app lookup by one member's phone returns the member, children
+      (masked by permission), the last sale, the band, the booking, the
+      wallet balance, the OTO App record and the Inbox conversation, each
+      labelled with its app, and writes one `data_access` row.
+- [ ] Pasting the action id of a completed card sale into the trace view
+      shows the ordered chain from till intent to rollup with each step's
+      latency, including the box outbox event and the adapter run; doing
+      the same for a sale made while the box was offline shows the gap and
+      the later sync step.
+- [ ] Impersonating a reception account read-only shows the banner in the
+      POS for the whole window, ends automatically after
+      `IMPERSONATION_MAX_MIN`, and produces rows in both the platform audit
+      and the target app's audit marked `actor_type=impersonated` with
+      `on_behalf_of`; impersonating a `platform_admin` or a console-holder
+      is refused with `IMPERSONATION_REFUSED`; enabling writes without an
+      approver is refused.
+- [ ] "Reset demo data" requires `platform_admin`, `OPS_TEST_CONTROLS`, a
+      typed confirmation and a second approver, previews the schemas and
+      row counts, is audited `ops.demo_reset`, and is absent from the UI
+      and refused by the route when `NODE_ENV=production` (dev evidence in
+      the boot-refusal and route tests).
+- [ ] A retention policy set below the five-year floor for the financial or
+      child-release category is refused; a dry run reports the rows that
+      would be affected without removing any; an erasure request records
+      the subject's presence in every app and the executed anonymisation
+      leaves no value in the audit rows.
+- [ ] Flipping the "disable QR tender" kill switch previews the affected
+      branches, stations and open sessions, requires a reason and a second
+      approver, makes the POS refuse the QR tender with the configured
+      message while cash and card still work, raises an alert on every
+      channel, and auto-reverts at its expiry with a second alert and audit
+      row.
+- [ ] Every Console mutation in the QA run carries an audit row with
+      `origin='console'`, actor, `target_app` and, where required, a
+      reason; the console pages pass the phone-width and 1280 px checks and
+      no page shows a secret value.
+
+QA / demo steps:
+1. QA (UI): Open the Console on Render as platform admin; screenshot the
+   Suite overview with the six apps, today's money, alerts, boxes online
+   and the "needs a decision" list; click one item through to the page that
+   acts on it.
+2. QA (UI): On Tenancy, create operator "Demo Operator" with branch "Demo
+   2" (Asia/Bangkok, opening hours, business-day start), add a holiday
+   range and toggle a branch feature flag; screenshot the saves and their
+   Activity rows; try to archive HKT Central and screenshot the refusal
+   naming the box.
+3. QA (UI): On People, create an account, assign `reception` scoped to HKT
+   Central, screenshot the effective-permission diff before saving, then
+   provision the same person into the OTO App in one action; open the OTO
+   App from the launcher as that person with no second password and
+   screenshot it; screenshot the two audit rows and the reverse lookup for
+   `pos:refund:approve`.
+4. QA (UI): On Apps, set the Inbox to maintenance with a message;
+   screenshot the launcher tile and the refused hand-off, and the POS still
+   working; clear it and screenshot both audit rows.
+5. QA (UI): On Activity, open the data-access preset after reading a child
+   note in the POS; screenshot the masked and unmasked views as two
+   different accounts and the export row; on Failures, add an email
+   recipient for payments, force an unmatched webhook from the gateway
+   simulator, and screenshot the alert, its delivery and the
+   acknowledgement.
+6. QA (UI): On Health, screenshot the service, job, box, device and sync
+   tiles; on Devices, run a test print and a "re-pull config" on the
+   virtual box and screenshot the command results; attempt `reset_store`
+   with a non-empty outbox and screenshot the refusal.
+7. QA (UI): On Integrations, screenshot the presence list with no values,
+   run the gateway and storage tests, and screenshot the `ops_run` rows and
+   the expiry-watch alert after setting an `expires_on` 20 days ahead.
+8. QA (UI): On Analytics, switch "Demo 2" to `oto_pos` with today's date,
+   screenshot the preview and the save, make a demo sale on the POS,
+   re-run the rollup for today, and screenshot Radar showing the figure.
+9. QA (UI): On Configuration, edit a print template and screenshot the
+   audited change; screenshot a POS-owned price row shown read-only with
+   its link out; screenshot the drift report for a deliberately renamed
+   branch.
+10. QA (UI): On Money, screenshot the day's sales, refunds with approver,
+    cash variance and settlement status beside the POS End-of-Day screen
+    for the same date; screenshot the money-integrity panel listing the
+    seeded receipt-number gap.
+11. QA (UI): On Support, look up a member by phone and screenshot the
+    cross-app result; paste the action id of a card sale and screenshot the
+    trace; repeat for a sale made with the box offline; start a read-only
+    impersonation of the reception account, screenshot the banner in the
+    POS and the audit rows in both apps, then screenshot the refusal when
+    impersonating a platform admin.
+12. QA (UI): On Data tools and Releases, screenshot the reset-demo preview
+    with its typed confirmation and approver step, the retention floor
+    refusal, and the "disable QR tender" kill switch — its blast-radius
+    preview, the POS refusing the QR tender, the alert, and the auto-revert
+    with its audit row.
+13. Dev evidence: test output for the route-enumeration guard over the
+    console routes, the "no query outside platform schemas from console
+    services" test, the impersonation refusal and expiry tests, the
+    production destructive-route refusal test, the kill-switch auto-revert
+    test, and the migration-twice log.
+
+Depends on: S2-03 (Console v1, telemetry, audit extensions, alerts), S2-04
+(boxes, stations, devices and their commands), S2-15b (analytics summary
+contract), S2-17c, S2-18 and S2-19 (every app must exist before the layer
+above them is real), S2-22 (so the money and analytics pages show the
+client's own figures). Size: XL.
 
 ### S2-16 — Sprint 2 acceptance run, load and soak checks, Render staging refresh, sprint-2 tag, SPRINT_2_REPORT.md and Jira evidence per story
 
