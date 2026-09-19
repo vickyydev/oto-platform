@@ -13,10 +13,12 @@
   full account of what was done: `SPRINT_2_JIRA_MAP.md`.
 - Last completed step: S2-01a — the role-assignment privilege hole, the lock
   model, the public-deploy fencing and the PII leaks (see the ticket log).
-- Next step: **S2-01c** (SCRUM-188) — `render.yaml`, the staging profile and
-  the CI-gated deploy. It is owner-blockable: it needs the Render account.
-  The files it produces can be written now; the deploy itself waits.
-  After it, S2-02 (the suite launcher).
+- **S2-01c (SCRUM-188) is code-complete and waiting on two owner inputs:** a
+  Render API key in the gitignored `.env`, and an S3-compatible bucket
+  (Cloudflare R2 or similar — there is no MinIO on Render, and the api
+  refuses to boot on the demo keys). Everything else is written: the
+  blueprint, the CI deploy job, the staging profile, the demo reset.
+- Next step after the deploy: **S2-02** (SCRUM-189), the suite launcher.
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
@@ -70,6 +72,57 @@
   DS2278 + CR2278 cradle, Welltech G4 = rebadged Xprinter XP-C260, Xprinter
   XP-80 family, NEXGO/PAX physical ECR links, Pi vs mini PC) and the SCB
   Developer Portal direct API (kept as the alternative provider).
+
+### S2-01c — Render deploy of API + POS (SCRUM-188) — **code complete, deploy waiting on the owner**
+
+Built by two parallel agents on Opus 5 and reviewed here. Commit `9f3488d`.
+
+**`render.yaml`.** One api web service (`PROCESS_ROLES=api,edge,jobs`, one
+instance, health check on `/ready`, `TRUST_PROXY=1`), with `pnpm db:migrate
+&& pnpm db:platform-sync` as its pre-deploy step; the POS as a static site
+that rewrites `/api/*` to the api, so the session cookie stays same-origin
+and dev and production are one code path; a Singapore Postgres on a paid
+plan for its backups and recovery window; a commented-out worker for when
+`jobs` splits out of the api — enabling it means removing `jobs` from the
+api's roles, or the runner competes with itself for its own locks.
+
+Two findings worth keeping. `--prod=false` on the install is load-bearing:
+`NODE_ENV=production` is set on the service and both `tsx` (the start
+command's runtime) and `drizzle-kit` (the migrator) are devDependencies, so
+without it the build succeeds and the start fails. And Render's blueprint
+schema has **no PITR field** — point-in-time recovery is a property of any
+paid instance type, so it is encoded as the paid plan plus a comment.
+
+**CI.** A `deploy` job that runs only on a push to `main`, only after `ci`
+passes, calls the Render deploy hooks, and **skips green** while the secrets
+are unset — which they are until the account is connected.
+
+**"Reset demo data".** Platform-wide caller, a typed confirmation in the
+request body as well as the UI, one transaction, an `ops.demo_reset` audit
+row. It deletes what a day of play produces — visits, bookings, sales,
+payments, wallets, bands, stock levels and the members created during the
+session — and keeps what the operator set up. Seeded demo families survive
+by `created_via` (`import` from the seed, `pos` from the till), so the QA
+lookups for `+66811111111` still find Mali and her two children. Known
+residue, recorded rather than hidden: a child added to a *seeded* member
+during play survives, because `pnpm db:seed` skips a member that exists; a
+clean demo set is a re-seed against a fresh database.
+
+**`DEPLOY_ENV`, the conflict the blueprint exposed.** DEVELOPMENT_PLAN said
+the api should refuse to boot when `NODE_ENV=production` and any of
+`OPS_TEST_CONTROLS`, `SEED_PROFILE=staging` or `SMS_ADAPTER=console` is set —
+but the staging service is `NODE_ENV=production` with exactly those three,
+because staging runs the production *build* against throwaway data. Taken
+literally, staging could not start. Resolved with a separate discriminator:
+`DEPLOY_ENV=local|staging|production`. A development default is still
+refused on any deployment; the three playground settings are refused on
+`DEPLOY_ENV=production` only. Twelve boot-guard tests cover both halves.
+
+**Still needed from the owner, and nothing else:** a Render API key in the
+gitignored `.env`, and an S3-compatible bucket — there is no MinIO on
+Render, and `assertProductionSafe` refuses to boot while the object-storage
+keys are still the demo ones. Twilio and Sentry stay blank on staging by
+design: the staging SMS adapter prints codes to the log.
 
 ## Pending — in this order
 
