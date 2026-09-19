@@ -7,6 +7,7 @@ import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { opCtx, withTx } from '../services/tx';
 import { invalidateAllSessions, issueCode } from '../services/auth';
 import { resolveEffectivePermissions } from '../services/permissions';
 import {
@@ -93,18 +94,7 @@ export async function accountRoutes(app: App): Promise<void> {
         throw errors.conflict('ACCOUNT_PHONE_EXISTS', 'An account with this phone already exists');
       }
 
-      let employeeId = req.body.employeeId ?? null;
-      if (!employeeId && req.body.employeeName) {
-        employeeId = newId();
-        await app.db.insert(employee).values({
-          id: employeeId,
-          operatorId: auth.operatorId,
-          name: req.body.employeeName,
-          phone,
-        });
-      }
-
-      // Every requested role is checked BEFORE the account exists, so a
+      // Every requested role is checked BEFORE anything is written, so a
       // refused grant cannot leave a half-created account behind.
       const callerEffective = await req.effectivePermissions();
       const resolved: { roleId: string; scopeType: (typeof req.body.roles)[number]['scopeType']; scopeId: string | null }[] = [];
@@ -116,28 +106,40 @@ export async function accountRoutes(app: App): Promise<void> {
         resolved.push({ roleId: roleRow.id, ...scope });
       }
 
+      // Employee, account, role assignments, the setup code and the audit row
+      // are one operation: a failure at any point leaves no trace of it.
       const id = newId();
-      await app.db.insert(account).values({ id, operatorId: auth.operatorId, employeeId, phone, status: 'invited' });
-
-      for (const r of resolved) {
-        await app.db.insert(roleAssignment).values({
-          id: newId(),
-          accountId: id,
-          roleId: r.roleId,
-          scopeType: r.scopeType,
-          scopeId: r.scopeId,
+      await withTx(app.db, opCtx(req), 'account.create', async (tx) => {
+        let employeeId = req.body.employeeId ?? null;
+        if (!employeeId && req.body.employeeName) {
+          employeeId = newId();
+          await tx.insert(employee).values({
+            id: employeeId,
+            operatorId: auth.operatorId,
+            name: req.body.employeeName,
+            phone,
+          });
+        }
+        await tx.insert(account).values({ id, operatorId: auth.operatorId, employeeId, phone, status: 'invited' });
+        for (const r of resolved) {
+          await tx.insert(roleAssignment).values({
+            id: newId(),
+            accountId: id,
+            roleId: r.roleId,
+            scopeType: r.scopeType,
+            scopeId: r.scopeId,
+          });
+        }
+        await issueCode(tx, app.sms, id, phone, 'setup', req.id);
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'account.create',
+          entityType: 'account',
+          entityId: id,
+          after: { phone, employeeId, roles: req.body.roles },
+          requestId: req.id,
         });
-      }
-
-      await issueCode(app.db, app.sms, id, phone, 'setup', req.id);
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        action: 'account.create',
-        entityType: 'account',
-        entityId: id,
-        after: { phone, employeeId, roles: req.body.roles },
-        requestId: req.id,
       });
       return { id, status: 'invited' };
     },

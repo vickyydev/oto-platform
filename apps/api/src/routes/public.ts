@@ -22,6 +22,7 @@ import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { ipLimited } from '../plugins/rate-limit';
 import { audit } from '../services/audit';
+import { opCtx, withTx } from '../services/tx';
 
 /**
  * PUBLIC endpoints for the customer self-booking site (/book) — no session.
@@ -236,46 +237,50 @@ export async function publicRoutes(app: App): Promise<void> {
 
       const id = newId();
       const reference = `OTO-${String(randomInt(0, 36 ** 4)).padStart(4, '0')}-${randomInt(1000, 9999)}`;
-      await app.db.insert(booking).values({
-        id,
-        operatorId: br.operatorId,
-        branchId: br.id,
-        memberId,
-        reference,
-        bookingDate: visitDate,
-        status: 'paid', // payment recording is M2; the online flow simulates it (prototype behaviour)
-        totalSatang,
-        payload: {
-          tier: req.body.tier,
-          rateMode: rate.mode,
-          parentName: req.body.parentName,
-          phone,
-          contactChannel: req.body.contactChannel ?? 'whatsapp',
-          locale: req.body.locale ?? 'en',
-          lines: computedLines,
-          clientSnapshot: req.body.clientSnapshot ?? null,
-        },
-      });
-      for (const line of req.body.lines) {
-        for (let i = 0; i < line.kids; i++) {
-          await app.db.insert(attendee).values({
-            id: newId(),
-            bookingId: id,
-            name: `${req.body.parentName} — child ${i + 1}`,
-            kind: 'child',
-            payload: { packageId: line.packageId },
-          });
+      // Booking, attendees and the audit row are one operation: a booking
+      // whose attendees are missing is a family turned away at the door.
+      await withTx(app.db, opCtx(req), 'booking.create', async (tx) => {
+        await tx.insert(booking).values({
+          id,
+          operatorId: br.operatorId,
+          branchId: br.id,
+          memberId,
+          reference,
+          bookingDate: visitDate,
+          status: 'paid', // payment recording is M2; the online flow simulates it (prototype behaviour)
+          totalSatang,
+          payload: {
+            tier: req.body.tier,
+            rateMode: rate.mode,
+            parentName: req.body.parentName,
+            phone,
+            contactChannel: req.body.contactChannel ?? 'whatsapp',
+            locale: req.body.locale ?? 'en',
+            lines: computedLines,
+            clientSnapshot: req.body.clientSnapshot ?? null,
+          },
+        });
+        for (const line of req.body.lines) {
+          for (let i = 0; i < line.kids; i++) {
+            await tx.insert(attendee).values({
+              id: newId(),
+              bookingId: id,
+              name: `${req.body.parentName} — child ${i + 1}`,
+              kind: 'child',
+              payload: { packageId: line.packageId },
+            });
+          }
         }
-      }
-      await audit.record(app.db, {
-        actorAccountId: null,
-        operatorId: br.operatorId,
-        branchId: br.id,
-        action: 'booking.create',
-        entityType: 'booking',
-        entityId: id,
-        after: { reference, totalSatang, tier: req.body.tier, visitDate },
-        requestId: req.id,
+        await audit.record(tx, {
+          actorAccountId: null,
+          operatorId: br.operatorId,
+          branchId: br.id,
+          action: 'booking.create',
+          entityType: 'booking',
+          entityId: id,
+          after: { reference, totalSatang, tier: req.body.tier, visitDate },
+          requestId: req.id,
+        });
       });
       return { id, reference, visitDate, rateMode: rate.mode, totalSatang, lines: computedLines };
     },

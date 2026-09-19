@@ -5,6 +5,7 @@ import { branchToday, newId } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { opCtx, withTx } from '../services/tx';
 
 /**
  * SCRUM-32 — select & reconfirm children for a visit. A draft `visit` is
@@ -49,33 +50,38 @@ export async function visitRoutes(app: App): Promise<void> {
       const id = newId();
       const visitDate = req.body.visitDate ?? branchToday(br.timezone);
       const now = new Date();
-      await app.db.insert(visit).values({
-        id,
-        operatorId: auth.operatorId,
-        branchId,
-        memberId: req.body.memberId ?? null,
-        visitDate,
-        status: 'draft',
-        createdByAccountId: auth.accountId,
-      });
-      for (const childId of req.body.childIds) {
-        await app.db.insert(visitChild).values({ visitId: id, childId, confirmedAt: now });
-      }
-      if (req.body.childIds.length > 0) {
-        await app.db
-          .update(child)
-          .set({ lastConfirmedAt: now })
-          .where(inArray(child.id, req.body.childIds));
-      }
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId,
-        action: 'visit.create',
-        entityType: 'visit',
-        entityId: id,
-        after: { memberId: req.body.memberId ?? null, childIds: req.body.childIds, visitDate },
-        requestId: req.id,
+      // The visit, who is on it, their re-confirmation stamps and the audit
+      // row are one operation: a visit with half its children on it would be
+      // a child nobody knows is in the park.
+      await withTx(app.db, opCtx(req), 'visit.create', async (tx) => {
+        await tx.insert(visit).values({
+          id,
+          operatorId: auth.operatorId,
+          branchId,
+          memberId: req.body.memberId ?? null,
+          visitDate,
+          status: 'draft',
+          createdByAccountId: auth.accountId,
+        });
+        for (const childId of req.body.childIds) {
+          await tx.insert(visitChild).values({ visitId: id, childId, confirmedAt: now });
+        }
+        if (req.body.childIds.length > 0) {
+          await tx
+            .update(child)
+            .set({ lastConfirmedAt: now })
+            .where(inArray(child.id, req.body.childIds));
+        }
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId,
+          action: 'visit.create',
+          entityType: 'visit',
+          entityId: id,
+          after: { memberId: req.body.memberId ?? null, childIds: req.body.childIds, visitDate },
+          requestId: req.id,
+        });
       });
       return { id, visitDate, status: 'draft' };
     },

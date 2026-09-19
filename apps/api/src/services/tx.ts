@@ -1,5 +1,5 @@
 import type { Db } from '@oto/db';
-import type { FastifyBaseLogger } from 'fastify';
+import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
 import { audit } from './audit';
 
 /**
@@ -22,6 +22,13 @@ import { audit } from './audit';
 
 /** The transaction handle Drizzle hands a callback. Same surface as `Db`. */
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+
+/**
+ * What a service writes through: the pool, or a transaction on it. Services
+ * take this rather than `Db` so the same function works standalone and
+ * inside `withTx` — which is what lets one operation stay one transaction.
+ */
+export type Exec = Db | Tx;
 
 export interface OpContext {
   requestId?: string;
@@ -69,6 +76,17 @@ export async function withTx<T>(
     }
     throw err;
   }
+}
+
+/** The operation context every route builds the same way. */
+export function opCtx(req: FastifyRequest): OpContext {
+  return {
+    requestId: req.id,
+    actorAccountId: req.auth?.accountId ?? null,
+    operatorId: req.auth?.operatorId ?? null,
+    branchId: req.auth?.branchId ?? null,
+    log: req.log,
+  };
 }
 
 /** A short, non-leaking label for why an operation failed. */
