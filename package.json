@@ -13,6 +13,7 @@
     "db:generate": "pnpm --filter @oto/db generate",
     "db:migrate": "pnpm --filter @oto/db migrate",
     "db:seed": "pnpm --filter @oto/db seed",
+    "db:platform-sync": "pnpm --filter @oto/db platform:sync",
     "format": "prettier --write ."
   },
   "devDependencies": {

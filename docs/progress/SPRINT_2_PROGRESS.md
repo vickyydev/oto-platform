@@ -2,21 +2,21 @@
 
 ## Status
 
-- Current checkpoint: **building. S2-01a (SCRUM-186) is done and merged to
-  `main`; S2-01b (SCRUM-187) is in progress on
-  `feat/s2-01b-transactions-schema`** — the schema move and the declarative
-  permission guard are committed, 85 API tests green, typecheck/lint clean.
+- Current checkpoint: **building. S2-01a (SCRUM-186) and S2-01b (SCRUM-187)
+  are both done** — 106 API tests + 22 shared tests green, typecheck and lint
+  clean, the schema verified against its snapshot from an empty database
+  migrated twice. Next: S2-01c (SCRUM-188), which needs the owner's Render
+  account.
 - Jira: sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of project
   SCRUM holds the 24 stories under four epics, with 16 sub-tasks; the
   pre-existing 177 issues were labelled rather than deleted. Keys and the
   full account of what was done: `SPRINT_2_JIRA_MAP.md`.
 - Last completed step: S2-01a — the role-assignment privilege hole, the lock
   model, the public-deploy fencing and the PII leaks (see the ticket log).
-- Next step, inside **S2-01b**: wrap the mutating routes in `withTx` (the
-  helper is written and committed) and lift their bodies into services;
-  then the atomic idempotency claim, the extended permission vocabulary with
-  a re-runnable `platform:sync`, and the pool/process hardening. Then S2-01c
-  (Render deploy, owner-blockable on the Render account).
+- Next step: **S2-01c** (SCRUM-188) — `render.yaml`, the staging profile and
+  the CI-gated deploy. It is owner-blockable: it needs the Render account.
+  The files it produces can be written now; the deploy itself waits.
+  After it, S2-02 (the suite launcher).
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
@@ -214,9 +214,12 @@ gained `restart()` and per-test env overrides.
 **Deferred to S2-01b, as the ticket says:** transactions (`withTx`), the
 schema move, and the atomic idempotency claim.
 
-### S2-01b — Transactions, schema move and idempotency (SCRUM-187) — **in progress**
+### S2-01b — Transactions, schema move and idempotency (SCRUM-187) — **done**
 
-Branch `feat/s2-01b-transactions-schema`. Done so far, committed:
+Branch `feat/s2-01b-transactions-schema`. Three of its tracks — the
+permission vocabulary with `platform:sync`, the architecture documents, and
+the catalogue/branch transactions — were built by parallel agents on Opus 5
+and reviewed here before committing.
 
 **Named schemas (migration `0005_schema_move`).** `core` (tenancy, fleet and
 the platform's own records), `crm` (tiers, members, children, visits), `pos`
@@ -272,10 +275,65 @@ surface so widening it shows up in a diff.
 inside the transaction by the service, the failure row after the rollback on
 a separate connection, and one log line carries the operation name.
 
-Still to do in this ticket: wrap the mutating routes in `withTx` and lift
-their bodies into services; the atomic idempotency claim with the in-flight
-409 and `x-oto-replay`; the extended permission vocabulary and a re-runnable
-`platform:sync`; the pool and process hardening; ARCHITECTURE.md.
+**Transactions.** `withTx(db, ctx, opName, fn)`: the success audit row is
+written inside the transaction with the `tx` handle, the failure row after
+the rollback on the pool — the record of an attempt has to outlive the
+transaction that failed. Every mutating route is wrapped: accounts (create,
+role grant and removal, update, temporary password, force sign-out),
+operators (create, rename, administrator), members (create, update, archive,
+tier verification), children, visits, the catalogue (packages, holidays, tax
+config, overrides), branches and public bookings. The cases that matter are
+the multi-row ones: a visit with half its children on it is a child nobody
+knows is in the park; a tier verification writes the evidence and moves the
+member's tier together; deactivating an account also ends its sessions.
+`transactions.test.ts` forces a failure with a Postgres trigger that raises
+on the audit insert — inside the transaction, after everything the handler
+wrote — and asserts the rows are gone, the success audit row is gone, and
+exactly one `.failed` row remains.
+
+**Idempotency.** The key is claimed in one statement (`insert … on conflict
+do nothing returning`), so two retries racing a dropped connection cannot
+both decide they are first — Sprint 1 read then wrote, which is that race. A
+duplicate arriving while the original runs gets 409 `IDEMPOTENCY_IN_FLIGHT`
+with `Retry-After`; a replay carries `x-oto-replay`; a 5xx **releases** the
+key so a real retry does the work rather than replaying a failure for a day;
+an expired key is taken over atomically; `purgeExpiredIdempotencyKeys` gives
+the housekeeping job its sweep. Where a handler builds its response inside
+`withTx` the response is stored in that same transaction; where it reads the
+response back after committing, the client-minted id covers the gap —
+`POST /members` and `POST /visits` accept a UUIDv7 from the till and answer a
+repeat with the row that already exists.
+
+**Permission vocabulary and `platform:sync`.** 28 strings became 99, grouped
+by the ticket that will enforce them (selling, payments, refunds, printing,
+cash and day close, check-in, wallets, stock, fleet, booths, analytics, and
+the `app:*:access` tiles). The seed is now re-runnable and is the
+`platform:sync` step: system roles and their permissions converge on every
+run — a permission removed from a bundle is withdrawn, not merely left
+behind — while the demo rows are created once and then left alone, so a
+password changed on staging survives a sync. Sprint 1's "operator exists →
+return" early exit is gone. `pnpm db:platform-sync` runs the platform half
+alone, which is what the deploy step will call.
+
+**Pool and process.** Pool capped at 10 with a 10-second statement timeout,
+idle and connection timeouts, idle-in-transaction cut off, and an
+`application_name`; a pool error is logged rather than fatal. SIGTERM drains
+instead of dropping. Production refuses to boot on a development default —
+a localhost database, the `oto:oto` credentials, the demo MinIO keys, or a
+cookie that would travel in the clear — reporting every problem at once.
+
+**Documents.** ARCHITECTURE.md now carries the schema map, the transaction
+rule, ids and idempotency, the dominance rule and why the platform-wide
+scope is refused before dominance is weighed, the lock model, the route
+guard, and what never reaches a log line; its entity diagram is
+schema-qualified and renamed. CONTRIBUTING.md carries the expand/contract
+policy from 0006 and how to write and verify a hand-written migration.
+
+Still to do in this ticket: nothing. **Known follow-ups, not blockers:**
+ARCHITECTURE.md §3 and §6 still describe the pre-2026-09-19 repository
+layout; the new permission strings are defined and seeded but nothing
+enforces them yet — their own tickets wire them; `purgeExpiredIdempotencyKeys`
+is exported but not yet scheduled (S2-03's job runner).
 
 **Deviation recorded:** the plan calls this migration `0003`. S2-01a had
 already taken `0003` (the session lock model) and `0004` (the auth throttle),

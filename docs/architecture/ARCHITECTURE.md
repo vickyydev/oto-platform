@@ -1,6 +1,8 @@
 # OTO Platform — Architecture
 
-Status: Sprint 1. This file restates the decisions from `CLAUDE.md` Section 3 (the source of the decisions), records the verified prototype layout, and logs decisions and deviations as they are made. Update it whenever a decision is made or changed.
+Status: Sprint 2, from ticket S2-01b. This file restates the decisions from `CLAUDE.md` Section 3 (the source of the decisions), records the verified prototype layout, and logs decisions and deviations as they are made. Update it whenever a decision is made or changed.
+
+Sections 1–7 are the Sprint 1 decisions and still hold. Section 8 (the database schemas and the entity diagram) and section 9 (ids and idempotency) were rewritten in S2-01b; sections 11–15 describe the rules the API now runs under — transactions, administrative access control, the session lock model, route guards and log redaction — and are the part to read before writing a route or a service.
 
 ---
 
@@ -105,42 +107,87 @@ Prototype runs at `http://localhost:25731` with required env `PORT` + `BASE_PATH
 
 New code uses **operator = tenant** and **account / employee = staff**. When porting prototype code, every prototype `Operator`/`operatorId` reference maps to **account** (the acting staff account). Do not let the two meanings mix in the schema or services.
 
-## 8. Entity diagram (SCRUM-10)
+## 8. Database schemas and entity diagram (SCRUM-10, S2-01b)
 
-Core Sprint 1 entities (future-milestone tables — booking, transaction, wallet, wristband, stock — exist with minimal columns and hang off operator/branch/member the same way):
+### 8.1 The schema map
+
+One database holds the whole suite. The boundary between its parts is a Postgres **schema** rather than a naming convention, so that a grant, a dump or a `search_path` can address one area on its own, and so that a lifted application brought onto the same database later — the OTO App, Radar, the Inbox — can keep its own tables beside ours without a single name collision. `packages/db` owns seven schemas, declared in `packages/db/src/schema/helpers.ts` and listed there as `OWNED_SCHEMAS`. Drizzle table objects are still imported by name from `@oto/db`; only the SQL is qualified.
+
+| Schema | What lives there |
+|---|---|
+| `core` | Tenancy and fleet — `operator`, `branch`, `department`, `employee`, `account`, `role`, `role_permission`, `role_assignment`, `session`, `verification_code`, `station` — and the platform's own records: `audit_log`, `idempotency_key`, `file_object`, `auth_throttle`. |
+| `crm` | The customer: `tier`, `member`, `member_tier_verification`, `child`, `visit`, `visit_child`. |
+| `pos` | What the till sells and the money it takes: the catalogue (`ticket_package`, `branch_holiday`, `branch_tax_config`, `product_category`, `product`, `tax_override`), `booking` and `attendee`, `sale` and `sale_line`, `payment_attempt`, `wallet` and `wallet_entry`, `band`, `stock_item`, `stock_location`, `stock_level`. |
+| `promo` | Vouchers, redemptions, campaigns. Empty until the tickets that fill it. |
+| `booth` | The Lucky Wheel. Empty. |
+| `analytics` | Summaries and facts the reporting app reads. Empty. |
+| `edge` | Box-owned state and the sync ledger for the on-site boxes. Empty. |
+
+Placement is by **owner**, not by lifecycle: a table lives with the part of the business that is responsible for its rows, not with the tables that happen to be written at the same moment. Two placements the plan left open were settled here:
+
+- **The catalogue sits in `pos`.** A ticket package, the holiday calendar that switches its pricing and the tax rules applied to it are only ever read together, and only by the till and by the admin screens that configure the till. A separate configuration schema would put one read across two boundaries and buy nothing back.
+- **`tier` sits in `crm`, not with the catalogue that prices by it.** A tier is what a person *is* — the thing a member is verified as, and a verification that holds at every branch (D6). The catalogue only refers to `tier.code` when it works out a price.
+
+Nothing of ours is left in `public`. Schemas other tools own — `pgboss`, created by the job runner's own migrator, and `otoapp`, `radar`, `inbox` for the lifted applications — are deliberately excluded by `schemaFilter` in `packages/db/drizzle.config.ts`, so a Drizzle diff never offers to drop them.
+
+### 8.2 Names and types settled in the same move
+
+`migrations/0005_schema_move.sql` moved every table with `ALTER TABLE … SET SCHEMA`, which preserves the rows, and took the names the rest of the sprint uses while those tables were still empty: `transaction` → `sale`, `transaction_line` → `sale_line`, `payment` → `payment_attempt`, `wristband` → `band`, `item` → `stock_item`, with the foreign-key columns renamed to match. Postgres does not rename a constraint or an index when its table is renamed, so the migration renames those by hand as well.
+
+The seven Postgres enums became `text` columns with a `CHECK`. Adding a value to a Postgres enum takes a DDL lock and cannot happen in a transaction that also reads the type; a `CHECK` is replaced in one statement, and the database still enforces the set.
+
+A move between schemas is one of the few things `drizzle-kit generate` cannot express — it answers with `DROP` + `CREATE`, which would throw the rows away — so 0005 is hand-written and two scripts stand behind it. `pnpm --filter @oto/db snapshot <tag>` writes the matching Drizzle snapshot without the CLI's interactive rename prompts, and `pnpm --filter @oto/db verify-schema` builds a throwaway database from the committed migrations, runs them a second time to prove they are a no-op, and compares the live catalogue with the snapshot: tables, columns, nullability, foreign-key names *and* their `ON DELETE`, indexes and their uniqueness, and check constraints. It fails if any table of ours is found in `public`. See `CONTRIBUTING.md` for when each of those is required.
+
+### 8.3 Entity diagram
+
+The Sprint 1 entities plus the sales chain the rest of Sprint 2 fills. Tables that are still empty (`pos.booking` onwards) carry minimal columns and hang off operator, branch and member the same way the others do.
 
 ```mermaid
 erDiagram
-    operator ||--o{ branch : has
-    operator ||--o{ department : has
-    operator ||--o{ employee : employs
-    operator ||--o{ account : "logins"
-    operator ||--o{ member : "customers"
-    operator ||--o{ tier : "tier defs"
-    employee |o--o| account : "linked"
-    account ||--o{ role_assignment : "grants"
-    role ||--o{ role_assignment : ""
-    role ||--o{ role_permission : "bundle"
-    account ||--o{ session : ""
-    account ||--o{ verification_code : ""
-    member ||--o{ child : "guardian of"
-    member ||--o{ member_tier_verification : "evidence"
-    member |o--o{ visit : ""
-    branch ||--o{ visit : ""
-    visit ||--o{ visit_child : ""
-    child ||--o{ visit_child : ""
-    branch ||--o{ ticket_package : "catalog"
-    branch ||--o{ branch_holiday : "weekend overrides"
-    branch ||--|| branch_tax_config : "tax engine"
-    branch ||--o{ tax_override : ""
-    product_category ||--o{ product : ""
-    product_category |o--o{ tax_override : "scoped to"
-    product |o--o{ tax_override : "scoped to"
-    branch ||--o{ station : "devices"
-    operator ||--o{ audit_log : ""
-    account ||--o{ idempotency_key : ""
-    operator ||--o{ file_object : ""
+    "core.operator" ||--o{ "core.branch" : has
+    "core.operator" ||--o{ "core.department" : has
+    "core.operator" ||--o{ "core.employee" : employs
+    "core.operator" ||--o{ "core.account" : "logins"
+    "core.operator" ||--o{ "crm.member" : "customers"
+    "core.operator" ||--o{ "crm.tier" : "tier defs"
+    "core.employee" |o--o| "core.account" : "linked"
+    "core.account" ||--o{ "core.role_assignment" : "grants"
+    "core.role" ||--o{ "core.role_assignment" : ""
+    "core.role" ||--o{ "core.role_permission" : "bundle"
+    "core.account" ||--o{ "core.session" : ""
+    "core.account" ||--o{ "core.verification_code" : ""
+    "crm.member" ||--o{ "crm.child" : "guardian of"
+    "crm.member" ||--o{ "crm.member_tier_verification" : "evidence"
+    "crm.member" |o--o{ "crm.visit" : ""
+    "core.branch" ||--o{ "crm.visit" : ""
+    "crm.visit" ||--o{ "crm.visit_child" : ""
+    "crm.child" ||--o{ "crm.visit_child" : ""
+    "core.branch" ||--o{ "pos.ticket_package" : "catalogue"
+    "core.branch" ||--o{ "pos.branch_holiday" : "weekend overrides"
+    "core.branch" ||--|| "pos.branch_tax_config" : "tax engine"
+    "core.branch" ||--o{ "pos.tax_override" : ""
+    "pos.product_category" ||--o{ "pos.product" : ""
+    "pos.product_category" |o--o{ "pos.tax_override" : "scoped to"
+    "pos.product" |o--o{ "pos.tax_override" : "scoped to"
+    "core.operator" ||--o{ "core.station" : "devices"
+    "core.branch" ||--o{ "core.station" : "sited at"
+    "core.operator" ||--o{ "core.audit_log" : ""
+    "core.account" ||--o{ "core.idempotency_key" : ""
+    "core.operator" ||--o{ "core.file_object" : ""
+    "core.branch" ||--o{ "pos.booking" : ""
+    "pos.booking" ||--o{ "pos.attendee" : ""
+    "core.branch" ||--o{ "pos.sale" : "rings up"
+    "crm.member" |o--o{ "pos.sale" : ""
+    "pos.sale" ||--o{ "pos.sale_line" : ""
+    "pos.sale" ||--o{ "pos.payment_attempt" : "attempts"
+    "crm.member" |o--o| "pos.wallet" : ""
+    "pos.wallet" ||--o{ "pos.wallet_entry" : "ledger"
+    "core.branch" ||--o{ "pos.band" : "issued at"
+    "pos.stock_location" ||--o{ "pos.stock_level" : ""
+    "pos.stock_item" ||--o{ "pos.stock_level" : ""
 ```
+
+A ledger is never deleted out from under itself and a child's record is never deleted with its guardian: `crm.child → crm.member` is `ON DELETE RESTRICT`, and `pos.sale_line`, `pos.payment_attempt` and `pos.wallet_entry` lost the cascade they were created with. A delete that would take those rows with it now fails loudly instead.
 
 Key shapes inside jsonb (validated by `@oto/shared` zod schemas at the API boundary):
 - `ticket_package.prices` — `Record<tierCode, {weekday, weekend}>` satang (D1)
@@ -148,15 +195,24 @@ Key shapes inside jsonb (validated by `@oto/shared` zod schemas at the API bound
 - `ticket_package.tier_pricing` / `freebies` / `credit_rule` / `translations` — prototype shapes verbatim
 - `branch_tax_config.config` — the prototype tax engine: `{rates[], categoryRules[], discountPlacement}` (D3)
 
-## 9. Idempotency pattern (SCRUM-15)
+## 9. Ids and idempotency (SCRUM-15, hardened in S2-01b)
 
-Every mutating route accepts an `Idempotency-Key` header. The middleware hashes `method + url + body`; under `(account_id, key)`:
-- first sighting → the handler runs and its `{status, body}` is stored with the request hash and a TTL (`IDEMPOTENCY_TTL_HOURS`, default 24h);
-- same key + same hash → the stored response is replayed without re-running the handler;
-- same key + different hash → `409 IDEMPOTENCY_MISMATCH`;
-- same key while the original is still in flight → `409 IDEMPOTENCY_IN_FLIGHT`.
+A till on a mall connection retries. Without the two mechanisms below, a retry is a second member, a second visit, a second sale.
 
-This sits ON TOP of database unique constraints on business keys (`member(operator_id, phone)`, `account(operator_id, phone)`, `branch(operator_id, code)`), so replay protection never substitutes for real uniqueness. Payments/wallets/redemptions in later sprints inherit the same middleware unchanged.
+**Ids are minted by the client, not by the database.** Every primary key is a UUIDv7 produced by `newId()` in `@oto/shared`. The application generates it, so a till knows the id of the thing it is about to create before it has a connection to send it over — which is what the later offline queue is built on — and a create can therefore be repeated safely. `POST /members` takes the id in the body: if that row already exists inside the caller's operator, the existing member comes back with an `x-oto-replay: true` header instead of a second member being created. UUIDv7 is time-ordered, so the primary-key index stays append-mostly despite being random-looking.
+
+**`Idempotency-Key` covers the rest.** Every mutating route accepts the header; the plugin (`apps/api/src/plugins/idempotency.ts`) hashes `method + url + body` and works under `(account_id, key)` — the account is the principal today, and a box or station credential becomes a principal of its own when the boxes arrive.
+
+- The key is **claimed atomically**, in a single `insert … on conflict do nothing returning`, so two racing retries cannot both decide they are first. Sprint 1 read the row and then wrote it, which is exactly that race.
+- Same key, same request, response already stored → the stored `{status, body}` is replayed verbatim with `x-oto-replay: true`, and the handler does not run.
+- Same key, different request → `409 IDEMPOTENCY_MISMATCH`.
+- Same key while the original is **still running** → `409 IDEMPOTENCY_IN_FLIGHT` with `Retry-After: 1`. The answer tells the client to poll the same key rather than send the work again, which is the difference between waiting for a sale and ringing up two.
+- A **5xx releases the claim**: the row is deleted on the way out, so the next attempt does the work instead of replaying a server fault for the rest of the day.
+- A key whose window has passed is taken over by the next claim, again atomically. `IDEMPOTENCY_TTL_HOURS` (default 24) sets the window; `purgeExpiredIdempotencyKeys` clears the rows in bulk for housekeeping.
+
+Where a handler runs inside `withTx` (section 11) the stored response is written **in that same transaction**, so "the work happened" and "this is what we answered" commit together and a crash between the two cannot leave a retry re-running work that already succeeded. Where a handler reads its response back after the commit, the `onSend` hook stores it instead, and the client-minted id covers the gap.
+
+All of this sits **on top of** database unique constraints on business keys (`member(operator_id, phone)`, `account(operator_id, phone)`, `branch(operator_id, code)`): replay protection never substitutes for real uniqueness, and the two paths answer with the same error code when they race (section 15). The header cache is an online convenience with a one-day memory; the money path, when it arrives, rests on the client-minted entity id rather than on the header alone.
 
 ## 10. Deviations & decisions log
 
@@ -172,3 +228,90 @@ This sits ON TOP of database unique constraints on business keys (`member(operat
 | D8 | 2026-09-11 | The customer-display → till membership lookup travels via `session.pending_lookup_phone` (PUT stage / POST consume, 30 s TTL) — the "short-lived pending lookup on the session" from CLAUDE.md §7.4. | Both halves of the split-screen harness share the till's session; a station-scoped channel replaces it when the display becomes a separate device (M2+). |
 | D9 | 2026-09-11 | Public /book endpoints (client-requested Sprint 1 extension): unauthenticated catalog, phone → {nickname, tier} self-identification, and booking creation with the total recomputed server-side (shared pricing port). The member-tier endpoint deliberately returns no children or other PII, and the online tier claim is re-verified at the door per the prototype rule. | The customer site must price by tier and persist bookings without a staff session; trusting a client-computed total or exposing member PII publicly was never acceptable. |
 | D10 | 2026-09-11 | The i18n scaffold carries all five customer languages (en/zh/th/ru/fr) with the real prototype strings, and every seeded package ships name+description translations in all five. | Client instruction supersedes the brief's en/th scaffold: "all 5 languages processed and translations working, not placeholders" (extends Q2/D4). |
+
+(The log stays at section 10 so that the references to "§10" elsewhere keep working. The sections below were added after it.)
+
+## 11. Transactions — one operation, one transaction (S2-01b)
+
+Sprint 1 wrote the row and then the audit entry as two separate statements. A crash between them left a change nobody could account for, and a half-finished multi-table write left the database describing something that never happened. Everything a single operation does now happens inside `withTx(db, ctx, opName, fn)` — `apps/api/src/services/tx.ts` — and commits together or not at all.
+
+The rule the audit trail depends on has two halves, and they are deliberately asymmetric:
+
+- The **success** row is written **inside** the transaction, by the service, on the `tx` handle. It therefore cannot survive a rollback. An audit row describing a change that was rolled back is worse than no audit row at all.
+- The **failure** row is written **after** the rollback, on a separate connection from the pool, because by definition it has to outlive the transaction that failed. It is `<opName>.failed` against entity type `operation`, and it carries a short error code only — never the error's own text, which can contain the values that caused it. If even that write fails it is logged and the original error is still thrown: the record of a failure never replaces the failure.
+
+`opName` is the audit action vocabulary — `member.create`, `visit.create`, `role_assignment.delete` — so one name ties the log line, the audit row and the operation together, and the failure row is that name with `.failed` on the end.
+
+What a service is expected to do:
+
+- **Take `Exec`, not `Db`.** `Exec` is "the pool, or a transaction on it", so the same function works standalone and inside a `withTx`. That is what lets one operation stay one transaction when a route composes two services.
+- **Write only on the handle it was given.** A write issued against `app.db` from inside a `withTx` callback runs on a different connection, outside the transaction, and will not roll back with it. This is the mistake to watch for in review.
+- **Record its own audit row**, with `audit.record(tx, …)` on the same handle, as the last thing it does.
+- **Validate before it writes.** Roles are resolved before the account row is inserted, for instance, so an unknown role cannot leave an orphaned account behind.
+- **Be safe to run twice**, because the caller may retry (section 9).
+
+`apps/api/test/transactions.test.ts` proves the rule rather than asserting it. It installs a Postgres trigger that raises on the audit insert for one named action, so the failure happens *inside* the transaction, after everything the handler wrote — exactly the case the rule exists for. Creating an account, a visit and a public booking each roll back completely, leaving no row and no `create` audit entry, while the `.failed` entry survives in every case.
+
+## 12. Administrative access control — tenancy, scope, dominance (S2-01a)
+
+Sprint 1 checked only that the caller held `admin:role:assign`. Any holder, a branch manager included, could grant `platform_admin` platform-wide, reset the operator administrator's password, or act on an account belonging to another operator. `apps/api/src/services/access-control.ts` closes that with three rules, applied **in this order**:
+
+1. **Tenancy.** The target account must belong to the caller's operator. Anything else is `404 ACCOUNT_NOT_FOUND`, never 403 — a 403 would confirm that the id exists, and the existence of another operator's account is not ours to disclose.
+2. **Scope ownership.** A branch or department named in a scope must belong to the caller's operator, and the platform-wide scope (scope type `operator` with a null scope id) may only be used by a caller who already holds permissions platform-wide. Refusals are `403 SCOPE_NOT_OWNED`.
+3. **Dominance.** You cannot grant what you do not hold. The caller must hold *every* permission the role carries, at a scope that covers the scope being granted, or the grant is `403 ROLE_NOT_DOMINATED`. The same test guards destructive actions on an account that already exists: to deactivate it, change its phone, issue it a temporary password or read its permissions, the caller must dominate every role that account already holds.
+
+**Why the platform-wide scope is refused by rule 2, before rule 3 is weighed.** Both rules would refuse it, so the order looks like a detail. It is not, for three reasons.
+
+The first is that the answer has to be true. Weighing dominance first answers `ROLE_NOT_DOMINATED` and names a permission, which reads as an instruction — obtain that permission and the grant will go through. It will not. No permission held inside an operator ever authorises a platform-wide grant, because the question is not which permissions the caller holds but whether that scope is theirs to use at all. `SCOPE_NOT_OWNED` says the true thing.
+
+The second is that rule 2 decides which dominance test applies. For an ordinary scope, dominance asks whether the caller holds each permission at a covering scope. For a platform-wide grant it asks something stricter: the caller must hold the permission at `operator`/null specifically, not merely somewhere inside an operator. Running the check before the scope has been established would run the wrong one.
+
+The third is cost: rule 2 needs the caller's effective permissions, which are already resolved for the request, while rule 3 needs the role's whole permission list from the database.
+
+## 13. The lock model (S2-01a)
+
+Three different things can suspend or end a session, and conflating them is how audit trails go missing.
+
+- **Lock** — `session.locked_at`. The POS locks itself after inactivity (timings in `apps/pos/src/auth/timings.ts`). The session row survives untouched: it is still a valid session, it simply may do no business. `requireAuth` refuses everything outside a short exempt list — sign-out, lock, unlock, change-password, `GET /me`, `GET /me/permissions` — with `423 SESSION_LOCKED`, and a 423 from any call puts the POS into its locked screen, which names who is signed in and asks only for the password. Unlocking re-verifies that password against the *same* session, under the sign-in throttle. The checks live in `requireAuth` rather than only in `requirePermission`, because otherwise a route that needs nothing but a session would be reachable from a locked till.
+- **Revoke** — `session.revoked_at` and `revoked_reason`. Signing out, and "sign out everywhere", revoke rather than delete, so who ended a session, when and why stays answerable afterwards. `loadAuth` refuses a revoked session exactly as it refuses an expired one. A deactivated account is refused mid-session by the same path: the account's status is re-read on every request.
+- **Expire** — `session.expires_at`, with `last_seen_at` sliding at most once a minute. A locked session is deliberately not "seen": a locked till left open overnight stops sliding and expires on its own, rather than being kept alive for ever by the fact that nobody closed the browser.
+
+Locking is therefore a *state* of a session, not its end, and that is what it buys later. When the on-site boxes arrive, a till that is idle, locked, or cut off from the network still has a session id that is valid and unchanged, so work queued against it belongs to an identifiable session, station and branch when it eventually syncs — no re-authentication against a network that may be down, and no gap in the record. Meanwhile revocation stays a fact the server owns, so a lost or stolen box is cut off centrally on its next contact instead of everyone waiting for an expiry or being made to sign in again.
+
+## 14. Route guards declared on the route (S2-01b)
+
+Sprint 1 opened every handler with `await req.requirePermission(...)`. That works right up until someone adds a route and forgets the line, and nothing anywhere would have noticed. The guard now lives in the route options:
+
+```ts
+app.post(
+  '/',
+  { config: { permission: 'pos:member:create' }, schema: { /* … */ } },
+  async (req) => { /* … */ },
+);
+```
+
+`apps/api/src/plugins/permission.ts` hooks `onRoute`, records every route in a registry, and where a permission is declared prepends a `preHandler` that enforces it before the handler runs. Scope targets are paths into the request — `target: { branchId: 'params.branchId' }` — because the branch a caller is acting on is usually in the URL and the guard has to know it before the handler is entered. With no target, the caller's own operator and active branch are used.
+
+A route that needs something other than a plain permission says which, by name, so that "the guard is elsewhere" is a decision rather than an oversight:
+
+| Declaration | Meaning |
+|---|---|
+| `permission` | The permission required to enter the route. |
+| `auth: 'session'` | A signed-in caller is enough; no permission applies (`/me`). |
+| `public: true` | No session at all — the health probes, the OpenAPI document, and the customer-facing `/public/*` surface, which is fenced by rate limits instead. |
+| `dynamicPermission: true` | The permission depends on the request (read versus write of the same resource), so the handler calls `requirePermission` itself. |
+| `platformWide: true` | Guarded by a platform-wide assignment rather than a named permission: managing operators themselves is not an operator's business. |
+
+The registry exists so a test can enumerate it. `apps/api/test/routes-guarded.test.ts` walks every registered route and fails if one declares none of the five, which means a new route written without a `config` fails on the day it is written rather than the day it is exploited. A second case pins the open surface as an exact list, so widening it shows up in a diff and has to be argued for in review.
+
+## 15. Log redaction (S2-01a)
+
+On a hosted platform, stdout is a log stream the whole team can read. A phone number is the park's primary customer identifier and the key its members are looked up by, so in a log it is treated as a secret. Nothing below is optional tidiness; `apps/api/src/lib/scrub.ts` is where it is implemented.
+
+What never reaches a log line or the error reporter:
+
+- **Query strings.** Fastify's own request logging is off in favour of one completion line per request, with the path kept and everything after the `?` replaced (`scrubUrl`). `GET /members/lookup?phone=+66…` was the leak this closes.
+- **Phone numbers.** Where a log genuinely needs to correlate — "the same number failed five times" — it carries `phoneHash(phone)`, a short non-reversible handle, not the number. Every SMS adapter logs the hash; the local console adapter still prints the message body, because printing the code is how a developer receives it in development.
+- **Postgres error payloads.** A pg error is reduced to `code`, `constraint`, `table`, `schema`, `routine` and a truncated `message` before it goes anywhere. `detail`, `hint`, `where`, `parameters` and the query text are dropped: on a unique violation Postgres puts `Key (phone)=(+66…) already exists` in `detail`.
+- **The offending value in a response.** A 23505 becomes a typed `409` naming the constraint — `MEMBER_PHONE_EXISTS`, `ACCOUNT_PHONE_EXISTS`, and the rest of the map — never the value. The client already knows what it sent. The pre-check and the racing path deliberately answer with the same code, so one condition has one code however it is reached.
+- **Anything a caller can inject.** An inbound `x-request-id` is only honoured if it matches `^[A-Za-z0-9._-]{8,64}$`; otherwise the server mints its own.

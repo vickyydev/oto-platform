@@ -6,7 +6,13 @@
  * ticket packages (values ported 1:1 from catalogStore.ts seeds, in satang),
  * one holiday range, and the 7% inclusive VAT tax config.
  *
- * Safe to re-run: exits as a no-op when the OTO operator already exists.
+ * Re-runnable — this is the `platform:sync` step (S2-01b). Sprint 1's seed
+ * bailed out once the OTO operator existed, so a permission added to a bundle
+ * never reached a database that had already been seeded. Now every write is
+ * an upsert or a find-or-create: what the platform owns (system roles and
+ * their permissions, tiers, the catalogue) converges on each run, while the
+ * demo rows (accounts, members, children) are created once and then left
+ * alone, so a password changed or a note edited on staging survives a sync.
  */
 import { hash } from '@node-rs/argon2';
 import {
@@ -17,11 +23,12 @@ import {
   satangFromBaht,
   wwp,
   TAXABLE_CATEGORIES,
+  type SystemRole,
   type TaxConfigShape,
   type WWPrice,
 } from '@oto/shared';
-import { eq } from 'drizzle-orm';
-import { closeDb, getDb } from '../index';
+import { and, eq, isNull, notInArray, sql } from 'drizzle-orm';
+import { closeDb, getDb, type Db } from '../index';
 import * as s from '../schema/index';
 
 const b = satangFromBaht;
@@ -38,32 +45,92 @@ const ADULTS_FULL_CREDIT = { appliesTo: 'adults', basis: 'full_price' };
 const expatFromTourist = (t: WWPrice): WWPrice =>
   wwp(Math.round(t.weekday * 0.7), Math.round(t.weekend * 0.8));
 
-export async function seed(db: import('../index').Db = getDb()): Promise<void> {
-  const existing = await db.select().from(s.operator).where(eq(s.operator.name, 'OTO'));
-  if (existing.length > 0) {
-    console.log('Seed: operator "OTO" already exists — nothing to do.');
-    return;
+/**
+ * The rows the platform owns rather than any operator: the system role
+ * bundles. Separate from the demo tenant below so a deploy can re-sync access
+ * against a real database without seeding fixtures into it.
+ */
+export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole, string>> {
+  const roleIds = {} as Record<SystemRole, string>;
+  for (const roleName of SYSTEM_ROLES) {
+    const description = `System role: ${roleName}`;
+    const [row] = await db
+      .insert(s.role)
+      .values({ id: newId(), operatorId: null, name: roleName, description, isSystem: true })
+      .onConflictDoUpdate({
+        // A system role's operator_id is null and Postgres treats nulls as
+        // distinct, so role_name_unique never fires for one: the conflict
+        // lands on the partial index over name alone.
+        target: s.role.name,
+        targetWhere: sql`${s.role.operatorId} is null`,
+        set: { description, isSystem: true },
+      })
+      .returning({ id: s.role.id });
+    const roleId = row!.id;
+    roleIds[roleName] = roleId;
+
+    const bundle = ROLE_BUNDLES[roleName];
+    // A sync has to be able to take a permission away, not only hand one out.
+    await db
+      .delete(s.rolePermission)
+      .where(
+        and(eq(s.rolePermission.roleId, roleId), notInArray(s.rolePermission.permission, bundle)),
+      );
+    await db
+      .insert(s.rolePermission)
+      .values(bundle.map((permission) => ({ id: newId(), roleId, permission })))
+      .onConflictDoNothing({ target: [s.rolePermission.roleId, s.rolePermission.permission] });
   }
+  return roleIds;
+}
 
-  const operatorId = newId();
-  await db.insert(s.operator).values({ id: operatorId, name: 'OTO' });
+export async function seed(db: Db = getDb()): Promise<void> {
+  const roleIds = await platformSync(db);
 
-  const branchId = newId();
-  await db.insert(s.branch).values({
-    id: branchId,
-    operatorId,
-    name: 'HKT Central',
-    code: 'hkt-central',
-    timezone: 'Asia/Bangkok',
-    country: 'TH',
-  });
+  // `operator` has no natural business key, so the name is the seed's own
+  // handle on the demo tenant.
+  const [existingOperator] = await db
+    .select({ id: s.operator.id })
+    .from(s.operator)
+    .where(eq(s.operator.name, 'OTO'))
+    .limit(1);
+  const operatorId = existingOperator?.id ?? newId();
+  if (!existingOperator) await db.insert(s.operator).values({ id: operatorId, name: 'OTO' });
+
+  const [branchRow] = await db
+    .insert(s.branch)
+    .values({
+      id: newId(),
+      operatorId,
+      name: 'HKT Central',
+      code: 'hkt-central',
+      timezone: 'Asia/Bangkok',
+      country: 'TH',
+    })
+    .onConflictDoUpdate({
+      target: [s.branch.operatorId, s.branch.code],
+      set: { name: 'HKT Central', timezone: 'Asia/Bangkok', country: 'TH' },
+    })
+    .returning({ id: s.branch.id });
+  const branchId = branchRow!.id;
 
   // Departments (CLAUDE.md §4).
   const deptIds: Record<string, string> = {};
   for (const name of ['reception', 'restaurant', 'floor', 'nanny']) {
-    const id = newId();
+    const [found] = await db
+      .select({ id: s.department.id })
+      .from(s.department)
+      .where(
+        and(
+          eq(s.department.operatorId, operatorId),
+          eq(s.department.branchId, branchId),
+          eq(s.department.name, name),
+        ),
+      )
+      .limit(1);
+    const id = found?.id ?? newId();
+    if (!found) await db.insert(s.department).values({ id, operatorId, branchId, name });
     deptIds[name] = id;
-    await db.insert(s.department).values({ id, operatorId, branchId, name });
   }
 
   // Tiers — prototype seedTiers (catalogStore.ts:792), operator-wide.
@@ -74,27 +141,29 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
       { code: 'thai', name: 'Thai', isDefault: false, requiresVerification: true },
     ] as const
   ).entries()) {
-    await db.insert(s.tier).values({ id: newId(), operatorId, ...t, sortOrder: i });
-  }
-
-  // System roles generated from the shared permission bundles.
-  const roleIds: Record<string, string> = {};
-  for (const roleName of SYSTEM_ROLES) {
-    const id = newId();
-    roleIds[roleName] = id;
-    await db.insert(s.role).values({
-      id,
-      operatorId: null, // system role
-      name: roleName,
-      description: `System role: ${roleName}`,
-    });
-    for (const permission of ROLE_BUNDLES[roleName]) {
-      await db.insert(s.rolePermission).values({ id: newId(), roleId: id, permission });
-    }
+    await db
+      .insert(s.tier)
+      .values({ id: newId(), operatorId, ...t, sortOrder: i })
+      .onConflictDoUpdate({
+        target: [s.tier.operatorId, s.tier.code],
+        set: {
+          name: t.name,
+          isDefault: t.isDefault,
+          requiresVerification: t.requiresVerification,
+          sortOrder: i,
+        },
+      });
   }
 
   // Employees (prototype roster, mockApi.ts:430) + dev accounts.
   const emp = async (name: string, dept: string, phone: string) => {
+    const e164 = normalizePhone(phone);
+    const [found] = await db
+      .select({ id: s.employee.id })
+      .from(s.employee)
+      .where(and(eq(s.employee.operatorId, operatorId), eq(s.employee.phone, e164!)))
+      .limit(1);
+    if (found) return found.id;
     const id = newId();
     await db.insert(s.employee).values({
       id,
@@ -102,7 +171,7 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
       name,
       branchId,
       departmentId: deptIds[dept] ?? null,
-      phone: normalizePhone(phone),
+      phone: e164,
     });
     return id;
   };
@@ -115,23 +184,54 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
     employeeId: string,
     phone: string,
     password: string,
-    roles: Array<{ role: string; scopeType: 'operator' | 'branch'; scopeId: string | null }>,
+    roles: Array<{ role: SystemRole; scopeType: 'operator' | 'branch'; scopeId: string | null }>,
   ) => {
-    const id = newId();
-    await db.insert(s.account).values({
-      id,
-      operatorId,
-      employeeId,
-      phone: normalizePhone(phone)!,
-      passwordHash: await hash(password),
-      phoneVerifiedAt: new Date(),
-      status: 'active',
-    });
+    const e164 = normalizePhone(phone)!;
+    // A dev password someone has since changed stays changed.
+    const [created] = await db
+      .insert(s.account)
+      .values({
+        id: newId(),
+        operatorId,
+        employeeId,
+        phone: e164,
+        passwordHash: await hash(password),
+        phoneVerifiedAt: new Date(),
+        status: 'active',
+      })
+      .onConflictDoNothing({ target: [s.account.operatorId, s.account.phone] })
+      .returning({ id: s.account.id });
+    const [existing] = created
+      ? []
+      : await db
+          .select({ id: s.account.id })
+          .from(s.account)
+          .where(and(eq(s.account.operatorId, operatorId), eq(s.account.phone, e164)))
+          .limit(1);
+    const id = (created ?? existing)!.id;
+    // The assignments are re-checked even on an existing account: the dev
+    // admin has to keep working after a role is added to the seed.
     for (const r of roles) {
+      const roleId = roleIds[r.role];
+      const [held] = await db
+        .select({ id: s.roleAssignment.id })
+        .from(s.roleAssignment)
+        .where(
+          and(
+            eq(s.roleAssignment.accountId, id),
+            eq(s.roleAssignment.roleId, roleId),
+            eq(s.roleAssignment.scopeType, r.scopeType),
+            r.scopeId === null
+              ? isNull(s.roleAssignment.scopeId)
+              : eq(s.roleAssignment.scopeId, r.scopeId),
+          ),
+        )
+        .limit(1);
+      if (held) continue;
       await db.insert(s.roleAssignment).values({
         id: newId(),
         accountId: id,
-        roleId: roleIds[r.role]!,
+        roleId,
         scopeType: r.scopeType,
         scopeId: r.scopeId,
       });
@@ -165,15 +265,23 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
       medicalAlert?: boolean;
     }>;
   }) => {
-    const id = newId();
-    await db.insert(s.member).values({
-      id,
-      operatorId,
-      phone: normalizePhone(m.phone)!,
-      nickname: m.nickname,
-      tierCode: m.tier ?? 'tourist',
-      createdVia: 'import',
-    });
+    const [created] = await db
+      .insert(s.member)
+      .values({
+        id: newId(),
+        operatorId,
+        phone: normalizePhone(m.phone)!,
+        nickname: m.nickname,
+        tierCode: m.tier ?? 'tourist',
+        createdVia: 'import',
+      })
+      .onConflictDoNothing({ target: [s.member.operatorId, s.member.phone] })
+      .returning({ id: s.member.id });
+    // A demo family is written once. Its children and tier evidence carry no
+    // unique key of their own, so the guardian's own row is what stops a
+    // second run from giving Mali a second Nong Ploy.
+    if (!created) return;
+    const id = created.id;
     if (m.tier && m.tier !== 'tourist' && m.evidence) {
       // Demo records carry the full audit shape the counter flow now writes:
       // who checked (the seeded admin), where, and a document expiry.
@@ -204,7 +312,6 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
         consentRecordedAt: new Date(),
       });
     }
-    return id;
   };
 
   await mkMember({
@@ -327,18 +434,25 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
       },
     },
   ];
-  for (const p of packages) {
-    await db.insert(s.ticketPackage).values({ id: newId(), operatorId, branchId, ...p });
+  for (const { name, ...rest } of packages) {
+    // The catalogue is reference data: a price corrected here reaches a
+    // database that already has the package.
+    await db
+      .insert(s.ticketPackage)
+      .values({ id: newId(), operatorId, branchId, name, ...rest })
+      .onConflictDoUpdate({ target: [s.ticketPackage.branchId, s.ticketPackage.name], set: rest });
   }
 
   // One holiday range (future-dated so "today" stays weekday-priced).
-  await db.insert(s.branchHoliday).values({
-    id: newId(),
-    branchId,
-    name: 'Loy Krathong',
-    startsOn: '2026-11-24',
-    endsOn: '2026-11-25',
-  });
+  const holiday = { name: 'Loy Krathong', startsOn: '2026-11-24', endsOn: '2026-11-25' };
+  const [holidayRow] = await db
+    .select({ id: s.branchHoliday.id })
+    .from(s.branchHoliday)
+    .where(and(eq(s.branchHoliday.branchId, branchId), eq(s.branchHoliday.name, holiday.name)))
+    .limit(1);
+  if (!holidayRow) {
+    await db.insert(s.branchHoliday).values({ id: newId(), branchId, ...holiday });
+  }
 
   // Tax: 7% VAT inclusive on every category, stored_value untaxed, service 0,
   // discounts before tax — prototype seedTaxConfig (catalogStore.ts:719).
@@ -357,37 +471,64 @@ export async function seed(db: import('../index').Db = getDb()): Promise<void> {
     ),
     discountPlacement: 'before_tax',
   };
-  await db.insert(s.branchTaxConfig).values({ id: newId(), branchId, config: taxConfig });
+  await db
+    .insert(s.branchTaxConfig)
+    .values({ id: newId(), branchId, config: taxConfig })
+    .onConflictDoUpdate({ target: s.branchTaxConfig.branchId, set: { config: taxConfig } });
 
   // A product category + product so the tax-override resolver has targets.
-  const catId = newId();
-  await db.insert(s.productCategory).values({
-    id: catId,
-    operatorId,
-    name: 'F&B',
-    taxableCategory: 'fnb',
-  });
-  await db.insert(s.product).values({
-    id: newId(),
-    operatorId,
-    branchId,
-    categoryId: catId,
-    name: 'Ice Cream Cone',
-    priceSatang: b(60),
-  });
+  const [catRow] = await db
+    .select({ id: s.productCategory.id })
+    .from(s.productCategory)
+    .where(and(eq(s.productCategory.operatorId, operatorId), eq(s.productCategory.name, 'F&B')))
+    .limit(1);
+  const catId = catRow?.id ?? newId();
+  if (!catRow) {
+    await db.insert(s.productCategory).values({
+      id: catId,
+      operatorId,
+      name: 'F&B',
+      taxableCategory: 'fnb',
+    });
+  }
+  const [productRow] = await db
+    .select({ id: s.product.id })
+    .from(s.product)
+    .where(and(eq(s.product.branchId, branchId), eq(s.product.name, 'Ice Cream Cone')))
+    .limit(1);
+  if (!productRow) {
+    await db.insert(s.product).values({
+      id: newId(),
+      operatorId,
+      branchId,
+      categoryId: catId,
+      name: 'Ice Cream Cone',
+      priceSatang: b(60),
+    });
+  }
 
   // A first till station for the branch.
-  await db
-    .insert(s.station)
-    .values({ id: newId(), operatorId, branchId, name: 'Reception Till 1', kind: 'till' });
+  const [stationRow] = await db
+    .select({ id: s.station.id })
+    .from(s.station)
+    .where(and(eq(s.station.branchId, branchId), eq(s.station.name, 'Reception Till 1')))
+    .limit(1);
+  if (!stationRow) {
+    await db
+      .insert(s.station)
+      .values({ id: newId(), operatorId, branchId, name: 'Reception Till 1', kind: 'till' });
+  }
 
   console.log('Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog.');
 }
 
-// Run directly (pnpm db:seed).
+// Run directly: `pnpm db:seed`, or `--platform-only` for the sync a deploy
+// runs against a real database (system roles and their permissions, nothing
+// demo).
 const isMain = process.argv[1]?.replace(/\\/g, '/').endsWith('seed/index.ts');
 if (isMain) {
-  seed()
+  const run = process.argv.includes('--platform-only') ? platformSync() : seed();
+  run
     .then(() => closeDb())
     .catch((err) => {
       console.error(err);

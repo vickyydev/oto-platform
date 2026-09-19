@@ -5,6 +5,7 @@ import { newId } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { opCtx, withTx } from '../services/tx';
 
 /** SCRUM-27 — branches (with timezone) under the caller's operator. */
 export async function branchRoutes(app: App): Promise<void> {
@@ -57,18 +58,22 @@ export async function branchRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       const id = newId();
-      await app.db.insert(branch).values({ id, operatorId: auth.operatorId, ...req.body });
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: id,
-        action: 'branch.create',
-        entityType: 'branch',
-        entityId: id,
-        after: req.body,
-        requestId: req.id,
+      // Everything the operator's estate is judged by hangs off a branch row,
+      // so it arrives with the record of who opened it or not at all.
+      return withTx(app.db, opCtx(req), 'branch.create', async (tx) => {
+        await tx.insert(branch).values({ id, operatorId: auth.operatorId, ...req.body });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: id,
+          action: 'branch.create',
+          entityType: 'branch',
+          entityId: id,
+          after: req.body,
+          requestId: req.id,
+        });
+        return { id };
       });
-      return { id };
     },
   );
 
@@ -101,19 +106,21 @@ export async function branchRoutes(app: App): Promise<void> {
       const { archived, ...rest } = req.body;
       const patch: Partial<typeof branch.$inferInsert> = { ...rest };
       if (archived !== undefined) patch.archivedAt = archived ? new Date() : null;
-      const [after] = await app.db.update(branch).set(patch).where(eq(branch.id, req.params.id)).returning();
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: req.params.id,
-        action: 'branch.update',
-        entityType: 'branch',
-        entityId: req.params.id,
-        before,
-        after,
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'branch.update', async (tx) => {
+        const [after] = await tx.update(branch).set(patch).where(eq(branch.id, req.params.id)).returning();
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: req.params.id,
+          action: 'branch.update',
+          entityType: 'branch',
+          entityId: req.params.id,
+          before,
+          after,
+          requestId: req.id,
+        });
+        return { ok: true };
       });
-      return { ok: true };
     },
   );
 }

@@ -146,3 +146,35 @@ describe('ticket pricing port (prototype lib/pricing.ts semantics)', () => {
     expect(line.lineTotal).toBe(154000);
   });
 });
+
+describe('permission bundles (S2-01b)', () => {
+  it('every bundled permission is in the vocabulary', async () => {
+    const { PERMISSIONS, ROLE_BUNDLES, SYSTEM_ROLES } = await import('../src/permissions');
+    const known = new Set<string>(PERMISSIONS);
+    for (const roleName of SYSTEM_ROLES) {
+      for (const permission of ROLE_BUNDLES[roleName]) expect(known.has(permission)).toBe(true);
+    }
+  });
+
+  it('no bundle carries the same permission twice', async () => {
+    const { ROLE_BUNDLES, SYSTEM_ROLES } = await import('../src/permissions');
+    for (const roleName of SYSTEM_ROLES) {
+      const bundle = ROLE_BUNDLES[roleName];
+      expect(new Set(bundle).size).toBe(bundle.length);
+    }
+  });
+
+  // The dominance rule (S2-01a) only lets an account grant a role whose every
+  // permission it already holds: a manager who could not grant `reception`
+  // could not staff their own branch.
+  it('the bundles nest: staff ⊆ reception ⊆ branch_manager ⊆ operator_admin', async () => {
+    const { ROLE_BUNDLES } = await import('../src/permissions');
+    const within = (inner: string[], outer: string[]) => {
+      const held = new Set(outer);
+      return inner.filter((p) => !held.has(p));
+    };
+    expect(within(ROLE_BUNDLES.staff, ROLE_BUNDLES.reception)).toEqual([]);
+    expect(within(ROLE_BUNDLES.reception, ROLE_BUNDLES.branch_manager)).toEqual([]);
+    expect(within(ROLE_BUNDLES.branch_manager, ROLE_BUNDLES.operator_admin)).toEqual([]);
+  });
+});

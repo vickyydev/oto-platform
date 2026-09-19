@@ -23,6 +23,7 @@ import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { resolveTax } from '../services/tax';
+import { opCtx, withTx } from '../services/tx';
 
 async function loadBranch(app: App, branchId: string, operatorId: string) {
   const [br] = await app.db
@@ -92,25 +93,30 @@ export async function catalogRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const id = newId();
-      await app.db.insert(ticketPackage).values({
-        id,
-        operatorId: auth.operatorId,
-        branchId: req.params.branchId,
-        ...req.body,
-        gateAccess: req.body.gateAccess ?? false,
-        active: req.body.active ?? true,
+      // Catalogue writes carry their audit row in the same transaction: a
+      // price the tills start charging that nobody can account for is worse
+      // than a price change that never landed.
+      return withTx(app.db, opCtx(req), 'ticket_package.create', async (tx) => {
+        await tx.insert(ticketPackage).values({
+          id,
+          operatorId: auth.operatorId,
+          branchId: req.params.branchId,
+          ...req.body,
+          gateAccess: req.body.gateAccess ?? false,
+          active: req.body.active ?? true,
+        });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: req.params.branchId,
+          action: 'ticket_package.create',
+          entityType: 'ticket_package',
+          entityId: id,
+          after: req.body,
+          requestId: req.id,
+        });
+        return { id };
       });
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: req.params.branchId,
-        action: 'ticket_package.create',
-        entityType: 'ticket_package',
-        entityId: id,
-        after: req.body,
-        requestId: req.id,
-      });
-      return { id };
     },
   );
 
@@ -132,23 +138,25 @@ export async function catalogRoutes(app: App): Promise<void> {
         .where(and(eq(ticketPackage.id, req.params.id), eq(ticketPackage.branchId, req.params.branchId)))
         .limit(1);
       if (!before) throw errors.notFound('Ticket package not found');
-      const [after] = await app.db
-        .update(ticketPackage)
-        .set(req.body)
-        .where(eq(ticketPackage.id, req.params.id))
-        .returning();
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: req.params.branchId,
-        action: 'ticket_package.update',
-        entityType: 'ticket_package',
-        entityId: req.params.id,
-        before,
-        after,
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'ticket_package.update', async (tx) => {
+        const [after] = await tx
+          .update(ticketPackage)
+          .set(req.body)
+          .where(eq(ticketPackage.id, req.params.id))
+          .returning();
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: req.params.branchId,
+          action: 'ticket_package.update',
+          entityType: 'ticket_package',
+          entityId: req.params.id,
+          before,
+          after,
+          requestId: req.id,
+        });
+        return { ok: true };
       });
-      return { ok: true };
     },
   );
 
@@ -169,21 +177,23 @@ export async function catalogRoutes(app: App): Promise<void> {
         .where(and(eq(ticketPackage.id, req.params.id), eq(ticketPackage.branchId, req.params.branchId)))
         .limit(1);
       if (!before) throw errors.notFound('Ticket package not found');
-      await app.db
-        .update(ticketPackage)
-        .set({ archivedAt: new Date(), active: false })
-        .where(eq(ticketPackage.id, req.params.id));
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: req.params.branchId,
-        action: 'ticket_package.archive',
-        entityType: 'ticket_package',
-        entityId: req.params.id,
-        before,
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'ticket_package.archive', async (tx) => {
+        await tx
+          .update(ticketPackage)
+          .set({ archivedAt: new Date(), active: false })
+          .where(eq(ticketPackage.id, req.params.id));
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: req.params.branchId,
+          action: 'ticket_package.archive',
+          entityType: 'ticket_package',
+          entityId: req.params.id,
+          before,
+          requestId: req.id,
+        });
+        return { ok: true };
       });
-      return { ok: true };
     },
   );
 
@@ -223,18 +233,20 @@ export async function catalogRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const id = newId();
-      await app.db.insert(branchHoliday).values({ id, branchId: req.params.branchId, ...req.body });
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: req.params.branchId,
-        action: 'branch_holiday.create',
-        entityType: 'branch_holiday',
-        entityId: id,
-        after: req.body,
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'branch_holiday.create', async (tx) => {
+        await tx.insert(branchHoliday).values({ id, branchId: req.params.branchId, ...req.body });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: req.params.branchId,
+          action: 'branch_holiday.create',
+          entityType: 'branch_holiday',
+          entityId: id,
+          after: req.body,
+          requestId: req.id,
+        });
+        return { id };
       });
-      return { id };
     },
   );
 
@@ -249,18 +261,20 @@ export async function catalogRoutes(app: App): Promise<void> {
         .where(and(eq(branchHoliday.id, req.params.id), eq(branchHoliday.branchId, req.params.branchId)))
         .limit(1);
       if (!before) throw errors.notFound('Holiday not found');
-      await app.db.delete(branchHoliday).where(eq(branchHoliday.id, req.params.id));
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: req.params.branchId,
-        action: 'branch_holiday.delete',
-        entityType: 'branch_holiday',
-        entityId: req.params.id,
-        before,
-        requestId: req.id,
+      return withTx(app.db, opCtx(req), 'branch_holiday.delete', async (tx) => {
+        await tx.delete(branchHoliday).where(eq(branchHoliday.id, req.params.id));
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: req.params.branchId,
+          action: 'branch_holiday.delete',
+          entityType: 'branch_holiday',
+          entityId: req.params.id,
+          before,
+          requestId: req.id,
+        });
+        return { ok: true };
       });
-      return { ok: true };
     },
   );
 
@@ -323,28 +337,31 @@ export async function catalogRoutes(app: App): Promise<void> {
         .from(branchTaxConfig)
         .where(eq(branchTaxConfig.branchId, req.params.branchId))
         .limit(1);
-      if (existing) {
-        await app.db
-          .update(branchTaxConfig)
-          .set({ config: req.body })
-          .where(eq(branchTaxConfig.id, existing.id));
-      } else {
-        await app.db
+      return withTx(app.db, opCtx(req), 'branch_tax_config.update', async (tx) => {
+        // An upsert rather than the read above deciding: PUT is idempotent by
+        // definition, and two managers saving a branch's tax rules at once
+        // should both succeed with the later one winning — not one of them
+        // getting a unique violation off the branch_tax_config_unique index.
+        await tx
           .insert(branchTaxConfig)
-          .values({ id: newId(), branchId: req.params.branchId, config: req.body });
-      }
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: req.params.branchId,
-        action: 'branch_tax_config.update',
-        entityType: 'branch_tax_config',
-        entityId: req.params.branchId,
-        before: existing?.config ?? null,
-        after: req.body,
-        requestId: req.id,
+          .values({ id: existing?.id ?? newId(), branchId: req.params.branchId, config: req.body })
+          .onConflictDoUpdate({
+            target: branchTaxConfig.branchId,
+            set: { config: req.body },
+          });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: req.params.branchId,
+          action: 'branch_tax_config.update',
+          entityType: 'branch_tax_config',
+          entityId: req.params.branchId,
+          before: existing?.config ?? null,
+          after: req.body,
+          requestId: req.id,
+        });
+        return { ok: true };
       });
-      return { ok: true };
     },
   );
 
@@ -380,25 +397,27 @@ export async function catalogRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
       const id = newId();
-      await app.db.insert(taxOverride).values({
-        id,
-        branchId: req.params.branchId,
-        categoryId: req.body.categoryId ?? null,
-        productId: req.body.productId ?? null,
-        vatRateBp: req.body.vatRateBp ?? null,
-        serviceChargeBp: req.body.serviceChargeBp ?? null,
+      return withTx(app.db, opCtx(req), 'tax_override.create', async (tx) => {
+        await tx.insert(taxOverride).values({
+          id,
+          branchId: req.params.branchId,
+          categoryId: req.body.categoryId ?? null,
+          productId: req.body.productId ?? null,
+          vatRateBp: req.body.vatRateBp ?? null,
+          serviceChargeBp: req.body.serviceChargeBp ?? null,
+        });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: req.params.branchId,
+          action: 'tax_override.create',
+          entityType: 'tax_override',
+          entityId: id,
+          after: req.body,
+          requestId: req.id,
+        });
+        return { id };
       });
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        branchId: req.params.branchId,
-        action: 'tax_override.create',
-        entityType: 'tax_override',
-        entityId: id,
-        after: req.body,
-        requestId: req.id,
-      });
-      return { id };
     },
   );
 
