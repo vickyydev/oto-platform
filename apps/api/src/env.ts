@@ -58,6 +58,51 @@ const EnvSchema = z.object({
 
 export type Env = z.infer<typeof EnvSchema>;
 
+/** The values that exist so a fresh checkout runs; never a production value. */
+const DEV_DEFAULTS = {
+  minioAccessKey: 'oto',
+  minioSecretKey: 'otosecret123',
+} as const;
+
+/**
+ * Refuse to boot in production on a development default (S2-01b).
+ *
+ * The failure this prevents is quiet and expensive: a service that starts
+ * happily against the local Postgres, or with the demo object-storage
+ * credentials, and only reveals it when customer data is already in the
+ * wrong place. Better to not start at all, loudly, on the deploy.
+ */
+export function assertProductionSafe(env: Env): void {
+  if (env.NODE_ENV !== 'production') return;
+  const problems: string[] = [];
+
+  if (!env.DATABASE_URL) {
+    problems.push('DATABASE_URL is not set');
+  } else if (/@(localhost|127\.0\.0\.1)[:/]/.test(env.DATABASE_URL)) {
+    problems.push('DATABASE_URL points at localhost');
+  } else if (/:\/\/oto:oto@/.test(env.DATABASE_URL)) {
+    problems.push('DATABASE_URL still carries the development credentials');
+  }
+
+  if (env.MINIO_ACCESS_KEY === DEV_DEFAULTS.minioAccessKey) {
+    problems.push('MINIO_ACCESS_KEY is the development default');
+  }
+  if (env.MINIO_SECRET_KEY === DEV_DEFAULTS.minioSecretKey) {
+    problems.push('MINIO_SECRET_KEY is the development default');
+  }
+  if (!env.COOKIE_SECURE) {
+    problems.push('COOKIE_SECURE is false — the session cookie would travel in the clear');
+  }
+
+  if (problems.length) {
+    throw new Error(
+      `Refusing to start in production with development configuration:\n  - ${problems.join('\n  - ')}`,
+    );
+  }
+}
+
 export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env {
-  return EnvSchema.parse({ ...process.env, ...overrides });
+  const env = EnvSchema.parse({ ...process.env, ...overrides });
+  assertProductionSafe(env);
+  return env;
 }
