@@ -16,40 +16,50 @@ _Last updated: 2026-09-19 (after the app intake)_
   Lucky Wheel), together with the OTO App production dump and the wheel
   specification. Findings: `../architecture/EXISTING_SYSTEMS.md`; per-app pages
   in `../features/`; review notes in `../architecture/intake-2026-09-19/`.
-- **The programme plan is written and awaits the owner's approval:**
-  `../architecture/PLATFORM_PLAN.md` — five apps, one database, sign-on,
-  analytics continuity, two-device stations, booth, console, cutover.
+- **The programme plan is written:** `../architecture/PLATFORM_PLAN.md` —
+  five apps, one database, sign-on, analytics continuity, two-device stations,
+  booth, console, cutover.
+- **The owner re-prioritised on 2026-09-19 (evening):** Sprint 2 = the suite
+  launcher with centralised sign-in, the **POS complete against device
+  simulators**, the **Lucky Wheel booth with its admin control panel**, and
+  observability, deployed on Render temporary domains for the client to play
+  with. OTO App and Radar lifts, messaging and migration move to Sprint 3.
+- **The Sprint 2 plan is written and awaits approval:** `SPRINT_2_PLAN.md`
+  (16 tickets, milestones, checkpoints, open decisions). Its rule references
+  come from `../architecture/POS_RULES_RECONCILIATION.md`, which reconciles the
+  previous developer's `../briefs/POS_BACKEND_LOGIC.md` with the brief.
 - **Deployment shape is agreed:** one repo, many small deployables, a subdomain
   per app, one central database (`../architecture/DEPLOYMENT_TOPOLOGY.md`).
+  On `*.onrender.com` the sign-on is a signed hand-off between apps (permanent
+  mechanism); the parent-domain cookie is a later shortcut.
 
-**Nothing in the plan has been built.** The owner asked for analysis and a plan
-first.
+**Nothing in either plan has been built.**
 
 ## Waiting on the owner
 
-See `PLATFORM_PLAN.md` §14 for the full list. Blocking items:
-
-1. Approval of the plan, and the decisions in §14 (staff clock-in, revenue
-   definition, supervised care ownership, cutover shape).
-2. A real dump of **Radar's published database** and of the wheel's database.
-3. **Pisell and Papaya API credentials** (Replit Secrets) — history must be
-   exported before those subscriptions are cancelled.
-4. S3 bucket contents; DNS control of the `otoplay` domains.
-5. Render account, a staging domain with DNS access, vendor device documents in
-   `imports/_vendor-docs/`, target date.
+1. **Approval of `SPRINT_2_PLAN.md`** and answers to its Open decisions that
+   have no safe default (revenue definition, accountant session for inclusive
+   tax and receipt numbering, wallet offline cap, alert channel).
+2. Render account access (owner has one) — needed at S2-01c.
+3. Later sprints: a real dump of Radar's published database and of the
+   wheel's; Pisell and Papaya credentials from Replit Secrets (history must be
+   exported before those subscriptions are cancelled); S3 contents; DNS
+   control of the `otoplay` domains; staff clock-in decision.
+4. Remaining vendor documents (gate, printers, scanner) and 2C2P sandbox
+   credentials; a Raspberry Pi 5 on the desk would let the Pi image be built
+   this sprint instead of on site.
 
 ## Next steps once approved, in order
 
-1. **Platform foundation** (stream 1): named schemas and per-service database
-   logins, transactions and a service layer, the role-assignment fix,
-   client-supplied ids, shared sign-on package, signed staff token, device
-   credentials, `render.yaml`, staging domain.
-2. In parallel: **lift OTO App** (stream 2) and **lift Radar** (stream 3) onto
-   staging with copies of their data; **box agent core with simulators**
-   (stream 5).
-3. **Launcher and Console v1** (stream 4).
-4. **POS on the platform** (stream 6), then **Booth** (stream 7).
-5. **Analytics unification** (stream 8) and **cutover rehearsals** (stream 9).
+1. Create the Sprint 2 Jira tickets from `SPRINT_2_PLAN.md` (one issue per
+   ticket, lettered parts as sub-tasks).
+2. Execute in the plan's order: S2-01 (hardening, transactions, schema move,
+   first Render deploy) → S2-02/03 (launcher, sign-on, console, observability)
+   → **CP1** → S2-04..07 (stations, box agent, simulators, booth) → **CP2** →
+   S2-08..11 (display, checkout, tenders, printing, History) → **CP3, client
+   play-test opens** → S2-12..15 → **CP4** → S2-16 → **CP5**.
+3. Sprint 3: lift OTO App and Radar, Radar's per-branch source switch, messaging,
+   migration rehearsals and cutover (`../architecture/PLATFORM_PLAN.md` §12).
 
 ## Known defects to fix first
 

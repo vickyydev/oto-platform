@@ -5,6 +5,14 @@ yet. Basis: [`EXISTING_SYSTEMS.md`](EXISTING_SYSTEMS.md) (what runs today),
 [`../briefs/PROJECT_CONTEXT.md`](../briefs/PROJECT_CONTEXT.md) (boxes, devices,
 offline model) and [`../briefs/OWNER_DIRECTION.md`](../briefs/OWNER_DIRECTION.md).
 
+**Sequencing update (same day):** the owner brought the POS and the booth
+forward. Sprint 2 covers streams 1, 4 (launcher + Console v1), 5, 6, 7 and the
+observability layer, deployed on Render temporary domains — see
+[`../progress/SPRINT_2_PLAN.md`](../progress/SPRINT_2_PLAN.md). Streams 2, 3,
+8 and 9 follow in Sprint 3. On temporary domains the sign-on in §4 is a signed
+hand-off between apps rather than a parent-domain cookie; that hand-off is
+the permanent mechanism and the cookie an optional shortcut later.
+
 ## 1. What we are building
 
 A launcher page that lists the OTO apps a person may open, five apps behind one
