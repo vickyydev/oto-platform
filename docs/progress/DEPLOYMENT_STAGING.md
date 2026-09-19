@@ -17,7 +17,7 @@ environment sits beside staging later rather than colliding with it:
 
 | Resource | Type | Plan | Region |
 |---|---|---|---|
-| `oto-db-staging` | Postgres 16 | `basic_1gb`, 15 GB disk | Singapore |
+| `oto-db-staging` | Postgres 16 | `1c-2g` (1 CPU, 2 GB), 15 GB disk | Singapore |
 | `oto-api-staging` | web service | `standard`, 1 instance | Singapore |
 | `oto-pos-staging` | static site | — | CDN |
 
@@ -46,35 +46,50 @@ environment sits beside staging later rather than colliding with it:
   Only services in this workspace can connect. To run a one-off `psql` or the
   S2-22 restore from a laptop, add that address temporarily and remove it.
 
-## What is missing — three values
+## What is missing — the SMS credentials
 
-The api builds, migrates and seeds, then refuses to start:
+The api builds, migrates and seeds, then refuses to start until it can
+actually send a text. That is the guard working, not a defect: a deployment
+that quietly printed verification codes into a hosted log stream would put a
+live credential where anyone with log access can read it, and would leave
+every person who tried to set up an account waiting for a text that never
+came.
 
-```
-Error: SMS_ADAPTER=twilio but TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
-TWILIO_FROM are not set. Set them, or set SMS_ADAPTER=console on a local
-machine; there is no fallback, because …
-```
+Authentication is by **API key**, not the account's Auth Token — a key is
+revocable on its own, rotates without touching anything else on the account,
+and a Standard key cannot be used to create further keys.
 
-That is the guard working, not a defect. A deployment that quietly printed
-verification codes into a hosted log stream would put a live credential where
-anyone with log access can read it, and would leave every person who tried to
-set up an account waiting for a text that was never sent.
+| Variable | Value |
+|---|---|
+| `TWILIO_ACCOUNT_SID` | the `AC…` from the console dashboard — names the account in the URL, it does not authenticate |
+| `TWILIO_API_KEY_SID` | the `SK…` shown when the key is created |
+| `TWILIO_API_KEY_SECRET` | the secret shown once, at creation, and never again |
+| `TWILIO_FROM` | the SMS-capable number in E.164, or a Messaging Service SID (`MG…`) |
+| `TWILIO_AUTH_TOKEN` | leave blank when a key is set |
 
-Set the three on `oto-api-staging`, then turn its auto-deploy back on
-(`checksPass`) and deploy. Its auto-deploy is **off** meanwhile, so it does
-not retry and fail every time something merges.
+The api checks the shape of each at boot — a value that does not begin `AC`
+in the account variable, or `SK` in the key variable, is refused by name.
+Twilio's own answer to a swapped pair is a 401 at the first person who needs
+a code, days later, reading as a delivery problem.
+
+On a **trial** account, every phone in the walkthrough must first be added to
+Verified Caller IDs in the console: a trial account texts nobody else.
+
+Set them on `oto-api-staging`, turn its auto-deploy back on (`checksPass`)
+and deploy. Auto-deploy is **off** on that service meanwhile, so it does not
+retry and fail every time something merges.
 
 ## Decisions taken at the first deploy
 
-- **`basic_1gb`, not `basic_4gb`.** The blueprint argued for 4 GB against the
-  S2-22 restore and the analytics rollups. The dump is 33 MB, and the
-  connection budget written into `render.yaml` (68 of 97) already fits the
-  1 GB ceiling. Render changes the plan in place, so this is reversible in a
-  click before the restore; over-provisioning a staging database is not.
-- **The database is `basic_1gb` rather than the free type** because the free
-  one expires after 30 days and carries no backups — a cliff in the middle of
-  the sprint.
+- **`1c-2g`, not `basic_4gb`.** Measured rather than guessed: the seeded
+  database is 10 MB across 38 tables, and `max_connections` is **103** where
+  the blueprint had budgeted 68 — so the connection argument for a larger
+  plan did not survive contact with the real server. 2 GB caches the eventual
+  33 MB restore many times over, and doubles the CPU from the 1 GB tier,
+  which is what `pg_restore -j4` will actually want. Resizing is a plan
+  change in place with a short restart, done here while nothing was live.
+- **A paid database rather than the free type** because the free one expires
+  after 30 days and carries no backups — a cliff in the middle of the sprint.
 - **The api is `standard`, not `starter`:** argon2id on every sign-in makes
   the process CPU-bound, the free and starter types spin down when idle (a
   ~50 s cold start the first time someone opens the till), and Render's

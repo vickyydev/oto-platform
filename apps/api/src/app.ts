@@ -112,6 +112,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
         adapter: opts.env.SMS_ADAPTER,
         twilioAccountSid: opts.env.TWILIO_ACCOUNT_SID || undefined,
         twilioAuthToken: opts.env.TWILIO_AUTH_TOKEN || undefined,
+        twilioApiKeySid: opts.env.TWILIO_API_KEY_SID || undefined,
+        twilioApiKeySecret: opts.env.TWILIO_API_KEY_SECRET || undefined,
         twilioFrom: opts.env.TWILIO_FROM || undefined,
       },
       log,

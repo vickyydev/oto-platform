@@ -16,9 +16,10 @@
 #      boot in production on the development storage keys (apps/api/src/env.ts,
 #      `assertProductionSafe`) — deliberately, so a deploy cannot quietly put
 #      a member's files somewhere wrong.
-#   2. TWILIO_* must carry a real Twilio sender. Verification and reset codes
-#      go to a phone on every deployment, staging included, and the api
-#      refuses to start on a deployment that has no way to send one.
+#   2. TWILIO_* must carry a real Twilio sender — the account SID, a sending
+#      number, and either an API key or the account auth token. Verification
+#      and reset codes go to a phone on every deployment, staging included, and
+#      the api refuses to start on a deployment that has no way to send one.
 #   3. ALLOWED_ORIGINS must carry the POS site's origin once Render has issued
 #      it, or every write from the till is refused with ORIGIN_NOT_ALLOWED.
 #
@@ -49,16 +50,24 @@ databases:
     # on staging. Confirm the retention window in the dashboard after the first
     # deploy — that is where Render shows it.
     #
-    # `basic_4gb` rather than the cheapest paid type, for three reasons that
+    # `1c-2g` (1 CPU, 2 GB) rather than the cheapest paid type, for three
     # are all work this database is already scheduled to do:
     #   - S2-22 restores the park's own data here: a 33 MB dump of 184 tables
     #     and 519 foreign keys, loaded into a scratch database on THIS server,
     #     renamed, dumped again and restored with `pg_restore -j4`. Two copies
     #     of the data and four parallel workers want more than half a core.
     #   - Radar's rollups (S2-18) and the analytics summary (S2-15b) scan the
-    #     sales tables on a schedule, beside the till's own queries. 4 GB keeps
-    #     that working set in cache instead of on disk.
+    #     sales tables on a schedule, beside the till's own queries. The whole
+    #     dataset is 33 MB, so 2 GB holds that working set in cache many times
+    #     over; the next size up would be buying headroom for a park that does
+    #     not exist yet.
     #   - the connection ceiling, which the api's maxInstances is derived from.
+    #
+    # Sizing up is a plan change in the dashboard, applied with a restart, and
+    # the connection budget below is written against the lowest paid ceiling so
+    # it survives the move. Sizing DOWN is not symmetrical — the disk grows
+    # with the data and can never be shrunk — which is why the smaller paid
+    # type is the one to start on.
     #
     # CONNECTION CEILING — the api's scaling block depends on this number.
     # Render publishes a fixed limit per instance type and the basic range
@@ -84,7 +93,7 @@ databases:
     # shrunk — a number guessed in a blueprint is a number you live with. The
     # S2-22 restore holds the data twice over while it runs, so check the disk
     # before running it rather than after.
-    plan: basic_1gb
+    plan: 1c-2g
     # Empty = no connections from the public internet; only services in this
     # Render workspace can reach it. To run a one-off psql or the demo seed
     # from a laptop, add that address here temporarily and remove it after.
@@ -339,15 +348,35 @@ services:
       # nobody has tested. Staging runs the production build; it runs the
       # production SMS route too.
       #
-      # THE SERVICE WILL NOT START UNTIL ALL THREE ARE SET, and that is the
-      # point: a deployment with no way to reach a phone would otherwise fall
-      # back to logging codes and look perfectly healthy doing it.
+      # THE SERVICE WILL NOT START UNTIL THE CREDENTIALS ARE SET, and that is
+      # the point: a deployment with no way to reach a phone would otherwise
+      # fall back to logging codes and look perfectly healthy doing it.
+      #
+      # WHAT TO SET: TWILIO_ACCOUNT_SID, TWILIO_FROM, and ONE of
+      #   - TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET  (recommended), or
+      #   - TWILIO_AUTH_TOKEN                           (the fallback).
+      # Leave the unused shape blank. Half a key pair is refused at boot rather
+      # than quietly authenticating as the whole account instead.
       - key: SMS_ADAPTER
         value: twilio
       - key: TWILIO_ACCOUNT_SID
-        # console.twilio.com → Account SID, begins "AC".
+        # console.twilio.com → Account SID, begins "AC". Required either way:
+        # it names the account in the request URL rather than authenticating.
+        sync: false
+      - key: TWILIO_API_KEY_SID
+        # Account → API keys & tokens → Create API key, type Standard. Begins
+        # "SK". Preferred over the auth token: revoked and rotated on its own,
+        # so replacing this deployment's credential does not break every other
+        # integration on the account, and a Standard key cannot manage keys or
+        # change the account.
+        sync: false
+      - key: TWILIO_API_KEY_SECRET
+        # Shown once, when the key is created. Not recoverable afterwards —
+        # a lost secret means a new key.
         sync: false
       - key: TWILIO_AUTH_TOKEN
+        # The account's master password. Only used when no API key is set;
+        # leave blank once the key above is in place.
         sync: false
       - key: TWILIO_FROM
         # An SMS-capable Twilio number in E.164, or a Messaging Service SID

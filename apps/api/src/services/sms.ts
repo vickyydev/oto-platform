@@ -14,9 +14,18 @@ import { phoneHash } from '../lib/scrub';
  *    code is delivered on a developer's machine, and it is a configuration
  *    error anywhere else — `assertProductionSafe` refuses it on a deployment,
  *    staging included.
- *  - "twilio": Twilio's REST API. Needs TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
- *    and TWILIO_FROM (an SMS-capable Twilio number in E.164, or a Messaging
- *    Service SID starting "MG").
+ *  - "twilio": Twilio's REST API. Needs TWILIO_ACCOUNT_SID, TWILIO_FROM (an
+ *    SMS-capable Twilio number in E.164, or a Messaging Service SID starting
+ *    "MG") and one of two credential shapes:
+ *      * TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET — an API key, and the
+ *        shape to prefer. It is revocable and rotatable on its own, so the day
+ *        this deployment's credential is replaced is not the day every other
+ *        integration on the account breaks.
+ *      * TWILIO_AUTH_TOKEN — the account's master password. It works, it is
+ *        what the dashboard shows first, and it can do anything the account
+ *        can do.
+ *    The key wins when both are present. Either way the URL path names the
+ *    ACCOUNT, so TWILIO_ACCOUNT_SID is required in both shapes.
  *
  * A misconfigured adapter now fails at construction — which is boot — rather
  * than at the first person who needs a code. Until S2-01c both the
@@ -33,6 +42,8 @@ export interface SmsConfig {
   adapter: string;
   twilioAccountSid?: string;
   twilioAuthToken?: string;
+  twilioApiKeySid?: string;
+  twilioApiKeySecret?: string;
   twilioFrom?: string;
 }
 
@@ -100,9 +111,22 @@ const deliveryFailed = (status?: number): AppError =>
     status === undefined ? undefined : { status },
   );
 
-function twilioSender(sid: string, token: string, from: string, log: Logger): SmsSender {
-  const auth = 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64');
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+/**
+ * WHO we authenticate as and WHOSE account we are posting to are two different
+ * questions, and with an API key they have two different answers: Twilio
+ * authenticates the REST API with HTTP Basic, where the username is the key
+ * SID and the password is the key secret, while the URL path still names the
+ * account the message is billed to. With the account auth token the two
+ * collapse back into one value, which is why this used to take a single SID.
+ */
+function twilioSender(
+  accountSid: string,
+  basic: { user: string; password: string },
+  from: string,
+  log: Logger,
+): SmsSender {
+  const auth = 'Basic ' + Buffer.from(`${basic.user}:${basic.password}`).toString('base64');
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
   return {
     async send(phone, message) {
       const to = phoneHash(phone);
@@ -182,23 +206,102 @@ function twilioSender(sid: string, token: string, from: string, log: Logger): Sm
   };
 }
 
+/** Twilio's two SID kinds, each with the prefix that identifies it. */
+const SID_SHAPES = {
+  TWILIO_ACCOUNT_SID: { prefix: 'AC', kind: 'an account SID' },
+  TWILIO_API_KEY_SID: { prefix: 'SK', kind: 'an API key SID' },
+} as const;
+
+const SID_NAMES = ['TWILIO_ACCOUNT_SID', 'TWILIO_API_KEY_SID'] as const;
+
+/**
+ * Both SIDs are 34 characters of hex behind two letters, they sit next to each
+ * other in the Twilio console, and a key is created on the same page that
+ * shows the account. Swapping them is therefore the likely mistake, and Twilio
+ * answers a swap with a 401 at the first person who needs a code — days after
+ * the deploy, reading as "the SMS did not go out" rather than "that value is
+ * in the wrong variable". Two characters are cheap to check here instead.
+ */
+function wrongSidShape(name: (typeof SID_NAMES)[number], value: string): string | null {
+  const want = SID_SHAPES[name];
+  if (value.startsWith(want.prefix)) return null;
+  const actually = SID_NAMES.find((n) => n !== name && value.startsWith(SID_SHAPES[n].prefix));
+  return (
+    `${name} does not hold ${want.kind} — those begin "${want.prefix}"` +
+    (actually
+      ? `, and this value is ${SID_SHAPES[actually].kind}, which belongs in ${actually}`
+      : '')
+  );
+}
+
 export function buildSmsSender(cfg: SmsConfig, log: Logger): SmsSender {
   switch (cfg.adapter) {
     case 'twilio': {
-      const { twilioAccountSid: sid, twilioAuthToken: token, twilioFrom: from } = cfg;
-      if (!sid || !token || !from) {
+      const {
+        twilioAccountSid: accountSid,
+        twilioAuthToken: token,
+        twilioApiKeySid: keySid,
+        twilioApiKeySecret: keySecret,
+        twilioFrom: from,
+      } = cfg;
+
+      // A value that is present but of the wrong kind is a more specific
+      // diagnosis than one that is absent, so it is reported first.
+      const wrong = [
+        accountSid ? wrongSidShape('TWILIO_ACCOUNT_SID', accountSid) : null,
+        keySid ? wrongSidShape('TWILIO_API_KEY_SID', keySid) : null,
+      ].filter((problem): problem is string => problem !== null);
+      if (wrong.length) {
+        throw new Error(
+          `SMS_ADAPTER=twilio but a Twilio credential is the wrong kind: ${wrong.join('; ')}. ` +
+            'Twilio would answer this with a 401 at the first person who needs a code, which is ' +
+            'days later and looks like a delivery problem rather than a configuration one.',
+        );
+      }
+
+      /**
+       * Half a key pair is an error, not a reason to reach for the auth
+       * token. It is somebody mid-paste, and authenticating as the whole
+       * account instead would work — quietly, on the credential they were
+       * deliberately moving away from.
+       */
+      const reachingForKey = Boolean(keySid) || Boolean(keySecret);
+
+      /** The Basic pair we will authenticate with, or null if neither shape is whole. */
+      let basic: { user: string; password: string } | null = null;
+      if (keySid && keySecret) {
+        basic = { user: keySid, password: keySecret };
+      } else if (!reachingForKey && accountSid && token) {
+        basic = { user: accountSid, password: token };
+      }
+
+      if (!accountSid || !from || !basic) {
+        // A half-filled shape is read as the shape it was reaching for:
+        // somebody who has set a key SID wants a key, so the missing secret is
+        // what to name, rather than the auth token they did not ask about.
         const missing = [
-          sid ? null : 'TWILIO_ACCOUNT_SID',
-          token ? null : 'TWILIO_AUTH_TOKEN',
+          // Required in both shapes: it names the account in the URL path
+          // rather than authenticating, so an API key does not replace it.
+          accountSid ? null : 'TWILIO_ACCOUNT_SID',
+          ...(reachingForKey
+            ? [keySid ? null : 'TWILIO_API_KEY_SID', keySecret ? null : 'TWILIO_API_KEY_SECRET']
+            : [token ? null : 'TWILIO_AUTH_TOKEN']),
           from ? null : 'TWILIO_FROM',
         ].filter((name): name is string => name !== null);
+
         throw new Error(
           `SMS_ADAPTER=twilio but ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not set. ` +
+            (missing.includes('TWILIO_AUTH_TOKEN')
+              ? 'TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET complete it instead, and are the shape to ' +
+                'prefer: an API key is revoked and rotated on its own, while the auth token is the ' +
+                'account itself. '
+              : '') +
             'Set them, or set SMS_ADAPTER=console on a local machine; there is no fallback, because a ' +
             'fallback writes verification codes to the log and delivers none of them.',
         );
       }
-      return twilioSender(sid, token, from, log);
+
+      return twilioSender(accountSid, basic, from, log);
     }
     case 'console':
       // Allowed here, refused by assertProductionSafe on any deployment.

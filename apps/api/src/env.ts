@@ -89,7 +89,19 @@ const EnvSchema = z.object({
    */
   MINIO_REGION: z.string().default('us-east-1'),
   SMS_ADAPTER: z.string().default('console'),
+  /** Always required with the twilio adapter: it names the account in the URL path. */
   TWILIO_ACCOUNT_SID: z.string().optional().or(z.literal('')),
+  /**
+   * Two credential shapes, one of which must be complete (`buildSmsSender`
+   * refuses to construct a sender otherwise). The API key is the one to use:
+   * it is revoked and rotated on its own, so replacing this deployment's
+   * credential is not an event for every other integration on the account,
+   * and a Standard key cannot manage keys or change the account. The account
+   * auth token is the account's master password and is kept only as the
+   * fallback for an account that has not issued a key.
+   */
+  TWILIO_API_KEY_SID: z.string().optional().or(z.literal('')),
+  TWILIO_API_KEY_SECRET: z.string().optional().or(z.literal('')),
   TWILIO_AUTH_TOKEN: z.string().optional().or(z.literal('')),
   TWILIO_FROM: z.string().optional().or(z.literal('')),
   SENTRY_DSN: z.string().optional().or(z.literal('')),

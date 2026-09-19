@@ -34,8 +34,25 @@ function expectNoLeak(lines: string[]): void {
 const twilioConfig = {
   adapter: 'twilio',
   twilioAccountSid: 'ACtest',
-  twilioAuthToken: 'token',
+  twilioAuthToken: 'authtoken-value',
   twilioFrom: '+15005550006',
+};
+
+/**
+ * The shape to prefer: an API key authenticates in place of the auth token,
+ * while the URL still names the account the message is billed to.
+ */
+const apiKeyConfig = {
+  ...twilioConfig,
+  twilioAuthToken: undefined,
+  twilioApiKeySid: 'SKtest',
+  twilioApiKeySecret: 'keysecret-value',
+};
+
+/** What Twilio was actually sent as the HTTP Basic pair. */
+const basicPair = (fetchMock: { mock: { calls: unknown[][] } }): string => {
+  const init = fetchMock.mock.calls[0]![1] as { headers: Record<string, string> };
+  return Buffer.from(init.headers.authorization!.replace('Basic ', ''), 'base64').toString();
 };
 
 const response = (status: number, init: ResponseInit = {}): Response =>
@@ -73,6 +90,108 @@ describe('choosing an adapter (S2-01c)', () => {
   it('builds the Twilio sender when all three are set', () => {
     const { log } = captureLog();
     expect(() => buildSmsSender(twilioConfig, log)).not.toThrow();
+  });
+
+  it('builds it from an API key just as readily', () => {
+    const { log } = captureLog();
+    expect(() => buildSmsSender(apiKeyConfig, log)).not.toThrow();
+  });
+});
+
+/**
+ * Twilio takes either the account auth token or an API key, and authenticates
+ * both with HTTP Basic — so the only thing that changes on the wire is which
+ * pair goes in the header. The URL names the account either way, which is what
+ * makes a credential pasted into the wrong variable look plausible right up
+ * until Twilio answers 401 at the first person who needs a code.
+ */
+describe('Twilio credentials (S2-01c)', () => {
+  it('authenticates with the API key while the URL still names the account', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(201));
+    vi.stubGlobal('fetch', fetchMock);
+    const { log } = captureLog();
+
+    await buildSmsSender(apiKeyConfig, log).send(PHONE, MESSAGE);
+
+    expect(basicPair(fetchMock)).toBe('SKtest:keysecret-value');
+    expect(fetchMock.mock.calls[0]![0]).toContain('/Accounts/ACtest/Messages.json');
+  });
+
+  it('authenticates as the account itself when no key is set', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(201));
+    vi.stubGlobal('fetch', fetchMock);
+    const { log } = captureLog();
+
+    await buildSmsSender(twilioConfig, log).send(PHONE, MESSAGE);
+
+    expect(basicPair(fetchMock)).toBe('ACtest:authtoken-value');
+    expect(fetchMock.mock.calls[0]![0]).toContain('/Accounts/ACtest/Messages.json');
+  });
+
+  it('prefers the key when an account still carries both', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(201));
+    vi.stubGlobal('fetch', fetchMock);
+    const { log } = captureLog();
+
+    await buildSmsSender({ ...apiKeyConfig, twilioAuthToken: 'authtoken-value' }, log).send(
+      PHONE,
+      MESSAGE,
+    );
+
+    expect(basicPair(fetchMock)).toBe('SKtest:keysecret-value');
+  });
+
+  it('names the half of the key pair that is missing', () => {
+    const { log } = captureLog();
+    expect(() => buildSmsSender({ ...apiKeyConfig, twilioApiKeySecret: undefined }, log)).toThrow(
+      /TWILIO_API_KEY_SECRET is not set/,
+    );
+    expect(() => buildSmsSender({ ...apiKeyConfig, twilioApiKeySid: undefined }, log)).toThrow(
+      /TWILIO_API_KEY_SID is not set/,
+    );
+  });
+
+  // Half a pair beside a usable auth token is the dangerous one: it would work.
+  it('refuses half a key pair rather than quietly using the auth token', () => {
+    const { log } = captureLog();
+    expect(() => buildSmsSender({ ...twilioConfig, twilioApiKeySid: 'SKtest' }, log)).toThrow(
+      /TWILIO_API_KEY_SECRET is not set/,
+    );
+  });
+
+  it('refuses an account SID pasted into the key variable', () => {
+    const { log } = captureLog();
+    const build = (): unknown =>
+      buildSmsSender({ ...apiKeyConfig, twilioApiKeySid: 'ACtest' }, log);
+    expect(build).toThrow(/TWILIO_API_KEY_SID does not hold an API key SID/);
+    expect(build).toThrow(/belongs in TWILIO_ACCOUNT_SID/);
+  });
+
+  it('refuses a key SID pasted into the account variable', () => {
+    const { log } = captureLog();
+    const build = (): unknown =>
+      buildSmsSender({ ...twilioConfig, twilioAccountSid: 'SKtest' }, log);
+    expect(build).toThrow(/TWILIO_ACCOUNT_SID does not hold an account SID/);
+    expect(build).toThrow(/belongs in TWILIO_API_KEY_SID/);
+  });
+
+  it('keeps every kind of secret out of the log', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(400));
+    vi.stubGlobal('fetch', fetchMock);
+    const { log, lines } = captureLog();
+
+    for (const cfg of [twilioConfig, apiKeyConfig]) {
+      await buildSmsSender(cfg, log)
+        .send(PHONE, MESSAGE)
+        .catch(() => undefined);
+    }
+
+    const logged = lines.join('\n');
+    expect(lines.length).toBeGreaterThan(0);
+    expect(logged).not.toContain('authtoken-value');
+    expect(logged).not.toContain('keysecret-value');
+    expect(logged).not.toContain('SKtest');
+    expectNoLeak(lines);
   });
 });
 
