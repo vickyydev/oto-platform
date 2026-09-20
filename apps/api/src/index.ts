@@ -2,6 +2,7 @@ import { closeDb, getDb } from '@oto/db';
 import { buildApp } from './app';
 import { loadEnv } from './env';
 import { buildFileStorage } from './services/files';
+import { createJobRunner } from './services/jobs';
 
 /**
  * Process entry point. Everything here exists because of how the api is
@@ -12,6 +13,26 @@ import { buildFileStorage } from './services/files';
 const env = loadEnv();
 const db = getDb(env.DATABASE_URL, { applicationName: `oto-api-${env.NODE_ENV}` });
 const app = await buildApp({ env, db, fileStorage: buildFileStorage(env) });
+
+/**
+ * The scheduled work, started here rather than inside `buildApp` (S2-03).
+ *
+ * Tests build an app per file, and a runner started there would mean every
+ * one of them firing timers, sweeping tables and racing its neighbours. The
+ * process entry point is the one place that knows this is a real deployment,
+ * so it is the one place that starts them.
+ *
+ * `enabled` is false unless PROCESS_ROLES names `jobs`, and every method is
+ * then a no-op — which is how the api stops competing with the worker service
+ * on the day that role splits out.
+ */
+const jobs = createJobRunner({ db, env, log: app.log });
+if (jobs.enabled) {
+  await jobs.start();
+  app.log.info({ jobs: jobs.jobs.map((j) => j.name) }, 'job runner started');
+} else {
+  app.log.info('job runner not started — PROCESS_ROLES does not name jobs');
+}
 
 // Render supplies PORT; API_PORT is the local default.
 const port = Number(process.env.PORT ?? env.API_PORT);
@@ -27,6 +48,7 @@ async function shutdown(signal: string): Promise<void> {
   shuttingDown = true;
   app.log.info({ signal }, 'shutting down');
   try {
+    await jobs.stop();
     await app.close();
     await closeDb();
     process.exit(0);
