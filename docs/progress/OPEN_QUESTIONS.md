@@ -146,6 +146,39 @@ one is Full Day Pass at the Thai tier. The fixture is built as the catalogue
 actually prices it (฿2,924). Either the seed or the criterion should change
 before QA is asked to screenshot a figure that cannot be produced.
 
+## 3d. Phone numbers in the production dump are not all E.164 (bites at S2-22)
+
+**What was found:** the platform reads a leading `00` as the international
+access code, so `0066818953926` becomes `+66818953926` — which is what finds
+the member, because that is how a visitor's handset and contact list write
+the number. The prototype does not: it strips non-digits and leaves
+`0066818953926`, a 13-digit key that matches nobody and silently creates a
+second member for somebody who already exists.
+
+**Why it matters later:** the park's production dump was written by the
+prototype's rule. Any `00…` values in it are therefore **not** E.164 and
+must be re-normalised at import and de-duplicated against members already
+present — not copied across. Copying them makes duplicate people, and a
+duplicate member is a child's allergy note attached to the wrong record.
+
+**Meanwhile:** nothing is blocked; the platform's own normalisation is
+correct and Sprint 1 shipped it, so it is not being changed.
+
+**Edge already handled:** Thailand's own outbound prefixes are 001, 007,
+008 and 009, so `001…` reads as a `+1` number and is rejected as impossible
+rather than stored wrong.
+
+## 3e. The Eat & Play adult price: the rule and the seed disagree
+
+`POS_RULES_RECONCILIATION.md` R-22 says Play & Eat's adult price equals the
+kid price. The seeded Eat & Play Kids Pass charges ฿350 for an adult against
+a ฿1,300 kid ticket. The pricing fixtures encode the seed, because the seed
+is what the till actually sells.
+
+**Needed:** which is right. Recorded here rather than resolved, and the
+fixture deliberately cites no rule id so the disagreement is not papered
+over.
+
 ## 4. Alert channel and recipients (plan decision 17)
 
 **Where it bites:** S2-03 builds alerting. It can deliver to a console, an
