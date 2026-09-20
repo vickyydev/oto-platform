@@ -61,6 +61,21 @@ export interface PermissionConfig {
    * one thing that list exists to stop.
    */
   credential?: 'box' | 'box-claim';
+  /**
+   * This route's answer IS a credential — a box secret, a temporary password,
+   * a hand-off token — so it must never enter the idempotency store, which
+   * keeps a response body for a day and replays it to anyone holding the key.
+   *
+   * Declared on the ROUTE rather than remembered at the callsite. Three
+   * places used to dodge the store by hand — `createBox` and `pairCredential`
+   * keep the code out of the value `withTx` returns, `/auth/handoff` gave the
+   * claim back — and each was a habit the next credential-minting route would
+   * have had to know about. Saying it here makes the plugin refuse the key
+   * outright: no row is claimed, so there is nothing to store and nothing to
+   * replay, and a genuine retry does the work again rather than waiting out a
+   * key whose answer is never written.
+   */
+  secretResponse?: true;
 }
 
 declare module 'fastify' {

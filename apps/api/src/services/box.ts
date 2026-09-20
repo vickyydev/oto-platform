@@ -50,9 +50,13 @@ import { withTx, type Exec, type OpContext } from './tx';
  *     config, its own devices, its own commands. It cannot read a member, a
  *     sale, an account or another counter's printer, and it holds no key that
  *     signs anything.
- *   - **Refusal is a local decision.** Marking the box `disabled`, or issuing
- *     a fresh claim code (which replaces the secret on the next registration),
- *     cuts a stolen box off at the next request it makes. Both are one field.
+ *   - **Refusal is a local decision, and it takes effect immediately.** Marking
+ *     the box `disabled` (`PATCH /boxes/:id`) and issuing a fresh claim code
+ *     (`POST /boxes/:id/claim-code`) both DROP `secret_hash` as they go, so the
+ *     stolen Pi is refused at the very next request it makes rather than at
+ *     whatever future moment somebody else completes a registration. Until
+ *     S2-04's second half that was not true: both wrote one field and left the
+ *     credential live, and this comment said otherwise.
  *   - **Replay is assumed.** A heartbeat, a claim code and a command result
  *     can all arrive twice — captured on the wire, or retried because the
  *     answer was lost — and each has its own defence below, at the point it
@@ -83,6 +87,13 @@ export interface BoxSettings {
   /** Beyond this the box's clock is not trusted and its heartbeat is refused. */
   maxClockSkewS: number;
   claimCodeTtlS: number;
+  /**
+   * How long a queued command stays worth running. A test print aimed at a box
+   * that was offline all week must not fire when it finally wakes up, so it
+   * expires instead — swept hourly by `job:housekeeping.retention`, and again
+   * by the poll itself for the box that is actually asking.
+   */
+  commandTtlS: number;
   heartbeatRetentionDays: number;
   /** Per-IP, per-route: the park's boxes all share one public address. */
   ipRateMax: number;
@@ -106,6 +117,7 @@ export function boxSettings(): BoxSettings {
     minAgentVersion: process.env.BOX_MIN_AGENT_VERSION || '0.1.0',
     maxClockSkewS: num('BOX_MAX_CLOCK_SKEW_S', 900),
     claimCodeTtlS: num('BOX_CLAIM_CODE_TTL_S', 3600),
+    commandTtlS: num('BOX_COMMAND_TTL_S', 3600),
     heartbeatRetentionDays: num('BOX_HEARTBEAT_RETENTION_DAYS', 14),
     ipRateMax: num('BOX_RATE_LIMIT_IP_MAX', 600),
     boxRateMax: num('BOX_RATE_LIMIT_MAX', 240),
@@ -117,7 +129,7 @@ export function boxSettings(): BoxSettings {
 
 // --- Secrets and codes ------------------------------------------------------
 
-function sha256Hex(value: string): string {
+export function sha256Hex(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
@@ -185,34 +197,86 @@ const UNAUTHORIZED = () =>
 export async function authenticateBox(
   db: Db,
   header: string | undefined,
-  ctx: { ip: string },
+  ctx: { ip: string; log?: FastifyBaseLogger; requestId?: string },
 ): Promise<BoxAuth> {
   const settings = boxSettings();
-  const refuse = async (): Promise<never> => {
+  /**
+   * Every refusal on this surface used to be one indistinguishable
+   * `BOX_UNAUTHORIZED` with nothing written down, so a stolen Pi hammering
+   * after being disabled, a captured credential being probed and a claim code
+   * being guessed all looked identical (S2-04 review, F4). Registration was
+   * already audited with the source address; this follows it.
+   *
+   * What is recorded is the box id PRESENTED — unverified by definition, which
+   * is why the row says `presented` — the reason, and the address. Never the
+   * secret, never a prefix of it, and never its length: a length is a
+   * measurement of a secret, and measurements accumulate.
+   */
+  const deny = async (
+    reason: 'malformed' | 'unknown_box' | 'archived' | 'bad_secret' | 'disabled',
+    presented: { boxId: string | null; operatorId?: string; branchId?: string },
+    error: AppError = UNAUTHORIZED(),
+  ): Promise<never> => {
+    try {
+      await audit.record(db, {
+        actorAccountId: null,
+        operatorId: presented.operatorId ?? null,
+        branchId: presented.branchId ?? null,
+        action: 'box.auth_denied',
+        entityType: 'box',
+        entityId: presented.boxId ?? 'unknown',
+        after: { reason, ip: ctx.ip, presentedBoxId: presented.boxId },
+        requestId: ctx.requestId ?? null,
+      });
+    } catch (err) {
+      // Recording a refusal must never replace the refusal.
+      ctx.log?.error({ err, reason }, 'box denial audit could not be written');
+    }
+    ctx.log?.warn(
+      { reason, boxId: presented.boxId, ip: ctx.ip, reqId: ctx.requestId },
+      'box credential refused',
+    );
     // Counted only on failure, so an honest box heartbeating every minute
-    // never approaches it and somebody working through box ids does.
+    // never approaches it and somebody working through box ids does. It also
+    // bounds the audit rows above: past the ceiling nothing reaches them.
     await limitPrincipal(db, `box-auth:${ctx.ip}`, 30, 300);
-    throw UNAUTHORIZED();
+    throw error;
   };
 
   const raw = typeof header === 'string' ? header.trim() : '';
   const bearer = /^Bearer\s+(.+)$/i.exec(raw)?.[1];
   const separator = bearer ? bearer.indexOf('.') : -1;
-  if (!bearer || separator <= 0) return refuse();
+  if (!bearer || separator <= 0) return deny('malformed', { boxId: null });
   const boxId = bearer.slice(0, separator);
   const secret = bearer.slice(separator + 1);
   // Shaped like a uuid and long enough to be a secret, before a query runs:
   // anything else is somebody probing, and probing should not cost a read.
-  if (!/^[0-9a-f-]{36}$/i.test(boxId) || secret.length < 32) return refuse();
+  if (!/^[0-9a-f-]{36}$/i.test(boxId) || secret.length < 32) {
+    return deny('malformed', { boxId: null });
+  }
 
   const [row] = await db.select().from(box).where(eq(box.id, boxId)).limit(1);
-  if (!row || row.archivedAt) return refuse();
-  if (!hashesMatch(row.secretHash, sha256Hex(secret))) return refuse();
+  if (!row) return deny('unknown_box', { boxId });
+  if (row.archivedAt) {
+    return deny('archived', { boxId, operatorId: row.operatorId, branchId: row.branchId });
+  }
+  if (!hashesMatch(row.secretHash, sha256Hex(secret))) {
+    return deny('bad_secret', { boxId, operatorId: row.operatorId, branchId: row.branchId });
+  }
   if (row.status === 'disabled') {
-    // Distinct from a bad credential on purpose: the credential IS this box's,
-    // and an administrator took it out of service. A box told "you are
-    // disabled" stops retrying and says so on its own screen.
-    throw new AppError(403, 'BOX_DISABLED', 'This box has been taken out of service');
+    /**
+     * Reachable only for a box disabled before S2-04's revocation fix, or one
+     * whose secret was restored by hand: disabling now drops `secret_hash`, so
+     * a disabled box fails the check above and gets a 401 it knows how to act
+     * on. Kept because the status is still the more informative answer where
+     * the credential genuinely is this box's — and because the agent must not
+     * be the only thing standing between a disabled box and service.
+     */
+    return deny(
+      'disabled',
+      { boxId, operatorId: row.operatorId, branchId: row.branchId },
+      new AppError(403, 'BOX_DISABLED', 'This box has been taken out of service'),
+    );
   }
 
   // One bucket for everything this box does. Generous — a box polls for
@@ -372,18 +436,32 @@ export async function registerBox(
  * The plaintext is returned to the caller and never logged, never audited and
  * never stored: the row keeps its hash and its expiry, which is everything
  * needed to honour it and nothing needed to use it.
+ *
+ * **Issuing a code also drops the box's live secret, and that is the point.**
+ * The Console puts this button next to a box somebody is worried about, and an
+ * administrator pressing the only control available to them when a Pi has
+ * walked out of the mall believes it cut that Pi off. Now it does. The cost is
+ * that re-claiming a HEALTHY box takes it off the air until it registers
+ * again, which is seconds and is what was being asked for anyway — of the four
+ * reasons to issue a code (first setup, recovery after a lost registration
+ * answer, swapping the hardware in a slot, cutting off a stolen box) three
+ * have no working secret to lose and the fourth wants it gone.
  */
 export async function issueClaimCode(
   exec: Exec,
   boxId: string,
   opts: { ttlSeconds?: number; issuedByAccountId?: string | null; requestId?: string | null } = {},
-): Promise<string> {
+): Promise<{ code: string; expiresAt: Date }> {
   const settings = boxSettings();
   const code = mintClaimCode();
   const expiresAt = new Date(Date.now() + (opts.ttlSeconds ?? settings.claimCodeTtlS) * 1000);
   const updated = await exec
     .update(box)
-    .set({ claimCodeHash: sha256Hex(normaliseClaimCode(code)), claimCodeExpiresAt: expiresAt })
+    .set({
+      claimCodeHash: sha256Hex(normaliseClaimCode(code)),
+      claimCodeExpiresAt: expiresAt,
+      secretHash: null,
+    })
     .where(and(eq(box.id, boxId), isNull(box.archivedAt)))
     .returning({ id: box.id, operatorId: box.operatorId, branchId: box.branchId, slot: box.slot });
   const row = updated[0];
@@ -395,10 +473,10 @@ export async function issueClaimCode(
     action: 'box.claim_code_issue',
     entityType: 'box',
     entityId: row.id,
-    after: { slot: row.slot, expiresAt: expiresAt.toISOString() },
+    after: { slot: row.slot, expiresAt: expiresAt.toISOString(), secretRevoked: true },
     requestId: opts.requestId ?? null,
   });
-  return code;
+  return { code, expiresAt };
 }
 
 // --- Heartbeat --------------------------------------------------------------
@@ -1004,6 +1082,31 @@ export function withinOpeningHours(openingHours: unknown, timezone: string, at: 
  * `box.last_status` answer "is this box well right now" without touching it,
  * which is what makes throwing the history away after two weeks cheap.
  */
+/**
+ * Mark queued commands nobody came back for as `expired`.
+ *
+ * `pollCommands` does this too, but only for the box that is asking — which is
+ * exactly the box that will never ask again. A test print queued for a Pi that
+ * died on Monday sat `queued` for ever and showed as pending on the Devices
+ * page indefinitely; this is the sweep that closes it. `box_command_expires_idx`
+ * exists for this statement, and until now had no reader at all.
+ *
+ * It EXPIRES and never deletes. `box_command`'s restricting foreign key is what
+ * makes "a box is archived, never deleted" a fact the database enforces rather
+ * than a habit, and a retention sweep that emptied this table would quietly
+ * hand that guarantee back. Commands are queued by a person pressing a button,
+ * so the table grows at human pace and has no retention problem to solve —
+ * unlike `box_heartbeat`, which arrives on a timer and is swept beside this.
+ */
+export async function expireStaleCommands(db: Db): Promise<number> {
+  const result = await db.execute(
+    sql`update edge.box_command
+           set state = 'expired', finished_at = now(), updated_at = now()
+         where state = 'queued' and expires_at is not null and expires_at <= now()`,
+  );
+  return result.rowCount ?? 0;
+}
+
 export async function purgeOldBoxHeartbeats(db: Db, retentionDays?: number): Promise<number> {
   const days = retentionDays ?? boxSettings().heartbeatRetentionDays;
   const result = await db.execute(
@@ -1062,8 +1165,8 @@ export async function provisionVirtualBox(
     );
     return null;
   }
-  const claimCode = await issueClaimCode(db, row.id, { ttlSeconds: 300 });
-  return { boxId: row.id, claimCode };
+  const { code } = await issueClaimCode(db, row.id, { ttlSeconds: 300 });
+  return { boxId: row.id, claimCode: code };
 }
 
 export interface VirtualBoxOptions {

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import {
   Printer,
@@ -213,12 +213,29 @@ function StationEditor({ wizard }: { wizard: boolean }) {
   const [accessScope, setAccessScope] = useState<StationAccessScope>(
     seedStation?.accessScope === 'selected_staff' ? 'selected_staff' : 'all_staff',
   );
-  const [staffIds, setStaffIds] = useState<string[]>(
-    seedStation?.staff?.map((s) => s.accountId) ?? [],
-  );
+  // Empty until the record arrives: taking a station does not hand this iPad
+  // the list of who else may work it, so there is nothing here to seed from.
+  const [staffIds, setStaffIds] = useState<string[]>([]);
   const [staff, setStaff] = useState<StaffCandidate[] | null>(null);
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffBranchFiltered, setStaffBranchFiltered] = useState(true);
+  /**
+   * Whether the person has already changed who may use this station.
+   *
+   * The record below is read to seed the answer, and a read that lands after
+   * somebody has started editing must not undo what they did.
+   */
+  const accessEdited = useRef(false);
+  /**
+   * Where "who may use this station" stands. `known` means the answer on screen
+   * is one somebody can save — the record was read, or the person set it
+   * themselves. Until then it is not written at all: a list sent empty takes
+   * everybody off the station, and the station then disappears from the pickers
+   * of the people who were working it.
+   */
+  const [accessSource, setAccessSource] = useState<'known' | 'pending' | 'failed'>(
+    wizard ? 'known' : 'pending',
+  );
 
   const [saving, setSaving] = useState(false);
 
@@ -247,6 +264,37 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fleet, branchApiId]);
+
+  /**
+   * Settings mode edits a station that already exists, and the record this till
+   * is holding came from taking it — which carries no staff list, because an
+   * iPad on a counter has no business with the names of everybody else who may
+   * stand there. So the list is read from the station itself. Without this,
+   * saving would write an empty list over the people already on it and the
+   * station would vanish from their pickers.
+   */
+  const editingId = wizard ? null : (seedStation?.id ?? null);
+  useEffect(() => {
+    if (!fleet || !editingId) return;
+    let cancelled = false;
+    stationsApi
+      .get(editingId)
+      .then(({ station: record }) => {
+        if (cancelled || accessEdited.current) return;
+        setAccessScope(record.accessScope === 'selected_staff' ? 'selected_staff' : 'all_staff');
+        setStaffIds((record.staff ?? []).map((s) => s.accountId));
+        setAccessSource('known');
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setAccessSource('failed');
+        apiFail("Couldn't read who may use this station")(err);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleet, editingId]);
 
   useEffect(() => {
     if (!fleet || !boxId) {
@@ -277,9 +325,9 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     setStaffLoading(true);
     void (async () => {
       try {
-        const { accounts } = await stationsApi.staffCandidates(branchApiId);
+        const { staff: candidates } = await stationsApi.staffCandidates(branchApiId);
         if (!cancelled) {
-          setStaff(accounts);
+          setStaff(candidates);
           setStaffBranchFiltered(true);
         }
       } catch (err) {
@@ -385,10 +433,11 @@ function StationEditor({ wizard }: { wizard: boolean }) {
   });
 
   /**
-   * What the station tells the box to drive, one device per role. Every role
-   * the wizard asked about is sent, with null where nothing was chosen, so
-   * clearing a printer is a change the API can see rather than a field that
-   * quietly went missing.
+   * What the station tells the box to drive, one device per role.
+   *
+   * The set is sent whole and replaces what was there, so a role that is not in
+   * it is a role with nothing assigned: clearing a printer is leaving it out,
+   * and a role the capabilities hid is left out for the same reason.
    */
   const deviceAssignments = (): StationInput['devices'] => {
     const chosen: Array<[DeviceRole, string | undefined]> = [
@@ -398,13 +447,17 @@ function StationEditor({ wizard }: { wizard: boolean }) {
       ['kitchen', kitchenId],
       ['bar', barId],
     ];
-    const assignments: StationInput['devices'] = {};
+    const assignments: StationInput['devices'] = [];
     for (const [role, id] of chosen) {
-      assignments[ROLE_TO_API[role]] = visibleRoles.includes(role) ? id ?? null : null;
+      if (id && visibleRoles.includes(role)) {
+        assignments.push({ role: ROLE_TO_API[role], deviceId: id });
+      }
     }
     // A scanner on the box belongs to the station; the iPad's own camera and a
     // scanner paired to the iPad do not, and are kept on the device instead.
-    assignments.scanner = scannerMode === 'box' ? scannerId ?? null : null;
+    if (scannerMode === 'box' && scannerId) {
+      assignments.push({ role: 'scanner', deviceId: scannerId });
+    }
     return assignments;
   };
 
@@ -432,21 +485,28 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     const stationName = name.trim() || 'Unnamed Station';
     setSaving(true);
     try {
-      const body: StationInput = {
-        branchId: branchApiId,
+      const core = {
         boxId,
         name: stationName,
         kind: stationKind(seedStation?.kind),
         capabilities,
+        devices: deviceAssignments(),
+      };
+      const access = {
         accessScope,
         staffAccountIds: accessScope === 'selected_staff' ? staffIds : [],
-        devices: deviceAssignments(),
       };
       let savedId: string;
       if (wizard || !seedStation) {
-        savedId = (await stationsApi.create(body)).id;
+        savedId = (await stationsApi.create(branchApiId, { ...core, ...access })).station.id;
       } else {
-        await stationsApi.update(seedStation.id, body);
+        // Both lists are written whole, so leaving the access pair out of the
+        // patch is how the station keeps the people it already has when this
+        // screen never managed to read them.
+        await stationsApi.update(
+          seedStation.id,
+          accessSource === 'known' ? { ...core, ...access } : core,
+        );
         savedId = seedStation.id;
       }
       await reload();
@@ -482,7 +542,18 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     );
   };
 
+  // Both of these mark the answer as the person's own: the record's version of
+  // it cannot land afterwards and undo them, and what is on screen is now
+  // something to save rather than something still being read.
+  const chooseAccessScope = (scope: StationAccessScope) => {
+    accessEdited.current = true;
+    setAccessSource('known');
+    setAccessScope(scope);
+  };
+
   const toggleStaff = (accountId: string) => {
+    accessEdited.current = true;
+    setAccessSource('known');
     setStaffIds((prev) =>
       prev.includes(accountId) ? prev.filter((id) => id !== accountId) : [...prev, accountId],
     );
@@ -683,7 +754,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
                 </p>
                 <StaffAccessPicker
                   scope={accessScope}
-                  onScopeChange={setAccessScope}
+                  onScopeChange={chooseAccessScope}
                   staff={staff}
                   loading={staffLoading}
                   branchFiltered={staffBranchFiltered}
@@ -862,9 +933,15 @@ function StationEditor({ wizard }: { wizard: boolean }) {
                 Staff pick their station when they sign in. A station kept for named people is not in
                 anybody else's list at all.
               </p>
+              {accessSource === 'failed' && (
+                <p className="text-sm text-amber-600 dark:text-amber-400 mb-4">
+                  Who may use this station could not be read just now, so what is shown here may not
+                  be the whole list. Saving leaves it exactly as it is unless you change it.
+                </p>
+              )}
               <StaffAccessPicker
                 scope={accessScope}
-                onScopeChange={setAccessScope}
+                onScopeChange={chooseAccessScope}
                 staff={staff}
                 loading={staffLoading}
                 branchFiltered={staffBranchFiltered}

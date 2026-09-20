@@ -14,6 +14,7 @@ import {
   type DeviceKind,
   type DeviceRow,
   type DeviceTransport,
+  type StationAssignmentRef,
   type StationRow,
 } from '@/api/fleet';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ import {
   boxStatusWord,
   commandWord,
   deviceKindWord,
+  deviceRoleWord,
   toneForBoxStatus,
   toneForCommandState,
   toneForPaper,
@@ -188,7 +190,14 @@ function ClaimCodeRow({
     try {
       const result = await fleetApi.reissueClaimCode(box.id);
       onChanged();
-      if (result.claimCode) setCode({ code: result.claimCode, expiresAt: result.claimCodeExpiresAt });
+      if (result.claimCode) {
+        setCode({ code: result.claimCode, expiresAt: result.expiresAt });
+      } else {
+        // The API keeps a one-time code out of the body it files against an
+        // Idempotency-Key, so a request that arrived twice answers with no
+        // code at all. Pressing again mints one and supersedes the last.
+        setFailed('That request reached the API twice, so its code cannot be shown. Press again.');
+      }
     } catch (err) {
       setFailed(err instanceof Error ? err.message : 'Could not issue a claim code');
     } finally {
@@ -203,7 +212,7 @@ function ClaimCodeRow({
           label="Claim code"
           code={code.code}
           expiresAt={code.expiresAt}
-          detail="Only its hash is stored, so this is the one time it can be read."
+          detail="Only its hash is kept, and it is left out of the response the API files against this request, so this is the one time it can be read."
         />
       ) : (
         <p className="text-sm text-muted-foreground">
@@ -451,6 +460,7 @@ function EditDeviceForm({
   const [merchantId, setMerchantId] = useState(device.merchantId ?? '');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  const [orphaned, setOrphaned] = useState<StationAssignmentRef[] | null>(null);
 
   const save = async () => {
     setBusy(true);
@@ -477,9 +487,14 @@ function EditDeviceForm({
     setBusy(true);
     setFailed(null);
     try {
-      await fleetApi.archiveDevice(device.id);
+      const result = await fleetApi.archiveDevice(device.id);
       onSaved();
-      onClose();
+      const left = result.stillAssignedTo ?? [];
+      // A station that was using it has quietly lost that job. The form stays
+      // up to say which, because the alternative is a till finding out at the
+      // moment somebody is waiting for a receipt.
+      if (left.length === 0) onClose();
+      else setOrphaned(left);
     } catch (err) {
       setFailed(err instanceof Error ? err.message : 'The device could not be archived');
     } finally {
@@ -488,6 +503,37 @@ function EditDeviceForm({
   };
 
   const isTerminal = device.kind === 'terminal';
+
+  if (orphaned) {
+    return (
+      <div
+        className="rounded-xl border p-3 flex flex-col gap-2"
+        style={{
+          borderColor: 'hsl(var(--status-warn) / 0.35)',
+          backgroundColor: 'hsl(var(--status-warn) / 0.08)',
+        }}
+      >
+        <p className="text-sm font-semibold">{device.label} is archived.</p>
+        <p className="text-xs text-muted-foreground">
+          It was still doing a job at {orphaned.length} station
+          {orphaned.length === 1 ? '' : 's'}, and that job is now unset — assign another device on
+          each of them, or the station simply goes without.
+        </p>
+        <ul className="text-xs text-muted-foreground flex flex-col gap-0.5">
+          {orphaned.map((ref) => (
+            <li key={`${ref.stationId}-${ref.role}`} className="break-words">
+              {ref.stationName} — {deviceRoleWord(ref.role)}
+            </li>
+          ))}
+        </ul>
+        <div className="flex justify-end">
+          <Button size="sm" onClick={onClose}>
+            Done
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border bg-muted/20 p-3 flex flex-col gap-3">

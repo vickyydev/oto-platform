@@ -12,13 +12,14 @@
  *
  * WHY THESE PATHS. The till states the same contract in
  * apps/pos/src/api/platform.ts, and the two must not ask the API two different
- * ways: paths, names and response shapes here follow that file exactly
- * wherever the two overlap. Branch-scoped resources are nested
- * (`/branches/:id/stations`), which is what the catalogue routes already do,
- * and devices are asked for per BOX and never per branch, because a printer is
- * reachable through the box it is plugged into and through no other. What is
- * only ever done from the console — registering a box, its claim code, its
- * command history and log, pairing a screen — is added here and nowhere else.
+ * ways. Branch-scoped resources are nested (`/branches/:id/stations`), which is
+ * what the catalogue routes already do and what the guard can rely on — a path
+ * parameter is required by the router and checked before the handler runs,
+ * where a `?branchId=` can simply be left off. Devices are asked for per BOX
+ * and never per branch, because a printer is reachable through the box it is
+ * plugged into and through no other. What is only ever done from the console —
+ * registering a box, its claim code, its command history and log, pairing a
+ * screen — is added here and nowhere else.
  *
  * The vocabularies below are the database's, from
  * packages/db/src/schema/fleet.ts and edge.ts, so the two cannot drift apart
@@ -156,9 +157,22 @@ export interface DeviceRow {
   archived?: boolean;
 }
 
+/**
+ * One device doing one job for a station.
+ *
+ * The label and the wiring are denormalised onto the assignment by the API
+ * rather than sent as a nested device row, because the till reads the same
+ * shape and has to name the printer a receipt went to without holding the whole
+ * device list (apps/pos/src/station/fleet.ts). This page has that list anyway,
+ * so it costs nothing here and saves a request there.
+ */
 export interface StationDeviceAssignment {
   role: StationDeviceRole | string;
-  device: DeviceRow;
+  deviceId: string;
+  label?: string | null;
+  kind?: DeviceKind | string | null;
+  transport?: DeviceTransport | string | null;
+  address?: string | null;
 }
 
 /**
@@ -187,10 +201,12 @@ export interface StationRow {
   capabilities?: (StationCapability | string)[];
   accessScope?: StationAccessScope | string;
   /** Null only on a station carried over from Sprint 1, before boxes existed. */
-  box?: { id: string; name: string; status: BoxStatus | string } | null;
+  boxId: string | null;
+  boxName?: string | null;
+  boxStatus?: BoxStatus | string | null;
   devices?: StationDeviceAssignment[];
   /** Who may pick it. Empty unless the scope is `selected_staff`. */
-  staff?: Array<{ accountId: string; name: string }>;
+  staff?: Array<{ accountId: string; name: string | null }>;
   /** What the box compares on each config poll. One number answers "which bundle is it running". */
   configVersion?: number | null;
   archived?: boolean;
@@ -223,12 +239,26 @@ export interface StationWrite {
   offlineWalletCapSatang?: number | null;
 }
 
-/** Somebody who can be put on a station's list — the staff of that branch. */
+/**
+ * Somebody who can be put on a station's list — the staff of that branch.
+ *
+ * The name is nullable because an account need not have an employee record
+ * behind it: a manager granted a role at this branch and never entered in the
+ * staff directory is a real person who can be named on a station, and the phone
+ * is what identifies them until somebody fills the rest in.
+ */
 export interface BranchStaffMember {
   accountId: string;
-  name: string;
+  name: string | null;
   phone?: string | null;
   status?: string | null;
+}
+
+/** A station that is still naming some device for a job — see `archiveDevice`. */
+export interface StationAssignmentRef {
+  stationId: string;
+  stationName: string;
+  role: StationDeviceRole | string;
 }
 
 export interface BoxHeartbeatRow {
@@ -331,9 +361,15 @@ export const fleetApi = {
    * Creates the row and mints its claim code. The code comes back ONCE, in
    * this response, because only its hash is stored — so the page shows it
    * until the panel is closed and never pretends it can fetch it again.
+   *
+   * WHY THE CODE IS OPTIONAL HERE. The API deliberately keeps it out of the
+   * body it files against this Idempotency-Key, so a replayed request answers
+   * with the box and no code at all. That is the point rather than a gap: a
+   * one-time code that can be read a second time out of a stored response is
+   * not one-time. The panel says so and offers to issue a fresh one.
    */
   createBox: (branchId: string, body: { name: string; slot: string; role: BoxRole }) =>
-    api.post<{ box: BoxRow; claimCode?: string; claimCodeExpiresAt?: string }>(
+    api.post<{ box: BoxRow; claimCode?: string; expiresAt?: string }>(
       `/branches/${encodeURIComponent(branchId)}/boxes`,
       body,
       { idempotencyKey: idemKey() },
@@ -344,9 +380,13 @@ export const fleetApi = {
     body: { name?: string; slot?: string; role?: BoxRole; status?: BoxStatus },
   ) => api.patch<{ box: BoxRow }>(`/boxes/${encodeURIComponent(id)}`, body),
 
-  /** Re-issues a claim code for a box nobody managed to register in time. */
+  /**
+   * Re-issues a claim code for a box nobody managed to register in time. The
+   * new code supersedes the old one, and it is returned on the same terms as
+   * `createBox`: once, and never from a replay.
+   */
   reissueClaimCode: (id: string) =>
-    api.post<{ claimCode?: string; claimCodeExpiresAt?: string }>(
+    api.post<{ claimCode?: string; expiresAt?: string }>(
       `/boxes/${encodeURIComponent(id)}/claim-code`,
       undefined,
       { idempotencyKey: idemKey() },
@@ -398,8 +438,19 @@ export const fleetApi = {
     },
   ) => api.patch<{ device: DeviceRow }>(`/devices/${encodeURIComponent(id)}`, body),
 
-  /** Archives it. A device that left the park is kept: assignments still point at it. */
-  archiveDevice: (id: string) => api.delete<{ ok: true }>(`/devices/${encodeURIComponent(id)}`),
+  /**
+   * Archives it. A device that left the park is kept rather than deleted:
+   * assignments and command history still point at it.
+   *
+   * The answer names the stations that were still using it, because the
+   * consequence is silent otherwise — the config bundle simply stops carrying
+   * that device and a till discovers it has no receipt printer at the moment
+   * somebody is waiting for a receipt.
+   */
+  archiveDevice: (id: string) =>
+    api.delete<{ ok: true; stillAssignedTo?: StationAssignmentRef[] }>(
+      `/devices/${encodeURIComponent(id)}`,
+    ),
 
   /** Every live station of a branch, the hidden ones included. Admins only. */
   stations: (branchId: string) =>
@@ -437,6 +488,13 @@ export const fleetApi = {
       { idempotencyKey: idemKey() },
     ),
 
+  /**
+   * The box's own account of itself. Deliberately outside the settled S2-04
+   * route table: there is nothing behind it yet — the `edge` schema holds
+   * commands and heartbeats and no log — so this asks, reads a 404 as "not on
+   * this deployment", and the drawer says what a command's result can still
+   * tell you in the meantime.
+   */
   log: (boxId: string, params: { limit?: number; actionId?: string } = {}) =>
     api.get<{ lines: BoxLogLine[]; truncated?: boolean }>(
       `/boxes/${encodeURIComponent(boxId)}/log${qs({ limit: 500, ...params })}`,
@@ -456,7 +514,8 @@ export const fleetApi = {
    * Mints a pairing code. Like a box's claim code it is returned ONCE and only
    * its hash is kept, so the page shows it until the panel closes and never
    * offers to show it again — a code that can be re-read from a screen is a
-   * credential lying around the back office.
+   * credential lying around the back office. A replay of this request answers
+   * with the credential and no code, for the reason given on `createBox`.
    */
   pair: (stationId: string, body: { kind: CredentialKind; label?: string }) =>
     api.post<{ credential: CredentialRow; pairingCode?: string; expiresAt?: string }>(
@@ -495,7 +554,7 @@ export async function staffCandidates(
     return {
       staff: accounts.map((a) => ({
         accountId: a.id,
-        name: a.employee?.name ?? a.phone,
+        name: a.employee?.name ?? null,
         phone: a.phone,
         status: a.status,
       })),

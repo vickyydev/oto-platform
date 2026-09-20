@@ -36,12 +36,14 @@ import { fileRoutes } from './routes/files';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
 import { boxRoutes } from './routes/box';
+import { fleetRoutes } from './routes/fleet';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
 import { permissionPlugin } from './plugins/permission';
+import { credentialPlugin } from './plugins/credential';
 import { telemetryPlugin } from './plugins/telemetry';
-import { isPgError, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
+import { pgErrorOf, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
 import { audit } from './services/audit';
 import type { FileStorage } from './services/files';
 import { buildSmsSender, type SmsSender } from './services/sms';
@@ -226,7 +228,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     // what Postgres puts in `detail` (S2-01a).
     const conflict = uniqueViolationToAppError(err);
     if (conflict) {
-      req.log.warn({ pg: scrubPgError(err as never), reqId: req.id }, 'unique violation');
+      req.log.warn({ pg: scrubPgError(pgErrorOf(err) ?? {}), reqId: req.id }, 'unique violation');
       return reply
         .status(conflict.statusCode)
         .send({ error: { code: conflict.code, message: conflict.message, details: conflict.details } });
@@ -240,13 +242,21 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     // Scrubbed both ways: the reporter is an external service, and the log is
     // a hosted stream. A pg error is reduced to its structural fields.
     const safeUrl = scrubUrl(req.url);
-    if (isPgError(err)) {
+    /**
+     * Unwrapped, because Drizzle hands us a `DrizzleQueryError` whose `cause`
+     * is the database error and whose own fields are the SQL and its bound
+     * PARAMETERS — a phone number, a name, a child's note. Asking `isPgError`
+     * about the wrapper answered no, and the whole error then went to the
+     * reporter and the log with those parameters attached (S2-04).
+     */
+    const pg = pgErrorOf(err);
+    if (pg) {
       app.reporter.report(new Error('database error'), {
         requestId: req.id,
         url: safeUrl,
-        pg: scrubPgError(err),
+        pg: scrubPgError(pg),
       });
-      req.log.error({ pg: scrubPgError(err), url: safeUrl, reqId: req.id }, 'request failed');
+      req.log.error({ pg: scrubPgError(pg), url: safeUrl, reqId: req.id }, 'request failed');
     } else {
       app.reporter.report(err, { requestId: req.id, url: safeUrl });
       req.log.error({ err, url: safeUrl, reqId: req.id }, 'request failed');
@@ -257,6 +267,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(rateLimitPlugin);
   await app.register(sessionPlugin);
   await app.register(permissionPlugin);
+  // Registered after the permission plugin so both see every route below: one
+  // installs the session guard a route declares, the other the box credential.
+  await app.register(credentialPlugin);
   await app.register(idempotencyPlugin);
 
   await app.register(healthRoutes);
@@ -269,6 +282,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(memberRoutes, { prefix: '/members' });
   await app.register(visitRoutes, { prefix: '/visits' });
   await app.register(catalogRoutes);
+  // No prefix, like the catalogue: the fleet's branch-scoped resources are
+  // nested under /branches/:branchId/… and its by-id routes are not, so the
+  // paths are declared in full rather than assembled from two places.
+  await app.register(fleetRoutes);
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
   await app.register(opsRoutes, { prefix: '/ops' });

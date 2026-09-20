@@ -102,14 +102,49 @@ describe('route guards (S2-01b)', () => {
     ).toEqual([]);
   });
 
-  it('a box route refuses a caller with no credential', async () => {
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/box/v1/heartbeat',
-      payload: { reportedAt: new Date().toISOString(), agentVersion: '0.1.0' },
-    });
-    expect(res.statusCode).toBe(401);
-    expect(res.json().error.code).toBe('BOX_UNAUTHORIZED');
+  /**
+   * EVERY box route, anonymously — the behaviour, not the label.
+   *
+   * `config.credential` used to be a label: the permission plugin installed a
+   * preHandler only for `config.permission`, so the box surface was safe purely
+   * because each handler remembered to call `authenticateBox` itself. A sixth
+   * route that forgot would have been open and would still have passed this
+   * file, because the two tests above pin the declared labels and the URL list.
+   * So the guard now lives in `plugins/credential.ts` and this walks the whole
+   * surface rather than one route of it — including the poll and the result,
+   * which had no anonymous test at all.
+   */
+  it('every box route refuses a caller with no credential', async () => {
+    const boxUrls = ctx.app.routeRegistry.filter(
+      (r) => r.url.startsWith('/box/') && r.method !== 'HEAD' && r.method !== 'OPTIONS',
+    );
+    expect(boxUrls.length).toBe(5);
+
+    const bodies: Record<string, unknown> = {
+      'POST:/box/v1/register': { claimCode: undefined, agentVersion: '0.1.0' },
+      'POST:/box/v1/heartbeat': { reportedAt: new Date().toISOString(), agentVersion: '0.1.0' },
+      'POST:/box/v1/commands/poll': { max: 5 },
+      'POST:/box/v1/commands/:commandId/result': { state: 'succeeded' },
+    };
+
+    for (const route of boxUrls) {
+      const url = route.url.replace(':commandId', '00000000-0000-7000-8000-000000000000');
+      const res = await ctx.app.inject({
+        method: route.method as 'GET' | 'POST',
+        url,
+        ...(route.method === 'GET'
+          ? {}
+          : { payload: (bodies[`${route.method}:${route.url}`] ?? {}) as never }),
+      });
+      expect(res.statusCode, `${route.method} ${route.url}`).toBe(401);
+      // Register answers with its own code — the claim code IS the credential
+      // there — and everything else with the box one. Both are refusals, and
+      // neither is a schema complaint about a body nobody was entitled to send.
+      expect(
+        ['BOX_UNAUTHORIZED', 'BOX_CLAIM_INVALID'],
+        `${route.method} ${route.url}`,
+      ).toContain(res.json().error.code);
+    }
   });
 
   it('refuses a route registered without a guard', async () => {

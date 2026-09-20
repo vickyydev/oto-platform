@@ -167,7 +167,18 @@ const READ_CATALOG: Permission[] = ['catalog:package:read', 'catalog:holiday:rea
  */
 const READ_COUNTER: Permission[] = [
   'admin:branch:read',
-  'admin:station:read',
+  /**
+   * `admin:station:read` is deliberately NOT here (S2-04 review).
+   *
+   * It reads like a counter permission and is not one: it opens the admin
+   * station list, which carries who may use each station, its code prefix, the
+   * LAN address of every printer on it and its payment routing. With it in this
+   * bundle every staff account held it, so the ticket's own rule — somebody who
+   * cannot use a station should not be looking at it — was defeated by one
+   * request to `GET /branches/:id/stations`. What the counter actually needs is
+   * `GET /me/stations`, which takes no permission at all and filters on the
+   * access scope. This belongs to whoever configures the estate.
+   */
   'pos:member:read',
   'pos:child:read',
   'pos:visit:read',
@@ -219,6 +230,9 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'admin:role:read',
     'admin:role:assign',
     'admin:audit:read',
+    // Named here rather than inherited from READ_COUNTER: a branch manager
+    // configures the estate, and the three station permissions travel together.
+    'admin:station:read',
     'admin:station:create',
     'admin:station:update',
     'admin:box:command',

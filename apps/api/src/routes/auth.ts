@@ -22,7 +22,6 @@ import {
   HandoffRejected,
   HANDOFF_APPS,
   issueHandoff,
-  releaseIdempotencyClaim,
   type HandoffConfig,
 } from '../services/handoff';
 import { audit } from '../services/audit';
@@ -135,7 +134,11 @@ export async function authRoutes(app: App): Promise<void> {
   app.post(
     '/handoff',
     {
-      config: { dynamicPermission: true },
+      // `secretResponse`: the answer is the token itself. This used to be a
+      // line in the handler giving the claim back; declaring it means no key
+      // is taken in the first place, and the next route that mints something
+      // does not have to know the trick.
+      config: { dynamicPermission: true, secretResponse: true },
       schema: {
         description: 'Issue a short-lived signed hand-off token for one app origin',
         body: z.object({ app: z.enum(HANDOFF_APPS) }),
@@ -152,10 +155,6 @@ export async function authRoutes(app: App): Promise<void> {
       // Present by definition — `requireAuth` resolved the session from it.
       const sessionToken = req.cookies[SESSION_COOKIE];
       if (!sessionToken) throw errors.unauthorized();
-
-      // Before `opCtx` reads the claim: this response is a credential and
-      // must not be kept in the day-long replay store.
-      await releaseIdempotencyClaim(app.db, req);
 
       const issued = await withTx(app.db, opCtx(req), 'auth.handoff_issue', async (tx) => {
         const out = await issueHandoff(tx, config, {

@@ -43,7 +43,7 @@ async function seededBox(): Promise<typeof box.$inferSelect> {
 /** Register the seeded box and return the credential it was given. */
 async function registerSeededBox(): Promise<{ boxId: string; credential: string; secret: string }> {
   const row = await seededBox();
-  const claimCode = await issueClaimCode(ctx.db, row.id);
+  const { code: claimCode } = await issueClaimCode(ctx.db, row.id);
   const res = await ctx.app.inject({
     method: 'POST',
     url: '/box/v1/register',
@@ -88,7 +88,7 @@ async function heartbeat(
 describe('box registration (S2-04)', () => {
   it('redeems a claim code exactly once and mints a secret nobody can ask for again', async () => {
     const row = await seededBox();
-    const claimCode = await issueClaimCode(ctx.db, row.id);
+    const { code: claimCode } = await issueClaimCode(ctx.db, row.id);
 
     const res = await ctx.app.inject({
       method: 'POST',
@@ -142,7 +142,7 @@ describe('box registration (S2-04)', () => {
     expect(unknown.json().error.code).toBe('BOX_CLAIM_INVALID');
 
     const row = await seededBox();
-    const expired = await issueClaimCode(ctx.db, row.id, { ttlSeconds: -60 });
+    const { code: expired } = await issueClaimCode(ctx.db, row.id, { ttlSeconds: -60 });
     const res = await ctx.app.inject({
       method: 'POST',
       url: '/box/v1/register',
@@ -156,7 +156,7 @@ describe('box registration (S2-04)', () => {
 
   it('refuses a box an administrator has taken out of service', async () => {
     const row = await seededBox();
-    const claimCode = await issueClaimCode(ctx.db, row.id);
+    const { code: claimCode } = await issueClaimCode(ctx.db, row.id);
     await ctx.db.update(box).set({ status: 'disabled' }).where(eq(box.id, row.id));
     const res = await ctx.app.inject({
       method: 'POST',

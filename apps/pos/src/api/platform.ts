@@ -336,6 +336,13 @@ export const adminApi = {
 // built in different trees. Where a field is optional it is because the API is
 // being built beside this and has not grown it yet — the POS renders what has
 // arrived rather than insisting on a field it may not get.
+//
+// Branch-scoped reads are nested (`/branches/:id/stations`), the form the
+// catalogue routes already use: a path parameter is required by the router and
+// checked before the handler runs, where a `?branchId=` can be left off and
+// quietly fall back to whatever branch the session is on. The two questions a
+// till asks about ITSELF stay on `/me` — which stations are mine, and which am
+// I taking — because neither takes a branch: the session already says.
 
 /** What a station is for. `booth` is the Lucky Wheel's (S2-07b). */
 export type StationKind = 'till' | 'kiosk' | 'gate' | 'display' | 'booth';
@@ -441,7 +448,12 @@ export interface ApiStation {
   /** What the box compares on each config poll. */
   configVersion?: number | null;
   devices?: StationDeviceAssignment[];
-  /** Who may pick it. Empty unless the scope is `selected_staff`. */
+  /**
+   * Who may pick it. Empty unless the scope is `selected_staff` — and empty
+   * from `pick` whatever the scope, because taking a till is no reason to hand
+   * an iPad on the counter the list of everybody else who may stand at it. The
+   * settings screen reads the list from `get` instead.
+   */
   staff?: Array<{ accountId: string; name?: string | null }>;
   archived?: boolean;
 }
@@ -463,7 +475,14 @@ export interface PickableStation {
   deviceCount?: number | null;
 }
 
-/** An account that may be put on a station's list: the staff of that branch. */
+/**
+ * An account that may be put on a station's list: the staff of that branch.
+ *
+ * The name is nullable because an account need not have an employee record
+ * behind it — somebody granted a role at this branch and never entered in the
+ * staff directory is a real person who can be named on a station, and their
+ * phone is what identifies them until the rest is filled in.
+ */
 export interface StaffCandidate {
   accountId: string;
   name?: string | null;
@@ -471,17 +490,24 @@ export interface StaffCandidate {
   status?: string | null;
 }
 
+/**
+ * Everything a station is written with. The branch comes from the path, not
+ * the body: a station belongs to the branch it was created under and no write
+ * moves it.
+ *
+ * The staff list and the device assignments are both sent WHOLE rather than as
+ * deltas — one call, one audit row, and a before and after that reads as what
+ * it is. So a role left out of `devices` is a role with nothing assigned:
+ * clearing a printer is dropping it from the set, not sending a null.
+ */
 export interface StationInput {
-  branchId: string;
   boxId: string;
   name: string;
   kind: StationKind;
-  capabilities?: StationCapability[];
-  accessScope?: StationAccessScope;
-  /** The WHOLE list, not a delta: one call, one audit row, one before and after. */
-  staffAccountIds?: string[];
-  /** Role to device id, or null to leave that role unassigned. */
-  devices?: Partial<Record<StationDeviceRole, string | null>>;
+  capabilities: StationCapability[];
+  accessScope: StationAccessScope;
+  staffAccountIds: string[];
+  devices: Array<{ role: StationDeviceRole; deviceId: string }>;
 }
 
 export const stationsApi = {
@@ -499,35 +525,42 @@ export const stationsApi = {
    */
   pick: (stationId: string) =>
     api.put<{ station: ApiStation }>('/me/session/station', { stationId }),
-  list: (branchId: string) =>
-    api.get<{ stations: ApiStation[] }>(`/stations?branchId=${encodeURIComponent(branchId)}`),
-  create: (body: StationInput) =>
-    api.post<{ id: string }>('/stations', body, { idempotencyKey: idemKey() }),
+  /**
+   * One station whole, for the settings screen. The pick response carries no
+   * staff list, so editing "who may use it" has to start from the record
+   * rather than from what this till happens to be holding — otherwise saving
+   * would write an empty list over the people already on it.
+   */
+  get: (id: string) => api.get<{ station: ApiStation }>(`/stations/${encodeURIComponent(id)}`),
+  create: (branchId: string, body: StationInput) =>
+    api.post<{ station: ApiStation }>(
+      `/branches/${encodeURIComponent(branchId)}/stations`,
+      body,
+      { idempotencyKey: idemKey() },
+    ),
   update: (id: string, body: Partial<StationInput>) =>
-    api.patch<{ ok: true; configVersion?: number }>(`/stations/${id}`, body),
+    api.patch<{ station: ApiStation }>(`/stations/${encodeURIComponent(id)}`, body),
   /** The boxes standing at a branch, whether or not a station uses them yet. */
   boxes: (branchId: string) =>
-    api.get<{ boxes: ApiBox[] }>(`/boxes?branchId=${encodeURIComponent(branchId)}`),
+    api.get<{ boxes: ApiBox[] }>(`/branches/${encodeURIComponent(branchId)}/boxes`),
   /**
    * What one box can reach. Devices are asked for per box and never per branch,
    * because a printer is reachable through the box it is plugged into and
    * through no other.
    */
   boxDevices: (boxId: string) =>
-    api.get<{ devices: ApiDevice[] }>(`/devices?boxId=${encodeURIComponent(boxId)}`),
-  /** Who can be added to a station's list, asked by branch. */
+    api.get<{ devices: ApiDevice[] }>(`/boxes/${encodeURIComponent(boxId)}/devices`),
+  /** Who can be added to a station's list: the staff of that branch. */
   staffCandidates: (branchId: string) =>
-    api.get<{ accounts: StaffCandidate[] }>(
-      `/stations/staff-candidates?branchId=${encodeURIComponent(branchId)}`,
-    ),
+    api.get<{ staff: StaffCandidate[] }>(`/branches/${encodeURIComponent(branchId)}/staff`),
   /**
    * A test print is a command to the box, not a message down a wire from this
    * iPad: the cloud queues it, the box collects it on its next poll and runs it
    * there. So it can be sent while the station is still being set up.
    */
   testPrint: (boxId: string, deviceId: string) =>
-    api.post<{ id: string; actionId?: string | null }>(
-      `/boxes/${boxId}/commands`,
+    api.post<{ commandId: string; actionId?: string | null }>(
+      `/boxes/${encodeURIComponent(boxId)}/commands`,
       { kind: 'test_print', payload: { deviceId } },
       { idempotencyKey: idemKey() },
     ),

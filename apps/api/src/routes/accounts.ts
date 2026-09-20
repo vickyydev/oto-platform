@@ -325,7 +325,12 @@ export async function accountRoutes(app: App): Promise<void> {
   // SCRUM-28 — temporary password forcing a change at next sign-in.
   app.post(
     '/:id/temp-password',
-    { config: { permission: 'admin:account:update' }, schema: { description: 'Issue a temporary password', params: z.object({ id: z.string().uuid() }) } },
+    {
+      // The answer is a working password for somebody else's account, so it
+      // never enters the replay store — it was being kept there for a day.
+      config: { permission: 'admin:account:update', secretResponse: true },
+      schema: { description: 'Issue a temporary password', params: z.object({ id: z.string().uuid() }) },
+    },
     async (req) => {
       const auth = req.requireAuth();
       const acc = await loadTargetAccount(app.db, auth.operatorId, req.params.id);

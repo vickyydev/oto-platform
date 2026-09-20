@@ -6,11 +6,17 @@ import { useSession } from '@/auth/SessionContext';
 /**
  * A claim code or a pairing code, shown the only time it can be shown.
  *
- * Only the hash of these is stored, so there is no route that could fetch one
- * back and the page must not imply there is: it says so, plainly, next to the
- * code. The block is deliberately loud — somebody is going to read this out
- * over a phone or type it into an iPad across the counter, and a small grey
- * monospace run of characters is how a `0` becomes an `O`.
+ * Two things have to be true for that sentence to be honest, and both are:
+ * only the hash of the code is stored, so no route can fetch one back; and the
+ * API deliberately keeps the plaintext out of the body it files against the
+ * request's Idempotency-Key, so it is not sitting in `idempotency_key.
+ * response_body` for a day either. The page says so plainly next to the code,
+ * and a replayed request that comes back without one is told as what it is
+ * rather than closed over.
+ *
+ * The block is deliberately loud — somebody is going to read this out over a
+ * phone or type it into an iPad across the counter, and a small grey monospace
+ * run of characters is how a `0` becomes an `O`.
  */
 export function OneTimeCode({
   label,

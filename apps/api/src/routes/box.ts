@@ -7,8 +7,8 @@ import {
   BoxRegisterRequestSchema,
 } from '@oto/box-agent';
 import type { App } from '../app';
+import { boxAuthOf } from '../plugins/credential';
 import {
-  authenticateBox,
   boxSettings,
   completeCommand,
   configBundle,
@@ -35,6 +35,11 @@ import type { OpContext } from '../services/tx';
  * putting them in the pinned list of genuinely open endpoints, which is
  * exactly the kind of quiet reclassification that list exists to prevent.
  *
+ * That declaration is now what DOES the authenticating: `plugins/credential.ts`
+ * reads it and refuses the caller before the handler runs. It used to be a
+ * label, and the surface was safe only because every handler below remembered
+ * to check for itself — which a sixth route would not have had to.
+ *
  * Two rate-limit buckets sit under them, for two different attackers: a
  * per-IP bucket on each route (generous, because the whole park shares one
  * public address) and a per-box bucket inside `authenticateBox` (a ceiling on
@@ -51,8 +56,8 @@ export async function boxRoutes(app: App): Promise<void> {
    */
   const limited = { rateLimit: { max: settings.ipRateMax, timeWindow: 60_000 } };
 
-  const boxAuth = (req: FastifyRequest): Promise<BoxAuth> =>
-    authenticateBox(app.db, req.headers.authorization, { ip: req.ip });
+  /** Already authenticated by the credential guard; this only reads the result. */
+  const boxAuth = (req: FastifyRequest): BoxAuth => boxAuthOf(req);
 
   /**
    * The operation context for a box's own writes. `actorAccountId` is null and
@@ -71,7 +76,13 @@ export async function boxRoutes(app: App): Promise<void> {
   app.post(
     '/register',
     {
-      config: { credential: 'box-claim', ...limited },
+      /**
+       * `secretResponse`: the answer is the box's live 256-bit secret, and
+       * the idempotency store keeps a response body for a day. Declared even
+       * though `credential` already fences this surface off, because what
+       * makes THIS route unstorable is what it returns, not who calls it.
+       */
+      config: { credential: 'box-claim', secretResponse: true, ...limited },
       schema: {
         description:
           'Redeem a single-use claim code for this box’s own secret. The secret is returned once and never again.',
@@ -98,7 +109,7 @@ export async function boxRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await boxAuth(req);
+      const auth = boxAuth(req);
       return recordHeartbeat(app.db, auth, req.body, boxCtx(req, auth));
     },
   );
@@ -113,7 +124,7 @@ export async function boxRoutes(app: App): Promise<void> {
       },
     },
     async (req, reply) => {
-      const auth = await boxAuth(req);
+      const auth = boxAuth(req);
       const bundle = await configBundle(app.db, auth);
       const etag = `"${bundle.configVersion}"`;
       reply.header('etag', etag);
@@ -141,7 +152,7 @@ export async function boxRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await boxAuth(req);
+      const auth = boxAuth(req);
       const commands = await pollCommands(app.db, auth, req.body.max);
       return { commands, serverTime: new Date().toISOString() };
     },
@@ -159,7 +170,7 @@ export async function boxRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const auth = await boxAuth(req);
+      const auth = boxAuth(req);
       return completeCommand(app.db, auth, req.params.commandId, req.body, boxCtx(req, auth));
     },
   );

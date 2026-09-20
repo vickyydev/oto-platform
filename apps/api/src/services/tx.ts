@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { idempotencyKey, type Db } from '@oto/db';
 import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
-import type { IdempotencyClaim } from '../plugins/idempotency';
+import { carriesSecret, type IdempotencyClaim } from '../plugins/idempotency';
 import { audit } from './audit';
 
 /**
@@ -69,7 +69,7 @@ export async function withTx<T>(
       // (because it needs the committed row) has it stored by the onSend
       // hook instead, and its client-minted id covers the gap between the
       // commit and that write.
-      if (claim && value !== undefined) {
+      if (claim && value !== undefined && !carriesSecret(value)) {
         await tx
           .update(idempotencyKey)
           .set({ statusCode: 200, responseBody: (value ?? null) as never })
@@ -78,6 +78,12 @@ export async function withTx<T>(
           );
         claim.stored = true;
       }
+      /**
+       * A value carrying a credential is left unstored and `stored` left
+       * false, so the onSend hook sees it, says which route it was and gives
+       * the key back. The rule belongs on the route — `secretResponse` — and
+       * this is only what catches the one that did not say so.
+       */
       return value;
     });
     ctx.log?.debug({ op: opName, ms: Date.now() - started, reqId: ctx.requestId }, 'op ok');

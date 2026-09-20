@@ -4,7 +4,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { opsExpectation, opsLast, type AlertSeverity, type Db } from '@oto/db';
 import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
-import { markSilentBoxesOffline, purgeOldBoxHeartbeats } from './box';
+import { expireStaleCommands, markSilentBoxesOffline, purgeOldBoxHeartbeats } from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
 import {
   buildAlertChannels,
@@ -363,7 +363,8 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
     },
     {
       name: 'job:housekeeping.retention',
-      description: 'Ages out operational runs, resolved alerts and box heartbeats',
+      description:
+        'Ages out operational runs, resolved alerts and box heartbeats, and expires stale box commands',
       intervalSeconds: deps.env.HOUSEKEEPING_INTERVAL_S,
       run: async ({ db, env }) => ({
         detail: {
@@ -377,6 +378,15 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
            * is what makes throwing its history away after two weeks cheap.
            */
           heartbeatsDeleted: await purgeOldBoxHeartbeats(db),
+          /**
+           * Not a delete. `pollCommands` expires only for the box that is
+           * asking, which is never the box that died with work queued for it,
+           * so a test print aimed at a dead Pi showed as pending for ever.
+           * This closes those; nothing is removed, because `box_command`'s
+           * restricting foreign key is what makes "a box is archived, never
+           * deleted" a database fact.
+           */
+          commandsExpired: await expireStaleCommands(db),
         },
       }),
     },

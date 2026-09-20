@@ -7,11 +7,9 @@ import {
   timingSafeEqual,
 } from 'node:crypto';
 import { and, eq, gt, isNull, lte } from 'drizzle-orm';
-import type { FastifyRequest } from 'fastify';
 import {
   account,
   handoffToken,
-  idempotencyKey,
   session as sessionTable,
   HANDOFF_AUDIENCES,
   type Db,
@@ -481,18 +479,9 @@ export async function purgeExpiredHandoffTokens(db: Db): Promise<number> {
 }
 
 /**
- * Give back an `Idempotency-Key` claim so the response is never stored.
- *
- * The issue response IS a credential, and the replay store keeps a response
- * for a day. Releasing the claim rather than ignoring it also keeps a genuine
- * retry working: it mints a fresh token instead of waiting out
- * `IDEMPOTENCY_IN_FLIGHT` on a key whose answer will never be written.
+ * Keeping the issue response out of the replay store used to be a line in the
+ * hand-off route, giving the claimed key back by hand. It is now a property of
+ * the route — `config: { secretResponse: true }` — so no key is claimed at all
+ * and the next route that mints a credential inherits the rule instead of
+ * having to remember this one. See `plugins/idempotency.ts`.
  */
-export async function releaseIdempotencyClaim(db: Db, req: FastifyRequest): Promise<void> {
-  const claim = req.idempotency;
-  if (!claim) return;
-  req.idempotency = undefined;
-  await db
-    .delete(idempotencyKey)
-    .where(and(eq(idempotencyKey.accountId, claim.accountId), eq(idempotencyKey.key, claim.key)));
-}

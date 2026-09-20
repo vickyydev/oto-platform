@@ -65,7 +65,7 @@ export function StationDrawer({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [boxId, setBoxId] = useState(station?.box?.id ?? boxes[0]?.id ?? '');
+  const [boxId, setBoxId] = useState(station?.boxId ?? boxes[0]?.id ?? '');
   const [name, setName] = useState(station?.name ?? '');
   const [kind, setKind] = useState<StationKind>((station?.kind as StationKind) ?? 'till');
   const [codePrefix, setCodePrefix] = useState(station?.codePrefix ?? '');
@@ -413,7 +413,7 @@ function initialAssignments(
 ): Partial<Record<StationDeviceRole, string | null>> {
   const out: Partial<Record<StationDeviceRole, string | null>> = {};
   for (const assignment of station?.devices ?? []) {
-    out[assignment.role as StationDeviceRole] = assignment.device.id;
+    out[assignment.role as StationDeviceRole] = assignment.deviceId;
   }
   return out;
 }
@@ -463,8 +463,11 @@ function StaffList({
   const shown = (candidates ?? []).filter((account) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
+    // An account with a role at this branch and no employee record behind it
+    // has no name — searching by phone is how that person is found at all.
     return (
-      account.name.toLowerCase().includes(q) || (account.phone ?? '').toLowerCase().includes(q)
+      (account.name ?? '').toLowerCase().includes(q) ||
+      (account.phone ?? '').toLowerCase().includes(q)
     );
   });
 
@@ -489,26 +492,32 @@ function StaffList({
         <EmptyState title={query ? 'Nobody matches that' : 'No staff to choose from'} />
       ) : (
         <div className="max-h-64 overflow-y-auto">
-          {shown.map((account) => (
-            <CheckRow
-              key={account.accountId}
-              checked={selected.includes(account.accountId)}
-              disabled={disabled}
-              label={account.name}
-              detail={
-                account.status && account.status !== 'active'
-                  ? `${account.phone ?? ''} — ${account.status}`
-                  : (account.phone ?? undefined)
-              }
-              onChange={(on) =>
-                onChange(
-                  on
-                    ? [...selected, account.accountId]
-                    : selected.filter((id) => id !== account.accountId),
-                )
-              }
-            />
-          ))}
+          {shown.map((account) => {
+            // Somebody with no employee record behind their account is named by
+            // their phone; the line under it then carries the status alone
+            // rather than the same number twice.
+            const named = Boolean(account.name);
+            const label = account.name ?? account.phone ?? account.accountId;
+            const under = named ? (account.phone ?? undefined) : undefined;
+            const status =
+              account.status && account.status !== 'active' ? account.status : undefined;
+            return (
+              <CheckRow
+                key={account.accountId}
+                checked={selected.includes(account.accountId)}
+                disabled={disabled}
+                label={label}
+                detail={[under, status].filter(Boolean).join(' — ') || undefined}
+                onChange={(on) =>
+                  onChange(
+                    on
+                      ? [...selected, account.accountId]
+                      : selected.filter((id) => id !== account.accountId),
+                  )
+                }
+              />
+            );
+          })}
         </div>
       )}
 

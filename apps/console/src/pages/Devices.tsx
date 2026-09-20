@@ -162,7 +162,7 @@ export function Devices() {
                 key={box.id}
                 box={box}
                 deviceCount={fleet.devices.filter((d) => d.boxId === box.id && !d.archived).length}
-                stationCount={fleet.stations.filter((s) => s.box?.id === box.id && !s.archived).length}
+                stationCount={fleet.stations.filter((s) => s.boxId === box.id && !s.archived).length}
                 timezone={timezone}
                 onOpen={() => setOpenBox(box)}
               />
@@ -240,7 +240,7 @@ export function Devices() {
         <BoxDrawer
           box={openBox}
           devices={fleet.devices.filter((d) => d.boxId === openBox.id)}
-          stations={fleet.stations.filter((s) => s.box?.id === openBox.id)}
+          stations={fleet.stations.filter((s) => s.boxId === openBox.id)}
           timezone={timezone}
           canCommand={canCommandBox}
           canUpdateBox={canUpdateBox}
@@ -490,25 +490,43 @@ function AddBoxPanel({
   const [role, setRole] = useState<BoxRole>('counter');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
-  const [claimCode, setClaimCode] = useState<{ code: string; expiresAt?: string } | null>(null);
+  // The box id is kept as well as the code, because a request that was replayed
+  // answers with the box and no code — and issuing a fresh one needs the id.
+  const [created, setCreated] = useState<{
+    boxId: string;
+    code?: string;
+    expiresAt?: string;
+  } | null>(null);
 
   const submit = async () => {
     setBusy(true);
     setFailed(null);
     try {
-      const created = await fleetApi.createBox(branchId, {
+      const result = await fleetApi.createBox(branchId, {
         name: name.trim(),
         slot: slot.trim(),
         role,
       });
       onAdded();
-      if (created.claimCode) {
-        setClaimCode({ code: created.claimCode, expiresAt: created.claimCodeExpiresAt });
-      } else {
-        onClose();
-      }
+      setCreated({ boxId: result.box.id, code: result.claimCode, expiresAt: result.expiresAt });
     } catch (err) {
       setFailed(err instanceof Error ? err.message : 'The box could not be added');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const issueFresh = async () => {
+    if (!created) return;
+    setBusy(true);
+    setFailed(null);
+    try {
+      const result = await fleetApi.reissueClaimCode(created.boxId);
+      onAdded();
+      setCreated({ boxId: created.boxId, code: result.claimCode, expiresAt: result.expiresAt });
+      if (!result.claimCode) setFailed('That request was replayed too. Press it once more.');
+    } catch (err) {
+      setFailed(err instanceof Error ? err.message : 'Could not issue a claim code');
     } finally {
       setBusy(false);
     }
@@ -521,15 +539,32 @@ function AddBoxPanel({
         mints its own secret from it.
       </p>
 
-      {claimCode ? (
+      {created?.code ? (
         <>
           <OneTimeCode
             label="Claim code"
-            code={claimCode.code}
-            expiresAt={claimCode.expiresAt}
-            detail="Only its hash is stored, so this is the one time it can be read. Issue a new one from the box if it is lost."
+            code={created.code}
+            expiresAt={created.expiresAt}
+            detail="Only its hash is kept, and it is left out of the response the API files against this request — so this is the one time it can be read. Issue a new one from the box if it is lost."
           />
           <Button onClick={onClose}>Done</Button>
+        </>
+      ) : created ? (
+        <>
+          <CodeWithheld
+            what="The box was added, but its claim code is not in this answer."
+            detail="That happens when the same request reaches the API twice — a double press, or a retry on a flaky connection. The code was minted once and only its hash was kept, so it cannot be read back. Issue a fresh one; it supersedes the first."
+          />
+          {failed && <p className="text-sm text-destructive break-words">{failed}</p>}
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={onClose} disabled={busy}>
+              Later
+            </Button>
+            <Button onClick={() => void issueFresh()} disabled={busy}>
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Issue a new claim code
+            </Button>
+          </div>
         </>
       ) : (
         <>
@@ -583,7 +618,7 @@ function StationListRow({
   return (
     <li className="py-3 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusMark tone={station.archived ? 'idle' : station.box ? 'ok' : 'warn'} />
+        <StatusMark tone={station.archived ? 'idle' : station.boxId ? 'ok' : 'warn'} />
         <button
           type="button"
           onClick={onOpen}
@@ -600,7 +635,9 @@ function StationListRow({
       </div>
 
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span>{station.box ? `on ${station.box.name}` : 'no box assigned'}</span>
+        <span>
+          {station.boxId ? `on ${station.boxName ?? 'its box'}` : 'no box assigned'}
+        </span>
         {deviceCount > 0 && (
           <span>
             {deviceCount} device{deviceCount === 1 ? '' : 's'} assigned
@@ -771,16 +808,54 @@ function PairPanel({
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
-  const [code, setCode] = useState<{ code: string; expiresAt?: string } | null>(null);
+  // The credential as well as the code: a replayed request answers with the
+  // credential and no code, and the credential is then the thing to supersede.
+  const [paired, setPaired] = useState<{
+    credentialId: string;
+    code?: string;
+    expiresAt?: string;
+  } | null>(null);
+
+  const mint = async () => {
+    const result = await fleetApi.pair(stationId, { kind, label: label.trim() || undefined });
+    onPaired();
+    setPaired({
+      credentialId: result.credential.id,
+      code: result.pairingCode,
+      expiresAt: result.expiresAt,
+    });
+    if (!result.pairingCode && paired) {
+      setFailed('That request was replayed too. Press it once more.');
+    }
+  };
 
   const submit = async () => {
     setBusy(true);
     setFailed(null);
     try {
-      const result = await fleetApi.pair(stationId, { kind, label: label.trim() || undefined });
-      onPaired();
-      if (result.pairingCode) setCode({ code: result.pairingCode, expiresAt: result.expiresAt });
-      else onClose();
+      await mint();
+    } catch (err) {
+      setFailed(err instanceof Error ? err.message : 'The screen could not be paired');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const pairAgain = async () => {
+    if (!paired) return;
+    setBusy(true);
+    setFailed(null);
+    try {
+      try {
+        // A credential whose code nobody saw can never be redeemed, so it is
+        // revoked rather than left in Paired screens waiting for a screen that
+        // is never coming.
+        await fleetApi.revokeCredential(paired.credentialId, 'Superseded: its code was not shown');
+      } catch {
+        // Not worth stopping for. Somebody is standing at the screen waiting
+        // for a code, and the stale row can be revoked from the list below.
+      }
+      await mint();
     } catch (err) {
       setFailed(err instanceof Error ? err.message : 'The screen could not be paired');
     } finally {
@@ -795,15 +870,32 @@ function PairPanel({
         from then on — bound to this station and nothing else.
       </p>
 
-      {code ? (
+      {paired?.code ? (
         <>
           <OneTimeCode
             label="Pairing code"
-            code={code.code}
-            expiresAt={code.expiresAt}
-            detail="Only its hash is stored. If it is lost, revoke the credential and pair again."
+            code={paired.code}
+            expiresAt={paired.expiresAt}
+            detail="Only its hash is kept, and it is left out of the response the API files against this request. If it is lost, revoke the credential and pair again."
           />
           <Button onClick={onClose}>Done</Button>
+        </>
+      ) : paired ? (
+        <>
+          <CodeWithheld
+            what="The credential was created, but its pairing code is not in this answer."
+            detail="That happens when the same request reaches the API twice — a double press, or a retry on a flaky connection. The code was minted once and only its hash was kept, so it cannot be read back. Pairing again revokes that credential and mints a fresh code."
+          />
+          {failed && <p className="text-sm text-destructive break-words">{failed}</p>}
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={onClose} disabled={busy}>
+              Later
+            </Button>
+            <Button onClick={() => void pairAgain()} disabled={busy}>
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Pair again
+            </Button>
+          </div>
         </>
       ) : (
         <>
@@ -840,6 +932,30 @@ function PairPanel({
         </>
       )}
     </Dialog>
+  );
+}
+
+/**
+ * Why there is no code on screen when somebody is waiting to read one out.
+ *
+ * A one-time code is deliberately left out of the response the API files
+ * against an Idempotency-Key, so a request that arrived twice answers with the
+ * record and nothing else. Closing the panel on that would look like success
+ * and lose the code; saying it plainly, and offering a fresh one, is the only
+ * honest way out of it.
+ */
+function CodeWithheld({ what, detail }: { what: string; detail: string }) {
+  return (
+    <div
+      className="rounded-xl border p-4"
+      style={{
+        borderColor: 'hsl(var(--status-warn) / 0.35)',
+        backgroundColor: 'hsl(var(--status-warn) / 0.08)',
+      }}
+    >
+      <p className="text-sm font-semibold">{what}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+    </div>
   );
 }
 
