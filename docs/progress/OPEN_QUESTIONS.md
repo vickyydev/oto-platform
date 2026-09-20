@@ -4,7 +4,7 @@ Collected as they arise so building never stops on them. Each one names what
 was decided in the meantime, so nothing is blocked and nothing is silently
 assumed. Answered items move to `OWNER_DIRECTION.md` and leave here.
 
-_Last updated 2026-09-20, after S2-02._
+_Last updated 2026-09-20, after S2-03._
 
 ## 1. One cookie value shared across app origins, or one per origin?
 
@@ -60,6 +60,14 @@ Saturday.
 The 2C2P sandbox merchant id and secret, into `.env` as `PGW_*`. Not blocking
 until S2-10; the gateway simulator answers in the meantime so CI and a fresh
 checkout never need the sandbox.
+
+## 6. Alerting is built but delivers only to a console
+
+S2-03 built the alert record, dedupe, auto-resolve and flap suppression, and
+a channel interface an email or webhook adapter slots into. Nothing leaves
+the building until question 4 is answered — so today an alert is visible on
+the Console and nowhere else. That is fine while someone is looking at the
+Console; it is not fine at 9pm on a Saturday.
 
 ## Recorded, not blocking — deferred work
 

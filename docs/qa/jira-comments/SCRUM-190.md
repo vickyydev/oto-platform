@@ -1,0 +1,30 @@
+SCRUM-190 — S2-03 — Observability and Console v1
+Dev evidence 2026-09-20 on commit 94e0976 (branch main). Built and DEPLOYED. 223 API integration tests + 36 telemetry unit tests + 22 shared, typecheck, lint and build green; verify-schema passes against 0007. Screenshots are from the live deployment.
+
+Console: https://oto-console-staging.onrender.com — the fourth service in the staging environment, reached from the launcher's Console tile or directly.
+
+One redactor for the whole suite. packages/telemetry now owns what apps/api/src/lib/scrub.ts used to, so the POS, the launcher, the console and the box agent share one implementation rather than four that drift. It redacts by key AND by value shape, because those fail in opposite directions: a key deny-list is the only thing that catches medicalNotes, whose value has no shape, and value-shape detection is the only thing that catches the key nobody listed — which is precisely how Sprint 1 leaked, with a phone inside the detail field of a Postgres error. It never throws and never hangs: depth, node-count and string budgets, ancestor-path cycle detection, guarded property reads, and the whole call wrapped. A redactor that throws takes the log line and the request with it, which is worse than no redactor.
+
+A second, weaker redactor had grown in apps/api/src/services/ops.ts and is gone. It was key-only and exact-match, so it would have missed that same leak shape. Worse for that table specifically, it walked own enumerable properties — an Error's message and stack are neither — so every failure detail would have been recorded as an empty object, on the one table whose entire purpose is saying what went wrong.
+
+Two defences, at two different moments. safeLogger wraps the api's pino instance at creation, so req.log and every child inherit redaction whether or not the person adding a binding thought about it. An ESLint rule catches the obvious cases at the keyboard, where they cost nothing to fix. The rule deliberately does not list "code": it is the error code on every envelope we send and the SQLSTATE on every pg error, and a rule that fires on the commonest legitimate key gets switched off within a week — the redactor, which can see the value, still refuses a six-digit one. Run across the whole tree it reports zero, and it fires on all three deliberate leaks in its own test.
+
+The operational record. audit_log answers "who changed which record". ops_run, ops_last, ops_expectation, alert and alert_delivery answer the other question, the one a log stream cannot answer a week later: did the system do what it was supposed to, and if not, since when. ops_expectation is what makes a silent failure impossible — it records what SHOULD have happened and how recently, so a watchdog can raise an alert about something that did NOT run.
+
+The job runner holds an advisory lock, so two instances cannot run one schedule twice. That matters today: the api carries PROCESS_ROLES=api,edge,jobs in one container, which is exactly why render.yaml's autoscaling block is commented out. The two sweeps written in earlier tickets and left unscheduled — purgeExpiredIdempotencyKeys and purgeExpiredHandoffTokens — are finally scheduled.
+
+A gap caught by reading the deployment rather than by a test. The runner, its jobs, the watchdog and twenty tests were all written, and nothing ever constructed it: /ready reported jobs.configured false on a service whose PROCESS_ROLES names jobs. No test caught it because every test builds its own app and none of them start a runner. It is started from the process entry point now — not from buildApp, or every test file would fire timers and sweep tables against its neighbours — and stopped on SIGTERM before the pool it writes through closes. Verified after the fix: /ready reports jobs configured true, watchdogAgeS 44, stale false.
+
+/ready now answers with substance: {"status":"ready","checks":{"database":{"ok":true,"latencyMs":2},"pool":{"total":1,"idle":1,"waiting":0,"max":10},"jobs":{"configured":true,"watchdogAgeS":44,"staleAfterS":180,"stale":false}}}. It deliberately does not fail on a non-critical dependency: Render takes a service out of rotation on a failing health check, and the park must not lose its till because object storage is unreachable.
+
+GET /audit is readable now: keyset pagination rather than an offset (an offset over a growing table gets slower and can skip rows as new ones arrive), filters, a hard cap of 200, and personal data masked unless the caller holds admin:audit:read_sensitive. An unmasked read is itself audited — reading a child's medical note is an event worth recording.
+
+Screenshots:
+- 01-console-sign-in — the console's own sign-in, in the suite's design language.
+- 02-console-health — the Health page. Note what it says about itself: "Only /ready is reporting on this deployment, so this is not yet a verdict on the jobs, the alerts or anything else." The watchdog card reads 9s, late after 3m.
+- 03-console-activity — the audit log with its filters.
+- 04-console-failures — failures grouped by fingerprint, so one broken thing failing sixty times reads as one problem.
+- 05-console-integrations — the outside services and their states; names only, never a credential.
+- 06-console-phone-width — 390px, no horizontal scroll (scrollWidth 390 = clientWidth 390).
+
+Known and recorded, not hidden. The Health page's "Scheduled jobs" panel shows an honest empty state — "The job register is not on this deployment yet" — because the admin observability routes it reads are not all wired. The watchdog IS running, as /ready proves; what is missing is the endpoint that lists the register. That belongs with the remaining admin routes for ops-runs and alerts. Also outstanding from the ticket: OpenTelemetry traces and the OTLP bridge, POST /telemetry/client for browser errors, the audit_log classification columns with BRIN, and the GitHub Actions cron pinging /ready. They are additive to what is deployed and none of them block the next ticket.
