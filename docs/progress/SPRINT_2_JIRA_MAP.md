@@ -91,7 +91,17 @@ reversible: remove a label, or delete a comment.
   | When | Move it to | And |
   |---|---|---|
   | Work on a ticket starts | **In Progress** | Comment saying what is being built and what it will prove |
-  | The work is finished, committed and deployed | **Testing** | Comment with the evidence: what you can do now, where, what changed, how it was checked, what is still open |
+  | Built, committed, tests green | **Testing** | Comment with the evidence: what you can do now, where, what changed, how it was checked, what is still open |
+  | Live on the staging deployment | **Deployed** | Comment naming the addresses it can be opened at, and anything that needs a value set before it works |
+
+  **Deployed** (status id 10033, project-scoped, category *In Progress*) was
+  added on the owner's instruction 2026-09-20. It sits after Testing: a
+  ticket is in Testing when the work is finished and evidenced, and in
+  Deployed once it is actually running where the park's team can open it.
+  The distinction earns its keep because the two are not simultaneous —
+  every service deploys on `checksPass`, so a ticket can be finished and
+  green for several minutes before it is live, and a red build can hold it
+  much longer.
 
   *Done* stays the owner's to set, after they have looked at it. A sub-task
   and its story move together: the story goes to In Progress when its first
