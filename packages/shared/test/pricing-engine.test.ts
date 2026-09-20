@@ -587,7 +587,14 @@ describe('rounding', () => {
       const sum = weights.reduce((a, b) => a + b, 0);
       const parts = apportion(total, weights);
 
-      expect(parts.length).toBe(weights.length);
+      // Thrown rather than expect()ed, like every other invariant in this
+      // loop: 200,000 expect() calls cost more than the arithmetic they guard
+      // and pushed this past vitest's default timeout on a CI runner, which
+      // made a test written to prove the suite is not flaky the one flaky
+      // test in it.
+      if (parts.length !== weights.length) {
+        throw new Error(`apportion(${total}, [${weights}]) gave ${parts.length} parts`);
+      }
       for (const part of parts) {
         if (!Number.isInteger(part) || part < 0) {
           throw new Error(`apportion(${total}, [${weights}]) gave a non-integer part: ${parts}`);
@@ -612,7 +619,11 @@ describe('rounding', () => {
       checked += 1;
     }
     expect(checked).toBe(200_000);
-  });
+    // An explicit budget rather than the 5 s default: this is a property test
+    // and a CI runner is several times slower than a developer's machine, so
+    // the default turns a slow machine into a red build and a blocked deploy.
+    // Every service here deploys on `checksPass`.
+  }, 30_000);
 
   it('apportion is exact at the magnitude its comment claims, and the product is not beyond it', () => {
     // The only product formed is `total × weight`; the split is exact while
