@@ -1061,6 +1061,15 @@ export interface BoxSyncState {
   quarantineOpen: number;
   epochRegressedOpen: number;
   lastSyncAt: Date | null;
+  /**
+   * How many journal positions the ledger holds above the box's sync cursor, on
+   * its current epoch. Zero is the healthy answer and the usual one: the cursor
+   * is the contiguous prefix of what has arrived, so anything above it means a
+   * position in between never did (S2-05).
+   */
+  cursorBehindBy: number;
+  /** The first position the cursor cannot claim — the hole itself. Null when there is none. */
+  cursorHoleAt: number | null;
 }
 
 /**
@@ -1265,6 +1274,41 @@ export function evaluateBox(
       category: 'sync.quarantine',
       reason: 'cleared',
       summary: `Everything quarantined from ${subject} has been replayed or discarded`,
+    },
+  });
+
+  /**
+   * **The cursor is behind the ledger.** The cursor is the contiguous prefix of
+   * what has arrived from a box, so a ledger row above it means a position in
+   * between never arrived at all — a queue row damaged on the way up and not yet
+   * re-sent, or a store that has lost part of its journal. It stalls the number
+   * the heartbeat and the till's banner both read as "where the box has got to",
+   * and it is invisible to `sync.stale` above, which measures the age of a queue
+   * that is still draining perfectly well.
+   *
+   * Unlike the offline and device rules it does not wait for the box to be
+   * REPORTING: the rows are already in this database, and a box that lost
+   * positions and was then unplugged still lost them. It does hold to the same
+   * rule as everything else about a box nobody has registered against or that an
+   * administrator has taken out of service, which is expected to be quiet. It
+   * closes on its own when the missing position arrives or when the store is
+   * reset, because a reset mints a new epoch and this reads the current one.
+   */
+  const cursorBehindBy = sync?.cursorBehindBy ?? 0;
+  const cursorHoleAt = sync?.cursorHoleAt ?? null;
+  conditions.push({
+    key: `sync.cursor_stalled:${row.id}`,
+    category: 'sync.cursor_stalled',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: expectedAlive && cursorBehindBy > 0,
+    summary: `${subject} has ${cursorBehindBy} event(s) recorded above journal position ${cursorHoleAt ?? 0}, which has never arrived — its sync cursor cannot move past it`,
+    detail: { slot: row.slot, cursorBehindBy, cursorHoleAt, currentEpoch: row.currentEpoch },
+    clear: {
+      category: 'sync.cursor_stalled',
+      reason: 'recovered',
+      summary: `${subject} has nothing filed above its sync cursor — everything it has sent is accounted for`,
     },
   });
 
@@ -1532,6 +1576,8 @@ async function boxSyncStates(
       quarantineOpen: 0,
       epochRegressedOpen: 0,
       lastSyncAt: null,
+      cursorBehindBy: 0,
+      cursorHoleAt: null,
     });
   }
 
@@ -1598,6 +1644,52 @@ async function boxSyncStates(
     const state = out.get(row.box_id);
     if (!state) continue;
     state.lastSyncAt = row.last_push_at ? new Date(row.last_push_at) : null;
+  }
+
+  /**
+   * How far the cursor is behind the ledger on the box's CURRENT epoch (S2-05).
+   *
+   * The ledger only, never quarantine: a filed event is a position the cloud
+   * refused rather than one it is missing, and counting those would open this on
+   * every press of "Inject poison event" — a control that must cost the box
+   * nothing. A count of rows rather than `max(box_seq) - last_box_seq`, because
+   * the number a person acts on is how many facts are stranded above the hole,
+   * not how wide the numbering is; a box that once sealed an event a million
+   * positions ahead would otherwise report a million.
+   *
+   * One index-only aggregate per box on `sync_event_journal_unique`, on a page
+   * load and a watchdog tick rather than on a push. Its range is empty on a
+   * healthy box, which is the case that has to be free; on a stalled one it
+   * counts every position that has arrived since the hole, so a hole left open
+   * for weeks makes this a longer scan — by which time `sync.cursor_stalled` has
+   * been open for weeks too.
+   */
+  const stalled = await probe(
+    async () =>
+      (
+        await db.execute<{ box_id: string; behind: string; hole: string | null }>(
+          sql`select c.box_id,
+                     count(e.box_seq)::text as behind,
+                     case when count(e.box_seq) > 0
+                          then (c.last_box_seq + 1)::text end as hole
+                from edge.sync_cursor c
+                join core.box b
+                  on b.id = c.box_id and b.current_epoch = c.journal_epoch
+                left join edge.sync_event e
+                  on e.box_id = c.box_id
+                 and e.journal_epoch = c.journal_epoch
+                 and e.box_seq > c.last_box_seq
+               where c.box_id in (${ids})
+               group by c.box_id, c.last_box_seq`,
+        )
+      ).rows,
+    [] as Array<{ box_id: string; behind: string; hole: string | null }>,
+  );
+  for (const row of stalled) {
+    const state = out.get(row.box_id);
+    if (!state) continue;
+    state.cursorBehindBy = Number(row.behind);
+    state.cursorHoleAt = row.hole === null ? null : Number(row.hole);
   }
 
   return out;

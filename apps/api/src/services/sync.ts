@@ -1,5 +1,5 @@
 import { createHash, createPublicKey, verify as verifyDetached, type KeyObject } from 'node:crypto';
-import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import {
   account,
   band,
@@ -1180,7 +1180,7 @@ export async function pushEvents(
    * it raises after the transaction.
    */
   const droppedWithoutRecord: number[] = [];
-  /** Positions the mark could not walk to, for the run record. */
+  /** Positions the cloud can claim but the mark could not walk to, for the run record. */
   const markHeldFor: number[] = [];
   let applied = 0;
   let duplicates = 0;
@@ -1229,35 +1229,49 @@ export async function pushEvents(
     let lastEventId = cursorRow?.lastEventId ?? null;
 
     /**
-     * How far one batch may move the mark: over positions it accounted for, one
-     * at a time, with no holes.
+     * What the cloud already holds ABOVE the mark, read before the batch runs.
      *
-     * The mark is a claim rather than a note — everything at or below it has
-     * been DEALT WITH and the box may retire it — so the only honest way to move
-     * it is to step it over positions that were in fact dealt with. Nothing used
-     * to bound it: one sequence, read out of a queue row that was never an
-     * envelope or carried by an event the box really did seal a million
-     * positions ahead, took the mark with it. `[broken@999999, sealed@1,
-     * sealed@2]` answered `applied 0, duplicates 2` — the two sealed facts were
-     * below the jumped mark, counted as replays and dropped, with no anomaly and
-     * no alert. `[broken@4, sealed@1]` did the same three positions out.
+     * **The ledger is the authority on what the box has delivered; the cursor is
+     * a cache of a question the ledger can always answer.** The mark used to be
+     * computed from this batch alone, and that is what froze it: a batch that
+     * could not step over a hole left the mark behind, and every batch after it
+     * — dealing only with its own positions — had no way to notice that the
+     * hole had since been filled. `[@1, truncated, @3, @4, @5]` left the mark on
+     * 1; the re-send of @2 moved it to 2; and @6, @7 and everything after moved
+     * it nowhere, with 1..7 all sitting in the ledger.
      *
-     * Walking the positions instead makes that shape impossible rather than
-     * merely smaller: a sequence the batch cannot reach without skipping leaves
-     * the mark where it is. It also makes the answer independent of the order
-     * the elements arrive in, which matters because the one input this path
-     * exists for — a damaged queue row — is exactly the input that arrives out
-     * of order.
+     * Deriving it from what the ledger holds is self-healing by construction:
+     * fill the hole and the next push walks the whole run in one step, because
+     * the run is what the query returns.
      *
-     * What it costs is a mark that stalls when a box really has lost journal
-     * positions. Its events still apply and are still acknowledged one by one in
-     * `results`, so nothing is lost and the queue still drains; what stops is
-     * the cursor, and the oldest-unacked watchdog says so. A store that has lost
-     * positions is what "Reset store" is for, and a stalled cursor pointing at
-     * one is a better failure than a mark a single bad integer can throw to
-     * infinity.
+     * What it still costs is a mark that stalls while a hole is genuinely open —
+     * a box that has lost journal positions, which is what "Reset store" is for.
+     * Its events still apply and are still acknowledged one by one in `results`,
+     * so nothing is lost and the queue still drains. That draining is exactly
+     * why the oldest-unacked watchdog cannot see this: `sync.stale` reads an age
+     * computed from queued and sending rows, and an emptying queue has none. The
+     * rule that does see it is `sync.cursor_stalled` in `evaluateBox`, which
+     * compares this mark with the ledger's own high-water mark for the box's
+     * current epoch, and closes itself when the hole is filled or the store is
+     * reset.
      */
-    const accountedFor = new Set<number>();
+    const held = await loadHeldPositions(tx, auth, epoch, startMark);
+    /**
+     * Positions the mark may CLAIM. Seeded from the ledger and from the filed
+     * events whose position the box has genuinely finished with, then added to
+     * by this batch through `accountFor`.
+     */
+    const sealed = held.sealed;
+    /**
+     * Positions the cloud holds ANYTHING for, claimable or not — an injected
+     * event, a row whose identity had to be invented. A gap is measured against
+     * this rather than against `sealed`, because "the box skipped a position" is
+     * a claim about facts that never arrived, and one that did arrive and was
+     * refused is not one of those.
+     */
+    const known = held.known;
+    /** The highest position the cloud held BEFORE this batch. See the gap below. */
+    const headBefore = held.head;
 
     /**
      * Account for a position, or decline to.
@@ -1267,28 +1281,48 @@ export async function pushEvents(
      * and a box whose answer was lost in flight needs the cursor to retire it
      * rather than send it for ever.
      *
-     * Three kinds account for nothing, each for its own reason. An event whose
-     * identity had to be invented was never at a sequence this box minted. An
-     * INJECTED event was minted in the cloud by a test control and the box will
-     * itself mint that very sequence next. And anything FROM QUARANTINE is one
-     * filed event a person put back: its position was dealt with when it was
-     * filed — or deliberately was not, for an injected one — so re-pushing it
-     * says nothing new about where the box has got to. That last one is what
-     * made "Inject poison event" followed by "Replay" swallow the box's next
-     * real fact: the injection carefully left the mark alone and the replay
-     * moved it to the very sequence the box was about to use.
+     * Three kinds are `known` without being `sealed`, each for its own reason.
+     * An event whose identity had to be invented was never acknowledged under an
+     * id the box holds, so the box will send that position again and the mark
+     * must leave it alone. An INJECTED event was minted in the cloud by a test
+     * control and the box will itself mint that very sequence next. And anything
+     * FROM QUARANTINE is one filed event a person put back: its position was
+     * dealt with when it was filed — or deliberately was not, for an injected
+     * one — so re-pushing it says nothing new about where the box has got to.
+     * That last one is what made "Inject poison event" followed by "Replay"
+     * swallow the box's next real fact: the injection carefully left the mark
+     * alone and the replay moved it to the very sequence the box was about to
+     * use.
+     *
+     * The first two are exclusions `loadHeldPositions` applies again to the rows
+     * it reads back, so a position filed by an earlier batch is treated the same
+     * way it was when it was filed. The third is a property of this push rather
+     * than of any row, so it has nothing to apply.
      */
     const accountFor = (boxSeq: number, addressable: boolean): void => {
+      if (boxSeq > 0) known.add(boxSeq);
       if (!addressable || source === 'injected' || fromQuarantine) return;
-      accountedFor.add(boxSeq);
+      sealed.add(boxSeq);
     };
 
     /**
      * The frontier as this batch walks it, which is a different question from
      * the mark: it is what a gap is measured against, and a gap is about the
-     * order the box sent things in rather than about what may be claimed.
+     * order the box sent things in rather than about what may be claimed. It
+     * steps over everything the cloud already holds, so a batch that starts
+     * above a filed position is not reporting that position missing.
      */
     let walked = startMark;
+    const absorbKnown = (): void => {
+      while (known.has(walked + 1)) walked += 1;
+    };
+    absorbKnown();
+    /**
+     * Positions this batch stepped past that the cloud holds nothing for, as far
+     * as it looked. Collected here and filed as one anomaly at the end.
+     */
+    const missing = new Set<number>();
+    let gapWitness: { eventId: string; actionId: string | null; boxSeq: number } | null = null;
 
     for (const raw of input.events) {
       /**
@@ -1309,7 +1343,10 @@ export async function pushEvents(
       // Read before the checks below use it, so a gap is measured against what
       // this batch had reached rather than against what it reaches later.
       const walkedBefore = walked;
-      if (address.addressable) walked = Math.max(walked, address.boxSeq);
+      if (address.addressable) {
+        walked = Math.max(walked, address.boxSeq);
+        absorbKnown();
+      }
 
       // --- The epoch, first, because it decides whether the rest means anything.
       if (address.journalEpoch !== epoch) {
@@ -1478,25 +1515,44 @@ export async function pushEvents(
        * the sales that were lost are not recovered by also losing the ones
        * that survived.
        *
-       * It records an anomaly and does NOT raise an alert, which is a gap of
-       * its own and is deliberate rather than forgotten: every alert here is
-       * opened and CLOSED from the same evaluation in `evaluateBox`, and there
-       * is no condition that can stop being true about a gap — the events are
-       * gone, so nothing ever recovers. Giving it an alert would mean giving
-       * somebody a row they can never clear. It belongs with the Anomalies tab,
-       * where a thing that happened once and is not a live condition belongs.
+       * **What is missing is measured against the cloud's rows, not against the
+       * cursor.** The old test was `boxSeq > walkedBefore + 1` with `walked`
+       * seeded from the mark, so one hole made every later batch report the
+       * positions BEHIND it missing for ever — real rows read
+       * `{missing 3, expectedBoxSeq 3, receivedBoxSeq 6}` while 3, 4, 5, 6 and 7
+       * were all in the ledger. A position the cloud holds a row for is not
+       * missing, however that row got there, so `known` is what the step is
+       * judged against and `absorbKnown` walks over it.
+       *
+       * **And only positions above `headBefore`.** A position below the highest
+       * one the cloud already held is not news: the batch that first reached
+       * past it is the batch that had the chance to say so, and re-saying it on
+       * every push afterwards is the same "once per batch for ever" fault in a
+       * different place. The ceiling is the same window the mark walks, so a box
+       * that jumps thousands of positions in one go has the first thousand named
+       * and the rest neither named nor examined — `lookedUpTo` on the row says
+       * how far the look went, because a longer list on a tab is worth less than
+       * a bounded query here.
+       *
+       * It records an anomaly and does NOT raise an alert. A standing hole is a
+       * live condition and it has one now — `sync.cursor_stalled` in
+       * `evaluateBox`, which is true while the cursor is behind the ledger and
+       * stops being true when the hole is filled or the store is reset. This row
+       * is what one batch saw and is not the same question: a hole whose
+       * position DID reach the cloud, in a row that could not be applied, opens
+       * that condition and records nothing here, because nothing is missing.
        */
-      if (envelope.boxSeq > walkedBefore + 1 && !fromQuarantine) {
-        anomalies.push({
-          kind: 'sequence_gap',
-          eventId: envelope.eventId,
-          actionId: envelope.actionId ?? null,
-          detail: {
-            expectedBoxSeq: walkedBefore + 1,
-            receivedBoxSeq: envelope.boxSeq,
-            missing: envelope.boxSeq - walkedBefore - 1,
-          },
-        });
+      if (!fromQuarantine) {
+        const ceiling = Math.min(envelope.boxSeq - 1, startMark + MARK_WINDOW);
+        for (let seq = walkedBefore + 1; seq <= ceiling; seq += 1) {
+          if (known.has(seq) || seq <= headBefore) continue;
+          missing.add(seq);
+          gapWitness ??= {
+            eventId: envelope.eventId,
+            actionId: envelope.actionId ?? null,
+            boxSeq: envelope.boxSeq,
+          };
+        }
       }
 
       const prepared = prepareEvent(envelope, scope);
@@ -1655,18 +1711,53 @@ export async function pushEvents(
     }
 
     /**
-     * The walk. One step per position this batch accounted for, stopping at the
+     * The walk. One step per position the cloud can claim, stopping at the
      * first hole — which is the whole rule, and the reason the mark could not be
      * computed until every element had been seen.
      *
-     * Bounded by the batch without needing to be told: a batch of N elements can
-     * account for at most N positions, so this loop runs at most N times.
+     * It normally stops at the very first position it looks at, because the
+     * common case is a mark already sitting at the head of the journal: nothing
+     * was loaded above it, and the only positions in `sealed` are the ones this
+     * batch just dealt with. Bounded without needing to be told: `sealed` holds
+     * at most `MARK_WINDOW` loaded positions plus one per element of the batch,
+     * so this loop runs at most that many times.
      */
     let mark = startMark;
-    while (accountedFor.has(mark + 1)) mark += 1;
-    for (const seq of accountedFor) if (seq > mark) markHeldFor.push(seq);
+    while (sealed.has(mark + 1)) mark += 1;
+    for (const seq of sealed) if (seq > mark) markHeldFor.push(seq);
     markHeldFor.sort((a, b) => a - b);
     cursorSeq = mark;
+
+    /**
+     * One row for the batch, rather than one per event. The positions are what
+     * an investigation needs; the first event that stepped past one of them is
+     * where to start reading.
+     *
+     * Filtered against `known` once more, now that the whole batch has been
+     * seen: a damaged queue row is the one input that arrives out of journal
+     * order, so a position can be stepped over by one element and filed by
+     * another later in the same batch, and the answer must not depend on which
+     * of the two the box happened to put first.
+     */
+    const seqs = [...missing].filter((seq) => !known.has(seq)).sort((a, b) => a - b);
+    if (seqs.length > 0 && gapWitness) {
+      anomalies.push({
+        kind: 'sequence_gap',
+        eventId: gapWitness.eventId,
+        actionId: gapWitness.actionId,
+        detail: {
+          /** How many were found, which is not the same as how many there are. */
+          missing: seqs.length,
+          missingBoxSeqs: seqs.slice(0, 20),
+          expectedBoxSeq: seqs[0],
+          receivedBoxSeq: gapWitness.boxSeq,
+          /** The highest position the cloud held before this batch. */
+          knownBoxSeq: headBefore,
+          /** How far above the mark this looked. Past it, nothing was examined. */
+          lookedUpTo: startMark + MARK_WINDOW,
+        },
+      });
+    }
 
     await tx
       .update(syncCursor)
@@ -1719,12 +1810,14 @@ export async function pushEvents(
       /** What the box thought its own high-water mark was, when it said. */
       boxCursorSeq: input.cursorSeq ?? null,
       /**
-       * Positions this batch dealt with that the mark could not walk to,
-       * because something between them and the mark was missing. The fingerprint
-       * of a box sending sequences a gapless journal could not have reached from
-       * here: a damaged queue row, or a store that has lost part of its journal.
-       * The events themselves were still applied or still filed; what did not
-       * happen is the cursor claiming the positions in between.
+       * Positions the cloud can claim — from this batch or from an earlier one —
+       * that the mark could not walk to, because something between them and the
+       * mark is missing. The fingerprint of a box sending sequences a gapless
+       * journal could not have reached from here: a damaged queue row, or a
+       * store that has lost part of its journal. The events themselves were
+       * still applied or still filed; what did not happen is the cursor claiming
+       * the positions in between. The standing condition is
+       * `sync.cursor_stalled`; this is what one batch saw.
        */
       markHeldFor: markHeldFor.length > 0 ? markHeldFor.slice(0, 20) : undefined,
     },
@@ -1937,6 +2030,117 @@ function assertEnvelopeUsable(
       'The signature does not verify against this box’s registered key',
     );
   }
+}
+
+/**
+ * How far above the mark one push may look.
+ *
+ * The walk reads positions out of the ledger rather than out of the batch, so it
+ * needs a ceiling or a box carrying a year-old hole would read a year of
+ * sequences on every push. A batch is at most `SYNC_PUSH_MAX_EVENTS` (200)
+ * events, so a thousand is five batches of headroom: a hole filled several
+ * batches later is absorbed in one step, and a hole that is never filled reads
+ * at most a thousand index entries per push — see the cost note on
+ * `loadHeldPositions` for the whole of it. Past the ceiling the cloud does not
+ * look and does not claim: the mark catches up a window at a time, and
+ * `sync.cursor_stalled` says it is behind while it does.
+ */
+const MARK_WINDOW = 1_000;
+
+/** Positions above the mark, and what the cloud may say about each of them. */
+interface HeldPositions {
+  /** Positions the mark may claim: applied, or filed under the id the box sent. */
+  sealed: Set<number>;
+  /** Positions the cloud holds anything at all for. What a gap is measured against. */
+  known: Set<number>;
+  /** The highest position in `known`, or the mark itself when nothing is above it. */
+  head: number;
+}
+
+/**
+ * Read what the cloud holds above the mark, in one bounded window.
+ *
+ * **Cost.** Two reads per push. The ledger one is an index-only range scan on
+ * `sync_event_journal_unique` over at most `MARK_WINDOW` rows, and in the
+ * ordinary case — a mark sitting at the head of the journal — it returns none.
+ * The quarantine one has no index on the position, so it is a scan of this box's
+ * quarantine rows filtered by epoch and window; that table is small by
+ * construction, and the watchdog's "quarantine non-empty" rule is what says so
+ * long before its size is a question. At a park doing 5,000 events a day, where
+ * the agent flushes every five seconds, that is of the order of ten thousand
+ * pairs of small reads a day against an index and a table of tens of rows.
+ *
+ * Two kinds of filed row are `known` without being `sealed`, and both exclusions
+ * exist to stop the mark retiring a position the box is going to send again:
+ *
+ *   - an event the test controls INJECTED, which the box never minted and whose
+ *     sequence it is about to use;
+ *   - an event whose identity had to be invented, because the id in the answer
+ *     is then not one the box can match against its queue — it never retires the
+ *     row, and re-sends it whole. `payload->>'eventId'` is the id the box
+ *     actually sent: `fileQuarantine` writes the raw element as the payload and
+ *     `salvageAddress` mints `event_id` only when it could not read one, so the
+ *     two agree exactly when the identity came off the wire.
+ */
+async function loadHeldPositions(
+  tx: Tx,
+  auth: BoxAuth,
+  epoch: number,
+  mark: number,
+): Promise<HeldPositions> {
+  const ceiling = mark + MARK_WINDOW;
+  const applied = await tx
+    .select({ boxSeq: syncEvent.boxSeq })
+    .from(syncEvent)
+    .where(
+      and(
+        eq(syncEvent.boxId, auth.boxId),
+        eq(syncEvent.journalEpoch, epoch),
+        gt(syncEvent.boxSeq, mark),
+        lte(syncEvent.boxSeq, ceiling),
+      ),
+    )
+    .orderBy(asc(syncEvent.boxSeq))
+    .limit(MARK_WINDOW);
+
+  const filed = await tx
+    .select({
+      boxSeq: syncQuarantine.boxSeq,
+      eventId: syncQuarantine.eventId,
+      sig: syncQuarantine.sig,
+      errorMessage: syncQuarantine.errorMessage,
+      /** Null where the element was not even an object, which is not an identity. */
+      sentEventId: sql<
+        string | null
+      >`case when jsonb_typeof(${syncQuarantine.payload}) = 'object' then ${syncQuarantine.payload}->>'eventId' else null end`,
+    })
+    .from(syncQuarantine)
+    .where(
+      and(
+        eq(syncQuarantine.boxId, auth.boxId),
+        eq(syncQuarantine.journalEpoch, epoch),
+        gt(syncQuarantine.boxSeq, mark),
+        lte(syncQuarantine.boxSeq, ceiling),
+      ),
+    )
+    .limit(MARK_WINDOW);
+
+  const sealed = new Set<number>();
+  const known = new Set<number>();
+  let head = mark;
+  for (const row of applied) {
+    sealed.add(row.boxSeq);
+    known.add(row.boxSeq);
+    if (row.boxSeq > head) head = row.boxSeq;
+  }
+  for (const row of filed) {
+    known.add(row.boxSeq);
+    if (row.boxSeq > head) head = row.boxSeq;
+    if (wasInjected(row)) continue;
+    if (row.sentEventId !== row.eventId) continue;
+    sealed.add(row.boxSeq);
+  }
+  return { sealed, known, head };
 }
 
 /**
