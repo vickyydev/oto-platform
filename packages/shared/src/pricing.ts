@@ -69,7 +69,8 @@ export interface TicketLineBreakdown {
 
 /**
  * Kids + adults only. Kept for the public booking quote (SCRUM-36), which sells
- * admission with no extras; a till line goes through `computeLineTotal`.
+ * admission with no extras; a till line goes through `priceCartLine`, which is
+ * the pricing authority for anything in a ticket cart.
  */
 export function computeTicketLine(input: TicketLineInput, mode: RateMode): TicketLineBreakdown {
   const kidUnit = priceForTier(input.pkg, input.tier, mode);

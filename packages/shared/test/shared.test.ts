@@ -25,8 +25,14 @@ describe('phone normalisation (SCRUM-17)', () => {
   it('normalises +66 international with spaces', () => {
     expect(normalizePhone('+66 81 895 3926')).toBe('+66818953926');
   });
-  it('normalises 00 international prefix (prototype rule)', () => {
+  it('reads a leading 00 as the international access code — the prototype does not', () => {
     expect(normalizePhone('0066818953926')).toBe('+66818953926');
+    // The prototype treats a leading 00 as "already international" and then
+    // only strips non-digits (lib/phoneUtils.ts:29-32), so its comparison key
+    // for the same input is the thirteen digits as typed — which matches no
+    // member. Ours is the eleven-digit Thai number. See the note in phone.ts.
+    expect(phoneDigits(normalizePhone('0066818953926')!)).toBe('66818953926');
+    expect('0066818953926'.replace(/\D/g, '')).toBe('0066818953926');
   });
   it('keeps non-Thai international numbers', () => {
     expect(normalizePhone('+44 7911 123456')).toBe('+447911123456');

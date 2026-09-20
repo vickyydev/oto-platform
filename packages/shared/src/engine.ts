@@ -8,9 +8,16 @@
  *
  * WHAT IS ACTUALLY PURE, AND WHERE THE CLOCK GETS IN
  * The priced-amount core — pricing.ts, tax.ts, discount.ts, promo.ts,
- * cart-totals.ts, business-date.ts, rounding.ts — is pure: nothing in it reads
- * a clock, a timezone, a locale or a store, and the rules below are absolute
- * there.
+ * cart-totals.ts, business-date.ts, rounding.ts — is pure in the sense that
+ * matters: every answer is a function of the arguments alone. Nothing in it
+ * reads the clock, the HOST timezone, the host locale or a store, and the rules
+ * below are absolute there.
+ *
+ * "No timezone" means no AMBIENT one. business-date.ts and dates.ts do resolve
+ * a timezone — the BRANCH's, passed in as an argument — through
+ * `Intl.DateTimeFormat`, which is what the environmental requirement at the
+ * bottom of this comment is about. That is a zone the caller named, not one the
+ * machine supplied, so two boxes handed the same arguments still agree.
  *
  * Two functions sit OUTSIDE that core and read the clock by default:
  * `branchToday(timeZone, now = new Date())` in dates.ts and
@@ -43,8 +50,9 @@
  *     join them, and neither of them may be called from inside the core.)
  *   - Reading the host timezone. No `getFullYear`/`getDay`/`getHours` on a local
  *     Date, no `toISOString().slice(0,10)` standing in for "today". The branch
- *     timezone is always an argument. (The prototype does all three — see the
- *     six disagreeing day boundaries recorded in the S2-09a specification.)
+ *     timezone is always an argument. (The prototype does all three — its six
+ *     disagreeing day boundaries are listed, with their files and lines, in the
+ *     comment at the top of business-date.ts.)
  *   - Reading the host locale. No `toLocaleString()`/`toLocaleDateString()`
  *     without an explicit locale tag; a box in a th-TH environment must not
  *     produce a different string from the cloud.
@@ -57,8 +65,11 @@
  *   - `Math.random()` or any other non-deterministic source.
  *
  * THE ONE ENVIRONMENTAL REQUIREMENT that remains is an ICU build carrying IANA
- * time-zone data, because `businessDate` resolves a branch timezone through
- * `Intl.DateTimeFormat`.
+ * time-zone data, because `businessDate` resolves the branch timezone it is
+ * GIVEN through `Intl.DateTimeFormat`. Nothing above is contradicted by that:
+ * the zone is an argument, and the priced-amount path never constructs a
+ * formatter at all — a test installs a hostile `Intl.DateTimeFormat` and prices
+ * every fixture cart through it.
  *
  * An earlier version of this comment said a small-icu build "would silently
  * resolve every zone to UTC". That is wrong, and documenting the wrong
@@ -85,9 +96,26 @@
  *
  * Format is `YYYY.MM.DD-n`, n counting same-day bumps.
  */
-export const PRICING_ENGINE_VERSION = '2026.09.20-3';
+export const PRICING_ENGINE_VERSION = '2026.09.20-4';
 
 /*
+ * -4 (2026-09-20). One change of behaviour, and it is a refusal rather than a
+ * new number:
+ *   - `computeManualDiscount` throws when two manual discounts share an id
+ *     instead of letting the last one overwrite the first in `amounts`
+ *     (discount.ts). Under -3 the cart still counted both in its total while
+ *     the tax cascade received one of them twice and the other not at all: on
+ *     the 109000 cart of fixture MD-2, with a 30000 discount on the kids and a
+ *     5000 on the socks both carrying id 'dup', the cart reported 35000 of
+ *     discount, the cascade placed 10000, and the guest was charged 99000
+ *     instead of 74000 with `unappliedDiscount` reporting 0. MD-1 pins the
+ *     refusal and MD-2 the same cart with distinct ids.
+ *
+ * `ManualDiscount` also gained the fields its own docstring and S2-09a both
+ * promised — `reason` (required), `note`, `targetLabel` — and a
+ * `ManualDiscountRecord` for what the sale record stores. No priced amount
+ * moves: the engine reads none of them.
+ *
  * -3 (2026-09-20). One change, and it moves money on carts -2 got wrong:
  *   - a discount's per-category attribution is computed against the bases that
  *     REMAIN after the earlier discounts, not against the undiscounted

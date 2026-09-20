@@ -344,6 +344,31 @@ export interface CartTotalsOptions {
  *
  * Promo lines are exempt: their total is their item's shelf price and has no
  * participants to re-price.
+ *
+ * WHAT IT WILL REFUSE THAT IS NOT STALE, stated because S2-13 walks straight
+ * into it: a drop-off line before staff have chosen the length. The prototype
+ * keeps that line in the cart at `lineTotal: 0` on purpose — "until
+ * `lengthChosen` is true the line is unpriced (the caller passes a placeholder
+ * ticket only to satisfy the type)" (lib/dropoff.ts:52-59, :87), and its
+ * re-pricing pass writes the 0 back on every edit (lib/dropoff.ts:139-141).
+ * Hand that cart here and the line's stored 0 will not equal what `ctx` prices
+ * a kid at, so the cart is refused and the line is named.
+ *
+ * THIS FUNCTION CANNOT TELL THE TWO APART TODAY, and must not guess: "not yet
+ * priced" and "priced under another rate mode" both look like a stored total
+ * that disagrees with `ctx`, and treating every 0 as deliberate would let a
+ * genuinely mis-priced line through at nothing. The distinguishing fact lives
+ * on the prototype's `CartLine.dropOff.lengthChosen`, which this port has not
+ * modelled — `TicketCartLine` carries `serviceFee` and `foodProvision` but no
+ * drop-off block, because drop-off is S2-13's ticket.
+ *
+ * So S2-13 picks one, and it is a decision, not a patch: either carry
+ * `lengthChosen` onto the line and exempt an unpriced drop-off line here the
+ * way promo lines are exempt, or keep unpriced lines out of the cart that is
+ * totalled until the length is chosen. What it must NOT do is reach for
+ * `staleLines: 'trust_stored'` — that is a diagnostic, it re-derives every tax
+ * base from `ctx` anyway, and on an unpriced line it would charge the guest for
+ * play time the till is showing as ฿0.
  */
 export function findStaleLines(lines: readonly TicketCartLine[], ctx: PricingContext): string[] {
   return lines
@@ -424,6 +449,12 @@ export function computeTicketCartTotals(
   // before it have taken their share; see the attribution note above for what
   // reading the undiscounted breakdown instead costs a guest, and
   // computeTaxBreakdown for what spreading it instead costs on a tax return.
+  //
+  // THIS LOOP READS ONE AMOUNT PER DISCOUNT OUT OF A MAP KEYED BY ID, so it is
+  // correct only while the ids are distinct. `computeManualDiscount` refuses a
+  // repeated id for exactly this reason (and states the ฿250 it used to cost);
+  // it has already run, so by here every id is unique and every amount is its
+  // own discount's.
   const remaining = remainingCategoryBases(lines, ctx);
   const allocations: DiscountAllocation[] = [];
   for (const discount of manualDiscounts) {

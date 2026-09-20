@@ -109,6 +109,7 @@ export interface FixtureCartExpectation {
 export interface FixtureCartCase {
   id: string;
   title: string;
+  /** Rule ids from POS_RULES_RECONCILIATION.md §2 — see `rulesCovered`. */
   rules: string[];
   mode: RateMode;
   taxConfig: string;
@@ -176,6 +177,15 @@ export interface FixtureBusinessDateCase {
 
 export interface PricingFixtures {
   about: string[];
+  /**
+   * Every rule id the file claims to exercise, all of them from
+   * `docs/architecture/POS_RULES_RECONCILIATION.md` §2. The test
+   * "every rule the fixture file claims is a real catalogue rule, and every one
+   * is exercised" reads that document and holds this list to it in both
+   * directions, so a citation cannot rot into a number that means something
+   * else — which is what happened to the `R66`/`R43`/`R75` ids this replaced.
+   */
+  rulesCovered: string[];
   catalog: {
     socks: { addOnId: string; price: Satang; label: string };
     addOns: Record<string, FixtureAddOn>;

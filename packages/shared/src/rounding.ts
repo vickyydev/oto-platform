@@ -18,11 +18,25 @@ import type { Satang } from './money';
  * adding up to its printed total, which is the property that actually matters
  * at the counter.
  *
- * Half-up (ties away from zero, and every amount here is non-negative so ties
- * go up) is chosen because it is what Thai receipts show and what the
- * prototype's only rounding call — `Math.round` in `lib/manualDiscount.ts:11` —
- * already does. JS `Math.round` breaks ties toward +∞, which is the same thing
- * for non-negative input.
+ * Half-up (ties away from zero) is chosen because it is what Thai receipts show
+ * and what the prototype's only rounding call — `Math.round` in
+ * `lib/manualDiscount.ts:11` — already does. JS `Math.round` breaks ties toward
+ * +∞, which is the same thing for non-negative input.
+ *
+ * THE NON-NEGATIVE PREMISE HAS ONE HOLE, and it is named here rather than
+ * assumed away. Every amount the engine rounds is non-negative — a price, a
+ * tax, a service charge, a manual discount (`resolveManualDiscountAmount`
+ * clamps a negative percentage to 0) — EXCEPT a promo code stored with a
+ * negative value. The prototype does not clamp one either: `base * (value/100)`
+ * with no guard (lib/sale.ts:109), so a −50 % code is a surcharge on its side
+ * too, and both engines then refuse to put it in the tax cascade (the prototype
+ * at `Math.max(0, discountTotal)`, lib/tax.ts:91; the port by never allocating
+ * a non-positive amount). What is OURS and not the prototype's is this
+ * rounding: the prototype leaves the figure fractional, we must not, and on a
+ * negative tie `Math.round` goes toward +∞ — −166.5 becomes −166, which is
+ * half-up toward zero rather than away from it. Fixture EC-23 pins the whole
+ * shape. The place to stop a negative value is the catalogue that stores the
+ * code, not here.
  */
 
 /**
@@ -116,6 +130,15 @@ export function percentOf(
  * that, from a fixed seed, and checks the three properties below on every one.
  * An earlier version of this sentence claimed the 200,000 cases had been run
  * when no such loop existed anywhere in the repository.
+ *
+ * The bound is where the ARITHMETIC is exact, which is not the same as where
+ * the function starts answering wrongly, and the test "apportion is exact at
+ * the magnitude its comment claims, and the product is not beyond it" now says
+ * which is which: it splits AT the bound and checks the result against a BigInt
+ * computation of the same split, then shows that one satang past it the product
+ * `total × weight` is already a different number from the exact one. Past the
+ * bound the sum is still forced (the leftover pass distributes whatever the
+ * floors missed), so what degrades first is which share gets the odd satang.
  *
  * The invariants, so the test and the comment cannot drift apart:
  *   1. every part is a non-negative integer;

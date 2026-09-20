@@ -1,11 +1,18 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   PRICING_ENGINE_VERSION,
   PROTOTYPE_BAHT_ROUNDING,
   DEFAULT_ROUNDING,
+  addDaysToIsoDate,
   apportion,
   applyFreeItemPromo,
+  businessDate,
   computeLineBreakdown,
+  computeManualDiscount,
+  findDuplicateDiscountId,
+  parseDayStart,
+  wallClockMinutesInTz,
   computeTaxBreakdown,
   computeTicketCartTotals,
   discountTargetBase,
@@ -239,30 +246,114 @@ describe('pricing regression fixtures — cart cases', () => {
         expect(own, `line ${line.id}: total vs its own tax bases`).toBe(line.lineTotal);
       }
 
-      // Nothing is lost between the cart and the cascade: what the cart says it
-      // discounted is what the cascade was handed, and what the cascade could
-      // not place is reported rather than dropped.
-      expect(totals.taxBreakdown.discountTotal, 'cart vs cascade discount').toBe(
-        totals.discountTotal,
-      );
+      // Nothing is lost between the cart and the cascade: every satang the cart
+      // says it discounted reaches the cascade, and what the cascade could not
+      // place is reported rather than dropped. THE CASCADE IS HANDED THE
+      // POSITIVE DISCOUNTS ONLY — a promo stored with a negative value is a
+      // surcharge neither engine will charge (EC-23), so it is counted out
+      // here rather than papered over with a looser assertion.
+      const negativePromos = totals.appliedPromos.filter((promo) => promo.amount < 0);
+      const cascadeDiscount =
+        totals.manualDiscountTotal +
+        totals.appliedPromos.reduce((sum, promo) => sum + Math.max(0, promo.amount), 0);
+      expect(totals.taxBreakdown.discountTotal, 'cart vs cascade discount').toBe(cascadeDiscount);
+      if (negativePromos.length === 0) {
+        // Which, on every ordinary cart, is the whole of the cart's discount.
+        expect(cascadeDiscount, 'cart vs cascade discount').toBe(totals.discountTotal);
+      }
       const absorbed = ticketCartTaxInputs(lines, ctx).reduce((sum, input) => {
         const after = totals.taxBreakdown.categories.find((c) => c.category === input.category);
         return sum + (input.base - (after?.base ?? input.base));
       }, 0);
       if (taxConfigFor(testCase.taxConfig).discountPlacement === 'before_tax') {
         expect(absorbed + totals.taxBreakdown.unappliedDiscount, 'absorbed + unapplied').toBe(
-          totals.discountTotal,
+          cascadeDiscount,
         );
+      }
+
+      // Duplicate discount ids are refused, so the per-discount amounts the
+      // sale record writes are one per discount. (MD-1 pins the refusal.)
+      const discountIds = (testCase.manualDiscounts ?? []).map((discount) => discount.id);
+      expect(new Set(discountIds).size, 'distinct manual discount ids').toBe(discountIds.length);
+      for (const id of discountIds) {
+        expect(totals.manualAmounts[id], `amount for ${id}`).toBeTypeOf('number');
       }
     });
   }
 
-  it('covers every rule the fixture file claims, once', () => {
-    const cited = new Set(cartCases.flatMap((c) => c.rules));
-    // A spot-check that the ordering, adult and tax rules the S2-09a spec
-    // calls load-bearing are actually exercised somewhere in the cart cases.
-    for (const rule of ['R13', 'R19', 'R20', 'R21', 'R29', 'R35', 'R40', 'R43', 'R60', 'R75']) {
-      expect(cited.has(rule), `no cart fixture cites ${rule}`).toBe(true);
+});
+
+/**
+ * THE PROVENANCE MECHANISM, made to mean something.
+ *
+ * The fixture file's second standard is "every expected number can be pointed
+ * at a rule", and its `rules` field is how a case points. That field used to
+ * name ids (`R1`…`R76`) from an "S2-09a specification" that does not exist in
+ * this repository, in a numbering that collided with the ids of the one
+ * catalogue that does: WE-1 cited R66, and R-66 is F&B modifier groups; EC-9
+ * cited R43, and R-43 is the 2C2P Redirect API. The test that was supposed to
+ * guard this checked that ten hard-coded ids appeared somewhere in the union of
+ * the arrays — nothing about "every", nothing about "once", and its own comment
+ * called itself a spot-check.
+ *
+ * So the ids now come from `docs/architecture/POS_RULES_RECONCILIATION.md` §2,
+ * which is committed and therefore readable here and in CI, and this holds the
+ * file to it in both directions. A citation that rots into a number meaning
+ * something else fails the suite instead of reading plausibly.
+ */
+describe('pricing regression fixtures — rule provenance', () => {
+  const CATALOGUE = new URL(
+    '../../../docs/architecture/POS_RULES_RECONCILIATION.md',
+    import.meta.url,
+  );
+
+  function catalogueRuleIds(): Set<string> {
+    const markdown = readFileSync(CATALOGUE, 'utf8');
+    return new Set([...markdown.matchAll(/^- (R-\d{2,3}) /gm)].map((match) => match[1]!));
+  }
+
+  const citingCases = [
+    ...cartCases.map((c) => ({ id: c.id, rules: c.rules })),
+    ...taxCases.map((c) => ({ id: c.id, rules: c.rules })),
+    ...rateModeCases.map((c) => ({ id: c.id, rules: c.rules })),
+  ];
+
+  it('every rule the fixture file claims is a real catalogue rule, and every one is exercised', () => {
+    const catalogue = catalogueRuleIds();
+    expect(catalogue.size, 'rules parsed out of POS_RULES_RECONCILIATION.md').toBeGreaterThan(100);
+
+    const claimed = new Set(PRICING_FIXTURES.rulesCovered);
+    expect(claimed.size, 'rulesCovered has no repeats').toBe(PRICING_FIXTURES.rulesCovered.length);
+
+    // 1. Nothing is claimed that the catalogue does not define.
+    const unknown = [...claimed].filter((rule) => !catalogue.has(rule));
+    expect(unknown, 'claimed rules that are not in POS_RULES_RECONCILIATION.md').toEqual([]);
+
+    // 2. No case cites outside the claim, and every case cites something.
+    const uncited: string[] = [];
+    const strays: string[] = [];
+    for (const testCase of citingCases) {
+      if (testCase.rules.length === 0) uncited.push(testCase.id);
+      for (const rule of testCase.rules) {
+        if (!claimed.has(rule)) strays.push(`${testCase.id} → ${rule}`);
+      }
+    }
+    expect(uncited, 'cases citing no rule at all').toEqual([]);
+    expect(strays, 'cases citing a rule the file does not claim').toEqual([]);
+
+    // 3. Every claim is actually exercised — "covers" has to mean covered.
+    const cited = new Set(citingCases.flatMap((c) => c.rules));
+    const idle = [...claimed].filter((rule) => !cited.has(rule));
+    expect(idle, 'rules claimed but exercised by no case').toEqual([]);
+  });
+
+  it('cites the rules that decide what a guest pays', () => {
+    // The claim list is only as good as what is on it, so the load-bearing
+    // pricing rules are named here too: a future edit cannot quietly drop the
+    // adult rule or the discount placement and still pass the check above.
+    const claimed = new Set(PRICING_FIXTURES.rulesCovered);
+    for (const rule of ['R-10', 'R-19', 'R-21', 'R-28', 'R-29', 'R-31', 'R-33', 'R-34']) {
+      expect(claimed.has(rule), `the fixtures no longer claim ${rule}`).toBe(true);
     }
   });
 });
@@ -379,7 +470,7 @@ describe('the ordering of discounts is load-bearing', () => {
     expect(totals.total - promoFirst).toBe(2000);
   });
 
-  it('a promo scoped to add-ons never reaches the drop-off service fee (R43)', () => {
+  it('a promo scoped to add-ons never reaches the drop-off service fee (R-29, EC-9)', () => {
     const testCase = cartCases.find((c) => c.id === 'EC-9');
     expect(testCase).toBeDefined();
     const { ctx, lines } = runCartCase(testCase!);
@@ -429,7 +520,13 @@ describe('rounding', () => {
   });
 
   it('a manual discount never exceeds its base and a dead base yields nothing', () => {
-    const percent: ManualDiscount = { id: 'd', scope: 'order', type: 'percent', value: 200 };
+    const percent: ManualDiscount = {
+      id: 'd',
+      scope: 'order',
+      type: 'percent',
+      value: 200,
+      reason: 'Manager comp',
+    };
     expect(resolveManualDiscountAmount(percent, 10000)).toBe(10000); // clamped to 100%
     expect(resolveManualDiscountAmount({ ...percent, value: -5 }, 10000)).toBe(0);
     expect(resolveManualDiscountAmount({ ...percent, type: 'fixed', value: 99999 }, 10000)).toBe(
@@ -517,22 +614,59 @@ describe('rounding', () => {
     expect(checked).toBe(200_000);
   });
 
-  it('apportion is exact up to the magnitude its comment claims, and not beyond', () => {
+  it('apportion is exact at the magnitude its comment claims, and the product is not beyond it', () => {
     // The only product formed is `total × weight`; the split is exact while
     // that stays inside MAX_SAFE_INTEGER. At equal magnitudes the bound is
     // √(2^53 − 1) ≈ 94,906,265 satang — about ฿949,000, far above any till
     // order. The earlier comment claimed ฿10,000,000 against ฿10,000,000 was
     // safe; that pair is 1e18, roughly 111× too large.
+    //
+    // The earlier version of this test never called `apportion` at or past the
+    // bound, so it asserted arithmetic about the bound rather than the function
+    // at it. This one splits AT the bound and checks the result against the
+    // same split computed in BigInt, then shows what actually gives way beyond
+    // it: the product, one satang past the limit, is already a different number.
     const bound = Math.floor(Math.sqrt(Number.MAX_SAFE_INTEGER));
-    expect(bound).toBeGreaterThan(94_000_000);
+    expect(bound).toBe(94_906_265);
     expect(bound * bound).toBeLessThanOrEqual(Number.MAX_SAFE_INTEGER);
+
+    /** The largest-remainder split, in BigInt, with no float anywhere. */
+    const exactSplit = (total: number, weights: number[]): number[] => {
+      const sum = weights.reduce((a, b) => a + BigInt(b), 0n);
+      const floors = weights.map((w) => (BigInt(total) * BigInt(w)) / sum);
+      const remainders = weights.map((w, i) => BigInt(total) * BigInt(w) - floors[i]! * sum);
+      const out = floors.map(Number);
+      let leftover = total - out.reduce((a, b) => a + b, 0);
+      [...remainders.keys()]
+        .sort((a, b) => (remainders[b]! === remainders[a]! ? a - b : remainders[b]! > remainders[a]! ? 1 : -1))
+        .forEach((index) => {
+          if (leftover <= 0) return;
+          out[index] = out[index]! + 1;
+          leftover -= 1;
+        });
+      return out;
+    };
+
+    // At the bound, on the worst shape for it: every weight at the bound too,
+    // so every product is the largest one the comment permits.
+    const atBound = [bound, bound, bound];
+    expect(apportion(bound, atBound)).toEqual(exactSplit(bound, atBound));
+    expect(apportion(bound, [bound, 1])).toEqual(exactSplit(bound, [bound, 1]));
+    expect(apportion(bound, atBound).reduce((a, b) => a + b, 0)).toBe(bound);
+
+    // And past it the product itself stops being the integer it should be:
+    // 94,906,267 × 94,906,269 is 9,007,199,705,687,823 and JavaScript says
+    // ...824. That is the thing the bound is a bound on.
+    expect(Number.isSafeInteger(bound * bound)).toBe(true);
+    expect(Number.isSafeInteger((bound + 1) * (bound + 1))).toBe(false);
+    const [a, b] = [94_906_267, 94_906_269];
+    expect(String(a * b)).not.toBe(String(BigInt(a) * BigInt(b)));
     expect(1e9 * 1e9).toBeGreaterThan(Number.MAX_SAFE_INTEGER);
 
     // Exact at a realistic till magnitude (a ฿50,000 discount over three
-    // category bases), checked as a sum rather than asserted.
-    const parts = apportion(5_000_000, [12_345_600, 7_654_400, 3_210_000]);
-    expect(parts.reduce((a, b) => a + b, 0)).toBe(5_000_000);
-    for (const part of parts) expect(Number.isInteger(part)).toBe(true);
+    // category bases), checked against the BigInt split rather than asserted.
+    const weights = [12_345_600, 7_654_400, 3_210_000];
+    expect(apportion(5_000_000, weights)).toEqual(exactSplit(5_000_000, weights));
   });
 });
 
@@ -596,7 +730,7 @@ describe('tax cascade details', () => {
     expect(breakdown.exclusiveTaxTotal).toBe(0);
   });
 
-  it('routes each kind of line to the taxable category the prototype gives it (R75)', () => {
+  it('routes each kind of line to the taxable category the prototype gives it (R-31)', () => {
     const ctx = contextFor('weekday');
     const testCase = cartCases.find((c) => c.id === 'EC-9');
     const { lines } = runCartCase(testCase!);
@@ -720,8 +854,15 @@ describe('orphaned manual discounts', () => {
       ctx,
     );
     const discounts: ManualDiscount[] = [
-      { id: 'd1', scope: 'order', type: 'percent', value: 10 },
-      { id: 'd2', scope: 'line', targetLineId: 'l1', type: 'fixed', value: 5000 },
+      { id: 'd1', scope: 'order', type: 'percent', value: 10, reason: 'Staff / family' },
+      {
+        id: 'd2',
+        scope: 'line',
+        targetLineId: 'l1',
+        type: 'fixed',
+        value: 5000,
+        reason: 'Service recovery',
+      },
       {
         id: 'd3',
         scope: 'line',
@@ -729,8 +870,16 @@ describe('orphaned manual discounts', () => {
         targetComponent: { kind: 'kids' },
         type: 'comp',
         value: 0,
+        reason: 'Manager comp',
       },
-      { id: 'd4', scope: 'line', targetLineId: 'gone', type: 'comp', value: 0 },
+      {
+        id: 'd4',
+        scope: 'line',
+        targetLineId: 'gone',
+        type: 'comp',
+        value: 0,
+        reason: 'Manager comp',
+      },
     ];
     expect(dropOrphanedDiscounts(discounts, [withKids], ctx).map((d) => d.id)).toEqual([
       'd1',
@@ -742,6 +891,104 @@ describe('orphaned manual discounts', () => {
       'd2',
     ]);
     expect(dropOrphanedDiscounts(discounts, [], ctx).map((d) => d.id)).toEqual(['d1']);
+  });
+});
+
+describe('a repeated discount id is refused, not silently charged to the guest', () => {
+  const ctx = contextFor('weekday');
+  const cart = () => [
+    buildLine(
+      {
+        id: 'l1',
+        package: 't-2h',
+        tier: 'tourist',
+        kids: 1,
+        adults: 0,
+        socks: 2,
+        addOns: [{ ref: 'a-locker', quantity: 1 }],
+      },
+      ctx,
+    ),
+  ];
+  const onKids: ManualDiscount = {
+    id: 'dup',
+    scope: 'line',
+    targetLineId: 'l1',
+    targetComponent: { kind: 'kids' },
+    type: 'fixed',
+    value: 30000,
+    reason: 'Service recovery',
+  };
+  const onSocks: ManualDiscount = {
+    ...onKids,
+    targetComponent: { kind: 'socks' },
+    value: 5000,
+    reason: 'Damaged item',
+  };
+
+  it('names the id, at the function that cannot represent it (MD-1)', () => {
+    expect(findDuplicateDiscountId([onKids, onSocks])).toBe('dup');
+    expect(findDuplicateDiscountId([onKids, { ...onSocks, id: 'm2' }])).toBeNull();
+
+    // The refusal lives in computeManualDiscount, so every caller inherits it —
+    // S2-09b calling it directly for an F&B cart as much as the till.
+    expect(() => computeManualDiscount([onKids, onSocks], 109000, { l1: 109000 }, {})).toThrow(
+      /"dup" appears more than once/,
+    );
+    expect(() =>
+      computeTicketCartTotals(cart(), [], [onKids, onSocks], taxConfigFor('seeded'), ctx),
+    ).toThrow(/appears more than once/);
+  });
+
+  it('and the ฿250 that used to go missing, written down next to the rule (MD-2)', () => {
+    const { totals } = runCartCase(cartCases.find((c) => c.id === 'MD-2')!);
+    expect(totals.subtotal).toBe(109000);
+    expect(totals.manualDiscountTotal).toBe(35000);
+    expect(totals.total).toBe(74000);
+    expect(totals.taxBreakdown.unappliedDiscount).toBe(0);
+
+    // What the same cart produced while both discounts shared an id, as
+    // arithmetic: `amounts` is keyed by id, the last write won, and the
+    // attribution loop read that one amount once per discount. So the cascade
+    // was handed 5000 twice instead of 30000 + 5000, and the guest paid the
+    // difference. Nothing in the engine can produce this now; it is here so the
+    // cost of the collision is next to the rule that forbids it.
+    const lastWriteWins = 5000 + 5000; // the socks amount, placed twice
+    expect(totals.manualDiscountTotal - lastWriteWins).toBe(25000);
+    expect(109000 - lastWriteWins).toBe(99000); // what the guest was charged
+    expect(99000 - totals.total).toBe(25000); // ฿250 of discount, gone
+  });
+});
+
+describe('a promo stored with a negative value (EC-23)', () => {
+  it('is reported by the cart and refused by the cascade, and the guest pays the full price', () => {
+    const { totals } = runCartCase(cartCases.find((c) => c.id === 'EC-23')!);
+    expect(totals.subtotal).toBe(89000);
+    expect(totals.promoDiscountTotal).toBe(-44500);
+    expect(totals.discountTotal).toBe(-44500);
+    // The cascade sees none of it — the prototype clamps at Math.max(0, …)
+    // (lib/tax.ts:91), the port never allocates a non-positive amount.
+    expect(totals.taxBreakdown.discountTotal).toBe(0);
+    expect(totals.total).toBe(89000);
+    expect(totals.taxBreakdown.unappliedDiscount).toBe(0);
+  });
+
+  it('and the rounding of a negative is ours, not the prototype’s', () => {
+    // rounding.ts grounds half-up on "every amount here is non-negative". A
+    // negative promo value is the one input that breaks the premise: the
+    // prototype leaves the figure fractional (lib/sale.ts:109), integer satang
+    // cannot, and Math.round takes a negative tie toward +∞ — so it rounds
+    // toward zero rather than away from it.
+    expect(roundHalfUpSatang(-166.5)).toBe(-166);
+    expect(roundHalfUpSatang(166.5)).toBe(167);
+    // A manual discount cannot reach this path at all: a negative percentage is
+    // clamped to zero before any rounding happens.
+    expect(
+      resolveManualDiscountAmount(
+        { id: 'd', scope: 'order', type: 'percent', value: -50, reason: 'Manager comp' },
+        33300,
+      ),
+    ).toBe(0);
   });
 });
 
@@ -870,6 +1117,21 @@ describe('a cart priced under another context is refused, not silently mixed', (
     expect(totals.total).not.toBe(totals.subtotal);
   });
 
+  it('and it refuses a drop-off line the prototype deliberately leaves unpriced (S2-13)', () => {
+    // The prototype keeps a drop-off line in the cart at lineTotal 0 until
+    // staff pick the length (lib/dropoff.ts:52-59, :87, :139-141). This engine
+    // cannot tell that from a line priced under another rate mode, so it
+    // refuses the cart and names the line. Pinned rather than patched: the fix
+    // is S2-13's, because the distinguishing fact is `dropOff.lengthChosen`,
+    // which this port has not modelled. See findStaleLines for the two ways out
+    // and the one that must not be taken.
+    const unpriced = { ...buildLine(spec, weekday), lineTotal: 0 };
+    expect(findStaleLines([unpriced], weekday)).toEqual(['l1']);
+    expect(() =>
+      computeTicketCartTotals([unpriced], [], [], taxConfigFor('seeded'), weekday),
+    ).toThrow(/l1/);
+  });
+
   it('a promo line is never stale — its total is its item price, not a participant price', () => {
     const cart = [
       buildLine({ id: 'l1', package: 't-2h', tier: 'tourist', kids: 1, adults: 0 }, weekday),
@@ -923,6 +1185,7 @@ describe('a discount lands on the category it targeted', () => {
       targetComponent: { kind: 'socks' },
       type: 'comp',
       value: 0,
+      reason: 'Damaged item',
     };
     const socksResult = computeTicketCartTotals([line], [], [onSocks], config, ctx);
     const socksBase = (category: string) =>
@@ -1151,9 +1414,44 @@ describe('the engine is environment-free', () => {
 // missing price; the boundary itself is exercised minute by minute in
 // business-date.test.ts.
 describe('pricing regression fixtures — business dates are present', () => {
-  it('covers midnight, the day start and both sides of it', () => {
+  it('has a distinct case per id', () => {
     const ids = new Set(businessDateCases.map((c) => c.id));
     expect(ids.size).toBe(businessDateCases.length);
     expect(businessDateCases.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('covers midnight, the day start and both sides of it', () => {
+    // The previous body of this name counted the cases and checked their ids
+    // were unique, which is the test above. This one reads the instants and
+    // proves the three boundary positions are actually present, in the branch
+    // timezone each case names — the property the name has always claimed.
+    const positions = businessDateCases.map((testCase) => {
+      const minutes = wallClockMinutesInTz(new Date(testCase.instant), testCase.timeZone);
+      const start = parseDayStart(testCase.dayStart);
+      if (minutes === 0) return 'midnight';
+      if (minutes === start) return 'exactly the day start';
+      return minutes < start ? 'before the day start' : 'after the day start';
+    });
+    for (const position of [
+      'midnight',
+      'exactly the day start',
+      'before the day start',
+      'after the day start',
+    ]) {
+      expect(positions, `no business-date case sits ${position}`).toContain(position);
+    }
+
+    // And each case's expectation is the rule applied to that position: before
+    // the day start the business date is the day before the branch date.
+    for (const testCase of businessDateCases) {
+      const instant = new Date(testCase.instant);
+      const minutes = wallClockMinutesInTz(instant, testCase.timeZone);
+      const start = parseDayStart(testCase.dayStart);
+      expect(businessDate(instant, testCase.timeZone, start), testCase.id).toBe(
+        minutes < start
+          ? addDaysToIsoDate(testCase.expect.branchDate, -1)
+          : testCase.expect.branchDate,
+      );
+    }
   });
 });
