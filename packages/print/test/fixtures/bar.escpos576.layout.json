@@ -1,0 +1,158 @@
+{
+  "widthDots": 576,
+  "heightDots": 238,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 269,
+      "baselineY": 21,
+      "w": 38,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "BAR"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 24,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 50,
+      "w": 114,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "#F-2207"
+    },
+    {
+      "k": "text",
+      "x": 491,
+      "baselineY": 50,
+      "w": 77,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "14:41"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 71,
+      "w": 40,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "For "
+    },
+    {
+      "k": "text",
+      "x": 48,
+      "baselineY": 71,
+      "w": 242,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "Mali (Band 3) · Привет"
+    },
+    {
+      "k": "warning",
+      "x": 12,
+      "y": 87,
+      "size": 22
+    },
+    {
+      "k": "text",
+      "x": 42,
+      "baselineY": 104,
+      "w": 475,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "ALLERGY (Mali (Band 3) · Привет): สวัสดี OTO"
+    },
+    {
+      "k": "text",
+      "x": 42,
+      "baselineY": 130,
+      "w": 50,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "Park"
+    },
+    {
+      "k": "stroke",
+      "x": 8,
+      "y": 82,
+      "w": 560,
+      "h": 56
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 141,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 162,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "2× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 162,
+      "w": 135,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Thai Iced Tea"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 179,
+      "w": 100,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "  Less sweet"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 200,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 200,
+      "w": 149,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Fresh Coconut"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 204,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 222,
+      "w": 319,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Bring everything out together, please."
+    }
+  ]
+}

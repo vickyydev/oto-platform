@@ -17,7 +17,10 @@ import { box } from './fleet';
 //
 // S2-04 opens this schema with the two tables that make a box visible from the
 // cloud: what somebody asked it to do, and what it said about itself. S2-05
-// adds the sync ledger beside them.
+// added the sync core beside them — the station session document, the outbox,
+// the ledger, quarantine and the change feed — in `sync.ts`, which is a
+// separate file for size rather than for any boundary: it is the same `edge`
+// schema and the two are read together.
 //
 // Both tables are telemetry rather than business record, and both grow on a
 // timer rather than on a sale, so both are written knowing a sweep will delete

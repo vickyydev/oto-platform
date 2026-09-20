@@ -1,0 +1,70 @@
+{
+  "widthDots": 200,
+  "heightDots": 261,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 20,
+      "w": 136,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "10:00 – 12:00 · 2"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 38,
+      "w": 52,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "hours"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 57,
+      "w": 179,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Ploy's Birthday · สวัสดี"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 79,
+      "w": 80,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "OTO Park"
+    },
+    {
+      "k": "qr",
+      "x": 34,
+      "y": 87,
+      "moduleDots": 4,
+      "modules": 33,
+      "version": 4,
+      "ecc": "M"
+    },
+    {
+      "k": "text",
+      "x": 53,
+      "baselineY": 236,
+      "w": 93,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "HKT1-4822"
+    },
+    {
+      "k": "text",
+      "x": 77,
+      "baselineY": 251,
+      "w": 45,
+      "sizeDots": 14,
+      "weight": "regular",
+      "text": "SCAN"
+    }
+  ]
+}

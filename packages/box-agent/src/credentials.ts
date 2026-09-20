@@ -13,6 +13,16 @@ import { dirname } from 'node:path';
 export interface BoxCredential {
   boxId: string;
   secret: string;
+  /**
+   * The private half of this box's sync signing key, PKCS#8 PEM (S2-05).
+   *
+   * It lives beside the secret rather than in a file of its own because the
+   * two have the same life and the same danger: whoever can read either can
+   * be this box. Optional, because a box registered before S2-05 has a
+   * credential file without one and mints a key on its next start rather than
+   * refusing to run.
+   */
+  syncPrivateKeyPem?: string;
 }
 
 export interface CredentialStore {
@@ -69,7 +79,17 @@ export function fileCredentialStore(path: string): CredentialStore {
           typeof (parsed as BoxCredential).boxId === 'string' &&
           typeof (parsed as BoxCredential).secret === 'string'
         ) {
-          return parsed as BoxCredential;
+          const held = parsed as BoxCredential;
+          return {
+            boxId: held.boxId,
+            secret: held.secret,
+            // Read back explicitly rather than by spreading the file, so a
+            // field somebody added to the JSON by hand cannot become part of
+            // what this box thinks it is.
+            ...(typeof held.syncPrivateKeyPem === 'string'
+              ? { syncPrivateKeyPem: held.syncPrivateKeyPem }
+              : {}),
+          };
         }
         return null;
       } catch {

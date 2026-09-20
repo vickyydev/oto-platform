@@ -683,13 +683,29 @@ export async function getStationView(
  * The staff of a branch, which has no single definition in the schema: there is
  * no `account.branch_id`.
  *
- * The union of two honest halves — somebody whose employee record says they
- * work here, and somebody granted a role scoped to this branch — because either
- * alone drops real people. The seeded reception account has the employee link
- * and no branch-scoped assignment; a manager granted `branch_manager` here may
- * have no employee row at all. Deactivated accounts are excluded: putting
- * somebody who cannot sign in on a till's list is a list entry that does
- * nothing.
+ * The union of three honest halves — somebody whose employee record says they
+ * work here, somebody granted a role scoped to this branch, and somebody who
+ * administers the whole operator — because any one alone drops real people.
+ * The seeded reception account has the employee link and no branch-scoped
+ * assignment; a manager granted `branch_manager` here may have no employee row
+ * at all. Deactivated accounts are excluded: putting somebody who cannot sign
+ * in on a till's list is a list entry that does nothing.
+ *
+ * The third half is the owner's ruling (2026-09-20). Without it an
+ * operator-wide administrator belongs to no branch, so they cannot be put on a
+ * restricted station's list and — because `visibleToAccount` has no
+ * administrator escape hatch — that station is then absent from their own
+ * picker. It worked until now only because the seeded owner's employee record
+ * happens to sit at HKT Central, and a second branch would have broken it the
+ * day it opened.
+ *
+ * Taken here rather than as an exception inside the picker, deliberately:
+ * widening who counts as staff keeps ONE visibility rule with no special case,
+ * while an administrator override would split the rule back into two places
+ * and make "absent, not refused" a thing that needs explaining every time
+ * somebody asks why a manager can see a booth they are not on. The cost is
+ * that a branch's staff picker lists every operator administrator, which grows
+ * with the head-office estate; that is a noisier picker, not a wrong one.
  */
 function atBranch(branchId: string) {
   return and(
@@ -699,8 +715,13 @@ function atBranch(branchId: string) {
       sql`exists (
         select 1 from core.role_assignment ra
          where ra.account_id = ${account.id}
-           and ra.scope_type = 'branch'
-           and ra.scope_id = ${branchId}
+           and (
+             (ra.scope_type = 'branch' and ra.scope_id = ${branchId})
+             -- Operator-wide: scope_id names the operator, or is null for a
+             -- platform-wide assignment. Both administer this branch.
+             or (ra.scope_type = 'operator'
+                 and (ra.scope_id is null or ra.scope_id = ${account.operatorId}))
+           )
       )`,
     ),
   );

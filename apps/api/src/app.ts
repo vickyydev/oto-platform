@@ -37,6 +37,7 @@ import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
 import { boxRoutes } from './routes/box';
 import { fleetRoutes } from './routes/fleet';
+import { stationSessionRoutes } from './routes/stations';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -286,6 +287,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // nested under /branches/:branchId/… and its by-id routes are not, so the
   // paths are declared in full rather than assembled from two places.
   await app.register(fleetRoutes);
+  // The station session document (S2-05), beside the fleet for the same
+  // reason: its routes hang off `/stations/:id` and `/me`, two prefixes that
+  // are already spoken for, so the paths are declared in full.
+  await app.register(stationSessionRoutes);
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
   await app.register(opsRoutes, { prefix: '/ops' });

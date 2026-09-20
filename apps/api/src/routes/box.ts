@@ -6,6 +6,11 @@ import {
   BoxHeartbeatRequestSchema,
   BoxRegisterRequestSchema,
 } from '@oto/box-agent';
+import {
+  SYNC_CHANGE_SCOPES,
+  SYNC_PUSH_MAX_BYTES,
+  SyncPushRequestSchema,
+} from '@oto/shared';
 import type { App } from '../app';
 import { boxAuthOf } from '../plugins/credential';
 import {
@@ -17,6 +22,16 @@ import {
   registerBox,
   type BoxAuth,
 } from '../services/box';
+import {
+  CACHE_SCOPES,
+  SYNC_EVENT_TYPES,
+  SyncKeyRegisterSchema,
+  assertBundleReadable,
+  cacheBundle,
+  pullChanges,
+  pushEvents,
+  registerSyncKey,
+} from '../services/sync';
 import type { OpContext } from '../services/tx';
 
 /**
@@ -104,7 +119,7 @@ export async function boxRoutes(app: App): Promise<void> {
       config: { credential: 'box', ...limited },
       schema: {
         description:
-          'Say this box is alive: clock, uptime, temperature, outbox depth, device reachability and paper',
+          'Say this box is alive: clock, uptime, temperature, outbox depth and age, device reachability, paper, lease holders and error fingerprints. A box that registered before the sync core hands over its signing key here.',
         body: BoxHeartbeatRequestSchema,
       },
     },
@@ -174,4 +189,133 @@ export async function boxRoutes(app: App): Promise<void> {
       return completeCommand(app.db, auth, req.params.commandId, req.body, boxCtx(req, auth));
     },
   );
+
+  // --- The sync core (S2-05) ------------------------------------------------
+
+  app.post(
+    '/sync/key',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'Register the public half of the keypair this box signs its events with. Rotating it invalidates events already queued under the old key.',
+        body: SyncKeyRegisterSchema,
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      return registerSyncKey(app.db, auth, req.body, boxCtx(req, auth));
+    },
+  );
+
+  app.post(
+    '/sync/push',
+    {
+      config: { credential: 'box', ...limited },
+      /**
+       * The byte cap from `@oto/shared`, applied by Fastify before the body is
+       * parsed rather than counted afterwards: a box that has been offline for
+       * a week and tries to send its whole journal at once is refused at the
+       * socket, not after a megabyte has been through zod. The event cap is on
+       * the schema, which is where a reader looks for it.
+       */
+      bodyLimit: SYNC_PUSH_MAX_BYTES,
+      schema: {
+        description:
+          `Hand over a batch of facts. Each event is validated and applied on its own, under its own SAVEPOINT: a duplicate is dropped, and a conflict, a malformed envelope or a poison payload is quarantined without costing the rest of the batch. An old journal epoch is refused. Types this api applies: ${SYNC_EVENT_TYPES.join(', ')}.`,
+        body: SyncPushRequestSchema,
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      return pushEvents(app.db, auth, req.body, boxCtx(req, auth));
+    },
+  );
+
+  app.get(
+    '/sync/pull',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'The cloud-authoritative changes this box has not seen: its branch’s, its operator’s, and the ones addressed to it by name',
+        querystring: z.object({
+          cursorSeq: z.coerce.number().int().min(0).default(0),
+          limit: z.coerce.number().int().min(1).max(500).default(200),
+          /** Comma-separated; absent means every scope this box caches. */
+          scopes: z.string().max(200).optional(),
+        }),
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      const scopes = parseList(req.query.scopes, SYNC_CHANGE_SCOPES);
+      return pullChanges(app.db, auth, {
+        cursorSeq: req.query.cursorSeq,
+        limit: req.query.limit,
+        scopes: scopes.length > 0 ? scopes : undefined,
+      });
+    },
+  );
+
+  app.get(
+    '/cache',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'Everything this box needs to run its counter with no internet, as one versioned document applied whole or not at all. A bundle newer than the agent can read is refused with an alert.',
+        querystring: z.object({
+          scopes: z.string().max(200).optional(),
+          /**
+           * The highest bundle version this agent can read. Lower than what
+           * this api builds is refused with an alert rather than half-applied:
+           * an agent that silently drops a field it does not recognise leaves a
+           * counter running on a price list missing whatever was added last
+           * week. Zero is allowed and means "none of them", which is the only
+           * value an agent older than version 1 could honestly send.
+           */
+          schemaVersion: z.coerce.number().int().min(0).optional(),
+          limit: z.coerce.number().int().min(1).max(5_000).optional(),
+          /** Pages one scope; ask for that scope on its own. */
+          cursor: z.string().max(100).optional(),
+        }),
+      },
+    },
+    async (req, reply) => {
+      const auth = boxAuth(req);
+      await assertBundleReadable(app.db, auth, req.query.schemaVersion);
+      const bundle = await cacheBundle(app.db, auth, {
+        scopes: parseList(req.query.scopes, CACHE_SCOPES),
+        supportedSchemaVersion: req.query.schemaVersion,
+        limit: req.query.limit,
+        cursor: req.query.cursor,
+      });
+      /**
+       * Same `If-None-Match` courtesy as the config bundle: a box polls this
+       * and the answer usually has not moved, so the ordinary case is a 304
+       * with no body rather than the branch's whole member list again.
+       */
+      const etag = `"${bundle.bundleVersion}"`;
+      reply.header('etag', etag);
+      const inm = req.headers['if-none-match'];
+      if (typeof inm === 'string' && inm.split(',').some((v) => v.trim() === etag)) {
+        return reply.code(304).send();
+      }
+      return bundle;
+    },
+  );
+}
+
+/**
+ * A comma-separated query value, narrowed to a known vocabulary.
+ *
+ * Unknown names are DROPPED rather than refused: a box newer than this api
+ * asking for a scope it does not build yet should get the scopes that do exist,
+ * not a 400 that leaves its cache empty.
+ */
+function parseList<T extends string>(raw: string | undefined, allowed: readonly T[]): T[] {
+  if (!raw) return [];
+  const wanted = new Set(raw.split(',').map((s) => s.trim()));
+  return allowed.filter((a) => wanted.has(a));
 }

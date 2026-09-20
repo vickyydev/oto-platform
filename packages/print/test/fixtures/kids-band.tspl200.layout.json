@@ -1,0 +1,144 @@
+{
+  "widthDots": 200,
+  "heightDots": 413,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 26,
+      "w": 174,
+      "sizeDots": 26,
+      "weight": "bold",
+      "text": "Mali · Привет"
+    },
+    {
+      "k": "text",
+      "x": 9,
+      "baselineY": 52,
+      "w": 76,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "NANNY"
+    },
+    {
+      "k": "invert",
+      "x": 6,
+      "y": 36,
+      "w": 82,
+      "h": 22
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 75,
+      "w": 136,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "10:00 – 12:00 · 2"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 93,
+      "w": 52,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "hours"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 112,
+      "w": 179,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Ploy's Birthday · สวัสดี"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 134,
+      "w": 80,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "OTO Park"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 151,
+      "w": 96,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Nanny: Fon"
+    },
+    {
+      "k": "warning",
+      "x": 10,
+      "y": 166,
+      "size": 22
+    },
+    {
+      "k": "text",
+      "x": 40,
+      "baselineY": 181,
+      "w": 102,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "ALLERGY:"
+    },
+    {
+      "k": "text",
+      "x": 40,
+      "baselineY": 201,
+      "w": 95,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "Peanuts,"
+    },
+    {
+      "k": "text",
+      "x": 40,
+      "baselineY": 224,
+      "w": 92,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "shellfish"
+    },
+    {
+      "k": "stroke",
+      "x": 6,
+      "y": 161,
+      "w": 188,
+      "h": 71
+    },
+    {
+      "k": "qr",
+      "x": 34,
+      "y": 239,
+      "moduleDots": 4,
+      "modules": 33,
+      "version": 4,
+      "ecc": "M"
+    },
+    {
+      "k": "text",
+      "x": 53,
+      "baselineY": 388,
+      "w": 93,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "HKT1-4821"
+    },
+    {
+      "k": "text",
+      "x": 77,
+      "baselineY": 403,
+      "w": 45,
+      "sizeDots": 14,
+      "weight": "regular",
+      "text": "SCAN"
+    }
+  ]
+}

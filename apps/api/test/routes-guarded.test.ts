@@ -87,13 +87,21 @@ describe('route guards (S2-01b)', () => {
       .map((r) => `${r.method} ${r.url} [${r.config.credential}]`)
       .sort();
     expect(boxRoutes).toEqual([
+      // The cache bundle (S2-05): the branch's members, children and prices, so
+      // a counter keeps working with no internet. It is the single largest
+      // thing a box is ever given, which is why the list it appears on is one
+      // somebody has to edit deliberately.
+      'GET /box/v1/cache [box]',
       'GET /box/v1/config [box]',
+      'GET /box/v1/sync/pull [box]',
       'POST /box/v1/commands/:commandId/result [box]',
       'POST /box/v1/commands/poll [box]',
       'POST /box/v1/heartbeat [box]',
       // The one route a box reaches before it has a credential: the claim
       // code IS the credential, single-use and short-lived.
       'POST /box/v1/register [box-claim]',
+      'POST /box/v1/sync/key [box]',
+      'POST /box/v1/sync/push [box]',
     ]);
     // None of them is also marked public — the two are different guards and a
     // route carrying both would be read as open by anyone skimming.
@@ -118,13 +126,17 @@ describe('route guards (S2-01b)', () => {
     const boxUrls = ctx.app.routeRegistry.filter(
       (r) => r.url.startsWith('/box/') && r.method !== 'HEAD' && r.method !== 'OPTIONS',
     );
-    expect(boxUrls.length).toBe(5);
+    expect(boxUrls.length).toBe(9);
 
     const bodies: Record<string, unknown> = {
       'POST:/box/v1/register': { claimCode: undefined, agentVersion: '0.1.0' },
       'POST:/box/v1/heartbeat': { reportedAt: new Date().toISOString(), agentVersion: '0.1.0' },
       'POST:/box/v1/commands/poll': { max: 5 },
       'POST:/box/v1/commands/:commandId/result': { state: 'succeeded' },
+      'POST:/box/v1/sync/key': { publicKey: 'x'.repeat(44) },
+      // A whole batch of facts, sent by nobody. It must be refused before the
+      // body is looked at, which is what preValidation buys.
+      'POST:/box/v1/sync/push': { events: [] },
     };
 
     for (const route of boxUrls) {

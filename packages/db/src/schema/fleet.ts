@@ -104,6 +104,31 @@ export const box = core.table(
      * the hash still matches.
      */
     claimCodeExpiresAt: timestamp('claim_code_expires_at', { withTimezone: true, mode: 'date' }),
+    /**
+     * The PUBLIC half of the keypair the box signs its sync events with
+     * (S2-05), raw base64url or SPKI PEM. Ed25519 by default.
+     *
+     * Two credentials, two jobs. `secret_hash` authenticates the CONNECTION:
+     * the box presents `boxId.secret` as a bearer token and the api compares
+     * the SHA-256. This key authenticates each EVENT, one at a time, long
+     * after the connection that carried it has closed — a batch that sat in an
+     * outbox for two days is still provably from this box.
+     *
+     * A keypair rather than the shared HMAC the S2-05 ticket sketches, because
+     * the cloud stores only a hash of the box secret and a hash cannot verify
+     * an HMAC. The alternative — a second, recoverable per-box secret — would
+     * put a credential in the database that forges a box's whole history if
+     * the database leaks. Here there is nothing to steal: the box keeps the
+     * private half, and a signature is verified once, at push, after which
+     * `sync_event.sig` is evidence rather than something re-checked.
+     */
+    syncPublicKey: text('sync_public_key'),
+    syncKeyAlgorithm: text('sync_key_algorithm').notNull().default('ed25519'),
+    /** When this key was presented — on registration, or on a rotation. */
+    syncKeyRegisteredAt: timestamp('sync_key_registered_at', {
+      withTimezone: true,
+      mode: 'date',
+    }),
     registeredAt: timestamp('registered_at', { withTimezone: true, mode: 'date' }),
     agentVersion: text('agent_version'),
     /**

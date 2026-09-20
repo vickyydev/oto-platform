@@ -17,6 +17,13 @@ import {
   resolveAlert,
   type AlertChannel,
 } from './ops';
+import {
+  purgeOldStationEvents,
+  purgeOldSyncAnomalies,
+  purgeOldSyncChanges,
+  purgeOldSyncEvents,
+  syncSettings,
+} from './sync';
 
 /**
  * The job runner and the watchdog (S2-03).
@@ -364,12 +371,37 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
     {
       name: 'job:housekeeping.retention',
       description:
-        'Ages out operational runs, resolved alerts and box heartbeats, and expires stale box commands',
+        'Ages out operational runs, resolved alerts, box heartbeats, the sync ledger, the change feed and station telemetry, and expires stale box commands',
       intervalSeconds: deps.env.HOUSEKEEPING_INTERVAL_S,
-      run: async ({ db, env }) => ({
-        detail: {
-          runsDeleted: await purgeOldOpsRuns(db, env.OPS_RUN_RETENTION_DAYS),
-          alertsDeleted: await purgeResolvedAlerts(db, env.OPS_RUN_RETENTION_DAYS),
+      run: async ({ db }) => {
+        const sync = syncSettings();
+        return {
+          detail: {
+            ...(await legacySweeps(db, deps.env)),
+            /**
+             * The sync core's four windows (S2-05). The reasoning behind each
+             * is on its table in `packages/db/src/schema/sync.ts`; what matters
+             * here is what is NOT swept — `edge.sync_cursor`, which is what
+             * keeps a replayed year-old batch recognisable after its ledger row
+             * has gone, and `edge.sync_quarantine`, which is small by
+             * construction and whose growth is itself the signal.
+             */
+            syncEventsDeleted: await purgeOldSyncEvents(db, sync.eventRetentionDays),
+            syncAnomaliesDeleted: await purgeOldSyncAnomalies(db, sync.eventRetentionDays),
+            syncChangesDeleted: await purgeOldSyncChanges(db, sync.changeRetentionDays),
+            stationEventsDeleted: await purgeOldStationEvents(db, sync.stationEventRetentionDays),
+          },
+        };
+      },
+    },
+  ];
+}
+
+/** The sweeps that existed before the sync core, unchanged. */
+async function legacySweeps(db: Db, env: Env): Promise<Record<string, number>> {
+  return {
+    runsDeleted: await purgeOldOpsRuns(db, env.OPS_RUN_RETENTION_DAYS),
+    alertsDeleted: await purgeResolvedAlerts(db, env.OPS_RUN_RETENTION_DAYS),
           /**
            * A row a minute per box, forever, is around half a million a year
            * each — so `edge.box_heartbeat` is a retention problem from the day
@@ -377,20 +409,16 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
            * answered from `box.last_status` and never touches this table, which
            * is what makes throwing its history away after two weeks cheap.
            */
-          heartbeatsDeleted: await purgeOldBoxHeartbeats(db),
-          /**
-           * Not a delete. `pollCommands` expires only for the box that is
-           * asking, which is never the box that died with work queued for it,
-           * so a test print aimed at a dead Pi showed as pending for ever.
-           * This closes those; nothing is removed, because `box_command`'s
-           * restricting foreign key is what makes "a box is archived, never
-           * deleted" a database fact.
-           */
-          commandsExpired: await expireStaleCommands(db),
-        },
-      }),
-    },
-  ];
+    heartbeatsDeleted: await purgeOldBoxHeartbeats(db),
+    /**
+     * Not a delete. `pollCommands` expires only for the box that is asking,
+     * which is never the box that died with work queued for it, so a test print
+     * aimed at a dead Pi showed as pending for ever. This closes those; nothing
+     * is removed, because `box_command`'s restricting foreign key is what makes
+     * "a box is archived, never deleted" a database fact.
+     */
+    commandsExpired: await expireStaleCommands(db),
+  };
 }
 
 // --- The runner -------------------------------------------------------------

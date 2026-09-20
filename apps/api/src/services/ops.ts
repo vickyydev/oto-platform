@@ -35,6 +35,7 @@ import { newId } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { isPgError, scrubPgError } from '../lib/scrub';
 import { boxSettings, withinOpeningHours } from './box';
+import { syncSettings } from './sync';
 import type { Exec } from './tx';
 
 /**
@@ -113,6 +114,13 @@ export function errorFingerprint(kind: OpsKind, name: string, errorCode: string)
 // --- Runs -------------------------------------------------------------------
 
 export interface RecordRunInput {
+  /**
+   * Supplied only where the run's id has to be known BEFORE it is recorded —
+   * a sync push stamps `sync_event.batch_id` with it inside the transaction
+   * that applies the batch, so the Console can open the whole push from one
+   * event (S2-05). Everywhere else it is minted here.
+   */
+  id?: string;
   kind: OpsKind;
   /** `job:housekeeping.idempotency`, `adapter:2c2p.do_payment`, `http:POST /members`. */
   name: string;
@@ -143,7 +151,7 @@ export interface RecordedRun {
  * this last work" or to "is this due" — both of which read `ops_last`.
  */
 export async function recordRun(exec: Exec, input: RecordRunInput): Promise<RecordedRun> {
-  const id = newId();
+  const id = input.id ?? newId();
   const finishedAt = input.finishedAt ?? new Date();
   const durationMs = Math.max(0, finishedAt.getTime() - input.startedAt.getTime());
   const failed = input.outcome === 'failed';
@@ -842,11 +850,12 @@ export async function healthChecks(deps: HealthDeps, now = Date.now()): Promise<
 // opens those and closes the rest. The page can no more disagree with the alert
 // than a number can disagree with itself.
 //
-// `withinOpeningHours` and `boxSettings` are imported from `services/box.ts`,
-// which imports `recordRun` from this file — the two modules are circular.
-// Neither calls the other while it is being loaded, so that is safe, and the
-// alternative is a second copy of the opening-hours rule living here. A second
-// copy is precisely the disagreement this section exists to prevent.
+// `withinOpeningHours` and `boxSettings` come from `services/box.ts`, and
+// `syncSettings` from `services/sync.ts`; both of those import `recordRun` from
+// this file, so all three modules are circular. Nothing calls across while a
+// module is being loaded, so that is safe, and the alternative is a second copy
+// of the opening-hours rule and of `SYNC_STALE_AFTER_S`'s default living here.
+// A second copy is precisely the disagreement this section exists to prevent.
 //
 // Nothing here selects a person, a box secret or a claim code. A box's name,
 // its slot and its device labels are what a page read over a shoulder in a back
@@ -898,6 +907,16 @@ export interface BoxHealth {
   uptimeSeconds: number | null;
   /** Unsynced events waiting on the box — the number that says whether offline is safe. */
   outboxDepth: number | null;
+  /**
+   * How long the oldest unsynced event has been waiting, in seconds (S2-05).
+   * A depth that is not moving is the difference between a box that is busy
+   * and a box whose sync path is broken, and only the age can tell them apart.
+   */
+  oldestUnackedAgeS: number | null;
+  /** Events this box sent that could not be applied and are waiting on a person. */
+  quarantineOpen: number;
+  /** When the cloud last accepted a batch from it. Null means never. */
+  lastSyncAt: string | null;
   /** Positive means the box's clock is ahead of ours. */
   clockOffsetMs: number | null;
   /** Null on the virtual box, which has no thermometer — not zero, which reads as cold. */
@@ -1022,6 +1041,26 @@ export interface BoxRuleSettings {
   /** `BOX_OFFLINE_AFTER_S`: silence longer than this and the box is offline. */
   offlineAfterS: number;
   minAgentVersion: string;
+  /** `SYNC_STALE_AFTER_S`: a box that is talking but whose facts are not arriving. */
+  syncStaleAfterS: number;
+}
+
+/**
+ * What the sync core knows about one box, gathered once per evaluation and
+ * handed in beside its devices (S2-05).
+ *
+ * Passed in rather than queried here for the same reason the devices are: this
+ * function is pure, it runs on every Health page load and every watchdog tick,
+ * and the page and the alert must be reading the same numbers.
+ */
+export interface BoxSyncState {
+  /** Queued or sending, from `edge.box_outbox` where that store is ours. */
+  outboxDepth: number | null;
+  /** Reported by the box on its heartbeat, or measured from our copy of its outbox. */
+  oldestUnackedAgeS: number | null;
+  quarantineOpen: number;
+  epochRegressedOpen: number;
+  lastSyncAt: Date | null;
 }
 
 /**
@@ -1045,6 +1084,7 @@ export function evaluateBox(
   devices: FleetDeviceRow[],
   settings: BoxRuleSettings,
   now: number,
+  sync?: BoxSyncState,
 ): { health: BoxHealth; conditions: FleetCondition[] } {
   const last = statusOf(row);
   const heartbeatAgeSeconds = secondsSince(row.lastHeartbeatAt, now);
@@ -1165,6 +1205,91 @@ export function evaluateBox(
     },
   });
 
+  /**
+   * --- And the two sync rules (S2-05), which are about a quieter fault than
+   * everything above: a box that is answering every heartbeat while the facts
+   * it produced are not arriving.
+   *
+   * **Online but not syncing.** The offline rule cannot see this — the box is
+   * calling home, so by every measure above it is healthy — and yet a counter
+   * whose sales are sitting in an outbox is a counter whose takings exist in
+   * one place, on a Pi, in a mall. It fires only while the box is REPORTING,
+   * because an offline box is expected to hold a queue: that is what offline
+   * mode is for, and raising it there would make the demo instrument alarm on
+   * itself.
+   */
+  const outboxDepth = sync?.outboxDepth ?? statusNumber(last, 'outboxDepth');
+  const oldestUnackedAgeS = sync?.oldestUnackedAgeS ?? statusNumber(last, 'oldestUnackedAgeS');
+  conditions.push({
+    key: `sync.stale:${row.id}`,
+    category: 'sync.stale',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active:
+      reporting && oldestUnackedAgeS !== null && oldestUnackedAgeS > settings.syncStaleAfterS,
+    summary: `${subject} is calling home but its oldest unsynced event has been waiting ${elapsedWords(oldestUnackedAgeS ?? 0)} — ${outboxDepth ?? 'some'} event(s) exist only on the box`,
+    detail: {
+      slot: row.slot,
+      outboxDepth,
+      oldestUnackedAgeS,
+      staleAfterSeconds: settings.syncStaleAfterS,
+    },
+    clear: {
+      category: 'sync.stale',
+      reason: 'recovered',
+      summary: `${subject} is syncing again — nothing has been waiting longer than ${settings.syncStaleAfterS}s`,
+    },
+  });
+
+  /**
+   * **Quarantine non-empty.** An event the cloud refused is a fact nobody has
+   * recorded anywhere, waiting on a person to replay or discard it. Unlike
+   * everything else here it does not depend on the box being reachable — the
+   * rows are already in this database, and the box that sent them may since
+   * have been unplugged — so it fires whatever the box is doing now. Raised by
+   * the push as it happens and closed by this, from the same count, so the two
+   * cannot tell different stories.
+   */
+  const quarantineOpen = sync?.quarantineOpen ?? 0;
+  conditions.push({
+    key: `sync.quarantine:${row.id}`,
+    category: 'sync.quarantine',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: quarantineOpen - (sync?.epochRegressedOpen ?? 0) > 0,
+    summary: `${quarantineOpen} event(s) from ${subject} could not be applied and are waiting on Failures > Quarantine`,
+    detail: { slot: row.slot, quarantineOpen, epochRegressedOpen: sync?.epochRegressedOpen ?? 0 },
+    clear: {
+      category: 'sync.quarantine',
+      reason: 'cleared',
+      summary: `Everything quarantined from ${subject} has been replayed or discarded`,
+    },
+  });
+
+  /**
+   * A replay from a journal the box no longer has. Its own condition rather
+   * than one more quarantine reason, because the answer is different: nothing
+   * is wrong with the events, the box is sending from a store that was wiped,
+   * and what a person does about it is check the box rather than the data.
+   */
+  conditions.push({
+    key: `sync.epoch_regressed:${row.id}`,
+    category: 'sync.epoch_regressed',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: (sync?.epochRegressedOpen ?? 0) > 0,
+    summary: `${subject} sent ${sync?.epochRegressedOpen ?? 0} event(s) from a journal epoch replaced when its store was reset`,
+    detail: { slot: row.slot, currentEpoch: row.currentEpoch },
+    clear: {
+      category: 'sync.epoch_regressed',
+      reason: 'cleared',
+      summary: `${subject} is sending from epoch ${row.currentEpoch} again`,
+    },
+  });
+
   // --- And what the box says about the things plugged into it.
   const visible = reporting && openingHours === 'open';
   for (const d of devices) {
@@ -1256,7 +1381,10 @@ export function evaluateBox(
       lastHeartbeatAt: iso(row.lastHeartbeatAt),
       heartbeatAgeSeconds,
       uptimeSeconds: statusNumber(last, 'uptimeS'),
-      outboxDepth: statusNumber(last, 'outboxDepth'),
+      outboxDepth,
+      oldestUnackedAgeS,
+      quarantineOpen,
+      lastSyncAt: iso(sync?.lastSyncAt ?? null),
       clockOffsetMs,
       tempC: statusNumber(last, 'tempC'),
       currentEpoch: row.currentEpoch,
@@ -1296,6 +1424,7 @@ export async function fleetHealth(
   const rules: BoxRuleSettings = {
     offlineAfterS: settings.offlineAfterS,
     minAgentVersion: settings.minAgentVersion,
+    syncStaleAfterS: syncSettings().staleAfterS,
   };
 
   const scope = deps.operatorId ? eq(box.operatorId, deps.operatorId) : undefined;
@@ -1354,13 +1483,124 @@ export async function fleetHealth(
     byBox.set(d.boxId, list);
   }
 
+  const sync = await boxSyncStates(
+    deps.db,
+    rows.map((r) => r.id),
+    now,
+  );
+
   const snapshot: FleetSnapshot = { boxes: [], conditions: [] };
   for (const row of rows) {
-    const { health, conditions } = evaluateBox(row, byBox.get(row.id) ?? [], rules, now);
+    const { health, conditions } = evaluateBox(
+      row,
+      byBox.get(row.id) ?? [],
+      rules,
+      now,
+      sync.get(row.id),
+    );
     snapshot.boxes.push(health);
     snapshot.conditions.push(...conditions);
   }
   return snapshot;
+}
+
+/**
+ * The sync numbers for a set of boxes, in three statements rather than three
+ * per box (S2-05).
+ *
+ * Written here rather than imported from `services/sync.ts` on purpose: that
+ * file already imports `recordRun` and `raiseAlert` from this one, and a
+ * two-way runtime import between them would be a cycle with no upside. The
+ * queries are small and belong to the page that reads them.
+ *
+ * `edge.box_outbox` is the box's own store, which on the virtual box IS this
+ * database and on a Raspberry Pi is a SQLite file we cannot see. An empty
+ * answer therefore means "we hold no copy", not "nothing is queued", which is
+ * why `evaluateBox` falls back to what the box reported on its heartbeat.
+ */
+async function boxSyncStates(
+  db: Db,
+  boxIds: string[],
+  now: number,
+): Promise<Map<string, BoxSyncState>> {
+  const out = new Map<string, BoxSyncState>();
+  if (boxIds.length === 0) return out;
+  for (const id of boxIds) {
+    out.set(id, {
+      outboxDepth: null,
+      oldestUnackedAgeS: null,
+      quarantineOpen: 0,
+      epochRegressedOpen: 0,
+      lastSyncAt: null,
+    });
+  }
+
+  const ids = sql.join(
+    boxIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
+
+  const outbox = await probe(
+    async () =>
+      (
+        await db.execute<{ box_id: string; depth: string; oldest: Date | null }>(
+          sql`select box_id, count(*)::text as depth, min(created_at) as oldest
+                from edge.box_outbox
+               where state in ('queued','sending') and box_id in (${ids})
+               group by box_id`,
+        )
+      ).rows,
+    [] as Array<{ box_id: string; depth: string; oldest: Date | null }>,
+  );
+  for (const row of outbox) {
+    const state = out.get(row.box_id);
+    if (!state) continue;
+    state.outboxDepth = Number(row.depth);
+    state.oldestUnackedAgeS = row.oldest
+      ? Math.max(0, Math.round((now - new Date(row.oldest).getTime()) / 1000))
+      : null;
+  }
+
+  const quarantine = await probe(
+    async () =>
+      (
+        await db.execute<{ box_id: string; open: string; epoch: string }>(
+          sql`select box_id,
+                     count(*)::text as open,
+                     count(*) filter (where reason = 'epoch_regressed')::text as epoch
+                from edge.sync_quarantine
+               where status = 'open' and box_id in (${ids})
+               group by box_id`,
+        )
+      ).rows,
+    [] as Array<{ box_id: string; open: string; epoch: string }>,
+  );
+  for (const row of quarantine) {
+    const state = out.get(row.box_id);
+    if (!state) continue;
+    state.quarantineOpen = Number(row.open);
+    state.epochRegressedOpen = Number(row.epoch);
+  }
+
+  const cursors = await probe(
+    async () =>
+      (
+        await db.execute<{ box_id: string; last_push_at: Date | null }>(
+          sql`select box_id, max(last_push_at) as last_push_at
+                from edge.sync_cursor
+               where box_id in (${ids})
+               group by box_id`,
+        )
+      ).rows,
+    [] as Array<{ box_id: string; last_push_at: Date | null }>,
+  );
+  for (const row of cursors) {
+    const state = out.get(row.box_id);
+    if (!state) continue;
+    state.lastSyncAt = row.last_push_at ? new Date(row.last_push_at) : null;
+  }
+
+  return out;
 }
 
 /**

@@ -6,4 +6,5 @@ export * from './fleet';
 export * from './platform';
 export * from './ops';
 export * from './edge';
+export * from './sync';
 export * from './future';

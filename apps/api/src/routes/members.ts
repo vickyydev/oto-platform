@@ -5,7 +5,44 @@ import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { recordChange } from '../services/sync';
 import { opCtx, withTx } from '../services/tx';
+
+/**
+ * What a box holds a copy of (S2-05).
+ *
+ * A member edited at reception has to reach the boxes that cache members, and
+ * the delta is written in the SAME transaction as the edit — so a member who
+ * exists and a feed that says so commit together. What travels is only what a
+ * till reads at the identify step: never the staff notes, never the email,
+ * never the tier evidence. See the cache bundle in `services/sync.ts` for the
+ * full account of what a box is and is not given.
+ */
+function memberCacheView(row: typeof member.$inferSelect): Record<string, unknown> {
+  return {
+    id: row.id,
+    phone: row.phone,
+    nickname: row.nickname,
+    name: row.name,
+    tierCode: row.tierCode,
+    preferredChannel: row.preferredChannel,
+  };
+}
+
+function childCacheView(row: typeof child.$inferSelect): Record<string, unknown> {
+  return {
+    id: row.id,
+    memberId: row.memberId,
+    name: row.name,
+    dateOfBirth: row.dateOfBirth,
+    ageYears: row.ageYears,
+    allergies: row.allergies,
+    medicalNotes: row.medicalNotes,
+    medicalAlert: row.medicalAlert,
+    dietary: row.dietary,
+    foodRestrictions: row.foodRestrictions,
+  };
+}
 
 const ChildBody = z.object({
   name: z.string().min(1),
@@ -190,6 +227,14 @@ export async function memberRoutes(app: App): Promise<void> {
       if (!before) throw errors.notFound('Member not found');
       return withTx(app.db, opCtx(req), 'member.archive', async (tx) => {
         await tx.update(member).set({ archivedAt: new Date() }).where(eq(member.id, req.params.id));
+        // A box holding this member drops it on the next pull: an archived
+        // member must not still be findable at a counter that is offline.
+        await recordChange(tx, { operatorId: auth.operatorId, branchId: null }, {
+          scope: 'members',
+          op: 'delete',
+          entityType: 'member',
+          entityId: req.params.id,
+        });
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
@@ -276,13 +321,22 @@ export async function memberRoutes(app: App): Promise<void> {
       }
       const id = req.body.id ?? newId();
       await withTx(app.db, opCtx(req), 'member.create', async (tx) => {
-        await tx.insert(member).values({
-          id,
-          operatorId: auth.operatorId,
-          phone,
-          nickname: req.body.nickname.trim(),
-          preferredChannel: req.body.preferredChannel ?? null,
-          createdVia: req.body.createdVia,
+        const [created] = await tx
+          .insert(member)
+          .values({
+            id,
+            operatorId: auth.operatorId,
+            phone,
+            nickname: req.body.nickname.trim(),
+            preferredChannel: req.body.preferredChannel ?? null,
+            createdVia: req.body.createdVia,
+          })
+          .returning();
+        await recordChange(tx, { operatorId: auth.operatorId, branchId: null }, {
+          scope: 'members',
+          entityType: 'member',
+          entityId: id,
+          payload: memberCacheView(created!),
         });
         await audit.record(tx, {
           actorAccountId: auth.accountId,
@@ -345,6 +399,12 @@ export async function memberRoutes(app: App): Promise<void> {
           .set(patch)
           .where(eq(member.id, req.params.id))
           .returning();
+        await recordChange(tx, { operatorId: auth.operatorId, branchId: null }, {
+          scope: 'members',
+          entityType: 'member',
+          entityId: req.params.id,
+          payload: memberCacheView(after!),
+        });
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
@@ -516,7 +576,7 @@ export async function memberRoutes(app: App): Promise<void> {
       if (!m) throw errors.notFound('Member not found');
       const id = newId();
       await withTx(app.db, opCtx(req), 'child.create', async (tx) => {
-        await tx.insert(child).values({
+        const [created] = await tx.insert(child).values({
           id,
           memberId: req.params.id,
           name: req.body.name.trim(),
@@ -529,6 +589,12 @@ export async function memberRoutes(app: App): Promise<void> {
           foodRestrictions: req.body.foodRestrictions ?? null,
           notes: req.body.notes ?? null,
           consentRecordedAt: new Date(),
+        }).returning();
+        await recordChange(tx, { operatorId: auth.operatorId, branchId: null }, {
+          scope: 'members',
+          entityType: 'child',
+          entityId: id,
+          payload: childCacheView(created!),
         });
         await audit.record(app.db, {
           actorAccountId: auth.accountId,
@@ -593,6 +659,14 @@ export async function memberRoutes(app: App): Promise<void> {
           .set(patch)
           .where(eq(child.id, req.params.childId))
           .returning();
+        // An allergy edited at reception has to reach the box that will warn
+        // the kitchen tonight, whether or not it has internet by then.
+        await recordChange(tx, { operatorId: auth.operatorId, branchId: null }, {
+          scope: 'members',
+          entityType: 'child',
+          entityId: req.params.childId,
+          payload: childCacheView(after!),
+        });
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,

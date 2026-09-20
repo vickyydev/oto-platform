@@ -89,6 +89,28 @@ export type SyncSigAlgorithm = (typeof SYNC_SIG_ALGORITHMS)[number];
  * Both ends must produce the SAME BYTES or every event looks like a conflict,
  * so the order is fixed here and nowhere else. `receivedAt` is absent by
  * design — it is the cloud's stamp and cannot be part of what the box signed.
+ *
+ * `boxId` is in this list and is NOT in the envelope below, and the difference
+ * is the point: the box adds its own id to the bytes it seals, the cloud adds
+ * the id from the credential the push arrived on, and the two agree only when
+ * the box that signed is the box that is speaking. Anything that canonicalises
+ * an envelope without putting `boxId` back writes a null into slot 2 and
+ * produces bytes neither end will recognise.
+ *
+ * `clockTrust` and `clockOffsetMs` are absent too, and unlike `receivedAt` they
+ * are absent on a judgement rather than on a fact, so it is worth saying what
+ * the judgement was. They are the box's CLAIM about its own clock, and the
+ * cloud does not take a claim as given: it overrules `trusted` downwards from
+ * the offset, and when trust is anything but `trusted` it resolves the trading
+ * day from its own clock instead. So the two timestamps a business date can
+ * ever be computed from are `occurredAt`, which IS sealed, and the cloud's own
+ * `receivedAt`. Something that rewrote `clockTrust` in flight would move the
+ * choice between those two; it could not introduce a third, and the row records
+ * which was used in `business_date_source`. What this does NOT give is
+ * tamper-evidence for that choice — two envelopes differing only in
+ * `clockTrust` hash identically. If a later ticket ever lets the box's clock
+ * report decide something the box itself chose, these belong in the list and
+ * the schema version goes up with them.
  */
 export const SYNC_CANONICAL_FIELDS = [
   'eventId',
@@ -134,8 +156,21 @@ export const SyncEventEnvelopeSchema = z.object({
 export type SyncEventEnvelope = z.infer<typeof SyncEventEnvelopeSchema>;
 
 export const SyncPushRequestSchema = z.object({
-  /** In journal order. The cloud applies each under its own SAVEPOINT. */
-  events: z.array(SyncEventEnvelopeSchema).min(1).max(SYNC_PUSH_MAX_EVENTS),
+  /**
+   * In journal order. The cloud applies each under its own SAVEPOINT.
+   *
+   * **Deliberately `unknown` rather than an array of envelopes.** A zod array
+   * fails WHOLE when one element does not parse, so a single malformed
+   * envelope — a truncated queue row, a field a newer agent stopped sending —
+   * would turn a batch of two hundred into one `400 VALIDATION` and the other
+   * hundred and ninety-nine would never be applied. Worse, re-sending would
+   * produce the same 400 for ever, which is the one failure the box cannot
+   * recover from on its own. So the BATCH is validated here — an array, in
+   * bounds — and each element is parsed against `SyncEventEnvelopeSchema` one
+   * at a time by the service, where a failure is a quarantined event like any
+   * other refusal and the batch carries on.
+   */
+  events: z.array(z.unknown()).min(1).max(SYNC_PUSH_MAX_EVENTS),
   /**
    * The box's view of its own high-water mark when it built the batch. Not
    * trusted — the cursor is — but a disagreement is worth an anomaly, because

@@ -1,0 +1,469 @@
+{
+  "widthDots": 200,
+  "heightDots": 983,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 16,
+      "baselineY": 22,
+      "w": 168,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "PRINTER TEST"
+    },
+    {
+      "k": "dashes",
+      "x": 6,
+      "y": 26,
+      "w": 188,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 44,
+      "w": 56,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Device"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 61,
+      "w": 148,
+      "sizeDots": 16,
+      "weight": "bold",
+      "text": "Adult band printer"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 82,
+      "w": 53,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Model"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 98,
+      "w": 73,
+      "sizeDots": 16,
+      "weight": "bold",
+      "text": "4B-2082A"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 116,
+      "w": 68,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Address"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 132,
+      "w": 155,
+      "sizeDots": 16,
+      "weight": "bold",
+      "text": "192.168.88.204:9100"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 149,
+      "w": 82,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Transport"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 170,
+      "w": 172,
+      "sizeDots": 16,
+      "weight": "bold",
+      "text": "TCP 9100, one session"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 190,
+      "w": 76,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Dots/line"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 207,
+      "w": 137,
+      "sizeDots": 16,
+      "weight": "bold",
+      "text": "200 (as rendered)"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 227,
+      "w": 78,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Renderer"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 244,
+      "w": 115,
+      "sizeDots": 16,
+      "weight": "bold",
+      "text": "oto-print/0.1.0"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 264,
+      "w": 46,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Fonts"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 280,
+      "w": 81,
+      "sizeDots": 16,
+      "weight": "bold",
+      "text": "NotoSans,"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 299,
+      "w": 115,
+      "sizeDots": 16,
+      "weight": "bold",
+      "text": "NotoSansThai,"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 318,
+      "w": 88,
+      "sizeDots": 16,
+      "weight": "bold",
+      "text": "OtoPrintSC"
+    },
+    {
+      "k": "dashes",
+      "x": 6,
+      "y": 322,
+      "w": 188,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 340,
+      "w": 76,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Dot ruler"
+    },
+    {
+      "k": "image",
+      "x": 6,
+      "y": 344,
+      "w": 188,
+      "h": 20
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 378,
+      "w": 71,
+      "sizeDots": 14,
+      "weight": "regular",
+      "text": "0  100  188"
+    },
+    {
+      "k": "dashes",
+      "x": 6,
+      "y": 382,
+      "w": 188,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 400,
+      "w": 61,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Scripts"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 426,
+      "w": 153,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "สวัสดี OTO Park"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 446,
+      "w": 78,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Привет"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 474,
+      "w": 88,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "欢迎光临"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 495,
+      "w": 100,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Thai stacks"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 524,
+      "w": 151,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "ญี่ปุ่น · น้ำ · เพื่อน"
+    },
+    {
+      "k": "dashes",
+      "x": 6,
+      "y": 533,
+      "w": 188,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 551,
+      "w": 125,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Money column"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 573,
+      "w": 71,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Subtotal"
+    },
+    {
+      "k": "text",
+      "x": 137,
+      "baselineY": 573,
+      "w": 57,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "฿1,090"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 593,
+      "w": 60,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Service"
+    },
+    {
+      "k": "text",
+      "x": 127,
+      "baselineY": 593,
+      "w": 67,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "฿109.50"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 612,
+      "w": 80,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "VAT (incl.)"
+    },
+    {
+      "k": "text",
+      "x": 137,
+      "baselineY": 612,
+      "w": 57,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "฿78.47"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 632,
+      "w": 55,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "TOTAL"
+    },
+    {
+      "k": "text",
+      "x": 112,
+      "baselineY": 632,
+      "w": 82,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "฿1,199.50"
+    },
+    {
+      "k": "dashes",
+      "x": 6,
+      "y": 638,
+      "w": 188,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 656,
+      "w": 54,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Codes"
+    },
+    {
+      "k": "qr",
+      "x": 58,
+      "y": 660,
+      "moduleDots": 4,
+      "modules": 21,
+      "version": 1,
+      "ecc": "M"
+    },
+    {
+      "k": "text",
+      "x": 54,
+      "baselineY": 761,
+      "w": 92,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "HKT1-4821"
+    },
+    {
+      "k": "barcode",
+      "x": 39,
+      "y": 765,
+      "moduleDots": 1,
+      "heightDots": 56,
+      "bars": 123
+    },
+    {
+      "k": "text",
+      "x": 64,
+      "baselineY": 835,
+      "w": 71,
+      "sizeDots": 14,
+      "weight": "regular",
+      "text": "HKT1-4821"
+    },
+    {
+      "k": "dashes",
+      "x": 6,
+      "y": 839,
+      "w": 188,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 857,
+      "w": 161,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Seeded templates"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 879,
+      "w": 151,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• Standard receipt"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 901,
+      "w": 136,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• Kids wristband"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 919,
+      "w": 146,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• Adult wristband"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 937,
+      "w": 125,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• Kitchen ticket"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 955,
+      "w": 91,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• Bar ticket"
+    },
+    {
+      "k": "text",
+      "x": 6,
+      "baselineY": 973,
+      "w": 135,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• Credit voucher"
+    }
+  ]
+}

@@ -151,6 +151,34 @@ const EnvSchema = z.object({
    * `audit_log` is the permanent record and is never swept.
    */
   OPS_RUN_RETENTION_DAYS: z.coerce.number().int().min(1).default(30),
+  /**
+   * The sync core's four dials (S2-05).
+   *
+   * Declared here so a deployment that sets one gets it VALIDATED at boot
+   * rather than silently ignored, and so `.env.example` and the blueprint have
+   * one list to work from. The defaults deliberately live in `syncSettings()`
+   * in `services/sync.ts` and not here as well: `fleetHealth` and the watchdog
+   * read them without an `Env` in hand — the same shape `boxSettings()` has —
+   * and a number written in two places is a number that will one day disagree
+   * with itself.
+   *
+   *   SYNC_EVENT_RETENTION_DAYS    how long `edge.sync_event` is kept (365).
+   *                                Dedupe does NOT depend on it: `sync_cursor`
+   *                                is never swept, so an event past the window
+   *                                is still recognisably a replay.
+   *   SYNC_CHANGE_RETENTION_DAYS   how long a delta stays on the feed (30). A
+   *                                box away longer takes a whole bundle.
+   *   STATION_EVENT_RETENTION_DAYS the tape of one station's afternoon (30).
+   *                                Telemetry, not record.
+   *   SYNC_STALE_AFTER_S           a box calling home whose oldest unsynced
+   *                                event is older than this is not syncing
+   *                                (300) — quieter than silence, and the fault
+   *                                with money behind it.
+   */
+  SYNC_EVENT_RETENTION_DAYS: z.coerce.number().int().min(1).optional(),
+  SYNC_CHANGE_RETENTION_DAYS: z.coerce.number().int().min(1).optional(),
+  STATION_EVENT_RETENTION_DAYS: z.coerce.number().int().min(1).optional(),
+  SYNC_STALE_AFTER_S: z.coerce.number().int().min(30).optional(),
   MINIO_ENDPOINT: z.string().default('localhost'),
   MINIO_PORT: z.coerce.number().int().default(9000),
   MINIO_USE_SSL: z
