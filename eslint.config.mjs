@@ -10,6 +10,16 @@ export default tseslint.config(
       '**/.turbo/**',
       // The ported prototype UI keeps its original style; linted separately later.
       'apps/pos/**',
+      // The lifted OTO App (S2-17a) keeps its own toolchain, its own lockfile
+      // and its own style — it is outside the pnpm workspace for the same
+      // reason. Holding 184 tables' worth of inherited code to rules it was
+      // never written against turns every push red and, because every Render
+      // service deploys on `checksPass`, stops the whole suite deploying. Its
+      // own `npm run check` is what gates it; the one rule that must not be
+      // lost — never write a phone number to a log — is enforced there instead
+      // by a vendored copy of the platform's redactor that every log line and
+      // every `console.*` call goes through.
+      'apps/oto-app/**',
       '**/migrations/**',
       // Raw Replit exports are reference material, never part of the build.
       'imports/**',
@@ -30,6 +40,7 @@ export default tseslint.config(
         FormData: 'readonly',
         Blob: 'readonly',
         URL: 'readonly',
+        URLSearchParams: 'readonly',
         setTimeout: 'readonly',
       },
     },
