@@ -174,7 +174,9 @@ AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
    (SCRUM-189) and S2-03 (SCRUM-190) — see the ticket log. **Next: S2-17a**
    (SCRUM-192), then **CP1**. The ticket log below is the record, updated in
    the same commit series as the code, and an evidence comment goes on each
-   story or sub-task as its work merges. We never change a ticket's status.
+   story or sub-task as its work merges. Status moves with the work — In
+   Progress when it starts, Testing when it is committed and deployed; *Done*
+   stays the owner's to set. See `SPRINT_2_JIRA_MAP.md` → Conventions.
 
 ## Owner inputs needed (asked 2026-09-20)
 

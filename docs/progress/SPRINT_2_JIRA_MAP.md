@@ -85,9 +85,29 @@ reversible: remove a label, or delete a comment.
 
 ## Conventions from here
 
-- **We never change a ticket's status.** Status is the owner's and QA's to
-  move. We add evidence comments in the Sprint 1 format
-  (`docs/qa/jira-comments/`) when a ticket's work merges.
+- **We move a ticket's status as the work moves** (owner instruction,
+  2026-09-20 — this replaces the earlier rule that we never touched status):
+
+  | When | Move it to | And |
+  |---|---|---|
+  | Work on a ticket starts | **In Progress** | Comment saying what is being built and what it will prove |
+  | The work is finished, committed and deployed | **Testing** | Comment with the evidence: what you can do now, where, what changed, how it was checked, what is still open |
+
+  *Done* stays the owner's to set, after they have looked at it. A sub-task
+  and its story move together: the story goes to In Progress when its first
+  sub-task does, and to Testing when its last one does.
+
+- **Comments are written for somebody who will never open the repository.**
+  Lead with what a person can now do and where, then what changed in plain
+  words, then how it was checked, then what is still open. Name file paths
+  and commit hashes only where they are the evidence; never as the
+  explanation. The comments on SCRUM-186 through SCRUM-190 are the format.
+
+- **Antonie Polfliet watches all 28 sprint epics and stories**, so every
+  comment and every status move reaches him by email. The saved filter
+  *Sprint 2 — OTO Platform build* (filter 10033, shared with the project) is
+  the board-level view. That is why comment quality matters: these are read
+  outside the team.
 - A ticket's text in Jira is a copy; `SPRINT_2_PLAN.md` stays the source. If a
   ticket changes, change the plan first and then update the Jira description.
 - Sub-tasks carry their part's own acceptance criteria and QA steps, so
