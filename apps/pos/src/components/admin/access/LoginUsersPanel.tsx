@@ -8,6 +8,7 @@ import {
   UserX,
   UserCheck,
   Loader2,
+  LayoutGrid,
   Lock,
   LogOut,
   MonitorSmartphone,
@@ -42,6 +43,7 @@ import { PhoneInput } from '@/components/shared/PhoneInput';
 import { toast } from '@/hooks/use-toast';
 import { adminApi } from '@/api/platform';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { AccountAppsDialog } from './AccountAppsDialog';
 
 /**
  * SCRUM-21 / SCRUM-22 / SCRUM-28 — manage login users: search, invite with a
@@ -53,6 +55,10 @@ import { useCatalogStore } from '@/store/CatalogStoreContext';
  * signed in on, "Sign out everywhere" to evict a forgotten till, and the
  * refusals the API has recorded — the first place to look when someone is
  * being told "no" or is probing what they can reach.
+ *
+ * S2-17a adds the app side: the suite's other apps hold users of their own, and
+ * an account needs both the permission and an identity in the app before a tile
+ * opens onto anything. AccountAppsDialog is where those are linked.
  */
 type AccountRow = {
   id: string;
@@ -105,6 +111,7 @@ export function LoginUsersPanel() {
     | null
   >(null);
 
+  const [appsFor, setAppsFor] = useState<AccountRow | null>(null);
   const [sessionsFor, setSessionsFor] = useState<AccountRow | null>(null);
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [denials, setDenials] = useState<DenialRow[]>([]);
@@ -290,6 +297,9 @@ export function LoginUsersPanel() {
                   <div className="flex items-center justify-end gap-1.5">
                     <Button variant="ghost" size="sm" title="Effective permissions" onClick={() => showPerms(a)}>
                       <ShieldCheck className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" title="Apps" onClick={() => setAppsFor(a)}>
+                      <LayoutGrid className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="sm" title="Sessions" onClick={() => showSessions(a)}>
                       <MonitorSmartphone className="w-4 h-4" />
@@ -481,6 +491,13 @@ export function LoginUsersPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Apps this account is linked to (S2-17a) */}
+      <AccountAppsDialog
+        account={appsFor}
+        onClose={() => setAppsFor(null)}
+        scopeLabel={scopeLabel}
+      />
 
       {/* Sessions this account holds (S2-01a) */}
       <Dialog open={sessionsFor !== null} onOpenChange={(o) => !o && setSessionsFor(null)}>

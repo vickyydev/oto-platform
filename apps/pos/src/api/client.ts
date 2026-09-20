@@ -14,6 +14,25 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * True when the API simply does not have this route on this deployment.
+ *
+ * The admin screens ship ahead of parts of the API they read — the app
+ * provisioning routes are being built alongside the Apps panel — and a screen
+ * in that position should say "not on this deployment yet" rather than show an
+ * error the reader cannot act on. The console's helper (apps/console/src/api/
+ * client.ts) reads any 404 that way because every route it calls answers 404
+ * for one reason only. Here they do not: "that account is not linked to this
+ * app" and "no such account" are 404s with meanings of their own, and telling
+ * someone the feature is undeployed when the real answer is "already unlinked"
+ * sends them to the wrong person. So the code decides. An unrouted request
+ * never reaches our error handler — it gets Fastify's own 404 body, which
+ * carries none of our codes and arrives here as `UNKNOWN`.
+ */
+export function isMissingRoute(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 404 && err.code === 'UNKNOWN';
+}
+
 async function request<T>(
   method: string,
   path: string,

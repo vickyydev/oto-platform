@@ -57,6 +57,13 @@
       "when": 1789881907398,
       "tag": "0007_ops_record",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789887896945,
+      "tag": "0008_app_identity",
+      "breakpoints": true
     }
   ]
 }

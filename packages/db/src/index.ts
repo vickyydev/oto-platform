@@ -5,6 +5,13 @@ import * as schema from './schema/index';
 export * from './schema/index';
 export { schema };
 
+/**
+ * The OTO App's `users` table, for the one service on the platform api that
+ * provisions into it. Exported here and not from `./schema/index`, which is
+ * what `drizzle.config.ts` reads — see the file for why.
+ */
+export * from './schema/otoapp';
+
 export type Db = NodePgDatabase<typeof schema>;
 
 let _pool: pg.Pool | null = null;

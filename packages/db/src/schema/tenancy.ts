@@ -320,6 +320,72 @@ export const handoffToken = core.table(
   ],
 );
 
+/**
+ * Which person in a lifted app is which account here (S2-17a).
+ *
+ * The apps taken into the suite keep their own user tables — `otoapp.users`
+ * is the first — and a hand-off arriving at one of them has to be answered in
+ * that app's own vocabulary. This row is the answer: one platform account,
+ * one app, and the id that app knows the person by. The app's sign-on
+ * middleware resolves the incoming token to an account and then to this row;
+ * the provisioning route writes it.
+ *
+ * Both directions are unique. An account has at most one identity in an app,
+ * and an app's user belongs to at most one account — without the second
+ * constraint two accounts could claim the same `otoapp.users` row and the
+ * sign-on would hand the app's session to whichever one it happened to read
+ * first.
+ *
+ * There is no `operator_id` here for the same reason `role_assignment` has
+ * none: the row hangs off the account, and the account carries the operator.
+ * One owner of that fact is enough.
+ */
+export const appIdentity = core.table(
+  'app_identity',
+  {
+    id: idPk(),
+    /**
+     * The same list as the hand-off audiences, so an identity cannot name an
+     * app no token can be aimed at.
+     */
+    app: text('app').$type<HandoffAudience>().notNull(),
+    /**
+     * RESTRICT rather than CASCADE: an account is archived, never deleted, so
+     * a delete reaching this table is a mistake — and cascading would quietly
+     * take with it the record of who was provisioned into the app.
+     */
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    /** The id the app knows the person by — `otoapp.users.id` for `oto_app`. */
+    externalUserId: text('external_user_id').notNull(),
+    /**
+     * The administrator who made the link. Not nullable: access to another
+     * system is always granted by someone, and that someone is who an audit
+     * asks about. RESTRICT for the same reason as above.
+     */
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('app_identity_account_unique').on(t.app, t.accountId),
+    uniqueIndex('app_identity_external_unique').on(t.app, t.externalUserId),
+    /**
+     * The unique indexes above lead with `app`, so neither serves "what has
+     * this account been linked to?" — which is the question the account page
+     * asks on every open.
+     */
+    index('app_identity_account_idx').on(t.accountId),
+    index('app_identity_created_by_idx').on(t.createdBy),
+    check(
+      'app_identity_app_check',
+      sql`${t.app} in ('pos','console','oto_app','radar','booth','inbox')`,
+    ),
+  ],
+);
+
 export const VERIFICATION_PURPOSES = ['setup', 'password_reset'] as const;
 export type VerificationPurpose = (typeof VERIFICATION_PURPOSES)[number];
 

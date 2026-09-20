@@ -1,6 +1,7 @@
 // Typed calls to the Sprint 1 API surface, with mapping between the API's
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
 import { newId as newRecordId } from '@oto/shared';
+import { PERMISSIONS, type Permission } from '@oto/shared/permissions';
 import { api, idemKey } from './client';
 
 // --- auth / me -------------------------------------------------------------
@@ -325,6 +326,93 @@ export const adminApi = {
       body,
       { idempotencyKey: idemKey() },
     ),
+};
+
+// --- admin: app identities (S2-17a) -----------------------------------------
+/** `app:<key>:access` — the permission that puts an app's tile on the launcher. */
+export type AppAccessPermission = Extract<Permission, `app:${string}:access`>;
+
+/** The slug in that permission, which is also the name the routes below take. */
+export type AppKey = AppAccessPermission extends `app:${infer K}:access` ? K : never;
+
+const isAppAccess = (p: Permission): p is AppAccessPermission =>
+  p.startsWith('app:') && p.endsWith(':access');
+
+/**
+ * The apps a tile can be granted for, read out of the permission list itself
+ * rather than written down a second time: an app joins the suite by gaining an
+ * `app:<key>:access` string in packages/shared, and this list follows it there.
+ */
+export const APP_KEYS: AppKey[] = PERMISSIONS.filter(isAppAccess).map(
+  // The template-literal type above guarantees the shape, but TypeScript cannot
+  // narrow the result of a slice, so the key is asserted rather than parsed.
+  (p) => p.slice('app:'.length, -':access'.length) as AppKey,
+);
+
+export const appAccessPermission = (app: AppKey): AppAccessPermission => `app:${app}:access`;
+
+/** What an app knows this account as. One per app, at most. */
+export interface AppIdentity {
+  id: string;
+  app: AppKey;
+  /** The id inside that app — `otoapp.users.id` for the OTO App. */
+  externalUserId: string;
+  createdAt: string;
+  createdBy: string | null;
+  /**
+   * The API's own answer to "does the tile actually open". The panel works the
+   * same fact out of the role list instead, because it has to name the role
+   * that grants it and one derivation is better than two.
+   */
+  hasAccess: boolean;
+}
+
+/**
+ * The OTO App's own role vocabulary, as that app spells it
+ * (`userRoles` in its `shared/schema.ts`). Not platform roles and not a
+ * translation of them: they answer different questions, so whoever provisions
+ * somebody picks from this list.
+ */
+export const OTO_APP_ROLES = [
+  { value: 'global_admin', label: 'Global admin' },
+  { value: 'operator_admin', label: 'Operator admin' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'staff', label: 'Staff' },
+] as const;
+export type OtoAppRole = (typeof OTO_APP_ROLES)[number]['value'];
+
+export const appIdentitiesApi = {
+  list: (accountId: string) =>
+    api.get<{ identities: AppIdentity[] }>(`/admin/apps/users/${accountId}`),
+  /**
+   * Provisioning: one call records the link and grants `app:<key>:access`,
+   * because the two halves are useless apart — a permission with no identity
+   * opens onto a refusal, an identity with no permission is a user in that app
+   * that nobody can reach.
+   *
+   * For the OTO App, which is on the same database, one of the two is sent:
+   * `externalUserId` claims a user that app already has, `otoApp` creates one.
+   * Every other app mints its own user, so its id is all there is to send.
+   */
+  link: (
+    app: AppKey,
+    body: {
+      accountId: string;
+      externalUserId?: string;
+      otoApp?: { email: string; fullName?: string; role: OtoAppRole };
+    },
+  ) =>
+    api.post<{
+      id: string;
+      app: AppKey;
+      accountId: string;
+      externalUserId: string;
+      appUserCreated?: boolean;
+    }>(`/admin/apps/${app}/users`, body, { idempotencyKey: idemKey() }),
+  /** `accessRevoked` is false when the permission also comes from another role. */
+  unlink: (app: AppKey, accountId: string) =>
+    api.delete<{ ok: true; accessRevoked: boolean }>(`/admin/apps/${app}/users/${accountId}`),
 };
 
 // --- ops: staging-only controls (S2-01c) ------------------------------------

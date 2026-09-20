@@ -232,7 +232,8 @@ export const adminNav: AdminNavEntry[] = [
         id: 'login-users',
         label: 'Login Users',
         icon: ShieldCheck,
-        description: 'Invite staff accounts, assign scoped roles, and review effective permissions.',
+        description:
+          'Invite staff accounts, assign scoped roles, link the suite apps they use, and review effective permissions.',
         managerOnly: true,
       },
       {

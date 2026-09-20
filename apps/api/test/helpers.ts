@@ -24,9 +24,17 @@ export interface TestContext {
 
 /** Fresh database + migrations + seed + app instance. */
 export async function createTestContext(
-  opts: { files?: boolean; env?: Partial<Record<keyof Env, string>> } = {},
+  opts: {
+    files?: boolean;
+    /**
+     * Also build the OTO App's tables in schema `otoapp`. Off by default: its
+     * baseline is 184 tables, and only the provisioning tests read them.
+     */
+    otoapp?: boolean;
+    env?: Partial<Record<keyof Env, string>>;
+  } = {},
 ): Promise<TestContext> {
-  const { url, drop } = await createTestDatabase();
+  const { url, drop } = await createTestDatabase({ otoapp: opts.otoapp });
   const pool = new pg.Pool({ connectionString: url });
   const db = drizzle(pool, { schema }) as Db;
   await seed(db);
