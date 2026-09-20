@@ -31,10 +31,11 @@
     "     line, not written down: the hand-written 174000 in EC-4 was concealing that prepaid",
     "     food was taxed but never priced into the line.",
     "",
-    "  2. EVERY EXPECTED NUMBER CAN BE POINTED AT A RULE. Where one cannot be derived with",
-    "     certainty the case says so in its note and says what it is pinning instead — a",
-    "     measured current behaviour that is disputed and awaiting a ruling (EC-15, WE-8) is",
-    "     legitimate; a plausible-looking invention is not.",
+    "  2. EVERY EXPECTED NUMBER CAN BE POINTED AT A RULE, OR AT A DECISION THAT SAYS IT IS ONE.",
+    "     Where a number cannot be derived from a rule with certainty the case says so in its",
+    "     note and says what it is instead. A measured behaviour pinned while a ruling is",
+    "     awaited is legitimate; so is a decision taken deliberately and labelled as one; a",
+    "     plausible-looking invention is not.",
     "",
     "  3. A SANCTIONED DIVERGENCE FROM THE PROTOTYPE STAYS INSIDE ITS WARRANT, and the case",
     "     that pins it says where the warrant comes from. Discount attribution is warranted by",
@@ -43,6 +44,23 @@
     "     spread is exact, and the guest's total must not move. An earlier pass let attribution",
     "     change the total there too — see EC-15's note and EC-17, the case that caught it. A",
     "     fixture is not allowed to bless a divergence its own tax config cannot justify.",
+    "",
+    "THE FOUR RULINGS OF 2026-09-20, and which cases carry them. The engine was pinned against",
+    "four questions nobody had answered (OPEN_QUESTIONS.md §3c). All four are now applied, and",
+    "each case says whether it implements a rule this repository already held or a decision that",
+    "was taken — because a reader six months from now has to be able to tell the difference.",
+    "",
+    "  RULING 1, A CITED RULE, AND THE ENGINE HAD A DEFECT AGAINST IT. A free item goes on the",
+    "  bill at ฿0 and the rest of the bill is untouched. WE-8 moved from 208000 to 213000 and",
+    "  its note carries the four citations; EC-8's unappliedDiscount moved from 5000 to 0.",
+    "",
+    "  RULING 2, A DECISION. A scoped discount may only spend what its own scope has left.",
+    "  EC-15 moved from 0 to 100000 and EC-17 from 0 to 30000 — SOME GUESTS PAY MORE, which is",
+    "  the point of the ruling and not a side effect. Both notes carry the reasoning.",
+    "",
+    "  RULINGS 3 AND 4, DECISIONS. A sale is priced by the BUSINESS date, and a promo code is",
+    "  validated against the same date. TD-1..TD-9 pin the boundaries; no cart case's money",
+    "  moves, because every cart case is handed its rate mode rather than resolving one.",
     "",
     "PACKAGES PREFIXED x- ARE NOT IN THE SEED. They exist only for adult-rule branches the",
     "seeded catalogue cannot reach (same_as_kid, free_adults overflowing to the kid price), and",
@@ -681,12 +699,17 @@
         "subtotal": 218000,
         "promoDiscountTotal": 5000,
         "discountTotal": 5000,
-        "inclusiveTaxTotal": 13607,
+        "inclusiveTaxTotal": 13935,
         "unappliedDiscount": 0,
-        "total": 208000,
-        "breakdown": { "promo-ICECREAM": [] }
+        "total": 213000,
+        "breakdown": { "promo-ICECREAM": [] },
+        "categories": [
+          { "category": "tickets", "base": 213000, "tax": 13935, "gross": 213000 },
+          { "category": "fnb", "base": 0, "tax": 0, "gross": 0 }
+        ],
+        "appliedPromos": [{ "code": "ICECREAM", "amount": 5000 }]
       },
-      "note": "INPUTS: the promo is copied verbatim from store/catalogStore.ts:301-315, value 0 and all — the value is whatever the item costs today, which is why the till resolves it (pages/Till.tsx:576) rather than the catalogue storing it. The harness injects the synthetic line and the resolved code exactly as pages/Till.tsx:574-589 does. Ported without that rewrite, this case reads subtotal 218000 / discount 0 / total 213000: the guest is charged for the free ice cream and end-of-day records no markdown. The earlier fixture hid it by hand-writing value 5000. EXPECTED: 208000 is DISPUTED and pinned as measured. The comment at pages/Till.tsx:569-573 promises the grand total is unchanged at 213000 for the guest, and S2-09a's acceptance criterion says the discount offsets the line; the prototype's engine nevertheless produces 208000, because the promo line contributes no breakdown row and so no tax base while its line total is in the subtotal and its discount is in the discount total. It needs a ruling before a guest is charged either number."
+      "note": "INPUTS: the promo is copied verbatim from store/catalogStore.ts:301-315, value 0 and all — the value is whatever the item costs today, which is why the till resolves it (pages/Till.tsx:576) rather than the catalogue storing it. The harness injects the synthetic line and the resolved code exactly as pages/Till.tsx:574-589 does. Ported without that rewrite, this case reads subtotal 218000 / discount 0 / total 213000: the guest is charged for the free ice cream and end-of-day records no markdown. The earlier fixture hid it by hand-writing value 5000. CHANGED 2026-09-20 — RULING 1, A DEFECT CORRECTED AGAINST A CITED SPECIFICATION, NOT A PREFERENCE. This case used to expect a total of 208000, pinned as measured and marked disputed. 208000 was wrong. Four sources in this repository say the guest pays 213000: POS_BACKEND_LOGIC.md §6.2 ('free_item adds an item at ฿0. Respects tax discountPlacement. At EOD this is revenue foregone (a discount/markdown) — distinct from wallet spend'), POS_RULES_RECONCILIATION.md R-29 ('free_item adds a ฿0 line'), AGENCY_PROPOSAL.md week 20 ('free-item voucher adds the item at THB 0.00 … reported as foregone revenue, never wallet spend') and SPRINT_2_PLAN.md ('adds the synthetic line and offsetting discount'). The prototype says it four more times (pages/Till.tsx:569-573, lib/pricing.ts:192-194, components/till/OrderSummary.tsx:222-225, components/till/CustomerDisplay.tsx:287-288) and states the invariant at lib/sale.ts:122-124 — 'the grand total equals the old subtotal − discount, so existing totals are unchanged' — which its own code then violates. That makes 208000 a defect rather than a design choice. HOW IT AROSE: the synthetic line goes in at shelf price (subtotal 218000) and the discount resolves to 5000, giving 213000 — the right number, and the one the prototype's own arithmetic reaches; the total is then RE-DERIVED from the tax engine, computeLineBreakdown returns [] for a promo line (lib/pricing.ts:192-194) so the cone's 5000 never arrives as a base, and before_tax placement apportions the 5000 across the bases that DO exist — only tickets — dropping them 213000 → 208000. The park gave the cone away twice, once off the shelf and once as ฿50 off the tickets, and booked one ฿50 markdown. THE FIX: the promo line carries a taxable base of its own, in the item's OWN category, so the offsetting discount lands on the item it is for — fnb gross 5000, markdown 5000, net 0, which is what 'reported as foregone revenue' means, while the tickets are untouched at 213000. The seeded code already carries target menuItems ['m-icecream'], so the catalogue was already saying where it belonged."
     },
     {
       "id": "WE-12",
@@ -896,7 +919,7 @@
     },
     {
       "id": "EC-8",
-      "title": "A discount larger than the taxable base — the excess is dropped, and now it is visible",
+      "title": "A comp takes the whole order, the free item included — and since ruling 1 there is no longer an excess to drop",
       "rules": ["R-28", "R-29", "R-34"],
       "mode": "weekday",
       "taxConfig": "seeded",
@@ -918,10 +941,15 @@
         "manualDiscountTotal": 218000,
         "promoDiscountTotal": 0,
         "discountTotal": 218000,
-        "unappliedDiscount": 5000,
-        "total": 0
+        "unappliedDiscount": 0,
+        "total": 0,
+        "categories": [
+          { "category": "tickets", "base": 0, "tax": 0, "gross": 0 },
+          { "category": "fnb", "base": 0, "tax": 0, "gross": 0 }
+        ],
+        "appliedPromos": [{ "code": "ICECREAM", "amount": 0, "exhausted": true }]
       },
-      "note": "The comp runs first and takes the whole subtotal, the free-item code then finds a running balance of 0 and resolves to 0. The promo line's 5000 never reaches the tax engine, so 5000 of the 218000 comp has no base to reduce. The prototype drops it silently; unappliedDiscount reports it without changing any figure."
+      "note": "The comp runs first and takes the whole subtotal; the free-item code then finds nothing left in its own scope — the comp has already spent it — and resolves to 0, which it now SAYS through exhaustedReason rather than looking like a code nobody scanned. CHANGED 2026-09-20 by ruling 1: this case used to expect unappliedDiscount 5000, because the promo line's 5000 was in the subtotal and so in the comp, while its base never reached the tax engine — 5000 of discount with nothing to reduce. The promo line now carries its own fnb base, so the whole 218000 lands and nothing is unapplied. No money moves for the guest: the total was 0 and is 0. What moved is the books, which no longer report 5000 of discount the cascade could not place. TX-ATTR-5 is where unappliedDiscount is still exercised, from a caller that hands computeTaxBreakdown an allocation naming a category the cart has no base in."
     },
     {
       "id": "EC-9",
@@ -1008,7 +1036,7 @@
     },
     {
       "id": "EC-15",
-      "title": "PINNED, DISPUTED — a scoped promo re-discounts a component a manual discount already zeroed",
+      "title": "A scoped promo may not re-discount a component a manual discount already zeroed — so it takes nothing, and says so",
       "rules": ["R-28", "R-29", "R-31", "R-34"],
       "mode": "weekday",
       "taxConfig": "seeded",
@@ -1045,16 +1073,18 @@
       "expect": {
         "subtotal": 278000,
         "manualDiscountTotal": 178000,
-        "promoDiscountTotal": 100000,
-        "discountTotal": 278000,
+        "promoDiscountTotal": 0,
+        "discountTotal": 178000,
+        "inclusiveTaxTotal": 6542,
         "unappliedDiscount": 0,
-        "total": 0,
+        "total": 100000,
         "categories": [
           { "category": "tickets", "base": 0, "tax": 0, "gross": 0 },
-          { "category": "addons", "base": 0, "tax": 0, "gross": 0 }
-        ]
+          { "category": "addons", "base": 100000, "tax": 6542, "gross": 100000 }
+        ],
+        "appliedPromos": [{ "code": "TICKETS100", "amount": 0, "exhausted": true }]
       },
-      "note": "THIS CASE IS PINNED AS-IS AND THE RULE IT PINS IS DISPUTED. What is disputed is the DOUBLE COUNT, not the total: the two kid tickets are comped by the manual discount, and the ticket-scoped promo then discounts them AGAIN, because its base is taken from the UNDISCOUNTED breakdown (cart-totals.ts clamps with Math.min(discountTargetBase(...), running), where the base ignores what the manual discount already took and `running` is an order-level number). The cart therefore reports 278000 of discount against a 278000 subtotal and the guest walks out with 1000 baht of lockers for nothing. That is a FAITHFUL PORT — the prototype behaves identically — so per CLAUDE.md the clamp is not ours to change without a ruling, and the ruling is what this case is waiting for. CHANGED 2026-09-20, and changed BACK: an earlier pass expected unappliedDiscount 100000 and a total of 100000, because discount attribution read the undiscounted breakdown and so refused to spend the ticket-scoped promo anywhere, leaving the guest to pay for the lockers. That was a second divergence stacked on top of the first: the prototype's own warning (lib/tax.ts:99-106) licenses attribution only where categories carry DIFFERENT rules, and here every category is one inclusive 7% rule, so the prototype's spread is exact and its total of 0 stands. Attribution now allocates against the bases that REMAIN, and the surplus a scope can no longer absorb goes back to being order-wide — so the double count still double-counts, visibly, in manualDiscountTotal + promoDiscountTotal against subtotal, but it no longer moves what the guest pays."
+      "note": "THE BILL MOVED, AND UPWARD: this cart used to total 0 and now totals 100000 — the guest pays for the 10 lockers. CHANGED 2026-09-20 by RULING 2, WHICH IS A DECISION OF OURS AND NOT A RULE FOUND IN THIS REPOSITORY. Nothing here said whether one discount may spend twice on the same items. What the engine did: the two kid tickets are comped by the manual discount, and the ticket-scoped promo then discounted them AGAIN, because its base was taken from the UNDISCOUNTED breakdown and clamped only by the ORDER-level running balance — so the cart reported 278000 of discount against a 278000 subtotal and ฿1,000 of lockers walked out free. That was a faithful port; the prototype does the same. THE DECISION: a scoped discount's amount is bounded by what its OWN SCOPE has left. Here the kids component has nothing left, so TICKETS100 resolves to 0 and carries exhaustedReason so the till can tell the guest why. THE REASONING, in three parts. (1) There is no manager approval on discounts anywhere in this system, by design (R-08; POS_BACKEND_LOGIC §16/§20 remove the approval gates), so the arithmetic is the only thing between a scoped code and the stockroom. (2) Staff benefits (benefits.ts:107-131) and manual discounts themselves already track what a line has left, so this follows the park's own pattern rather than inventing one. (3) Without it the same two discounts applied in the opposite order produce different bills, which reception cannot explain to a guest. NOT TO BE CONFUSED WITH THE ATTRIBUTION CHANGE: an earlier pass in the other direction — making ATTRIBUTION read the undiscounted breakdown — also produced a total of 100000 here, and was reverted because it overcharged the guest on 2528 of 2528 divergences in a 20000-cart differential run (see EC-17). That was the wrong line. Attribution is unchanged and still allocates against the bases that REMAIN; what changed is the AMOUNT the promo may take, which is now 0 rather than 100000, and the discount the cart reports is now the discount it actually gave."
     },
     {
       "id": "EC-16",
@@ -1069,7 +1099,7 @@
     },
     {
       "id": "EC-17",
-      "title": "TWO OVERLAPPING SCOPED DISCOUNTS — the second is attributed against what the first LEFT, so the total is still the prototype's",
+      "title": "TWO OVERLAPPING SCOPED DISCOUNTS — the second both SPENDS and is ATTRIBUTED against what the first left, and the two are different lines",
       "rules": ["R-29", "R-31", "R-34"],
       "mode": "weekday",
       "taxConfig": "seeded",
@@ -1105,17 +1135,21 @@
       "expect": {
         "lineTotals": { "l1": 297000 },
         "subtotal": 297000,
-        "promoDiscountTotal": 297000,
-        "discountTotal": 297000,
-        "inclusiveTaxTotal": 0,
+        "promoDiscountTotal": 267000,
+        "discountTotal": 267000,
+        "inclusiveTaxTotal": 1963,
         "unappliedDiscount": 0,
-        "total": 0,
+        "total": 30000,
         "categories": [
           { "category": "tickets", "base": 0, "tax": 0, "gross": 0 },
-          { "category": "addons", "base": 0, "tax": 0, "gross": 0 }
+          { "category": "addons", "base": 30000, "tax": 1963, "gross": 30000 }
+        ],
+        "appliedPromos": [
+          { "code": "KIDS23", "amount": 61410 },
+          { "code": "TICKETSFREE", "amount": 205590 }
         ]
       },
-      "note": "THE CASE THAT CAUGHT A MONEY REGRESSION, kept as the guard against it returning. Both codes are scoped to tickets: KIDS23 takes 23% of the 267000 ticket base (61410), TICKETSFREE then takes 100% of what the order has left (235590), for 297000 against a 297000 subtotal — the prototype's arithmetic, which spreads that across both categories and hands the guest a bill of 0. Attribute each discount against the UNDISCOUNTED breakdown instead and both codes claim the same 267000 of tickets, computeTaxBreakdown clamps the second and reports 30000 as unapplied, and the guest is charged 300 baht for socks and lockers the prototype gives away. A differential run of 20000 generated carts per shape found that class of divergence on 2.96% of two-scoped-code carts and 9.69% of mixed carts, and 2528 of 2528 divergences overcharged the guest — not one favoured them. Allocating against what REMAINS, and returning the unabsorbable surplus to order-wide, restores the prototype's figure. Read with TX-ATTR-1..5, which still show attribution doing its job where category rules genuinely differ."
+      "note": "THE BILL MOVED, AND UPWARD: 0 to 30000, the socks and lockers. THE CASE THAT CAUGHT A MONEY REGRESSION, kept as the guard against it returning — and it now pins BOTH lines, which is why the distinction has to be read carefully. Both codes are scoped to tickets over a 267000 ticket base and 30000 of add-ons. THE AMOUNT LINE, changed 2026-09-20 by RULING 2 (a decision of ours, not a found rule): KIDS23 takes 23% of the 267000 tickets (61410) and TICKETSFREE then takes 100% of what is left OF THE TICKETS (205590), for 267000. It used to take 100% of what the ORDER had left (235590), for 297000 — a discount 30000 larger than the tickets it was aimed at, which the prototype spreads across the add-ons so the guest walks out with socks and lockers for nothing. The cart now reports the discount it actually gave. THE ATTRIBUTION LINE, unchanged, and the one that must not be touched: each amount is allocated against the bases that REMAIN after the earlier discounts. Read it off the UNDISCOUNTED breakdown instead and both codes claim the same 267000 of tickets, computeTaxBreakdown clamps the second and reports the surplus as unapplied — a differential run of 20000 generated carts per shape found that class of divergence on 2.96% of two-scoped-code carts and 9.69% of mixed carts, and 2528 of 2528 divergences overcharged the guest, not one favoured them. The two changes produce similar-looking totals here and are nothing alike: ruling 2 reduces what a code may TAKE and leaves every satang of it placed (unappliedDiscount 0), while the reverted attribution change left the amount at 297000 and lost 30000 of it in the cascade. Read with TX-ATTR-1..5, which show attribution doing its job where category rules genuinely differ."
     },
     {
       "id": "WE-13",
@@ -1917,6 +1951,169 @@
       "dayStart": "05:00",
       "expect": { "branchDate": "2026-11-01", "businessDate": "2026-10-31" },
       "note": "With the default day start both sides of the repeated hour land on the same business date. This pair is why the DST question is recorded rather than blocking: no configuration the park uses reaches it."
+    }
+  ],
+
+  "tradingDayCases": [
+    {
+      "id": "TD-1",
+      "title": "Friday 23:00 — an hour before midnight, and every date agrees",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-25T16:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "promo": { "validUntil": "2026-09-25" },
+      "expect": {
+        "branchDate": "2026-09-25",
+        "businessDate": "2026-09-25",
+        "utcDate": "2026-09-25",
+        "mode": "weekday",
+        "reason": "Weekday pricing",
+        "promoAccepted": true
+      },
+      "note": "The control. Inside trading hours nothing is in dispute: calendar day, business day and UTC day are the same Friday, the cart prices at weekday rates and a code expiring today works."
+    },
+    {
+      "id": "TD-2",
+      "title": "Saturday 00:30 — still FRIDAY's trading day, so still Friday's prices and Friday's codes",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-25T17:30:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "promo": { "validUntil": "2026-09-25" },
+      "expect": {
+        "branchDate": "2026-09-26",
+        "businessDate": "2026-09-25",
+        "utcDate": "2026-09-25",
+        "mode": "weekday",
+        "reason": "Weekday pricing",
+        "promoAccepted": true
+      },
+      "note": "RULINGS 3 AND 4, BOTH DECISIONS OF OURS. The calendar has rolled into Saturday but the trading day has not: this cart belongs to Friday's ledger, so it takes Friday's WEEKDAY prices and Friday's codes still work. Until 2026-09-20 rateModeToday read branchToday and charged this cart the WEEKEND price — Saturday's rate on Friday's receipt. 'Until Friday' means Friday works all day, and the park's Friday ends at 05:00 on Saturday."
+    },
+    {
+      "id": "TD-3",
+      "title": "Saturday 04:59 — the last minute of Friday's trading day",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-25T21:59:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "promo": { "validUntil": "2026-09-25" },
+      "expect": {
+        "branchDate": "2026-09-26",
+        "businessDate": "2026-09-25",
+        "utcDate": "2026-09-25",
+        "mode": "weekday",
+        "reason": "Weekday pricing",
+        "promoAccepted": true
+      }
+    },
+    {
+      "id": "TD-4",
+      "title": "Saturday 05:00 — the trading day turns over, and pricing and promo validity turn over with it",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-25T22:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "promo": { "validUntil": "2026-09-25" },
+      "expect": {
+        "branchDate": "2026-09-26",
+        "businessDate": "2026-09-26",
+        "utcDate": "2026-09-25",
+        "mode": "weekend",
+        "reason": "Weekend pricing",
+        "promoAccepted": false
+      },
+      "note": "One minute after TD-3 and everything with a date on it moves together: weekday to weekend pricing, and Friday's code expires. THE UTC DATE DOES NOT MOVE WITH THEM — it still reads 2026-09-25, so the prototype's rule would honour a Friday code an hour into Saturday's trading day. That two-hour window, 05:00 to 06:59 local, is where UTC is a day behind the business date."
+    },
+    {
+      "id": "TD-5",
+      "title": "Sunday 23:00 — a weekend evening, priced as one",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-27T16:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "promo": { "validUntil": "2026-09-27" },
+      "expect": {
+        "branchDate": "2026-09-27",
+        "businessDate": "2026-09-27",
+        "utcDate": "2026-09-27",
+        "mode": "weekend",
+        "reason": "Weekend pricing",
+        "promoAccepted": true
+      }
+    },
+    {
+      "id": "TD-6",
+      "title": "Monday 00:30 — still SUNDAY's trading day, so still WEEKEND prices",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-27T17:30:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "promo": { "validUntil": "2026-09-27" },
+      "expect": {
+        "branchDate": "2026-09-28",
+        "businessDate": "2026-09-27",
+        "utcDate": "2026-09-27",
+        "mode": "weekend",
+        "reason": "Weekend pricing",
+        "promoAccepted": true
+      },
+      "note": "The other side of the weekday/weekend change, and the one that costs the park rather than the guest: the calendar says Monday, the trading day says Sunday, and the engine charges the WEEKEND rate. Before ruling 3 this cart took the Monday weekday rate — a 2 Hours Play thai kid at 52000 instead of 62000 — while its takings landed on Sunday's ledger."
+    },
+    {
+      "id": "TD-7",
+      "title": "Monday 05:00 — the weekend is over for pricing as well as for the ledger",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-27T22:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "promo": { "validUntil": "2026-09-27" },
+      "expect": {
+        "branchDate": "2026-09-28",
+        "businessDate": "2026-09-28",
+        "utcDate": "2026-09-27",
+        "mode": "weekday",
+        "reason": "Weekday pricing",
+        "promoAccepted": false
+      }
+    },
+    {
+      "id": "TD-8",
+      "title": "Friday 06:00 — the UTC date says Thursday, and a code valid FROM Friday would be refused on Friday",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-24T23:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "promo": { "validFrom": "2026-09-25" },
+      "expect": {
+        "branchDate": "2026-09-25",
+        "businessDate": "2026-09-25",
+        "utcDate": "2026-09-24",
+        "mode": "weekday",
+        "reason": "Weekday pricing",
+        "promoAccepted": true,
+        "promoAcceptedUnderUtc": false
+      },
+      "note": "THE BUG RULING 4 FIXES, IN THE DIRECTION THAT REFUSES A VALID CODE. The prototype compares validity against new Date().toISOString().slice(0,10) (pages/Till.tsx:560) while pricing the same cart from LOCAL midnight (lib/pricingMode.ts:19-24) — one engine, two day boundaries, seven hours apart in Bangkok. Measured: between 05:00 and 06:59 local the UTC date is a day behind the business date, so a code whose window opens on Friday is refused to anyone standing at the till at 06:00 on Friday. TD-4 is the same fault in the other direction, honouring a code an hour after its day ended. The park trades 10:00-20:00, so no guest sale falls in either window today — which is why this is recorded as a correction taken rather than an incident."
+    },
+    {
+      "id": "TD-9",
+      "title": "A branch with no late night — a 00:00 day start puts the calendar day and the trading day back together",
+      "rules": ["R-10", "R-29"],
+      "instant": "2026-09-25T17:30:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "00:00",
+      "promo": { "validUntil": "2026-09-25" },
+      "expect": {
+        "branchDate": "2026-09-26",
+        "businessDate": "2026-09-26",
+        "utcDate": "2026-09-25",
+        "mode": "weekend",
+        "reason": "Weekend pricing",
+        "promoAccepted": false
+      },
+      "note": "The same instant as TD-2 under a branch that closes at midnight. business_day_start is per branch, so the ruling is 'the business date decides' and not '05:00 decides': set the start to midnight and the answers are the calendar day's again. Kept so a second branch in another country inherits the rule rather than the hour."
     }
   ]
 }

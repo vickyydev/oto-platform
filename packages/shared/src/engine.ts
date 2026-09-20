@@ -96,9 +96,56 @@
  *
  * Format is `YYYY.MM.DD-n`, n counting same-day bumps.
  */
-export const PRICING_ENGINE_VERSION = '2026.09.20-4';
+export const PRICING_ENGINE_VERSION = '2026.09.20-5';
 
 /*
+ * -5 (2026-09-20). THE FOUR RULINGS on the questions the engine was pinned
+ * against (OPEN_QUESTIONS.md §3c). Three of them move money. Each says whether
+ * it implements a rule this repository already held or a decision we took.
+ *
+ *   - RULING 1 — A FREE ITEM GOES ON AT ฿0 AND THE REST OF THE BILL IS
+ *     UNTOUCHED. A CITED RULE, and the engine had a DEFECT against it. A
+ *     free-item promo line now carries a taxable base of its own — the item's
+ *     price, in the item's own category (`fnb` for a menu item, `merch` for
+ *     merchandise) — so the offsetting discount lands on the thing that was
+ *     given away instead of being apportioned onto whatever other bases exist.
+ *     WE-8's guest pays 213000 rather than 208000: the ฿50 cone was coming off
+ *     the TICKETS base as well as off the shelf, so the park gave it away twice
+ *     and booked one markdown. Cited to POS_BACKEND_LOGIC §6.2, R-29,
+ *     AGENCY_PROPOSAL week 20, SPRINT_2_PLAN, and to the prototype's own
+ *     invariant at `lib/sale.ts:122-124`, which its code violated.
+ *     (cart-totals.ts `cartUnits`, `promoItemTaxCategory`.)
+ *
+ *   - RULING 2 — A SCOPED DISCOUNT MAY ONLY SPEND WHAT ITS OWN SCOPE HAS LEFT.
+ *     A DECISION, not a found rule; the reasoning is recorded in
+ *     `computeTicketCartTotals`. A scoped promo's base now comes from a ledger
+ *     of what each unit of the cart has left rather than from the undiscounted
+ *     breakdown clamped by the order balance. SOME GUESTS PAY MORE: EC-15 moves
+ *     from 0 to 100000 (a comped line no longer lets a ticket-scoped code carry
+ *     ฿1,000 of lockers out free) and EC-17 from 0 to 30000. A code that finds
+ *     its scope already spent now says so on `AppliedPromo.exhaustedReason`,
+ *     in the promo vocabulary's own wording.
+ *     THIS IS THE AMOUNT LINE, NOT THE ATTRIBUTION LINE — the attribution
+ *     change of -3 is untouched, and both are documented side by side in
+ *     cart-totals.ts so the next reader does not mistake one for the other.
+ *
+ *   - RULING 3 — A SALE IS PRICED BY THE BUSINESS DATE. A DECISION.
+ *     `rateModeToday` resolves the rate mode from `businessDate` rather than
+ *     `branchToday`, and takes the branch's `business_day_start`. A cart rung
+ *     up at 00:30 on Saturday while Friday's session is still open is charged
+ *     Friday's prices. No guest sale falls in the window where the two rules
+ *     disagree — the park trades 10:00–20:00 and the day starts at 05:00.
+ *
+ *   - RULING 4 — A PROMO CODE IS VALIDATED AGAINST THE BUSINESS DATE. A
+ *     DECISION, and it also corrects a plain bug: the prototype compares
+ *     against the UTC date (`pages/Till.tsx:560`) while pricing the same cart
+ *     from local midnight — one engine, two day boundaries, seven hours apart.
+ *     Measured, the UTC date is a day behind the business date between 05:00
+ *     and 06:59 local, so a code valid FROM Friday was refused at 06:00 on
+ *     Friday and a code valid UNTIL Friday was still accepted at 06:00 on
+ *     Saturday. `promoValidityDate` is the one right answer to pass.
+ *     No fixture's money moves; TD-* pin the boundaries.
+ *
  * -4 (2026-09-20). One change of behaviour, and it is a refusal rather than a
  * new number:
  *   - `computeManualDiscount` throws when two manual discounts share an id

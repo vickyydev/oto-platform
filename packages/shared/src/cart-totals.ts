@@ -1,11 +1,6 @@
 import type { Satang } from './money';
 import type { TaxConfigShape, TaxableCategory } from './catalog-shapes';
-import type {
-  DiscountComponentTarget,
-  LineBreakdownItem,
-  PricingContext,
-  TicketCartLine,
-} from './pricing';
+import type { LineBreakdownItem, PricingContext, TicketCartLine } from './pricing';
 import {
   breakdownComponentKey,
   componentKey,
@@ -15,8 +10,9 @@ import {
   SERVICE_FEE_ROW_KEY,
 } from './pricing';
 import type { DiscountTarget, ManualDiscount } from './discount';
-import { computeManualDiscount, discountTargetBase, rowMatchesTarget } from './discount';
+import { computeManualDiscount, rowMatchesTarget } from './discount';
 import type { PromoDiscount } from './promo';
+import { freeItemLineId, promoNotApplicableReason } from './promo';
 import type { DiscountAllocation, TaxBreakdown, TaxCategoryInput } from './tax';
 import { computeTaxBreakdown, groupTaxInputs } from './tax';
 import type { RoundingPolicy } from './rounding';
@@ -54,42 +50,130 @@ function foodTaxCategory(line: TicketCartLine): TaxableCategory | null {
 }
 
 /**
- * Map a cart's line components to taxable-category bases. Reuses
- * `computeLineBreakdown` so the bases always sum to the line totals, and routes
- * prepaid food explicitly because it is in the line total without being a
- * breakdown row.
+ * The taxable category a free-item promo's item belongs to: ITS OWN — a menu
+ * item is `fnb`, a merch item is `merch`.
  *
- * A free-item promo line returns no breakdown rows, so its base never reaches
- * the engine while its line total IS in the subtotal and its matching discount
- * IS in the discount total. Under before_tax placement the engine then
- * subtracts a discount with no matching base and the grand total falls by the
- * item's price — the prototype's behaviour, reproduced here, and NOT what the
- * comment at `pages/Till.tsx:569-573` promises ("grandTotal unchanged").
+ * RULING 1, 2026-09-20, AND IT IS A DOCUMENTED RULE RATHER THAN A CHOICE. Four
+ * sources in this repository say a free item goes on the bill at ฿0 and leaves
+ * the rest of the bill alone:
+ *   - `docs/briefs/POS_BACKEND_LOGIC.md` §6.2 — "free_item adds an item at ฿0.
+ *     Respects tax discountPlacement. At EOD this is revenue foregone (a
+ *     discount/markdown) — distinct from wallet spend."
+ *   - `docs/architecture/POS_RULES_RECONCILIATION.md` R-29 — "free_item adds a
+ *     ฿0 line".
+ *   - `docs/briefs/AGENCY_PROPOSAL.md`, week 20 — "free-item voucher adds the
+ *     item at THB 0.00 … reported as foregone revenue, never wallet spend".
+ *   - `docs/progress/SPRINT_2_PLAN.md` — the code "adds the synthetic line and
+ *     offsetting discount".
+ * The prototype says it four more times (`pages/Till.tsx:569-573`,
+ * `lib/pricing.ts:192-194`, `components/till/OrderSummary.tsx:222-225`,
+ * `components/till/CustomerDisplay.tsx:287-288`) and states the invariant at
+ * `lib/sale.ts:122-124`: "the grand total equals the old subtotal − discount,
+ * so existing totals are unchanged".
  *
- * WHERE THE GAP SHOWS, precisely: the free-item discount is order-wide, and an
- * order-wide allocation is apportioned across the bases that remain, so on an
- * ordinary cart it comes off ANOTHER category's base and `unappliedDiscount`
- * stays 0 — WE-8 pins exactly that (tickets 213000 → 208000, unapplied 0). It
- * surfaces as `unappliedDiscount` only when nothing is left to absorb it, which
- * is EC-8. Either way the guest pays the item's price less than the comment
- * promises. Recorded as an open question for S2-09a; do not "fix" it here
- * without a ruling, because the fix changes what a guest pays.
+ * Putting the item's price in its own category is what makes "revenue foregone"
+ * true on the books: the cone books as F&B gross ฿50, markdown ฿50, net 0 — the
+ * cone was handed over and its stock was drawn, and the markdown sits against
+ * the thing that was given away. Attributing it anywhere else says the park gave
+ * ฿50 off the tickets instead, which is not what happened.
+ */
+function promoItemTaxCategory(item: NonNullable<TicketCartLine['promoItem']>): TaxableCategory {
+  return item.itemKind === 'merch' ? 'merch' : 'fnb';
+}
+
+/**
+ * ONE DISCOUNTABLE PIECE OF A CART: a rendered breakdown row, a free-item
+ * promo's item, or a line's prepaid food. Three shapes because three kinds of
+ * money are in the bill, and only the first is a breakdown row.
  *
- * Port of prototype `tillTaxInputs` (lib/sale.ts:27).
+ * Every satang of the subtotal is in exactly one unit, and that is the property
+ * the rest of this file leans on: the units grouped by category ARE the tax
+ * bases, and the units matched by a scope ARE what that scope may discount.
+ */
+interface CartUnit {
+  lineId: string;
+  packageId: string;
+  /** The rendered breakdown row this unit is, or null for the other two kinds. */
+  row: LineBreakdownItem | null;
+  /** Set on the unit that IS a free-item promo line's item. */
+  promoItem: NonNullable<TicketCartLine['promoItem']> | null;
+  category: TaxableCategory;
+  /** Undiscounted. What the unit was worth before any discount ran. */
+  base: Satang;
+}
+
+/**
+ * Split a cart into its discountable units, in cart order.
+ *
+ * Reuses `computeLineBreakdown` so the row units always sum to the line totals,
+ * and routes the other two kinds explicitly because neither is a breakdown row:
+ *
+ *   - PREPAID FOOD is in the line total without being a row (prototype
+ *     `lib/sale.ts:52-60`), and carries its own category.
+ *   - A FREE-ITEM PROMO'S ITEM is likewise in the line total without being a
+ *     row — `computeLineBreakdown` returns [] for a promo line, deliberately,
+ *     because the receipt shows the item and not a ticket breakdown of it.
+ *     Until 2026-09-20 that meant its base never reached the tax engine at all,
+ *     which is the defect ruling 1 corrects; see `promoItemTaxCategory`.
+ *
+ * Port of prototype `tillTaxInputs` (lib/sale.ts:27), extended by that ruling.
+ */
+function cartUnits(lines: readonly TicketCartLine[], ctx: PricingContext): CartUnit[] {
+  const units: CartUnit[] = [];
+  for (const line of lines) {
+    for (const row of computeLineBreakdown(line, ctx)) {
+      units.push({
+        lineId: line.id,
+        packageId: line.packageId,
+        row,
+        promoItem: null,
+        category: rowTaxCategory(line, row),
+        base: row.subtotal,
+      });
+    }
+    if (line.promoItem) {
+      units.push({
+        lineId: line.id,
+        packageId: line.packageId,
+        row: null,
+        promoItem: line.promoItem,
+        category: promoItemTaxCategory(line.promoItem),
+        // `priceCartLine` says a promo line's total IS its item's shelf price,
+        // so reading the item rather than the line keeps the two reconciled and
+        // makes a caller that set them apart fail the per-line invariant loudly.
+        base: line.promoItem.price,
+      });
+    }
+    const foodCategory = foodTaxCategory(line);
+    if (foodCategory) {
+      units.push({
+        lineId: line.id,
+        packageId: line.packageId,
+        row: null,
+        promoItem: null,
+        category: foodCategory,
+        base: line.foodProvision?.paid ?? 0,
+      });
+    }
+  }
+  return units;
+}
+
+/**
+ * Map a cart's money to taxable-category bases — one row per category.
+ *
+ * Every satang of every line total is here, the free-item promo line's included
+ * (ruling 1). The invariant that follows, and that the suite asserts per line:
+ * a line's total equals the sum of its own tax bases, exactly, with no
+ * exceptions — the prototype states it at `lib/sale.ts:50-51`.
  */
 export function ticketCartTaxInputs(
   lines: readonly TicketCartLine[],
   ctx: PricingContext,
 ): TaxCategoryInput[] {
-  const inputs: TaxCategoryInput[] = [];
-  for (const line of lines) {
-    for (const row of computeLineBreakdown(line, ctx)) {
-      inputs.push({ category: rowTaxCategory(line, row), base: row.subtotal });
-    }
-    const foodCategory = foodTaxCategory(line);
-    if (foodCategory) inputs.push({ category: foodCategory, base: line.foodProvision?.paid ?? 0 });
-  }
-  return groupTaxInputs(inputs);
+  return groupTaxInputs(
+    cartUnits(lines, ctx).map((unit) => ({ category: unit.category, base: unit.base })),
+  );
 }
 
 // --- Discount attribution ---------------------------------------------------
@@ -98,19 +182,29 @@ export function ticketCartTaxInputs(
  * ATTRIBUTION IS SEQUENTIAL, AND THE ORDER MATTERS AS MUCH AS IT DOES FOR THE
  * AMOUNTS THEMSELVES.
  *
- * Each of the `categoryBasesFor*` helpers below reads the UNDISCOUNTED
- * breakdown — it answers "what did this discount's scope cover", which is a
- * question about the cart, not about the discounts that ran before it. What a
- * discount can actually be attributed to is that scope intersected with WHAT IS
- * LEFT of each category, and that is what `allocateAgainstRemaining` computes,
- * threading one `remaining` map through every discount in order.
+ * TWO DIFFERENT QUESTIONS ARE ANSWERED IN THIS FILE AND THEY MUST NOT BE
+ * CONFUSED, because getting one of them wrong looks exactly like getting the
+ * other one wrong and costs the guest either way:
+ *
+ *   THE AMOUNT LINE — how much may this discount take? Bounded by what its own
+ *   scope has LEFT (ruling 2, the `ledger` in `computeTicketCartTotals`).
+ *   THE ATTRIBUTION LINE — which taxable category books what it took? Decided
+ *   against what each CATEGORY has left (the `remaining` map, below).
+ *
+ * `categoryBasesOf` reads the UNDISCOUNTED bases of the units a scope covered —
+ * it answers "what did this discount's scope cover", which is a question about
+ * the cart, not about the discounts that ran before it. What a discount can
+ * actually be attributed to is that scope intersected with WHAT IS LEFT of each
+ * category, and that is what `allocateAgainstRemaining` computes, threading one
+ * `remaining` map through every discount in order.
  *
  * WHY, WITH THE BILL IT COST. Attribute every discount against the undiscounted
  * breakdown instead and two discounts whose scopes overlap in one category both
  * claim the same base. `computeTaxBreakdown` clamps the second one to what is
  * left and drops the surplus into `unappliedDiscount` — so the money simply
  * disappears from the guest's side of the bill. Measured on the seeded config
- * (7 % inclusive on every category, the only state reachable today):
+ * (7 % inclusive on every category, the only state reachable today), BEFORE
+ * ruling 2 bounded the amounts:
  *
  *   3 kids @ 89000 = 267000 tickets, 2 socks + 2 lockers = 30000 addons;
  *   KIDS23 (tickets, 23 %) then TICKETSFREE (tickets, 100 %) → 61410 + 235590
@@ -118,7 +212,13 @@ export function ticketCartTaxInputs(
  *     prototype total 0 — the guest walks out having paid nothing
  *     undiscounted-base attribution 30000, with 30000 "unapplied"
  *
- * That is ฿300 charged for socks and lockers the prototype gives away. It is
+ * Under ruling 2 that cart's two codes now come to 267000 rather than 297000
+ * and the guest pays the 30000 of socks and lockers — by the AMOUNT line, with
+ * every satang of discount placed and nothing unapplied. The attribution rule
+ * below is unchanged and still load-bearing: reverting it would once again
+ * report a discount the cascade never placed. EC-17 pins both halves.
+ *
+ * That ฿300 was charged for socks and lockers the prototype gives away. It is
  * not a corner: a differential run of 20,000 generated carts per shape against
  * the prototype's arithmetic found the same class of divergence on 2.96 % of
  * two-scoped-code carts (worst +฿798) and 9.69 % of mixed carts (worst +฿4,660)
@@ -143,86 +243,107 @@ export function ticketCartTaxInputs(
 
 /**
  * Split one discount amount across the taxable categories its scope actually
- * covered, in proportion to how much of each it covered.
+ * covered, in proportion to how much of each it covered — from the UNDISCOUNTED
+ * bases of the units the scope matched.
  *
  * A scope is not a category: `addOns` covers the socks row and every add-on
  * row, and an add-on carrying a `taxCategoryOverride` puts its money somewhere
  * else entirely (the seeded refillable cup is `fnb`). So the split is taken
- * from the rows the scope matched, not from the scope's name. An empty result
+ * from the units the scope matched, not from the scope's name. An empty result
  * means the scope matched nothing, and the caller treats the discount as
  * order-wide rather than inventing a category for it.
- *
- * `everything` returns empty ON PURPOSE and the early return is load-bearing:
- * `rowMatchesTarget` says (correctly) that every row is inside that scope, but
- * an order-wide code is not attributed per category — it is apportioned across
- * what remains, at the end, which is the prototype's arithmetic for a discount
- * that targeted nothing. Fixture EC-5 pins it.
  */
-function categoryBasesForTarget(
-  lines: readonly TicketCartLine[],
-  target: DiscountTarget,
-  ctx: PricingContext,
-): Map<TaxableCategory, Satang> {
+function categoryBasesOf(units: readonly CartUnit[]): Map<TaxableCategory, Satang> {
   const bases = new Map<TaxableCategory, Satang>();
-  if (target.kind === 'everything') return bases;
-  for (const line of lines) {
-    for (const row of computeLineBreakdown(line, ctx)) {
-      if (!rowMatchesTarget(row, line.packageId, target, ctx.socks.addOnId)) continue;
-      const category = rowTaxCategory(line, row);
-      bases.set(category, (bases.get(category) ?? 0) + row.subtotal);
-    }
+  for (const unit of units) {
+    bases.set(unit.category, (bases.get(unit.category) ?? 0) + unit.base);
   }
   return bases;
 }
 
 /**
- * The categories one COMPONENT of a line falls into. Matched by the same
- * component key `lineComponentBases` uses, so the attribution lands on exactly
- * the rows the discount was resolved against — not on anything that merely
- * shares a scope name.
+ * Whether one unit is inside a promo's scope.
+ *
+ * A breakdown row answers through `rowMatchesTarget`, unchanged. The two units
+ * that are not rows answer here, and both answers are new with ruling 1:
+ *
+ *   - A FREE-ITEM PROMO'S ITEM is an item, so it answers to item scopes: the
+ *     seeded ice-cream code already carries `menuItems: ['m-icecream']`, which
+ *     is the catalogue saying where its discount belongs. `fnb` and `merch`
+ *     match the kind. `fnbCategory` cannot be answered here — a promo line
+ *     carries the item's id and kind but not its menu category — so it returns
+ *     false rather than guessing, and a caller wanting that scope has to put
+ *     the category on the line.
+ *   - PREPAID FOOD answers only to `everything`. It is money in the bill that
+ *     no item- or ticket-scoped code was aimed at.
+ *
+ * `everything` is true for every unit, as `rowMatchesTarget` is for every row.
+ * Its only caller short-circuits that scope before getting here — an order-wide
+ * code resolves against the whole order and is attributed order-wide — so the
+ * answer is unreachable today; it is written as true because "the order-wide
+ * scope covers nothing" is the one answer that is wrong in plain English and
+ * the easiest for a later caller to mistake for a real empty result.
  */
-function categoryBasesForComponent(
-  line: TicketCartLine,
-  target: DiscountComponentTarget,
-  ctx: PricingContext,
-): Map<TaxableCategory, Satang> {
-  const wanted = componentKey(target);
-  const bases = new Map<TaxableCategory, Satang>();
-  for (const row of computeLineBreakdown(line, ctx)) {
-    if (breakdownComponentKey(row) !== wanted) continue;
-    const category = rowTaxCategory(line, row);
-    bases.set(category, (bases.get(category) ?? 0) + row.subtotal);
+function unitMatchesTarget(unit: CartUnit, target: DiscountTarget, socksAddOnId: string): boolean {
+  if (unit.row) return rowMatchesTarget(unit.row, unit.packageId, target, socksAddOnId);
+  if (unit.promoItem) {
+    const item = unit.promoItem;
+    switch (target.kind) {
+      case 'everything':
+        return true;
+      case 'menuItems':
+        return item.itemKind === 'menu' && target.menuItemIds.includes(item.itemId);
+      case 'fnb':
+        return item.itemKind === 'menu';
+      case 'merch':
+        return item.itemKind === 'merch';
+      default:
+        return false;
+    }
   }
-  return bases;
+  return target.kind === 'everything'; // prepaid food
 }
 
-/** The categories one whole cart line's money falls into, and how much of each. */
-function categoryBasesForLine(
-  line: TicketCartLine,
-  ctx: PricingContext,
-): Map<TaxableCategory, Satang> {
-  const bases = new Map<TaxableCategory, Satang>();
-  for (const row of computeLineBreakdown(line, ctx)) {
-    const category = rowTaxCategory(line, row);
-    bases.set(category, (bases.get(category) ?? 0) + row.subtotal);
-  }
-  const foodCategory = foodTaxCategory(line);
-  if (foodCategory) {
-    bases.set(foodCategory, (bases.get(foodCategory) ?? 0) + (line.foodProvision?.paid ?? 0));
-  }
-  return bases;
+/**
+ * WHAT EACH UNIT HAS LEFT TO BE DISCOUNTED — the AMOUNT ledger.
+ *
+ * THIS IS NOT THE ATTRIBUTION LEDGER, and the two must not be confused. The
+ * `remaining` map in `computeTicketCartTotals` answers "which taxable category
+ * absorbs this discount"; this one answers "how much may this discount take at
+ * all". A change to the attribution line was made on 2026-09-20 and reverted
+ * the same day because it overcharged the guest on 2,528 of 2,528 divergences
+ * in a 20,000-cart differential run (see the attribution note above, and
+ * EC-17). This ledger is the other line.
+ */
+interface LedgerEntry {
+  unit: CartUnit;
+  remaining: Satang;
 }
 
-/** What is left of each taxable category before any discount is attributed. */
-function remainingCategoryBases(
-  lines: readonly TicketCartLine[],
-  ctx: PricingContext,
-): Map<TaxableCategory, Satang> {
-  const remaining = new Map<TaxableCategory, Satang>();
-  for (const input of ticketCartTaxInputs(lines, ctx)) {
-    remaining.set(input.category, (remaining.get(input.category) ?? 0) + input.base);
-  }
-  return remaining;
+/**
+ * Take `amount` out of a scope, in proportion to what each of its units has
+ * left. Clamped per unit, and a no-op for a non-positive amount — a promo
+ * stored with a negative value is a surcharge nobody charges (EC-23), and it
+ * must not put money BACK into a scope.
+ */
+function spendScope(entries: readonly LedgerEntry[], amount: Satang): void {
+  if (amount <= 0) return;
+  const live = entries.filter((entry) => entry.remaining > 0);
+  if (live.length === 0) return;
+  const capacity = live.reduce((sum, entry) => sum + entry.remaining, 0);
+  const spend = Math.min(amount, capacity);
+  // Largest remainder, for the same reason as everywhere else: whole satang
+  // that sum back to what was spent.
+  const shares =
+    live.length === 1
+      ? [spend]
+      : apportion(
+          spend,
+          live.map((entry) => entry.remaining),
+        );
+  live.forEach((entry, index) => {
+    entry.remaining -= Math.min(entry.remaining, shares[index] ?? 0);
+  });
 }
 
 /**
@@ -276,6 +397,18 @@ export interface AppliedPromo {
   label: string;
   type: PromoDiscount['type'];
   amount: Satang;
+  /**
+   * Set when the code found NOTHING LEFT IN ITS OWN SCOPE to discount, so it
+   * took nothing — the visible half of ruling 2. Without it a code that spends
+   * zero looks identical on the receipt to one nobody scanned, and reception
+   * has no answer for a guest asking why their code did nothing.
+   *
+   * The wording is the promo vocabulary's own (`promoNotApplicableReason`), the
+   * same sentence `validatePromoCode` shows when a code matches nothing at
+   * scan time. It is the same fact one step later: at scan time the scope was
+   * empty, here it has been emptied by the discounts already on the cart.
+   */
+  exhaustedReason?: string;
 }
 
 export interface TicketCartTotals {
@@ -369,6 +502,28 @@ export interface CartTotalsOptions {
  * `staleLines: 'trust_stored'` — that is a diagnostic, it re-derives every tax
  * base from `ctx` anyway, and on an unpriced line it would charge the guest for
  * play time the till is showing as ฿0.
+ *
+ * AND THE LARGER POINT, FOR WHOEVER BUILDS THE CART (S2-09a), so it is not
+ * rediscovered: RULINGS 3 AND 4 DECIDE WHICH DATE IS READ, BUT WHAT ACTUALLY
+ * PROTECTS THE MONEY IS THE FREEZE. A price and a code's validity are resolved
+ * ONCE, when the line goes into the cart, and stored on the sale — never
+ * recalculated. A cart open across 05:00 must not silently re-price itself, and
+ * a code scanned at 04:55 must not stop being valid at 04:56 while the guest is
+ * still at the till.
+ *
+ * This function is the first half of that: it REFUSES a cart whose stored line
+ * totals were not priced under the context it is being totalled with, so the
+ * drift is a loud error rather than a receipt that does not add up. The cart
+ * has to supply the other three halves, none of which lives here:
+ *   1. snapshot the rate mode (and the instant it came from) onto the cart when
+ *      the first line is added, and total with THAT context, not with a fresh
+ *      `rateModeToday`;
+ *   2. snapshot each applied code's validity decision — `validatePromoCode`
+ *      runs at scan time and its answer is what the sale records, so the date
+ *      it was judged against is frozen with it;
+ *   3. when the snapshot and the clock disagree, tell staff and let them
+ *      re-price deliberately (`repriceCartLines`), because re-pricing a cart a
+ *      guest has already been quoted is a decision a person makes.
  */
 export function findStaleLines(lines: readonly TicketCartLine[], ctx: PricingContext): string[] {
   return lines
@@ -430,11 +585,9 @@ export function computeTicketCartTotals(
 
   const lineAmounts: Record<string, Satang> = {};
   const componentBases: Record<string, Record<string, Satang>> = {};
-  const linesById = new Map<string, TicketCartLine>();
   for (const line of lines) {
     lineAmounts[line.id] = line.lineTotal;
     componentBases[line.id] = lineComponentBases(line, ctx);
-    linesById.set(line.id, line);
   }
   const manual = computeManualDiscount(
     manualDiscounts,
@@ -443,6 +596,32 @@ export function computeTicketCartTotals(
     componentBases,
     rounding,
   );
+
+  // THE TWO LEDGERS, threaded through every discount in order. Keep them apart:
+  //   `ledger`    — how much each unit has LEFT TO BE DISCOUNTED. It bounds the
+  //                 AMOUNT a scoped discount may take (ruling 2).
+  //   `remaining` — how much of each taxable category is left to ABSORB a
+  //                 discount. It decides which category books it, never how big
+  //                 it is (the attribution note above, and EC-17).
+  const units = cartUnits(lines, ctx);
+  const ledger: LedgerEntry[] = units.map((unit) => ({ unit, remaining: unit.base }));
+  const remaining = new Map<TaxableCategory, Satang>();
+  for (const input of ticketCartTaxInputs(lines, ctx)) {
+    remaining.set(input.category, (remaining.get(input.category) ?? 0) + input.base);
+  }
+  const entriesOfLine = (lineId: string): LedgerEntry[] =>
+    ledger.filter((entry) => entry.unit.lineId === lineId);
+
+  /** The units one manual discount is aimed at: the order, a line, or one of its components. */
+  const scopeOfManual = (discount: ManualDiscount): LedgerEntry[] => {
+    if (discount.scope !== 'line' || !discount.targetLineId) return ledger;
+    const entries = entriesOfLine(discount.targetLineId);
+    if (!discount.targetComponent) return entries;
+    const wanted = componentKey(discount.targetComponent);
+    return entries.filter(
+      (entry) => entry.unit.row !== null && breakdownComponentKey(entry.unit.row) === wanted,
+    );
+  };
 
   // Each discount is placed in the tax cascade against the category it actually
   // targeted, and against what is LEFT of that category once the discounts
@@ -455,41 +634,77 @@ export function computeTicketCartTotals(
   // repeated id for exactly this reason (and states the ฿250 it used to cost);
   // it has already run, so by here every id is unique and every amount is its
   // own discount's.
-  const remaining = remainingCategoryBases(lines, ctx);
   const allocations: DiscountAllocation[] = [];
   for (const discount of manualDiscounts) {
     const amount = manual.amounts[discount.id] ?? 0;
     if (amount <= 0) continue;
+    const scope = scopeOfManual(discount);
+    // It has spent its scope, so a promo code aimed at the same items finds
+    // that much less of them. An order-scope discount spends the whole cart
+    // proportionally, which is how `computeTaxBreakdown` spreads an order-wide
+    // allocation, so the two ledgers stay in step.
+    spendScope(scope, amount);
     if (discount.scope !== 'line' || !discount.targetLineId) {
       allocations.push({ amount }); // order scope — genuinely order-wide
       continue;
     }
-    const line = linesById.get(discount.targetLineId);
-    if (!line) {
-      allocations.push({ amount });
-      continue;
-    }
-    const bases = discount.targetComponent
-      ? categoryBasesForComponent(line, discount.targetComponent, ctx)
-      : categoryBasesForLine(line, ctx);
+    // An empty scope (the line was removed) yields no category bases, and
+    // `allocateAgainstRemaining` turns that into one order-wide allocation.
+    const bases = categoryBasesOf(scope.map((entry) => entry.unit));
     allocations.push(...allocateAgainstRemaining(amount, bases, remaining));
   }
 
   // Manual discounts come off first; codes apply to what remains. Several
   // stackable codes apply SEQUENTIALLY, each against the balance the previous
   // one left, so the order can never go negative.
+  //
+  // RULING 2, 2026-09-20, AND IT IS A DECISION OF OURS, NOT A RULE WE FOUND.
+  // Nothing in this repository says whether one discount may spend twice on the
+  // same items. Until this ruling a scoped code was clamped only by the
+  // ORDER-level running balance, with its base read off the UNDISCOUNTED
+  // breakdown — so a line comped to zero and then a ticket-scoped code
+  // discounted the same tickets again, and ฿1,000 of add-ons walked out free
+  // (EC-15). A scoped code now takes no more than its OWN SCOPE has left.
+  //
+  // THE REASONING, recorded because it is ours:
+  //   - There is no manager approval on discounts anywhere in this system, by
+  //     design (R-08; the backend logic doc §16/§20 remove the approval gates).
+  //     The arithmetic is therefore the only thing between a scoped code and
+  //     the stockroom.
+  //   - Two neighbouring systems already track what a line has left — staff
+  //     benefits (`benefits.ts:107-131`) and manual discounts themselves
+  //     (`computeManualDiscount`). This follows the park's own pattern rather
+  //     than inventing one.
+  //   - Without it the same two discounts applied in the opposite order produce
+  //     different bills, which reception cannot explain to a guest.
+  //
+  // IT MOVES MONEY, upward, and that is the point rather than a side effect:
+  // EC-15 goes from 0 to 100000 and EC-17 from 0 to 30000. Both notes say so.
   let running = subtotal - manual.total;
   let promoDiscountTotal = 0;
   const appliedPromos: AppliedPromo[] = [];
   for (const promo of promos) {
     const target = promo.target ?? { kind: 'everything' as const };
-    // A free_item code is deliberately based on `running` — the balance that
-    // already includes its own synthetic line — so its amount comes out as
-    // exactly the item's price.
-    const base =
-      promo.type === 'free_item' || target.kind === 'everything'
-        ? running
-        : Math.min(discountTargetBase(lines, target, ctx), running);
+    // A FREE-ITEM CODE'S SCOPE IS THE LINE IT PUT THERE, always — the id is the
+    // one the till mints (`freeItemLineId`), which is already how removing the
+    // code removes the line. Ruling 1 is that the item goes on at ฿0 and the
+    // rest of the bill is untouched, so the offsetting discount belongs to that
+    // item whatever the stored `target` says; the seeded code's own
+    // `menuItems: ['m-icecream']` agrees, and a code configured with no target
+    // or the wrong one would otherwise book the markdown against the tickets.
+    // This is what replaced the old `type === 'free_item'` special case, which
+    // resolved the code against the ORDER balance and attributed it order-wide.
+    const orderWide = promo.type !== 'free_item' && target.kind === 'everything';
+    const scope =
+      promo.type === 'free_item'
+        ? entriesOfLine(freeItemLineId(promo.code))
+        : orderWide
+          ? ledger
+          : ledger.filter((entry) => unitMatchesTarget(entry.unit, target, ctx.socks.addOnId));
+    const scopeLeft = scope.reduce((sum, entry) => sum + entry.remaining, 0);
+    // An order-wide code is resolved against the order balance, which is the
+    // prototype's arithmetic and includes money no unit-scope reaches.
+    const base = orderWide ? running : Math.min(scopeLeft, running);
     let amount =
       promo.type === 'fixed' || promo.type === 'free_item'
         ? Math.min(promo.value, base)
@@ -503,19 +718,26 @@ export function computeTicketCartTotals(
     amount = Math.min(amount, running);
     promoDiscountTotal += amount;
     running -= amount;
-    appliedPromos.push({ code: promo.code, label: promo.label, type: promo.type, amount });
-    // A free_item code's own line contributes no taxable base, so there is no
-    // category to attribute it to and it stays order-wide. Order-wide means
-    // apportioned across whatever base remains, so on WE-8 the 5000 comes off
-    // the TICKETS base (213000 → 208000) with unappliedDiscount 0 — the
-    // shortfall is real but it is somebody else's base that absorbs it, not a
-    // reported gap. It only reaches unappliedDiscount when nothing is left to
-    // absorb it, which is EC-8.
-    if (promo.type === 'free_item' || target.kind === 'everything') {
+    appliedPromos.push({
+      code: promo.code,
+      label: promo.label,
+      type: promo.type,
+      amount,
+      ...(base <= 0 ? { exhaustedReason: promoNotApplicableReason(promo.code) } : {}),
+    });
+    spendScope(scope, amount);
+    if (orderWide) {
       if (amount > 0) allocations.push({ amount });
     } else {
+      // A free-item code's line now carries a taxable base of its own — the
+      // item's, in the item's category — so the discount that offsets it lands
+      // there: F&B gross ฿50, markdown ฿50, net 0 (WE-8).
       allocations.push(
-        ...allocateAgainstRemaining(amount, categoryBasesForTarget(lines, target, ctx), remaining),
+        ...allocateAgainstRemaining(
+          amount,
+          categoryBasesOf(scope.map((entry) => entry.unit)),
+          remaining,
+        ),
       );
     }
   }

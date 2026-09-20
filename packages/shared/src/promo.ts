@@ -2,6 +2,7 @@ import type { Satang } from './money';
 import type { PricingContext, TicketCartLine } from './pricing';
 import type { DiscountTarget } from './discount';
 import { discountTargetBase } from './discount';
+import { businessDate, DEFAULT_BUSINESS_DAY_START_MINUTES } from './business-date';
 
 /**
  * Promo codes — a faithful port of the prototype's `lib/promoVoucher.ts`
@@ -39,6 +40,24 @@ export interface PromoDiscount {
 
 export type PromoValidation = { ok: true; promo: PromoDiscount } | { ok: false; reason: string };
 
+/**
+ * The date a promo code's validity window is compared against: the branch's
+ * BUSINESS date (ruling 4 — see `validatePromoCode`). Pure; the instant is an
+ * argument, as everywhere else in the priced-amount core.
+ *
+ * It is `businessDate` under a name that says which rule a call site is
+ * applying. Worth the alias because the wrong answers are so easy to reach for:
+ * `new Date().toISOString().slice(0,10)` is the UTC day, `branchToday` is the
+ * branch's calendar day, and both are a plain call away.
+ */
+export function promoValidityDate(
+  instant: Date,
+  timeZone: string,
+  dayStartMinutes: number = DEFAULT_BUSINESS_DAY_START_MINUTES,
+): string {
+  return businessDate(instant, timeZone, dayStartMinutes);
+}
+
 export interface ValidatePromoOptions {
   customerPhone?: string;
   appliedPromos?: readonly PromoDiscount[];
@@ -70,17 +89,50 @@ function formatIsoDate(iso: string): string {
 }
 
 /**
+ * The one sentence this engine uses for "that code has nothing to discount".
+ *
+ * Exported because two places now say it: `validatePromoCode` at scan time,
+ * when the scope matches nothing in the cart, and `computeTicketCartTotals`
+ * when a scoped code's own scope has been emptied by the discounts already on
+ * the cart (ruling 2). Same fact, one step apart, so it must not be two
+ * sentences — a guest told two different things about one code is a guest
+ * arguing with reception.
+ */
+export function promoNotApplicableReason(code: string): string {
+  return `Code "${code}" doesn't apply to any items in this order.`;
+}
+
+/**
  * Validate a promo code against a cart before applying it. First failure wins,
  * in the prototype's order: already applied → stacking → active → validFrom →
  * validUntil → total usage limit → per-customer limit → applicability.
  *
- * `today` is supplied by the caller (yyyy-mm-dd) so this stays pure. WHICH date
- * to supply is a live question: the prototype passes
- * `new Date().toISOString().slice(0,10)` — the UTC date — so in Bangkok a code
- * expiring "today" stops working at 07:00 local rather than at closing time.
- * Pass the branch calendar date (`branchToday`) or the business date
- * (`businessDate`) instead; both are better than UTC and the choice between
- * them is recorded as an open question for S2-09a.
+ * `today` IS THE BRANCH'S BUSINESS DATE (yyyy-mm-dd), supplied by the caller so
+ * this stays pure. Take it from `promoValidityDate`, which is `businessDate`
+ * under another name so that a call site reads as the rule it is applying.
+ *
+ * RULING 4, 2026-09-20, AND IT IS A DECISION OF OURS, NOT A RULE WE FOUND.
+ * Nothing in this repository said which date validates a code. The park trades
+ * 10:00–20:00 (its own SOP, and Radar has watched the live tills against a
+ * 20:00 close for months) and the business day starts at 05:00, so NO GUEST
+ * SALE falls in the window where the candidate rules disagree — only staff
+ * actions do: a cash count, a late party settling, a correction. That makes one
+ * sentence cover pricing, promo expiry, the till roll and the cash-up:
+ * EVERYTHING ANSWERS TO THE DAY PRINTED ON YOUR RECEIPT. And "until Friday"
+ * then means Friday works all day, including the part of it that happens after
+ * midnight.
+ *
+ * IT ALSO FIXES A PLAIN BUG, whichever date had won. The prototype passes
+ * `new Date().toISOString().slice(0,10)` — the UTC date (`pages/Till.tsx:560`)
+ * — while pricing the same cart from LOCAL midnight (`lib/pricingMode.ts:19-24`
+ * via `todayRateMode`): one engine, two day boundaries, seven hours apart in
+ * Bangkok. Measured against the business date, the UTC date is a day behind
+ * between 05:00 and 06:59 local, so under it:
+ *   - a code valid FROM Friday is refused to anyone at 06:00 on Friday, which
+ *     is Friday;
+ *   - a code valid UNTIL Friday is still accepted at 06:00 on SATURDAY, an hour
+ *     into the next trading day.
+ * Both are wrong in the same two-hour window, in opposite directions.
  */
 export function validatePromoCode(
   promo: PromoDiscount,
@@ -167,10 +219,7 @@ export function validatePromoCode(
     const target = promo.target ?? { kind: 'everything' as const };
     const base = target.kind === 'everything' ? cartTotal : discountTargetBase(lines, target, ctx);
     if (base <= 0) {
-      return {
-        ok: false,
-        reason: `Code "${promo.code}" doesn't apply to any items in this order.`,
-      };
+      return { ok: false, reason: promoNotApplicableReason(promo.code) };
     }
   }
 

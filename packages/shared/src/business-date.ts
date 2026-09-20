@@ -19,13 +19,23 @@ import { isoDateInTz } from './dates';
  * The park closes after midnight, so a sale at 00:30 belongs to the day that
  * started the previous morning.
  *
- * WHAT IT DOES NOT GOVERN, TODAY: pricing. The prototype prices from the
- * CALENDAR day (`todayRateMode()` → `getRateModeForDate(new Date())`), so a
- * 01:00 Saturday sale is priced at weekend rates even though it belongs to
- * Friday's business date. The prototype has logic here and the plan does not
- * contradict it, so the calendar day still decides the rate mode — pass
- * `branchToday(...)` to the rate resolver, not `businessDate(...)`. Whether
- * the owner wants the two aligned is an open question, recorded for S2-09a.
+ * WHAT IT GOVERNS, SINCE 2026-09-20: everything with a date on it — the ledger,
+ * the rate mode a sale is PRICED at (`rateModeToday`, ruling 3) and the date a
+ * promo code's validity window is compared against (`promoValidityDate`, ruling
+ * 4). Both of those are DECISIONS OF OURS rather than rules found in the
+ * repository, and each carries its reasoning where it is applied. The short
+ * form: the park trades 10:00–20:00 and the day starts at 05:00, so no guest
+ * sale falls in the window where the candidate rules disagree, and one sentence
+ * then covers pricing, promo expiry, the till roll and the cash-up —
+ * everything answers to the day printed on your receipt.
+ *
+ * It replaces a calendar-day rule the prototype had and the plan did not
+ * contradict: `todayRateMode()` → `getRateModeForDate(new Date())` priced a
+ * 01:00 Saturday sale at weekend rates while the ledger put it on Friday.
+ * `branchToday` is still the branch's CALENDAR date and is still right for
+ * anything a person would call "what is today's date" — a visit date, a
+ * booking, a report's default range endpoint. It is no longer what prices a
+ * sale.
  */
 
 /** 05:00, the plan's default `branch.business_day_start`. */

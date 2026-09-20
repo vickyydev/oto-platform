@@ -88,6 +88,18 @@ export interface FixtureCategoryExpectation {
   gross?: Satang;
 }
 
+/**
+ * What one applied code came to, and whether it found anything left in its own
+ * scope to take. `exhausted` asserts `AppliedPromo.exhaustedReason` is set —
+ * the visible half of ruling 2, so a code that spends nothing cannot silently
+ * look like a code nobody scanned.
+ */
+export interface FixtureAppliedPromo {
+  code: string;
+  amount: Satang;
+  exhausted?: boolean;
+}
+
 export interface FixtureCartExpectation {
   lineTotals?: Record<string, Satang>;
   subtotal?: Satang;
@@ -104,6 +116,7 @@ export interface FixtureCartExpectation {
   categories?: FixtureCategoryExpectation[];
   breakdown?: Record<string, FixtureBreakdownRow[]>;
   taxRows?: { key: string; label: string; amount: Satang; kind: string }[];
+  appliedPromos?: FixtureAppliedPromo[];
 }
 
 export interface FixtureCartCase {
@@ -175,6 +188,41 @@ export interface FixtureBusinessDateCase {
   note?: string;
 }
 
+/**
+ * One instant at one branch, and everything with a date on it that follows from
+ * it: which trading day the sale belongs to, which of the two price sets it is
+ * charged at (ruling 3) and whether a code's validity window is still open
+ * (ruling 4). Both rulings are decisions recorded on 2026-09-20, not rules
+ * found in the repository, and these are the boundary cases that pin them.
+ *
+ * `utcDate` and `promoAcceptedUnderUtc` are here to keep the rule the platform
+ * REPLACED visible: the prototype validates a code against the UTC date while
+ * pricing the same cart from local midnight, and a case where the two answers
+ * differ is worth more than a sentence saying they can.
+ */
+export interface FixtureTradingDayCase {
+  id: string;
+  title: string;
+  rules: string[];
+  /** ISO 8601 instant. */
+  instant: string;
+  timeZone: string;
+  /** The branch's `business_day_start`, HH:MM. */
+  dayStart: string;
+  promo?: { validFrom?: string; validUntil?: string };
+  expect: {
+    branchDate: string;
+    businessDate: string;
+    utcDate: string;
+    mode: RateMode;
+    reason: string;
+    promoAccepted?: boolean;
+    /** Only where the UTC rule gives a DIFFERENT answer from the business date. */
+    promoAcceptedUnderUtc?: boolean;
+  };
+  note?: string;
+}
+
 export interface PricingFixtures {
   about: string[];
   /**
@@ -198,6 +246,7 @@ export interface PricingFixtures {
   taxCases: FixtureTaxCase[];
   rateModeCases: FixtureRateModeCase[];
   businessDateCases: FixtureBusinessDateCase[];
+  tradingDayCases: FixtureTradingDayCase[];
 }
 
 // The compiler infers the JSON's structure literally and widens unions across

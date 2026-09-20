@@ -24,6 +24,8 @@ import {
   branchToday,
   percentOf,
   priceCartLine,
+  promoNotApplicableReason,
+  promoValidityDate,
   rateModeToday,
   repriceCartLines,
   resolveManualDiscountAmount,
@@ -224,6 +226,27 @@ describe('pricing regression fixtures — cart cases', () => {
         expect(summarizeTax(totals.taxBreakdown)).toEqual(want.taxRows);
       }
 
+      if (want.appliedPromos) {
+        expect(totals.appliedPromos.map((promo) => promo.code)).toEqual(
+          want.appliedPromos.map((promo) => promo.code),
+        );
+        for (const expected of want.appliedPromos) {
+          const actual = totals.appliedPromos.find((promo) => promo.code === expected.code);
+          expect(actual?.amount, `amount for ${expected.code}`).toBe(expected.amount);
+          // A code that found nothing left in its own scope must SAY so, in the
+          // promo vocabulary's own wording — ruling 2's visible half.
+          if (expected.exhausted) {
+            expect(actual?.exhaustedReason, `exhausted reason for ${expected.code}`).toBe(
+              promoNotApplicableReason(expected.code),
+            );
+          } else {
+            expect(actual?.exhaustedReason, `no exhausted reason for ${expected.code}`).toBe(
+              undefined,
+            );
+          }
+        }
+      }
+
       // Every case, every time: money stays whole satang, and the engine
       // stamps the version that produced these numbers.
       expect(Number.isInteger(totals.total)).toBe(true);
@@ -237,11 +260,12 @@ describe('pricing regression fixtures — cart cases', () => {
 
       // THE INVARIANT THAT WOULD HAVE CAUGHT THE PREPAID-FOOD DEFECT: every
       // line's total is exactly the money its own tax bases carry. The
-      // prototype states it at lib/sale.ts:50-51. Promo lines are the known
-      // exception — their total reaches the subtotal and their base reaches
-      // nothing, which is what WE-8 and EC-8 pin.
+      // prototype states it at lib/sale.ts:50-51. It now holds for EVERY line
+      // with no exceptions — a free-item promo line used to be exempt here,
+      // because its total reached the subtotal and its base reached nothing,
+      // and that exemption was the ruling-1 defect written down as a test
+      // (WE-8: the guest paid 208000 instead of 213000). Do not reinstate it.
       for (const line of lines) {
-        if (line.promoItem) continue;
         const own = ticketCartTaxInputs([line], ctx).reduce((sum, input) => sum + input.base, 0);
         expect(own, `line ${line.id}: total vs its own tax bases`).toBe(line.lineTotal);
       }
@@ -316,6 +340,7 @@ describe('pricing regression fixtures — rule provenance', () => {
     ...cartCases.map((c) => ({ id: c.id, rules: c.rules })),
     ...taxCases.map((c) => ({ id: c.id, rules: c.rules })),
     ...rateModeCases.map((c) => ({ id: c.id, rules: c.rules })),
+    ...PRICING_FIXTURES.tradingDayCases.map((c) => ({ id: c.id, rules: c.rules })),
   ];
 
   it('every rule the fixture file claims is a real catalogue rule, and every one is exercised', () => {
@@ -423,14 +448,27 @@ describe('rateModeToday — the clock seam', () => {
   const holidays = () => catalog.holidays.map((h) => ({ ...h }));
 
   it('takes the instant as an argument and reads the day in the BRANCH timezone', () => {
-    // 23:30 Friday and 00:30 Saturday in Bangkok, one hour apart. In Los
-    // Angeles both instants are still Friday, so a host-timezone read would
-    // price the second one at weekday rates.
+    // 23:30 Friday and 05:30 Saturday in Bangkok. In Los Angeles the second
+    // instant is still Friday afternoon, so a host-timezone read would price it
+    // at weekday rates.
     const fridayNight = new Date('2026-09-25T16:30:00Z');
-    const saturdayMorning = new Date('2026-09-25T17:30:00Z');
+    const saturdayOpen = new Date('2026-09-25T22:30:00Z');
     expect(rateModeToday(BANGKOK, [], fridayNight).mode).toBe('weekday');
-    expect(rateModeToday(BANGKOK, [], saturdayMorning).mode).toBe('weekend');
-    expect(rateModeToday('America/Los_Angeles', [], saturdayMorning).mode).toBe('weekday');
+    expect(rateModeToday(BANGKOK, [], saturdayOpen).mode).toBe('weekend');
+    expect(rateModeToday('America/Los_Angeles', [], saturdayOpen).mode).toBe('weekday');
+  });
+
+  it('prices by the BUSINESS day, so Saturday 00:30 is still Friday (ruling 3)', () => {
+    // The change ruling 3 made, at the instant it bites: 00:30 on Saturday, a
+    // cart rung up while Friday's session is still being closed. It used to
+    // read branchToday and charge the WEEKEND price.
+    const afterMidnight = new Date('2026-09-25T17:30:00Z');
+    expect(branchToday(BANGKOK, afterMidnight)).toBe('2026-09-26');
+    expect(businessDate(afterMidnight, BANGKOK)).toBe('2026-09-25');
+    expect(rateModeToday(BANGKOK, [], afterMidnight).mode).toBe('weekday');
+    // And the day start is the branch's, not a constant: a branch that closes
+    // at midnight gets the calendar day's answer back.
+    expect(rateModeToday(BANGKOK, [], afterMidnight, 0).mode).toBe('weekend');
   });
 
   it('applies a holiday range at the same seam, with its name for the POS indicator', () => {
@@ -444,13 +482,92 @@ describe('rateModeToday — the clock seam', () => {
   });
 
   it('omitting the instant reads the clock — which is why a till must not omit it', () => {
-    // Race-free: the answer has to match the branch date read either side of
-    // the call, whichever side of midnight the suite happens to run on.
-    const before = branchToday(BANGKOK);
+    // Race-free: the answer has to match the business date read either side of
+    // the call, whichever side of the day start the suite happens to run on.
+    const before = businessDate(new Date(), BANGKOK);
     const got = rateModeToday(BANGKOK, holidays());
-    const after = branchToday(BANGKOK);
+    const after = businessDate(new Date(), BANGKOK);
     const acceptable = [before, after].map((date) => getRateModeForDate(date, holidays()));
     expect(acceptable.map((a) => a.reason)).toContain(got.reason);
+  });
+});
+
+/**
+ * RULINGS 3 AND 4 AT THE BOUNDARY: one instant at one branch, and everything
+ * with a date on it that follows from it. Both rulings are DECISIONS taken on
+ * 2026-09-20, not rules found in the repository, and both say the same thing —
+ * everything answers to the day printed on your receipt.
+ *
+ * Each case also carries the UTC date the prototype would have used, so the
+ * rule that was replaced stays visible rather than being described.
+ */
+describe('pricing regression fixtures — the trading day (rulings 3 and 4)', () => {
+  const ctx = contextFor('weekday');
+  const cart = [buildLine({ id: 'l1', package: 't-2h', tier: 'tourist', kids: 1, adults: 0 }, ctx)];
+
+  for (const testCase of PRICING_FIXTURES.tradingDayCases) {
+    it(`${testCase.id} — ${testCase.title}`, () => {
+      const instant = new Date(testCase.instant);
+      const dayStart = parseDayStart(testCase.dayStart);
+      const want = testCase.expect;
+
+      expect(branchToday(testCase.timeZone, instant), 'branch calendar date').toBe(want.branchDate);
+      expect(businessDate(instant, testCase.timeZone, dayStart), 'business date').toBe(
+        want.businessDate,
+      );
+      expect(instant.toISOString().slice(0, 10), 'the UTC date the prototype used').toBe(
+        want.utcDate,
+      );
+
+      // Ruling 3: the rate mode comes from the BUSINESS date.
+      const holidays = catalog.holidays.map((h) => ({ ...h }));
+      const mode = rateModeToday(testCase.timeZone, holidays, instant, dayStart);
+      expect(mode.mode, 'rate mode').toBe(want.mode);
+      expect(mode.reason, 'rate mode reason').toBe(want.reason);
+      expect(mode, 'and it is exactly the mode for that date').toEqual(
+        getRateModeForDate(want.businessDate, holidays),
+      );
+
+      // Ruling 4: a code's validity window is compared against the same date.
+      if (testCase.promo && want.promoAccepted !== undefined) {
+        const promo: PromoDiscount = {
+          code: 'WINDOW',
+          label: 'Window',
+          type: 'percent',
+          value: 10,
+          ...testCase.promo,
+        };
+        const today = promoValidityDate(instant, testCase.timeZone, dayStart);
+        expect(today, 'promoValidityDate is the business date').toBe(want.businessDate);
+        expect(validatePromoCode(promo, cart, today, ctx).ok, 'promo accepted').toBe(
+          want.promoAccepted,
+        );
+        if (want.promoAcceptedUnderUtc !== undefined) {
+          // The rule this replaced, run on the same instant, giving the other
+          // answer — the two-hour window where the UTC date is a day behind.
+          expect(
+            validatePromoCode(promo, cart, want.utcDate, ctx).ok,
+            'promo under the UTC date',
+          ).toBe(want.promoAcceptedUnderUtc);
+          expect(want.promoAcceptedUnderUtc).not.toBe(want.promoAccepted);
+        }
+      }
+    });
+  }
+
+  it('the cases actually straddle both boundaries they claim to', () => {
+    const cases = PRICING_FIXTURES.tradingDayCases;
+    // A weekday/weekend change on both sides, after midnight...
+    const afterMidnight = cases.filter((c) => c.expect.branchDate !== c.expect.businessDate);
+    expect([...new Set(afterMidnight.map((c) => c.expect.mode))].sort()).toEqual([
+      'weekday',
+      'weekend',
+    ]);
+    // ...and at least one case where the UTC rule gives the other answer.
+    expect(
+      cases.some((c) => c.expect.promoAcceptedUnderUtc !== undefined),
+      'no case shows the UTC divergence',
+    ).toBe(true);
   });
 });
 
@@ -1040,12 +1157,94 @@ describe('a free-item promo puts BOTH halves in the cart', () => {
 
     // The defect the earlier fixture hid: port only the line, leave the code's
     // stored value alone, and the guest is charged for the free item while
-    // end-of-day records no markdown at all.
+    // end-of-day records no markdown at all. Since ruling 1 that overcharge is
+    // the whole ฿50 and it is VISIBLE — the cone is on the bill at its shelf
+    // price with nothing offsetting it, so the cart totals 218000 rather than
+    // quietly dropping the cone out of the taxable base and landing on 213000
+    // by a route nobody could reconcile.
     const withStored = computeTicketCartTotals(lines, [seeded], [], config, ctx);
     expect(withStored.subtotal).toBe(218000);
     expect(withStored.discountTotal).toBe(0);
-    expect(withStored.total).toBe(213000);
-    expect(withResolved.total).toBe(208000);
+    expect(withStored.total).toBe(218000);
+
+    // RULING 1: with the value resolved the guest pays 213000, the tickets are
+    // untouched, and the cone is marked down to nothing against F&B. The engine
+    // used to charge 208000 here, taking the cone off the TICKETS base as well
+    // as off the shelf — the park giving it away twice and booking it once.
+    expect(withResolved.total).toBe(213000);
+    expect(withStored.total - withResolved.total, 'what the resolved code is worth').toBe(5000);
+    const fnb = (totals: typeof withResolved) =>
+      totals.taxBreakdown.categories.find((c) => c.category === 'fnb');
+    expect(fnb(withResolved)?.base, 'the cone is marked down to nothing').toBe(0);
+    expect(
+      withResolved.taxBreakdown.netSubtotal,
+      'and the ฿50 of F&B gross is still on the books',
+    ).toBe(218000);
+    expect(
+      withResolved.taxBreakdown.categories.find((c) => c.category === 'tickets')?.base,
+      'while the tickets are untouched',
+    ).toBe(213000);
+    expect(withStored.taxBreakdown.netSubtotal).toBe(218000);
+    expect(fnb(withStored)?.base, 'the unresolved code marks nothing down').toBe(5000);
+  });
+
+  it('a free-item code discounts the line it added and nothing else (ruling 1)', () => {
+    // A code the catalogue stored with no target at all. Its scope is still its
+    // own synthetic line — `freeItemLineId` ties the two together — so the
+    // markdown lands on F&B rather than being apportioned over the tickets.
+    const cart = [
+      buildLine({ id: 'l1', package: 't-2h', tier: 'tourist', kids: 2, adults: 1 }, ctx),
+    ];
+    const untargeted: PromoDiscount = {
+      code: 'ICECREAM',
+      label: 'Free Ice Cream',
+      type: 'free_item',
+      value: 0,
+      freeItemId: 'm-icecream',
+      freeItemKind: 'menu',
+    };
+    const injected = applyFreeItemPromo(untargeted, item, freeItemStub(cart)!);
+    const totals = computeTicketCartTotals(
+      [...cart, injected.line],
+      [injected.promo],
+      [],
+      taxConfigFor('seeded'),
+      ctx,
+    );
+    expect(totals.total).toBe(213000);
+    expect(totals.discountTotal).toBe(5000);
+    const base = (category: string) =>
+      totals.taxBreakdown.categories.find((c) => c.category === category)?.base;
+    expect(base('tickets')).toBe(213000);
+    expect(base('fnb')).toBe(0);
+  });
+
+  it('a free merch item books against merch, not F&B', () => {
+    const cart = [
+      buildLine({ id: 'l1', package: 't-2h', tier: 'tourist', kids: 1, adults: 0 }, ctx),
+    ];
+    const merch: PromoDiscount = {
+      ...seeded,
+      code: 'FREECAP',
+      freeItemId: 'm-cap',
+      freeItemKind: 'merch',
+      target: { kind: 'merch' },
+    };
+    const injected = applyFreeItemPromo(merch, { name: 'Cap', price: 30000 }, freeItemStub(cart)!);
+    const totals = computeTicketCartTotals(
+      [...cart, injected.line],
+      [injected.promo],
+      [],
+      taxConfigFor('seeded'),
+      ctx,
+    );
+    expect(totals.subtotal).toBe(119000);
+    expect(totals.discountTotal).toBe(30000);
+    expect(totals.total).toBe(89000);
+    expect(totals.taxBreakdown.categories.map((c) => [c.category, c.base])).toEqual([
+      ['tickets', 89000],
+      ['merch', 0],
+    ]);
   });
 
   it('refuses to guess a stub when the cart holds no real line', () => {
@@ -1253,50 +1452,77 @@ describe('a discount lands on the category it targeted', () => {
     expect(spread.grandTotal - attributed.grandTotal).toBe(700);
   });
 
-  it('allocates each discount against what the earlier ones LEFT (EC-17)', () => {
-    const { totals } = runCartCase(cartCases.find((c) => c.id === 'EC-17')!);
+  it('allocates each discount against what the earlier ones LEFT, and each SPENDS only its own scope (EC-17)', () => {
+    const { totals, lines } = runCartCase(cartCases.find((c) => c.id === 'EC-17')!);
     const base = (category: string) =>
       totals.taxBreakdown.categories.find((c) => c.category === category)?.base;
 
-    // Both codes are scoped to tickets and together they exhaust the order.
-    expect(totals.appliedPromos.map((p) => p.amount)).toEqual([61410, 235590]);
-    expect(totals.discountTotal).toBe(297000);
+    // THE AMOUNT LINE (ruling 2, a decision): both codes are scoped to tickets,
+    // so the second takes 100% of what is left OF THE TICKETS, not of the
+    // order. 61410 + 205590 = 267000, exactly the ticket base.
+    expect(totals.appliedPromos.map((p) => p.amount)).toEqual([61410, 205590]);
+    expect(totals.discountTotal).toBe(267000);
 
-    // The prototype's arithmetic, written out: it spreads the whole discount
-    // proportionally, so both bases go to zero and the guest pays nothing.
-    // Every category here carries one inclusive 7% rule, which is the state the
-    // prototype's own warning (lib/tax.ts:99-106) says its spread is exact in,
-    // so this total is not ours to move.
-    const bases = ticketCartTaxInputs(runCartCase(cartCases.find((c) => c.id === 'EC-17')!).lines, {
-      mode: 'weekday',
-      socks: { ...catalog.socks },
-    });
+    const bases = ticketCartTaxInputs(lines, { mode: 'weekday', socks: { ...catalog.socks } });
     const totalBase = bases.reduce((sum, b) => sum + b.base, 0);
-    const prototypeTotal = bases.reduce(
-      (sum, b) => sum + Math.max(0, b.base - (297000 * b.base) / totalBase),
-      0,
-    );
-    expect(prototypeTotal).toBe(0);
-    expect(totals.total).toBe(0);
-    expect(base('tickets')).toBe(0);
-    expect(base('addons')).toBe(0);
-    expect(totals.taxBreakdown.unappliedDiscount).toBe(0);
+    expect(totalBase).toBe(297000);
+    expect(bases.find((b) => b.category === 'tickets')?.base).toBe(267000);
 
-    // The defect this replaced, stated as the number it would produce: reading
-    // each discount's split off the UNDISCOUNTED breakdown lets both codes
-    // claim the same 267000 of tickets, the cascade clamps the second, and
-    // 30000 of add-ons the prototype gives away is charged to the guest.
+    // So the add-ons survive, and the guest pays for them. What the engine used
+    // to do instead: let the second code take 235590 — the ORDER balance — for
+    // 297000 of discount against a 267000 ticket base, which the prototype then
+    // spreads over the add-ons and hands the guest a bill of nothing.
+    expect(totals.total).toBe(30000);
+    expect(base('tickets')).toBe(0);
+    expect(base('addons')).toBe(30000);
     expect(totalBase - 267000).toBe(30000);
+
+    // THE ATTRIBUTION LINE, unchanged and still the thing not to touch: every
+    // satang of the 267000 is placed on a category. Reading each discount's
+    // split off the UNDISCOUNTED breakdown instead would let both codes claim
+    // the same 267000, the cascade would clamp the second, and the surplus
+    // would be reported as unapplied rather than given.
+    expect(totals.taxBreakdown.unappliedDiscount).toBe(0);
+    const absorbed = bases.reduce((sum, b) => sum + (b.base - (base(b.category) ?? 0)), 0);
+    expect(absorbed).toBe(267000);
   });
 
-  it('a surplus a scope can no longer absorb goes back to order-wide, not into the bin (EC-15)', () => {
+  it('a scoped code whose scope is already spent takes nothing, and says so (EC-15)', () => {
     const { totals } = runCartCase(cartCases.find((c) => c.id === 'EC-15')!);
     // The manual comp already took the whole ticket base, so the ticket-scoped
-    // promo has nothing of its own scope left; its 100000 spreads over what
-    // remains rather than being reported as unapplied.
-    expect(totals.discountTotal).toBe(278000);
+    // promo has nothing of its own scope left. Ruling 2: it takes nothing, the
+    // guest pays for the lockers, and the code carries the reason the till
+    // shows rather than sitting on the receipt at ฿0 with no explanation.
+    expect(totals.manualDiscountTotal).toBe(178000);
+    expect(totals.promoDiscountTotal).toBe(0);
+    expect(totals.discountTotal).toBe(178000);
+    expect(totals.appliedPromos[0]?.exhaustedReason).toBe(promoNotApplicableReason('TICKETS100'));
     expect(totals.taxBreakdown.unappliedDiscount).toBe(0);
-    expect(totals.total).toBe(0);
+    expect(totals.total).toBe(100000);
+  });
+
+  it('the ฿1,000 of lockers survives every combination of the two discounts (ruling 2)', () => {
+    // The reason the ruling was taken: before it, the comp and the code between
+    // them took 278000 off a 278000 cart, and ฿1,000 of lockers neither of them
+    // was aimed at walked out free. Now each is bounded by the tickets it
+    // targets, so no combination of the two can reach the lockers.
+    const source = cartCases.find((c) => c.id === 'EC-15')!;
+    const ctx = contextFor('weekday');
+    const { lines } = buildCart(source, ctx);
+    const config = taxConfigFor('seeded');
+    const manual = (source.manualDiscounts ?? []) as ManualDiscount[];
+    const promos = (source.promos ?? []) as PromoDiscount[];
+
+    for (const [label, m, p] of [
+      ['comp only', manual, [] as PromoDiscount[]],
+      ['code only', [] as ManualDiscount[], promos],
+      ['both', manual, promos],
+    ] as const) {
+      const totals = computeTicketCartTotals(lines, p, m, config, ctx);
+      expect(totals.subtotal, label).toBe(278000);
+      expect(totals.discountTotal, label).toBe(178000);
+      expect(totals.total, label).toBe(100000);
+    }
   });
 
   it('but the cascade itself still drops a named allocation it cannot place (TX-ATTR-5)', () => {
