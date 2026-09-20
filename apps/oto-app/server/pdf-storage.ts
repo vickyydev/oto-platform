@@ -4,24 +4,23 @@
  * Storage backend is selected by the OBJECT_STORAGE environment variable
  * (same as file-storage.ts):
  *   OBJECT_STORAGE=local   – local filesystem under uploads/.private/contracts/
- *   OBJECT_STORAGE=s3      – AWS S3 under <bucket>/<STORAGE_ENV_PREFIX>/.private/contracts/
- *   OBJECT_STORAGE=replit  – Replit GCS sidecar bucket
+ *   OBJECT_STORAGE=s3      – the platform bucket, under
+ *                            <bucket>/<STORAGE_ENV_PREFIX>/contracts/
  *
  * Paths stored in the database:
- *   s3      →  /<bucketId>/<prefix>/.private/contracts/signed_contract_<id>.pdf
- *   local   →  /uploads/.private/contracts/signed_contract_<id>.pdf
- *   replit  →  /<bucketId>/.private/contracts/signed_contract_<id>.pdf
+ *   s3      →  /<bucket>/<prefix>/contracts/signed_contract_<id>.pdf
+ *   local   →  /uploads/contracts/signed_contract_<id>.pdf
  */
 
 import { OBJECT_STORAGE } from "./config/env";
+import type { S3Client } from "@aws-sdk/client-s3";
 import {
-  S3Client,
   PutObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import { objectStorageClient } from "./replit_integrations/object_storage";
+import { createS3Client, s3Bucket } from "./storage/s3Client";
 import { Readable } from "stream";
 import fs from "fs";
 import path from "path";
@@ -31,19 +30,12 @@ const LETTERS_FOLDER = "letters";
 
 // ── S3 helpers ────────────────────────────────────────────────────────────────
 
+// One client for the process. It was rebuilt on every call before, which is
+// a credential resolution and an endpoint parse per contract PDF.
+let s3: S3Client | undefined;
 function getS3Client(): S3Client {
-  const region = process.env.AWS_REGION || "ap-southeast-1";
-  return new S3Client({
-    region,
-    ...(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
-      ? {
-          credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-          },
-        }
-      : {}),
-  });
+  if (!s3) s3 = createS3Client();
+  return s3;
 }
 
 function s3ContractKey(contractId: string): string {
@@ -56,27 +48,7 @@ function s3LetterKey(letterId: string): string {
   return `${prefix}/${LETTERS_FOLDER}/signed_letter_${letterId}.pdf`;
 }
 
-function s3BucketName(): string {
-  const bucket = process.env.S3_BUCKET;
-  if (!bucket) throw new Error("S3_BUCKET environment variable is not set");
-  return bucket;
-}
-
-// ── Replit helpers ────────────────────────────────────────────────────────────
-
-function replitBucketName(): string {
-  const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
-  if (!bucketId) throw new Error("DEFAULT_OBJECT_STORAGE_BUCKET_ID not set");
-  return bucketId;
-}
-
-function replitContractObjectPath(contractId: string): string {
-  return `.private/${CONTRACTS_FOLDER}/signed_contract_${contractId}.pdf`;
-}
-
-function replitLetterObjectPath(letterId: string): string {
-  return `.private/${LETTERS_FOLDER}/signed_letter_${letterId}.pdf`;
-}
+const s3BucketName = s3Bucket;
 
 // ── local helpers ─────────────────────────────────────────────────────────────
 
@@ -122,21 +94,6 @@ export async function uploadSignedPdf(contractId: string, pdfBuffer: Buffer): Pr
       console.log("[PdfStorage] Saved locally:", p);
       return localContractStoragePath(contractId);
     }
-
-    case "replit": {
-      const bucketId = replitBucketName();
-      const objectPath = replitContractObjectPath(contractId);
-      const bucket = objectStorageClient.bucket(bucketId);
-      await bucket.file(objectPath).save(pdfBuffer, {
-        contentType: "application/pdf",
-        resumable: false,
-        metadata: {
-          cacheControl: "private, max-age=31536000",
-          metadata: { contractId, uploadedAt: new Date().toISOString() },
-        },
-      });
-      return `/${bucketId}/${objectPath}`;
-    }
   }
 }
 
@@ -163,21 +120,6 @@ export async function uploadSignedLetterPdf(letterId: string, pdfBuffer: Buffer)
       await fs.promises.writeFile(p, pdfBuffer);
       console.log("[PdfStorage] Saved letter locally:", p);
       return localLetterStoragePath(letterId);
-    }
-
-    case "replit": {
-      const bucketId = replitBucketName();
-      const objectPath = replitLetterObjectPath(letterId);
-      const bucket = objectStorageClient.bucket(bucketId);
-      await bucket.file(objectPath).save(pdfBuffer, {
-        contentType: "application/pdf",
-        resumable: false,
-        metadata: {
-          cacheControl: "private, max-age=31536000",
-          metadata: { letterId, uploadedAt: new Date().toISOString() },
-        },
-      });
-      return `/${bucketId}/${objectPath}`;
     }
   }
 }
@@ -226,30 +168,6 @@ export async function streamSignedPdf(storagePath: string): Promise<{
         contentType: "application/pdf",
       };
     }
-
-    case "replit": {
-      try {
-        const pathWithoutSlash = storagePath.startsWith("/") ? storagePath.slice(1) : storagePath;
-        const parts = pathWithoutSlash.split("/");
-        if (parts.length < 2) return { stream: null, exists: false };
-        const bucketId = parts[0];
-        const objectPath = parts.slice(1).join("/");
-        const bucket = objectStorageClient.bucket(bucketId);
-        const file = bucket.file(objectPath);
-        const [exists] = await file.exists();
-        if (!exists) return { stream: null, exists: false };
-        const [metadata] = await file.getMetadata();
-        return {
-          stream: file.createReadStream(),
-          exists: true,
-          size: metadata.size ? Number(metadata.size) : undefined,
-          contentType: (metadata.contentType as string) || "application/pdf",
-        };
-      } catch (error) {
-        console.error("[PdfStorage] Replit stream error:", error);
-        return { stream: null, exists: false };
-      }
-    }
   }
 }
 
@@ -287,30 +205,12 @@ export async function deleteSignedPdf(storagePath: string): Promise<boolean> {
       await fs.promises.unlink(localFilePath);
       return true;
     }
-
-    case "replit": {
-      try {
-        const pathWithoutSlash = storagePath.startsWith("/") ? storagePath.slice(1) : storagePath;
-        const parts = pathWithoutSlash.split("/");
-        if (parts.length < 2) return false;
-        const bucketId = parts[0];
-        const objectPath = parts.slice(1).join("/");
-        const bucket = objectStorageClient.bucket(bucketId);
-        const file = bucket.file(objectPath);
-        const [exists] = await file.exists();
-        if (!exists) return true;
-        await file.delete();
-        return true;
-      } catch {
-        return false;
-      }
-    }
   }
 }
 
 /**
- * Returns true when the stored path belongs to object storage (S3 or Replit)
- * rather than the local filesystem. Used by routes to decide how to serve the file.
+ * Returns true when the stored path belongs to object storage rather than the
+ * local filesystem. Used by routes to decide how to serve the file.
  */
 export function isObjectStoragePath(storagePath: string): boolean {
   if (!storagePath) return false;
@@ -318,10 +218,6 @@ export function isObjectStoragePath(storagePath: string): boolean {
     case "s3": {
       const bucket = process.env.S3_BUCKET;
       return !!bucket && (storagePath.includes(bucket) || storagePath.startsWith(`/${bucket}/`));
-    }
-    case "replit": {
-      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
-      return !!bucketId && (storagePath.includes(bucketId) || storagePath.startsWith(`/${bucketId}/`));
     }
     case "local":
       return false;

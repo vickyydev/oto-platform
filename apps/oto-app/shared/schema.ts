@@ -137,6 +137,11 @@ export const users = pgTable("users", {
   phoneVerified: boolean("phone_verified").notNull().default(false),
   phoneVerifiedAt: timestamp("phone_verified_at"),
   profilePhotoPath: text("profile_photo_path"),
+  // The platform account this user is the same person as. Nullable because
+  // every user here predates the platform: the link is made afterwards by the
+  // provisioning service, not at creation, and a user who never signs in
+  // through the launcher never gets one.
+  platformUserId: uuid("platform_user_id").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

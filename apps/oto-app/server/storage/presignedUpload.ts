@@ -2,14 +2,17 @@
  * Presigned upload URL generation.
  *
  * Dispatches on OBJECT_STORAGE:
- *   s3     — AWS S3 presigned PUT (IAM role or explicit credentials)
- *   replit — GCS presigned PUT via service account credentials
- *              (GCS_PROJECT_ID, GCS_BUCKET_NAME, GCS_SERVICE_ACCOUNT_JSON)
+ *   s3     — presigned PUT against the platform bucket
  *   local  — not applicable; local mode uploads are server-proxied
+ *
+ * The third mode was `replit`, a presigned PUT against a Google Cloud bucket
+ * reached through a service-account JSON in an environment variable. It is
+ * gone with the rest of the Replit hosting: there is one bucket now, and it is
+ * the platform's.
  */
 
 import { OBJECT_STORAGE } from "../config/env";
-import { s3PresignedPut } from "./s3Storage";
+import { s3PresignedPutForKey } from "./s3Storage";
 
 export async function presignedUploadUrl(
   storageKey: string,
@@ -17,50 +20,11 @@ export async function presignedUploadUrl(
   expiresInSeconds = 600,
 ): Promise<string> {
   switch (OBJECT_STORAGE) {
-    case "s3": {
-      // storageKey is already the full key including prefix
-      const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
-      const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
-      const bucket = process.env.S3_BUCKET!;
-      const region = process.env.AWS_REGION || "ap-southeast-1";
-      const client = new S3Client({
-        region,
-        ...(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
-          ? {
-              credentials: {
-                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-              },
-            }
-          : {}),
-      });
-      return getSignedUrl(
-        client,
-        new PutObjectCommand({ Bucket: bucket, Key: storageKey, ContentType: mimeType }),
-        { expiresIn: expiresInSeconds },
-      );
-    }
-
-    case "replit": {
-      const projectId = process.env.GCS_PROJECT_ID;
-      const bucketName = process.env.GCS_BUCKET_NAME;
-      const serviceAccountJson = process.env.GCS_SERVICE_ACCOUNT_JSON;
-
-      if (!projectId || !bucketName || !serviceAccountJson) {
-        throw new Error("GCS not configured: GCS_PROJECT_ID, GCS_BUCKET_NAME, and GCS_SERVICE_ACCOUNT_JSON are required");
-      }
-
-      const { Storage } = await import("@google-cloud/storage");
-      const credentials = JSON.parse(serviceAccountJson);
-      const storage = new Storage({ projectId, credentials });
-      const [signedUrl] = await storage.bucket(bucketName).file(storageKey).getSignedUrl({
-        version: "v4",
-        action: "write",
-        expires: Date.now() + expiresInSeconds * 1000,
-        contentType: mimeType,
-      });
-      return signedUrl;
-    }
+    // storageKey is already the full key including prefix. s3Storage owns the
+    // client, so the endpoint and credentials are resolved in one place rather
+    // than constructed again here.
+    case "s3":
+      return s3PresignedPutForKey(storageKey, mimeType, expiresInSeconds);
 
     case "local":
       throw new Error("Presigned upload URLs are not supported with OBJECT_STORAGE=local");

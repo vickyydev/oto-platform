@@ -4,7 +4,7 @@
  * Activated when the S3_BUCKET environment variable is set.
  * Provides the same interface used by the rest of the server code
  * (uploadToObjectStorage / getFileFromObjectStorage / deleteFromObjectStorage)
- * but backed by AWS S3 instead of the Replit/GCS sidecar.
+ * but backed by the platform's S3-compatible bucket rather than local disk.
  *
  * Files are stored at:
  *   s3://<S3_BUCKET>/<STORAGE_ENV_PREFIX>/<folder>/<filename>
@@ -13,7 +13,6 @@
  */
 
 import {
-  S3Client,
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
@@ -21,24 +20,15 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { STORAGE_ENV_PREFIX } from "../config/env";
+import { createS3Client } from "./s3Client";
 import { Readable } from "stream";
 
 const bucket = process.env.S3_BUCKET!;
-const region = process.env.AWS_REGION || "ap-southeast-1";
 
-// Use explicit credentials when provided (local Tilt dev).
-// On App Runner the SDK picks up the IAM task role automatically.
-const s3 = new S3Client({
-  region,
-  ...(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
-    ? {
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        },
-      }
-    : {}),
-});
+// Endpoint, region and credentials all come from s3Client.ts now — the four
+// clients in this app pointed at four slightly different configurations, and
+// none of them at the platform bucket.
+const s3 = createS3Client();
 
 function objectKey(folder: string, filename: string): string {
   return `${STORAGE_ENV_PREFIX}/${folder}/${filename}`;
@@ -162,6 +152,25 @@ export async function s3PresignedPut(
   expiresInSeconds = 900,
 ): Promise<string> {
   const key = objectKey(folder, filename);
+  return getSignedUrl(
+    s3,
+    new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }),
+    { expiresIn: expiresInSeconds },
+  );
+}
+
+/**
+ * Sign a PUT for a key that is already complete — `buildStorageKey` has
+ * already put the environment prefix and the tenant on it, so this must not
+ * add a second one. Kept separate from `s3PresignedPut` above, which composes
+ * a key from a folder and a filename, because silently double-prefixing is the
+ * kind of bug that only shows up as a file nobody can find.
+ */
+export async function s3PresignedPutForKey(
+  key: string,
+  contentType: string,
+  expiresInSeconds = 900,
+): Promise<string> {
   return getSignedUrl(
     s3,
     new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }),

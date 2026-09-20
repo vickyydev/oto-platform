@@ -6,7 +6,14 @@ import { eq, and, desc } from "drizzle-orm";
 
 const router = Router();
 
-const REDIRECT_URI = "https://oto-suite-dev.replit.app/api/auth/xero/callback";
+/**
+ * Xero sends the person back here after they authorise, and the URI must match
+ * one registered on the Xero app exactly. It was hard-coded to a Replit
+ * workspace host, which is why the OAuth flow only ever completed on Replit
+ * (intake note 01, finding 9). It is configuration now; unset, the routes
+ * below refuse rather than sending anyone to a host that is not ours.
+ */
+const REDIRECT_URI = process.env.XERO_REDIRECT_URI ?? "";
 
 const XERO_SCOPES = [
   "openid",
@@ -20,6 +27,12 @@ const XERO_SCOPES = [
 ];
 
 function createXeroClient(): XeroClient {
+  // Named here rather than left to fail inside the OAuth exchange: an empty
+  // redirect URI produces an error from Xero's own servers that says nothing
+  // about which of our variables is missing.
+  if (!REDIRECT_URI) {
+    throw new Error("XERO_REDIRECT_URI is not set — the Xero OAuth callback has nowhere to return to");
+  }
   return new XeroClient({
     clientId: process.env.XERO_CLIENT_ID!,
     clientSecret: process.env.XERO_CLIENT_SECRET!,

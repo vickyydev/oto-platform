@@ -5,6 +5,12 @@
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
+    // No target was set, so tsc fell back to ES5 and refused to iterate a Set
+    // or a Map — which the vendored redactor does, and which must stay
+    // byte-identical to packages/telemetry/src or the drift check is
+    // meaningless. esbuild already builds this at a modern target; this only
+    // makes the typechecker agree with what actually ships.
+    "target": "ES2022",
     "module": "ESNext",
     "strict": true,
     "lib": ["esnext", "dom", "dom.iterable"],

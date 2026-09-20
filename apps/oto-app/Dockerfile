@@ -42,14 +42,19 @@ RUN npm ci --ignore-scripts
 
 # ── build ─────────────────────────────────────────────────────────────────────
 FROM deps AS builder
-# VITE_ vars must be available at build time to be embedded in the client bundle.
-# Declaring ARG before COPY ensures a changed value busts the build cache.
+# VITE_ vars must be available at build time to be embedded in the client
+# bundle. Declaring ARG before COPY ensures a changed value busts the build
+# cache.
 ARG VITE_SENTRY_DSN
 ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+# Where the client's "open the HR app" links point. Its fallback in the client
+# source is a Replit workspace URL, so leaving this unset sends people from
+# this deployment to a host that is not ours.
+ARG VITE_HR_APP_URL
+ENV VITE_HR_APP_URL=$VITE_HR_APP_URL
 ARG APP_VERSION
 ARG APP_CHANGE_ID
 COPY . .
-# Skip Replit-only vite plugins — they are guarded by REPL_ID checks in vite.config.ts
 RUN npm run build
 
 # ── runtime ───────────────────────────────────────────────────────────────────
@@ -64,6 +69,14 @@ RUN npm ci --omit=dev --ignore-scripts
 # Copy compiled output
 COPY --from=builder /app/dist ./dist
 
+# The migrator and the SQL it applies. They are in the runtime image because
+# the pre-deploy step runs there (render.yaml), against this service's own
+# database role, before the new instance takes any traffic. script/migrate.mjs
+# is plain JavaScript needing only pg and drizzle-orm for exactly this reason:
+# the runtime install is --omit=dev, so there is no tsx and no drizzle-kit here.
+COPY migrations/ ./migrations/
+COPY script/migrate.mjs ./script/migrate.mjs
+
 ARG APP_VERSION
 ARG APP_CHANGE_ID
 
@@ -72,7 +85,18 @@ ENV PORT=8080
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV APP_VERSION=$APP_VERSION
 ENV APP_CHANGE_ID=$APP_CHANGE_ID
+# Every process on this platform stores UTC and converts at the edge using the
+# branch's timezone. A container on Asia/Bangkok would make a day boundary
+# depend on where the code happens to run.
+ENV TZ=UTC
 
 EXPOSE 8080
+
+# The process still runs as root, which it should not. It is left that way
+# deliberately for now rather than changed blind: Chromium's sandbox and
+# Puppeteer's temporary files both care who the user is, /app is owned by root
+# because npm ci ran as root, and none of that can be verified without building
+# and running the image. It belongs with the module walk-through in S2-17b,
+# where every PDF path is exercised anyway.
 
 CMD ["node", "dist/index.cjs"]

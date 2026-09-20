@@ -5,78 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1769398214818,
-      "tag": "0000_add_nanny_reservations",
+      "when": 1789888010378,
+      "tag": "0000_otoapp_baseline",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1769428574865,
-      "tag": "0001_concerned_scorpion",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1769597568302,
-      "tag": "0002_add_completion_fields_to_studio_event_tasks",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1775182400000,
-      "tag": "0003_replace_theme_with_activities_decoration",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1750291200000,
-      "tag": "0004_beo_set_menu",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1750291200001,
-      "tag": "0005_add_camp_event_type",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1750291200002,
-      "tag": "0006_add_camp_end_date",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1784373318195,
-      "tag": "0014_add_beo_suppression_and_start_time",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1788593209390,
-      "tag": "0020_add_advisor_kiosk_attendance",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1789215232000,
-      "tag": "0021_add_checklist_item_evidence_methods",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1789220989000,
-      "tag": "0022_add_advisor_attendance_corrections",
+      "when": 1789888049933,
+      "tag": "0001_platform_user_id",
       "breakpoints": true
     }
   ]

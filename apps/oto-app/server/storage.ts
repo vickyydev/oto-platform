@@ -358,6 +358,10 @@ export interface IStorage {
         getUser(id: string): Promise<User | undefined>;
         getUserByEmail(email: string): Promise<User | undefined>;
         getUserByPhoneE164(phoneE164: string): Promise<User | undefined>;
+        // Who this platform account is in this app. The only lookup the
+        // launcher hand-off is allowed to make: matching on name or email
+        // instead is how one person ends up inside another's record.
+        getUserByPlatformUserId(platformUserId: string): Promise<User | undefined>;
         getUserWithBranchAccess(
                 id: string,
         ): Promise<UserWithBranchAccess | undefined>;
@@ -1916,6 +1920,16 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(users)
                         .where(eq(users.phoneE164, phoneE164));
+                return user || undefined;
+        }
+
+        async getUserByPlatformUserId(
+                platformUserId: string,
+        ): Promise<User | undefined> {
+                const [user] = await db
+                        .select()
+                        .from(users)
+                        .where(eq(users.platformUserId, platformUserId));
                 return user || undefined;
         }
 

@@ -108,7 +108,7 @@ import { advisorSessionCorrectionValues, advisorSessionMetrics, canAdvisorUseKio
 
 import { registerAIRoutes } from "./ai-routes";
 import { Sentry } from "./sentry";
-import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { DB_SCHEMA, OBJECT_STORAGE, S3_ENDPOINT } from "./config/env";
 
 
 // Helper to parse object storage path
@@ -746,19 +746,31 @@ export async function registerRoutes(
 
   app.set('etag', false);
 
+  /**
+   * The health endpoint. Render polls it, and it is what puts this app on the
+   * Console's Health page beside everything else.
+   *
+   * It is UNAUTHENTICATED — it is registered before the auth middleware, and
+   * has to be, because a health check cannot sign in. So it reports presence,
+   * never values: it used to hand the bucket name and the storage region to
+   * anyone who asked, which is a free description of where the park's files
+   * live. Same rule as the platform's Integrations page: name the variable
+   * that is unset, never what is in it.
+   */
   app.get("/api/status", (_req, res) => {
     res.json({
       status: "ok",
       version: process.env.APP_VERSION || "unknown",
       changeId: process.env.APP_CHANGE_ID || null,
+      schema: DB_SCHEMA,
       features: {
         awsRekognition: process.env.USE_AWS_REKOGNITION === "true",
       },
       storage: {
-        mode: process.env.OBJECT_STORAGE,
-        bucket: process.env.S3_BUCKET || null,
-        region: process.env.AWS_REGION || null,
-        explicitCredentials: !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY),
+        mode: OBJECT_STORAGE,
+        bucketConfigured: !!process.env.S3_BUCKET,
+        endpointConfigured: !!S3_ENDPOINT,
+        credentialsConfigured: !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY),
       },
     });
   });
@@ -823,8 +835,11 @@ export async function registerRoutes(
   // Data Admin routes (global_admin / admin only)
   app.use("/api/data-admin", requireAuth, requireGlobalAdmin, dataAdminRouter);
 
-  // Object storage routes for file uploads
-  registerObjectStorageRoutes(app);
+  // The presigned-upload and /objects routes that came with Replit's object
+  // storage integration are gone with it. They signed against the GCS sidecar
+  // and had no ACL check on the way back out; the app's own upload paths
+  // (core/filesRoutes.ts, core/tasksRoutes.ts) go through presignedUploadUrl
+  // and the platform bucket instead.
 
   // BEO (Banquet Event Order) routes
   registerBeoRoutes(app);
@@ -21249,7 +21264,7 @@ OTO Company Limited`,
       const fullText = chunks.map(c => c.text).join("\n\n");
       
       // Check for OpenAI API key
-      if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+      if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ message: "AI service not configured" });
       }
       
@@ -21483,7 +21498,7 @@ Return ONLY valid JSON, no markdown or explanation.`
   const getAskOtoOpenAI = (() => {
     let _client: OpenAI | null = null;
     return () => {
-      if (!_client) _client = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+      if (!_client) _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL });
       return _client;
     };
   })();
@@ -21740,7 +21755,7 @@ KNOWLEDGE BASE ARTICLES & SOPs:
 ${context}`;
 
       // Check if OpenAI API key is configured
-      if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+      if (!process.env.OPENAI_API_KEY) {
         console.error("Ask OTO: OpenAI API key not configured");
         return res.status(503).json({ 
           message: "AI assistant is temporarily unavailable. Please try again later or ask your manager.",

@@ -6,11 +6,19 @@ import { eq } from "drizzle-orm";
 
 let openaiClient: OpenAI | null = null;
 
+/**
+ * `AI_INTEGRATIONS_OPENAI_API_KEY` and `AI_INTEGRATIONS_OPENAI_BASE_URL` were
+ * Replit's names for a key it injected and a proxy it ran. Off Replit nothing
+ * injects them, and the names describe a thing that no longer exists, so they
+ * are the SDK's own: OPENAI_API_KEY and OPENAI_BASE_URL. The base URL is still
+ * honoured because a proxy in front of the model is a real deployment choice —
+ * it is simply ours to make now.
+ */
 function getOpenAI(): OpenAI {
   if (!openaiClient) {
     openaiClient = new OpenAI({
-      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: process.env.OPENAI_BASE_URL,
     });
   }
   return openaiClient;

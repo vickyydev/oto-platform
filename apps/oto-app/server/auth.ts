@@ -6,6 +6,12 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { normalizePhoneToE164 } from "./twilio-service";
+import { TRUST_PROXY } from "./config/env";
+import {
+  LEGACY_LOGIN_REFUSAL,
+  legacyLoginEnabled,
+  registerPlatformSignOn,
+} from "./middleware/platformSignOn";
 import { User as SelectUser } from "@shared/schema";
 
 declare global {
@@ -23,33 +29,52 @@ export async function hashPassword(password: string) {
 }
 
 export function setupAuth(app: Express) {
-  // When running inside Replit the app is embedded in an iframe on a different
-  // origin (replit.com), making every fetch a cross-site request.  Browsers
-  // block SameSite=Lax cookies in cross-site contexts, so the session cookie
-  // is never sent and all authenticated API calls fail.  Fix: use
-  // SameSite=None + Secure when running on Replit.  Replit's proxy provides
-  // TLS and the existing `trust proxy: 1` setting ensures req.secure reflects
-  // the real protocol, so Express will send the Secure cookie correctly.
-  // Outside Replit (Tilt/k8s local dev, App Runner) keep SameSite=Lax and
-  // secure:false — those environments are same-site and this matches existing
-  // behaviour.
-  const isReplit = !!process.env.REPLIT_DEV_DOMAIN || !!process.env.REPLIT_DEPLOYMENT;
-  console.log(`[auth-diag] isReplit=${isReplit} REPLIT_DEV_DOMAIN=${process.env.REPLIT_DEV_DOMAIN} REPLIT_DEPLOYMENT=${process.env.REPLIT_DEPLOYMENT} -> cookie secure=${isReplit} sameSite=${isReplit ? "none" : "lax"}`);
+  // The cookie used to be decided by Replit's own variables, because on Replit
+  // the app ran in an iframe on replit.com and every fetch was cross-site —
+  // which needs SameSite=None, which needs Secure. None of that is true here:
+  // the client and the api are one origin, served by this process. So the
+  // cookie is SameSite=Lax, and `secure` follows the build: HTTPS everywhere
+  // this runs as a production build, plain HTTP on a laptop.
+  //
+  // The launcher hand-off still works under Lax. It arrives as a top-level
+  // navigation to this app's own origin, which is the case Lax exists to
+  // allow; the token travels in the URL fragment and is exchanged for this
+  // cookie by a same-origin request afterwards.
+  const secureCookie = process.env.NODE_ENV === "production";
   const sessionSettings: session.SessionOptions = {
+    // No fallback. The boot guard refuses a deployment that has not set this
+    // (server/config/env.ts) — a session secret from the source is a session
+    // anyone holding the source can mint.
     secret: process.env.SESSION_SECRET || "contract-sender-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000,
-      secure: isReplit,
-      sameSite: isReplit ? "none" : "lax",
+      secure: secureCookie,
+      sameSite: "lax",
+      httpOnly: true,
     },
   };
 
-  app.set("trust proxy", 1);
+  // Render terminates TLS at its load balancer and forwards plain HTTP to the
+  // container, so `req.protocol` is "http" unless Express is told how many
+  // hops in front of it are ours. express-session consults that before it will
+  // set a `secure` cookie: at 0 hops on Render the app would authenticate a
+  // person and then hand back no cookie at all, and the only symptom would be
+  // a sign-in form that reappears.
+  app.set("trust proxy", TRUST_PROXY);
   app.use(session(sessionSettings));
   app.use(passport.initialize());
+  /**
+   * Between the two, deliberately. `passport.initialize()` is what puts
+   * `req.login` on the request, and running before `passport.session()` means
+   * a hand-off spent on this request is deserialised on this request — through
+   * `deserializeUser` and `getUserWithBranchAccess` like any other session, so
+   * role, branch scope and tenant resolve the way they always did and no
+   * handler below knows the difference.
+   */
+  registerPlatformSignOn(app);
   app.use(passport.session());
 
   passport.use(
@@ -93,6 +118,14 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    /**
+     * A refusal, not a 404. Somebody has this address bookmarked, or has typed
+     * it from memory for two years, and the one thing they need to be told is
+     * where the door moved to. A missing route tells them the app is broken.
+     */
+    if (!legacyLoginEnabled()) {
+      return res.status(403).json({ reason: "legacy_login_off", message: LEGACY_LOGIN_REFUSAL });
+    }
     passport.authenticate("local", async (err: any, user: SelectUser | false, info: any) => {
       if (err) return next(err);
       if (!user) {

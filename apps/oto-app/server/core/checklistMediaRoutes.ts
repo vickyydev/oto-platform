@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import type { S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { db } from "../db";
 import { eq, and, inArray } from "drizzle-orm";
@@ -11,6 +12,7 @@ import { tenants, DEFAULT_TENANT_SLUG } from "../../shared/schema";
 import multer from "multer";
 import { fixMulterFilenames } from "../middleware/fixMulterFilenames";
 import { randomUUID } from "crypto";
+import { createS3Client, s3Bucket } from "../storage/s3Client";
 
 const router = Router();
 
@@ -35,22 +37,19 @@ async function getDefaultTenantId(): Promise<string> {
   return result[0].id;
 }
 
-function getS3Client() {
-  const region = process.env.AWS_S3_REGION || "ap-southeast-7";
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-
-  if (!accessKeyId || !secretAccessKey) {
+/**
+ * Checklist media used to address a bucket of its own — AWS_S3_BUCKET,
+ * defaulting to "oto-studio-files", in a region of its own. One bucket now
+ * (intake note 01, §10 item 3): two variables naming one thing is how photos
+ * end up somewhere nobody looks for them.
+ */
+let s3: S3Client | undefined;
+function getS3Client(): S3Client {
+  if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
     throw new Error("AWS credentials not configured");
   }
-
-  return new S3Client({
-    region,
-    credentials: {
-      accessKeyId,
-      secretAccessKey,
-    },
-  });
+  if (!s3) s3 = createS3Client();
+  return s3;
 }
 
 function canAccessTemplate(user: any, template: { branchId?: string | null; branchIds?: string[] | null }): boolean {
@@ -79,9 +78,7 @@ async function getAuthorizedTemplate(req: Request, templateId: string, tenantId:
   return template && canAccessTemplate(req.user, template) ? template : null;
 }
 
-function getS3Bucket(): string {
-  return process.env.AWS_S3_BUCKET || "oto-studio-files";
-}
+const getS3Bucket = s3Bucket;
 
 async function verifyTemplateAccess(req: Request, templateId: string, userTenantId: string): Promise<boolean> {
   return !!await getAuthorizedTemplate(req, templateId, userTenantId);

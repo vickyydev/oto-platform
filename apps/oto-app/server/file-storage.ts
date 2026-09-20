@@ -5,9 +5,8 @@
  * All file uploads in this application MUST use these functions.
  *
  * Storage backend is selected by the OBJECT_STORAGE environment variable:
- *   OBJECT_STORAGE=local   – local filesystem under uploads/ (Tilt / local dev)
- *   OBJECT_STORAGE=s3      – AWS S3 (App Runner / production)
- *   OBJECT_STORAGE=replit  – Replit GCS sidecar (legacy Replit hosting)
+ *   OBJECT_STORAGE=local   – local filesystem under uploads/ (a laptop only)
+ *   OBJECT_STORAGE=s3      – the platform's S3-compatible bucket
  *
  * OBJECT_STORAGE MUST be set; there is no default. Startup will fail without it.
  *
@@ -30,7 +29,6 @@
 
 import { OBJECT_STORAGE } from "./config/env";
 import { s3Upload, s3Get, s3Delete, s3GetRange, type RangeFileResult } from "./storage/s3Storage";
-import { objectStorageClient, ObjectStorageService } from "./replit_integrations/object_storage/objectStorage";
 import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
@@ -119,126 +117,6 @@ async function localDelete(folder: string, filename: string): Promise<boolean> {
   return true;
 }
 
-// ── replit helpers ────────────────────────────────────────────────────────────
-
-function parseObjectPath(storagePath: string): { bucketName: string; objectName: string } {
-  if (!storagePath.startsWith("/")) storagePath = `/${storagePath}`;
-  const parts = storagePath.split("/");
-  return { bucketName: parts[1], objectName: parts.slice(2).join("/") };
-}
-
-async function replitUpload(
-  buffer: Buffer,
-  folder: string,
-  filename: string,
-  contentType: string,
-): Promise<string> {
-  const objectStorageService = new ObjectStorageService();
-  const publicPaths = objectStorageService.getPublicObjectSearchPaths();
-
-  if (publicPaths.length === 0) {
-    throw new Error("No public object storage paths configured (PUBLIC_OBJECT_SEARCH_PATHS)");
-  }
-
-  const { bucketName, objectName: basePath } = parseObjectPath(publicPaths[0]);
-  const objectName = basePath ? `${basePath}/${folder}/${filename}` : `${folder}/${filename}`;
-
-  const bucket = objectStorageClient.bucket(bucketName);
-  await bucket.file(objectName).save(buffer, {
-    contentType,
-    metadata: { folder, uploadedAt: new Date().toISOString() },
-  });
-
-  console.log(`[FileStorage] Uploaded to Replit object storage: ${objectName}`);
-  return `/api/files/${folder}/${filename}`;
-}
-
-async function replitGet(
-  folder: string,
-  filename: string,
-): Promise<{ stream: NodeJS.ReadableStream; contentType: string } | null> {
-  const objectStorageService = new ObjectStorageService();
-  const publicPaths = objectStorageService.getPublicObjectSearchPaths();
-
-  for (const publicPath of publicPaths) {
-    const { bucketName, objectName: basePath } = parseObjectPath(publicPath);
-    const objectName = basePath ? `${basePath}/${folder}/${filename}` : `${folder}/${filename}`;
-    const bucket = objectStorageClient.bucket(bucketName);
-    const file = bucket.file(objectName);
-
-    try {
-      const [exists] = await file.exists();
-      if (exists) {
-        const [metadata] = await file.getMetadata();
-        return {
-          stream: file.createReadStream() as unknown as NodeJS.ReadableStream,
-          contentType: (metadata.contentType as string) || "application/octet-stream",
-        };
-      }
-    } catch (err) {
-      console.error(`[FileStorage] Replit bucket error for ${objectName}:`, err);
-    }
-  }
-  return null;
-}
-
-async function replitGetRange(
-  folder: string,
-  filename: string,
-  rangeHeader?: string,
-): Promise<RangeFileResult | null> {
-  const objectStorageService = new ObjectStorageService();
-  const publicPaths = objectStorageService.getPublicObjectSearchPaths();
-
-  for (const publicPath of publicPaths) {
-    const { bucketName, objectName: basePath } = parseObjectPath(publicPath);
-    const objectName = basePath ? `${basePath}/${folder}/${filename}` : `${folder}/${filename}`;
-    const bucket = objectStorageClient.bucket(bucketName);
-    const file = bucket.file(objectName);
-
-    try {
-      const [exists] = await file.exists();
-      if (exists) {
-        const [metadata] = await file.getMetadata();
-        const totalSize = Number(metadata.size) || 0;
-        const contentType = (metadata.contentType as string) || "application/octet-stream";
-        const { start, end, isPartial } = parseRangeHeader(rangeHeader, totalSize);
-        return {
-          stream: file.createReadStream({ start, end }) as unknown as NodeJS.ReadableStream,
-          contentType,
-          totalSize,
-          start,
-          end,
-          isPartial,
-        };
-      }
-    } catch (err) {
-      console.error(`[FileStorage] Replit bucket error for ${objectName}:`, err);
-    }
-  }
-  return null;
-}
-
-async function replitDelete(folder: string, filename: string): Promise<boolean> {
-  const objectStorageService = new ObjectStorageService();
-  const publicPaths = objectStorageService.getPublicObjectSearchPaths();
-
-  for (const publicPath of publicPaths) {
-    const { bucketName, objectName: basePath } = parseObjectPath(publicPath);
-    const objectName = basePath ? `${basePath}/${folder}/${filename}` : `${folder}/${filename}`;
-    const bucket = objectStorageClient.bucket(bucketName);
-    const file = bucket.file(objectName);
-
-    const [exists] = await file.exists();
-    if (exists) {
-      await file.delete();
-      console.log(`[FileStorage] Deleted from Replit object storage: ${objectName}`);
-      return true;
-    }
-  }
-  return false;
-}
-
 // ── public API ────────────────────────────────────────────────────────────────
 
 export async function uploadToObjectStorage(
@@ -250,7 +128,6 @@ export async function uploadToObjectStorage(
   switch (OBJECT_STORAGE) {
     case "s3":     return s3Upload(buffer, folder, filename, contentType);
     case "local":  return localUpload(buffer, folder, filename);
-    case "replit": return replitUpload(buffer, folder, filename, contentType);
   }
 }
 
@@ -261,7 +138,6 @@ export async function getFileFromObjectStorage(
   switch (OBJECT_STORAGE) {
     case "s3":     return s3Get(folder, filename);
     case "local":  return localGet(folder, filename);
-    case "replit": return replitGet(folder, filename);
   }
 }
 
@@ -272,7 +148,6 @@ export async function deleteFromObjectStorage(
   switch (OBJECT_STORAGE) {
     case "s3":     return s3Delete(folder, filename);
     case "local":  return localDelete(folder, filename);
-    case "replit": return replitDelete(folder, filename);
   }
 }
 
@@ -289,6 +164,5 @@ export async function getFileRangeFromObjectStorage(
   switch (OBJECT_STORAGE) {
     case "s3":     return s3GetRange(folder, filename, rangeHeader);
     case "local":  return localGetRange(folder, filename, rangeHeader);
-    case "replit": return replitGetRange(folder, filename, rangeHeader);
   }
 }

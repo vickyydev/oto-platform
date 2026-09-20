@@ -1,3 +1,8 @@
+// First, and it has to be first: importing it validates the whole environment
+// and refuses to go further on a configuration that does not belong to this
+// deployment. Everything below builds something — a Sentry client, a
+// connection pool, a session store — out of the values it checks.
+import "./config/env";
 import "./sentry";
 import * as Sentry from "@sentry/node";
 import express, { type Request, Response, NextFunction } from "express";
@@ -8,7 +13,15 @@ import { runFullReconciliation } from "./attention-engine";
 import { startScheduledJobs } from "./scheduled-jobs";
 import { storage } from "./storage";
 import { hashPassword } from "./auth";
+import { assertSearchPath } from "./db";
+import { bindConsole, logger } from "./lib/logger";
+import { registerRequestLogging } from "./middleware/requestLog";
 import path from "path";
+
+// Everything written through `console.*` from here on goes through the
+// redacting logger — see lib/logger.ts for why the global is rebound rather
+// than 466 call sites rewritten.
+bindConsole();
 
 const app = express();
 const httpServer = createServer(app);
@@ -18,6 +31,15 @@ declare module "http" {
     rawBody: unknown;
   }
 }
+
+// First, so that everything after it — the body parsers included — runs
+// inside the request's async context and can find its id. This replaces the
+// middleware that captured every JSON response body and wrote it into the log
+// whenever LOG_RESPONSE_BODY was not exactly "false", which is how the old
+// stack's log stream came to hold children's records, reset tokens and kiosk
+// codes (intake note 01, finding 6). The body is not captured at all now, so
+// there is no variable left to set wrongly.
+registerRequestLogging(app);
 
 app.use(
   express.json({
@@ -30,44 +52,24 @@ app.use(
 
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
+/**
+ * The app's own helper, used by the boot and schedule lines below and exported
+ * as it always was. It writes a structured line now instead of a formatted
+ * timestamp: `source` was the bracketed tag in the old output ("[attention]",
+ * "[seed]") and becomes a field, so a log search can ask for one subsystem.
+ */
 export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
+  logger.info({ source }, message);
 }
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse && process.env.LOG_RESPONSE_BODY !== "false") {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
-
 (async () => {
+  // Before a single route is registered. The app emits unqualified table
+  // names, so if the search path fell through to `public` it would read and
+  // write another application's schema perfectly happily and report itself
+  // healthy doing it. There is no symptom to watch for afterwards, which is
+  // why this is a refusal to start rather than a warning.
+  await assertSearchPath();
+
   Sentry.setupExpressErrorHandler(app);
 
   await registerRoutes(httpServer, app);
@@ -162,4 +164,10 @@ app.use((req, res, next) => {
       startScheduledJobs();
     },
   );
-})();
+})().catch((error) => {
+  // A boot failure has to be loud and has to exit non-zero: Render reads the
+  // exit code, cancels the deploy and leaves the previous instance serving.
+  // An unhandled rejection would do the same thing by accident; this says so.
+  logger.fatal({ err: error }, "boot failed");
+  process.exit(1);
+});

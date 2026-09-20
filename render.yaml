@@ -1,10 +1,11 @@
-# OTO Platform — Render blueprint (S2-01c, extended by S2-02)
+# OTO Platform — Render blueprint (S2-01c, extended by S2-02 and S2-17a)
 #
 # This file declares the staging environment: the api web service, the two
-# static sites in front of it — the POS and the suite launcher — and the
-# managed Postgres they share. It is the whole deployment, in one file, in the
-# repository — which is the trade DEPLOYMENT_TOPOLOGY.md accepts for having
-# many small deployables instead of one server.
+# static sites in front of it — the POS and the suite launcher — the lifted
+# OTO App, and the managed Postgres they all share. It is the whole
+# deployment, in one file, in the repository — which is the trade
+# DEPLOYMENT_TOPOLOGY.md accepts for having many small deployables instead of
+# one server.
 #
 # How to apply it: Render dashboard → New → Blueprint → point it at this repo.
 # Render creates everything below and prompts for each value marked
@@ -30,6 +31,12 @@
 #      app it names. Unlike the three above this does not stop the api
 #      booting: sign-in on each app's own origin still works, so the failure
 #      is a launcher that shows tiles and refuses to follow them.
+#   5. The OTO App needs a database role of its own created by hand — the
+#      blueprint can declare one login per database and that one belongs to
+#      the api — plus its four hashing secrets and the same bucket the api
+#      uses. Its own block spells out the SQL. It refuses to start without
+#      them, and it refuses to start if its search_path does not resolve to
+#      its own schema.
 #
 # Production is a second environment, added when the park cuts over: the same
 # services with `SEED_PROFILE`/`OPS_TEST_CONTROLS` dropped, its own Twilio
@@ -37,7 +44,7 @@
 # database. It is not declared yet — staging is where the park's team play
 # during Sprint 2.
 #
-# Deploys are gated on CI, not on the push: all three services set
+# Deploys are gated on CI, not on the push: every service sets
 # `autoDeployTrigger: checksPass`, so Render watches this repository, waits for
 # the commit status of the `ci` workflow and deploys only when it is green. A
 # red build therefore never reaches the staging URL. The rejected alternative
@@ -318,6 +325,16 @@ services:
         # reference another service's URL. Correct them if Render issues a
         # suffixed hostname. Comma-separated as the console and the lifted
         # apps land.
+        #
+        # THE OTO APP IS NOT LISTED YET. Its service is declared at the foot of
+        # this file and it boots, but the middleware that exchanges a hand-off
+        # token for one of its sessions is the other half of S2-17a and is not
+        # in place. Naming it here now would mint tokens for an app that cannot
+        # spend them, and the tile would open a second sign-in page — the exact
+        # thing the ticket's acceptance criteria rule out. When the middleware
+        # lands, this becomes:
+        #   pos=…,oto_app=https://oto-app-staging.onrender.com
+        # and that origin has to join ALLOWED_ORIGINS above at the same time.
         value: pos=https://oto-pos-staging.onrender.com
       - key: HANDOFF_TOKEN_TTL_S
         # The seconds a browser needs to carry a token from one origin to the
@@ -579,6 +596,257 @@ services:
       # bundle, the other decides whether a credential is honoured.
       - key: VITE_POS_URL
         value: https://oto-pos-staging.onrender.com
+      # The OTO App tile stays "coming soon" for one more step. Its service is
+      # declared at the foot of this file and reachable, but until the hand-off
+      # middleware is in it the tile would hand someone a second sign-in page.
+      # Uncomment together with the oto_app entry in HANDOFF_APP_ORIGINS above
+      # and that origin in ALLOWED_ORIGINS.
+      # - key: VITE_OTO_APP_URL
+      #   value: https://oto-app-staging.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # OTO App — the park's HR and daily-operations system, lifted (S2-17a).
+  #
+  # The one Docker service here, and the only one not built from the pnpm
+  # workspace. It keeps npm and its own lockfile because it is a lift rather
+  # than a port: inside the workspace pnpm would hoist its dependency tree
+  # against ours and neither app would resolve what it was written against
+  # (pnpm-workspace.yaml says the same). So Render builds it from its own
+  # Dockerfile, with apps/oto-app as the build context — NOT the repository
+  # root, which would put the whole monorepo into the build.
+  #
+  # Its 184 tables live in schema `otoapp` of the database above, beside core,
+  # crm, pos and the rest. The app emits unqualified table names, so the schema
+  # is chosen by `search_path` rather than by rewriting 184 definitions, and it
+  # REFUSES TO START if that path does not resolve to `otoapp` — see
+  # apps/oto-app/server/db.ts. A silent fall-through to `public` is the failure
+  # that guard exists for, and it is silent: the app would read and write
+  # another application's schema perfectly happily.
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: oto-app-staging
+    runtime: docker
+    region: singapore
+    # 2 GB, matching the intake's sizing. What it is for: Chromium renders the
+    # contract, letter and BEO PDFs inside this container, and a headless
+    # browser is the largest thing this process ever does. `starter` (512 MB)
+    # would render a PDF once and fail the second time.
+    plan: standard
+    branch: main
+    # The Dockerfile copies package.json, vendor/ and then the app — all
+    # relative to the app's own folder, so the context is the app's own folder.
+    rootDir: apps/oto-app
+    dockerfilePath: ./Dockerfile
+    # ONE INSTANCE, and for a reason this app carries with it: it runs its own
+    # schedules in-process (the attention engine every six hours, the nightly
+    # departed-account deactivation, presence reconciliation). None of them
+    # takes a lock, so a second instance runs every schedule twice. Moving them
+    # onto the platform job runner is S2-17b's work; until then this number is
+    # not a capacity dial.
+    numInstances: 1
+    # /api/status answers without touching the database and is deliberately
+    # unauthenticated — a health check cannot sign in. It reports presence, not
+    # values: no bucket name, no region, no secret.
+    healthCheckPath: /api/status
+    # Applied before the new instance takes traffic, against this service's own
+    # role. Forward-only SQL migrations, never `drizzle-kit push`: the export's
+    # post-merge hook ran `push --force` on every merge, and against a database
+    # several apps share that is a schema-destroying operation with no
+    # migration to review. A failure here cancels the deploy and leaves the
+    # previous instance serving.
+    preDeployCommand: npm run db:migrate
+    autoDeployTrigger: checksPass
+    envVars:
+      # -- runtime ----------------------------------------------------------
+      # NODE_ENV, TZ and PUPPETEER_EXECUTABLE_PATH are set in the image
+      # (apps/oto-app/Dockerfile) and are deliberately not repeated here —
+      # properties of the build rather than of the deployment.
+      - key: PORT
+        # Matches the image's EXPOSE. The app reads PORT and falls back to
+        # 5000, which is a Replit convention and nothing this container does.
+        value: '8080'
+      - key: DEPLOY_ENV
+        # WHICH deployment this is. The boot guard
+        # (apps/oto-app/server/config/env.ts) keys every refusal on this rather
+        # than on NODE_ENV, because staging runs the production build.
+        value: staging
+      - key: APP_ENV
+        # The app's own older discriminator, required since before the lift:
+        # it tags Sentry events and gates the dev-only import routes.
+        value: staging
+      - key: LOG_LEVEL
+        value: info
+
+      # -- database ----------------------------------------------------------
+      - key: DATABASE_URL
+        # NOT `fromDatabase`, and this is the one value that needs a person
+        # before the first deploy. The blueprint's `databases:` block declares
+        # exactly one login (oto_platform) and there is no blueprint syntax for
+        # a second, but this app is meant to have its own — "one login per
+        # service" in the note above that block, so a connection leak in one
+        # app cannot starve the others.
+        #
+        # Create it once, on the database above:
+        #
+        #   CREATE ROLE oto_app LOGIN PASSWORD '<generated>';
+        #   ALTER ROLE oto_app CONNECTION LIMIT 10;
+        #   CREATE SCHEMA IF NOT EXISTS otoapp AUTHORIZATION oto_app;
+        #   ALTER ROLE oto_app SET search_path = otoapp;
+        #
+        # then paste the connection string for that role here. The connection
+        # limit is the 10 budgeted for this app in the note above the database,
+        # and matches the pool in apps/oto-app/server/db.ts.
+        #
+        # The app also sets `search_path` on the connection itself, so it is
+        # correct even connected as some other role — belt and braces, because
+        # the role default is what protects psql and one-off scripts, and the
+        # connection option is what protects the app.
+        sync: false
+      - key: DB_SCHEMA
+        # The schema the app's tables live in. Changing this is a data move,
+        # not a setting; it is here so the value the guard checks is visible
+        # beside everything else rather than only in the code.
+        value: otoapp
+
+      # -- how the app sits behind Render's proxy ----------------------------
+      - key: TRUST_PROXY
+        # One hop: Render's load balancer. This is not only about req.ip here —
+        # express-session refuses to set a `secure` cookie unless the request
+        # looks secure, and behind a TLS terminator the only evidence of that
+        # is X-Forwarded-Proto, which Express reads only when it trusts the
+        # proxy. At 0 the app would sign a person in and issue no cookie.
+        value: '1'
+
+      # -- secrets ------------------------------------------------------------
+      # Four values that each hash something already in the park. Every one has
+      # a fallback written into the source, and the fallback WORKS — which is
+      # why the boot guard refuses a deployment that has not set them rather
+      # than letting the app start with a secret anyone holding the source can
+      # reproduce.
+      #
+      # WHAT BREAKS WHEN ONE OF THEM CHANGES, from the intake's re-hosting
+      # list: every kiosk has to be re-activated, every branch check-in QR code
+      # has to be reprinted, and advisor PINs have to be reset. So they are set
+      # once, before the first deploy, and then left alone. Generate each the
+      # way you would any other: `openssl rand -hex 32`.
+      - key: SESSION_SECRET
+        # Signs the session cookie AND the check-in tokens embedded in the
+        # branch QR codes. Changing it signs everyone out and invalidates every
+        # printed code.
+        sync: false
+      - key: SESSION_PEPPER
+        # Hashes kiosk session tokens. Changing it ends every kiosk session.
+        sync: false
+      - key: KIOSK_CODE_PEPPER
+        # Hashes kiosk activation codes. Changing it means every kiosk device
+        # has to be activated again, in person.
+        sync: false
+      - key: PIN_FINGERPRINT_SECRET
+        # Hashes advisor PIN fingerprints. Changing it means every advisor PIN
+        # has to be reset.
+        sync: false
+
+      # -- object storage ----------------------------------------------------
+      # The same bucket the api uses, addressed the same way. There were four
+      # S3 clients in this app and none of them had an endpoint, so they all
+      # addressed AWS S3 and signed with an instance role that existed on the
+      # old stack and does not exist here.
+      - key: OBJECT_STORAGE
+        # `local` writes to the container's disk, which Render discards on
+        # every deploy — the boot guard refuses it on a deployment for that
+        # reason.
+        value: s3
+      - key: S3_ENDPOINT
+        # THE SAME VALUE AS THE API'S MINIO_ENDPOINT, written the same way:
+        # host only, no scheme and no bucket, e.g.
+        # <account>.r2.cloudflarestorage.com. One bucket written two ways in
+        # two places is the value that gets pasted into the wrong field; the
+        # boot guard refuses a URL here and says so.
+        sync: false
+      - key: S3_PORT
+        value: '443'
+      - key: S3_USE_SSL
+        value: 'true'
+      - key: S3_BUCKET
+        # The api's MINIO_BUCKET. Same bucket, same objects: a contract PDF
+        # signed here and a profile photo uploaded through the api are both the
+        # park's files.
+        sync: false
+      - key: AWS_REGION
+        # A signing input, not a location. Cloudflare R2 wants `auto`, and
+        # setting it explicitly stops the SDK asking the bucket where it lives
+        # before every signature.
+        value: auto
+      - key: AWS_ACCESS_KEY_ID
+        # The bucket token, under the SDK's own variable names. Scope it to
+        # this one bucket, read and write on objects only.
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: STORAGE_ENV_PREFIX
+        # Every object this app writes is keyed under this prefix, so staging
+        # and production can share a bucket without sharing files. Keep it
+        # different from production's.
+        value: staging
+
+      # -- features off on staging ------------------------------------------
+      - key: USE_AWS_REKOGNITION
+        # Face clock-in. Off, and open decision 29 in SPRINT_2_PLAN decides
+        # whether it comes back at all. Note what "off" means here: the mock
+        # path behind this flag returns the FIRST enrolled employee for any
+        # face (server/face-recognition.ts), so the routes have to go, not just
+        # the flag — S2-17b's work.
+        value: 'false'
+
+      # -- client build-time values -----------------------------------------
+      # Read by Vite when the image is built, not at runtime: Render passes
+      # service variables to the Docker build as build args, and the Dockerfile
+      # declares the matching ARG. Changing one is a rebuild, not a restart.
+      - key: VITE_HR_APP_URL
+        # Where the client's "open the HR app" buttons point. Its fallback in
+        # the client source is a Replit workspace URL, so unset it sends people
+        # from this deployment to a host that is not ours. It is this app, so
+        # it points at this app. CHECK THIS HOST AFTER THE FIRST DEPLOY —
+        # onrender.com subdomains are globally unique and a blueprint cannot
+        # reference another service's URL, so it is a literal.
+        value: https://oto-app-staging.onrender.com
+
+      # -- error reporting ---------------------------------------------------
+      - key: SENTRY_DSN
+        # Optional. Unset, sentry.ts skips init.
+        sync: false
+
+      # -- integrations, all optional on staging -----------------------------
+      # Each of these is a feature that reports itself unconfigured rather than
+      # failing: the AI helpers, Xero and the messaging adapters. Set them when
+      # the feature is being worked on, and not before — an unset variable is a
+      # disabled feature, which is the state staging should be in for anything
+      # nobody is testing.
+      #
+      #  - OPENAI_API_KEY / OPENAI_BASE_URL — Ask OTO and the translation
+      #    helper. Renamed from Replit's AI_INTEGRATIONS_* names, which
+      #    described a key Replit injected and a proxy Replit ran.
+      #  - XERO_CLIENT_ID / XERO_CLIENT_SECRET / XERO_REDIRECT_URI — the
+      #    finance sync. The redirect URI was hard-coded to a Replit host,
+      #    which is why the OAuth flow only ever completed there; it is
+      #    configuration now and would be
+      #    https://oto-app-staging.onrender.com/api/auth/xero/callback,
+      #    registered on the Xero app as well. Sandbox only (S2-17b excludes
+      #    live Xero credentials).
+      #  - TWILIO_* — this app has its own SMS path, separate from the api's.
+
+      # -- NOT SET, and deliberately ------------------------------------------
+      # SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD — the app creates an admin at
+      # boot when both are set. Against the shared platform database that is a
+      # credential pair in an environment panel creating an account the
+      # platform never provisioned, so the boot guard refuses them on any
+      # deployment. Accounts come from the platform.
+      #
+      # LOG_RESPONSE_BODY — gone. It decided whether every JSON response body
+      # was written into the log, and it was "true" on the old stack, which is
+      # how that log stream came to hold children's records, reset tokens and
+      # kiosk codes. The body is no longer captured at all, so there is no
+      # variable left to set wrongly.
 
 # -----------------------------------------------------------------------------
 # worker — the future home of PROCESS_ROLES=jobs. Not enabled yet.

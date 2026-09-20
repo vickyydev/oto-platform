@@ -9,17 +9,14 @@ import { nanoid } from "nanoid";
 const viteLogger = createLogger();
 
 export async function setupVite(server: Server, app: Express) {
-  const isReplit = !!process.env.REPL_ID || !!process.env.REPLIT_DEV_DOMAIN;
+  // This runs only in development (server/index.ts serves the built bundle in
+  // production). The branch that used to be here forced HMR over `wss` on port
+  // 5000 whenever REPL_ID was set, because Replit put a TLS proxy in front of
+  // the workspace. There is no such proxy on a laptop: HMR shares the app's own
+  // server and its own scheme.
   const serverOptions = {
     middlewareMode: true,
-    hmr: isReplit
-      ? {
-          server,
-          path: "/vite-hmr",
-          clientPort: 5000,
-          protocol: "wss" as const,
-        }
-      : { server, path: "/vite-hmr" },
+    hmr: { server, path: "/vite-hmr" },
     allowedHosts: true as const,
   };
 

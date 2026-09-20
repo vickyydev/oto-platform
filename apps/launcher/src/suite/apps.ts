@@ -89,12 +89,15 @@ export const SUITE_APPS: SuiteApp[] = [
     purpose: 'Staff operations — shifts, tasks, events, camps and drop-off.',
     icon: ClipboardList,
     permission: 'app:oto_app:access',
-    origin: readOrigin(env.VITE_OTO_APP_URL),
+    // 5000 is the port the app's own `npm run dev` listens on, so the whole
+    // hand-off — tile, token, exchange, session — can be walked through on a
+    // laptop without a deployment.
+    origin: readOrigin(env.VITE_OTO_APP_URL, 'http://localhost:5000'),
     legacyUrl: readOrigin(env.VITE_OTO_APP_LEGACY_URL),
     legacyLabel: 'Open the OTO App that is running today',
     milestone: 'M10 — OTO App on the platform',
     arriving:
-      'Its tables move into the central database first, so an account made here opens it with no second password; the whole app follows.',
+      'Its tables are in the central database and it opens from here with no second password. If this shell opened instead, its address is not set on this build.',
   },
   {
     key: 'radar',
