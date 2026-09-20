@@ -119,8 +119,38 @@ const EnvSchema = z.object({
    * runner competes with itself for its own locks.
    */
   PROCESS_ROLES: z.string().default('api'),
-  /** Where an alert goes. `console` until the owner names a channel. */
+  /**
+   * Where an alert goes. `console` until the owner names a channel
+   * (OPEN_QUESTIONS §4). A name with no implementation on this build stops the
+   * process at boot rather than delivering nowhere — an alert channel that
+   * silently swallows alerts is the exact failure S2-03 exists to make
+   * impossible.
+   */
   ALERT_CHANNELS: z.string().default('console'),
+  /**
+   * How often the watchdog compares what should have run with what did
+   * (S2-03). Everything else records what happened; this is the only check
+   * that can notice a silence, so it runs often and cheaply.
+   */
+  WATCHDOG_INTERVAL_S: z.coerce.number().int().min(5).default(60),
+  /** How often the sweeps run: expired idempotency keys, hand-off tokens, old runs. */
+  HOUSEKEEPING_INTERVAL_S: z.coerce.number().int().min(60).default(3600),
+  /**
+   * A condition that clears and comes back inside this window reuses its alert
+   * row and is not delivered again. Something flipping every minute must not
+   * put sixty messages in front of whoever is on shift: the reliable response
+   * to that is to mute the channel, which is worse than the flapping.
+   */
+  ALERT_FLAP_WINDOW_S: z.coerce.number().int().min(0).default(300),
+  /** Failures in a row before a run that keeps failing raises an alert. */
+  ALERT_FAILURE_THRESHOLD: z.coerce.number().int().min(1).default(3),
+  /**
+   * How long `ops_run` rows and resolved alerts are kept. This table grows
+   * faster than anything else in the database — one row per failed request,
+   * job run and device call — so it prunes itself from the day it exists.
+   * `audit_log` is the permanent record and is never swept.
+   */
+  OPS_RUN_RETENTION_DAYS: z.coerce.number().int().min(1).default(30),
   MINIO_ENDPOINT: z.string().default('localhost'),
   MINIO_PORT: z.coerce.number().int().default(9000),
   MINIO_USE_SSL: z

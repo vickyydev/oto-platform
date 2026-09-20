@@ -1,3 +1,4 @@
+import otoTelemetry from './packages/telemetry/eslint/index.mjs';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
@@ -43,5 +44,18 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
     },
+  },
+  {
+    // A log line is written once and read when something has already gone
+    // wrong, which is the worst moment to discover it carries a phone number
+    // or a child's medical note. The redactor in @oto/telemetry catches these
+    // at runtime; this catches them at the keyboard, where they are cheap to
+    // fix. Deliberately NOT listing : it is the error code on every
+    // envelope we send and the SQLSTATE on every pg error, so a rule that
+    // fired on it would be switched off within a week - the redactor, which
+    // can see the value, still refuses a six-digit one.
+    files: ['**/*.ts', '**/*.mjs'],
+    plugins: { oto: otoTelemetry },
+    rules: { 'oto/no-pii-in-logs': 'error' },
   },
 );

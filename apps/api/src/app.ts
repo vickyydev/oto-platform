@@ -34,10 +34,11 @@ import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
-import { sessionPlugin } from './plugins/session';
+import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
 import { permissionPlugin } from './plugins/permission';
+import { telemetryPlugin } from './plugins/telemetry';
 import { isPgError, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
 import { audit } from './services/audit';
 import type { FileStorage } from './services/files';
@@ -88,9 +89,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     },
     /**
      * Fastify's own request/response lines carry the full URL, and the URL
-     * carries phone numbers (`/members/lookup?phone=…`). They are replaced
-     * below by one completion line with the query string stripped. S2-03
-     * takes this over with the telemetry package.
+     * carries phone numbers (`/members/lookup?phone=…`). `plugins/telemetry`
+     * replaces both with one completion line that never sees a query string.
      */
     disableRequestLogging: true,
     // Cast: Fastify's types omit the documented hop-count form ("trust N hops
@@ -121,6 +121,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   );
 
   await app.register(cookie);
+  // First, so its onSend and onResponse hooks see every request — including
+  // the ones the origin check below refuses before a route is ever chosen.
+  await app.register(telemetryPlugin);
 
   // OpenAPI generated from the zod route schemas (CLAUDE.md §3); JSON at /docs/json.
   await app.register(swagger, {
@@ -128,11 +131,6 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     transform: jsonSchemaTransform,
   });
   app.get('/docs/json', { schema: { hide: true } }, async () => app.swagger());
-
-  // Request id on every response for log correlation.
-  app.addHook('onSend', async (req, reply) => {
-    reply.header('x-request-id', req.id);
-  });
 
   /**
    * Origin check on state-changing requests (S2-01a). The session cookie is
@@ -156,24 +154,6 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     const host = req.headers.host;
     if (host && origin.replace(/\/$/, '').endsWith(`://${host}`)) return;
     throw new AppError(403, 'ORIGIN_NOT_ALLOWED', 'Request origin is not allowed');
-  });
-
-  /**
-   * One completion line per request, with the query string stripped. Phone
-   * numbers, verification codes and search terms live in query strings.
-   */
-  app.addHook('onResponse', async (req, reply) => {
-    req.log.info(
-      {
-        method: req.method,
-        url: scrubUrl(req.url),
-        statusCode: reply.statusCode,
-        ms: Math.round(reply.elapsedTime),
-        accountId: req.auth?.accountId,
-        reqId: req.id,
-      },
-      'request completed',
-    );
   });
 
   /**
@@ -202,7 +182,15 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
             actorAccountId: req.auth.accountId,
             operatorId: req.auth.operatorId,
             branchId: req.auth.branchId,
-            action: 'access.denied',
+            /**
+             * A permission the caller simply does not hold is its own event
+             * (S2-03): it is the one refusal that means "this person is not
+             * set up for this job" rather than "this request was malformed or
+             * aimed at someone else's data". The HTTP code stays `FORBIDDEN`
+             * either way, so nothing a caller reads changes.
+             */
+            action:
+              err instanceof PermissionDeniedError ? 'auth.permission_denied' : 'access.denied',
             entityType: 'request',
             entityId: req.id,
             after: {

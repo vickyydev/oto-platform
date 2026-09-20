@@ -9,6 +9,23 @@ import { hasPermission, resolveEffectivePermissions, type EffectivePermission, t
 
 export const SESSION_COOKIE = 'oto_session';
 
+/**
+ * A refusal for a permission the caller does not hold (S2-03).
+ *
+ * The status and the code are unchanged — `403 FORBIDDEN`, the same message —
+ * because nothing a caller reads should move. The type exists so the error
+ * handler can record it as `auth.permission_denied` rather than the generic
+ * `access.denied`, without reading a message string to find out what kind of
+ * "no" this was. Those two answer different questions: one is a role that
+ * needs granting, the other is a request aimed somewhere it does not belong.
+ */
+export class PermissionDeniedError extends AppError {
+  constructor(permission: Permission) {
+    super(403, 'FORBIDDEN', `Missing permission ${permission}`);
+    this.name = 'PermissionDeniedError';
+  }
+}
+
 export interface AuthContext {
   accountId: string;
   operatorId: string;
@@ -150,7 +167,7 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
         recordId: target.recordId,
       };
       if (!hasPermission(effective, permission, fullTarget)) {
-        throw errors.forbidden(`Missing permission ${permission}`);
+        throw new PermissionDeniedError(permission);
       }
       return auth;
     };

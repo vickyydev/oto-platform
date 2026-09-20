@@ -12,6 +12,7 @@ import {
 } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
+import { phoneHash } from '../lib/scrub';
 import { audit } from './audit';
 import type { Exec } from './tx';
 import { bumpWindow } from './throttle';
@@ -34,16 +35,22 @@ export async function throttleCheck(db: Db, keys: string[]): Promise<void> {
   }
 }
 
+/**
+ * Count a failure against each bucket. Returns the buckets that went from
+ * open to locked on THIS call — the transition, not the state, so a lockout
+ * is recorded once rather than once per attempt that bounces off it.
+ */
 export async function throttleFail(
   db: Db,
   keys: string[],
   maxFailures: number,
   cooldownSeconds: number,
-): Promise<void> {
+): Promise<string[]> {
   const now = new Date();
+  const lockedNow: string[] = [];
   for (const key of keys) {
     // One statement, so two racing requests cannot both read "4 failures".
-    await db
+    const [row] = await db
       .insert(authThrottle)
       .values({ key, failures: 1, updatedAt: now })
       .onConflictDoUpdate({
@@ -53,8 +60,15 @@ export async function throttleFail(
           lockedUntil: sql`case when (case when ${authThrottle.lockedUntil} is not null and ${authThrottle.lockedUntil} <= now() then 1 else ${authThrottle.failures} + 1 end) >= ${maxFailures} then now() + ${`${cooldownSeconds} seconds`}::interval else ${authThrottle.lockedUntil} end`,
           updatedAt: now,
         },
-      });
+      })
+      .returning({ failures: authThrottle.failures, lockedUntil: authThrottle.lockedUntil });
+    // Exactly at the threshold: the counter resets to 1 when a previous
+    // cooldown expired, so this is the moment the bucket closed.
+    if (row && row.failures === maxFailures && row.lockedUntil && row.lockedUntil > now) {
+      lockedNow.push(key);
+    }
   }
+  return lockedNow;
 }
 
 export async function throttleClear(db: Exec, keys: string[]): Promise<void> {
@@ -278,6 +292,76 @@ export interface SignInResult {
   mustChangePassword: boolean;
 }
 
+/**
+ * A refused sign-in, and the moment a bucket closed behind it (S2-03).
+ *
+ * Both are written on the pool: there is no transaction to belong to, and the
+ * record of an attempt has to outlive the attempt whatever happens to it. The
+ * phone is stored as its hash — enough to see that the same number failed
+ * five times, useless to anyone reading the table for numbers.
+ *
+ * The whole thing is swallowed on error, deliberately: a refusal that cannot
+ * be written down is still a refusal, and turning a 401 into a 500 would tell
+ * the person guessing that they had found something.
+ */
+async function recordSignInFailure(
+  db: Db,
+  opts: {
+    phone: string;
+    reason: string;
+    accountId?: string | null;
+    operatorId?: string | null;
+    requestId?: string;
+    lockedBuckets?: string[];
+    cooldownSeconds?: number;
+  },
+): Promise<void> {
+  const entry = {
+    actorAccountId: opts.accountId ?? null,
+    operatorId: opts.operatorId ?? null,
+    entityType: 'account',
+    // No account means no id; the hash is the only stable handle there is.
+    entityId: opts.accountId ?? phoneHash(opts.phone),
+    requestId: opts.requestId,
+  };
+  try {
+    await audit.record(db, {
+      ...entry,
+      action: 'auth.sign_in_failed',
+      after: { reason: opts.reason, phoneHash: phoneHash(opts.phone) },
+    });
+    for (const bucket of opts.lockedBuckets ?? []) {
+      await audit.record(db, {
+        ...entry,
+        action: 'auth.locked_out',
+        // The bucket's kind, not its key: the key holds a phone number or an
+        // address, and neither belongs in a row an admin console renders.
+        after: { bucket: bucket.split(':')[0], cooldownSeconds: opts.cooldownSeconds },
+      });
+    }
+  } catch (err) {
+    // Same rule as the denial rows in the error handler. No request logger
+    // reaches this far, so it goes out the way the pool's own errors do.
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        msg: 'sign-in failure audit could not be written',
+        code: (err as { code?: string }).code,
+      }),
+    );
+  }
+}
+
+/** The operator an account belongs to — the audit row's tenancy. */
+async function operatorOfAccount(db: Db, accountId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ operatorId: account.operatorId })
+    .from(account)
+    .where(eq(account.id, accountId))
+    .limit(1);
+  return row?.operatorId ?? null;
+}
+
 export async function signIn(
   db: Db,
   opts: {
@@ -297,22 +381,49 @@ export async function signIn(
   // IP isn't locked out by a single guessed phone (many tills share an IP).
   await throttleCheck(db, [`phone:${phone}`, `ip:${opts.ip}`]);
 
-  const fail = async (): Promise<never> => {
-    await throttleFail(db, [`phone:${phone}`], opts.maxFailures, opts.cooldownSeconds);
-    await throttleFail(db, [`ip:${opts.ip}`], opts.maxFailures * 4, opts.cooldownSeconds);
+  const refuse = async (reason: string): Promise<void> => {
+    await recordSignInFailure(db, {
+      phone,
+      reason,
+      accountId: acc?.id,
+      operatorId: acc?.operatorId,
+      requestId: opts.requestId,
+    });
+  };
+
+  const fail = async (reason: string): Promise<never> => {
+    const lockedBuckets = [
+      ...(await throttleFail(db, [`phone:${phone}`], opts.maxFailures, opts.cooldownSeconds)),
+      ...(await throttleFail(db, [`ip:${opts.ip}`], opts.maxFailures * 4, opts.cooldownSeconds)),
+    ];
+    await recordSignInFailure(db, {
+      phone,
+      reason,
+      accountId: acc?.id,
+      operatorId: acc?.operatorId,
+      requestId: opts.requestId,
+      lockedBuckets,
+      cooldownSeconds: opts.cooldownSeconds,
+    });
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Phone or password is incorrect');
   };
 
-  if (!acc) await fail();
+  if (!acc) await fail('no_account');
   // Status checks come BEFORE the password check so invited/inactive accounts
-  // get their clear message (SCRUM-19) rather than a generic 401.
+  // get their clear message (SCRUM-19) rather than a generic 401. They count
+  // as a refused sign-in but not as a guess: the password was never tried, so
+  // throttling them would lock a colleague out for finishing their setup late.
   if (acc!.status === 'invited') {
+    await refuse('setup_required');
     throw new AppError(403, 'SETUP_REQUIRED', 'Finish your account setup before signing in');
   }
   if (acc!.status === 'inactive') {
+    await refuse('account_inactive');
     throw new AppError(403, 'ACCOUNT_INACTIVE', 'This account has been deactivated — contact a manager');
   }
-  if (!acc!.passwordHash || !(await verify(acc!.passwordHash, opts.password))) await fail();
+  if (!acc!.passwordHash || !(await verify(acc!.passwordHash, opts.password))) {
+    await fail('bad_password');
+  }
 
   await throttleClear(db, [`phone:${phone}`, `ip:${opts.ip}`]);
 
@@ -355,6 +466,10 @@ export async function signOut(db: Db, sessionId: string, actorAccountId: string,
     .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.revokedAt)));
   await audit.record(db, {
     actorAccountId,
+    // Sprint 1 left this null, so a sign-out was the one access event that
+    // fell outside its own tenant's audit read. The operator is a property of
+    // the account, not of the request, so it is read back rather than passed.
+    operatorId: await operatorOfAccount(db, actorAccountId),
     action: 'auth.sign_out',
     entityType: 'session',
     entityId: sessionId,
@@ -389,7 +504,8 @@ export async function lockSession(
     .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.lockedAt)));
   await audit.record(db, {
     actorAccountId,
-    action: 'auth.lock',
+    operatorId: await operatorOfAccount(db, actorAccountId),
+    action: 'session.lock',
     entityType: 'session',
     entityId: sessionId,
     requestId,
@@ -420,15 +536,26 @@ export async function unlockSession(
   const [acc] = await db.select().from(account).where(eq(account.id, opts.accountId)).limit(1);
   const ok = Boolean(acc?.passwordHash) && (await verify(acc!.passwordHash!, opts.password));
   if (!ok) {
-    await throttleFail(db, keys, opts.maxFailures, opts.cooldownSeconds);
+    const lockedBuckets = await throttleFail(db, keys, opts.maxFailures, opts.cooldownSeconds);
     await audit.record(db, {
       actorAccountId: opts.accountId,
       operatorId: acc?.operatorId,
-      action: 'auth.unlock_failed',
+      action: 'session.unlock_failed',
       entityType: 'session',
       entityId: opts.sessionId,
       requestId: opts.requestId,
     });
+    for (const bucket of lockedBuckets) {
+      await audit.record(db, {
+        actorAccountId: opts.accountId,
+        operatorId: acc?.operatorId,
+        action: 'auth.locked_out',
+        entityType: 'session',
+        entityId: opts.sessionId,
+        after: { bucket: bucket.split(':')[0], cooldownSeconds: opts.cooldownSeconds },
+        requestId: opts.requestId,
+      });
+    }
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Password is incorrect');
   }
 
@@ -440,7 +567,7 @@ export async function unlockSession(
   await audit.record(db, {
     actorAccountId: opts.accountId,
     operatorId: acc!.operatorId,
-    action: 'auth.unlock',
+    action: 'session.unlock',
     entityType: 'session',
     entityId: opts.sessionId,
     requestId: opts.requestId,

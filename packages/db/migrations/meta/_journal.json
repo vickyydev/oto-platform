@@ -50,6 +50,13 @@
       "when": 1789875183524,
       "tag": "0006_handoff_token",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789881907398,
+      "tag": "0007_ops_record",
+      "breakpoints": true
     }
   ]
 }
