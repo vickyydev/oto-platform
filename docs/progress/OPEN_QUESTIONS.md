@@ -111,6 +111,41 @@ approval — worth starting before it is wanted), and the number the report
 goes to. Then this merges with question 4 below: one channel carries both the
 sprint report and the 9pm-Saturday operational alert.
 
+## 3c. Pricing: four rulings the engine is waiting on (S2-09a)
+
+The engine is built and committed. Each of these is **pinned as the
+prototype behaves today**, with a fixture, so nothing is blocked and nothing
+changes silently. Each needs a yes or a no before the till sells for real.
+
+**(a) A free item on a promo: does the guest pay for it or not?**
+The prototype's own comment promises the guest pays ฿2,130 on the cart
+concerned. The code charges ฿2,080 — the free ice cream comes off the
+tickets' taxable base rather than showing as its own ฿50 discount. Both
+numbers are defensible; they differ by the price of the free item. Pinned at
+฿2,080 (fixture WE-8).
+
+**(b) A discount can currently be spent twice.** A line comped to zero, then
+a promo scoped to tickets, discounts the same tickets again — and ฿1,000 of
+lockers walks out free. This is exactly what the prototype does, so it was
+not "fixed": changing it changes what a guest pays. Pinned (fixture EC-15).
+
+**(c) Which date prices a sale after midnight?** A sale at 00:30 belongs to
+the previous **business** day for the ledger. Does it also get the previous
+day's *prices*? If Friday runs to 02:00 on Saturday morning, the guests
+still in the park were quoted Friday's rates. Pinned at the calendar day.
+
+**(d) Which date validates a promo code?** Same question, different answer
+possible: a code valid "until Friday" used at 00:30 on Saturday.
+
+**Also, not a ruling — a mismatch to correct in one place or the other.**
+S2-09a's acceptance criterion names a cart *"2 Hours Play, 2 kids + 3
+adults, weekend, for James (expat), with the free-adults rule applied per
+line"*. In the seeded catalogue that ticket prices expat adults at a set
+price, so that cart exercises no free-adults rule at all — the only seeded
+one is Full Day Pass at the Thai tier. The fixture is built as the catalogue
+actually prices it (฿2,924). Either the seed or the criterion should change
+before QA is asked to screenshot a figure that cannot be produced.
+
 ## 4. Alert channel and recipients (plan decision 17)
 
 **Where it bites:** S2-03 builds alerting. It can deliver to a console, an
