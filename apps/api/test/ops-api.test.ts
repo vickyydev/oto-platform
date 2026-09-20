@@ -462,6 +462,46 @@ describe('S2-03 — GET /ops/integrations', () => {
     const database = body.variables.find((v) => v.name === 'DATABASE_URL')!;
     expect(database.required).toBe(true);
   });
+
+  /**
+   * S2-17a. A lifted app is a dependency like any outside one: the launcher
+   * shows a tile, somebody presses it, and when it is down the only honest
+   * answer here is that it is down.
+   *
+   * The list comes from `HANDOFF_APP_ORIGINS` — the origins a hand-off token
+   * may be spent at — so an app that can be signed into is an app that gets
+   * reported, and nothing separate has to be kept in step. The test drives it
+   * through the real environment value and a stubbed `fetch`, because what is
+   * being defended is that a refusal reads as a refusal rather than silently
+   * as health.
+   */
+  it('asks the other suite apps whether they are up, and says so when they are not', async () => {
+    const origins = ctx.app.env.HANDOFF_APP_ORIGINS;
+    const realFetch = globalThis.fetch;
+    ctx.app.env.HANDOFF_APP_ORIGINS = 'oto_app=https://oto-app.example';
+
+    try {
+      globalThis.fetch = (async () =>
+        new Response('{}', { status: 503 })) as typeof globalThis.fetch;
+      const down = (await get('/ops/integrations')).json<{
+        providers: Array<{ key: string; state: string; endpoint?: string | null; detail?: string | null }>;
+      }>();
+      const app = down.providers.find((p) => p.key === 'oto_app')!;
+      expect(app.state).toBe('degraded');
+      expect(app.endpoint).toBe('https://oto-app.example');
+      expect(app.detail).toContain('503');
+
+      globalThis.fetch = (async () =>
+        new Response('{"status":"ok"}', { status: 200 })) as typeof globalThis.fetch;
+      const up = (await get('/ops/integrations')).json<{
+        providers: Array<{ key: string; state: string }>;
+      }>();
+      expect(up.providers.find((p) => p.key === 'oto_app')!.state).toBe('configured');
+    } finally {
+      globalThis.fetch = realFetch;
+      ctx.app.env.HANDOFF_APP_ORIGINS = origins;
+    }
+  });
 });
 
 describe('S2-03 — the staging-only controls', () => {

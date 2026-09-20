@@ -1167,10 +1167,70 @@ export interface IntegrationDeps {
     MINIO_PORT: number;
     MINIO_USE_SSL: boolean;
     SENTRY_DSN?: string;
+    HANDOFF_APP_ORIGINS: string;
   };
   /** Null when this instance was built without object storage. */
   storage: { probe(): Promise<{ state: string; reason?: string }> } | null;
   watchdogJob: string;
+}
+
+/**
+ * The other apps in the suite, asked whether they are up (S2-17a).
+ *
+ * A lifted app is a dependency like any outside service: the launcher shows a
+ * tile for it, somebody presses it, and when it is down the only honest answer
+ * on this page is that it is down. We know where each one lives because
+ * `HANDOFF_APP_ORIGINS` already says so — it is the list of origins a token
+ * may be spent at, so an app that can be signed into is an app worth
+ * reporting, and nothing new has to be configured for this to work.
+ *
+ * Only apps with a health endpoint we can name are asked. The static sites
+ * (the POS, the console) are CDN-served and have nothing to answer with.
+ */
+const APP_HEALTH: Record<string, { path: string; name: string; purpose: string }> = {
+  oto_app: {
+    path: '/api/status',
+    name: 'OTO App',
+    purpose: "The park's HR and daily operations, on the otoapp schema of this database.",
+  },
+};
+
+async function suiteAppProviders(env: { HANDOFF_APP_ORIGINS: string }): Promise<IntegrationProvider[]> {
+  const out: IntegrationProvider[] = [];
+  for (const entry of env.HANDOFF_APP_ORIGINS.split(',')) {
+    const [app, origin] = entry.split('=').map((s) => s?.trim());
+    const known = app ? APP_HEALTH[app] : undefined;
+    if (!known || !origin) continue;
+
+    // A deployment across the sea that is asleep takes seconds to answer, and
+    // this page must not take seconds. Unreachable here means "did not answer
+    // quickly", which the card says rather than claiming the app is down.
+    const health = await probe(
+      async () => {
+        const res = await fetch(`${origin}${known.path}`, {
+          signal: AbortSignal.timeout(4_000),
+          headers: { accept: 'application/json' },
+        });
+        return { ok: res.ok, status: res.status };
+      },
+      { ok: false, status: 0 },
+      5_000,
+    );
+    out.push({
+      key: app!,
+      name: known.name,
+      purpose: known.purpose,
+      category: 'Suite apps',
+      state: health.ok ? 'configured' : 'degraded',
+      endpoint: origin,
+      detail: health.ok
+        ? null
+        : health.status === 0
+          ? 'Did not answer within four seconds. It may be starting, or down.'
+          : `Answered ${health.status} rather than 200.`,
+    });
+  }
+  return out;
 }
 
 /** The Twilio variables, by name, that a complete credential needs. */
@@ -1329,6 +1389,9 @@ export async function integrationsSnapshot(deps: IntegrationDeps): Promise<Integ
     missingVars: env.SENTRY_DSN ? undefined : ['SENTRY_DSN'],
     detail: env.SENTRY_DSN ? null : 'Unset, so the reporter is a no-op and errors go to the log only.',
   });
+
+  // --- The other apps in the suite
+  providers.push(...(await suiteAppProviders(env)));
 
   const onDeployment = env.DEPLOY_ENV !== 'local';
   const twilio = env.SMS_ADAPTER === 'twilio';
