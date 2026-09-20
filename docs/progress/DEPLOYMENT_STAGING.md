@@ -1,6 +1,6 @@
 # Staging deployment — what exists on Render
 
-_Last updated 2026-09-20, with the launcher (S2-02)._
+_Last updated 2026-09-20, with the console (S2-03) and the OTO App (S2-17a)._
 
 Everything below is live in the **Oto dev** Render workspace. Nothing here is
 a plan: it is what is running, and what is not yet.
@@ -21,10 +21,21 @@ environment sits beside staging later rather than colliding with it:
 | `oto-api-staging` | web service | `standard`, 1 instance | Singapore |
 | `oto-pos-staging` | static site | — | CDN |
 | `oto-launcher-staging` | static site | — | CDN |
+| `oto-console-staging` | static site | — | CDN |
+| `oto-app-staging` | Docker web service | `standard`, 1 instance | Singapore |
 
 - Launcher: <https://oto-launcher-staging.onrender.com> — **live**
 - POS: <https://oto-pos-staging.onrender.com> — **live**
+- Console: <https://oto-console-staging.onrender.com> — **live**
 - API: <https://oto-api-staging.onrender.com> — **live**
+- OTO App: <https://oto-app-staging.onrender.com> — **declared, not yet created**
+
+**The services were created one at a time from the API, not from a blueprint,
+so `render.yaml` is a description rather than the thing Render reads.** Both
+were drifting — the console had been live since S2-03 without appearing in the
+file at all — and the file has been brought back level with what is running
+(commit 3d9b6c1). Treat a change there as needing a matching change in the
+dashboard until a blueprint is actually connected.
 
 ## What already works
 
@@ -124,3 +135,24 @@ The hand-off keyring (`HANDOFF_SIGNING_KEY`) is one of those values, and it is
 a keyring rather than a key so that replacing it is expand and contract:
 prepend a new `<kid>:<secret>` pair, deploy, and drop the old entry once every
 token it signed has expired — 60 seconds at the TTL set here.
+
+**The staging database password was printed into a session transcript on
+2026-09-20 and should be rotated.** Render dashboard → `oto-db-staging` →
+Info → *Reset database password*; services wired with `fromDatabase` pick the
+new value up on their next deploy. The exposure is bounded — the string was
+the internal hostname (`dpg-…-a`), which resolves only inside the Render
+private network, and the database has `ipAllowList: []` so it is unreachable
+from the internet either way — but a password in a log is a password to
+replace, not to reason about.
+
+### One database login, for now
+
+The OTO App connects with the same `oto_platform` login the api uses, with
+`search_path=otoapp` set as a connection startup parameter. The target
+(DEPLOYMENT_TOPOLOGY.md item 5) is a login per service so a connection leak in
+one app cannot starve the others, and `render.yaml` writes out the SQL for an
+`oto_app` role with its own connection limit. It is deliberately not done yet:
+creating it means connecting to the database with the superuser credential,
+which is the thing being rotated above, and the split matters when the
+production restore lands — S2-17b, where the connection budget is already on
+the list.
