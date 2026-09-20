@@ -47,6 +47,14 @@ export interface BranchRow {
   code: string;
   timezone: string;
   archived: boolean;
+  /**
+   * When this branch trades, per weekday (S2-04). Optional because the route
+   * may not send it yet, and the difference matters: UNDEFINED means this
+   * deployment does not report hours, NULL means nobody has set them — and the
+   * watchdog only calls a box offline during trading, so a branch with no
+   * hours never raises that alert. Health says so rather than looking healthy.
+   */
+  openingHours?: Record<string, { open: string; close: string }> | null;
 }
 
 export interface AccountRow {

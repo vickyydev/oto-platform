@@ -49,6 +49,18 @@ export interface PermissionConfig {
    * managing operators themselves is not an operator's business.
    */
   platformWide?: true;
+  /**
+   * Authenticated by a MACHINE credential the handler checks itself (S2-04).
+   * `box` is a registered box's secret; `box-claim` is the single-use code a
+   * box redeems to get one.
+   *
+   * Its own kind rather than `public: true`, because these routes are not
+   * open: they refuse an anonymous caller. Calling them public would have
+   * satisfied the "every route declares a guard" test while quietly adding
+   * five entries to the pinned list of genuinely open endpoints, which is the
+   * one thing that list exists to stop.
+   */
+  credential?: 'box' | 'box-claim';
 }
 
 declare module 'fastify' {

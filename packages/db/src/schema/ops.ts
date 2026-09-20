@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { core, idPk, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
-import { station } from './platform';
+import { station } from './fleet';
 
 // --- The operational record (schema `core`) --------------------------------
 //

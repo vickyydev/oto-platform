@@ -1516,12 +1516,24 @@ export type DeviceType =
   | 'gate';
 export type DeviceConnection = 'network' | 'bluetooth';
 
+/**
+ * How a device reaches the system, when that is more than the two links the
+ * prototype knew. A device plugged into the branch box sits on the end of a
+ * USB or serial cable rather than on the LAN or paired to an iPad, so `wired`
+ * exists to keep the line under its name honest (S2-04).
+ */
+export type DeviceLink = DeviceConnection | 'wired';
+
 export interface Device {
   id: string;
   type: DeviceType;
   label: string;
   connection: DeviceConnection;
   address?: string; // IP for network devices; absent for Bluetooth (OS-paired)
+  /** Absent = `connection`, which is what every prototype device carries. */
+  link?: DeviceLink;
+  /** Absent = the address, or the iOS-pairing note, as before. */
+  transportNote?: string;
 }
 
 // What a station is used for. Absent capabilities = "does everything" (backward compat).
@@ -1529,7 +1541,10 @@ export type StationCapability = 'tickets' | 'fnb' | 'dropoff' | 'parties';
 
 // How scanning is performed on this station.
 // Absent scannerMode + scannerId present → device mode (backward compat).
-export type ScannerMode = 'device' | 'camera';
+// 'box' is a scanner plugged into the branch box: it serves the till, the
+// display, the gate and the kiosk alike, because the box publishes its scans to
+// the whole station rather than to one screen (S2-04, R-15).
+export type ScannerMode = 'device' | 'camera' | 'box';
 
 // The per-iPad assignment of which devices this station drives.
 export interface StationProfile {

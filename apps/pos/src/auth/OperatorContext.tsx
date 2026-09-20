@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import type { Permission } from '@oto/shared/permissions';
 import { Operator } from '@/types';
 import { getOperatorThemePref } from '@/mockApi';
 import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS } from '@/auth/timings';
@@ -36,6 +37,12 @@ interface OperatorContextValue {
   signIn: (phone: string, password: string) => Promise<Operator>;
   /** Re-enter the password to unlock the SAME session. */
   unlock: (password: string) => Promise<void>;
+  /**
+   * Whether this account holds a permission anywhere — any branch, any scope.
+   * Enough to decide what a screen offers; never enough to decide what may
+   * happen, which the API settles against the scope of the thing being touched.
+   */
+  can: (permission: Permission) => boolean;
   /** Lock now, without waiting for the timer. */
   lockNow: () => void;
   /**
@@ -134,6 +141,7 @@ function toOperator(me: Awaited<ReturnType<typeof authApi.me>>, isManager: boole
 
 export function OperatorProvider({ children }: { children: ReactNode }) {
   const [operator, setOperator] = useState<Operator | null>(null);
+  const [held, setHeld] = useState<ReadonlySet<string>>(() => new Set());
   const [locked, setLocked] = useState(false);
   const [warningActive, setWarningActive] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -156,11 +164,14 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     countdown.current = null;
   }, []);
 
+  const can = useCallback((permission: Permission) => held.has(permission), [held]);
+
   const logout = useCallback(() => {
     clearTimers();
     setWarningActive(false);
     setLocked(false);
     setOperator(null);
+    setHeld(new Set());
     void authApi.signOut().catch(() => {
       // Session may already be gone (expiry, deactivation) — signed out either way.
     });
@@ -213,6 +224,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       await loadCatalogFromApi(me.branch?.code).catch(() => {
         // Catalog load failing must not block the lock screen → surfaced by panels.
       });
+      setHeld(new Set(permissions.map((p) => p.permission)));
       setOperator(op);
       setLocked(false);
       applyThemePrefs(op.id);
@@ -271,6 +283,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         await loadCatalogFromApi(me.branch?.code).catch(() => {});
         if (cancelled) return;
         const op = toOperator(me, isManager);
+        setHeld(new Set(permissions.map((p) => p.permission)));
         setOperator(op);
         // A reload inside a locked session comes back locked.
         setLocked(me.sessionLocked);
@@ -317,6 +330,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       setWarningActive(false);
       setLocked(false);
       setOperator(null);
+      setHeld(new Set());
     };
     window.addEventListener('oto:unauthorized', onUnauthorized);
     return () => window.removeEventListener('oto:unauthorized', onUnauthorized);
@@ -338,6 +352,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         locked,
         signIn,
         unlock,
+        can,
         lockNow,
         handoffError,
         logout,

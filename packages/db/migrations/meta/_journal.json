@@ -64,6 +64,13 @@
       "when": 1789887896945,
       "tag": "0008_app_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789896982896,
+      "tag": "0009_fleet",
+      "breakpoints": true
     }
   ]
 }

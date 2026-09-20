@@ -8,6 +8,7 @@ import { opCtx, withTx } from '../services/tx';
 import { isPlatformWide } from '../services/permissions';
 import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
+import { boxSettings, virtualBoxAgent } from '../services/box';
 import {
   acknowledgeAlert,
   buildAlertChannels,
@@ -79,7 +80,7 @@ export async function opsRoutes(app: App): Promise<void> {
       config: { permission: 'admin:health:read' },
       schema: {
         description:
-          'Dependency checks, the job register and open alerts — read from the database, not from this process',
+          'Dependency checks, the job register, every box with its devices, and open alerts — read from the database, not from this process',
       },
     },
     async (req) => {
@@ -277,6 +278,43 @@ export async function opsRoutes(app: App): Promise<void> {
       description: 'Writes the same failure record a broken job would, so the Failures page can be watched grouping them.',
       sticky: true,
     },
+    /**
+     * The fleet controls (S2-04). They act on the virtual box running inside
+     * this process — the ordinary agent from `@oto/box-agent` pointed at
+     * loopback — so what they exercise is the real registration, the real
+     * heartbeat and the real watchdog rules, with nothing simulated but the
+     * hardware.
+     *
+     * Each is a separate control rather than one that toggles, because a
+     * button labelled "Stop heartbeats" that resumes them on the second press
+     * is a button that lies about what it is about to do.
+     */
+    {
+      key: 'box.heartbeats.stop',
+      label: 'Stop heartbeats',
+      description:
+        'The virtual box stops calling home. Run the watchdog after it: during opening hours the box goes offline and opens an alert.',
+      sticky: true,
+    },
+    {
+      key: 'box.heartbeats.start',
+      label: 'Resume heartbeats',
+      description: 'The virtual box calls home again at once, which closes the offline alert.',
+      sticky: false,
+    },
+    {
+      key: 'box.clock.advance',
+      label: 'Advance box clock',
+      description:
+        'Moves the virtual box two minutes ahead of us — past the minute the watchdog allows, and well short of the fifteen that make a heartbeat refusable.',
+      sticky: true,
+    },
+    {
+      key: 'box.clock.reset',
+      label: 'Put the box clock back',
+      description: 'Returns the virtual box to our time, which closes the clock alert.',
+      sticky: false,
+    },
   ] as const;
 
   /**
@@ -371,6 +409,8 @@ export async function opsRoutes(app: App): Promise<void> {
       return `Delivered to ${channels.map((c) => c.name).join(', ') || 'nowhere — ALERT_CHANNELS is empty'}. It is open on Health until acknowledged.`;
     }
 
+    if (key.startsWith('box.')) return runFleetControl(key);
+
     /**
      * `job.fail` writes the failure record a broken job would write, rather
      * than registering a deliberately broken job in the runner. A registered
@@ -390,6 +430,73 @@ export async function opsRoutes(app: App): Promise<void> {
       detail: { deliberate: true },
     });
     return 'Recorded a failed run of job:demo.fail. It is on the Failures page.';
+  }
+
+  /**
+   * Two minutes. Past the minute the watchdog's clock rule allows, and a long
+   * way short of the fifteen at which `recordHeartbeat` stops believing a box's
+   * clock at all — a refused heartbeat would make the box go silent, which is a
+   * different fault from the one this control exists to demonstrate.
+   */
+  const CLOCK_STEP_MS = 120_000;
+
+  /**
+   * The controls that make the virtual box misbehave.
+   *
+   * They reach the ordinary agent from `@oto/box-agent` running inside this
+   * process, so what they exercise is the real registration, the real heartbeat
+   * and the real watchdog rules, with nothing simulated but the hardware. On an
+   * instance that does not carry the `edge` role there is no box here to stop,
+   * and saying so is more use than a success that moved nothing.
+   */
+  async function runFleetControl(key: string): Promise<string> {
+    const agent = virtualBoxAgent();
+    if (!agent) {
+      throw errors.conflict(
+        'VIRTUAL_BOX_ABSENT',
+        'No virtual box is running in this process — PROCESS_ROLES does not name edge, so there is nothing here to stop or to move',
+      );
+    }
+
+    /**
+     * Each control sends a heartbeat itself rather than leaving somebody
+     * watching a page for up to a minute. A stopped box answers null, which is
+     * the whole point of stopping it and is said rather than swallowed.
+     */
+    const beat = async (): Promise<boolean> => {
+      try {
+        return (await agent.heartbeat()) !== null;
+      } catch (err) {
+        app.log.warn({ err }, 'the virtual box could not be made to call home from a test control');
+        return false;
+      }
+    };
+
+    if (key === 'box.heartbeats.stop') {
+      agent.pauseHeartbeats(true);
+      return `The virtual box has stopped calling home. After ${boxSettings().offlineAfterS}s of silence the watchdog calls it offline, and during opening hours it opens a box.offline alert.`;
+    }
+
+    if (key === 'box.heartbeats.start') {
+      agent.pauseHeartbeats(false);
+      return (await beat())
+        ? 'The virtual box is calling home again. The next watchdog run closes the alert with box.online.'
+        : 'Heartbeats are on again, but the box could not reach the api just now — it tries again on its own timer.';
+    }
+
+    if (key === 'box.clock.advance') {
+      agent.advanceClock(CLOCK_STEP_MS);
+      const sent = await beat();
+      const skewSeconds = Math.round(agent.state.clockSkewMs / 1000);
+      return sent
+        ? `The virtual box's clock is now ${skewSeconds}s ahead of ours, which the next watchdog run raises as box.clock.`
+        : `The virtual box's clock is now ${skewSeconds}s ahead of ours, but its heartbeats are stopped, so nothing has reported the offset yet.`;
+    }
+
+    // box.clock.reset — the only one left, and the way back from the one above.
+    agent.advanceClock(-agent.state.clockSkewMs);
+    await beat();
+    return 'The virtual box is back on our time. The next watchdog run closes the clock alert.';
   }
 
   // --- The demo reset (S2-01c) --------------------------------------------

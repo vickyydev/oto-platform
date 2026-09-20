@@ -11,6 +11,7 @@ import {
   type TestControl,
 } from '@/api/observability';
 import { Button } from '@/components/ui/button';
+import { FleetSummary } from '@/components/devices/FleetSummary';
 import { EmptyState, ErrorNote, Panel, RouteUnavailable } from '@/components/Panel';
 import {
   StatusMark,
@@ -81,6 +82,8 @@ export function Health() {
           </div>
         )}
       </Panel>
+
+      <FleetSummary timezone={timezone} />
 
       <Panel
         title="Scheduled jobs"

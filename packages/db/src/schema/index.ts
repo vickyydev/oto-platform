@@ -2,6 +2,8 @@ export * from './helpers';
 export * from './tenancy';
 export * from './members';
 export * from './catalog';
+export * from './fleet';
 export * from './platform';
 export * from './ops';
+export * from './edge';
 export * from './future';

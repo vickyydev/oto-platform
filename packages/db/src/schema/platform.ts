@@ -1,58 +1,12 @@
-import { sql } from 'drizzle-orm';
-import {
-  check,
-  index,
-  integer,
-  jsonb,
-  primaryKey,
-  text,
-  timestamp,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { index, integer, jsonb, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { core, idPk } from './helpers';
 import { account, branch, operator } from './tenancy';
 
 // --- The platform's own records (schema `core`) ----------------------------
-
-/**
- * A place a session can be held: a till, a kiosk, a gate, a customer display
- * — and from S2-07 a booth. Text + CHECK rather than a pg enum so a new kind
- * arrives without a DDL lock (S2-01b).
- */
-export const STATION_KINDS = ['till', 'kiosk', 'gate', 'display', 'booth'] as const;
-export type StationKind = (typeof STATION_KINDS)[number];
-
-export const station = core.table(
-  'station',
-  {
-    id: idPk(),
-    /**
-     * Denormalised from the branch (S2-01b): every tenant-owned table carries
-     * its operator, so a tenancy filter never has to join through the branch
-     * to find out whose station this is.
-     */
-    operatorId: uuid('operator_id')
-      .notNull()
-      .references(() => operator.id),
-    branchId: uuid('branch_id')
-      .notNull()
-      .references(() => branch.id),
-    name: text('name').notNull(),
-    kind: text('kind').$type<StationKind>().notNull().default('till'),
-    deviceKeyHash: text('device_key_hash'),
-    lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'date' }),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
-  },
-  (t) => [
-    index('station_branch_idx').on(t.branchId),
-    index('station_operator_idx').on(t.operatorId),
-    check('station_kind_check', sql`${t.kind} in ('till','kiosk','gate','display','booth')`),
-  ],
-);
+//
+// `station` used to live here. S2-04 moved the declaration to `fleet.ts`, next
+// to the boxes and devices it is now defined in terms of; the table itself did
+// not move schema, change name or lose a column.
 
 /** Append-only audit log (CLAUDE.md §3). Written by audit.record — no exceptions. */
 export const auditLog = core.table(

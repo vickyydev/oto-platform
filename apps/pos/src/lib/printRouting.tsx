@@ -1,5 +1,6 @@
 import { Device, FnbOrder, Sale, StationProfile } from '@/types';
 import { getAvailableDevices, getPrintTemplate, getMockWristbands } from '@/mockApi';
+import { stationDevice } from '@/station/fleet';
 import { buildPrepTickets } from '@/lib/fnb';
 import { toast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -10,7 +11,11 @@ import { ToastAction } from '@/components/ui/toast';
 
 export function deviceById(id?: string): Device | undefined {
   if (!id) return undefined;
-  return getAvailableDevices().find((d) => d.id === id);
+  // A station taken from the platform drives real devices on its box, whose
+  // ids the prototype's catalogue has never heard of, so the station's own
+  // devices are consulted first and the catalogue remains the fallback for a
+  // deployment that has no fleet yet (S2-04).
+  return stationDevice(id) ?? getAvailableDevices().find((d) => d.id === id);
 }
 
 const deviceName = (d?: Device) => d?.label ?? 'Unassigned';

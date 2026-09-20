@@ -53,7 +53,9 @@ export function MobileShell() {
 
   // Station setup is a full-screen page with its own header + Close button, so we
   // render it without the mobile tab chrome to avoid a double frame / clipping.
-  if (location === '/station-setup') {
+  // Its wizard and settings have addresses below it (S2-04) and are the same
+  // full-screen page, so the whole branch is taken, not the one path.
+  if (location.startsWith('/station-setup')) {
     return <StationSetup />;
   }
 

@@ -1,0 +1,580 @@
+/**
+ * The fleet: the boxes standing at the park, the stations that sit on them,
+ * the devices each box can reach, and the credentials the screens hold.
+ *
+ * WHY IT IS ALL IN ONE FILE — the same reason observability.ts is. The API
+ * half of S2-04 is being built beside this page, so what follows is the
+ * CONTRACT rather than a description of something already deployed: one place
+ * to retarget a path, and every field the API has not grown yet optional, so
+ * the Devices page renders correctly against today's API and fills in as the
+ * routes land. A 404 means "this deployment does not have that route yet" and
+ * the page says so (see isMissingRoute); anything else is a real failure.
+ *
+ * WHY THESE PATHS. The till states the same contract in
+ * apps/pos/src/api/platform.ts, and the two must not ask the API two different
+ * ways: paths, names and response shapes here follow that file exactly
+ * wherever the two overlap. Branch-scoped resources are nested
+ * (`/branches/:id/stations`), which is what the catalogue routes already do,
+ * and devices are asked for per BOX and never per branch, because a printer is
+ * reachable through the box it is plugged into and through no other. What is
+ * only ever done from the console — registering a box, its claim code, its
+ * command history and log, pairing a screen — is added here and nowhere else.
+ *
+ * The vocabularies below are the database's, from
+ * packages/db/src/schema/fleet.ts and edge.ts, so the two cannot drift apart
+ * silently.
+ */
+import { api, ApiError, idemKey, isMissingRoute, qs } from './client';
+
+export { isMissingRoute };
+
+// ---------------------------------------------------------------------------
+// The vocabulary
+// ---------------------------------------------------------------------------
+
+/** `virtual` is the box that runs inside the api; the rest are Raspberry Pis. */
+export const BOX_ROLES = ['counter', 'gate', 'booth', 'kiosk', 'standby', 'virtual'] as const;
+export type BoxRole = (typeof BOX_ROLES)[number];
+
+/**
+ * `unclaimed` is a row waiting for its Pi to redeem a claim code. `online` and
+ * `offline` are the watchdog's verdict from the heartbeat age, never the box's
+ * own claim — a box that has crashed cannot tell anybody it is down, and that
+ * silence is the signal. `disabled` is a box a person took out of service,
+ * which is a different fact from one that has gone quiet.
+ */
+export const BOX_STATUSES = ['unclaimed', 'online', 'offline', 'disabled'] as const;
+export type BoxStatus = (typeof BOX_STATUSES)[number];
+
+export const DEVICE_KINDS = [
+  'receipt_printer',
+  'band_printer',
+  'kitchen_printer',
+  'bar_printer',
+  'scanner',
+  'terminal',
+  'gate',
+  'gate_reader',
+  'cash_drawer',
+] as const;
+export type DeviceKind = (typeof DEVICE_KINDS)[number];
+
+export const DEVICE_TRANSPORTS = ['lan', 'usb', 'serial', 'bluetooth', 'simulated'] as const;
+export type DeviceTransport = (typeof DEVICE_TRANSPORTS)[number];
+
+export const STATION_KINDS = ['till', 'kiosk', 'gate', 'display', 'booth'] as const;
+export type StationKind = (typeof STATION_KINDS)[number];
+
+/**
+ * Who may pick a station — and therefore who can SEE it. `all_staff` puts it
+ * in every signed-in member's picker at that branch; `selected_staff` puts it
+ * only in the pickers of the accounts on its list, and to everybody else the
+ * station is not there at all.
+ */
+export const STATION_ACCESS_SCOPES = ['all_staff', 'selected_staff'] as const;
+export type StationAccessScope = (typeof STATION_ACCESS_SCOPES)[number];
+
+/** What a TILL is used for. Empty means "not restricted"; other kinds ignore it. */
+export const STATION_CAPABILITIES = ['tickets', 'fnb', 'dropoff', 'parties'] as const;
+export type StationCapability = (typeof STATION_CAPABILITIES)[number];
+
+/** What job a device does for one station — one device per role, as the till has one field each. */
+export const STATION_DEVICE_ROLES = [
+  'receipt',
+  'kids_band',
+  'adult_band',
+  'kitchen',
+  'bar',
+  'scanner',
+  'card_terminal',
+  'qr_terminal',
+  'gate',
+  'cash_drawer',
+] as const;
+export type StationDeviceRole = (typeof STATION_DEVICE_ROLES)[number];
+
+export const CREDENTIAL_KINDS = ['display', 'kiosk', 'booth', 'box'] as const;
+export type CredentialKind = (typeof CREDENTIAL_KINDS)[number];
+
+// ---------------------------------------------------------------------------
+// Shapes
+// ---------------------------------------------------------------------------
+
+export interface BoxRow {
+  id: string;
+  name: string;
+  /** The position on site — "counter-1", "gate-north". Survives a Pi being swapped. */
+  slot: string;
+  role: BoxRole | string;
+  status: BoxStatus | string;
+  agentVersion?: string | null;
+  lastHeartbeatAt?: string | null;
+  deviceCount?: number | null;
+  /** Console-only, all optional: the till's picker has no use for any of it. */
+  branchId?: string;
+  hostname?: string | null;
+  /** The journal epoch its events are stamped with. "Reset store" mints N+1. */
+  currentEpoch?: number | null;
+  registeredAt?: string | null;
+  /**
+   * Seconds since the last heartbeat AS THE API COUNTED IT. Preferred over
+   * anything worked out here: a back-office laptop with a wrong clock would
+   * otherwise report every box in the park as offline.
+   */
+  heartbeatAgeSeconds?: number | null;
+  uptimeSeconds?: number | null;
+  tempC?: number | null;
+  clockOffsetMs?: number | null;
+  /** Unsynced events waiting on the box — the number that says whether offline is safe. */
+  outboxDepth?: number | null;
+  stationCount?: number | null;
+  /** A claim code has been issued and no Pi has redeemed it yet. */
+  claimCodeOutstanding?: boolean;
+  claimCodeExpiresAt?: string | null;
+  /** The newest heartbeat's report, whole, for anything not flattened above. */
+  lastStatus?: Record<string, unknown> | null;
+  archived?: boolean;
+}
+
+export interface DeviceRow {
+  id: string;
+  boxId: string;
+  kind: DeviceKind | string;
+  label: string;
+  transport: DeviceTransport | string;
+  address?: string | null;
+  model?: string | null;
+  protocol?: string | null;
+  reachability?: 'unknown' | 'reachable' | 'unreachable' | string;
+  /** Only meaningful on a printer; `unknown` everywhere else. */
+  paperStatus?: 'unknown' | 'ok' | 'low' | 'out' | string;
+  serialNumber?: string | null;
+  terminalId?: string | null;
+  merchantId?: string | null;
+  lastError?: string | null;
+  lastSeenAt?: string | null;
+  archived?: boolean;
+}
+
+export interface StationDeviceAssignment {
+  role: StationDeviceRole | string;
+  device: DeviceRow;
+}
+
+/**
+ * Which tender goes where.
+ *
+ * S2-10a is the ticket that names the tenders properly; this is the subset the
+ * wizard sets today, and it is deliberately written as "which of this
+ * station's assigned devices takes it" rather than as device ids, so moving a
+ * terminal between stations does not silently re-route money. Unknown keys the
+ * API grows are preserved on write — see `mergeRouting`.
+ */
+export interface PaymentRouting {
+  /** `card_terminal` takes it on the tethered EDC; `manual` means staff key it in on the terminal itself. */
+  card?: 'card_terminal' | 'manual' | string;
+  /** `gateway` is the payment gateway on the customer display; `qr_terminal` is the EDC's own QR. */
+  qr?: 'gateway' | 'qr_terminal' | 'none' | string;
+  cash?: 'cash_drawer' | 'none' | string;
+  [key: string]: unknown;
+}
+
+export interface StationRow {
+  id: string;
+  branchId: string;
+  name: string;
+  kind: StationKind | string;
+  capabilities?: (StationCapability | string)[];
+  accessScope?: StationAccessScope | string;
+  /** Null only on a station carried over from Sprint 1, before boxes existed. */
+  box?: { id: string; name: string; status: BoxStatus | string } | null;
+  devices?: StationDeviceAssignment[];
+  /** Who may pick it. Empty unless the scope is `selected_staff`. */
+  staff?: Array<{ accountId: string; name: string }>;
+  /** What the box compares on each config poll. One number answers "which bundle is it running". */
+  configVersion?: number | null;
+  archived?: boolean;
+  /** Set from the console only; the till's wizard leaves these alone. */
+  codePrefix?: string | null;
+  paymentRouting?: PaymentRouting | null;
+  offlineWalletCapSatang?: number | null;
+  lastSeenAt?: string | null;
+}
+
+/**
+ * Everything a station is written with.
+ *
+ * The staff list and the device assignments are sent WHOLE rather than as
+ * deltas: one call, one audit row, and a before and after that reads as what
+ * it is rather than as three rows somebody has to reassemble.
+ */
+export interface StationWrite {
+  name: string;
+  kind: StationKind;
+  boxId: string | null;
+  capabilities: StationCapability[];
+  accessScope: StationAccessScope;
+  /** Ignored by the API unless the scope is `selected_staff`. */
+  staffAccountIds: string[];
+  devices: Array<{ role: StationDeviceRole; deviceId: string }>;
+  /** Console-only fields. The till's wizard omits them and they are left as they were. */
+  codePrefix?: string | null;
+  paymentRouting?: PaymentRouting | null;
+  offlineWalletCapSatang?: number | null;
+}
+
+/** Somebody who can be put on a station's list — the staff of that branch. */
+export interface BranchStaffMember {
+  accountId: string;
+  name: string;
+  phone?: string | null;
+  status?: string | null;
+}
+
+export interface BoxHeartbeatRow {
+  id: string;
+  receivedAt: string;
+  reportedAt?: string | null;
+  clockOffsetMs?: number | null;
+  agentVersion?: string | null;
+  uptimeS?: number | null;
+  /** Null on the virtual box, which has no thermometer — not zero, which reads as cold. */
+  tempC?: number | null;
+  outboxDepth?: number | null;
+}
+
+export const BOX_COMMAND_KINDS = [
+  'test_print',
+  'config_apply',
+  'clear_cache',
+  'collect_logs',
+  'restart',
+  'go_offline',
+  'go_online',
+  'reset_store',
+] as const;
+export type BoxCommandKind = (typeof BOX_COMMAND_KINDS)[number];
+
+export const BOX_COMMAND_STATES = [
+  'queued',
+  'running',
+  'succeeded',
+  'failed',
+  'expired',
+  'cancelled',
+] as const;
+export type BoxCommandState = (typeof BOX_COMMAND_STATES)[number];
+
+export interface BoxCommandRow {
+  id: string;
+  kind: BoxCommandKind | string;
+  state: BoxCommandState | string;
+  payload?: Record<string, unknown> | null;
+  result?: Record<string, unknown> | null;
+  /** `x-oto-action-id` — what ties this command to the Box log and to its ops_run. */
+  actionId?: string | null;
+  requestedByAccountId?: string | null;
+  attempts?: number | null;
+  createdAt: string;
+  claimedAt?: string | null;
+  finishedAt?: string | null;
+  expiresAt?: string | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+}
+
+/**
+ * One line of what a box did. The ticket asks for the last 500, filterable by
+ * action id, and for it to be READABLE rather than a dump — so a line is
+ * structured (when, how bad, what about) rather than a string the page would
+ * have to parse back apart.
+ */
+export interface BoxLogLine {
+  at: string;
+  /** pino's levels, as the agent emits them. */
+  level?: 'debug' | 'info' | 'warn' | 'error' | string;
+  message: string;
+  actionId?: string | null;
+  commandId?: string | null;
+  /** Which part of the agent spoke: `printer`, `sync`, `lease`, `config`. */
+  source?: string | null;
+  stationId?: string | null;
+}
+
+export interface CredentialRow {
+  id: string;
+  kind: CredentialKind | string;
+  stationId?: string | null;
+  boxId?: string | null;
+  label?: string | null;
+  /** A code has been issued and nothing has redeemed it yet. */
+  pairingOutstanding?: boolean;
+  pairingCodeExpiresAt?: string | null;
+  pairedAt?: string | null;
+  pairedByAccountId?: string | null;
+  lastSeenAt?: string | null;
+  revokedAt?: string | null;
+  revokedReason?: string | null;
+  scopes?: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Calls
+// ---------------------------------------------------------------------------
+
+export const fleetApi = {
+  /** The boxes standing at a branch, whether or not a station uses them yet. */
+  boxes: (branchId: string) =>
+    api.get<{ boxes: BoxRow[] }>(`/branches/${encodeURIComponent(branchId)}/boxes`),
+
+  /**
+   * Creates the row and mints its claim code. The code comes back ONCE, in
+   * this response, because only its hash is stored — so the page shows it
+   * until the panel is closed and never pretends it can fetch it again.
+   */
+  createBox: (branchId: string, body: { name: string; slot: string; role: BoxRole }) =>
+    api.post<{ box: BoxRow; claimCode?: string; claimCodeExpiresAt?: string }>(
+      `/branches/${encodeURIComponent(branchId)}/boxes`,
+      body,
+      { idempotencyKey: idemKey() },
+    ),
+
+  updateBox: (
+    id: string,
+    body: { name?: string; slot?: string; role?: BoxRole; status?: BoxStatus },
+  ) => api.patch<{ box: BoxRow }>(`/boxes/${encodeURIComponent(id)}`, body),
+
+  /** Re-issues a claim code for a box nobody managed to register in time. */
+  reissueClaimCode: (id: string) =>
+    api.post<{ claimCode?: string; claimCodeExpiresAt?: string }>(
+      `/boxes/${encodeURIComponent(id)}/claim-code`,
+      undefined,
+      { idempotencyKey: idemKey() },
+    ),
+
+  /**
+   * What that box has reported. Devices are asked for per box and never per
+   * branch, because a printer is reachable through the box it is plugged into
+   * and through no other.
+   */
+  boxDevices: (boxId: string) =>
+    api.get<{ devices: DeviceRow[] }>(`/boxes/${encodeURIComponent(boxId)}/devices`),
+
+  /**
+   * Declares a device the box cannot find on its own. A printer on the LAN is
+   * the case that matters: nothing announces a TCP socket at
+   * `192.168.88.204:9100`, so somebody has to say it is there. Anything the
+   * box discovers — a scanner on USB, a terminal on a serial port — appears
+   * without this.
+   */
+  createDevice: (
+    boxId: string,
+    body: {
+      kind: DeviceKind;
+      label: string;
+      transport: DeviceTransport;
+      address?: string;
+      model?: string;
+      protocol?: string;
+      serialNumber?: string;
+      terminalId?: string;
+      merchantId?: string;
+    },
+  ) =>
+    api.post<{ device: DeviceRow }>(`/boxes/${encodeURIComponent(boxId)}/devices`, body, {
+      idempotencyKey: idemKey(),
+    }),
+
+  updateDevice: (
+    id: string,
+    body: {
+      label?: string;
+      address?: string | null;
+      model?: string | null;
+      protocol?: string | null;
+      serialNumber?: string | null;
+      terminalId?: string | null;
+      merchantId?: string | null;
+    },
+  ) => api.patch<{ device: DeviceRow }>(`/devices/${encodeURIComponent(id)}`, body),
+
+  /** Archives it. A device that left the park is kept: assignments still point at it. */
+  archiveDevice: (id: string) => api.delete<{ ok: true }>(`/devices/${encodeURIComponent(id)}`),
+
+  /** Every live station of a branch, the hidden ones included. Admins only. */
+  stations: (branchId: string) =>
+    api.get<{ stations: StationRow[] }>(`/branches/${encodeURIComponent(branchId)}/stations`),
+
+  createStation: (branchId: string, body: StationWrite) =>
+    api.post<{ station: StationRow }>(`/branches/${encodeURIComponent(branchId)}/stations`, body, {
+      idempotencyKey: idemKey(),
+    }),
+
+  updateStation: (id: string, body: StationWrite) =>
+    api.patch<{ station: StationRow }>(`/stations/${encodeURIComponent(id)}`, body),
+
+  archiveStation: (id: string) => api.delete<{ ok: true }>(`/stations/${encodeURIComponent(id)}`),
+
+  /** The staff of one branch, for a station's access list. */
+  branchStaff: (branchId: string) =>
+    api.get<{ staff: BranchStaffMember[] }>(`/branches/${encodeURIComponent(branchId)}/staff`),
+
+  commands: (boxId: string, limit = 25) =>
+    api.get<{ commands: BoxCommandRow[] }>(
+      `/boxes/${encodeURIComponent(boxId)}/commands${qs({ limit })}`,
+    ),
+
+  /**
+   * Queues one command. The action id comes back so the page can jump straight
+   * to the lines this command wrote, which is the whole point of the log
+   * drawer: press the button, then watch that one action rather than the noise
+   * of a working box.
+   */
+  sendCommand: (boxId: string, body: { kind: BoxCommandKind; payload?: Record<string, unknown> }) =>
+    api.post<{ commandId: string; actionId?: string | null }>(
+      `/boxes/${encodeURIComponent(boxId)}/commands`,
+      body,
+      { idempotencyKey: idemKey() },
+    ),
+
+  log: (boxId: string, params: { limit?: number; actionId?: string } = {}) =>
+    api.get<{ lines: BoxLogLine[]; truncated?: boolean }>(
+      `/boxes/${encodeURIComponent(boxId)}/log${qs({ limit: 500, ...params })}`,
+    ),
+
+  heartbeats: (boxId: string, limit = 30) =>
+    api.get<{ heartbeats: BoxHeartbeatRow[] }>(
+      `/boxes/${encodeURIComponent(boxId)}/heartbeats${qs({ limit })}`,
+    ),
+
+  credentials: (branchId: string) =>
+    api.get<{ credentials: CredentialRow[] }>(
+      `/branches/${encodeURIComponent(branchId)}/credentials`,
+    ),
+
+  /**
+   * Mints a pairing code. Like a box's claim code it is returned ONCE and only
+   * its hash is kept, so the page shows it until the panel closes and never
+   * offers to show it again — a code that can be re-read from a screen is a
+   * credential lying around the back office.
+   */
+  pair: (stationId: string, body: { kind: CredentialKind; label?: string }) =>
+    api.post<{ credential: CredentialRow; pairingCode?: string; expiresAt?: string }>(
+      `/stations/${encodeURIComponent(stationId)}/credentials`,
+      body,
+      { idempotencyKey: idemKey() },
+    ),
+
+  /** Revoking is not deleting: the row stays, with who revoked it and why. */
+  revokeCredential: (id: string, reason?: string) =>
+    api.post<{ ok: true }>(`/credentials/${encodeURIComponent(id)}/revoke`, { reason }, {
+      idempotencyKey: idemKey(),
+    }),
+};
+
+/**
+ * Who can be added to a station's list, with a fallback for a deployment that
+ * has not grown the route yet.
+ *
+ * The park's rule is "from the staff of that branch". Where the branch route is
+ * absent the console falls back to the operator-wide account directory and SAYS
+ * the list is not filtered — an unfiltered list that looks filtered is how
+ * somebody at the other branch ends up on a till they will never stand at.
+ */
+export async function staffCandidates(
+  branchId: string,
+): Promise<{ staff: BranchStaffMember[]; branchFiltered: boolean }> {
+  try {
+    const { staff } = await fleetApi.branchStaff(branchId);
+    return { staff, branchFiltered: true };
+  } catch (err) {
+    if (!isMissingRoute(err)) throw err;
+    const { accounts } = await api.get<{
+      accounts: { id: string; phone: string; status: string; employee: { name: string } | null }[];
+    }>('/accounts');
+    return {
+      staff: accounts.map((a) => ({
+        accountId: a.id,
+        name: a.employee?.name ?? a.phone,
+        phone: a.phone,
+        status: a.status,
+      })),
+      branchFiltered: false,
+    };
+  }
+}
+
+/**
+ * Change one tender's target without touching the rest of the document.
+ *
+ * The routing jsonb is shared with tenders this console does not know about
+ * yet (S2-10a), and a page that sent only the two fields it understands would
+ * quietly delete the others.
+ */
+export function mergeRouting(
+  current: PaymentRouting | null | undefined,
+  change: Partial<PaymentRouting>,
+): PaymentRouting {
+  return { ...(current ?? {}), ...change };
+}
+
+// ---------------------------------------------------------------------------
+// Reading a box's vitals, wherever the API happens to put them
+// ---------------------------------------------------------------------------
+
+export interface BoxVitals {
+  agentVersion: string | null;
+  uptimeSeconds: number | null;
+  outboxDepth: number | null;
+  tempC: number | null;
+  clockOffsetMs: number | null;
+  heartbeatAgeSeconds: number | null;
+}
+
+/**
+ * The numbers a box reports, read from the flattened fields when the API sends
+ * them and out of `last_status` when it does not.
+ *
+ * `last_status` is the newest heartbeat held whole on the box row, and its
+ * shape is still moving with S2-05 and S2-06. Reading it defensively is what
+ * lets this page show a version and an uptime the day the agent starts sending
+ * them, without waiting for the list route to grow a column for each.
+ */
+export function boxVitals(box: BoxRow): BoxVitals {
+  const status = (box.lastStatus ?? {}) as Record<string, unknown>;
+  const num = (...keys: string[]): number | null => {
+    for (const key of keys) {
+      const value = status[key];
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+    }
+    return null;
+  };
+  const heartbeatAge =
+    box.heartbeatAgeSeconds ??
+    (box.lastHeartbeatAt
+      ? Math.max(0, Math.round((Date.now() - new Date(box.lastHeartbeatAt).getTime()) / 1000))
+      : null);
+  return {
+    agentVersion:
+      box.agentVersion ?? (typeof status.agentVersion === 'string' ? status.agentVersion : null),
+    uptimeSeconds: box.uptimeSeconds ?? num('uptimeS', 'uptimeSeconds'),
+    outboxDepth: box.outboxDepth ?? num('outboxDepth'),
+    tempC: box.tempC ?? num('tempC'),
+    clockOffsetMs: box.clockOffsetMs ?? num('clockOffsetMs'),
+    heartbeatAgeSeconds: heartbeatAge,
+  };
+}
+
+/**
+ * A box is late when it has been silent for longer than two heartbeats.
+ *
+ * The watchdog's own threshold is `BOX_OFFLINE_AFTER_S` and it is the one that
+ * opens an alert; this is only what the page paints amber with, so that a box
+ * drifting quiet is visible here a minute or two before the alert lands.
+ */
+export const HEARTBEAT_LATE_AFTER_S = 150;
+
+/** A refusal the page can act on, told apart from a route that is simply absent. */
+export function isForbidden(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 403 || err.code === 'FORBIDDEN');
+}

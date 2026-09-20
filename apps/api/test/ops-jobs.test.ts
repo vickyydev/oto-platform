@@ -3,6 +3,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   alert,
   alertDelivery,
+  box,
+  boxHeartbeat,
   handoffToken,
   idempotencyKey,
   opsExpectation,
@@ -550,12 +552,31 @@ describe('S2-03 — the sweeps that had never run', () => {
       resolvedReason: 'recovered',
     });
 
+    /**
+     * And the box heartbeats, which are the fastest-growing rows in the
+     * database — one a minute per box, forever (S2-04). The sweep that already
+     * ages out runs and resolved alerts is where they belong: three deletes on
+     * one hourly schedule rather than a fourth job nobody remembers to
+     * register.
+     */
+    const [seededBox] = await ctx.db.select().from(box).limit(1);
+    await ctx.db.insert(boxHeartbeat).values([
+      { id: newId(), boxId: seededBox!.id, receivedAt: new Date(Date.now() - 30 * 86_400_000) },
+      { id: newId(), boxId: seededBox!.id, receivedAt: new Date() },
+    ]);
+
     const runner = createJobRunner({ db: ctx.db, env: ctx.app.env, log: ctx.app.log, channels });
     expect(await runner.runJob('job:housekeeping.retention', { force: true })).toBe('ok');
 
     expect(await runsOf('job:test.ancient')).toHaveLength(0);
     expect(await alertsOf(resolvedKey)).toHaveLength(0);
     expect(await alertsOf(openKey)).toHaveLength(1);
+
+    const kept = await ctx.db.select().from(boxHeartbeat);
+    expect(kept).toHaveLength(1);
+    expect(Date.now() - kept[0]!.receivedAt.getTime()).toBeLessThan(60_000);
+    const [swept] = await runsOf('job:housekeeping.retention');
+    expect((swept!.detail as { heartbeatsDeleted: number }).heartbeatsDeleted).toBe(1);
   });
 
   it('publishes the watchdog age /ready reports', async () => {

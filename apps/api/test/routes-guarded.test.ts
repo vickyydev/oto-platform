@@ -37,11 +37,12 @@ describe('route guards (S2-01b)', () => {
         !r.config.platformWide &&
         !r.config.dynamicPermission &&
         !r.config.public &&
+        !r.config.credential &&
         r.config.auth !== 'session',
     );
     expect(
       unguarded.map((r) => `${r.method} ${r.url}`),
-      'routes with no declared guard — add config: { permission } (or public/auth/platformWide)',
+      'routes with no declared guard — add config: { permission } (or public/auth/platformWide/credential)',
     ).toEqual([]);
   });
 
@@ -70,6 +71,47 @@ describe('route guards (S2-01b)', () => {
     ]);
   });
 
+  /**
+   * S2-04 — the machine surface, pinned separately from the open one.
+   *
+   * A box carries a credential and these routes refuse a caller without one,
+   * so they are emphatically not public; but there is no session and no
+   * account behind them either, which is why they declare a third kind of
+   * guard. Keeping them in their own list means a route added here cannot be
+   * mistaken for an open endpoint, and an open endpoint cannot be smuggled in
+   * as a box route: both lists have to be edited on purpose.
+   */
+  it('the box surface is only what it should be, and is credential-guarded', async () => {
+    const boxRoutes = ctx.app.routeRegistry
+      .filter((r) => r.url.startsWith('/box/') && r.method !== 'HEAD')
+      .map((r) => `${r.method} ${r.url} [${r.config.credential}]`)
+      .sort();
+    expect(boxRoutes).toEqual([
+      'GET /box/v1/config [box]',
+      'POST /box/v1/commands/:commandId/result [box]',
+      'POST /box/v1/commands/poll [box]',
+      'POST /box/v1/heartbeat [box]',
+      // The one route a box reaches before it has a credential: the claim
+      // code IS the credential, single-use and short-lived.
+      'POST /box/v1/register [box-claim]',
+    ]);
+    // None of them is also marked public — the two are different guards and a
+    // route carrying both would be read as open by anyone skimming.
+    expect(
+      ctx.app.routeRegistry.filter((r) => r.config.credential && r.config.public),
+    ).toEqual([]);
+  });
+
+  it('a box route refuses a caller with no credential', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/box/v1/heartbeat',
+      payload: { reportedAt: new Date().toISOString(), agentVersion: '0.1.0' },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error.code).toBe('BOX_UNAUTHORIZED');
+  });
+
   it('refuses a route registered without a guard', async () => {
     // The check itself, run against a deliberately bad route.
     const registry = [
@@ -82,6 +124,7 @@ describe('route guards (S2-01b)', () => {
         !r.config.platformWide &&
         !r.config.dynamicPermission &&
         !r.config.public &&
+        !r.config.credential &&
         r.config.auth !== 'session' &&
         !NOT_OURS.has(r.url) &&
         r.method !== 'HEAD' &&

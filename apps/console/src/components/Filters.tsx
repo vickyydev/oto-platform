@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
  * that a keyboard, a screen reader and a phone all already know how to drive is
  * worth more here than a prettier one that none of them do.
  */
-const CONTROL =
+export const CONTROL =
   'h-9 w-full rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
 export function FilterBar({ children, className }: { children: ReactNode; className?: string }) {

@@ -2,6 +2,7 @@ import { redact } from '@oto/telemetry';
 import { createHash } from 'node:crypto';
 import {
   and,
+  asc,
   desc,
   eq,
   gte,
@@ -18,6 +19,9 @@ import type { FastifyBaseLogger } from 'fastify';
 import {
   alert,
   alertDelivery,
+  box,
+  branch,
+  device,
   opsExpectation,
   opsLast,
   opsRun,
@@ -30,6 +34,7 @@ import {
 import { newId } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { isPgError, scrubPgError } from '../lib/scrub';
+import { boxSettings, withinOpeningHours } from './box';
 import type { Exec } from './tx';
 
 /**
@@ -574,6 +579,8 @@ export interface HealthSnapshot {
   status: HealthState;
   checks: HealthCheck[];
   jobs: JobStatus[];
+  /** The boxes at every branch of this operator, and what each is reporting. */
+  boxes: BoxHealth[];
   alerts: AlertRow[];
   watchdogAgeSeconds: number | null;
   generatedAt: string;
@@ -823,15 +830,556 @@ export async function healthChecks(deps: HealthDeps, now = Date.now()): Promise<
   return checks;
 }
 
+// --- The fleet: what Health says about a box, and what the watchdog raises --
+//
+// Both come out of ONE evaluation, and that is the point of this section.
+//
+// S2-03 already has a rule written twice — `jobRegister` and `runWatchdog` each
+// work out lateness from `last_ok_at` and the expectation's grace — and the
+// comments in both say they must agree. A box carries five rules rather than
+// one, so here they are evaluated once, in `evaluateBox`, and both readers take
+// the same answer: the page shows the conditions that are true, the watchdog
+// opens those and closes the rest. The page can no more disagree with the alert
+// than a number can disagree with itself.
+//
+// `withinOpeningHours` and `boxSettings` are imported from `services/box.ts`,
+// which imports `recordRun` from this file — the two modules are circular.
+// Neither calls the other while it is being loaded, so that is safe, and the
+// alternative is a second copy of the opening-hours rule living here. A second
+// copy is precisely the disagreement this section exists to prevent.
+//
+// Nothing here selects a person, a box secret or a claim code. A box's name,
+// its slot and its device labels are what a page read over a shoulder in a back
+// office is allowed to carry.
+
+/**
+ * Whether the park is open at a branch right now — and whether anybody has said.
+ *
+ * `not_set` is emphatically not `closed`. A branch with no opening hours has
+ * never been asked the question, and the difference is what decides whether a
+ * silent box is worth waking somebody for: answering "closed" would stay quiet
+ * through a busy Saturday, and answering "open" would raise at three in the
+ * morning about a park that is shut. So the offline rule does not fire at all,
+ * and the box says on the page that the hours are missing.
+ */
+export type OpeningHoursState = 'open' | 'closed' | 'not_set';
+
+/** More than this between the box's clock and ours and the box is not trusted to date anything. */
+const CLOCK_TOLERANCE_MS = 60_000;
+
+export interface BoxDeviceHealth {
+  id: string;
+  kind: string;
+  label: string;
+  reachability: string;
+  /** Only a printer reports paper; `unknown` on everything else. */
+  paperStatus: string;
+  /** The short, non-leaking label the box reported for its last fault. */
+  lastError: string | null;
+  lastSeenAt: string | null;
+}
+
+export interface BoxHealth {
+  id: string;
+  name: string;
+  slot: string;
+  role: string;
+  /** The column: `unclaimed`, `online`, `offline` or `disabled`. */
+  status: string;
+  state: HealthState;
+  branchId: string;
+  branchName: string;
+  openingHours: OpeningHoursState;
+  agentVersion: string | null;
+  minAgentVersion: string;
+  agentBelowMinimum: boolean;
+  lastHeartbeatAt: string | null;
+  heartbeatAgeSeconds: number | null;
+  uptimeSeconds: number | null;
+  /** Unsynced events waiting on the box — the number that says whether offline is safe. */
+  outboxDepth: number | null;
+  /** Positive means the box's clock is ahead of ours. */
+  clockOffsetMs: number | null;
+  /** Null on the virtual box, which has no thermometer — not zero, which reads as cold. */
+  tempC: number | null;
+  currentEpoch: number;
+  /** The config bundle the box last said it had applied. */
+  configVersion: string | null;
+  devices: BoxDeviceHealth[];
+  /** The alert keys true about this box right now. The same list the watchdog raises from. */
+  conditions: string[];
+  /** One sentence for the tile: what this box's state means. */
+  detail: string | null;
+}
+
+/**
+ * One rule about one box or one of its devices, evaluated.
+ *
+ * `active` is what the watchdog acts on in both directions — open it when true,
+ * close it when false — so a rule that stops being true is a rule that resolves
+ * itself without anybody pressing anything.
+ */
+export interface FleetCondition {
+  /** The identity of the CONDITION: `box.offline:<box id>`. */
+  key: string;
+  category: string;
+  severity: AlertSeverity;
+  subject: string;
+  operatorId: string;
+  branchId: string;
+  active: boolean;
+  /** The sentence while it is true. */
+  summary: string;
+  detail: Record<string, unknown>;
+  /**
+   * How it reads when it stops being true. A box that started reporting again
+   * has recovered; one that is still silent at 21:05 has not — the park has
+   * simply closed — and writing "recovered" on that row would be a lie in the
+   * one record somebody reads back after an incident.
+   */
+  clear: { category: string; reason: string; summary: string };
+}
+
+export interface FleetSnapshot {
+  boxes: BoxHealth[];
+  /** Every rule evaluated, true and false alike. */
+  conditions: FleetCondition[];
+}
+
+interface FleetBoxRow {
+  id: string;
+  operatorId: string;
+  branchId: string;
+  name: string;
+  slot: string;
+  role: string;
+  status: string;
+  agentVersion: string | null;
+  registeredAt: Date | null;
+  currentEpoch: number;
+  lastHeartbeatAt: Date | null;
+  lastStatus: unknown;
+  branchName: string;
+  timezone: string;
+  openingHours: unknown;
+}
+
+interface FleetDeviceRow {
+  id: string;
+  boxId: string;
+  kind: string;
+  label: string;
+  reachability: string;
+  paperStatus: string;
+  lastError: string | null;
+  lastSeenAt: Date | null;
+}
+
+function statusOf(row: FleetBoxRow): Record<string, unknown> | null {
+  const value = row.lastStatus;
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+}
+
+function statusNumber(status: Record<string, unknown> | null, key: string): number | null {
+  const value = status?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function statusText(status: Record<string, unknown> | null, key: string): string | null {
+  const value = status?.[key];
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+/**
+ * Dotted comparison, the same reading the agent applies to itself. Anything
+ * unparseable counts as new enough: refusing a box because its version string
+ * was unexpected would be a worse failure than running it.
+ */
+export function versionBelow(version: string, minimum: string): boolean {
+  const parts = (v: string): number[] =>
+    v.split('.').map((part) => {
+      const n = Number.parseInt(part, 10);
+      return Number.isFinite(n) ? n : 0;
+    });
+  const a = parts(version);
+  const b = parts(minimum);
+  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+    const left = a[i] ?? 0;
+    const right = b[i] ?? 0;
+    if (left !== right) return left < right;
+  }
+  return false;
+}
+
+/** How long, in words somebody reads rather than a count of seconds. */
+function elapsedWords(seconds: number): string {
+  if (seconds < 120) return `${seconds}s`;
+  if (seconds < 7_200) return `${Math.round(seconds / 60)} minutes`;
+  return `${Math.round(seconds / 3_600)} hours`;
+}
+
+export interface BoxRuleSettings {
+  /** `BOX_OFFLINE_AFTER_S`: silence longer than this and the box is offline. */
+  offlineAfterS: number;
+  minAgentVersion: string;
+}
+
+/**
+ * Every rule about one box, decided.
+ *
+ * The one that matters most is the first: a box that has stopped calling home
+ * is only raised DURING OPENING HOURS. A park that is shut is not a park with a
+ * broken till, and an alert at three in the morning that means nothing is how
+ * everybody learns to ignore alerts — including the one that arrives on a
+ * Saturday afternoon and does mean something. The status column still moves to
+ * `offline` whatever the hour, because that is a fact; whether it is worth
+ * telling anybody is the judgement, and that is what the hours decide.
+ *
+ * The device rules are the other half of the same thought. They fire only while
+ * the box is reporting, because paper and reachability are only as fresh as the
+ * last heartbeat: calling a printer unreachable on the evidence of a box we
+ * cannot hear from would be inventing a second fault out of the first one.
+ */
+export function evaluateBox(
+  row: FleetBoxRow,
+  devices: FleetDeviceRow[],
+  settings: BoxRuleSettings,
+  now: number,
+): { health: BoxHealth; conditions: FleetCondition[] } {
+  const last = statusOf(row);
+  const heartbeatAgeSeconds = secondsSince(row.lastHeartbeatAt, now);
+  const openingHours: OpeningHoursState =
+    row.openingHours == null
+      ? 'not_set'
+      : withinOpeningHours(row.openingHours, row.timezone, new Date(now))
+        ? 'open'
+        : 'closed';
+
+  /**
+   * A box nobody has registered against yet, and one an administrator has taken
+   * out of service, are both expected to be quiet. Neither is a fault, and
+   * neither may raise.
+   */
+  const expectedAlive = row.registeredAt !== null && row.status !== 'disabled';
+  const silent = heartbeatAgeSeconds === null || heartbeatAgeSeconds > settings.offlineAfterS;
+  /** Reporting means what this box can see, we can see — and only then. */
+  const reporting = expectedAlive && !silent;
+
+  const clockOffsetMs = statusNumber(last, 'clockOffsetMs');
+  const agentVersion = row.agentVersion ?? statusText(last, 'agentVersion');
+  const agentBelowMinimum =
+    agentVersion !== null && versionBelow(agentVersion, settings.minAgentVersion);
+
+  const subject = `${row.name} (${row.slot})`;
+  const scope = { operatorId: row.operatorId, branchId: row.branchId };
+  const conditions: FleetCondition[] = [];
+
+  /**
+   * Why the offline condition stopped being true, which is not always "the box
+   * came back". It also stops at 21:00 because the park closed, and it stops
+   * when an administrator takes the box out of service — and an incident read
+   * back six months later deserves to say which of the three happened.
+   */
+  const offlineClear = (): FleetCondition['clear'] => {
+    if (reporting) {
+      return { category: 'box.online', reason: 'recovered', summary: `${subject} is calling home again` };
+    }
+    if (!expectedAlive) {
+      return {
+        category: 'box.offline',
+        reason: 'taken out of service',
+        summary: `${subject} is silent, and it has been taken out of service`,
+      };
+    }
+    if (openingHours === 'not_set') {
+      return {
+        category: 'box.offline',
+        reason: 'opening hours are not set',
+        summary: `${subject} is silent, and nobody has said when ${row.branchName} is open`,
+      };
+    }
+    return {
+      category: 'box.offline',
+      reason: `${row.branchName} is closed`,
+      summary: `${subject} is silent, and ${row.branchName} is closed`,
+    };
+  };
+
+  // --- The box has stopped calling home, and the park is open.
+  conditions.push({
+    key: `box.offline:${row.id}`,
+    category: 'box.offline',
+    // The stations on it cannot sell, print or open a gate. Nothing else in
+    // this file is worth the loudest word; this is.
+    severity: 'critical',
+    subject,
+    ...scope,
+    active: expectedAlive && silent && openingHours === 'open',
+    summary:
+      heartbeatAgeSeconds === null
+        ? `${subject} has never called home, and ${row.branchName} is open`
+        : `${subject} has not called home for ${elapsedWords(heartbeatAgeSeconds)} while ${row.branchName} is open — the stations on it cannot sell`,
+    detail: {
+      slot: row.slot,
+      status: row.status,
+      branch: row.branchName,
+      heartbeatAgeSeconds,
+      offlineAfterSeconds: settings.offlineAfterS,
+      lastHeartbeatAt: iso(row.lastHeartbeatAt),
+    },
+    clear: offlineClear(),
+  });
+
+  // --- Its clock has drifted far enough to date things wrongly.
+  const offsetSeconds = clockOffsetMs === null ? 0 : Math.round(clockOffsetMs / 1000);
+  conditions.push({
+    key: `box.clock:${row.id}`,
+    category: 'box.clock',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: reporting && clockOffsetMs !== null && Math.abs(clockOffsetMs) > CLOCK_TOLERANCE_MS,
+    summary: `${subject}'s clock is ${Math.abs(offsetSeconds)}s ${offsetSeconds >= 0 ? 'ahead of' : 'behind'} ours — everything it stamps while offline lands on the wrong business date`,
+    detail: { slot: row.slot, clockOffsetMs, toleranceMs: CLOCK_TOLERANCE_MS },
+    clear: {
+      category: 'box.clock',
+      reason: 'recovered',
+      summary: `${subject}'s clock is back within a minute of ours`,
+    },
+  });
+
+  // --- It is running an agent this build no longer supports.
+  conditions.push({
+    key: `box.agent:${row.id}`,
+    category: 'box.agent',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: expectedAlive && agentBelowMinimum,
+    summary: `${subject} is running agent ${agentVersion ?? 'unknown'}, below the ${settings.minAgentVersion} this build supports`,
+    detail: { slot: row.slot, agentVersion, minSupportedAgentVersion: settings.minAgentVersion },
+    clear: {
+      category: 'box.agent',
+      reason: 'recovered',
+      summary: `${subject} is running agent ${agentVersion ?? 'unknown'}, which this build supports`,
+    },
+  });
+
+  // --- And what the box says about the things plugged into it.
+  const visible = reporting && openingHours === 'open';
+  for (const d of devices) {
+    const where = `${d.label} on ${row.name}`;
+    const deviceDetail = { slot: row.slot, deviceKind: d.kind, deviceLabel: d.label };
+    if (d.kind.endsWith('printer')) {
+      conditions.push({
+        key: `device.paper:${d.id}`,
+        category: 'device.paper',
+        severity: 'warning',
+        subject: where,
+        ...scope,
+        active: visible && d.paperStatus === 'out',
+        summary: `${where} is out of paper`,
+        detail: { ...deviceDetail, paperStatus: d.paperStatus },
+        clear: { category: 'device.paper', reason: 'recovered', summary: `${where} has paper again` },
+      });
+    }
+    /**
+     * Every kind, not only the printers the ticket names. A terminal the box
+     * cannot reach stops a card payment and a scanner it cannot reach stops a
+     * band being read; the rule is identical and so is the sentence.
+     */
+    conditions.push({
+      key: `device.unreachable:${d.id}`,
+      category: 'device.unreachable',
+      severity: 'warning',
+      subject: where,
+      ...scope,
+      active: visible && d.reachability === 'unreachable',
+      summary: `${where} did not answer the box`,
+      detail: { ...deviceDetail, reachability: d.reachability, lastError: d.lastError },
+      clear: {
+        category: 'device.unreachable',
+        reason: 'recovered',
+        summary: `${where} is answering the box again`,
+      },
+    });
+  }
+
+  const active = conditions.filter((c) => c.active);
+  const worst = active.find((c) => c.severity === 'critical') ?? active[0] ?? null;
+
+  /**
+   * The tile's state, and the sentence under it. Silence that is not alertable
+   * is still shown — `warn` where nobody has set opening hours, because that is
+   * a gap somebody has to close, and `unknown` where the park is simply shut,
+   * because nothing is expected of a box at four in the morning.
+   */
+  let state: HealthState;
+  let detail: string | null;
+  if (row.registeredAt === null) {
+    state = 'unknown';
+    detail = 'Waiting for its claim code to be redeemed — no agent has registered here yet.';
+  } else if (row.status === 'disabled') {
+    state = 'unknown';
+    detail = 'Taken out of service by an administrator.';
+  } else if (silent && openingHours === 'open') {
+    state = 'down';
+    detail = worst?.summary ?? null;
+  } else if (silent && openingHours === 'not_set') {
+    state = 'warn';
+    detail = `Silent, and opening hours are not set for ${row.branchName} — so nothing here is raised. Set them on the Branches panel.`;
+  } else if (silent) {
+    state = 'unknown';
+    detail = `Silent, and ${row.branchName} is closed. A box is only called offline during trading.`;
+  } else if (worst) {
+    state = worst.severity === 'critical' ? 'down' : 'warn';
+    detail = worst.summary;
+  } else {
+    state = 'ok';
+    detail = null;
+  }
+
+  return {
+    health: {
+      id: row.id,
+      name: row.name,
+      slot: row.slot,
+      role: row.role,
+      status: row.status,
+      state,
+      branchId: row.branchId,
+      branchName: row.branchName,
+      openingHours,
+      agentVersion,
+      minAgentVersion: settings.minAgentVersion,
+      agentBelowMinimum,
+      lastHeartbeatAt: iso(row.lastHeartbeatAt),
+      heartbeatAgeSeconds,
+      uptimeSeconds: statusNumber(last, 'uptimeS'),
+      outboxDepth: statusNumber(last, 'outboxDepth'),
+      clockOffsetMs,
+      tempC: statusNumber(last, 'tempC'),
+      currentEpoch: row.currentEpoch,
+      configVersion: statusText(last, 'configVersion'),
+      devices: devices.map((d) => ({
+        id: d.id,
+        kind: d.kind,
+        label: d.label,
+        reachability: d.reachability,
+        paperStatus: d.paperStatus,
+        lastError: d.lastError,
+        lastSeenAt: iso(d.lastSeenAt),
+      })),
+      conditions: active.map((c) => c.key),
+      detail,
+    },
+    conditions,
+  };
+}
+
+/**
+ * Every live box, evaluated — for the Health page and for the watchdog.
+ *
+ * Read from `box.last_heartbeat_at` and `box.last_status`, the denormalised
+ * newest report, rather than from `edge.box_heartbeat`: this runs on every
+ * Health page load and on every watchdog tick, and it must stay one row per box
+ * rather than the newest of half a million.
+ *
+ * `operatorId` narrows it to what one caller may see; the watchdog passes
+ * nothing, because a condition is true whoever happens to be looking.
+ */
+export async function fleetHealth(
+  deps: { db: Db; operatorId?: string | null },
+  now = Date.now(),
+): Promise<FleetSnapshot> {
+  const settings = boxSettings();
+  const rules: BoxRuleSettings = {
+    offlineAfterS: settings.offlineAfterS,
+    minAgentVersion: settings.minAgentVersion,
+  };
+
+  const scope = deps.operatorId ? eq(box.operatorId, deps.operatorId) : undefined;
+  const rows = (await deps.db
+    .select({
+      id: box.id,
+      operatorId: box.operatorId,
+      branchId: box.branchId,
+      name: box.name,
+      slot: box.slot,
+      role: box.role,
+      status: box.status,
+      agentVersion: box.agentVersion,
+      registeredAt: box.registeredAt,
+      currentEpoch: box.currentEpoch,
+      lastHeartbeatAt: box.lastHeartbeatAt,
+      lastStatus: box.lastStatus,
+      branchName: branch.name,
+      timezone: branch.timezone,
+      openingHours: branch.openingHours,
+    })
+    .from(box)
+    .innerJoin(branch, eq(box.branchId, branch.id))
+    .where(and(isNull(box.archivedAt), scope))
+    .orderBy(asc(branch.name), asc(box.slot))) as FleetBoxRow[];
+
+  if (rows.length === 0) return { boxes: [], conditions: [] };
+
+  const devices = (await deps.db
+    .select({
+      id: device.id,
+      boxId: device.boxId,
+      kind: device.kind,
+      label: device.label,
+      reachability: device.reachability,
+      paperStatus: device.paperStatus,
+      lastError: device.lastError,
+      lastSeenAt: device.lastSeenAt,
+    })
+    .from(device)
+    .where(
+      and(
+        inArray(
+          device.boxId,
+          rows.map((r) => r.id),
+        ),
+        isNull(device.archivedAt),
+      ),
+    )
+    .orderBy(asc(device.label))) as FleetDeviceRow[];
+
+  const byBox = new Map<string, FleetDeviceRow[]>();
+  for (const d of devices) {
+    const list = byBox.get(d.boxId) ?? [];
+    list.push(d);
+    byBox.set(d.boxId, list);
+  }
+
+  const snapshot: FleetSnapshot = { boxes: [], conditions: [] };
+  for (const row of rows) {
+    const { health, conditions } = evaluateBox(row, byBox.get(row.id) ?? [], rules, now);
+    snapshot.boxes.push(health);
+    snapshot.conditions.push(...conditions);
+  }
+  return snapshot;
+}
+
 /**
  * One verdict for the page. `down` is kept for something that is actually
- * broken — a dependency failing, a job the watchdog calls critical, an open
- * critical alert — so that the loudest state stays worth reacting to.
+ * broken — a dependency failing, a job the watchdog calls critical, a box that
+ * has gone quiet while the park is open, an open critical alert — so that the
+ * loudest state stays worth reacting to.
  */
-function overallStatus(checks: HealthCheck[], jobs: JobStatus[], alerts: AlertRow[]): HealthState {
+function overallStatus(
+  checks: HealthCheck[],
+  jobs: JobStatus[],
+  boxes: BoxHealth[],
+  alerts: AlertRow[],
+): HealthState {
   if (checks.some((c) => c.status === 'down') || jobs.some((j) => j.status === 'down')) return 'down';
+  if (boxes.some((b) => b.state === 'down')) return 'down';
   if (alerts.some((a) => a.severity === 'critical' && !a.acknowledgedAt)) return 'down';
   if (checks.some((c) => c.status === 'warn') || jobs.some((j) => j.status === 'warn')) return 'warn';
+  if (boxes.some((b) => b.state === 'warn')) return 'warn';
   if (alerts.some((a) => !a.acknowledgedAt)) return 'warn';
   return 'ok';
 }
@@ -843,13 +1391,18 @@ export async function healthSnapshot(deps: HealthDeps): Promise<HealthSnapshot> 
   // page must never be the reason a till waits for a connection.
   const checks = await healthChecks(deps, now);
   const jobs = await probe(() => jobRegister(deps, now), [] as JobStatus[]);
+  const fleet = await probe(
+    () => fleetHealth({ db: deps.db, operatorId: deps.operatorId }, now),
+    { boxes: [], conditions: [] } as FleetSnapshot,
+  );
   const alerts = await probe(() => openAlerts(deps), [] as AlertRow[]);
   const watchdogCheck = checks.find((c) => c.key === 'watchdog');
 
   return {
-    status: overallStatus(checks, jobs, alerts),
+    status: overallStatus(checks, jobs, fleet.boxes, alerts),
     checks,
     jobs,
+    boxes: fleet.boxes,
     alerts,
     watchdogAgeSeconds: typeof watchdogCheck?.value === 'number' ? watchdogCheck.value : null,
     generatedAt: new Date(now).toISOString(),

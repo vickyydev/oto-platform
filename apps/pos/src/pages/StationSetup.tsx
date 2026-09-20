@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import { Link, useLocation } from 'wouter';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useLocation } from 'wouter';
 import {
   Printer,
   Baby,
@@ -17,12 +17,35 @@ import {
   Home,
   PartyPopper,
   Layers,
+  Loader2,
+  Cpu,
+  ShieldAlert,
+  UserCheck,
 } from 'lucide-react';
-import { StationCapability, ScannerMode, StationProfile } from '@/types';
+import { StationCapability, ScannerMode, StationProfile, Device, DeviceType } from '@/types';
 import { getAvailableDevices } from '@/mockApi';
+import {
+  adminApi,
+  stationsApi,
+  type ApiBox,
+  type ApiDevice,
+  type StaffCandidate,
+  type StationAccessScope,
+  type StationInput,
+  type StationKind,
+} from '@/api/platform';
+import { isMissingRoute } from '@/api/client';
 import { useStation } from '@/station/StationContext';
+import { useOperator } from '@/auth/OperatorContext';
+import { useBranch } from '@/branch/BranchContext';
+import { ROLE_TO_API, toPrototypeDevices, type DeviceRole } from '@/station/fleet';
 import { deviceById, testPrint, testScan } from '@/lib/printRouting';
 import { DevicePicker } from '@/components/station/DevicePicker';
+import { BoxPicker } from '@/components/station/BoxPicker';
+import { ModeOption } from '@/components/station/ModeOption';
+import { StaffAccessPicker } from '@/components/station/StaffAccessPicker';
+import { StationPicker } from '@/components/station/StationPicker';
+import { StationShell } from '@/components/station/StationShell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,11 +53,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import logoUrl from '@/assets/logo-oto.png';
 
 // ─── Capability metadata ──────────────────────────────────────────────────────
-
-type DeviceRole = 'receipt' | 'kids' | 'adult' | 'kitchen' | 'bar';
 
 const CAP_META: Record<
   StationCapability,
@@ -68,6 +88,15 @@ const CAP_META: Record<
 
 const ROLE_ORDER: DeviceRole[] = ['receipt', 'kids', 'adult', 'kitchen', 'bar'];
 
+/** Which devices can fill each slot, in the prototype's own vocabulary. */
+const ROLE_DEVICE_TYPE: Record<DeviceRole, DeviceType> = {
+  receipt: 'receipt_printer',
+  kids: 'bracelet_printer',
+  adult: 'bracelet_printer',
+  kitchen: 'kitchen_printer',
+  bar: 'bar_printer',
+};
+
 function deriveDeviceRoles(caps: StationCapability[]): DeviceRole[] {
   if (caps.length === 0) return ROLE_ORDER;
   return ROLE_ORDER.filter((role) => caps.some((c) => CAP_META[c].roles.includes(role)));
@@ -75,49 +104,275 @@ function deriveDeviceRoles(caps: StationCapability[]): DeviceRole[] {
 
 // ─── Step key types ───────────────────────────────────────────────────────────
 
-type StepKey = 'capabilities' | 'name' | DeviceRole | 'scanner' | 'ready';
+type StepKey = 'capabilities' | 'name' | 'box' | DeviceRole | 'scanner' | 'access' | 'ready';
 
-function buildWizardSteps(caps: StationCapability[]): StepKey[] {
-  return ['capabilities', 'name', ...deriveDeviceRoles(caps), 'scanner', 'ready'];
+/**
+ * The wizard's steps. The two S2-04 additions sit where the order of the work
+ * puts them: the box before every device step, because the box is a machine
+ * already standing at the counter and the devices on offer are the ones plugged
+ * into it; and who may use the station last, once there is a station to give
+ * people.
+ */
+function buildWizardSteps(caps: StationCapability[], fleet: boolean): StepKey[] {
+  return [
+    'capabilities',
+    'name',
+    ...(fleet ? (['box'] as StepKey[]) : []),
+    ...deriveDeviceRoles(caps),
+    'scanner',
+    ...(fleet ? (['access'] as StepKey[]) : []),
+    'ready',
+  ];
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Entry point ──────────────────────────────────────────────────────────────
 
+/**
+ * Everything reached through "Set up station" in the header.
+ *
+ * Which surface that is depends on who is asking. Staff switch between the
+ * stations they may work and never set one up — the owner's rule, and the
+ * reason the wizard is behind a permission rather than behind a warning.
+ * Administrators reach the wizard and the settings from the picker.
+ */
 export default function StationSetup() {
-  const { station, setStation } = useStation();
+  const [location] = useLocation();
+  const { station, active, fleetAvailable } = useStation();
+  const { can } = useOperator();
+
+  // The fleet routes are not on this deployment yet, so there is no list of
+  // stations to pick from and nothing to gate. Keep the prototype's own
+  // behaviour exactly: the wizard when this iPad has no station, its settings
+  // when it has one, both against the mock device catalogue.
+  if (!fleetAvailable) return <StationEditor wizard={!station} />;
+
+  if (location.endsWith('/new')) {
+    return can('admin:station:create') ? (
+      <StationEditor wizard />
+    ) : (
+      <SetupRefused action="set a station up" />
+    );
+  }
+
+  if (location.endsWith('/settings')) {
+    if (!can('admin:station:update')) return <SetupRefused action="change a station" />;
+    // The whole record, not just the profile: a till that is working a station
+    // it remembers while the API is unreachable knows its name and nothing
+    // else, and editing from that would write a station rather than change one.
+    if (!active) return <StationPicker />;
+    return <StationEditor wizard={false} />;
+  }
+
+  return <StationPicker />;
+}
+
+/** What a non-administrator gets for opening the wizard's address directly. */
+function SetupRefused({ action }: { action: string }) {
+  const [, navigate] = useLocation();
+  return (
+    <StationShell subtitle="Station setup">
+      <Card className="p-6 flex flex-col items-center text-center gap-4 bg-card/50 max-w-3xl mx-auto w-full">
+        <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 text-red-400">
+          <ShieldAlert className="w-8 h-8" />
+        </span>
+        <h2 className="text-2xl font-bold">Manager access required</h2>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Only a POS manager or an administrator can {action}. Pick the station you are working
+          instead — the list shows the ones that are yours.
+        </p>
+        <Button variant="secondary" onClick={() => navigate('/station-setup')}>
+          Pick a station
+        </Button>
+      </Card>
+    </StationShell>
+  );
+}
+
+// ─── The editor: the prototype's wizard and settings ─────────────────────────
+
+function StationEditor({ wizard }: { wizard: boolean }) {
+  const { station, active, fleetAvailable, pick, setStation, reload } = useStation();
+  const { branch } = useBranch();
   const [, navigate] = useLocation();
   const isMobile = useIsMobile();
 
-  const devices = getAvailableDevices();
-  const receiptPrinters = devices.filter((d) => d.type === 'receipt_printer');
-  const braceletPrinters = devices.filter((d) => d.type === 'bracelet_printer');
-  const kitchenPrinters = devices.filter((d) => d.type === 'kitchen_printer');
-  const barPrinters = devices.filter((d) => d.type === 'bar_printer');
+  const fleet = fleetAvailable;
+  const branchApiId = branch.apiId;
+  // A wizard starts from nothing even when this iPad is already working a
+  // station: an administrator setting up the counter next door must not have
+  // that station's devices offered as this one's.
+  const seed = wizard ? null : station;
+  const seedStation = wizard ? null : active;
+
+  // --- the box, and the devices it reported -----------------------------------
+  const [boxes, setBoxes] = useState<ApiBox[] | null>(null);
+  const [boxId, setBoxId] = useState<string | undefined>(seedStation?.boxId ?? undefined);
+  const [boxDevices, setBoxDevices] = useState<ApiDevice[] | null>(null);
+
+  // --- who may work it ---------------------------------------------------------
+  const [accessScope, setAccessScope] = useState<StationAccessScope>(
+    seedStation?.accessScope === 'selected_staff' ? 'selected_staff' : 'all_staff',
+  );
+  const [staffIds, setStaffIds] = useState<string[]>(
+    seedStation?.staff?.map((s) => s.accountId) ?? [],
+  );
+  const [staff, setStaff] = useState<StaffCandidate[] | null>(null);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [staffBranchFiltered, setStaffBranchFiltered] = useState(true);
+
+  const [saving, setSaving] = useState(false);
+
+  const apiFail = (title: string) => (err: unknown) =>
+    toast({
+      title,
+      description: err instanceof Error ? err.message : 'Unknown error',
+      variant: 'destructive',
+    });
+
+  useEffect(() => {
+    if (!fleet || !branchApiId) return;
+    let cancelled = false;
+    stationsApi
+      .boxes(branchApiId)
+      .then((r) => {
+        if (!cancelled) setBoxes(r.boxes);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setBoxes([]);
+        apiFail("Couldn't load this branch's boxes")(err);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleet, branchApiId]);
+
+  useEffect(() => {
+    if (!fleet || !boxId) {
+      setBoxDevices(null);
+      return;
+    }
+    let cancelled = false;
+    stationsApi
+      .boxDevices(boxId)
+      .then((r) => {
+        if (!cancelled) setBoxDevices(r.devices);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setBoxDevices([]);
+        apiFail("Couldn't load what that box has")(err);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleet, boxId]);
+
+  // The staff list is only worth fetching once somebody decides to name people.
+  useEffect(() => {
+    if (!fleet || !branchApiId || accessScope !== 'selected_staff' || staff !== null) return;
+    let cancelled = false;
+    setStaffLoading(true);
+    void (async () => {
+      try {
+        const { accounts } = await stationsApi.staffCandidates(branchApiId);
+        if (!cancelled) {
+          setStaff(accounts);
+          setStaffBranchFiltered(true);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (!isMissingRoute(err)) {
+          setStaff([]);
+          apiFail("Couldn't load this branch's staff")(err);
+        } else {
+          // The narrowed route is not deployed here yet. Falling back to the
+          // operator's whole directory keeps the wizard usable, and the picker
+          // says the list is not filtered rather than implying it is.
+          try {
+            const { accounts } = await adminApi.accounts();
+            if (cancelled) return;
+            setStaff(
+              accounts.map((a) => ({
+                accountId: a.id,
+                name: a.employee?.name ?? null,
+                phone: a.phone,
+                status: a.status,
+              })),
+            );
+            setStaffBranchFiltered(false);
+          } catch (fallbackErr) {
+            if (cancelled) return;
+            setStaff([]);
+            apiFail("Couldn't load the staff list")(fallbackErr);
+          }
+        }
+      } finally {
+        if (!cancelled) setStaffLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleet, branchApiId, accessScope, staff]);
+
+  const boxName = boxes?.find((b) => b.id === boxId)?.name ?? seedStation?.boxName ?? 'the box';
+
+  // Under the fleet the devices on offer are the ones this box reported and
+  // nothing else; without it, the prototype's catalogue as before.
+  const devices: Device[] = fleet
+    ? boxDevices
+      ? toPrototypeDevices(boxDevices, boxName)
+      : []
+    : getAvailableDevices();
+
+  const devicesFor = (role: DeviceRole) =>
+    devices.filter((d) => d.type === ROLE_DEVICE_TYPE[role]);
   const scanners = devices.filter((d) => d.type === 'scanner');
 
   // Capabilities: absent on existing station = does everything
-  const [capabilities, setCapabilities] = useState<StationCapability[]>(
-    station?.capabilities ?? [],
-  );
-  const [name, setName] = useState(station?.stationName ?? '');
-  const [receiptId, setReceiptId] = useState<string | undefined>(station?.receiptPrinterId);
-  const [kidsId, setKidsId] = useState<string | undefined>(station?.kidsBraceletPrinterId);
-  const [adultId, setAdultId] = useState<string | undefined>(station?.adultBraceletPrinterId);
-  const [kitchenId, setKitchenId] = useState<string | undefined>(station?.kitchenPrinterId);
-  const [barId, setBarId] = useState<string | undefined>(station?.barPrinterId);
+  const [capabilities, setCapabilities] = useState<StationCapability[]>(seed?.capabilities ?? []);
+  const [name, setName] = useState(seed?.stationName ?? '');
+  const [receiptId, setReceiptId] = useState<string | undefined>(seed?.receiptPrinterId);
+  const [kidsId, setKidsId] = useState<string | undefined>(seed?.kidsBraceletPrinterId);
+  const [adultId, setAdultId] = useState<string | undefined>(seed?.adultBraceletPrinterId);
+  const [kitchenId, setKitchenId] = useState<string | undefined>(seed?.kitchenPrinterId);
+  const [barId, setBarId] = useState<string | undefined>(seed?.barPrinterId);
 
   // Scanner: default to camera on mobile, device if scanner already exists on iPad
   const defaultScannerMode: ScannerMode =
-    station?.scannerMode ??
-    (isMobile ? 'camera' : station?.scannerId ? 'device' : 'camera');
+    seed?.scannerMode ?? (isMobile ? 'camera' : seed?.scannerId ? 'device' : 'camera');
   const [scannerMode, setScannerMode] = useState<ScannerMode>(defaultScannerMode);
-  const [scannerId, setScannerId] = useState<string | undefined>(station?.scannerId);
+  const [scannerId, setScannerId] = useState<string | undefined>(seed?.scannerId);
 
-  const isWizard = !station;
   const [stepIdx, setStepIdx] = useState(0);
 
+  /**
+   * Changing the box empties every device slot. The old choices named devices
+   * plugged into the old box, and a printer does not move because a station
+   * did.
+   */
+  const chooseBox = (id: string) => {
+    if (id === boxId) return;
+    setBoxId(id);
+    setReceiptId(undefined);
+    setKidsId(undefined);
+    setAdultId(undefined);
+    setKitchenId(undefined);
+    setBarId(undefined);
+    if (scannerMode === 'box') setScannerId(undefined);
+  };
+
+  const deviceLabel = (id?: string): string =>
+    (id ? devices.find((d) => d.id === id)?.label : undefined) ?? 'Not set';
+
+  const visibleRoles = deriveDeviceRoles(capabilities);
+
   const buildProfile = (): StationProfile => ({
-    stationId: station?.stationId ?? `station-${Math.random().toString(36).slice(2, 8)}`,
+    stationId: seed?.stationId ?? `station-${Math.random().toString(36).slice(2, 8)}`,
     stationName: name.trim() || 'Unnamed Station',
     capabilities,
     receiptPrinterId: receiptId,
@@ -129,14 +384,96 @@ export default function StationSetup() {
     scannerMode,
   });
 
-  const save = (announceReady: boolean) => {
-    setStation(buildProfile());
-    toast(
-      announceReady
-        ? { title: 'Station ready', description: `${name.trim() || 'This station'} is set up.` }
-        : { title: 'Station saved', description: 'Your changes are active on this iPad.' },
-    );
-    navigate('/');
+  /**
+   * What the station tells the box to drive, one device per role. Every role
+   * the wizard asked about is sent, with null where nothing was chosen, so
+   * clearing a printer is a change the API can see rather than a field that
+   * quietly went missing.
+   */
+  const deviceAssignments = (): StationInput['devices'] => {
+    const chosen: Array<[DeviceRole, string | undefined]> = [
+      ['receipt', receiptId],
+      ['kids', kidsId],
+      ['adult', adultId],
+      ['kitchen', kitchenId],
+      ['bar', barId],
+    ];
+    const assignments: StationInput['devices'] = {};
+    for (const [role, id] of chosen) {
+      assignments[ROLE_TO_API[role]] = visibleRoles.includes(role) ? id ?? null : null;
+    }
+    // A scanner on the box belongs to the station; the iPad's own camera and a
+    // scanner paired to the iPad do not, and are kept on the device instead.
+    assignments.scanner = scannerMode === 'box' ? scannerId ?? null : null;
+    return assignments;
+  };
+
+  const save = async (announceReady: boolean) => {
+    if (!fleet) {
+      setStation(buildProfile());
+      toast(
+        announceReady
+          ? { title: 'Station ready', description: `${name.trim() || 'This station'} is set up.` }
+          : { title: 'Station saved', description: 'Your changes are active on this iPad.' },
+      );
+      navigate('/');
+      return;
+    }
+    if (!branchApiId || !boxId) {
+      toast({
+        title: "Couldn't save the station",
+        description: branchApiId
+          ? 'Choose the box this station runs on first.'
+          : 'This branch is not on the platform yet.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const stationName = name.trim() || 'Unnamed Station';
+    setSaving(true);
+    try {
+      const body: StationInput = {
+        branchId: branchApiId,
+        boxId,
+        name: stationName,
+        kind: stationKind(seedStation?.kind),
+        capabilities,
+        accessScope,
+        staffAccountIds: accessScope === 'selected_staff' ? staffIds : [],
+        devices: deviceAssignments(),
+      };
+      let savedId: string;
+      if (wizard || !seedStation) {
+        savedId = (await stationsApi.create(body)).id;
+      } else {
+        await stationsApi.update(seedStation.id, body);
+        savedId = seedStation.id;
+      }
+      await reload();
+      try {
+        // Open the till on what was just set up. The pick goes through the same
+        // refusal as anybody else's, so an administrator who left themselves off
+        // a named list finds out here rather than at the next shift.
+        await pick(savedId, scannerMode === 'box' ? undefined : scannerMode);
+        toast(
+          announceReady
+            ? { title: 'Station ready', description: `${stationName} is set up and yours.` }
+            : { title: 'Station saved', description: `${stationName} is up to date.` },
+        );
+        navigate('/');
+      } catch {
+        toast({
+          title: `${stationName} is set up`,
+          description:
+            'It is kept for the staff on its list, and you are not on it, so it is not in your picker.',
+        });
+        navigate('/station-setup');
+      }
+    } catch (err) {
+      apiFail("Couldn't save the station")(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleCapability = (cap: StationCapability) => {
@@ -145,22 +482,81 @@ export default function StationSetup() {
     );
   };
 
+  const toggleStaff = (accountId: string) => {
+    setStaffIds((prev) =>
+      prev.includes(accountId) ? prev.filter((id) => id !== accountId) : [...prev, accountId],
+    );
+  };
+
+  /**
+   * A test print is a command to the box, not a message down a wire from this
+   * iPad: the cloud queues it, the box runs it, and the result shows up in its
+   * command history. Without the fleet it stays the prototype's simulated
+   * message.
+   */
+  const runTestPrint = (deviceId?: string) => {
+    if (!fleet) {
+      testPrint(deviceById(deviceId));
+      return;
+    }
+    if (!deviceId || !boxId) {
+      toast({ title: 'No printer selected', description: 'Choose a printer first.' });
+      return;
+    }
+    stationsApi
+      .testPrint(boxId, deviceId)
+      .then(() =>
+        toast({
+          title: 'Test print queued',
+          description: `${boxName} runs it on its next poll and records the result.`,
+        }),
+      )
+      .catch(apiFail("Couldn't send the test print"));
+  };
+
+  const deviceStepProps = (role: DeviceRole, id: string | undefined, set: (v?: string) => void) => ({
+    devices: devicesFor(role),
+    selectedId: id,
+    onSelect: (value: string) => set(value),
+    onClear: () => set(undefined),
+    onTest: () => runTestPrint(id),
+    testLabel: 'Test print',
+    empty: fleet ? emptyDeviceNote(boxId, boxDevices) : undefined,
+  });
+
+  const scannerStep = (compact?: boolean) => (
+    <ScannerStep
+      isMobile={isMobile}
+      fleet={fleet}
+      boxName={boxName}
+      mode={scannerMode}
+      onModeChange={(m) => {
+        setScannerMode(m);
+        if (m !== 'box' && m !== 'device') setScannerId(undefined);
+      }}
+      scanners={scanners}
+      scannerId={scannerId}
+      onScannerSelect={setScannerId}
+      compact={compact}
+    />
+  );
+
   // ─── Wizard mode ────────────────────────────────────────────────────────────
-  if (isWizard) {
-    const steps = buildWizardSteps(capabilities);
+  if (wizard) {
+    const steps = buildWizardSteps(capabilities, fleet);
     const step = steps[stepIdx];
 
     // Recalculate steps whenever capabilities change — clamp stepIdx if steps shrunk
     const clampedIdx = Math.min(stepIdx, steps.length - 1);
     if (clampedIdx !== stepIdx) setStepIdx(clampedIdx);
 
-    // Only the name step gates Next; all device/scanner steps are freely skippable
-    const canAdvance = step === 'name' ? name.trim().length > 0 : true;
-
-    const visibleRoles = deriveDeviceRoles(capabilities);
+    // Only the name step and the box step gate Next; every device and scanner
+    // step is freely skippable, and a station with no box has nothing to drive.
+    const canAdvance =
+      step === 'name' ? name.trim().length > 0 : step === 'box' ? boxId !== undefined : true;
 
     return (
-      <Shell subtitle="First-time setup">
+      <StationShell subtitle="First-time setup">
         <Card className="p-6 flex flex-col bg-card/50 max-w-3xl mx-auto w-full">
           <div className="flex items-center justify-between mb-1 text-sm text-muted-foreground">
             <span>
@@ -209,17 +605,34 @@ export default function StationSetup() {
               </StepWrap>
             )}
 
+            {step === 'box' && (
+              <StepWrap icon={<Cpu className="w-6 h-6" />} title="Which box runs this station?">
+                <p className="text-muted-foreground mb-4">
+                  The box is the machine under the counter that drives the printers, the scanner and
+                  the card machine. Pick the one this station is plugged into — the devices it
+                  reported are what the next steps offer.
+                </p>
+                {boxes === null ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : boxes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No box has registered at {branch.name} yet. A box registers itself the first
+                    time it is switched on with its claim code.
+                  </p>
+                ) : (
+                  <BoxPicker boxes={boxes} selectedId={boxId} onSelect={chooseBox} />
+                )}
+              </StepWrap>
+            )}
+
             {step === 'receipt' && (
               <DeviceStep
                 icon={<Printer className="w-6 h-6" />}
                 title="Receipt printer"
                 subtitle="Optional — skip if this station doesn't need one."
-                devices={receiptPrinters}
-                selectedId={receiptId}
-                onSelect={setReceiptId}
-                onClear={() => setReceiptId(undefined)}
-                onTest={() => testPrint(deviceById(receiptId))}
-                testLabel="Test print"
+                {...deviceStepProps('receipt', receiptId, setReceiptId)}
               />
             )}
 
@@ -228,12 +641,7 @@ export default function StationSetup() {
                 icon={<Baby className="w-6 h-6" />}
                 title="Kids bracelet printer"
                 subtitle="Optional — skip if this station doesn't print bracelets."
-                devices={braceletPrinters}
-                selectedId={kidsId}
-                onSelect={setKidsId}
-                onClear={() => setKidsId(undefined)}
-                onTest={() => testPrint(deviceById(kidsId))}
-                testLabel="Test print"
+                {...deviceStepProps('kids', kidsId, setKidsId)}
               />
             )}
 
@@ -242,12 +650,7 @@ export default function StationSetup() {
                 icon={<User className="w-6 h-6" />}
                 title="Adult bracelet printer"
                 subtitle="Optional — skip if this station doesn't print adult bracelets."
-                devices={braceletPrinters}
-                selectedId={adultId}
-                onSelect={setAdultId}
-                onClear={() => setAdultId(undefined)}
-                onTest={() => testPrint(deviceById(adultId))}
-                testLabel="Test print"
+                {...deviceStepProps('adult', adultId, setAdultId)}
               />
             )}
 
@@ -256,12 +659,7 @@ export default function StationSetup() {
                 icon={<ChefHat className="w-6 h-6" />}
                 title="Kitchen printer"
                 subtitle="Optional — skip if kitchen tickets print elsewhere."
-                devices={kitchenPrinters}
-                selectedId={kitchenId}
-                onSelect={setKitchenId}
-                onClear={() => setKitchenId(undefined)}
-                onTest={() => testPrint(deviceById(kitchenId))}
-                testLabel="Test print"
+                {...deviceStepProps('kitchen', kitchenId, setKitchenId)}
               />
             )}
 
@@ -270,24 +668,29 @@ export default function StationSetup() {
                 icon={<GlassWater className="w-6 h-6" />}
                 title="Bar printer"
                 subtitle="Optional — skip if bar tickets print elsewhere."
-                devices={barPrinters}
-                selectedId={barId}
-                onSelect={setBarId}
-                onClear={() => setBarId(undefined)}
-                onTest={() => testPrint(deviceById(barId))}
-                testLabel="Test print"
+                {...deviceStepProps('bar', barId, setBarId)}
               />
             )}
 
-            {step === 'scanner' && (
-              <ScannerStep
-                isMobile={isMobile}
-                mode={scannerMode}
-                onModeChange={setScannerMode}
-                scanners={scanners}
-                scannerId={scannerId}
-                onScannerSelect={setScannerId}
-              />
+            {step === 'scanner' && scannerStep()}
+
+            {step === 'access' && (
+              <StepWrap icon={<UserCheck className="w-6 h-6" />} title="Who may use this station?">
+                <p className="text-muted-foreground mb-4">
+                  Staff pick their station when they sign in. A station kept for named people is not
+                  in anybody else's list at all, so nobody is left looking at a till that turns them
+                  away.
+                </p>
+                <StaffAccessPicker
+                  scope={accessScope}
+                  onScopeChange={setAccessScope}
+                  staff={staff}
+                  loading={staffLoading}
+                  branchFiltered={staffBranchFiltered}
+                  selected={staffIds}
+                  onToggle={toggleStaff}
+                />
+              </StepWrap>
             )}
 
             {step === 'ready' && (
@@ -307,6 +710,9 @@ export default function StationSetup() {
                   barId={barId}
                   scannerMode={scannerMode}
                   scannerId={scannerId}
+                  deviceLabel={deviceLabel}
+                  boxName={fleet ? boxName : undefined}
+                  access={fleet ? accessLine(accessScope, staffIds.length) : undefined}
                 />
               </StepWrap>
             )}
@@ -323,7 +729,8 @@ export default function StationSetup() {
               Back
             </Button>
             {step === 'ready' ? (
-              <Button size="lg" className="px-8" onClick={() => save(true)}>
+              <Button size="lg" className="px-8" disabled={saving} onClick={() => void save(true)}>
+                {saving && <Loader2 className="w-5 h-5 mr-1 animate-spin" />}
                 Finish setup
               </Button>
             ) : (
@@ -333,21 +740,22 @@ export default function StationSetup() {
                 disabled={!canAdvance}
                 onClick={() => setStepIdx((i) => Math.min(steps.length - 1, i + 1))}
               >
-                {step !== 'capabilities' && step !== 'name' ? 'Skip / Next' : 'Next'}
+                {step !== 'capabilities' && step !== 'name' && step !== 'box'
+                  ? 'Skip / Next'
+                  : 'Next'}
                 <ArrowRight className="w-5 h-5 ml-1" />
               </Button>
             )}
           </div>
         </Card>
-      </Shell>
+      </StationShell>
     );
   }
 
   // ─── Settings mode ─────────────────────────────────────────────────────────
-  const visibleRoles = deriveDeviceRoles(capabilities);
 
   return (
-    <Shell subtitle="Station settings">
+    <StationShell subtitle="Station settings">
       <ScrollArea className="flex-1">
         <div className="max-w-3xl mx-auto w-full space-y-5 pb-8">
           {/* Capabilities */}
@@ -376,18 +784,35 @@ export default function StationSetup() {
             />
           </Card>
 
+          {/* The box — before the devices, because it decides what they can be. */}
+          {fleet && (
+            <Card className="p-6 bg-card/50">
+              <SectionTitle icon={<Cpu className="w-5 h-5" />} title="Box" />
+              <p className="text-sm text-muted-foreground mt-1 mb-4">
+                The machine under this counter. Changing it clears the devices below, because they
+                are plugged into the old one.
+              </p>
+              {boxes === null ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : boxes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No box has registered at {branch.name} yet.
+                </p>
+              ) : (
+                <BoxPicker boxes={boxes} selectedId={boxId} onSelect={chooseBox} />
+              )}
+            </Card>
+          )}
+
           {/* Device cards — only roles relevant to chosen capabilities */}
           {visibleRoles.includes('receipt') && (
             <DeviceCard
               icon={<Printer className="w-5 h-5" />}
               title="Receipt printer"
               note="Optional — leave unset to skip receipt printing on this station."
-              devices={receiptPrinters}
-              selectedId={receiptId}
-              onSelect={setReceiptId}
-              onClear={() => setReceiptId(undefined)}
-              onTest={() => testPrint(deviceById(receiptId))}
-              testLabel="Test print"
+              {...deviceStepProps('receipt', receiptId, setReceiptId)}
             />
           )}
           {visibleRoles.includes('kids') && (
@@ -395,12 +820,7 @@ export default function StationSetup() {
               icon={<Baby className="w-5 h-5" />}
               title="Kids bracelet printer"
               note="Optional — leave unset to skip kids bracelet printing."
-              devices={braceletPrinters}
-              selectedId={kidsId}
-              onSelect={setKidsId}
-              onClear={() => setKidsId(undefined)}
-              onTest={() => testPrint(deviceById(kidsId))}
-              testLabel="Test print"
+              {...deviceStepProps('kids', kidsId, setKidsId)}
             />
           )}
           {visibleRoles.includes('adult') && (
@@ -408,12 +828,7 @@ export default function StationSetup() {
               icon={<User className="w-5 h-5" />}
               title="Adult bracelet printer"
               note="Optional — leave unset to skip adult bracelet printing."
-              devices={braceletPrinters}
-              selectedId={adultId}
-              onSelect={setAdultId}
-              onClear={() => setAdultId(undefined)}
-              onTest={() => testPrint(deviceById(adultId))}
-              testLabel="Test print"
+              {...deviceStepProps('adult', adultId, setAdultId)}
             />
           )}
           {visibleRoles.includes('kitchen') && (
@@ -421,12 +836,7 @@ export default function StationSetup() {
               icon={<ChefHat className="w-5 h-5" />}
               title="Kitchen printer"
               note="Optional — leave unset to skip kitchen ticket printing."
-              devices={kitchenPrinters}
-              selectedId={kitchenId}
-              onSelect={setKitchenId}
-              onClear={() => setKitchenId(undefined)}
-              onTest={() => testPrint(deviceById(kitchenId))}
-              testLabel="Test print"
+              {...deviceStepProps('kitchen', kitchenId, setKitchenId)}
             />
           )}
           {visibleRoles.includes('bar') && (
@@ -434,40 +844,74 @@ export default function StationSetup() {
               icon={<GlassWater className="w-5 h-5" />}
               title="Bar printer"
               note="Optional — leave unset to skip bar ticket printing."
-              devices={barPrinters}
-              selectedId={barId}
-              onSelect={setBarId}
-              onClear={() => setBarId(undefined)}
-              onTest={() => testPrint(deviceById(barId))}
-              testLabel="Test print"
+              {...deviceStepProps('bar', barId, setBarId)}
             />
           )}
 
           {/* Scanner */}
           <Card className="p-6 bg-card/50">
             <SectionTitle icon={<ScanLine className="w-5 h-5" />} title="Wristband scanner" />
-            <div className="mt-4">
-              <ScannerStep
-                isMobile={isMobile}
-                mode={scannerMode}
-                onModeChange={setScannerMode}
-                scanners={scanners}
-                scannerId={scannerId}
-                onScannerSelect={setScannerId}
-                compact
-              />
-            </div>
+            <div className="mt-4">{scannerStep(true)}</div>
           </Card>
 
+          {/* Who may use it */}
+          {fleet && (
+            <Card className="p-6 bg-card/50">
+              <SectionTitle icon={<UserCheck className="w-5 h-5" />} title="Who may use this station" />
+              <p className="text-sm text-muted-foreground mt-1 mb-4">
+                Staff pick their station when they sign in. A station kept for named people is not in
+                anybody else's list at all.
+              </p>
+              <StaffAccessPicker
+                scope={accessScope}
+                onScopeChange={setAccessScope}
+                staff={staff}
+                loading={staffLoading}
+                branchFiltered={staffBranchFiltered}
+                selected={staffIds}
+                onToggle={toggleStaff}
+                compact
+              />
+            </Card>
+          )}
+
           <div className="flex justify-end">
-            <Button size="lg" className="px-8" onClick={() => save(false)}>
+            <Button size="lg" className="px-8" disabled={saving} onClick={() => void save(false)}>
+              {saving && <Loader2 className="w-5 h-5 mr-1 animate-spin" />}
               Save changes
             </Button>
           </div>
         </div>
       </ScrollArea>
-    </Shell>
+    </StationShell>
   );
+}
+
+// ─── Small helpers shared by both modes ──────────────────────────────────────
+
+const KINDS: StationKind[] = ['till', 'kiosk', 'gate', 'display', 'booth'];
+
+/**
+ * A station set up from the till is a till unless it already was something
+ * else. Booths and gates are configured from the Console, which is where the
+ * rest of their settings live, so this screen keeps what it was given rather
+ * than quietly turning a gate into a counter.
+ */
+function stationKind(existing: string | undefined): StationKind {
+  const known = KINDS.find((k) => k === existing);
+  return known ?? 'till';
+}
+
+/** Why a device list is empty, when the box is the reason. */
+function emptyDeviceNote(boxId: string | undefined, reported: ApiDevice[] | null): string {
+  if (!boxId) return 'Choose the box first — its devices are the ones on offer.';
+  if (reported === null) return 'Reading what the box has…';
+  return 'The box has not reported a device of this kind.';
+}
+
+function accessLine(scope: StationAccessScope, named: number): string {
+  if (scope === 'all_staff') return 'All staff at this branch';
+  return named === 1 ? '1 named staff member' : `${named} named staff`;
 }
 
 // ─── Capability picker ────────────────────────────────────────────────────────
@@ -511,6 +955,8 @@ function CapabilityPicker({
 
 function ScannerStep({
   isMobile,
+  fleet,
+  boxName,
   mode,
   onModeChange,
   scanners,
@@ -519,9 +965,12 @@ function ScannerStep({
   compact,
 }: {
   isMobile: boolean;
+  /** With a box there is a third place a scanner can live (R-15). */
+  fleet: boolean;
+  boxName: string;
   mode: ScannerMode;
   onModeChange: (m: ScannerMode) => void;
-  scanners: import('@/types').Device[];
+  scanners: Device[];
   scannerId?: string;
   onScannerSelect: (id: string) => void;
   compact?: boolean;
@@ -549,12 +998,21 @@ function ScannerStep({
           description="Bluetooth/USB scanner paired to this iPad."
           onClick={() => onModeChange('device')}
         />
+        {fleet && (
+          <ModeOption
+            active={mode === 'box'}
+            icon={<Cpu className="w-5 h-5" />}
+            label="Scanner on the box"
+            description="Plugged into the box, so its scans reach the till, the display and the gate alike."
+            onClick={() => onModeChange('box')}
+          />
+        )}
       </div>
 
       {mode === 'device' && (
         <>
           <NoteLine text="Bluetooth scanners pair in iOS Settings → Bluetooth before they appear here." />
-          {scanners.length > 0 ? (
+          {scanners.length > 0 && !fleet ? (
             <>
               <DevicePicker devices={scanners} selectedId={scannerId} onSelect={onScannerSelect} />
               <Button
@@ -573,6 +1031,19 @@ function ScannerStep({
           )}
         </>
       )}
+
+      {mode === 'box' && (
+        <>
+          <NoteLine text={`Scanners plugged into ${boxName}. The box publishes each scan to the whole station.`} />
+          {scanners.length > 0 ? (
+            <DevicePicker devices={scanners} selectedId={scannerId} onSelect={onScannerSelect} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {boxName} has not reported a scanner.
+            </p>
+          )}
+        </>
+      )}
     </>
   );
 
@@ -582,45 +1053,6 @@ function ScannerStep({
     <StepWrap icon={<ScanLine className="w-6 h-6" />} title="Wristband scanner">
       {content}
     </StepWrap>
-  );
-}
-
-function ModeOption({
-  active,
-  icon,
-  label,
-  description,
-  onClick,
-}: {
-  active: boolean;
-  icon: ReactNode;
-  label: string;
-  description: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'rounded-xl border p-4 text-left transition-colors flex items-start gap-3',
-        active ? 'border-primary bg-primary/10' : 'hover:bg-muted',
-      )}
-    >
-      <div
-        className={cn(
-          'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
-          active ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground',
-        )}
-      >
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className={cn('font-semibold', active && 'text-primary')}>{label}</div>
-        <div className="text-xs text-muted-foreground mt-0.5">{description}</div>
-      </div>
-      {active && <Check className="w-5 h-5 text-primary shrink-0 mt-1" />}
-    </button>
   );
 }
 
@@ -637,6 +1069,9 @@ function ReadySummary({
   barId,
   scannerMode,
   scannerId,
+  deviceLabel,
+  boxName,
+  access,
 }: {
   name: string;
   capabilities: StationCapability[];
@@ -648,6 +1083,11 @@ function ReadySummary({
   barId?: string;
   scannerMode: ScannerMode;
   scannerId?: string;
+  deviceLabel: (id?: string) => string;
+  /** Absent without the fleet, where a station has no box. */
+  boxName?: string;
+  /** Absent without the fleet, where every station is open to everybody. */
+  access?: string;
 }) {
   const capLabel =
     capabilities.length === 0
@@ -655,29 +1095,27 @@ function ReadySummary({
       : capabilities.map((c) => CAP_META[c].label).join(', ');
 
   const scannerLabel =
-    scannerMode === 'camera'
-      ? 'Camera / manual input'
-      : deviceById(scannerId)?.label ?? 'Not set';
+    scannerMode === 'camera' ? 'Camera / manual input' : deviceLabel(scannerId);
 
   const rows: [string, string][] = [
     ['Station', name],
     ['Does', capLabel],
+    ...(boxName ? [['Box', boxName] as [string, string]] : []),
     ...(roles.includes('receipt')
-      ? [['Receipt printer', deviceById(receiptId)?.label ?? 'Not set'] as [string, string]]
+      ? [['Receipt printer', deviceLabel(receiptId)] as [string, string]]
       : []),
     ...(roles.includes('kids')
-      ? [['Kids bracelet', deviceById(kidsId)?.label ?? 'Not set'] as [string, string]]
+      ? [['Kids bracelet', deviceLabel(kidsId)] as [string, string]]
       : []),
     ...(roles.includes('adult')
-      ? [['Adult bracelet', deviceById(adultId)?.label ?? 'Not set'] as [string, string]]
+      ? [['Adult bracelet', deviceLabel(adultId)] as [string, string]]
       : []),
     ...(roles.includes('kitchen')
-      ? [['Kitchen printer', deviceById(kitchenId)?.label ?? 'Not set'] as [string, string]]
+      ? [['Kitchen printer', deviceLabel(kitchenId)] as [string, string]]
       : []),
-    ...(roles.includes('bar')
-      ? [['Bar printer', deviceById(barId)?.label ?? 'Not set'] as [string, string]]
-      : []),
+    ...(roles.includes('bar') ? [['Bar printer', deviceLabel(barId)] as [string, string]] : []),
     ['Scanner', scannerLabel],
+    ...(access ? [['Who may use it', access] as [string, string]] : []),
   ];
 
   return (
@@ -700,27 +1138,6 @@ function ReadySummary({
 }
 
 // ─── Layout + small presentational helpers ────────────────────────────────────
-
-function Shell({ subtitle, children }: { subtitle: string; children: ReactNode }) {
-  return (
-    <div className="h-screen flex flex-col bg-background text-foreground">
-      <div className="shrink-0 flex items-center justify-between px-6 h-16 border-b bg-card/30">
-        <div className="flex items-center gap-3">
-          <Link href="/" aria-label="Oto home">
-            <img src={logoUrl} alt="Oto" className="h-8 w-auto cursor-pointer" />
-          </Link>
-          <div className="text-sm text-muted-foreground border-l pl-3">{subtitle}</div>
-        </div>
-        <Link href="/">
-          <Button variant="ghost" size="sm">
-            Close
-          </Button>
-        </Link>
-      </div>
-      <div className="flex-1 flex flex-col p-6 overflow-hidden">{children}</div>
-    </div>
-  );
-}
 
 function StepWrap({
   icon,
@@ -761,23 +1178,30 @@ function DeviceStep({
   onTest,
   testLabel,
   note,
+  empty,
 }: {
   icon: ReactNode;
   title: string;
   subtitle?: string;
-  devices: import('@/types').Device[];
+  devices: Device[];
   selectedId?: string;
   onSelect: (id: string) => void;
   onClear: () => void;
   onTest: () => void;
   testLabel: string;
   note?: string;
+  /** Shown in place of an empty picker, saying why there is nothing to pick. */
+  empty?: string;
 }) {
   return (
     <StepWrap icon={icon} title={title}>
       {subtitle && <p className="text-muted-foreground mb-4">{subtitle}</p>}
       {note && <NoteLine text={note} />}
-      <DevicePicker devices={devices} selectedId={selectedId} onSelect={onSelect} />
+      {devices.length === 0 && empty ? (
+        <p className="text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <DevicePicker devices={devices} selectedId={selectedId} onSelect={onSelect} />
+      )}
       <div className="flex gap-3 mt-4">
         <Button variant="outline" disabled={!selectedId} onClick={onTest}>
           {testLabel}
@@ -796,14 +1220,16 @@ function DeviceCard(props: {
   icon: ReactNode;
   title: string;
   note?: string;
-  devices: import('@/types').Device[];
+  devices: Device[];
   selectedId?: string;
   onSelect: (id: string) => void;
   onClear: () => void;
   onTest: () => void;
   testLabel: string;
+  empty?: string;
 }) {
-  const { icon, title, note, devices, selectedId, onSelect, onClear, onTest, testLabel } = props;
+  const { icon, title, note, devices, selectedId, onSelect, onClear, onTest, testLabel, empty } =
+    props;
   return (
     <Card className="p-6 bg-card/50">
       <div className="flex items-center justify-between mb-3">
@@ -825,7 +1251,11 @@ function DeviceCard(props: {
         </div>
       </div>
       {note && <NoteLine text={note} />}
-      <DevicePicker devices={devices} selectedId={selectedId} onSelect={onSelect} />
+      {devices.length === 0 && empty ? (
+        <p className="text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <DevicePicker devices={devices} selectedId={selectedId} onSelect={onSelect} />
+      )}
     </Card>
   );
 }
@@ -847,4 +1277,3 @@ function NoteLine({ text }: { text: string }) {
     </div>
   );
 }
-

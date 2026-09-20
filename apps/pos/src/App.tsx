@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,7 +17,8 @@ import Admin from "@/pages/Admin";
 import { AdminAccessGate } from "@/components/admin/AdminAccessGate";
 import { MobileStock } from "@/components/mobile/stock/MobileStock";
 import { OperatorProvider, useOperator } from "@/auth/OperatorContext";
-import { StationProvider } from "@/station/StationContext";
+import { StationProvider, useStation } from "@/station/StationContext";
+import { StationPicker } from "@/components/station/StationPicker";
 import { CatalogStoreProvider } from "@/store/CatalogStoreContext";
 import { BranchProvider } from "@/branch/BranchContext";
 import { LockScreen } from "@/components/auth/LockScreen";
@@ -46,6 +47,11 @@ function Router() {
       <Route path="/messages" component={Messages} />
       <Route path="/stock" component={MobileStock} />
       <Route path="/station-setup" component={StationSetup} />
+      {/* The wizard and the settings have addresses of their own so that
+          opening one without the permission is a refusal somebody can be shown
+          and can screenshot, not a button that was simply never drawn. */}
+      <Route path="/station-setup/new" component={StationSetup} />
+      <Route path="/station-setup/settings" component={StationSetup} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -57,6 +63,8 @@ function Router() {
 // the standard iPad Router — same provider tree, additive only.
 function AuthGate() {
   const { operator, locked, sessionResolved } = useOperator();
+  const { station, fleetAvailable, resolved: stationResolved } = useStation();
+  const [location] = useLocation();
   const isMobile = useIsMobile();
   // Until the resume (and any launcher hand-off) has answered, the till knows
   // nothing: showing the sign-in form here would prompt an operator who has
@@ -71,6 +79,24 @@ function AuthGate() {
   // Signed out → sign in. Signed in but locked → unlock the same session
   // with the password (S2-01a); the shift is not ended by inactivity.
   if (!operator || locked) return <LockScreen />;
+  // The same wait again for the station question: a till that showed the
+  // picker and then took it away half a second later, because this deployment
+  // turns out to have no fleet, would be worse than a moment of nothing.
+  if (!stationResolved) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground/50">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    );
+  }
+  // The shift starts by picking a station (R-14): it is what decides which
+  // printers, scanner and card machine this screen drives, so no selling
+  // surface opens without one. The station screens themselves are let through,
+  // because that is where an administrator goes to set one up. Deployments
+  // whose API has no fleet routes yet are not gated at all.
+  if (fleetAvailable && !station && !location.startsWith('/station-setup')) {
+    return <StationPicker />;
+  }
   if (isMobile) {
     return (
       <>

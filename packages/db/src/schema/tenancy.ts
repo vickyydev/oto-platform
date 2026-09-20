@@ -1,5 +1,15 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, index, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  check,
+  index,
+  jsonb,
+  text,
+  time,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { archivedAt, core, idPk, timestamps } from './helpers';
 
 // --- Tenancy (schema `core`) -----------------------------------------------
@@ -27,6 +37,27 @@ export const branch = core.table(
     timezone: text('timezone').notNull().default('Asia/Bangkok'),
     address: text('address'),
     country: text('country'),
+    /**
+     * When the park is open, per weekday, as
+     * `{ mon: { open: "10:00", close: "21:00" }, … }` in the branch's own
+     * timezone; a day may be absent or null for a closing day (S2-04).
+     *
+     * Null — the whole column — means nobody has said yet, and that is treated
+     * as "unknown", never as "closed": the watchdog rule that raises when a box
+     * goes silent DURING opening hours does not fire at all, and the branch
+     * tile says "opening hours not set". Guessing here would mean either
+     * paging somebody at two in the morning or staying quiet through a busy
+     * Saturday.
+     */
+    openingHours: jsonb('opening_hours'),
+    /**
+     * When one trading day becomes the next, in the branch's timezone. Not
+     * midnight: the park closes at 21:00 but a late party, the cash count and
+     * the end-of-day print land after it, and every one of those belongs to the
+     * day that is finishing rather than to the one starting. 05:00 puts the
+     * boundary in the only hour nothing happens in.
+     */
+    businessDayStart: time('business_day_start').notNull().default('05:00'),
     ...timestamps,
     ...archivedAt,
   },
@@ -204,6 +235,19 @@ export const session = core.table(
     tokenHash: text('token_hash').notNull(),
     /** Active branch for this session (POS pickers scope to it). */
     branchId: uuid('branch_id').references(() => branch.id),
+    /**
+     * The station this session is working at, set when the person picks one
+     * after signing in (S2-04) and stamped onto their audit rows and log lines
+     * from then on.
+     *
+     * Deliberately without a foreign key. `station` is declared in `fleet.ts`,
+     * which already imports `operator`, `branch` and `account` from this file,
+     * and pointing back at it would make the two modules circular for a
+     * constraint that is the weaker half of the check anyway: the pick route
+     * has to verify that the station is live, at this session's branch, and
+     * visible to this account under its access scope — none of which
+     * referential integrity can express, and all of which it must do first.
+     */
     stationId: uuid('station_id'),
     /**
      * Short-lived membership lookup handed from the customer display to the

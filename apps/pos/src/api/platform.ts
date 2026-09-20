@@ -2,6 +2,7 @@
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
 import { newId as newRecordId } from '@oto/shared';
 import { PERMISSIONS, type Permission } from '@oto/shared/permissions';
+import type { StationCapability } from '@/types';
 import { api, idemKey } from './client';
 
 // --- auth / me -------------------------------------------------------------
@@ -324,6 +325,210 @@ export const adminApi = {
     api.post<{ accountId: string; codeSent: boolean; warning?: string }>(
       `/operators/${id}/administrators`,
       body,
+      { idempotencyKey: idemKey() },
+    ),
+};
+
+// --- stations, boxes and devices (S2-04) ------------------------------------
+//
+// The shapes below are the same contract the Console reads (apps/console/src/
+// api/fleet.ts): one set of routes, described twice because the two apps are
+// built in different trees. Where a field is optional it is because the API is
+// being built beside this and has not grown it yet — the POS renders what has
+// arrived rather than insisting on a field it may not get.
+
+/** What a station is for. `booth` is the Lucky Wheel's (S2-07b). */
+export type StationKind = 'till' | 'kiosk' | 'gate' | 'display' | 'booth';
+
+/**
+ * Who may pick a station. The scope decides VISIBILITY, not merely permission:
+ * an `all_staff` station is in every signed-in member's picker, a
+ * `selected_staff` one is in the pickers of the accounts on its list and in
+ * nobody else's. Someone who cannot use a till should not be looking at it and
+ * wondering why it refuses them.
+ */
+export type StationAccessScope = 'all_staff' | 'selected_staff';
+
+/** What a device does for a station — one per role, as the till has one field each. */
+export type StationDeviceRole =
+  | 'receipt'
+  | 'kids_band'
+  | 'adult_band'
+  | 'kitchen'
+  | 'bar'
+  | 'scanner'
+  | 'card_terminal'
+  | 'qr_terminal'
+  | 'gate'
+  | 'cash_drawer';
+
+export type DeviceKind =
+  | 'receipt_printer'
+  | 'band_printer'
+  | 'kitchen_printer'
+  | 'bar_printer'
+  | 'scanner'
+  | 'terminal'
+  | 'gate'
+  | 'gate_reader'
+  | 'cash_drawer';
+
+/** How the device is wired to its box; `simulated` is one on a virtual box. */
+export type DeviceTransport = 'lan' | 'usb' | 'serial' | 'bluetooth' | 'simulated';
+
+export type BoxStatus = 'unclaimed' | 'online' | 'offline' | 'disabled';
+
+/** A box is a Raspberry Pi already standing at the branch, not a thing to create here. */
+export interface ApiBox {
+  id: string;
+  branchId: string;
+  name: string;
+  /** The position on site — "counter-1". Survives a Pi being swapped. */
+  slot: string;
+  role: string;
+  status: BoxStatus | string;
+  agentVersion?: string | null;
+  lastHeartbeatAt?: string | null;
+  /**
+   * Seconds since the last heartbeat AS THE API COUNTED IT, which is the one
+   * to trust: an iPad with a wrong clock would otherwise report a healthy box
+   * as silent for hours.
+   */
+  heartbeatAgeSeconds?: number | null;
+  deviceCount?: number | null;
+  archived?: boolean;
+}
+
+export interface ApiDevice {
+  id: string;
+  boxId: string;
+  kind: DeviceKind | string;
+  label: string;
+  transport: DeviceTransport | string;
+  address?: string | null;
+  model?: string | null;
+  protocol?: string | null;
+  reachability?: 'unknown' | 'reachable' | 'unreachable' | string;
+  /** Only meaningful on a printer; `unknown` everywhere else. */
+  paperStatus?: 'unknown' | 'ok' | 'low' | 'out' | string;
+  archived?: boolean;
+}
+
+/**
+ * One device doing one job for a station. The label and the link are
+ * denormalised by the API so a till can name the printer a receipt went to
+ * without holding the whole device list.
+ */
+export interface StationDeviceAssignment {
+  role: StationDeviceRole | string;
+  deviceId: string;
+  label?: string | null;
+  kind?: DeviceKind | string | null;
+  transport?: DeviceTransport | string | null;
+  address?: string | null;
+}
+
+export interface ApiStation {
+  id: string;
+  branchId: string;
+  boxId: string | null;
+  boxName?: string | null;
+  boxStatus?: BoxStatus | string | null;
+  name: string;
+  kind: StationKind | string;
+  capabilities?: (StationCapability | string)[];
+  accessScope?: StationAccessScope | string;
+  /** What the box compares on each config poll. */
+  configVersion?: number | null;
+  devices?: StationDeviceAssignment[];
+  /** Who may pick it. Empty unless the scope is `selected_staff`. */
+  staff?: Array<{ accountId: string; name?: string | null }>;
+  archived?: boolean;
+}
+
+/**
+ * One row of the picker. It carries the box and its state as well as the name,
+ * because a till whose box is not answering prints nothing, and the person
+ * about to stand at it should know that before the first sale rather than at
+ * the moment they try to hand somebody a receipt.
+ */
+export interface PickableStation {
+  id: string;
+  name: string;
+  kind: StationKind | string;
+  accessScope?: StationAccessScope | string;
+  boxId: string | null;
+  boxName?: string | null;
+  boxStatus?: BoxStatus | string | null;
+  deviceCount?: number | null;
+}
+
+/** An account that may be put on a station's list: the staff of that branch. */
+export interface StaffCandidate {
+  accountId: string;
+  name?: string | null;
+  phone?: string | null;
+  status?: string | null;
+}
+
+export interface StationInput {
+  branchId: string;
+  boxId: string;
+  name: string;
+  kind: StationKind;
+  capabilities?: StationCapability[];
+  accessScope?: StationAccessScope;
+  /** The WHOLE list, not a delta: one call, one audit row, one before and after. */
+  staffAccountIds?: string[];
+  /** Role to device id, or null to leave that role unassigned. */
+  devices?: Partial<Record<StationDeviceRole, string | null>>;
+}
+
+export const stationsApi = {
+  /**
+   * The stations this account may work at the branch its session is on,
+   * already filtered by access scope. The filtering is the API's and not ours:
+   * a station somebody may not use never reaches this browser at all.
+   */
+  mine: () => api.get<{ stations: PickableStation[] }>('/me/stations'),
+  /**
+   * Take a station: the session records it, and the audit rows and log lines
+   * this till writes afterwards carry it. Refused when the station is not on
+   * that account's list — a list that hides something is not a permission
+   * check, so the refusal stands whether or not a picker ever showed it.
+   */
+  pick: (stationId: string) =>
+    api.put<{ station: ApiStation }>('/me/session/station', { stationId }),
+  list: (branchId: string) =>
+    api.get<{ stations: ApiStation[] }>(`/stations?branchId=${encodeURIComponent(branchId)}`),
+  create: (body: StationInput) =>
+    api.post<{ id: string }>('/stations', body, { idempotencyKey: idemKey() }),
+  update: (id: string, body: Partial<StationInput>) =>
+    api.patch<{ ok: true; configVersion?: number }>(`/stations/${id}`, body),
+  /** The boxes standing at a branch, whether or not a station uses them yet. */
+  boxes: (branchId: string) =>
+    api.get<{ boxes: ApiBox[] }>(`/boxes?branchId=${encodeURIComponent(branchId)}`),
+  /**
+   * What one box can reach. Devices are asked for per box and never per branch,
+   * because a printer is reachable through the box it is plugged into and
+   * through no other.
+   */
+  boxDevices: (boxId: string) =>
+    api.get<{ devices: ApiDevice[] }>(`/devices?boxId=${encodeURIComponent(boxId)}`),
+  /** Who can be added to a station's list, asked by branch. */
+  staffCandidates: (branchId: string) =>
+    api.get<{ accounts: StaffCandidate[] }>(
+      `/stations/staff-candidates?branchId=${encodeURIComponent(branchId)}`,
+    ),
+  /**
+   * A test print is a command to the box, not a message down a wire from this
+   * iPad: the cloud queues it, the box collects it on its next poll and runs it
+   * there. So it can be sent while the station is still being set up.
+   */
+  testPrint: (boxId: string, deviceId: string) =>
+    api.post<{ id: string; actionId?: string | null }>(
+      `/boxes/${boxId}/commands`,
+      { kind: 'test_print', payload: { deviceId } },
       { idempotencyKey: idemKey() },
     ),
 };

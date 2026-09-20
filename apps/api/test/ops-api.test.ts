@@ -1,8 +1,9 @@
-import { and, desc, eq } from 'drizzle-orm';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { alert, auditLog, opsExpectation, opsLast, opsRun } from '@oto/db';
+import { and, desc, eq, like, or } from 'drizzle-orm';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { alert, auditLog, box, branch, device, opsExpectation, opsLast, opsRun } from '@oto/db';
 import { newId } from '@oto/shared';
-import { recordRun } from '../src/services/ops';
+import { runWatchdog } from '../src/services/jobs';
+import { recordRun, type AlertChannel, type AlertMessage } from '../src/services/ops';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
@@ -70,6 +71,23 @@ interface HealthBody {
     expectedEverySeconds: number | null;
     ageSeconds: number | null;
     lastError: string | null;
+  }>;
+  boxes: Array<{
+    id: string;
+    name: string;
+    slot: string;
+    status: string;
+    state: string;
+    openingHours: string;
+    agentVersion: string | null;
+    agentBelowMinimum: boolean;
+    heartbeatAgeSeconds: number | null;
+    uptimeSeconds: number | null;
+    outboxDepth: number | null;
+    clockOffsetMs: number | null;
+    conditions: string[];
+    detail: string | null;
+    devices: Array<{ id: string; kind: string; label: string; reachability: string; paperStatus: string }>;
   }>;
   alerts: Array<{ id: string; key: string; severity: string; title: string; count: number }>;
   watchdogAgeSeconds: number | null;
@@ -570,5 +588,387 @@ describe('S2-03 — who may read any of this', () => {
     }
     // Managing is a second permission, not the same one.
     expect((await post(`/ops/alerts/${newId()}/acknowledge`, receptionCookie)).statusCode).toBe(403);
+  });
+});
+
+/**
+ * S2-04 — the boxes on Health, and the rules the watchdog raises about them.
+ *
+ * The page and the alert are asserted TOGETHER in most of these cases, on
+ * purpose: they come out of one evaluation (`fleetHealth`), and the thing worth
+ * defending is that they cannot tell two different stories about one box. A
+ * case that only read the page would pass just as happily against two copies of
+ * the rule quietly disagreeing.
+ *
+ * The subtle one, and the reason half of this block exists: a box that has gone
+ * quiet is only raised DURING OPENING HOURS. Nobody is paged at three in the
+ * morning about a park that is shut, and where nobody has said when the park
+ * opens the rule does not fire at all.
+ */
+describe('S2-04 — boxes on Health and the fleet watchdog', () => {
+  const BOX_SLOT = 'virtual-1';
+  const BRANCH_CODE = 'hkt-central';
+
+  /**
+   * Midnight to midnight. `withinOpeningHours` reads a close that is not after
+   * the open as a day running past midnight, so this is the whole 24 hours and
+   * the cases below do not depend on what time of day the suite runs.
+   */
+  const ALWAYS_OPEN = Object.fromEntries(
+    ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day) => [
+      day,
+      { open: '00:00', close: '00:00' },
+    ]),
+  );
+  /** Hours that have been ANSWERED, with no day open — shut whenever this runs. */
+  const ALWAYS_SHUT = {};
+
+  let delivered: AlertMessage[];
+  let channels: AlertChannel[];
+
+  const watchdog = () =>
+    runWatchdog({ db: ctx.db, env: ctx.app.env, log: ctx.app.log, channels });
+
+  const theBox = async () => {
+    const [row] = await ctx.db.select().from(box).where(eq(box.slot, BOX_SLOT)).limit(1);
+    return row!;
+  };
+
+  const setBox = (values: Partial<typeof box.$inferInsert>) =>
+    ctx.db.update(box).set(values).where(eq(box.slot, BOX_SLOT));
+
+  const setHours = (openingHours: unknown) =>
+    ctx.db
+      .update(branch)
+      .set({ openingHours: openingHours as never })
+      .where(eq(branch.code, BRANCH_CODE));
+
+  /** The shape `recordHeartbeat` leaves on `box.last_status`. */
+  const reported = (patch: Record<string, unknown> = {}) => ({
+    reportedAt: new Date().toISOString(),
+    receivedAt: new Date().toISOString(),
+    clockOffsetMs: 40,
+    agentVersion: '0.1.0',
+    uptimeS: 3_600,
+    tempC: null,
+    outboxDepth: 0,
+    configVersion: 'ab12cd34ef567890',
+    ...patch,
+  });
+
+  /** A box that registered and is calling home right now. */
+  const callingHome = (patch: Record<string, unknown> = {}) =>
+    setBox({
+      status: 'online',
+      registeredAt: new Date(Date.now() - 86_400_000),
+      lastHeartbeatAt: new Date(),
+      agentVersion: '0.1.0',
+      lastStatus: reported(patch) as never,
+    });
+
+  /** The same box, which stopped saying anything half an hour ago. */
+  const wentQuiet = () =>
+    setBox({ status: 'online', lastHeartbeatAt: new Date(Date.now() - 1_800_000) });
+
+  const boxesOn = async (): Promise<HealthBody['boxes']> =>
+    (await get('/ops/health')).json<HealthBody>().boxes;
+
+  const alertsOf = (key: string) => ctx.db.select().from(alert).where(eq(alert.key, key));
+
+  beforeEach(async () => {
+    delivered = [];
+    channels = [
+      {
+        name: 'console',
+        async deliver(message) {
+          delivered.push(message);
+          return { target: 'test' };
+        },
+      },
+    ];
+    // Every fleet alert is deleted rather than resolved: a resolved row inside
+    // the flap window would be REOPENED silently, and a case that expects a
+    // delivery would then be asserting the flap rule instead of its own rule.
+    await ctx.db
+      .delete(alert)
+      .where(or(like(alert.key, 'box.%'), like(alert.key, 'device.%')));
+    await setHours(ALWAYS_OPEN);
+    await ctx.db
+      .update(device)
+      .set({ reachability: 'reachable', paperStatus: 'ok', lastError: null });
+    await callingHome();
+  });
+
+  it('lists every box with its devices and vitals, and not one credential', async () => {
+    // Real-looking credential columns, so "no credential is returned" is a
+    // claim about the response rather than about a value that was never there.
+    const secretHash = 'box-secret-hash-must-never-be-returned';
+    const claimCodeHash = 'box-claim-code-hash-must-never-be-returned';
+    await setBox({ secretHash, claimCodeHash });
+
+    const res = await get('/ops/health');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).not.toContain(secretHash);
+    expect(res.body).not.toContain(claimCodeHash);
+    expect(res.body).not.toContain('secretHash');
+    expect(res.body).not.toContain('claimCode');
+
+    const [reception] = res.json<HealthBody>().boxes;
+    expect(reception, 'Health must carry the fleet, not only the jobs').toBeTruthy();
+    expect(reception!.name).toBe('Virtual box 1');
+    expect(reception!.slot).toBe(BOX_SLOT);
+    expect(reception!.state).toBe('ok');
+    expect(reception!.openingHours).toBe('open');
+    expect(reception!.agentVersion).toBe('0.1.0');
+    expect(reception!.uptimeSeconds).toBe(3_600);
+    expect(reception!.outboxDepth).toBe(0);
+    expect(reception!.clockOffsetMs).toBe(40);
+    expect(reception!.heartbeatAgeSeconds).toBeLessThan(60);
+    expect(reception!.conditions).toEqual([]);
+
+    // The park's devices, with the two indicators the Health page paints.
+    const printer = reception!.devices.find((d) => d.label === 'Receipt Printer 1')!;
+    expect(printer.kind).toBe('receipt_printer');
+    expect(printer.reachability).toBe('reachable');
+    expect(printer.paperStatus).toBe('ok');
+    expect(reception!.devices.length).toBeGreaterThan(1);
+  });
+
+  it('a box that has gone quiet while the park is open is down, and raises box.offline', async () => {
+    await wentQuiet();
+
+    const key = `box.offline:${(await theBox()).id}`;
+    const [quiet] = await boxesOn();
+    // The page knows before the watchdog has run: same evaluation, same answer.
+    expect(quiet!.state).toBe('down');
+    expect(quiet!.conditions).toContain(key);
+    expect(quiet!.detail).toContain('has not called home');
+
+    const summary = await watchdog();
+    expect(summary.boxes).toBe(1);
+    // The status column moves whatever the hour: that is a fact, not a judgement.
+    expect(summary.boxesSilenced).toBe(1);
+    expect((await theBox()).status).toBe('offline');
+
+    const [raised] = await alertsOf(key);
+    expect(raised!.status).toBe('open');
+    expect(raised!.category).toBe('box.offline');
+    expect(raised!.severity).toBe('critical');
+    expect(raised!.summary).toContain('Virtual box 1');
+    // Scoped, so it reaches the operator whose park it is and nobody else.
+    expect(raised!.branchId).not.toBeNull();
+    expect(raised!.operatorId).not.toBeNull();
+    expect(delivered.filter((d) => d.key === key && d.event === 'opened')).toHaveLength(1);
+
+    // Still quiet a minute later is the same condition, not a second alert.
+    await watchdog();
+    expect(await alertsOf(key)).toHaveLength(1);
+    expect(delivered.filter((d) => d.key === key)).toHaveLength(1);
+
+    // And the page's own verdict follows the box.
+    expect((await get('/ops/health')).json<HealthBody>().status).toBe('down');
+  });
+
+  it('the box calling home again closes it, delivered as box.online', async () => {
+    await wentQuiet();
+    await watchdog();
+    const key = `box.offline:${(await theBox()).id}`;
+    expect((await alertsOf(key))[0]!.status).toBe('open');
+
+    // What a heartbeat does to the row.
+    await callingHome();
+    const summary = await watchdog();
+    expect(summary.resolved).toBeGreaterThanOrEqual(1);
+
+    const [row] = await alertsOf(key);
+    expect(row!.status).toBe('resolved');
+    expect(row!.resolvedReason).toBe('recovered');
+    const closing = delivered.filter((d) => d.key === key && d.event === 'resolved');
+    expect(closing).toHaveLength(1);
+    expect(closing[0]!.category).toBe('box.online');
+    expect(closing[0]!.summary).toContain('calling home again');
+
+    expect((await boxesOn())[0]!.state).toBe('ok');
+  });
+
+  it('the same silence outside opening hours raises nothing at all', async () => {
+    await setHours(ALWAYS_SHUT);
+    await wentQuiet();
+
+    const key = `box.offline:${(await theBox()).id}`;
+    await watchdog();
+    expect(
+      await alertsOf(key),
+      'a park that is shut is not a park with a broken till',
+    ).toHaveLength(0);
+    expect(delivered).toHaveLength(0);
+
+    const [shut] = await boxesOn();
+    expect(shut!.openingHours).toBe('closed');
+    // Shown, because the page is where somebody looks; not alerted, because an
+    // alert at three in the morning teaches everyone to ignore alerts.
+    expect(shut!.state).toBe('unknown');
+    expect(shut!.detail).toContain('closed');
+    expect(shut!.conditions).toEqual([]);
+  });
+
+  it('with no opening hours set the rule never fires, and the tile says why', async () => {
+    await setHours(null);
+    await wentQuiet();
+
+    await watchdog();
+    expect(await alertsOf(`box.offline:${(await theBox()).id}`)).toHaveLength(0);
+
+    const [unanswered] = await boxesOn();
+    expect(unanswered!.openingHours).toBe('not_set');
+    // Not `unknown`: nobody has answered the question, and that is a gap
+    // somebody has to close rather than a park that is simply shut.
+    expect(unanswered!.state).toBe('warn');
+    expect(unanswered!.detail).toContain('opening hours are not set');
+  });
+
+  it('a box still silent when the park closes is not recorded as having recovered', async () => {
+    await wentQuiet();
+    await watchdog();
+    const key = `box.offline:${(await theBox()).id}`;
+    expect((await alertsOf(key))[0]!.status).toBe('open');
+
+    // 21:00. The box has not come back; the park has closed.
+    await setHours(ALWAYS_SHUT);
+    await watchdog();
+
+    const [row] = await alertsOf(key);
+    expect(row!.status).toBe('resolved');
+    expect(row!.resolvedReason).toContain('closed');
+    expect(row!.resolvedReason).not.toBe('recovered');
+  });
+
+  it('a clock more than a minute out raises, and clears when it comes back', async () => {
+    await callingHome({ clockOffsetMs: 121_000 });
+    const key = `box.clock:${(await theBox()).id}`;
+
+    await watchdog();
+    const [drifted] = await alertsOf(key);
+    expect(drifted!.status).toBe('open');
+    expect(drifted!.severity).toBe('warning');
+    expect(drifted!.summary).toContain('121s ahead');
+    expect(drifted!.summary).toContain('business date');
+    expect((await boxesOn())[0]!.state).toBe('warn');
+
+    await callingHome({ clockOffsetMs: -30_000 });
+    await watchdog();
+    expect((await alertsOf(key))[0]!.status).toBe('resolved');
+  });
+
+  it('paper out and a device that did not answer raise per device, and stop when the box does', async () => {
+    const [printer] = await ctx.db
+      .select()
+      .from(device)
+      .where(eq(device.label, 'Receipt Printer 1'))
+      .limit(1);
+    const [scanner] = await ctx.db
+      .select()
+      .from(device)
+      .where(eq(device.label, 'Scanner 1'))
+      .limit(1);
+    await ctx.db.update(device).set({ paperStatus: 'out' }).where(eq(device.id, printer!.id));
+    await ctx.db
+      .update(device)
+      .set({ reachability: 'unreachable' })
+      .where(eq(device.id, scanner!.id));
+
+    await watchdog();
+    const paperKey = `device.paper:${printer!.id}`;
+    const unreachableKey = `device.unreachable:${scanner!.id}`;
+    expect((await alertsOf(paperKey))[0]!.summary).toContain('out of paper');
+    expect((await alertsOf(unreachableKey))[0]!.summary).toContain('did not answer');
+
+    const [warned] = await boxesOn();
+    expect(warned!.state).toBe('warn');
+    expect(warned!.conditions).toEqual(expect.arrayContaining([paperKey, unreachableKey]));
+
+    /**
+     * And then the box itself goes quiet. Paper and reachability are only as
+     * fresh as the last heartbeat, so calling a printer broken on the evidence
+     * of a box we cannot hear from would be inventing a second fault out of the
+     * first one.
+     */
+    await wentQuiet();
+    await watchdog();
+    expect((await alertsOf(paperKey))[0]!.status).toBe('resolved');
+    expect((await alertsOf(unreachableKey))[0]!.status).toBe('resolved');
+    expect((await alertsOf(`box.offline:${(await theBox()).id}`))[0]!.status).toBe('open');
+  });
+
+  it('an agent below the minimum this build supports raises box.agent', async () => {
+    const previous = process.env.BOX_MIN_AGENT_VERSION;
+    process.env.BOX_MIN_AGENT_VERSION = '0.2.0';
+    const key = `box.agent:${(await theBox()).id}`;
+    try {
+      await watchdog();
+      const [old] = await alertsOf(key);
+      expect(old!.status).toBe('open');
+      expect(old!.summary).toContain('0.1.0');
+      expect(old!.summary).toContain('0.2.0');
+      expect((await boxesOn())[0]!.agentBelowMinimum).toBe(true);
+
+      // The box is updated — or the floor is lowered again, which is the same
+      // fact from the cloud's side.
+      process.env.BOX_MIN_AGENT_VERSION = '0.1.0';
+      await watchdog();
+      expect((await alertsOf(key))[0]!.status).toBe('resolved');
+      expect((await boxesOn())[0]!.agentBelowMinimum).toBe(false);
+    } finally {
+      if (previous === undefined) delete process.env.BOX_MIN_AGENT_VERSION;
+      else process.env.BOX_MIN_AGENT_VERSION = previous;
+    }
+  });
+
+  it('a box nobody has registered, and one taken out of service, raise nothing', async () => {
+    // What the seed leaves behind: a row with a slot, waiting for its Pi.
+    await setBox({ registeredAt: null, status: 'unclaimed', lastHeartbeatAt: null, lastStatus: null });
+    await watchdog();
+    expect(delivered).toHaveLength(0);
+    const [unclaimed] = await boxesOn();
+    expect(unclaimed!.state).toBe('unknown');
+    expect(unclaimed!.detail).toContain('claim code');
+
+    await setBox({
+      registeredAt: new Date(Date.now() - 86_400_000),
+      status: 'disabled',
+      lastHeartbeatAt: new Date(Date.now() - 86_400_000),
+    });
+    await watchdog();
+    expect(delivered).toHaveLength(0);
+    const [disabled] = await boxesOn();
+    expect(disabled!.state).toBe('unknown');
+    expect(disabled!.detail).toContain('out of service');
+    // And the status a person set is never moved by the sweep.
+    expect((await theBox()).status).toBe('disabled');
+  });
+
+  it('offers the fleet test controls, and says so when there is no box here to stop', async () => {
+    const { controls } = (await get('/ops/test-controls')).json<{
+      controls: Array<{ key: string; label: string; sticky: boolean }>;
+    }>();
+    expect(controls.map((c) => c.key)).toEqual(
+      expect.arrayContaining([
+        'box.heartbeats.stop',
+        'box.heartbeats.start',
+        'box.clock.advance',
+        'box.clock.reset',
+      ]),
+    );
+    expect(controls.find((c) => c.key === 'box.heartbeats.stop')!.label).toBe('Stop heartbeats');
+
+    /**
+     * This process does not carry the `edge` role, so there is no virtual box
+     * inside it. A control that quietly reported success would be the exact
+     * failure the whole ticket is about.
+     */
+    const res = await post('/ops/test-controls/box.heartbeats.stop');
+    expect(res.statusCode).toBe(409);
+    expect(res.json<{ error: { code: string } }>().error.code).toBe('VIRTUAL_BOX_ABSENT');
+    expect((await post('/ops/test-controls/box.clock.advance', receptionCookie)).statusCode).toBe(403);
   });
 });

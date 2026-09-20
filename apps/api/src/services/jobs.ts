@@ -4,10 +4,12 @@ import type { FastifyBaseLogger } from 'fastify';
 import { opsExpectation, opsLast, type AlertSeverity, type Db } from '@oto/db';
 import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
+import { markSilentBoxesOffline, purgeOldBoxHeartbeats } from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
 import {
   buildAlertChannels,
   deliverAlert,
+  fleetHealth,
   purgeOldOpsRuns,
   purgeResolvedAlerts,
   raiseAlert,
@@ -110,6 +112,9 @@ export interface WatchdogSummary extends Record<string, unknown> {
   expectations: number;
   missing: number;
   failing: number;
+  /** Live boxes examined, and how many of them this pass moved to `offline`. */
+  boxes: number;
+  boxesSilenced: number;
   opened: number;
   resolved: number;
 }
@@ -141,6 +146,8 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     expectations: expectations.length,
     missing: 0,
     failing: 0,
+    boxes: 0,
+    boxesSilenced: 0,
     opened: 0,
     resolved: 0,
   };
@@ -152,10 +159,12 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     subject: string,
     summaryLine: string,
     detail: Record<string, unknown>,
+    /** A job belongs to nobody; a box belongs to a branch of an operator. */
+    scope?: { operatorId: string; branchId: string },
   ): Promise<void> => {
     const raised = await raiseAlert(
       db,
-      { key, category, severity, subject, summary: summaryLine, detail },
+      { key, category, severity, subject, summary: summaryLine, detail, ...scope },
       { flapWindowSeconds },
     );
     // Only a genuinely new condition is delivered. A repeat is the same
@@ -173,8 +182,19 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     }
   };
 
-  const close = async (key: string, category: string, subject: string): Promise<void> => {
-    const resolved = await resolveAlert(db, key, 'recovered');
+  /**
+   * `clear` is how a condition stops being true, in its own words. A job that
+   * ran again has recovered, and that is the default; a box that is still
+   * silent at 21:05 has not, and writing "recovered" on that row would be a lie
+   * in the one record somebody reads back after an incident.
+   */
+  const close = async (
+    key: string,
+    category: string,
+    subject: string,
+    clear?: { category: string; reason: string; summary: string },
+  ): Promise<void> => {
+    const resolved = await resolveAlert(db, key, clear?.reason ?? 'recovered');
     if (!resolved) return;
     summary.resolved += 1;
     if (resolved.wasNotified) {
@@ -184,10 +204,10 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
         {
           alertId: resolved.id,
           key,
-          category,
+          category: clear?.category ?? category,
           severity: 'info',
           subject,
-          summary: `${subject} has recovered`,
+          summary: clear?.summary ?? `${subject} has recovered`,
           event: 'resolved',
         },
         log,
@@ -267,6 +287,40 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
     }
   }
 
+  /**
+   * And then the fleet, which is the same check pointed at a machine in a mall
+   * rather than at a sweep in this process.
+   *
+   * Two steps, in this order and for different reasons. `markSilentBoxesOffline`
+   * writes the FACT — a box that has not called home within
+   * `BOX_OFFLINE_AFTER_S` is offline — unconditionally, whatever the hour,
+   * because the Devices page, the station picker and the config bundle all read
+   * that column and none of them cares what time it is. `fleetHealth` then
+   * makes the JUDGEMENT, and that one does care: a silent box is only raised
+   * while the park is open.
+   *
+   * Every condition comes back evaluated, true and false alike, so a rule that
+   * has stopped being true closes itself here without anybody pressing
+   * anything — and it is the same evaluation the Health page renders, so the
+   * page and the alert cannot tell two different stories about one box.
+   */
+  const silenced = await markSilentBoxesOffline(db);
+  summary.boxesSilenced = silenced.length;
+  if (silenced.length > 0) {
+    log.warn(
+      { boxes: silenced.map((b) => ({ slot: b.slot, duringOpeningHours: b.duringOpeningHours })) },
+      'boxes moved to offline after silence',
+    );
+  }
+
+  const fleet = await fleetHealth({ db }, now.getTime());
+  summary.boxes = fleet.boxes.length;
+  for (const c of fleet.conditions) {
+    const scope = { operatorId: c.operatorId, branchId: c.branchId };
+    if (c.active) await open(c.key, c.category, c.severity, c.subject, c.summary, c.detail, scope);
+    else await close(c.key, c.category, c.subject, c.clear);
+  }
+
   return summary;
 }
 
@@ -309,12 +363,20 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
     },
     {
       name: 'job:housekeeping.retention',
-      description: 'Ages out operational runs and resolved alerts',
+      description: 'Ages out operational runs, resolved alerts and box heartbeats',
       intervalSeconds: deps.env.HOUSEKEEPING_INTERVAL_S,
       run: async ({ db, env }) => ({
         detail: {
           runsDeleted: await purgeOldOpsRuns(db, env.OPS_RUN_RETENTION_DAYS),
           alertsDeleted: await purgeResolvedAlerts(db, env.OPS_RUN_RETENTION_DAYS),
+          /**
+           * A row a minute per box, forever, is around half a million a year
+           * each — so `edge.box_heartbeat` is a retention problem from the day
+           * it exists rather than later. "Is this box well right now" is
+           * answered from `box.last_status` and never touches this table, which
+           * is what makes throwing its history away after two weeks cheap.
+           */
+          heartbeatsDeleted: await purgeOldBoxHeartbeats(db),
         },
       }),
     },

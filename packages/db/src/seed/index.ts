@@ -97,6 +97,13 @@ export async function seed(db: Db = getDb()): Promise<void> {
   const operatorId = existingOperator?.id ?? newId();
   if (!existingOperator) await db.insert(s.operator).values({ id: operatorId, name: 'OTO' });
 
+  // HKT Central opens 10:00-21:00 every day (S2-04).
+  const openingHours = Object.fromEntries(
+    ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day) => [
+      day,
+      { open: '10:00', close: '21:00' },
+    ]),
+  );
   const [branchRow] = await db
     .insert(s.branch)
     .values({
@@ -106,6 +113,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
       code: 'hkt-central',
       timezone: 'Asia/Bangkok',
       country: 'TH',
+      openingHours,
     })
     .onConflictDoUpdate({
       target: [s.branch.operatorId, s.branch.code],
@@ -113,6 +121,15 @@ export async function seed(db: Db = getDb()): Promise<void> {
     })
     .returning({ id: s.branch.id });
   const branchId = branchRow!.id;
+
+  // Opening hours are edited from the Branches panel, so a sync must not push
+  // them back — but a branch seeded before the column existed still has none,
+  // and the watchdog reads "not set" as "do not raise". Backfill the null, and
+  // leave any answer a person has given alone.
+  await db
+    .update(s.branch)
+    .set({ openingHours })
+    .where(and(eq(s.branch.id, branchId), isNull(s.branch.openingHours)));
 
   // Departments (CLAUDE.md §4).
   const deptIds: Record<string, string> = {};
@@ -507,19 +524,210 @@ export async function seed(db: Db = getDb()): Promise<void> {
     });
   }
 
-  // A first till station for the branch.
-  const [stationRow] = await db
-    .select({ id: s.station.id })
-    .from(s.station)
-    .where(and(eq(s.station.branchId, branchId), eq(s.station.name, 'Reception Till 1')))
+  // --- The fleet (S2-04) -----------------------------------------------------
+  //
+  // One virtual box, the two stations that sit on it, and the park's real
+  // devices as simulations. The virtual box runs inside the api under
+  // PROCESS_ROLES=edge, which is what lets pairing, config bundles, commands
+  // and heartbeats all be exercised on Render months before anybody carries a
+  // Raspberry Pi to Phuket.
+
+  // Found by (branch, slot) and then left entirely alone. Everything else the
+  // box owns — its secret, its epoch, its last heartbeat — is runtime state,
+  // and a sync that reset any of it would take a working box offline.
+  const [existingBox] = await db
+    .select({ id: s.box.id })
+    .from(s.box)
+    .where(and(eq(s.box.branchId, branchId), eq(s.box.slot, 'virtual-1')))
     .limit(1);
-  if (!stationRow) {
-    await db
-      .insert(s.station)
-      .values({ id: newId(), operatorId, branchId, name: 'Reception Till 1', kind: 'till' });
+  const boxId = existingBox?.id ?? newId();
+  if (!existingBox) {
+    await db.insert(s.box).values({
+      id: boxId,
+      operatorId,
+      branchId,
+      name: 'Virtual box 1',
+      slot: 'virtual-1',
+      role: 'virtual',
+      // The agent registers into this row when the edge process starts; until
+      // it has, the box genuinely is unclaimed and Health should say so.
+      status: 'unclaimed',
+    });
   }
 
-  console.log('Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog.');
+  // The park's real devices (docs/architecture/DEVICE_INVENTORY.md §2) with
+  // their real models, addresses, protocols and terminal identifiers — but on
+  // the `simulated` transport, so the adapters are written against the truth
+  // and only the physical link changes on site.
+  const mkDevice = async (d: {
+    kind: (typeof s.DEVICE_KINDS)[number];
+    label: string;
+    model: string;
+    protocol: string;
+    address?: string;
+    serialNumber?: string;
+    terminalId?: string;
+    merchantId?: string;
+  }) => {
+    const [found] = await db
+      .select({ id: s.device.id })
+      .from(s.device)
+      .where(and(eq(s.device.boxId, boxId), eq(s.device.label, d.label)))
+      .limit(1);
+    if (found) return found.id;
+    const id = newId();
+    await db.insert(s.device).values({
+      id,
+      operatorId,
+      branchId,
+      boxId,
+      transport: 'simulated',
+      reachability: 'reachable',
+      paperStatus: 'ok',
+      ...d,
+    });
+    return id;
+  };
+
+  const devReceipt = await mkDevice({
+    kind: 'receipt_printer',
+    label: 'Receipt Printer 1',
+    model: 'Welltech G4 (Xprinter XP-C260)',
+    protocol: 'escpos',
+    address: '192.168.88.202:9100',
+  });
+  const devKitchen = await mkDevice({
+    kind: 'kitchen_printer',
+    label: 'Kitchen Printer',
+    model: 'Xprinter XP-80',
+    protocol: 'escpos',
+    address: '192.168.88.206:9100',
+  });
+  const devBooth = await mkDevice({
+    kind: 'receipt_printer',
+    label: 'Receipt Printer 2',
+    model: 'Xprinter XP-80',
+    protocol: 'escpos',
+    address: '192.168.88.207:9100',
+  });
+  const devKidsBand = await mkDevice({
+    kind: 'band_printer',
+    label: 'Band Printer (kids)',
+    model: '4B-2082A',
+    protocol: 'tspl2',
+    address: '192.168.88.204:9100',
+  });
+  const devAdultBand = await mkDevice({
+    kind: 'band_printer',
+    label: 'Band Printer (adults)',
+    model: '4B-2082A',
+    protocol: 'tspl2',
+    address: '192.168.88.210:9100',
+  });
+  const devScanner = await mkDevice({
+    kind: 'scanner',
+    label: 'Scanner 1',
+    model: 'Zebra DS2278 (CR2278-PC cradle)',
+    protocol: 'hid',
+  });
+  const devCard = await mkDevice({
+    kind: 'terminal',
+    label: 'EDC 1',
+    model: 'NEXGO N5',
+    protocol: 'ghl_linkpos',
+    terminalId: '65703235',
+    merchantId: '4648434010',
+  });
+  const devQr = await mkDevice({
+    kind: 'terminal',
+    label: 'EDC 3',
+    model: 'PAX A920Pro',
+    protocol: 'digio_tlv',
+    serialNumber: '1854355548',
+  });
+
+  /**
+   * Stations are demo rows: created once, then left to whoever configures them.
+   * The one exception is a backfill of the two fields a station cannot work
+   * without and that a Sprint 1 row has no answer for — its box and its code
+   * prefix — which is the same thing the expand migration would do and is
+   * still not an overwrite of anybody's choice.
+   */
+  const mkStation = async (st: {
+    name: string;
+    kind: (typeof s.STATION_KINDS)[number];
+    codePrefix: string;
+    capabilities: (typeof s.STATION_CAPABILITIES)[number][];
+    accessScope: (typeof s.STATION_ACCESS_SCOPES)[number];
+  }) => {
+    const [found] = await db
+      .select({ id: s.station.id, boxId: s.station.boxId, codePrefix: s.station.codePrefix })
+      .from(s.station)
+      .where(and(eq(s.station.branchId, branchId), eq(s.station.name, st.name)))
+      .limit(1);
+    if (found) {
+      if (!found.boxId || !found.codePrefix) {
+        await db
+          .update(s.station)
+          .set({ boxId: found.boxId ?? boxId, codePrefix: found.codePrefix ?? st.codePrefix })
+          .where(eq(s.station.id, found.id));
+      }
+      return found.id;
+    }
+    const id = newId();
+    await db.insert(s.station).values({ id, operatorId, branchId, boxId, ...st });
+    return id;
+  };
+
+  const tillId = await mkStation({
+    name: 'Reception Till 1',
+    kind: 'till',
+    codePrefix: 'T1',
+    capabilities: ['tickets', 'fnb'],
+    accessScope: 'all_staff',
+  });
+  /**
+   * The booth is the seed's `selected_staff` station, and it is the one the
+   * visibility rule is proved against: reception signing in sees Reception
+   * Till 1 and does not see this at all. It is also the honest setting for a
+   * booth — the wheel is run by whoever is looking after it, not by anybody
+   * who happens to be on shift.
+   */
+  const boothId = await mkStation({
+    name: 'Booth 1',
+    kind: 'booth',
+    codePrefix: 'B1',
+    // Capabilities describe what a TILL sells; a booth's behaviour comes from
+    // its kind, so the list stays empty.
+    capabilities: [],
+    accessScope: 'selected_staff',
+  });
+
+  const assign = async (stationId: string, role: (typeof s.STATION_DEVICE_ROLES)[number], deviceId: string) => {
+    await db
+      .insert(s.stationDevice)
+      .values({ id: newId(), stationId, role, deviceId })
+      .onConflictDoNothing({ target: [s.stationDevice.stationId, s.stationDevice.role] });
+  };
+  await assign(tillId, 'receipt', devReceipt);
+  await assign(tillId, 'kitchen', devKitchen);
+  await assign(tillId, 'kids_band', devKidsBand);
+  await assign(tillId, 'adult_band', devAdultBand);
+  await assign(tillId, 'scanner', devScanner);
+  await assign(tillId, 'card_terminal', devCard);
+  await assign(tillId, 'qr_terminal', devQr);
+  await assign(boothId, 'receipt', devBooth);
+
+  // Only the administrator may pick Booth 1. Reception's picker must not show
+  // it at all — that is the rule this row exists to exercise.
+  await db
+    .insert(s.stationStaff)
+    .values({ id: newId(), stationId: boothId, accountId: adminAccountId, addedBy: adminAccountId })
+    .onConflictDoNothing({ target: [s.stationStaff.stationId, s.stationStaff.accountId] });
+
+  console.log(
+    'Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog, one virtual box with two stations.',
+  );
 }
 
 /**

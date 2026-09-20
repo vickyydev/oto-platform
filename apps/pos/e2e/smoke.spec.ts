@@ -1,4 +1,25 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+/**
+ * Signing in now lands on the station picker before the till (S2-04): the
+ * station is what decides which printers and scanner the screen drives.
+ *
+ * It is taken when it appears rather than waited for, because a deployment
+ * whose API has no fleet routes yet goes straight to the till and both are
+ * correct. "Reception Till 1" is the seed's all-staff station, so the reception
+ * account sees it; the booth beside it is kept for named staff and is absent
+ * from this list entirely.
+ */
+async function pickStationIfAsked(page: Page): Promise<void> {
+  const heading = page.getByRole('heading', { name: 'Which station are you on?' });
+  const asked = await heading
+    .waitFor({ state: 'visible', timeout: 10_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!asked) return;
+  await page.getByRole('button', { name: /Reception Till 1/ }).click();
+  await expect(heading).toBeHidden({ timeout: 15_000 });
+}
 
 /**
  * The CLAUDE.md §8 smoke flow: lock → sign-in → membership lookup → child
@@ -17,6 +38,7 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
   await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill('0900000002');
   await page.locator('input[type="password"]').fill('reception1234');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await pickStationIfAsked(page);
 
   // Till home: operator badge + API-driven pricing chip.
   await expect(page.getByText('Membership Check')).toBeVisible({ timeout: 15_000 });
@@ -58,6 +80,7 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page }) 
   await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill('0900000002');
   await page.locator('input[type="password"]').fill('reception1234');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await pickStationIfAsked(page);
   await expect(page.getByText('Membership Check')).toBeVisible({ timeout: 15_000 });
 
   const unknown = `06${String(Math.floor(10000000 + Math.random() * 89999999))}`;

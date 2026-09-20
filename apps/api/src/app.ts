@@ -35,6 +35,7 @@ import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
+import { boxRoutes } from './routes/box';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -271,6 +272,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
   await app.register(opsRoutes, { prefix: '/ops' });
+  // Versioned separately from everything else: a box in a mall is updated on
+  // its own schedule, so the one surface that has to stay compatible with a
+  // machine nobody can reach says so in its path (S2-04).
+  await app.register(boxRoutes, { prefix: '/box/v1' });
   await app.register(publicRoutes);
 
   return app;

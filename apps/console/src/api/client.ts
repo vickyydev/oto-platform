@@ -28,11 +28,19 @@ export function isMissingRoute(err: unknown): boolean {
   return err instanceof ApiError && err.status === 404;
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  opts: { idempotencyKey?: string } = {},
+): Promise<T> {
   const res = await fetch(`/api${path}`, {
     method,
     credentials: 'same-origin',
-    headers: body !== undefined ? { 'content-type': 'application/json' } : {},
+    headers: {
+      ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+      ...(opts.idempotencyKey ? { 'idempotency-key': opts.idempotencyKey } : {}),
+    },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (res.status === 204) return undefined as T;
@@ -59,8 +67,22 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
+  post: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
+    request<T>('POST', path, body, opts),
+  patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
+    request<T>('PATCH', path, body, opts),
+  delete: <T>(path: string) => request<T>('DELETE', path),
 };
+
+/**
+ * A fresh key for one mutation, minted where the person pressed the button.
+ *
+ * The API stores the key with a hash of the request, so a double press, a
+ * flaky connection or a retry lands one station, one device, one command —
+ * and the second attempt gets the first attempt's answer back rather than a
+ * second row. Same helper, same reasoning as apps/pos/src/api/client.ts.
+ */
+export const idemKey = (): string => crypto.randomUUID();
 
 /** Query string from the filters a page holds, skipping anything unset. */
 export function qs(params: Record<string, string | number | boolean | null | undefined>): string {

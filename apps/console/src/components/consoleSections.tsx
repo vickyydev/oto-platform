@@ -1,4 +1,4 @@
-import { Activity, HeartPulse, Plug, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { Activity, HeartPulse, Plug, Router, TriangleAlert, type LucideIcon } from 'lucide-react';
 import type { Permission } from '@oto/shared/permissions';
 
 export interface ConsoleSection {
@@ -19,8 +19,8 @@ export interface ConsoleNavGroup {
 }
 
 /**
- * Console v1. One group today; Devices joins it in S2-04 and Booths in S2-07b,
- * which is why the shape is a group of sections rather than a flat list.
+ * Console v1. One group today; Booths joins it in S2-07b, which is why the
+ * shape is a group of sections rather than a flat list.
  *
  * The Sprint 1 back-office panels — catalogue, tax, members, accounts — stay in
  * the POS at /admin this sprint and are linked from the foot of the nav rather
@@ -51,6 +51,18 @@ export const consoleNav: ConsoleNavGroup[] = [
         icon: Activity,
         description: 'The audit log: who did what, to what, from where, and whether it went through.',
         permission: 'admin:audit:read',
+      },
+      {
+        id: 'devices',
+        label: 'Devices',
+        icon: Router,
+        description:
+          'The boxes at the park, the stations that sit on them, and who may pick each one.',
+        // The floor is reading stations: boxes and devices are panels within
+        // the page and each is gated on its own, so an account that may see
+        // the stations but not the fleet gets the half it is entitled to
+        // rather than a locked page.
+        permission: 'admin:station:read',
       },
       {
         id: 'integrations',

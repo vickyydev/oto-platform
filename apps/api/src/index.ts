@@ -3,6 +3,7 @@ import { buildApp } from './app';
 import { loadEnv } from './env';
 import { buildFileStorage } from './services/files';
 import { createJobRunner } from './services/jobs';
+import { startVirtualBox, stopVirtualBox } from './services/box';
 
 /**
  * Process entry point. Everything here exists because of how the api is
@@ -49,6 +50,7 @@ async function shutdown(signal: string): Promise<void> {
   app.log.info({ signal }, 'shutting down');
   try {
     await jobs.stop();
+    stopVirtualBox();
     await app.close();
     await closeDb();
     process.exit(0);
@@ -72,7 +74,22 @@ process.on('uncaughtException', (err) => {
   void shutdown('uncaughtException').finally(() => process.exit(1));
 });
 
-app.listen({ port, host: '0.0.0.0' }).catch((err) => {
+try {
+  await app.listen({ port, host: '0.0.0.0' });
+} catch (err) {
   app.log.error(err, 'failed to start');
   process.exit(1);
-});
+}
+
+/**
+ * The virtual box (S2-04), started here for the same reason the job runner is:
+ * tests build an app per file, and a box started inside `buildApp` would mean
+ * every one of them registering itself and firing timers.
+ *
+ * It talks to this process over loopback, so it can only start once the port
+ * is actually bound — and it is the ordinary agent from `@oto/box-agent`
+ * rather than a simulation of one, which is what makes pairing, config
+ * bundles, commands and heartbeats provable on Render with no hardware. It is
+ * a no-op unless PROCESS_ROLES names `edge`.
+ */
+await startVirtualBox({ db, env, log: app.log, port });
