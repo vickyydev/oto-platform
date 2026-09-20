@@ -111,40 +111,76 @@ approval — worth starting before it is wanted), and the number the report
 goes to. Then this merges with question 4 below: one channel carries both the
 sprint report and the 9pm-Saturday operational alert.
 
-## 3c. Pricing: four rulings the engine is waiting on (S2-09a)
+## ~~3c. Pricing: four rulings~~ — answered 2026-09-20, applied in 7d66dd5
 
-The engine is built and committed. Each of these is **pinned as the
-prototype behaves today**, with a fixture, so nothing is blocked and nothing
-changes silently. Each needs a yes or a no before the till sells for real.
+Four agents searched the prototype, the lifted OTO App, the intake documents
+and every brief. **One was never a ruling; three were genuinely undocumented
+and were decided.** The distinction is kept in the code: a cited rule carries
+its citation, a decision is labelled as one with its reasoning.
 
-**(a) A free item on a promo: does the guest pay for it or not?**
-The prototype's own comment promises the guest pays ฿2,130 on the cart
-concerned. The code charges ฿2,080 — the free ice cream comes off the
-tickets' taxable base rather than showing as its own ฿50 discount. Both
-numbers are defensible; they differ by the price of the free item. Pinned at
-฿2,080 (fixture WE-8).
+**(a) The free item goes on at ฿0 and the rest of the bill is untouched —
+a CITED RULE, and the engine had a defect against it.** Said outside the
+prototype three times (`POS_BACKEND_LOGIC.md` §6.2, rule R-29 in
+`POS_RULES_RECONCILIATION.md:78`, the signed acceptance criterion in
+`AGENCY_PROPOSAL.md`) and four more times in the prototype's own comments.
+Its arithmetic even computed ฿2,130 and then discarded it, because a promo
+line returns no taxable base so the offsetting discount fell on the tickets.
+The park was giving the cone away twice and booking it once. WE-8 now reads
+฿2,130 and the markdown books against F&B, not admission.
 
-**(b) A discount can currently be spent twice.** A line comped to zero, then
-a promo scoped to tickets, discounts the same tickets again — and ฿1,000 of
-lockers walks out free. This is exactly what the prototype does, so it was
-not "fixed": changing it changes what a guest pays. Pinned (fixture EC-15).
+**(b) A scoped discount spends only what its own scope has left — a
+DECISION.** Nothing rules on it anywhere. Taken because this system has no
+manager approval on discounts by design, so the arithmetic is the only thing
+between a scoped code and the stockroom; and two neighbouring systems (staff
+benefits, manual discounts) already track what a line has left, so it follows
+the park's own pattern. Guests pay more where it bites — EC-15 ฿0 → ฿1,000,
+EC-17 ฿0 → ฿300 — and no code the park holds today is scoped this way, so it
+becomes reachable only when somebody creates one.
 
-**(c) Which date prices a sale after midnight?** A sale at 00:30 belongs to
-the previous **business** day for the ledger. Does it also get the previous
-day's *prices*? If Friday runs to 02:00 on Saturday morning, the guests
-still in the park were quoted Friday's rates. Pinned at the calendar day.
+**(c) and (d) Both dates are the business date — DECISIONS.** The park trades
+10:00–20:00, so no guest sale falls in the window where the calendar day and
+the business day disagree. One sentence then covers pricing, expiry, the till
+roll and the cash-up. (d) also fixed a plain bug: promo validity compared
+against UTC while pricing used local midnight — measured as a 05:00–06:59
+window, wrong in **both** directions.
 
-**(d) Which date validates a promo code?** Same question, different answer
-possible: a code valid "until Friday" used at 00:30 on Saturday.
+**Still to do, outside `packages/shared` and therefore not in that commit:**
+- `apps/api/src/routes/catalog.ts:299` — the pricing resolver still defaults
+  to `branchToday`; ruling (c) makes it `businessDate`.
+- `apps/pos/src/pages/Till.tsx:508,624` and `components/mobile/MobileTill.tsx:522`
+  — still UTC for promo validity; ruling (d) makes them `promoValidityDate`.
+  These call the POS's own lifted `lib/promoVoucher.ts`, not the engine.
 
-**Also, not a ruling — a mismatch to correct in one place or the other.**
-S2-09a's acceptance criterion names a cart *"2 Hours Play, 2 kids + 3
-adults, weekend, for James (expat), with the free-adults rule applied per
-line"*. In the seeded catalogue that ticket prices expat adults at a set
-price, so that cart exercises no free-adults rule at all — the only seeded
-one is Full Day Pass at the Thai tier. The fixture is built as the catalogue
-actually prices it (฿2,924). Either the seed or the criterion should change
-before QA is asked to screenshot a figure that cannot be produced.
+**What actually protects the money is not the date but the freeze** — price
+and code validity resolved once when a line enters the cart and stored, with
+re-pricing a deliberate act. Recorded in `findStaleLines`' docstring where
+S2-09a's cart work will find it.
+
+**Separately, a mismatch to correct in one place or the other.** S2-09a's
+acceptance criterion names a cart *"2 Hours Play, 2 kids + 3 adults, weekend,
+for James (expat), with the free-adults rule applied per line"*. In the
+seeded catalogue that ticket prices expat adults at a set price, so that cart
+exercises no free-adults rule at all — the only seeded one is Full Day Pass
+at the Thai tier. The fixture is built as the catalogue actually prices it
+(฿2,924). Either the seed or the criterion should change before QA is asked
+to screenshot a figure that cannot be produced.
+
+## 3f. The seeded closing time is an hour late, and it will page somebody
+
+`packages/db/src/seed/index.ts` seeds HKT Central closing at **21:00**, and
+`packages/db/src/schema/tenancy.ts` asserts "the park closes at 21:00". The
+park's own SOP says **20:00** ("Daily: 10:00 AM – 8:00 PM", order counter
+closes 19:30), and Radar has been watching the live tills against a 20:00
+close for months.
+
+The box watchdog only raises an alert during opening hours, so the extra hour
+means expecting every box to be alive for an hour after the park is dark —
+a nightly false alarm waiting to happen, and false alarms are how people
+learn to ignore real ones.
+
+**Meanwhile:** nothing is broken; staging has no real boxes yet. Correct it
+to 20:00 (or 20:30 to cover the last reception shift) next time somebody is
+in that file — it is being edited by S2-05 right now.
 
 ## 3d. Phone numbers in the production dump are not all E.164 (bites at S2-22)
 
