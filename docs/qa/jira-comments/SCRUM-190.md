@@ -19,12 +19,14 @@ A gap caught by reading the deployment rather than by a test. The runner, its jo
 
 GET /audit is readable now: keyset pagination rather than an offset (an offset over a growing table gets slower and can skip rows as new ones arrive), filters, a hard cap of 200, and personal data masked unless the caller holds admin:audit:read_sensitive. An unmasked read is itself audited — reading a child's medical note is an event worth recording.
 
-Screenshots:
+Screenshots (re-captured after commit d2e4568 — see the separate screenshot comment for what each one shows):
 - 01-console-sign-in — the console's own sign-in, in the suite's design language.
-- 02-console-health — the Health page. Note what it says about itself: "Only /ready is reporting on this deployment, so this is not yet a verdict on the jobs, the alerts or anything else." The watchdog card reads 9s, late after 3m.
-- 03-console-activity — the audit log with its filters.
-- 04-console-failures — failures grouped by fingerprint, so one broken thing failing sixty times reads as one problem.
-- 05-console-integrations — the outside services and their states; names only, never a credential.
-- 06-console-phone-width — 390px, no horizontal scroll (scrollWidth 390 = clientWidth 390).
+- 02-console-health — the Health page against the live deployment: the services cards, the job register with each job's last run and expected interval, and "2 things need attention" naming the failed run and the open alert.
+- 03-console-failures — three failed runs of job:demo.fail grouped by fingerprint as one problem, ×3, with Retry offered because the kind is "job".
+- 04-console-integrations — five outside services, each state derived from something real; Sentry off, naming SENTRY_DSN as what is unset. Names only, never a credential.
+- 05-console-activity — the audit log with its filters, showing this session's sign-in and the four ops.test_control presses.
+- 06-console-phone-width — 400px, no horizontal scroll.
 
-Known and recorded, not hidden. The Health page's "Scheduled jobs" panel shows an honest empty state — "The job register is not on this deployment yet" — because the admin observability routes it reads are not all wired. The watchdog IS running, as /ready proves; what is missing is the endpoint that lists the register. That belongs with the remaining admin routes for ops-runs and alerts. Also outstanding from the ticket: OpenTelemetry traces and the OTLP bridge, POST /telemetry/client for browser errors, the audit_log classification columns with BRIN, and the GitHub Actions cron pinging /ready. They are additive to what is deployed and none of them block the next ticket.
+The observability routes the console reads — GET /ops/health, /ops/failures, /ops/runs, /ops/integrations, the alert acknowledge and the staging test controls — landed in d2e4568 and are live. An earlier version of this comment said the job register had no endpoint behind it; that was true when it was written and is no longer.
+
+Still outstanding from the ticket, all additive and none of it blocking the next one: OpenTelemetry traces and the OTLP bridge, POST /telemetry/client for browser errors, the audit_log classification columns with BRIN, and a scheduled ping of /ready from outside the platform. Two decisions the routes surfaced are in docs/progress/OPEN_QUESTIONS.md: the job.fail control raises no ops.failing alert (it writes the failure record rather than registering a job the watchdog would then expect to succeed), and an acknowledged alert does not name who took it, because that name is masked personal data everywhere else.
