@@ -2,24 +2,29 @@
 
 ## Status
 
-- Current checkpoint: **S2-01 is complete and deployed.** S2-01a, S2-01b and
-  S2-01c are all done; the POS and the api are live on Render with the
-  database migrated and seeded, and both Playwright smoke flows pass against
-  the two live origins. 165 API tests + 22 shared tests green. See
-  `DEPLOYMENT_STAGING.md`. Next: **S2-02**, the suite launcher.
+- Current checkpoint: **S2-02 is complete and deployed.** The suite launcher
+  is live beside the POS and the api — three services in the Render `staging`
+  environment — and one sign-in on the launcher opens the till with no second
+  prompt, over a signed hand-off verified end to end against the live
+  origins. S2-01a, S2-01b and S2-01c are all done before it. 185 API tests +
+  22 shared tests green. See `DEPLOYMENT_STAGING.md`. Next: **S2-03**,
+  observability and Console v1.
 
 - Jira: sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of project
   SCRUM holds the 24 stories under four epics, with 16 sub-tasks; the
   pre-existing 177 issues were labelled rather than deleted. Keys and the
   full account of what was done: `SPRINT_2_JIRA_MAP.md`.
-- Last completed step: S2-01a — the role-assignment privilege hole, the lock
-  model, the public-deploy fencing and the PII leaks (see the ticket log).
-- Next step: **S2-02** (SCRUM-189), the suite launcher.
+- Last completed step: S2-02 (SCRUM-189) — the launcher, the signed hand-off
+  between app origins, and the face-scan removal (see the ticket log).
+- Next step: **S2-03** (SCRUM-190), observability and Console v1 — the
+  telemetry package, request and operation logging, `ops_run`, the job runner
+  and watchdog, and the Activity / Failures / Health / Integrations pages in
+  a console of its own.
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
   recipe, plus `docs/briefs/OWNER_DIRECTION.md` (section 2026-09-20 wins).
-  Branch `feat/s2-01a-security-lock-model` off `main`; commit per
+  Branch off `main`, which carries everything through S2-02; commit per
   `CONTRIBUTING.md`, no attribution lines; never commit `imports/` beyond its
   READMEs. `pnpm test` needs no Docker — the API tests start an embedded
   Postgres per file.
@@ -161,10 +166,11 @@ AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
    Complete build", four epics, 24 stories in execution order, 16 sub-tasks,
    old issues labelled and explained (`SPRINT_2_JIRA_MAP.md`).
 2. **Done 2026-09-20:** S2-01a (SCRUM-186) — see the ticket log.
-3. **Next: S2-01b** (SCRUM-187) then S2-01c (SCRUM-188, owner-blockable on
-   the Render account). The ticket log below is the record, updated in the
-   same commit series as the code, and an evidence comment goes on each story
-   or sub-task as its work merges. We never change a ticket's status.
+3. **Done 2026-09-20:** S2-01b (SCRUM-187), S2-01c (SCRUM-188) and S2-02
+   (SCRUM-189) — see the ticket log. **Next: S2-03** (SCRUM-190). The ticket
+   log below is the record, updated in the same commit series as the code, and
+   an evidence comment goes on each story or sub-task as its work merges. We
+   never change a ticket's status.
 
 ## Owner inputs needed (asked 2026-09-20)
 
@@ -419,6 +425,129 @@ is exported but not yet scheduled (S2-03's job runner).
 **Deviation recorded:** the plan calls this migration `0003`. S2-01a had
 already taken `0003` (the session lock model) and `0004` (the auth throttle),
 so the schema move is **`0005`**. Nothing else about it changed.
+
+### S2-02 — Suite launcher and the signed hand-off (SCRUM-189) — **done and deployed**
+
+Commit `c3d94ff` on `main`. 185 API tests + 22 shared tests green; typecheck,
+lint and build clean. Live at <https://oto-launcher-staging.onrender.com>,
+with the whole hand-off exercised against the real origins —
+`DEPLOYMENT_STAGING.md` lists what was checked.
+
+**Why not simply share a cookie.** The suite is several apps on several
+origins and the design is one platform session behind all of them, so the
+obvious answer is a cookie on the parent domain. It is not available:
+`onrender.com` is on the **public suffix list**, which is exactly the list
+browsers consult to refuse a cookie set for a domain that many unrelated
+people share — a cookie for `.onrender.com` is not "rejected by Render", it is
+rejected by the browser, and no configuration changes that. Nor would the
+trick survive its own success: the booking site lands on a domain of its own,
+and a parent-domain cookie would not reach it either. So the mechanism here is
+the permanent one rather than a stand-in for a real domain — the launcher
+mints a short-lived token aimed at ONE app, the browser carries it there, and
+that app exchanges it for a cookie of its own bound to the same session row.
+A real domain later makes it faster, not different.
+
+**The fragment, not the query string.** The token travels as
+`https://app/#handoff=…`. A fragment is never sent to a server: it reaches no
+access log, no proxy, no load balancer and no `Referer` on the next click. The
+same token in `?handoff=` would be written down by every hop between the two
+apps and then sit in whichever of those logs is kept longest — which is how a
+60-second credential becomes a 90-day one. The POS strips the fragment with
+`replaceState` as it reads it, before anything can copy the address bar.
+
+**Replay is stopped by the jti, not by the signature.** A signature proves a
+token was minted by us; it says nothing about whether it has already been
+spent. So every token carries a `jti` with a row of its own, and the exchange
+claims it in a single statement — `update … where jti = $1 and consumed_at is
+null returning` — the same lesson as the idempotency claim in S2-01b: two tabs
+racing the same fragment cannot both read "unused" and both win. Every outcome
+is audited (`auth.handoff_issue`, `auth.handoff_exchange`,
+`auth.handoff_rejected` with the reason), and the launcher's account page
+shows a person their own recent rejections.
+
+**A keyring, not a key.** `HANDOFF_SIGNING_KEY` is `<kid>:<secret>` pairs,
+newest first: the first entry signs, the rest still verify. Rotation is
+therefore expand and contract, exactly like a migration — prepend the new key,
+deploy, and drop the old entry once every token it signed has expired, which
+at a 60-second TTL is the next minute. The `kid` in the header is what lets
+the old key keep verifying in the meantime, instead of every launch failing at
+the moment of the swap. Unset, the hand-off is **unavailable** (both routes
+answer 503) rather than improvised: a key minted at boot would differ between
+restarts and between instances, and a key nobody chose is a key nobody can
+rotate.
+
+**The sealed session token, and the trade-off it carries.** The app's cookie
+holds the platform session's own opaque token, so revoking the session ends
+every app at once — there is no second credential anyone can forget to revoke.
+Getting that token across means carrying it, so it travels sealed:
+AES-256-GCM under a key derived per `jti` (HKDF, the jti as salt and as
+associated data), wiped from the row the moment the jti is claimed. A database
+dump therefore cannot produce a usable cookie, and a ciphertext copied onto
+another row fails to open.
+
+The trade-off, recorded rather than hidden: **one bearer value is shared
+across the app origins.** Whoever holds the POS cookie holds the same string
+the launcher holds. The alternative is a credential per origin — a
+`session_credential` table with one row per app, each with its own token, all
+pointing at one session — which is strictly better isolation and is not free:
+it needs the new table, a change to `loadAuth` so a lookup resolves a
+credential to its session rather than reading the session directly, and a
+revoke path that sweeps the children. **Follow-up to weigh before the console
+and the lifted apps multiply the origins (S2-03, S2-17, S2-18).** The cost of
+deferring is bounded: the session TTL and the existing revoke-everywhere path
+already bound the damage, and nothing about the token format changes when the
+table lands.
+
+**Idempotency, deliberately released.** `POST /auth/handoff` releases its
+idempotency claim instead of storing its response. The response *is* a
+credential, and the replay store keeps a body for a day: a retried request
+would otherwise be answered with a token that was already spent, and the token
+would sit in a table for twenty-four hours after it stopped being useful.
+
+**The launcher itself.** `apps/launcher` is a designed front door, not a list
+of links: the POS design tokens verbatim, sign-in in the lock-screen language,
+tiles filtered by `app:<name>:access` showing each app's state (open / coming
+soon / no access), coming-soon shells for what is not built, and an account
+page listing the session and its recent hand-off rejections. It also carries a
+temporary-password panel, which closed a real hole found while building it: an
+account owing a password change could sign in and then met a 403 on every
+guarded route, with nowhere to change it.
+
+**UI additions and removals** (CLAUDE.md §7.2): the launcher is new in full;
+on the POS, the **"Scan my face" placeholder is removed** — PROJECT_CONTEXT
+§13 rules biometrics out of scope, so the button led nowhere and invited a
+question with no answer — and a "Back to the suite" link takes its place when
+`VITE_LAUNCHER_URL` is set. The POS lock screen otherwise keeps the Sprint 1
+design.
+
+**A flaky test, fixed rather than retried.** The tampered-signature case
+flipped the **last** base64url character of the signature — but 32 bytes
+encode as 43 characters, and the final character carries only four meaningful
+bits: its low two are padding a decoder discards. So the flip sometimes
+changed nothing at all (it swapped `A` for `B`, which differ only in those
+padding bits), the "tampered" token decoded to **identical bytes**, verified
+perfectly, and the case failed whenever a signature happened to end that way —
+a rare, unreproducible red build rather than an honest one. It now mutates the
+middle of the signature and asserts the decoded bytes actually differ before
+asserting the token is refused. Worth writing down because the shape recurs:
+any test that corrupts the tail of a base64 value is as likely to be
+corrupting padding as data.
+
+**Deployment.** Three services now, all on Render's `checksPass` trigger.
+`ALLOWED_ORIGINS` carries **both** static origins — the `/api` rewrite makes
+`Origin` differ from `Host`, so each app's writes arrive under its own origin
+and neither is covered by the other. `HANDOFF_APP_ORIGINS` carries **only real
+targets** (`pos=…` today): the launcher is the issuer and is not one of the
+audiences, and naming it there made the api **refuse to boot** — which is how
+we learned the validator does its job. `render.yaml` now describes all three
+services and both variable groups.
+
+**Deferred, and named so it is not mistaken for done:** the plan's
+"Expire hand-off now" test control (S2-02 QA step 3) is not built — expiry is
+covered by tests, but not by a button on the account page. It belongs with the
+other operational test controls under `OPS_TEST_CONTROLS` in S2-03. The
+console, OTO App, Radar, booth and Inbox tiles stay "coming soon" until their
+own tickets give them an origin.
 
 ## Deviations recorded
 

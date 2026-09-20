@@ -1,6 +1,6 @@
 # Staging deployment — what exists on Render
 
-_Last updated 2026-09-20, at the first deploy._
+_Last updated 2026-09-20, with the launcher (S2-02)._
 
 Everything below is live in the **Oto dev** Render workspace. Nothing here is
 a plan: it is what is running, and what is not yet.
@@ -13,33 +13,44 @@ environment sits beside staging later rather than colliding with it:
 | Environment | Protected | Holds |
 |---|---|---|
 | `production` | yes | nothing yet |
-| `staging` | no | the three resources below |
+| `staging` | no | the four resources below |
 
 | Resource | Type | Plan | Region |
 |---|---|---|---|
 | `oto-db-staging` | Postgres 16 | `1c-2g` (1 CPU, 2 GB), 15 GB disk | Singapore |
 | `oto-api-staging` | web service | `standard`, 1 instance | Singapore |
 | `oto-pos-staging` | static site | — | CDN |
+| `oto-launcher-staging` | static site | — | CDN |
 
+- Launcher: <https://oto-launcher-staging.onrender.com> — **live**
 - POS: <https://oto-pos-staging.onrender.com> — **live**
 - API: <https://oto-api-staging.onrender.com> — **live**
 
 ## What already works
 
-- **Both services are live.** The POS serves its client routes, and `/api/*`
-  rewrites to the api, so the session cookie stays same-origin and the dev
-  proxy and the deployment are one code path.
+- **All three services are live.** Each static site serves its client routes
+  and rewrites `/api/*` to the api, so every session cookie stays same-origin
+  on the origin that set it, and the dev proxy and the deployment are one code
+  path.
+- **One sign-in opens both apps.** The launcher signs a person in on its own
+  origin and mints a short-lived signed token aimed at the POS; the POS
+  exchanges it for its own cookie against the same session row. The api
+  carries both origins in `ALLOWED_ORIGINS` — each app writes from its own —
+  and only real hand-off *targets* in `HANDOFF_APP_ORIGINS`. The launcher is
+  absent from that second list on purpose: it is the issuer, and naming it
+  there stops the api booting.
 - **Migrations and the seed ran against the real database.** The deploy log
   reads `migrations applied successfully`, then
   `Full seed (SEED_PROFILE=staging): platform rows plus the demo tenant`, then
   `Seed complete: operator OTO, branch HKT Central, roles, accounts, members,
   catalog.` The database is ready to sign in to.
-- **Auto-deploy is gated on CI, with no credential on the GitHub side.** Both
-  services use Render's `checksPass` trigger: Render watches the repository,
-  waits for the `ci` workflow's commit status, and deploys only when it is
-  green. The alternative — a deploy hook or an API key in repository secrets —
-  would put a key to the whole workspace within reach of anyone who can push a
-  workflow file, so the CI workflow deliberately has no deploy job.
+- **Auto-deploy is gated on CI, with no credential on the GitHub side.** All
+  three services use Render's `checksPass` trigger: Render watches the
+  repository, waits for the `ci` workflow's commit status, and deploys only
+  when it is green. The alternative — a deploy hook or an API key in
+  repository secrets — would put a key to the whole workspace within reach of
+  anyone who can push a workflow file, so the CI workflow deliberately has no
+  deploy job.
 - **The database is unreachable from the public internet** (`ipAllowList: []`).
   Only services in this workspace can connect. To run a one-off `psql` or the
   S2-22 restore from a laptop, add that address temporarily and remove it.
@@ -62,6 +73,24 @@ SMS authenticates with a Twilio **Standard API key** rather than the account
 auth token, so the credential this deployment uses is revoked and rotated on
 its own. The account is a trial one for now: it can only text numbers added
 to Verified Caller IDs in the Twilio console.
+
+### The hand-off, across the two live origins (S2-02)
+
+Run end to end against the deployed services, not in a test harness:
+
+- Sign-in on the **launcher** origin: **200**, with its own session cookie.
+- Minting a hand-off for the POS: **200**, `audience: pos`, and a `launchUrl`
+  pointing at the POS host. The token is in the URL **fragment** and the query
+  string is empty — a fragment is never sent to a server, so the credential
+  reaches no access log, no proxy and no `Referer` on the next click.
+- Exchanging it at the **POS** origin: **200**, and `/me` on the POS then
+  answers **200** — one platform session, two app cookies, no second prompt.
+- Replaying the same token: refused **`HANDOFF_REJECTED`**, reason
+  `replayed`. The jti is claimed in a single statement, so a second tab racing
+  the same fragment cannot win either.
+- Reception asking for a **console** token: refused **`FORBIDDEN`** —
+  `app:console:access` is not in that role. A tile a person cannot open is not
+  a tile the api will mint for.
 
 ## Decisions taken at the first deploy
 
@@ -90,3 +119,8 @@ Nothing secret is in this repository. The Render API key, the object-storage
 keys and the Jira token are in the gitignored `.env`; the service's own values
 are set on the service in Render. `render.yaml` carries variable **names**
 only, with `sync: false` where a person must supply the value.
+
+The hand-off keyring (`HANDOFF_SIGNING_KEY`) is one of those values, and it is
+a keyring rather than a key so that replacing it is expand and contract:
+prepend a new `<kid>:<secret>` pair, deploy, and drop the old entry once every
+token it signed has expired — 60 seconds at the TTL set here.

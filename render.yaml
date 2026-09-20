@@ -1,16 +1,17 @@
-# OTO Platform — Render blueprint (S2-01c)
+# OTO Platform — Render blueprint (S2-01c, extended by S2-02)
 #
-# This file declares the staging environment: the api web service, the POS
-# static site and the managed Postgres they share. It is the whole deployment,
-# in one file, in the repository — which is the trade DEPLOYMENT_TOPOLOGY.md
-# accepts for having many small deployables instead of one server.
+# This file declares the staging environment: the api web service, the two
+# static sites in front of it — the POS and the suite launcher — and the
+# managed Postgres they share. It is the whole deployment, in one file, in the
+# repository — which is the trade DEPLOYMENT_TOPOLOGY.md accepts for having
+# many small deployables instead of one server.
 #
 # How to apply it: Render dashboard → New → Blueprint → point it at this repo.
 # Render creates everything below and prompts for each value marked
 # `sync: false`. Nothing here contains a secret; the values live only in the
 # dashboard.
 #
-# Three things will NOT work until the owner acts, and each is called out again
+# Four things will NOT work until the owner acts, and each is called out again
 # where it appears:
 #   1. MINIO_* must point at a real S3-compatible bucket. The api refuses to
 #      boot in production on the development storage keys (apps/api/src/env.ts,
@@ -20,18 +21,31 @@
 #      number, and either an API key or the account auth token. Verification
 #      and reset codes go to a phone on every deployment, staging included, and
 #      the api refuses to start on a deployment that has no way to send one.
-#   3. ALLOWED_ORIGINS must carry the POS site's origin once Render has issued
-#      it, or every write from the till is refused with ORIGIN_NOT_ALLOWED.
+#   3. ALLOWED_ORIGINS must carry BOTH static sites' origins once Render has
+#      issued them — the POS and the launcher. Every write from a site left
+#      out is refused with ORIGIN_NOT_ALLOWED, and each site writes under its
+#      own origin, so listing one does not cover the other.
+#   4. HANDOFF_SIGNING_KEY must carry a key the owner chose, or the two
+#      hand-off routes answer 503 and a tile on the launcher cannot open the
+#      app it names. Unlike the three above this does not stop the api
+#      booting: sign-in on each app's own origin still works, so the failure
+#      is a launcher that shows tiles and refuses to follow them.
 #
 # Production is a second environment, added when the park cuts over: the same
 # services with `SEED_PROFILE`/`OPS_TEST_CONTROLS` dropped, its own Twilio
-# sender and payment credentials, and its own database. It is not declared yet
-# — staging is where the park's team play during Sprint 2.
+# sender and payment credentials, its own hand-off keyring, and its own
+# database. It is not declared yet — staging is where the park's team play
+# during Sprint 2.
 #
-# Deploys are gated on CI, not on the push: every service sets
-# `autoDeploy: false` and .github/workflows/ci.yml fires the deploy hooks only
-# after the ci job is green on main. A red build therefore never reaches the
-# staging URL.
+# Deploys are gated on CI, not on the push: all three services set
+# `autoDeployTrigger: checksPass`, so Render watches this repository, waits for
+# the commit status of the `ci` workflow and deploys only when it is green. A
+# red build therefore never reaches the staging URL. The rejected alternative
+# — a deploy hook or a Render API key in repository secrets — would put a key
+# to the whole workspace within reach of anyone who can push a workflow file,
+# which is why .github/workflows/ci.yml deliberately has no deploy job.
+# (`autoDeployTrigger` replaces the deprecated `autoDeploy` and takes
+# precedence over it where both appear.)
 
 databases:
   - name: oto-db-staging
@@ -184,6 +198,11 @@ services:
     #      that any instance can serve;
     #   3. delete `numInstances` and uncomment `scaling`.
     # Until all three are done, raising this number is a bug, not a scale-up.
+    #
+    # One more thing holds it at one instance from S2-02: `handoff_token` rows
+    # are claimed in the database, not in memory, so the hand-off itself is
+    # safe across instances — but the same is not yet true of the edge role
+    # above, so do not read a working hand-off as permission to scale out.
     numInstances: 1
     # maxInstances is the database's arithmetic, not a preference: the pool is
     # 10 connections per instance (packages/db/src/index.ts, `max`), so three
@@ -199,7 +218,9 @@ services:
     #   maxInstances: 3
     #   targetCPUPercent: 60
     #   targetMemoryPercent: 70
-    autoDeploy: false
+    # Deploy when CI is green, never on the bare push — see the note at the
+    # head of this file for why no deploy credential exists on the GitHub side.
+    autoDeployTrigger: checksPass
     envVars:
       # -- runtime ----------------------------------------------------------
       - key: NODE_VERSION
@@ -241,15 +262,70 @@ services:
         # HTTPS only. The api refuses to boot in production without this.
         value: 'true'
       - key: ALLOWED_ORIGINS
-        # BLOCKS THE FIRST DEPLOY IF LEFT BLANK. The POS is served from the
-        # static site's origin and reaches the api through that site's /api
-        # rewrite, so a browser write arrives with Origin = the POS site and
+        # BLOCKS THE FIRST DEPLOY IF LEFT BLANK. Each static site is served
+        # from its own origin and reaches the api through that site's /api
+        # rewrite, so a browser write arrives with Origin = the site and
         # Host = this service. They differ, so the same-origin fallback in
-        # apps/api/src/app.ts does not apply and the origin must be listed
-        # here explicitly. Value: the POS site's URL, scheme and host, no
-        # trailing slash — e.g. https://oto-pos-staging.onrender.com. Comma
-        # -separated as the launcher and console sites land.
+        # apps/api/src/app.ts does not apply and every origin must be listed
+        # here explicitly.
+        #
+        # BOTH static sites belong here, comma-separated: the POS and the
+        # launcher. The launcher is not merely a link page — it signs in, mints
+        # hand-offs and runs its own account page, so its writes carry its own
+        # Origin and are refused ORIGIN_NOT_ALLOWED if only the POS is listed.
+        # Scheme and host, no trailing slash, e.g.
+        # https://oto-pos-staging.onrender.com,https://oto-launcher-staging.onrender.com
+        # The console site joins them in S2-03.
         sync: false
+
+      # -- suite hand-off (S2-02) -------------------------------------------
+      # One platform session, several app origins. A parent-domain cookie
+      # cannot carry it: onrender.com is on the public suffix list, so no
+      # cookie may be set for it, and even a real parent domain would not
+      # reach the booking site's separate domain later. So the launcher asks
+      # this api for a short-lived signed token aimed at ONE app, the browser
+      # carries it in the URL fragment, and that app exchanges it for its own
+      # cookie bound to the same session row. Revoking the session ends every
+      # app at once, because there is no second credential to forget.
+      - key: HANDOFF_SIGNING_KEY
+        # A KEYRING, newest first: `<kid>:<secret>,<kid>:<secret>`. The first
+        # entry signs; the rest still verify, so rotation is expand/contract
+        # like a migration — prepend the new key, deploy, and drop the old
+        # entry once every token it signed has expired (one TTL below).
+        # Generate a secret the way you would any other: 32+ random
+        # characters, e.g. `openssl rand -hex 32`.
+        #
+        # Left blank the hand-off is UNAVAILABLE rather than improvised: both
+        # routes answer 503. A key minted at boot would differ between
+        # restarts and between instances, and a key nobody chose is a key
+        # nobody can rotate.
+        sync: false
+      - key: HANDOFF_APP_ORIGINS
+        # Where each app answers, as `<app>=<origin>` pairs. The exchange
+        # compares the request's Origin with the one recorded when the token
+        # was signed, so a token minted for the till cannot be spent on the
+        # console. Every origin named here must also appear in
+        # ALLOWED_ORIGINS above, or the exchange is refused before it reaches
+        # the route.
+        #
+        # THE LAUNCHER IS ABSENT ON PURPOSE. It is the issuer, not a target:
+        # nothing is ever handed off *to* it, and `launcher` is not one of the
+        # audiences in packages/db (pos, console, oto_app, radar, booth,
+        # inbox). Adding it here does not degrade quietly — the api refuses to
+        # boot, naming the unknown app, which is how this was learned.
+        #
+        # Literal hosts, like the POS rewrite below: a blueprint cannot
+        # reference another service's URL. Correct them if Render issues a
+        # suffixed hostname. Comma-separated as the console and the lifted
+        # apps land.
+        value: pos=https://oto-pos-staging.onrender.com
+      - key: HANDOFF_TOKEN_TTL_S
+        # The seconds a browser needs to carry a token from one origin to the
+        # next, not minutes: long enough for a redirect, short enough that a
+        # token left in someone's history is worth nothing by the time it is
+        # read. Replay is stopped by the single-use jti, not by this — the TTL
+        # is what bounds the window before the jti row is even consulted.
+        value: '60'
 
       # -- database ----------------------------------------------------------
       - key: DATABASE_URL
@@ -400,10 +476,12 @@ services:
   # consumes — build minutes and bandwidth — without a line in this file.
   #
   # No `buildFilter` either, though DEPLOYMENT_TOPOLOGY item 1 asks for one. A
-  # build filter only decides whether a COMMIT triggers a build, and
-  # `autoDeploy: false` means no commit ever does: CI calls the deploy hook and
-  # a hook always builds. The filter becomes worth adding the day auto-deploy
-  # is turned on, and would be dead configuration until then.
+  # build filter would stop a commit that touches only the api from rebuilding
+  # this site — worth having once there are several static sites in the
+  # repository, and worth writing deliberately rather than by guess: the POS
+  # imports packages/shared, so a filter naming only `apps/pos/**` would skip
+  # a build the site actually needed. Left off until a real build-minute cost
+  # justifies getting those paths exactly right.
   # ---------------------------------------------------------------------------
   - type: web
     name: oto-pos-staging
@@ -412,7 +490,7 @@ services:
     rootDir: .
     buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @oto/pos build
     staticPublishPath: apps/pos/dist/public
-    autoDeploy: false
+    autoDeployTrigger: checksPass
     routes:
       # THE POS AND THE API ARE ONE ORIGIN IN THE BROWSER. apps/pos/src/api/client.ts
       # calls `/api/...` relative, so this rewrite is what makes the session
@@ -441,6 +519,66 @@ services:
     envVars:
       - key: NODE_VERSION
         value: '22'
+      - key: VITE_LAUNCHER_URL
+        # Read at BUILD time — Vite inlines it into the bundle, so changing it
+        # is a rebuild, not a restart. It puts the "Back to the suite" link on
+        # the POS lock screen; unset, the link is simply absent, which is what
+        # a till on a park counter with no launcher in front of it should see.
+        value: https://oto-launcher-staging.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # launcher — static site. The suite's front door (S2-02).
+  #
+  # It signs a person in once and hands them on to an app, so it is a real
+  # application rather than a page of links: sign-in, setup and reset, the
+  # tiles filtered by `app:<name>:access`, coming-soon shells, and an account
+  # page showing the session and its recent hand-off rejections. That is why
+  # its origin has to be in the api's ALLOWED_ORIGINS beside the POS.
+  #
+  # Same shape as the POS above for the same reason: the /api rewrite keeps
+  # the launcher's own session cookie same-origin, so development and staging
+  # are one code path and no CORS is involved.
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: oto-launcher-staging
+    runtime: static
+    branch: main
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @oto/launcher build
+    staticPublishPath: apps/launcher/dist/public
+    autoDeployTrigger: checksPass
+    routes:
+      # As on the POS: the `*` carries the rest of the path across, so
+      # /api/auth/handoff arrives at the api as /auth/handoff. CHECK THIS HOST
+      # AFTER THE FIRST DEPLOY — onrender.com subdomains are globally unique
+      # and a blueprint cannot reference another service's URL, so it is a
+      # literal.
+      - type: rewrite
+        source: /api/*
+        destination: https://oto-api-staging.onrender.com/*
+      # Client-side routing. Must stay BELOW the /api rule — Render takes the
+      # first match.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      # Where each tile points, read at BUILD time: Vite inlines these, so
+      # changing one is a rebuild, not a restart. A tile whose URL is unset
+      # stays "coming soon" rather than putting a dead address on the front
+      # door — which is why the rest are deliberately absent here and get
+      # added by the ticket that makes each app real: VITE_CONSOLE_URL with
+      # S2-03, VITE_OTO_APP_URL with S2-17, VITE_RADAR_URL with S2-18,
+      # VITE_BOOTH_URL with S2-07, VITE_INBOX_URL with S2-19.
+      #
+      # Note what this variable is NOT: it is the address the browser is sent
+      # to, while the api's HANDOFF_APP_ORIGINS above is the address the api
+      # will accept an exchange from. The two have to agree, and they are
+      # deliberately set in different places — one is public and built into a
+      # bundle, the other decides whether a credential is honoured.
+      - key: VITE_POS_URL
+        value: https://oto-pos-staging.onrender.com
 
 # -----------------------------------------------------------------------------
 # worker — the future home of PROCESS_ROLES=jobs. Not enabled yet.
@@ -474,7 +612,7 @@ services:
 #    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
 #    startCommand: pnpm --filter @oto/api start
 #    numInstances: 1
-#    autoDeploy: false
+#    autoDeployTrigger: checksPass
 #    envVars:
 #      - key: PROCESS_ROLES
 #        value: jobs
