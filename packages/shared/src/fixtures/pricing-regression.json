@@ -1,0 +1,1769 @@
+{
+  "about": [
+    "Regression fixtures for the S2-09a selling engine. Every figure is derived from the",
+    "prototype's own code and its seeded catalogue (imports/oto-pos/artifacts/oto-till/src:",
+    "lib/pricing.ts, lib/pricingMode.ts, lib/tax.ts, lib/sale.ts, lib/manualDiscount.ts,",
+    "lib/discountTarget.ts, store/catalogStore.ts, pages/Till.tsx) and each case's 'rules' field",
+    "names the rule ids from the S2-09a specification. Money is integer satang throughout; the",
+    "catalogue below is the prototype seed at x100.",
+    "",
+    "THREE STANDARDS THIS FILE NOW HOLDS ITSELF TO, because it failed all three and the failures",
+    "hid real defects for a while.",
+    "",
+    "  1. INPUTS ARE WHAT THE SYSTEM ACTUALLY PRODUCES, never a shape hand-written to make a",
+    "     case pass. A free-item promo used to be spelled out here with its synthetic line",
+    "     already in 'lines' and 'value' already set to the item's price — a shape no caller",
+    "     ever built, which is exactly why nobody noticed that the port had dropped the value",
+    "     rewrite and that the seeded code (value: 0) produced no discount at all. Free-item",
+    "     cases now carry the code as store/catalogStore.ts seeds it and the harness applies it",
+    "     the way the till does. Likewise a drop-off line's lineTotal is derived by pricing the",
+    "     line, not written down: the hand-written 174000 in EC-4 was concealing that prepaid",
+    "     food was taxed but never priced into the line.",
+    "",
+    "  2. EVERY EXPECTED NUMBER CAN BE POINTED AT A RULE. Where one cannot be derived with",
+    "     certainty the case says so in its note and says what it is pinning instead — a",
+    "     measured current behaviour that is disputed and awaiting a ruling (EC-15, WE-8) is",
+    "     legitimate; a plausible-looking invention is not.",
+    "",
+    "  3. A SANCTIONED DIVERGENCE FROM THE PROTOTYPE STAYS INSIDE ITS WARRANT, and the case",
+    "     that pins it says where the warrant comes from. Discount attribution is warranted by",
+    "     the prototype's own comment at lib/tax.ts:99-106, but only where categories carry",
+    "     DIFFERENT tax rules; on the seeded config they do not, the prototype's proportional",
+    "     spread is exact, and the guest's total must not move. An earlier pass let attribution",
+    "     change the total there too — see EC-15's note and EC-17, the case that caught it. A",
+    "     fixture is not allowed to bless a divergence its own tax config cannot justify.",
+    "",
+    "PACKAGES PREFIXED x- ARE NOT IN THE SEED. They exist only for adult-rule branches the",
+    "seeded catalogue cannot reach (same_as_kid, free_adults overflowing to the kid price), and",
+    "each carries a note saying which branch and why the seed cannot reach it. Tax configs have",
+    "always been allowed to go beyond the seed the same way; every one of those says so too."
+  ],
+  "catalog": {
+    "socks": { "addOnId": "a-socks", "price": 5000, "label": "Regular Socks" },
+    "addOns": {
+      "a-socks": { "name": "Regular Socks", "price": 5000 },
+      "a-grip-socks": { "name": "Grip Socks", "price": 8000 },
+      "a-locker": { "name": "Locker Rental", "price": 10000 },
+      "a-cup": { "name": "Refillable Drink Cup", "price": 15000 },
+      "a-glow": { "name": "Glow Band", "price": 6000 }
+    },
+    "menuItems": {
+      "m-icecream": { "name": "Ice Cream Cone", "price": 5000 }
+    },
+    "packages": {
+      "t-1h": {
+        "name": "1 Hour Play",
+        "prices": {
+          "tourist": { "weekday": 69000, "weekend": 69000 },
+          "expat": { "weekday": 48300, "weekend": 55200 },
+          "thai": { "weekday": 42000, "weekend": 52000 }
+        },
+        "adultRules": {
+          "tourist": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 50000 } },
+          "expat": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 50000 } },
+          "thai": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 50000 } }
+        }
+      },
+      "t-2h": {
+        "name": "2 Hours Play",
+        "prices": {
+          "tourist": { "weekday": 89000, "weekend": 89000 },
+          "expat": { "weekday": 62300, "weekend": 71200 },
+          "thai": { "weekday": 52000, "weekend": 62000 }
+        },
+        "adultRules": {
+          "tourist": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 50000 } },
+          "expat": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 50000 } },
+          "thai": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 50000 } }
+        }
+      },
+      "t-fd": {
+        "name": "Full Day Pass",
+        "prices": {
+          "tourist": { "weekday": 109000, "weekend": 109000 },
+          "expat": { "weekday": 76300, "weekend": 87200 },
+          "thai": { "weekday": 62000, "weekend": 72000 }
+        },
+        "adultRules": {
+          "tourist": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 50000 } },
+          "expat": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 50000 } },
+          "thai": {
+            "kind": "free_adults",
+            "freeAdults": 1,
+            "overflow": "set_price",
+            "price": { "weekday": 35000, "weekend": 50000 }
+          }
+        }
+      },
+      "t-pe": {
+        "name": "Eat & Play Kids Pass",
+        "prices": {
+          "tourist": { "weekday": 130000, "weekend": 130000 },
+          "expat": { "weekday": 130000, "weekend": 130000 },
+          "thai": { "weekday": 130000, "weekend": 130000 }
+        },
+        "adultRules": {
+          "tourist": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 35000 } },
+          "expat": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 35000 } },
+          "thai": { "kind": "set_price", "price": { "weekday": 35000, "weekend": 35000 } }
+        }
+      },
+      "x-samekid": {
+        "name": "Open Play (NOT SEEDED)",
+        "note": "NOT SEEDED. Every seeded package gives every priced tier an explicit set_price adult rule (STANDARD_ADULT_RULES, store/catalogStore.ts:180-184), so the same_as_kid branch of resolveAdultLine (lib/pricing.ts:42) is only ever reached as the default for a tier with NO rule — which in the seed means a tier with no price either, where the kid price is 0 and nothing is exercised (EC-11). This package prices a tier and omits its adult rule, which is the shape that branch is written for. Named with an x- prefix so it can never be mistaken for a seeded package.",
+        "prices": { "tourist": { "weekday": 60000, "weekend": 80000 } }
+      },
+      "x-freekid": {
+        "name": "Family Day (NOT SEEDED)",
+        "note": "NOT SEEDED. free_adults with overflow 'same_as_kid' and no price on the rule. The seeded free_adults rule (Full Day Pass, thai) always overflows to the flat adult admission via 'set_price', so the other half of that branch — paidUnit falls back to the KID price (lib/pricing.ts:52) — has no seeded path.",
+        "prices": { "thai": { "weekday": 45000, "weekend": 55000 } },
+        "adultRules": {
+          "thai": { "kind": "free_adults", "freeAdults": 1, "overflow": "same_as_kid" }
+        }
+      }
+    },
+    "holidays": [{ "name": "Songkran", "startsOn": "2026-04-13", "endsOn": "2026-04-15" }]
+  },
+  "taxConfigs": {
+    "seeded": {
+      "note": "The prototype seed: VAT 7% inclusive on every category, no service charge, stored value untaxed, discount before tax.",
+      "rates": [{ "id": "vat", "name": "VAT", "percent": 7 }],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        {
+          "category": "fnb",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        {
+          "category": "bar",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        {
+          "category": "drop_off",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        {
+          "category": "parties",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        {
+          "category": "addons",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        {
+          "category": "merch",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        {
+          "category": "stored_value",
+          "taxMode": "none",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        }
+      ],
+      "discountPlacement": "before_tax"
+    },
+    "seededAfterTax": {
+      "note": "The seeded config with the discount placed after tax.",
+      "rates": [{ "id": "vat", "name": "VAT", "percent": 7 }],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        }
+      ],
+      "discountPlacement": "after_tax"
+    },
+    "exclusiveAfterTax": {
+      "note": "Not seeded. Exclusive VAT 7% on tickets and add-ons with the discount placed AFTER tax — the pairing where placement visibly moves what the guest pays, because a discount taken after the tax cannot reduce the tax.",
+      "rates": [{ "id": "vat", "name": "VAT", "percent": 7 }],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "exclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        {
+          "category": "addons",
+          "taxRateId": "vat",
+          "taxMode": "exclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        }
+      ],
+      "discountPlacement": "after_tax"
+    },
+    "secondaryRateDisabled": {
+      "note": "Not seeded. A secondary rate is CONFIGURED but its mode is explicitly 'none' — an owner who turned the second tax off without clearing the rate. The rate stays visible on the breakdown row so an admin screen can show what is configured; no money moves and no receipt row appears.",
+      "rates": [
+        { "id": "vat", "name": "VAT", "percent": 7 },
+        { "id": "local", "name": "Local levy", "percent": 5 }
+      ],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false,
+          "secondaryTaxRateId": "local",
+          "secondaryTaxMode": "none"
+        }
+      ],
+      "discountPlacement": "before_tax"
+    },
+    "noRules": {
+      "note": "No category rule at all — the engine's default is taxMode none, and the base still counts toward the total.",
+      "rates": [],
+      "categoryRules": [],
+      "discountPlacement": "before_tax"
+    },
+    "serviceInclusive": {
+      "note": "Not seeded. Inclusive VAT 7% with a 10% service charge inside the tax base.",
+      "rates": [{ "id": "vat", "name": "VAT", "percent": 7 }],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 10,
+          "taxOnServiceCharge": true
+        }
+      ],
+      "discountPlacement": "before_tax"
+    },
+    "serviceInclusiveNoTos": {
+      "note": "Not seeded. Same, with the service charge outside the tax base.",
+      "rates": [{ "id": "vat", "name": "VAT", "percent": 7 }],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 10,
+          "taxOnServiceCharge": false
+        }
+      ],
+      "discountPlacement": "before_tax"
+    },
+    "serviceExclusiveSecondary": {
+      "note": "Not seeded. Exclusive VAT 7% + 10% service inside the tax base + a 5% exclusive secondary tax.",
+      "rates": [
+        { "id": "vat", "name": "VAT", "percent": 7 },
+        { "id": "local", "name": "Local levy", "percent": 5 }
+      ],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "exclusive",
+          "serviceChargePercent": 10,
+          "taxOnServiceCharge": true,
+          "secondaryTaxRateId": "local",
+          "secondaryTaxMode": "exclusive"
+        }
+      ],
+      "discountPlacement": "before_tax"
+    },
+    "serviceExclusiveSecondaryNoTos": {
+      "note": "Not seeded. Same, with the service charge outside the tax base.",
+      "rates": [
+        { "id": "vat", "name": "VAT", "percent": 7 },
+        { "id": "local", "name": "Local levy", "percent": 5 }
+      ],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "exclusive",
+          "serviceChargePercent": 10,
+          "taxOnServiceCharge": false,
+          "secondaryTaxRateId": "local",
+          "secondaryTaxMode": "exclusive"
+        }
+      ],
+      "discountPlacement": "before_tax"
+    },
+    "twoInclusive": {
+      "note": "Not seeded. Two inclusive 7% rates, both unwound from the same taxable amount.",
+      "rates": [
+        { "id": "vat", "name": "VAT", "percent": 7 },
+        { "id": "levy", "name": "Levy", "percent": 7 }
+      ],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false,
+          "secondaryTaxRateId": "levy",
+          "secondaryTaxMode": "inclusive"
+        }
+      ],
+      "discountPlacement": "before_tax"
+    },
+    "divergentStoredValue": {
+      "note": "Not seeded, and the whole point: two categories under DIFFERENT rules — tickets at inclusive VAT 7%, a stored-value load untaxed. This is the state the prototype's own warning at lib/tax.ts:99-106 says makes spreading a scoped discount wrong.",
+      "rates": [{ "id": "vat", "name": "VAT", "percent": 7 }],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        { "category": "stored_value", "taxMode": "none", "serviceChargePercent": 0 }
+      ],
+      "discountPlacement": "before_tax"
+    },
+    "divergentInclusiveExclusive": {
+      "note": "Not seeded. Tickets at INCLUSIVE VAT 7%, merchandise at EXCLUSIVE VAT 7% — the pairing where misplacing a discount moves what the guest pays, not only what is reported.",
+      "rates": [{ "id": "vat", "name": "VAT", "percent": 7 }],
+      "categoryRules": [
+        {
+          "category": "tickets",
+          "taxRateId": "vat",
+          "taxMode": "inclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        },
+        {
+          "category": "merch",
+          "taxRateId": "vat",
+          "taxMode": "exclusive",
+          "serviceChargePercent": 0,
+          "taxOnServiceCharge": false
+        }
+      ],
+      "discountPlacement": "before_tax"
+    }
+  },
+
+  "cartCases": [
+    {
+      "id": "WE-1",
+      "title": "Weekday, tourist, 2 kids + 1 adult, 2 Hours Play",
+      "rules": ["R13", "R19", "R21", "R29", "R66"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 2, "adults": 1 }],
+      "expect": {
+        "lineTotals": { "l1": 213000 },
+        "subtotal": 213000,
+        "discountTotal": 0,
+        "serviceChargeTotal": 0,
+        "inclusiveTaxTotal": 13935,
+        "exclusiveTaxTotal": 0,
+        "unappliedDiscount": 0,
+        "total": 213000,
+        "categories": [
+          {
+            "category": "tickets",
+            "base": 213000,
+            "serviceCharge": 0,
+            "tax": 13935,
+            "gross": 213000
+          }
+        ],
+        "breakdown": {
+          "l1": [
+            ["kids", 89000, 2, 178000],
+            ["adults", 35000, 1, 35000]
+          ]
+        },
+        "taxRows": [
+          {
+            "key": "inclusive:VAT",
+            "label": "VAT included",
+            "amount": 13935,
+            "kind": "tax_included"
+          }
+        ]
+      }
+    },
+    {
+      "id": "WE-2",
+      "title": "Weekend (or a Songkran weekday), same cart — the tourist kid price is weekend-invariant, the adult is not",
+      "rules": ["R1", "R2", "R3", "R19"],
+      "mode": "weekend",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 2, "adults": 1 }],
+      "expect": {
+        "lineTotals": { "l1": 228000 },
+        "subtotal": 228000,
+        "inclusiveTaxTotal": 14916,
+        "total": 228000
+      }
+    },
+    {
+      "id": "WE-3",
+      "title": "Included adults exactly met — thai, Full Day Pass, 1 kid + 1 adult, weekday",
+      "rules": ["R20", "R30"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-fd", "tier": "thai", "kids": 1, "adults": 1 }],
+      "expect": {
+        "lineTotals": { "l1": 62000 },
+        "subtotal": 62000,
+        "inclusiveTaxTotal": 4056,
+        "total": 62000,
+        "breakdown": {
+          "l1": [
+            ["kids", 62000, 1, 62000],
+            ["adults-free", 0, 1, 0]
+          ]
+        }
+      },
+      "note": "The free-adult row is present at unit 0 so the guest can see the adult was counted; there is no paid-adults row."
+    },
+    {
+      "id": "WE-4",
+      "title": "Overflow by one — thai, Full Day Pass, 2 kids + 2 adults, weekday",
+      "rules": ["R20", "R29", "R30"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-fd", "tier": "thai", "kids": 2, "adults": 2 }],
+      "expect": {
+        "lineTotals": { "l1": 159000 },
+        "subtotal": 159000,
+        "inclusiveTaxTotal": 10402,
+        "total": 159000,
+        "breakdown": {
+          "l1": [
+            ["kids", 62000, 2, 124000],
+            ["adults", 35000, 1, 35000],
+            ["adults-free", 0, 1, 0]
+          ]
+        }
+      },
+      "note": "The free count is per CART LINE, not per child: 2 adults on one line give 1 free, not 2."
+    },
+    {
+      "id": "WE-5a",
+      "title": "Tier side-by-side — tourist, 2 Hours Play, 1 kid + 1 adult, weekday",
+      "rules": ["R13"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 1, "adults": 1 }],
+      "expect": { "subtotal": 124000, "inclusiveTaxTotal": 8112, "total": 124000 }
+    },
+    {
+      "id": "WE-5b",
+      "title": "Tier side-by-side — tourist, weekend",
+      "rules": ["R13"],
+      "mode": "weekend",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 1, "adults": 1 }],
+      "expect": { "subtotal": 139000, "inclusiveTaxTotal": 9093, "total": 139000 }
+    },
+    {
+      "id": "WE-5c",
+      "title": "Tier side-by-side — expat, weekday",
+      "rules": ["R13"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "expat", "kids": 1, "adults": 1 }],
+      "expect": { "subtotal": 97300, "inclusiveTaxTotal": 6365, "total": 97300 }
+    },
+    {
+      "id": "WE-5d",
+      "title": "Tier side-by-side — expat, weekend",
+      "rules": ["R13"],
+      "mode": "weekend",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "expat", "kids": 1, "adults": 1 }],
+      "expect": { "subtotal": 121200, "inclusiveTaxTotal": 7929, "total": 121200 }
+    },
+    {
+      "id": "WE-5e",
+      "title": "Tier side-by-side — thai, weekday",
+      "rules": ["R13"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "thai", "kids": 1, "adults": 1 }],
+      "expect": { "subtotal": 87000, "inclusiveTaxTotal": 5692, "total": 87000 }
+    },
+    {
+      "id": "WE-5f",
+      "title": "Tier side-by-side — thai, weekend",
+      "rules": ["R13"],
+      "mode": "weekend",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "thai", "kids": 1, "adults": 1 }],
+      "expect": { "subtotal": 112000, "inclusiveTaxTotal": 7327, "total": 112000 }
+    },
+    {
+      "id": "WE-6",
+      "title": "A manual discount and a promo together — manual FIRST, promo against the balance",
+      "rules": ["R34", "R35", "R39", "R40", "R41", "R42", "R60"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 2, "adults": 1 }],
+      "manualDiscounts": [{ "id": "m1", "scope": "order", "type": "fixed", "value": 20000 }],
+      "promos": [
+        {
+          "code": "STAFF10",
+          "label": "Staff Discount",
+          "type": "percent",
+          "value": 10,
+          "stackable": true
+        }
+      ],
+      "expect": {
+        "subtotal": 213000,
+        "manualDiscountTotal": 20000,
+        "promoDiscountTotal": 19300,
+        "discountTotal": 39300,
+        "inclusiveTaxTotal": 11364,
+        "unappliedDiscount": 0,
+        "total": 173700
+      },
+      "note": "Reverse the order — promo first, manual second — and the same cart totals 171700 satang. The ordering is worth 2000 satang here and is not cosmetic. Both discounts are order-scope, so attribution does not arise: they spread across the one category in the cart."
+    },
+    {
+      "id": "WE-7a",
+      "title": "Percent rounding — a 10% MANUAL discount at the platform's satang granularity",
+      "rules": ["R39"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "expat", "kids": 1, "adults": 1 }],
+      "manualDiscounts": [{ "id": "m1", "scope": "order", "type": "percent", "value": 10 }],
+      "expect": {
+        "subtotal": 97300,
+        "discountTotal": 9730,
+        "inclusiveTaxTotal": 5729,
+        "total": 87570
+      }
+    },
+    {
+      "id": "WE-7b",
+      "title": "Percent rounding — the same manual discount with the prototype's whole-baht rounding",
+      "rules": ["R39"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "rounding": "baht",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "expat", "kids": 1, "adults": 1 }],
+      "manualDiscounts": [{ "id": "m1", "scope": "order", "type": "percent", "value": 10 }],
+      "expect": {
+        "subtotal": 97300,
+        "discountTotal": 9700,
+        "inclusiveTaxTotal": 5731,
+        "total": 87600
+      },
+      "note": "This is the prototype's own figure: Math.round(973 * 0.1) = 97 baht (lib/manualDiscount.ts:11). Under the platform default it is 97.30 (WE-7a). The 30-satang gap is the whole of the prototype's percent-rounding asymmetry."
+    },
+    {
+      "id": "WE-7c",
+      "title": "Percent rounding — a 10% PROMO on the same cart matches the manual one at satang granularity",
+      "rules": ["R42"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "expat", "kids": 1, "adults": 1 }],
+      "promos": [
+        {
+          "code": "STAFF10",
+          "label": "Staff Discount",
+          "type": "percent",
+          "value": 10,
+          "stackable": true
+        }
+      ],
+      "expect": { "subtotal": 97300, "discountTotal": 9730, "total": 87570 },
+      "note": "In the prototype this promo gives 97.30 while the identical manual discount gives 97.00 — two nominally identical 10% discounts, 30 satang apart. Rounding both half-up at the satang removes the asymmetry."
+    },
+    {
+      "id": "WE-7d",
+      "title": "Percent rounding — the baht policy does NOT reach the promo path",
+      "rules": ["R42"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "rounding": "baht",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "expat", "kids": 1, "adults": 1 }],
+      "promos": [
+        {
+          "code": "STAFF10",
+          "label": "Staff Discount",
+          "type": "percent",
+          "value": 10,
+          "stackable": true
+        }
+      ],
+      "expect": { "subtotal": 97300, "discountTotal": 9730, "total": 87570 },
+      "note": "The prototype does not round a promo percentage at all, so the baht policy — which exists only to reproduce the prototype's manual-discount rounding — must not touch it."
+    },
+    {
+      "id": "WE-8",
+      "title": "Free-item promo — the code as the catalogue stores it, applied the way the till applies it",
+      "rules": ["R31", "R41", "R50", "R54"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 2, "adults": 1 }],
+      "promos": [
+        {
+          "code": "ICECREAM",
+          "label": "Free Ice Cream",
+          "type": "free_item",
+          "value": 0,
+          "freeItemId": "m-icecream",
+          "freeItemKind": "menu",
+          "target": { "kind": "menuItems", "menuItemIds": ["m-icecream"] },
+          "active": true,
+          "usageLimit": 100,
+          "usedCount": 0,
+          "perCustomerLimit": 1,
+          "validUntil": "2026-12-31"
+        }
+      ],
+      "expect": {
+        "subtotal": 218000,
+        "promoDiscountTotal": 5000,
+        "discountTotal": 5000,
+        "inclusiveTaxTotal": 13607,
+        "unappliedDiscount": 0,
+        "total": 208000,
+        "breakdown": { "promo-ICECREAM": [] }
+      },
+      "note": "INPUTS: the promo is copied verbatim from store/catalogStore.ts:301-315, value 0 and all — the value is whatever the item costs today, which is why the till resolves it (pages/Till.tsx:576) rather than the catalogue storing it. The harness injects the synthetic line and the resolved code exactly as pages/Till.tsx:574-589 does. Ported without that rewrite, this case reads subtotal 218000 / discount 0 / total 213000: the guest is charged for the free ice cream and end-of-day records no markdown. The earlier fixture hid it by hand-writing value 5000. EXPECTED: 208000 is DISPUTED and pinned as measured. The comment at pages/Till.tsx:569-573 promises the grand total is unchanged at 213000 for the guest, and S2-09a's acceptance criterion says the discount offsets the line; the prototype's engine nevertheless produces 208000, because the promo line contributes no breakdown row and so no tax base while its line total is in the subtotal and its discount is in the discount total. It needs a ruling before a guest is charged either number."
+    },
+    {
+      "id": "WE-12",
+      "title": "Eat & Play, weekend, 1 kid + 2 adults — the adult price is weekend-invariant and is neither the kid price nor the flat admission",
+      "rules": ["R19"],
+      "mode": "weekend",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-pe", "tier": "tourist", "kids": 1, "adults": 2 }],
+      "expect": { "subtotal": 200000, "inclusiveTaxTotal": 13084, "total": 200000 }
+    },
+    {
+      "id": "EC-1",
+      "title": "Socks and an add-on split the cart across two taxable categories",
+      "rules": ["R21", "R23", "R24", "R29", "R75"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 2,
+          "adults": 1,
+          "socks": 2,
+          "addOns": [{ "ref": "a-locker", "quantity": 1 }]
+        }
+      ],
+      "expect": {
+        "lineTotals": { "l1": 233000 },
+        "subtotal": 233000,
+        "inclusiveTaxTotal": 15243,
+        "total": 233000,
+        "categories": [
+          { "category": "tickets", "base": 213000, "tax": 13935, "gross": 213000 },
+          { "category": "addons", "base": 20000, "tax": 1308, "gross": 20000 }
+        ],
+        "breakdown": {
+          "l1": [
+            ["kids", 89000, 2, 178000],
+            ["adults", 35000, 1, 35000],
+            ["socks", 5000, 2, 10000],
+            ["a-locker", 10000, 1, 10000]
+          ]
+        }
+      }
+    },
+    {
+      "id": "EC-2",
+      "title": "An add-on's tax_category_override points at a different CATEGORY, never at a rate",
+      "rules": ["R75"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 2,
+          "adults": 1,
+          "addOns": [{ "ref": "a-cup", "quantity": 1, "taxCategoryOverride": "fnb" }]
+        }
+      ],
+      "expect": {
+        "subtotal": 228000,
+        "total": 228000,
+        "categories": [
+          { "category": "tickets", "base": 213000, "tax": 13935, "gross": 213000 },
+          { "category": "fnb", "base": 15000, "tax": 981, "gross": 15000 }
+        ]
+      }
+    },
+    {
+      "id": "EC-3",
+      "title": "The service-fee row lands in drop_off and sits last in the breakdown",
+      "rules": ["R21", "R29", "R75"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 1,
+          "adults": 0,
+          "serviceFee": { "label": "Drop-off service", "amount": 30000 }
+        }
+      ],
+      "expect": {
+        "lineTotals": { "l1": 119000 },
+        "subtotal": 119000,
+        "total": 119000,
+        "categories": [
+          { "category": "tickets", "base": 89000, "tax": 5822, "gross": 89000 },
+          { "category": "drop_off", "base": 30000, "tax": 1963, "gross": 30000 }
+        ],
+        "breakdown": {
+          "l1": [
+            ["kids", 89000, 1, 89000],
+            ["dropoff-service", 30000, 1, 30000]
+          ]
+        }
+      }
+    },
+    {
+      "id": "EC-4",
+      "title": "A stored-value load is untaxed at load, is priced into the line, and still counts toward the total",
+      "rules": ["R57", "R75", "R76"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 1,
+          "adults": 1,
+          "foodProvision": { "mode": "prepaid_credit", "paid": 50000 }
+        }
+      ],
+      "expect": {
+        "lineTotals": { "l1": 174000 },
+        "subtotal": 174000,
+        "total": 174000,
+        "inclusiveTaxTotal": 8112,
+        "categories": [
+          { "category": "tickets", "base": 124000, "tax": 8112, "gross": 124000 },
+          { "category": "stored_value", "base": 50000, "tax": 0, "gross": 50000 }
+        ]
+      },
+      "note": "INPUTS: the line total is DERIVED (89000 kid + 35000 adult + 50000 prepaid credit), not written down. It used to be hand-written as 174000, which hid that priceCartLine ignored foodProvision while the tax engine charged it — the same 174000 appeared whether or not the food was priced, so the defect was invisible. The prototype builds the total with the food in it at lib/dropoff.ts:87 and states the invariant at lib/sale.ts:50-51: the tax engine's grand total must equal the sum of line totals. EXPECTED: tax on this 50000 is realised when the credit is spent at the F&B station, not when it is loaded."
+    },
+    {
+      "id": "EC-5",
+      "title": "An ORDER-WIDE before-tax discount is apportioned across categories and the parts sum to it exactly",
+      "rules": ["R60"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 2,
+          "adults": 1,
+          "socks": 2,
+          "addOns": [{ "ref": "a-locker", "quantity": 1 }]
+        }
+      ],
+      "manualDiscounts": [{ "id": "m1", "scope": "order", "type": "fixed", "value": 10000 }],
+      "expect": {
+        "subtotal": 233000,
+        "discountTotal": 10000,
+        "total": 223000,
+        "unappliedDiscount": 0,
+        "categories": [
+          { "category": "tickets", "base": 203858, "tax": 13337, "gross": 203858 },
+          { "category": "addons", "base": 19142, "tax": 1252, "gross": 19142 }
+        ]
+      },
+      "note": "Order scope means order-wide: nothing was targeted, so the spread is correct and stays. The exact shares are 9141.63 and 858.37 satang. Largest remainder gives 9142 and 858, which sum to 10000; rounding each independently would give 9142 + 858 here but 99.99 or 100.01 baht on other splits, and the receipt would not reconcile. Contrast EC-9, where the discount DID target something."
+    },
+    {
+      "id": "EC-6",
+      "title": "A component-scoped comp takes only that component's base",
+      "rules": ["R33", "R36", "R37", "R39"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 2, "adults": 1 }],
+      "manualDiscounts": [
+        {
+          "id": "m1",
+          "scope": "line",
+          "targetLineId": "l1",
+          "targetComponent": { "kind": "kids" },
+          "type": "comp",
+          "value": 0
+        }
+      ],
+      "expect": {
+        "subtotal": 213000,
+        "discountTotal": 178000,
+        "total": 35000,
+        "inclusiveTaxTotal": 2290
+      },
+      "note": "The comp targets the kids rows, which are the tickets category, and the whole cart is tickets — so attribution and proportional spreading give the same figures here. EC-9 and TX-ATTR-2 are where they part."
+    },
+    {
+      "id": "EC-7",
+      "title": "Line scope runs before order scope, and the order-scope discount finds nothing left",
+      "rules": ["R36", "R38", "R39"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 2, "adults": 1 }],
+      "manualDiscounts": [
+        { "id": "m1", "scope": "line", "targetLineId": "l1", "type": "comp", "value": 0 },
+        { "id": "m2", "scope": "order", "type": "comp", "value": 0 }
+      ],
+      "expect": {
+        "subtotal": 213000,
+        "manualAmounts": { "m1": 213000, "m2": 0 },
+        "discountTotal": 213000,
+        "total": 0,
+        "unappliedDiscount": 0
+      },
+      "note": "A zero or negative base yields 0, which is what stops a stacked discount becoming a credit."
+    },
+    {
+      "id": "EC-8",
+      "title": "A discount larger than the taxable base — the excess is dropped, and now it is visible",
+      "rules": ["R31", "R59", "R60"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 2, "adults": 1 }],
+      "manualDiscounts": [{ "id": "m1", "scope": "order", "type": "comp", "value": 0 }],
+      "promos": [
+        {
+          "code": "ICECREAM",
+          "label": "Free Ice Cream",
+          "type": "free_item",
+          "value": 0,
+          "freeItemId": "m-icecream",
+          "freeItemKind": "menu",
+          "active": true
+        }
+      ],
+      "expect": {
+        "subtotal": 218000,
+        "manualDiscountTotal": 218000,
+        "promoDiscountTotal": 0,
+        "discountTotal": 218000,
+        "unappliedDiscount": 5000,
+        "total": 0
+      },
+      "note": "The comp runs first and takes the whole subtotal, the free-item code then finds a running balance of 0 and resolves to 0. The promo line's 5000 never reaches the tax engine, so 5000 of the 218000 comp has no base to reduce. The prototype drops it silently; unappliedDiscount reports it without changing any figure."
+    },
+    {
+      "id": "EC-9",
+      "title": "A promo scoped to add-ons discounts the add-ons — not a share of every category",
+      "rules": ["R43", "R60"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 1,
+          "adults": 1,
+          "socks": 2,
+          "addOns": [{ "ref": "a-locker", "quantity": 1 }],
+          "serviceFee": { "label": "Drop-off service", "amount": 30000 }
+        }
+      ],
+      "promos": [
+        {
+          "code": "EXTRAS50",
+          "label": "Half-price extras",
+          "type": "percent",
+          "value": 50,
+          "target": { "kind": "addOns" }
+        }
+      ],
+      "expect": {
+        "lineTotals": { "l1": 174000 },
+        "subtotal": 174000,
+        "discountTotal": 10000,
+        "total": 164000,
+        "unappliedDiscount": 0,
+        "inclusiveTaxTotal": 10729,
+        "categories": [
+          { "category": "tickets", "base": 124000, "tax": 8112, "gross": 124000 },
+          { "category": "addons", "base": 10000, "tax": 654, "gross": 10000 },
+          { "category": "drop_off", "base": 30000, "tax": 1963, "gross": 30000 }
+        ]
+      },
+      "note": "The scoped base is 20000 (socks 10000 + locker 10000) — the 30000 service fee is excluded even though its breakdown row borrows the 'addon' kind (lib/discountTarget.ts:41). The whole 10000 then comes off the addons category, which is what the code was aimed at. CHANGED: the earlier fixture expected 116873 / 18851 / 28276, the proportional spread, which is what the prototype does and what its own comment at lib/tax.ts:99-106 says must stop once categories can carry different rules. Under this seeded config every category shares one inclusive 7% rule, so no total and no reported VAT moves — 10729 either way. TX-ATTR-2 and TX-ATTR-4 are the same change under rules that do differ, where money moves."
+    },
+    {
+      "id": "EC-10",
+      "title": "Two stackable promo codes apply sequentially, not additively",
+      "rules": ["R40", "R45"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "tourist", "kids": 2, "adults": 1 }],
+      "promos": [
+        {
+          "code": "STAFF10",
+          "label": "Staff Discount",
+          "type": "percent",
+          "value": 10,
+          "stackable": true
+        },
+        {
+          "code": "MEMBER20",
+          "label": "Member Discount",
+          "type": "percent",
+          "value": 20,
+          "stackable": true
+        }
+      ],
+      "expect": {
+        "subtotal": 213000,
+        "discountTotal": 59640,
+        "total": 153360,
+        "inclusiveTaxTotal": 10033
+      },
+      "note": "Sequential: 20% comes off 191700, not off 213000. Additively it would be 30% = 63900 and a total of 149100."
+    },
+    {
+      "id": "EC-11",
+      "title": "A tier the package has not priced resolves to 0 rather than poisoning the total",
+      "rules": ["R8", "R13", "R18"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "vip", "kids": 1, "adults": 1 }],
+      "expect": { "subtotal": 0, "total": 0, "inclusiveTaxTotal": 0 },
+      "note": "An unpriced tier falls through to same_as_kid at a kid price of 0 — the defensive path for a tier the owner added but has not priced on this package."
+    },
+    {
+      "id": "EC-15",
+      "title": "PINNED, DISPUTED — a scoped promo re-discounts a component a manual discount already zeroed",
+      "rules": ["R36", "R43", "R59"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 2,
+          "adults": 0,
+          "addOns": [{ "ref": "a-locker", "quantity": 10 }]
+        }
+      ],
+      "manualDiscounts": [
+        {
+          "id": "m1",
+          "scope": "line",
+          "targetLineId": "l1",
+          "targetComponent": { "kind": "kids" },
+          "type": "comp",
+          "value": 0
+        }
+      ],
+      "promos": [
+        {
+          "code": "TICKETS100",
+          "label": "Tickets on us",
+          "type": "percent",
+          "value": 100,
+          "target": { "kind": "tickets" }
+        }
+      ],
+      "expect": {
+        "subtotal": 278000,
+        "manualDiscountTotal": 178000,
+        "promoDiscountTotal": 100000,
+        "discountTotal": 278000,
+        "unappliedDiscount": 0,
+        "total": 0,
+        "categories": [
+          { "category": "tickets", "base": 0, "tax": 0, "gross": 0 },
+          { "category": "addons", "base": 0, "tax": 0, "gross": 0 }
+        ]
+      },
+      "note": "THIS CASE IS PINNED AS-IS AND THE RULE IT PINS IS DISPUTED. What is disputed is the DOUBLE COUNT, not the total: the two kid tickets are comped by the manual discount, and the ticket-scoped promo then discounts them AGAIN, because its base is taken from the UNDISCOUNTED breakdown (cart-totals.ts clamps with Math.min(discountTargetBase(...), running), where the base ignores what the manual discount already took and `running` is an order-level number). The cart therefore reports 278000 of discount against a 278000 subtotal and the guest walks out with 1000 baht of lockers for nothing. That is a FAITHFUL PORT — the prototype behaves identically — so per CLAUDE.md the clamp is not ours to change without a ruling, and the ruling is what this case is waiting for. CHANGED 2026-09-20, and changed BACK: an earlier pass expected unappliedDiscount 100000 and a total of 100000, because discount attribution read the undiscounted breakdown and so refused to spend the ticket-scoped promo anywhere, leaving the guest to pay for the lockers. That was a second divergence stacked on top of the first: the prototype's own warning (lib/tax.ts:99-106) licenses attribution only where categories carry DIFFERENT rules, and here every category is one inclusive 7% rule, so the prototype's spread is exact and its total of 0 stands. Attribution now allocates against the bases that REMAIN, and the surplus a scope can no longer absorb goes back to being order-wide — so the double count still double-counts, visibly, in manualDiscountTotal + promoDiscountTotal against subtotal, but it no longer moves what the guest pays."
+    },
+    {
+      "id": "EC-16",
+      "title": "A cart priced under one rate mode and totalled under another is REFUSED, not quietly mixed",
+      "rules": ["R1", "R3"],
+      "mode": "weekend",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "thai", "kids": 1, "adults": 0 }],
+      "staleLineTotals": { "l1": 52000 },
+      "expectThrows": "were not priced under this pricing context",
+      "note": "52000 is the WEEKDAY thai price for 2 Hours Play; the context is weekend, where the same line is 62000. This is the cart left open on a Friday night that is still on screen after midnight. Before the guard, the subtotal came from the stored 52000 while every tax base came from the weekend context: 52000 of subtotal against 62000 of taxable base, no discount, and a receipt whose rows do not add up to its total. The engine now names the line and refuses; repriceCartLines is the explicit repair, and staleLines: 'trust_stored' reproduces the drift for diagnosis — it does NOT return the recorded total (it returns 62000 here, against a stored 52000), so it is not the route for a report."
+    },
+    {
+      "id": "EC-17",
+      "title": "TWO OVERLAPPING SCOPED DISCOUNTS — the second is attributed against what the first LEFT, so the total is still the prototype's",
+      "rules": ["R43", "R45", "R59", "R60"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 3,
+          "adults": 0,
+          "socks": 2,
+          "addOns": [{ "ref": "a-locker", "quantity": 2 }]
+        }
+      ],
+      "promos": [
+        {
+          "code": "KIDS23",
+          "label": "Kids 23% off",
+          "type": "percent",
+          "value": 23,
+          "stackable": true,
+          "target": { "kind": "tickets" }
+        },
+        {
+          "code": "TICKETSFREE",
+          "label": "Tickets on us",
+          "type": "percent",
+          "value": 100,
+          "stackable": true,
+          "target": { "kind": "tickets" }
+        }
+      ],
+      "expect": {
+        "lineTotals": { "l1": 297000 },
+        "subtotal": 297000,
+        "promoDiscountTotal": 297000,
+        "discountTotal": 297000,
+        "inclusiveTaxTotal": 0,
+        "unappliedDiscount": 0,
+        "total": 0,
+        "categories": [
+          { "category": "tickets", "base": 0, "tax": 0, "gross": 0 },
+          { "category": "addons", "base": 0, "tax": 0, "gross": 0 }
+        ]
+      },
+      "note": "THE CASE THAT CAUGHT A MONEY REGRESSION, kept as the guard against it returning. Both codes are scoped to tickets: KIDS23 takes 23% of the 267000 ticket base (61410), TICKETSFREE then takes 100% of what the order has left (235590), for 297000 against a 297000 subtotal — the prototype's arithmetic, which spreads that across both categories and hands the guest a bill of 0. Attribute each discount against the UNDISCOUNTED breakdown instead and both codes claim the same 267000 of tickets, computeTaxBreakdown clamps the second and reports 30000 as unapplied, and the guest is charged 300 baht for socks and lockers the prototype gives away. A differential run of 20000 generated carts per shape found that class of divergence on 2.96% of two-scoped-code carts and 9.69% of mixed carts, and 2528 of 2528 divergences overcharged the guest — not one favoured them. Allocating against what REMAINS, and returning the unabsorbable surplus to order-wide, restores the prototype's figure. Read with TX-ATTR-1..5, which still show attribution doing its job where category rules genuinely differ."
+    },
+    {
+      "id": "WE-13",
+      "title": "The S2-09a acceptance cart — 2 Hours Play, 2 kids + 3 adults, weekend, expat",
+      "rules": ["R1", "R3", "R13", "R19", "R29"],
+      "mode": "weekend",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "t-2h", "tier": "expat", "kids": 2, "adults": 3 }],
+      "expect": {
+        "lineTotals": { "l1": 292400 },
+        "subtotal": 292400,
+        "discountTotal": 0,
+        "inclusiveTaxTotal": 19129,
+        "unappliedDiscount": 0,
+        "total": 292400,
+        "categories": [
+          { "category": "tickets", "base": 292400, "tax": 19129, "gross": 292400 }
+        ],
+        "breakdown": {
+          "l1": [
+            ["kids", 71200, 2, 142400],
+            ["adults", 50000, 3, 150000]
+          ]
+        }
+      },
+      "note": "The cart S2-09a's first acceptance criterion names by member: '2 Hours Play for 2 kids + 3 adults on a weekend for +66822222222 (James, expat, seeded)'. 2 x 71200 (expat weekend kid, derived from the tourist 89000 at -20% weekend) + 3 x 50000 (the flat weekend adult admission) = 292400 satang. DISCREPANCY, REPORTED NOT RESOLVED: the criterion ends 'with the free-adults rule applied per line', but the seeded 2 Hours Play gives the expat tier a set_price adult rule (STANDARD_ADULT_RULES, store/catalogStore.ts:180-184) — so this cart exercises no free-adults rule at all, and every adult is charged. The only seeded free_adults rule is Full Day Pass / thai (WE-3, WE-4). Either the seed or the criterion is wrong; neither is changed here."
+    },
+    {
+      "id": "EC-18",
+      "title": "after_tax placement, end to end from a cart — the discount cannot reduce the tax the guest is charged",
+      "rules": ["R61", "R65", "R66", "R71"],
+      "mode": "weekday",
+      "taxConfig": "exclusiveAfterTax",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 2,
+          "adults": 1,
+          "socks": 2,
+          "addOns": [{ "ref": "a-locker", "quantity": 1 }]
+        }
+      ],
+      "manualDiscounts": [{ "id": "m1", "scope": "order", "type": "fixed", "value": 20000 }],
+      "promos": [
+        {
+          "code": "STAFF10",
+          "label": "Staff Discount",
+          "type": "percent",
+          "value": 10,
+          "stackable": true
+        }
+      ],
+      "expect": {
+        "subtotal": 233000,
+        "manualDiscountTotal": 20000,
+        "promoDiscountTotal": 21300,
+        "discountTotal": 41300,
+        "exclusiveTaxTotal": 16310,
+        "inclusiveTaxTotal": 0,
+        "unappliedDiscount": 0,
+        "total": 208010,
+        "categories": [
+          { "category": "tickets", "base": 213000, "tax": 14910, "gross": 227910 },
+          { "category": "addons", "base": 20000, "tax": 1400, "gross": 21400 }
+        ]
+      },
+      "note": "The only cart case under after_tax placement, and the one path where attribution is computed and then deliberately ignored: no category's base moves, VAT is charged on the FULL 233000, and the whole 41300 comes off the grand gross of 249310. Placement is worth real money here — the same cart and the same two discounts under before_tax reduce the bases first (order-wide, so apportioned 37755 / 3545) and come out at 205119, which is 2891 satang less. EC-14 pins the after_tax clamp at zero from the cascade side; this pins the whole cart path."
+    },
+    {
+      "id": "EC-19",
+      "title": "A stocked add-on split across sizes prints its sizes in the row label",
+      "rules": ["R23", "R24", "R75"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [
+        {
+          "id": "l1",
+          "package": "t-2h",
+          "tier": "tourist",
+          "kids": 1,
+          "adults": 0,
+          "addOns": [
+            {
+              "ref": "a-grip-socks",
+              "quantity": 3,
+              "variantBreakdown": [
+                { "variantId": "v-s", "variantLabel": "S", "quantity": 1 },
+                { "variantId": "v-m", "variantLabel": "M", "quantity": 2 }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "lineTotals": { "l1": 113000 },
+        "subtotal": 113000,
+        "inclusiveTaxTotal": 7392,
+        "total": 113000,
+        "categories": [
+          { "category": "tickets", "base": 89000, "tax": 5822, "gross": 89000 },
+          { "category": "addons", "base": 24000, "tax": 1570, "gross": 24000 }
+        ],
+        "breakdown": {
+          "l1": [
+            ["kids", 89000, 1, 89000],
+            ["a-grip-socks", 8000, 3, 24000, "Grip Socks (1×S, 2×M)"]
+          ]
+        }
+      },
+      "note": "The fifth element of a breakdown row is the LABEL, asserted only where a case cares about it. Until this case the variant branch of computeLineBreakdown was unreachable from any test, and that label is what a receipt prints: the sizes are the only record of which socks left the shelf. The quantity stays the sum (3) and the price is per unit, so the money is unaffected by the split."
+    },
+    {
+      "id": "EC-20",
+      "title": "same_as_kid adults — a tier with no adult rule at all charges the adult the kid price",
+      "rules": ["R20", "R29"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "x-samekid", "tier": "tourist", "kids": 2, "adults": 2 }],
+      "expect": {
+        "lineTotals": { "l1": 240000 },
+        "subtotal": 240000,
+        "inclusiveTaxTotal": 15701,
+        "total": 240000,
+        "breakdown": {
+          "l1": [
+            ["kids", 60000, 2, 120000],
+            ["adults", 60000, 2, 120000]
+          ]
+        }
+      },
+      "note": "NOT SEEDED — see the package's own note. The default branch of resolveAdultLine (lib/pricing.ts:42) had no cart case: EC-11 reaches it only through an unpriced tier where the kid price is 0, so nothing was exercised. Here the adults are charged the kid price, there is no free-adults row, and paidUnit is the kid price rather than a set price."
+    },
+    {
+      "id": "EC-21",
+      "title": "free_adults with overflow same_as_kid — the overflow adult pays the KID price, not a set price",
+      "rules": ["R20", "R29", "R30"],
+      "mode": "weekday",
+      "taxConfig": "seeded",
+      "lines": [{ "id": "l1", "package": "x-freekid", "tier": "thai", "kids": 2, "adults": 3 }],
+      "expect": {
+        "lineTotals": { "l1": 180000 },
+        "subtotal": 180000,
+        "inclusiveTaxTotal": 11776,
+        "total": 180000,
+        "breakdown": {
+          "l1": [
+            ["kids", 45000, 2, 90000],
+            ["adults", 45000, 2, 90000],
+            ["adults-free", 0, 1, 0]
+          ]
+        }
+      },
+      "note": "NOT SEEDED — see the package's own note. The seeded free_adults rule (Full Day Pass, thai) always overflows to the flat adult admission, so the other half of that branch — overflow 'same_as_kid', where the paid adult unit is the kid price and the rule carries no price at all — had no assertion anywhere. One adult free, two at 45000."
+    }
+  ],
+
+  "taxCases": [
+    {
+      "id": "WE-9",
+      "title": "Inclusive VAT with a service charge inside the tax base",
+      "rules": ["R62", "R63", "R66", "R70"],
+      "taxConfig": "serviceInclusive",
+      "inputs": [{ "category": "tickets", "base": 100000 }],
+      "discountTotal": 0,
+      "expect": {
+        "serviceChargeTotal": 10000,
+        "inclusiveTaxTotal": 7196,
+        "exclusiveTaxTotal": 0,
+        "grandTotal": 110000,
+        "categories": [
+          {
+            "category": "tickets",
+            "base": 100000,
+            "serviceCharge": 10000,
+            "tax": 7196,
+            "gross": 110000
+          }
+        ]
+      },
+      "note": "The guest pays 110000 — the service charge is ADDED on top — while VAT is unwound from 110000. 'inclusive' in this engine means inclusive of VAT and exclusive of service. There is no mode in which the service charge sits inside the quoted price."
+    },
+    {
+      "id": "WE-9b",
+      "title": "Inclusive VAT with the service charge outside the tax base",
+      "rules": ["R63"],
+      "taxConfig": "serviceInclusiveNoTos",
+      "inputs": [{ "category": "tickets", "base": 100000 }],
+      "discountTotal": 0,
+      "expect": { "serviceChargeTotal": 10000, "inclusiveTaxTotal": 6542, "grandTotal": 110000 }
+    },
+    {
+      "id": "WE-10",
+      "title": "Exclusive VAT + service + a 5% exclusive secondary tax on (price + VAT)",
+      "rules": ["R65", "R67", "R70"],
+      "taxConfig": "serviceExclusiveSecondary",
+      "inputs": [{ "category": "tickets", "base": 100000 }],
+      "discountTotal": 0,
+      "expect": {
+        "serviceChargeTotal": 10000,
+        "exclusiveTaxTotal": 13585,
+        "inclusiveTaxTotal": 0,
+        "grandTotal": 123585,
+        "categories": [
+          {
+            "category": "tickets",
+            "base": 100000,
+            "serviceCharge": 10000,
+            "tax": 7700,
+            "secondaryTax": 5885,
+            "gross": 123585
+          }
+        ]
+      }
+    },
+    {
+      "id": "WE-10b",
+      "title": "The same, with the service charge outside the tax base",
+      "rules": ["R63", "R67"],
+      "taxConfig": "serviceExclusiveSecondaryNoTos",
+      "inputs": [{ "category": "tickets", "base": 100000 }],
+      "discountTotal": 0,
+      "expect": {
+        "exclusiveTaxTotal": 12850,
+        "grandTotal": 122850,
+        "categories": [
+          {
+            "category": "tickets",
+            "base": 100000,
+            "serviceCharge": 10000,
+            "tax": 7000,
+            "secondaryTax": 5850,
+            "gross": 122850
+          }
+        ]
+      }
+    },
+    {
+      "id": "WE-11",
+      "title": "after_tax placement — the same grand total as WE-6 but a different reported VAT",
+      "rules": ["R58", "R61", "R71"],
+      "taxConfig": "seededAfterTax",
+      "inputs": [{ "category": "tickets", "base": 213000 }],
+      "discountTotal": 39300,
+      "expect": {
+        "netSubtotal": 213000,
+        "inclusiveTaxTotal": 13935,
+        "grandTotal": 173700,
+        "unappliedDiscount": 0,
+        "categories": [{ "category": "tickets", "base": 213000, "tax": 13935, "gross": 213000 }]
+      },
+      "note": "WE-6 reports 11364 of VAT on the same bill because the discount comes off the base first. One category and an inclusive rate make the grand totals agree; with an exclusive rate or several categories they diverge. This pair is what pins discountPlacement."
+    },
+    {
+      "id": "EC-12",
+      "title": "A category with no rule is untaxed but its base still counts toward the total",
+      "rules": ["R57", "R64"],
+      "taxConfig": "noRules",
+      "inputs": [{ "category": "tickets", "base": 100000 }],
+      "discountTotal": 0,
+      "expect": {
+        "grandTotal": 100000,
+        "taxTotal": 0,
+        "categories": [
+          { "category": "tickets", "base": 100000, "taxMode": "none", "tax": 0, "gross": 100000 }
+        ]
+      }
+    },
+    {
+      "id": "EC-13",
+      "title": "Two inclusive taxes each unwind from the SAME taxable amount",
+      "rules": ["R68", "R72"],
+      "taxConfig": "twoInclusive",
+      "inputs": [{ "category": "tickets", "base": 107000 }],
+      "discountTotal": 0,
+      "expect": {
+        "inclusiveTaxTotal": 14000,
+        "grandTotal": 107000,
+        "categories": [
+          {
+            "category": "tickets",
+            "base": 107000,
+            "tax": 7000,
+            "secondaryTax": 7000,
+            "gross": 107000
+          }
+        ]
+      },
+      "note": "Both report 7000, summing to more tax than is actually inside 107000. The prototype's comment (lib/tax.ts:126-129) says this is deliberate so each can be broken out on a receipt; the grand total is untouched either way. Worth confirming with whoever files the VAT return."
+    },
+    {
+      "id": "EC-14",
+      "title": "after_tax placement clamps the grand total at zero and reports the unapplied remainder",
+      "rules": ["R61", "R71"],
+      "taxConfig": "seededAfterTax",
+      "inputs": [{ "category": "tickets", "base": 100000 }],
+      "discountTotal": 150000,
+      "expect": { "grandTotal": 0, "unappliedDiscount": 50000 }
+    },
+    {
+      "id": "TX-ATTR-1",
+      "title": "Divergent rules, ORDER-WIDE discount — spreading is correct, because nothing was targeted",
+      "rules": ["R60"],
+      "taxConfig": "divergentStoredValue",
+      "inputs": [
+        { "category": "tickets", "base": 100000 },
+        { "category": "stored_value", "base": 100000 }
+      ],
+      "discounts": [{ "amount": 20000 }],
+      "expect": {
+        "netSubtotal": 200000,
+        "inclusiveTaxTotal": 5888,
+        "grandTotal": 180000,
+        "unappliedDiscount": 0,
+        "categories": [
+          { "category": "tickets", "base": 90000, "tax": 5888, "gross": 90000 },
+          { "category": "stored_value", "base": 90000, "tax": 0, "gross": 90000 }
+        ]
+      },
+      "note": "A 200-baht discount on the whole order against a 1000-baht ticket line and a 1000-baht stored-value load. Each absorbs half. Reported VAT 5888 satang. This is the baseline TX-ATTR-2 is read against."
+    },
+    {
+      "id": "TX-ATTR-2",
+      "title": "Divergent rules, the SAME discount scoped to tickets — spreading it overstates VAT by 654 satang",
+      "rules": ["R60"],
+      "taxConfig": "divergentStoredValue",
+      "inputs": [
+        { "category": "tickets", "base": 100000 },
+        { "category": "stored_value", "base": 100000 }
+      ],
+      "discounts": [{ "amount": 20000, "category": "tickets" }],
+      "expect": {
+        "netSubtotal": 200000,
+        "inclusiveTaxTotal": 5234,
+        "grandTotal": 180000,
+        "unappliedDiscount": 0,
+        "categories": [
+          { "category": "tickets", "base": 80000, "tax": 5234, "gross": 80000 },
+          { "category": "stored_value", "base": 100000, "tax": 0, "gross": 100000 }
+        ]
+      },
+      "note": "THIS IS THE PAIR THE PROTOTYPE'S OWN WARNING (lib/tax.ts:99-106) IS ABOUT. The whole 20000 targeted the tickets, so the whole 20000 comes off the tickets: VAT 5234. Spread proportionally (TX-ATTR-1's arithmetic) half of it lands on a stored-value load that carries no VAT at all, the ticket base is only reduced to 90000, and reported VAT comes out 5888 — 654 satang too high, on a figure that goes on a tax return. The grand total is 180000 either way, because both categories here are inclusive-or-untaxed; TX-ATTR-4 is where the guest's bill moves too."
+    },
+    {
+      "id": "TX-ATTR-3",
+      "title": "Mixed inclusive and exclusive, ORDER-WIDE discount",
+      "rules": ["R60", "R65", "R66"],
+      "taxConfig": "divergentInclusiveExclusive",
+      "inputs": [
+        { "category": "tickets", "base": 100000 },
+        { "category": "merch", "base": 100000 }
+      ],
+      "discounts": [{ "amount": 20000 }],
+      "expect": {
+        "grandTotal": 186300,
+        "inclusiveTaxTotal": 5888,
+        "exclusiveTaxTotal": 6300,
+        "categories": [
+          { "category": "tickets", "base": 90000, "tax": 5888, "gross": 90000 },
+          { "category": "merch", "base": 90000, "tax": 6300, "gross": 96300 }
+        ]
+      }
+    },
+    {
+      "id": "TX-ATTR-4",
+      "title": "Mixed inclusive and exclusive, the same discount scoped to MERCHANDISE — 700 satang of the guest's own money",
+      "rules": ["R60", "R65", "R66"],
+      "taxConfig": "divergentInclusiveExclusive",
+      "inputs": [
+        { "category": "tickets", "base": 100000 },
+        { "category": "merch", "base": 100000 }
+      ],
+      "discounts": [{ "amount": 20000, "category": "merch" }],
+      "expect": {
+        "grandTotal": 185600,
+        "inclusiveTaxTotal": 6542,
+        "exclusiveTaxTotal": 5600,
+        "categories": [
+          { "category": "tickets", "base": 100000, "tax": 6542, "gross": 100000 },
+          { "category": "merch", "base": 80000, "tax": 5600, "gross": 85600 }
+        ]
+      },
+      "note": "The discount was aimed at the merchandise, so all of it reduces the merchandise base — and because that category's VAT is added ON TOP, reducing the base also reduces the tax. Grand total 185600. Spread instead (TX-ATTR-3), half the discount lands on the inclusive tickets where it cannot reduce any added tax, the merchandise base falls only to 90000, and the guest is charged 186300 — 700 satang MORE for the same cart and the same discount. Scale it to a real bill and it is a queue argument at the counter."
+    },
+    {
+      "id": "TX-ATTR-5",
+      "title": "A discount scoped to a category with no base in this cart is dropped, and reported",
+      "rules": ["R59", "R60"],
+      "taxConfig": "divergentStoredValue",
+      "inputs": [{ "category": "tickets", "base": 100000 }],
+      "discounts": [{ "amount": 5000, "category": "merch" }],
+      "expect": {
+        "grandTotal": 100000,
+        "inclusiveTaxTotal": 6542,
+        "unappliedDiscount": 5000,
+        "categories": [{ "category": "tickets", "base": 100000, "tax": 6542, "gross": 100000 }]
+      },
+      "note": "It is NOT quietly spilled onto the tickets. A discount that names a category the cart does not contain has nothing to reduce, and saying so is the point of unappliedDiscount. This is the contract for a caller that hands computeTaxBreakdown an allocation directly; a ticket cart never relies on it, because cart-totals.ts allocates against what remains and returns any surplus to order-wide before it reaches here (EC-17)."
+    },
+    {
+      "id": "TX-ATTR-6",
+      "title": "Two allocations naming the SAME category, handed to the cascade directly",
+      "rules": ["R59", "R60"],
+      "taxConfig": "divergentStoredValue",
+      "inputs": [
+        { "category": "tickets", "base": 100000 },
+        { "category": "stored_value", "base": 100000 }
+      ],
+      "discounts": [
+        { "amount": 60000, "category": "tickets" },
+        { "amount": 60000, "category": "tickets" }
+      ],
+      "expect": {
+        "netSubtotal": 200000,
+        "grandTotal": 100000,
+        "unappliedDiscount": 20000,
+        "categories": [
+          { "category": "tickets", "base": 0, "tax": 0, "gross": 0 },
+          { "category": "stored_value", "base": 100000, "tax": 0, "gross": 100000 }
+        ]
+      },
+      "note": "Named allocations are applied IN ORDER against what is left of the category, so the second one absorbs only the 40000 the first left and 20000 is reported unapplied rather than spilling onto the stored-value load. This is the cascade's own contract; a cart reaching this shape would have had its surplus turned into an order-wide allocation upstream (EC-17)."
+    },
+    {
+      "id": "TX-ATTR-7",
+      "title": "Ungrouped inputs sharing a category are grouped before a named allocation is placed",
+      "rules": ["R60", "R64"],
+      "taxConfig": "seeded",
+      "inputs": [
+        { "category": "tickets", "base": 50000 },
+        { "category": "tickets", "base": 50000 }
+      ],
+      "discounts": [{ "amount": 80000, "category": "tickets" }],
+      "expect": {
+        "netSubtotal": 100000,
+        "grandTotal": 20000,
+        "unappliedDiscount": 0,
+        "categories": [{ "category": "tickets", "base": 20000, "tax": 1308, "gross": 20000 }]
+      },
+      "note": "THE PRECONDITION THAT ATTRIBUTION INTRODUCED, pinned. Placing a named allocation means finding the row its category names, and with two rows sharing a category only the first was found: the discount reduced one 50000 row to zero, the other stayed at 50000, and 30000 was reported unapplied for a total of 50000 where the prototype gives 20000. ticketCartTaxInputs groups, so no cart could reach it, but computeTaxBreakdown is exported and S2-09b calls it directly — so it now groups its own inputs. One row comes back, not two."
+    },
+    {
+      "id": "EC-22",
+      "title": "A secondary rate that is configured but switched OFF reports the rate and charges nothing",
+      "rules": ["R68", "R72"],
+      "taxConfig": "secondaryRateDisabled",
+      "inputs": [{ "category": "tickets", "base": 107000 }],
+      "discountTotal": 0,
+      "expect": {
+        "inclusiveTaxTotal": 7000,
+        "exclusiveTaxTotal": 0,
+        "taxTotal": 7000,
+        "grandTotal": 107000,
+        "categories": [
+          {
+            "category": "tickets",
+            "base": 107000,
+            "tax": 7000,
+            "secondaryTax": 0,
+            "gross": 107000
+          }
+        ]
+      },
+      "note": "secondaryTaxMode defaults to 'exclusive' whenever a secondary RATE is set, so an explicit 'none' is the only way to keep the rate configured without charging it — and that combination had no case. The rate's id, name and percent still come back on the row (an admin screen shows what is configured); the amount is 0 and summarizeTax emits no row for it, so the guest sees nothing."
+    }
+  ],
+
+  "rateModeCases": [
+    {
+      "id": "RM-1",
+      "date": "2026-09-22",
+      "rules": ["R4"],
+      "expect": { "mode": "weekday", "reason": "Weekday pricing" }
+    },
+    {
+      "id": "RM-2",
+      "date": "2026-09-26",
+      "rules": ["R3"],
+      "expect": { "mode": "weekend", "reason": "Weekend pricing" }
+    },
+    {
+      "id": "RM-3",
+      "date": "2026-09-27",
+      "rules": ["R3"],
+      "expect": { "mode": "weekend", "reason": "Weekend pricing" }
+    },
+    {
+      "id": "RM-4",
+      "date": "2026-04-13",
+      "rules": ["R2", "R9"],
+      "expect": {
+        "mode": "weekend",
+        "reason": "Weekend pricing — Songkran",
+        "overrideName": "Songkran"
+      },
+      "note": "A Monday. The holiday range beats the day of the week, and both ends of the range are inclusive."
+    },
+    {
+      "id": "RM-5",
+      "date": "2026-04-14",
+      "rules": ["R2"],
+      "expect": {
+        "mode": "weekend",
+        "reason": "Weekend pricing — Songkran",
+        "overrideName": "Songkran"
+      }
+    },
+    {
+      "id": "RM-6",
+      "date": "2026-04-15",
+      "rules": ["R2"],
+      "expect": {
+        "mode": "weekend",
+        "reason": "Weekend pricing — Songkran",
+        "overrideName": "Songkran"
+      }
+    },
+    {
+      "id": "RM-7",
+      "date": "2026-04-16",
+      "rules": ["R4"],
+      "expect": { "mode": "weekday", "reason": "Weekday pricing" }
+    },
+    {
+      "id": "RM-8",
+      "date": "2026-04-12",
+      "rules": ["R3"],
+      "expect": { "mode": "weekend", "reason": "Weekend pricing" }
+    }
+  ],
+
+  "businessDateCases": [
+    {
+      "id": "BD-1",
+      "title": "A sale at 00:30 belongs to the PREVIOUS business date",
+      "instant": "2026-09-22T17:30:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2026-09-23", "businessDate": "2026-09-22" }
+    },
+    {
+      "id": "BD-2",
+      "title": "04:59 is still the previous business date",
+      "instant": "2026-09-22T21:59:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2026-09-23", "businessDate": "2026-09-22" }
+    },
+    {
+      "id": "BD-3",
+      "title": "05:00 exactly starts the new business date",
+      "instant": "2026-09-22T22:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2026-09-23", "businessDate": "2026-09-23" }
+    },
+    {
+      "id": "BD-4",
+      "title": "Midnight exactly",
+      "instant": "2026-09-22T17:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2026-09-23", "businessDate": "2026-09-22" }
+    },
+    {
+      "id": "BD-5",
+      "title": "23:59 is the same business date as the afternoon before it",
+      "instant": "2026-09-22T16:59:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2026-09-22", "businessDate": "2026-09-22" }
+    },
+    {
+      "id": "BD-6",
+      "title": "Across a month boundary",
+      "instant": "2026-08-31T18:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2026-09-01", "businessDate": "2026-08-31" }
+    },
+    {
+      "id": "BD-7",
+      "title": "Across a year boundary",
+      "instant": "2026-12-31T18:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2027-01-01", "businessDate": "2026-12-31" }
+    },
+    {
+      "id": "BD-8",
+      "title": "A midnight day start makes the business date the calendar date",
+      "instant": "2026-09-22T17:30:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "00:00",
+      "expect": { "branchDate": "2026-09-23", "businessDate": "2026-09-23" }
+    },
+    {
+      "id": "BD-9",
+      "title": "The same instant at a UTC branch resolves to a different day entirely",
+      "instant": "2026-09-22T17:30:00Z",
+      "timeZone": "UTC",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2026-09-22", "businessDate": "2026-09-22" }
+    },
+    {
+      "id": "BD-10",
+      "title": "A late day start pushes a mid-morning sale back a day",
+      "instant": "2026-09-23T03:00:00Z",
+      "timeZone": "Asia/Bangkok",
+      "dayStart": "11:00",
+      "expect": { "branchDate": "2026-09-23", "businessDate": "2026-09-22" }
+    },
+    {
+      "id": "BD-DST-1",
+      "title": "DST fall-back, first pass through 01:45 — the new business date has started",
+      "instant": "2026-11-01T05:45:00Z",
+      "timeZone": "America/New_York",
+      "dayStart": "01:45",
+      "expect": { "branchDate": "2026-11-01", "businessDate": "2026-11-01" },
+      "note": "PINNED, NOT RULED ON. 2026-11-01 is the US fall-back Sunday: at 02:00 EDT the clocks go back to 01:00 EST, so the wall clock runs 01:00-02:00 twice. This instant is the FIRST 01:45, still on EDT. Read with BD-DST-2."
+    },
+    {
+      "id": "BD-DST-2",
+      "title": "DST fall-back, second pass — thirty minutes LATER in real time, an EARLIER business date",
+      "instant": "2026-11-01T06:15:00Z",
+      "timeZone": "America/New_York",
+      "dayStart": "01:45",
+      "expect": { "branchDate": "2026-11-01", "businessDate": "2026-10-31" },
+      "note": "PINNED, NOT RULED ON. Thirty minutes after BD-DST-1 the wall clock reads 01:15, because the hour repeated — so this sale is stamped with the PREVIOUS business date and the ledger's business dates run backwards. business-date.ts compares wall-clock time, which is the answer a manager closing the till would give; making it monotonic would mean deciding the tie on the instant instead, which is a decision about what a trading day is. Bangkok has no DST and the plan's 05:00 default clears the transition hour (BD-DST-6), so this is latent, not live."
+    },
+    {
+      "id": "BD-DST-3",
+      "title": "DST spring-forward — the hour is skipped, so the boundary is crossed by a jump",
+      "instant": "2026-03-08T06:59:00Z",
+      "timeZone": "America/New_York",
+      "dayStart": "02:30",
+      "expect": { "branchDate": "2026-03-08", "businessDate": "2026-03-07" },
+      "note": "At 02:00 EST the clocks jump to 03:00 EDT, so a 02:30 day start is never shown on the wall. This instant reads 01:59; the next minute reads 03:00 (BD-DST-3b). No sale can land exactly on the boundary, and the business date still advances exactly once — the benign half of DST."
+    },
+    {
+      "id": "BD-DST-3b",
+      "title": "DST spring-forward, one minute later and on the far side of the jump",
+      "instant": "2026-03-08T07:00:00Z",
+      "timeZone": "America/New_York",
+      "dayStart": "02:30",
+      "expect": { "branchDate": "2026-03-08", "businessDate": "2026-03-08" }
+    },
+    {
+      "id": "BD-DST-4",
+      "title": "A half-hour-offset zone repeats half an hour, and hits the same boundary",
+      "instant": "2026-04-04T14:50:00Z",
+      "timeZone": "Australia/Lord_Howe",
+      "dayStart": "01:45",
+      "expect": { "branchDate": "2026-04-05", "businessDate": "2026-04-05" },
+      "note": "PINNED, NOT RULED ON. Lord Howe moves between +11:00 and +10:30, so on 2026-04-05 the wall clock runs 01:30-02:00 twice rather than a whole hour. This instant is the first 01:50."
+    },
+    {
+      "id": "BD-DST-5",
+      "title": "The same half-hour zone, twenty minutes later — again an earlier business date",
+      "instant": "2026-04-04T15:10:00Z",
+      "timeZone": "Australia/Lord_Howe",
+      "dayStart": "01:45",
+      "expect": { "branchDate": "2026-04-05", "businessDate": "2026-04-04" },
+      "note": "PINNED, NOT RULED ON. Twenty minutes after BD-DST-4 the wall clock reads 01:40 and the business date goes backwards, exactly as in BD-DST-2 — a half-hour zone shifts where the trap sits, it does not remove it."
+    },
+    {
+      "id": "BD-DST-6",
+      "title": "The plan's 05:00 default clears the fall-back hour — both passes agree",
+      "instant": "2026-11-01T05:45:00Z",
+      "timeZone": "America/New_York",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2026-11-01", "businessDate": "2026-10-31" }
+    },
+    {
+      "id": "BD-DST-7",
+      "title": "The same, on the second pass — still the same business date",
+      "instant": "2026-11-01T06:15:00Z",
+      "timeZone": "America/New_York",
+      "dayStart": "05:00",
+      "expect": { "branchDate": "2026-11-01", "businessDate": "2026-10-31" },
+      "note": "With the default day start both sides of the repeated hour land on the same business date. This pair is why the DST question is recorded rather than blocking: no configuration the park uses reaches it."
+    }
+  ]
+}

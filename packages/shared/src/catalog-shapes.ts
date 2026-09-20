@@ -79,6 +79,7 @@ export const TaxableCategorySchema = z.enum(TAXABLE_CATEGORIES);
 export type TaxableCategory = z.infer<typeof TaxableCategorySchema>;
 
 export const TaxModeSchema = z.enum(['inclusive', 'exclusive', 'none']);
+export type TaxMode = z.infer<typeof TaxModeSchema>;
 
 export const TaxRateSchema = z.object({
   id: z.string(),
@@ -87,6 +88,7 @@ export const TaxRateSchema = z.object({
   percent: z.number().nonnegative(),
   defaultMode: TaxModeSchema.optional(),
 });
+export type TaxRateShape = z.infer<typeof TaxRateSchema>;
 
 export const CategoryTaxRuleSchema = z.object({
   category: TaxableCategorySchema,
@@ -97,6 +99,7 @@ export const CategoryTaxRuleSchema = z.object({
   secondaryTaxRateId: z.string().optional(),
   secondaryTaxMode: TaxModeSchema.optional(),
 });
+export type CategoryTaxRuleShape = z.infer<typeof CategoryTaxRuleSchema>;
 
 export const TaxConfigSchema = z.object({
   rates: z.array(TaxRateSchema),

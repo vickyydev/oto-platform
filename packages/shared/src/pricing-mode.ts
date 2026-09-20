@@ -41,7 +41,16 @@ export function getRateModeForDate(isoDate: string, holidays: HolidayRange[]): R
   return { mode: 'weekday', reason: 'Weekday pricing' };
 }
 
-/** Rate mode for "now" at a branch. */
+/**
+ * Rate mode for "now" at a branch.
+ *
+ * READS THE CLOCK when `now` is omitted, and this function decides which of two
+ * prices a guest pays. On a box whose clock has drifted across midnight into a
+ * Saturday, every ticket sold until the clock is corrected is charged the
+ * weekend price with nothing in the sale to show it was wrong. A till must pass
+ * the same instant it stamps on the sale; the default is for a convenience
+ * caller such as an admin screen. See the clock-seam note in engine.ts.
+ */
 export function rateModeToday(
   timeZone: string,
   holidays: HolidayRange[],
