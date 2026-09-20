@@ -160,23 +160,23 @@ describe('the station session document over HTTP (S2-05)', () => {
     const applied = await call('POST', `/stations/${tillId}/intents`, {
       cookie: receptionCookie,
       payload: {
-        type: 'display.set_language',
+        type: 'session.set_stage',
         leaseId: lease.leaseId,
         lastSeenSequence: sequence,
-        payload: { language: 'th' },
+        payload: { stage: 'order' },
       },
     });
     expect(applied.statusCode).toBe(200);
-    expect(document(applied).language).toBe('th');
+    expect(document(applied).stage).toBe('order');
     expect(document(applied).sequence).toBe(sequence + 1);
 
     const behind = await call('POST', `/stations/${tillId}/intents`, {
       cookie: receptionCookie,
       payload: {
-        type: 'display.set_language',
+        type: 'session.set_stage',
         leaseId: lease.leaseId,
         lastSeenSequence: sequence,
-        payload: { language: 'en' },
+        payload: { stage: 'identify' },
       },
     });
     expect(behind.statusCode).toBe(409);
@@ -186,6 +186,72 @@ describe('the station session document over HTTP (S2-05)', () => {
     const carried = (behind.body.error as { details?: { document?: { sequence?: number } } })
       .details?.document;
     expect(carried?.sequence).toBe(sequence + 1);
+
+    // Put the station back where the rest of this file expects to find it.
+    const reset = await call('POST', `/stations/${tillId}/intents`, {
+      cookie: receptionCookie,
+      payload: {
+        type: 'session.reset',
+        leaseId: lease.leaseId,
+        lastSeenSequence: sequence + 1,
+        payload: {},
+      },
+    });
+    expect(reset.statusCode).toBe(200);
+    expect(document(reset).stage).toBe('identify');
+  });
+
+  /**
+   * The language toggle belongs to the customer display, which holds no lease
+   * and never will — so the question is not whether to require one, but what a
+   * lease-free intent may DO.
+   *
+   * It may change the display's own fields, and it may not move the sequence the
+   * holder is fenced against. While it did, any screen that could reach the
+   * station could make the till working the sale stale at will: toggle the
+   * language, the number moves, and the till's next intent is refused with
+   * "session moved to another till" when nothing had moved at all.
+   */
+  it('lets a screen with no lease set the language without disturbing the holder', async () => {
+    const before = await call('GET', `/stations/${tillId}/session`, { cookie: receptionCookie });
+    const sequence = document(before).sequence as number;
+
+    const toggled = await call('POST', `/stations/${tillId}/intents`, {
+      cookie: receptionCookie,
+      payload: {
+        type: 'display.set_language',
+        lastSeenSequence: sequence,
+        payload: { language: 'th' },
+      },
+    });
+    expect(toggled.statusCode).toBe(200);
+    expect(document(toggled).language).toBe('th');
+    expect(document(toggled).sequence).toBe(sequence);
+
+    // And the holder, who read the document before the toggle, is still current.
+    const held = await call('POST', `/stations/${tillId}/intents`, {
+      cookie: receptionCookie,
+      payload: {
+        type: 'session.set_stage',
+        leaseId: lease.leaseId,
+        lastSeenSequence: sequence,
+        payload: { stage: 'order' },
+      },
+    });
+    expect(held.statusCode).toBe(200);
+    expect(document(held).stage).toBe('order');
+    expect(document(held).language).toBe('th');
+
+    const reset = await call('POST', `/stations/${tillId}/intents`, {
+      cookie: receptionCookie,
+      payload: {
+        type: 'session.reset',
+        leaseId: lease.leaseId,
+        lastSeenSequence: sequence + 1,
+        payload: {},
+      },
+    });
+    expect(reset.statusCode).toBe(200);
   });
 
   it('renews without moving the sequence, which is what lets two screens agree', async () => {

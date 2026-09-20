@@ -481,6 +481,121 @@ test('an intent quoting an old sequence is stale even from the lease holder', as
   h.close();
 });
 
+/**
+ * The last way a screen that was refused the station could still reach into it.
+ *
+ * `display.set_language` needs no lease, because the toggle belongs to the
+ * customer display and a display never holds one. What it must not do is move
+ * the number the holder is fenced against: while it did, a second till could
+ * toggle the language in a loop and every intent the till working the sale sent
+ * came back "session moved to another till", with nothing having moved.
+ */
+test('a second till with no lease cannot make the holder stale', async () => {
+  const h = await openManager();
+  const claim = await h.manager.claim({
+    stationId: STATION_ID,
+    holder: 'tab-1',
+    holderKind: 'till',
+    accountId: MANAGER_ID,
+  });
+  assert.equal(claim.ok, true);
+  if (!claim.ok) return;
+
+  // A second till at the same counter. It was refused the lease and holds none.
+  const refused = await h.manager.claim({
+    stationId: STATION_ID,
+    holder: 'tab-2',
+    holderKind: 'till',
+    accountId: '018f0000-0000-7000-8000-0000000000b2',
+  });
+  assert.equal(refused.ok, false);
+
+  for (const language of ['th', 'en', 'th']) {
+    const toggled = await h.manager.applyIntent(
+      STATION_ID,
+      { type: 'display.set_language', lastSeenSequence: claim.document.sequence, payload: { language } },
+      { source: 'till' },
+    );
+    assert.equal(toggled.ok, true);
+    if (!toggled.ok) return;
+    assert.equal(toggled.document.language, language);
+    assert.equal(toggled.document.sequence, claim.document.sequence, 'the fence did not move');
+  }
+
+  // The holder read the document before any of that and is still current.
+  const held = await h.manager.applyIntent(
+    STATION_ID,
+    {
+      type: 'session.set_stage',
+      leaseId: claim.lease.leaseId,
+      lastSeenSequence: claim.document.sequence,
+      payload: { stage: 'order' },
+    },
+    { source: 'till', accountId: MANAGER_ID },
+  );
+  assert.equal(held.ok, true);
+  if (!held.ok) return;
+  assert.equal(held.document.stage, 'order');
+  assert.equal(held.document.language, 'th');
+  assert.equal(held.document.sequence, claim.document.sequence + 1);
+
+  // The other half of "it does not move the fence": it is still HELD to it. A
+  // screen with no lease still cannot write over a change it has not seen.
+  const behind = await h.manager.applyIntent(
+    STATION_ID,
+    {
+      type: 'display.set_language',
+      lastSeenSequence: claim.document.sequence,
+      payload: { language: 'en' },
+    },
+    { source: 'display' },
+  );
+  assert.equal(behind.ok, false);
+  if (behind.ok) return;
+  assert.equal(behind.refusal, 'stale');
+  assert.equal((await h.manager.open(STATION_ID)).language, 'th');
+  h.close();
+});
+
+/**
+ * And the other half of the same rule: a lease-free intent may write only the
+ * display's own fields. The check is on the WRITE rather than on the spec, so an
+ * intent registered later cannot become a second writer of the sale by being
+ * declared `requiresLease: false`.
+ */
+test('a lease-free intent may not write a field the sale is made of', async () => {
+  const h = await openManager();
+  const claim = await h.manager.claim({
+    stationId: STATION_ID,
+    holder: 'tab-1',
+    holderKind: 'till',
+  });
+  assert.equal(claim.ok, true);
+  if (!claim.ok) return;
+
+  h.manager.register('display.overreach', {
+    sources: ['display', 'till'],
+    requiresLease: false,
+    apply: () => ({ ok: true, write: { cart: { lines: [] }, language: 'en' } }),
+  });
+
+  const result = await h.manager.applyIntent(
+    STATION_ID,
+    { type: 'display.overreach', lastSeenSequence: claim.document.sequence, payload: {} },
+    { source: 'display' },
+  );
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.equal(result.refusal, 'not_permitted');
+  assert.match(result.message, /cart/);
+
+  // And nothing was written: not the field it may not touch, not the one it may.
+  const after = await h.manager.open(STATION_ID);
+  assert.equal(after.cart, null);
+  assert.equal(after.sequence, claim.document.sequence);
+  h.close();
+});
+
 test('the display holds no lease and may still answer what it was asked', async () => {
   const h = await openManager();
   const claim = await h.manager.claim({

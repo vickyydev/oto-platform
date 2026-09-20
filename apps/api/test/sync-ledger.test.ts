@@ -25,6 +25,7 @@ import {
 } from '@oto/box-agent';
 import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 import { boxAuthFromRow, issueClaimCode } from '../src/services/box';
+import { fleetHealth } from '../src/services/ops';
 import { injectPoisonEvent } from '../src/services/sync';
 
 /**
@@ -836,5 +837,123 @@ describe('how far one batch may move the high-water mark', () => {
       .from(alert)
       .where(eq(alert.key, `sync.dropped_without_record:${b.boxId}`));
     expect(raised).toEqual([]);
+  });
+});
+
+/**
+ * And how it catches up again, which is the other half of the same rule.
+ *
+ * Holding the mark back at a hole was right; computing it from the batch that
+ * happened to be in hand was not. A batch can only see the positions it is
+ * carrying, so once a hole had held the mark back, every batch afterwards left
+ * it exactly where it was — the box filled the hole, sent another thousand
+ * facts, and the cursor stayed on 1 for ever. The mark is now read from what the
+ * ledger HOLDS rather than from what one batch touched, which heals by
+ * construction: fill the hole and the next push walks the whole run.
+ */
+describe('and how far it catches up once the hole is filled', () => {
+  const gapsFor = (b: RunningBox) =>
+    ctx.db
+      .select()
+      .from(syncAnomaly)
+      .where(and(eq(syncAnomaly.boxId, b.boxId), eq(syncAnomaly.kind, 'sequence_gap')));
+
+  it('walks the whole run the ledger holds, not only this batch', async () => {
+    const b = await startBox();
+    const phones = [uniquePhone(), uniquePhone(), uniquePhone(), uniquePhone()];
+
+    /**
+     * Position 2 arrives with its identity unreadable — a body truncated in
+     * flight. It is filed under an id the cloud minted, which the box cannot
+     * match against its queue, so the box will send that position again and the
+     * mark must not retire it.
+     */
+    const first = await pushRaw(b, [
+      sealed(b, 1, phones[0]!),
+      broken(2, { eventId: 'truncated-in-flight' }),
+      sealed(b, 3, phones[1]!),
+      sealed(b, 4, phones[2]!),
+      sealed(b, 5, phones[3]!),
+    ]);
+    expect(first.body).toMatchObject({ applied: 4, quarantined: 1, cursorSeq: 1 });
+
+    // The box sends position 2 again, whole. The ledger is gapless from here,
+    // and the mark is what the ledger says rather than what this batch carried.
+    const healed = await pushRaw(b, [sealed(b, 2, uniquePhone())]);
+    expect(healed.body).toMatchObject({ applied: 1, cursorSeq: 5 });
+    expect(await cursorNow(b)).toBe(5);
+
+    // And it keeps up from there rather than trailing one position for ever.
+    expect((await pushRaw(b, [sealed(b, 6, uniquePhone())])).body.cursorSeq).toBe(6);
+    expect((await pushRaw(b, [sealed(b, 7, uniquePhone())])).body.cursorSeq).toBe(7);
+
+    /**
+     * And nothing ever claimed the box had lost facts. Every one of 1..7 reached
+     * the cloud; the old rule measured the gap against the frozen mark and filed
+     * `{missing 3, expectedBoxSeq 3, receivedBoxSeq 6}` on every batch, about a
+     * box that had lost nothing.
+     */
+    expect(await gapsFor(b)).toEqual([]);
+  });
+
+  it('claims a position an earlier batch filed, once the ones before it arrive', async () => {
+    const b = await startBox();
+    // Refused at position 3, under the id the box sent. Nothing can be claimed
+    // yet, because 1 and 2 have not arrived.
+    expect((await pushRaw(b, [broken(3, { type: 'MemberCreated' })])).body.cursorSeq).toBe(0);
+
+    // Being refused is a way of being dealt with, so the mark walks over it —
+    // across the batch boundary, which is what it could not do before.
+    const second = await pushRaw(b, [sealed(b, 1, uniquePhone()), sealed(b, 2, uniquePhone())]);
+    expect(second.body).toMatchObject({ applied: 2, cursorSeq: 3 });
+    expect(await openQuarantine(b)).toHaveLength(1);
+  });
+
+  it('records a genuinely skipped position once, not once per batch', async () => {
+    const b = await startBox();
+    // This box's first batch starts at 3. Whatever it minted at 1 and 2 is gone.
+    expect((await pushRaw(b, [sealed(b, 3, uniquePhone())])).body.cursorSeq).toBe(0);
+
+    const [gap] = await gapsFor(b);
+    expect(gap?.detail).toMatchObject({
+      missing: 2,
+      missingBoxSeqs: [1, 2],
+      expectedBoxSeq: 1,
+      receivedBoxSeq: 3,
+    });
+
+    // Everything it sends afterwards stands above the same hole and says nothing
+    // new about it. One row, not one per push until somebody resets the store.
+    await pushRaw(b, [sealed(b, 4, uniquePhone())]);
+    await pushRaw(b, [sealed(b, 5, uniquePhone())]);
+    expect(await gapsFor(b)).toHaveLength(1);
+    expect(await cursorNow(b)).toBe(0);
+  });
+
+  /**
+   * The mark stalling at a genuine hole is correct and it is not silent.
+   *
+   * `sync.stale` cannot see this one: it reads the age of the oldest queued
+   * event, and a box whose facts are all being applied has nothing queued — the
+   * queue drains perfectly while the number everybody reads as "where the box
+   * has got to" stands still. `sync.cursor_stalled` compares the cursor with the
+   * ledger instead, so it sees the fault the draining hides.
+   */
+  it('shows a stalled cursor on Health, and stops showing it when the hole fills', async () => {
+    const b = await startBox();
+    expect((await pushRaw(b, [sealed(b, 2, uniquePhone())])).body.cursorSeq).toBe(0);
+
+    const condition = async () =>
+      (await fleetHealth({ db: ctx.db, operatorId: b.operatorId })).conditions.find(
+        (c) => c.key === `sync.cursor_stalled:${b.boxId}`,
+      );
+
+    const stalled = await condition();
+    expect(stalled?.active).toBe(true);
+    expect(stalled?.detail).toMatchObject({ cursorBehindBy: 1, cursorHoleAt: 1 });
+    expect(stalled?.summary).toContain('never arrived');
+
+    expect((await pushRaw(b, [sealed(b, 1, uniquePhone())])).body.cursorSeq).toBe(2);
+    expect((await condition())?.active).toBe(false);
   });
 });

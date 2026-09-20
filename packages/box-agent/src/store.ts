@@ -270,10 +270,17 @@ export interface BoxStore {
   /**
    * The compare-and-set the whole design rests on. Returns the new document
    * when it won and `null` when the row had moved on — which is `409 STALE`.
+   *
+   * `advanceSequence: false` writes the document without moving the sequence.
+   * The caller is still fenced on the sequence it read, so it cannot overwrite a
+   * change it has not seen; what it does not do is invalidate what everybody
+   * else read. That is for the intents a screen holding no lease may send — see
+   * `applyIntent` — and it is the same move `applyLease` makes for the
+   * 15-second renewal.
    */
   applySession(
     stationId: string,
-    expect: { sequence: number; leaseId: string | null },
+    expect: { sequence: number; leaseId: string | null; advanceSequence?: boolean },
     write: SessionWrite,
     now: string,
   ): Promise<StationSessionDocument | null>;

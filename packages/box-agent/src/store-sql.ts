@@ -553,12 +553,15 @@ export class SqlBoxStore implements BoxStore {
 
   async applySession(
     stationId: string,
-    expect: { sequence: number; leaseId: string | null },
+    expect: { sequence: number; leaseId: string | null; advanceSequence?: boolean },
     write: SessionWrite,
     now: string,
   ): Promise<StationSessionDocument | null> {
-    const sets: string[] = ['sequence = sequence + 1', 'updated_at = ?', 'last_intent_at = ?'];
+    const sets: string[] = ['updated_at = ?', 'last_intent_at = ?'];
     const params: unknown[] = [now, now];
+    // Default true: every caller that does not say otherwise is a writer that
+    // holds the station, and the sequence is what fences the next one.
+    if (expect.advanceSequence !== false) sets.unshift('sequence = sequence + 1');
 
     // Built from the keys actually present, so "set the cart to null" and
     // "leave the cart alone" stay two different requests. A COALESCE would

@@ -309,9 +309,12 @@ export interface StationSessionDocument {
   boxId: string;
   schemaVersion: number;
   /**
-   * Stamped by the box on every change and never reused. Two tabs on one
-   * station showing the same number is the acceptance criterion; an intent
-   * quoting an older one is stale.
+   * The fence around the station's writer: stamped by the box, never reused,
+   * and moved by every change made by whoever is HOLDING the station. Two tabs
+   * on one station showing the same number is the acceptance criterion; an
+   * intent quoting an older one is stale. The lease renewal and an intent sent
+   * with no lease change the document without moving it — see
+   * `StationSessionDocumentSchema` in `@oto/shared`.
    */
   sequence: number;
   stage: StationSessionStage;

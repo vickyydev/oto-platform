@@ -662,6 +662,31 @@ export class StationSessionManager {
     });
     if (!outcome.ok) return refuse(outcome.refusal, outcome.message, document);
 
+    /**
+     * A lease-free intent may write only the fields that belong to the screen
+     * sending it.
+     *
+     * `requiresLease: false` is for the customer display: the language toggle
+     * and the answer to the prompt the till has just put up. Both are the
+     * visitor's own side of the conversation, and neither is something the till
+     * is holding the station in order to do. The rule is enforced on the WRITE
+     * rather than trusted to the spec, because the next lease-free intent
+     * somebody adds will be written by reading these two — and a lease-free
+     * intent that could set the cart would be a second till operating the sale.
+     */
+    if (!spec.requiresLease) {
+      const reached = Object.keys(outcome.write).filter(
+        (key) => !LEASE_FREE_FIELDS.includes(key as keyof SessionWrite),
+      );
+      if (reached.length > 0) {
+        return refuse(
+          'not_permitted',
+          `${intent.type} may not change ${reached.join(', ')} without holding the station.`,
+          document,
+        );
+      }
+    }
+
     const next = await this.store.applySession(
       stationId,
       {
@@ -670,6 +695,18 @@ export class StationSessionManager {
         // lease, so requiring one would make the display unable to answer the
         // prompt the till just put on it.
         leaseId: spec.requiresLease ? (intent.leaseId ?? null) : null,
+        /**
+         * **And it may not move the sequence the holder is fenced against.**
+         *
+         * The display and a second till both send these with no lease, so
+         * bumping the sequence for them handed any screen that can reach the
+         * station a way to make the holder's next intent `409 STALE`: toggle the
+         * language, the number moves, and the till working the sale is told the
+         * session moved to another till. It is fenced on the sequence it read —
+         * so it still cannot overwrite a change it has not seen — and it leaves
+         * the number where it was, the way the lease renewal does.
+         */
+        advanceSequence: spec.requiresLease,
       },
       { ...outcome.write, lastActionId: intent.actionId ?? null },
       nowIso,
@@ -816,6 +853,13 @@ function redactIntentPayload(intent: StationIntent): Record<string, unknown> {
  */
 const TILL_ONLY: readonly StationEventSource[] = ['till', 'kiosk'];
 const DISPLAY_AND_TILL: readonly StationEventSource[] = ['till', 'display', 'kiosk', 'booth'];
+
+/**
+ * The fields an intent sent with no lease may write — the visitor's own side of
+ * the screen and nothing else. Enforced in `applyIntent`, which is where the
+ * reasoning for it is.
+ */
+const LEASE_FREE_FIELDS: ReadonlyArray<keyof SessionWrite> = ['language', 'prompt'];
 
 function ok(write: SessionWrite): IntentOutcome {
   return { ok: true, write };

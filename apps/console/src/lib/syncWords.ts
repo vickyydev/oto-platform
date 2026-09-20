@@ -198,8 +198,8 @@ const ANOMALIES: Record<SyncAnomalyKind, AnomalyWords> = {
     what: 'Every event in it was already filed, so nothing was written a second time. This is what a retry looks like from the cloud, and it is the proof the ledger is doing its job.',
   },
   sequence_gap: {
-    label: 'A gap in the sequence, since closed',
-    what: 'Events from this box arrived out of order and the missing one turned up afterwards. Everything is filed.',
+    label: 'A journal position that never arrived',
+    what: 'This box sent an event from beyond a position nothing has ever reached us for, so the numbering skipped. The event itself is filed; the row names the positions that are missing. Recorded once, when the skip first showed — if they arrive later the box’s sync cursor catches up on its own.',
   },
   merge: {
     label: 'The same person entered at two tills',
