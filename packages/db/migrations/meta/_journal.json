@@ -43,6 +43,13 @@
       "when": 1789849494252,
       "tag": "0005_schema_move",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789875183524,
+      "tag": "0006_handoff_token",
+      "breakpoints": true
     }
   ]
 }

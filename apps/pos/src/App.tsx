@@ -26,6 +26,7 @@ import { MobileShell } from "@/components/mobile/MobileShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStaffTheme } from "@/lib/themePref";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -50,12 +51,23 @@ function Router() {
   );
 }
 
-// Gate the entire POS behind operator login: locked until a face scan succeeds.
+// Gate the entire POS behind an operator session: phone + password here, or a
+// hand-off from the suite launcher (S2-02).
 // On narrow phone viewports (< 768 px) the MobileShell is rendered in place of
 // the standard iPad Router — same provider tree, additive only.
 function AuthGate() {
-  const { operator, locked } = useOperator();
+  const { operator, locked, sessionResolved } = useOperator();
   const isMobile = useIsMobile();
+  // Until the resume (and any launcher hand-off) has answered, the till knows
+  // nothing: showing the sign-in form here would prompt an operator who has
+  // just signed in next door, and flash it on every reload.
+  if (!sessionResolved) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground/50">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    );
+  }
   // Signed out → sign in. Signed in but locked → unlock the same session
   // with the password (S2-01a); the shift is not ended by inactivity.
   if (!operator || locked) return <LockScreen />;

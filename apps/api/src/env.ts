@@ -2,6 +2,7 @@ import { config as loadDotenv } from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
+import { parseAppOrigins, parseHandoffKeys } from './services/handoff';
 
 // .env lives at the repository root; entrypoints may run from any package cwd.
 loadDotenv({ path: join(dirname(fileURLToPath(import.meta.url)), '../../../.env'), quiet: true });
@@ -49,6 +50,53 @@ const EnvSchema = z.object({
   RATE_LIMIT_CODE_MAX: z.coerce.number().int().default(5),
   RATE_LIMIT_CODE_WINDOW_SECONDS: z.coerce.number().int().default(900),
   IDEMPOTENCY_TTL_HOURS: z.coerce.number().default(24),
+  /**
+   * The suite hand-off signing keyring (S2-02): comma-separated
+   * `<kid>:<secret>` entries, **newest first** — the first signs, the rest
+   * still verify. Rotation is the same expand/contract as a migration:
+   * prepend the new key, deploy, and drop the old entry once nothing alive
+   * can still be carrying it (one token lifetime).
+   *
+   * Empty means the launcher hand-off is unavailable and both routes answer
+   * 503. That is deliberate: a key minted at boot would differ between
+   * instances and between restarts, and a key nobody chose is a key nobody
+   * can rotate.
+   */
+  HANDOFF_SIGNING_KEY: z
+    .string()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (!value) return;
+      try {
+        parseHandoffKeys(value);
+      } catch (err) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `HANDOFF_SIGNING_KEY: ${(err as Error).message}` });
+      }
+    }),
+  /**
+   * Where each app lives, as `<app>=<origin>` pairs. The exchange compares
+   * the request's `Origin` with the one recorded when the token was signed,
+   * so a token for the till cannot be spent on the console. Each origin here
+   * must also appear in `ALLOWED_ORIGINS`, or the write is refused before it
+   * reaches the route.
+   */
+  HANDOFF_APP_ORIGINS: z
+    .string()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (!value) return;
+      try {
+        parseAppOrigins(value);
+      } catch (err) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `HANDOFF_APP_ORIGINS: ${(err as Error).message}` });
+      }
+    }),
+  /**
+   * How long a hand-off lives. Long enough to carry a browser from one origin
+   * to another, short enough that a token left in someone's history is worth
+   * nothing by the time it is read.
+   */
+  HANDOFF_TOKEN_TTL_S: z.coerce.number().int().min(5).max(600).default(60),
   /**
    * Staging opt-in for the destructive operational controls — today the demo
    * reset (S2-01c). Deliberately its own flag rather than a NODE_ENV test:
@@ -243,6 +291,12 @@ export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
   if (raw.NODE_ENV === 'test') {
     if (overrides.SMS_ADAPTER === undefined) raw.SMS_ADAPTER = 'console';
     if (overrides.DEPLOY_ENV === undefined) raw.DEPLOY_ENV = 'local';
+    // Same reason, for the hand-off keyring (S2-02): a real signing key in a
+    // developer's `.env` would mint tokens a test then treats as evidence,
+    // and a half-written one would stop every test building an app at all.
+    // The suite supplies its own where it needs one.
+    if (overrides.HANDOFF_SIGNING_KEY === undefined) raw.HANDOFF_SIGNING_KEY = '';
+    if (overrides.HANDOFF_APP_ORIGINS === undefined) raw.HANDOFF_APP_ORIGINS = '';
   }
   const env = EnvSchema.parse(raw);
   assertProductionSafe(env);

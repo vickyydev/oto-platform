@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useOperator } from '@/auth/OperatorContext';
 import { Button } from '@/components/ui/button';
@@ -6,13 +6,12 @@ import { PhoneInput } from '@/components/shared/PhoneInput';
 import { ApiError } from '@/api/client';
 import { authApi } from '@/api/platform';
 import {
-  ScanFace,
   Lock,
-  Camera,
   Loader2,
   Smartphone,
   Settings,
   Boxes,
+  LayoutGrid,
   KeyRound,
   Phone as PhoneIcon,
   ShieldCheck,
@@ -22,10 +21,31 @@ import {
 type Mode = 'signin' | 'setup' | 'reset';
 
 /**
- * Lock screen — prototype design preserved. "Scan my face" stays as the
- * placeholder for later face auth (CLAUDE.md §6); beneath it sits the real
- * phone + password sign-in (SCRUM-19), with links into first-time setup
- * (SCRUM-20) and password recovery (SCRUM-23) in the same visual style.
+ * The suite launcher this POS was opened from, when it is deployed behind one
+ * (S2-02). Read at build time — a static site has no server to read it at
+ * runtime. A half-set value (a bare hostname, a newline pasted into a
+ * dashboard field) leaves the link out rather than putting a dead one on the
+ * lock screen.
+ */
+function launcherOrigin(): string | undefined {
+  const raw = (import.meta.env.VITE_LAUNCHER_URL as string | undefined)?.trim();
+  if (!raw) return undefined;
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.origin : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const LAUNCHER_URL = launcherOrigin();
+
+/**
+ * Lock screen — prototype design preserved, with phone + password sign-in as
+ * its one way in (SCRUM-19) and links into first-time setup (SCRUM-20) and
+ * password recovery (SCRUM-23) in the same visual style. The prototype's
+ * "Scan my face" placeholder is gone: PROJECT_CONTEXT §13 bans biometrics, so
+ * there is nothing behind it to ship.
  *
  * `adminMode` renders the same form as the ADMIN CONSOLE sign-in wall
  * (/admin): distinct title + restricted-area chip so staff can tell it apart
@@ -33,7 +53,7 @@ type Mode = 'signin' | 'setup' | 'reset';
  * temp module links.
  */
 export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
-  const { signIn, locked, operator, unlock, logout } = useOperator();
+  const { signIn, locked, operator, unlock, logout, handoffError } = useOperator();
   const [, navigate] = useLocation();
 
   const [mode, setMode] = useState<Mode>('signin');
@@ -44,8 +64,9 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [faceHint, setFaceHint] = useState(false);
-  const afterSignIn = useRef<string | null>(null);
+  // Where signing in should land, when the operator asked for a module rather
+  // than the till. Kept in state so the screen can say so before they type.
+  const [afterSignIn, setAfterSignIn] = useState<string | null>(null);
 
   useEffect(() => {
     setError(null);
@@ -61,9 +82,9 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
     setError(null);
     try {
       await signIn(phone, password);
-      if (afterSignIn.current) {
-        navigate(afterSignIn.current);
-        afterSignIn.current = null;
+      if (afterSignIn) {
+        navigate(afterSignIn);
+        setAfterSignIn(null);
       }
     } catch (err) {
       if (err instanceof ApiError && err.code === 'SETUP_REQUIRED') {
@@ -107,12 +128,6 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
     } finally {
       setBusy(false);
     }
-  };
-
-  const showFaceHint = (destination?: string) => {
-    afterSignIn.current = destination ?? null;
-    setFaceHint(true);
-    window.setTimeout(() => setFaceHint(false), 2600);
   };
 
   /**
@@ -194,7 +209,7 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
     <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-background text-foreground px-6 overflow-y-auto">
       <div className="w-full max-w-md flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-500 py-8">
         <div className="relative w-24 h-24 rounded-[2rem] bg-primary flex items-center justify-center text-primary-foreground mb-6 shadow-2xl shadow-primary/30">
-          {adminMode ? <Settings className="w-12 h-12" /> : <ScanFace className="w-12 h-12" />}
+          {adminMode ? <Settings className="w-12 h-12" /> : <KeyRound className="w-12 h-12" />}
         </div>
 
         <h1 className="text-4xl font-black tracking-tight mb-2">
@@ -216,27 +231,19 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
               : 'Reset your password.'}
         </p>
 
-        {/* Face auth placeholder — real face sign-in ships with the branch agent. */}
-        <Button
-          size="lg"
-          variant="secondary"
-          className="h-14 px-10 text-lg gap-3 rounded-2xl w-full"
-          onClick={() => showFaceHint()}
-        >
-          <Camera className="w-6 h-6" />
-          Scan my face
-        </Button>
-        {faceHint && (
-          <p className="mt-2 text-sm text-foreground/50 animate-in fade-in">
-            Face sign-in is coming soon — use your phone and password below.
+        {/* A refused hand-off from the launcher: why this screen appeared at
+            all, and whether signing in again is enough (S2-02). */}
+        {handoffError && (
+          <p className="mb-6 w-full rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-left">
+            {handoffError}
           </p>
         )}
 
-        <div className="flex items-center gap-3 w-full my-6 text-foreground/30 text-xs font-semibold">
-          <span className="flex-1 h-px bg-foreground/10" />
-          OR
-          <span className="flex-1 h-px bg-foreground/10" />
-        </div>
+        {afterSignIn === '/stock' && mode === 'signin' && (
+          <p className="mb-6 w-full rounded-2xl border border-dashed border-foreground/20 px-4 py-3 text-sm text-foreground/60 text-left">
+            Signing in here opens the stock module.
+          </p>
+        )}
 
         {mode === 'signin' && (
           <form onSubmit={doSignIn} className="w-full flex flex-col gap-3 text-left">
@@ -354,10 +361,22 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
             Back to POS sign-in
           </Link>
         ) : (
-          <>
+          <div className="mt-8 w-full flex flex-col gap-3">
+            {/* The launcher is another origin, so this leaves the app rather
+                than routing inside it. Absent when the POS runs on its own. */}
+            {LAUNCHER_URL && (
+              <a
+                href={LAUNCHER_URL}
+                className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Back to launcher
+              </a>
+            )}
+
             <Link
               href="/book"
-              className="mt-8 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
+              className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
             >
               <Smartphone className="w-4 h-4" />
               Open customer booking site (temp)
@@ -367,23 +386,26 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
                 it asks for sign-in and admits manager-role operators only. */}
             <Link
               href="/admin"
-              className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
+              className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
             >
               <Settings className="w-4 h-4" />
               Open admin console (manager sign-in)
             </Link>
 
             {/* Staff stock module — reached from here instead of the POS bottom nav.
-                Signing in below lands on /stock. */}
+                Signing in above lands on /stock. */}
             <button
               type="button"
-              onClick={() => showFaceHint('/stock')}
-              className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
+              onClick={() => {
+                setAfterSignIn('/stock');
+                setMode('signin');
+              }}
+              className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-2xl border border-dashed border-foreground/20 text-foreground/60 hover:text-foreground hover:border-foreground/40 transition-colors text-sm font-medium"
             >
               <Boxes className="w-4 h-4" />
               Open stock module (temp)
             </button>
-          </>
+          </div>
         )}
 
         <div className="flex items-center gap-2 mt-10 text-foreground/30 text-sm">

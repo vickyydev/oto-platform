@@ -24,6 +24,14 @@ export const authApi = {
   signIn: (phone: string, password: string) =>
     api.post<{ accountId: string; mustChangePassword: boolean }>('/auth/sign-in', { phone, password }),
   signOut: () => api.post<{ ok: true }>('/auth/sign-out'),
+  /**
+   * Spend a launcher hand-off token for this origin's own session cookie
+   * (S2-02). The token is single-use, short-lived and bound to this origin,
+   * so one copied out of the address bar buys nothing anywhere else. The
+   * refusal reason arrives as the error code (and `details.reason`), because
+   * "expired" and "issued for another app" call for different actions.
+   */
+  handoffExchange: (token: string) => api.post<{ ok: true }>('/auth/handoff/exchange', { token }),
   /** Inactivity lock: the session survives, business routes refuse (S2-01a). */
   lock: () => api.post<{ locked: true }>('/auth/lock'),
   unlock: (password: string) => api.post<{ locked: false }>('/auth/unlock', { password }),

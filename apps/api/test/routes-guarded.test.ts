@@ -56,6 +56,10 @@ describe('route guards (S2-01b)', () => {
       'GET /public/branches/:code/catalog',
       'GET /public/member-tier',
       'GET /ready',
+      // S2-02: the app's origin has no session yet — that is the point. The
+      // token is the credential, fenced by its signature, its one-minute life
+      // and its single-use jti.
+      'POST /auth/handoff/exchange',
       'POST /auth/password-reset/complete',
       'POST /auth/password-reset/request',
       'POST /auth/setup/complete',

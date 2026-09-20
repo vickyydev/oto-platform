@@ -245,6 +245,81 @@ export const session = core.table(
   ],
 );
 
+/**
+ * The suite's apps, as a hand-off can name them (S2-02). Each one has a
+ * matching `app:<name>:access` permission in `@oto/shared`, and the two lists
+ * are tied together at compile time in `services/handoff.ts`.
+ */
+export const HANDOFF_AUDIENCES = ['pos', 'console', 'oto_app', 'radar', 'booth', 'inbox'] as const;
+export type HandoffAudience = (typeof HANDOFF_AUDIENCES)[number];
+
+/**
+ * One platform session, several app origins (S2-02).
+ *
+ * A cookie cannot be shared across `*.onrender.com` — it is on the public
+ * suffix list — and would not reach the booking site's own domain anyway. So
+ * the launcher asks for a short-lived signed token aimed at ONE app, the
+ * browser carries it there in the URL fragment, and the app posts it back for
+ * a cookie of its own bound to the same session row.
+ *
+ * This table is the token's `jti` store, and it exists for one reason: a
+ * signature proves a token was minted by us, not that it has never been used.
+ * The row is claimed in a single `update … where jti = $1 and consumed_at is
+ * null`, so two tabs racing the same fragment cannot both win — the same
+ * lesson as the idempotency claim.
+ *
+ * The token itself is NEVER stored: only its jti, which is useless without
+ * the signature.
+ */
+export const handoffToken = core.table(
+  'handoff_token',
+  {
+    /** The token's `jti` claim. UUIDv7, minted with the token. */
+    jti: uuid('jti').primaryKey(),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => session.id, { onDelete: 'cascade' }),
+    /** Denormalised from the session so a rejection can be attributed without a join. */
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    audience: text('audience').$type<HandoffAudience>().notNull(),
+    /**
+     * The origin this token was minted for, resolved from configuration at
+     * issue time. The exchange compares the request's `Origin` with THIS,
+     * not with whatever the environment says a minute later: a token means
+     * what it meant when it was signed.
+     */
+    audienceOrigin: text('audience_origin').notNull(),
+    /** Which signing key sealed the row below, so a key can be rotated. */
+    keyId: text('key_id').notNull(),
+    /**
+     * The session's own opaque cookie token, sealed (AES-256-GCM under a key
+     * derived from the signing secret, with the jti as associated data) so
+     * that the exchange can hand the app a cookie bound to the SAME session
+     * row — which is what makes one sign-out end every app at once.
+     *
+     * The database alone cannot open it, it lives at most one token lifetime,
+     * and it is wiped the moment the token is consumed. Sessions are still
+     * stored as a hash and nothing here changes that.
+     */
+    sessionSecret: text('session_secret'),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+    consumedAt: timestamp('consumed_at', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('handoff_token_session_idx').on(t.sessionId),
+    index('handoff_token_account_idx').on(t.accountId),
+    /** The housekeeping sweep, and the expiry guard on the claim itself. */
+    index('handoff_token_expires_idx').on(t.expiresAt),
+    check(
+      'handoff_token_audience_check',
+      sql`${t.audience} in ('pos','console','oto_app','radar','booth','inbox')`,
+    ),
+  ],
+);
+
 export const VERIFICATION_PURPOSES = ['setup', 'password_reset'] as const;
 export type VerificationPurpose = (typeof VERIFICATION_PURPOSES)[number];
 
