@@ -22,10 +22,11 @@
 #      number, and either an API key or the account auth token. Verification
 #      and reset codes go to a phone on every deployment, staging included, and
 #      the api refuses to start on a deployment that has no way to send one.
-#   3. ALLOWED_ORIGINS must carry BOTH static sites' origins once Render has
-#      issued them — the POS and the launcher. Every write from a site left
-#      out is refused with ORIGIN_NOT_ALLOWED, and each site writes under its
-#      own origin, so listing one does not cover the other.
+#   3. ALLOWED_ORIGINS must carry every origin that writes, once Render has
+#      issued them — the POS, the launcher, the console and the OTO App. A
+#      write from an origin left out is refused with ORIGIN_NOT_ALLOWED, and
+#      each app writes under its own origin, so listing one does not cover
+#      another. Nothing fails at deploy time; it fails when somebody uses it.
 #   4. HANDOFF_SIGNING_KEY must carry a key the owner chose, or the two
 #      hand-off routes answer 503 and a tile on the launcher cannot open the
 #      app it names. Unlike the three above this does not stop the api
@@ -276,13 +277,20 @@ services:
         # apps/api/src/app.ts does not apply and every origin must be listed
         # here explicitly.
         #
-        # BOTH static sites belong here, comma-separated: the POS and the
-        # launcher. The launcher is not merely a link page — it signs in, mints
-        # hand-offs and runs its own account page, so its writes carry its own
-        # Origin and are refused ORIGIN_NOT_ALLOWED if only the POS is listed.
-        # Scheme and host, no trailing slash, e.g.
-        # https://oto-pos-staging.onrender.com,https://oto-launcher-staging.onrender.com
-        # The console site joins them in S2-03.
+        # EVERY origin that writes belongs here, comma-separated. The launcher
+        # is not merely a link page — it signs in, mints hand-offs and runs its
+        # own account page — and the OTO App exchanges its hand-off from its
+        # own origin, server to server, which the origin check sees exactly as
+        # it sees a browser. Scheme and host, no trailing slash:
+        #
+        #   https://oto-pos-staging.onrender.com,
+        #   https://oto-launcher-staging.onrender.com,
+        #   https://oto-console-staging.onrender.com,
+        #   https://oto-app-staging.onrender.com
+        #
+        # (one line, no spaces). Leaving one out does not fail a deploy — it
+        # fails that app's writes at runtime with ORIGIN_NOT_ALLOWED, which is
+        # why this list is worth re-reading whenever a service is added.
         sync: false
 
       # -- suite hand-off (S2-02) -------------------------------------------
@@ -326,16 +334,13 @@ services:
         # suffixed hostname. Comma-separated as the console and the lifted
         # apps land.
         #
-        # THE OTO APP IS NOT LISTED YET. Its service is declared at the foot of
-        # this file and it boots, but the middleware that exchanges a hand-off
-        # token for one of its sessions is the other half of S2-17a and is not
-        # in place. Naming it here now would mint tokens for an app that cannot
-        # spend them, and the tile would open a second sign-in page — the exact
-        # thing the ticket's acceptance criteria rule out. When the middleware
-        # lands, this becomes:
-        #   pos=…,oto_app=https://oto-app-staging.onrender.com
-        # and that origin has to join ALLOWED_ORIGINS above at the same time.
-        value: pos=https://oto-pos-staging.onrender.com
+        # The OTO App's middleware is now in place, so it is listed. Three
+        # things move together or none of them work: this entry, that origin in
+        # ALLOWED_ORIGINS above (the exchange is a POST, and the origin check
+        # refuses an unlisted one before the route runs), and VITE_OTO_APP_URL
+        # on the launcher. Change one and the tile opens onto a refusal.
+        value: >-
+          pos=https://oto-pos-staging.onrender.com,console=https://oto-console-staging.onrender.com,oto_app=https://oto-app-staging.onrender.com
       - key: HANDOFF_TOKEN_TTL_S
         # The seconds a browser needs to carry a token from one origin to the
         # next, not minutes: long enough for a redirect, short enough that a
@@ -596,13 +601,48 @@ services:
       # bundle, the other decides whether a credential is honoured.
       - key: VITE_POS_URL
         value: https://oto-pos-staging.onrender.com
-      # The OTO App tile stays "coming soon" for one more step. Its service is
-      # declared at the foot of this file and reachable, but until the hand-off
-      # middleware is in it the tile would hand someone a second sign-in page.
-      # Uncomment together with the oto_app entry in HANDOFF_APP_ORIGINS above
-      # and that origin in ALLOWED_ORIGINS.
-      # - key: VITE_OTO_APP_URL
-      #   value: https://oto-app-staging.onrender.com
+      - key: VITE_CONSOLE_URL
+        value: https://oto-console-staging.onrender.com
+      # Build-time, baked into the bundle, so changing it is a rebuild of the
+      # launcher and not a restart. It travels with the oto_app entry in
+      # HANDOFF_APP_ORIGINS and that origin in ALLOWED_ORIGINS.
+      - key: VITE_OTO_APP_URL
+        value: https://oto-app-staging.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # Console — operations screens: activity, failures, health, integrations
+  # (S2-03). Its own origin rather than a route inside the POS, because it is
+  # read by whoever is on call rather than by whoever is at the till, and the
+  # two want different sign-ins on different devices.
+  #
+  # It was created from the dashboard during S2-03 and is declared here after
+  # the fact. That gap is the reason for declaring it: a blueprint that does
+  # not describe the whole deployment is one somebody applies and silently
+  # loses a service by.
+  - type: web
+    name: oto-console-staging
+    runtime: static
+    branch: main
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @oto/console build
+    staticPublishPath: apps/console/dist/public
+    autoDeployTrigger: checksPass
+    routes:
+      # The same /api rewrite the POS and launcher use, so the session cookie
+      # is same-origin and no CORS is involved. Must stay ABOVE the SPA rule.
+      - type: rewrite
+        source: /api/*
+        destination: https://oto-api-staging.onrender.com/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      # Where "Back to the suite" goes, and where an account owing a password
+      # change is sent — the console has no front door of its own for that.
+      - key: VITE_LAUNCHER_URL
+        value: https://oto-launcher-staging.onrender.com
 
   # ---------------------------------------------------------------------------
   # OTO App — the park's HR and daily-operations system, lifted (S2-17a).
@@ -788,6 +828,27 @@ services:
         # and production can share a bucket without sharing files. Keep it
         # different from production's.
         value: staging
+
+      # -- signing on from the launcher (S2-17a) -----------------------------
+      # Both are needed for the hand-off. Without them the app still boots and
+      # logs a warning, and the hand-off endpoint answers 503 naming them —
+      # which is the right failure: a tile that says "not configured" beats one
+      # that silently drops somebody on a sign-in page.
+      - key: PLATFORM_API_URL
+        # The api this app exchanges a hand-off token with, server to server.
+        # No trailing slash.
+        value: https://oto-api-staging.onrender.com
+      - key: OTOAPP_PUBLIC_ORIGIN
+        # This app's own origin, exactly as the platform signed it into the
+        # token. The exchange sends it as the Origin header and the platform
+        # compares it against its HANDOFF_APP_ORIGINS entry for oto_app, so a
+        # mismatch here is refused rather than ignored.
+        value: https://oto-app-staging.onrender.com
+      # OTOAPP_LEGACY_LOGIN is deliberately absent. The old Passport form is
+      # off unless it is set to `true`, and it exists only for the cutover
+      # rehearsal. Note for whoever runs the app's Playwright suite: its
+      # helpers drive that form, so it needs this set on whatever server it
+      # runs against.
 
       # -- features off on staging ------------------------------------------
       - key: USE_AWS_REKOGNITION
