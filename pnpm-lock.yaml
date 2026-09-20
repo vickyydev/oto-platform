@@ -468,6 +468,9 @@ importers:
 
   packages/box-agent:
     dependencies:
+      '@oto/shared':
+        specifier: workspace:*
+        version: link:../shared
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -514,6 +517,21 @@ importers:
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
+
+  packages/print:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.6
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.13
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@25.9.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.0)
 
   packages/shared:
     dependencies:

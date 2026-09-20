@@ -16,7 +16,8 @@
     "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types --import ./harness.mjs --test"
   },
   "dependencies": {
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@oto/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",
