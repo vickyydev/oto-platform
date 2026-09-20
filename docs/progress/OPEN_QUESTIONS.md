@@ -74,7 +74,16 @@ Console; it is not fine at 9pm on a Saturday.
 - **"Expire hand-off now"** (S2-02 QA step 3): the test control is not built.
   Expiry is covered by an integration test but not by a button. It belongs
   with the other staging-only controls behind `OPS_TEST_CONTROLS` in S2-03.
-- `purgeExpiredIdempotencyKeys` and `purgeExpiredHandoffTokens` are written
-  and exported but nothing schedules them yet — S2-03's job runner.
+- ~~The two sweeps are unscheduled~~ — **done in S2-03.** The job runner
+  schedules `purgeExpiredIdempotencyKeys` and `purgeExpiredHandoffTokens`,
+  and the watchdog is live on the deployment.
+- **The Console's Health page cannot list the job register yet.** The watchdog
+  is running and `/ready` proves it, but the admin route that lists the
+  register is not wired, so that panel shows an honest empty state. It belongs
+  with the remaining admin routes for ops-runs and alerts.
+- Still outstanding from S2-03, all additive and none of it blocking the next
+  ticket: OpenTelemetry traces and the OTLP bridge, `POST /telemetry/client`
+  for browser errors, the `audit_log` classification columns with a BRIN
+  index, and a scheduled ping of `/ready` from outside the platform.
 - ARCHITECTURE.md sections 3 and 6 still describe the pre-2026-09-19
   repository layout.
