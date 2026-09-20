@@ -2,28 +2,27 @@
 
 ## Status
 
-- Current checkpoint: **S2-03 is complete and deployed.** Four services are
-  live in the Render `staging` environment — api, POS, launcher and the
-  Console — and the Console's four pages (Activity, Failures, Health,
-  Integrations) read real rows from the deployment: the job register with
-  each job's last run and expected interval, failed runs grouped by
-  fingerprint, five integration states each derived from something real, and
-  the audit log. 239 API tests green. S2-01a/b/c and S2-02 are done before
-  it. See `DEPLOYMENT_STAGING.md`. Next: **S2-17a**, the OTO App on the
-  central database — the last ticket before CP1.
+- Current checkpoint: **CP1 is reached — S2-01a/b/c, S2-02, S2-03 and S2-17a
+  are all built, deployed and evidenced.** Five services are live in the
+  Render `staging` environment: api, POS, launcher, Console and the lifted
+  OTO App. One sign-in on the launcher opens the till, the Console *and* the
+  OTO App with no second password, and all three read one database. 257 API
+  tests green. See `DEPLOYMENT_STAGING.md` for what is running and
+  `OPEN_QUESTIONS.md` for what needs the owner. Next: **S2-04**, stations,
+  boxes and devices.
 
 - Jira: sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of project
   SCRUM holds the 24 stories under four epics, with 16 sub-tasks; the
   pre-existing 177 issues were labelled rather than deleted. Keys and the
   full account of what was done: `SPRINT_2_JIRA_MAP.md`.
-- Last completed step: S2-03 (SCRUM-190) — the telemetry package and its one
-  redactor, request and operation logging, `ops_run` with fingerprint
-  grouping, alerts with dedupe and flap suppression, the job runner and
-  watchdog, the observability routes and the Console's four pages.
-- Next step: **S2-17a** (SCRUM-192), the OTO App on the central database —
-  `otoapp` schema, the hand-off sign-on in place of its own login, and user
-  provisioning from the platform. Its source is now a working copy at
-  `apps/oto-app/` (see `OPEN_QUESTIONS.md` §0). CP1 follows it.
+- Last completed step: S2-17a (SCRUM-192) — the `otoapp` schema on the
+  central database, the launcher hand-off in place of the app's own login,
+  provisioning from the platform, and the app deployed as its own Docker
+  service. Its source is a working copy at `apps/oto-app/` (see
+  `OPEN_QUESTIONS.md` §0).
+- Next step: **S2-04** (SCRUM-195), stations, boxes and devices — the
+  Console's Devices area, box registration and the station model the money
+  path and the booth both sit on.
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
@@ -171,8 +170,8 @@ AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
    old issues labelled and explained (`SPRINT_2_JIRA_MAP.md`).
 2. **Done 2026-09-20:** S2-01a (SCRUM-186) — see the ticket log.
 3. **Done 2026-09-20:** S2-01b (SCRUM-187), S2-01c (SCRUM-188), S2-02
-   (SCRUM-189) and S2-03 (SCRUM-190) — see the ticket log. **Next: S2-17a**
-   (SCRUM-192), then **CP1**. The ticket log below is the record, updated in
+   (SCRUM-189), S2-03 (SCRUM-190) and S2-17a (SCRUM-192) — see the ticket
+   log. **CP1 is reached.** Next: **S2-04** (SCRUM-195). The ticket log below is the record, updated in
    the same commit series as the code, and an evidence comment goes on each
    story or sub-task as its work merges. Status moves with the work — In
    Progress when it starts, Testing when it is committed and deployed; *Done*
@@ -607,6 +606,69 @@ columns with a BRIN index, and a scheduled ping of `/ready` from outside the
 platform. All additive; none blocks the next ticket. See `OPEN_QUESTIONS.md`
 for the two decisions this ticket surfaced (`job.fail` raises no
 `ops.failing`; an acknowledged alert does not say who took it).
+
+### S2-17a — The OTO App on the central database (SCRUM-192) — **done and deployed**
+
+**The lift, not a rewrite.** The app arrived as a 619 MB export; what came
+into `apps/oto-app/` is the source only, 17 MB, with the runtime output and
+the real uploads left behind. Two scripts were deliberately not copied:
+`post-merge.sh` ran `drizzle-kit push --force` on every merge and
+`db-reset.sh` drops the public schema. Against a database several apps now
+share, either one is a data-loss event with no migration to review, and the
+README says so where somebody would otherwise restore them from the export
+by reflex.
+
+**The migration history had drifted, and the number is the argument.** 184
+tables are declared in the TypeScript; the chain Drizzle would actually apply
+creates 112; fourteen `.sql` files sit in the folder unreferenced by the
+journal. That is what `push --force` leaves behind: the live database is
+right, the history is a partial record of how it got there. Replaying it into
+an empty database produces one the app cannot start on. So `0000_otoapp_
+baseline` is a single generated migration for a fresh database and the old
+chain is kept, unapplied, in `pre-platform/` for whoever needs to read how a
+table came to look the way it does. Faking the missing 53 tables into a
+history that never ran was the alternative.
+
+**Two guards that pay for themselves.** The migrator refuses if `otoapp` does
+not exist, and refuses any migration that qualifies a name with `public` —
+because a stray `public` copy of 184 tables would shadow every other app on
+the database. The app refuses to start unless `search_path` resolves to
+`otoapp`, set as a connection startup parameter rather than a `SET` on
+connect, which a query can win the race against. Measured: with no option at
+all the app writes to `public`, which is exactly the accident. **The first
+deploy hit the first guard** — the api had not yet run the migration that
+creates the schema — and stopped with the missing step named, rather than
+creating 184 tables in the wrong place.
+
+**One sign-on, and one way out.** The browser posts the fragment to the app's
+own origin, the server exchanges it with the platform, resolves its user
+strictly by `platform_user_id` — no fallback on email or name, which is how
+one person ends up inside another's record — and calls `req.login()`. Nothing
+downstream changed. Sign out on the launcher ends the app's session within
+ten seconds through a liveness check that fails *open* on anything but a
+clear 401, so a platform restart cannot sign the whole park out at once.
+
+**The gap that would have stopped the demo.** The provisioning route recorded
+the link and nothing wrote the app's own column, so the sign-on would have
+resolved nobody. The route now creates or stamps the app's user in the same
+transaction, through one seam file that says at the top why the boundary is a
+function call and not an HTTP one. The rollback is proved rather than
+asserted: the grant is fault-injected to fail after the app user is written.
+
+**Not done, and it needs the owner.** Which *branch* and which *operator* a
+person belongs to inside the OTO App. Its branches and operators are
+different records with different ids from the platform's and no
+correspondence exists, so writing ours into its fields would make a link that
+looks right and is not. Role is set from the platform; branch is still set
+inside the app. That mapping blocks nothing today and must be settled before
+S2-17b.
+
+**Also:** taking the app in turned `eslint .` red with 854 inherited errors,
+which — because every service deploys on `checksPass` — stopped the whole
+suite deploying, not just the new app. The app is excluded from the platform
+lint run and holds itself to its own; the one rule that must not be lost is
+enforced inside it by a byte-for-byte copy of the platform's redactor, with a
+CI step that fails if the copy drifts.
 
 ## Deviations recorded
 
