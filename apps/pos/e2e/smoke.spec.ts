@@ -33,7 +33,7 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
   await expect(page.getByText('Nong Ploy')).toBeVisible();
   await expect(page.getByText('Nong Tan')).toBeVisible();
   await page.getByRole('button', { name: /Confirm 2 children/ }).click();
-  await expect(page.getByText('Visit confirmed')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('Visit confirmed', { exact: true })).toBeVisible({ timeout: 15_000 });
 
   // Verified tier auto-applied from the member record.
   await expect(page.getByText('Thai · verified')).toBeVisible();
@@ -66,8 +66,8 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page }) 
   }
   await page.getByRole('button', { name: 'Find my membership' }).click();
 
-  await expect(page.getByText('New member?')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('New member?', { exact: true })).toBeVisible({ timeout: 15_000 });
   await page.getByPlaceholder('e.g. Mali').fill('Smoke Test');
   await page.getByRole('button', { name: 'Create member', exact: true }).click();
-  await expect(page.getByText('Member created')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('Member created', { exact: true })).toBeVisible({ timeout: 15_000 });
 });

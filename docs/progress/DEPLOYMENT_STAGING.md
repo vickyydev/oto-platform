@@ -22,15 +22,13 @@ environment sits beside staging later rather than colliding with it:
 | `oto-pos-staging` | static site | — | CDN |
 
 - POS: <https://oto-pos-staging.onrender.com> — **live**
-- API: <https://oto-api-staging.onrender.com> — built and migrated, **not yet
-  serving** (see "What is missing")
+- API: <https://oto-api-staging.onrender.com> — **live**
 
 ## What already works
 
-- **The POS is live** and serves its client routes; `/api/*` rewrites to the
-  api service, so the session cookie stays same-origin and the dev proxy and
-  the deployment are one code path. `/api/health` currently answers 502
-  because the api is not up — which is itself proof the rewrite reaches it.
+- **Both services are live.** The POS serves its client routes, and `/api/*`
+  rewrites to the api, so the session cookie stays same-origin and the dev
+  proxy and the deployment are one code path.
 - **Migrations and the seed ran against the real database.** The deploy log
   reads `migrations applied successfully`, then
   `Full seed (SEED_PROFILE=staging): platform rows plus the demo tenant`, then
@@ -46,38 +44,24 @@ environment sits beside staging later rather than colliding with it:
   Only services in this workspace can connect. To run a one-off `psql` or the
   S2-22 restore from a laptop, add that address temporarily and remove it.
 
-## What is missing — the SMS credentials
+## Verified against the live deployment
 
-The api builds, migrates and seeds, then refuses to start until it can
-actually send a text. That is the guard working, not a defect: a deployment
-that quietly printed verification codes into a hosted log stream would put a
-live credential where anyone with log access can read it, and would leave
-every person who tried to set up an account waiting for a text that never
-came.
+- `/health` 200 and `/ready` reports the database reachable.
+- Sign-in through the POS origin returns a session cookie marked
+  `HttpOnly; Secure; SameSite=Lax` — the rewrite keeps it same-origin.
+- The Sprint 1 membership check: `+66811111111` returns Mali with her tier
+  verification and both children.
+- A write carrying a foreign `Origin` is refused `ORIGIN_NOT_ALLOWED`.
+- A member id belonging to no operator of the caller answers **404**.
+- Both Playwright smoke flows pass against the two Render origins
+  (`SMOKE_BASE_URL=https://oto-pos-staging.onrender.com pnpm --filter @oto/pos
+  exec playwright test`): lock, sign in, membership lookup, child confirm,
+  lock, unlock, sign out; and the create-member path.
 
-Authentication is by **API key**, not the account's Auth Token — a key is
-revocable on its own, rotates without touching anything else on the account,
-and a Standard key cannot be used to create further keys.
-
-| Variable | Value |
-|---|---|
-| `TWILIO_ACCOUNT_SID` | the `AC…` from the console dashboard — names the account in the URL, it does not authenticate |
-| `TWILIO_API_KEY_SID` | the `SK…` shown when the key is created |
-| `TWILIO_API_KEY_SECRET` | the secret shown once, at creation, and never again |
-| `TWILIO_FROM` | the SMS-capable number in E.164, or a Messaging Service SID (`MG…`) |
-| `TWILIO_AUTH_TOKEN` | leave blank when a key is set |
-
-The api checks the shape of each at boot — a value that does not begin `AC`
-in the account variable, or `SK` in the key variable, is refused by name.
-Twilio's own answer to a swapped pair is a 401 at the first person who needs
-a code, days later, reading as a delivery problem.
-
-On a **trial** account, every phone in the walkthrough must first be added to
-Verified Caller IDs in the console: a trial account texts nobody else.
-
-Set them on `oto-api-staging`, turn its auto-deploy back on (`checksPass`)
-and deploy. Auto-deploy is **off** on that service meanwhile, so it does not
-retry and fail every time something merges.
+SMS authenticates with a Twilio **Standard API key** rather than the account
+auth token, so the credential this deployment uses is revoked and rotated on
+its own. The account is a trial one for now: it can only text numbers added
+to Verified Caller IDs in the Twilio console.
 
 ## Decisions taken at the first deploy
 

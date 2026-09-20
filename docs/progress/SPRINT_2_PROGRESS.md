@@ -2,23 +2,19 @@
 
 ## Status
 
-- Current checkpoint: **building. S2-01a (SCRUM-186) and S2-01b (SCRUM-187)
-  are both done** — 106 API tests + 22 shared tests green, typecheck and lint
-  clean, the schema verified against its snapshot from an empty database
-  migrated twice. Next: S2-01c (SCRUM-188), which needs the owner's Render
-  account.
+- Current checkpoint: **S2-01 is complete and deployed.** S2-01a, S2-01b and
+  S2-01c are all done; the POS and the api are live on Render with the
+  database migrated and seeded, and both Playwright smoke flows pass against
+  the two live origins. 165 API tests + 22 shared tests green. See
+  `DEPLOYMENT_STAGING.md`. Next: **S2-02**, the suite launcher.
+
 - Jira: sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of project
   SCRUM holds the 24 stories under four epics, with 16 sub-tasks; the
   pre-existing 177 issues were labelled rather than deleted. Keys and the
   full account of what was done: `SPRINT_2_JIRA_MAP.md`.
 - Last completed step: S2-01a — the role-assignment privilege hole, the lock
   model, the public-deploy fencing and the PII leaks (see the ticket log).
-- **S2-01c (SCRUM-188) is code-complete and waiting on two owner inputs:** a
-  Render API key in the gitignored `.env`, and an S3-compatible bucket
-  (Cloudflare R2 or similar — there is no MinIO on Render, and the api
-  refuses to boot on the demo keys). Everything else is written: the
-  blueprint, the CI deploy job, the staging profile, the demo reset.
-- Next step after the deploy: **S2-02** (SCRUM-189), the suite launcher.
+- Next step: **S2-02** (SCRUM-189), the suite launcher.
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
