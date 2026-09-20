@@ -76,6 +76,24 @@ worth knowing if it was meant to be the real one.
 
 **Meanwhile:** the variable is deliberately blank on the Render service.
 
+## 3b. WhatsApp delivery is built but parked, waiting on a real sender
+
+**Where it bites:** `scripts/sprint-report.mjs` composes the Sprint 2 report
+and delivers it through Twilio's WhatsApp channel, but nothing is sent until
+`TWILIO_WHATSAPP_FROM` and `REPORT_WHATSAPP_TO` carry real values. Parked by
+the owner on 2026-09-20 until Jim's Twilio details arrive, rather than
+standing up the sandbox and having to redo it.
+
+**Meanwhile:** email works and is live — Antonie Polfliet watches all 28
+sprint epics and stories, so every comment and every status move reaches him.
+The report also prints, so it can be pasted anywhere in the meantime.
+
+**Needed, when the real account lands:** a WhatsApp-enabled sender on it (a
+WhatsApp Business sender needs a Meta Business account and a few days of
+approval — worth starting before it is wanted), and the number the report
+goes to. Then this merges with question 4 below: one channel carries both the
+sprint report and the 9pm-Saturday operational alert.
+
 ## 4. Alert channel and recipients (plan decision 17)
 
 **Where it bites:** S2-03 builds alerting. It can deliver to a console, an
