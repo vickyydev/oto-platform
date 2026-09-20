@@ -1,7 +1,15 @@
 import { z } from 'zod';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
-import { OPS_KINDS, box as boxTable, branch as branchTable, syncQuarantine } from '@oto/db';
+import {
+  OPS_KINDS,
+  SYNC_ANOMALY_KINDS,
+  SYNC_QUARANTINE_REASONS,
+  SYNC_QUARANTINE_STATUSES,
+  box as boxTable,
+  branch as branchTable,
+  syncQuarantine,
+} from '@oto/db';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
@@ -20,6 +28,7 @@ import {
 } from '../services/sync';
 import {
   acknowledgeAlert,
+  anomalyPage,
   buildAlertChannels,
   deliverAlert,
   failureGroups,
@@ -249,17 +258,49 @@ export async function opsRoutes(app: App): Promise<void> {
       config: { permission: 'admin:health:read' },
       schema: {
         description:
-          'Events refused at sync, newest first — which box, which event, why, and what became of it. The payload itself is never returned.',
+          'Events refused at sync, newest first — which box, which event, why, and what became of it, with a keyset cursor and the count still open across the whole table. The payload itself is never returned.',
         querystring: z.object({
-          status: z.enum(['open', 'replayed', 'discarded']).optional(),
+          status: z.enum(SYNC_QUARANTINE_STATUSES).optional(),
+          reason: z.enum(SYNC_QUARANTINE_REASONS).optional(),
+          boxId: z.string().uuid().optional(),
+          cursor: z.string().max(200).optional(),
           limit: z.coerce.number().int().min(1).max(200).default(50),
         }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
-      const rows = await listQuarantine(app.db, { ...req.query, operatorId: auth.operatorId });
-      return { quarantine: rows };
+      return listQuarantine(app.db, { ...req.query, operatorId: auth.operatorId });
+    },
+  );
+
+  /**
+   * The other half of the tab: what WAS applied, with a caveat.
+   *
+   * Guarded by `admin:health:read` like every read here — whoever is on call
+   * reads it — and answering with ids, counts, kinds and times. A
+   * `sync_anomaly` is the cloud saying it had to make a judgement about a fact
+   * from the park; a merge is about a member's phone number existing at two
+   * counters, so what comes back names the two member ids and never the number.
+   */
+  app.get(
+    '/anomalies',
+    {
+      config: { permission: 'admin:health:read' },
+      schema: {
+        description:
+          'Events applied with something worth recording — a clock that was not trusted, a batch that arrived twice, a journal position that never came, a member created at two boxes and merged. Newest first, keyset-paginated; nothing here is waiting on anybody.',
+        querystring: z.object({
+          kind: z.enum(SYNC_ANOMALY_KINDS).optional(),
+          boxId: z.string().uuid().optional(),
+          cursor: z.string().max(200).optional(),
+          limit: z.coerce.number().int().min(1).max(200).default(50),
+        }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return anomalyPage(app.db, { ...req.query, operatorId: auth.operatorId });
     },
   );
 
@@ -296,17 +337,37 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { auth, boxAuth } = await quarantineBox(req, req.params.quarantineId);
-      const { result, outcome, message } = await replayQuarantined(
+      const { result, outcome, message, explanation } = await replayQuarantined(
         app.db,
         boxAuth,
         req.params.quarantineId,
         opCtx(req),
         auth.accountId,
       );
-      // `message` says what became of it in a sentence, because "quarantined"
-      // on its own does not tell whoever pressed the button whether to press it
-      // again, fix something first, or discard it.
-      return { ok: result === 'applied' || result === 'duplicate', result, outcome, message };
+      const filed = result === 'applied' || result === 'duplicate';
+      return {
+        ok: filed,
+        /**
+         * What the quarantine row IS now, which is the field the Console reads
+         * to decide between "Filed" and "Refused again" — and the field it was
+         * reading before this route answered with one, which made every
+         * successful replay report itself as a refusal and stopped "Replay all"
+         * after the first event. `replayQuarantined` closes the row on exactly
+         * these two results, so this says what is in the table rather than a
+         * second opinion about it.
+         */
+        status: filed ? ('replayed' as const) : ('open' as const),
+        eventId: outcome.eventId,
+        errorCode: outcome.errorCode ?? null,
+        errorMessage: explanation,
+        // The ledger's own vocabulary, kept for anything reading the API
+        // directly. `message` says what became of it in a whole sentence,
+        // because "quarantined" on its own does not tell whoever pressed the
+        // button whether to press it again, fix something first, or discard it.
+        result,
+        outcome,
+        message,
+      };
     },
   );
 
@@ -323,7 +384,7 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { auth, boxAuth } = await quarantineBox(req, req.params.quarantineId);
-      return discardQuarantined(
+      const done = await discardQuarantined(
         app.db,
         boxAuth,
         req.params.quarantineId,
@@ -331,6 +392,10 @@ export async function opsRoutes(app: App): Promise<void> {
         opCtx(req),
         auth.accountId,
       );
+      // The row's new status, for the same reason the replay answers with one:
+      // the Console's type declares it, and a caller should not have to infer
+      // the state of a record from the absence of an error.
+      return { ...done, status: 'discarded' as const };
     },
   );
 

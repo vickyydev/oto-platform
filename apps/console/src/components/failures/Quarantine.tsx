@@ -16,6 +16,7 @@ import { PresetButton, PresetRow, SelectFilter } from '@/components/Filters';
 import { Field, TextInput } from '@/components/Form';
 import {
   QUARANTINE_REASON_OPTIONS,
+  anomalyFacts,
   anomalyWords,
   quarantineStatusWord,
   quarantineWords,
@@ -751,6 +752,7 @@ function Anomalies({ timezone }: { timezone?: string | null }) {
           <ul className="flex flex-col divide-y">
             {rows.map((row) => {
               const words = anomalyWords(row.kind);
+              const facts = anomalyFacts(row.detail);
               return (
                 <li key={row.id} className="py-3 first:pt-0 last:pb-0">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -762,6 +764,24 @@ function Anomalies({ timezone }: { timezone?: string | null }) {
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground break-words">{words.what}</p>
+                  {/*
+                    What the cloud actually recorded about this one — the two
+                    candidate trading days, the positions that went missing, the
+                    two member ids behind a merge. Without it the sentence above
+                    describes a category and the row evidences nothing.
+                  */}
+                  {facts.length > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      {facts.map((fact) => (
+                        <span key={fact.label} className="break-all">
+                          {fact.label}{' '}
+                          <span className="font-semibold text-foreground tabular-nums">
+                            {fact.value}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     <span>{formatWhen(row.detectedAt, timezone)}</span>
                     {row.eventId && <span className="font-mono break-all">event {row.eventId}</span>}

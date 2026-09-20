@@ -223,3 +223,67 @@ export function anomalyWords(kind: string): AnomalyWords {
     }
   );
 }
+
+export interface AnomalyFact {
+  label: string;
+  value: string;
+}
+
+/** Enough to explain a row; past this it is a wall of text on one line. */
+const MAX_FACTS = 6;
+
+/** `survivingMemberId` → `Surviving member id`. */
+function words(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_.]/g, ' ')
+    .toLowerCase()
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
+/**
+ * One value, if it is the kind of thing that belongs on a line of a list.
+ *
+ * Nested objects are skipped rather than stringified: an anomaly's detail is
+ * ids, counts and dates by the API's own rule, so anything deeper is something
+ * this was not written for, and a `[object Object]` on the page is worse than
+ * the absence of it.
+ */
+function factValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'boolean') return value ? 'yes' : 'no';
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'string') return value.length > 80 ? `${value.slice(0, 80)}…` : value;
+  if (Array.isArray(value)) {
+    const shown = value.filter((v) => typeof v === 'number' || typeof v === 'string').slice(0, 8);
+    if (shown.length === 0) return null;
+    const rest = value.length - shown.length;
+    return shown.join(', ') + (rest > 0 ? ` +${rest} more` : '');
+  }
+  return null;
+}
+
+/**
+ * What an anomaly's `detail` says, as short labelled pairs.
+ *
+ * The cloud records the thing that makes a row understandable months later —
+ * the two candidate trading days behind a recomputed clock, the journal
+ * positions that never arrived and how far it looked for them, the two member
+ * ids a merge reconciled — and the panel used to fetch all of it and draw none
+ * of it, so every row read as a category with no evidence under it. The
+ * sentences above even promise otherwise: "Both dates are on the row."
+ *
+ * Nothing personal is in a detail: the API records names, counts and states and
+ * never a value, and `GET /ops/anomalies` holds the same line on the way out.
+ */
+export function anomalyFacts(detail: Record<string, unknown> | null | undefined): AnomalyFact[] {
+  if (!detail) return [];
+  const facts: AnomalyFact[] = [];
+  for (const [key, value] of Object.entries(detail)) {
+    if (facts.length >= MAX_FACTS) break;
+    const text = factValue(value);
+    if (text === null) continue;
+    facts.push({ label: words(key), value: text });
+  }
+  return facts;
+}

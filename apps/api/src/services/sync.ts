@@ -50,11 +50,12 @@ import {
   type SyncPullResponse,
   type SyncPushResponse,
 } from '@oto/shared';
+import { scrubText } from '@oto/telemetry';
 import { z } from 'zod';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
-import { errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
+import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 import type { BoxAuth } from './box';
 
@@ -3046,15 +3047,38 @@ export interface QuarantineRow {
   journalEpoch: number;
   boxSeq: number;
   type: string | null;
+  schemaVersion: number | null;
   reason: string;
   status: string;
   errorCode: string | null;
   errorMessage: string | null;
+  payloadHash: string | null;
+  /** On a `conflict`: the hash of the event already stored under this id. */
+  existingPayloadHash: string | null;
+  occurredAt: string | null;
   receivedAt: string;
   actionId: string | null;
   batchId: string | null;
+  /** What the watchdog raised its alert under; also what groups these rows. */
+  alertKey: string | null;
   resolvedAt: string | null;
+  resolvedByAccountId: string | null;
+  resolutionNote: string | null;
   replayedEventId: string | null;
+}
+
+export interface QuarantinePage {
+  events: QuarantineRow[];
+  nextCursor: string | null;
+  /**
+   * Open across the WHOLE table for this operator — every reason, every box —
+   * because the Console shows it as the tab's badge and "quarantine non-empty"
+   * is a watchdog rule. The length of one filtered page is a different number
+   * and would make the badge disagree with the alert. Counted on the first page
+   * only: it is a property of the table, not of the page, and paging does not
+   * change it.
+   */
+  openCount: number | null;
 }
 
 /**
@@ -3064,12 +3088,43 @@ export interface QuarantineRow {
  * carries a phone number and a child's allergy note, because it has to be
  * replayable as sent. This page is read by whoever is on call, on a screen in a
  * back office, and what they need is which box, which event, why, and the two
- * buttons — none of which is the payload.
+ * buttons — none of which is the payload. The Console's row type has an
+ * optional `payload` and draws "The ledger kept no payload for this one." when
+ * it is absent, which is the honest thing for it to say.
+ *
+ * **Nor is a person's name.** `resolved_by_account_id` is returned and the name
+ * behind it is not: who discarded an event is a question for the audit log,
+ * which is guarded by its own permission. `resolution_note` IS returned,
+ * because a discard without its reason is not a decision — swept through
+ * `scrubText` first, since it is free text a member of staff typed and free
+ * text is exactly where a phone number ends up.
  */
 export async function listQuarantine(
   db: Db,
-  q: { operatorId: string; status?: SyncQuarantineStatus; limit: number },
-): Promise<QuarantineRow[]> {
+  q: {
+    operatorId: string;
+    status?: SyncQuarantineStatus;
+    reason?: SyncQuarantineReason;
+    boxId?: string;
+    cursor?: string;
+    limit: number;
+  },
+): Promise<QuarantinePage> {
+  const clauses = [
+    eq(box.operatorId, q.operatorId),
+    q.status ? eq(syncQuarantine.status, q.status) : undefined,
+    q.reason ? eq(syncQuarantine.reason, q.reason) : undefined,
+    q.boxId ? eq(syncQuarantine.boxId, q.boxId) : undefined,
+  ];
+  if (q.cursor) {
+    const c = decodeCursor(q.cursor);
+    // Row-wise on the sort key; `id` is a UUIDv7, so rows sharing a received
+    // time still have a total order and none is skipped or served twice.
+    clauses.push(
+      sql`(${syncQuarantine.receivedAt}, ${syncQuarantine.id}) < (${c.at}::timestamptz, ${c.tiebreak}::uuid)`,
+    );
+  }
+
   const rows = await db
     .select({
       q: syncQuarantine,
@@ -3078,16 +3133,11 @@ export async function listQuarantine(
     })
     .from(syncQuarantine)
     .innerJoin(box, eq(syncQuarantine.boxId, box.id))
-    .where(
-      and(
-        eq(box.operatorId, q.operatorId),
-        q.status ? eq(syncQuarantine.status, q.status) : undefined,
-      ),
-    )
-    .orderBy(desc(syncQuarantine.receivedAt))
+    .where(and(...clauses))
+    .orderBy(desc(syncQuarantine.receivedAt), desc(syncQuarantine.id))
     .limit(q.limit);
 
-  return rows.map((r) => ({
+  const events: QuarantineRow[] = rows.map((r) => ({
     id: r.q.id,
     boxId: r.q.boxId,
     boxName: r.boxName,
@@ -3096,16 +3146,41 @@ export async function listQuarantine(
     journalEpoch: r.q.journalEpoch,
     boxSeq: r.q.boxSeq,
     type: r.q.type,
+    schemaVersion: r.q.schemaVersion,
     reason: r.q.reason,
     status: r.q.status,
     errorCode: r.q.errorCode,
     errorMessage: r.q.errorMessage,
+    payloadHash: r.q.payloadHash,
+    existingPayloadHash: r.q.existingPayloadHash,
+    occurredAt: r.q.occurredAt?.toISOString() ?? null,
     receivedAt: r.q.receivedAt.toISOString(),
     actionId: r.q.actionId,
     batchId: r.q.batchId,
+    alertKey: r.q.alertKey,
     resolvedAt: r.q.resolvedAt?.toISOString() ?? null,
+    resolvedByAccountId: r.q.resolvedByAccountId,
+    resolutionNote: r.q.resolutionNote === null ? null : scrubText(r.q.resolutionNote),
     replayedEventId: r.q.replayedEventId,
   }));
+
+  let openCount: number | null = null;
+  if (!q.cursor) {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(syncQuarantine)
+      .innerJoin(box, eq(syncQuarantine.boxId, box.id))
+      .where(and(eq(box.operatorId, q.operatorId), eq(syncQuarantine.status, 'open')));
+    openCount = row?.count ?? 0;
+  }
+
+  const last = events[events.length - 1];
+  return {
+    events,
+    // A short page is the last page; a full one may not be.
+    nextCursor: events.length === q.limit && last ? encodeCursor(last.receivedAt, last.id) : null,
+    openCount,
+  };
 }
 
 /**
@@ -3130,7 +3205,13 @@ export async function replayQuarantined(
   quarantineId: string,
   ctx: OpContext,
   actorAccountId: string,
-): Promise<{ result: SyncEventResult; outcome: SyncEventOutcome; message: string }> {
+): Promise<{
+  result: SyncEventResult;
+  outcome: SyncEventOutcome;
+  message: string;
+  /** The refusal on its own, for a caller that writes its own lead. Null when it was filed. */
+  explanation: string | null;
+}> {
   const [row] = await db
     .select()
     .from(syncQuarantine)
@@ -3160,16 +3241,29 @@ export async function replayQuarantined(
     actorAccountId,
   });
   const outcome = response.results[0]!;
+  const filed = outcome.result === 'applied' || outcome.result === 'duplicate';
+  const code = outcome.errorCode ?? outcome.reason ?? 'quarantined';
+  /**
+   * Why it was refused a second time, WITHOUT the "Refused again" lead.
+   *
+   * The Console writes that half itself — `Quarantine.tsx` renders `Refused
+   * again: ${errorMessage}` — so a value carrying it too reads "Refused again:
+   * Refused again: …". Null when the event went in, because there is then
+   * nothing to explain.
+   */
+  const explanation = filed
+    ? null
+    : injected
+      ? `${code}. This event was injected from the test controls and cannot be applied — its payload is not a member. Discard it.`
+      : `${code}. It is still open, with the reason updated.`;
   const message =
     outcome.result === 'applied'
       ? 'Applied. The event is in the ledger and the records it makes exist.'
       : outcome.result === 'duplicate'
         ? 'Already in the ledger — nothing was applied twice.'
-        : injected
-          ? `Refused again: ${outcome.errorCode ?? outcome.reason ?? 'quarantined'}. This event was injected from the test controls and cannot be applied — its payload is not a member. Discard it.`
-          : `Refused again: ${outcome.errorCode ?? outcome.reason ?? 'quarantined'}. It is still open, with the reason updated.`;
+        : `Refused again: ${explanation}`;
 
-  if (outcome.result === 'applied' || outcome.result === 'duplicate') {
+  if (filed) {
     await withTx(db, ctx, 'sync.quarantine_replay', async (tx) => {
       await tx
         .update(syncQuarantine)
@@ -3196,7 +3290,7 @@ export async function replayQuarantined(
     });
   }
 
-  return { result: outcome.result, outcome, message };
+  return { result: outcome.result, outcome, message, explanation };
 }
 
 /** Decide not to apply it, with a reason. A discard with no reason is not a decision. */

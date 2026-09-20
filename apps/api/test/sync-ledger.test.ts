@@ -527,7 +527,7 @@ describe('"Inject poison event"', () => {
       url: '/ops/quarantine?status=open',
       headers: { cookie: adminCookie },
     });
-    const open = list.json().quarantine as Array<{ boxId: string; reason: string }>;
+    const open = list.json().events as Array<{ boxId: string; reason: string }>;
     expect(open.some((q) => q.boxId === b.boxId && q.reason === 'poison')).toBe(true);
   });
 

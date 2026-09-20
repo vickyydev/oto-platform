@@ -31,7 +31,14 @@ import {
   type SyncPushResponse,
 } from '@oto/shared';
 import { boxCredential } from '@oto/box-agent';
-import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  RECEPTION,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 import { issueClaimCode } from '../src/services/box';
 
 /**
@@ -886,7 +893,7 @@ describe('quarantine, from the Console', () => {
       headers: { cookie: adminCookie },
     });
     expect(list.statusCode).toBe(200);
-    const rows = list.json().quarantine as Array<Record<string, unknown>>;
+    const rows = list.json().events as Array<Record<string, unknown>>;
     const row = rows.find((r) => r.eventId === update.eventId);
     expect(row).toBeTruthy();
     // Nothing personal leaves here: the envelope stays in the table.
@@ -907,6 +914,15 @@ describe('quarantine, from the Console', () => {
     });
     expect(replay.statusCode).toBe(200);
     expect(replay.json().result).toBe('applied');
+    /**
+     * And the row's new STATUS, which is the field the Console reads to decide
+     * between "Filed" and "Refused again". While the route answered with
+     * `result` alone, every successful replay reported itself as a refusal and
+     * "Replay all" stopped after the first event believing it had failed.
+     */
+    expect(replay.json().status).toBe('replayed');
+    expect(replay.json().eventId).toBe(update.eventId);
+    expect(replay.json().errorMessage).toBeNull();
     const [after] = await ctx.db.select().from(member).where(eq(member.id, memberId));
     expect(after?.nickname).toBe('Renamed');
 
@@ -944,12 +960,270 @@ describe('quarantine, from the Console', () => {
       payload: { note: 'A test control injected it; nothing was lost.' },
     });
     expect(withReason.statusCode).toBe(200);
+    expect(withReason.json().status).toBe('discarded');
     const [closed] = await ctx.db
       .select()
       .from(syncQuarantine)
       .where(eq(syncQuarantine.id, row!.id));
     expect(closed?.status).toBe('discarded');
     expect(closed?.resolutionNote).toContain('nothing was lost');
+  });
+});
+
+/**
+ * The other half of the Failures > Quarantine tab (S2-05).
+ *
+ * `apps/console/src/api/sync.ts` is the contract and these cases are written
+ * from it, the way `ops-api.test.ts` is written from `observability.ts`: the
+ * Console was built beside an API that did not yet serve `/ops/anomalies`, so
+ * the panel rendered "not on this deployment" and the rows the cloud had
+ * written about the park's money accumulated where nobody could read them. A
+ * response that is merely plausible renders an empty panel, so every field the
+ * page reads is asserted by name.
+ */
+describe('the anomaly record, from the Console', () => {
+  /** Two boxes that cannot see each other, and one phone typed at both. */
+  async function mergeAtTwoBoxes(): Promise<{
+    phone: string;
+    nickname: string;
+    survivingMemberId: string;
+    discardedMemberId: string;
+    firstEventId: string;
+    secondEventId: string;
+    secondBoxId: string;
+  }> {
+    const one = await freshBox();
+    const two = await freshBox();
+    await registerKey(one);
+    await registerKey(two);
+
+    const phone = uniquePhone();
+    const nickname = `Merged family ${slotCounter}`;
+    const atReception = mint(one, 'member.created', { ...memberPayload(phone), nickname });
+    const atCounterTwo = mint(two, 'member.created', { ...memberPayload(phone), nickname });
+
+    expect((await push(one, [atReception])).body.applied).toBe(1);
+    expect((await push(two, [atCounterTwo])).body.applied).toBe(1);
+
+    return {
+      phone,
+      nickname,
+      survivingMemberId: (atReception.payload as { memberId: string }).memberId,
+      discardedMemberId: (atCounterTwo.payload as { memberId: string }).memberId,
+      firstEventId: atReception.eventId,
+      secondEventId: atCounterTwo.eventId,
+      secondBoxId: two.boxId,
+    };
+  }
+
+  const anomalies = (query = '', cookie = adminCookie) =>
+    ctx.app.inject({ method: 'GET', url: `/ops/anomalies${query}`, headers: { cookie } });
+
+  interface AnomalyBody {
+    anomalies: Array<{
+      id: string;
+      boxId: string;
+      boxName: string | null;
+      kind: string;
+      eventId: string | null;
+      relatedEventId: string | null;
+      detail: Record<string, unknown> | null;
+      actionId: string | null;
+      detectedAt: string;
+    }>;
+    nextCursor: string | null;
+  }
+
+  it('answers the shape the Console reads, naming both halves of a merge', async () => {
+    const merged = await mergeAtTwoBoxes();
+
+    const res = await anomalies('?limit=200');
+    expect(res.statusCode).toBe(200);
+    const body = res.json<AnomalyBody>();
+
+    const row = body.anomalies.find((a) => a.eventId === merged.secondEventId);
+    expect(row, 'the merge is on the page the Console reads').toBeTruthy();
+    expect(row!.kind).toBe('merge');
+    // The acceptance criterion: both events reachable from the one row.
+    expect(row!.relatedEventId).toBe(merged.firstEventId);
+    expect(row!.boxId).toBe(merged.secondBoxId);
+    // A box id alone names nothing to a person on call.
+    expect(row!.boxName).toBeTruthy();
+    expect(typeof row!.actionId).toBe('string');
+    expect(Number.isNaN(Date.parse(row!.detectedAt))).toBe(false);
+    // The useful half of the detail, which is what the panel now draws.
+    expect(row!.detail).toMatchObject({
+      survivingMemberId: merged.survivingMemberId,
+      discardedMemberId: merged.discardedMemberId,
+    });
+
+    // Newest first, because that is the order the page renders in.
+    const times = body.anomalies.map((a) => Date.parse(a.detectedAt));
+    expect([...times].sort((x, y) => y - x)).toEqual(times);
+  });
+
+  /**
+   * The rule the whole `/ops/*` family is held to, asserted on the RAW body
+   * rather than the parsed one — the way `GET /ops/integrations` asserts it.
+   * A merge is about a phone number existing at two counters, so this route is
+   * the one with the most to leak: what comes back names the two member ids
+   * and never the number, and never the nickname somebody typed either.
+   */
+  it('never hands back a phone number or a name, and a merge is about both', async () => {
+    const merged = await mergeAtTwoBoxes();
+
+    const res = await anomalies('?limit=200');
+    expect(res.body).not.toContain(merged.phone);
+    // The same number without its country code, which is how a box's own store
+    // would have written it.
+    expect(res.body).not.toContain(merged.phone.replace('+66', '0'));
+    expect(res.body).not.toContain(merged.nickname);
+    // And the ids that make it investigable are still there, so the case is
+    // pinning redaction rather than an empty answer.
+    expect(res.body).toContain(merged.survivingMemberId);
+  });
+
+  it('filters by kind and by box, and pages with a keyset cursor', async () => {
+    const merged = await mergeAtTwoBoxes();
+
+    const byKind = (await anomalies('?kind=merge&limit=200')).json<AnomalyBody>();
+    expect(byKind.anomalies.length).toBeGreaterThan(0);
+    expect(byKind.anomalies.every((a) => a.kind === 'merge')).toBe(true);
+
+    const byBox = (await anomalies(`?boxId=${merged.secondBoxId}&limit=200`)).json<AnomalyBody>();
+    expect(byBox.anomalies.length).toBeGreaterThan(0);
+    expect(byBox.anomalies.every((a) => a.boxId === merged.secondBoxId)).toBe(true);
+
+    // One at a time, following the cursor: no row served twice and none
+    // skipped, which is the property a keyset page exists for.
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    for (let page = 0; page < 3; page += 1) {
+      const next: AnomalyBody = (
+        await anomalies(`?limit=1${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)
+      ).json<AnomalyBody>();
+      expect(next.anomalies).toHaveLength(1);
+      seen.push(next.anomalies[0]!.id);
+      cursor = next.nextCursor;
+      expect(cursor).toBeTruthy();
+    }
+    expect(new Set(seen).size).toBe(seen.length);
+
+    // The same rows the unpaged read gives, in the same order.
+    const whole = (await anomalies('?limit=200')).json<AnomalyBody>();
+    expect(whole.anomalies.slice(0, 3).map((a) => a.id)).toEqual(seen);
+  });
+
+  it('refuses a bad cursor rather than answering from the top', async () => {
+    const res = await anomalies('?cursor=not-a-cursor');
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('is read by whoever is on call, and by nobody else', async () => {
+    const reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    expect((await anomalies('', reception)).statusCode).toBe(403);
+    const anonymous = await ctx.app.inject({ method: 'GET', url: '/ops/anomalies' });
+    expect(anonymous.statusCode).toBe(401);
+  });
+});
+
+/**
+ * The quarantine list's own contract, which the Console reads as a page rather
+ * than as a bare array: `events`, a `nextCursor` and the count still open
+ * across the whole table for the tab's badge.
+ */
+describe('the quarantine list, as the Console pages it', () => {
+  interface QuarantineBody {
+    events: Array<{
+      id: string;
+      eventId: string;
+      boxId: string;
+      boxName: string | null;
+      journalEpoch: number;
+      boxSeq: number;
+      reason: string;
+      status: string;
+      receivedAt: string;
+      resolutionNote?: string | null;
+      payload?: unknown;
+    }>;
+    nextCursor: string | null;
+    openCount: number | null;
+  }
+
+  const quarantine = (query: string, cookie = adminCookie) =>
+    ctx.app.inject({ method: 'GET', url: `/ops/quarantine${query}`, headers: { cookie } });
+
+  it('answers a page, filters by reason and box, and counts what is open overall', async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const poison = mint(b, 'member.created', { nothing: 'useful' });
+    await push(b, [poison]);
+
+    const res = await quarantine('?status=open&limit=200');
+    expect(res.statusCode).toBe(200);
+    const body = res.json<QuarantineBody>();
+
+    const row = body.events.find((e) => e.eventId === poison.eventId);
+    expect(row, 'the refused event is on the page the Console reads').toBeTruthy();
+    expect(row!.reason).toBe('poison');
+    expect(row!.status).toBe('open');
+    expect(row!.boxName).toBeTruthy();
+    // Still true after the reshape: the envelope stays in the table.
+    expect(res.body).not.toContain('"payload"');
+
+    // The badge counts the whole table, not this page — the watchdog alerts on
+    // the same number, and the two must not disagree.
+    expect(body.openCount).toBeGreaterThanOrEqual(1);
+
+    const byReason = (await quarantine('?reason=poison&limit=200')).json<QuarantineBody>();
+    expect(byReason.events.every((e) => e.reason === 'poison')).toBe(true);
+    expect(byReason.events.some((e) => e.eventId === poison.eventId)).toBe(true);
+
+    const byBox = (await quarantine(`?boxId=${b.boxId}&limit=200`)).json<QuarantineBody>();
+    expect(byBox.events.every((e) => e.boxId === b.boxId)).toBe(true);
+
+    // One row at a time, following the cursor.
+    const firstPage = (await quarantine('?limit=1')).json<QuarantineBody>();
+    expect(firstPage.events).toHaveLength(1);
+    expect(firstPage.nextCursor).toBeTruthy();
+    const secondPage = (
+      await quarantine(`?limit=1&cursor=${encodeURIComponent(firstPage.nextCursor!)}`)
+    ).json<QuarantineBody>();
+    expect(secondPage.events[0]!.id).not.toBe(firstPage.events[0]!.id);
+    // The count is a property of the table, not of the page, so later pages do
+    // not pay for it a second time.
+    expect(secondPage.openCount).toBeNull();
+  });
+
+  it('sweeps a phone number out of the reason somebody typed for a discard', async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const poison = mint(b, 'member.created', { nothing: 'useful' });
+    await push(b, [poison]);
+    const [filed] = await ctx.db
+      .select()
+      .from(syncQuarantine)
+      .where(eq(syncQuarantine.eventId, poison.eventId));
+
+    const phone = uniquePhone();
+    const discarded = await ctx.app.inject({
+      method: 'POST',
+      url: `/ops/quarantine/${filed!.id}/discard`,
+      headers: { cookie: adminCookie },
+      payload: { note: `Re-keyed at the till for ${phone}` },
+    });
+    expect(discarded.statusCode).toBe(200);
+
+    // The note is the decision and it comes back; the number inside it does
+    // not. Free text is exactly where a phone number ends up.
+    const res = await quarantine('?status=discarded&limit=200');
+    expect(res.body).not.toContain(phone);
+    const row = res
+      .json<QuarantineBody>()
+      .events.find((e) => e.eventId === poison.eventId);
+    expect(row!.resolutionNote).toContain('Re-keyed at the till');
+    expect(row!.resolutionNote).toContain('[redacted:phone]');
   });
 });
 

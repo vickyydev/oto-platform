@@ -25,11 +25,13 @@ import {
   opsExpectation,
   opsLast,
   opsRun,
+  syncAnomaly,
   type AlertDeliveryEvent,
   type AlertSeverity,
   type Db,
   type OpsKind,
   type OpsOutcome,
+  type SyncAnomalyKind,
 } from '@oto/db';
 import { newId } from '@oto/shared';
 import { AppError } from '../lib/errors';
@@ -1776,28 +1778,35 @@ export interface FailureQuery {
 }
 
 /**
- * The cursor is the sort key itself — the last group's newest failure and its
- * fingerprint — so a page resumes exactly where the previous one stopped even
- * as new failures arrive. Same shape as the audit log's (routes/audit.ts).
+ * The cursor is the sort key itself — a timestamp, and the tiebreak that gives
+ * rows sharing that timestamp a total order — so a page resumes exactly where
+ * the previous one stopped even as new rows arrive. Same shape as the audit
+ * log's (routes/audit.ts).
+ *
+ * Exported because every keyset list under `/ops` uses this one encoding: the
+ * failure groups below (newest failure + fingerprint), and the quarantine list
+ * in `services/sync.ts` and the anomaly list further down this file (received
+ * or detected time + row id). One format means a cursor is decoded the same way
+ * and rejected the same way wherever it arrives.
  */
-function encodeGroupCursor(lastSeenAt: string, fingerprint: string): string {
-  return Buffer.from(`${lastSeenAt}|${fingerprint}`, 'utf8').toString('base64url');
+export function encodeCursor(at: string, tiebreak: string): string {
+  return Buffer.from(`${at}|${tiebreak}`, 'utf8').toString('base64url');
 }
 
-function decodeGroupCursor(raw: string): { lastSeenAt: string; fingerprint: string } {
-  const [lastSeenAt, fingerprint] = Buffer.from(raw, 'base64url').toString('utf8').split('|');
-  if (!lastSeenAt || !fingerprint || Number.isNaN(Date.parse(lastSeenAt))) {
+export function decodeCursor(raw: string): { at: string; tiebreak: string } {
+  const [at, tiebreak] = Buffer.from(raw, 'base64url').toString('utf8').split('|');
+  if (!at || !tiebreak || Number.isNaN(Date.parse(at))) {
     throw new AppError(400, 'BAD_REQUEST', 'Invalid cursor');
   }
-  return { lastSeenAt, fingerprint };
+  return { at, tiebreak };
 }
 
 /**
  * Row-wise comparison on the sort key, which is what makes the tie-break free:
  * groups sharing a last-seen timestamp still have a total order.
  */
-function groupCursorClause(c: { lastSeenAt: string; fingerprint: string }): SQL {
-  return sql`(max(${opsRun.startedAt}), ${opsRun.fingerprint}) < (${c.lastSeenAt}::timestamptz, ${c.fingerprint})`;
+function groupCursorClause(c: { at: string; tiebreak: string }): SQL {
+  return sql`(max(${opsRun.startedAt}), ${opsRun.fingerprint}) < (${c.at}::timestamptz, ${c.tiebreak})`;
 }
 
 /**
@@ -1840,7 +1849,7 @@ export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePag
   ];
   if (q.kind) clauses.push(eq(opsRun.kind, q.kind as OpsKind));
 
-  const cursorClause = q.cursor ? groupCursorClause(decodeGroupCursor(q.cursor)) : undefined;
+  const cursorClause = q.cursor ? groupCursorClause(decodeCursor(q.cursor)) : undefined;
 
   const rows = await db
     .select({
@@ -1893,7 +1902,7 @@ export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePag
     groups,
     // A short page is the last page; a full one may not be.
     nextCursor:
-      groups.length === q.limit && last ? encodeGroupCursor(last.lastSeenAt, last.fingerprint) : null,
+      groups.length === q.limit && last ? encodeCursor(last.lastSeenAt, last.fingerprint) : null,
   };
 
   // Only worth the second scan on the first page: it is a property of the
@@ -1970,6 +1979,144 @@ export async function runsForFingerprint(
 export async function findRun(db: Db, id: string) {
   const [row] = await db.select().from(opsRun).where(eq(opsRun.id, id)).limit(1);
   return row ?? null;
+}
+
+// --- Anomalies (S2-05) ------------------------------------------------------
+//
+// The other half of the Failures > Quarantine tab. A quarantined event is one
+// the cloud REFUSED and a person has to decide about; an anomaly is one it
+// APPLIED, with a judgement worth recording — a clock it could not trust, a
+// batch that arrived twice, a journal position that never came, the same phone
+// number created at two boxes and merged. Nobody is waiting on these, and that
+// is exactly why they need somewhere to be read: until this route existed they
+// accumulated where nothing could show them.
+//
+// Read here rather than in `services/sync.ts`, where the quarantine list lives,
+// because the page this answers is the Failures page: the cursor encoding, the
+// `iso` helper and the 400 on a bad cursor are all in this file, and a second
+// copy of any of them is how two lists under one prefix start disagreeing.
+
+export interface SyncAnomalyRow {
+  id: string;
+  boxId: string;
+  /** Denormalised: a box id alone names nothing to a person on call. */
+  boxName: string | null;
+  kind: string;
+  eventId: string | null;
+  /** The other event, where the kind is about a pair — the second half of a merge. */
+  relatedEventId: string | null;
+  /** Ids, counts and dates. See `safeDetail`. */
+  detail: Record<string, unknown> | null;
+  actionId: string | null;
+  detectedAt: string;
+}
+
+export interface SyncAnomalyPage {
+  anomalies: SyncAnomalyRow[];
+  nextCursor: string | null;
+}
+
+export interface AnomalyQuery {
+  operatorId: string;
+  kind?: string;
+  boxId?: string;
+  cursor?: string;
+  limit: number;
+}
+
+/**
+ * What a row is allowed to carry onto the page.
+ *
+ * `sync_anomaly.detail` is already scrubbed where it is written (`pushEvents`
+ * in `services/sync.ts` puts every detail through `scrubDetail` before the
+ * insert), and what the call sites put there is ids, counts and dates. This
+ * runs the same redactor again on the way out, for the two cases the write
+ * path cannot cover: a row written by an earlier build, and a call site added
+ * later that forgets. It is the same redactor, not a stronger one — a key
+ * deny-list plus a value-shape sweep, which is a good filter and not a proof —
+ * so the rule that actually keeps this page clean is still the one upstream:
+ * a detail names things, never quotes a value.
+ *
+ * Twenty to fifty small objects per page; the cost does not signify.
+ */
+function safeDetail(value: unknown): Record<string, unknown> | null {
+  if (value === null || value === undefined) return null;
+  const scrubbed = scrubDetail(value);
+  return scrubbed !== null && typeof scrubbed === 'object' && !Array.isArray(scrubbed)
+    ? (scrubbed as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * The anomaly record, newest first.
+ *
+ * **Paginated rather than grouped, unlike the failure list, and the difference
+ * is what the rows mean.** Sixty failures behind one fingerprint are one break
+ * repeating: the sixtieth says nothing the first did not, so collapsing them to
+ * a row with a count of sixty loses nothing and is the only way the page stays
+ * readable. Sixty anomalies are sixty different facts from the park. A `merge`
+ * names the two member ids it reconciled; a `clock_recomputed` names the two
+ * candidate trading days for one event; a `sequence_gap` names the positions
+ * that went missing. Grouped by kind and box they would collapse to six rows
+ * carrying no ids at all — which is the whole of what somebody opens this to
+ * find. They are also not a work queue: an anomaly needs no decision, so there
+ * is no backlog to make tractable by collapsing it.
+ *
+ * So: keyset pagination on `(detected_at, id)` — `id` is a UUIDv7, so it is a
+ * total order and a stable tiebreak for rows sharing a timestamp — and the
+ * Console asks for twenty at a time with a "Load more".
+ *
+ * Tenancy comes through the box, because `sync_anomaly` carries no operator of
+ * its own; the schema says why (`packages/db/src/schema/sync.ts`).
+ */
+export async function anomalyPage(db: Db, q: AnomalyQuery): Promise<SyncAnomalyPage> {
+  const clauses: SQL[] = [eq(box.operatorId, q.operatorId)];
+  if (q.kind) clauses.push(eq(syncAnomaly.kind, q.kind as SyncAnomalyKind));
+  if (q.boxId) clauses.push(eq(syncAnomaly.boxId, q.boxId));
+  if (q.cursor) {
+    const c = decodeCursor(q.cursor);
+    clauses.push(
+      sql`(${syncAnomaly.detectedAt}, ${syncAnomaly.id}) < (${c.at}::timestamptz, ${c.tiebreak}::uuid)`,
+    );
+  }
+
+  const rows = await db
+    .select({
+      id: syncAnomaly.id,
+      boxId: syncAnomaly.boxId,
+      boxName: box.name,
+      kind: syncAnomaly.kind,
+      eventId: syncAnomaly.eventId,
+      relatedEventId: syncAnomaly.relatedEventId,
+      detail: syncAnomaly.detail,
+      actionId: syncAnomaly.actionId,
+      detectedAt: syncAnomaly.detectedAt,
+    })
+    .from(syncAnomaly)
+    .innerJoin(box, eq(syncAnomaly.boxId, box.id))
+    .where(and(...clauses))
+    .orderBy(desc(syncAnomaly.detectedAt), desc(syncAnomaly.id))
+    .limit(q.limit);
+
+  const anomalies: SyncAnomalyRow[] = rows.map((r) => ({
+    id: r.id,
+    boxId: r.boxId,
+    boxName: r.boxName,
+    kind: r.kind,
+    eventId: r.eventId,
+    relatedEventId: r.relatedEventId,
+    detail: safeDetail(r.detail),
+    actionId: r.actionId,
+    detectedAt: iso(r.detectedAt)!,
+  }));
+
+  const last = anomalies[anomalies.length - 1];
+  return {
+    anomalies,
+    // A short page is the last page; a full one may not be.
+    nextCursor:
+      anomalies.length === q.limit && last ? encodeCursor(last.detectedAt, last.id) : null,
+  };
 }
 
 /**
