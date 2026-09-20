@@ -76,6 +76,23 @@ worth knowing if it was meant to be the real one.
 
 **Meanwhile:** the variable is deliberately blank on the Render service.
 
+## ~~Which branch and operator a provisioned person has inside the OTO App~~ — answered 2026-09-20
+
+**The answer: the admin decides, by picking from the OTO App's own list.**
+
+The problem was that the OTO App carries its own `tenants → operators →
+branches` tables whose ids have no correspondence with `core.operator` and
+`core.branch`, so nothing could be derived without inventing a mapping that
+would look right and not be.
+
+So nothing is derived. The provisioning dialog reads the OTO App's own branch
+list and the administrator chooses — the same shape as choosing a box for a
+station, or choosing who may use one. Role was already chosen this way.
+
+**Assumed, not asked:** the OTO App has a `tenants` table above operators with
+a single `default` row. Provisioning uses it. Revisit if a second tenant ever
+exists.
+
 ## 3b. WhatsApp delivery is built but parked, waiting on a real sender
 
 **Where it bites:** `scripts/sprint-report.mjs` composes the Sprint 2 report

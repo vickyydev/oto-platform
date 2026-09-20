@@ -972,7 +972,10 @@ Includes:
   `agent_version`, `current_epoch`, status, `last_heartbeat_at`, `last_status`),
   `station` reshape (operator, box, code prefix, kind incl. booth,
   capabilities, `config_version`, payment routing, offline wallet cap,
-  `archived_at`), `device` (kind, transport, address, model, serial/TID/MID,
+  **`access_scope` (`all_staff` | `selected_staff`, default `all_staff`)**,
+  `archived_at`), **`station_staff` (station, account, added_by, added_at —
+  who may pick a `selected_staff` station)**, `device` (kind, transport,
+  address, model, serial/TID/MID,
   reachability, paper), `station_device`, `device_credential` (kind
   display|kiosk|booth|box, station, scopes, `rotated_from`, paired_by/at,
   `revoked_at`, `last_seen_at`), `signing_key` (public keys only); `edge`:
@@ -1002,10 +1005,27 @@ Includes:
 - Wizard kept in the prototype's 9-step design: admins only; new "choose the
   box" step; devices offered are those the box reported; scanner step offers
   camera / paired scanner / scanner on the box; test print routed cloud → box.
-- Staff flow: after sign-in the POS shows the branch's station list (stored on
-  the device in localStorage — the one documented browser-storage exception);
-  "Set up station" in the header switches; `session.station_id` set on pick
-  and stamped into audit rows and logs.
+  One further step before "ready": **who may use this station** — open to all
+  staff, or a named list chosen from the staff of that branch.
+- **Who may use a station (owner, 2026-09-20).** The order the owner
+  described, and the order the wizard must follow: pick the **box** first,
+  because it is a Raspberry Pi already standing on site; the **devices** then
+  offered are only those that box reported, because a printer is reachable
+  through the box it is plugged into and nowhere else; then **who may use
+  it**, chosen from the staff of that branch, or left open to all of them.
+  A station's `access_scope` drives **visibility, not merely permission**: an
+  `all_staff` station appears in every signed-in member's picker and they take
+  it by pressing it; a `selected_staff` station appears only to the accounts
+  on its list. Somebody who cannot use a station should not be looking at it
+  and wondering why it refuses. Staff never create or edit a station — only a
+  POS manager or administrator does, and the wizard stays admin-only.
+- Staff flow: after sign-in the POS shows the branch's station list, **already
+  filtered by `access_scope`** (stored on the device in localStorage — the one
+  documented browser-storage exception); "Set up station" in the header
+  switches; `session.station_id` set on pick and stamped into audit rows and
+  logs. A station removed from somebody's list while they hold it is not
+  yanked mid-sale: they keep it until they switch or sign out, and the
+  refusal, if it comes, is at the next pick.
 - Health box section: per box online/offline, version, uptime, heartbeat age,
   outbox depth, devices with printer/paper indicators, 24 h heartbeat drawer,
   command history; watchdog rules: heartbeat silence > `BOX_OFFLINE_AFTER_S`
@@ -1032,6 +1052,11 @@ Acceptance criteria:
       the header shows the station and `GET /me` (About panel) shows
       `stationId`; the choice survives a reload; a non-admin cannot open the
       wizard (403 `PERMISSION_DENIED` and hidden entry).
+- [ ] A station set to `selected_staff` with only the manager on its list is
+      **absent from reception's picker** — not greyed out, not refusing —
+      while an `all_staff` station beside it is present and pickable; adding
+      reception to the list makes it appear on their next load, and picking it
+      by id without being on the list is refused.
 - [ ] Test print from the console creates a `box_command`; the virtual box
       runs it; the result appears in command history and `ops_run`.
 - [ ] Editing HKT Central's opening hours saves and is audited; clearing them
