@@ -67,6 +67,16 @@ export const PERMISSIONS = [
   'pos:visit:create',
   'pos:visit:read',
   'pos:visit:update',
+  /**
+   * Manager gate: taking a LIVE station away from the till holding it (S2-05).
+   *
+   * Not an `admin:station:*` permission, because it is not estate
+   * configuration — it happens at a counter, mid-sale, and what it costs is
+   * somebody's half-finished order. An expired lease needs none of this: it is
+   * claimable by anyone after the TTL, which is what makes a closed browser
+   * tab something reception can recover from without finding a manager.
+   */
+  'pos:station:takeover',
   // POS — selling (S2-09 … S2-11)
   'pos:sale:read',
   'pos:sale:create',
@@ -252,6 +262,9 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:child:update',
     'pos:visit:create',
     'pos:visit:update',
+    // Deliberately not in `reception`: a till taking a live station from a
+    // colleague is the moment somebody senior should be standing there.
+    'pos:station:takeover',
     'pos:payment:settle',
     'pos:refund:approve',
     'pos:cash:session_open',

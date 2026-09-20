@@ -1,0 +1,125 @@
+{
+  "widthDots": 576,
+  "heightDots": 388,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 268,
+      "baselineY": 28,
+      "w": 39,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "oto"
+    },
+    {
+      "k": "invert",
+      "x": 264,
+      "y": 8,
+      "w": 47,
+      "h": 28
+    },
+    {
+      "k": "text",
+      "x": 187,
+      "baselineY": 66,
+      "w": 202,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "Oto Play Park"
+    },
+    {
+      "k": "text",
+      "x": 202,
+      "baselineY": 91,
+      "w": 172,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "CREDIT VOUCHER"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 95,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 122,
+      "w": 200,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "Credit loaded"
+    },
+    {
+      "k": "text",
+      "x": 499,
+      "baselineY": 122,
+      "w": 69,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "฿150"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 141,
+      "w": 429,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Scan wristband or QR at the F&B counter to spend."
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 170,
+      "w": 228,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "For Nong Mai · น้องใหม่"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 179,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "qr",
+      "x": 213,
+      "y": 183,
+      "moduleDots": 6,
+      "modules": 25,
+      "version": 2,
+      "ecc": "M"
+    },
+    {
+      "k": "text",
+      "x": 204,
+      "baselineY": 350,
+      "w": 169,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "wb-walkin-S10428-0"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 354,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 33,
+      "baselineY": 372,
+      "w": 510,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Scan QR or wristband at the F&B or merch counter to spend."
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "widthDots": 512,
+  "heightDots": 257,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 212,
+      "baselineY": 22,
+      "w": 87,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "KITCHEN"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 26,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 52,
+      "w": 114,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "#F-2207"
+    },
+    {
+      "k": "text",
+      "x": 427,
+      "baselineY": 52,
+      "w": 77,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "14:41"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 73,
+      "w": 40,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "For "
+    },
+    {
+      "k": "text",
+      "x": 48,
+      "baselineY": 73,
+      "w": 242,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "Mali (Band 3) · Привет"
+    },
+    {
+      "k": "warning",
+      "x": 12,
+      "y": 89,
+      "size": 22
+    },
+    {
+      "k": "text",
+      "x": 42,
+      "baselineY": 105,
+      "w": 365,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "ALLERGY (Mali (Band 3) · Привет):"
+    },
+    {
+      "k": "text",
+      "x": 42,
+      "baselineY": 132,
+      "w": 371,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "Peanuts, shellfish · สวัสดี OTO Park"
+    },
+    {
+      "k": "stroke",
+      "x": 8,
+      "y": 84,
+      "w": 496,
+      "h": 58
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 145,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 166,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 166,
+      "w": 175,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Chicken Nuggets"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 189,
+      "w": 65,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "  No dip"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 214,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 214,
+      "w": 173,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Margherita Pizza"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 223,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 241,
+      "w": 319,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Bring everything out together, please."
+    }
+  ]
+}

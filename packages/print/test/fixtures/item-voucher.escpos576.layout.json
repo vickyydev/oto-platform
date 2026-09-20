@@ -1,0 +1,116 @@
+{
+  "widthDots": 576,
+  "heightDots": 384,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 268,
+      "baselineY": 28,
+      "w": 39,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "oto"
+    },
+    {
+      "k": "invert",
+      "x": 264,
+      "y": 8,
+      "w": 47,
+      "h": 28
+    },
+    {
+      "k": "text",
+      "x": 187,
+      "baselineY": 66,
+      "w": 202,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "Oto Play Park"
+    },
+    {
+      "k": "text",
+      "x": 214,
+      "baselineY": 91,
+      "w": 149,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "ITEM VOUCHER"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 95,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 10,
+      "baselineY": 124,
+      "w": 557,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "Free: Ice Cream Cone · สวัสดี OTO Park"
+    },
+    {
+      "k": "text",
+      "x": 271,
+      "baselineY": 150,
+      "w": 34,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "×2"
+    },
+    {
+      "k": "text",
+      "x": 136,
+      "baselineY": 167,
+      "w": 303,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Collect at the F&B or merch counter."
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 171,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "qr",
+      "x": 213,
+      "y": 175,
+      "moduleDots": 6,
+      "modules": 25,
+      "version": 2,
+      "ecc": "M"
+    },
+    {
+      "k": "text",
+      "x": 201,
+      "baselineY": 342,
+      "w": 173,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "grant-S10428-item-1"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 350,
+      "w": 560,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 33,
+      "baselineY": 368,
+      "w": 510,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Scan QR or wristband at the F&B or merch counter to spend."
+    }
+  ]
+}

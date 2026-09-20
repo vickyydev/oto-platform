@@ -524,36 +524,46 @@ export async function seed(db: Db = getDb()): Promise<void> {
     });
   }
 
-  // --- The fleet (S2-04) -----------------------------------------------------
+  // --- The fleet (S2-04, S2-05) ----------------------------------------------
   //
-  // One virtual box, the two stations that sit on it, and the park's real
-  // devices as simulations. The virtual box runs inside the api under
+  // Two virtual boxes, the stations that sit on them, and the park's real
+  // devices as simulations. A virtual box runs inside the api under
   // PROCESS_ROLES=edge, which is what lets pairing, config bundles, commands
   // and heartbeats all be exercised on Render months before anybody carries a
   // Raspberry Pi to Phuket.
+  //
+  // The SECOND box exists because half of S2-05 cannot be demonstrated with
+  // one: the same phone typed at two counters while both are offline, merging
+  // at sync with one member and an anomaly naming both events, needs two
+  // journals that cannot see each other.
 
-  // Found by (branch, slot) and then left entirely alone. Everything else the
+  // Found by (branch, slot) and then left entirely alone. Everything else a
   // box owns — its secret, its epoch, its last heartbeat — is runtime state,
   // and a sync that reset any of it would take a working box offline.
-  const [existingBox] = await db
-    .select({ id: s.box.id })
-    .from(s.box)
-    .where(and(eq(s.box.branchId, branchId), eq(s.box.slot, 'virtual-1')))
-    .limit(1);
-  const boxId = existingBox?.id ?? newId();
-  if (!existingBox) {
+  const mkBox = async (name: string, slot: string) => {
+    const [found] = await db
+      .select({ id: s.box.id })
+      .from(s.box)
+      .where(and(eq(s.box.branchId, branchId), eq(s.box.slot, slot)))
+      .limit(1);
+    if (found) return found.id;
+    const id = newId();
     await db.insert(s.box).values({
-      id: boxId,
+      id,
       operatorId,
       branchId,
-      name: 'Virtual box 1',
-      slot: 'virtual-1',
+      name,
+      slot,
       role: 'virtual',
       // The agent registers into this row when the edge process starts; until
       // it has, the box genuinely is unclaimed and Health should say so.
       status: 'unclaimed',
     });
-  }
+    return id;
+  };
+
+  const boxId = await mkBox('Virtual box 1', 'virtual-1');
+  const box2Id = await mkBox('Virtual box 2', 'virtual-2');
 
   // The park's real devices (docs/architecture/DEVICE_INVENTORY.md §2) with
   // their real models, addresses, protocols and terminal identifiers — but on
@@ -568,11 +578,14 @@ export async function seed(db: Db = getDb()): Promise<void> {
     serialNumber?: string;
     terminalId?: string;
     merchantId?: string;
+    /** Which box reported it. Defaults to virtual box 1. */
+    box?: string;
   }) => {
+    const { box: onBox = boxId, ...fields } = d;
     const [found] = await db
       .select({ id: s.device.id })
       .from(s.device)
-      .where(and(eq(s.device.boxId, boxId), eq(s.device.label, d.label)))
+      .where(and(eq(s.device.boxId, onBox), eq(s.device.label, d.label)))
       .limit(1);
     if (found) return found.id;
     const id = newId();
@@ -580,11 +593,11 @@ export async function seed(db: Db = getDb()): Promise<void> {
       id,
       operatorId,
       branchId,
-      boxId,
+      boxId: onBox,
       transport: 'simulated',
       reachability: 'reachable',
       paperStatus: 'ok',
-      ...d,
+      ...fields,
     });
     return id;
   };
@@ -659,7 +672,10 @@ export async function seed(db: Db = getDb()): Promise<void> {
     codePrefix: string;
     capabilities: (typeof s.STATION_CAPABILITIES)[number][];
     accessScope: (typeof s.STATION_ACCESS_SCOPES)[number];
+    /** The box that drives it. Defaults to virtual box 1. */
+    box?: string;
   }) => {
+    const { box: onBox = boxId, ...fields } = st;
     const [found] = await db
       .select({ id: s.station.id, boxId: s.station.boxId, codePrefix: s.station.codePrefix })
       .from(s.station)
@@ -669,13 +685,13 @@ export async function seed(db: Db = getDb()): Promise<void> {
       if (!found.boxId || !found.codePrefix) {
         await db
           .update(s.station)
-          .set({ boxId: found.boxId ?? boxId, codePrefix: found.codePrefix ?? st.codePrefix })
+          .set({ boxId: found.boxId ?? onBox, codePrefix: found.codePrefix ?? st.codePrefix })
           .where(eq(s.station.id, found.id));
       }
       return found.id;
     }
     const id = newId();
-    await db.insert(s.station).values({ id, operatorId, branchId, boxId, ...st });
+    await db.insert(s.station).values({ id, operatorId, branchId, boxId: onBox, ...fields });
     return id;
   };
 
@@ -718,6 +734,36 @@ export async function seed(db: Db = getDb()): Promise<void> {
   await assign(tillId, 'qr_terminal', devQr);
   await assign(boothId, 'receipt', devBooth);
 
+  /**
+   * Counter 2, on the second box (S2-05 seed line).
+   *
+   * Read "till, F&B capability" as a till that also sells food rather than one
+   * that sells nothing else: the two-box scenario the ticket asks for begins
+   * by creating a member at this counter, which is the ticket flow's identify
+   * step, so removing `tickets` would make the demo it exists for impossible.
+   *
+   * It gets its own receipt printer because a device belongs to the box it is
+   * plugged into and nowhere else — a station on box 2 cannot be assigned box
+   * 1's printer, and the wizard will not offer it.
+   */
+  const devReceipt2 = await mkDevice({
+    kind: 'receipt_printer',
+    label: 'Receipt Printer 3',
+    model: 'Xprinter XP-80',
+    protocol: 'escpos',
+    address: '192.168.88.208:9100',
+    box: box2Id,
+  });
+  const counter2Id = await mkStation({
+    name: 'Counter 2',
+    kind: 'till',
+    codePrefix: 'T2',
+    capabilities: ['tickets', 'fnb'],
+    accessScope: 'all_staff',
+    box: box2Id,
+  });
+  await assign(counter2Id, 'receipt', devReceipt2);
+
   // Only the administrator may pick Booth 1. Reception's picker must not show
   // it at all — that is the rule this row exists to exercise.
   await db
@@ -726,7 +772,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
     .onConflictDoNothing({ target: [s.stationStaff.stationId, s.stationStaff.accountId] });
 
   console.log(
-    'Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog, one virtual box with two stations.',
+    'Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog, two virtual boxes with three stations.',
   );
 }
 

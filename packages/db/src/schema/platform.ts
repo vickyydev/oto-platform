@@ -23,6 +23,20 @@ export const auditLog = core.table(
     entityId: text('entity_id').notNull(),
     before: jsonb('before'),
     after: jsonb('after'),
+    /**
+     * `x-oto-action-id`, minted where the person tapped and carried PWA -> box
+     * -> cloud (S2-05). The audit row is the last of the four records one
+     * action writes — the till line, the Box log drawer, the `ops_run` for the
+     * batch, and this — and without the id here the chain stops one short.
+     */
+    actionId: text('action_id'),
+    /**
+     * The `edge.sync_event` this change arrived as, for anything a box
+     * originated. No foreign key, deliberately: the ledger is swept after a
+     * year and the audit log is not, so the pointer has to outlive what it
+     * points at. Same rule as `edge.box_command.action_id` and `ops_run`.
+     */
+    sourceEventId: uuid('source_event_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => [
@@ -32,6 +46,8 @@ export const auditLog = core.table(
     index('audit_branch_idx').on(t.branchId),
     index('audit_created_idx').on(t.createdAt),
     index('audit_action_idx').on(t.action, t.createdAt),
+    index('audit_action_id_idx').on(t.actionId),
+    index('audit_source_event_idx').on(t.sourceEventId),
   ],
 );
 

@@ -47,6 +47,17 @@ export const BoxRegisterRequestSchema = z.object({
   agentVersion: z.string().min(1).max(32),
   /** What the machine calls itself — useful when a slot holds the wrong Pi. */
   hostname: z.string().max(128).optional(),
+  /**
+   * The PUBLIC half of the box's sync signing key, SPKI PEM (S2-05).
+   *
+   * Presented once, at registration, and kept in `core.box.sync_public_key`.
+   * The private half never leaves the box, which is the whole point: the
+   * cloud holds only what it needs to VERIFY a box's events and nothing it
+   * could use to forge them. Optional so that an agent older than S2-05 still
+   * registers; such a box can queue nothing until it has a key.
+   */
+  syncPublicKey: z.string().max(1024).optional(),
+  syncKeyAlgorithm: z.enum(['ed25519']).optional(),
 });
 export type BoxRegisterRequest = z.infer<typeof BoxRegisterRequestSchema>;
 
@@ -97,11 +108,30 @@ export const BoxHeartbeatRequestSchema = z.object({
    */
   reportedAt: z.string().datetime(),
   agentVersion: z.string().min(1).max(32),
+  /**
+   * The box's sync public key, when it has one the cloud may not (S2-05).
+   *
+   * A box that registered before S2-05 has a spent claim code and no way back
+   * through `/register`, so the one channel it still has for handing over a
+   * newly minted public half is this one — authenticated by the box secret,
+   * which is the same proof registration used. It is also how a rotation
+   * reaches the cloud.
+   */
+  syncPublicKey: z.string().max(1024).optional(),
   uptimeS: z.number().int().min(0).optional(),
   /** Null on a virtual box, which has no thermometer — never 0, which reads as cold. */
   tempC: z.number().nullable().optional(),
   /** Unsynced events waiting on the box: the number that says whether offline is safe. */
   outboxDepth: z.number().int().min(0).optional(),
+  /**
+   * How long the oldest unacknowledged event has been waiting, in seconds.
+   *
+   * Depth alone does not say whether a box is stuck: three events queued a
+   * minute ago is a busy till, three queued yesterday is a box that has been
+   * talking to the cloud and failing to hand anything over. The watchdog's
+   * "online but oldest unacked > SYNC_STALE_AFTER_S" rule reads this field.
+   */
+  oldestUnackedS: z.number().int().min(0).nullable().optional(),
   /** The config version the box has actually applied, so drift is visible. */
   configVersion: z.string().max(64).optional(),
   /** The box has been put into offline mode deliberately (S2-05). */
@@ -201,6 +231,13 @@ export interface BoxConfigBundle {
     id: string;
     code: string;
     name: string;
+    /**
+     * Present so a box restored from its credential file — which never
+     * re-registers, because the claim code is spent — can still stamp a
+     * station session row with the operator it belongs to. Optional so an api
+     * that has not added it yet still produces a bundle this agent accepts.
+     */
+    operatorId?: string;
     timezone: string;
     openingHours: unknown;
     businessDayStart: string;

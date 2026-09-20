@@ -6,6 +6,7 @@ import { OccupancyChip } from '@/components/shared/OccupancyChip';
 import { ThemeMenu } from '@/components/shared/ThemeMenu';
 import { BranchSwitcher } from '@/components/shared/BranchSwitcher';
 import { PricingModeIndicator } from '@/components/shared/PricingModeIndicator';
+import { StationLinkBanner } from '@/components/shared/StationLinkBanner';
 import { useStation } from '@/station/StationContext';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { getRestockAlerts } from '@/lib/inventory';
@@ -206,6 +207,12 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
         <OperatorBadge />
       </div>
     </div>
+
+    {/* POS-wide link strip: shown only when this till is working without the
+        internet, or cannot reach the platform at all. Above the low-stock
+        strip because a link fault outranks a low bottle of syrup — and, like
+        it, hidden entirely when there is nothing to say. */}
+    <StationLinkBanner />
 
     {/* POS-wide low-stock reminder strip. Hidden when nothing needs restocking. */}
     {alerts.length > 0 && (

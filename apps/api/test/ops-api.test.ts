@@ -745,7 +745,10 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
     expect(quiet!.detail).toContain('has not called home');
 
     const summary = await watchdog();
-    expect(summary.boxes).toBe(1);
+    // Both seeded boxes are examined. Only the one this block drives is
+    // silenced: Virtual box 2 has never registered, and nothing is expected of
+    // a box no agent has claimed.
+    expect(summary.boxes).toBe(2);
     // The status column moves whatever the hour: that is a fact, not a judgement.
     expect(summary.boxesSilenced).toBe(1);
     expect((await theBox()).status).toBe('offline');

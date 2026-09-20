@@ -16,6 +16,23 @@ export interface AuditEntry {
   operatorId?: string | null;
   branchId?: string | null;
   requestId?: string | null;
+  /**
+   * `x-oto-action-id`, minted where the person tapped and carried PWA → box →
+   * cloud (S2-05). A request id identifies one HTTP call; this identifies one
+   * ACTION, which may have crossed a box, waited in an outbox overnight and
+   * arrived in a batch of two hundred. It is what makes the till line, the Box
+   * log drawer and this row findable from one another.
+   */
+  actionId?: string | null;
+  /**
+   * The `edge.sync_event` this change came out of, for a record written by
+   * applying a box's fact rather than by somebody pressing a button here.
+   *
+   * No foreign key, deliberately: `sync_event` is swept on a dated policy and
+   * `audit_log` is never swept, so a long-lived row must not hold a key into a
+   * shorter-lived one. The pointer has to outlive what it points at.
+   */
+  sourceEventId?: string | null;
 }
 
 /** Minimal insert surface shared by Db and its transaction handle. */
@@ -31,6 +48,8 @@ export const audit = {
       branchId: entry.branchId ?? null,
       actorAccountId: entry.actorAccountId,
       requestId: entry.requestId ?? null,
+      actionId: entry.actionId ?? null,
+      sourceEventId: entry.sourceEventId ?? null,
       action: entry.action,
       entityType: entry.entityType,
       entityId: entry.entityId,

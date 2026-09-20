@@ -90,9 +90,16 @@ export const StationSessionDocumentSchema = z.object({
   boxId: z.string().uuid(),
   schemaVersion: z.number().int().positive().default(STATION_SESSION_SCHEMA_VERSION),
   /**
-   * Stamped by the box on every change and never reused. Two tabs on one
-   * station showing the same number is the acceptance criterion; an intent
-   * quoting an older one is stale.
+   * The fence around the station's writer: stamped by the box, never reused,
+   * and moved by every change made by whoever is HOLDING the station. Two tabs
+   * on one station showing the same number is the acceptance criterion; an
+   * intent quoting an older one is stale.
+   *
+   * Two things deliberately change the document without moving it — the lease
+   * renewal, and an intent sent with no lease, which is the customer display
+   * choosing a language or answering a prompt. Neither belongs to the sale, and
+   * a number any screen watching the station could move would be a number any
+   * screen could use to make the holder's next intent stale.
    */
   sequence: z.number().int().min(0),
   stage: z.enum(STATION_SESSION_STAGES),

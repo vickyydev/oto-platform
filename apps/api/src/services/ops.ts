@@ -25,16 +25,19 @@ import {
   opsExpectation,
   opsLast,
   opsRun,
+  syncAnomaly,
   type AlertDeliveryEvent,
   type AlertSeverity,
   type Db,
   type OpsKind,
   type OpsOutcome,
+  type SyncAnomalyKind,
 } from '@oto/db';
 import { newId } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { isPgError, scrubPgError } from '../lib/scrub';
 import { boxSettings, withinOpeningHours } from './box';
+import { syncSettings } from './sync';
 import type { Exec } from './tx';
 
 /**
@@ -113,6 +116,13 @@ export function errorFingerprint(kind: OpsKind, name: string, errorCode: string)
 // --- Runs -------------------------------------------------------------------
 
 export interface RecordRunInput {
+  /**
+   * Supplied only where the run's id has to be known BEFORE it is recorded —
+   * a sync push stamps `sync_event.batch_id` with it inside the transaction
+   * that applies the batch, so the Console can open the whole push from one
+   * event (S2-05). Everywhere else it is minted here.
+   */
+  id?: string;
   kind: OpsKind;
   /** `job:housekeeping.idempotency`, `adapter:2c2p.do_payment`, `http:POST /members`. */
   name: string;
@@ -143,7 +153,7 @@ export interface RecordedRun {
  * this last work" or to "is this due" — both of which read `ops_last`.
  */
 export async function recordRun(exec: Exec, input: RecordRunInput): Promise<RecordedRun> {
-  const id = newId();
+  const id = input.id ?? newId();
   const finishedAt = input.finishedAt ?? new Date();
   const durationMs = Math.max(0, finishedAt.getTime() - input.startedAt.getTime());
   const failed = input.outcome === 'failed';
@@ -842,11 +852,12 @@ export async function healthChecks(deps: HealthDeps, now = Date.now()): Promise<
 // opens those and closes the rest. The page can no more disagree with the alert
 // than a number can disagree with itself.
 //
-// `withinOpeningHours` and `boxSettings` are imported from `services/box.ts`,
-// which imports `recordRun` from this file — the two modules are circular.
-// Neither calls the other while it is being loaded, so that is safe, and the
-// alternative is a second copy of the opening-hours rule living here. A second
-// copy is precisely the disagreement this section exists to prevent.
+// `withinOpeningHours` and `boxSettings` come from `services/box.ts`, and
+// `syncSettings` from `services/sync.ts`; both of those import `recordRun` from
+// this file, so all three modules are circular. Nothing calls across while a
+// module is being loaded, so that is safe, and the alternative is a second copy
+// of the opening-hours rule and of `SYNC_STALE_AFTER_S`'s default living here.
+// A second copy is precisely the disagreement this section exists to prevent.
 //
 // Nothing here selects a person, a box secret or a claim code. A box's name,
 // its slot and its device labels are what a page read over a shoulder in a back
@@ -898,6 +909,16 @@ export interface BoxHealth {
   uptimeSeconds: number | null;
   /** Unsynced events waiting on the box — the number that says whether offline is safe. */
   outboxDepth: number | null;
+  /**
+   * How long the oldest unsynced event has been waiting, in seconds (S2-05).
+   * A depth that is not moving is the difference between a box that is busy
+   * and a box whose sync path is broken, and only the age can tell them apart.
+   */
+  oldestUnackedAgeS: number | null;
+  /** Events this box sent that could not be applied and are waiting on a person. */
+  quarantineOpen: number;
+  /** When the cloud last accepted a batch from it. Null means never. */
+  lastSyncAt: string | null;
   /** Positive means the box's clock is ahead of ours. */
   clockOffsetMs: number | null;
   /** Null on the virtual box, which has no thermometer — not zero, which reads as cold. */
@@ -1022,6 +1043,35 @@ export interface BoxRuleSettings {
   /** `BOX_OFFLINE_AFTER_S`: silence longer than this and the box is offline. */
   offlineAfterS: number;
   minAgentVersion: string;
+  /** `SYNC_STALE_AFTER_S`: a box that is talking but whose facts are not arriving. */
+  syncStaleAfterS: number;
+}
+
+/**
+ * What the sync core knows about one box, gathered once per evaluation and
+ * handed in beside its devices (S2-05).
+ *
+ * Passed in rather than queried here for the same reason the devices are: this
+ * function is pure, it runs on every Health page load and every watchdog tick,
+ * and the page and the alert must be reading the same numbers.
+ */
+export interface BoxSyncState {
+  /** Queued or sending, from `edge.box_outbox` where that store is ours. */
+  outboxDepth: number | null;
+  /** Reported by the box on its heartbeat, or measured from our copy of its outbox. */
+  oldestUnackedAgeS: number | null;
+  quarantineOpen: number;
+  epochRegressedOpen: number;
+  lastSyncAt: Date | null;
+  /**
+   * How many journal positions the ledger holds above the box's sync cursor, on
+   * its current epoch. Zero is the healthy answer and the usual one: the cursor
+   * is the contiguous prefix of what has arrived, so anything above it means a
+   * position in between never did (S2-05).
+   */
+  cursorBehindBy: number;
+  /** The first position the cursor cannot claim — the hole itself. Null when there is none. */
+  cursorHoleAt: number | null;
 }
 
 /**
@@ -1045,6 +1095,7 @@ export function evaluateBox(
   devices: FleetDeviceRow[],
   settings: BoxRuleSettings,
   now: number,
+  sync?: BoxSyncState,
 ): { health: BoxHealth; conditions: FleetCondition[] } {
   const last = statusOf(row);
   const heartbeatAgeSeconds = secondsSince(row.lastHeartbeatAt, now);
@@ -1165,6 +1216,126 @@ export function evaluateBox(
     },
   });
 
+  /**
+   * --- And the two sync rules (S2-05), which are about a quieter fault than
+   * everything above: a box that is answering every heartbeat while the facts
+   * it produced are not arriving.
+   *
+   * **Online but not syncing.** The offline rule cannot see this — the box is
+   * calling home, so by every measure above it is healthy — and yet a counter
+   * whose sales are sitting in an outbox is a counter whose takings exist in
+   * one place, on a Pi, in a mall. It fires only while the box is REPORTING,
+   * because an offline box is expected to hold a queue: that is what offline
+   * mode is for, and raising it there would make the demo instrument alarm on
+   * itself.
+   */
+  const outboxDepth = sync?.outboxDepth ?? statusNumber(last, 'outboxDepth');
+  const oldestUnackedAgeS = sync?.oldestUnackedAgeS ?? statusNumber(last, 'oldestUnackedAgeS');
+  conditions.push({
+    key: `sync.stale:${row.id}`,
+    category: 'sync.stale',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active:
+      reporting && oldestUnackedAgeS !== null && oldestUnackedAgeS > settings.syncStaleAfterS,
+    summary: `${subject} is calling home but its oldest unsynced event has been waiting ${elapsedWords(oldestUnackedAgeS ?? 0)} — ${outboxDepth ?? 'some'} event(s) exist only on the box`,
+    detail: {
+      slot: row.slot,
+      outboxDepth,
+      oldestUnackedAgeS,
+      staleAfterSeconds: settings.syncStaleAfterS,
+    },
+    clear: {
+      category: 'sync.stale',
+      reason: 'recovered',
+      summary: `${subject} is syncing again — nothing has been waiting longer than ${settings.syncStaleAfterS}s`,
+    },
+  });
+
+  /**
+   * **Quarantine non-empty.** An event the cloud refused is a fact nobody has
+   * recorded anywhere, waiting on a person to replay or discard it. Unlike
+   * everything else here it does not depend on the box being reachable — the
+   * rows are already in this database, and the box that sent them may since
+   * have been unplugged — so it fires whatever the box is doing now. Raised by
+   * the push as it happens and closed by this, from the same count, so the two
+   * cannot tell different stories.
+   */
+  const quarantineOpen = sync?.quarantineOpen ?? 0;
+  conditions.push({
+    key: `sync.quarantine:${row.id}`,
+    category: 'sync.quarantine',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: quarantineOpen - (sync?.epochRegressedOpen ?? 0) > 0,
+    summary: `${quarantineOpen} event(s) from ${subject} could not be applied and are waiting on Failures > Quarantine`,
+    detail: { slot: row.slot, quarantineOpen, epochRegressedOpen: sync?.epochRegressedOpen ?? 0 },
+    clear: {
+      category: 'sync.quarantine',
+      reason: 'cleared',
+      summary: `Everything quarantined from ${subject} has been replayed or discarded`,
+    },
+  });
+
+  /**
+   * **The cursor is behind the ledger.** The cursor is the contiguous prefix of
+   * what has arrived from a box, so a ledger row above it means a position in
+   * between never arrived at all — a queue row damaged on the way up and not yet
+   * re-sent, or a store that has lost part of its journal. It stalls the number
+   * the heartbeat and the till's banner both read as "where the box has got to",
+   * and it is invisible to `sync.stale` above, which measures the age of a queue
+   * that is still draining perfectly well.
+   *
+   * Unlike the offline and device rules it does not wait for the box to be
+   * REPORTING: the rows are already in this database, and a box that lost
+   * positions and was then unplugged still lost them. It does hold to the same
+   * rule as everything else about a box nobody has registered against or that an
+   * administrator has taken out of service, which is expected to be quiet. It
+   * closes on its own when the missing position arrives or when the store is
+   * reset, because a reset mints a new epoch and this reads the current one.
+   */
+  const cursorBehindBy = sync?.cursorBehindBy ?? 0;
+  const cursorHoleAt = sync?.cursorHoleAt ?? null;
+  conditions.push({
+    key: `sync.cursor_stalled:${row.id}`,
+    category: 'sync.cursor_stalled',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: expectedAlive && cursorBehindBy > 0,
+    summary: `${subject} has ${cursorBehindBy} event(s) recorded above journal position ${cursorHoleAt ?? 0}, which has never arrived — its sync cursor cannot move past it`,
+    detail: { slot: row.slot, cursorBehindBy, cursorHoleAt, currentEpoch: row.currentEpoch },
+    clear: {
+      category: 'sync.cursor_stalled',
+      reason: 'recovered',
+      summary: `${subject} has nothing filed above its sync cursor — everything it has sent is accounted for`,
+    },
+  });
+
+  /**
+   * A replay from a journal the box no longer has. Its own condition rather
+   * than one more quarantine reason, because the answer is different: nothing
+   * is wrong with the events, the box is sending from a store that was wiped,
+   * and what a person does about it is check the box rather than the data.
+   */
+  conditions.push({
+    key: `sync.epoch_regressed:${row.id}`,
+    category: 'sync.epoch_regressed',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: (sync?.epochRegressedOpen ?? 0) > 0,
+    summary: `${subject} sent ${sync?.epochRegressedOpen ?? 0} event(s) from a journal epoch replaced when its store was reset`,
+    detail: { slot: row.slot, currentEpoch: row.currentEpoch },
+    clear: {
+      category: 'sync.epoch_regressed',
+      reason: 'cleared',
+      summary: `${subject} is sending from epoch ${row.currentEpoch} again`,
+    },
+  });
+
   // --- And what the box says about the things plugged into it.
   const visible = reporting && openingHours === 'open';
   for (const d of devices) {
@@ -1256,7 +1427,10 @@ export function evaluateBox(
       lastHeartbeatAt: iso(row.lastHeartbeatAt),
       heartbeatAgeSeconds,
       uptimeSeconds: statusNumber(last, 'uptimeS'),
-      outboxDepth: statusNumber(last, 'outboxDepth'),
+      outboxDepth,
+      oldestUnackedAgeS,
+      quarantineOpen,
+      lastSyncAt: iso(sync?.lastSyncAt ?? null),
       clockOffsetMs,
       tempC: statusNumber(last, 'tempC'),
       currentEpoch: row.currentEpoch,
@@ -1296,6 +1470,7 @@ export async function fleetHealth(
   const rules: BoxRuleSettings = {
     offlineAfterS: settings.offlineAfterS,
     minAgentVersion: settings.minAgentVersion,
+    syncStaleAfterS: syncSettings().staleAfterS,
   };
 
   const scope = deps.operatorId ? eq(box.operatorId, deps.operatorId) : undefined;
@@ -1354,13 +1529,172 @@ export async function fleetHealth(
     byBox.set(d.boxId, list);
   }
 
+  const sync = await boxSyncStates(
+    deps.db,
+    rows.map((r) => r.id),
+    now,
+  );
+
   const snapshot: FleetSnapshot = { boxes: [], conditions: [] };
   for (const row of rows) {
-    const { health, conditions } = evaluateBox(row, byBox.get(row.id) ?? [], rules, now);
+    const { health, conditions } = evaluateBox(
+      row,
+      byBox.get(row.id) ?? [],
+      rules,
+      now,
+      sync.get(row.id),
+    );
     snapshot.boxes.push(health);
     snapshot.conditions.push(...conditions);
   }
   return snapshot;
+}
+
+/**
+ * The sync numbers for a set of boxes, in three statements rather than three
+ * per box (S2-05).
+ *
+ * Written here rather than imported from `services/sync.ts` on purpose: that
+ * file already imports `recordRun` and `raiseAlert` from this one, and a
+ * two-way runtime import between them would be a cycle with no upside. The
+ * queries are small and belong to the page that reads them.
+ *
+ * `edge.box_outbox` is the box's own store, which on the virtual box IS this
+ * database and on a Raspberry Pi is a SQLite file we cannot see. An empty
+ * answer therefore means "we hold no copy", not "nothing is queued", which is
+ * why `evaluateBox` falls back to what the box reported on its heartbeat.
+ */
+async function boxSyncStates(
+  db: Db,
+  boxIds: string[],
+  now: number,
+): Promise<Map<string, BoxSyncState>> {
+  const out = new Map<string, BoxSyncState>();
+  if (boxIds.length === 0) return out;
+  for (const id of boxIds) {
+    out.set(id, {
+      outboxDepth: null,
+      oldestUnackedAgeS: null,
+      quarantineOpen: 0,
+      epochRegressedOpen: 0,
+      lastSyncAt: null,
+      cursorBehindBy: 0,
+      cursorHoleAt: null,
+    });
+  }
+
+  const ids = sql.join(
+    boxIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
+
+  const outbox = await probe(
+    async () =>
+      (
+        await db.execute<{ box_id: string; depth: string; oldest: Date | null }>(
+          sql`select box_id, count(*)::text as depth, min(created_at) as oldest
+                from edge.box_outbox
+               where state in ('queued','sending') and box_id in (${ids})
+               group by box_id`,
+        )
+      ).rows,
+    [] as Array<{ box_id: string; depth: string; oldest: Date | null }>,
+  );
+  for (const row of outbox) {
+    const state = out.get(row.box_id);
+    if (!state) continue;
+    state.outboxDepth = Number(row.depth);
+    state.oldestUnackedAgeS = row.oldest
+      ? Math.max(0, Math.round((now - new Date(row.oldest).getTime()) / 1000))
+      : null;
+  }
+
+  const quarantine = await probe(
+    async () =>
+      (
+        await db.execute<{ box_id: string; open: string; epoch: string }>(
+          sql`select box_id,
+                     count(*)::text as open,
+                     count(*) filter (where reason = 'epoch_regressed')::text as epoch
+                from edge.sync_quarantine
+               where status = 'open' and box_id in (${ids})
+               group by box_id`,
+        )
+      ).rows,
+    [] as Array<{ box_id: string; open: string; epoch: string }>,
+  );
+  for (const row of quarantine) {
+    const state = out.get(row.box_id);
+    if (!state) continue;
+    state.quarantineOpen = Number(row.open);
+    state.epochRegressedOpen = Number(row.epoch);
+  }
+
+  const cursors = await probe(
+    async () =>
+      (
+        await db.execute<{ box_id: string; last_push_at: Date | null }>(
+          sql`select box_id, max(last_push_at) as last_push_at
+                from edge.sync_cursor
+               where box_id in (${ids})
+               group by box_id`,
+        )
+      ).rows,
+    [] as Array<{ box_id: string; last_push_at: Date | null }>,
+  );
+  for (const row of cursors) {
+    const state = out.get(row.box_id);
+    if (!state) continue;
+    state.lastSyncAt = row.last_push_at ? new Date(row.last_push_at) : null;
+  }
+
+  /**
+   * How far the cursor is behind the ledger on the box's CURRENT epoch (S2-05).
+   *
+   * The ledger only, never quarantine: a filed event is a position the cloud
+   * refused rather than one it is missing, and counting those would open this on
+   * every press of "Inject poison event" — a control that must cost the box
+   * nothing. A count of rows rather than `max(box_seq) - last_box_seq`, because
+   * the number a person acts on is how many facts are stranded above the hole,
+   * not how wide the numbering is; a box that once sealed an event a million
+   * positions ahead would otherwise report a million.
+   *
+   * One index-only aggregate per box on `sync_event_journal_unique`, on a page
+   * load and a watchdog tick rather than on a push. Its range is empty on a
+   * healthy box, which is the case that has to be free; on a stalled one it
+   * counts every position that has arrived since the hole, so a hole left open
+   * for weeks makes this a longer scan — by which time `sync.cursor_stalled` has
+   * been open for weeks too.
+   */
+  const stalled = await probe(
+    async () =>
+      (
+        await db.execute<{ box_id: string; behind: string; hole: string | null }>(
+          sql`select c.box_id,
+                     count(e.box_seq)::text as behind,
+                     case when count(e.box_seq) > 0
+                          then (c.last_box_seq + 1)::text end as hole
+                from edge.sync_cursor c
+                join core.box b
+                  on b.id = c.box_id and b.current_epoch = c.journal_epoch
+                left join edge.sync_event e
+                  on e.box_id = c.box_id
+                 and e.journal_epoch = c.journal_epoch
+                 and e.box_seq > c.last_box_seq
+               where c.box_id in (${ids})
+               group by c.box_id, c.last_box_seq`,
+        )
+      ).rows,
+    [] as Array<{ box_id: string; behind: string; hole: string | null }>,
+  );
+  for (const row of stalled) {
+    const state = out.get(row.box_id);
+    if (!state) continue;
+    state.cursorBehindBy = Number(row.behind);
+    state.cursorHoleAt = row.hole === null ? null : Number(row.hole);
+  }
+
+  return out;
 }
 
 /**
@@ -1444,28 +1778,35 @@ export interface FailureQuery {
 }
 
 /**
- * The cursor is the sort key itself — the last group's newest failure and its
- * fingerprint — so a page resumes exactly where the previous one stopped even
- * as new failures arrive. Same shape as the audit log's (routes/audit.ts).
+ * The cursor is the sort key itself — a timestamp, and the tiebreak that gives
+ * rows sharing that timestamp a total order — so a page resumes exactly where
+ * the previous one stopped even as new rows arrive. Same shape as the audit
+ * log's (routes/audit.ts).
+ *
+ * Exported because every keyset list under `/ops` uses this one encoding: the
+ * failure groups below (newest failure + fingerprint), and the quarantine list
+ * in `services/sync.ts` and the anomaly list further down this file (received
+ * or detected time + row id). One format means a cursor is decoded the same way
+ * and rejected the same way wherever it arrives.
  */
-function encodeGroupCursor(lastSeenAt: string, fingerprint: string): string {
-  return Buffer.from(`${lastSeenAt}|${fingerprint}`, 'utf8').toString('base64url');
+export function encodeCursor(at: string, tiebreak: string): string {
+  return Buffer.from(`${at}|${tiebreak}`, 'utf8').toString('base64url');
 }
 
-function decodeGroupCursor(raw: string): { lastSeenAt: string; fingerprint: string } {
-  const [lastSeenAt, fingerprint] = Buffer.from(raw, 'base64url').toString('utf8').split('|');
-  if (!lastSeenAt || !fingerprint || Number.isNaN(Date.parse(lastSeenAt))) {
+export function decodeCursor(raw: string): { at: string; tiebreak: string } {
+  const [at, tiebreak] = Buffer.from(raw, 'base64url').toString('utf8').split('|');
+  if (!at || !tiebreak || Number.isNaN(Date.parse(at))) {
     throw new AppError(400, 'BAD_REQUEST', 'Invalid cursor');
   }
-  return { lastSeenAt, fingerprint };
+  return { at, tiebreak };
 }
 
 /**
  * Row-wise comparison on the sort key, which is what makes the tie-break free:
  * groups sharing a last-seen timestamp still have a total order.
  */
-function groupCursorClause(c: { lastSeenAt: string; fingerprint: string }): SQL {
-  return sql`(max(${opsRun.startedAt}), ${opsRun.fingerprint}) < (${c.lastSeenAt}::timestamptz, ${c.fingerprint})`;
+function groupCursorClause(c: { at: string; tiebreak: string }): SQL {
+  return sql`(max(${opsRun.startedAt}), ${opsRun.fingerprint}) < (${c.at}::timestamptz, ${c.tiebreak})`;
 }
 
 /**
@@ -1508,7 +1849,7 @@ export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePag
   ];
   if (q.kind) clauses.push(eq(opsRun.kind, q.kind as OpsKind));
 
-  const cursorClause = q.cursor ? groupCursorClause(decodeGroupCursor(q.cursor)) : undefined;
+  const cursorClause = q.cursor ? groupCursorClause(decodeCursor(q.cursor)) : undefined;
 
   const rows = await db
     .select({
@@ -1561,7 +1902,7 @@ export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePag
     groups,
     // A short page is the last page; a full one may not be.
     nextCursor:
-      groups.length === q.limit && last ? encodeGroupCursor(last.lastSeenAt, last.fingerprint) : null,
+      groups.length === q.limit && last ? encodeCursor(last.lastSeenAt, last.fingerprint) : null,
   };
 
   // Only worth the second scan on the first page: it is a property of the
@@ -1638,6 +1979,144 @@ export async function runsForFingerprint(
 export async function findRun(db: Db, id: string) {
   const [row] = await db.select().from(opsRun).where(eq(opsRun.id, id)).limit(1);
   return row ?? null;
+}
+
+// --- Anomalies (S2-05) ------------------------------------------------------
+//
+// The other half of the Failures > Quarantine tab. A quarantined event is one
+// the cloud REFUSED and a person has to decide about; an anomaly is one it
+// APPLIED, with a judgement worth recording — a clock it could not trust, a
+// batch that arrived twice, a journal position that never came, the same phone
+// number created at two boxes and merged. Nobody is waiting on these, and that
+// is exactly why they need somewhere to be read: until this route existed they
+// accumulated where nothing could show them.
+//
+// Read here rather than in `services/sync.ts`, where the quarantine list lives,
+// because the page this answers is the Failures page: the cursor encoding, the
+// `iso` helper and the 400 on a bad cursor are all in this file, and a second
+// copy of any of them is how two lists under one prefix start disagreeing.
+
+export interface SyncAnomalyRow {
+  id: string;
+  boxId: string;
+  /** Denormalised: a box id alone names nothing to a person on call. */
+  boxName: string | null;
+  kind: string;
+  eventId: string | null;
+  /** The other event, where the kind is about a pair — the second half of a merge. */
+  relatedEventId: string | null;
+  /** Ids, counts and dates. See `safeDetail`. */
+  detail: Record<string, unknown> | null;
+  actionId: string | null;
+  detectedAt: string;
+}
+
+export interface SyncAnomalyPage {
+  anomalies: SyncAnomalyRow[];
+  nextCursor: string | null;
+}
+
+export interface AnomalyQuery {
+  operatorId: string;
+  kind?: string;
+  boxId?: string;
+  cursor?: string;
+  limit: number;
+}
+
+/**
+ * What a row is allowed to carry onto the page.
+ *
+ * `sync_anomaly.detail` is already scrubbed where it is written (`pushEvents`
+ * in `services/sync.ts` puts every detail through `scrubDetail` before the
+ * insert), and what the call sites put there is ids, counts and dates. This
+ * runs the same redactor again on the way out, for the two cases the write
+ * path cannot cover: a row written by an earlier build, and a call site added
+ * later that forgets. It is the same redactor, not a stronger one — a key
+ * deny-list plus a value-shape sweep, which is a good filter and not a proof —
+ * so the rule that actually keeps this page clean is still the one upstream:
+ * a detail names things, never quotes a value.
+ *
+ * Twenty to fifty small objects per page; the cost does not signify.
+ */
+function safeDetail(value: unknown): Record<string, unknown> | null {
+  if (value === null || value === undefined) return null;
+  const scrubbed = scrubDetail(value);
+  return scrubbed !== null && typeof scrubbed === 'object' && !Array.isArray(scrubbed)
+    ? (scrubbed as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * The anomaly record, newest first.
+ *
+ * **Paginated rather than grouped, unlike the failure list, and the difference
+ * is what the rows mean.** Sixty failures behind one fingerprint are one break
+ * repeating: the sixtieth says nothing the first did not, so collapsing them to
+ * a row with a count of sixty loses nothing and is the only way the page stays
+ * readable. Sixty anomalies are sixty different facts from the park. A `merge`
+ * names the two member ids it reconciled; a `clock_recomputed` names the two
+ * candidate trading days for one event; a `sequence_gap` names the positions
+ * that went missing. Grouped by kind and box they would collapse to six rows
+ * carrying no ids at all — which is the whole of what somebody opens this to
+ * find. They are also not a work queue: an anomaly needs no decision, so there
+ * is no backlog to make tractable by collapsing it.
+ *
+ * So: keyset pagination on `(detected_at, id)` — `id` is a UUIDv7, so it is a
+ * total order and a stable tiebreak for rows sharing a timestamp — and the
+ * Console asks for twenty at a time with a "Load more".
+ *
+ * Tenancy comes through the box, because `sync_anomaly` carries no operator of
+ * its own; the schema says why (`packages/db/src/schema/sync.ts`).
+ */
+export async function anomalyPage(db: Db, q: AnomalyQuery): Promise<SyncAnomalyPage> {
+  const clauses: SQL[] = [eq(box.operatorId, q.operatorId)];
+  if (q.kind) clauses.push(eq(syncAnomaly.kind, q.kind as SyncAnomalyKind));
+  if (q.boxId) clauses.push(eq(syncAnomaly.boxId, q.boxId));
+  if (q.cursor) {
+    const c = decodeCursor(q.cursor);
+    clauses.push(
+      sql`(${syncAnomaly.detectedAt}, ${syncAnomaly.id}) < (${c.at}::timestamptz, ${c.tiebreak}::uuid)`,
+    );
+  }
+
+  const rows = await db
+    .select({
+      id: syncAnomaly.id,
+      boxId: syncAnomaly.boxId,
+      boxName: box.name,
+      kind: syncAnomaly.kind,
+      eventId: syncAnomaly.eventId,
+      relatedEventId: syncAnomaly.relatedEventId,
+      detail: syncAnomaly.detail,
+      actionId: syncAnomaly.actionId,
+      detectedAt: syncAnomaly.detectedAt,
+    })
+    .from(syncAnomaly)
+    .innerJoin(box, eq(syncAnomaly.boxId, box.id))
+    .where(and(...clauses))
+    .orderBy(desc(syncAnomaly.detectedAt), desc(syncAnomaly.id))
+    .limit(q.limit);
+
+  const anomalies: SyncAnomalyRow[] = rows.map((r) => ({
+    id: r.id,
+    boxId: r.boxId,
+    boxName: r.boxName,
+    kind: r.kind,
+    eventId: r.eventId,
+    relatedEventId: r.relatedEventId,
+    detail: safeDetail(r.detail),
+    actionId: r.actionId,
+    detectedAt: iso(r.detectedAt)!,
+  }));
+
+  const last = anomalies[anomalies.length - 1];
+  return {
+    anomalies,
+    // A short page is the last page; a full one may not be.
+    nextCursor:
+      anomalies.length === q.limit && last ? encodeCursor(last.detectedAt, last.id) : null,
+  };
 }
 
 /**

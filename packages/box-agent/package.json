@@ -7,13 +7,17 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./protocol": "./src/protocol.ts"
+    "./protocol": "./src/protocol.ts",
+    "./contract": "./src/contract.ts",
+    "./sqlite": "./src/store-sqlite.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
+    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types --import ./harness.mjs --test"
   },
   "dependencies": {
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@oto/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

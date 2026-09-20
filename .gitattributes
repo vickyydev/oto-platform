@@ -1,0 +1,32 @@
+# Line endings, decided here rather than by whoever checked out the repository.
+#
+# This exists because a committed fixture was compared against freshly
+# generated text and failed on a Windows checkout: git had rewritten the
+# committed copy to CRLF while the generator produces LF, so sixteen identical
+# layouts differed by one invisible byte per line. The device `.bin` fixtures
+# beside them were fine — git recognised them as binary — but that was luck
+# rather than a rule, and a printer byte stream silently gaining a 0x0D is a
+# receipt nobody can read.
+
+# Everything text is LF in the repository. Working copies may differ; what is
+# committed does not.
+* text=auto eol=lf
+
+# Generated fixtures are compared byte for byte against what the code emits, so
+# nothing may touch them on the way in or out.
+packages/print/test/fixtures/** -text
+
+# Binary, stated rather than inferred.
+*.png binary
+*.jpg binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.bin binary
+
+# Lockfiles and generated SQL are diffed by people; keep them LF and let git
+# show them as text.
+pnpm-lock.yaml text eol=lf
+*.sql text eol=lf

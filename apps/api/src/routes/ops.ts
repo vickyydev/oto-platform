@@ -1,6 +1,15 @@
 import { z } from 'zod';
+import { and, eq } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
-import { OPS_KINDS } from '@oto/db';
+import {
+  OPS_KINDS,
+  SYNC_ANOMALY_KINDS,
+  SYNC_QUARANTINE_REASONS,
+  SYNC_QUARANTINE_STATUSES,
+  box as boxTable,
+  branch as branchTable,
+  syncQuarantine,
+} from '@oto/db';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
@@ -8,9 +17,18 @@ import { opCtx, withTx } from '../services/tx';
 import { isPlatformWide } from '../services/permissions';
 import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
-import { boxSettings, virtualBoxAgent } from '../services/box';
+import { boxAuthFromRow, boxSettings, virtualBoxAgent } from '../services/box';
+import { loadBox, queueCommand } from '../services/fleet';
+import {
+  discardQuarantined,
+  injectPoisonEvent,
+  listQuarantine,
+  replayLastBatch,
+  replayQuarantined,
+} from '../services/sync';
 import {
   acknowledgeAlert,
+  anomalyPage,
   buildAlertChannels,
   deliverAlert,
   failureGroups,
@@ -228,6 +246,159 @@ export async function opsRoutes(app: App): Promise<void> {
     },
   );
 
+  // --- Failures > Quarantine (S2-05) --------------------------------------
+  //
+  // Events a box sent that the cloud could not apply. Each is a fact somebody
+  // typed at a counter that is recorded nowhere else, so the only two honest
+  // endings are "replay it" and "somebody decided not to, and said why".
+
+  app.get(
+    '/quarantine',
+    {
+      config: { permission: 'admin:health:read' },
+      schema: {
+        description:
+          'Events refused at sync, newest first — which box, which event, why, and what became of it, with a keyset cursor and the count still open across the whole table. The payload itself is never returned.',
+        querystring: z.object({
+          status: z.enum(SYNC_QUARANTINE_STATUSES).optional(),
+          reason: z.enum(SYNC_QUARANTINE_REASONS).optional(),
+          boxId: z.string().uuid().optional(),
+          cursor: z.string().max(200).optional(),
+          limit: z.coerce.number().int().min(1).max(200).default(50),
+        }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return listQuarantine(app.db, { ...req.query, operatorId: auth.operatorId });
+    },
+  );
+
+  /**
+   * The other half of the tab: what WAS applied, with a caveat.
+   *
+   * Guarded by `admin:health:read` like every read here — whoever is on call
+   * reads it — and answering with ids, counts, kinds and times. A
+   * `sync_anomaly` is the cloud saying it had to make a judgement about a fact
+   * from the park; a merge is about a member's phone number existing at two
+   * counters, so what comes back names the two member ids and never the number.
+   */
+  app.get(
+    '/anomalies',
+    {
+      config: { permission: 'admin:health:read' },
+      schema: {
+        description:
+          'Events applied with something worth recording — a clock that was not trusted, a batch that arrived twice, a journal position that never came, a member created at two boxes and merged. Newest first, keyset-paginated; nothing here is waiting on anybody.',
+        querystring: z.object({
+          kind: z.enum(SYNC_ANOMALY_KINDS).optional(),
+          boxId: z.string().uuid().optional(),
+          cursor: z.string().max(200).optional(),
+          limit: z.coerce.number().int().min(1).max(200).default(50),
+        }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return anomalyPage(app.db, { ...req.query, operatorId: auth.operatorId });
+    },
+  );
+
+  /**
+   * Both actions load the box FIRST and act on that row's branch, never on the
+   * caller's session branch — the rule S2-04 established for every by-id route,
+   * for the same reason: a quarantine id carries no tenancy, and a manager at
+   * one branch must not be able to replay another branch's sale by guessing one.
+   */
+  const quarantineBox = async (req: FastifyRequest, quarantineId: string) => {
+    const auth = req.requireAuth();
+    const [row] = await app.db
+      .select({ boxId: syncQuarantine.boxId })
+      .from(syncQuarantine)
+      .where(eq(syncQuarantine.id, quarantineId))
+      .limit(1);
+    if (!row) throw errors.notFound('No such quarantined event');
+    // Scoped to the caller's operator by the load itself: another operator's
+    // box is not ours to confirm the existence of.
+    const boxRow = await loadBox(app.db, auth.operatorId, row.boxId);
+    await req.requirePermission('admin:ops:manage', { branchId: boxRow.branchId });
+    return { auth, boxAuth: boxAuthFromRow(boxRow) };
+  };
+
+  app.post(
+    '/quarantine/:quarantineId/replay',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Put a refused event back through the sync door it was refused at, under the rules it arrived under. A box event is verified and epoch-checked again; an event the test controls injected was never sealed by a box and replays unsigned, so the reason it comes back with is its own rather than a missing signature.',
+        params: z.object({ quarantineId: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const { auth, boxAuth } = await quarantineBox(req, req.params.quarantineId);
+      const { result, outcome, message, explanation } = await replayQuarantined(
+        app.db,
+        boxAuth,
+        req.params.quarantineId,
+        opCtx(req),
+        auth.accountId,
+      );
+      const filed = result === 'applied' || result === 'duplicate';
+      return {
+        ok: filed,
+        /**
+         * What the quarantine row IS now, which is the field the Console reads
+         * to decide between "Filed" and "Refused again" — and the field it was
+         * reading before this route answered with one, which made every
+         * successful replay report itself as a refusal and stopped "Replay all"
+         * after the first event. `replayQuarantined` closes the row on exactly
+         * these two results, so this says what is in the table rather than a
+         * second opinion about it.
+         */
+        status: filed ? ('replayed' as const) : ('open' as const),
+        eventId: outcome.eventId,
+        errorCode: outcome.errorCode ?? null,
+        errorMessage: explanation,
+        // The ledger's own vocabulary, kept for anything reading the API
+        // directly. `message` says what became of it in a whole sentence,
+        // because "quarantined" on its own does not tell whoever pressed the
+        // button whether to press it again, fix something first, or discard it.
+        result,
+        outcome,
+        message,
+      };
+    },
+  );
+
+  app.post(
+    '/quarantine/:quarantineId/discard',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description: 'Decide not to apply a refused event. The reason is required.',
+        params: z.object({ quarantineId: z.string().uuid() }),
+        // A discard with no reason is not a decision, it is a deletion.
+        body: z.object({ note: z.string().min(3).max(500) }).strict(),
+      },
+    },
+    async (req) => {
+      const { auth, boxAuth } = await quarantineBox(req, req.params.quarantineId);
+      const done = await discardQuarantined(
+        app.db,
+        boxAuth,
+        req.params.quarantineId,
+        req.body.note,
+        opCtx(req),
+        auth.accountId,
+      );
+      // The row's new status, for the same reason the replay answers with one:
+      // the Console's type declares it, and a caller should not have to infer
+      // the state of a record from the absence of an error.
+      return { ...done, status: 'discarded' as const };
+    },
+  );
+
   // --- Integrations -------------------------------------------------------
 
   app.get(
@@ -315,6 +486,32 @@ export async function opsRoutes(app: App): Promise<void> {
       description: 'Returns the virtual box to our time, which closes the clock alert.',
       sticky: false,
     },
+    /**
+     * The sync controls (S2-05). Each demonstrates one property of the ledger
+     * that is otherwise only visible in a test, and each acts on the virtual
+     * box's real journal rather than on a fixture.
+     */
+    {
+      key: 'sync.replay_last_batch',
+      label: 'Replay last batch',
+      description:
+        'Sends the box’s newest batch again, byte for byte, signature and all. It should apply nothing and count every event as a duplicate.',
+      sticky: false,
+    },
+    {
+      key: 'sync.inject_poison',
+      label: 'Inject poison event',
+      description:
+        'Pushes one deliberately malformed event. It lands in Failures > Quarantine, opens an alert, and can be replayed or discarded there.',
+      sticky: true,
+    },
+    {
+      key: 'sync.reset_store',
+      label: 'Reset store (new epoch)',
+      description:
+        'Tells the virtual box to wipe its store. The cloud mints journal epoch N+1, and anything replayed from epoch N is refused rather than applied.',
+      sticky: true,
+    },
   ] as const;
 
   /**
@@ -350,7 +547,7 @@ export async function opsRoutes(app: App): Promise<void> {
       const key = req.params.key;
       if (!TEST_CONTROLS.some((c) => c.key === key)) throw errors.notFound('No such control');
 
-      const message = await runTestControl(key);
+      const message = await runTestControl(key, req, auth.accountId);
       await withTx(app.db, opCtx(req), 'ops.test_control', async (tx) => {
         await audit.record(tx, {
           actorAccountId: auth.accountId,
@@ -367,7 +564,11 @@ export async function opsRoutes(app: App): Promise<void> {
     },
   );
 
-  async function runTestControl(key: string): Promise<string> {
+  async function runTestControl(
+    key: string,
+    req: FastifyRequest,
+    accountId: string,
+  ): Promise<string> {
     if (key === 'watchdog.run') {
       const outcome = await jobRunner().runJob(WATCHDOG_JOB, { force: true });
       if (outcome === 'disabled') {
@@ -410,6 +611,7 @@ export async function opsRoutes(app: App): Promise<void> {
     }
 
     if (key.startsWith('box.')) return runFleetControl(key);
+    if (key.startsWith('sync.')) return runSyncControl(key, req, accountId);
 
     /**
      * `job.fail` writes the failure record a broken job would write, rather
@@ -497,6 +699,68 @@ export async function opsRoutes(app: App): Promise<void> {
     agent.advanceClock(-agent.state.clockSkewMs);
     await beat();
     return 'The virtual box is back on our time. The next watchdog run closes the clock alert.';
+  }
+
+  /**
+   * The sync controls (S2-05), which act on the virtual box's own journal.
+   *
+   * They resolve the box from the seeded slot rather than taking an id from the
+   * caller: a control that could name any box would be a way to inject a poison
+   * event into a real counter's ledger from a URL, and the whole point of the
+   * two gates in front of these is that there is nothing here worth aiming.
+   */
+  async function runSyncControl(
+    key: string,
+    req: FastifyRequest,
+    accountId: string,
+  ): Promise<string> {
+    const settings = boxSettings();
+    const [row] = await app.db
+      .select()
+      .from(boxTable)
+      .innerJoin(branchTable, eq(boxTable.branchId, branchTable.id))
+      .where(
+        and(
+          eq(branchTable.code, settings.agentBranchCode),
+          eq(boxTable.slot, settings.agentSlot),
+          eq(boxTable.role, 'virtual'),
+        ),
+      )
+      .limit(1);
+    if (!row) {
+      throw errors.conflict(
+        'VIRTUAL_BOX_ABSENT',
+        `No virtual box at ${settings.agentBranchCode}/${settings.agentSlot} — these controls act on the seeded one and on nothing else`,
+      );
+    }
+    const boxAuth = boxAuthFromRow(row.box);
+
+    if (key === 'sync.replay_last_batch') {
+      const result = await replayLastBatch(app.db, boxAuth, opCtx(req));
+      return `Replayed ${result.results.length} event(s): applied=${result.applied} duplicates=${result.duplicates} quarantined=${result.quarantined}. The cursor is still at ${result.cursorSeq}.`;
+    }
+
+    if (key === 'sync.inject_poison') {
+      const result = await injectPoisonEvent(app.db, boxAuth, opCtx(req), accountId);
+      const outcome = result.results[0];
+      return `Injected one malformed event (${outcome?.reason ?? 'refused'}). It is open on Failures > Quarantine with an alert, and can be replayed or discarded from there.`;
+    }
+
+    // sync.reset_store — the real command, not a number edited in place.
+    //
+    // The epoch is minted when the BOX reports that it has wiped its store
+    // (`completeCommand`), because an epoch bumped before the box has actually
+    // forgotten anything would fence off a journal that is still live. The
+    // outbox guard inside `queueCommand` is what stops this throwing away
+    // unsynced sales.
+    await queueCommand(
+      app.db,
+      opCtx(req),
+      { accountId, operatorId: boxAuth.operatorId },
+      row.box,
+      { kind: 'reset_store', actionId: `test-control-${req.id}` },
+    );
+    return `Queued a store reset for ${boxAuth.name}. The new epoch is minted when the box reports it has wiped its store; anything replayed from epoch ${boxAuth.currentEpoch} is then refused with sync.epoch_regressed.`;
   }
 
   // --- The demo reset (S2-01c) --------------------------------------------

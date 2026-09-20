@@ -1,0 +1,432 @@
+{
+  "widthDots": 512,
+  "heightDots": 645,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 236,
+      "baselineY": 28,
+      "w": 39,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "oto"
+    },
+    {
+      "k": "invert",
+      "x": 232,
+      "y": 8,
+      "w": 47,
+      "h": 28
+    },
+    {
+      "k": "text",
+      "x": 155,
+      "baselineY": 66,
+      "w": 202,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "Oto Play Park"
+    },
+    {
+      "k": "text",
+      "x": 215,
+      "baselineY": 91,
+      "w": 82,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "RECEIPT"
+    },
+    {
+      "k": "text",
+      "x": 184,
+      "baselineY": 115,
+      "w": 144,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "ใบกำกับภาษีอย่างย่อ"
+    },
+    {
+      "k": "text",
+      "x": 161,
+      "baselineY": 133,
+      "w": 191,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Tax ID 0105500000000"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 137,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 157,
+      "w": 139,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "HKT1-000428"
+    },
+    {
+      "k": "text",
+      "x": 317,
+      "baselineY": 157,
+      "w": 187,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "20 Sep 2026 14:32"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 180,
+      "w": 199,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Served by Nok · Привет"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 204,
+      "w": 236,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Member: Nong Mai · น้องใหม่"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 212,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 233,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "2× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 233,
+      "w": 169,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "2hr Play — Child"
+    },
+    {
+      "k": "text",
+      "x": 453,
+      "baselineY": 233,
+      "w": 51,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "฿700"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 259,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 259,
+      "w": 107,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Adult Pass"
+    },
+    {
+      "k": "text",
+      "x": 453,
+      "baselineY": 259,
+      "w": 51,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "฿150"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 281,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "2× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 281,
+      "w": 108,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Grip Socks"
+    },
+    {
+      "k": "text",
+      "x": 453,
+      "baselineY": 281,
+      "w": 51,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "฿120"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 304,
+      "w": 68,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "  Size 24"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 326,
+      "w": 31,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "1× "
+    },
+    {
+      "k": "text",
+      "x": 39,
+      "baselineY": 326,
+      "w": 153,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "สวัสดี OTO Park"
+    },
+    {
+      "k": "text",
+      "x": 422,
+      "baselineY": 325,
+      "w": 82,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "฿120.50"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 330,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 351,
+      "w": 86,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Subtotal"
+    },
+    {
+      "k": "text",
+      "x": 404,
+      "baselineY": 351,
+      "w": 100,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "฿1,090.50"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 374,
+      "w": 73,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Service"
+    },
+    {
+      "k": "text",
+      "x": 479,
+      "baselineY": 374,
+      "w": 25,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "฿0"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 396,
+      "w": 97,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "VAT (incl.)"
+    },
+    {
+      "k": "text",
+      "x": 435,
+      "baselineY": 396,
+      "w": 69,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "฿71.32"
+    },
+    {
+      "k": "rect",
+      "x": 8,
+      "y": 403,
+      "w": 496,
+      "h": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 429,
+      "w": 92,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "TOTAL"
+    },
+    {
+      "k": "text",
+      "x": 367,
+      "baselineY": 430,
+      "w": 137,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "฿1,090.50"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 458,
+      "w": 50,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Cash"
+    },
+    {
+      "k": "text",
+      "x": 435,
+      "baselineY": 458,
+      "w": 69,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "฿1,100"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 481,
+      "w": 79,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "Change"
+    },
+    {
+      "k": "text",
+      "x": 448,
+      "baselineY": 481,
+      "w": 56,
+      "sizeDots": 22,
+      "weight": "regular",
+      "text": "฿9.50"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 490,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 508,
+      "w": 126,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Bands issued"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 526,
+      "w": 103,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• HKT1-4821"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 544,
+      "w": 103,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• HKT1-4822"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 548,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 566,
+      "w": 127,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Credit issued"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 584,
+      "w": 106,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• ฿100 credit"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 603,
+      "w": 205,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "• 2× Grip socks to collect"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 611,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 60,
+      "baselineY": 629,
+      "w": 392,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Thank you for visiting! · Tax ID 0105500000000"
+    }
+  ]
+}

@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Loader2, RefreshCw, RotateCcw } from 'lucide-react';
 import { isMissingRoute } from '@/api/client';
 import { failuresApi, type FailureGroup, type OpsRun } from '@/api/observability';
+import { quarantineApi } from '@/api/sync';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/Drawer';
+import { Quarantine } from '@/components/failures/Quarantine';
 import { EmptyState, ErrorNote, Fact, Loading, Panel, RouteUnavailable } from '@/components/Panel';
 import { Chip, StatusMark, StatusPill, toneForOutcome } from '@/components/Status';
 import { PresetButton, PresetRow, SelectFilter } from '@/components/Filters';
 import { useSession } from '@/auth/SessionContext';
 import { elapsed, formatExact, formatWhen, millis, timeAgo } from '@/lib/time';
+import { cn } from '@/lib/utils';
 
 const WINDOWS = [
   { hours: 1, label: 'Last hour' },
@@ -27,6 +30,112 @@ const KINDS = [
 ];
 
 /**
+ * Two lists, on two tabs, because they are two different questions.
+ *
+ * PROBLEMS is everything the platform tried to do and could not: a job, a
+ * route, an adapter, a device. Somebody presses retry, or fixes the thing.
+ *
+ * QUARANTINE is the other direction — facts the tills sent UP that the cloud
+ * refused to file. Nothing there is broken in the platform sense; each row is
+ * something that happened at the park and is now waiting on a person to decide
+ * what becomes of it. Mixing the two into one list would put "a printer was
+ * unreachable for forty seconds" beside "a member created at reception has not
+ * been filed", and the second is the one that matters.
+ */
+export function Failures() {
+  const { me, has } = useSession();
+  const timezone = me?.branch?.timezone;
+  const canManage = has('admin:ops:manage');
+
+  const [tab, setTab] = useState<'problems' | 'quarantine'>('problems');
+  const [quarantineOpen, setQuarantineOpen] = useState<number | null>(null);
+
+  // The badge is read once on arrival so it is right on a page somebody opened
+  // on the Problems tab — otherwise the only way to learn that a till's sale is
+  // sitting unfiled would be to go looking for it. One row is enough: what is
+  // wanted is the count across the whole table, which the route carries.
+  useEffect(() => {
+    let cancelled = false;
+    void quarantineApi
+      .list({ status: 'open', limit: 1 })
+      .then((page) => {
+        if (!cancelled && page.openCount !== null && page.openCount !== undefined) {
+          setQuarantineOpen(page.openCount);
+        }
+      })
+      .catch(() => {
+        // A deployment without the sync routes shows the tab with no number
+        // rather than an error: the tab itself then says what is missing.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-5 border-b">
+        <Tab active={tab === 'problems'} onClick={() => setTab('problems')}>
+          Problems
+        </Tab>
+        <Tab
+          active={tab === 'quarantine'}
+          onClick={() => setTab('quarantine')}
+          badge={quarantineOpen ?? undefined}
+        >
+          Quarantine
+        </Tab>
+      </div>
+
+      {tab === 'problems' ? (
+        <Problems timezone={timezone} canManage={canManage} />
+      ) : (
+        <Quarantine timezone={timezone} canManage={canManage} onOpenCount={setQuarantineOpen} />
+      )}
+    </div>
+  );
+}
+
+function Tab({
+  active,
+  onClick,
+  badge,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  /** Open quarantined events. Absent means "not known here", which is not zero. */
+  badge?: number;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        '-mb-px flex items-center gap-2 border-b-2 px-1 pb-2 pt-1 text-sm font-bold transition-colors',
+        active
+          ? 'border-primary text-foreground'
+          : 'border-transparent text-muted-foreground hover:text-foreground',
+      )}
+    >
+      {children}
+      {badge !== undefined && badge > 0 && (
+        <span
+          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold tabular-nums"
+          style={{
+            color: 'hsl(var(--status-down))',
+            backgroundColor: 'hsl(var(--status-down) / 0.12)',
+          }}
+        >
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/**
  * Everything that did not succeed, grouped by fingerprint.
  *
  * The grouping is the whole point. One printer that cannot be reached produces
@@ -35,11 +144,7 @@ const KINDS = [
  * of sixty it reads as what it is — and the count is the useful number, because
  * it separates "happened once" from "happening continuously".
  */
-export function Failures() {
-  const { me, has } = useSession();
-  const timezone = me?.branch?.timezone;
-  const canManage = has('admin:ops:manage');
-
+function Problems({ timezone, canManage }: { timezone?: string | null; canManage: boolean }) {
   const [windowHours, setWindowHours] = useState(24);
   const [kind, setKind] = useState('');
   const [groups, setGroups] = useState<FailureGroup[]>([]);

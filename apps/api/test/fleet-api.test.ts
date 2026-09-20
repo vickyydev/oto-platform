@@ -115,19 +115,33 @@ describe('the station picker — the visibility rule (S2-04)', () => {
     const mine = await call('GET', '/me/stations', { cookie: receptionCookie });
     expect(mine.statusCode).toBe(200);
     const names = (mine.body.stations as Array<{ name: string }>).map((s) => s.name);
-    // The whole ticket, in one assertion: Booth 1 is ABSENT, not flagged.
-    expect(names).toEqual(['Reception Till 1']);
+    /**
+     * The whole ticket, in one assertion: Booth 1 is ABSENT, not flagged.
+     *
+     * Counter 2 is here because S2-05's seed puts a second virtual box at the
+     * branch with an `all_staff` till on it — the two-box merge scenario needs
+     * two journals that cannot see each other — and the visibility rule is
+     * about the ACCESS SCOPE, not about which box a station sits on. Reception
+     * may stand at any open counter at their own branch, and that is the
+     * answer here whether the park has one box or five.
+     */
+    expect(names).toEqual(['Counter 2', 'Reception Till 1']);
 
     const asAdmin = await call('GET', '/me/stations', { cookie: adminCookie });
     expect((asAdmin.body.stations as Array<{ name: string }>).map((s) => s.name)).toEqual([
       'Booth 1',
+      'Counter 2',
       'Reception Till 1',
     ]);
   });
 
   it('carries the box and what is plugged into it, and nothing a hidden station could be read from', async () => {
     const mine = await call('GET', '/me/stations', { cookie: receptionCookie });
-    const [tile] = mine.body.stations as Array<Record<string, unknown>>;
+    // By id, not by position: the picker is ordered by name, and the branch
+    // now has more than one open till.
+    const tile = (mine.body.stations as Array<Record<string, unknown>>).find(
+      (s) => s.id === tillId,
+    );
     expect(tile).toMatchObject({ id: tillId, kind: 'till', boxId, boxName: 'Virtual box 1' });
     expect(tile!.deviceCount).toBe(7);
     // No `visible`, no `available`, no `reason`: a field a client could use to
@@ -195,44 +209,67 @@ describe('the station picker — the visibility rule (S2-04)', () => {
     await ctx.db
       .insert(stationStaff)
       .values({ id: newId(), stationId: boothId, accountId: acc!.id, addedBy: admin!.id });
-
-    const mine = await call('GET', '/me/stations', { cookie: receptionCookie });
-    expect((mine.body.stations as Array<{ name: string }>).map((s) => s.name)).toEqual([
-      'Booth 1',
-      'Reception Till 1',
-    ]);
-    const pick = await call('PUT', '/me/session/station', {
-      cookie: receptionCookie,
-      payload: { stationId: boothId },
-    });
-    expect(pick.statusCode).toBe(200);
-
-    // And taking it away hides it again — the removal bites at the next load.
-    await ctx.db
-      .delete(stationStaff)
-      .where(and(eq(stationStaff.stationId, boothId), eq(stationStaff.accountId, acc!.id)));
-    const after = await call('GET', '/me/stations', { cookie: receptionCookie });
-    expect((after.body.stations as Array<{ name: string }>).map((s) => s.name)).toEqual([
-      'Reception Till 1',
-    ]);
     /**
-     * Not evicted mid-shift, deliberately: `session.station_id` still points at
-     * Booth 1 and the person keeps working it until they switch or sign out.
-     * This is the ABSENCE of a check rather than a check that passes, so it is
-     * pinned here to stop a later reviewer "fixing" it.
+     * The grant is torn down whatever happens next.
+     *
+     * It used to be removed by a statement in the middle of the test, so the
+     * first assertion that failed left reception holding access to Booth 1 for
+     * every case after it — and each of THOSE then failed for a reason that
+     * had nothing to do with what it was testing. One broken expectation
+     * became a broken file, which is the worst kind of test failure to read.
      */
-    const [held] = await ctx.db
-      .select({ stationId: sessionTable.stationId })
-      .from(sessionTable)
-      .where(eq(sessionTable.accountId, acc!.id))
-      .orderBy(desc(sessionTable.createdAt))
-      .limit(1);
-    expect(held?.stationId).toBe(boothId);
-    // Put reception back where the rest of the file expects to find it.
-    await call('PUT', '/me/session/station', {
-      cookie: receptionCookie,
-      payload: { stationId: tillId },
-    });
+    let granted = true;
+    const ungrant = async (): Promise<void> => {
+      if (!granted) return;
+      granted = false;
+      await ctx.db
+        .delete(stationStaff)
+        .where(and(eq(stationStaff.stationId, boothId), eq(stationStaff.accountId, acc!.id)));
+    };
+
+    try {
+      const mine = await call('GET', '/me/stations', { cookie: receptionCookie });
+      expect((mine.body.stations as Array<{ name: string }>).map((s) => s.name)).toEqual([
+        'Booth 1',
+        'Counter 2',
+        'Reception Till 1',
+      ]);
+      const pick = await call('PUT', '/me/session/station', {
+        cookie: receptionCookie,
+        payload: { stationId: boothId },
+      });
+      expect(pick.statusCode).toBe(200);
+
+      // And taking it away hides it again — the removal bites at the next load.
+      await ungrant();
+      const after = await call('GET', '/me/stations', { cookie: receptionCookie });
+      expect((after.body.stations as Array<{ name: string }>).map((s) => s.name)).toEqual([
+        'Counter 2',
+        'Reception Till 1',
+      ]);
+      /**
+       * Not evicted mid-shift, deliberately: `session.station_id` still points
+       * at Booth 1 and the person keeps working it until they switch or sign
+       * out. This is the ABSENCE of a check rather than a check that passes, so
+       * it is pinned here to stop a later reviewer "fixing" it.
+       */
+      const [held] = await ctx.db
+        .select({ stationId: sessionTable.stationId })
+        .from(sessionTable)
+        .where(eq(sessionTable.accountId, acc!.id))
+        .orderBy(desc(sessionTable.createdAt))
+        .limit(1);
+      expect(held?.stationId).toBe(boothId);
+    } finally {
+      // The net under both: whichever assertion above failed, the grant is
+      // gone and reception is back where the rest of the file expects to find
+      // it. `ungrant` is idempotent, so the ordinary path does not do it twice.
+      await ungrant();
+      await call('PUT', '/me/session/station', {
+        cookie: receptionCookie,
+        payload: { stationId: tillId },
+      });
+    }
   });
 
   it('answers a station that does not exist, and an archived one, the same way', async () => {

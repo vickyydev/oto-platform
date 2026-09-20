@@ -30,10 +30,12 @@ import {
   type BoxRegisterResponse,
 } from '@oto/box-agent';
 import type { Env } from '../env';
+import { boxStoreFor } from '../lib/box-store';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
+import { boxOutboxState, closeCursorEpoch, normaliseSyncPublicKey } from './sync';
 import { limitPrincipal } from './throttle';
 import { withTx, type Exec, type OpContext } from './tx';
 
@@ -179,12 +181,45 @@ export interface BoxAuth {
   role: string;
   status: string;
   currentEpoch: number;
+  /**
+   * The public half this box signs its events with, SPKI PEM, or null while it
+   * has not handed one over (S2-05). Carried on the credential so a heartbeat
+   * can tell "the same key again" from "a key we have never seen" without a
+   * second read on the hottest path this surface has.
+   */
+  syncPublicKey: string | null;
   /** The newest heartbeat we accepted, which is the replay watermark. */
   lastStatus: Record<string, unknown> | null;
 }
 
 const UNAUTHORIZED = () =>
   new AppError(401, 'BOX_UNAUTHORIZED', 'This box credential is not valid');
+
+/**
+ * The same `BoxAuth` a credential produces, built from a row that has already
+ * been loaded and permission-checked (S2-05).
+ *
+ * The sync service takes a `BoxAuth` because everything it does is scoped to
+ * one box, and that is true whether the box itself is pushing or an
+ * administrator is replaying something on its behalf from the Console. Building
+ * the same value from a loaded row keeps one scoping rule rather than two —
+ * what this does NOT do is authenticate anything, which is why it is named for
+ * where it came from.
+ */
+export function boxAuthFromRow(row: typeof box.$inferSelect): BoxAuth {
+  return {
+    boxId: row.id,
+    operatorId: row.operatorId,
+    branchId: row.branchId,
+    name: row.name,
+    slot: row.slot,
+    role: row.role,
+    status: row.status,
+    currentEpoch: row.currentEpoch,
+    syncPublicKey: row.syncPublicKey,
+    lastStatus: (row.lastStatus ?? null) as Record<string, unknown> | null,
+  };
+}
 
 /**
  * `Authorization: Bearer <boxId>.<secret>`.
@@ -293,6 +328,7 @@ export async function authenticateBox(
     role: row.role,
     status: row.status,
     currentEpoch: row.currentEpoch,
+    syncPublicKey: row.syncPublicKey,
     lastStatus: (row.lastStatus ?? null) as Record<string, unknown> | null,
   };
 }
@@ -362,11 +398,29 @@ export async function registerBox(
   }
 
   const secret = mintSecret();
+  /**
+   * The sync keypair's public half, when the agent minted one (S2-05).
+   *
+   * Registration is its ordinary door: a box generates the pair at first start
+   * and hands over the half the cloud needs to VERIFY its events. Optional,
+   * because an agent older than the sync core still has to be able to register
+   * — and a box with no key here simply cannot push until it presents one on a
+   * heartbeat or through `/box/v1/sync/key`.
+   */
+  const syncKey = input.syncPublicKey ? normaliseSyncPublicKey(input.syncPublicKey) : null;
+
   return withTx(db, ctx, 'box.register', async (tx) => {
     const updated = await tx
       .update(box)
       .set({
         secretHash: sha256Hex(secret),
+        ...(syncKey
+          ? {
+              syncPublicKey: syncKey.pem,
+              syncKeyAlgorithm: input.syncKeyAlgorithm ?? 'ed25519',
+              syncKeyRegisteredAt: new Date(),
+            }
+          : {}),
         claimCodeHash: null,
         claimCodeExpiresAt: null,
         registeredAt: new Date(),
@@ -410,6 +464,10 @@ export async function registerBox(
         hostname: row.hostname,
         agentVersion: row.agentVersion,
         epoch: row.currentEpoch,
+        // The fingerprint, never the key itself: the public half is public and
+        // is still noise in an audit row, and the fingerprint is what a person
+        // compares against what the box says it holds.
+        syncKeyFingerprint: syncKey?.fingerprint ?? null,
         ip: ctx.ip,
       },
       requestId: ctx.requestId,
@@ -555,6 +613,68 @@ export async function recordHeartbeat(
     }
   }
 
+  /**
+   * The outbox, from whichever side can see it (S2-05).
+   *
+   * A Pi keeps its queue in a SQLite file we cannot reach, so what it reports
+   * is the only source and it wins. The virtual box's store IS this database,
+   * so where the box says nothing, `edge.box_outbox` answers — which is what
+   * makes "toggle offline, create three members, restart the api, the depth is
+   * still three" demonstrable without the agent having to remember to report.
+   *
+   * The AGE matters as much as the depth: a depth of three that is four hours
+   * old is a broken sync path, and a depth of three that is four seconds old is
+   * a busy counter. Only the age separates them, and it is what the watchdog's
+   * `sync.stale` rule reads.
+   */
+  const ourView = await boxOutboxState(db, auth.boxId);
+  const outboxDepth = input.outboxDepth ?? ourView.depth;
+  const oldestUnackedAgeS =
+    input.oldestUnackedS ??
+    (ourView.oldestCreatedAt
+      ? Math.max(0, Math.round((receivedAt.getTime() - ourView.oldestCreatedAt.getTime()) / 1000))
+      : null);
+
+  /**
+   * A box handing over a public key it has and we have not (S2-05).
+   *
+   * The ordinary path is registration, and this is the one a box that
+   * registered BEFORE the sync core still has: its claim code is spent, so
+   * `/register` is closed to it for ever, and without this channel it could
+   * never hand over a key and every batch it sent would be refused. Written
+   * only when it differs, so the common case is a comparison and no write.
+   */
+  if (input.syncPublicKey) {
+    try {
+      const { pem, fingerprint } = normaliseSyncPublicKey(input.syncPublicKey);
+      if (pem !== auth.syncPublicKey) {
+        const rotated = auth.syncPublicKey !== null;
+        await withTx(db, ctx, 'box.sync_key', async (tx) => {
+          await tx
+            .update(box)
+            .set({ syncPublicKey: pem, syncKeyRegisteredAt: receivedAt })
+            .where(eq(box.id, auth.boxId));
+          await audit.record(tx, {
+            actorAccountId: null,
+            operatorId: auth.operatorId,
+            branchId: auth.branchId,
+            action: rotated ? 'box.sync_key_rotate' : 'box.sync_key_register',
+            entityType: 'box',
+            entityId: auth.boxId,
+            after: { keyFingerprint: fingerprint, slot: auth.slot, via: 'heartbeat' },
+            requestId: ctx.requestId,
+          });
+        });
+        auth.syncPublicKey = pem;
+      }
+    } catch (err) {
+      // A key we cannot read must not cost the box its heartbeat: it would
+      // then look offline as well as unable to sync, which is one fault
+      // reported as two.
+      ctx.log?.warn({ err, boxId: auth.boxId }, 'a box presented an unreadable sync public key');
+    }
+  }
+
   const lastStatus = scrubDetail({
     reportedAt: reportedAt.toISOString(),
     receivedAt: receivedAt.toISOString(),
@@ -562,7 +682,8 @@ export async function recordHeartbeat(
     agentVersion: input.agentVersion,
     uptimeS: input.uptimeS ?? null,
     tempC: input.tempC ?? null,
-    outboxDepth: input.outboxDepth ?? 0,
+    outboxDepth,
+    oldestUnackedAgeS,
     configVersion: input.configVersion ?? null,
     offline: input.offline ?? false,
     devices: matched.map(({ row, report }) => ({
@@ -589,7 +710,7 @@ export async function recordHeartbeat(
       agentVersion: input.agentVersion,
       uptimeS: input.uptimeS ?? null,
       tempC: input.tempC ?? null,
-      outboxDepth: input.outboxDepth ?? null,
+      outboxDepth,
       payload: lastStatus as never,
     });
 
@@ -787,6 +908,13 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
       id: branchRow.id,
       code: branchRow.code,
       name: branchRow.name,
+      /**
+       * A box restored from its credential file never re-registers — its claim
+       * code is spent — so the config bundle is the only place it can learn
+       * which operator it belongs to, and it needs that to stamp a station
+       * session row (S2-05).
+       */
+      operatorId: branchRow.operatorId,
       timezone: branchRow.timezone,
       openingHours: branchRow.openingHours ?? null,
       businessDayStart: branchRow.businessDayStart,
@@ -935,6 +1063,14 @@ export async function completeCommand(
         .where(eq(box.id, auth.boxId))
         .returning({ currentEpoch: box.currentEpoch });
       epoch = bumped[0]?.currentEpoch ?? auth.currentEpoch;
+      /**
+       * The old journal's cursor row is CLOSED, never deleted (S2-05): it is
+       * what makes a batch replayed from the wiped store recognisable as a
+       * regression rather than as a set of sequence numbers that happen to
+       * collide with live ones. Closing it in the same transaction as the
+       * epoch bump is what keeps the two from ever disagreeing.
+       */
+      await closeCursorEpoch(tx, auth.boxId, auth.currentEpoch);
       await audit.record(tx, {
         actorAccountId: existing.requestedByAccountId ?? null,
         operatorId: auth.operatorId,
@@ -1214,6 +1350,19 @@ export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent
     log: log.child({ module: 'virtual-box' }),
     heartbeatIntervalMs: settings.heartbeatIntervalS * 1000,
     claimCode: async () => (await provisionVirtualBox(db, log))?.claimCode ?? null,
+    /**
+     * With a store this stops being a reporter and becomes the system of
+     * action (S2-05): a durable outbox, station session documents, and an
+     * offline flag that survives a redeploy. Without one the agent still
+     * registers, heartbeats and runs commands — that was the S2-04 box — but
+     * every fact it caused would live in this process's memory and die with
+     * it, so "three things queued" could not survive a Render restart and the
+     * offline demo would be a claim rather than a demonstration.
+     *
+     * The same store object the station-session routes write through, on the
+     * pool this process already holds.
+     */
+    store: boxStoreFor(db),
   });
   try {
     await agent.start();

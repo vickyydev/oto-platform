@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { opsLast } from '@oto/db';
 import type { App } from '../app';
+import { stationChannels } from '../lib/station-channel';
 
 /**
  * Liveness and readiness (S2-03).
@@ -112,6 +113,23 @@ export async function healthRoutes(app: App): Promise<void> {
         database: { ok: databaseOk, latencyMs },
         pool: poolState(app),
         jobs: { configured: watchdogConfigured, watchdogAgeS, staleAfterS, stale: watchdogStale },
+        /**
+         * The station channels this INSTANCE is holding (S2-05) — not the
+         * deployment's, because a live stream belongs to the process on the
+         * end of it and no other process can be asked about it. On a
+         * deployment running two api containers each reports its own, and
+         * summing them is the readiness aggregator's job rather than a lie
+         * told by either.
+         *
+         * Reported and never failed on: a till with no display attached is a
+         * till that can still take money, and readiness is only allowed to
+         * fail on something without which no request can be answered at all.
+         */
+        stationChannels: {
+          stations: stationChannels.stations(),
+          connections: stationChannels.total(),
+          perStation: stationChannels.counts(),
+        },
       },
     };
     return databaseOk ? body : reply.status(503).send(body);
