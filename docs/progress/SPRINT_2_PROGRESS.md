@@ -2,24 +2,28 @@
 
 ## Status
 
-- Current checkpoint: **S2-02 is complete and deployed.** The suite launcher
-  is live beside the POS and the api — three services in the Render `staging`
-  environment — and one sign-in on the launcher opens the till with no second
-  prompt, over a signed hand-off verified end to end against the live
-  origins. S2-01a, S2-01b and S2-01c are all done before it. 185 API tests +
-  22 shared tests green. See `DEPLOYMENT_STAGING.md`. Next: **S2-03**,
-  observability and Console v1.
+- Current checkpoint: **S2-03 is complete and deployed.** Four services are
+  live in the Render `staging` environment — api, POS, launcher and the
+  Console — and the Console's four pages (Activity, Failures, Health,
+  Integrations) read real rows from the deployment: the job register with
+  each job's last run and expected interval, failed runs grouped by
+  fingerprint, five integration states each derived from something real, and
+  the audit log. 239 API tests green. S2-01a/b/c and S2-02 are done before
+  it. See `DEPLOYMENT_STAGING.md`. Next: **S2-17a**, the OTO App on the
+  central database — the last ticket before CP1.
 
 - Jira: sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of project
   SCRUM holds the 24 stories under four epics, with 16 sub-tasks; the
   pre-existing 177 issues were labelled rather than deleted. Keys and the
   full account of what was done: `SPRINT_2_JIRA_MAP.md`.
-- Last completed step: S2-02 (SCRUM-189) — the launcher, the signed hand-off
-  between app origins, and the face-scan removal (see the ticket log).
-- Next step: **S2-03** (SCRUM-190), observability and Console v1 — the
-  telemetry package, request and operation logging, `ops_run`, the job runner
-  and watchdog, and the Activity / Failures / Health / Integrations pages in
-  a console of its own.
+- Last completed step: S2-03 (SCRUM-190) — the telemetry package and its one
+  redactor, request and operation logging, `ops_run` with fingerprint
+  grouping, alerts with dedupe and flap suppression, the job runner and
+  watchdog, the observability routes and the Console's four pages.
+- Next step: **S2-17a** (SCRUM-192), the OTO App on the central database —
+  `otoapp` schema, the hand-off sign-on in place of its own login, and user
+  provisioning from the platform. Its source is now a working copy at
+  `apps/oto-app/` (see `OPEN_QUESTIONS.md` §0). CP1 follows it.
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
@@ -166,11 +170,11 @@ AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
    Complete build", four epics, 24 stories in execution order, 16 sub-tasks,
    old issues labelled and explained (`SPRINT_2_JIRA_MAP.md`).
 2. **Done 2026-09-20:** S2-01a (SCRUM-186) — see the ticket log.
-3. **Done 2026-09-20:** S2-01b (SCRUM-187), S2-01c (SCRUM-188) and S2-02
-   (SCRUM-189) — see the ticket log. **Next: S2-03** (SCRUM-190). The ticket
-   log below is the record, updated in the same commit series as the code, and
-   an evidence comment goes on each story or sub-task as its work merges. We
-   never change a ticket's status.
+3. **Done 2026-09-20:** S2-01b (SCRUM-187), S2-01c (SCRUM-188), S2-02
+   (SCRUM-189) and S2-03 (SCRUM-190) — see the ticket log. **Next: S2-17a**
+   (SCRUM-192), then **CP1**. The ticket log below is the record, updated in
+   the same commit series as the code, and an evidence comment goes on each
+   story or sub-task as its work merges. We never change a ticket's status.
 
 ## Owner inputs needed (asked 2026-09-20)
 
@@ -548,6 +552,59 @@ covered by tests, but not by a button on the account page. It belongs with the
 other operational test controls under `OPS_TEST_CONTROLS` in S2-03. The
 console, OTO App, Radar, booth and Inbox tiles stay "coming soon" until their
 own tickets give them an origin.
+
+### S2-03 — Observability and Console v1 (SCRUM-190) — **done and deployed**
+
+**One redactor, not four.** `@oto/telemetry` is the single place a phone
+number, a password, a token or a card number is turned into `[redacted]`, and
+it redacts by key AND by value shape — a Luhn-valid 13-to-19 digit run is a
+PAN wherever it appears, whatever the key is called. Three weaker copies were
+deleted: `lib/scrub.ts` is now a thin binding to it, `services/ops.ts` binds
+`scrubDetail` to the same function, and the pino logger is wrapped ONCE at
+creation so every child inherits redaction rather than every caller
+remembering it. Budgets on depth, node count and string length, plus cycle
+detection, so a redactor can never be the thing that hangs a request.
+
+**The operational record.** `ops_run` holds what ran and whether it worked;
+`ops_last` and `ops_expectation` hold the register the watchdog compares. A
+failure's fingerprint is a hash of kind, name and error code, which is what
+makes sixty failures read as one problem. Alerts dedupe against an open alert
+of the same key, auto-resolve when the thing recovers, and suppress a flap.
+
+**The job runner, and how it was found not to be running.** `createJobRunner`
+and twenty tests existed; nothing constructed it. `/ready` on the deployment
+said `jobs.configured: false` — no test caught it, reading the deployment did.
+It now starts from `index.ts`, which is the one place that knows this is a
+real process and not a test building an app per file. `PROCESS_ROLES` gates
+it, so the day the worker splits out the api stops competing with it.
+
+**The routes the Console reads.** `GET /ops/health` reads the job register
+from `ops_expectation` joined to `ops_last`, never from the process answering
+the request, so an instance without the jobs role still answers correctly.
+Lateness is measured from the last **success** against interval + grace — the
+same arithmetic the watchdog uses, so the page and the alert cannot disagree
+— while age is measured from the last **finish**, so "runs and fails" and
+"stopped running" read as the two different problems they are.
+`GET /ops/failures` groups by fingerprint with a keyset cursor;
+`POST /ops/runs/:id/retry` re-runs a job and refuses every other kind,
+because each of those has already half-happened by the time it failed.
+`GET /ops/integrations` reports names and states only: where a provider is
+unconfigured it names the **variable** that is unset, never a value and never
+a masked one, because the page is read over shoulders in a back office.
+
+**Evidence, and a correction.** The first screenshot set was attached while
+three of those routes did not exist, so Health, Failures and Integrations
+photographed their empty states. They were removed from the ticket and
+re-captured against the live deployment with the staging test controls
+pressed first, so every page shows real rows. The lesson is recorded rather
+than smoothed over: evidence is checked by looking at it, not by counting it.
+
+**Deferred, named:** OpenTelemetry traces and the OTLP bridge,
+`POST /telemetry/client` for browser errors, the `audit_log` classification
+columns with a BRIN index, and a scheduled ping of `/ready` from outside the
+platform. All additive; none blocks the next ticket. See `OPEN_QUESTIONS.md`
+for the two decisions this ticket surfaced (`job.fail` raises no
+`ops.failing`; an acknowledged alert does not say who took it).
 
 ## Deviations recorded
 

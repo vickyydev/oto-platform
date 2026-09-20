@@ -4,7 +4,39 @@ Collected as they arise so building never stops on them. Each one names what
 was decided in the meantime, so nothing is blocked and nothing is silently
 assumed. Answered items move to `OWNER_DIRECTION.md` and leave here.
 
-_Last updated 2026-09-20, after S2-03._
+_Last updated 2026-09-20, during S2-17a._
+
+## 0. The OTO App now lives in this repository — say if that is wrong
+
+**What was done:** its source moved from the read-only export at
+`imports/oto-app/` to `apps/oto-app/`, where it is maintained and deployed
+from. Render builds it there from its own Dockerfile; it keeps npm and its
+own lockfile and is excluded from the pnpm workspace.
+
+**Why:** OWNER_DIRECTION 2026-09-20 item 2 says the whole live app is lifted
+onto the platform, improved where it can be, and the owed features built
+inside it. That makes this repository its home. Render is already connected
+here, so no second repository, connection or deploy key is needed.
+
+**What it costs:** this copy forks from whatever the outgoing developer
+commits to the live repository from the export date onward. The intake
+already accepted that trade ("lift as-is first — a rewrite would fork from
+code still under daily commits"), but the fork is now real rather than
+planned.
+
+**Needed:** either confirmation, or the live repository's remote so the copy
+can be a fork of it with history rather than a snapshot. Worth settling
+before S2-17b puts weeks of work on top of it.
+
+## 0b. A change freeze on the live OTO App, and when
+
+**Where it bites:** every commit made to the live app after the export widens
+the gap this copy has to close before cutover.
+
+**Meanwhile:** nothing is blocked — S2-17a only needs the app to boot.
+
+**Needed:** a date after which the outgoing developer stops committing, or
+confirmation that the park accepts re-applying their changes by hand.
 
 ## 1. One cookie value shared across app origins, or one per origin?
 
@@ -77,10 +109,21 @@ Console; it is not fine at 9pm on a Saturday.
 - ~~The two sweeps are unscheduled~~ — **done in S2-03.** The job runner
   schedules `purgeExpiredIdempotencyKeys` and `purgeExpiredHandoffTokens`,
   and the watchdog is live on the deployment.
-- **The Console's Health page cannot list the job register yet.** The watchdog
-  is running and `/ready` proves it, but the admin route that lists the
-  register is not wired, so that panel shows an honest empty state. It belongs
-  with the remaining admin routes for ops-runs and alerts.
+- ~~The Console's Health page cannot list the job register yet~~ — **done.**
+  `GET /ops/health`, `/ops/failures`, `/ops/runs`, `/ops/integrations` and the
+  staging test controls landed in d2e4568 and are live. All four Console pages
+  read real rows; the evidence on SCRUM-190 was re-captured against them.
+- **`job.fail` raises no `ops.failing` alert.** The staging control writes the
+  failure record a broken job would, rather than registering a deliberately
+  broken job — because a registered job is one the watchdog then expects to
+  succeed, so every staging deploy would open an alert nobody asked for. The
+  consequence is that the plan's acceptance line for the `ops.failing` alert
+  is met by the watchdog and not by this control.
+- **An acknowledged alert does not say who took it.** `acknowledgedBy` is a
+  staff member's name, which the audit route masks unless the caller holds
+  `admin:audit:read_sensitive`. The Health page shows "taken 5m ago" without
+  it. Returning it to a caller who holds that permission is a one-line change
+  if the owner wants it.
 - Still outstanding from S2-03, all additive and none of it blocking the next
   ticket: OpenTelemetry traces and the OTLP bridge, `POST /telemetry/client`
   for browser errors, the `audit_log` classification columns with a BRIN
