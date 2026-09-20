@@ -1,6 +1,11 @@
 packages:
   - apps/*
   - packages/*
+  # The OTO App is a lift, not a port: it keeps npm and its own lockfile, and
+  # Render builds it from its Dockerfile. Inside this workspace pnpm would
+  # hoist its dependency tree against ours and neither app would resolve what
+  # it was written against.
+  - '!apps/oto-app'
 
 onlyBuiltDependencies:
   - esbuild

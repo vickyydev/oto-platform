@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+*.log
+
+# Local-disk writers in the export. Nothing the app writes at runtime belongs
+# in the repository, and three of these hold real uploads from the live system.
+uploads/
+pdfs/
+profile-photos/
+fix-media/
+attached_assets/

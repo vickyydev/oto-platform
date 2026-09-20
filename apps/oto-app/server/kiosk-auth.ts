@@ -1,0 +1,343 @@
+import { Request, Response, NextFunction } from "express";
+import { createHash, randomBytes } from "crypto";
+import { eq, and, gt, isNull } from "drizzle-orm";
+import { db } from "./db";
+import { kioskSessions, kioskDevices, kioskCodes, tenants, settings } from "@shared/schema";
+
+const KIOSK_CODE_PEPPER = process.env.KIOSK_CODE_PEPPER || "default-kiosk-pepper-change-in-production";
+const SESSION_PEPPER = process.env.SESSION_PEPPER || "default-session-pepper-change-in-production";
+
+export const kioskPermissions = [
+  "core.checkin.read",
+  "core.checkin.update",
+  "core.guest.read_minimal",
+] as const;
+
+export type KioskPermission = typeof kioskPermissions[number];
+
+interface KioskSessionData {
+  sessionId: string;
+  deviceId: string;
+  tenantId: string;
+  branchId: string;
+  kioskType: string;
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      kioskSession?: KioskSessionData;
+    }
+  }
+}
+
+export function hashKioskCode(code: string): string {
+  return createHash("sha256").update(code + KIOSK_CODE_PEPPER).digest("hex");
+}
+
+export function hashSessionToken(token: string): string {
+  return createHash("sha256").update(token + SESSION_PEPPER).digest("hex");
+}
+
+export function generateKioskCode(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+export function generateSessionToken(): string {
+  return randomBytes(48).toString("base64url");
+}
+
+export async function validateKioskSession(tokenHash: string): Promise<KioskSessionData | null> {
+  const now = new Date();
+  
+  const [session] = await db
+    .select({
+      sessionId: kioskSessions.id,
+      deviceId: kioskSessions.kioskDeviceId,
+      tenantId: kioskSessions.tenantId,
+      branchId: kioskDevices.branchId,
+      kioskType: kioskDevices.kioskType,
+    })
+    .from(kioskSessions)
+    .innerJoin(kioskDevices, eq(kioskSessions.kioskDeviceId, kioskDevices.id))
+    .where(
+      and(
+        eq(kioskSessions.sessionTokenHash, tokenHash),
+        gt(kioskSessions.expiresAt, now),
+        eq(kioskDevices.isActive, true)
+      )
+    )
+    .limit(1);
+
+  if (!session) return null;
+
+  await db
+    .update(kioskSessions)
+    .set({ lastSeenAt: now })
+    .where(eq(kioskSessions.id, session.sessionId));
+
+  await db
+    .update(kioskDevices)
+    .set({ lastSeenAt: now })
+    .where(eq(kioskDevices.id, session.deviceId));
+
+  return {
+    sessionId: session.sessionId,
+    deviceId: session.deviceId,
+    tenantId: session.tenantId,
+    branchId: session.branchId,
+    kioskType: session.kioskType || "reception",
+  };
+}
+
+export function requireKioskSession(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Kiosk session required" });
+  }
+
+  const token = authHeader.substring(7);
+  const tokenHash = hashSessionToken(token);
+
+  validateKioskSession(tokenHash)
+    .then((session) => {
+      if (!session) {
+        return res.status(401).json({ error: "Invalid or expired kiosk session" });
+      }
+      req.kioskSession = session;
+      next();
+    })
+    .catch((error) => {
+      console.error("Kiosk session validation error:", error);
+      return res.status(500).json({ error: "Session validation failed" });
+    });
+}
+
+export function requireKioskPermission(...permissions: KioskPermission[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.kioskSession) {
+      return res.status(401).json({ error: "Kiosk session required" });
+    }
+
+    const hasPermission = permissions.every((p) => kioskPermissions.includes(p));
+    
+    if (!hasPermission) {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+
+    next();
+  };
+}
+
+const KIOSK_CODE_EXPIRY_SECONDS_DEFAULT = 600; // 10 minutes
+
+async function getKioskCodeExpirySeconds(): Promise<number> {
+  const [row] = await db
+    .select({ value: settings.value })
+    .from(settings)
+    .where(eq(settings.key, "auth_kiosk_code_expiry_seconds"))
+    .limit(1);
+  if (!row) return KIOSK_CODE_EXPIRY_SECONDS_DEFAULT;
+  const parsed = parseInt(row.value, 10);
+  return isNaN(parsed) || parsed <= 0 ? KIOSK_CODE_EXPIRY_SECONDS_DEFAULT : parsed;
+}
+
+export async function createKioskCode(
+  tenantId: string,
+  branchId: string,
+): Promise<{ code: string; expiresAt: Date }> {
+  const expirySeconds = await getKioskCodeExpirySeconds();
+  const code = generateKioskCode();
+  const codeHash = hashKioskCode(code);
+  const expiresAt = new Date(Date.now() + expirySeconds * 1000);
+
+  await db.insert(kioskCodes).values({
+    tenantId,
+    branchId,
+    codeHash,
+    expiresAt,
+  });
+
+  return { code, expiresAt };
+}
+
+export async function exchangeKioskCode(
+  code: string,
+  ip?: string,
+  userAgent?: string
+): Promise<{ token: string; expiresAt: Date; device: { id: string; name: string | null; branchId: string } } | null> {
+  const codeHash = hashKioskCode(code);
+  const now = new Date();
+
+  const [existingCode] = await db
+    .select()
+    .from(kioskCodes)
+    .where(eq(kioskCodes.codeHash, codeHash))
+    .limit(1);
+
+  if (!existingCode) {
+    console.warn("[kiosk-exchange] failed: code not found", { ip, userAgent });
+    return null;
+  }
+
+  if (existingCode.usedAt) {
+    console.warn("[kiosk-exchange] failed: code already used", {
+      usedAt: existingCode.usedAt,
+      ip,
+      userAgent,
+    });
+    return null;
+  }
+
+  if (existingCode.expiresAt <= now) {
+    console.warn("[kiosk-exchange] failed: code expired", {
+      expiresAt: existingCode.expiresAt,
+      now,
+      expiredAgoMs: now.getTime() - existingCode.expiresAt.getTime(),
+      ip,
+      userAgent,
+    });
+    return null;
+  }
+
+  const [updatedCode] = await db
+    .update(kioskCodes)
+    .set({ usedAt: now })
+    .where(
+      and(
+        eq(kioskCodes.codeHash, codeHash),
+        gt(kioskCodes.expiresAt, now),
+        isNull(kioskCodes.usedAt)
+      )
+    )
+    .returning();
+
+  if (!updatedCode) {
+    console.warn("[kiosk-exchange] failed: update matched no rows (race condition?)", { ip, userAgent });
+    return null;
+  }
+
+  const kioskCode = updatedCode;
+
+  const [device] = await db
+    .insert(kioskDevices)
+    .values({
+      tenantId: kioskCode.tenantId,
+      branchId: kioskCode.branchId,
+      kioskType: "reception",
+      isActive: true,
+      lastSeenAt: now,
+      lastIp: ip,
+      lastUserAgent: userAgent,
+    })
+    .returning();
+
+  const sessionToken = generateSessionToken();
+  const sessionTokenHash = hashSessionToken(sessionToken);
+  const sessionExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  await db.insert(kioskSessions).values({
+    tenantId: kioskCode.tenantId,
+    kioskDeviceId: device.id,
+    sessionTokenHash,
+    expiresAt: sessionExpiresAt,
+    lastSeenAt: now,
+  });
+
+  return {
+    token: sessionToken,
+    expiresAt: sessionExpiresAt,
+    device: {
+      id: device.id,
+      name: device.name,
+      branchId: device.branchId,
+    },
+  };
+}
+
+export async function refreshKioskSession(
+  deviceId: string,
+  ip?: string,
+  userAgent?: string
+): Promise<{ token: string; expiresAt: Date; device: { id: string; name: string | null; branchId: string } } | null> {
+  const now = new Date();
+
+  const [row] = await db
+    .select({ device: kioskDevices })
+    .from(kioskDevices)
+    .innerJoin(tenants, eq(kioskDevices.tenantId, tenants.id))
+    .where(
+      and(
+        eq(kioskDevices.id, deviceId),
+        eq(kioskDevices.isActive, true)
+      )
+    )
+    .limit(1);
+
+  if (!row) {
+    return null;
+  }
+
+  const device = row.device;
+
+  const sessionToken = generateSessionToken();
+  const sessionTokenHash = hashSessionToken(sessionToken);
+  const sessionExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  await db.insert(kioskSessions).values({
+    tenantId: device.tenantId,
+    kioskDeviceId: device.id,
+    sessionTokenHash,
+    expiresAt: sessionExpiresAt,
+    lastSeenAt: now,
+  });
+
+  await db
+    .update(kioskDevices)
+    .set({ lastSeenAt: now, lastIp: ip, lastUserAgent: userAgent })
+    .where(eq(kioskDevices.id, device.id));
+
+  return {
+    token: sessionToken,
+    expiresAt: sessionExpiresAt,
+    device: {
+      id: device.id,
+      name: device.name,
+      branchId: device.branchId,
+    },
+  };
+}
+
+export async function revokeKioskSession(sessionId: string, tenantId: string): Promise<boolean> {
+  const deleted = await db
+    .delete(kioskSessions)
+    .where(
+      and(
+        eq(kioskSessions.id, sessionId),
+        eq(kioskSessions.tenantId, tenantId)
+      )
+    )
+    .returning();
+
+  return deleted.length > 0;
+}
+
+export async function revokeKioskDevice(deviceId: string, tenantId: string): Promise<boolean> {
+  await db
+    .delete(kioskSessions)
+    .where(eq(kioskSessions.kioskDeviceId, deviceId));
+
+  const updated = await db
+    .update(kioskDevices)
+    .set({ isActive: false, updatedAt: new Date() })
+    .where(
+      and(
+        eq(kioskDevices.id, deviceId),
+        eq(kioskDevices.tenantId, tenantId)
+      )
+    )
+    .returning();
+
+  return updated.length > 0;
+}

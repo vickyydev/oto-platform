@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OTO Suite — Platform IP Overview</title>
+  <meta name="description" content="OTO Suite platform overview — modules, AI capabilities, and proprietary innovations." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:    hsl(210, 85%, 42%);
+      --blue-dk: hsl(210, 85%, 30%);
+      --teal:    hsl(195, 75%, 38%);
+      --purple:  hsl(280, 65%, 40%);
+      --amber:   hsl(38, 80%, 40%);
+      --rose:    hsl(15, 70%, 42%);
+      --green:   hsl(150, 60%, 35%);
+      --bg:      hsl(210, 5%, 98%);
+      --fg:      hsl(210, 6%, 12%);
+      --muted:   hsl(210, 6%, 46%);
+      --border:  hsl(210, 5%, 88%);
+      --card:    #ffffff;
+      --radius:  8px;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page-wrapper { max-width: 960px; margin: 0 auto; padding: 0 32px 80px; }
+
+    /* ── COVER ───────────────────────────────────────────────── */
+    .cover {
+      background: linear-gradient(135deg, hsl(210,85%,38%) 0%, hsl(210,85%,26%) 100%);
+      color: #fff;
+      padding: 56px 48px 48px;
+      margin: 0 -32px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -70px; right: -70px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+    .cover-eyebrow {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      opacity: 0.65; margin-bottom: 12px;
+    }
+    .cover h1 {
+      font-size: 38px; font-weight: 700; line-height: 1.15;
+      margin-bottom: 10px; position: relative; z-index: 1;
+    }
+    .cover h1 span { opacity: 0.6; font-weight: 300; }
+    .cover-sub {
+      font-size: 16px; opacity: 0.82; max-width: 580px;
+      line-height: 1.5; margin-bottom: 28px; position: relative; z-index: 1;
+    }
+    .cover-meta {
+      display: flex; gap: 28px; flex-wrap: wrap;
+      font-size: 12px; opacity: 0.65; position: relative; z-index: 1;
+    }
+    .cover-meta strong { opacity: 1; font-weight: 600; }
+
+    /* ── TOC ─────────────────────────────────────────────────── */
+    .toc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 48px;
+    }
+    .toc-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px;
+    }
+    .toc ol { list-style: none; columns: 2; column-gap: 32px; }
+    .toc li { margin-bottom: 5px; break-inside: avoid; }
+    .toc a { color: var(--blue); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; }
+    .toc .n { display: inline-block; width: 22px; color: var(--muted); font-size: 12px; }
+
+    /* ── SECTION STRUCTURE ───────────────────────────────────── */
+    .section { margin-bottom: 52px; }
+    .section-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px; padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+    .snb {
+      display: flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--blue); color: #fff;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+    }
+    .section h2 { font-size: 21px; font-weight: 700; }
+    .section h3 { font-size: 15px; font-weight: 600; margin: 22px 0 8px; color: var(--fg); }
+    .section p  { font-size: 14px; color: var(--fg); margin-bottom: 12px; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* ── MODULE BANNER ───────────────────────────────────────── */
+    .mod-banner {
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 22px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .mod-banner .ico { font-size: 26px; flex-shrink: 0; }
+    .mod-banner h3 { font-size: 17px; font-weight: 700; margin: 0 0 2px; color: inherit; }
+    .mod-banner p  { font-size: 13px; opacity: 0.88; margin: 0; color: inherit; }
+    .mod-banner.hr          { background: linear-gradient(135deg, hsl(210,85%,42%), hsl(210,85%,30%)); color: #fff; }
+    .mod-banner.ops         { background: linear-gradient(135deg, hsl(195,75%,38%), hsl(195,75%,26%)); color: #fff; }
+    .mod-banner.intelligence { background: linear-gradient(135deg, hsl(38,80%,40%), hsl(38,80%,28%)); color: #fff; }
+    .mod-banner.marketing   { background: linear-gradient(135deg, hsl(15,70%,42%), hsl(15,70%,30%)); color: #fff; }
+
+    /* ── MODULE MAP (visual overview grid) ───────────────────── */
+    .module-map {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin: 20px 0 28px;
+    }
+    .mm-card {
+      border-radius: var(--radius);
+      padding: 16px 12px;
+      text-align: center;
+      color: #fff;
+    }
+    .mm-card .mm-ico  { font-size: 22px; margin-bottom: 6px; }
+    .mm-card .mm-name { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+    .mm-card .mm-tag  { font-size: 10px; opacity: 0.82; line-height: 1.3; }
+    .mm-card.hr          { background: linear-gradient(160deg, hsl(210,85%,44%), hsl(210,85%,32%)); }
+    .mm-card.ops         { background: linear-gradient(160deg, hsl(195,75%,40%), hsl(195,75%,28%)); }
+    .mm-card.intelligence { background: linear-gradient(160deg, hsl(38,80%,42%), hsl(38,80%,30%)); }
+    .mm-card.marketing   { background: linear-gradient(160deg, hsl(15,70%,44%), hsl(15,70%,32%)); }
+    .mm-card.ai          { background: linear-gradient(160deg, hsl(280,65%,42%), hsl(280,65%,30%)); }
+
+    /* ── ICON LIST ────────────────────────────────────────────── */
+    .icon-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .icon-list li {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      font-size: 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.45;
+    }
+    .icon-list li .li-ico {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .icon-list li strong { display: block; font-weight: 600; margin-bottom: 1px; }
+    .icon-list li span   { color: var(--muted); font-size: 12px; }
+
+    /* ── COMPACT FEATURE LIST ────────────────────────────────── */
+    .feat-list {
+      list-style: none;
+      margin-bottom: 16px;
+    }
+    .feat-list li {
+      font-size: 13.5px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .feat-list li:last-child { border-bottom: none; }
+    .feat-list .fl-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 6px;
+    }
+    .feat-list strong { font-weight: 600; white-space: nowrap; }
+    .feat-list em     { color: var(--muted); font-style: normal; }
+
+    /* ── TWO-COLUMN LIST ─────────────────────────────────────── */
+    .two-col { columns: 2; column-gap: 28px; list-style: none; margin-bottom: 16px; }
+    .two-col li {
+      font-size: 13px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      break-inside: avoid;
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+    }
+    .two-col li:last-child { border-bottom: none; }
+
+    /* ── IP CARDS ────────────────────────────────────────────── */
+    .ip-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .ip-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--blue);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+    .ip-card.teal   { border-top-color: var(--teal); }
+    .ip-card.green  { border-top-color: var(--green); }
+    .ip-card.amber  { border-top-color: var(--amber); }
+    .ip-card.purple { border-top-color: var(--purple); }
+    .ip-card.rose   { border-top-color: var(--rose); }
+    .ip-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; padding: 2px 7px;
+      border-radius: 100px; display: inline-block;
+      background: hsl(210,60%,93%); color: hsl(210,85%,28%);
+      margin-bottom: 7px;
+    }
+    .ip-badge.teal   { background: hsl(195,60%,92%); color: hsl(195,75%,26%); }
+    .ip-badge.green  { background: hsl(150,50%,92%); color: hsl(150,60%,24%); }
+    .ip-badge.amber  { background: hsl(38,70%,92%);  color: hsl(38,80%,26%); }
+    .ip-badge.purple { background: hsl(280,50%,93%); color: hsl(280,65%,26%); }
+    .ip-badge.rose   { background: hsl(15,60%,92%);  color: hsl(15,70%,27%); }
+    .ip-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .ip-card p  { font-size: 12.5px; color: var(--muted); margin: 0; line-height: 1.5; }
+
+    /* ── STATS ROW ───────────────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      text-align: center;
+    }
+    .stat-val   { font-size: 28px; font-weight: 700; color: var(--blue); display: block; line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+    /* ── CALLOUT ─────────────────────────────────────────────── */
+    .callout {
+      background: hsl(210,60%,95%);
+      border: 1px solid hsl(210,60%,82%);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 13px;
+      color: hsl(210,50%,28%);
+      line-height: 1.55;
+      margin: 18px 0;
+    }
+    .callout strong { font-weight: 700; }
+
+    /* ── TECH TABLE ──────────────────────────────────────────── */
+    .stack-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .stack-table th {
+      text-align: left; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); padding: 7px 10px;
+      border-bottom: 2px solid var(--border);
+    }
+    .stack-table td {
+      padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top;
+    }
+    .stack-table tr:last-child td { border-bottom: none; }
+    .stack-table td:first-child { font-weight: 600; white-space: nowrap; width: 140px; }
+    .stack-table td:nth-child(2) { color: var(--muted); width: 200px; }
+    .stack-table td:last-child { color: var(--muted); }
+
+    /* ── INTEGRATION PILLS ───────────────────────────────────── */
+    .int-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 18px; }
+    .int-pill {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 100px; padding: 5px 12px 5px 8px;
+      font-size: 13px; font-weight: 500;
+    }
+    .int-ico {
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .ix  { background: #13B5EA; }
+    .it  { background: #F22F46; }
+    .io  { background: #10A37F; }
+    .ig  { background: #4285F4; }
+    .is  { background: #362D59; }
+    .ip  { background: #FF5C35; }
+    .ipa { background: #1DB954; }
+
+    /* ── FOOTER ──────────────────────────────────────────────── */
+    .doc-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 20px; margin-top: 56px;
+      font-size: 12px; color: var(--muted);
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .doc-footer strong { color: var(--fg); }
+
+    /* ── PRINT ───────────────────────────────────────────────── */
+    @media print {
+      body { background: #fff; font-size: 9.5pt; }
+      .page-wrapper { max-width: 100%; padding: 0 20pt; }
+      .cover { margin: 0 -20pt 28pt; padding: 36pt 32pt 30pt; }
+      .cover h1 { font-size: 24pt; }
+      .cover-sub { font-size: 11pt; }
+      .toc { page-break-after: always; }
+      .section { page-break-inside: avoid; margin-bottom: 28pt; }
+      .section h2 { font-size: 14pt; }
+      h2, h3 { page-break-after: avoid; }
+      .module-map { grid-template-columns: repeat(5,1fr); gap: 6pt; }
+      .icon-list  { grid-template-columns: repeat(2,1fr); gap: 6pt; }
+      .ip-grid    { grid-template-columns: repeat(2,1fr); gap: 8pt; }
+      .stats-row  { grid-template-columns: repeat(4,1fr); gap: 6pt; }
+      .ip-card p, .icon-list li, .feat-list li { font-size: 8.5pt; }
+      a { color: inherit; text-decoration: none; }
+    }
+
+    @page { size: A4; margin: 16mm 14mm 18mm; }
+  </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-eyebrow">Intellectual Property Overview &mdash; Confidential</div>
+    <h1>OTO Suite <span>/ Platform Overview</span></h1>
+    <p class="cover-sub">
+      A five-module business operations and analytics platform for multi-branch service businesses.
+      Covers HR lifecycle, daily operations, event management, revenue analytics, and marketing intelligence.
+    </p>
+    <div class="cover-meta">
+      <div><strong>Type:</strong> IP Summary</div>
+      <div><strong>Audience:</strong> Legal, investors, stakeholders</div>
+      <div><strong>Prepared:</strong> April 2026</div>
+      <div><strong>Classification:</strong> Confidential</div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-label">Contents</div>
+    <ol>
+      <li><a href="#overview"><span class="n">1.</span> Platform Overview</a></li>
+      <li><a href="#module-hr"><span class="n">2.</span> OTO HR</a></li>
+      <li><a href="#module-ops"><span class="n">3.</span> OTO Ops</a></li>
+      <li><a href="#module-intelligence"><span class="n">4.</span> OTO Intelligence</a></li>
+      <li><a href="#module-marketing"><span class="n">5.</span> OTO Marketing Hub</a></li>
+      <li><a href="#ai"><span class="n">6.</span> AI &amp; Automation</a></li>
+      <li><a href="#tech"><span class="n">7.</span> Technical Architecture</a></li>
+      <li><a href="#integrations"><span class="n">8.</span> Integrations</a></li>
+      <li><a href="#ip"><span class="n">9.</span> Proprietary IP Highlights</a></li>
+      <li><a href="#summary"><span class="n">10.</span> Summary</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. PLATFORM OVERVIEW -->
+  <section class="section" id="overview">
+    <div class="section-header">
+      <div class="snb">1</div>
+      <h2>Platform Overview</h2>
+    </div>
+
+    <p>OTO Suite is a unified platform covering the full operational lifecycle of a multi-branch service business — from people management to daily task execution, event planning, revenue analytics, and marketing measurement.</p>
+
+    <div class="module-map">
+      <div class="mm-card hr">
+        <div class="mm-ico">👥</div>
+        <div class="mm-name">OTO HR</div>
+        <div class="mm-tag">Employees · Contracts · Payroll</div>
+      </div>
+      <div class="mm-card ops">
+        <div class="mm-ico">⚡</div>
+        <div class="mm-name">OTO Ops</div>
+        <div class="mm-tag">Tasks · Events · Knowledge</div>
+      </div>
+      <div class="mm-card intelligence">
+        <div class="mm-ico">📊</div>
+        <div class="mm-name">OTO Intelligence</div>
+        <div class="mm-tag">Revenue · Footfall · Forecasts</div>
+      </div>
+      <div class="mm-card marketing">
+        <div class="mm-ico">📣</div>
+        <div class="mm-name">OTO Marketing Hub</div>
+        <div class="mm-tag">Meta · Google · Social</div>
+      </div>
+      <div class="mm-card ai">
+        <div class="mm-ico">🤖</div>
+        <div class="mm-name">AI Layer</div>
+        <div class="mm-tag">ASK OTO · AI Fill · Attention</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><span class="stat-val">5</span><span class="stat-label">Modules</span></div>
+      <div class="stat-card"><span class="stat-val">80+</span><span class="stat-label">Feature Areas</span></div>
+      <div class="stat-card"><span class="stat-val">7+</span><span class="stat-label">Integrations</span></div>
+      <div class="stat-card"><span class="stat-val">10</span><span class="stat-label">Proprietary IP Capabilities</span></div>
+    </div>
+
+    <h3>Architecture at a glance</h3>
+    <ul class="feat-list">
+      <li><div class="fl-dot" style="background:var(--blue)"></div><strong>Multi-tenant hierarchy</strong> <em>— tenant → operator → branch; full data isolation per operator</em></li>
+      <li><div class="fl-dot" style="background:var(--blue)"></div><strong>Shared identity</strong> <em>— one People record links contracts, schedules, payslips, and training across all modules</em></li>
+      <li><div class="fl-dot" style="background:var(--blue)"></div><strong>Role-based access</strong> <em>— 5-tier hierarchy (Global Admin → Staff) with per-user module overrides</em></li>
+      <li><div class="fl-dot" style="background:var(--blue)"></div><strong>Single deployment</strong> <em>— React frontend + Express backend served from one process; no separate login per module</em></li>
+    </ul>
+  </section>
+
+  <!-- 2. OTO HR -->
+  <section class="section" id="module-hr">
+    <div class="section-header">
+      <div class="snb">2</div>
+      <h2>OTO HR</h2>
+    </div>
+
+    <div class="mod-banner hr">
+      <div class="ico">👥</div>
+      <div>
+        <h3>Human Resources &amp; Workforce Management</h3>
+        <p>End-to-end employee lifecycle — hire, contract, schedule, clock in, pay, offboard.</p>
+      </div>
+    </div>
+
+    <ul class="icon-list">
+      <li>
+        <div class="li-ico">📋</div>
+        <div><strong>Contract Templates + E-Sign</strong>
+        <span>Rich-text templates with dynamic token substitution. Contracts issued via tokenised public URL — no employee account needed to sign.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">👤</div>
+        <div><strong>Employee Profiles</strong>
+        <span>Full lifecycle records: onboarding, department, role, photo, contract history. Bulk CSV import for large cohorts.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📅</div>
+        <div><strong>Scheduling</strong>
+        <span>Multi-branch shift builder. Staff view their rota in Ops. Availability preferences feed directly into schedule planning.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🕐</div>
+        <div><strong>Timekeeping &amp; Attendance</strong>
+        <span>Clock-in/out via kiosk (PIN, QR, face). Live "who's on site" dashboard. Discrepancy flagging before payroll.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">💰</div>
+        <div><strong>Payroll</strong>
+        <span>Configurable pay periods, statutory rules, exception review. One-click Xero export. Self-service payslip portal for staff.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📲</div>
+        <div><strong>Reception Kiosk</strong>
+        <span>Any tablet becomes a branded branch terminal. Activated via hashed one-time code. Supports PIN, QR, and face check-in.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🔔</div>
+        <div><strong>Attention Engine</strong>
+        <span>Rule-based proactive alerting. Surfaces expiring probations, unsigned contracts, missing documents before they become problems.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📄</div>
+        <div><strong>Policies &amp; Audit Log</strong>
+        <span>Rich-text policy editor with staff acknowledgement. Immutable activity logbook for all HR actions with actor and timestamp.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📈</div>
+        <div><strong>HR Analytics</strong>
+        <span>Headcount by branch/department, turnover trends, attendance rates, payroll summaries — scoped to user's branch access.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🗂️</div>
+        <div><strong>Org Chart &amp; Org Structure</strong>
+        <span>Live org chart from employee data. Departments, roles, locations all configurable. Casual and contractor pools managed separately.</span></div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 3. OTO OPS -->
+  <section class="section" id="module-ops">
+    <div class="section-header">
+      <div class="snb">3</div>
+      <h2>OTO Ops</h2>
+    </div>
+
+    <div class="mod-banner ops">
+      <div class="ico">⚡</div>
+      <div>
+        <h3>Task Management · Event Management · Daily Operations</h3>
+        <p>The front-of-house interface used by all staff every working day — and the back-office where managers build the workflows, events, and knowledge that power it.</p>
+      </div>
+    </div>
+
+    <h3>Task &amp; Checklist Management</h3>
+    <ul class="icon-list">
+      <li>
+        <div class="li-ico">✅</div>
+        <div><strong>Tasks</strong>
+        <span>Assign discrete action items with priority, due date, and photo-evidence or form-completion requirements. Board view for managers.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📝</div>
+        <div><strong>Checklists</strong>
+        <span>Structured repeatable procedures (opening, cleaning, safety). Managers author templates in Studio; staff execute step-by-step in the app.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🔧</div>
+        <div><strong>Issue Reporting &amp; Fix Board</strong>
+        <span>Staff report faults or safety concerns. Kanban Fix Board lets managers track through to resolution. Escalations trigger SMS alerts.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📋</div>
+        <div><strong>Today Dashboard</strong>
+        <span>Personalised daily view: outstanding tasks, upcoming events, pending checklists, and notifications — all in one opening screen.</span></div>
+      </li>
+    </ul>
+
+    <h3>Event Management (BEO)</h3>
+    <ul class="icon-list">
+      <li>
+        <div class="li-ico">🎉</div>
+        <div><strong>Event / BEO Planner</strong>
+        <span>Full event lifecycle: guest list, RSVP tracking, seating, supplier assignments, staff briefings. Kanban + calendar views.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">✨</div>
+        <div><strong>AI Fill</strong>
+        <span>Paste a raw enquiry email or message — AI extracts event name, date, guest count, requirements, and pre-fills the BEO form.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📧</div>
+        <div><strong>Guest RSVP Portal</strong>
+        <span>Tokenised public page for guests to confirm, add guests, note dietary requirements — no account needed.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🏷️</div>
+        <div><strong>Supplier Portal</strong>
+        <span>Tokenised supplier-facing briefing pages. Vendors confirm participation and communicate directly without accessing the main system.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🎟️</div>
+        <div><strong>Vouchers</strong>
+        <span>Issue and redeem branded QR-code vouchers tied to events or standalone. Mobile-first redemption flow, no app install needed.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">👶</div>
+        <div><strong>Parent Portal (Drop-off)</strong>
+        <span>For child-focused businesses: SMS-notified drop-off and collection check-in. Photo capture at entry and exit. Digital signature on pickup.</span></div>
+      </li>
+    </ul>
+
+    <h3>Knowledge Base &amp; Training</h3>
+    <ul class="icon-list">
+      <li>
+        <div class="li-ico">📚</div>
+        <div><strong>SOP Knowledge Base</strong>
+        <span>Managers author structured articles (SOPs, how-to guides, policies) in a rich-text editor. Content is indexed by the ASK OTO AI assistant.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🤖</div>
+        <div><strong>ASK OTO (AI Assistant)</strong>
+        <span>Staff type a question; ASK OTO retrieves relevant articles and synthesises a grounded answer with source attribution. Available to all staff from the Ops interface.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🔍</div>
+        <div><strong>Troubleshooting Guides</strong>
+        <span>Decision-tree flows help staff resolve common issues without calling a manager. Escalates only when genuinely unresolvable.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🎓</div>
+        <div><strong>Training Quizzes</strong>
+        <span>Multiple-choice assessments linked to knowledge articles. Assigned for onboarding or compliance. Scores tracked per employee.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🏗️</div>
+        <div><strong>Custom Form Builder</strong>
+        <span>Build intake forms, incident reports, feedback forms via drag-and-drop. Published to public URLs with submissions stored and exportable.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📅</div>
+        <div><strong>My Rota</strong>
+        <span>Staff view their published schedule directly within Ops. Availability preferences submitted here feed straight into the HR scheduling tool.</span></div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 4. OTO INTELLIGENCE -->
+  <section class="section" id="module-intelligence">
+    <div class="section-header">
+      <div class="snb">4</div>
+      <h2>OTO Intelligence</h2>
+    </div>
+
+    <div class="mod-banner intelligence">
+      <div class="ico">📊</div>
+      <div>
+        <h3>Revenue &amp; Operations Analytics</h3>
+        <p>Live POS revenue dashboard with AI trend analysis, branch forecasting, and a proprietary headcount engine. No login required.</p>
+      </div>
+    </div>
+
+    <p>OTO Intelligence ingests data from multiple point-of-sale systems, normalises it into a central database, and presents live KPIs, trend charts, and forecasts. The database is the sole source of truth — POS APIs are never called on page load, ensuring the dashboard is always fast regardless of third-party API availability.</p>
+
+    <ul class="icon-list">
+      <li>
+        <div class="li-ico">🔗</div>
+        <div><strong>Multi-POS Ingestion</strong>
+        <span>Connects simultaneously to Pisell (MD5-signed auth) and Papaya (dual-terminal merge). Includes a 2-hour-window pagination fix that recovers ~25% of Papaya orders silently dropped by a vendor API bug.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🧮</div>
+        <div><strong>Headcount Solver</strong>
+        <span>Proprietary price-based constraint solver decomposes bundled family ticket packages into individual kid + adult counts — data no POS or generic analytics tool provides natively.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🗂️</div>
+        <div><strong>Revenue Category Engine</strong>
+        <span>Classifies all POS orders into 6 categories (Tickets, F&amp;B, Merchandise, Events, Nanny/Drop-off, Extras) using product-name and category-name rules. Each daily summary is formula-versioned for auditability.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📈</div>
+        <div><strong>Branch Forecasting</strong>
+        <span>Per-branch operating models (weekday/weekend targets, category shares, seasonality). AI Trends injects virtual forecast metrics so users can query actual vs. budget directly in conversation.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🔄</div>
+        <div><strong>Background Auto-Sync</strong>
+        <span>Syncs 5 seconds after startup, then every 5 minutes. Locked months (audited periods) are skipped and preserved even during push-to-production.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🤖</div>
+        <div><strong>AI Trends Assistant</strong>
+        <span>Conversational chart builder with Phuket tourism context, 6 quick-start presets, and saved conversation history. Forecast lines render dashed; actuals solid.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📆</div>
+        <div><strong>Yearly Heatmap Calendar</strong>
+        <span>Academic-year 12-month grid with 7-level intensity scale. School calendar events overlaid as dots. Click any day to add an operational note.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🔢</div>
+        <div><strong>Formula Registry</strong>
+        <span>Every calculation is a named, versioned entity. Visible in the Config tab. Historical records are always re-interpretable regardless of future formula changes.</span></div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 5. OTO MARKETING HUB -->
+  <section class="section" id="module-marketing">
+    <div class="section-header">
+      <div class="snb">5</div>
+      <h2>OTO Marketing Hub</h2>
+    </div>
+
+    <div class="mod-banner marketing">
+      <div class="ico">📣</div>
+      <div>
+        <h3>Unified Marketing Analytics</h3>
+        <p>Read-only dashboard aggregating Meta, Google, and website data with period-over-period comparison and a Smart Refresh sync pipeline.</p>
+      </div>
+    </div>
+
+    <p>OTO Marketing Hub pulls from Meta (Facebook/Instagram/WhatsApp), Google (Ads/Analytics/Maps), and website analytics into one read-only dashboard. It is intentionally read-only — it never writes back to any source platform. A formal OpenAPI contract is the single source of truth; all client hooks and Zod schemas are auto-generated from it, eliminating type drift between frontend and backend.</p>
+
+    <ul class="icon-list">
+      <li>
+        <div class="li-ico">⚙️</div>
+        <div><strong>Two-Layer Pipeline</strong>
+        <span>Layer 1 (raw) stores API responses. Layer 2 (processed) runs SQL aggregations into analytics-ready tables. Clean separation of sync and query concerns.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🛡️</div>
+        <div><strong>Triple Fallback</strong>
+        <span>Each route tries the DB first, then a live API call, then high-fidelity demo data. Dashboard always renders — even when credentials are absent or rate-limited.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🔄</div>
+        <div><strong>Smart Refresh</strong>
+        <span>Single endpoint syncs yesterday, today, and any detected data gaps. Frontend refresh button triggers Smart Refresh before re-querying.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📊</div>
+        <div><strong>Command Centre</strong>
+        <span>Global period-over-period view (e.g., This Month vs. Previous Month) with trend indicators for visibility, followers, engagement, and spend.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">📱</div>
+        <div><strong>Social Performance</strong>
+        <span>Follower growth charts and per-post metrics across Facebook and Instagram — engagement rate, reach, and impressions breakdowns.</span></div>
+      </li>
+      <li>
+        <div class="li-ico">🏗️</div>
+        <div><strong>Design Sandbox</strong>
+        <span>Isolated component preview environment for prototyping UI in isolation. A Vite plugin auto-discovers components and serves a gallery — changes never risk the production dashboard.</span></div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 6. AI & AUTOMATION -->
+  <section class="section" id="ai">
+    <div class="section-header">
+      <div class="snb">6</div>
+      <h2>AI &amp; Automation</h2>
+    </div>
+
+    <ul class="feat-list">
+      <li>
+        <div class="fl-dot" style="background:var(--purple)"></div>
+        <div><strong>ASK OTO (RAG assistant)</strong> <em>— retrieval-augmented generation grounded in the business's own knowledge base. Source-cited answers. Explicitly flags out-of-scope questions rather than hallucinating.</em></div>
+      </li>
+      <li>
+        <div class="fl-dot" style="background:var(--teal)"></div>
+        <div><strong>AI Fill (BEO parser)</strong> <em>— paste raw enquiry text; LLM extracts date, guest count, requirements, and special notes and pre-fills the event form.</em></div>
+      </li>
+      <li>
+        <div class="fl-dot" style="background:var(--green)"></div>
+        <div><strong>Attention Engine</strong> <em>— rule-based HR alerting. Encodes domain knowledge (probation thresholds, contract expiry windows, document gaps) to surface actionable items before they escalate.</em></div>
+      </li>
+      <li>
+        <div class="fl-dot" style="background:var(--amber)"></div>
+        <div><strong>OTO Intelligence Trends</strong> <em>— conversational chart builder with tourism seasonality context; injects virtual forecast metrics server-side for actual vs. budget queries.</em></div>
+      </li>
+      <li>
+        <div class="fl-dot" style="background:var(--rose)"></div>
+        <div><strong>SMS Automation (Twilio)</strong> <em>— drop-off/pickup parent notifications, escalation alerts, password-reset OTPs, phone verification. E.164 normalisation for reliable international delivery.</em></div>
+      </li>
+    </ul>
+
+    <div class="callout">
+      <strong>Grounded AI principle:</strong> All AI features are anchored to business-specific data (knowledge articles, POS records, HR rules) rather than applied generically. This makes outputs auditable and operationally trustworthy.
+    </div>
+  </section>
+
+  <!-- 7. TECHNICAL ARCHITECTURE -->
+  <section class="section" id="tech">
+    <div class="section-header">
+      <div class="snb">7</div>
+      <h2>Technical Architecture</h2>
+    </div>
+
+    <table class="stack-table">
+      <thead>
+        <tr><th>Layer</th><th>Technology</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Frontend</td><td>React 18, TypeScript, Vite</td><td>SPA with lazy-loaded code-split modules per section</td></tr>
+        <tr><td>UI</td><td>shadcn/ui, Tailwind CSS, Radix UI</td><td>Accessible component system; dark/light mode</td></tr>
+        <tr><td>State</td><td>TanStack Query v5, wouter</td><td>Server state, cache invalidation, client routing</td></tr>
+        <tr><td>Backend</td><td>Node.js, Express, TypeScript</td><td>RESTful API with session-based auth</td></tr>
+        <tr><td>Database</td><td>PostgreSQL, Drizzle ORM</td><td>Type-safe schema, migrations, query builder</td></tr>
+        <tr><td>Validation</td><td>Zod, drizzle-zod</td><td>Shared schemas between frontend and backend; auto-generated in Marketing Hub via Orval + OpenAPI</td></tr>
+        <tr><td>Storage</td><td>Object Storage</td><td>Profile photos, document attachments, media uploads</td></tr>
+        <tr><td>Auth</td><td>Sessions, bcrypt, HMAC</td><td>Timeclock PINs bcrypt-hashed; uniqueness via HMAC fingerprint</td></tr>
+        <tr><td>Monitoring</td><td>Sentry</td><td>Error tracking + session replay for production</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>Type safety end-to-end:</strong> All data models are defined once in <code>shared/schema.ts</code>. TypeScript types for insert and select are auto-derived. A schema change propagates immediately across DB, API, and frontend at compile time — no manual sync.
+    </div>
+  </section>
+
+  <!-- 8. INTEGRATIONS -->
+  <section class="section" id="integrations">
+    <div class="section-header">
+      <div class="snb">8</div>
+      <h2>Integrations</h2>
+    </div>
+
+    <div class="int-row">
+      <div class="int-pill"><div class="int-ico ix">X</div> Xero</div>
+      <div class="int-pill"><div class="int-ico it">T</div> Twilio SMS</div>
+      <div class="int-pill"><div class="int-ico io">AI</div> OpenAI</div>
+      <div class="int-pill"><div class="int-ico ig">G</div> Google Drive</div>
+      <div class="int-pill"><div class="int-ico is">S</div> Sentry</div>
+      <div class="int-pill"><div class="int-ico ip">P</div> Pisell POS</div>
+      <div class="int-pill"><div class="int-ico ipa">Pa</div> Papaya POS</div>
+    </div>
+
+    <ul class="feat-list">
+      <li><div class="fl-dot" style="background:#13B5EA"></div><strong>Xero</strong> <em>— payroll export for ledger posting; branch and employee entity sync with status tracking per run</em></li>
+      <li><div class="fl-dot" style="background:#F22F46"></div><strong>Twilio SMS</strong> <em>— outbound SMS for OTPs, verification, check-in alerts, and manager escalations; E.164 normalisation</em></li>
+      <li><div class="fl-dot" style="background:#10A37F"></div><strong>OpenAI</strong> <em>— embeddings for semantic knowledge search; completions for ASK OTO and AI Fill; abstracted behind a service layer for future model swap</em></li>
+      <li><div class="fl-dot" style="background:#4285F4"></div><strong>Google Drive</strong> <em>— branch-level folder linking for knowledge base and event document storage</em></li>
+      <li><div class="fl-dot" style="background:#FF5C35"></div><strong>Pisell POS</strong> <em>— MD5-signed revenue sync for OTO Intelligence; voucher-adjusted net sales calculation</em></li>
+      <li><div class="fl-dot" style="background:#1DB954"></div><strong>Papaya POS</strong> <em>— dual-terminal Park + Café merge; 2-hour-window pagination fix; cancelled-item revenue inclusion for Café</em></li>
+    </ul>
+  </section>
+
+  <!-- 9. IP HIGHLIGHTS -->
+  <section class="section" id="ip">
+    <div class="section-header">
+      <div class="snb">9</div>
+      <h2>Proprietary IP Highlights</h2>
+    </div>
+
+    <p>Each item below represents a novel capability engineered specifically for this vertical — not replicable from off-the-shelf tools.</p>
+
+    <div class="ip-grid">
+      <div class="ip-card">
+        <div class="ip-badge">Architecture</div>
+        <h3>Unified Multi-Module Platform</h3>
+        <p>HR, Ops, and analytics share one identity, one permission model, one database. A single person record anchors contracts, schedules, payslips, and training — no sync layer.</p>
+      </div>
+
+      <div class="ip-card teal">
+        <div class="ip-badge teal">AI / NLP</div>
+        <h3>AI Fill — BEO Parser</h3>
+        <p>Unstructured enquiry text (email, WhatsApp, voice transcript) → fully populated event record. LLM extracts date, guest count, requirements, and maps them to the data model.</p>
+      </div>
+
+      <div class="ip-card green">
+        <div class="ip-badge green">Rules Engine</div>
+        <h3>Attention Engine</h3>
+        <p>Encodes HR domain knowledge (probation thresholds, contract expiry, document gaps) as rules. Surfaces actionable, prioritised items — not raw notification lists.</p>
+      </div>
+
+      <div class="ip-card purple">
+        <div class="ip-badge purple">AI / RAG</div>
+        <h3>ASK OTO — Grounded AI Assistant</h3>
+        <p>RAG architecture anchored to operator-authored knowledge base. Explicitly declines out-of-scope questions — architecturally enforced, not a prompt instruction.</p>
+      </div>
+
+      <div class="ip-card amber">
+        <div class="ip-badge amber">Workflow</div>
+        <h3>Contract Template + E-Sign Flow</h3>
+        <p>Rich-text editor → token substitution → guided wizard → unique expiring signing URL. Every signing event timestamped. No employee account required.</p>
+      </div>
+
+      <div class="ip-card">
+        <div class="ip-badge">Security / Hardware</div>
+        <h3>Multi-Modal Kiosk System</h3>
+        <p>Standard tablet → branch reception terminal via hashed one-time activation code. Supports PIN (bcrypt), QR, and face recognition. Configurable expiry and reconnection limits.</p>
+      </div>
+
+      <div class="ip-card teal">
+        <div class="ip-badge teal">Multi-Tenant</div>
+        <h3>Tenant → Operator → Branch Isolation</h3>
+        <p>Three-level data hierarchy enforced at the middleware layer before any business logic. Enables SaaS multi-tenancy and single-tenant enterprise from one codebase.</p>
+      </div>
+
+      <div class="ip-card green">
+        <div class="ip-badge green">Communication</div>
+        <h3>Tokenised Public Portal Network</h3>
+        <p>Contract signing, guest RSVPs, supplier briefings, parent check-in — all via cryptographically random expiring URLs. No account creation; full audit trail.</p>
+      </div>
+
+      <div class="ip-card amber">
+        <div class="ip-badge amber">Analytics</div>
+        <h3>Price-Based Headcount Solver</h3>
+        <p>Constraint algorithm decomposes bundled family ticket packages into kid + adult counts using known base prices. Includes free-guardian and drop-off logic. No POS vendor provides this natively.</p>
+      </div>
+
+      <div class="ip-card rose">
+        <div class="ip-badge rose">Analytics</div>
+        <h3>Spec-Driven API + Triple Fallback</h3>
+        <p>OpenAPI contract → auto-generated TanStack hooks + Zod schemas (Orval). Triple fallback (DB → live API → demo data) means the dashboard never shows a blank screen.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. SUMMARY -->
+  <section class="section" id="summary">
+    <div class="section-header">
+      <div class="snb">10</div>
+      <h2>Summary</h2>
+    </div>
+
+    <p>
+      OTO Suite is a five-module platform that covers the full operational and analytical lifecycle of a multi-branch service business: hiring and paying people (OTO HR), managing their daily tasks and events (OTO Ops), understanding revenue in real time (OTO Intelligence), and measuring marketing performance (OTO Marketing Hub) — all underpinned by a shared AI layer.
+    </p>
+    <p>
+      The platform's IP value lies in the depth of its domain-specific engineering: the headcount solver, the grounded AI assistant, the proactive attention engine, the contract e-sign workflow, and the multi-modal kiosk system are each purpose-built for this vertical and constitute a body of proprietary software that cannot be assembled from generic components.
+    </p>
+
+    <div class="callout">
+      For source code review, detailed data model documentation, or technical due diligence, please contact the development team. This document is a high-level overview for legal and commercial audiences.
+    </div>
+  </section>
+
+  <div class="doc-footer">
+    <div><strong>OTO Suite</strong> &mdash; IP Overview &mdash; Confidential</div>
+    <div>April 2026 &bull; For authorised recipients only</div>
+  </div>
+
+</div>
+</body>
+</html>
