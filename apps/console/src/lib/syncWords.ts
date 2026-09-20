@@ -199,7 +199,7 @@ const ANOMALIES: Record<SyncAnomalyKind, AnomalyWords> = {
   },
   sequence_gap: {
     label: 'A journal position that never arrived',
-    what: 'This box sent an event from beyond a position nothing has ever reached us for, so the numbering skipped. The event itself is filed; the row names the positions that are missing. Recorded once, when the skip first showed — if they arrive later the box’s sync cursor catches up on its own.',
+    what: 'This box sent an event from beyond a position nothing has ever reached us for, so the numbering skipped. Each skipped position is named once, on the push that first stepped over it — the pushes after it stand above the same hole and add nothing. The row carries what the cloud found and how far it looked; a position beyond that was never examined. Nothing catches up on a timer: if the missing events arrive the cursor moves over them on this box’s next push, a window at a time. While they do not, the cursor cannot move past the hole, and Health’s stalled-cursor warning is the standing sign of that.',
   },
   merge: {
     label: 'The same person entered at two tills',

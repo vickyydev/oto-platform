@@ -931,6 +931,98 @@ describe('and how far it catches up once the hole is filled', () => {
   });
 
   /**
+   * The same property where the hole is further from the mark than one push may
+   * look — which is the shape that survived the last fix and is the one a real
+   * box produces after a store is restored from a stale copy.
+   *
+   * `loadHeldPositions` reads only `(mark, mark + MARK_WINDOW]`, so a ledger row
+   * at 1001 above a mark stuck on 0 is invisible to it: the head it returned
+   * stayed on the mark, nothing could be recognised as already-reported, and
+   * every push re-derived the same thousand positions and filed them again.
+   * These tests COUNT the rows, which is what the two tests above this one did
+   * not do and is the only reason that survived a review.
+   */
+  it('files one row about a hole further below the head than one push may look', async () => {
+    const b = await startBox();
+
+    // Whatever this box minted at 1..1000 is gone, and it has pushed in perfect
+    // order ever since.
+    expect((await pushRaw(b, [sealed(b, 1001, uniquePhone())])).body).toMatchObject({
+      applied: 1,
+      cursorSeq: 0,
+    });
+    const [first] = await gapsFor(b);
+    expect(first?.detail).toMatchObject({
+      missing: 1000,
+      expectedBoxSeq: 1,
+      receivedBoxSeq: 1001,
+      lookedUpTo: 1000,
+    });
+
+    // The count after each push, asserted as one sequence: a run that grows is
+    // the fault itself, and reading it off the failure is worth more than
+    // finding out which push was the first to be wrong.
+    const counts = [(await gapsFor(b)).length];
+    for (const seq of [1002, 1003, 1004]) {
+      expect((await pushRaw(b, [sealed(b, seq, uniquePhone())])).body, `@${seq}`).toMatchObject({
+        applied: 1,
+        duplicates: 0,
+      });
+      counts.push((await gapsFor(b)).length);
+    }
+    // A push of @1002 says nothing new about position 500.
+    expect(counts).toEqual([1, 1, 1, 1]);
+    expect(await cursorNow(b)).toBe(0);
+  });
+
+  /**
+   * And the re-send of the very event that opened the hole. The cloud answers
+   * `duplicates: 1` — it holds the fact, under this id, at this position — and a
+   * push it recognises that completely has nothing left to report.
+   */
+  it('files nothing more when the far-ahead event it already holds comes round again', async () => {
+    const b = await startBox();
+    const event = sealed(b, 999_999, uniquePhone());
+    expect((await pushRaw(b, [event])).body).toMatchObject({ applied: 1, cursorSeq: 0 });
+
+    const counts = [(await gapsFor(b)).length];
+    for (const attempt of [2, 3]) {
+      expect((await pushRaw(b, [event])).body, `push ${attempt}`).toMatchObject({
+        applied: 0,
+        duplicates: 1,
+      });
+      counts.push((await gapsFor(b)).length);
+    }
+    expect(counts).toEqual([1, 1, 1]);
+  });
+
+  /**
+   * The same again where the event that stepped over the hole was REFUSED rather
+   * than applied. It has no ledger row — that is what being refused means — so
+   * the position it holds is held in quarantine, and a head read from the ledger
+   * alone would forget it and start filing the hole afresh on every retry. A box
+   * re-sends whenever an answer was lost on the way back, so this is the retry
+   * path rather than a corner of it.
+   */
+  it('files nothing more when the far-ahead event it refused is sent again', async () => {
+    const b = await startBox();
+    // Shaped like an envelope in every way, so it reaches the gap check, and
+    // refused underneath it for a hash that does not match its payload.
+    const bad = broken(1001, {});
+    expect((await pushRaw(b, [bad])).body).toMatchObject({ applied: 0, quarantined: 1 });
+
+    const counts = [(await gapsFor(b)).length];
+    for (const attempt of [2, 3]) {
+      expect((await pushRaw(b, [bad])).body, `push ${attempt}`).toMatchObject({ quarantined: 1 });
+      counts.push((await gapsFor(b)).length);
+    }
+    expect(counts).toEqual([1, 1, 1]);
+    // One open row for it too, which is the neighbouring property and the reason
+    // `fileQuarantine` refreshes rather than repeats.
+    expect(await openQuarantine(b)).toHaveLength(1);
+  });
+
+  /**
    * The mark stalling at a genuine hole is correct and it is not silent.
    *
    * `sync.stale` cannot see this one: it reads the age of the oldest queued

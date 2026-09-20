@@ -1231,8 +1231,13 @@ export async function pushEvents(
     /**
      * What the cloud already holds ABOVE the mark, read before the batch runs.
      *
-     * **The ledger is the authority on what the box has delivered; the cursor is
-     * a cache of a question the ledger can always answer.** The mark used to be
+     * **The ledger is the authority on what the box has delivered, for as long
+     * as it keeps the rows; the cursor is what still answers when it does not.**
+     * The two are not interchangeable — the ledger is swept on a retention clock
+     * and the cursor never is, which is the whole reason `classifyReplay` exists
+     * — but
+     * above the mark, where nothing has been swept, the ledger is the better
+     * witness and the mark is derived from it. The mark used to be
      * computed from this batch alone, and that is what froze it: a batch that
      * could not step over a hole left the mark behind, and every batch after it
      * — dealing only with its own positions — had no way to notice that the
@@ -1240,9 +1245,14 @@ export async function pushEvents(
      * 1; the re-send of @2 moved it to 2; and @6, @7 and everything after moved
      * it nowhere, with 1..7 all sitting in the ledger.
      *
-     * Deriving it from what the ledger holds is self-healing by construction:
-     * fill the hole and the next push walks the whole run in one step, because
-     * the run is what the query returns.
+     * Deriving it from what the ledger holds heals by construction: fill the
+     * hole and the next push walks the run the query returns, rather than the
+     * one position this batch happened to carry. It does not heal in one step —
+     * the query stops at `mark + MARK_WINDOW`, so a run reaching further above
+     * the mark than that is claimed over as many pushes as it takes rather than
+     * all at once. And it heals only on a PUSH: nothing
+     * here runs on a timer, so a box that fills a hole and then goes quiet
+     * leaves the mark where it is until it sends something.
      *
      * What it still costs is a mark that stalls while a hole is genuinely open —
      * a box that has lost journal positions, which is what "Reset store" is for.
@@ -1251,9 +1261,12 @@ export async function pushEvents(
      * why the oldest-unacked watchdog cannot see this: `sync.stale` reads an age
      * computed from queued and sending rows, and an emptying queue has none. The
      * rule that does see it is `sync.cursor_stalled` in `evaluateBox`, which
-     * compares this mark with the ledger's own high-water mark for the box's
-     * current epoch, and closes itself when the hole is filled or the store is
-     * reset.
+     * COUNTS the ledger rows standing above this mark on the box's current epoch
+     * — the number of stranded facts, deliberately not `max(box_seq) - mark`,
+     * which would report a million for one event sealed a million ahead. It
+     * closes itself when that count reaches zero, which is where filling the
+     * hole leads — a window per push — and a store reset mints an epoch it does
+     * not read.
      */
     const held = await loadHeldPositions(tx, auth, epoch, startMark);
     /**
@@ -1270,7 +1283,11 @@ export async function pushEvents(
      * refused is not one of those.
      */
     const known = held.known;
-    /** The highest position the cloud held BEFORE this batch. See the gap below. */
+    /**
+     * The highest position the cloud held ANYTHING for BEFORE this batch — the
+     * whole epoch, not just the window. What stops a gap being re-reported on
+     * every push; see the gap check below.
+     */
     const headBefore = held.head;
 
     /**
@@ -1524,15 +1541,31 @@ export async function pushEvents(
        * missing, however that row got there, so `known` is what the step is
        * judged against and `absorbKnown` walks over it.
        *
-       * **And only positions above `headBefore`.** A position below the highest
-       * one the cloud already held is not news: the batch that first reached
-       * past it is the batch that had the chance to say so, and re-saying it on
-       * every push afterwards is the same "once per batch for ever" fault in a
-       * different place. The ceiling is the same window the mark walks, so a box
-       * that jumps thousands of positions in one go has the first thousand named
-       * and the rest neither named nor examined — `lookedUpTo` on the row says
-       * how far the look went, because a longer list on a tab is worth less than
-       * a bounded query here.
+       * **And only positions above `headBefore`, which is read WITHOUT the
+       * window.** A position below the highest one the cloud already holds
+       * anything for is not news: the batch that first reached past it is the
+       * batch that had the chance to say so. That is what files a lost run once
+       * rather than once per push, and it holds at any distance from the mark
+       * because of how the two fit together — every position reported here is
+       * below the `boxSeq` of an event that leaves this push holding a row at
+       * that `boxSeq`, applied to the ledger or filed in quarantine or
+       * recognised as a duplicate of a ledger row already there, so the head the
+       * NEXT push reads stands above it and the check skips it. `headBefore`
+       * used to stop at `mark + MARK_WINDOW`, which held for a hole inside the
+       * window and for nothing past it: a box that lost 1..1000 and then pushed
+       * @1001, @1002, @1003 in perfect order filed the same thousand positions
+       * three times, and would have gone on filing them for ever.
+       *
+       * The CEILING is still that window, and it is a different limit meaning a
+       * different thing. A box that jumps thousands of positions in one go has
+       * the first thousand named and the rest neither named nor examined, now or
+       * on any later push — `lookedUpTo` on the row says how far the look went,
+       * so a position above it is recorded as unexamined rather than as present.
+       * The ceiling is measured from the mark, so while the mark is held at a
+       * hole the ceiling is held with it, and a SECOND hole opening more than
+       * `MARK_WINDOW` above the mark is not reported here at all. What covers a
+       * box in that state is `sync.cursor_stalled`, which is open the whole time
+       * the first hole is.
        *
        * It records an anomaly and does NOT raise an alert. A standing hole is a
        * live condition and it has one now — `sync.cursor_stalled` in
@@ -1751,7 +1784,10 @@ export async function pushEvents(
           missingBoxSeqs: seqs.slice(0, 20),
           expectedBoxSeq: seqs[0],
           receivedBoxSeq: gapWitness.boxSeq,
-          /** The highest position the cloud held before this batch. */
+          /**
+           * The highest position the cloud held anything for on this epoch
+           * before this batch — ledger or quarantine, at any distance.
+           */
           knownBoxSeq: headBefore,
           /** How far above the mark this looked. Past it, nothing was examined. */
           lookedUpTo: startMark + MARK_WINDOW,
@@ -2042,8 +2078,14 @@ function assertEnvelopeUsable(
  * batches later is absorbed in one step, and a hole that is never filled reads
  * at most a thousand index entries per push — see the cost note on
  * `loadHeldPositions` for the whole of it. Past the ceiling the cloud does not
- * look and does not claim: the mark catches up a window at a time, and
+ * enumerate and does not claim: the mark catches up a window at a time, and
  * `sync.cursor_stalled` says it is behind while it does.
+ *
+ * The one question that DOES reach past it is `HeldPositions.head`, which asks
+ * for a single row off the top of each table rather than a range. Neither of
+ * those two reads costs more for a distant head than for a near one — see the
+ * cost note on `loadHeldPositions` — and together they are what stops a hole
+ * below the window being reported as news on every push for ever.
  */
 const MARK_WINDOW = 1_000;
 
@@ -2053,22 +2095,36 @@ interface HeldPositions {
   sealed: Set<number>;
   /** Positions the cloud holds anything at all for. What a gap is measured against. */
   known: Set<number>;
-  /** The highest position in `known`, or the mark itself when nothing is above it. */
+  /**
+   * The highest position the cloud holds ANYTHING for on this epoch — ledger or
+   * quarantine — or the mark itself when it holds nothing above it.
+   *
+   * Read without the window, unlike `sealed` and `known`. That is the whole
+   * difference between this and the version before it, and the fault it fixes:
+   * a head that stopped at `mark + MARK_WINDOW` could not see a ledger row at
+   * 1001 above a mark stuck on 0, so the gap check below had nothing to
+   * recognise 1..1000 as already-reported by, and filed them again on every
+   * push for ever. The positions it may CLAIM still stop at the window; only
+   * the question "has this already been said" reaches past it.
+   */
   head: number;
 }
 
 /**
- * Read what the cloud holds above the mark, in one bounded window.
+ * Read what the cloud holds above the mark, in one bounded window, and how far
+ * up this epoch it holds anything at all.
  *
- * **Cost.** Two reads per push. The ledger one is an index-only range scan on
+ * **Cost.** Four reads per push, two of them windowed and two of them one row
+ * each. The windowed ledger read is an index-only range scan on
  * `sync_event_journal_unique` over at most `MARK_WINDOW` rows, and in the
- * ordinary case — a mark sitting at the head of the journal — it returns none.
- * The quarantine one has no index on the position, so it is a scan of this box's
- * quarantine rows filtered by epoch and window; that table is small by
- * construction, and the watchdog's "quarantine non-empty" rule is what says so
- * long before its size is a question. At a park doing 5,000 events a day, where
- * the agent flushes every five seconds, that is of the order of ten thousand
- * pairs of small reads a day against an index and a table of tens of rows.
+ * ordinary case — a mark sitting at the head of the journal — it returns none;
+ * the head read is the same index walked backwards for a single row. The
+ * quarantine pair has no index on the position, so each is a scan of this box's
+ * quarantine rows for this epoch; that table is small by construction, and the
+ * watchdog's "quarantine non-empty" rule is what says so long before its size is
+ * a question. At a park doing 5,000 events a day, where the agent flushes every
+ * five seconds, that is of the order of ten thousand small reads a day against
+ * an index and a table of tens of rows.
  *
  * Two kinds of filed row are `known` without being `sealed`, and both exclusions
  * exist to stop the mark retiring a position the box is going to send again:
@@ -2125,21 +2181,48 @@ async function loadHeldPositions(
     )
     .limit(MARK_WINDOW);
 
+  /**
+   * The two heads, each one row off the top of what the cloud holds for this
+   * box on this epoch.
+   *
+   * Quarantine is read as well as the ledger because a refused event has no
+   * ledger row — that is what being refused means — and the position it stands
+   * at was still reached. A head from the ledger alone would forget a box whose
+   * far-ahead event was refused, and start filing the hole underneath it afresh
+   * on every retry, which is the same fault in a smaller place.
+   *
+   * The epoch filter is what makes a store reset start the question over: a
+   * reset mints a new epoch, and nothing filed under the old one answers for
+   * the new one's numbering.
+   */
+  const [ledgerHead] = await tx
+    .select({ boxSeq: syncEvent.boxSeq })
+    .from(syncEvent)
+    .where(and(eq(syncEvent.boxId, auth.boxId), eq(syncEvent.journalEpoch, epoch)))
+    .orderBy(desc(syncEvent.boxSeq))
+    .limit(1);
+  const [filedHead] = await tx
+    .select({ boxSeq: syncQuarantine.boxSeq })
+    .from(syncQuarantine)
+    .where(and(eq(syncQuarantine.boxId, auth.boxId), eq(syncQuarantine.journalEpoch, epoch)))
+    .orderBy(desc(syncQuarantine.boxSeq))
+    .limit(1);
+
   const sealed = new Set<number>();
   const known = new Set<number>();
-  let head = mark;
   for (const row of applied) {
     sealed.add(row.boxSeq);
     known.add(row.boxSeq);
-    if (row.boxSeq > head) head = row.boxSeq;
   }
   for (const row of filed) {
     known.add(row.boxSeq);
-    if (row.boxSeq > head) head = row.boxSeq;
     if (wasInjected(row)) continue;
     if (row.sentEventId !== row.eventId) continue;
     sealed.add(row.boxSeq);
   }
+  // `mark` floors it: a mark at the head of a swept journal holds nothing above
+  // itself, and a head BELOW the mark would make the check under it meaningless.
+  const head = Math.max(mark, ledgerHead?.boxSeq ?? 0, filedHead?.boxSeq ?? 0);
   return { sealed, known, head };
 }
 
