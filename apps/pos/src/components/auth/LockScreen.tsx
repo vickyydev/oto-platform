@@ -250,7 +250,7 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
             <label className="text-sm font-semibold text-foreground/60 flex items-center gap-2">
               <PhoneIcon className="w-4 h-4" /> Phone number
             </label>
-            <PhoneInput value={phone} onChange={setPhone} />
+            <PhoneInput value={phone} onChange={setPhone} label="" />
             <label className="text-sm font-semibold text-foreground/60 flex items-center gap-2 mt-1">
               <KeyRound className="w-4 h-4" /> Password
             </label>
@@ -289,7 +289,7 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
             <label className="text-sm font-semibold text-foreground/60 flex items-center gap-2">
               <PhoneIcon className="w-4 h-4" /> Phone number
             </label>
-            <PhoneInput value={phone} onChange={setPhone} />
+            <PhoneInput value={phone} onChange={setPhone} label="" />
             {!codeSent ? (
               <Button
                 type="button"
