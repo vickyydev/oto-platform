@@ -39,6 +39,14 @@ jobs:
         run: pnpm typecheck
       - name: Lint
         run: pnpm lint
+      # The lifted OTO App carries a byte-for-byte copy of the platform's
+      # redactor, because it is outside the pnpm workspace and cannot import
+      # @oto/telemetry. A copy nobody checks is a copy that diverges, and the
+      # divergence shows up as a phone number in a log line months later. This
+      # is plain Node with no dependencies, so it needs no install of that
+      # app's 1,120 packages.
+      - name: Vendored redaction has not drifted
+        run: node apps/oto-app/server/lib/telemetry/check-sync.mjs
       - name: Migrations apply cleanly from empty (twice)
         run: |
           pnpm db:migrate
@@ -53,7 +61,7 @@ jobs:
 
 # Staging deploys are not a job here, and deliberately so.
 #
-# Both Render services are set to auto-deploy with the trigger `checksPass`:
+# Every Render service is set to auto-deploy with the trigger `checksPass`:
 # Render watches this repository, waits for the commit status of the `ci` job
 # above, and deploys only when it is green. A red build therefore never
 # reaches the staging URL the park team opens, and the deploy needs no
