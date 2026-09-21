@@ -104,6 +104,9 @@ importers:
       '@oto/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@oto/print':
+        specifier: workspace:*
+        version: link:../../packages/print
       '@oto/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -468,6 +471,9 @@ importers:
 
   packages/box-agent:
     dependencies:
+      '@oto/print':
+        specifier: workspace:*
+        version: link:../print
       '@oto/shared':
         specifier: workspace:*
         version: link:../shared
