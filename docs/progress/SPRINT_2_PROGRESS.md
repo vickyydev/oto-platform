@@ -2,35 +2,55 @@
 
 ## Status
 
-- Current checkpoint: **CP1 is reached — S2-01a/b/c, S2-02, S2-03 and S2-17a
-  are all built, deployed and evidenced.** Five services are live in the
-  Render `staging` environment: api, POS, launcher, Console and the lifted
-  OTO App. One sign-in on the launcher opens the till, the Console *and* the
-  OTO App with no second password, and all three read one database. 257 API
-  tests green. See `DEPLOYMENT_STAGING.md` for what is running and
-  `OPEN_QUESTIONS.md` for what needs the owner. Next: **S2-04**, stations,
-  boxes and devices.
+_Last updated 2026-09-21, after S2-06's device half went to review._
 
-- Jira: sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of project
-  SCRUM holds the 24 stories under four epics, with 16 sub-tasks; the
-  pre-existing 177 issues were labelled rather than deleted. Keys and the
-  full account of what was done: `SPRINT_2_JIRA_MAP.md`.
-- Last completed step: S2-17a (SCRUM-192) — the `otoapp` schema on the
-  central database, the launcher hand-off in place of the app's own login,
-  provisioning from the platform, and the app deployed as its own Docker
-  service. Its source is a working copy at `apps/oto-app/` (see
-  `OPEN_QUESTIONS.md` §0).
-- Next step: **S2-04** (SCRUM-195), stations, boxes and devices — the
-  Console's Devices area, box registration and the station model the money
-  path and the booth both sit on.
+- **Where this is.** CP1 passed. Since then S2-04 (stations, boxes, devices),
+  S2-05 (the box sync core) and S2-06's print renderer are built, merged and
+  **deployed** — `main` is green at `f117220` and everything on it is live.
+  S2-06's remaining half (adapters, simulators, the print queue, scanning,
+  the staff badge token, the offline shell, the simulator panel) is committed
+  on **`wip/s2-06-devices` at `6440761`** and is **not on main**, because two
+  reviewers found six defects in it, three of them security. A fix round is
+  running. Six services are live in the Render `staging` environment: api,
+  POS, launcher, Console, the lifted OTO App, and the deploy bot.
+
+- **Tests.** 450 api, 192 print, 49 box-agent, 185 shared; schema verified;
+  migrations applied twice from empty produce an identical catalogue.
+
+- **The recurring defect, now four tickets running.** Each of S2-04, S2-05
+  and S2-06 shipped something with *no caller* — the fleet API while both
+  front ends called it, the station-session document, the anomalies panel's
+  missing route, and now an offline unlock reachable only from the cloud.
+  Each time the tests passed, because each test mirrored **one side of a
+  seam**. Two rules came out of it and are now standing: *a service with no
+  caller is not built*, and *a test that talks to Fastify directly does not
+  prove a browser can reach the route*. Every ticket now gets an independent
+  reviewer whose job is to reproduce rather than to read.
+
+- **Jira.** Sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of
+  project SCRUM: 24 stories under four epics, 16 sub-tasks; the pre-existing
+  177 issues were labelled rather than deleted. Keys and the full account:
+  `SPRINT_2_JIRA_MAP.md`. Status moves with the work — **In Progress** when
+  it starts, **Testing** when it is committed, **Deployed** when it is live
+  with evidence; *Done* stays the owner's to set. Evidence comments carry
+  screenshots.
+
+- **Next steps, in order.** (1) Land the six S2-06 fixes and merge
+  `wip/s2-06-devices`. (2) **S2-07a** (SCRUM-199), the Lucky Wheel booth →
+  **CP2**. (3) S2-09a's remainder and S2-08.
+
+- **Small corrections owed:** the seeded branch closes at 21:00 where the
+  park's own SOP says 20:00 (`OPEN_QUESTIONS.md` §3f).
+
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
   source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
   recipe, plus `docs/briefs/OWNER_DIRECTION.md` (section 2026-09-20 wins).
-  Branch off `main`, which carries everything through S2-02; commit per
-  `CONTRIBUTING.md`, no attribution lines; never commit `imports/` beyond its
-  READMEs. `pnpm test` needs no Docker — the API tests start an embedded
-  Postgres per file.
+  Branch off `main`; commit per `CONTRIBUTING.md`, no attribution lines;
+  never commit `imports/` beyond its READMEs. `pnpm test` needs no Docker —
+  the API tests start an embedded Postgres per file. **`services/deploy-bot/`
+  and `render.yaml` belong to a separate session — do not touch either.**
+  To play with what is deployed: `docs/qa/SIMULATION_AND_TEST_CONTROLS.md`.
 
 ## Done on 2026-09-20 (all committed)
 
@@ -171,11 +191,20 @@ AGENCY_PROPOSAL.md, features/inbox.md; CLAUDE.md points at the two plans._
 2. **Done 2026-09-20:** S2-01a (SCRUM-186) — see the ticket log.
 3. **Done 2026-09-20:** S2-01b (SCRUM-187), S2-01c (SCRUM-188), S2-02
    (SCRUM-189), S2-03 (SCRUM-190) and S2-17a (SCRUM-192) — see the ticket
-   log. **CP1 is reached.** Next: **S2-04** (SCRUM-195). The ticket log below is the record, updated in
-   the same commit series as the code, and an evidence comment goes on each
-   story or sub-task as its work merges. Status moves with the work — In
-   Progress when it starts, Testing when it is committed and deployed; *Done*
-   stays the owner's to set. See `SPRINT_2_JIRA_MAP.md` → Conventions.
+   log. **CP1 is reached.**
+4. **Done 2026-09-21:** S2-04 (SCRUM-195), S2-05 (SCRUM-196) and S2-06's
+   print renderer (SCRUM-197) — merged, deployed, evidenced with
+   screenshots. S2-06's device half is on `wip/s2-06-devices` pending six
+   fixes; see its ticket-log entry.
+5. **Next:** land those fixes and merge, then **S2-07a** (SCRUM-199), the
+   Lucky Wheel booth → **CP2**.
+
+   The ticket log below is the record, updated in the same commit series as
+   the code, and an evidence comment goes on each story or sub-task as its
+   work merges. Status moves with the work — In Progress when it starts,
+   Testing when it is committed, Deployed when it is live with evidence;
+   *Done* stays the owner's to set. See `SPRINT_2_JIRA_MAP.md` →
+   Conventions.
 
 ## Owner inputs needed (asked 2026-09-20)
 
@@ -669,6 +698,226 @@ suite deploying, not just the new app. The app is excluded from the platform
 lint run and holds itself to its own; the one rule that must not be lost is
 enforced inside it by a byte-for-byte copy of the platform's redactor, with a
 CI step that fails if the copy drifts.
+
+### S2-04 — stations, boxes and devices (SCRUM-195) — **done and deployed**
+
+**What it is.** The model everything physical hangs off: a *box* (the
+Raspberry Pi at the counter, or a cloud stand-in), the *devices* it drives,
+and the *stations* a member of staff stands at. The Console's Devices area
+registers a box, watches its heartbeat and edits its devices; the POS asks
+"which station are you on?" after sign-in.
+
+**Who belongs where is the administrator's call, not an inference.** A box is
+claimed to a branch; devices are attached to the box; a station names the box
+it sits on and may be restricted to named staff. A restricted station is
+**absent** from everybody else's picker — not greyed out, not refusing — which
+is the rule the owner described. Staff never set a station up; they pick one.
+
+**A box's secret is stored as SHA-256 only.** That single decision changed
+S2-05's signing scheme: the cloud cannot compute an HMAC over a secret it
+does not hold, so box→cloud provenance is Ed25519 with the box holding the
+private half, not the HMAC the ticket's wording implied.
+
+**What review found.** The fleet API the Console and the POS both called did
+not exist — the first instance of the pattern above. `atBranch` was also too
+narrow: an operator-wide administrator did not count as branch staff. Widened
+per the owner's ruling to accept an `operator`-scoped role assignment
+(including a null scope id) as well as a branch-scoped one.
+
+### S2-05 — the box agent sync core (SCRUM-196) — **done and deployed**
+
+**What it is.** The till stops talking straight to the cloud. The box owns
+what is happening: a *station session document* with lease fencing (15s
+heartbeat, 60s TTL), a durable outbox, and a *sync ledger* the cloud files
+facts into — `sync_event` unique on `(box_id, journal_epoch, box_seq)`,
+with `payload_hash` for identity and `sig` for provenance, plus
+`sync_cursor`, `sync_quarantine`, `sync_anomaly` and `sync_change`. A dropped
+connection stops being an incident.
+
+**Six rounds, four of them fixing the previous round.** The findings worth
+keeping in mind:
+
+- *Nothing a real Pi produced would ever have synced.* Box and cloud
+  canonicalised slightly different bytes, so every fact from real hardware
+  would have been quarantined — and three existing tests all passed, because
+  each mirrored one side of the join. The test that caught it seals with the
+  real box code and pushes at the real server.
+- *A till could lose its station mid-sale*, and *a till refused a takeover
+  could take over anyway* — the lease id was published to everyone who could
+  read the screen, and quoting it was the whole permission check. Now the
+  lease only fences; the **account** authorises.
+- *One damaged message cost the other 199.*
+- *"Inject poison event" jammed the box it was aimed at* so every later sale
+  was silently discarded as a duplicate.
+- *Facts could vanish without a trace* — counted as already-seen with no row
+  behind it. Now a critical alert.
+
+**Still open:** a box that re-registers after a redeploy rotates its signing
+key, so facts queued before the restart need re-signing. A Raspberry Pi keeps
+its identity and does not hit this; the cloud stand-in does.
+
+### S2-06 — the print pipeline: adapters, simulators, the job queue, the panel (SCRUM-197)
+
+**What this half is.** `packages/print` had already turned a template into
+device bytes and had them verified against an independent decoder. This is
+everything between those bytes and paper: the socket, the status query, the
+queue that survives a printer being out of paper, the simulator that lets all
+of it be rehearsed with no hardware, and the two screens a person uses.
+
+**One adapter per family, parameterised per unit.** The Welltech G4 and the
+three XP-80s share one ESC/POS implementation (§9.4 is explicit that status,
+cut, drawer kick and raster are identical across them); the 4B-2082A band
+printers get a TSPL2 one. What differs per unit — 576 versus 512 dots per
+line, band stock, cutter, whether a drawer hangs off the RJ11 — comes from the
+S2-04 device row and its new `settings` document, never from a constant.
+`GS v 0` discards anything wider than the head **without an error**, so a wrong
+width is a receipt silently missing its price column; that is why the number
+is a per-unit fact and not a model default.
+
+**The simulator is a byte-stream device, not a stub.** It takes exactly the
+bytes the adapter writes, answers `DLE EOT n` / `ESC ! ?` with the real bit
+frames (including mid-job and while in error, as the manual promises),
+injects the five faults, refuses a second connection, and rebuilds the picture
+with **the renderer's own reader** — `packages/print/test/escpos-reader.ts`,
+which its author wrote "to be lifted". Lifting it rather than writing a second
+parser is the point: it is the same code that proves, in `emit.test.ts`, that
+the emitted bytes carry the rendered dots, so a preview that differs from the
+renderer's means the transport lost something. A test asserts the two PNGs are
+**byte for byte identical**.
+
+**The defect that test found.** The simulator scanned the byte stream for
+real-time commands one byte at a time — and a raster band is arbitrary binary,
+so a receipt whose dots happened to spell `10 04 01` lost three bytes out of
+the middle of the picture. One fixture did. It showed up as a kitchen ticket
+that came out truncated in one run and whole in the next, which is the shape
+of a bug that survives a suite. A real printer does not have the problem
+because it reads the length first; now neither does this. The same applies to
+TSPL's `BITMAP` payload.
+
+**Four decisions written down rather than discovered at a counter**, in
+`packages/box-agent/src/printing/queue.ts` and each with a test:
+
+- *The cable is pulled mid-job.* `failed`, and **no timer retries it**. Bytes
+  that reached the head are already paper in a guest's hand; an unattended
+  retry produces a second, complete receipt beside a torn-off first one and
+  nobody can afterwards say which is real. A person pressing reprint is a
+  different act and mints its own job.
+- *The printer answers no status query.* Printed to anyway, reported
+  `statusUnknown`. §9.3 leaves open whether every firmware in this family
+  answers `DLE EOT` over the LAN board; a till that refused to sell because a
+  printer was silent would be the worse failure.
+- *Two jobs race one printer.* Serialised per device. Neither vendor document
+  says whether a second TCP session is refused or stalls — both list it as
+  "confirm on site" — so we never open two.
+- *The printer left the box while the job waited.* Re-resolved from the
+  current bundle on every attempt, so it ends `skipped` with `DEVICE_GONE`,
+  not `failed`. Nobody can fix that by waiting.
+
+And the fifth, which is an acceptance criterion rather than a failure: a job
+for a role no station has a printer for is **skipped**, the till says "not
+printed", and nothing is raised — a station with no band printer is a choice
+somebody made in Station Setup.
+
+**What the cloud keeps.** `edge.print_job` rows with the outcome, one
+`ops_run` per failure whose fingerprint groups sixty paper-outs into one
+problem, and the 90-day retention sweep wired into
+`job:housekeeping.retention` — which the schema left named and uncalled.
+Reports arrive on their own route (`POST /box/v1/print-jobs/:id/result`)
+rather than on the command result, because a job that waited half an hour on
+an empty roll reports long after the command that queued it was acknowledged;
+a second report of a terminal job is answered `replayed` and changes nothing.
+
+**Health in the heartbeat, and the red indicator.** The box now pings every
+assigned printer before each heartbeat and reports what they said, so the
+worst case between a roll running out and the till going red is one interval.
+Before this, every printer reported `reachable`/`ok` because nothing had asked
+it anything — the one answer a health indicator must never give by default; an
+unprobed printer now reports `unknown`. The POS header reads the device rows
+the heartbeat updates rather than asking the box, because the case that
+matters most is the box being unreachable, and a thing that cannot answer
+cannot report its own silence.
+
+**Two screens.** The POS's Print Templates panel is wired to
+`pos.print_template` with the prototype's design untouched — the list, the
+editor and the live preview are unchanged; what is new is that saving is a
+`PATCH` that bumps the version, and a **Test print** button (a UI addition)
+that puts the template's sample on a real printer through the box. The
+Console's Devices drawer gains a **Printing** panel beside the Simulators
+panel: the box's queue, and the pictures the simulator rebuilt.
+
+**One door, not two.** The Console's Simulators panel sends a fault through
+`POST /boxes/:id/commands` like every other control on that drawer, and
+`POST /boxes/:id/simulate` is a typed spelling of the same thing. The two
+checks such a command needs — **no badge or PIN in a stored payload** that the
+Console renders, and a device that is really on this box — live in
+`queueCommand`, where both spellings pass. They were on the route first; that
+would have made one of the two spellings the unguarded one.
+
+**Drift, closed where it could be.** `apps/api/test/print-api.test.ts`
+compares the renderer's `TEMPLATE_FOR_KIND` / `APPLICABLE_FIELDS` /
+`TEMPLATE_TYPE_ORDER` with `@oto/shared`'s, and the agent's
+`BOX_COMMAND_KINDS` with the schema's — the api is the one place all of them
+are importable. `simulate` was added to the agent's copy; the schema and the
+api already had it.
+
+**Tests.** 32 new cases: `apps/api/test/printing-box.test.ts` (16, the box
+pipeline by itself) and `apps/api/test/print-api.test.ts` (16, driven through
+the real routes with the real agent behind `app.inject`), plus the existing
+box-agent and route-guard suites updated. They live in `apps/api/test` rather
+than `packages/box-agent/test` because that package runs on Node's own runner
+with `--experimental-strip-types`, which refuses TypeScript parameter
+properties — and `Bitmap1`'s constructor uses them, so `@oto/print` cannot be
+imported there at all.
+
+**Deferred, named:** sale-specific print jobs and reprints from the till
+(S2-11 — the reprint route exists and is tested, but nothing on the POS calls
+it yet); the booth voucher's content (S2-07a); `catalog:template:*` as a
+permission pair of its own, which is why editing a template currently asks for
+`admin:branch:update` and a test print for `admin:box:command`; and a box-side
+queue that survives a restart — a job waiting on paper today lives in the
+agent's memory, the cloud row stays `queued`, and a restarted box does not
+resume it.
+
+#### The device half — on `wip/s2-06-devices`, not on main
+
+Committed as `6440761`, 96 files: `print_job` / `print_template` /
+`staff_token` schema (migration 0011), the printer adapters and their
+simulators, the scanning service and scanner simulator, the signed staff
+token with offline unlock, the PWA shell, and the Console's simulator panel.
+Twenty routes, every one registered and guarded. Tests green.
+
+**Two reviewers then found six things, three of them security.** They are on
+a branch rather than main for that reason:
+
+1. **Revocation fails open.** `packages/box-agent/src/staff-token.ts:275-280`
+   — `if (deny) { … }`. A box holding a `staff` list but no `deny_list`
+   admits a revoked token silently. Two reachable routes into that state were
+   measured: a partial cache apply (`agent.ts:689-699` writes scopes in
+   order, `staff` before `deny_list`, and the caller at `:1190` swallows the
+   error), and `GET /box/v1/cache?scopes=staff`, which lets a box hold one
+   and not the other permanently. A dismissed employee keeps working until
+   the token expires.
+2. **The offline unlock has no offline caller.** `POST /auth/unlock-offline`
+   declares `auth: 'session'`, which reads `core.session` joined to
+   `core.account` live, so on a Pi with the link down there is no door. Three
+   comments assert the opposite, one calling it *"the one that has to work
+   when nothing else does"*. The test calls `agent.setOffline(true)` and then
+   posts to the route **in the same process with the same database open**.
+3. **Retiring a compromised key does not stop it.** `snapshotForBox` filters
+   signing keys on purpose and `active` only — no `retiredAt`, no
+   `expiresAt` — where `services/box.ts`, which feeds a real box, filters
+   correctly.
+4. **The Console's printout preview is a broken image.** `previewUrl` misses
+   the `/api` prefix every Console request goes through, so the browser asks
+   its own origin. The byte test passes because `app.inject` never sees a
+   prefix.
+5. **"The same renderer that drew the preview" is false.**
+   `PrintTemplatePreview.tsx` is 291 lines of React sharing only
+   `APPLICABLE_FIELDS` with `packages/print`. `single-renderer.test.ts`,
+   written to forbid exactly this, only walks `packages/print/src`.
+6. **A cover left open is invisible above the box**, and the paper-out alert
+   is gated on opening hours where the criterion does not say so — so a QA
+   run before 10:00 fails and reads like a bug.
 
 ## Deviations recorded
 
