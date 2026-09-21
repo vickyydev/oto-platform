@@ -83,7 +83,20 @@ export function PrintPanel({
   const simulatedPrinters = devices.filter(
     (d) => !d.archived && d.transport === 'simulated' && d.kind.endsWith('printer'),
   );
-  const [selected, setSelected] = useState<string | null>(simulatedPrinters[0]?.id ?? null);
+  /**
+   * Which printer's paper is on screen. Null means "nobody has chosen and
+   * there is nothing to choose from", never "still deciding".
+   *
+   * It is NOT seeded from `simulatedPrinters[0]` here. `useState`'s initial
+   * value is read once, at mount, and this panel mounts before the drawer's
+   * device list has arrived — so seeding it left `selected` null for good, no
+   * preview was ever requested, and the panel sat on "Loading the previews…"
+   * until somebody happened to press a printer chip. The panel exists so a
+   * person can look at the receipt; one that shows a spinner until you guess
+   * at a button does not do that. The effect below adopts the first printer
+   * when the list turns up, and leaves a choice already made alone.
+   */
+  const [selected, setSelected] = useState<string | null>(null);
   const [jobs, setJobs] = useState<PrintJobRow[] | null>(null);
   const [printouts, setPrintouts] = useState<Printout[] | null>(null);
   const [missing, setMissing] = useState(false);
@@ -127,6 +140,21 @@ export function PrintPanel({
       setBusy(false);
     }
   }, [box.id, selected]);
+
+  /**
+   * Adopt a printer as soon as there is one, and let go of one that has gone.
+   *
+   * Keyed on the ids rather than the array, because the drawer rebuilds
+   * `devices` on every poll and an array identity would re-run this forever.
+   * A choice a person has made is left alone while that printer still exists;
+   * if it is archived or removed from the box, the panel falls back to the
+   * first remaining one rather than pointing at a device that is not there.
+   */
+  const printerIds = simulatedPrinters.map((p) => p.id).join(',');
+  useEffect(() => {
+    const ids = printerIds ? printerIds.split(',') : [];
+    setSelected((current) => (current && ids.includes(current) ? current : (ids[0] ?? null)));
+  }, [printerIds]);
 
   useEffect(() => {
     void load();

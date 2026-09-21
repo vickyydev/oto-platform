@@ -142,7 +142,16 @@ export function PrinterHealthIndicator() {
       role="status"
       title={detail}
       aria-label={`Printers: ${detail}`}
-      className={`shrink-0 inline-flex items-center gap-1.5 rounded-md px-2 h-9 text-sm font-semibold ${
+      /* `min-w-0` and NOT `shrink-0`. The header is one flex row: nav on the
+         left, these indicators on the right. A chip that refuses to shrink
+         takes its width out of the nav instead, and a reviewer caught the
+         result — with a fault showing, the Check-in tab's label wrapped and
+         was clipped to "Che". A cut navigation tab is a worse thing to show a
+         person than a cut fault message, and the message is built so the cut
+         falls in the right place: "Receipt Printer 1: cover open · 1 waiting"
+         loses the count first and keeps the name of the fault. The whole
+         sentence stays in the tooltip and the aria-label either way. */
+      className={`min-w-0 inline-flex items-center gap-1.5 rounded-md px-2 h-9 text-sm font-semibold ${
         severity === 'bad'
           ? 'bg-destructive/15 text-destructive'
           : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
