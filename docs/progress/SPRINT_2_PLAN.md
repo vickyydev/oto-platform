@@ -999,7 +999,8 @@ Includes:
   action id) — the surface later QA steps use to see routed results;
   simulator control panel placeholder per box.
 - POS Branches panel gains opening hours and business-day start editors;
-  seed sets HKT Central 10:00-21:00 daily; when opening hours are null the
+  seed sets HKT Central 10:00-20:00 daily, per the park's SOP; when opening
+  hours are null the
   offline-during-opening-hours rule does not fire and Health shows "opening
   hours not set" on the branch tile.
 - Wizard kept in the prototype's 9-step design: admins only; new "choose the

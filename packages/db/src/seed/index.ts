@@ -97,11 +97,20 @@ export async function seed(db: Db = getDb()): Promise<void> {
   const operatorId = existingOperator?.id ?? newId();
   if (!existingOperator) await db.insert(s.operator).values({ id: operatorId, name: 'OTO' });
 
-  // HKT Central opens 10:00-21:00 every day (S2-04).
+  // HKT Central opens 10:00-20:00 every day, which is what the park's own SOP
+  // says ("Daily: 10:00 AM - 8:00 PM", order counter closes 19:30) and what
+  // Radar has been measuring the live tills against for months. This was
+  // seeded at 21:00 until 2026-09-21; the hour mattered because the watchdog
+  // only raises when a box goes quiet DURING opening hours, so an hour of
+  // padding is an hour of expecting every box to be alive after the park is
+  // dark — a nightly false alarm, and false alarms are how people learn to
+  // ignore the real ones. Work that happens after the doors close (the cash
+  // count, an end-of-day print, a late party) is covered by
+  // `businessDayStart`, not by pretending the park is still open.
   const openingHours = Object.fromEntries(
     ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day) => [
       day,
-      { open: '10:00', close: '21:00' },
+      { open: '10:00', close: '20:00' },
     ]),
   );
   const [branchRow] = await db

@@ -165,22 +165,30 @@ at the Thai tier. The fixture is built as the catalogue actually prices it
 (฿2,924). Either the seed or the criterion should change before QA is asked
 to screenshot a figure that cannot be produced.
 
-## 3f. The seeded closing time is an hour late, and it will page somebody
+## 3f. The seeded closing time was an hour late — **corrected 2026-09-21**
 
-`packages/db/src/seed/index.ts` seeds HKT Central closing at **21:00**, and
-`packages/db/src/schema/tenancy.ts` asserts "the park closes at 21:00". The
+`packages/db/src/seed/index.ts` seeded HKT Central closing at **21:00**, and
+`packages/db/src/schema/tenancy.ts` asserted "the park closes at 21:00". The
 park's own SOP says **20:00** ("Daily: 10:00 AM – 8:00 PM", order counter
 closes 19:30), and Radar has been watching the live tills against a 20:00
 close for months.
 
 The box watchdog only raises an alert during opening hours, so the extra hour
-means expecting every box to be alive for an hour after the park is dark —
-a nightly false alarm waiting to happen, and false alarms are how people
-learn to ignore real ones.
+meant expecting every box to be alive for an hour after the park was dark —
+a nightly false alarm, and false alarms are how people learn to ignore the
+real ones.
 
-**Meanwhile:** nothing is broken; staging has no real boxes yet. Correct it
-to 20:00 (or 20:30 to cover the last reception shift) next time somebody is
-in that file — it is being edited by S2-05 right now.
+**Now 20:00,** matching the park's own document, which wins. The half hour
+after the doors close — the cash count, an end-of-day print, a late party —
+is covered by `business_day_start` (05:00), which is what decides the trading
+day a late fact belongs to; it does not need the park to be pretending it is
+still open. Nothing turned on the old value because staging has no real boxes
+yet, and the watchdog tests carry their own hours fixture rather than reading
+the seed.
+
+**If the owner tells us the park's hours differ from the SOP**, a person
+edits them in Console → Branches: the seed only backfills a branch that has
+none, and never overwrites an answer somebody gave.
 
 ## 3d. Phone numbers in the production dump are not all E.164 (bites at S2-22)
 

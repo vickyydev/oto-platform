@@ -39,8 +39,9 @@ _Last updated 2026-09-21, after S2-06's device half went to review._
   `wip/s2-06-devices`. (2) **S2-07a** (SCRUM-199), the Lucky Wheel booth →
   **CP2**. (3) S2-09a's remainder and S2-08.
 
-- **Small corrections owed:** the seeded branch closes at 21:00 where the
-  park's own SOP says 20:00 (`OPEN_QUESTIONS.md` §3f).
+- **Done 2026-09-21:** the seeded closing time is now 20:00, matching the
+  park's own SOP, so the watchdog stops expecting live boxes for an hour
+  after the park is dark (`OPEN_QUESTIONS.md` §3f).
 
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
