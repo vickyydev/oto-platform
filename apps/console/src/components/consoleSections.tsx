@@ -1,4 +1,12 @@
-import { Activity, HeartPulse, Plug, Router, TriangleAlert, type LucideIcon } from 'lucide-react';
+import {
+  Activity,
+  FerrisWheel,
+  HeartPulse,
+  Plug,
+  Router,
+  TriangleAlert,
+  type LucideIcon,
+} from 'lucide-react';
 import type { Permission } from '@oto/shared/permissions';
 
 export interface ConsoleSection {
@@ -19,7 +27,7 @@ export interface ConsoleNavGroup {
 }
 
 /**
- * Console v1. One group today; Booths joins it in S2-07b, which is why the
+ * Console v1. One group today; Booths joined it in S2-07b, which is why the
  * shape is a group of sections rather than a flat list.
  *
  * The Sprint 1 back-office panels — catalogue, tax, members, accounts — stay in
@@ -63,6 +71,18 @@ export const consoleNav: ConsoleNavGroup[] = [
         // the stations but not the fleet gets the half it is entitled to
         // rather than a locked page.
         permission: 'admin:station:read',
+      },
+      {
+        id: 'booths',
+        label: 'Booths',
+        icon: FerrisWheel,
+        description:
+          'The Lucky Wheel at each booth: its prizes, their odds and what they cost, and the version each booth is running.',
+        // Reading the wheel is the page; changing it needs `admin:booth:manage`
+        // and publishing it `admin:booth:publish`, both checked on the panels
+        // themselves — so somebody who may look at the odds gets the page
+        // rather than a locked door.
+        permission: 'admin:booth:read',
       },
       {
         id: 'integrations',

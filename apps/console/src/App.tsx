@@ -13,6 +13,7 @@ import { SessionProvider, useSession, displayName } from '@/auth/SessionContext'
 import { PlatformStatusProvider } from '@/lib/platformStatus';
 import { useTheme } from '@/lib/theme';
 import { Activity } from '@/pages/Activity';
+import { Booths } from '@/pages/Booths';
 import { Devices } from '@/pages/Devices';
 import { Failures } from '@/pages/Failures';
 import { Health } from '@/pages/Health';
@@ -139,6 +140,11 @@ function Routes() {
       <Route path="/devices">
         <Section id="devices">
           <Devices />
+        </Section>
+      </Route>
+      <Route path="/booths">
+        <Section id="booths">
+          <Booths />
         </Section>
       </Route>
       <Route path="/integrations">

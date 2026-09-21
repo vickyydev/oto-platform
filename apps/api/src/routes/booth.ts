@@ -1,8 +1,41 @@
 import { z } from 'zod';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { BOOTH_ACTION_HEADER, BOOTH_IDEMPOTENCY_HEADER } from '@oto/box-agent';
+import {
+  BOOTH_ELIGIBILITY_MODES,
+  VOUCHER_KINDS,
+  VOUCHER_OFFLINE_POLICIES,
+  VOUCHER_VALUE_TYPES,
+} from '@oto/db';
 import type { App } from '../app';
 import { boothConsoleStatus, boothHeaders, callBooth, loadBoothStation } from '../services/booth';
+import {
+  BOOTH_TOTAL_WEIGHT_BP,
+  addBoothStaff,
+  archiveBoothPrize,
+  boothDraft,
+  clearBoothPin,
+  createBoothLayout,
+  createBoothPrize,
+  createVoucherDefinition,
+  listBoothLayouts,
+  listBoothStaff,
+  listBoothVersions,
+  listBooths,
+  listVoucherDefinitions,
+  loadBoothLayout,
+  loadBoothPrize,
+  loadVoucherDefinition,
+  publishBoothConfig,
+  removeBoothStaff,
+  reorderBoothPrizes,
+  setBoothPin,
+  updateBoothLayout,
+  updateBoothPrize,
+  updateBoothSettings,
+  updateVoucherDefinition,
+} from '../services/booth-admin';
+import { opCtx } from '../services/tx';
 
 /**
  * The Lucky Wheel's two surfaces (S2-07a).
@@ -249,6 +282,632 @@ export async function boothRoutes(app: App): Promise<void> {
       const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:booth:read', { branchId: row.branchId });
       return boothConsoleStatus(app.db, row);
+    },
+  );
+
+  // --- The Console's control panel (S2-07b) ---------------------------------
+  //
+  // What a manager changes, and the one act that puts it on a television.
+  //
+  // **Every route keyed by `:id` declares `dynamicPermission` and asks for its
+  // permission at the BOOTH's own branch**, which is not in the URL — the row
+  // is loaded first and checked against `row.branchId`, exactly as the status
+  // route above does and for the same reason: a plain `config: { permission }`
+  // with no target checks the caller's SESSION branch and then acts on
+  // whatever the id names, which would let a manager at one branch re-weight a
+  // wheel at another.
+  //
+  // **Three permissions, and the split is deliberate** (`@oto/shared`):
+  // `admin:booth:read` to look, `admin:booth:manage` to edit the draft,
+  // `admin:booth:publish` to put it on a booth. A branch manager holds read
+  // and `admin:booth:staff_assign` and neither of the other two, so the person
+  // who decides who works the booth is not the person who decides the odds.
+  //
+  // **The layout and voucher-definition routes are operator-wide** and pass no
+  // branch target, so only an operator-scoped grant covers them: a design and
+  // a voucher are shared by every booth of the operator, and editing one from
+  // one branch changes what all of them would publish.
+  //
+  // **No response schema on the routes that carry a row or a jsonb document.**
+  // A zod object drops keys it does not name, and `design`, `assetManifest`
+  // and the published `bundle` are documents whose shapes belong to the wheel
+  // renderer and to `@oto/shared` — serialising one through a schema written
+  // here would quietly strip whatever a newer build put in it. The routes
+  // whose answers are small and wholly this file's own do declare one.
+
+  const BoothIdParams = z.object({ id: z.string().uuid() });
+  const PrizeParams = z.object({ id: z.string().uuid(), prizeId: z.string().uuid() });
+  const StaffParams = z.object({ id: z.string().uuid(), accountId: z.string().uuid() });
+
+  /** A colour the wheel can actually paint with, or nothing. */
+  const HexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'A colour is #RRGGBB');
+
+  const PrizeBody = z.object({
+    nameEn: z.string().min(1).max(120),
+    nameTh: z.string().max(120).nullable().optional(),
+    wheelLabel: z.string().max(80).nullable().optional(),
+    /** Basis points (D4). Integers, because "must add up to 100" has to hold. */
+    weightBp: z.number().int().min(0).max(BOOTH_TOTAL_WEIGHT_BP),
+    active: z.boolean().optional(),
+    expiryDays: z.number().int().positive().nullable().optional(),
+    dailyCap: z.number().int().positive().nullable().optional(),
+    costSatang: z.number().int().min(0).optional(),
+    sliceColor: HexColor.nullable().optional(),
+    textColor: HexColor.nullable().optional(),
+    sortOrder: z.number().int().min(0).optional(),
+    voucherDefinitionId: z.string().uuid().nullable().optional(),
+  });
+
+  const SettingsBody = z
+    .object({
+      layoutId: z.string().uuid().nullable().optional(),
+      /**
+       * **Never `Enter`.** The park's USB badge scanner types digits and then
+       * Enter, so a booth bound to it would spin the wheel every time somebody
+       * scanned a badge. Refused here, in `@oto/shared`, and by a CHECK on the
+       * column — three times, because the value reaches the box through a
+       * document none of the other two can see.
+       */
+      buttonKey: z
+        .string()
+        .min(1)
+        .max(32)
+        .refine((key) => key !== 'Enter', {
+          message: 'Enter is the badge scanner’s key and cannot be the booth button',
+        })
+        .optional(),
+      eligibility: z.enum(BOOTH_ELIGIBILITY_MODES).optional(),
+      dailySpinCap: z.number().int().positive().nullable().optional(),
+    })
+    .refine((body) => Object.keys(body).length > 0, { message: 'Nothing to change' });
+
+  app.get(
+    '/branches/:branchId/booths',
+    {
+      config: { permission: 'admin:booth:read', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          'The booths at one branch: the design each is on, how many prizes are live, and which config version is published. The live status tiles — box, printer, paper, today’s spins — are `GET /booths/:id/status`.',
+        params: z.object({ branchId: z.string().uuid() }),
+      },
+    },
+    async (req) => listBooths(app.db, req.params.branchId),
+  );
+
+  app.get(
+    '/booths/:id/draft',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'What would be published if somebody pressed Publish now: the settings, the prize list in slice order, the exact bundle and its hash, the bundle the booths are running now beside it so a before-and-after can be shown, whether the draft differs, when it was last edited — and every reason it cannot be published yet, each naming its field. There is no draft table: these rows ARE the draft, one per booth and shared, so a colleague’s edit is in here too.',
+        params: BoothIdParams,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:read', { branchId: row.branchId });
+      return boothDraft(app.db, row);
+    },
+  );
+
+  app.patch(
+    '/booths/:id/settings',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Change the booth itself: its wheel design, the key the red button sends, spin eligibility and the daily spin cap. Saved to the draft — no booth sees any of it until a publish. Eligibility `band` and `phone` can be SAVED and cannot be published until there is a booth inside the park.',
+        params: BoothIdParams,
+        body: SettingsBody,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
+      return updateBoothSettings(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        req.body,
+      );
+    },
+  );
+
+  app.post(
+    '/booths/:id/prizes',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Add a slice to this booth’s wheel. Goes on the end unless `sortOrder` says otherwise. A prize with no voucher definition can be saved and cannot be published while it is active.',
+        params: BoothIdParams,
+        body: PrizeBody,
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
+      const created = await createBoothPrize(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        req.body,
+      );
+      return reply.code(201).send(created);
+    },
+  );
+
+  app.patch(
+    '/booths/:id/prizes/:prizeId',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Edit one slice: its names, the short label on the wheel, its weight in basis points, whether it is switched on, its expiry, its daily cap, what it costs the park and its colours.',
+        params: PrizeParams,
+        body: PrizeBody.partial(),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
+      const prize = await loadBoothPrize(app.db, row.stationId, req.params.prizeId);
+      return updateBoothPrize(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        prize,
+        req.body,
+      );
+    },
+  );
+
+  app.delete(
+    '/booths/:id/prizes/:prizeId',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Take a slice off the wheel. Archived rather than deleted — `booth.spin` points at the prize somebody won — and the wheel loses it at the next publish, like every other edit.',
+        params: PrizeParams,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
+      const prize = await loadBoothPrize(app.db, row.stationId, req.params.prizeId);
+      return archiveBoothPrize(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        prize,
+      );
+    },
+  );
+
+  app.put(
+    '/booths/:id/prize-order',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Set the slice order as a whole list. It must name every live prize exactly once: the order IS the wheel — `SpinResponse.prizeIndex` indexes the published array — and a partial list would leave two slices sharing a position.',
+        params: BoothIdParams,
+        body: z.object({ prizeIds: z.array(z.string().uuid()).min(1).max(60) }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
+      return reorderBoothPrizes(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        req.body.prizeIds,
+      );
+    },
+  );
+
+  app.get(
+    '/booths/:id/versions',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The wheels this booth has run, newest first: version, when, who published it, the note they left and the bundle hash. Nothing here is ever edited — a spin points at its version, so what the odds were on a given day cannot be changed by tonight’s publish.',
+        params: BoothIdParams,
+        querystring: z.object({ limit: z.coerce.number().int().min(1).max(100).default(20) }),
+        response: {
+          200: z.object({
+            versions: z.array(
+              z.object({
+                id: z.string().uuid(),
+                version: z.number().int(),
+                publishedAt: z.string(),
+                bundleHash: z.string(),
+                note: z.string().nullable(),
+                publishedByAccountId: z.string().uuid().nullable(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:read', { branchId: row.branchId });
+      return listBoothVersions(app.db, row.stationId, req.query.limit);
+    },
+  );
+
+  app.post(
+    '/booths/:id/publish',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          `Mint the next version of this booth's wheel from the draft, and hand it to the boxes. Validated inside the transaction that writes it: the active weights must add up to exactly ${BOOTH_TOTAL_WEIGHT_BP} basis points, every active prize needs a live voucher definition and an expiry, the booth needs a design, and a wheel that could not be played — every prize off, or every active prize capped out today — is refused rather than published. Eligibility \`band\` or \`phone\` is refused until there is a booth inside the park. A version is never edited: this makes N+1, and the box picks it up by version at its next pull. Pass \`expectedBundleHash\` from the draft to be refused rather than publish a colleague's edit you have not seen.`,
+        params: BoothIdParams,
+        body: z.object({
+          note: z.string().max(500).nullable().optional(),
+          expectedBundleHash: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+        }),
+        response: {
+          200: z.object({
+            version: z.object({
+              id: z.string().uuid(),
+              version: z.number().int(),
+              publishedAt: z.string(),
+              bundleHash: z.string(),
+              note: z.string().nullable(),
+              publishedByAccountId: z.string().uuid().nullable(),
+            }),
+            prizes: z.number().int(),
+            activePrizes: z.number().int(),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:publish', { branchId: row.branchId });
+      return publishBoothConfig(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        req.body,
+      );
+    },
+  );
+
+  // --- Who may work the booth, and what they type ---------------------------
+
+  const StaffResponse = z.object({
+    staff: z.array(
+      z.object({
+        accountId: z.string().uuid(),
+        addedAt: z.string(),
+        addedBy: z.string().uuid(),
+        hasPin: z.boolean(),
+      }),
+    ),
+  });
+
+  app.get(
+    '/booths/:id/staff',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Who may sign in at this booth, when they were added and by whom, and whether each has a live booth PIN. Never a PIN and never its hash — "can they get in" is the whole question this answers.',
+        params: BoothIdParams,
+        response: { 200: StaffResponse },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:read', { branchId: row.branchId });
+      return listBoothStaff(app.db, row.stationId);
+    },
+  );
+
+  app.put(
+    '/booths/:id/staff/:accountId',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Let this account sign in at this booth. Separate from the station picker’s `station_staff`: a booth is unattended hardware in a mall and the person at it identifies with a PIN, not a password at a till. The list reaches the booth in the published bundle, so a booth picks up an addition at its next pull.',
+        params: StaffParams,
+        response: { 200: StaffResponse },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return addBoothStaff(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        req.params.accountId,
+      );
+    },
+  );
+
+  app.delete(
+    '/booths/:id/staff/:accountId',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Take an account off this booth. Their PIN is NOT withdrawn by this — a PIN belongs to the person and may open another booth — so withdraw it separately when that is what is meant.',
+        params: StaffParams,
+        response: { 200: StaffResponse },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return removeBoothStaff(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        req.params.accountId,
+      );
+    },
+  );
+
+  app.put(
+    '/booths/:id/staff/:accountId/pin',
+    {
+      /**
+       * `secretResponse` here is about the REQUEST, not the answer.
+       *
+       * The answer carries nothing — an account id and a boolean. What must
+       * not be kept is the BODY: the idempotency plugin stores a plain
+       * SHA-256 over method, url and body for a day, and four digits behind an
+       * unsalted hash of a known shape is ten thousand guesses. Declaring this
+       * makes the plugin claim no key at all, so no hash of this body is ever
+       * written. A retry simply sets the PIN again, which is the same PIN.
+       */
+      config: { dynamicPermission: true, secretResponse: true },
+      schema: {
+        description:
+          'Set this person’s booth PIN. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one — and it reaches a booth only as that hash, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log.',
+        params: StaffParams,
+        body: z.object({
+          /** Digits, because a booth overlay on a television is a number pad. */
+          pin: z.string().regex(/^\d{4,8}$/, 'A booth PIN is 4 to 8 digits'),
+        }),
+        response: { 200: z.object({ accountId: z.string().uuid(), hasPin: z.literal(true) }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return setBoothPin(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        req.params.accountId,
+        req.body.pin,
+      );
+    },
+  );
+
+  app.delete(
+    '/booths/:id/staff/:accountId/pin',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Withdraw this person’s booth PIN. Marked revoked with a reason rather than deleted, so "whose PIN was withdrawn, and when" stays answerable. It stops working at the booth when the box next pulls — minutes online, and however long it stays offline otherwise, which is the same window the deny-list has.',
+        params: StaffParams,
+        querystring: z.object({ reason: z.string().max(200).optional() }),
+        response: { 200: z.object({ accountId: z.string().uuid(), hasPin: z.literal(false) }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return clearBoothPin(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        req.params.accountId,
+        req.query.reason ?? null,
+      );
+    },
+  );
+
+  // --- Designs and what a win is worth (operator-wide) ----------------------
+
+  const LayoutBody = z.object({
+    name: z.string().min(1).max(80),
+    description: z.string().max(500).nullable().optional(),
+    /**
+     * Palette, label rules, rotation geometry — and the asset SLOT manifest,
+     * which names what the wheel wants rather than carrying any bytes (D23).
+     * Held as one document and validated where it is READ, by the slice that
+     * draws the wheel: a field a newer booth build understands must not be
+     * refused here.
+     */
+    design: z.record(z.string(), z.unknown()).optional(),
+    assetManifest: z.record(z.string(), z.unknown()).optional(),
+    active: z.boolean().optional(),
+  });
+
+  app.get(
+    '/booth-layouts',
+    {
+      config: { permission: 'admin:booth:read' },
+      schema: {
+        description:
+          'The wheel designs this operator has. A design is shared between booths and seasons — which is what makes a seasonal wheel a picker rather than a re-entry of six prizes.',
+        querystring: z.object({ includeArchived: z.enum(['true', 'false']).default('false') }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return listBoothLayouts(app.db, auth.operatorId, req.query.includeArchived === 'true');
+    },
+  );
+
+  app.post(
+    '/booth-layouts',
+    {
+      config: { permission: 'admin:booth:manage' },
+      schema: { description: 'Create a wheel design.', body: LayoutBody },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const created = await createBoothLayout(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        req.body,
+      );
+      return reply.code(201).send(created);
+    },
+  );
+
+  app.patch(
+    '/booth-layouts/:id',
+    {
+      config: { permission: 'admin:booth:manage' },
+      schema: {
+        description:
+          'Edit a wheel design. Its `version` moves whenever the design or the asset manifest does — a rename is not a new wheel — so a published bundle can name the design it took. A layout is shared, so this changes what every booth using it WOULD publish and nothing any of them is running.',
+        params: BoothIdParams,
+        body: LayoutBody.partial().extend({ archived: z.boolean().optional() }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const before = await loadBoothLayout(app.db, auth.operatorId, req.params.id);
+      return updateBoothLayout(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        before,
+        req.body,
+      );
+    },
+  );
+
+  /**
+   * What a win is worth.
+   *
+   * **No product or ticket-package link on this surface yet.** The columns
+   * exist and a `free_item` will want one; validating that a product belongs
+   * to this operator is the catalogue admin's job and it is S2-09b's, so the
+   * field is left off rather than accepted unchecked.
+   *
+   * **No campaign or marketing channel either**: `promo.campaign` and
+   * `promo.marketing_channel` are S2-07b's own tables and are not built —
+   * they need a migration, and migrations are another workflow's file in this
+   * tree today. A definition therefore carries neither, and the day those
+   * tables land this body gains two required fields.
+   */
+  const DefinitionBody = z.object({
+    code: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9-]{1,60}$/, 'A code is lower-case letters, digits and hyphens'),
+    nameEn: z.string().min(1).max(120),
+    nameTh: z.string().max(120).nullable().optional(),
+    kind: z.enum(VOUCHER_KINDS),
+    valueType: z.enum(VOUCHER_VALUE_TYPES).optional(),
+    valueSatang: z.number().int().min(0).nullable().optional(),
+    valueBp: z.number().int().min(0).max(BOOTH_TOTAL_WEIGHT_BP).nullable().optional(),
+    /** Null never expires — which is true of the legacy codes and of nothing new. */
+    expiryDays: z.number().int().positive().nullable().optional(),
+    offlinePolicy: z.enum(VOUCHER_OFFLINE_POLICIES).optional(),
+    singleUse: z.boolean().optional(),
+    costSatang: z.number().int().min(0).optional(),
+    termsEn: z.string().max(2000).nullable().optional(),
+    termsTh: z.string().max(2000).nullable().optional(),
+    active: z.boolean().optional(),
+  });
+
+  app.get(
+    '/voucher-definitions',
+    {
+      config: { permission: 'admin:booth:read' },
+      schema: {
+        description:
+          'What the park gives away: the template behind every voucher — kind, value, expiry, offline policy, single use, cost and the terms printed on the slip. A voucher copies its cost and expiry at issue, so editing one of these never changes what a slip already in somebody’s hand is worth.',
+        querystring: z.object({ includeArchived: z.enum(['true', 'false']).default('false') }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return listVoucherDefinitions(app.db, auth.operatorId, req.query.includeArchived === 'true');
+    },
+  );
+
+  app.post(
+    '/voucher-definitions',
+    {
+      config: { permission: 'admin:booth:manage' },
+      schema: { description: 'Create a voucher definition.', body: DefinitionBody },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const created = await createVoucherDefinition(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        req.body,
+      );
+      return reply.code(201).send(created);
+    },
+  );
+
+  app.patch(
+    '/voucher-definitions/:id',
+    {
+      config: { permission: 'admin:booth:manage' },
+      schema: {
+        description:
+          'Edit a voucher definition. Switching one off is refused at publish for any active prize pointing at it, rather than producing a wheel whose prize means nothing.',
+        params: BoothIdParams,
+        body: DefinitionBody.partial(),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const before = await loadVoucherDefinition(app.db, auth.operatorId, req.params.id);
+      return updateVoucherDefinition(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        before,
+        req.body,
+      );
     },
   );
 }
