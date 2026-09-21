@@ -158,16 +158,22 @@ owner. `docs/qa/STAGING_READINESS.md` is what he can try today.
    build also closes SCRUM-245, because the null-scope fix is in it.
 2. **The booth's Render service**, so SCRUM-199 can be Deployed and the wheel
    can be opened in a browser. Coordinate with the `render.yaml` session.
-3. **SCRUM-203 — the ticket cart and the sale ledger.** This is the biggest
-   real gap: admission works end to end up to "Pay ฿1,440" and **nothing
-   after Pay exists**. No `sale` row is ever written and no tender recorded.
-   `sale`/`sale_line` are still Sprint 1 placeholders in `future.ts`.
-4. **SCRUM-229's sibling — one pricing engine.** The tested engine in
-   `packages/shared` (~1,600 lines, 1,694 lines of tests) has **one caller**:
-   the public booking quote. The till prices in the browser from the
-   prototype's copy. They agree today because both are ports of the same
-   rules. They are two engines, and the one under test is not the one taking
-   money. SCRUM-226 is what that costs.
+3. **SCRUM-203 — the ticket cart and the sale ledger.** Was the biggest real
+   gap: admission reached "Pay ฿1,440" and **nothing after Pay existed**.
+   **All three parts are now built in this tree and none is committed or
+   deployed** — migration `0014_sales_ledger`, the till's quote-and-write
+   path, and `apps/api/src/services/sale.ts` + `routes/sales.ts` behind
+   `POST /sales/quote`, `POST /sales`, `POST /sales/:id/finalise`,
+   `GET /sales` and `GET /sales/:id`. The next step is the one neither half
+   can claim: commit, deploy and **drive it from a browser**. Tenders are
+   S2-10a.
+4. **SCRUM-229's sibling — one pricing engine.** Was one caller (the public
+   booking quote) while the till priced in the browser from the prototype's
+   copy. Now three: the booking quote, the till through `@oto/shared`
+   directly, and `POST /sales/quote`, which is what the till asks and what
+   the sale is written from. The two-engines problem is closed in the tree;
+   it is closed *in production* on the day the above is deployed. SCRUM-226
+   is what it cost.
 5. **SCRUM-232 — the product tables cannot hold the park's menu.** `product`
    is a five-field placeholder with no write path anywhere. Every catalogue
    ticket lands on this, and the menu import/export the owner asked for
@@ -240,7 +246,204 @@ left a live member form wired to nothing cited `CLAUDE.md` §6.
 
 ---
 
-## 8. Known gaps in our own tooling
+## 8. Work in flight when this session ended — READ BEFORE TOUCHING THE TILL OR THE BOOTH
+
+Two workflows were building when the session wound up, and **their code is
+on disk, uncommitted, and may be half-written.** Nothing of theirs is
+committed, so `main` is clean and green — the working tree is not.
+
+**First thing to do: find out what state it is in.** `git status`, then
+`pnpm turbo run typecheck` and `pnpm turbo run test`. If it does not build,
+the fastest honest route is `git stash` (never `git checkout --`, you would
+lose the lot) and rebuild from the design below, which is complete.
+
+### Where the real record is
+
+Both workflows persist to disk and **survive this session**:
+
+| | |
+|---|---|
+| Their scripts, carrying the full brief and every design decision | `~/.claude/projects/C--Users-waqar-OneDrive-Desktop-Projects-oto-pos/317fcfce-2754-44c9-bec5-9a762ab18d03/workflows/scripts/s2-09a-sale-ledger-wf_62d14e91-eb9.js` and `…/s2-07b-booth-admin-wf_a761b608-c23.js` |
+| What each agent actually did and returned | `~/.claude/projects/c--Users-waqar-OneDrive-Desktop-Projects-oto-pos/317fcfce-2754-44c9-bec5-9a762ab18d03/subagents/workflows/wf_62d14e91-eb9/journal.jsonl` and `…/wf_a761b608-c23/journal.jsonl` |
+
+**Read the journals first.** One `{"type":"result"}` line per completed
+agent, carrying its whole report — what it built, what it measured, what it
+could not do. That is worth more than re-deriving from the diff. The scripts
+can be re-run with `Workflow({scriptPath, resumeFromRunId})`, but **resume is
+same-session only**, so in a new session treat them as documentation, not as
+something to replay.
+
+### SCRUM-203 — the ticket cart and the sale ledger (the biggest gap)
+
+**What it is for.** The till reaches "Pay ฿1,440" and nothing after Pay
+exists: no sale recorded, no tender recorded. `sale` and `sale_line` were the
+empty Sprint 1 placeholders in `future.ts`; the POS's `recordSale` pushed
+into an in-memory array and a refresh lost it. **The park could take money
+and the platform would hold no record of it.**
+
+**The design, decided and not to be relitigated:**
+
+- **Migration 0014** replaces the placeholders. A sale must carry, on day
+  one, the things that cannot be added cheaply later: operator, branch,
+  station, box; the **business date** resolved from the branch's
+  `business_day_start` (a sale at 00:30 belongs to the day that is
+  finishing, not the calendar day); the pricing mode that applied and which
+  holiday if any; **the member's tier at the time of sale**; totals split
+  into net, VAT and service charge rather than one number, so a receipt is
+  reproducible years later from the row alone; the account that rang it up;
+  the receipt number; and a lifecycle column so a void or refunded sale is
+  distinguishable from one that never happened (refunds themselves are
+  S2-11 — build the column, not the feature).
+- A line carries what was sold, quantity, unit price, the tier, **the
+  adult/child split and free-adult allowance that produced it**, any
+  discount with its reason, and the tax for that line.
+- **The till mints the sale id**, so Pay pressed twice through a dropped
+  connection is one sale. The constraint must say so.
+- **One pricing engine.** The quote endpoint prices with
+  `packages/shared` — the same engine the booking site uses. Before this, the
+  tested engine (~1,600 lines, 1,694 lines of tests) had exactly **one**
+  caller and the till priced in the browser in baht floats from the
+  prototype's copy. They agreed because both are ports of the same rules;
+  they were still two engines and the tested one was not the one taking
+  money. SCRUM-226 is what that cost.
+- **The price charged is the price the platform quoted.** If the till sends
+  its own totals, compare and refuse on a mismatch. A server that trusts a
+  client-supplied total is a discount anybody can give themselves.
+- **The tier is resolved server-side** from the member, never taken from the
+  body.
+- **A ฿0 sale finalises like any other** — an acceptance criterion, not an
+  edge case: a fully comped visit still leaves a record.
+
+**Out of scope, deliberately:** how it was paid (S2-10a), the receipt print
+and refunds (S2-11).
+
+**The seam to prove:** a sale rung up through the built till lands as a row
+with every column right. A test that posts to the route and asserts a row is
+only half of it — five tickets here shipped a service with no caller.
+
+**Where to resume: check out `wip/s2-09a-sales-ledger` at `4a34037`.** All
+three slices are there — schema, till, service+routes — and nothing of it is
+on `main`. Answer blocker 1 with S2-10a's tender design in hand, fix 2 and 3,
+then merge; they are the only things between this and deployable.
+
+What is already proved: the arithmetic (69/69 carts on the till's own check),
+28 api tests driving the real routes with a real session and reading the rows
+back, the till's payload shape accepted as it is actually sent, and migrations
+twice from empty.
+
+**The sync and box changes that were sitting beside it in the tree are now on
+`main`** at the commit after `14201bc` — they were the booth's two PIN fixes,
+described in `14201bc`'s message but missing from its file list, which turned
+CI red until they were committed separately. If you diff the branch against
+main and see them missing there, that is why.
+
+**CHECKPOINTED, so none of it can be lost: branch
+`wip/s2-09a-sales-ledger` at `4a34037`, pushed to origin.** It carries the
+whole slice — migration 0014, the schema, the service, the routes, the till,
+the tests and these documents — and **only** that slice: the sync and box
+changes still in the working tree belong to another workstream and
+`render.yaml` and `services/` to a third, so they were left for their owners.
+It is a branch and not `main` on purpose: `CONTRIBUTING.md` says main is
+always deployable, and a till that refuses every paid sale is not. The
+working tree was not touched and `main` still points at `14201bc`, so the
+other two workflows carried on undisturbed. Continue on that branch.
+
+**An integration check then drove a real server on a real port with the till's
+own commit body and read the rows out of Postgres. It found the seam, and it
+is one boolean wide. FIX THESE THREE FIRST — do not deploy this as it stands:**
+
+1. **A paid sale cannot be recorded.** The till sends `finalise: true` on every
+   commit (`apps/pos/src/api/sales.ts:802`); the service refuses to finalise a
+   sale that still owes money (`services/sale.ts:1169`, because `outstanding()`
+   returns the gross until tenders land in S2-10a). Live: the till's verbatim
+   body for a ฿1,440 admission → **409 `SALE_NOT_PAID`, zero rows**. The same
+   cart with `finalise: false` → one row, two lines, audited. Only a ฿0 comp
+   goes through. And the panel tells staff *"Trying again will not help… go
+   back, check the order, call a manager"*, because `isRetryable()` reads a 409
+   as a judgement about the cart. The comment at `api/sales.ts:170` claims
+   "฿0 comps and paid sales both finalise here"; they do not. **Decide which
+   side moves** — the till sends `finalise: false` and the sale waits in
+   `tendering` without a receipt number, or `outstanding()` counts the till's
+   `paymentMethod`. It is a decision about when a receipt number is allocated,
+   so it belongs with S2-10a's design, not to whoever is fastest.
+2. **After any refusal the cart can only be sold by discarding it.** The sale
+   id, and the idempotency key `sale:<id>` derived from it, are minted once per
+   Pay press and cleared only by `reset()`; `handlePaymentBack`
+   (`Till.tsx:1672`) does not clear them. So *Back to the order* → fix the
+   order → Pay → **409 `IDEMPOTENCY_MISMATCH`**, for ever, and Cancel is the
+   only way out. Mint a new sale id whenever the cart changes after a refusal.
+3. **A branch-scoped account can write a sale at another branch.** `POST
+   /sales`, `POST /sales/quote` and `POST /sales/:id/finalise` declare their
+   permission with **no `target`**, so the scope is never checked against
+   `cart.branchId`. Driven as seeded reception (HKT Central only) against a
+   second branch: quote 200, commit 200, row written at the other branch on its
+   own station — and then `GET /sales/:id` refuses the same account 403, which
+   is the proof the write should have been refused too.
+
+Smaller, from the same run: `sale_line.revenue_category` is NULL on every row
+(S2-09a's own acceptance criterion says the Sale detail view shows it
+populated; the schema defers it to S2-09b); and **removing a holiday now
+fails** — `sale.holiday_id` is `ON DELETE restrict` while
+`DELETE /branches/:branchId/holidays/:id` hard deletes, so once a sale exists
+on a holiday date the admin panel raises an unhandled Postgres 23503.
+
+What that run *did* prove, by reading the rows: quote total equals the stored
+`gross_satang` on all thirteen shapes (weekday, a holiday range as weekend,
+three tiers, free adult, overflow, socks, fixed and percent staff discounts, a
+promo code, ฿0 comp); the tier comes from the member even when the body lies;
+the business date, day start, timezone, station, box, account, pricing mode,
+tax snapshots and the four-way money split all land; two presses make one sale
+and an aborted connection makes one; underpaying is refused; no session is
+401; the freeze trigger fires; a six-hour clock skew is recorded as `skewed`
+and cannot move the trading day.
+
+### SCRUM-200 — the booth admin panel
+
+**What it is for.** The wheel runs on a seeded prize list; this is where a
+manager changes prizes, odds, daily caps, expiry, layout, the button key and
+who may sign in — and publishes.
+
+**The design, decided:**
+
+- **Publishing is the heart of it, and a published version is immutable.**
+  Publishing mints a new version; the box picks it up by version, about a
+  minute later, and applies it **whole and only between spins**. Editing a
+  published bundle would change what a spin that already happened was drawn
+  from — `booth.spin` records its version for exactly that reason.
+- **Validate before publishing, not after.** Weights are integer basis
+  points summing to **exactly 10000**; every prize needs a voucher
+  definition; a prize cannot be active with no expiry. A booth running an
+  invalid bundle hands out wrong prizes and cannot tell.
+- **Refuse a publish that leaves the wheel unplayable** — every prize
+  inactive, or every prize capped. The draw handles that state correctly by
+  accident; publishing it deliberately is different.
+- **The Console shows real percentages, not basis points**, with the running
+  total and what each prize costs at its chance. A manager should never do
+  that arithmetic, and "what does this wheel cost me a day" is the first
+  question the owner will ask.
+- **Show what is about to change before Publish takes effect.** It is a live
+  change to a machine in a public place.
+- **A PIN must never travel on the box command queue** — its payload is
+  stored and rendered on a Console screen. That is why S2-07a deliberately
+  left badge and PIN out of the simulator panel. Any PIN management here
+  needs a path that does not store what it carries.
+- It registers its routes **inside `apps/api/src/routes/booth.ts`**, not in
+  `app.ts`, to stay clear of the sale work.
+
+**The seam to prove:** change a weight in the Console, publish, and watch a
+**real** box pick that version up and draw from it. Asserting a row landed is
+not the ticket.
+
+### File ownership these two were working to
+
+Keep it if you resume both; it is what let them run together.
+
+| Workflow | Owns |
+|---|---|
+| Sale ledger | `packages/db/migrations`, `schema/{sales,future,index}.ts`, `apps/api/src/services/sale.ts`, `routes/sales.ts`, `app.ts`, `apps/pos/**`, `packages/shared` cart code |
+| Booth admin | `apps/api/src/services/booth-admin.ts`, `routes/booth.ts`, `apps/console/src/pages/Booth*`, `components/booth/**` |
+
+## 9. Known gaps in our own tooling
 
 - **`apps/pos` has no unit-test runner** — no vitest, no `test` script, two
   Playwright specs. And **`apps/pos/**` is in eslint's ignore list**

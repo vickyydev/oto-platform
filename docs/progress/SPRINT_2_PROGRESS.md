@@ -23,14 +23,42 @@ _Last updated 2026-09-21 at the end of a long session._
   fifteen are now fixed — five Deployed, five in Testing. Read that register
   before planning anything on the till.
 
-- **The largest real gap:** admission works end to end up to "Pay ฿1,440" and
-  **nothing after Pay exists** — no `sale` row is written, no tender is
-  recorded. That is SCRUM-203.
+- **The largest real gap:** admission worked end to end up to "Pay ฿1,440" and
+  **nothing after Pay existed** — no `sale` row, no tender. That is SCRUM-203,
+  and **all three of its parts are now built in this tree**. **The schema**
+  (migration `0014_sales_ledger`: sale, sale_line, sale_discount,
+  receipt_series, with the money checks and a freeze on finalised sales).
+  **The till**: the cart is priced by the platform's own tested engine rather
+  than the browser's baht floats, Pay writes through a client-minted id so two
+  presses are one sale, and a failure is a panel with a Try again rather than a
+  lost sale. **The service and the routes**: `POST /sales/quote` prices from
+  the shared engine and `POST /sales` writes the sale, its lines and its
+  discounts in one transaction, with the tier resolved from the member and a
+  till-sent total able only to cause a refusal; a ฿0 comp finalises with a
+  receipt number out of the station's series.
+  **THE THREE PARTS DO NOT YET MEET.** An integration check drove a real
+  server with the till's own payload and read the rows back: a ฿0 comp lands
+  and **every sale with money on it is refused 409 `SALE_NOT_PAID`, writing
+  nothing** — the till sends `finalise: true`, the service will not finalise a
+  sale that owes money until tenders exist. Two more blockers with it (a
+  refused cart can then only be sold by discarding it; a branch-scoped account
+  can write a sale at another branch). The pricing itself is right on all
+  thirteen shapes driven, quote to stored row. See the ticket log entry
+  *"S2-09a — the integration check"* for the evidence and the two ways out.
+  **Nothing is committed or
+  deployed**, so on staging today the till still prices locally, says so on the
+  screen, and the confirmation still carries "Saved on this till only" until
+  this lands. Tenders are S2-10a.
 
-- **Tests.** 577 api, 209 print, 197 shared, 167 box-agent, 36 telemetry;
+- **Tests.** 643 api, 209 print, 197 shared, 167 box-agent, 36 telemetry;
   schema verified; migrations apply twice from empty to an identical
-  catalogue. Note `apps/pos` has no unit-test runner and is in eslint's
-  ignore list — the compiler is the only automated check on the till.
+  catalogue. `apps/pos` still has no unit-test runner and is still in
+  eslint's ignore list — the compiler is the only automated check on the
+  till. SCRUM-203's till half added the next best thing for the one path
+  where that hurts most: `apps/pos/src/dev/checkCartPricing.ts` walks the
+  seeded catalogue and asserts the platform engine and the prototype's
+  arithmetic agree to the satang (69/69 carts, weekday and weekend). One
+  command, not in CI.
 
 - **The recurring defect, now four tickets running.** Each of S2-04, S2-05
   and S2-06 shipped something with *no caller* — the fleet API while both
@@ -58,7 +86,12 @@ _Last updated 2026-09-21 at the end of a long session._
   (4) One pricing engine: the tested one has a single caller and the till is
   not it. (5) **SCRUM-232** — the product tables cannot hold the park's menu,
   and the menu import the owner asked for arrives with that reshape rather
-  than after it. (6) S2-07b, then the register's remaining broken items.
+  than after it. (6) S2-07b — **both halves are now built**: the Console
+  screens and the API behind them (see the ticket log, two entries). What is
+  left of it is the **first integration run in a browser**, the
+  `promo.marketing_channel` / `promo.campaign` tables (blocked: they need a
+  migration, and migrations are another workflow's file today), and the badge
+  open decision. Then the register's remaining broken items.
 
 - **Blocked on somebody else** (`SESSION_HANDOVER.md` §4): the booth's Render
   service; Twilio, which refuses every message because the trial account owns
@@ -992,6 +1025,753 @@ a branch rather than main for that reason:
    box pulls and the snapshot the unlock path builds. It honours `retired_at`,
    `expires_at`, `not_before` and the operator. A test retires the key and
    shows a token signed with it refused as `STAFF_TOKEN_UNKNOWN_KEY`.
+
+### S2-07b — the booth admin control panel (SCRUM-200) — **Console half built, against the real routes**
+
+**What this half is.** Console > Booths: the screen a manager uses to decide
+what the Lucky Wheel gives away. The prize list with its real odds, the prize
+editor, the booth's settings, a wheel preview, the version history, and a
+Publish that states what it is committing to before it commits.
+
+**It was built against a stated contract and then re-pointed at the real one.**
+The API half (`apps/api/src/routes/booth.ts`, `services/booth-admin.ts`)
+landed in the same working tree while this was being written, so the guessed
+paths were replaced by the routes that exist and every shape was re-copied
+from `BoothDraftView`, `BoothListItem` and `PublishBlocker` rather than
+inferred. Three of the guesses were wrong and are worth recording, because
+they are the kind of thing two halves discover at integration and not before:
+the booth list is **branch-nested** (`GET /branches/:branchId/booths`, so the
+page needed the branch picker Devices already has); the draft is
+`GET /booths/:id/draft`, not `/config`; and layouts and voucher definitions
+are **the operator's own collections** (`GET /booth-layouts`,
+`GET /voucher-definitions`), not fields inside the draft.
+
+**Files.** `apps/console/src/pages/Booths.tsx`; `apps/console/src/components/booth/`
+— `boothApi.ts` (the contract), `readState.ts`, `odds.ts`, `publishPlan.ts`,
+`PrizeTable.tsx`, `PrizeEditor.tsx`, `BoothSettingsPanel.tsx`,
+`WheelPreview.tsx`, `PublishPanel.tsx`. Plus the nav entry in
+`consoleSections.tsx` and the route in `App.tsx`.
+
+**The odds are the point of the screen.** Weights are integer basis points
+summing to 10,000 and nobody is asked to do that arithmetic. Each row shows
+the chance a child actually has — the weight **renormalised over the prizes
+the box will draw from**, which is the draw's own rule (D5) — so switching one
+prize off visibly moves every other row, which is the mistake this page exists
+to prevent. The running total is a verdict ("adds to 100%", or the gap named
+in the units somebody has to type), not a sum left for the reader to check.
+Each row also carries its share of the day's giveaway, because *14.5% of the
+spins and 40% of the money* is the sentence a list of weights never says.
+
+**Integers decide; floats only paint.** `odds.ts` computes every verdict in
+basis points and satang. A typed decimal is parsed **digit by digit**
+(`parseHundredths`) rather than through `Number`, because `Number('0.07') * 100`
+is 7.000000000000001 and a list of those rounds to a total one basis point out
+with no typed number to blame. Money is multiplied before it is divided, once.
+
+**Publish states what it commits to, and the refusals are the API's.** The
+draft route returns `blockers` — computed by the same code that validates the
+publish inside the transaction that writes it — so the panel shows that list
+verbatim, all of it at once, with the field each one belongs to. It does not
+re-derive them: a second list would agree today and drift the first time
+either side gains a rule, and the screen would be the one that is wrong. The
+confirmation is two presses, the first being what puts the odds, the money and
+the settings on screen, and it sends the draft's `expectedBundleHash` back
+with the publish — so a colleague's edit made since the page was read is
+refused rather than published by somebody who never saw it.
+
+**One thing the panel cannot do, and says so.** A field-by-field comparison
+with the wheel the booths are running is not possible: the draft carries the
+published version's number and hash but **not its document**, so "the ฿200
+voucher went from 14.5% to 20%" cannot be computed in the Console. `changed`
+(a boolean, from comparing hashes) is what there is. The panel therefore
+states what version N+1 *will be* and says in as many words that it is not a
+before-and-after. Worth closing from the API side — the draft returning the
+published bundle beside its hash would be enough.
+
+**The wheel preview matches the booth, including the part that surprises
+people.** `apps/booth/src/components/Wheel.tsx` computes `360 / slices.length`:
+on the television **every wedge is the same width whatever its odds**, so the
+2.5% grand prize looks exactly as big as the 27.5% sticker. The preview copies
+that geometry — slice order, labels at 0.62r rotated radially, the same
+font-size steps — and prints the real chance beside each label, rather than
+drawing proportional wedges that would be prettier, wrong, and wrong again the
+moment a prize is switched off. Slices with no colour of their own are drawn
+in a labelled placeholder ramp: the layout's palette lives in its design
+document, which this page does not read.
+
+**What is proven and what is not, plainly.** `GET /booths/:id/status` ships
+(S2-07a) and everything on the "What this booth is running" panel comes from
+it. The other routes now **exist in this tree** but are not deployed to
+staging, and **no request from this page has been run against a live server**
+— the panel compiles against their shapes and has not spoken to them. Where a
+route answers 404 the page says the route is not on this deployment and names
+SCRUM-200, rather than showing an empty screen that reads as "this booth has
+no prizes". Every reading carries what it is worth — unread, read, stale,
+failed or absent — by the same four-state discipline as `lib/deviceList.ts`,
+generalised in `readState.ts`, so a failed request is never drawn as a booth
+with nothing on its wheel. **First integration run is the next step**, and
+the S2-04/05/06 lesson applies: a type that lines up is not a browser that
+reached the route.
+
+**Tests: none automated, and that is a gap, not an omission.** `apps/console`
+has **no test runner** — the same hole as `apps/pos`, and the compiler is the
+only automated check on either. The arithmetic was proved by running `odds.ts`
+under `node --experimental-strip-types` with the owner's launch list
+(23.5/27.5/17.5/14.5/14.5/2.5): **38 checks, all passing** — the balanced
+total, the renormalisation when the grand prize is switched off (the sticker
+rises 23.5% → 24.1%), the exact-decimal parser against the `Number()` trap,
+the money (฿72.75 a spin, ฿14,550 over 200 spins, ฿5,800 of it from the one
+prize at 14.5%), and the degenerate lists that must not divide by zero. That
+run is a scratchpad artefact and **CI does not know about any of it**. Raised
+as a defect.
+
+**Findings raised from building it:**
+1. `apps/console` has no unit-test runner, so this page's arithmetic, its
+   publish refusals and its diff are unverified by CI.
+2. `booth_settings.daily_spin_cap` is a setting **nothing reads** — the column
+   says so. The form offers it with that stated in the hint, which is the
+   honest minimum, but a manager can still set a cap that does not cap.
+3. Badge sign-in at a booth is an unresolved contract, not a to-do:
+   `BoothStaffCacheFields.badgeHash` notes that argon2id cannot be a lookup
+   key, so a scan cannot find an account offline. S2-07b owns settling it —
+   either a keyed digest with the credential row saying which, or a badge
+   resolves to a staff code and PIN is the only path.
+
+4. The Console cannot show a before-and-after on publish, because the draft
+   does not carry the published bundle (above).
+
+**Not built in this half, named:** the Console screens for voucher-definition,
+marketing-channel and layout *authoring* — the routes for all three exist and
+this page only *reads* them into its pickers; staff PIN/badge management
+screens (routes exist: `/booths/:id/staff`, `.../pin`); drag-to-reorder
+slices (`PUT /booths/:id/prize-order` exists, the editor sets `sortOrder` by
+number instead); the `platform:sync` seed of "Booth 1"; the booth report
+(S2-15b).
+
+### S2-07b — the booth admin control panel (SCRUM-200) — **API half built, and a real box runs what it publishes**
+
+**The other half of the entry above.** `apps/api/src/services/booth-admin.ts`
+(new), the Console section of `apps/api/src/routes/booth.ts` (20 routes) and
+`apps/api/test/booth-admin.test.ts` (19 cases, all passing). Prizes (create,
+edit, reorder, switch on and off, weight, expiry, daily cap, cost), voucher
+definitions, wheel layouts, the booth's own settings, its staff list and their
+PINs — and **publish**, which is what the rest of it is for.
+
+**Publishing is minted whole, validated before it exists, and never edited.**
+Validation, the bundle and the insert are one transaction: validating outside
+it would let a colleague's edit land in between, and the version published
+would be one nothing ever checked. The refusals — all of them at once, each
+naming its field, so a manager fixing a list one refusal at a time does not
+spend four version numbers finding the fifth problem:
+
+| Refusal | Why it is refused rather than defaulted |
+|---|---|
+| active weights ≠ 10000 bp | the box renormalises per draw; a list that does not add up is odds nobody chose. The message names the sum and the percentage |
+| an active prize with no voucher definition, or one archived/switched off | winning it would produce nothing to redeem |
+| an active prize with no expiry (its own or its definition's) | null on a definition means *never expires*, which is true of the legacy Radar codes and is a liability with no end date on a slip printed today |
+| no layout | there is no wheel to publish |
+| every prize off, **or every active prize capped out today** | the box refuses the press with "Booth not ready — please call staff" (D5). Right for an accident, wrong to publish on purpose. The cap check names the trading day, because tomorrow the same bundle is playable |
+| eligibility `band` / `phone` | *not available until the park booth exists* — both modes are built; neither makes sense where a visitor has no band and the television asks for no phone (D15) |
+
+**The draft is the live rows, and the entry says so.** There is no draft table:
+`booth_settings`, `booth_prize` and `booth_layout` ARE the draft, one per booth
+and shared. Two managers edit the same rows — last write wins per field, with
+the audit row naming who moved what — and a publish carries everything saved,
+a colleague's edit included. `GET /booths/:id/draft` therefore returns the
+exact bundle that would be minted, its hash, the **published bundle beside it**
+(which closes the Console half's finding 4 — a before-and-after is now
+computable), when it was last edited, and the blockers. `POST .../publish`
+takes an optional `expectedBundleHash`, so a manager can be refused rather than
+publish a draft they never saw; publishing an identical bundle is refused too
+("nothing has changed since version N"), because a version spent on nothing
+tells a booth to re-apply a wheel it is already running. Two managers pressing
+Publish together produce one version and one 409 —
+`booth_config_version_unique` settles the race, not the read.
+
+**The seam, which is the point.** The test publishes through the real route
+with a real session and a real permission check, then the **real box agent**
+(`createBoxAgent` + `SqlBoxStore` on Postgres, the same code a Pi runs) pulls
+its cache, adopts the version and spins: one prize forced to 10000 bp,
+published, and the next press lands on it with `configVersion: 2` and
+`bundle.prizes[prizeIndex].id === prizeId`. Version 1 is then re-read and is
+byte-for-byte what it was, with its six live slices, while the draft has five
+switched off.
+
+**Two defects found and fixed, both of which would have read as "the PIN
+doesn't work" with nothing to blame:**
+1. the `staff` cache scope carried no `pinHash`, so a PIN set in the Console
+   reached no booth at all — `BoothStaffCacheFields.pinHash` in `@oto/shared`
+   was declared for it and nothing wrote it (`services/sync.ts`; the pinned
+   field list in `sync-api.test.ts` was edited deliberately, because a field
+   added there is a field that lands on a Pi in a mall);
+2. `startVirtualBox` passed the booth no `verifySecret`, so `createBooth`
+   matched nobody and **every** booth sign-in was refused whatever PIN was set
+   (`services/box.ts`).
+
+**Where the four digits are not.** The PIN route declares `secretResponse`, so
+the idempotency plugin claims no key — a plain SHA-256 over a body holding four
+digits is ten thousand guesses, and that hash would otherwise sit in
+`idempotency_key.request_hash` for a day. The audit row says a PIN was set, by
+whom, for whom, and carries neither the PIN nor its hash. Nothing goes on the
+box command queue, whose payloads are stored and rendered on a Console screen.
+All three are asserted in the test, not claimed in a comment.
+
+**Permissions, and the split is deliberate:** `admin:booth:read` to look,
+`admin:booth:manage` to edit the draft, `admin:booth:publish` to put it on a
+booth, `admin:booth:staff_assign` for the staff list and PINs. A branch manager
+holds read and staff_assign and neither of the other two, so the person who
+decides who works the booth is not the person who decides the odds. Reception
+is refused both the prize edit and the publish (asserted). Layouts and voucher
+definitions pass no branch target, so only an operator-scoped grant covers
+them — they are shared by every booth of the operator.
+
+**Not built, named with its reason:**
+1. **`promo.marketing_channel` and `promo.campaign`** — in the ticket, and both
+   are new tables. A migration is another workflow's file in this tree today,
+   so `voucher_definition` carries neither and the API does not pretend to. The
+   conversion question the wheel exists to answer ("which booth, which staff
+   member, which prizes convert") stays unanswerable until they land, and the
+   definition body gains two required fields that day.
+2. **Product and ticket-package links on a voucher definition** — the columns
+   exist; validating that a product belongs to this operator is the catalogue
+   admin's, which is SCRUM-204.
+3. **Badge sign-in remains an open decision**, exactly as
+   `BoothStaffCacheFields.badgeHash` states: argon2id cannot be a lookup key,
+   so a scan cannot find an account offline. Either the credential row says it
+   holds a keyed digest, or a badge resolves to a staff code and PIN is the
+   only path. Not guessed here.
+4. **`booth_settings.daily_spin_cap` is still read by nothing** (the Console
+   half's finding 2 stands): the API accepts it, publishes it in the bundle,
+   and no code caps on it.
+5. **No browser has called any of this.** The Console half compiles against
+   these shapes and has not spoken to a live server; first integration run is
+   the next step, and the S2-04/05/06 lesson applies — a type that lines up is
+   not a browser that reached the route.
+
+**Checked:** 19/19 in `booth-admin.test.ts`; 614/615 across the api suite
+(`safeguards.test.ts` hit a Windows `EBUSY` on the temp Postgres directory and
+passes on its own); `pnpm exec eslint apps packages` clean. **Not committed** —
+this tree is shared with two other workflows.
+
+### S2-09a — the sales ledger (SCRUM-203) — **the schema half is built; nothing writes it yet**
+
+**The hole this fills.** The audit drove admission end to end and found the
+till reaching "Pay ฿1,440" with nowhere to put the sale. `pos.sale` and
+`pos.sale_line` were the Sprint 1 placeholders — operator, branch, status, one
+`total_satang`, a jsonb — with no station, box, business date, pricing mode,
+tier, VAT/service split or receipt number, and the only code referencing
+either was `demo-reset` deleting them. `recordSale` in the POS pushes onto an
+in-memory array a refresh empties.
+
+**What landed.** `packages/db/src/schema/sales.ts` and migration
+`0014_sales_ledger`: `pos.sale`, `pos.sale_line`, `pos.sale_discount`,
+`pos.receipt_series`, with `payment_attempt` moved across from `future.ts`
+unchanged (it is a row on a sale, and the move removes an import cycle;
+S2-10a still owns its columns). `future.ts` keeps bookings, wallets, bands and
+stock.
+
+**The column list is the engine's own output, not a fresh design.** The park's
+rules are the prototype's (`lib/sale.ts` — `buildSale`, `computeTotals`,
+`tillTaxInputs` — and `mockApi.ts:1295`), already ported and tested in
+`@oto/shared`. So `TicketCartTotals` → the totals block, `TaxBreakdown` →
+`tax_breakdown` and the per-line tax columns, `CartUnit`/`LineBreakdownItem` →
+one `sale_line` per unit, `ManualDiscountRecord`/`AppliedPromo` → one
+`sale_discount` per instrument. Reading a sale back needs no re-derivation,
+which matters because `cart-totals.ts` documents what re-deriving a historical
+sale under today's context does to it (a ฿520 sale reported as ฿620).
+
+**A line is a UNIT, not a cart line** — the kids row, the paid adults row, the
+free adults row, socks, each add-on, the service fee, prepaid food, a
+free-item promo's item — grouped by `cart_line_id`. One cart line can hold
+three taxable categories at once (tickets, an add-on with a category override,
+a drop-off fee), so a per-line tax rate is only meaningful on the unit, and
+these are exactly the units the engine already computes.
+
+**Four decisions.**
+
+1. **`business_date` is stored, not derived.** Resolved once from
+   `branch.business_day_start` (05:00): a sale at 00:30 belongs to the day
+   that is finishing. Ruling 3 in `pricing-mode.ts` already says the same date
+   chose the price, so the cash-up, the till roll, the price and promo expiry
+   all agree. `business_day_start` and `timezone` are frozen on the row too —
+   a branch that moves its day start must not silently re-answer which day
+   every past sale was on.
+
+2. **Receipt numbers are per STATION, gapless within that station's series,
+   allocated on the box** — `<code_prefix>-<seq>`, the shape
+   `packages/print` already prints. A branch-wide gapless counter needs a
+   single allocator, and a single allocator stops the counter when the mall's
+   internet or one box goes down — the thing the Pi exists to survive. Per-POS
+   running numbers are also the Revenue Department's own practice for
+   abbreviated tax invoices. `pos.receipt_series` is the CLOUD's high-water
+   mark (the `receipt_series` sync scope already ships it to boxes with
+   `highWaterMark: 0` and a note that the money path fills it), so a reimaged
+   box resumes rather than restarts. Two allocators in one series collide on
+   `sale_receipt_unique` instead of printing one number twice; the two
+   explainable gaps are a voided sale keeping its number and a box resuming
+   from the cloud's mark.
+
+3. **Totals are split and the database checks them.** net / service charge /
+   VAT-already-inside / VAT-added-on-top, with `sale_totals_check` refusing a
+   row whose parts do not add up to what the guest paid, and
+   `sale_discount_parts_check` refusing a discount total that is not its own
+   manual and promo halves. Inclusive and exclusive VAT are separate columns
+   because they are different money — `tax.ts` warns against adding them.
+
+4. **A finalised sale is frozen by a TRIGGER** (`pos.sale_freeze`,
+   `pos.sale_child_freeze`), not by convention, so no service, script or psql
+   session can quietly rewrite what somebody was charged; status may only move
+   finalised → voided/refunded, and a void needs a reason. It guards UPDATE
+   only — the demo reset deletes a day of play on purpose — so the guarantee
+   is "no silent rewrite", not "indestructible".
+
+**Idempotency.** The till mints the sale id, so pressing Pay twice through a
+dropped connection is a primary-key replay. `sale_action_unique` on
+`(station_id, action_id)` is the second net: a retry that minted a NEW id but
+carried the same `x-oto-action-id` is refused rather than written.
+
+**Tests.** `apps/api/test/sales-ledger-schema.test.ts`, 19 of them, aimed at
+what `verify-schema` **cannot see**: it compares check constraints by NAME
+only and does not look at triggers at all. So each check and each freeze is
+driven with a bad write and asserted to be refused *by the named constraint*
+— reading the Postgres error off `cause`, because Drizzle wraps it in "Failed
+query" and matching that would pass for a typo.
+
+**Gate.** Migrations apply twice from empty to an identical catalogue (1,921
+catalogue rows both passes); `verify-schema` green; 595/596 api tests pass —
+the one failure is the booth-admin workstream's uncommitted `pinHash` in the
+staff cache bundle, ahead of its own test, and is not this work; `@oto/db`
+typecheck clean; eslint clean on these files.
+
+**Deliberately not done here (the rest of SCRUM-203):** the cart intents and
+the service that writes a sale, ฿0 comp finalise, `GET /sales` and the Sale
+detail view, member tier change, `seed:demo-day`, and pointing the till at the
+tested engine instead of its browser copy in baht floats.
+
+**Open, for whoever takes the next part:** a PARTIAL refund has no status of
+its own — the plan lists five and `refunded` means fully refunded, so a
+partial leaves `status = finalised` with `refunded_satang > 0`. Recorded on
+the table; if S2-11 needs that distinction in a `where` clause it is a
+decision to raise, not a column to add quietly.
+
+**Two tooling defects found on the way.** (1) `scripts/snapshot.ts` picks the
+LATEST snapshot as the previous one, so running it twice for the same tag
+chains a snapshot onto itself (`prevId` = its own `id`) and silently corrupts
+the migration chain — it happened here and was caught by hand. It needs to
+take the previous tag, or refuse when the file it is about to write already
+exists. (2) `scripts/verify-schema.ts` compares check constraints by name
+only and ignores triggers entirely, so a check that allows everything, or a
+deleted trigger, passes the gate that exists to catch schema drift.
+
+### S2-09a — the till side of the cart and the sale (SCRUM-203) — **the till now prices from the platform's engine and writes what it sells**
+
+**The hole this fills.** The entry above gave the sale somewhere to live. This
+is the other end of the wire: until now the till priced the cart in the
+browser, in baht floats, from the prototype's own copy of the rules, and
+pressing Pay called `recordSale`, which pushes an object onto an array a
+refresh empties. Both halves of that are now different.
+
+**Where the number on the screen comes from.** One hook,
+`src/lib/cartQuote.ts`, answers "what does this cart cost" for the staff
+panel, the visitor's own display and the payment screen — the three surfaces
+that must never disagree — and it asks the platform. The components were not
+redesigned: `OrderSummary` and `CustomerDisplay` take an optional `totals`
+prop in exactly the shape `computeTotals` already returned, so the layout is
+untouched and only the source of the figures moved. A caller that passes
+nothing (the party tab, the booking screen, the mobile cart sheet) prices as
+it always did.
+
+**Three sources, and the screen names the one it used.** The platform's quote;
+failing that this device running **the platform's own engine** (`@oto/shared`,
+integer satang, the tested one) when there is no pricing route on the
+deployment, no station, or no answer; failing that the prototype's own
+arithmetic, and ONLY when the engine refuses the cart outright. When it is not
+the platform, a note appears under the total saying so — because a till that
+has quietly stopped agreeing with the platform is the failure this ticket
+exists to make impossible, and nobody at a counter can see it otherwise. When
+it IS the platform nothing is drawn.
+
+**The service landed in this tree while this was being written**, and the two
+halves were reconciled against each other rather than against a guess:
+`apps/api/src/routes/sales.ts` was built to the contract in
+`apps/pos/src/api/sales.ts` and accepts the cart nested under `cart`, the
+action id in the body or the header, and `finalise`. The till's client was then
+aligned to what the route actually returns — `{ quote, ...quote }`, the totals
+block, `rejectedPromoCodes` and `disagreements`. **No deployment carries either
+half yet**, so today every till still shows the "priced on this till" note and
+prices locally on the tested engine.
+
+**Reading one half against the other found a defect no type-check could:
+every call from the real till would have been refused.** The route requires
+`z.string().uuid()` for a cart line id and a manual discount id; the cart mints
+`Math.random().toString(36).substring(7)` for a ticket line,
+`line-<checkInId>` for a drop-off child, `promo-<CODE>` for a free-item promo
+line, and `md-<random>` for a staff discount. Not one is a uuid, so `POST
+/sales/quote` and `POST /sales` would both have answered 400 and no sale would
+ever have been written. `platformId` in `cartWire.ts` now translates at the
+wire — a uuid passes through, anything else is derived deterministically from
+its own text — and `localIdFor` translates the answer back, without which every
+staff discount would have rendered as ฿0 under a correct total. 413 sample ids
+check out as well-formed, unique and stable.
+
+**That translation is a workaround and is labelled as one.** The cost: the
+`cart_line_id` on a sale line is a derived value, so "this row came from the
+promo line for ICECREAM" is no longer readable off the ledger (grouping within
+a sale, which is what the column is documented for, still works). The real fix
+is one of two decisions and neither is the till's alone — the platform accepts
+the till's id as text, or the cart mints UUIDv7 everywhere, which needs
+`freeItemLineId` in `@oto/shared` to stop encoding the promo code in the line
+id. Raised on SCRUM-203; the function is written to be deleted in one edit.
+
+**A ticket package id is deliberately NOT translated.** It is the platform's
+own row key; inventing one would ask the platform to price a package that does
+not exist. A till holding the prototype's seeded catalogue (`t-2h`) is refused,
+which is correct, and the refusal is what the screen shows.
+
+**What Pay does now.** `src/lib/saleWriter.ts` mints the sale's id (UUIDv7)
+and an action id ONCE per press and reuses both for every retry of that press,
+so three separate things have to fail before a second sale can exist: the
+idempotency key (`sale:<id>`), the primary key on `pos.sale`, and
+`sale_action_unique`. Nothing else happens until the platform has answered —
+no receipt, no band, no wallet, no confirmation screen. A refusal leaves the
+till on the payment screen with a panel that says the sale was not saved, says
+whether trying again can help, and carries the sale number; pressing Try again
+finishes the sale that was started rather than starting a second one. The
+local record, the promo counters, the wallets and the paper now all hang off
+`finalizeSale`, which runs only on success and carries the platform's own sale
+id, so the row in the ledger and the record on the till are one sale by
+number. **`MobileTill` goes through the same writer** — a second till quietly
+selling into memory would be the same defect with a smaller screen.
+
+**Where a sale is still saved on the till alone, and it SAYS SO.** Two cases:
+the deployment has no sales route (today, everywhere), or the device is not on
+a platform station. Both are certainties rather than doubts — nothing was
+half-written and no retry can change them — so the confirmation screen carries
+an amber "Saved on this till only" notice naming the reason, instead of
+looking exactly like a saved sale. Every other failure is a real failure and
+is not finalised at all.
+
+**An async answer never lands on the next visitor.** The writer keeps its own
+epoch, bumped by `reset()`, and both tills check `saleEpochRef` after the
+await. The quote hook drops any answer whose sequence has been overtaken. This
+is the defect the project keeps producing; the guard is the one already in
+`Till.tsx`, used rather than reinvented.
+
+**A drop-off line with no length chosen is not quoted at all.** The engine's
+`findStaleLines` cannot tell "not yet priced" from "priced under another rate
+mode" and says so at length, leaving the choice to S2-13. This till does not
+make that choice: while such a line is in the cart the platform is not asked,
+the running total stays the prototype's, and the existing preflight still
+refuses to take money for it.
+
+**`apps/pos` has no test runner, so the money was checked another way.**
+`src/dev/checkCartPricing.ts` walks the seeded catalogue — 4 packages × 3
+tiers × 5 cart shapes, weekday and weekend, plus a multi-line cart, order and
+line fixed discounts, a comp and a fixed promo code — and asserts the engine
+and the prototype agree to the satang. **69 of 69 carts agree.** Run it with
+`cd apps/pos && node_modules/.bin/tsx src/dev/checkCartPricing.ts`. It is not
+in CI and is not a substitute for one; it is what can be run today by anyone
+who touches the pricing path, and it is deliberately blind to the shapes where
+the two are MEANT to differ (rulings 1 and 2, and percent discounts now
+rounding to the satang). A development-only divergence warning does the same
+comparison in the browser on every quote.
+
+It earned its keep immediately: it found `import.meta.env.DEV` read
+unguarded, which is fine in Vite and throws under any plain node runner — the
+one place a check like this would be run.
+
+**Checked.** `apps/pos` typecheck clean; `pnpm --filter @oto/pos build` green
+and byte-identical in bundle hash (the dev check is not bundled); `pnpm exec
+eslint apps packages` reports two errors and both are another workstream's
+(`apps/api/test/zz-verify-s207b.test.ts`) — `apps/pos` is in eslint's ignore
+list, which is its own defect and not one this ticket closed. **Not
+committed** — this tree is shared with two other workflows.
+
+**One more edge, handled rather than left:** press Cancel while a sale is being
+saved and the epoch guard correctly stops the answer landing on the next
+visitor — but the sale is on the platform. Both tills now say so, by receipt
+number, instead of leaving a sale nothing on the screen will mention again.
+
+**Not done, and named rather than implied:** **no browser has driven any of
+this against a running server.** Neither half is deployed, and the two were
+reconciled by reading each other's code — which caught the uuid defect above,
+and is still not the same as a request arriving. The S2-04/05/06 lesson applies
+in full: a type that lines up is not a browser that reached the route, and the
+first integration run is the next step on this ticket. What is proved: the
+arithmetic (69/69 carts), the id translation (413/413), the typecheck and the
+bundle. What is not: a single real request. Still missing from SCRUM-203
+overall: the Sale detail view in the POS, the member tier change, and
+`seed:demo-day`.
+
+### S2-09a — the service and the routes (SCRUM-203) — **pressing Pay now has somewhere to land**
+
+**What was missing.** The two entries above built the ledger and the till. The
+wire between them did not exist: there was no `POST /sales`, so the till's
+writer had nothing to call and every deployment showed "Saved on this till
+only". `apps/api/src/services/sale.ts`, `apps/api/src/routes/sales.ts` and one
+registration line in `app.ts` are that wire, with 28 tests in
+`apps/api/test/sales.test.ts` that drive the real routes with a real reception
+session and then read the rows out of Postgres.
+
+**Five routes.** `POST /sales/quote` prices a cart and writes nothing;
+`POST /sales` records one; `POST /sales/:id/finalise` allocates the receipt
+number and closes it; `GET /sales` and `GET /sales/:id` are the day's list and
+the Sale detail. Each declares its guard — selling takes `pos:sale:create`,
+finalising `pos:sale:update`, reading `pos:sale:read`, and **a cart carrying a
+discount of any kind is checked separately for `pos:sale:discount`**, because
+"may take money" and "may decide how much less a guest pays" are different
+questions and there is no manager-approval step behind them (R-08).
+
+**The pricing engine now has two callers instead of one.** Everything the
+route answers comes from `computeTicketCartTotals` in `@oto/shared` — the same
+1,600 lines under the same 1,694-line suite that the public booking quote uses
+and that the till now prices with. Nothing in the api re-derives a rule.
+
+**Two rules decide whose number wins, and both are tested.**
+*The price is the platform's*: the unit prices, the rate mode, the trading day,
+the tax and every discount amount are resolved on this side from the catalogue
+and the branch configuration. The till may send `expectedTotalSatang` and a
+`lineTotalSatang` per line, and the only thing either can do is cause a
+refusal — `SALE_TOTAL_MISMATCH` or `SALE_LINE_PRICE_MISMATCH`, with nothing
+written. *The tier is resolved from the member*, never from the body: a sale
+for James is priced expat because his record says so, and a walk-in gets the
+operator's default tier. A request sending `tier: 'thai'` and its own prices is
+priced exactly as one that sends neither — there is a test that does it.
+
+**A sale line is a UNIT, and the units are the engine's own.** `cartUnits` in
+`cart-totals.ts` was made exported (two words, no behaviour changed) so the
+ledger stores what the engine computed rather than a second decomposition of
+it in the api — the copy-of-the-rules defect this whole ticket is about. Each
+category's post-discount base, service charge and tax are then apportioned
+across its units by largest remainder, so the line rows sum back to the sale
+exactly; the test asserts that on base, net, tax, service and gross.
+
+**Receipt numbers** are allocated per station out of `pos.receipt_series`, the
+row locked `FOR UPDATE` inside the same transaction, formatted `T1-000001`.
+Consecutive within a station, and the high-water mark advances past everything
+issued. A second finalise of the same sale returns the number it already has
+rather than taking another.
+
+**A ฿0 comp finalises; anything with a balance does not.** A fully comped visit
+commits and finalises in one transaction, with the comp recorded as a
+`sale_discount` naming the reason and the account that gave it, and the
+subtotal still saying what the visit was worth. A sale that owes money is
+refused with `SALE_NOT_PAID` — `pos.payment_attempt` has no status vocabulary
+until S2-10a, so nothing can yet reduce what a sale owes, and that one
+predicate (`outstanding`) is the single line S2-10a changes.
+
+**The two halves were reconciled at the wire, in both directions.** The route
+was built to the contract in `apps/pos/src/api/sales.ts` and takes the cart
+nested under `cart` or flat, the action id in the body or the `x-oto-action-id`
+header, `occurredAt`, `businessDate` on the list, and answers `{ quote,
+...quote }` and `{ sale, replay }`. One test sends the till's exact payload —
+nested cart, socks block, `packageName`, the tier and rate mode it believed —
+and asserts the row that lands. What that reconciliation cost on this side:
+
+- **Add-ons, socks, service fees, prepaid food and a free-item's item are
+  priced from the till's snapshot when the platform has no row for them**, and
+  the line records `payload.priceSource = 'till_snapshot'` when it did. The
+  add-on catalogue is S2-09b and the prototype's ids (`a-locker`) are not
+  platform uuids; refusing them would mean a park that cannot sell socks until
+  that ticket lands. An id that IS a `pos.product` is priced from that row
+  whatever the till sent — including its taxable category, so the seeded ice
+  cream books to F&B — and there is a test for both halves.
+- **A promo code arrives with its definition**, because there is no promo-code
+  table to validate one against (S2-09b again). It grants no authority a staff
+  member does not already have: it takes `pos:sale:discount`, it is recorded as
+  a `sale_discount` row with its code and sequence, and it is audited. A code
+  with no definition is refused by name and takes nothing off. The order is the
+  engine's and therefore the prototype's — manual discounts first, then each
+  code against the running balance — and the test asserts the sequence, not
+  just the total, because reversing the two moves the bill.
+- **A till clock more than 60 s from the platform's is called `skewed`** and
+  the platform's instant is recorded, the same tolerance and the same rule the
+  sync ledger already applies to a box (`CLOCK_TOLERANCE_MS`). The trading day
+  is always the platform's, so a wrong till clock cannot move a sale onto
+  another day's takings.
+
+**Defects and decisions raised rather than buried.**
+
+1. **`pos.sale_line.cart_line_id` is a `uuid` and the till's cart line ids are
+   not uuids.** The till works around it by deriving one deterministically, at
+   the cost of the column no longer naming the real cart line. The fix is a
+   decision for one of the two sides — the column becomes text, or the cart
+   mints UUIDv7 everywhere (which needs `freeItemLineId` in `@oto/shared` to
+   stop encoding the promo code in the line id). Not taken here: it is a
+   migration, and 0014 is already claimed in a shared tree.
+2. **`sale_discount.allocations` is written null.** `computeTicketCartTotals`
+   keeps the per-discount allocations internal and returns only the totals, so
+   the reproducible record of where a discount landed is the sale's stored
+   `tax_breakdown` plus the per-line split. S2-11 (refunds) is the ticket that
+   needs them per instrument; exposing them means restructuring the engine's
+   discount loop, which is not a change to make in passing.
+3. **A refused sale cannot be retried under the same sale id with a corrected
+   cart.** The till derives its idempotency key from the sale id, and a 4xx is
+   stored like any other answer, so a second attempt with a different body gets
+   `IDEMPOTENCY_MISMATCH`. That is the platform behaving as designed — a
+   changed cart is a different sale — but it is a contract note the till has to
+   hold: **after a refusal, mint a new sale id before retrying.**
+4. **The demo reset would have failed on any day with a discount on it.** It
+   deletes `sale_line` before `sale` but knew nothing about `sale_discount`,
+   which points at the sale with `ON DELETE RESTRICT`. Two lines, fixed here,
+   because leaving it would break the button the park's team use to start over.
+5. Carried from the schema half: a *partial* refund has no status of its own,
+   and `scripts/snapshot.ts` / `verify-schema.ts` both have the gaps named
+   above.
+
+**Checked.** api 643 tests (39 files), shared 197, print 209, telemetry 36, all
+green; `pnpm -r typecheck` clean; `pnpm exec eslint apps packages` exits 0.
+**Not committed** — three workflows share this tree.
+
+**Still missing from SCRUM-203:** the Sale detail VIEW in the POS (the API
+behind it is built), the member tier change, `seed:demo-day`, and the thing
+neither half can claim yet — **a browser driving a running server**. The
+routes have been driven with the till's own payload shape through Fastify;
+that is closer than reading each other's code and it is still not a request
+that crossed a network.
+
+### S2-09a — the integration check (SCRUM-203) — **the three halves do not meet: a paid sale cannot be recorded**
+
+**What was done, and why it is different from the three entries above.** Each
+of those halves tested its own side. This drove a **real Fastify server on a
+real port against a real seeded Postgres**, signed in over HTTP as the seeded
+reception account, sent the till's **own commit body verbatim**, and then read
+the rows out of the database rather than the response. Thirteen cart shapes,
+the idempotency paths, the refusals, the scope checks and the freeze trigger.
+
+**THE BLOCKER, and it is one line on each side.** The till sends
+`finalise: true` on every commit (`apps/pos/src/api/sales.ts:802`). The service
+refuses `finalise: true` while the sale still owes money
+(`apps/api/src/services/sale.ts:1169`), because `outstanding()` returns the
+gross until tenders exist (S2-10a). So:
+
+```
+quote  a tourist Full Day, 1 kid + 1 adult   → 200, gross 144000 (฿1,440)
+commit the till's exact body, finalise:true  → 409 SALE_NOT_PAID
+rows in pos.sale                             → 0
+the same cart with finalise:false            → 200, one row, two lines, audited
+```
+
+**Every sale except a ฿0 comp is refused, and the screen tells staff the wrong
+thing about it.** `isRetryable()` in `lib/saleWriter.ts` treats a 409 as a
+judgement, so the panel reads *"Trying again will not help — the platform
+looked at this sale and refused it. Go back, check the order, and call a
+manager"* — for a fault that is in neither the order nor the manager's gift.
+The claim is also written above the field that causes it:
+`apps/pos/src/api/sales.ts:170` says *"฿0 comps and paid sales both finalise
+here"*, and a paid sale does not. Which side moves is a decision, not a typo:
+either the till sends `finalise: false` until S2-10a and the sale sits in
+`tendering` with no receipt number, or `outstanding()` counts the till's
+`paymentMethod` as money taken. **Until it is taken, SCRUM-203's acceptance
+criteria cannot pass.**
+
+**Second blocker: after any refusal the cart can only be sold by throwing it
+away.** The sale id — and the idempotency key `sale:<id>` derived from it — is
+minted once per Pay press and cleared only by `reset()`. `handlePaymentBack`
+(`Till.tsx:1672`) does not clear it. Proven live: first attempt refused,
+corrected cart under the same key → `409 IDEMPOTENCY_MISMATCH`, also
+classed non-retryable. So *Back to the order* → fix the order → Pay answers
+IDEMPOTENCY_MISMATCH for ever, and the only escape is Cancel, which discards
+the visitor's whole order. The service half's own contract note 3 predicted
+the mechanism; the till was not changed to mint a new id.
+
+**Third blocker: a branch-scoped account can write a sale at a branch it has no
+permission on.** `POST /sales` and `POST /sales/quote` declare
+`permission: 'pos:sale:create'` with **no `target`**, so the scope is never
+checked against `cart.branchId`. As the seeded reception account, scoped to
+HKT Central alone, with a second branch and its own station and package:
+
+```
+quote for the other branch          → 200
+commit  for the other branch        → 200
+sale row branch_id                  → the other branch  (station: its own)
+GET /sales/:id for that same sale   → 403
+```
+
+The 403 on the read is the proof the write should have been refused too.
+`POST /sales/:id/finalise` (`pos:sale:update`, no target) has the same hole: it
+reached SALE_NOT_PAID rather than 403, so a ฿0 sale at another branch could be
+finalised from here and consume that station's receipt number.
+
+**Defects, smaller.**
+1. `sale_line.revenue_category` is NULL on every row written (34 of 34). The
+   schema comment defers it to S2-09b, which is honest, but S2-09a's own
+   acceptance criterion says the Sale detail view shows it populated and
+   `getSaleDetail` returns the null. Not a thing to close quietly.
+2. **Removing a holiday now fails.** `sale.holiday_id` is `ON DELETE restrict`
+   and `DELETE /branches/:branchId/holidays/:id` (`routes/catalog.ts:474`) hard
+   deletes. Once one sale has been rung up on a holiday date the admin panel's
+   Remove raises an unhandled Postgres 23503
+   (`sale_holiday_id_branch_holiday_id_fk`). An existing screen broken by this
+   round's schema; `archived_at` is on the table and is the path the route
+   should take.
+3. A replay returns `lines: []` (second identical commit → 200, `replay` true,
+   no lines). Nothing reads them today.
+4. `GET /sales` with no `branchId` **and** no active branch on the session
+   queries the whole operator with no branch check. Narrow — every seeded
+   account has an active branch — and one line to close.
+5. **The confirmation screen and the receipt still carry the prototype's
+   total, not the platform's.** The amount due on the order panel and the
+   payment screen is the platform's (`cart.totals.total`), and so is the
+   stored sale. But `finalizeSale` in both tills builds the local record with
+   `buildSale(...)`, which recomputes the total through the prototype's
+   `computeTotals`, and that record is what StepConfirmation, the printed
+   receipt and the prototype's History and Today read.
+   `MobileConfirmation` (`MobileTill.tsx:94`) does the same for its VAT lines.
+   The two arithmetics agree on the 69 carts the till's own check covers and
+   are **documented to differ** on stacked or scoped promo codes and on
+   percent discounts: `manualDiscount.ts:11` rounds a percent discount to the
+   whole baht (`Math.round(base * pct/100)` on a baht base) while the engine
+   works in satang. So a 10 % staff discount on an expat 2-hour ticket (฿623)
+   takes ฿62 off on the receipt and ฿62.30 off in the ledger. Pass the
+   platform's figures into the sale record rather than recomputing them.
+
+**What was proved to work, and these were driven, not read.**
+- **One price, not two.** Quote total equals the stored `gross_satang` on all
+  thirteen shapes: weekday, a holiday range covering today (weekend prices),
+  tourist / expat / thai, the free-adult rule, an overflow adult, socks,
+  a fixed staff discount, a percent staff discount, a promo code, and a ฿0
+  comp. The sum of the line `gross_satang` equals the sale's.
+- **The tier is the member's.** Sending `tier: 'thai'` for James (expat) priced
+  him at 62300 and stored `customer_tier = expat`.
+- **The ledger row carries what the ticket asked for**: business date
+  2026-09-21 against a 05:00 day start, `business_day_start` and `timezone`
+  frozen on the row, station, box, account, pricing mode and its reason,
+  holiday id and name, engine version, the tax configuration and the whole
+  breakdown as snapshots, and the four-way net / service / VAT-inside /
+  VAT-on-top split.
+- **Pressing Pay twice.** Same id twice → one row and `x-oto-replay: true`. A
+  new id under the same action id → `409 SALE_ACTION_REPLAY`. Two genuine
+  presses → two sales. A connection aborted mid-flight → exactly one row, and
+  the retry returns it.
+- **Paying less than quoted is refused**: `SALE_TOTAL_MISMATCH` on the order,
+  `SALE_LINE_PRICE_MISMATCH` on a line.
+- **No session** → 401 on quote, commit and list.
+- **A ฿0 comp** finalises: status `finalised`, receipt `T1-000001`, the
+  station's series advanced to 2, and a `sale_discount` row naming the reason,
+  the amount and who gave it.
+- **The freeze trigger fires**: an UPDATE on a finalised sale is refused by the
+  database.
+- **A skewed till clock cannot move a day's takings**: six hours out →
+  `clock_trust = skewed`, the platform's instant and trading day; an
+  unparseable clock → `untrusted`.
+- **The totals did not change where they were already right.** OrderSummary,
+  CustomerDisplay and StepPayment each take an optional `totals` prop that
+  falls back to `computeTotals`, so every caller that is not the Till is
+  untouched; the Till hands one hook's answer to both the staff panel and the
+  visitor's screen, so the two cannot disagree.
+
+**Verdict: not ready for `main`.** The schema and the service are sound and the
+pricing is right. The seam between the till and the service is one boolean
+wide, and on the wrong side of it the park cannot take money.
+
+**Checkpointed anyway, so nothing is at risk: branch
+`wip/s2-09a-sales-ledger` at `4a34037`, pushed.** The whole slice and these
+documents are on it, and nothing else — the sync/box edits and
+`render.yaml`/`services/` in the working tree belong to two other workstreams
+and were left alone. `main` stays at `14201bc` and the working tree was not
+disturbed, so neither of those workflows lost a step. Resume on the branch by
+taking the finalise decision above.
 
 ## Deviations recorded
 
