@@ -1306,6 +1306,9 @@ describe('the cache bundle', () => {
     expect(Object.keys(bundle.scopes).sort()).toEqual([
       'bands',
       'bookings',
+      // The published wheel, since S2-07a filled the scope. This box has a
+      // booth, so a full bundle now carries one.
+      'booth',
       'catalogue',
       'deny_list',
       'members',

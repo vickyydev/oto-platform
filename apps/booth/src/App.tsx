@@ -232,7 +232,27 @@ export default function App() {
     setNotice(null);
     setPhase('starting');
     try {
-      const response = await booth.spin({});
+      /**
+       * One key for this press, reused if the first attempt does not answer.
+       *
+       * The box records the spin, mints the voucher and queues the print
+       * before it replies, so a reply lost to a slow mall connection is a
+       * prize that already exists on paper. Without a key the page's next
+       * attempt draws again and a second slip comes out; with one, the box
+       * recognises the press and returns the spin it already made. A NEW
+       * press mints a NEW key, so a guest pressing twice still gets two
+       * spins — that is the difference D7 asks for.
+       */
+      const pressKey = crypto.randomUUID();
+      let response: SpinResponse;
+      try {
+        response = await booth.spin({ idempotencyKey: pressKey });
+      } catch (err) {
+        // Only a press that went unanswered is retried. A refusal is an
+        // answer — retrying "no prizes are eligible" just asks twice.
+        if (!(err instanceof BoothCallError) || err.code !== 'unreachable') throw err;
+        response = await booth.spin({ idempotencyKey: pressKey });
+      }
 
       // --- The seam this page has to defend from its own side -------------
       // The box drew from the bundle IT has cached; this page drew its slices

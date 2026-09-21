@@ -41,6 +41,7 @@ import { stationSessionRoutes } from './routes/stations';
 import { printRoutes } from './routes/print';
 import { scanningRoutes } from './routes/scanning';
 import { staffTokenRoutes } from './routes/staff-token';
+import { boothRoutes } from './routes/booth';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -303,6 +304,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // three prefixes that are already spoken for.
   await app.register(scanningRoutes);
   await app.register(staffTokenRoutes);
+  // The Lucky Wheel (S2-07a): the television's `/booth/*` and the Console's
+  // `/booths/:id/status`. Declared in full like the fleet's, because the two
+  // halves answer to different callers and share no prefix.
+  await app.register(boothRoutes);
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
   await app.register(opsRoutes, { prefix: '/ops' });

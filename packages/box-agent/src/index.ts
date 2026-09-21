@@ -33,4 +33,16 @@ export * from './scan';
 export * from './scan-input';
 export * from './staff-token';
 export * from './cache-apply';
+/**
+ * The Lucky Wheel (S2-07a).
+ *
+ * `booth-draw` carries no I/O at all — the eligibility rule and the weighted
+ * pick — so it is importable anywhere the draw has to be reasoned about,
+ * exactly as `scan-input` is for the burst rule. `booth-http` is the `/booth/*`
+ * contract as a plain function, so whatever serves the booth's kiosk wires it
+ * to its own server without this package growing an opinion about which.
+ */
+export * from './booth-draw';
+export * from './booth';
+export * from './booth-http';
 export * from './agent';

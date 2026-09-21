@@ -1,17 +1,20 @@
 import { sql } from 'drizzle-orm';
 import {
   check,
+  date,
   index,
   integer,
   jsonb,
+  primaryKey,
   real,
+  smallint,
   text,
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { edge, idPk } from './helpers';
 import { account } from './tenancy';
-import { box } from './fleet';
+import { box, device, station } from './fleet';
 
 // --- Box-owned state (schema `edge`) ---------------------------------------
 //
@@ -219,4 +222,272 @@ export const boxHeartbeat = edge.table(
     /** The retention sweep's delete, and nothing else. */
     index('box_heartbeat_received_idx').on(t.receivedAt),
   ],
+);
+
+// --- What a box keeps for ITSELF (S2-07a) -----------------------------------
+//
+// Everything above this line is the cloud's record OF a box: what somebody
+// asked it to do, and what it reported. The five tables below are the box's own
+// working state — the print queue that still owes somebody a piece of paper,
+// the counters a daily cap is read from, who is signed in at a booth, the PINs
+// typed wrongly, and a couple of singletons the box must not forget over a
+// power cut.
+//
+// They exist in two dialects. A Raspberry Pi keeps them in a SQLite file its
+// own boot creates (`prepareSqliteBoxStore`); the virtual box runs inside the
+// api and its store IS this schema. ONE implementation drives both —
+// `SqlBoxStore` in `packages/box-agent/src/store-sql.ts` — so the columns here
+// are a transcription rather than a design: `EDGE_BOX_LOCAL_TABLES_SQL` in that
+// same file is the Postgres DDL its queries were written against, and this is
+// that DDL in Drizzle, so `pnpm db:generate` and `scripts/verify-schema.ts` can
+// both see the tables instead of finding them conjured at runtime. A column
+// spelled differently on one side than the other is a box that behaves
+// differently from its stand-in; where that would surface is
+// `apps/api/test/print-restart.test.ts`, which drives the store over THIS
+// schema and writes every one of these five tables.
+//
+// Until the migration that generated these, the tables were simply absent from
+// `edge`. On staging that meant `features()` reported both false: the durable
+// print queue fell back to memory, and every booth counter, staff session and
+// throttle read threw `BoxStoreFeatureMissingError`. A Pi never hit it, which
+// is exactly why it could have shipped.
+//
+// **No `created_at` on any of them**, and the omission is the SQLite mirror's
+// too. These are working rows, not business records: a print job carries
+// `queued_at`, a throttle carries `first_failure_at`, and the rest are
+// last-writer rows whose whole content is their current value. A `created_at`
+// here would be a column nothing writes and nothing reads, differing from the
+// Pi's table for the sake of a convention about the record.
+
+/**
+ * What a box-local print job is doing. The same three words as
+ * `BOX_PRINT_JOB_STATES` in `@oto/box-agent`, repeated because `@oto/db` does
+ * not depend on that package — and the CHECK below is the copy the database
+ * enforces, so a fourth state added on the agent side is refused at the insert
+ * rather than stored and puzzled over later.
+ *
+ * There is no terminal state because a finished job is DELETED. `edge.print_job`
+ * beside it is the history, with the Console page and the 90-day sweep; this
+ * table is the outstanding work, which is also what keeps a guest's name and a
+ * child's allergy line off a box in a storeroom for any longer than the paper
+ * takes to come out.
+ *
+ *   - `queued`      — waiting: for its turn, for paper, for the next retry.
+ *   - `sending`     — bytes are going at a printer right now.
+ *   - `interrupted` — it was `sending` when the process died (D12). Never
+ *     retried, because some of that voucher is already paper; it waits to be
+ *     reported and deleted.
+ */
+export const BOX_PRINT_JOB_STATES = ['queued', 'sending', 'interrupted'] as const;
+export type BoxPrintJobState = (typeof BOX_PRINT_JOB_STATES)[number];
+
+/**
+ * The box's own print queue.
+ *
+ * `id` is the `edge.print_job` id, minted where the job was raised, so the row
+ * here and the row in the cloud are the same job under the same name — which is
+ * what lets a restarted box report the outcome of work the cloud still shows as
+ * queued.
+ *
+ * `job` is the renderer's INPUT, stored whole, and that is the difference from
+ * `edge.print_job`, which deliberately stores nothing rendered. The point of
+ * this table is that a voucher waiting on paper still prints after the power
+ * has been off, and it cannot if what to print was only ever in memory. The
+ * protection is lifetime, not redaction: the row is deleted the moment the
+ * paper is out of the machine.
+ *
+ * `template_id` carries NO foreign key, unlike its namesake in
+ * `edge.print_job`. A template archived in the cloud, or swept, must not be
+ * able to stop a voucher somebody is standing waiting for; the id is stamped
+ * here as a record of what was applied, and the Pi's table cannot hold a
+ * foreign key into `pos` at all.
+ */
+export const boxPrintJob = edge.table(
+  'box_print_job',
+  {
+    /** UUIDv7, minted with the job — on the box, or in the service that queued it. */
+    id: idPk(),
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => box.id, { onDelete: 'restrict' }),
+    /** One of `PRINT_KINDS` in `@oto/shared`. Text here: the vocabulary is not this table's. */
+    kind: text('kind').notNull(),
+    /** Which `station_device` role chose the printer — `receipt`, `kids_band`, `voucher`. */
+    role: text('role'),
+    /** Null for a job that belongs to the box rather than to a station — a test page. */
+    stationId: uuid('station_id').references(() => station.id, { onDelete: 'restrict' }),
+    /** The printer the last attempt went to, so an interrupted job can name it. */
+    deviceId: uuid('device_id').references(() => device.id, { onDelete: 'restrict' }),
+    copies: smallint('copies').notNull().default(1),
+    job: jsonb('job').notNull(),
+    /** Cut and feed: what the head should do once the last line is out. */
+    finish: jsonb('finish'),
+    templateId: uuid('template_id'),
+    templateVersion: integer('template_version'),
+    /** `x-oto-action-id`, minted where the person tapped and carried through. */
+    actionId: text('action_id'),
+    state: text('state').$type<BoxPrintJobState>().notNull().default('queued'),
+    attempts: integer('attempts').notNull().default(0),
+    /** Backoff with jitter: the queue takes only jobs that are due. */
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true, mode: 'date' }),
+    lastErrorCode: text('last_error_code'),
+    lastErrorMessage: text('last_error_message'),
+    /** This table's `created_at`, under the name the queue reads it by. */
+    queuedAt: timestamp('queued_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    /** The recovery read at every boot and every tick: one box, oldest first. */
+    index('box_print_job_pending_idx').on(t.boxId, t.queuedAt),
+    index('box_print_job_station_idx').on(t.stationId),
+    index('box_print_job_device_idx').on(t.deviceId),
+    check('box_print_job_state_check', sql`${t.state} in ('queued','sending','interrupted')`),
+    check('box_print_job_copies_check', sql`${t.copies} > 0`),
+    check('box_print_job_attempts_check', sql`${t.attempts} >= 0`),
+  ],
+);
+
+/**
+ * Counters for one trading day: spins, and spins per prize.
+ *
+ * A `date` and not a timestamp, because the park's day starts at
+ * `branch.business_day_start` and not at midnight — a spin at one in the
+ * morning belongs to the evening that is still going on, and a cap read against
+ * the wrong day is a prize given away twice.
+ *
+ * `scope` and `counter_key` are a pair rather than a column per thing counted,
+ * so the booth's second counter costs a row instead of a migration. No CHECK on
+ * `scope`: the vocabulary is still moving with the sprint, and `edge.sync_event
+ * .type` was left open for the same reason.
+ *
+ * The primary key leads with `box_id`, which is also the index the foreign key
+ * needs, and its `(box_id, scope)` prefix is what `readCounters` scans for a
+ * whole day's prizes.
+ */
+export const boxCounter = edge.table(
+  'box_counter',
+  {
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => box.id, { onDelete: 'restrict' }),
+    /** `booth`, `booth_prize` — what is being counted. */
+    scope: text('scope').notNull(),
+    /** What within the scope: a prize id, a station id, or the scope's one total. */
+    counterKey: text('counter_key').notNull(),
+    businessDate: date('business_date', { mode: 'string' }).notNull(),
+    counterValue: integer('counter_value').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.boxId, t.scope, t.counterKey, t.businessDate] })],
+);
+
+/**
+ * Who is signed in at a station, kept where a restart cannot lose it.
+ *
+ * One row per station: signing in replaces whoever was there, because two
+ * people signed in at one booth is not a state the screen could show. The
+ * station's own id is the primary key, which is what makes that a property of
+ * the table rather than a rule somebody remembered to apply.
+ *
+ * `staff_code` is the lookup value the sign-in resolved, where there is one — a
+ * badge number, a staff code. The credential itself is never here: `core
+ * .credential` holds the argon2id hash, and a PIN or a badge is verified by
+ * iterating the booth's allowed staff and verifying against those (D18). This
+ * row is only the answer.
+ */
+export const boxStaffSession = edge.table(
+  'box_staff_session',
+  {
+    stationId: uuid('station_id')
+      .primaryKey()
+      .references(() => station.id, { onDelete: 'restrict' }),
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => box.id, { onDelete: 'restrict' }),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    /** How they proved it: `pin`, `badge`, `password`. What the booth shows and the fact records. */
+    credentialKind: text('credential_kind').notNull().default('pin'),
+    staffCode: text('staff_code'),
+    signedInAt: timestamp('signed_in_at', { withTimezone: true, mode: 'date' }).notNull(),
+    /** Bumped on activity; what an idle sign-out is measured from. */
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'date' }).notNull(),
+    /** Null for a session that ends only when somebody signs out. */
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    /** "Who is signed in across this box", and the index `box_id`'s key needs. */
+    index('box_staff_session_box_idx').on(t.boxId),
+    index('box_staff_session_account_idx').on(t.accountId),
+  ],
+);
+
+/**
+ * Failed sign-ins, counted on disk.
+ *
+ * In memory a lockout would last until somebody pulled the booth's power lead,
+ * which is not a lockout. `failures` moves inside the upsert, so two wrong PINs
+ * typed at once count as two.
+ *
+ * `subject` is text and carries no foreign key: what is being throttled is a
+ * station id today and may be a badge number or an account tomorrow, and a
+ * constraint cannot express a column whose type changes per row — the same rule
+ * `sync_quarantine.event_id` follows.
+ */
+export const boxThrottle = edge.table(
+  'box_throttle',
+  {
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => box.id, { onDelete: 'restrict' }),
+    /** `booth_pin`, `booth_badge` — which attempt is being counted. */
+    scope: text('scope').notNull(),
+    subject: text('subject').notNull(),
+    failures: integer('failures').notNull().default(0),
+    firstFailureAt: timestamp('first_failure_at', { withTimezone: true, mode: 'date' }).notNull(),
+    lastFailureAt: timestamp('last_failure_at', { withTimezone: true, mode: 'date' }).notNull(),
+    /**
+     * Null until a policy sets one. `recordThrottleFailure` coalesces it, so a
+     * later failure that names no lock leaves the one already on the row — which
+     * is what lets a policy that locks on the fifth failure say nothing about
+     * the sixth without lifting its own lock.
+     */
+    lockedUntil: timestamp('locked_until', { withTimezone: true, mode: 'date' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.boxId, t.scope, t.subject] }),
+    check('box_throttle_failures_check', sql`${t.failures} >= 0`),
+  ],
+);
+
+/**
+ * Small singletons the box owns, as key and value.
+ *
+ * One key so far: `last_good_time`, the latest instant this box has reason to
+ * believe in. It is how a Pi whose clock battery is dead can tell that the time
+ * it booted with is behind a moment it has already lived through, and it is
+ * what stops the business day moving backwards (D11). Forward-only is decided
+ * in `markTimeSeen`'s statement, not here — the column holds any text, and
+ * nothing but that method writes this key.
+ *
+ * A key/value table rather than a column per setting because these are the
+ * box's own scratch notes, added and dropped by whichever ticket needs one; a
+ * value worth a column of its own belongs in `box_state` beside the journal
+ * counter, where it can be typed and constrained.
+ */
+export const boxRuntime = edge.table(
+  'box_runtime',
+  {
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => box.id, { onDelete: 'restrict' }),
+    runtimeKey: text('runtime_key').notNull(),
+    /** Text in both dialects: SQLite has no timestamp, and every value so far is an ISO instant. */
+    value: text('value').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.boxId, t.runtimeKey] })],
 );

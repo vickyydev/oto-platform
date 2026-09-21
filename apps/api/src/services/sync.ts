@@ -57,6 +57,7 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
+import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
@@ -536,15 +537,35 @@ export function sha256Hex(value: string): string {
 // --- What a box may say, and what the cloud does with it ---------------------
 
 /** The rows a handler wants that are the same for every event in a batch. */
-interface BatchScope {
+export interface BatchScope {
   auth: BoxAuth;
   timezone: string;
   dayStartMinutes: number;
   /** Stations of THIS box. An event naming any other station is refused. */
   stationIds: Set<string>;
+  /**
+   * The POOL, beside the transaction a handler is writing through.
+   *
+   * It exists for one kind of write: an ALERT. One of them — the booth's code
+   * collision — is raised by a handler immediately before it throws, and the
+   * handler's savepoint is undone the moment it does, taking any row written
+   * on the transaction handle with it. An alert about a refusal has to outlive
+   * the refusal, which is the same reasoning `withTx` applies to the failure
+   * audit row it writes after a rollback on a separate connection.
+   *
+   * The other alerts a handler raises are on paths that succeed, and those
+   * would sit happily inside the transaction; they go here too because
+   * `raiseAlert` takes the pool handle, and the cost is small and one-way — a
+   * condition that stands even though the batch it was noticed in later failed
+   * is an alert somebody looks at twice, not a fact that was lost.
+   *
+   * It is not a general escape hatch. A handler's own work belongs in the
+   * transaction it was given, or a refused event leaves half of itself behind.
+   */
+  db: Db;
 }
 
-interface PreparedEvent {
+export interface PreparedEvent {
   envelope: SyncEventEnvelope;
   canonical: string;
   computedHash: string;
@@ -585,7 +606,7 @@ interface EventAddress {
 }
 
 /** What an applied handler wants recorded beside the ledger row. */
-interface ApplyResult {
+export interface ApplyResult {
   entityType: string;
   entityId: string;
   anomalies?: Array<{
@@ -596,7 +617,16 @@ interface ApplyResult {
   changes?: ChangeInput[];
 }
 
-interface EventHandler {
+/**
+ * What one kind of fact does to the cloud.
+ *
+ * Exported so that a ticket's handlers can live in their own file and be
+ * registered here — `sync-booth.ts` is the first — rather than growing this
+ * one by a module per sprint. A handler file imports this as a TYPE only, so
+ * registration costs an import and a spread and puts no runtime cycle through
+ * the file every push runs.
+ */
+export interface EventHandler {
   /** What a payload of this type must look like before anything is written. */
   schema: z.ZodTypeAny;
   apply(tx: Tx, scope: BatchScope, event: PreparedEvent, payload: never): Promise<ApplyResult>;
@@ -1158,6 +1188,15 @@ const HANDLERS: Record<string, EventHandler> = {
       return { entityType: 'station', entityId: stationId };
     },
   },
+
+  /**
+   * The Lucky Wheel's three facts (S2-07a) — `booth.spin_recorded`,
+   * `promo.voucher_issued`, `booth.voucher_printed`, named as the booth module
+   * in `@oto/box-agent` queues them. They live in `sync-booth.ts` because what
+   * they file is a whole subsystem's worth of rules, and nothing about them
+   * changes what a push does.
+   */
+  ...BOOTH_HANDLERS,
 };
 
 /**
@@ -1408,6 +1447,7 @@ export async function pushEvents(
     timezone: branchRow.timezone,
     dayStartMinutes: parseDayStart(branchRow.businessDayStart),
     stationIds: new Set(stations.map((s) => s.id)),
+    db,
   };
 
   const epoch = boxRow.currentEpoch;
@@ -2901,10 +2941,9 @@ export const CACHE_SCOPES = [
   'station_config',
   'receipt_series',
   /**
-   * The booth's published wheel (S2-07a). The vocabulary is here from the
-   * migration that creates `booth.booth_config_version`; the builder that
-   * fills it belongs to the booth box role, and until that lands the scope
-   * contributes nothing to a bundle rather than a half-answer.
+   * The booth's published wheel (S2-07a): one item per booth-kind station on
+   * the box, carrying the highest `booth.booth_config_version` published for
+   * it. Built by `boothCacheItems` in `sync-booth.ts`.
    */
   'booth',
 ] as const;
@@ -3336,6 +3375,18 @@ export async function cacheBundle(
       continue;
     }
 
+    /**
+     * The booth's published wheel (S2-07a) — one item per booth on this box,
+     * built by `sync-booth.ts`. Assembled as whole documents, so nothing here
+     * carries the limit and the scope is never truncated: a wheel is applied
+     * whole or not at all, and half a prize list is a wheel whose odds do not
+     * add up.
+     */
+    if (scope === 'booth') {
+      put('booth', await boothCacheItems(db, auth));
+      continue;
+    }
+
     // receipt_series — the high-water marks a box continues from when it is
     // offline, so two boxes cannot mint the same receipt number. The series
     // itself arrives with the money path (S2-11); what is here is the shape and
@@ -3346,7 +3397,7 @@ export async function cacheBundle(
     // this loop used to build a receipt series and `put` it under the receipt
     // series' name, so `?scopes=booth` would have answered with somebody
     // else's payload and a full bundle would have built the same list twice.
-    // An unhandled scope now contributes nothing, which the agent reads as
+    // An unhandled scope still contributes nothing, which the agent reads as
     // "not present" and skips.
     if (scope === 'receipt_series') {
       const stations = await db

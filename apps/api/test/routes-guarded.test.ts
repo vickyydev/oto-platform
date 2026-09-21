@@ -53,6 +53,8 @@ describe('route guards (S2-01b)', () => {
       .sort();
     // Anything added here is a deliberate decision, made visible in a diff.
     expect(open).toEqual([
+      'GET /booth/config',
+      'GET /booth/status',
       'GET /health',
       'GET /public/branches/:code/catalog',
       'GET /public/member-tier',
@@ -67,6 +69,24 @@ describe('route guards (S2-01b)', () => {
       'POST /auth/setup/start',
       'POST /auth/sign-in',
       'POST /auth/sign-out',
+      // S2-07a — the Lucky Wheel's television. The screen is a browser on a
+      // TV in a shopping centre and it carries nothing: no cookie, no
+      // account, no device key, because D15 forbids putting a token or a key
+      // on it and `apps/booth` sends `credentials: 'omit'`. So these six are
+      // genuinely open and say so here rather than borrowing a guard that
+      // would read as protection.
+      //
+      // What keeps them from being a voucher mint for anybody who finds the
+      // URL is underneath rather than on them: a booth is served by ITS box,
+      // and an api instance with no in-process agent answers 503 and never a
+      // prize (`booth-api.test.ts` pins that first). Caps, stock and
+      // eligibility are the box's, per draw. A credential the booth box
+      // verifies for the browser in front of it is what would close the rest;
+      // `core.device_credential` has a `booth` kind and nothing mints one yet.
+      'POST /booth/reprint',
+      'POST /booth/spin',
+      'POST /booth/staff/sign-in',
+      'POST /booth/staff/sign-out',
       'POST /public/bookings',
     ]);
   });

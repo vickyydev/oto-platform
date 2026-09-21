@@ -188,10 +188,78 @@ export interface AlertRow {
   count?: number | null;
 }
 
+/** What a booth's box measured about itself on its last heartbeat (S2-07a). */
+export interface BoothReport {
+  /** The published wheel it is running. **Null means it has never synced one.** */
+  configVersion: number | null;
+  /** Tri-state: `unknown` is "the box could not ask", which is not "unreachable". */
+  printerReachable: string;
+  paperStatus: string;
+  /** The box's whole outbox depth, which is what the booth module reports. */
+  vouchersPending: number | null;
+  lastSpinAt: string | null;
+  /** Whether somebody is signed in. Never who. */
+  staffSignedIn: boolean;
+  /** `booth.booth_prize` ids at their cap today — configuration, not people. */
+  dailyCapsReached: string[];
+}
+
+/** One booth on a box, as `/ops/health` reports it. */
+export interface BoothHealth {
+  stationId: string;
+  name: string;
+  codePrefix: string | null;
+  /** Null where the box has sent no booth block — NOT evidence it runs nothing. */
+  reported: BoothReport | null;
+  /** Vouchers issued today with nobody signed in. **Null means it could not be counted.** */
+  unattributedToday: number | null;
+  businessDate: string;
+}
+
+export interface HealthBoxDevice {
+  id: string;
+  kind: string;
+  label: string;
+  reachability: string;
+  paperStatus: string;
+  lastError: string | null;
+  lastSeenAt: string | null;
+}
+
+/**
+ * One box on the Health snapshot.
+ *
+ * Only the fields the booth section reads are named — the API answers with
+ * more, and the Devices pages read those from `@/api/fleet` instead.
+ */
+export interface HealthBox {
+  id: string;
+  name: string;
+  slot: string;
+  status: string;
+  state: HealthState;
+  branchName: string;
+  lastHeartbeatAt: string | null;
+  heartbeatAgeSeconds?: number | null;
+  outboxDepth?: number | null;
+  /** Read for its ids, which is how a `device.paper` alert is tied to a box. */
+  devices?: HealthBoxDevice[];
+  /** The alert keys true about this box right now. */
+  conditions: string[];
+  /** Empty on every till; that is what the booth section filters on. */
+  booths?: BoothHealth[];
+}
+
 export interface HealthSnapshot {
   status: HealthState;
   checks: HealthCheck[];
   jobs: JobStatus[];
+  /**
+   * Every box of this operator with what it last reported. Optional because a
+   * deployment older than S2-04 answers without it — and the Devices pages read
+   * the fleet from `@/api/fleet`, so only the booth section reads this.
+   */
+  boxes?: HealthBox[];
   alerts: AlertRow[];
   /** Seconds since the watchdog last ran — the check that checks the checks. */
   watchdogAgeSeconds?: number | null;

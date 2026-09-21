@@ -1,0 +1,549 @@
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
+import { station } from '@oto/db';
+import {
+  BOOTH_ACTION_HEADER,
+  BOOTH_IDEMPOTENCY_HEADER,
+  BoothRefusal,
+  createBoothHttp,
+  type Booth,
+  type BoothConfigBundle,
+  type BoothSignInRequest,
+  type BoothSpinRequest,
+  type BoothStatusReport,
+  type BoxAgent,
+  type BoxStaffSession,
+} from '@oto/box-agent';
+import type { SpinResponse } from '@oto/shared';
+import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { attachInProcessBox, detachInProcessBox } from '../src/services/box';
+
+/**
+ * S2-07a — the cloud's booth surface.
+ *
+ * What this file is really for is the first test in it. `/booth/*` hands each
+ * request to the booth's own contract function on the box in this process, and
+ * the obvious shortcut — "the route can just draw, it has the bundle right
+ * there" — would give the park two draws that disagree: one that wrote a spin
+ * row and put paper in a visitor's hand, and one that did not. So the pin is
+ * behavioural rather than structural: **with no in-process agent, a press is
+ * answered 503 and never a prize.** Reimplement the draw up here and it fails
+ * the same day it is written.
+ *
+ * The rest holds the same line from other sides: the api answers exactly what
+ * the box's own surface answers for the same request; a refusal the box names
+ * arrives with the box's code and status, not a cloud translation of it; a
+ * reprint never draws; and nothing on the surface — answers and errors alike —
+ * carries an id, a name or a word of server prose (D15).
+ */
+
+let ctx: TestContext;
+let adminCookie: string;
+let receptionCookie: string;
+let boothStationId: string;
+let boothBoxId: string;
+let tillStationId: string;
+
+beforeAll(async () => {
+  ctx = await createTestContext();
+  adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+  receptionCookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+  const [booth] = await ctx.db.select().from(station).where(eq(station.name, 'Booth 1')).limit(1);
+  boothStationId = booth!.id;
+  boothBoxId = booth!.boxId!;
+  const [till] = await ctx.db
+    .select()
+    .from(station)
+    .where(eq(station.name, 'Reception Till 1'))
+    .limit(1);
+  tillStationId = till!.id;
+});
+
+afterAll(async () => {
+  await ctx.close();
+  await teardownAll();
+});
+
+/** Nothing stays attached between tests: the map is process-wide. */
+const attached: BoxAgent[] = [];
+afterEach(() => {
+  while (attached.length > 0) detachInProcessBox(attached.pop()!);
+});
+
+const SPIN: SpinResponse = {
+  spinId: '0199a0f0-0000-7000-8000-00000000f001',
+  prizeIndex: 2,
+  prizeId: '0199a0f0-0000-7000-8000-00000000e002',
+  configVersion: 1,
+  voucherCode: 'B1H7K2M9PQ',
+  expiresAt: '2026-10-05T00:00:00.000Z',
+  printState: 'printed',
+  staffAccountId: null,
+  clockSuspect: false,
+};
+
+const BUNDLE = {
+  schemaVersion: 1,
+  settings: { eligibility: 'none', buttonKey: 'Space', dailySpinCap: null },
+  layout: { id: 'l1', name: 'Classic wheel', version: 1, design: {}, assetManifest: {} },
+  prizes: [],
+} as unknown as BoothConfigBundle;
+
+const STATUS: BoothStatusReport = {
+  online: true,
+  neverSynced: false,
+  configVersion: 1,
+  printerReachable: 'reachable',
+  paperStatus: 'ok',
+  vouchersPending: 0,
+  lastSpinAt: null,
+  staffSignedIn: false,
+  dailyCapsReached: [],
+};
+
+interface Calls {
+  spin: BoothSpinRequest[];
+  signIn: BoothSignInRequest[];
+  signOut: number;
+  /** What `status()` was told about the box's link — the api's own contribution. */
+  statusOnline: boolean[];
+}
+
+function newCalls(): Calls {
+  return { spin: [], signIn: [], signOut: 0, statusOnline: [] };
+}
+
+/**
+ * A booth module, stubbed at the interface the box publishes.
+ *
+ * Written out in full rather than cast, so that a change to `Booth` in
+ * `@oto/box-agent` fails this file rather than passing it: what these tests
+ * are about is the api handing a request to THAT interface, and a stub that
+ * had drifted from it would be proving nothing.
+ */
+function stubBooth(calls: Calls, overrides: Partial<Booth> = {}): Booth {
+  const base: Booth = {
+    start: async () => {},
+    stop: () => {},
+    config: () => ({ version: 1, bundle: BUNDLE }),
+    refresh: async () => false,
+    spin: async (request) => {
+      calls.spin.push(request);
+      return SPIN;
+    },
+    signIn: async (request) => {
+      calls.signIn.push(request);
+      return { ok: true };
+    },
+    signOut: async () => {
+      calls.signOut += 1;
+    },
+    staffSession: async (): Promise<BoxStaffSession | null> => null,
+    status: async ({ online }) => {
+      calls.statusOnline.push(online);
+      return { ...STATUS, online };
+    },
+    heartbeat: async () => null,
+    ownsPrintJob: () => false,
+    reportPrint: async () => {},
+    noteCloudTime: async () => {},
+  };
+  return { ...base, ...overrides };
+}
+
+/**
+ * That booth, on a box said to be running in this process.
+ *
+ * The cast is to `BoxAgent`, of which these routes use two things: the box id
+ * `attachInProcessBox` files it under, and the booth module. `print-api.test.ts`
+ * attaches a real agent for the same reason — a test driving an agent against
+ * this api is the same kind of process making the same claim.
+ */
+function attachBooth(booth: Booth, opts: { offline?: boolean } = {}): BoxAgent {
+  const agent = {
+    state: { boxId: boothBoxId, offline: opts.offline ?? false },
+    booth: () => booth,
+  } as unknown as BoxAgent;
+  attachInProcessBox(agent);
+  attached.push(agent);
+  return agent;
+}
+
+/** A box that is here but has no booth module at all — an agent with no store. */
+function attachBoxWithoutBooth(): BoxAgent {
+  const agent = {
+    state: { boxId: boothBoxId, offline: false },
+    booth: () => null,
+  } as unknown as BoxAgent;
+  attachInProcessBox(agent);
+  attached.push(agent);
+  return agent;
+}
+
+const press = (payload: Record<string, unknown> = {}, headers: Record<string, string> = {}) =>
+  ctx.app.inject({ method: 'POST', url: '/booth/spin', payload, headers });
+
+describe('the booth surface is a pass-through (S2-07a)', () => {
+  it('with no in-process agent, a press is refused — 503, and not a prize', async () => {
+    const res = await press();
+
+    expect(res.statusCode).toBe(503);
+    const body = res.json();
+    expect(body.error.code).toBe('BOOTH_NOT_ON_THIS_BOX');
+    // The whole point: no draw happened up here. Not a prize index, not a
+    // prize id, not a code, not a spin row — nothing a television could
+    // animate to and nothing reception could ever be handed on paper.
+    expect(body).not.toHaveProperty('prizeIndex');
+    expect(body).not.toHaveProperty('prizeId');
+    expect(body).not.toHaveProperty('voucherCode');
+    expect(body).not.toHaveProperty('spinId');
+  });
+
+  it('a box that is here but has no booth module is refused the same way', async () => {
+    attachBoxWithoutBooth();
+    const res = await press();
+    expect(res.statusCode).toBe(503);
+    expect(res.json().error.code).toBe('BOOTH_NOT_ON_THIS_BOX');
+  });
+
+  it('every booth route is refused when the booth is not on this box', async () => {
+    const routes: Array<[string, string]> = [
+      ['GET', '/booth/config'],
+      ['GET', '/booth/status'],
+      ['POST', '/booth/spin'],
+      ['POST', '/booth/staff/sign-in'],
+      ['POST', '/booth/staff/sign-out'],
+      ['POST', '/booth/reprint'],
+    ];
+    for (const [method, url] of routes) {
+      const res = await ctx.app.inject({
+        method: method as 'GET' | 'POST',
+        url,
+        ...(method === 'POST' ? { payload: url.endsWith('sign-in') ? { pin: '2468' } : {} } : {}),
+      });
+      expect(res.statusCode, `${method} ${url}`).toBe(503);
+      expect(res.json().error.code, `${method} ${url}`).toBe('BOOTH_NOT_ON_THIS_BOX');
+    }
+  });
+
+  it('the press the box answers is the press the television gets, verbatim', async () => {
+    const calls = newCalls();
+    attachBooth(stubBooth(calls));
+
+    const res = await press(
+      {},
+      { [BOOTH_IDEMPOTENCY_HEADER]: 'press-0199a0f0', [BOOTH_ACTION_HEADER]: 'act-0199a0f0' },
+    );
+
+    expect(res.statusCode).toBe(200);
+    // Field for field, including the nulls: the route neither adds to the
+    // box's answer nor drops from it. `prizeId` beside `prizeIndex` is what
+    // lets the page refuse to animate to a slice from a wheel it is not
+    // showing, and a serialiser that quietly dropped it would take that check
+    // away without failing anything.
+    expect(res.json()).toEqual(SPIN);
+    expect(calls.spin).toEqual([
+      { simulate: false, idempotencyKey: 'press-0199a0f0', actionId: 'act-0199a0f0' },
+    ]);
+  });
+
+  it('a simulated press travels as one, and a press key in the body is not stripped', async () => {
+    const calls = newCalls();
+    attachBooth(stubBooth(calls));
+
+    // The body schema names every field the box's surface reads, which is why
+    // this one survives: a schema that named only `simulate` would drop the
+    // key here and the box would mint its own, turning a retry into a second
+    // spin with nothing failing anywhere.
+    await press({ simulate: true, idempotencyKey: 'press-in-the-body' });
+
+    expect(calls.spin).toEqual([
+      { simulate: true, idempotencyKey: 'press-in-the-body', actionId: null },
+    ]);
+  });
+
+  it('a press with no key at all still reaches the box, which mints one', async () => {
+    const calls = newCalls();
+    attachBooth(stubBooth(calls));
+
+    await press();
+
+    // D7 is the box's to keep, not this route's: the platform's idempotency
+    // store keys on an account and a television has none. What this pins is
+    // that the api invents nothing — the key the box saw is the box's own.
+    expect(calls.spin[0]!.idempotencyKey).toMatch(/[0-9a-f-]{36}/);
+    expect(calls.spin[0]!.actionId).toBeNull();
+  });
+
+  it('a refusal the box names arrives with the box’s own code and status', async () => {
+    // D5: nothing active, under cap and in stock, so the press is refused
+    // rather than drawn from an empty set. The page matches this code
+    // literally and shows "Booth not ready — please call staff".
+    const calls = newCalls();
+    attachBooth(
+      stubBooth(calls, {
+        spin: async () => {
+          throw new BoothRefusal('booth_not_ready', 'nothing eligible');
+        },
+      }),
+    );
+
+    const res = await press();
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('booth_not_ready');
+  });
+
+  it('a box that cannot record refuses with its own 503, distinct from the cloud’s', async () => {
+    const calls = newCalls();
+    attachBooth(
+      stubBooth(calls, {
+        spin: async () => {
+          throw new BoothRefusal('runtime_unavailable', 'no counter table');
+        },
+      }),
+    );
+
+    const res = await press();
+    expect(res.statusCode).toBe(503);
+    // Two different 503s, and the difference is readable: this is the booth
+    // saying it cannot keep a daily count, not the api saying the booth is on
+    // another machine.
+    expect(res.json().error.code).toBe('runtime_unavailable');
+    expect(res.json().error.code).not.toBe('BOOTH_NOT_ON_THIS_BOX');
+  });
+
+  it('an unexpected fault stays the box’s to describe, and describes nothing', async () => {
+    const calls = newCalls();
+    attachBooth(
+      stubBooth(calls, {
+        spin: async () => {
+          throw new Error('duplicate key value violates unique constraint "spin_pkey"');
+        },
+      }),
+    );
+
+    const res = await press();
+    expect(res.statusCode).toBe(500);
+    expect(res.json().error.code).toBe('internal');
+    expect(res.body).not.toContain('duplicate key');
+  });
+
+  it('the api answers exactly what the box’s own surface answers', async () => {
+    // The drift pin. `createBoothHttp` is the `/booth/*` contract; the Pi
+    // wires it to its own server and this api wires it to Fastify. Asking
+    // both for the same request and comparing is what says there is one
+    // implementation rather than two that happen to agree today.
+    const calls = newCalls();
+    const booth = stubBooth(calls);
+    attachBooth(booth);
+    const direct = createBoothHttp({ booth, online: () => true });
+
+    for (const [method, path] of [
+      ['GET', '/config'],
+      ['POST', '/reprint'],
+    ] as const) {
+      const mine = await ctx.app.inject({
+        method,
+        url: `/booth${path}`,
+        ...(method === 'POST' ? { payload: {} } : {}),
+      });
+      const theirs = await direct({ method, path, body: {} });
+      expect(mine.statusCode, path).toBe(theirs.status);
+      expect(mine.json(), path).toEqual(theirs.body);
+    }
+  });
+
+  it('the config bundle is handed over as the box holds it, unstripped', async () => {
+    // No response schema on these routes, deliberately: a zod object drops
+    // keys it does not know about, and a bundle from a box newer than this api
+    // would reach the television with a field missing and nothing failing.
+    const calls = newCalls();
+    const bundle = { ...BUNDLE, somethingNewerBoxesSend: { keepMe: true } } as BoothConfigBundle;
+    attachBooth(stubBooth(calls, { config: () => ({ version: 7, bundle }) }));
+
+    const res = await ctx.app.inject({ method: 'GET', url: '/booth/config' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ version: 7, bundle });
+  });
+
+  it('whether the box has the cloud is the agent’s answer, carried into the status', async () => {
+    const calls = newCalls();
+    attachBooth(stubBooth(calls), { offline: true });
+
+    const res = await ctx.app.inject({ method: 'GET', url: '/booth/status' });
+
+    // The one field on this surface the booth module has no opinion about.
+    // The offline toggle the demo flips lives on the agent, and it is what
+    // lights the dot on the television.
+    expect(calls.statusOnline).toEqual([false]);
+    expect(res.json().online).toBe(false);
+  });
+
+  it('sign-in and sign-out are the box’s decisions, carried', async () => {
+    const calls = newCalls();
+    attachBooth(
+      stubBooth(calls, {
+        signIn: async (request) => {
+          calls.signIn.push(request);
+          return { ok: false, retryAfterMs: 30_000 };
+        },
+      }),
+    );
+
+    const refused = await ctx.app.inject({
+      method: 'POST',
+      url: '/booth/staff/sign-in',
+      payload: { pin: '0000' },
+    });
+    // A refusal is 200 with `ok: false`: the panel shows a countdown somebody
+    // can act on, and a booth whose sign-in is being retried is not a booth
+    // that is broken — the wheel is still spinning.
+    expect(refused.statusCode).toBe(200);
+    expect(refused.json()).toEqual({ ok: false, retryAfterMs: 30_000 });
+    expect(calls.signIn).toEqual([{ pin: '0000' }]);
+
+    const out = await ctx.app.inject({ method: 'POST', url: '/booth/staff/sign-out', payload: {} });
+    expect(out.statusCode).toBe(204);
+    expect(calls.signOut).toBe(1);
+  });
+
+  it('a reprint never draws', async () => {
+    const calls = newCalls();
+    attachBooth(stubBooth(calls));
+
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/booth/reprint',
+      payload: { spinId: SPIN.spinId },
+    });
+
+    // The box's surface has no reprint path yet, so it says so — and the api
+    // did not invent one, which is the point: a reprint needs the voucher, the
+    // printer and the staff session, and all three are on the box. When
+    // `booth-http.ts` grows the path this expectation is the line to change,
+    // and the one below it is the line that must not.
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('not_found');
+    // Nothing was drawn, printed or minted on the way to finding that out.
+    expect(calls.spin).toEqual([]);
+  });
+
+  it('nothing on the booth surface names a station, a box or a person (D15)', async () => {
+    const refused = await press();
+    // The refusal says the booth is not here; WHICH booth, and which box it is
+    // on, go to the log. A television in a shopping centre gets a status code.
+    expect(refused.body).not.toContain(boothStationId);
+    expect(refused.body).not.toContain(boothBoxId);
+    expect(refused.json().error).not.toHaveProperty('details');
+
+    const calls = newCalls();
+    attachBooth(stubBooth(calls));
+    const status = await ctx.app.inject({ method: 'GET', url: '/booth/status' });
+    // The document is the box's; what this pins is that the api adds nothing
+    // to it on the way past — no station, no box, no branch, no account. The
+    // shape's own rule, that `staffSignedIn` is a boolean rather than a
+    // person, is kept where the shape is.
+    expect(Object.keys(status.json()).sort()).toEqual([
+      'configVersion',
+      'dailyCapsReached',
+      'lastSpinAt',
+      'neverSynced',
+      'online',
+      'paperStatus',
+      'printerReachable',
+      'staffSignedIn',
+      'vouchersPending',
+    ]);
+  });
+});
+
+describe('the booth surface declares its guards (S2-07a)', () => {
+  /**
+   * The open list, pinned here as well as in `routes-guarded.test.ts`.
+   *
+   * The television carries no cookie, no account and no key (D15), so these
+   * six are genuinely open and say so. What keeps a stranger from minting
+   * vouchers on the park's api is that a booth is served by ITS box: an
+   * instance with no in-process agent answers 503, which is the first test in
+   * this file. Anything ADDED to this list is a new open endpoint and has to
+   * be a decision somebody made on purpose.
+   */
+  it('the booth routes are the open ones, and the Console route is not', () => {
+    const open = ctx.app.routeRegistry
+      .filter((r) => r.url.startsWith('/booth') && r.config.public && r.method !== 'HEAD')
+      .map((r) => `${r.method} ${r.url}`)
+      .sort();
+    expect(open).toEqual([
+      'GET /booth/config',
+      'GET /booth/status',
+      'POST /booth/reprint',
+      'POST /booth/spin',
+      'POST /booth/staff/sign-in',
+      'POST /booth/staff/sign-out',
+    ]);
+
+    const consoleRoute = ctx.app.routeRegistry.find(
+      (r) => r.url === '/booths/:id/status' && r.method === 'GET',
+    );
+    expect(consoleRoute?.config.public).toBeUndefined();
+    expect(consoleRoute?.config.dynamicPermission).toBe(true);
+  });
+
+  it('the Console’s booth status refuses an anonymous caller and one without the permission', async () => {
+    const anonymous = await ctx.app.inject({
+      method: 'GET',
+      url: `/booths/${boothStationId}/status`,
+    });
+    expect(anonymous.statusCode).toBe(401);
+
+    // Reception works the booth; reading the estate panel is a manager's job.
+    const denied = await ctx.app.inject({
+      method: 'GET',
+      url: `/booths/${boothStationId}/status`,
+      headers: { cookie: receptionCookie },
+    });
+    expect(denied.statusCode).toBe(403);
+  });
+});
+
+describe('the Console’s booth status (S2-07a)', () => {
+  const statusOf = (id: string) =>
+    ctx.app.inject({ method: 'GET', url: `/booths/${id}/status`, headers: { cookie: adminCookie } });
+
+  it('answers from cloud rows: the booth, its box, the published wheel and today', async () => {
+    const res = await statusOf(boothStationId);
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+
+    expect(body.booth.id).toBe(boothStationId);
+    expect(body.booth.name).toBe('Booth 1');
+    expect(body.box.id).toBe(boothBoxId);
+    // Seeded, never heartbeaten in this test, so: not online and not here.
+    expect(body.box.online).toBe(false);
+    expect(body.box.inProcess).toBe(false);
+    // The seed publishes version 1 so the wheel is playable before anybody
+    // opens the admin panel.
+    expect(body.config.publishedVersion).toBe(1);
+    // The box has not reported a booth block — which is not evidence that it
+    // is running nothing, and the field says so by being null rather than 0.
+    expect(body.config.runningVersion).toBeNull();
+    expect(body.today).toMatchObject({ spins: 0, unattributed: 0, dailyCapsReached: [] });
+    expect(body.today.businessDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(body.lastSpinAt).toBeNull();
+    // The booth's own printer, from the device row the box's heartbeat keeps
+    // current — no round trip to the box to draw this panel.
+    expect(body.printer).not.toBeNull();
+  });
+
+  it('says when the booth’s box is running in this process', async () => {
+    attachBooth(stubBooth(newCalls()));
+    const res = await statusOf(boothStationId);
+    expect(res.json().box.inProcess).toBe(true);
+  });
+
+  it('a till is not a booth', async () => {
+    const res = await statusOf(tillStationId);
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('BOOTH_NOT_FOUND');
+  });
+});

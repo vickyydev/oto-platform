@@ -1,3 +1,10 @@
+import {
+  createBooth,
+  type Booth,
+  type BoothBranchContext,
+  type BoothStaffRecord,
+  type BoothStationContext,
+} from './booth';
 import { planCacheApply, type CacheFaultReason } from './cache-apply';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
@@ -110,6 +117,34 @@ export interface BoxAgentOptions {
     /** How long a job waits before trying a printer that was out of paper. */
     retryDelayMs?: number;
   };
+  /**
+   * The Lucky Wheel (S2-07a).
+   *
+   * Built whenever this box has a store, because whether it is a BOOTH is a
+   * property of its configuration — a station of kind `booth` in its bundle —
+   * and not of how the process was started. A till's agent constructs the
+   * module too and it simply never has a station to run, which is why
+   * `heartbeat()` answers null there and no booth block goes up.
+   *
+   * The module itself is built with no cloud transport at all (D2). Nothing
+   * here can give it one.
+   */
+  booth?: {
+    /** Off only for a test that wants the agent without it. */
+    enabled?: boolean;
+    /**
+     * argon2id verification for a booth PIN or badge.
+     *
+     * Injected for the reason `OfflineAuthOptions.verifyPassword` is: this
+     * package has no native dependency, and the api and a Pi supply the same
+     * function from different places. Without it a booth still spins and every
+     * spin is unattributed, which is the state the specification requires to
+     * keep working anyway.
+     */
+    verifySecret?: (hash: string, secret: string) => Promise<boolean>;
+    /** The draw's randomness (D3). `node:crypto`'s `randomInt` by default. */
+    randomIndex?: (maxExclusive: number) => number;
+  };
 }
 
 export interface BoxAgentState {
@@ -184,6 +219,15 @@ export interface BoxAgent {
   cacheCursorSeq(): number;
   /** The print pipeline and its simulators, or null when printing is off. */
   printing(): PrintingController | null;
+  /**
+   * The Lucky Wheel, or null on a box with no store (S2-07a).
+   *
+   * Non-null does NOT mean this box is a booth: the module answers
+   * `config() === null` and `heartbeat() === null` until the box's bundle
+   * carries a station of kind `booth`. Whatever serves the booth page wires
+   * `createBoothHttp` to this.
+   */
+  booth(): Booth | null;
 }
 
 /** Kept small: it is read by `collect_logs` and it lives in a Pi's memory. */
@@ -212,6 +256,18 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let outbox: Outbox | null = null;
   let sessions: StationSessionManager | null = null;
   let scanner: ScanRouter | null = null;
+  let booth: Booth | null = null;
+  /**
+   * The `staff` cache scope, as the booth's sign-in reads it.
+   *
+   * Held here rather than read per attempt because the booth's `staff` option
+   * is synchronous and a cache read is not. Refreshed wherever the cache
+   * changes — on attach, so a box that comes back from a power cut knows its
+   * people before the first pull, and after every successful pull, so somebody
+   * removed from the list stops being able to sign in on the next one rather
+   * than at the next restart.
+   */
+  let boothStaff: readonly BoothStaffRecord[] = [];
   /** The `sync_change` sequence the cache bundles were current to. */
   let cacheCursorSeq = 0;
   let bundle: BoxConfigBundle | null = null;
@@ -375,6 +431,25 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    * the job in its queue — the cloud row stays `queued`, which is true.
    */
   async function reportPrintJob(outcome: PrintJobOutcome): Promise<void> {
+    /**
+     * A booth voucher's outcome goes to the OUTBOX, not up this route (D20).
+     *
+     * The cloud's print-result route writes onto an `edge.print_job` row that
+     * the cloud created. A booth's job was raised on the box, for a spin the
+     * cloud has not heard about yet, so there is no row to write onto — an
+     * offline booth reporting up this route would be reporting against
+     * nothing. As a fact it queues behind the spin and the voucher and arrives
+     * in the right order whenever the link comes back.
+     *
+     * Asked of the booth rather than switched on the kind, because
+     * `PrintJobOutcome` does not carry one: the booth knows which ids are its
+     * own, including the ones a previous process left unprinted, which it
+     * adopts at start-up for exactly this reason.
+     */
+    if (booth?.ownsPrintJob(outcome.id)) {
+      await booth.reportPrint(outcome);
+      return;
+    }
     if (!credential || state.offline) return;
     const { status } = await request(`/box/v1/print-jobs/${outcome.id}/result`, {
       method: 'POST',
@@ -521,11 +596,105 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       log,
     });
 
+    /**
+     * The Lucky Wheel (S2-07a).
+     *
+     * Constructed with the store, the box's signing key and a port to the
+     * printer — and with no way of reaching the cloud, which is D2 expressed
+     * as a constructor rather than as a rule somebody has to remember. It is
+     * built on every box with a store; whether it has a booth to run is
+     * answered by the config bundle, below.
+     */
+    if (options.booth?.enabled !== false) {
+      await refreshBoothStaff(boxId);
+      booth = createBooth({
+        boxId,
+        store,
+        station: boothStation,
+        branch: boothBranch,
+        privateKey: () => syncPrivateKeyPem,
+        print: printing ? { submit: (request) => printing!.submit(request) } : null,
+        printerHealth: () => printing?.jobs.health() ?? {},
+        staff: () => boothStaff,
+        ...(options.booth?.verifySecret ? { verifySecret: options.booth.verifySecret } : {}),
+        printTemplates: () => cachedTemplates,
+        ...(options.booth?.randomIndex ? { randomIndex: options.booth.randomIndex } : {}),
+        now: () => new Date(clock()),
+        log,
+      });
+    }
+
     note('info', 'box store attached', {
       boxId,
       offline: persisted.offline,
       epoch: persisted.journalEpoch,
     });
+  }
+
+  /** The booth station on this box, if its bundle names one. */
+  function boothStation(): BoothStationContext | null {
+    const station = bundle?.stations.find((s) => s.kind === 'booth');
+    if (!station) return null;
+    return { id: station.id, name: station.name, codePrefix: station.codePrefix };
+  }
+
+  /**
+   * The branch, which is what turns an instant into a trading day.
+   *
+   * Null when the box has not applied a config bundle yet — and that null is
+   * load-bearing: `booth.spin.business_date` is NOT NULL with no default, so a
+   * spin whose trading day cannot be resolved is refused rather than filed on
+   * whatever a database would have guessed.
+   */
+  function boothBranch(): BoothBranchContext | null {
+    const branch = bundle?.branch;
+    const operatorId = branch?.operatorId ?? state.operatorId;
+    if (!branch || !operatorId) return null;
+    return {
+      id: branch.id,
+      operatorId,
+      name: branch.name,
+      timezone: branch.timezone,
+      businessDayStart: branch.businessDayStart,
+    };
+  }
+
+  /**
+   * Re-read the cached staff list the booth's sign-in verifies against.
+   *
+   * The booth fields (`pinHash`, `badgeHash`, `staffCode`) are optional on
+   * every entry, so a bundle built before they existed parses and simply
+   * yields nobody who can sign in — which is the current state of the fleet,
+   * because nothing writes them yet. The cast is narrow and checked: anything
+   * without a string `accountId` is dropped rather than carried as a record
+   * with a hole in it.
+   */
+  async function refreshBoothStaff(boxId: string): Promise<void> {
+    if (!store) return;
+    try {
+      const held = await store.readBundle(boxId, 'staff');
+      const items = held?.payload?.items;
+      if (!Array.isArray(items)) {
+        boothStaff = [];
+        return;
+      }
+      const records: BoothStaffRecord[] = [];
+      for (const raw of items) {
+        if (typeof raw !== 'object' || raw === null) continue;
+        const entry = raw as Record<string, unknown>;
+        if (typeof entry.accountId !== 'string') continue;
+        records.push({
+          accountId: entry.accountId,
+          status: typeof entry.status === 'string' ? entry.status : 'unknown',
+          pinHash: typeof entry.pinHash === 'string' ? entry.pinHash : null,
+          badgeHash: typeof entry.badgeHash === 'string' ? entry.badgeHash : null,
+          staffCode: typeof entry.staffCode === 'string' ? entry.staffCode : null,
+        });
+      }
+      boothStaff = records;
+    } catch (err) {
+      note('warn', 'the cached staff list could not be read for the booth', { err: String(err) });
+    }
   }
 
   /** Which of this box's stations a device is assigned to, if any. */
@@ -765,6 +934,19 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     if (plan.skipped.length === 0) clearCacheFaults();
     cacheCursorSeq = body.cursorSeq;
     /**
+     * A pull can carry a newer wheel and a changed staff list, and both are
+     * adopted here rather than on the booth's own minute timer — so a publish
+     * an administrator has just made reaches the television as soon as the box
+     * has it, instead of up to a minute later. The timer remains the floor,
+     * for a box whose pull happens while nobody is watching.
+     */
+    if (applied.includes('staff')) await refreshBoothStaff(boxId);
+    if (applied.includes('booth')) {
+      await booth?.refresh().catch((err) => {
+        note('error', 'a newly pulled wheel could not be applied', { err: String(err) });
+      });
+    }
+    /**
      * Stamps `last_cache_applied_at`, which is what the till's banner reads to
      * say how old its copy is. Skipped when this box has not applied a config
      * version yet: the same call carries `applied_config_version`, and writing
@@ -834,6 +1016,23 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
        */
       errors: cacheFaultReports(),
     };
+    /**
+     * What this booth is doing, MEASURED (S2-07a).
+     *
+     * `heartbeat()` answers null on a box whose bundle names no booth station,
+     * and the field is then absent rather than a block of nulls Health would
+     * have to learn to ignore. Every number in it is read from the store or
+     * from what the printers themselves last said; nothing in it is defaulted
+     * to a cheerful value, which is the one thing a health indicator must
+     * never do.
+     */
+    const boothBlock = await booth?.heartbeat().catch((err) => {
+      note('warn', 'the booth could not report itself; the heartbeat goes without it', {
+        err: String(err),
+      });
+      return null;
+    });
+    if (boothBlock) payload.booth = boothBlock;
     const { status, body } = await request<BoxHeartbeatAck>('/box/v1/heartbeat', {
       method: 'POST',
       body: payload,
@@ -849,6 +1048,19 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     state.lastHeartbeatAt = payload.reportedAt;
     state.lastAckAt = body.receivedAt;
     state.epoch = body.epoch;
+    /**
+     * The last time this box has good reason to believe in (D11).
+     *
+     * The cloud's own clock, taken from the acknowledgement, is the only
+     * trustworthy time a Pi with no clock battery ever sees. Remembering the
+     * highest one is what lets a booth that came up after a mall power cut
+     * notice that its clock is now EARLIER than a moment it has already lived
+     * through — which is what flags a spin `clock_suspect` and stops the
+     * trading day moving backwards.
+     */
+    await booth?.noteCloudTime(body.serverTime).catch((err) => {
+      note('warn', 'the booth could not record the cloud time', { err: String(err) });
+    });
     if (body.configVersion !== state.configVersion) {
       await syncConfig();
     }
@@ -1263,6 +1475,18 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       recordCacheFault('unreadable', 'pull_threw');
       return [];
     });
+    /**
+     * Before the first heartbeat, because that heartbeat carries the booth
+     * block and a block measured before the wheel was adopted would report
+     * `configVersion: null` on a booth that is in fact running version 4.
+     *
+     * It also adopts the vouchers a previous process left unprinted, so their
+     * outcomes go to the outbox rather than to the cloud's print route — which
+     * has to happen before anything can submit a job (D20).
+     */
+    await booth?.start().catch((err) => {
+      note('error', 'the booth could not start', { err: String(err) });
+    });
     await heartbeat();
     await runPendingCommands();
     outbox?.start();
@@ -1290,6 +1514,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     heartbeatTimer = null;
     pollTimer = null;
     outbox?.stop();
+    booth?.stop();
   }
 
   return {
@@ -1308,6 +1533,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     scanner: () => scanner,
     cacheCursorSeq: () => cacheCursorSeq,
     printing: () => printing,
+    booth: () => booth,
     pauseHeartbeats(paused) {
       state.heartbeatsPaused = paused;
       note('info', paused ? 'heartbeats stopped by a test control' : 'heartbeats resumed');

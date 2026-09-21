@@ -46,6 +46,18 @@ export interface SpinRequest {
    * consumed. Only the `#debug` distribution table sends it.
    */
   simulate?: boolean;
+  /**
+   * One value per PRESS, so a press that is sent twice is one spin (D7).
+   *
+   * The box has always read this; the page did not send it, and a reviewer
+   * measured what that cost: two presses, two spins, two vouchers, and — the
+   * case that matters — a press the box recorded and printed but answered
+   * slowly shows the guest "Booth not ready", so the next press puts a second
+   * prize on real paper. The key is minted when the button goes down and
+   * reused for the retry, never for the next press: a retry is one spin, and
+   * a second press is two.
+   */
+  idempotencyKey?: string;
 }
 
 /** `POST /booth/staff/sign-in` */

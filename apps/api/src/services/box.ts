@@ -730,6 +730,22 @@ export async function recordHeartbeat(
     discovered,
     leases: input.leases,
     errors: input.errors,
+    /**
+     * What the booth on this box is doing, when there is one (S2-07a).
+     *
+     * Stored whole, under the key the box sent it under, and **only when it
+     * sent one**: the block is absent from every till's heartbeat, and putting
+     * an object of nulls here would give the Health page a booth to report on
+     * for a box that has none. The agent's own rule is the same one — a box
+     * whose bundle names no station of kind `booth` sends no block rather than
+     * a block full of nulls.
+     *
+     * Nothing in it names a person. `staffSignedIn` is a boolean and never
+     * who, and `dailyCapsReached` holds `booth.booth_prize` ids, which are
+     * configuration. That is what lets it sit on `box.last_status`, which the
+     * Console reads over somebody's shoulder in a back office.
+     */
+    ...(input.booth ? { booth: input.booth } : {}),
   }) as Record<string, unknown>;
 
   await withTx(db, ctx, 'box.heartbeat', async (tx) => {

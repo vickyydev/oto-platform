@@ -25,6 +25,7 @@ import {
   opsExpectation,
   opsLast,
   opsRun,
+  station,
   syncAnomaly,
   type AlertDeliveryEvent,
   type AlertSeverity,
@@ -33,7 +34,7 @@ import {
   type OpsOutcome,
   type SyncAnomalyKind,
 } from '@oto/db';
-import { newId } from '@oto/shared';
+import { businessDate, newId, parseDayStart } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { isPgError, scrubPgError } from '../lib/scrub';
 import { boxSettings, withinOpeningHours } from './box';
@@ -890,6 +891,56 @@ export interface BoxDeviceHealth {
   lastSeenAt: string | null;
 }
 
+/**
+ * What a booth's own heartbeat block said, as the box measured it (S2-07a).
+ *
+ * Every field is carried through unchanged, including the tri-state
+ * reachability: `unknown` is "the box has not managed to ask", which is not
+ * `unreachable`, and Health must not draw a fault from it. A missing field
+ * reads as `unknown` or null here for the same reason — never as a cheerful
+ * default.
+ */
+export interface BoothReport {
+  /** `booth.booth_config_version.version`. **Null means it has never synced a wheel.** */
+  configVersion: number | null;
+  printerReachable: string;
+  paperStatus: string;
+  /** The box's whole outbox depth, which is what the booth module reports. */
+  vouchersPending: number | null;
+  lastSpinAt: string | null;
+  /** Whether SOMEBODY is signed in. Never who. */
+  staffSignedIn: boolean;
+  /** `booth.booth_prize` ids at their cap today — configuration, not people. */
+  dailyCapsReached: string[];
+}
+
+/** One booth station on a box, with what the cloud and the box each know of it. */
+export interface BoxBoothHealth {
+  stationId: string;
+  name: string;
+  codePrefix: string | null;
+  /**
+   * The heartbeat's booth block, or null where the box has not sent one.
+   *
+   * **Null is not evidence that the booth is running nothing**: a box that has
+   * never called home since this field existed, and an agent older than
+   * S2-07a, both leave it null. The heartbeat's age beside it is what tells a
+   * reader which.
+   */
+  reported: BoothReport | null;
+  /**
+   * Vouchers this booth issued on the trading day below with nobody signed in
+   * (D13) — counted from the cloud's own rows, not from the heartbeat.
+   *
+   * **Null means it could not be counted**, which is a third answer and not
+   * zero: `fleetHealth` leaves it null when the query fails, and the condition
+   * is then not evaluated at all rather than evaluated as "nothing is wrong".
+   */
+  unattributedToday: number | null;
+  /** The branch's trading day the count was taken over, not the calendar one. */
+  businessDate: string;
+}
+
 export interface BoxHealth {
   id: string;
   name: string;
@@ -927,6 +978,16 @@ export interface BoxHealth {
   /** The config bundle the box last said it had applied. */
   configVersion: string | null;
   devices: BoxDeviceHealth[];
+  /**
+   * The booths this box drives (S2-07a). Empty on every till, which is what
+   * the Console's booth section filters on.
+   *
+   * A list rather than one booth, because `core.station` can hold two of kind
+   * `booth` against one box even though the heartbeat's block is a single
+   * object. Where there are two, neither gets the reported block — see
+   * `evaluateBox`.
+   */
+  booths: BoxBoothHealth[];
   /** The alert keys true about this box right now. The same list the watchdog raises from. */
   conditions: string[];
   /** One sentence for the tile: what this box's state means. */
@@ -982,6 +1043,8 @@ interface FleetBoxRow {
   lastStatus: unknown;
   branchName: string;
   timezone: string;
+  /** `HH:MM:SS` from `core.branch`; the trading day a booth's counts are taken over. */
+  businessDayStart: string;
   openingHours: unknown;
 }
 
@@ -994,6 +1057,25 @@ interface FleetDeviceRow {
   paperStatus: string;
   lastError: string | null;
   lastSeenAt: Date | null;
+}
+
+/**
+ * A booth station on a box, with the one number only the cloud can answer
+ * (S2-07a).
+ *
+ * Gathered once per evaluation and handed in beside the devices, for the same
+ * reason they are: `evaluateBox` is pure, it runs on every Health page load
+ * and every watchdog tick, and the page and the alert must be reading the same
+ * numbers.
+ */
+export interface FleetBoothRow {
+  stationId: string;
+  boxId: string;
+  name: string;
+  codePrefix: string | null;
+  /** See `BoxBoothHealth.unattributedToday`: null is "could not count", not zero. */
+  unattributedToday: number | null;
+  businessDate: string;
 }
 
 function statusOf(row: FleetBoxRow): Record<string, unknown> | null {
@@ -1034,6 +1116,57 @@ function statusErrors(
     });
   }
   return out;
+}
+
+/**
+ * The booth block off the last heartbeat (S2-07a).
+ *
+ * Read defensively for the same reason `statusErrors` is: it comes off a jsonb
+ * column written by whatever agent version the box happens to be running, and
+ * a box on a build older than S2-07a sends no block at all. Absent or
+ * unreadable answers null, which the caller reports as "not reported" rather
+ * than as a booth that is running nothing.
+ *
+ * A field that is present but the wrong type falls back to the answer the box
+ * itself gives when it cannot measure: `unknown` for the two device states,
+ * null for the version, the count and the last spin, `false` for signed-in and
+ * an empty list for the caps. Nothing here is defaulted upwards — the two that
+ * are not nullable are the two whose false answer is the quiet one.
+ */
+function boothReport(status: Record<string, unknown> | null): BoothReport | null {
+  const value = status?.booth;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const b = value as Record<string, unknown>;
+  const caps = Array.isArray(b.dailyCapsReached)
+    ? b.dailyCapsReached.filter((id): id is string => typeof id === 'string')
+    : [];
+  return {
+    configVersion:
+      typeof b.configVersion === 'number' && Number.isFinite(b.configVersion)
+        ? b.configVersion
+        : null,
+    printerReachable: typeof b.printerReachable === 'string' ? b.printerReachable : 'unknown',
+    paperStatus: typeof b.paperStatus === 'string' ? b.paperStatus : 'unknown',
+    vouchersPending:
+      typeof b.vouchersPending === 'number' && Number.isFinite(b.vouchersPending)
+        ? b.vouchersPending
+        : null,
+    lastSpinAt: typeof b.lastSpinAt === 'string' ? b.lastSpinAt : null,
+    staffSignedIn: b.staffSignedIn === true,
+    dailyCapsReached: caps,
+  };
+}
+
+/**
+ * How a booth is named in something a person reads: "Booth 1 (B1)".
+ *
+ * `code_prefix` is nullable on `core.station` — a booth nobody has allocated
+ * one to yet — so a missing prefix drops the bracket rather than printing
+ * "(null)". The same shape `services/sync-booth.ts` uses when it names a booth
+ * in a collision alert, so one booth reads the same way in both.
+ */
+function boothSubject(b: FleetBoothRow): string {
+  return b.codePrefix ? `${b.name} (${b.codePrefix})` : b.name;
 }
 
 /**
@@ -1121,6 +1254,7 @@ export function evaluateBox(
   settings: BoxRuleSettings,
   now: number,
   sync?: BoxSyncState,
+  booths: FleetBoothRow[] = [],
 ): { health: BoxHealth; conditions: FleetCondition[] } {
   const last = statusOf(row);
   const heartbeatAgeSeconds = secondsSince(row.lastHeartbeatAt, now);
@@ -1151,6 +1285,37 @@ export function evaluateBox(
   const conditions: FleetCondition[] = [];
 
   /**
+   * The queue, read before the offline rule rather than beside the sync rules
+   * below, because the recovery line spends it (S2-07a).
+   *
+   * `sync?.*` is our own copy of the box's outbox — real for the virtual box,
+   * whose store IS this database, and empty for a Raspberry Pi, whose queue is
+   * a SQLite file we cannot reach. So the box's own report is the fallback,
+   * and null means neither side could say.
+   */
+  const outboxDepth = sync?.outboxDepth ?? statusNumber(last, 'outboxDepth');
+  const oldestUnackedAgeS = sync?.oldestUnackedAgeS ?? statusNumber(last, 'oldestUnackedAgeS');
+
+  /**
+   * What the recovery line can honestly say about a box that has come back.
+   *
+   * It carries what is STILL WAITING, not what was handed over: nothing keeps
+   * a copy of the depth at the moment a box went quiet, so "it synced 43
+   * events" is not a number this side holds. "43 are still waiting" is, it is
+   * measured the same way on every tick, and it answers the question somebody
+   * actually asks on seeing a booth come back — has it caught up yet.
+   *
+   * A null depth says nothing at all rather than "nothing is waiting": on a Pi
+   * that means we hold no copy of its queue, which is not the same sentence.
+   */
+  const caughtUpWords =
+    outboxDepth === null
+      ? ''
+      : outboxDepth === 0
+        ? ', and nothing of its is still waiting to be handed over'
+        : ` — ${outboxDepth} event(s) of its are still waiting to be handed over`;
+
+  /**
    * Why the offline condition stopped being true, which is not always "the box
    * came back". It also stops at 21:00 because the park closed, and it stops
    * when an administrator takes the box out of service — and an incident read
@@ -1158,7 +1323,11 @@ export function evaluateBox(
    */
   const offlineClear = (): FleetCondition['clear'] => {
     if (reporting) {
-      return { category: 'box.online', reason: 'recovered', summary: `${subject} is calling home again` };
+      return {
+        category: 'box.online',
+        reason: 'recovered',
+        summary: `${subject} is calling home again${caughtUpWords}`,
+      };
     }
     if (!expectedAlive) {
       return {
@@ -1249,13 +1418,31 @@ export function evaluateBox(
    * **Online but not syncing.** The offline rule cannot see this — the box is
    * calling home, so by every measure above it is healthy — and yet a counter
    * whose sales are sitting in an outbox is a counter whose takings exist in
-   * one place, on a Pi, in a mall. It fires only while the box is REPORTING,
-   * because an offline box is expected to hold a queue: that is what offline
-   * mode is for, and raising it there would make the demo instrument alarm on
-   * itself.
+   * one place, on a Pi, in a mall. On a till it fires only while the box is
+   * REPORTING, because an offline box is expected to hold a queue: that is
+   * what offline mode is for.
+   *
+   * **A booth is the exception, and D10 is why.** A booth put offline keeps
+   * drawing prizes and printing paper the park owes, so "still working, not
+   * yet reported" and "broken" are different sentences and only this rule can
+   * say the first one — `box.offline` says the second. A booth nobody noticed
+   * was offline all day is worth knowing about.
+   *
+   * What keeps the offline demonstration quiet is the threshold and not this
+   * clause: a demonstration shorter than `SYNC_STALE_AFTER_S` never trips it,
+   * and one left running longer does — which is the case D10 asks to hear
+   * about, said in the same sentence whether somebody meant it or not.
+   *
+   * **It measures honestly only where the queue is ours.** A deliberately
+   * offline box stops heartbeating altogether — `refreshOffline` in the agent
+   * returns before the send — so the age this reads is either `edge.box_outbox`,
+   * which is the virtual box's real queue and goes on ageing, or the number
+   * frozen on the last heartbeat the box managed, which is a Raspberry Pi and
+   * does not. A Pi that went offline holding nothing therefore never trips
+   * this however long it stays away, and `box.offline` is the only thing said
+   * about it.
    */
-  const outboxDepth = sync?.outboxDepth ?? statusNumber(last, 'outboxDepth');
-  const oldestUnackedAgeS = sync?.oldestUnackedAgeS ?? statusNumber(last, 'oldestUnackedAgeS');
+  const boothQueueReadable = booths.length > 0;
   conditions.push({
     key: `sync.stale:${row.id}`,
     category: 'sync.stale',
@@ -1263,8 +1450,12 @@ export function evaluateBox(
     subject,
     ...scope,
     active:
-      reporting && oldestUnackedAgeS !== null && oldestUnackedAgeS > settings.syncStaleAfterS,
-    summary: `${subject} is calling home but its oldest unsynced event has been waiting ${elapsedWords(oldestUnackedAgeS ?? 0)} — ${outboxDepth ?? 'some'} event(s) exist only on the box`,
+      (reporting || (boothQueueReadable && expectedAlive)) &&
+      oldestUnackedAgeS !== null &&
+      oldestUnackedAgeS > settings.syncStaleAfterS,
+    summary: reporting
+      ? `${subject} is calling home but its oldest unsynced event has been waiting ${elapsedWords(oldestUnackedAgeS ?? 0)} — ${outboxDepth ?? 'some'} event(s) exist only on the box`
+      : `${subject} has been holding ${outboxDepth ?? 'some'} event(s) for ${elapsedWords(oldestUnackedAgeS ?? 0)} without handing any over — the booth is still working, and nothing it has done is recorded anywhere else`,
     detail: {
       slot: row.slot,
       outboxDepth,
@@ -1456,8 +1647,142 @@ export function evaluateBox(
     });
   }
 
+  /**
+   * --- And the booth, which adds exactly two rules to the ones above (S2-07a).
+   *
+   * Everything else a booth can suffer is already a rule about a box or a
+   * device and is not written twice here. A booth that has gone quiet is
+   * `box.offline`; its printer out of paper is `device.paper` on the printer
+   * row the same heartbeat updates; a printer that did not answer is
+   * `device.unreachable`. A booth is a box with a printer, and a second set of
+   * booth-shaped copies would be two rules that can disagree about one fault.
+   *
+   * The reported block is attached to the booth only when the box drives ONE
+   * of them. The heartbeat carries a single object with no station on it, so
+   * on a box with two booth stations there is no honest way to say which one
+   * it describes — and guessing would put one booth's paper state under the
+   * other booth's name.
+   */
+  const reportedBooth = boothReport(last);
+  for (const b of booths) {
+    const name = boothSubject(b);
+    const mine = booths.length === 1 ? reportedBooth : null;
+
+    /**
+     * **Vouchers issued with nobody signed in** (D13).
+     *
+     * One condition carrying a count, never one alert per voucher: sixty
+     * unattributed vouchers at one booth bump one row sixty times, because
+     * what somebody has to act on is "this booth is giving prizes away with
+     * nobody signed in", once.
+     *
+     * It is raised twice over, from two directions, exactly as
+     * `sync.quarantine` is: the push opens it the moment an unattributed
+     * voucher lands (`services/sync-booth.ts`), and this closes it from the
+     * count when it stops being true. The same key, so the two cannot tell
+     * different stories, and neither leaves a row nothing will ever resolve.
+     *
+     * No `expectedAlive` guard, for the same reason quarantine has none: the
+     * rows are already in this database and the booth that issued them may
+     * since have been unplugged. Whether it is reachable now has no bearing on
+     * whether it gave something away this morning.
+     *
+     * **Not evaluated at all where the count could not be taken.** A failed
+     * count is not zero, and emitting the condition as inactive would let the
+     * watchdog close a standing alert on the strength of a query that never
+     * answered.
+     */
+    if (b.unattributedToday !== null) {
+      const n = b.unattributedToday;
+      conditions.push({
+        key: `booth.unattributed:${b.stationId}`,
+        category: 'booth.unattributed',
+        severity: 'warning',
+        subject: name,
+        ...scope,
+        active: n > 0,
+        summary: `${name} has issued ${n} voucher(s) today with nobody signed in — the wheel keeps working, and the prizes are attributed to no one`,
+        detail: {
+          slot: row.slot,
+          stationId: b.stationId,
+          unattributedToday: n,
+          businessDate: b.businessDate,
+        },
+        /**
+         * A plain statement of what is now true rather than a claim about why.
+         * Within one trading day this count only ever grows — a spin filed
+         * with no staff member keeps its null — so in practice it closes when
+         * the day rolls over, and saying "recovered" would read as somebody
+         * having fixed the sign-in.
+         */
+        clear: {
+          category: 'booth.unattributed',
+          reason: 'nothing unattributed today',
+          summary: `${name} has issued no unattributed vouchers on ${b.businessDate}`,
+        },
+      });
+    }
+
+    /**
+     * **A prize has reached its daily cap.**
+     *
+     * `info`, because this is the wheel working as designed: D5 renormalises
+     * the draw over what is left and the booth keeps running. It is worth
+     * knowing — a cap set too low takes the headline prize out of the wheel
+     * before lunch — and it is not a fault, so it goes on the page and in the
+     * alert list without painting the box amber or moving the platform's
+     * verdict.
+     *
+     * Read from the heartbeat and therefore only while the box is REPORTING,
+     * like the device rules: a cap list from a box we can no longer hear from
+     * says nothing about the wheel running now.
+     */
+    const capped = mine?.dailyCapsReached ?? [];
+    conditions.push({
+      key: `booth.prize_cap:${b.stationId}`,
+      category: 'booth.prize_cap',
+      severity: 'info',
+      subject: name,
+      ...scope,
+      active: reporting && capped.length > 0,
+      summary: `${name} has reached today's cap on ${capped.length === 1 ? 'one of its prizes' : `${capped.length} of its prizes`} — the wheel keeps spinning and shares the odds out over the rest`,
+      detail: { slot: row.slot, stationId: b.stationId, prizeIds: capped },
+      /**
+       * Two ways for this to stop being true, and they are not the same news.
+       * A booth that reported an empty list has capacity again; a booth that
+       * stopped reporting has told us nothing, and writing "every prize is
+       * available" on that would be inventing an answer out of silence.
+       */
+      clear: reporting
+        ? {
+            category: 'booth.prize_cap',
+            reason: 'capacity again',
+            summary: `${name} has prizes left on every slice of its wheel`,
+          }
+        : {
+            category: 'booth.prize_cap',
+            reason: 'the booth stopped reporting',
+            summary: `${name} has stopped reporting, so nothing is known about its caps`,
+          },
+    });
+  }
+
   const active = conditions.filter((c) => c.active);
-  const worst = active.find((c) => c.severity === 'critical') ?? active[0] ?? null;
+  /**
+   * The box's state comes from the worst thing that is WRONG, and `info` is
+   * not wrong — it is news (S2-07a). A daily cap reached every afternoon must
+   * not leave a booth permanently amber, because a tile that is always amber
+   * is a tile nobody reads.
+   *
+   * Every condition written before this ticket is `warning` or `critical`, so
+   * this changes the answer for none of them. The informational line is still
+   * shown under the tile when there is nothing worse to say.
+   */
+  const worst =
+    active.find((c) => c.severity === 'critical') ??
+    active.find((c) => c.severity === 'warning') ??
+    null;
+  const news = worst ?? active[0] ?? null;
 
   /**
    * The tile's state, and the sentence under it. Silence that is not alertable
@@ -1475,7 +1800,7 @@ export function evaluateBox(
     detail = 'Taken out of service by an administrator.';
   } else if (silent && openingHours === 'open') {
     state = 'down';
-    detail = worst?.summary ?? null;
+    detail = news?.summary ?? null;
   } else if (silent && openingHours === 'not_set') {
     state = 'warn';
     detail = `Silent, and opening hours are not set for ${row.branchName} — so nothing here is raised. Set them on the Branches panel.`;
@@ -1487,7 +1812,8 @@ export function evaluateBox(
     detail = worst.summary;
   } else {
     state = 'ok';
-    detail = null;
+    // A box with nothing wrong, and possibly something worth saying anyway.
+    detail = news?.summary ?? null;
   }
 
   return {
@@ -1523,6 +1849,16 @@ export function evaluateBox(
         paperStatus: d.paperStatus,
         lastError: d.lastError,
         lastSeenAt: iso(d.lastSeenAt),
+      })),
+      booths: booths.map((b) => ({
+        stationId: b.stationId,
+        name: b.name,
+        codePrefix: b.codePrefix,
+        // Same rule as the conditions above: one booth on the box, or nobody
+        // gets the block the heartbeat could not say which booth it was about.
+        reported: booths.length === 1 ? reportedBooth : null,
+        unattributedToday: b.unattributedToday,
+        businessDate: b.businessDate,
       })),
       conditions: active.map((c) => c.key),
       detail,
@@ -1570,6 +1906,7 @@ export async function fleetHealth(
       lastStatus: box.lastStatus,
       branchName: branch.name,
       timezone: branch.timezone,
+      businessDayStart: branch.businessDayStart,
       openingHours: branch.openingHours,
     })
     .from(box)
@@ -1615,6 +1952,8 @@ export async function fleetHealth(
     now,
   );
 
+  const booths = await boxBooths(deps.db, rows, new Date(now));
+
   const snapshot: FleetSnapshot = { boxes: [], conditions: [] };
   for (const row of rows) {
     const { health, conditions } = evaluateBox(
@@ -1623,11 +1962,157 @@ export async function fleetHealth(
       rules,
       now,
       sync.get(row.id),
+      booths.get(row.id) ?? [],
     );
     snapshot.boxes.push(health);
     snapshot.conditions.push(...conditions);
   }
   return snapshot;
+}
+
+/**
+ * The booths on a set of boxes, and the one number about each that only the
+ * cloud can answer (S2-07a).
+ *
+ * Two statements, and neither runs at all on a fleet with no booth — which is
+ * every deployment until one is configured, and every till-only branch after
+ * that. A booth is a station of kind `booth` with a `box_id`, which is the
+ * same resolution `services/booth.ts` uses for `/booth/*`.
+ *
+ * The count is taken over each branch's TRADING day rather than the calendar
+ * one, from `business_day_start`: a booth still spinning at half past midnight
+ * is on the same day's figures as the afternoon, and D13's condition would
+ * otherwise close itself at midnight while the wheel was still running.
+ *
+ * **What a failed lookup does, since the two rules differ.** An empty answer
+ * here means `evaluateBox` emits no booth conditions at all, and a condition
+ * that is not emitted is neither opened nor closed by the watchdog — so a
+ * standing `booth.unattributed` survives a station query that did not answer.
+ * `sync.stale` is not so lucky: it is emitted for every box, and without the
+ * booth list its D10 clause is simply absent, so a silent booth's stale-sync
+ * alert would close on that tick and reopen on the next one that answers.
+ * That is a warning flapping once on a failed 2-second query, and it is said
+ * here rather than engineered around.
+ */
+async function boxBooths(
+  db: Db,
+  rows: FleetBoxRow[],
+  now: Date,
+): Promise<Map<string, FleetBoothRow[]>> {
+  const out = new Map<string, FleetBoothRow[]>();
+  const byBox = new Map(rows.map((r) => [r.id, r]));
+
+  const stations = await probe(
+    async () =>
+      (await db
+        .select({
+          stationId: station.id,
+          boxId: station.boxId,
+          name: station.name,
+          codePrefix: station.codePrefix,
+        })
+        .from(station)
+        .where(
+          and(
+            eq(station.kind, 'booth'),
+            inArray(
+              station.boxId,
+              rows.map((r) => r.id),
+            ),
+            isNull(station.archivedAt),
+          ),
+        )
+        .orderBy(asc(station.name))) as Array<{
+        stationId: string;
+        boxId: string;
+        name: string;
+        codePrefix: string | null;
+      }>,
+    [] as Array<{ stationId: string; boxId: string; name: string; codePrefix: string | null }>,
+  );
+  if (stations.length === 0) return out;
+
+  const dated = stations.map((s) => {
+    const owner = byBox.get(s.boxId)!;
+    return {
+      ...s,
+      businessDate: businessDate(now, owner.timezone, parseDayStart(owner.businessDayStart)),
+    };
+  });
+
+  /**
+   * Vouchers issued at each booth today with nobody signed in.
+   *
+   * It reads `promo.voucher.issued_by_account_id` — **the very column the push
+   * raises D13's alert from** — rather than `booth.spin.staff_account_id`
+   * beside it. The two are written from one booth session and should agree,
+   * but they are two columns from two sources, and this count is what CLOSES
+   * the alert that column opened. Reading a second copy would let the
+   * condition close an alert the push was still right to raise.
+   *
+   * What it cannot see is a voucher whose spin has not arrived: the link is
+   * `booth.spin.voucher_id`, and until both facts land the pair is not joined.
+   * Normally they travel in one batch. Where the spin is refused and
+   * quarantined the voucher stays uncounted here, and the quarantine is its
+   * own condition.
+   *
+   * `simulated = false` leaves out the `#debug` distribution run, which must
+   * not raise anything about attribution: nobody is meant to be signed in for
+   * it.
+   */
+  const counts = await probe(
+    async () => {
+      const ids = sql.join(
+        dated.map((s) => sql`${s.stationId}::uuid`),
+        sql`, `,
+      );
+      const dates = sql.join(
+        [...new Set(dated.map((s) => s.businessDate))].map((d) => sql`${d}::date`),
+        sql`, `,
+      );
+      const { rows: counted } = await db.execute<{
+        station_id: string;
+        business_date: string;
+        n: string;
+      }>(
+        sql`select s.station_id, s.business_date::text as business_date, count(*)::text as n
+              from booth.spin s
+              join promo.voucher v on v.id = s.voucher_id
+             where s.station_id in (${ids})
+               and s.business_date in (${dates})
+               and s.simulated = false
+               and v.issued_by_account_id is null
+             group by s.station_id, s.business_date`,
+      );
+      return counted;
+    },
+    /**
+     * `null` rather than an empty list, and the difference is the whole point:
+     * an empty result is "no booth issued an unattributed voucher today", and
+     * a failed or timed-out query is "nobody knows". `evaluateBox` leaves the
+     * condition unevaluated for the second, so a standing alert is not closed
+     * by a query that never answered.
+     */
+    null as Array<{ station_id: string; business_date: string; n: string }> | null,
+  );
+  const counted = new Map(
+    (counts ?? []).map((r) => [`${r.station_id}|${r.business_date}`, Number(r.n)]),
+  );
+
+  for (const s of dated) {
+    const list = out.get(s.boxId) ?? [];
+    list.push({
+      stationId: s.stationId,
+      boxId: s.boxId,
+      name: s.name,
+      codePrefix: s.codePrefix,
+      unattributedToday:
+        counts === null ? null : (counted.get(`${s.stationId}|${s.businessDate}`) ?? 0),
+      businessDate: s.businessDate,
+    });
+    out.set(s.boxId, list);
+  }
+  return out;
 }
 
 /**
@@ -1794,7 +2279,20 @@ function overallStatus(
   if (alerts.some((a) => a.severity === 'critical' && !a.acknowledgedAt)) return 'down';
   if (checks.some((c) => c.status === 'warn') || jobs.some((j) => j.status === 'warn')) return 'warn';
   if (boxes.some((b) => b.state === 'warn')) return 'warn';
-  if (alerts.some((a) => !a.acknowledgedAt)) return 'warn';
+  /**
+   * `info` is news and not a fault, so it is listed without moving the
+   * verdict (S2-07a). A booth reaching a prize's daily cap every afternoon
+   * would otherwise leave the whole platform reading "1 thing needs
+   * attention" until somebody acknowledged a row that says the wheel is
+   * working.
+   *
+   * One alert raised before this ticket is also `info` and this changes what
+   * it does: the Console's own test control, whose summary reads "A test
+   * alert, raised from the Console. Nothing is wrong." It is still open, still
+   * listed and still acknowledgeable; it no longer contradicts itself by
+   * turning the headline amber.
+   */
+  if (alerts.some((a) => a.severity !== 'info' && !a.acknowledgedAt)) return 'warn';
   return 'ok';
 }
 
