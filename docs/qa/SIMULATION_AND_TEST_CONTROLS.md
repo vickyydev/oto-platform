@@ -1,6 +1,15 @@
 # Playing with staging: every simulator and test control
 
-_Written 2026-09-21, after S2-06. Kept current as each ticket adds controls._
+_Written 2026-09-21, after S2-06's device half went live. Kept current as each
+ticket adds controls._
+
+**If you only do one thing:** sign in to the Console, open Devices → Virtual
+box 1, take the paper out of Receipt Printer 1, and run a test print from the
+POS. In one minute you will see the job waiting rather than lost, the till
+saying *why* in plain words, and — when you clear the fault — the receipt
+printing itself with nobody pressing anything twice. That is the whole of
+this sprint's printing work in one gesture. Do it after 10:00; the note on
+opening hours below explains why.
 
 Everything here works on **staging only**. Two gates have to agree before any
 of it exists: the deployment says it is a playground (`OPS_TEST_CONTROLS`),
@@ -21,6 +30,8 @@ browser before a Raspberry Pi is plugged in at the park.
 | Console | <https://oto-console-staging.onrender.com> |
 | Sign in | `090 000 0001` / `admin1234` |
 | Controls | **Health** page, bottom — *Test controls* |
+| Device faults and scanning | **Devices** → open a box → *Simulator* panel |
+| What came off the paper | **Devices** → open a box → *Printing* panel |
 | What they affect | **Health**, **Failures → Problems**, **Failures → Quarantine**, **Devices** |
 
 The POS is <https://oto-pos-staging.onrender.com> and the suite front door is
@@ -54,8 +65,15 @@ and it is reported offline, with an alert.
 > Worth knowing: the offline rule **only fires during opening hours**. A park
 > that is shut is not a park with a broken till. If you stop heartbeats
 > outside the branch's hours nothing will happen, and that is correct.
-> (Related: the seeded closing time is currently 21:00 where the park's own
-> SOP says 20:00 — recorded in `OPEN_QUESTIONS.md`.)
+> The seeded branch is open **10:00–20:00**, which is what the park's own SOP
+> says. It was seeded an hour late until 21 Sept; the hour mattered, because
+> it meant expecting every box to answer for an hour after the park was dark.
+>
+> **The paper-out rule is gated the same way**, so a walkthrough that starts
+> before 10:00 will inject a paper fault and see no alert. That is not a
+> fault in the alerting — but it is the one thing in this document most
+> likely to look like one, so start after the park would have opened, or
+> widen the hours in Console → Branches first.
 
 **Resume heartbeats** — the box comes back and the alert resolves itself. An
 alert that closes on its own is the one you can trust when it opens.
@@ -66,6 +84,32 @@ everything it records while offline, which is an accounting problem rather
 than a display one. The alert says exactly that.
 
 **Put the box clock back** — undoes it.
+
+### Scanning a band without a scanner
+
+Console → Devices → **Virtual box 1** → **Simulator** → *Scanner and counter
+button*.
+
+**Scan** — type a code and press it. The code reaches the box's scanning
+service **exactly as one read off a wristband would**, marked as having come
+from the simulator so nothing later mistakes a rehearsal for a real scan. Try
+a band code, a voucher code, and a code that is simply wrong: the point of
+this control is that the refusals are as visible as the successes.
+
+**Press the button** — the button beside the counter is not a scan and is
+sent as its own key press. It defaults to `F9` and the field will refuse
+`Enter`, which is deliberate: a keyboard-wedge scanner sends `Enter` at the
+end of every code it reads, so a counter button bound to `Enter` is
+indistinguishable from somebody finishing a scan.
+
+> **Staff badge and PIN are deliberately absent from this panel**, and the
+> panel says so where the buttons would be. Every other control here travels
+> on the box's command queue, whose payload is stored in the database and
+> rendered in the command history on that same page — so a panel that could
+> send a PIN would be a panel that writes a credential to a screen. They need
+> a path that carries a value without keeping it, and that is not built yet.
+> An empty space with a reason in it is better than a control that quietly
+> does the wrong thing.
 
 ### Making the sync ledger misbehave
 
@@ -121,12 +165,36 @@ its list, reload, and it appears.
 **6. A printer runs out during trading.**
 Console → Devices → Virtual box 1 → Simulator → Receipt Printer 1 → *Paper
 out*. Run a test print from the POS's Print templates panel. The job queues,
-the till header turns red within a minute, and nothing is lost. Clear the
-fault and the queued job prints itself.
+the till header turns red within a minute **and says "paper out"** rather
+than showing a silent count, and nothing is lost. Clear the fault and the
+queued job prints itself. (Do this after 10:00 — see the note on opening
+hours above.)
 
-**7. The suite is one sign-on.**
+**7. The till says what is wrong, not that something is.**
+Same panel, but try **Cover open** and then **Unreachable** on the same
+printer, clearing between. The header names each one differently: a lid left
+open after a paper change, and a printer whose socket will not open at all,
+are different problems for whoever is standing there. This is worth pressing
+because until 21 Sept it showed amber "1 job waiting" for all three and never
+said which.
+
+**8. A scan, with no scanner in the building.**
+Console → Devices → Virtual box 1 → Simulator → *Scanner and counter button*
+→ type a code → **Scan**. Then do it again with a code that is nonsense. The
+refusal should be as clear as the success — a scanner that silently does
+nothing is the commonest complaint about till hardware, and the point of
+simulating it is to see the answer, not just the happy path.
+
+**9. The suite is one sign-on.**
 Sign in at the launcher once. POS, Console and the OTO App all open with no
 second password. Press *Sign out* on the launcher and every one of them ends.
+
+**10. The till survives losing the network — up to a point.**
+The POS installs as an app and keeps its shell when the connection drops, so
+a staff member does not get a browser error page mid-sale. **What it cannot
+do yet is let somebody back in:** unlocking still needs the cloud. See *What
+is not simulated yet* at the foot of this page — this is the honest edge of
+what is built, and it is better to meet it here than at a counter.
 
 ---
 
@@ -276,7 +344,17 @@ than an accident:
 
 Named here so nobody goes looking for a button that does not exist:
 
-- **Scanning.** Same — the service and its simulator are in progress.
+- **A till unlocking with the internet down.** This is the one to know about,
+  because it is the one most likely to be assumed working. The signed staff
+  badge that makes it possible is built and tested: the cloud signs a shift
+  token when somebody picks a station, the box holds the public half, and the
+  box can check a badge against its own cached staff list and revoked list
+  with nothing to ask. What does **not** exist is the door — the only way in
+  today is a route in the cloud, which reads the live database before it does
+  anything. So a Raspberry Pi with the mall's link down has a till that keeps
+  selling and cannot be unlocked. Three comments in the code claimed
+  otherwise and now say what is true; the remaining work is the next ticket's.
+- **Staff badge and PIN in the simulator panel.** Deliberate, explained above.
 - **Payments.** No gateway is wired. `POST /public/bookings` currently marks a
   booking paid with no payment taken; the 2C2P sandbox arrives with S2-10.
 - **SMS.** Twilio credentials are a trial account, so a code can only reach a
