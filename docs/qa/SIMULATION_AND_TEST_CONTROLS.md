@@ -190,6 +190,13 @@ redeployed and no box restarted. (The edit bumps the template's version, the
 version is part of the box's config hash, and the box pulls on its next
 heartbeat. That is the whole mechanism.)
 
+Watch the **Live preview** on the right while you type: it redraws a moment
+after you stop. That picture is not an illustration either — the platform
+renders it with `@oto/print`, the same package that produces the bytes the
+printer is sent, so the preview and the paper are one drawing path rather than
+two things that resemble each other. It is laid out for the printer *Test
+print* would route to, which is why the wristband templates preview narrow.
+
 ### 3. Take the paper out
 
 Console → Devices → Virtual box 1 → **Simulator** → *Receipt Printer 1* →
@@ -205,6 +212,17 @@ Now run a test print. Three things happen and all three are the point:
 Press **Clear faults**, wait for the next heartbeat (or press a test print,
 which also nudges the queue), and the job that was waiting comes out. Nobody
 pressed print twice.
+
+> Unlike the offline rule above, **paper does not wait for opening hours**.
+> A printer with no paper at 08:00 is a printer with no paper at 10:00, and
+> the morning shift is there to change the roll — so the `printer.paper_out`
+> alert opens whenever the box is reporting, closed park or not. It is a
+> warning rather than a critical, so out of hours it waits on the Health page
+> instead of paging anybody. *Unreachable* below is the opposite and
+> deliberately so: the park's printers are switched off at night, a printer
+> that is off cannot be asked about its paper either (it reports *unknown*,
+> never *out*), and calling a powered-down printer a fault at 04:00 is raising
+> an alert about somebody having gone home.
 
 ### 4. Unplug it
 

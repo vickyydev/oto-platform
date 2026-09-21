@@ -8,12 +8,7 @@ import { printApi } from '@/api/platform';
 import { ApiError } from '@/api/client';
 import { Field, TextInput } from '../discounts/fields';
 import { PrintTemplatePreview } from './PrintTemplatePreview';
-import {
-  APPLICABLE_FIELDS,
-  FIELD_META,
-  TEMPLATE_TYPE_META,
-  sampleDataFor,
-} from './templateFields';
+import { APPLICABLE_FIELDS, FIELD_META, TEMPLATE_TYPE_META } from './templateFields';
 
 interface TemplateEditorProps {
   template: PrintTemplate;
@@ -78,12 +73,18 @@ export function TemplateEditor({
   /**
    * Print this template's sample on a real printer.
    *
-   * It goes through the platform and out to the box, so what comes off the
-   * paper is rendered by the same renderer that drew the preview on the right
-   * — which is the only way this button means anything. The job is queued and
-   * the answer is immediate: a printer that is out of paper holds the job and
-   * prints it when the roll is changed, and saying "queued" is the truth, not
-   * a hedge.
+   * It goes through the platform and out to the box, where `@oto/print` turns
+   * the template into dots. The preview on the right is a PNG the same package
+   * rendered from the same fixture sample, so the two are one drawing path and
+   * this button is a proof rather than a comparison of two drawings — which is
+   * the only way it means anything. What can still differ is the paper: the
+   * preview is laid out for the printer this test would route to, and a
+   * template with no printer assigned falls back to the default width for its
+   * kind.
+   *
+   * It prints what is SAVED. The job is queued and the answer is immediate: a
+   * printer that is out of paper holds the job and prints it when the roll is
+   * changed, and saying "queued" is the truth, not a hedge.
    */
   const testPrint = async () => {
     if (busy) return;
@@ -190,7 +191,11 @@ export function TemplateEditor({
           <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-foreground/40">
             Live preview
           </div>
-          <PrintTemplatePreview template={draft} data={sampleDataFor(draft.type)} />
+          <PrintTemplatePreview
+            template={draft}
+            live={live}
+            stationId={station?.stationId ?? null}
+          />
         </div>
       </div>
 

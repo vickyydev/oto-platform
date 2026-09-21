@@ -66,7 +66,20 @@ function token(over: Partial<StaffTokenClaims> = {}): string {
   return encodeStaffToken(claims(over), { kid: KID, privateKeyPem: keys.privateKeyPem });
 }
 
-const base = { keys: signingKeys, boxId: BOX_ID, branchId: BRANCH_ID, now: NOW };
+/**
+ * A box holding a COMPLETE cache: keys, and a deny-list with nobody on it.
+ *
+ * The empty deny-list is not decoration. Leaving it out used to verify just as
+ * happily, which meant every case in this file proved the token checks while
+ * silently exercising the state in which revocation is not checked at all.
+ */
+const base = {
+  keys: signingKeys,
+  boxId: BOX_ID,
+  branchId: BRANCH_ID,
+  deny: { revokedAccountIds: [], revokedTokenIds: [] },
+  now: NOW,
+};
 
 test('a token this box minted verifies here', () => {
   const result = verifyStaffToken(token(), base);
@@ -156,6 +169,37 @@ test('the deny-list refuses a jti and an account', () => {
     deny: { revokedAccountIds: [ACCOUNT], revokedTokenIds: [] },
   });
   assert.equal(byAccount.ok === false && byAccount.refusal, STAFF_TOKEN_REFUSALS.REVOKED);
+});
+
+test('a box that cannot check revocation refuses, and says which', () => {
+  // The whole finding in two assertions. The same token, the same keys, the
+  // same clock: the only difference is whether the box holds a deny-list.
+  const withList = verifyStaffToken(token(), base);
+  assert.equal(withList.ok, true);
+
+  const { deny: _dropped, ...withoutList } = base;
+  const blind = verifyStaffToken(token(), withoutList);
+  assert.equal(blind.ok, false);
+  assert.equal(
+    blind.ok === false && blind.refusal,
+    STAFF_TOKEN_REFUSALS.REVOCATION_UNKNOWN,
+    'no deny-list must not read as an empty one',
+  );
+  // And it is a different sentence from a revocation, because it is a
+  // different fact: the box does not know that a manager ended anything.
+  assert.notEqual(
+    refusalMessage(STAFF_TOKEN_REFUSALS.REVOCATION_UNKNOWN),
+    refusalMessage(STAFF_TOKEN_REFUSALS.REVOKED),
+  );
+});
+
+test('an expired token is still named expired on a box with no deny-list', () => {
+  // Order matters for the message the till shows: the cheaper, more useful
+  // refusal comes first, and "connect to sign in" is the fix for both.
+  const iat = Math.floor(NOW.getTime() / 1000) - 20 * 3600;
+  const { deny: _dropped, ...withoutList } = base;
+  const result = verifyStaffToken(token({ iat, exp: iat + 16 * 3600 }), withoutList);
+  assert.equal(result.ok === false && result.refusal, STAFF_TOKEN_REFUSALS.EXPIRED);
 });
 
 test('a token from a newer platform is refused by name', () => {
@@ -270,6 +314,33 @@ test('an account the last bundle deactivated cannot unlock', async () => {
   // The deny-list is checked on the token first, so this is REVOKED rather
   // than INACTIVE — both refuse, and the distinction is what the till shows.
   assert.equal(denied.ok === false && denied.refusal, STAFF_TOKEN_REFUSALS.REVOKED);
+});
+
+test('a box whose cache lost the deny-list unlocks nobody, by either door', async () => {
+  const blind = snapshot({ deny: null });
+
+  // The token path: a shift the park may have ended that morning.
+  const byToken = await auth({}, blind).unlock({ token: token(), password: 'correct-horse' });
+  assert.equal(byToken.ok, false);
+  assert.equal(byToken.ok === false && byToken.refusal, 'OFFLINE_REVOCATION_UNKNOWN');
+  assert.match(byToken.ok === false ? byToken.message : '', /connect to the internet/i);
+
+  // And the 30-day sign-in path, which reads the same list for the account.
+  const bySignIn = await auth({ allowOfflineSignIn: true }, blind).unlock({
+    password: 'correct-horse',
+    accountId: ACCOUNT,
+  });
+  assert.equal(bySignIn.ok === false && bySignIn.refusal, 'OFFLINE_REVOCATION_UNKNOWN');
+
+  // It is distinct from a box that has never pulled at all: the two send
+  // whoever is standing there after different fixes.
+  const cold = await auth({}, null).unlock({ token: token(), password: 'correct-horse' });
+  assert.equal(cold.ok === false && cold.refusal, 'OFFLINE_NO_CACHE');
+
+  // The right password is not enough, and the wrong one is not even counted:
+  // nothing here is a judgement about the person.
+  const wrong = await auth({}, blind).unlock({ token: token(), password: 'guess' });
+  assert.equal(wrong.ok === false && wrong.refusal, 'OFFLINE_REVOCATION_UNKNOWN');
 });
 
 test('five wrong passwords close the till, and the sixth is refused without checking', async () => {

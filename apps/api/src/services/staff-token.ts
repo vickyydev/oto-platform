@@ -22,6 +22,7 @@ import {
 import type { Env } from '../env';
 import { AppError } from '../lib/errors';
 import { boxStoreFor } from '../lib/box-store';
+import { usableSigningKeys } from '../lib/signing-keys';
 import { parseStaffTokenKey, staffTokenKid } from '../lib/staff-token-key';
 import { audit } from './audit';
 import { throttleClear, throttleFail } from './auth';
@@ -394,18 +395,24 @@ function sharedThrottle(
 /**
  * What the box has cached about who may work at it.
  *
- * Read from the BOX's store, never from the tables beside it — that is the
- * whole claim being tested. The one thing taken from outside is the public
- * signing key, and only when this process is not running that box's agent: a
- * box holds its keys in the config bundle it already has, and an api instance
- * standing in for a box it hosts is reading its own copy of the same thing.
- * A Raspberry Pi never takes that branch, because on a Pi the agent IS the
- * process answering.
+ * The staff list and the deny-list — everything that decides WHO may come in —
+ * are read from the box's own store and from no table beside it. The public
+ * signing keys are the exception and are read from `core.signing_key` here,
+ * because `SqlBoxStore` has nowhere to keep a config bundle yet (see the note
+ * at the keys below).
+ *
+ * **Which process this runs in.** The api's, always. There is no Raspberry Pi
+ * running this today: the box agent has no local HTTP surface, so nothing on a
+ * Pi calls `OfflineAuth` and every offline unlock in the park goes through the
+ * cloud route. What that route proves is the half that has to be right — that
+ * the CHECK needs nothing but what the box holds. Making it reachable with the
+ * mall link down is a box-side server, and is the next ticket's work.
  */
 async function snapshotForBox(
   db: Db,
   store: SqlBoxStore,
   boxId: string,
+  operatorId: string,
 ): Promise<OfflineAuthSnapshot | null> {
   const staffBundle = await store.readBundle(boxId, 'staff');
   if (!staffBundle) return null;
@@ -428,16 +435,17 @@ async function snapshotForBox(
    * than papered over; it does not change what is being proved here, which is
    * that the STAFF LIST and the DENY-LIST — the parts that say who may come in
    * — are read from the box and from nowhere else.
+   *
+   * Through `usableSigningKeys`, which is the SAME filter the config bundle
+   * applies. This used to be `purpose` and `active` alone, and the difference
+   * mattered: setting `retired_at` on a key whose private half had leaked took
+   * it off every box in the park and left it verifying here, on the path that
+   * answers the unlock today.
    */
-  const keys: StaffSigningKey[] = await db
-    .select({
-      purpose: signingKey.purpose,
-      kid: signingKey.kid,
-      algorithm: signingKey.algorithm,
-      publicKey: signingKey.publicKey,
-    })
-    .from(signingKey)
-    .where(and(eq(signingKey.purpose, 'staff_token'), eq(signingKey.active, true)));
+  const keys: StaffSigningKey[] = await usableSigningKeys(db, {
+    operatorId,
+    purpose: 'staff_token',
+  });
 
   return {
     keys,
@@ -469,17 +477,23 @@ export interface OfflineUnlockView {
 }
 
 /**
- * Unlock a locked till against the BOX's cache, with the cloud unreachable.
+ * Unlock a locked till against the BOX's cache.
  *
- * This is the api standing in for the box it hosts: it verifies the token with
- * the box's own verifier, against the box's own cached staff list and
- * deny-list, and touches no `core.account` row to decide anything. What it
- * does afterwards — clearing `locked_at` and writing the audit row — is the
- * cloud's own bookkeeping, and is the one part a Raspberry Pi would do
- * differently: there it is a local unlock plus a fact in the outbox, and that
- * local surface arrives with the box's own HTTP server. Until then this route
- * proves the half that has to be right — that the CHECK needs nothing but what
- * is on the box.
+ * The api standing in for the box it hosts: it verifies the token with the
+ * box's own verifier, against the box's own cached staff list and deny-list,
+ * and reads no `core.account` row to DECIDE anything — the account's password
+ * hash and status both come out of the cache bundle.
+ *
+ * **What this does not yet survive, stated plainly.** It is an HTTP route on
+ * the api, reached through the session plugin, which reads `core.session`
+ * joined to `core.account` before this function is entered. So a till whose
+ * mall link is down cannot reach it: the decision needs nothing but the box,
+ * and the door to the decision is still in the cloud. Closing that means a
+ * local HTTP surface on the box calling `OfflineAuth` directly, plus the
+ * unlock recorded into the outbox rather than written here — the next
+ * ticket's work, recorded in SPRINT_2_PROGRESS.md rather than implied to
+ * exist. What is true today is the half this proves: the CHECK needs nothing
+ * but what is on the box.
  */
 export async function offlineUnlock(
   db: Db,
@@ -504,7 +518,7 @@ export async function offlineUnlock(
   const auth = new OfflineAuth({
     boxId: stationRow.boxId,
     branchId: stationRow.branchId,
-    snapshot: () => snapshotForBox(db, store, stationRow.boxId!),
+    snapshot: () => snapshotForBox(db, store, stationRow.boxId!, input.operatorId),
     verifyPassword: (hash, password) => verifyArgon(hash, password),
     allowOfflineSignIn: env.STAFF_OFFLINE_SIGN_IN,
     maxFailures: env.AUTH_MAX_FAILURES,

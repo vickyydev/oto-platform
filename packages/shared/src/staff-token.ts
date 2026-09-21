@@ -166,6 +166,16 @@ export const STAFF_TOKEN_REFUSALS = {
   UNKNOWN_KEY: 'STAFF_TOKEN_UNKNOWN_KEY',
   /** The jti, or the account, is on the deny-list in the current cache bundle. */
   REVOKED: 'STAFF_TOKEN_REVOKED',
+  /**
+   * The box holds no deny-list at all, so it cannot say whether this token was
+   * revoked — and refuses rather than assume it was not.
+   *
+   * Separate from `REVOKED` because the two are different facts and one of
+   * them is a fault: `REVOKED` is a decision a manager made, this is a box
+   * whose last cache pull was incomplete, which is reported in its heartbeat
+   * and fixed by a complete pull.
+   */
+  REVOCATION_UNKNOWN: 'STAFF_TOKEN_REVOCATION_UNKNOWN',
   /** `box` or `aud` names somewhere else. */
   WRONG_AUDIENCE: 'STAFF_TOKEN_WRONG_AUDIENCE',
   /** `v` is newer than this box can read. */

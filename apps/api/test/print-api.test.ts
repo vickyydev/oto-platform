@@ -31,6 +31,8 @@ import {
 } from '@oto/shared';
 import { createTestContext, signInAs, teardownAll, ADMIN, type TestContext } from './helpers';
 import { attachInProcessBox, provisionVirtualBox } from '../src/services/box';
+// The Console's own URL rule, not a copy of it — see `fromBrowser` below.
+import { apiUrl } from '../../console/src/api/url';
 
 /**
  * S2-06 — printing, driven through the routes a person's button actually hits.
@@ -162,6 +164,30 @@ async function buildSecondBox(): Promise<TestBox> {
 
 async function get(url: string) {
   return ctx.app.inject({ method: 'GET', url, headers: { cookie } });
+}
+
+/**
+ * Follow a URL the API handed out the way a browser would, and hand the result
+ * to Fastify the way the proxy does.
+ *
+ * **`app.inject` does not prove a browser can reach a route.** It speaks to
+ * this server directly, at its own root, and never sees the `/api` prefix that
+ * every front end's origin actually uses — so a URL that is unreachable from a
+ * page passes here unchanged. That is how the Console's printout preview
+ * shipped as a broken image: `previewUrl` went straight into an `<img src>`,
+ * the browser asked the Console's own origin for `/devices/…`, and the test
+ * that "proved" the PNG was fetched had gone round the front door.
+ *
+ * So this does both halves. `apiUrl` is the Console's real function, imported
+ * rather than copied, and the rewrite below is the one in every front end's
+ * vite config (`rewrite: (p) => p.replace(/^\/api/, '')`), which is also what
+ * the static site does in staging. A URL that cannot survive the round trip
+ * fails here.
+ */
+function fromBrowser(url: string): string {
+  const fetched = apiUrl(url);
+  expect(fetched, 'only /api is forwarded to this server').toMatch(/^\/api\//);
+  return fetched.replace(/^\/api/, '');
 }
 async function post(url: string, payload?: unknown, headers: Record<string, string> = {}) {
   return ctx.app.inject({ method: 'POST', url, headers: { cookie, ...headers }, payload: payload as never });
@@ -380,7 +406,7 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
       expect(printouts.length, type).toBeGreaterThanOrEqual(1);
       expect(printouts.every((p) => !p.truncated && p.heightDots > 0), type).toBe(true);
 
-      const png = await get(printouts[printouts.length - 1]!.previewUrl);
+      const png = await get(fromBrowser(printouts[printouts.length - 1]!.previewUrl));
       expect(png.statusCode).toBe(200);
       expect(png.headers['content-type']).toBe('image/png');
       expect([...png.rawPayload.subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
@@ -414,7 +440,7 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
 
     const list = await get(`/devices/${receipt.id}/printouts?limit=1`);
     const printouts = list.json().printouts as { previewUrl: string }[];
-    const served = await get(printouts[0]!.previewUrl);
+    const served = await get(fromBrowser(printouts[0]!.previewUrl));
     expect(served.statusCode).toBe(200);
 
     const deviceRow = agent
@@ -425,6 +451,90 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
       renderJob(await testPrintJob('test_page'), { device: profileFor(deviceRow) }).bitmap,
     );
     expect(Buffer.from(served.rawPayload).equals(Buffer.from(expected))).toBe(true);
+  });
+
+  /**
+   * The Print Templates editor's preview, and the claim under it.
+   *
+   * The editor used to draw its own receipt in HTML — its own fonts, its own
+   * wrapping, its own sample content — beside a "Test print" button whose
+   * comment said both came from one renderer. They did not, and a preview that
+   * is only a resemblance cannot answer the question it is on screen for: does
+   * the Thai line have glyphs, does the name wrap, does the content fit the
+   * band. So the preview is now a PNG from `@oto/print`, and this is what says
+   * so: the picture the editor shows and the picture rebuilt from the bytes
+   * the printer received are the same bytes.
+   */
+  it('the editor’s preview is the bitmap the printer is sent, to the byte', async () => {
+    const { agent } = await buildAgent();
+    const { till, receipt } = await seededIds();
+    const templates = (await get(`/branches/${till.branchId}/print-templates`)).json()
+      .templates as { id: string; type: string }[];
+    const tpl = templates.find((t) => t.type === 'receipt')!;
+
+    const preview = await post(`/print-templates/${tpl.id}/preview.png`, { stationId: till.id });
+    expect(preview.statusCode, preview.body).toBe(200);
+    expect(preview.headers['content-type']).toBe('image/png');
+    expect(preview.headers['cache-control']).toBe('private, no-store');
+
+    await post(`/stations/${till.id}/test-print`, { kind: 'receipt' });
+    expect(await agent.runPendingCommands()).toBe(1);
+    const list = await get(`/devices/${receipt.id}/printouts?limit=1`);
+    const printouts = list.json().printouts as { previewUrl: string }[];
+    const paper = await get(fromBrowser(printouts[0]!.previewUrl));
+
+    expect(
+      Buffer.from(preview.rawPayload).equals(Buffer.from(paper.rawPayload)),
+      'the preview and the paper are one drawing path or they are two',
+    ).toBe(true);
+  });
+
+  it('toggling a field changes the next preview, with nothing saved', async () => {
+    const { till } = await seededIds();
+    const templates = (await get(`/branches/${till.branchId}/print-templates`)).json()
+      .templates as { id: string; type: string; showLogo: boolean; version: number }[];
+    const tpl = templates.find((t) => t.type === 'receipt')!;
+
+    const withLogo = await post(`/print-templates/${tpl.id}/preview.png`, { showLogo: true });
+    const without = await post(`/print-templates/${tpl.id}/preview.png`, { showLogo: false });
+    expect(withLogo.statusCode).toBe(200);
+    expect(without.statusCode).toBe(200);
+    expect(
+      Buffer.from(withLogo.rawPayload).equals(Buffer.from(without.rawPayload)),
+      'a toggle that changes nothing on the paper is a toggle that does nothing',
+    ).toBe(false);
+
+    // And previewing a draft changed nothing: it is a picture, not an edit.
+    const after = (await get(`/branches/${till.branchId}/print-templates`)).json().templates as {
+      id: string;
+      showLogo: boolean;
+      version: number;
+    }[];
+    const same = after.find((t) => t.id === tpl.id)!;
+    expect(same.showLogo).toBe(tpl.showLogo);
+    expect(same.version).toBe(tpl.version);
+  });
+
+  it('a band template previews at the band printer’s width, not the receipt’s', async () => {
+    const { till, kidsBand } = await seededIds();
+    const templates = (await get(`/branches/${till.branchId}/print-templates`)).json()
+      .templates as { id: string; type: string }[];
+    const band = templates.find((t) => t.type === 'kids_wristband')!;
+    const receiptTpl = templates.find((t) => t.type === 'receipt')!;
+
+    const bandPreview = await post(`/print-templates/${band.id}/preview.png`, {});
+    const receiptPreview = await post(`/print-templates/${receiptTpl.id}/preview.png`, {});
+    expect(bandPreview.statusCode, bandPreview.body).toBe(200);
+    /**
+     * The width is the printer's, so a preview says something true about
+     * whether the content fits. The seeded kids band printer is TSPL2 label
+     * stock and the receipt printer is 80 mm thermal; a preview drawn at one
+     * width for both would be the old resemblance in a new place.
+     */
+    expect(bandPreview.headers['x-oto-preview-width-dots']).not.toBe(
+      receiptPreview.headers['x-oto-preview-width-dots'],
+    );
+    expect(kidsBand.kind).toBe('band_printer');
   });
 
   it('a job for a role no printer is assigned to is skipped, not failed', async () => {

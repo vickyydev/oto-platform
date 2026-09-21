@@ -698,7 +698,13 @@ export const signingKey = core.table(
   },
   (t) => [
     uniqueIndex('signing_key_kid_unique').on(t.purpose, t.kid),
-    /** "Which key signs a staff token right now" and "which are still worth shipping to a box". */
+    /**
+     * "Which key signs a staff token right now" — the only question `active`
+     * answers. "Which are still worth shipping to a box" is a different one,
+     * asked by `usableSigningKeys`, which reads `retired_at`, `expires_at`,
+     * `not_before` and `operator_id` and never this column; the leading
+     * `purpose` serves that query too.
+     */
     index('signing_key_purpose_active_idx').on(t.purpose, t.active),
     index('signing_key_operator_idx').on(t.operatorId),
     check(

@@ -23,17 +23,69 @@ const POLL_MS = 30_000;
 
 type Severity = 'ok' | 'warn' | 'bad';
 
+/**
+ * Faults that stop paper until a person goes to the machine, in the words
+ * somebody at the counter would use.
+ *
+ * `reachability` and `paperStatus` are the two states the device row carries
+ * in a column of their own; everything else the printer can be wrong about
+ * arrives as `lastError`, the code of the last thing that stopped a job.
+ * Without this list a cover left open after a paper change read as "1 job
+ * waiting" and never said why — which is a staff member watching a queue grow
+ * while the fix is under their hand.
+ *
+ * **What this does not cover.** `lastError` is set by a job that tried and was
+ * refused, and it is re-set on every retry, so it holds for as long as a job
+ * waits behind the fault and clears on the heartbeat after the fault is fixed.
+ * A printer sitting idle with its cover open has nothing queued behind it and
+ * reports nothing here: the box knows, but the heartbeat's device report
+ * carries reachability, paper and the last error and no cover flag. So this is
+ * honest about a fault that is holding paper up, which is when it matters, and
+ * silent about one that is not yet.
+ */
+const BLOCKING_ERRORS: Record<string, string> = {
+  PRINTER_COVER_OPEN: 'cover open',
+  PRINTER_HEAD_OPEN: 'head open',
+  PRINTER_PAPER_JAM: 'paper jam',
+  PRINTER_PAPER_OUT: 'out of paper',
+  PRINTER_OFFLINE: 'switched off-line',
+  PRINTER_UNREACHABLE: 'not answering',
+};
+
+/**
+ * The sentence for one printer that cannot print, or null if it can.
+ *
+ * The empty string is checked here, at the reading end, rather than trusted to
+ * the writing one: `device.last_error` is nullable free text, the route hands
+ * it over as `z.string().nullable()` and the box's own report schema is
+ * `z.string().max(200).optional()` with no minimum, so `''` is admissible the
+ * whole way down however careful today's box happens to be. Written as
+ * `(p.lastError && BLOCKING_ERRORS[p.lastError]) ?? null` it let one through —
+ * `'' ?? null` is `''`, which is not null — and the header went red saying
+ * "Receipt Printer 1: " with no reason after the colon.
+ */
+function faultOf(p: ApiStationPrinter): string | null {
+  if (p.paperStatus === 'out') return 'out of paper';
+  if (p.reachability === 'unreachable') return 'not answering';
+  if (!p.lastError) return null;
+  return BLOCKING_ERRORS[p.lastError] ?? null;
+}
+
 function severityOf(printers: ApiStationPrinter[]): Severity {
-  if (printers.some((p) => p.reachability === 'unreachable' || p.paperStatus === 'out')) return 'bad';
+  if (printers.some((p) => faultOf(p) !== null)) return 'bad';
   if (printers.some((p) => p.paperStatus === 'low' || p.queued > 0)) return 'warn';
   return 'ok';
 }
 
 function describe(printers: ApiStationPrinter[]): string {
-  const bad = printers.filter((p) => p.reachability === 'unreachable' || p.paperStatus === 'out');
+  const bad = printers
+    .map((p) => ({ label: p.label, fault: faultOf(p), queued: p.queued }))
+    .filter((p): p is { label: string; fault: string; queued: number } => p.fault !== null);
   if (bad.length > 0) {
+    // The count goes with the fault rather than on its own, so the header says
+    // why the queue is not moving instead of only that it is not.
     return bad
-      .map((p) => `${p.label}: ${p.paperStatus === 'out' ? 'out of paper' : 'not answering'}`)
+      .map((p) => `${p.label}: ${p.fault}${p.queued > 0 ? ` · ${p.queued} waiting` : ''}`)
       .join(' · ');
   }
   const low = printers.filter((p) => p.paperStatus === 'low');

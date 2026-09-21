@@ -30,14 +30,31 @@ import { _resetThrottle } from '../src/services/auth';
  * S2-06 — scanning, and the shift token with its offline unlock, driven
  * through the real routes.
  *
- * The claim this file exists to prove is narrow and load-bearing: **a till
- * whose box cannot reach the cloud can still be unlocked, and the check uses
- * what the box cached and nothing else.** A unit test of the verifier proves
- * the signature maths; it proves nothing about whether the route reads the
- * box's copy of the staff list or quietly asks the `account` table sitting
- * next to it — which is exactly the shape of seam that has failed three times
- * this sprint. So the decisive case here CHANGES THE CLOUD'S COPY and shows
- * the offline unlock still answering from the box's.
+ * The claim this file exists to prove is narrow and load-bearing: **who may
+ * unlock, and whether they are still allowed to, is decided from the box's
+ * own copy of the staff list and the deny-list — never from the `account`
+ * table sitting next to it.** A unit test of the verifier proves the signature
+ * maths; it proves nothing about which copy the route consults, which is
+ * exactly the shape of seam that has failed three times this sprint. So the
+ * decisive case here CHANGES THE CLOUD'S COPY and shows the offline unlock
+ * still answering from the box's.
+ *
+ * The claim is scoped to those two lists on purpose. The PUBLIC signing keys
+ * are read live from `core.signing_key`, and that is the point rather than an
+ * exception: it is how retiring a leaked key stops the tokens it signed
+ * without waiting for every box to pull. The retired-key case below passes
+ * *because* of that live read, so a wider claim here would be contradicted by
+ * the test standing underneath it.
+ *
+ * **What it does NOT prove, said here so nobody reads it as more.**
+ * `agent.setOffline(true)` stops the agent talking to the cloud; this suite
+ * still posts to the route in the same process with the same database open. A
+ * till whose mall link is down cannot reach `POST /auth/unlock-offline` at
+ * all, because the session plugin ahead of it reads `core.session`. Serving
+ * that till means a local HTTP surface on the box calling `OfflineAuth`
+ * directly — the next ticket's work, recorded in SPRINT_2_PROGRESS.md. A test
+ * that talks to Fastify does not prove a browser with no network can reach a
+ * route, and this one does not pretend to.
  *
  * The scanning cases do the same for the other half: the route exists, the box
  * classifies, the tape gets a fingerprint, and the raw code is nowhere on the
@@ -380,6 +397,127 @@ describe('a locked till unlocks with no internet (S2-06)', () => {
       cookie: receptionCookie,
       payload: { password: RECEPTION.password },
     });
+  });
+
+  it('a box that cannot check revocation unlocks nobody (S2-06)', async () => {
+    await pickTill();
+    await agent.syncCache();
+    const store = boxStoreFor(ctx.db);
+    const complete = (await store.readBundle(boxId, 'deny_list'))!;
+
+    /**
+     * The state a partial cache apply used to leave behind: the staff list
+     * applied, the deny-list not. Written here rather than simulated by
+     * breaking the store, because it is the STATE that was dangerous — a box
+     * in it admitted every token that verified, including one a manager had
+     * ended that morning, and nothing on the box or in the cloud said the
+     * check had been skipped.
+     */
+    await store.writeBundle(boxId, { ...complete, payload: { items: [] } });
+    await agent.setOffline(true, { reason: 'test' });
+    await call('POST', '/auth/lock', { cookie: receptionCookie });
+
+    const res = await call('POST', '/auth/unlock-offline', {
+      cookie: receptionCookie,
+      payload: { token: heldToken, password: RECEPTION.password },
+    });
+    expect(res.statusCode).toBe(401);
+    // Not "your shift was ended" — the box does not know that. It knows it
+    // cannot tell, which is a different sentence and a different fix.
+    expect((res.body.error as { code: string }).code).toBe('OFFLINE_REVOCATION_UNKNOWN');
+    expect((res.body.error as { message: string }).message).toMatch(/connect to the internet/i);
+
+    // The right password is not a way round it.
+    const refusedAgain = await call('POST', '/auth/unlock-offline', {
+      cookie: receptionCookie,
+      payload: { password: RECEPTION.password },
+    });
+    expect((refusedAgain.body.error as { code: string }).code).toBe('OFFLINE_REVOCATION_UNKNOWN');
+
+    // And a complete pull is the fix: the same token, the same password.
+    await agent.setOffline(false);
+    await agent.syncCache();
+    await agent.setOffline(true, { reason: 'test' });
+    const after = await call('POST', '/auth/unlock-offline', {
+      cookie: receptionCookie,
+      payload: { token: heldToken, password: RECEPTION.password },
+    });
+    expect(after.statusCode).toBe(200);
+    expect(after.body.authMethod).toBe('offline_token');
+  });
+
+  it('a signing key retired after a leak stops the tokens it signed (S2-06)', async () => {
+    await pickTill();
+    await agent.syncCache();
+    await agent.setOffline(true, { reason: 'test' });
+    await call('POST', '/auth/lock', { cookie: receptionCookie });
+
+    const works = await call('POST', '/auth/unlock-offline', {
+      cookie: receptionCookie,
+      payload: { token: heldToken, password: RECEPTION.password },
+    });
+    expect(works.statusCode).toBe(200);
+
+    /**
+     * The documented response to a leaked private half: retire the key. Every
+     * Raspberry Pi honoured it — the config bundle drops a retired key — while
+     * the unlock path that answers today read `purpose` and `active` alone and
+     * went on verifying. Both now ask `usableSigningKeys`.
+     */
+    await call('POST', '/auth/lock', { cookie: receptionCookie });
+    await ctx.db
+      .update(signingKey)
+      .set({ retiredAt: new Date() })
+      .where(and(eq(signingKey.purpose, 'staff_token'), eq(signingKey.kid, KID)));
+
+    const refused = await call('POST', '/auth/unlock-offline', {
+      cookie: receptionCookie,
+      payload: { token: heldToken, password: RECEPTION.password },
+    });
+    expect(refused.statusCode).toBe(401);
+    // Named for what it is: the box has no key that can check this token.
+    expect((refused.body.error as { code: string }).code).toBe('STAFF_TOKEN_UNKNOWN_KEY');
+
+    await ctx.db
+      .update(signingKey)
+      .set({ retiredAt: null })
+      .where(and(eq(signingKey.purpose, 'staff_token'), eq(signingKey.kid, KID)));
+  });
+
+  it('a key that no longer signs still verifies what it signed (S2-06)', async () => {
+    await pickTill();
+    await agent.syncCache();
+    await agent.setOffline(true, { reason: 'test' });
+    await call('POST', '/auth/lock', { cookie: receptionCookie });
+
+    /**
+     * The other half of the case above, and the reason `usableSigningKeys` does
+     * not read `active`.
+     *
+     * A rotation is two keys live at once: `active` moves to the new key while
+     * the old one goes on verifying the tokens already in people's pockets —
+     * which is what `core.signing_key` says the column is for. That query read
+     * it until S2-06, so the first rotation the park ever did would have
+     * refused every pocket at the moment the new key went live, and a shift
+     * token is hours long. Ending a key is `retired_at`, and that is the case
+     * above; this one is the same key merely no longer the one signing.
+     */
+    await ctx.db
+      .update(signingKey)
+      .set({ active: false })
+      .where(and(eq(signingKey.purpose, 'staff_token'), eq(signingKey.kid, KID)));
+
+    const res = await call('POST', '/auth/unlock-offline', {
+      cookie: receptionCookie,
+      payload: { token: heldToken, password: RECEPTION.password },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.authMethod).toBe('offline_token');
+
+    await ctx.db
+      .update(signingKey)
+      .set({ active: true })
+      .where(and(eq(signingKey.purpose, 'staff_token'), eq(signingKey.kid, KID)));
   });
 
   it('a manager ending the shift reaches the box at its next pull', async () => {

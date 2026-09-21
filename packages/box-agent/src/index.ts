@@ -32,4 +32,5 @@ export * from './printing/index';
 export * from './scan';
 export * from './scan-input';
 export * from './staff-token';
+export * from './cache-apply';
 export * from './agent';

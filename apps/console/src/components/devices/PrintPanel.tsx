@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Printer, RefreshCw } from 'lucide-react';
-import { api } from '@/api/client';
+import { api, apiUrl } from '@/api/client';
 import { isMissingRoute, type BoxRow, type DeviceRow } from '@/api/fleet';
 import { Button } from '@/components/ui/button';
 import { EmptyState, ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
@@ -234,7 +234,12 @@ export function PrintPanel({
                   <li key={printout.seq} className="shrink-0">
                     <div className="rounded-lg border bg-white p-1">
                       <img
-                        src={printout.previewUrl}
+                        /* `previewUrl` is written from the API's root, and
+                           this browser can only reach the API through the
+                           `/api` prefix the proxy and the static rewrite
+                           forward. Unprefixed it asks the Console's own origin
+                           and the panel shows a broken image. */
+                        src={apiUrl(printout.previewUrl)}
                         alt={`Printout ${printout.seq}, ${printout.widthDots} by ${printout.heightDots} dots`}
                         /* The image is 1 bit per pixel at 203 dpi; scaling it
                            down smoothly turns a crisp receipt into grey mush,

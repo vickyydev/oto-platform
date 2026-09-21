@@ -96,10 +96,56 @@ async function request<T>(
   return data as T;
 }
 
+/**
+ * The same request, for a route that answers with bytes rather than JSON.
+ *
+ * A rendered preview is a PNG, and it travels here rather than through an
+ * `<img src>` for two reasons: the draft being previewed is a request body,
+ * and this is the one place that knows every route lives behind `/api`. A
+ * failure still arrives as an error envelope, so the JSON path below is the
+ * same one `request` takes.
+ */
+async function requestBlob(
+  method: string,
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      method,
+      credentials: 'same-origin',
+      headers: body !== undefined ? { 'content-type': 'application/json' } : {},
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    throw new NetworkError(err);
+  }
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as
+      | { error?: { code: string; message: string; details?: unknown } }
+      | null;
+    const err = data?.error;
+    if (res.status === 401 && !path.startsWith('/auth') && !path.startsWith('/public')) {
+      window.dispatchEvent(new CustomEvent('oto:unauthorized'));
+    }
+    if (res.status === 423) {
+      window.dispatchEvent(new CustomEvent('oto:session-locked'));
+    }
+    throw new ApiError(res.status, err?.code ?? 'UNKNOWN', err?.message ?? res.statusText, err?.details);
+  }
+  return res.blob();
+}
+
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
     request<T>('POST', path, body, opts),
+  postBlob: (path: string, body?: unknown, signal?: AbortSignal) =>
+    requestBlob('POST', path, body, signal),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
   delete: <T>(path: string) => request<T>('DELETE', path),

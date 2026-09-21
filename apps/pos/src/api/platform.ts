@@ -624,6 +624,27 @@ export const printApi = {
       `/print-templates/${encodeURIComponent(id)}/test-print`,
       body ?? {},
     ),
+  /**
+   * The editor's preview: this draft's sample, drawn by the renderer that
+   * drives the printer, answered as a PNG.
+   *
+   * The draft rather than the saved row, because the preview's whole job is to
+   * show the effect of a toggle before anybody commits to it. Abortable: an
+   * edit made while the previous render is in flight replaces it rather than
+   * racing it.
+   */
+  previewPng: (
+    id: string,
+    body: {
+      name?: string;
+      showLogo?: boolean;
+      headerText?: string | null;
+      footerText?: string | null;
+      fields?: Record<string, boolean | undefined>;
+      stationId?: string | null;
+    },
+    signal?: AbortSignal,
+  ) => api.postBlob(`/print-templates/${encodeURIComponent(id)}/preview.png`, body, signal),
   /** What this station's printers last said. Drives the header indicator. */
   stationPrinters: (stationId: string) =>
     api.get<{ printers: ApiStationPrinter[] }>(

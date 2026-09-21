@@ -1,7 +1,6 @@
 import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
 import {
   box,
-  branch,
   device,
   printJob,
   printTemplate,
@@ -11,14 +10,17 @@ import {
 } from '@oto/db';
 import {
   PRINT_JOB_RETENTION_DAYS,
+  PRINT_KINDS,
   PRINT_TEMPLATE_TYPE_ORDER,
+  TEMPLATE_FOR_KIND,
   newId,
   reprintRootOf,
   type PrintKind,
   type PrintTemplateType,
   type PrintTemplateUpdate,
 } from '@oto/shared';
-import { ROLE_FOR_KIND } from '@oto/box-agent';
+import { ROLE_FOR_KIND, profileFor, testPrintJob } from '@oto/box-agent';
+import { renderPreviewPng } from '@oto/print';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { queueCommand } from './fleet';
@@ -324,6 +326,120 @@ async function routeOnBox(
     .orderBy(asc(stationDevice.stationId))
     .limit(1);
   return rows[0] ?? null;
+}
+
+// --- The preview -------------------------------------------------------------
+
+/**
+ * Draw a template's sample the way the printer would, and answer with the PNG.
+ *
+ * **Why the editor's preview is a picture from here rather than markup in the
+ * browser.** `@oto/print` runs on Node only — it reads the bundled faces with
+ * `node:fs` and deflates the PNG with `node:zlib` — so a browser cannot call
+ * the renderer, and a panel that wanted a preview without one had to draw a
+ * second, approximate printout in HTML. It did, and the two drifted: different
+ * fonts, different line breaking, different sample content, and a "Test print"
+ * button whose paper matched neither. Everything about a printout that is
+ * worth looking at before printing it — whether a Thai line has glyphs or
+ * boxes, whether a name wraps, whether the content fits the band stock — is
+ * exactly what an approximation gets wrong.
+ *
+ * So there is one drawing path and it is this one. The cost is a round trip
+ * per edit, which the editor pays by asking only after typing stops.
+ *
+ * The sample content is `testPrintJob`'s, which is the renderer's own committed
+ * fixture for that kind — the same sample the Test print button puts on paper,
+ * so the two agree by construction rather than by resemblance. With a printer
+ * assigned and nothing unsaved on the screen they agree to the byte, which
+ * `print-api.test.ts` asserts by comparing this PNG with the one the simulator
+ * rebuilds from the bytes it was sent.
+ */
+export interface TemplatePreviewResult {
+  png: Uint8Array;
+  /** The printer this was laid out for, when the branch has one for the role. */
+  deviceLabel: string | null;
+  widthDots: number;
+}
+
+/** The printout whose sample stands for this template type. */
+function sampleKindFor(type: PrintTemplateType): PrintKind {
+  const kinds = PRINT_KINDS.filter((k) => TEMPLATE_FOR_KIND[k] === type);
+  // `credit_voucher` is the template for both the credit voucher and the item
+  // voucher, so prefer the kind named after the type where there is one.
+  const kind = kinds.find((k) => k === type) ?? kinds[0];
+  if (!kind) {
+    throw new AppError(500, 'INTERNAL', `Nothing prints with the ${type} template`);
+  }
+  return kind;
+}
+
+export async function renderTemplatePreview(
+  db: Db,
+  operatorId: string,
+  row: typeof printTemplate.$inferSelect,
+  draft: PrintTemplateUpdate,
+  input: { stationId?: string | null } = {},
+): Promise<TemplatePreviewResult> {
+  const kind = sampleKindFor(row.type);
+  const role = ROLE_FOR_KIND[kind];
+
+  /**
+   * Lay the sample out for the printer the Test print button would use, so
+   * "the preview fits" and "the paper fits" are the same statement. A branch
+   * with no printer for the role still gets a preview: `profileFor` falls back
+   * to the defaults for the kind, which is what the box would do with a device
+   * nobody has measured yet.
+   */
+  let routed: { device: typeof device.$inferSelect } | null = null;
+  try {
+    const target = await resolveTestPrintTarget(db, operatorId, {
+      branchId: row.branchId,
+      stationId: input.stationId ?? null,
+    });
+    const hit = await routeOnBox(db, target.boxRow.id, role, target.stationId);
+    if (hit) {
+      const [deviceRow] = await db.select().from(device).where(eq(device.id, hit.deviceId)).limit(1);
+      if (deviceRow) routed = { device: deviceRow };
+    }
+  } catch (err) {
+    // No box on the branch, or a station that is not attached to one. That
+    // stops a test print and it must not stop a preview: nothing here touches
+    // a box, and somebody configuring a template before the hardware arrives
+    // is the ordinary case rather than the odd one.
+    if (!(err instanceof AppError)) throw err;
+  }
+
+  const profile = profileFor({
+    id: routed?.device.id ?? row.id,
+    role,
+    kind: routed?.device.kind ?? (role.endsWith('band') ? 'band_printer' : 'receipt_printer'),
+    label: routed?.device.label ?? 'Sample',
+    transport: routed?.device.transport ?? 'simulated',
+    address: routed?.device.address ?? null,
+    model: routed?.device.model ?? null,
+    protocol: routed?.device.protocol ?? null,
+    serialNumber: null,
+    terminalId: null,
+    merchantId: null,
+    settings: routed?.device.settings ?? null,
+  });
+
+  const job = await testPrintJob(kind);
+  const png = renderPreviewPng(job, {
+    device: profile,
+    templates: [
+      {
+        id: row.id,
+        type: row.type,
+        name: draft.name ?? row.name,
+        showLogo: draft.showLogo ?? row.showLogo,
+        headerText: (draft.headerText === undefined ? row.headerText : draft.headerText) ?? undefined,
+        footerText: (draft.footerText === undefined ? row.footerText : draft.footerText) ?? undefined,
+        fields: (draft.fields ?? row.fields ?? {}) as never,
+      },
+    ],
+  });
+  return { png, deviceLabel: routed?.device.label ?? null, widthDots: profile.widthDots };
 }
 
 export interface TestPrintInput {
@@ -705,48 +821,6 @@ export async function purgeOldPrintJobs(db: Db, retentionDays: number): Promise<
 
 export const PRINT_RETENTION_DAYS = PRINT_JOB_RETENTION_DAYS;
 
-/**
- * Printers a box can be asked to simulate, for the Console's panel.
- *
- * Only devices whose `transport` is `simulated`: a fault injected into a real
- * printer would be a lie the Console told about a machine standing in the
- * park, and the box refuses it for the same reason.
- */
-export async function listSimulatedPrinters(
-  db: Db,
-  boxId: string,
-): Promise<{ id: string; label: string; kind: string; model: string | null; address: string | null; roles: string[] }[]> {
-  const rows = await db
-    .select()
-    .from(device)
-    .where(
-      and(
-        eq(device.boxId, boxId),
-        eq(device.transport, 'simulated'),
-        isNull(device.archivedAt),
-        inArray(device.kind, ['receipt_printer', 'kitchen_printer', 'bar_printer', 'band_printer']),
-      ),
-    )
-    .orderBy(asc(device.label));
-  if (rows.length === 0) return [];
-  const assignments = await db
-    .select({ deviceId: stationDevice.deviceId, role: stationDevice.role })
-    .from(stationDevice)
-    .where(inArray(stationDevice.deviceId, rows.map((r) => r.id)));
-  const roles = new Map<string, string[]>();
-  for (const a of assignments) {
-    roles.set(a.deviceId, [...(roles.get(a.deviceId) ?? []), a.role]);
-  }
-  return rows.map((r) => ({
-    id: r.id,
-    label: r.label,
-    kind: r.kind,
-    model: r.model,
-    address: r.address,
-    roles: (roles.get(r.id) ?? []).sort(),
-  }));
-}
-
 export interface StationPrinterHealth {
   deviceId: string;
   label: string;
@@ -807,17 +881,6 @@ export async function listStationPrinters(
     lastSeenAt: r.device.lastSeenAt?.toISOString() ?? null,
     queued: depth.get(r.device.id) ?? 0,
   }));
-}
-
-/** The branch a box belongs to, for the `/box/v1` result route's audit context. */
-export async function branchOfBox(db: Db, boxId: string): Promise<string | null> {
-  const [row] = await db
-    .select({ branchId: branch.id })
-    .from(box)
-    .innerJoin(branch, eq(box.branchId, branch.id))
-    .where(eq(box.id, boxId))
-    .limit(1);
-  return row?.branchId ?? null;
 }
 
 export type { Exec };

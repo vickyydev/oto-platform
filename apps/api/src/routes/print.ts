@@ -18,6 +18,7 @@ import {
   loadPrintJob,
   loadTemplate,
   recordSkippedPrint,
+  renderTemplatePreview,
   reprintJob,
   requestTestPrint,
   resolveTestPrintTarget,
@@ -99,7 +100,13 @@ const PrintoutSchema = z.object({
   jobBytes: z.number().int(),
   truncated: z.boolean(),
   setup: z.array(z.string()).optional(),
-  /** Fetch with the route below; the PNG itself never rides a JSON body. */
+  /**
+   * Fetch with the route below; the PNG itself never rides a JSON body.
+   *
+   * An API path, written from this server's root. A browser reaches this
+   * server through its front end's `/api` prefix and has to add it — see
+   * `apps/console/src/api/url.ts`, which is the one place that does.
+   */
   previewUrl: z.string(),
 });
 
@@ -140,6 +147,49 @@ export async function printRoutes(app: App): Promise<void> {
       const row = await loadTemplate(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:branch:update', { branchId: row.branchId });
       return updateTemplate(app.db, opCtx(req), auth, row, req.body);
+    },
+  );
+
+  /**
+   * The picture the Print Templates editor shows while somebody edits.
+   *
+   * POST, and it changes nothing: the draft on the screen is a record of
+   * booleans and two free-text lines, which is a request body rather than
+   * something to spell out in a query string — and a preview of unsaved work
+   * is the whole point, so the saved row alone would not do.
+   *
+   * `pos:print:read` rather than the editor's own `admin:branch:update`: what
+   * comes back is the renderer's fixture sample, carrying no member, no child
+   * and no sale, and the till reads templates under the same permission.
+   */
+  app.post(
+    '/print-templates/:id/preview.png',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description: 'Draw this template’s sample the way the printer would, and answer with the PNG',
+        params: IdParams,
+        body: PrintTemplateUpdateSchema.extend({
+          /** Which till to lay it out for; omitted, the branch’s first box decides. */
+          stationId: z.string().uuid().nullable().optional(),
+        }),
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const row = await loadTemplate(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('pos:print:read', { branchId: row.branchId });
+      const { stationId, ...draft } = req.body;
+      const preview = await renderTemplatePreview(app.db, auth.operatorId, row, draft, {
+        stationId: stationId ?? null,
+      });
+      return reply
+        .header('content-type', 'image/png')
+        .header('x-oto-preview-width-dots', String(preview.widthDots))
+        // A sample, but rendered for one branch's template and one branch's
+        // printer. Nothing shared may hold it.
+        .header('cache-control', 'private, no-store')
+        .send(Buffer.from(preview.png));
     },
   );
 

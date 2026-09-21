@@ -8,7 +8,6 @@ import {
   branch,
   device,
   printTemplate,
-  signingKey,
   station,
   stationDevice,
   type Db,
@@ -33,6 +32,7 @@ import {
 import type { Env } from '../env';
 import { boxStoreFor } from '../lib/box-store';
 import { AppError } from '../lib/errors';
+import { usableSigningKeys } from '../lib/signing-keys';
 import { audit } from './audit';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
@@ -883,20 +883,9 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
 
   // Public halves only, and only the ones still worth verifying against: a
   // retired key is dropped from the bundle once nothing it signed can still
-  // be in a visitor's pocket.
-  const keys = await db
-    .select({
-      purpose: signingKey.purpose,
-      kid: signingKey.kid,
-      algorithm: signingKey.algorithm,
-      publicKey: signingKey.publicKey,
-      expiresAt: signingKey.expiresAt,
-      retiredAt: signingKey.retiredAt,
-      operatorId: signingKey.operatorId,
-    })
-    .from(signingKey)
-    .where(eq(signingKey.active, true))
-    .orderBy(asc(signingKey.purpose), asc(signingKey.kid));
+  // be in a visitor's pocket. The rule lives in `usableSigningKeys` because
+  // the offline-unlock path needs the same answer and once had its own.
+  const signingKeys = await usableSigningKeys(db, { operatorId: auth.operatorId });
 
   const printTemplates = (
     await db
@@ -914,12 +903,6 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
     fields: (t.fields ?? {}) as Record<string, boolean | undefined>,
     version: t.version,
   }));
-
-  const now = Date.now();
-  const signingKeys = keys
-    .filter((k) => k.operatorId === null || k.operatorId === auth.operatorId)
-    .filter((k) => !k.retiredAt && (!k.expiresAt || k.expiresAt.getTime() > now))
-    .map((k) => ({ purpose: k.purpose, kid: k.kid, algorithm: k.algorithm, publicKey: k.publicKey }));
 
   const body = {
     box: {

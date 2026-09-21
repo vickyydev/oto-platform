@@ -12,6 +12,25 @@
       "dependsOn": ["^build"],
       "env": ["DATABASE_URL", "NODE_ENV"]
     },
+    // `@oto/print`'s suite holds the "one path from a layout to dots" guard,
+    // and that test READS .ts and .tsx files under apps/ and packages/ at
+    // runtime — everything except vendored and generated directories, which
+    // its own SKIP set names. Hashed on the print package's own files alone, a
+    // second drawing path added in apps/pos was a cache hit: the guard
+    // replayed a stored pass and never ran. So this one task is hashed on what
+    // it actually reads. Keep these globs matching that walk; a directory the
+    // walk reads but these globs miss is a guard that goes stale silently.
+    "@oto/print#test": {
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL", "NODE_ENV"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/**/*.ts",
+        "$TURBO_ROOT$/apps/**/*.tsx",
+        "$TURBO_ROOT$/packages/**/*.ts",
+        "$TURBO_ROOT$/packages/**/*.tsx"
+      ]
+    },
     "dev": {
       "cache": false,
       "persistent": true

@@ -2681,7 +2681,8 @@ export async function cacheBundle(
   auth: BoxAuth,
   query: CacheQuery,
 ): Promise<CacheBundle> {
-  const wanted = query.scopes?.length ? query.scopes : [...CACHE_SCOPES];
+  // Copied, never the caller's array: the deny-list pairing below appends.
+  const wanted = query.scopes?.length ? [...query.scopes] : [...CACHE_SCOPES];
   const limit = Math.min(query.limit ?? CACHE_DEFAULT_LIMIT, CACHE_MAX_LIMIT);
   if (query.cursor && wanted.length !== 1) {
     throw new AppError(
@@ -2690,18 +2691,60 @@ export async function cacheBundle(
       'A cursor pages one scope — ask for that scope on its own',
     );
   }
+  /**
+   * The staff list never travels without the deny-list (S2-06).
+   *
+   * `?scopes=staff` was answerable on its own, and a box that asked that way
+   * held a list of who may work at the counter with nothing saying whose
+   * access had since been withdrawn — permanently, because nothing ever
+   * corrected it. The two are one answer to one question and are served
+   * together; the agent enforces the same pairing on its side (`planCacheApply`
+   * in `@oto/box-agent`), because neither end may be the only place a rule
+   * like this lives.
+   *
+   * **Unconditional, a cursor included.** This carried an exemption for a
+   * cursor, on the reasoning that a cursor continues a pull whose first page
+   * already carried the deny-list. That was never true of THIS scope: `staff`
+   * is `put` with no `cursorOf`, so its `nextCursor` is always null and no
+   * staff cursor is ever minted. A cursor arriving beside `scopes=staff` is
+   * therefore a string this endpoint did not issue and does not read — and it
+   * was enough to get the staff list served on its own. The append runs after
+   * the one-scope check above, so pairing never turns a request that check
+   * allowed into an ambiguous one.
+   */
+  if (wanted.includes('staff') && !wanted.includes('deny_list')) {
+    wanted.push('deny_list');
+  }
 
   const scopes: CacheBundle['scopes'] = {};
   const truncated: string[] = [];
   const operatorId = auth.operatorId;
   const branchId = auth.branchId;
 
-  const put = (name: string, items: unknown[], cursorOf?: (last: unknown) => string): void => {
-    const full = items.length === limit;
-    if (full) truncated.push(name);
+  /**
+   * `rowsRead` is how many rows the database returned for a scope whose query
+   * carried the limit — the only kind of scope that can be cut short. A scope
+   * assembled as a whole unit passes nothing and is never truncated, however
+   * many items it happens to hold.
+   *
+   * The test used to be `items.length === limit`, which called a scope that
+   * FITTED a scope that was CUT: `?scopes=staff&limit=1` reported the deny-list
+   * truncated, because the deny-list is exactly one item by construction and
+   * that one item is the whole of it. The agent does not apply a truncated
+   * scope, and since S2-06 it does not apply `staff` without `deny_list`
+   * either — so a deny-list falsely called short took offline unlock away from
+   * that box.
+   */
+  const put = (
+    name: string,
+    items: unknown[],
+    opts: { rowsRead?: number; cursorOf?: (last: unknown) => string } = {},
+  ): void => {
+    const cut = opts.rowsRead === limit;
+    if (cut) truncated.push(name);
     scopes[name] = {
       items,
-      nextCursor: full && cursorOf ? cursorOf(items[items.length - 1]) : null,
+      nextCursor: cut && opts.cursorOf ? opts.cursorOf(items[items.length - 1]) : null,
     };
   };
 
@@ -2789,7 +2832,7 @@ export async function cacheBundle(
           ...(memberChange(m) as Record<string, unknown>),
           children: byMember.get(m.id) ?? [],
         })),
-        (last) => (last as { id: string }).id,
+        { rowsRead: rows.length, cursorOf: (last) => (last as { id: string }).id },
       );
       continue;
     }
@@ -2880,6 +2923,9 @@ export async function cacheBundle(
           mustChangePassword: a.mustChangePassword,
           lastTokenAt: lastToken.get(a.id)?.toISOString() ?? null,
         })),
+        // One row per person, so the rows read ARE the items — but the count
+        // that decides "cut short" is the one the LIMIT applied to.
+        { rowsRead: rows.length },
       );
       continue;
     }
@@ -2908,12 +2954,23 @@ export async function cacheBundle(
        * stays offline. That is a property of offline working rather than a
        * defect: it is why a token's expiry is hours and not days.
        */
-      put('deny_list', [
-        {
-          revokedAccountIds: rows.map((r) => r.id),
-          revokedTokenIds: await revokedStaffTokenIds(db, operatorId),
-        },
-      ]);
+      put(
+        'deny_list',
+        [
+          {
+            revokedAccountIds: rows.map((r) => r.id),
+            revokedTokenIds: await revokedStaffTokenIds(db, operatorId),
+          },
+        ],
+        /**
+         * One item always, so the item count says nothing about completeness —
+         * what can be cut short is the account query above, and a deny-list
+         * missing the people it was cut off before is the one list in this
+         * bundle that must never be applied half-read. The revoked token ids
+         * beside it are unbounded by expiry rather than by a LIMIT.
+         */
+        { rowsRead: rows.length },
+      );
       continue;
     }
 
@@ -2932,7 +2989,7 @@ export async function cacheBundle(
         )
         .orderBy(asc(booking.bookingDate))
         .limit(limit);
-      put('bookings', rows);
+      put('bookings', rows, { rowsRead: rows.length });
       continue;
     }
 
@@ -2943,7 +3000,10 @@ export async function cacheBundle(
         .where(and(eq(band.branchId, branchId), eq(band.status, 'active')))
         .orderBy(asc(band.id))
         .limit(limit);
-      put('bands', rows, (last) => (last as { id: string }).id);
+      put('bands', rows, {
+        rowsRead: rows.length,
+        cursorOf: (last) => (last as { id: string }).id,
+      });
       continue;
     }
 

@@ -920,6 +920,50 @@ a branch rather than main for that reason:
    is gated on opening hours where the criterion does not say so — so a QA
    run before 10:00 fails and reads like a bug.
 
+**Fixed on the branch — findings 1, 2 and 3 (the staff token).**
+
+1. **Not being able to check revocation is now its own refusal.** An absent
+   deny-list is `STAFF_TOKEN_REVOCATION_UNKNOWN` in the verifier and
+   `OFFLINE_REVOCATION_UNKNOWN` in the unlock, which refuses before the
+   password is looked at and on both doors — the token path and the 30-day
+   sign-in. The decision was *refuse* rather than *admit with a caveat*: the
+   state is only ever reached through a fault, and the window it would open —
+   up to sixteen hours — is the one in which a dismissed employee matters
+   most. The cost is honest and bounded: a till in that state cannot unlock
+   offline until the box completes one pull.
+   Both routes into the state are closed at their sources as well.
+   `planCacheApply` (new, `packages/box-agent/src/cache-apply.ts`, unit
+   tested) writes the deny-list **first** and refuses to apply a staff list
+   without it, and `syncCache` abandons a pull at the first write that fails
+   instead of filling in around it — so every state the loop can stop in has
+   revocations at least as fresh as the staff list beside them.
+   `GET /box/v1/cache?scopes=staff` now serves `deny_list` with it. And the
+   fault is visible rather than silent: the agent counts skipped scopes and
+   reports them in the heartbeat's `errors` (fingerprint, code, count — never
+   contents), which raises a `box.cache_incomplete` alert from the watchdog
+   and closes on the next complete pull.
+2. **The offline unlock's comments were narrowed to what is true, and the
+   gap is the next ticket's work.** There is no box-side surface: the agent
+   has no local HTTP server (only the printer simulator listens), so nothing
+   on a Pi constructs `OfflineAuth` and every offline unlock in the park goes
+   through the cloud route. Building that server was not attempted here —
+   half of it, reachable from nothing, is the very defect this list is about.
+   What the route does prove is kept and stated: the *decision* needs nothing
+   but the box's cached staff list, deny-list and signing keys. The three
+   sentences that claimed more are rewritten, the OpenAPI description with
+   them, and the test file now says in its own header what
+   `agent.setOffline(true)` does and does not demonstrate.
+   **Next ticket:** a local HTTP surface on the box that calls `OfflineAuth`
+   directly and records the unlock into the outbox, plus a POS that falls
+   back to the box's origin when the cloud does not answer. Until that lands,
+   an outage stops a locked till from being unlocked, and nothing in the code
+   should be read as saying otherwise.
+3. **One filter now answers "which key is still good"** —
+   `apps/api/src/lib/signing-keys.ts`, used by both the config bundle a real
+   box pulls and the snapshot the unlock path builds. It honours `retired_at`,
+   `expires_at`, `not_before` and the operator. A test retires the key and
+   shows a token signed with it refused as `STAFF_TOKEN_UNKNOWN_KEY`.
+
 ## Deviations recorded
 
 (None yet — the plan lists the ones it expects: booth order, Pi image, edge +

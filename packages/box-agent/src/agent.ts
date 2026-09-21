@@ -1,3 +1,4 @@
+import { planCacheApply, type CacheFaultReason } from './cache-apply';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
 import { createOutbox, type Outbox } from './outbox';
@@ -227,6 +228,16 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let lastReportedAt = 0;
 
   let printing: PrintingController | null = null;
+  /**
+   * Cache scopes that did not land, counted per cause (S2-06).
+   *
+   * A log line on a box in a storeroom is read by nobody, so these ride the
+   * heartbeat's `errors` — fingerprint, code and count, no contents — where
+   * they reach `box.last_status` and the Console's box detail. That is the
+   * difference between a box quietly holding an incomplete cache and somebody
+   * being able to see that it does.
+   */
+  const cacheFaults = new Map<string, { code: string; count: number }>();
   const ring: string[] = [];
   const state: BoxAgentState = {
     boxId: null,
@@ -254,6 +265,24 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     ring.push(`${new Date(clock()).toISOString()} ${level} ${msg}`);
     if (ring.length > LOG_RING) ring.splice(0, ring.length - LOG_RING);
     log[level]({ ...obj, module: 'box-agent' }, msg);
+  }
+
+  function recordCacheFault(reason: CacheFaultReason, scope: string): void {
+    const fingerprint = `${reason}:${scope}`.slice(0, 32);
+    const held = cacheFaults.get(fingerprint) ?? { code: `box.cache_${reason}`, count: 0 };
+    held.count += 1;
+    cacheFaults.set(fingerprint, held);
+  }
+
+  /** A pull in which every scope landed clears them: the fault is over. */
+  function clearCacheFaults(): void {
+    cacheFaults.clear();
+  }
+
+  function cacheFaultReports(): BoxHeartbeatRequest['errors'] {
+    return [...cacheFaults.entries()]
+      .slice(0, 32)
+      .map(([fingerprint, held]) => ({ fingerprint, code: held.code, count: held.count }));
   }
 
   async function request<T>(
@@ -665,9 +694,19 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    * A scope the cloud TRUNCATED is skipped rather than applied: a half staff
    * list would silently refuse the people who fell off the end of it. The
    * honest answer is to keep the last complete copy and say so.
+   *
+   * **The staff list and the deny-list are one answer in two scopes**, and
+   * this is where that is enforced. Written in the order `planCacheApply`
+   * gives — the deny-list first — and abandoned at the first failure, so every
+   * state this loop can stop in has a deny-list at least as fresh as the staff
+   * list beside it. The reverse order was reachable before and was the quiet
+   * one: a box left holding a current staff list and last week's revocations,
+   * with nothing to say it had happened. A skip or a failure is now a fault
+   * the heartbeat carries (`errors`) as well as a line in the box log.
    */
   async function syncCache(): Promise<string[]> {
     if (!credential || !store || !state.boxId || state.offline) return [];
+    const boxId = state.boxId;
     const { status, body } = await request<{
       schemaVersion: number;
       bundleVersion: string;
@@ -681,27 +720,49 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
     if (status !== 200 || !body) {
       note('warn', 'cache bundle could not be read', { status });
+      recordCacheFault('unreadable', `status ${status}`);
       return [];
     }
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
     const applied: string[] = [];
-    const truncated = new Set(body.truncated ?? []);
     const appliedAt = new Date(clock()).toISOString();
-    for (const [scope, held] of Object.entries(body.scopes ?? {})) {
-      if (truncated.has(scope)) {
-        note('warn', 'a cache scope was truncated and was not applied', { scope });
-        continue;
+    for (const scope of plan.apply) {
+      const held = body.scopes[scope];
+      if (!held) continue;
+      try {
+        await store.writeBundle(boxId, {
+          scope: scope as CachedBundle['scope'],
+          schemaVersion: body.schemaVersion,
+          cursorSeq: body.cursorSeq,
+          // One object rather than the array, because a scope is applied whole
+          // and `items` is how the cloud pages it, not what it means.
+          payload: { items: held.items },
+          appliedAt,
+        });
+        applied.push(scope);
+      } catch (err) {
+        /**
+         * One scope failing to write used to end the pull with whatever had
+         * already landed, silently — and because `staff` is written before
+         * `deny_list`, the state it left behind was the dangerous one: a box
+         * that knew who could work here and not who had been stopped. The
+         * write order below puts the deny-list first, and this refuses to go
+         * on past a failure rather than filling in around it.
+         */
+        note('error', 'a cache scope could not be applied; the rest of the pull was abandoned', {
+          scope,
+          err: String(err),
+          applied: [...applied],
+        });
+        recordCacheFault('write_failed', scope);
+        return applied;
       }
-      await store.writeBundle(state.boxId, {
-        scope: scope as CachedBundle['scope'],
-        schemaVersion: body.schemaVersion,
-        cursorSeq: body.cursorSeq,
-        // One object rather than the array, because a scope is applied whole
-        // and `items` is how the cloud pages it, not what it means.
-        payload: { items: held.items },
-        appliedAt,
-      });
-      applied.push(scope);
     }
+    for (const skipped of plan.skipped) {
+      note('warn', 'a cache scope was not applied', skipped);
+      recordCacheFault(skipped.reason, skipped.scope);
+    }
+    if (plan.skipped.length === 0) clearCacheFaults();
     cacheCursorSeq = body.cursorSeq;
     /**
      * Stamps `last_cache_applied_at`, which is what the till's banner reads to
@@ -764,7 +825,14 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       offline: state.offline,
       devices: deviceReports(),
       leases: await leaseReports(),
-      errors: [],
+      /**
+       * What has gone wrong on the box that nothing else would carry. Today
+       * that is the cache pull: a scope that did not land leaves this box
+       * running on an incomplete copy, and the one that matters is the
+       * deny-list, because without it the till cannot check whether a shift
+       * has been ended and refuses to unlock offline at all.
+       */
+      errors: cacheFaultReports(),
     };
     const { status, body } = await request<BoxHeartbeatAck>('/box/v1/heartbeat', {
       method: 'POST',
@@ -1189,6 +1257,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     // running for a second with one.
     await syncCache().catch((err) => {
       note('error', 'cache pull failed at start', { err: String(err) });
+      // Swallowed so the agent still comes up, but not silently: the fault
+      // goes out in the first heartbeat, so a box running on no cache is
+      // visible in the Console rather than only in a log line on the box.
+      recordCacheFault('unreadable', 'pull_threw');
       return [];
     });
     await heartbeat();

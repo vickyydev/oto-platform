@@ -38,6 +38,22 @@ import { createPublicKey, sign, timingSafeEqual, verify } from 'node:crypto';
  * box that has not pulled for longer than the token lifetime is visibly stale
  * on the Console's Health page.
  *
+ * **What happens when the box cannot check revocation at all.** It refuses.
+ * Holding a stale deny-list and holding NO deny-list are different states and
+ * were once treated as one: a box that had applied the staff list without the
+ * deny-list beside it admitted every token that verified, including one a
+ * manager had ended that morning, and said nothing about having skipped the
+ * check. An absent deny-list is now its own refusal —
+ * `STAFF_TOKEN_REVOCATION_UNKNOWN` here and `OFFLINE_REVOCATION_UNKNOWN` in
+ * the unlock — so the invariant is the one the name claims: a token this file
+ * admits has been checked against a deny-list the box actually holds. The cost
+ * is a till that cannot unlock offline until its next complete pull; the
+ * alternative was a dismissed employee working the till for the life of their
+ * token with nothing on the box aware of it. The two ways that state used to
+ * be reachable are closed at their sources as well — `syncCache` in `agent.ts`
+ * will not apply a staff list without the deny-list of the same pull, and
+ * `GET /box/v1/cache` serves the two together.
+ *
  * **Working past midnight.** The expiry is a duration from the pick, not a
  * wall-clock hour, so a shift that starts at 16:00 and ends at 02:00 is inside
  * one token. What sixteen hours does NOT survive is a person who picked a
@@ -72,6 +88,13 @@ export const STAFF_TOKEN_REFUSALS = {
   INVALID: 'STAFF_TOKEN_INVALID',
   UNKNOWN_KEY: 'STAFF_TOKEN_UNKNOWN_KEY',
   REVOKED: 'STAFF_TOKEN_REVOKED',
+  /**
+   * The box holds no deny-list, so it cannot say whether this token was
+   * revoked. Distinct from `REVOKED` on purpose: one is a decision, the other
+   * is the absence of one, and only the first should ever be reported as "a
+   * manager ended this shift".
+   */
+  REVOCATION_UNKNOWN: 'STAFF_TOKEN_REVOCATION_UNKNOWN',
   WRONG_AUDIENCE: 'STAFF_TOKEN_WRONG_AUDIENCE',
   SCHEMA_TOO_NEW: 'STAFF_TOKEN_SCHEMA_TOO_NEW',
 } as const;
@@ -204,7 +227,14 @@ export interface StaffTokenVerifyOptions {
   boxId: string;
   /** This box's branch — the token's `aud`. */
   branchId: string;
-  /** The deny-list from the cache bundle, or nothing when the box has never pulled. */
+  /**
+   * The deny-list from the cache bundle.
+   *
+   * Absent or null means **this box cannot check revocation**, which is not
+   * the same as nothing being revoked, and is refused rather than waved
+   * through. A list that is merely old is a different thing and is accepted:
+   * its age is on the unlock's audit row and under the till's banner.
+   */
   deny?: StaffDenyList | null;
   now?: Date;
   /** Clock tolerance, in seconds, for `iat` in the future. */
@@ -272,11 +302,13 @@ export function verifyStaffToken(
   if (claims.iat - leeway > nowS) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.EXPIRED };
   if (claims.exp <= nowS) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.EXPIRED };
 
+  // Not being able to check revocation is not the same as nothing being
+  // revoked. A box with no deny-list refuses here rather than admitting a
+  // token it has no way to have an opinion about.
   const deny = options.deny;
-  if (deny) {
-    if (deny.revokedTokenIds.includes(claims.jti) || deny.revokedAccountIds.includes(claims.sub)) {
-      return { ok: false, refusal: STAFF_TOKEN_REFUSALS.REVOKED };
-    }
+  if (!deny) return { ok: false, refusal: STAFF_TOKEN_REFUSALS.REVOCATION_UNKNOWN };
+  if (deny.revokedTokenIds.includes(claims.jti) || deny.revokedAccountIds.includes(claims.sub)) {
+    return { ok: false, refusal: STAFF_TOKEN_REFUSALS.REVOKED };
   }
 
   return { ok: true, claims, expiresAt: new Date(claims.exp * 1000) };
@@ -305,6 +337,11 @@ export interface OfflineStaffRecord {
 export interface OfflineAuthSnapshot {
   keys: readonly StaffSigningKey[];
   staff: readonly OfflineStaffRecord[];
+  /**
+   * The deny-list, or null when this box holds none — an incomplete cache,
+   * never "nobody is revoked". `unlock` refuses on null: see the note at the
+   * top of this file.
+   */
   deny: StaffDenyList | null;
   /** When the cache was applied. What the till's "working offline" banner reads. */
   cachedAt: string | null;
@@ -363,6 +400,17 @@ export interface OfflineAuthOptions {
 export const OFFLINE_UNLOCK_REFUSALS = {
   /** The box has never pulled a cache, so it knows nobody. */
   NO_CACHE: 'OFFLINE_NO_CACHE',
+  /**
+   * The box holds a staff list but no deny-list, so it cannot tell whether
+   * anybody's access has been withdrawn.
+   *
+   * Its own code rather than `NO_CACHE`, because the two send whoever is
+   * standing there after different things: `NO_CACHE` is a box that has never
+   * pulled, and this is a box whose last pull was incomplete — which is a
+   * fault, is reported in the heartbeat as one, and is fixed by a pull rather
+   * than by a first sign-in.
+   */
+  REVOCATION_UNKNOWN: 'OFFLINE_REVOCATION_UNKNOWN',
   /** The token verified, but this box holds no password hash for its account. */
   NOT_CACHED: 'OFFLINE_ACCOUNT_NOT_CACHED',
   /** The account is not `active` in the last bundle this box pulled. */
@@ -386,6 +434,14 @@ export type OfflineUnlockRefusal =
   | (typeof OFFLINE_UNLOCK_REFUSALS)[keyof typeof OFFLINE_UNLOCK_REFUSALS]
   | StaffTokenRefusal;
 
+/**
+ * `ok: true` carries one guarantee beyond the password: the box held a
+ * deny-list at the moment of the check and this account and token were not on
+ * it. There is no field saying so because there is no other way to reach this
+ * branch — an absent deny-list refuses above, which is what makes the
+ * statement worth anything. How OLD that list was is a separate question, and
+ * `cachedAt` is the answer to it.
+ */
 export type OfflineUnlockResult =
   | {
       ok: true;
@@ -536,6 +592,24 @@ export class OfflineAuth {
           'This box has not taken a copy of the staff list yet — connect to the internet once and sign in.',
       };
     }
+    /**
+     * Before anything that could admit somebody, and before the password is
+     * looked at: a box holding a staff list with no deny-list beside it cannot
+     * answer "has this person's access been withdrawn", and the honest thing
+     * to do with a question it cannot answer is refuse it.
+     *
+     * Both paths through this method depend on the answer — the token path
+     * through `verifyStaffToken`, the 30-day sign-in through the account check
+     * below — so the refusal is here once rather than in each of them.
+     */
+    if (!snapshot.deny) {
+      return {
+        ok: false,
+        refusal: OFFLINE_UNLOCK_REFUSALS.REVOCATION_UNKNOWN,
+        message:
+          'This till has only part of its offline copy and cannot check whether access has been withdrawn — connect to the internet and sign in.',
+      };
+    }
 
     const now = this.now();
     let claims: StaffTokenClaims | null = null;
@@ -592,7 +666,7 @@ export class OfflineAuth {
         message: 'This box does not have your details yet — connect to the internet to sign in.',
       };
     }
-    if (record.status !== 'active' || snapshot.deny?.revokedAccountIds.includes(accountId)) {
+    if (record.status !== 'active' || snapshot.deny.revokedAccountIds.includes(accountId)) {
       return {
         ok: false,
         refusal: OFFLINE_UNLOCK_REFUSALS.INACTIVE,
@@ -663,6 +737,10 @@ export function refusalMessage(refusal: StaffTokenRefusal): string {
       return 'Shift token expired, connect to sign in';
     case STAFF_TOKEN_REFUSALS.REVOKED:
       return 'This shift was ended by a manager — connect to sign in';
+    case STAFF_TOKEN_REFUSALS.REVOCATION_UNKNOWN:
+      // Not "your shift was ended": the box does not know that and must not
+      // say it. What it knows is that it cannot check, and the fix is a pull.
+      return 'This till cannot check whether that shift is still valid — connect to sign in';
     case STAFF_TOKEN_REFUSALS.WRONG_AUDIENCE:
       return 'That shift belongs to another till';
     case STAFF_TOKEN_REFUSALS.UNKNOWN_KEY:
