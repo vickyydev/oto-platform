@@ -16,6 +16,7 @@ import { phoneHash } from '../lib/scrub';
 import { audit } from './audit';
 import type { Exec } from './tx';
 import { bumpWindow } from './throttle';
+import { revokeStaffTokens } from './staff-token';
 import type { SmsSender } from './sms';
 import { hashToken, newSessionToken } from '../plugins/session';
 
@@ -464,6 +465,15 @@ export async function signOut(db: Db, sessionId: string, actorAccountId: string,
     .update(sessionTable)
     .set({ revokedAt: new Date(), revokedReason: 'sign_out' })
     .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.revokedAt)));
+  /**
+   * And the shift token minted from it (S2-06).
+   *
+   * Signing out has to end the offline credential too, or a person who handed
+   * the till over would leave behind a token that unlocks it — on a box that
+   * may not hear about the sign-out for hours. The jti joins the deny-list
+   * every box pulls, and until that pull the token's own expiry is the bound.
+   */
+  await revokeStaffTokens(db, { sessionId }, 'sign_out', actorAccountId);
   await audit.record(db, {
     actorAccountId,
     // Sprint 1 left this null, so a sign-out was the one access event that
@@ -488,6 +498,15 @@ export async function invalidateAllSessions(
     .set({ revokedAt: new Date(), revokedReason: reason })
     .where(and(eq(sessionTable.accountId, accountId), isNull(sessionTable.revokedAt)))
     .returning({ id: sessionTable.id });
+  /**
+   * Every shift token this account holds goes with them (S2-06).
+   *
+   * This is the path a password reset and a deactivation take, and it is the
+   * one that has to reach a box: ending the cloud sessions of somebody who has
+   * been let go, and leaving a token that unlocks a till they can still walk
+   * up to, would be the more dangerous half left undone.
+   */
+  await revokeStaffTokens(db, { accountId }, 'account_revoked');
   return ended.length;
 }
 

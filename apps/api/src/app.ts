@@ -38,6 +38,9 @@ import { opsRoutes } from './routes/ops';
 import { boxRoutes } from './routes/box';
 import { fleetRoutes } from './routes/fleet';
 import { stationSessionRoutes } from './routes/stations';
+import { printRoutes } from './routes/print';
+import { scanningRoutes } from './routes/scanning';
+import { staffTokenRoutes } from './routes/staff-token';
 import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
@@ -291,6 +294,15 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // reason: its routes hang off `/stations/:id` and `/me`, two prefixes that
   // are already spoken for, so the paths are declared in full.
   await app.register(stationSessionRoutes);
+  // Printing (S2-06), beside the fleet and for the same reason: its resources
+  // hang off /branches/:branchId, /boxes/:id, /stations/:id and /devices/:id,
+  // four prefixes already spoken for, so the paths are declared in full.
+  await app.register(printRoutes);
+  // Scanning and the shift token (S2-06), declared in full for the same reason
+  // the fleet's are: their paths hang off `/stations/:id`, `/me` and `/auth`,
+  // three prefixes that are already spoken for.
+  await app.register(scanningRoutes);
+  await app.register(staffTokenRoutes);
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
   await app.register(opsRoutes, { prefix: '/ops' });

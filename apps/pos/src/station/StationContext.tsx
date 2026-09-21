@@ -12,6 +12,7 @@ import { useOperator } from '@/auth/OperatorContext';
 import { stationsApi, type ApiStation, type PickableStation } from '@/api/platform';
 import { ApiError, isMissingRoute } from '@/api/client';
 import { forgetStationDevices, rememberStation, toStationProfile } from '@/station/fleet';
+import { forgetStaffToken, rememberStaffToken } from '@/auth/staffToken';
 
 interface StationContextValue {
   /** The station this till is working, or null while none has been picked. */
@@ -105,6 +106,31 @@ function forgetRemembered(branchId: string): void {
   }
 }
 
+/**
+ * Keep the shift token the pick just handed back (S2-06).
+ *
+ * The one moment it can be obtained is this one — it is minted in the same
+ * transaction as the pick — and the one moment it is spent is hours later at a
+ * locked screen with no internet. Anything the API could not give us
+ * (no signing key on this deployment) leaves the till working exactly as
+ * before and unable to unlock offline, which the lock screen says when asked
+ * rather than pretending now.
+ */
+function keepStaffToken(picked: {
+  station: ApiStation;
+  staffToken: { token: string; jti: string; expiresAt: string } | null;
+}): void {
+  if (!picked.staffToken) {
+    forgetStaffToken();
+    return;
+  }
+  rememberStaffToken({
+    ...picked.staffToken,
+    stationId: picked.station.id,
+    stationName: picked.station.name,
+  });
+}
+
 const failure = (err: unknown): string =>
   err instanceof Error ? err.message : 'Could not reach the platform';
 
@@ -140,8 +166,9 @@ export function StationProvider({ children }: { children: ReactNode }) {
 
   const pick = useCallback(
     async (stationId: string, scannerMode?: ScannerMode) => {
-      const { station } = await stationsApi.pick(stationId);
-      adopt(station, scannerMode);
+      const picked = await stationsApi.pick(stationId);
+      keepStaffToken(picked);
+      adopt(picked.station, scannerMode);
     },
     [adopt],
   );
@@ -214,8 +241,11 @@ export function StationProvider({ children }: { children: ReactNode }) {
       const remembered = routesMissing ? null : readRemembered(branch.id);
       if (remembered && !cancelled) {
         try {
-          const { station } = await stationsApi.pick(remembered.id);
-          if (!cancelled) adopt(station, remembered.scannerMode);
+          const picked = await stationsApi.pick(remembered.id);
+          if (!cancelled) {
+            keepStaffToken(picked);
+            adopt(picked.station, remembered.scannerMode);
+          }
         } catch (err) {
           if (cancelled) return;
           if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {

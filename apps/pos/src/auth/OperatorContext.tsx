@@ -13,7 +13,8 @@ import { getOperatorThemePref } from '@/mockApi';
 import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS } from '@/auth/timings';
 import { useStaffTheme, useCustomerTheme } from '@/lib/themePref';
 import { authApi } from '@/api/platform';
-import { ApiError } from '@/api/client';
+import { ApiError, NetworkError } from '@/api/client';
+import { forgetStaffToken, readStaffToken, staffTokenLive } from '@/auth/staffToken';
 import { loadCatalogFromApi } from '@/api/catalogBridge';
 
 /**
@@ -37,6 +38,12 @@ interface OperatorContextValue {
   signIn: (phone: string, password: string) => Promise<Operator>;
   /** Re-enter the password to unlock the SAME session. */
   unlock: (password: string) => Promise<void>;
+  /**
+   * Set when the last unlock was decided by the BOX rather than the platform
+   * (S2-06): which rule allowed it, and how old the copy of the staff list
+   * was. Null on an ordinary unlock, and cleared on the next online one.
+   */
+  offlineUnlock: { method: string; cacheAgeSeconds: number | null } | null;
   /**
    * Whether this account holds a permission anywhere — any branch, any scope.
    * Enough to decide what a screen offers; never enough to decide what may
@@ -143,6 +150,9 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const [operator, setOperator] = useState<Operator | null>(null);
   const [held, setHeld] = useState<ReadonlySet<string>>(() => new Set());
   const [locked, setLocked] = useState(false);
+  const [offlineUnlock, setOfflineUnlock] = useState<
+    { method: string; cacheAgeSeconds: number | null } | null
+  >(null);
   const [warningActive, setWarningActive] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [sessionResolved, setSessionResolved] = useState(false);
@@ -172,6 +182,14 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setLocked(false);
     setOperator(null);
     setHeld(new Set());
+    setOfflineUnlock(null);
+    /**
+     * And the shift token (S2-06). The server revokes it too — that is what
+     * puts it on every box's deny-list — but this device must not keep a
+     * credential for a shift that has ended, whether or not the sign-out
+     * request below ever reaches anybody.
+     */
+    forgetStaffToken();
     void authApi.signOut().catch(() => {
       // Session may already be gone (expiry, deactivation) — signed out either way.
     });
@@ -233,8 +251,50 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     [applyThemePrefs],
   );
 
+  /**
+   * Unlock, with the box as the fallback (S2-06).
+   *
+   * The platform is asked first, because its answer is the true one: it checks
+   * the password against the account as it stands this second. Only when
+   * NOTHING answered — a `NetworkError`, which is the client's word for a
+   * request that never reached a server, as distinct from one that was refused
+   * — does the till turn to the box it is standing on, which verifies the
+   * shift token and the password against the copy it took while it still had
+   * the internet.
+   *
+   * The order matters and is not interchangeable. Asking the box first would
+   * mean an account deactivated this morning could still unlock a till that
+   * has perfectly good internet, because the box's copy is older than the
+   * decision. A refusal from the platform is therefore final and is never
+   * retried against the cache.
+   *
+   * **What this does NOT do today.** On the current deployment both doors are
+   * the same address — the virtual box lives inside the api — so a browser
+   * that cannot reach the api cannot reach the fallback either, and this path
+   * runs for real only when the box is a Pi on the counter's own network. What
+   * it settles now is the order, the refusal that is never retried, and the
+   * fact that an unlock decided by a cache is recorded as one. The offline
+   * decision itself is proved by `apps/api/test/scanning-staff-token.test.ts`,
+   * which changes the cloud's copy of the password and shows the box's answer
+   * standing.
+   */
   const unlock = useCallback(async (password: string): Promise<void> => {
-    await authApi.unlock(password);
+    try {
+      await authApi.unlock(password);
+      setOfflineUnlock(null);
+      setLocked(false);
+      return;
+    } catch (err) {
+      if (!(err instanceof NetworkError)) throw err;
+    }
+    const held = readStaffToken();
+    const answer = await authApi.unlockOffline(
+      staffTokenLive(held) ? (held?.token ?? null) : null,
+      password,
+    );
+    // What the banner says afterwards: this unlock was allowed by a copy of
+    // the staff list of a known age, not by the platform.
+    setOfflineUnlock({ method: answer.authMethod, cacheAgeSeconds: answer.cacheAgeSeconds });
     setLocked(false);
   }, []);
 
@@ -352,6 +412,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         locked,
         signIn,
         unlock,
+        offlineUnlock,
         can,
         lockNow,
         handoffError,

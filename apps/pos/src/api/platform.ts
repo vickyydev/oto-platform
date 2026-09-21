@@ -37,6 +37,25 @@ export const authApi = {
   /** Inactivity lock: the session survives, business routes refuse (S2-01a). */
   lock: () => api.post<{ locked: true }>('/auth/lock'),
   unlock: (password: string) => api.post<{ locked: false }>('/auth/unlock', { password }),
+  /**
+   * Unlock with no internet (S2-06): the box checks the shift token against
+   * its cached signing key and deny-list, and the password against its cached
+   * hash. `cachedAt` is how old that copy is, which the banner shows — an
+   * unlock allowed by a two-day-old cache is a different statement from one
+   * allowed by a cache taken ten minutes ago.
+   */
+  unlockOffline: (token: string | null, password: string) =>
+    api.post<{
+      locked: false;
+      authMethod: string;
+      cachedAt: string | null;
+      cacheAgeSeconds: number | null;
+    }>('/auth/unlock-offline', token ? { token, password } : { password }),
+  /** Mint a shift token for the station this session already holds. */
+  staffToken: () =>
+    api.post<{ token: string; jti: string; expiresAt: string; stationId: string }>(
+      '/me/staff-token',
+    ),
   me: () => api.get<MeResponse>('/me'),
   permissions: () =>
     api.get<{ permissions: Array<{ permission: string; scopeType: string; scopeId: string | null }> }>(
@@ -510,6 +529,108 @@ export interface StationInput {
   devices: Array<{ role: StationDeviceRole; deviceId: string }>;
 }
 
+/**
+ * Scanning (S2-06).
+ *
+ * Every code a till reads goes to the BOX, which classifies it, hands it to
+ * whichever handler claimed it and writes a fingerprint-only line on the
+ * station's tape. The code itself never comes back and is never stored.
+ */
+export const scanApi = {
+  /**
+   * A badge presented or a PIN typed at a locked till. Reachable while the
+   * session is locked, because that is the screen it is for.
+   */
+  badge: (value: string, source: 'manual' | 'keyboard' | 'camera' = 'manual') =>
+    api.post<{ outcome: string; handler: string | null; message: string | null }>('/auth/badge', {
+      value,
+      source,
+    }),
+  /** Any other code — the camera, or a scanner paired to this iPad. */
+  scan: (stationId: string, code: string, source: 'camera' | 'keyboard' | 'manual' = 'camera') =>
+    api.post<{
+      accepted: boolean;
+      kind: string;
+      outcome: string;
+      handler: string | null;
+      errorCode: string | null;
+      codeFingerprint: string;
+      handlers: string[];
+    }>(`/stations/${encodeURIComponent(stationId)}/scan`, { code, source }),
+};
+
+/**
+ * Printing (S2-06).
+ *
+ * The till and the admin console both read templates, so this sits beside the
+ * catalogue rather than under `adminApi`. Editing one is an admin act and the
+ * API says so; reading one is not.
+ */
+export interface ApiPrintTemplate {
+  id: string;
+  branchId: string;
+  type: 'receipt' | 'kids_wristband' | 'adult_wristband' | 'kitchen_ticket' | 'bar_ticket' | 'credit_voucher';
+  name: string;
+  showLogo: boolean;
+  headerText: string | null;
+  footerText: string | null;
+  fields: Record<string, boolean | undefined>;
+  version: number;
+  updatedAt: string;
+}
+
+export interface ApiPrintJob {
+  id: string;
+  kind: string;
+  status: 'queued' | 'printed' | 'failed' | 'skipped';
+  deviceId: string | null;
+  deviceLabel: string | null;
+  role: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  attempts: number;
+  queuedAt: string;
+  finishedAt: string | null;
+}
+
+export interface ApiStationPrinter {
+  deviceId: string;
+  label: string;
+  role: string;
+  kind: string;
+  reachability: 'unknown' | 'reachable' | 'unreachable';
+  paperStatus: 'unknown' | 'ok' | 'low' | 'out';
+  lastError: string | null;
+  lastSeenAt: string | null;
+  queued: number;
+}
+
+export const printApi = {
+  templates: (branchId: string) =>
+    api.get<{ templates: ApiPrintTemplate[] }>(
+      `/branches/${encodeURIComponent(branchId)}/print-templates`,
+    ),
+  updateTemplate: (
+    id: string,
+    body: Partial<Pick<ApiPrintTemplate, 'name' | 'showLogo' | 'headerText' | 'footerText' | 'fields'>>,
+  ) => api.patch<{ template: ApiPrintTemplate }>(`/print-templates/${encodeURIComponent(id)}`, body),
+  /**
+   * Print this template's sample on a real printer. No idempotency key: two
+   * presses of "Test print" mean two pieces of paper, which is exactly what
+   * somebody pressing it twice is asking for.
+   */
+  testPrint: (id: string, body?: { stationId?: string | null; copies?: number }) =>
+    api.post<{ printJob: ApiPrintJob; commandId: string; actionId: string }>(
+      `/print-templates/${encodeURIComponent(id)}/test-print`,
+      body ?? {},
+    ),
+  /** What this station's printers last said. Drives the header indicator. */
+  stationPrinters: (stationId: string) =>
+    api.get<{ printers: ApiStationPrinter[] }>(
+      `/stations/${encodeURIComponent(stationId)}/printers`,
+    ),
+};
+
 export const stationsApi = {
   /**
    * The stations this account may work at the branch its session is on,
@@ -524,7 +645,16 @@ export const stationsApi = {
    * check, so the refusal stands whether or not a picker ever showed it.
    */
   pick: (stationId: string) =>
-    api.put<{ station: ApiStation }>('/me/session/station', { stationId }),
+    api.put<{
+      station: ApiStation;
+      /**
+       * The shift token for this station, minted in the same transaction as
+       * the pick (S2-06). Null when the deployment has no signing key, and
+       * `staffTokenUnavailable` then says so in words the till can show.
+       */
+      staffToken: { token: string; jti: string; expiresAt: string } | null;
+      staffTokenUnavailable: string | null;
+    }>('/me/session/station', { stationId }),
   /**
    * One station whole, for the settings screen. The pick response carries no
    * staff list, so editing "who may use it" has to start from the record

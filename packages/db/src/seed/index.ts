@@ -763,6 +763,123 @@ export async function seed(db: Db = getDb()): Promise<void> {
     box: box2Id,
   });
   await assign(counter2Id, 'receipt', devReceipt2);
+  /**
+   * The bar route (S2-06).
+   *
+   * `192.168.88.208` is the park's **Bar / F&B** printer — DEVICE_INVENTORY §2
+   * row 7 — and it is the unit seeded above as Counter 2's receipt printer.
+   * One 80 mm Xprinter at the food counter does both jobs, which is what the
+   * park does today, and `ROLE_ACCEPTS.bar` in `services/fleet.ts` allows a
+   * plain receipt printer to take the bar role for exactly that reason.
+   *
+   * Without this row nothing in the seeded fleet carries the `bar` role, and
+   * the bar ticket — one of the nine printouts `@oto/print` renders — would
+   * have no device to route to on any demo station.
+   */
+  await assign(counter2Id, 'bar', devReceipt2);
+
+  // --- Print templates (S2-06) ------------------------------------------------
+  //
+  // The six editable printout types, with the prototype's own values
+  // (`imports/oto-pos/artifacts/oto-till/src/store/catalogStore.ts:729-784`).
+  // `@oto/print` holds the same list for its fixtures; this is the copy that
+  // reaches a database, so that the Print Templates panel opens on something
+  // and the renderer has a template to apply.
+  //
+  // Created once and then left alone, like every other demo row: a footer
+  // edited on staging survives a re-seed. A branch with no rows at all is
+  // still valid and prints every applicable field — that is what `printFieldOn`
+  // does with no template — so this is a convenience, not a prerequisite.
+  //
+  // Two values in here look like mistakes and are not: the adult band has
+  // `holderName: false`, and it has no allergy field to set.
+  type TemplateSeed = Pick<
+    typeof s.printTemplate.$inferInsert,
+    'type' | 'name' | 'showLogo' | 'headerText' | 'footerText' | 'fields'
+  >;
+  const mkTemplate = async (t: TemplateSeed) => {
+    const [found] = await db
+      .select({ id: s.printTemplate.id })
+      .from(s.printTemplate)
+      .where(and(eq(s.printTemplate.branchId, branchId), eq(s.printTemplate.type, t.type)))
+      .limit(1);
+    if (found) return found.id;
+    const id = newId();
+    await db.insert(s.printTemplate).values({ id, operatorId, branchId, ...t });
+    return id;
+  };
+
+  await mkTemplate({
+    type: 'receipt',
+    name: 'Standard receipt',
+    showLogo: true,
+    headerText: 'Oto Play Park',
+    footerText: 'Thank you for visiting! · Tax ID 0105500000000',
+    fields: { itemizedLines: true, taxServiceBreakdown: true, voucherInfo: true },
+  });
+  await mkTemplate({
+    type: 'kids_wristband',
+    name: 'Kids wristband',
+    showLogo: false,
+    fields: {
+      holderName: true,
+      durationTime: true,
+      qr: true,
+      allergyLine: true,
+      startEndTime: true,
+      partyName: true,
+      dietaryRequirement: true,
+      supervisionBadge: true,
+      assignedNannyName: true,
+    },
+  });
+  await mkTemplate({
+    type: 'adult_wristband',
+    name: 'Adult wristband',
+    showLogo: false,
+    fields: {
+      holderName: false,
+      durationTime: true,
+      qr: true,
+      startEndTime: true,
+      partyName: true,
+      dietaryRequirement: true,
+      supervisionBadge: true,
+      assignedNannyName: true,
+    },
+  });
+  await mkTemplate({
+    type: 'kitchen_ticket',
+    name: 'Kitchen ticket',
+    showLogo: false,
+    fields: {
+      itemizedLines: true,
+      allergyLine: true,
+      orderNotes: true,
+      orderRefTime: true,
+      holderName: true,
+    },
+  });
+  await mkTemplate({
+    type: 'bar_ticket',
+    name: 'Bar ticket',
+    showLogo: false,
+    fields: {
+      itemizedLines: true,
+      allergyLine: true,
+      orderNotes: true,
+      orderRefTime: true,
+      holderName: true,
+    },
+  });
+  await mkTemplate({
+    type: 'credit_voucher',
+    name: 'Credit voucher',
+    showLogo: true,
+    headerText: 'Oto Play Park',
+    footerText: 'Scan QR or wristband at the F&B or merch counter to spend.',
+    fields: { creditVoucherBalance: true, creditVoucherQr: true },
+  });
 
   // Only the administrator may pick Booth 1. Reception's picker must not show
   // it at all — that is the rule this row exists to exercise.
@@ -772,7 +889,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
     .onConflictDoNothing({ target: [s.stationStaff.stationId, s.stationStaff.accountId] });
 
   console.log(
-    'Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog, two virtual boxes with three stations.',
+    'Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog, two virtual boxes with three stations, the park\'s six printers, and six print templates.',
   );
 }
 

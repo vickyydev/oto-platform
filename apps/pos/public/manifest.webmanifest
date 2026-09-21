@@ -1,0 +1,19 @@
+{
+  "name": "Oto POS Till",
+  "short_name": "Oto Till",
+  "description": "Point of sale for OTO Park — admissions, membership check and the customer display.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#fbf5ef",
+  "theme_color": "#fbf5ef",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}

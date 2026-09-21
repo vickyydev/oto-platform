@@ -13,9 +13,19 @@
     <meta name="twitter:title" content="Oto POS Till" />
     <meta name="twitter:description" content="Point of sale for OTO Park — admissions, membership check and the customer display." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!--
+      Inter is served from this build (src/fonts.css), not from
+      fonts.googleapis.com: a till that comes up with no internet must come up
+      in its own typeface, and a cross-origin stylesheet cannot be there on the
+      first offline load. The faces are the same ones Google was sending.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- The app's own --background, light and dark, so the iPad's status bar
+         matches the screen instead of framing it in white. -->
+    <meta name="theme-color" content="#fbf5ef" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1729" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Oto Till" />
   </head>
   <body>
     <div id="root"></div>

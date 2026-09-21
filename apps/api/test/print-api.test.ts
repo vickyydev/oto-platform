@@ -1,0 +1,682 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { and, eq } from 'drizzle-orm';
+import {
+  BOX_COMMAND_KINDS as DB_BOX_COMMAND_KINDS,
+  auditLog,
+  box,
+  device,
+  opsRun,
+  printJob,
+  printTemplate,
+  station,
+  stationDevice,
+} from '@oto/db';
+import {
+  BOX_COMMAND_KINDS as AGENT_BOX_COMMAND_KINDS,
+  createBoxAgent,
+  memoryCredentialStore,
+  type AgentFetch,
+  ROLE_FOR_KIND,
+  profileFor,
+  testPrintJob,
+  type BoxAgent,
+} from '@oto/box-agent';
+import { previewPng, renderJob } from '@oto/print';
+import {
+  APPLICABLE_FIELDS,
+  PRINT_KINDS,
+  PRINT_TEMPLATE_TYPES,
+  PRINT_TEMPLATE_TYPE_ORDER,
+  TEMPLATE_FOR_KIND,
+} from '@oto/shared';
+import { createTestContext, signInAs, teardownAll, ADMIN, type TestContext } from './helpers';
+import { attachInProcessBox, provisionVirtualBox } from '../src/services/box';
+
+/**
+ * S2-06 — printing, driven through the routes a person's button actually hits.
+ *
+ * Nothing here calls a service directly. A test print is `POST` to the route
+ * the Print Templates panel posts to; the box that takes it is the agent from
+ * `@oto/box-agent`, the same file a Raspberry Pi runs, pointed at this api
+ * through `app.inject`; the printer at the far end is the simulator, which
+ * parses the bytes with the renderer's own reader. So a green test here is a
+ * statement about the whole path — Console, cloud, command queue, box,
+ * adapter, socket, paper, and the outcome coming back up.
+ *
+ * That is the shape this sprint learned to insist on three times: a service
+ * with no caller is not built, and a test that mirrors one side of a seam
+ * proves nothing about the seam.
+ */
+
+let ctx: TestContext;
+let cookie: string;
+
+beforeAll(async () => {
+  ctx = await createTestContext();
+  cookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+});
+afterAll(async () => {
+  await ctx.close();
+  await teardownAll();
+});
+
+function injectTransport(): AgentFetch {
+  return async (url, init) => {
+    const path = url.replace(/^https?:\/\/[^/]+/, '');
+    const res = await ctx.app.inject({
+      method: init.method as 'GET',
+      url: path,
+      headers: init.headers,
+      payload: init.body,
+    });
+    return {
+      status: res.statusCode,
+      json: async () => (res.body ? JSON.parse(res.body) : null),
+      text: async () => res.body,
+      header: (name) => {
+        const value = res.headers[name.toLowerCase()];
+        return typeof value === 'string' ? value : null;
+      },
+    };
+  };
+}
+
+/**
+ * The agent, with its print retry loop tightened so a test need not wait, and
+ * its credential captured.
+ *
+ * The credential is read off the wire rather than out of the store, because
+ * that is how the box's own transport carries it: the test speaks as the box
+ * in exactly the form the box does, and it breaks if the format changes, which
+ * is the right thing for it to do.
+ */
+interface TestBox {
+  agent: BoxAgent;
+  credential: string;
+}
+
+async function buildAgent(claimCode?: () => Promise<string | null>): Promise<TestBox> {
+  const transport = injectTransport();
+  let credential = '';
+  const agent = createBoxAgent({
+    apiBaseUrl: 'http://print.test',
+    credentials: memoryCredentialStore(),
+    hostname: 'virtual-print-test',
+    fetch: async (url, init) => {
+      const auth = init.headers?.authorization;
+      if (typeof auth === 'string' && auth.startsWith('Bearer ')) {
+        credential = auth.slice('Bearer '.length);
+      }
+      return transport(url, init);
+    },
+    claimCode:
+      claimCode ?? (async () => (await provisionVirtualBox(ctx.db, ctx.app.log))?.claimCode ?? null),
+    printing: { retryDelayMs: 0 },
+  });
+  await agent.ensureRegistered();
+  await agent.syncConfig();
+  /**
+   * Say that this agent is running in this process, which is what lets the
+   * preview routes read its simulators. `startVirtualBox` makes the same claim
+   * about the box it brings up; a test driving an agent against this api is
+   * the same kind of process making the same claim.
+   */
+  attachInProcessBox(agent);
+  return {
+    agent,
+    get credential() {
+      return credential;
+    },
+  };
+}
+
+/** Which station carries the printer for this printout's role. */
+async function stationForKind(type: string): Promise<string> {
+  const role = ROLE_FOR_KIND[type as keyof typeof ROLE_FOR_KIND];
+  const [row] = await ctx.db
+    .select({ stationId: stationDevice.stationId })
+    .from(stationDevice)
+    .where(eq(stationDevice.role, role as never))
+    .limit(1);
+  if (!row) throw new Error(`nothing in the seeded fleet carries the ${role} role`);
+  return row.stationId;
+}
+
+/**
+ * The second virtual box, which is where the park's bar printer actually is.
+ *
+ * `provisionVirtualBox` only ever provisions the slot this deployment is
+ * configured for, so box 2 is claimed the way an administrator claims a real
+ * Raspberry Pi: reissue its claim code on the Console's own route, then let
+ * the agent register with it.
+ */
+async function buildSecondBox(): Promise<TestBox> {
+  const [box2] = await ctx.db.select().from(box).where(eq(box.slot, 'virtual-2')).limit(1);
+  if (!box2) throw new Error('the seed no longer carries a second box');
+  return buildAgent(async () => {
+    const res = await post(`/boxes/${box2.id}/claim-code`);
+    if (res.statusCode !== 200) throw new Error(`claim code refused: ${res.body}`);
+    return res.json().claimCode as string;
+  });
+}
+
+async function get(url: string) {
+  return ctx.app.inject({ method: 'GET', url, headers: { cookie } });
+}
+async function post(url: string, payload?: unknown, headers: Record<string, string> = {}) {
+  return ctx.app.inject({ method: 'POST', url, headers: { cookie, ...headers }, payload: payload as never });
+}
+async function patch(url: string, payload: unknown) {
+  return ctx.app.inject({ method: 'PATCH', url, headers: { cookie }, payload: payload as never });
+}
+
+/**
+ * Inject a fault exactly the way the Console's Simulators panel does.
+ *
+ * It rides the ordinary command queue — `POST /boxes/:id/commands` with kind
+ * `simulate` — because that is the one door, and the checks it needs live in
+ * `queueCommand` behind it rather than on a route of its own.
+ */
+async function simulate(boxId: string, action: Record<string, unknown>) {
+  return post(`/boxes/${boxId}/commands`, { kind: 'simulate', payload: { action } });
+}
+
+async function seededIds() {
+  const [till] = await ctx.db
+    .select()
+    .from(station)
+    .where(eq(station.name, 'Reception Till 1'))
+    .limit(1);
+  const [booth] = await ctx.db.select().from(station).where(eq(station.name, 'Booth 1')).limit(1);
+  const [receipt] = await ctx.db
+    .select()
+    .from(device)
+    .where(eq(device.label, 'Receipt Printer 1'))
+    .limit(1);
+  const [kidsBand] = await ctx.db
+    .select()
+    .from(device)
+    .where(eq(device.label, 'Band Printer (kids)'))
+    .limit(1);
+  return { till: till!, booth: booth!, receipt: receipt!, kidsBand: kidsBand! };
+}
+
+// --- The vocabulary, in the one place both copies are importable ------------
+
+describe('the vocabularies that exist twice (S2-06)', () => {
+  /**
+   * `PrintKind` is declared in `@oto/print/templates/model.ts`, which is
+   * authoritative for rendering and cannot be imported by a browser bundle,
+   * and again in `@oto/shared/print.ts`, which the Console and the POS read.
+   * Neither package can import the other's copy, so the comparison belongs
+   * here — the api is the one place both are reachable.
+   */
+  it('the renderer and the shared package agree on the nine printouts', async () => {
+    const renderer = await import('@oto/print/templates');
+    // The nine kinds, and which editable template each of them reads.
+    expect(renderer.TEMPLATE_FOR_KIND).toEqual(TEMPLATE_FOR_KIND);
+    expect(Object.keys(renderer.TEMPLATE_FOR_KIND).sort()).toEqual([...PRINT_KINDS].sort());
+    // The six editable types, and the order the panel lists them in.
+    expect([...renderer.TEMPLATE_TYPE_ORDER]).toEqual([...PRINT_TEMPLATE_TYPE_ORDER]);
+    expect(Object.keys(renderer.APPLICABLE_FIELDS).sort()).toEqual([...PRINT_TEMPLATE_TYPES].sort());
+    // Which toggles are meaningful per type, in the order they print. A field
+    // added to one copy and not the other is a toggle the editor offers and
+    // the paper ignores, which is exactly the drift nothing else would catch.
+    for (const type of PRINT_TEMPLATE_TYPES) {
+      expect([...renderer.APPLICABLE_FIELDS[type]], type).toEqual([...APPLICABLE_FIELDS[type]]);
+    }
+  });
+
+  /**
+   * The command vocabulary is a CHECK constraint, so a kind the Console offers
+   * and the database refuses is a 500 on a button press. The agent's copy and
+   * the schema's copy are compared here for the same reason as above.
+   */
+  it('the agent and the database agree on what a box can be asked to do', () => {
+    expect([...AGENT_BOX_COMMAND_KINDS].sort()).toEqual([...DB_BOX_COMMAND_KINDS].sort());
+    expect([...AGENT_BOX_COMMAND_KINDS]).toContain('simulate');
+  });
+});
+
+// --- Templates --------------------------------------------------------------
+
+describe('the Print Templates panel (S2-06)', () => {
+  it('lists the six seeded templates in the panel’s own order', async () => {
+    const { till } = await seededIds();
+    const res = await get(`/branches/${till.branchId}/print-templates`);
+    expect(res.statusCode).toBe(200);
+    const templates = res.json().templates as { type: string; name: string; version: number }[];
+    expect(templates.map((t) => t.type)).toEqual([
+      'receipt',
+      'kids_wristband',
+      'adult_wristband',
+      'kitchen_ticket',
+      'bar_ticket',
+      'credit_voucher',
+    ]);
+    expect(templates.every((t) => t.version >= 1)).toBe(true);
+  });
+
+  it('an edit bumps the version, is audited, and reaches the box with no redeploy', async () => {
+    const { agent } = await buildAgent();
+    const before = agent.state.configVersion;
+    const { till } = await seededIds();
+    const [receiptTemplate] = await ctx.db
+      .select()
+      .from(printTemplate)
+      .where(and(eq(printTemplate.branchId, till.branchId), eq(printTemplate.type, 'receipt')))
+      .limit(1);
+
+    const res = await patch(`/print-templates/${receiptTemplate!.id}`, {
+      showLogo: false,
+      footerText: 'ขอบคุณค่ะ · Thank you',
+      fields: { itemizedLines: true, taxServiceBreakdown: false, voucherInfo: false },
+    });
+    expect(res.statusCode).toBe(200);
+    const updated = res.json().template as { version: number; showLogo: boolean; footerText: string };
+    expect(updated.version).toBe(receiptTemplate!.version + 1);
+    expect(updated.showLogo).toBe(false);
+
+    const [row] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.entityId, receiptTemplate!.id), eq(auditLog.action, 'print_template.update')))
+      .limit(1);
+    expect(row).toBeTruthy();
+
+    // The route a box takes to a changed template: the bundle's hash moved, so
+    // the next config pull brings the new footer. Nothing was redeployed.
+    expect(await agent.syncConfig()).toBe(true);
+    expect(agent.state.configVersion).not.toBe(before);
+    const carried = agent.config()!.printTemplates!.find((t) => t.type === 'receipt')!;
+    expect(carried.footerText).toBe('ขอบคุณค่ะ · Thank you');
+    expect(carried.showLogo).toBe(false);
+    expect(carried.version).toBe(updated.version);
+  });
+
+  it('refuses a field the editor does not know about rather than storing it', async () => {
+    const { till } = await seededIds();
+    const [tpl] = await ctx.db
+      .select()
+      .from(printTemplate)
+      .where(and(eq(printTemplate.branchId, till.branchId), eq(printTemplate.type, 'bar_ticket')))
+      .limit(1);
+    const res = await patch(`/print-templates/${tpl!.id}`, { fields: { madeUpToggle: true } });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('VALIDATION');
+  });
+});
+
+// --- The routed test print --------------------------------------------------
+
+describe('a test print, cloud to box to paper (S2-06)', () => {
+  /**
+   * All six, each at the station whose printer actually carries its role.
+   *
+   * That is not a convenience: the park's **bar** printer is Counter 2's
+   * 80 mm Xprinter on the SECOND box (DEVICE_INVENTORY §2 row 7, and the seed
+   * says so), so a bar ticket fired at Reception Till 1 would correctly find
+   * nothing. Driving each template at its own station is what makes this a
+   * test of routing rather than a test of one till, and it needs both boxes
+   * running, as the park does.
+   */
+  it('prints every editable template on the simulator, from the panel’s own route', async () => {
+    const boxes = [await buildAgent(), await buildSecondBox()];
+    const { till } = await seededIds();
+    const templates = (await get(`/branches/${till.branchId}/print-templates`)).json()
+      .templates as { id: string; type: string }[];
+
+    const printed: string[] = [];
+    /** Which machine each printout actually came out of. */
+    const onDevice = new Map<string, string>();
+    for (const template of templates) {
+      const at = await stationForKind(template.type);
+      const res = await post(`/print-templates/${template.id}/test-print`, { stationId: at });
+      expect(res.statusCode, `${template.type}: ${res.body}`).toBe(200);
+      const job = res.json().printJob as { id: string; status: string; kind: string };
+      expect(job.status).toBe('queued');
+      expect(job.kind).toBe(template.type);
+
+      // Whichever box the station belongs to takes it; the other has nothing.
+      const ran = (await Promise.all(boxes.map((b) => b.agent.runPendingCommands()))).reduce(
+        (a, b) => a + b,
+        0,
+      );
+      expect(ran, `${template.type} was collected by no box`).toBe(1);
+
+      const [row] = await ctx.db.select().from(printJob).where(eq(printJob.id, job.id)).limit(1);
+      expect(row!.status, `${template.type} ended ${row!.status} (${row!.errorCode})`).toBe('printed');
+      expect(row!.finishedAt).toBeTruthy();
+      expect(row!.attempts).toBe(1);
+      expect(row!.templateId).toBe(template.id);
+      onDevice.set(template.type, row!.deviceId!);
+      printed.push(template.type);
+    }
+    expect(printed).toEqual([
+      'receipt',
+      'kids_wristband',
+      'adult_wristband',
+      'kitchen_ticket',
+      'bar_ticket',
+      'credit_voucher',
+    ]);
+
+    /**
+     * And the paper is real. Each printout is asked for at the machine it
+     * actually came out of — the receipt family shares one printer per
+     * station and the bands have their own, so the set of devices here is the
+     * routing, read back from the rows rather than assumed.
+     */
+    expect(new Set(onDevice.values()).size).toBeGreaterThanOrEqual(3);
+    for (const [type, deviceId] of onDevice) {
+      const list = await get(`/devices/${deviceId}/printouts?limit=20`);
+      expect(list.statusCode, `${type}: ${list.body}`).toBe(200);
+      const printouts = list.json().printouts as {
+        seq: number;
+        previewUrl: string;
+        truncated: boolean;
+        heightDots: number;
+      }[];
+      expect(printouts.length, type).toBeGreaterThanOrEqual(1);
+      expect(printouts.every((p) => !p.truncated && p.heightDots > 0), type).toBe(true);
+
+      const png = await get(printouts[printouts.length - 1]!.previewUrl);
+      expect(png.statusCode).toBe(200);
+      expect(png.headers['content-type']).toBe('image/png');
+      expect([...png.rawPayload.subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+      // A picture of a receipt must not be cached by anything shared.
+      expect(png.headers['cache-control']).toBe('private, no-store');
+    }
+  });
+
+  /**
+   * The claim the whole pipeline rests on, checked rather than asserted.
+   *
+   * The simulator never sees a bitmap: it receives device bytes and rebuilds
+   * the picture from them with the renderer's own reader. So rendering the
+   * same job independently here and comparing the two PNGs byte for byte says
+   * three things at once — the emitter carried every dot, the transport lost
+   * none of them, and the preview the panel shows IS what came off the paper.
+   * `packages/print/test/single-renderer.test.ts` keeps there from being a
+   * second drawing path; this keeps there from being a second ANSWER.
+   *
+   * It is also the regression for a defect this test found: the simulator
+   * scanned the raster payload for real-time commands, so a receipt whose dots
+   * happened to spell `DLE EOT` lost three bytes out of the middle of the
+   * picture. One fixture did, one run in two.
+   */
+  it('the picture off the paper is byte for byte the picture the panel previews', async () => {
+    const { agent } = await buildAgent();
+    const { till, receipt } = await seededIds();
+
+    await post(`/stations/${till.id}/test-print`, { kind: 'test_page' });
+    expect(await agent.runPendingCommands()).toBe(1);
+
+    const list = await get(`/devices/${receipt.id}/printouts?limit=1`);
+    const printouts = list.json().printouts as { previewUrl: string }[];
+    const served = await get(printouts[0]!.previewUrl);
+    expect(served.statusCode).toBe(200);
+
+    const deviceRow = agent
+      .config()!
+      .stations.flatMap((s) => s.devices)
+      .find((d) => d.id === receipt.id)!;
+    const expected = previewPng(
+      renderJob(await testPrintJob('test_page'), { device: profileFor(deviceRow) }).bitmap,
+    );
+    expect(Buffer.from(served.rawPayload).equals(Buffer.from(expected))).toBe(true);
+  });
+
+  it('a job for a role no printer is assigned to is skipped, not failed', async () => {
+    const { booth } = await seededIds();
+    const res = await post(`/stations/${booth.id}/test-print`, { kind: 'kids_wristband' });
+    expect(res.statusCode).toBe(200);
+    const job = res.json().printJob as { id: string; status: string; errorCode: string };
+    expect(job.status).toBe('skipped');
+    expect(job.errorCode).toBe('NO_DEVICE_FOR_ROLE');
+    expect(res.json().commandId).toBe('');
+
+    // Nothing was raised. A station with no band printer is a choice.
+    const failures = await ctx.db
+      .select()
+      .from(opsRun)
+      .where(eq(opsRun.name, 'device:printer.NO_DEVICE_FOR_ROLE'));
+    expect(failures).toHaveLength(0);
+  });
+});
+
+// --- Paper out --------------------------------------------------------------
+
+describe('paper out, from the Simulators panel (S2-06)', () => {
+  it('queues the job, turns the device red on the heartbeat, and prints on clearing', async () => {
+    const { agent } = await buildAgent();
+    const { till, receipt } = await seededIds();
+    const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, agent.state.boxId!)).limit(1);
+
+    const injected = await simulate(boxRow!.id, {
+      action: 'printer.fault',
+      deviceId: receipt.id,
+      fault: 'paper_out',
+    });
+    expect(injected.statusCode, injected.body).toBe(200);
+    expect(await agent.runPendingCommands()).toBe(1);
+
+    const started = await post(`/stations/${till.id}/test-print`, { kind: 'test_page' });
+    const jobId = started.json().printJob.id as string;
+    expect(await agent.runPendingCommands()).toBe(1);
+
+    const [queued] = await ctx.db.select().from(printJob).where(eq(printJob.id, jobId)).limit(1);
+    expect(queued!.status).toBe('queued');
+    expect(queued!.errorCode).toBe('PRINTER_PAPER_OUT');
+    expect(queued!.finishedAt).toBeNull();
+
+    // The heartbeat is the schedule §7.3 names, so the indicator turns red
+    // within one interval rather than when somebody notices a missing receipt.
+    await agent.heartbeat();
+    const [deviceRow] = await ctx.db.select().from(device).where(eq(device.id, receipt.id)).limit(1);
+    expect(deviceRow!.paperStatus).toBe('out');
+
+    // Clearing the paper is one gesture at the machine, not a list of faults.
+    const cleared = await simulate(boxRow!.id, {
+      action: 'printer.clear',
+      deviceId: receipt.id,
+    });
+    expect(cleared.statusCode).toBe(200);
+    expect(await agent.runPendingCommands()).toBe(1);
+
+    // The queued job goes out on the next heartbeat, with no second button.
+    await agent.heartbeat();
+    const [printed] = await ctx.db.select().from(printJob).where(eq(printJob.id, jobId)).limit(1);
+    expect(printed!.status).toBe('printed');
+    expect(printed!.attempts).toBeGreaterThanOrEqual(2);
+
+    const [afterRow] = await ctx.db.select().from(device).where(eq(device.id, receipt.id)).limit(1);
+    expect(afterRow!.paperStatus).toBe('ok');
+  });
+
+  it('a fault cannot be injected into a real printer', async () => {
+    const { agent } = await buildAgent();
+    const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, agent.state.boxId!)).limit(1);
+    const { receipt } = await seededIds();
+    await ctx.db.update(device).set({ transport: 'lan' }).where(eq(device.id, receipt.id));
+    try {
+      await simulate(boxRow!.id, {
+        action: 'printer.fault',
+        deviceId: receipt.id,
+        fault: 'paper_out',
+      });
+      await agent.syncConfig();
+      expect(await agent.runPendingCommands()).toBe(1);
+      const commands = (await get(`/boxes/${boxRow!.id}/commands?limit=1`)).json().commands as {
+        state: string;
+        errorCode: string | null;
+      }[];
+      expect(commands[0]!.state).toBe('failed');
+      expect(commands[0]!.errorCode).toBe('DEVICE_NOT_SIMULATED');
+    } finally {
+      await ctx.db.update(device).set({ transport: 'simulated' }).where(eq(device.id, receipt.id));
+    }
+  });
+
+  it('a badge or a PIN is refused rather than written into a stored payload', async () => {
+    const { agent } = await buildAgent();
+    const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, agent.state.boxId!)).limit(1);
+    const { till } = await seededIds();
+    const res = await simulate(boxRow!.id, {
+      action: 'pin.enter',
+      stationId: till.id,
+      pin: '1234',
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('SIMULATOR_ACTION_CARRIES_SECRET');
+  });
+});
+
+// --- Failure, the record, and the reprint -----------------------------------
+
+describe('what a failure leaves behind (S2-06)', () => {
+  it('an unreachable printer ends the job failed and files one ops_run', async () => {
+    const { agent, credential } = await buildAgent();
+    const { till, receipt } = await seededIds();
+    const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, agent.state.boxId!)).limit(1);
+
+    await simulate(boxRow!.id, {
+      action: 'printer.fault',
+      deviceId: receipt.id,
+      fault: 'unreachable',
+    });
+    await agent.runPendingCommands();
+
+    const started = await post(`/stations/${till.id}/test-print`, { kind: 'test_page' });
+    const jobId = started.json().printJob.id as string;
+    await agent.runPendingCommands();
+
+    /**
+     * An unreachable printer is retryable — the cable may be back in a minute
+     * — so the job queues. It only becomes `failed` when the box gives up,
+     * which is what the attempt ceiling is for; here it is forced by reporting
+     * the terminal outcome the box would eventually send.
+     */
+    const reported = await ctx.app.inject({
+      method: 'POST',
+      url: `/box/v1/print-jobs/${jobId}/result`,
+      headers: { authorization: `Bearer ${credential}` },
+      payload: {
+        status: 'failed',
+        attempts: 20,
+        deviceId: receipt.id,
+        errorCode: 'PRINTER_UNREACHABLE',
+        errorMessage: 'Receipt Printer 1 does not answer',
+      } as never,
+    });
+    expect(reported.statusCode, reported.body).toBe(200);
+    expect(reported.json().replayed).toBe(false);
+
+    const [row] = await ctx.db.select().from(printJob).where(eq(printJob.id, jobId)).limit(1);
+    expect(row!.status).toBe('failed');
+    expect(row!.errorCode).toBe('PRINTER_UNREACHABLE');
+
+    const runs = await ctx.db
+      .select()
+      .from(opsRun)
+      .where(eq(opsRun.name, 'device:printer.PRINTER_UNREACHABLE'));
+    expect(runs).toHaveLength(1);
+    expect(runs[0]!.outcome).toBe('failed');
+    // Sixty of these read as one problem on the Failures page.
+    expect(runs[0]!.fingerprint).toBeTruthy();
+
+    // A second report of a terminal job changes nothing and says so, which is
+    // what stops a box whose acknowledgement was lost retrying for ever.
+    const again = await ctx.app.inject({
+      method: 'POST',
+      url: `/box/v1/print-jobs/${jobId}/result`,
+      headers: { authorization: `Bearer ${credential}` },
+      payload: { status: 'printed', attempts: 21 } as never,
+    });
+    expect(again.json().replayed).toBe(true);
+    const [unchanged] = await ctx.db.select().from(printJob).where(eq(printJob.id, jobId)).limit(1);
+    expect(unchanged!.status).toBe('failed');
+
+    await simulate(boxRow!.id, {
+      action: 'printer.clear',
+      deviceId: receipt.id,
+    });
+    await agent.runPendingCommands();
+  });
+
+  it('a reprint is a new job pointing at the original, with a reason', async () => {
+    const { agent } = await buildAgent();
+    const { till } = await seededIds();
+    const first = await post(`/stations/${till.id}/test-print`, { kind: 'receipt' });
+    const original = first.json().printJob.id as string;
+    await agent.runPendingCommands();
+
+    const res = await post(`/print-jobs/${original}/reprint`, { reason: 'The guest asked for a copy' });
+    expect(res.statusCode, res.body).toBe(200);
+    const copy = res.json().printJob as { id: string; reprintOf: string };
+    expect(copy.reprintOf).toBe(original);
+    await agent.runPendingCommands();
+
+    // A copy of the copy still points at the ORIGINAL, so counting the copies
+    // of one receipt is one indexed query rather than a walk down a chain the
+    // retention sweep may already have broken.
+    const third = await post(`/print-jobs/${copy.id}/reprint`, { reason: 'And another' });
+    expect(third.json().printJob.reprintOf).toBe(original);
+  });
+
+  it('a box may only speak about its own print jobs', async () => {
+    const { credential } = await buildAgent();
+    const { till } = await seededIds();
+    const started = await post(`/stations/${till.id}/test-print`, { kind: 'test_page' });
+    const jobId = started.json().printJob.id as string;
+
+    // Point the row at another box; the same credential must no longer reach
+    // it — and it must answer 404, never 403, so an id cannot be confirmed.
+    const [other] = await ctx.db
+      .select()
+      .from(box)
+      .where(eq(box.slot, 'virtual-2'))
+      .limit(1);
+    await ctx.db.update(printJob).set({ boxId: other!.id }).where(eq(printJob.id, jobId));
+
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/box/v1/print-jobs/${jobId}/result`,
+      headers: { authorization: `Bearer ${credential}` },
+      payload: { status: 'printed', attempts: 1 } as never,
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('PRINT_JOB_NOT_FOUND');
+  });
+});
+
+// --- The queue, as the Console reads it -------------------------------------
+
+describe('the print record (S2-06)', () => {
+  it('lists a branch’s jobs newest first and filters by status', async () => {
+    const { till } = await seededIds();
+    const all = await get(`/branches/${till.branchId}/print-jobs?limit=200`);
+    expect(all.statusCode).toBe(200);
+    const jobs = all.json().jobs as { queuedAt: string; status: string; deviceLabel: string | null }[];
+    expect(jobs.length).toBeGreaterThan(0);
+    const times = jobs.map((j) => Date.parse(j.queuedAt));
+    expect([...times].sort((a, b) => b - a)).toEqual(times);
+
+    const skipped = await get(`/branches/${till.branchId}/print-jobs?status=skipped`);
+    expect((skipped.json().jobs as { status: string }[]).every((j) => j.status === 'skipped')).toBe(true);
+
+    // The label is joined, so the Console can say which machine without a
+    // second round trip per row.
+    expect(jobs.some((j) => j.deviceLabel === 'Receipt Printer 1')).toBe(true);
+  });
+
+  it('the seeded bar role exists, so the bar ticket has somewhere to go', async () => {
+    const rows = await ctx.db
+      .select({ role: stationDevice.role, label: device.label })
+      .from(stationDevice)
+      .innerJoin(device, eq(stationDevice.deviceId, device.id))
+      .where(eq(stationDevice.role, 'bar'));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.label).toBe('Receipt Printer 3');
+  });
+});

@@ -2,6 +2,7 @@ import { createHash, createPublicKey, verify as verifyDetached, type KeyObject }
 import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import {
   account,
+  employee,
   band,
   booking,
   box,
@@ -16,7 +17,6 @@ import {
   productCategory,
   station,
   stationDevice,
-  stationStaff,
   syncAnomaly,
   syncChange,
   syncCursor,
@@ -56,6 +56,8 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
+import { atBranch } from '../lib/staff-scope';
+import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 import type { BoxAuth } from './box';
 
@@ -2794,10 +2796,46 @@ export async function cacheBundle(
 
     if (scope === 'staff') {
       /**
-       * Only accounts that may actually stand at a station on THIS box, which
-       * is the same rule the station picker applies: a box holds the unlock
-       * credentials of the people who work at its counter and of nobody else.
+       * Only accounts that may actually stand at a station on THIS box: a box
+       * holds the unlock credentials of the people who work at its counter and
+       * of nobody else.
+       *
+       * **Both halves of the picker's rule, which this had only one of.** A
+       * station is either `all_staff` — open to everybody at the branch — or
+       * `selected_staff`, with a named list. The join through `station_staff`
+       * alone answered the second half and silently dropped the first, so a
+       * box whose stations are all open to the branch cached NOBODY: the
+       * bundle came back with an empty staff list, every box in the fleet
+       * reported healthy, and the first thing to discover it would have been
+       * reception unable to unlock a till during an outage. Reception Till 1
+       * in the seed is exactly that station.
+       *
+       * `atBranch` is the same predicate `listBranchStaff` and the station
+       * picker use, imported rather than restated — the two answers have to
+       * agree, because a person the picker lets stand at a till and the bundle
+       * does not cache is a person the till cannot let back in.
        */
+      const [openStation] = await db
+        .select({ id: station.id })
+        .from(station)
+        .where(
+          and(
+            eq(station.boxId, auth.boxId),
+            isNull(station.archivedAt),
+            eq(station.accessScope, 'all_staff'),
+          ),
+        )
+        .limit(1);
+
+      const namedOnThisBox = sql`exists (
+        select 1
+          from core.station_staff ss
+          join core.station st on st.id = ss.station_id
+         where ss.account_id = ${account.id}
+           and st.box_id = ${auth.boxId}
+           and st.archived_at is null
+      )`;
+
       const rows = await db
         .selectDistinct({
           id: account.id,
@@ -2806,16 +2844,30 @@ export async function cacheBundle(
           mustChangePassword: account.mustChangePassword,
         })
         .from(account)
-        .innerJoin(stationStaff, eq(stationStaff.accountId, account.id))
-        .innerJoin(station, eq(stationStaff.stationId, station.id))
+        .leftJoin(employee, eq(account.employeeId, employee.id))
         .where(
           and(
-            eq(station.boxId, auth.boxId),
-            isNull(station.archivedAt),
             eq(account.operatorId, operatorId),
+            // Never somebody who cannot sign in anyway: caching a deactivated
+            // account's hash puts a credential on a box for no reason, and
+            // "dropped from the bundle" is what a box does with somebody who
+            // has left. `atBranch` says the same thing for its own half.
+            sql`${account.status} <> 'inactive'`,
+            openStation ? or(atBranch(branchId), namedOnThisBox) : namedOnThisBox,
           ),
         )
         .limit(limit);
+      /**
+       * When this box last minted a shift token for each of them (S2-06).
+       *
+       * It is what makes "seen on this box in the last thirty days" answerable
+       * with no internet — the offline sign-in path — and it is a TIMESTAMP
+       * rather than a name or a phone, so it adds nothing to what somebody
+       * holding the disk learns. Read from `core.staff_token`, which is also
+       * where the revocation lives, so recognition and revocation cannot
+       * disagree.
+       */
+      const lastToken = await lastTokenByAccountOnBox(db, auth.boxId);
       put(
         'staff',
         rows.map((a) => ({
@@ -2826,6 +2878,7 @@ export async function cacheBundle(
           passwordHash: a.passwordHash,
           status: a.status,
           mustChangePassword: a.mustChangePassword,
+          lastTokenAt: lastToken.get(a.id)?.toISOString() ?? null,
         })),
       );
       continue;
@@ -2843,11 +2896,22 @@ export async function cacheBundle(
         .from(account)
         .where(and(eq(account.operatorId, operatorId), sql`${account.status} <> 'active'`))
         .limit(limit);
+      /**
+       * Individually revoked shift tokens that have not yet expired (S2-06).
+       *
+       * Bounded by expiry rather than by history: past its `exp` a box refuses
+       * a token on the timestamp alone, so keeping it here would grow the list
+       * for ever in order to repeat what the token already says about itself.
+       *
+       * The window between a revocation and a box honouring it is the box's
+       * own pull interval, and for a box that is OFFLINE it is however long it
+       * stays offline. That is a property of offline working rather than a
+       * defect: it is why a token's expiry is hours and not days.
+       */
       put('deny_list', [
         {
           revokedAccountIds: rows.map((r) => r.id),
-          /** Staff tokens revoked by jti — filled by S2-06, empty until then. */
-          revokedTokenIds: [] as string[],
+          revokedTokenIds: await revokedStaffTokenIds(db, operatorId),
         },
       ]);
       continue;

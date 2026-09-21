@@ -22,4 +22,14 @@ export * from './store-sql';
 export * from './store-postgres';
 export * from './outbox';
 export * from './station-session';
+export * from './printing/index';
+/**
+ * Scanning and the signed staff token (S2-06). `scan-input` is the part that
+ * has no I/O in it — the burst rule and the record rule — so the api imports
+ * it to drive a simulated scanner through exactly the state machine that will
+ * read the real one.
+ */
+export * from './scan';
+export * from './scan-input';
+export * from './staff-token';
 export * from './agent';

@@ -6,6 +6,7 @@ import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
 import { expireStaleCommands, markSilentBoxesOffline, purgeOldBoxHeartbeats } from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
+import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import {
   buildAlertChannels,
   deliverAlert,
@@ -371,7 +372,7 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
     {
       name: 'job:housekeeping.retention',
       description:
-        'Ages out operational runs, resolved alerts, box heartbeats, the sync ledger, the change feed and station telemetry, and expires stale box commands',
+        'Ages out operational runs, resolved alerts, box heartbeats, the sync ledger, the change feed, station telemetry and the print record, and expires stale box commands',
       intervalSeconds: deps.env.HOUSEKEEPING_INTERVAL_S,
       run: async ({ db }) => {
         const sync = syncSettings();
@@ -390,6 +391,14 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
             syncAnomaliesDeleted: await purgeOldSyncAnomalies(db, sync.eventRetentionDays),
             syncChangesDeleted: await purgeOldSyncChanges(db, sync.changeRetentionDays),
             stationEventsDeleted: await purgeOldStationEvents(db, sync.stationEventRetentionDays),
+            /**
+             * The print record (S2-06), ninety days by `queued_at`. Every
+             * question this table answers — did it print, why is the queue
+             * stuck, which printer eats paper — is asked within days; the ones
+             * asked in a year are asked of the sale and of the audit log,
+             * neither of which is swept.
+             */
+            printJobsDeleted: await purgeOldPrintJobs(db, PRINT_RETENTION_DAYS),
           },
         };
       },

@@ -1413,18 +1413,37 @@ describe('the cache bundle', () => {
       headers: headers(b),
     });
     const staff = res.json().scopes.staff.items as Array<Record<string, unknown>>;
-    // The seed puts the administrator on Booth 1's list and nobody else on a
-    // restricted station, so that is exactly who this box holds a hash for.
+    /**
+     * Both halves of the picker's rule, which this scope had only one of until
+     * S2-06.
+     *
+     * A station is either `all_staff` — open to everybody at the branch — or
+     * `selected_staff`, with a named list. This test used to assert that the
+     * bundle held the administrator alone, because the administrator is the
+     * only person the seed NAMES on a station; the branch's reception account,
+     * who works Reception Till 1 all day, was cached by nobody. That is
+     * invisible until the link drops and reception cannot unlock the till,
+     * which is the whole purpose of the scope. So the rule now mirrors
+     * `visibleToAccount` and both are here.
+     */
     const [admin] = await ctx.db
       .select({ id: account.id })
       .from(account)
       .where(eq(account.phone, ADMIN.phone))
       .limit(1);
-    expect(staff.map((s) => s.accountId)).toEqual([admin!.id]);
+    const [reception] = await ctx.db
+      .select({ id: account.id })
+      .from(account)
+      .where(eq(account.phone, RECEPTION.phone))
+      .limit(1);
+    expect(staff.map((s) => s.accountId).sort()).toEqual([admin!.id, reception!.id].sort());
     // What an offline unlock needs, and nothing that identifies the person to
-    // somebody holding the disk.
+    // somebody holding the disk. `lastTokenAt` is when THIS box last minted a
+    // shift token for them — the "seen here" half of the 30-day offline
+    // sign-in, and a timestamp rather than a name (S2-06).
     expect(Object.keys(staff[0]!).sort()).toEqual([
       'accountId',
+      'lastTokenAt',
       'mustChangePassword',
       'passwordHash',
       'status',

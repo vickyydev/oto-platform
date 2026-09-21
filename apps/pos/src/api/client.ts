@@ -33,21 +33,48 @@ export function isMissingRoute(err: unknown): boolean {
   return err instanceof ApiError && err.status === 404 && err.code === 'UNKNOWN';
 }
 
+/**
+ * Nothing answered at all — the request never reached a server.
+ *
+ * DELIBERATELY NOT AN `ApiError`. The two are different facts and the till
+ * tells them apart in two places that matter: the offline banner counts a
+ * no-answer as a miss and an ApiError as proof the platform is reachable
+ * (`components/shared/StationLinkBanner.tsx`), and the lock screen shows an
+ * error's message to somebody standing at the counter. `fetch` rejects with
+ * "Failed to fetch", which is the browser's words for its own plumbing and
+ * tells a person on reception nothing; this says what happened in theirs.
+ *
+ * It matters most on the one screen the service worker can serve with no
+ * network at all: the shell comes up, the sign-in is typed, and the only
+ * honest answer is that nothing is there to check it against.
+ */
+export class NetworkError extends Error {
+  constructor(public readonly cause?: unknown) {
+    super('No answer from the platform. This screen has no connection.');
+    this.name = 'NetworkError';
+  }
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
   opts: { idempotencyKey?: string } = {},
 ): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method,
-    credentials: 'same-origin',
-    headers: {
-      ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
-      ...(opts.idempotencyKey ? { 'idempotency-key': opts.idempotencyKey } : {}),
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      method,
+      credentials: 'same-origin',
+      headers: {
+        ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+        ...(opts.idempotencyKey ? { 'idempotency-key': opts.idempotencyKey } : {}),
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    throw new NetworkError(err);
+  }
   if (res.status === 204) return undefined as T;
   const data = (await res.json().catch(() => null)) as
     | { error?: { code: string; message: string; details?: unknown } }

@@ -118,7 +118,13 @@ in to the POS as reception (`090 000 0002` / `reception1234`) and the booth is
 **absent from the picker** — not greyed out, not refusing. Add reception to
 its list, reload, and it appears.
 
-**6. The suite is one sign-on.**
+**6. A printer runs out during trading.**
+Console → Devices → Virtual box 1 → Simulator → Receipt Printer 1 → *Paper
+out*. Run a test print from the POS's Print templates panel. The job queues,
+the till header turns red within a minute, and nothing is lost. Clear the
+fault and the queued job prints itself.
+
+**7. The suite is one sign-on.**
 Sign in at the launcher once. POS, Console and the OTO App all open with no
 second password. Press *Sign out* on the launcher and every one of them ends.
 
@@ -154,12 +160,104 @@ prints, Thai and all.
 
 ---
 
+## Printing, end to end — what to press and what to look at
+
+This is the part with the most to see, because a printer is the one device
+whose output you can look at and immediately tell is wrong.
+
+**Where.** Console → **Devices** → open **Virtual box 1**. Two panels matter:
+*Simulator* (the faults) and *Printing* (the queue, and the paper).
+
+### 1. Print something, and look at it
+
+POS → **Admin → Print templates** → open **Standard receipt** → **Test print**.
+
+Then Console → Devices → Virtual box 1 → **Printing** → *Refresh*. The job is
+listed `printed`, and below it is **the picture the printer was told to burn**
+— rebuilt by the simulator from the bytes it received, not from anything the
+Console drew. Scroll it: the Thai line `สวัสดี OTO Park` and the Cyrillic
+`Привет` are rasterised glyphs, not boxes.
+
+> The picture is not an illustration. It is produced by parsing the ESC/POS
+> the box sent, with the same reader that proves the emitter's bytes in
+> `packages/print`, so anything missing from it was missing from the wire.
+
+### 2. Edit the template and print again
+
+Same screen: turn **Show logo** off, put something in **Footer text**, Save,
+then **Test print** again. The new printout has the change — with nothing
+redeployed and no box restarted. (The edit bumps the template's version, the
+version is part of the box's config hash, and the box pulls on its next
+heartbeat. That is the whole mechanism.)
+
+### 3. Take the paper out
+
+Console → Devices → Virtual box 1 → **Simulator** → *Receipt Printer 1* →
+**Paper out**.
+
+Now run a test print. Three things happen and all three are the point:
+
+- the job is **queued**, not failed — it is waiting, not lost;
+- the POS station header turns **red** and names the printer (within a minute,
+  which is the heartbeat interval);
+- nothing prints, and the simulator's log says the bytes were dropped.
+
+Press **Clear faults**, wait for the next heartbeat (or press a test print,
+which also nudges the queue), and the job that was waiting comes out. Nobody
+pressed print twice.
+
+### 4. Unplug it
+
+Same panel → **Unreachable**. This is different from paper out and reads
+differently: the socket does not open at all. The job queues, the header goes
+red saying *not answering*, and the Printing panel shows the attempt count
+climbing.
+
+### 5. Print something with nowhere to go
+
+POS → a station with no band printer (Booth 1) → a wristband test print. The
+job is **skipped**, the till says "not printed", and **no alert is raised**.
+That is deliberate: a station with no band printer is a choice somebody made
+in Station Setup, not a machine that broke. An alert here would teach everyone
+to ignore the alerts that matter.
+
+### 6. Print on the other box
+
+The park's **bar** printer is Counter 2's 80 mm Xprinter, on **virtual box
+2** — which is unclaimed by default. A bar-ticket test print aimed there will
+sit `queued` until that box is claimed and comes online. That is correct, and
+it is also the quickest way to see what a job waiting for an absent box looks
+like.
+
+### What is faithfully reproduced, and what is not
+
+The simulators answer the real status commands with the real bit frames —
+`DLE EOT n` on the receipt family (one byte, answered even mid-job and even
+in error), `ESC ! ?` and `~!T` on the band printers — and refuse a second
+connection while one is open, as both families do. What they deliberately do
+**not** answer is anything the adapter does not rely on: `GS a` automatic
+status back, `SET RESPONSE` per-label acknowledgement, dump mode, the vendor
+IP-set command. Each of those is unconfirmed on the park's firmware, and a
+simulator that answered them would be rehearsing a path the park cannot use.
+
+### Four things that will happen on real hardware, and what we decided
+
+Worth knowing before the Pi is plugged in, because each is a decision rather
+than an accident:
+
+| When | What happens |
+|---|---|
+| The cable is pulled **mid-job** | The job is `failed`, and **no timer retries it** — paper has already come out, and an unattended retry hands the guest a second receipt beside a torn-off first one. A person pressing reprint is a different act. |
+| The printer **answers no status query** | It is printed to anyway, and reported `status unknown`. Some firmware in this family does not answer `DLE EOT` over the LAN board, and a till that refused to sell because of that would be a worse fault. |
+| **Two jobs race one printer** | They are serialised; the second waits. Neither vendor document says whether a second connection is refused or stalls, so we never open two. |
+| The printer **was removed** while a job waited | The job is `skipped`, not failed. Nobody can fix it by waiting. |
+
+---
+
 ## What is not simulated yet
 
 Named here so nobody goes looking for a button that does not exist:
 
-- **Printing end to end.** The renderer is done and verified; the adapters
-  that open a socket to a printer, and their simulators, are being built now.
 - **Scanning.** Same — the service and its simulator are in progress.
 - **Payments.** No gateway is wired. `POST /public/bookings` currently marks a
   booking paid with no payment taken; the 2C2P sandbox arrives with S2-10.

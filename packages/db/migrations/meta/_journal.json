@@ -78,6 +78,13 @@
       "when": 1789910677870,
       "tag": "0010_sync_core",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789946034042,
+      "tag": "0011_print_and_staff_tokens",
+      "breakpoints": true
     }
   ]
 }

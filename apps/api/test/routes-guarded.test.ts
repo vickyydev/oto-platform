@@ -97,6 +97,10 @@ describe('route guards (S2-01b)', () => {
       'POST /box/v1/commands/:commandId/result [box]',
       'POST /box/v1/commands/poll [box]',
       'POST /box/v1/heartbeat [box]',
+      // What happened to a print job (S2-06). Its own route rather than a
+      // command result, because a job that waited on an empty roll reports
+      // long after the command that queued it was acknowledged.
+      'POST /box/v1/print-jobs/:id/result [box]',
       // The one route a box reaches before it has a credential: the claim
       // code IS the credential, single-use and short-lived.
       'POST /box/v1/register [box-claim]',
@@ -126,13 +130,14 @@ describe('route guards (S2-01b)', () => {
     const boxUrls = ctx.app.routeRegistry.filter(
       (r) => r.url.startsWith('/box/') && r.method !== 'HEAD' && r.method !== 'OPTIONS',
     );
-    expect(boxUrls.length).toBe(9);
+    expect(boxUrls.length).toBe(10);
 
     const bodies: Record<string, unknown> = {
       'POST:/box/v1/register': { claimCode: undefined, agentVersion: '0.1.0' },
       'POST:/box/v1/heartbeat': { reportedAt: new Date().toISOString(), agentVersion: '0.1.0' },
       'POST:/box/v1/commands/poll': { max: 5 },
       'POST:/box/v1/commands/:commandId/result': { state: 'succeeded' },
+      'POST:/box/v1/print-jobs/:id/result': { status: 'printed', attempts: 1 },
       'POST:/box/v1/sync/key': { publicKey: 'x'.repeat(44) },
       // A whole batch of facts, sent by nobody. It must be refused before the
       // body is looked at, which is what preValidation buys.
@@ -140,7 +145,9 @@ describe('route guards (S2-01b)', () => {
     };
 
     for (const route of boxUrls) {
-      const url = route.url.replace(':commandId', '00000000-0000-7000-8000-000000000000');
+      const url = route.url
+        .replace(':commandId', '00000000-0000-7000-8000-000000000000')
+        .replace(':id', '00000000-0000-7000-8000-000000000000');
       const res = await ctx.app.inject({
         method: route.method as 'GET' | 'POST',
         url,

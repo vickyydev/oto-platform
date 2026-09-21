@@ -321,16 +321,33 @@ export async function fleetRoutes(app: App): Promise<void> {
   app.put(
     '/me/session/station',
     {
-      config: { auth: 'session' },
+      // `secretResponse`: the answer now carries a shift token, which is a
+      // bearer credential for an offline unlock. No idempotency key is taken,
+      // so it is never stored to be replayed (S2-06).
+      config: { auth: 'session', secretResponse: true },
       schema: {
-        description: 'Take a station for this session. Refused if archived, elsewhere, or not yours.',
+        description:
+          'Take a station for this session. Refused if archived, elsewhere, or not yours. The answer carries the shift token this station’s box verifies offline (S2-06); `staffTokenUnavailable` says why there is none when this deployment has no signing key.',
         body: z.object({ stationId: z.string().uuid() }),
-        response: { 200: z.object({ station: StationSchema }) },
+        response: {
+          200: z.object({
+            station: StationSchema,
+            staffToken: z
+              .object({
+                /** Bearer, for the offline unlock only. Kept by the till, never logged. */
+                token: z.string(),
+                jti: z.string().uuid(),
+                expiresAt: z.string(),
+              })
+              .nullable(),
+            staffTokenUnavailable: z.string().nullable(),
+          }),
+        },
       },
     },
     async (req) => {
       const auth = req.requireAuth();
-      return { station: await pickStation(app.db, opCtx(req), auth, req.body.stationId) };
+      return pickStation(app.db, opCtx(req), auth, req.body.stationId, app.env);
     },
   );
 

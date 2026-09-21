@@ -1,0 +1,266 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Loader2, Printer, RefreshCw } from 'lucide-react';
+import { api } from '@/api/client';
+import { isMissingRoute, type BoxRow, type DeviceRow } from '@/api/fleet';
+import { Button } from '@/components/ui/button';
+import { EmptyState, ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
+import { StatusPill, type Tone } from '@/components/Status';
+
+/**
+ * What came out of the machine, and what is still waiting to (S2-06).
+ *
+ * WHY A PREVIEW AT ALL. A printer simulator that only said "printed" would go
+ * green on a receipt with the guest's name missing, a Thai line rendered as
+ * empty boxes, or a layout eight millimetres too wide for the head — which is
+ * the class of fault this pipeline is most likely to have and the class a
+ * person spots instantly by looking. So the simulator rebuilds the picture
+ * from the bytes it was sent, with the renderer's own reader, and this shows
+ * it. `packages/print` proves the bytes carry the rendered dots; this is where
+ * somebody checks that the dots say the right thing.
+ *
+ * WHY ONLY FOR THE BOX RUNNING HERE. A printout is a rendered receipt: a
+ * member's name and what they bought, or a child's name and an allergy line.
+ * Pushing that up from a Raspberry Pi would put it on the telemetry wire,
+ * which the box protocol's first rule forbids — so a Pi's previews stay on the
+ * Pi and this panel says so rather than showing an empty box.
+ */
+interface Printout {
+  seq: number;
+  at: string;
+  widthDots: number;
+  heightDots: number;
+  jobBytes: number;
+  truncated: boolean;
+  setup?: string[];
+  previewUrl: string;
+}
+
+interface SimulatorEvent {
+  at: string;
+  kind: string;
+  detail: Record<string, unknown>;
+}
+
+interface PrintJobRow {
+  id: string;
+  kind: string;
+  status: 'queued' | 'printed' | 'failed' | 'skipped';
+  deviceLabel: string | null;
+  role: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  attempts: number;
+  queuedAt: string;
+  finishedAt: string | null;
+}
+
+const printApi = {
+  jobs: (boxId: string, limit = 12) =>
+    api.get<{ jobs: PrintJobRow[] }>(
+      `/boxes/${encodeURIComponent(boxId)}/print-jobs?limit=${limit}`,
+    ),
+  printouts: (deviceId: string, limit = 4) =>
+    api.get<{ printouts: Printout[]; events: SimulatorEvent[] }>(
+      `/devices/${encodeURIComponent(deviceId)}/printouts?limit=${limit}`,
+    ),
+};
+
+const STATUS_TONE: Record<PrintJobRow['status'], Tone> = {
+  printed: 'ok',
+  queued: 'warn',
+  failed: 'down',
+  /** Neither good nor bad: a printout nobody configured a printer for. */
+  skipped: 'idle',
+};
+
+export function PrintPanel({
+  box,
+  devices,
+}: {
+  box: BoxRow;
+  devices: DeviceRow[];
+}) {
+  const simulatedPrinters = devices.filter(
+    (d) => !d.archived && d.transport === 'simulated' && d.kind.endsWith('printer'),
+  );
+  const [selected, setSelected] = useState<string | null>(simulatedPrinters[0]?.id ?? null);
+  const [jobs, setJobs] = useState<PrintJobRow[] | null>(null);
+  const [printouts, setPrintouts] = useState<Printout[] | null>(null);
+  const [missing, setMissing] = useState(false);
+  /** The box's previews live on the box; this one is not here. */
+  const [elsewhere, setElsewhere] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    setFailed(null);
+    try {
+      const { jobs: rows } = await printApi.jobs(box.id);
+      setJobs(rows);
+      setMissing(false);
+    } catch (err) {
+      if (isMissingRoute(err)) {
+        setMissing(true);
+      } else {
+        setFailed(err instanceof Error ? err.message : 'The print queue could not be read.');
+      }
+      setBusy(false);
+      return;
+    }
+
+    if (!selected) {
+      setPrintouts(null);
+      setBusy(false);
+      return;
+    }
+    try {
+      const { printouts: rows } = await printApi.printouts(selected);
+      setPrintouts(rows);
+      setElsewhere(false);
+    } catch (err) {
+      // 409 BOX_NOT_IN_PROCESS — a real box, whose paper is in Phuket.
+      setPrintouts(null);
+      setElsewhere(true);
+      void err;
+    } finally {
+      setBusy(false);
+    }
+  }, [box.id, selected]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (missing) {
+    return (
+      <section>
+        <h3 className="text-sm font-bold mb-2">Printing</h3>
+        <RouteUnavailable
+          what="The print record"
+          detail="This deployment's API has no print routes yet."
+        />
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <h3 className="text-sm font-bold">Printing</h3>
+        <Button variant="ghost" size="sm" onClick={() => void load()} disabled={busy}>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Refresh
+        </Button>
+      </div>
+
+      {failed && <ErrorNote message={failed} onRetry={() => void load()} />}
+
+      {jobs === null ? (
+        <Loading what="the print queue" />
+      ) : jobs.length === 0 ? (
+        <EmptyState
+          title="Nothing has been printed on this box"
+          detail="A test print from the Print Templates panel, or from a station, appears here."
+        />
+      ) : (
+        <ul className="flex flex-col divide-y rounded-xl border mb-4">
+          {jobs.map((job) => (
+            <li key={job.id} className="px-3 py-2 flex flex-wrap items-center gap-2 text-sm">
+              <StatusPill tone={STATUS_TONE[job.status]}>{job.status}</StatusPill>
+              <span className="font-semibold">{job.kind.replace(/_/g, ' ')}</span>
+              <span className="text-xs text-muted-foreground">
+                {job.deviceLabel ?? 'no printer'}
+                {job.role ? ` · ${job.role}` : ''}
+              </span>
+              {job.attempts > 1 && (
+                <span className="text-xs text-muted-foreground">{job.attempts} attempts</span>
+              )}
+              {job.errorCode && (
+                <span className="text-xs text-destructive break-words">
+                  {job.errorCode}
+                  {job.errorMessage ? ` — ${job.errorMessage}` : ''}
+                </span>
+              )}
+              <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                {new Date(job.queuedAt).toLocaleTimeString()}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {simulatedPrinters.length === 0 ? (
+        <EmptyState
+          title="No simulated printer on this box"
+          detail="A real printer's output is on paper, so there is nothing to show here."
+        />
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {simulatedPrinters.map((printer) => (
+              <button
+                key={printer.id}
+                type="button"
+                onClick={() => setSelected(printer.id)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold border ${
+                  selected === printer.id ? 'bg-foreground/10' : 'text-muted-foreground'
+                }`}
+              >
+                <Printer className="inline h-3.5 w-3.5 mr-1" />
+                {printer.label}
+              </button>
+            ))}
+          </div>
+
+          {elsewhere ? (
+            <EmptyState
+              title="This box's paper is not here"
+              detail="Previews are held by the box that printed them. Only the box running inside this api process can show them from the Console."
+            />
+          ) : printouts === null ? (
+            <Loading what="the previews" />
+          ) : printouts.length === 0 ? (
+            <EmptyState
+              title="Nothing has come out of this printer yet"
+              detail="Run a test print, then refresh."
+            />
+          ) : (
+            <ul className="flex gap-3 overflow-x-auto pb-1">
+              {printouts
+                .slice()
+                .reverse()
+                .map((printout) => (
+                  <li key={printout.seq} className="shrink-0">
+                    <div className="rounded-lg border bg-white p-1">
+                      <img
+                        src={printout.previewUrl}
+                        alt={`Printout ${printout.seq}, ${printout.widthDots} by ${printout.heightDots} dots`}
+                        /* The image is 1 bit per pixel at 203 dpi; scaling it
+                           down smoothly turns a crisp receipt into grey mush,
+                           so it is shown at a readable width with the browser
+                           told not to interpolate. */
+                        className="block w-[220px] h-auto [image-rendering:pixelated]"
+                      />
+                    </div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      #{printout.seq} · {printout.widthDots}×{printout.heightDots} dots ·{' '}
+                      {printout.jobBytes.toLocaleString()} bytes
+                      {printout.truncated && (
+                        <span className="text-destructive"> · cut off mid-job</span>
+                      )}
+                    </div>
+                    {printout.setup && printout.setup.length > 0 && (
+                      <div className="mt-0.5 text-[11px] text-muted-foreground font-mono break-words max-w-[220px]">
+                        {printout.setup.slice(0, 3).join(' · ')}
+                      </div>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
