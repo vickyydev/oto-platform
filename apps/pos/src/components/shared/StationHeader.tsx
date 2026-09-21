@@ -25,8 +25,23 @@ interface StationHeaderProps {
   rightExtra?: ReactNode;
 }
 
+/**
+ * `shrink-0 whitespace-nowrap` is what makes the nav's `overflow-x-auto`
+ * mean anything.
+ *
+ * A flex item shrinks to min-content by default, so without these the tabs
+ * squeezed themselves narrower instead of overflowing, the nav never scrolled,
+ * and the only label with a break opportunity in it — `Check-in`, on its
+ * hyphen — wrapped to two lines and was then clipped by the row's height. It
+ * read `Che` over `i` on a perfectly healthy till at 1600px, because six tabs
+ * want 770px and the band between the side clusters offers 689px.
+ *
+ * A reviewer found it in a screenshot. Nobody had seen it in the code,
+ * including in a comment two lines below claiming the nav "shrinks and scrolls
+ * horizontally on a crowded screen" — it did the first and never the second.
+ */
 const baseBtn =
-  'rounded-md px-3 h-9 flex items-center gap-1.5 text-sm font-semibold transition-colors';
+  'shrink-0 whitespace-nowrap rounded-md px-3 h-9 flex items-center gap-1.5 text-sm font-semibold transition-colors';
 const activeBtn = `${baseBtn} bg-background shadow`;
 const idleBtn = `${baseBtn} text-muted-foreground hover:text-foreground`;
 
@@ -53,9 +68,13 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
     <>
     {/* Flex header: the logo/chip (left) and actions/badge (right) clusters take
         their content width; the nav lives in a flex-1 band between them and is
-        centred within it. With six surfaces the nav can be wide, so it shrinks and
-        scrolls horizontally on a crowded screen (e.g. the till with its Scan
-        Discount action) rather than overlapping the side clusters. */}
+        centred within it. With six surfaces the nav is wider than that band on
+        most screens, so the band scrolls horizontally rather than overlapping
+        the side clusters or clipping a label — which needs `shrink-0` on the
+        tabs themselves to work at all; see `baseBtn` above for what happened
+        without it. The band is `flex-1 min-w-0`, i.e. basis zero, so it takes
+        only what the two clusters leave: a printer-fault chip appearing costs
+        the nav its width, and the nav absorbs that by scrolling. */}
     <div className="shrink-0 flex items-center gap-3 px-6 h-16 border-b bg-card/30">
       <div className="flex items-center gap-3 min-w-0 shrink">
         <Link href="/" aria-label="Oto home">
