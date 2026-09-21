@@ -1,43 +1,64 @@
 /**
- * Sample data for a staging OTO App, so the screens show a park rather than
- * eight empty lists.
+ * Load the sampled park into a deployment, so the screens show a park rather
+ * than eight empty lists.
  *
  * Run it as often as you like:
  *
  *   DATABASE_URL=... npx tsx script/sample/main.ts
  *
  * Every write is a find-or-create against a natural key, and nothing that
- * already exists is overwritten — edit Ploy's phone number in the UI, run this
- * again, and her new number is still there. The only writes to an existing row
+ * already exists is overwritten — change a phone number in the UI, run this
+ * again, and the new number is still there. The only writes to an existing row
  * are backfills of a column that is NULL and that the row cannot work without
- * (an employee with no branch, a department with no description), which is the
- * same rule the platform's own seed follows.
+ * (an employee with no branch, a branch with no operator), which is the same
+ * rule the platform's own seed follows.
  *
  * It is NOT `script/minimal` or `script/full`. Those assume an empty database,
  * insert blindly, and call `assertDevEnv()` so they refuse to run anywhere
  * else. This one is written for a deployment that is already carrying real
  * sign-ins.
  *
- * What it deliberately does not create:
+ * ## Where the rows come from
+ *
+ * They are the park's own. `data.generated.ts` is a sample cut from the
+ * production export by `script/sample/extract.ts`, which is where the sampling
+ * rule and the list of columns deliberately left behind are written down. The
+ * export is never committed and is not needed to run this; the sample is
+ * committed and is.
+ *
+ * An earlier version of this seed carried twenty-six invented people. It does
+ * not any more.
+ *
+ * ## What it deliberately does not create
  *
  *  - `users`. Accounts on a deployment come from the platform's provisioning
  *    (S2-17a), and a local user here would be a second way in that survives
  *    being deactivated on the platform. The staff below are employee records;
- *    none of them can sign in.
+ *    none of them can sign in, and none of them is linked to an account even
+ *    though the export links sixty-seven of sixty-nine.
  *  - `user_branch_access` for anyone whose role does not already imply every
  *    branch. Who may see which branch is decided inside this app by an
  *    administrator, and a seed that widened it would be making that decision
  *    silently. See `backfillAdminBranchAccess` below for the one case it does
  *    write, and why that one grants nothing new.
+ *  - `people`, and therefore `employees.person_id`. That table carries its own
+ *    PIN hash, face id and phone number for each person.
  *
- * Every person, shift and message in `people.ts` is invented. The park's real
- * export was read for SHAPES and PROPORTIONS only — how many departments, how
- * many staff per department, that a Thai legal name sits beside a short
- * nickname, that a few hires are foreign and carry visa dates — and not one
- * value was copied out of it.
+ * ## One thing to know about the dates
+ *
+ * The clock-ins and the task board carry the export's real timestamps, which
+ * end on the day the export was taken. Screens that ask for a date range show
+ * them; screens that ask for *today* will be empty until somebody clocks in.
+ * That is the price of real data and it is the right way round — the fix is a
+ * fresher export through `extract.ts`, not invented timestamps here.
  */
 
-import { and, eq, inArray, sql } from 'drizzle-orm';
+// First, and before the database module: the sample's timestamps are wall
+// clocks with no offset, and this has to write them back exactly as they were
+// read — on a laptop in Bangkok and on a deployment running in UTC alike.
+import './utc';
+
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db, pool } from '../../server/db';
 import {
   DEFAULT_TENANT_SLUG,
@@ -56,47 +77,28 @@ import {
 } from '../../shared/schema';
 import { announcements, tasks } from '../../server/db/coreSchema';
 import {
+  ANNOUNCEMENTS,
+  BRANCHES,
   DEPARTMENTS,
+  OPERATOR,
   PEOPLE,
   ROLES,
+  SAMPLE_BANNER,
+  SAMPLE_COUNTS,
   SAMPLE_EMAIL_DOMAIN,
+  TASKS,
+  TASKS_OWNED_BY_ADMIN,
+  TIME_EVENTS,
   emailFor,
-  phoneFor,
-  type DeptKey,
-  type SamplePerson,
 } from './people';
-
-const BRANCH_NAME = 'HKT Central';
-const BRANCH_ADDRESS = 'Central Phuket Floresta, Wichit, Mueang Phuket';
-const OPERATOR_NAME = 'OTO Park';
 
 /** Every count the run reports, so the summary is measured and not claimed. */
 const made: Record<string, number> = {};
-const count = (what: string, n = 1) => {
+const count = (what: string, n = 1): void => {
   made[what] = (made[what] ?? 0) + n;
 };
 
-/**
- * A stable number in [0,1) from a string. Clock-in times have to look like
- * people rather than a cron job, but they also have to be the SAME on every
- * run — a re-run matches existing time events by their exact timestamp, and a
- * fresh random would write a second clock-in a minute away from the first.
- */
-function jitter(seed: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i += 1) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return ((h >>> 0) % 10000) / 10000;
-}
-
-function monthsAgo(n: number): Date {
-  const d = new Date();
-  d.setMonth(d.getMonth() - n);
-  d.setHours(9, 0, 0, 0);
-  return d;
-}
+const at = (value: string | null): Date | null => (value ? new Date(value) : null);
 
 async function ensureTenant(): Promise<string> {
   const [existing] = await db
@@ -106,8 +108,8 @@ async function ensureTenant(): Promise<string> {
     .limit(1);
   if (existing) return existing.id;
   // "Default" and not something prettier: this is the row every
-  // `getDefaultTenantId` in the app looks for by slug, and the app's own
-  // fallback creates it under that name.
+  // `getDefaultTenantId` in the app looks for by slug, and it is also what the
+  // export calls it.
   const [created] = await db
     .insert(tenants)
     .values({ name: 'Default', slug: DEFAULT_TENANT_SLUG })
@@ -120,46 +122,77 @@ async function ensureOperator(tenantId: string): Promise<string> {
   const [existing] = await db
     .select({ id: operators.id })
     .from(operators)
-    .where(and(eq(operators.tenantId, tenantId), eq(operators.name, OPERATOR_NAME)))
+    .where(and(eq(operators.tenantId, tenantId), eq(operators.name, OPERATOR.name)))
     .limit(1);
   if (existing) return existing.id;
   const [created] = await db
     .insert(operators)
-    .values({ tenantId, name: OPERATOR_NAME, status: 'active' })
+    .values({ tenantId, name: OPERATOR.name, status: OPERATOR.status })
     .returning({ id: operators.id });
   count('operator');
   return created!.id;
 }
 
-async function ensureBranch(tenantId: string, operatorId: string): Promise<string> {
-  const [existing] = await db
-    .select({ id: branches.id, operatorId: branches.operatorId })
-    .from(branches)
-    .where(and(eq(branches.tenantId, tenantId), eq(branches.name, BRANCH_NAME)))
-    .limit(1);
-  if (existing) {
-    if (!existing.operatorId) {
-      await db.update(branches).set({ operatorId }).where(eq(branches.id, existing.id));
-      count('branch.operator backfilled');
+/**
+ * All three of the park's branches, not one.
+ *
+ * Names are written exactly as the export holds them, trailing space and all.
+ * That looks like a typo and is not one: it is the string the find-or-create
+ * matches on, and trimming it here would mean a re-run against a deployment
+ * that already carries the untrimmed name creates a second branch beside it.
+ */
+async function ensureBranches(tenantId: string, operatorId: string): Promise<Map<string, string>> {
+  const byKey = new Map<string, string>();
+  for (const b of BRANCHES) {
+    const [existing] = await db
+      .select({ id: branches.id, operatorId: branches.operatorId })
+      .from(branches)
+      .where(and(eq(branches.tenantId, tenantId), eq(branches.name, b.name)))
+      .limit(1);
+    if (existing) {
+      if (!existing.operatorId) {
+        await db.update(branches).set({ operatorId }).where(eq(branches.id, existing.id));
+        count('branch.operator backfilled');
+      }
+      byKey.set(b.key, existing.id);
+      continue;
     }
-    return existing.id;
+    const [created] = await db
+      .insert(branches)
+      .values({
+        tenantId,
+        operatorId,
+        name: b.name,
+        address: b.address,
+        timezone: b.timezone,
+        // Unique per tenant on `lower(calendar_color)`, so a colour already
+        // taken by a branch somebody made by hand would fail the insert.
+        // Dropping ours is the safe half of that trade: the calendar picks a
+        // colour when none is set, and the branch is still created.
+        calendarColor: b.calendarColor,
+      })
+      .returning({ id: branches.id })
+      .onConflictDoNothing();
+    if (created) {
+      byKey.set(b.key, created.id);
+      count('branch');
+      continue;
+    }
+    const [retry] = await db
+      .insert(branches)
+      .values({ tenantId, operatorId, name: b.name, address: b.address, timezone: b.timezone })
+      .returning({ id: branches.id });
+    byKey.set(b.key, retry!.id);
+    count('branch (without its calendar colour)');
   }
-  const [created] = await db
-    .insert(branches)
-    .values({
-      tenantId,
-      operatorId,
-      name: BRANCH_NAME,
-      address: BRANCH_ADDRESS,
-      timezone: 'Asia/Bangkok',
-    })
-    .returning({ id: branches.id });
-  count('branch');
-  return created!.id;
+  return byKey;
 }
 
-async function ensureDepartments(tenantId: string, branchId: string): Promise<Map<DeptKey, string>> {
-  const byKey = new Map<DeptKey, string>();
+async function ensureDepartments(
+  tenantId: string,
+  branchIds: Map<string, string>,
+): Promise<Map<string, string>> {
+  const byKey = new Map<string, string>();
   for (const d of DEPARTMENTS) {
     const [existing] = await db
       .select({ id: departments.id, description: departments.description })
@@ -169,7 +202,7 @@ async function ensureDepartments(tenantId: string, branchId: string): Promise<Ma
     let id: string;
     if (existing) {
       id = existing.id;
-      if (!existing.description) {
+      if (!existing.description && d.description) {
         await db
           .update(departments)
           .set({ description: d.description })
@@ -183,8 +216,8 @@ async function ensureDepartments(tenantId: string, branchId: string): Promise<Ma
           tenantId,
           name: d.name,
           description: d.description,
-          displayOrder: d.order,
-          isActive: true,
+          displayOrder: d.displayOrder,
+          isActive: d.isActive,
         })
         .returning({ id: departments.id });
       id = created!.id;
@@ -192,17 +225,20 @@ async function ensureDepartments(tenantId: string, branchId: string): Promise<Ma
     }
     byKey.set(d.key, id);
 
-    const [link] = await db
-      .select({ id: departmentBranchAssignments.id })
-      .from(departmentBranchAssignments)
-      .where(
-        and(
-          eq(departmentBranchAssignments.departmentId, id),
-          eq(departmentBranchAssignments.branchId, branchId),
-        ),
-      )
-      .limit(1);
-    if (!link) {
+    for (const bk of d.branchKeys) {
+      const branchId = branchIds.get(bk);
+      if (!branchId) continue;
+      const [link] = await db
+        .select({ id: departmentBranchAssignments.id })
+        .from(departmentBranchAssignments)
+        .where(
+          and(
+            eq(departmentBranchAssignments.departmentId, id),
+            eq(departmentBranchAssignments.branchId, branchId),
+          ),
+        )
+        .limit(1);
+      if (link) continue;
       await db.insert(departmentBranchAssignments).values({ departmentId: id, branchId });
       count('department-branch link');
     }
@@ -210,8 +246,11 @@ async function ensureDepartments(tenantId: string, branchId: string): Promise<Ma
   return byKey;
 }
 
-async function ensureRoles(tenantId: string, branchId: string): Promise<Map<string, string>> {
-  const byName = new Map<string, string>();
+async function ensureRoles(
+  tenantId: string,
+  branchIds: Map<string, string>,
+): Promise<Map<string, string>> {
+  const byKey = new Map<string, string>();
   for (const r of ROLES) {
     // `roles.name` is unique across the whole table, not per tenant, so the
     // name alone is the key here.
@@ -223,19 +262,19 @@ async function ensureRoles(tenantId: string, branchId: string): Promise<Map<stri
     let id: string;
     if (existing) {
       id = existing.id;
-      if (!existing.description) {
+      if (!existing.description && r.description) {
         await db.update(roles).set({ description: r.description }).where(eq(roles.id, id));
         count('role.description backfilled');
       }
     } else {
       const [created] = await db
         .insert(roles)
-        .values({ tenantId, name: r.name, description: r.description, isActive: true })
+        .values({ tenantId, name: r.name, description: r.description, isActive: r.isActive })
         .returning({ id: roles.id });
       id = created!.id;
       count('role');
     }
-    byName.set(r.name, id);
+    byKey.set(r.key, id);
 
     /**
      * Without this the Roles screen is empty even with twelve roles in the
@@ -243,38 +282,38 @@ async function ensureRoles(tenantId: string, branchId: string): Promise<Map<stri
      * role with no row here belongs to no branch, so it is filtered out of
      * every branch.
      */
-    const [link] = await db
-      .select({ id: roleBranchAssignments.id })
-      .from(roleBranchAssignments)
-      .where(
-        and(eq(roleBranchAssignments.roleId, id), eq(roleBranchAssignments.branchId, branchId)),
-      )
-      .limit(1);
-    if (!link) {
+    for (const bk of r.branchKeys) {
+      const branchId = branchIds.get(bk);
+      if (!branchId) continue;
+      const [link] = await db
+        .select({ id: roleBranchAssignments.id })
+        .from(roleBranchAssignments)
+        .where(
+          and(
+            eq(roleBranchAssignments.roleId, id),
+            eq(roleBranchAssignments.branchId, branchId),
+          ),
+        )
+        .limit(1);
+      if (link) continue;
       await db.insert(roleBranchAssignments).values({ roleId: id, branchId });
       count('role-branch link');
     }
   }
-  return byName;
-}
-
-interface SeededEmployee {
-  person: SamplePerson;
-  id: string;
+  return byKey;
 }
 
 async function ensureEmployees(
   tenantId: string,
-  branchId: string,
-  depts: Map<DeptKey, string>,
+  branchIds: Map<string, string>,
+  deptIds: Map<string, string>,
   roleIds: Map<string, string>,
-): Promise<SeededEmployee[]> {
-  const out: SeededEmployee[] = [];
-  let order = 0;
+): Promise<Map<string, string>> {
+  const byKey = new Map<string, string>();
   for (const p of PEOPLE) {
-    order += 1;
     const email = emailFor(p);
-    const departmentId = depts.get(p.dept)!;
+    const branchId = p.branchKey ? (branchIds.get(p.branchKey) ?? null) : null;
+    const departmentId = deptIds.get(p.deptKey) ?? null;
 
     const [existing] = await db
       .select({
@@ -293,18 +332,19 @@ async function ensureEmployees(
        * The only two columns a re-run touches. Both are structural — an
        * employee with no branch is invisible on every branch-scoped screen,
        * and one with no department cannot be scheduled — and both are only
-       * written when they are NULL, so a person who moved Ploy to another
+       * written when they are NULL, so somebody who moved a person to another
        * department keeps that move.
        */
       const backfill: { branchId?: string; primaryDepartmentId?: string } = {};
-      if (!existing.branchId) backfill.branchId = branchId;
-      if (!existing.primaryDepartmentId) backfill.primaryDepartmentId = departmentId;
+      if (!existing.branchId && branchId) backfill.branchId = branchId;
+      if (!existing.primaryDepartmentId && departmentId) {
+        backfill.primaryDepartmentId = departmentId;
+      }
       if (Object.keys(backfill).length > 0) {
         await db.update(employees).set(backfill).where(eq(employees.id, id));
         count('employee backfilled');
       }
     } else {
-      const startDate = monthsAgo(p.startedMonthsAgo);
       const [created] = await db
         .insert(employees)
         .values({
@@ -313,37 +353,49 @@ async function ensureEmployees(
           thaiName: p.thaiName,
           nickname: p.nickname,
           email,
-          phone: phoneFor(p),
-          phoneE164: phoneFor(p),
+          /**
+           * The export's phone numbers, exactly as they are: `0955551234`,
+           * `66955551234`, `+66 95 555 1234`, one `+44`. They are not tidied
+           * here. That mess is the real input `script/backfill-phone-numbers.ts`
+           * has to cope with, and a seed that normalised it first would leave
+           * that script with nothing to prove.
+           */
+          phone: p.phone,
+          // NULL in the export for all sixty-nine, so NULL here. The backfill
+          // above is what fills it.
+          phoneE164: null,
           branchId,
           primaryDepartmentId: departmentId,
-          status: p.status,
-          employmentState: p.employmentState,
-          employmentBasis: p.employmentBasis,
-          dailyRate: p.employmentBasis === 'PART_TIME' ? (p.dailyRate ?? null) : null,
-          startDate,
+          status: p.status as typeof employees.$inferInsert.status,
+          employmentState: p.employmentState as typeof employees.$inferInsert.employmentState,
+          employmentBasis: p.employmentBasis as typeof employees.$inferInsert.employmentBasis,
+          dailyRate: p.dailyRate,
+          foodAllowancePerDay: p.foodAllowancePerDay,
+          startDate: at(p.startDate),
+          noticeDate: at(p.noticeDate),
+          lastWorkingDay: at(p.lastWorkingDay),
+          endReason: p.endReason,
+          offboardingType: p.offboardingType as typeof employees.$inferInsert.offboardingType,
           nationality: p.nationality,
           isForeignStaff: p.isForeignStaff,
-          // A foreign hire's visa and work permit are the two dates the HR
-          // screens chase, so the seeded ones are far enough out to be
-          // uneventful and close enough to be worth showing.
-          visaExpiryDate: p.isForeignStaff ? monthsAgo(-9) : null,
-          workPermitExpiryDate: p.isForeignStaff ? monthsAgo(-7) : null,
+          visaExpiryDate: at(p.visaExpiryDate),
+          workPermitExpiryDate: at(p.workPermitExpiryDate),
+          jobDescription: p.jobDescription,
           weeklyOffDays: p.weeklyOffDays,
-          displayOrder: order,
+          displayOrder: p.displayOrder,
           // The Employees list reads its Position column out of this jsonb
           // (`employees-page.tsx`, `defaultMergeData?.positionTitle`) rather
           // than from the roles, so without it every row shows a dash even
           // with roles assigned.
-          defaultMergeData: { positionTitle: p.roles[0] },
+          defaultMergeData: p.positionTitle ? { positionTitle: p.positionTitle } : undefined,
         })
         .returning({ id: employees.id });
       id = created!.id;
       count('employee');
     }
 
-    for (const [index, roleName] of p.roles.entries()) {
-      const roleId = roleIds.get(roleName);
+    for (const roleKey of p.roleKeys) {
+      const roleId = roleIds.get(roleKey);
       if (!roleId) continue;
       const [link] = await db
         .select({ id: employeeRoles.id })
@@ -351,18 +403,15 @@ async function ensureEmployees(
         .where(and(eq(employeeRoles.employeeId, id), eq(employeeRoles.roleId, roleId)))
         .limit(1);
       if (link) continue;
-      await db.insert(employeeRoles).values({
-        employeeId: id,
-        roleId,
-        isPrimary: index === 0,
-        proficiencyLevel: index === 0 ? 'EXPERT' : 'STANDARD',
-      });
+      // `is_primary` is false and `proficiency_level` NULL on all 101 rows in
+      // the export, so both are left at their defaults rather than guessed.
+      await db.insert(employeeRoles).values({ employeeId: id, roleId });
       count('employee role');
     }
 
-    out.push({ person: p, id });
+    byKey.set(p.key, id);
   }
-  return out;
+  return byKey;
 }
 
 /**
@@ -401,217 +450,220 @@ async function backfillAdminBranchAccess(tenantId: string): Promise<string[]> {
   return admins.map((u) => u.id);
 }
 
-const ANNOUNCEMENTS = [
-  {
-    title: 'Sample data is loaded on this branch',
-    body:
-      'Everyone and everything you can see here was invented for the staging site. ' +
-      'The staff are not real people: every address ends in ' +
-      SAMPLE_EMAIL_DOMAIN +
-      ' and every phone number starts +6695500. Edit anything you like — it saves, and ' +
-      're-running the sample loader will not undo your edit.',
-    priority: 'info' as const,
-    days: 365,
-  },
-  {
-    title: 'Songkran week — floor rota goes up Friday',
-    body:
-      'Expect the busiest three days of the quarter. Reception opens at 09:30 and the ' +
-      'floor runs two supervisors on every shift. Party bookings are capped at four a day.',
-    priority: 'warning' as const,
-    days: 21,
-  },
-  {
-    title: 'New allergy card at the restaurant counter',
-    body:
-      'Kitchen has a printed card for every set menu now. Check it against the child card ' +
-      'before anything leaves the pass, and ask reception if a guardian note is unclear.',
-    priority: 'urgent' as const,
-    days: 14,
-  },
-];
+async function ensureAnnouncements(
+  tenantId: string,
+  branchIds: Map<string, string>,
+): Promise<void> {
+  const all = [
+    ...ANNOUNCEMENTS.map((a) => ({
+      title: a.title,
+      body: a.body,
+      priority: a.priority as typeof announcements.$inferInsert.priority,
+      startDate: new Date(a.startDate),
+      endDate: new Date(a.endDate),
+      showToEveryone: a.showToEveryone,
+      isActive: a.isActive,
+      branchIds: a.branchKeys
+        .map((k) => branchIds.get(k))
+        .filter((id): id is string => Boolean(id)),
+    })),
+    (() => {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + SAMPLE_BANNER.days);
+      return {
+        title: SAMPLE_BANNER.title,
+        body: SAMPLE_BANNER.body,
+        priority: SAMPLE_BANNER.priority as typeof announcements.$inferInsert.priority,
+        startDate: start,
+        endDate: end,
+        showToEveryone: true,
+        isActive: true,
+        branchIds: [...branchIds.values()],
+      };
+    })(),
+  ];
 
-async function ensureAnnouncements(tenantId: string, branchId: string): Promise<void> {
-  for (const a of ANNOUNCEMENTS) {
+  for (const a of all) {
     const [existing] = await db
       .select({ id: announcements.id })
       .from(announcements)
       .where(and(eq(announcements.tenantId, tenantId), eq(announcements.title, a.title)))
       .limit(1);
     if (existing) continue;
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + a.days);
-    await db.insert(announcements).values({
-      tenantId,
-      title: a.title,
-      body: a.body,
-      priority: a.priority,
-      startDate: start,
-      endDate: end,
-      branchIds: [branchId],
-      showToEveryone: true,
-      isActive: true,
-    });
+    await db.insert(announcements).values({ tenantId, ...a });
     count('announcement');
   }
 }
 
-const TASKS: {
-  title: string;
-  description: string;
-  dept: DeptKey;
-  status: 'pending' | 'in_progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  dueInHours: number;
-}[] = [
-  { title: 'Open the floor — safety walk', description: 'Netting, slide mats, ball pit depth, fire doors clear.', dept: 'floor', status: 'completed', priority: 'high', dueInHours: -2 },
-  { title: 'Count the float and open the till', description: 'Two drawers. Photograph the count sheet before the first sale.', dept: 'reception', status: 'completed', priority: 'high', dueInHours: -3 },
-  { title: 'Restock wristbands at the desk', description: 'Adult and child rolls, plus the spare printer ribbon.', dept: 'reception', status: 'pending', priority: 'medium', dueInHours: 3 },
-  { title: 'Kitchen temperature log', description: 'Both fridges and the freezer, morning and evening.', dept: 'restaurant', status: 'in_progress', priority: 'high', dueInHours: 1 },
-  { title: 'Set up party room 2 for the 14:00 booking', description: 'Eight children, one nut allergy, dinosaur theme.', dept: 'events', status: 'pending', priority: 'high', dueInHours: 2 },
-  { title: 'Sanitise the soft play at changeover', description: 'Between the morning and afternoon sessions, all three zones.', dept: 'floor', status: 'pending', priority: 'medium', dueInHours: 4 },
-  { title: 'Check nanny ratios for the afternoon', description: 'Drop-off bookings against nannies on shift.', dept: 'nanny', status: 'pending', priority: 'medium', dueInHours: 5 },
-  { title: 'Cash-up and safe drop', description: 'Reconcile both drawers, bag the drop, log the discrepancy if any.', dept: 'management', status: 'pending', priority: 'high', dueInHours: 9 },
-  { title: 'Coffee machine descale', description: 'Weekly. Takes forty minutes — start it before the lunch rush.', dept: 'restaurant', status: 'pending', priority: 'low', dueInHours: 6 },
-  { title: 'Weekly rota to the group chat', description: 'Post next week once the duty manager has signed it off.', dept: 'management', status: 'in_progress', priority: 'medium', dueInHours: 26 },
-];
-
+/**
+ * The sampled task board.
+ *
+ * Parents before children: a recurring task in the export is a definition row
+ * with up to thirty-four generated instances hanging off it, and the instance
+ * carries its parent's id. Ids are minted by the database here, so the parent
+ * has to be inserted and its new id learned before a child can point at it.
+ * `extract.ts` samples whole families for the same reason — a child whose
+ * parent was not sampled would point at nothing.
+ */
 async function ensureTasks(
   tenantId: string,
-  branchId: string,
-  depts: Map<DeptKey, string>,
-  staff: SeededEmployee[],
+  branchIds: Map<string, string>,
+  deptIds: Map<string, string>,
+  staffIds: Map<string, string>,
+  roleIds: Map<string, string>,
   adminUserIds: string[],
 ): Promise<void> {
-  /**
-   * The Today screen's task panel is a personal workspace, not a branch board:
-   * `tasks/today` in `server/core/compat/tasksCompat.ts` keeps only what is
-   * assigned to the signed-in person or to their department, and drops
-   * role-only, branch-only and unassigned work by design. An administrator
-   * signing in from the launcher has no employee record, so without this every
-   * one of the tasks below would exist and Today would still read "No pending
-   * tasks" — which looks like a fault and is not one. Two of them are put in
-   * the administrator's own list so the panel has something in it.
-   */
-  const ownedByAdmin = new Set(['Cash-up and safe drop', 'Weekly rota to the group chat']);
+  const ordered = [...TASKS].sort(
+    (a, b) => Number(Boolean(a.parentKey)) - Number(Boolean(b.parentKey)),
+  );
 
-  for (const [index, t] of TASKS.entries()) {
+  // The two oldest live tasks, so the Today panel has something in it for an
+  // administrator who has no employee record. See TASKS_OWNED_BY_ADMIN.
+  const ownedByAdmin = new Set(
+    TASKS.filter((t) => t.status !== 'completed')
+      .sort((a, b) => (a.dueAt ?? '').localeCompare(b.dueAt ?? ''))
+      .slice(0, TASKS_OWNED_BY_ADMIN)
+      .map((t) => t.key),
+  );
+
+  const idByKey = new Map<string, string>();
+  for (const t of ordered) {
+    /**
+     * The title alone is not a key. A weekly task in the export is one
+     * definition and thirty-odd generated instances that all carry the same
+     * title and differ only by date — keying on the title collapsed
+     * forty-nine sampled rows to thirty-five on the first run here. The due
+     * and start times separate them; `extract.ts` asserts that the three
+     * together are unique across whatever it samples, so a future cut cannot
+     * quietly reintroduce this.
+     */
+    const dueAt = at(t.dueAt);
+    const startAt = at(t.startAt);
     const [existing] = await db
       .select({ id: tasks.id })
       .from(tasks)
-      .where(and(eq(tasks.tenantId, tenantId), eq(tasks.title, t.title)))
+      .where(
+        and(
+          eq(tasks.tenantId, tenantId),
+          eq(tasks.title, t.title),
+          dueAt ? eq(tasks.dueAt, dueAt) : isNull(tasks.dueAt),
+          startAt ? eq(tasks.startAt, startAt) : isNull(tasks.startAt),
+        ),
+      )
       .limit(1);
-    if (existing) continue;
-    const departmentId = depts.get(t.dept)!;
-    const candidates = staff.filter(
-      (s) => s.person.dept === t.dept && s.person.employmentState === 'ACTIVE',
-    );
-    const assignee = candidates[index % Math.max(candidates.length, 1)];
-    const dueAt = new Date(Date.now() + t.dueInHours * 3600_000);
-    await db.insert(tasks).values({
-      tenantId,
-      branchId,
-      departmentId,
-      assignedDepartmentId: departmentId,
-      assignedEmployeeId: assignee?.id ?? null,
-      assignedTo: ownedByAdmin.has(t.title) ? (adminUserIds[0] ?? null) : null,
-      title: t.title,
-      description: t.description,
-      status: t.status,
-      priority: t.priority,
-      recurrence: 'once',
-      dueAt,
-      completedAt: t.status === 'completed' ? new Date(dueAt.getTime() - 600_000) : null,
-      progressPercent: t.status === 'completed' ? 100 : t.status === 'in_progress' ? 40 : 0,
-      taskLevel: t.dept === 'management' ? 'management' : 'line',
-    });
+    if (existing) {
+      idByKey.set(t.key, existing.id);
+      continue;
+    }
+    const [created] = await db
+      .insert(tasks)
+      .values({
+        tenantId,
+        branchId: t.branchKey ? (branchIds.get(t.branchKey) ?? null) : null,
+        departmentId: t.deptKey ? (deptIds.get(t.deptKey) ?? null) : null,
+        parentTaskId: t.parentKey ? (idByKey.get(t.parentKey) ?? null) : null,
+        title: t.title,
+        description: t.description,
+        status: t.status as typeof tasks.$inferInsert.status,
+        priority: t.priority as typeof tasks.$inferInsert.priority,
+        recurrence: t.recurrence as typeof tasks.$inferInsert.recurrence,
+        weeklyDays: t.weeklyDays,
+        monthlyDay: t.monthlyDay,
+        preferredDueTime: t.preferredDueTime,
+        isRecurringDefinition: t.isRecurringDefinition,
+        dueAt,
+        startAt,
+        scheduledMode: t.scheduledMode,
+        progressPercent: t.progressPercent,
+        completedAt: at(t.completedAt),
+        assignedEmployeeId: t.assigneeKey ? (staffIds.get(t.assigneeKey) ?? null) : null,
+        assignedDepartmentId: t.assignedDeptKey ? (deptIds.get(t.assignedDeptKey) ?? null) : null,
+        assignedRoleId: t.assignedRoleKey ? (roleIds.get(t.assignedRoleKey) ?? null) : null,
+        assignedTo: ownedByAdmin.has(t.key) ? (adminUserIds[0] ?? null) : null,
+        taskLevel: t.taskLevel as typeof tasks.$inferInsert.taskLevel,
+        requiresPhotoEvidence: t.requiresPhotoEvidence,
+        requiresResponses: t.requiresResponses,
+      })
+      .returning({ id: tasks.id });
+    idByKey.set(t.key, created!.id);
     count('task');
   }
 }
 
 /**
- * Two weeks of clock-ins, for the Time & Attendance screens.
+ * The sampled clock-ins, for the Time & Attendance screens.
  *
- * Times are generated from the person and the day, so a second run produces
- * the same timestamps and matches the rows already there instead of adding a
- * near-duplicate a minute later.
+ * Matched on the employee and the exact timestamp, which is what makes a
+ * second run a no-op: the export's times are fixed values, so the row written
+ * last time is found rather than written again a minute away from itself.
  */
 async function ensureTimeEvents(
   tenantId: string,
-  branchId: string,
-  staff: SeededEmployee[],
+  branchIds: Map<string, string>,
+  staffIds: Map<string, string>,
 ): Promise<void> {
-  const working = staff.filter(
-    (s) => s.person.employmentState === 'ACTIVE' && s.person.status === 'active',
+  const ids = [...staffIds.values()];
+  if (ids.length === 0 || TIME_EVENTS.length === 0) return;
+
+  const since = new Date(
+    TIME_EVENTS.reduce((min, e) => (e[3] < min ? e[3] : min), TIME_EVENTS[0]![3]),
   );
-  const ids = working.map((s) => s.id);
-  if (ids.length === 0) return;
-
-  const since = new Date();
-  since.setDate(since.getDate() - 14);
-  since.setHours(0, 0, 0, 0);
-
+  /**
+   * The event type is part of the key, not decoration. The export holds two
+   * cases of one person having an IN and an OUT recorded at the same second —
+   * a clock-out and a clock-in that landed together, or an admin correction —
+   * and a key of employee-and-time alone would treat the second of the pair as
+   * already present and drop it for good.
+   */
   const already = await db
-    .select({ employeeId: timeEvents.employeeId, eventTime: timeEvents.eventTime })
+    .select({
+      employeeId: timeEvents.employeeId,
+      eventTime: timeEvents.eventTime,
+      eventType: timeEvents.eventType,
+    })
     .from(timeEvents)
     .where(and(inArray(timeEvents.employeeId, ids), sql`${timeEvents.eventTime} >= ${since}`));
-  const seen = new Set(already.map((r) => `${r.employeeId}@${r.eventTime.toISOString()}`));
+  const seen = new Set(
+    already.map((r) => `${r.employeeId}@${r.eventTime.toISOString()}#${r.eventType}`),
+  );
 
   const rows: (typeof timeEvents.$inferInsert)[] = [];
-  for (const s of working) {
-    for (let back = 14; back >= 1; back -= 1) {
-      const day = new Date();
-      day.setDate(day.getDate() - back);
-      day.setHours(0, 0, 0, 0);
-      if (s.person.weeklyOffDays.includes(day.getDay())) continue;
-
-      const seed = `${s.person.key}:${day.toISOString().slice(0, 10)}`;
-      const inMinutes = 9 * 60 + 30 + Math.round(jitter(`${seed}:in`) * 25) - 5;
-      const shiftMinutes = 8 * 60 + 30 + Math.round(jitter(`${seed}:out`) * 60);
-
-      const clockIn = new Date(day);
-      clockIn.setMinutes(inMinutes);
-      const clockOut = new Date(clockIn.getTime() + shiftMinutes * 60_000);
-
-      for (const [eventType, at] of [
-        ['IN', clockIn],
-        ['OUT', clockOut],
-      ] as const) {
-        if (seen.has(`${s.id}@${at.toISOString()}`)) continue;
-        rows.push({
-          tenantId,
-          employeeId: s.id,
-          branchId,
-          eventType,
-          eventTime: at,
-          // The park clocks in by face; PIN is the fallback, so a couple of
-          // the seeded days use it the way a real fortnight would.
-          authMethod: jitter(`${seed}:auth`) > 0.92 ? 'PIN' : 'FACE',
-          confidenceScore: 92 + Math.round(jitter(`${seed}:conf`) * 7),
-        });
-      }
-    }
+  for (const [personKey, branchKey, eventType, atIso, authMethod, confidence] of TIME_EVENTS) {
+    const employeeId = staffIds.get(personKey);
+    const branchId = branchIds.get(branchKey);
+    if (!employeeId || !branchId) continue;
+    const when = new Date(atIso);
+    if (seen.has(`${employeeId}@${when.toISOString()}#${eventType}`)) continue;
+    rows.push({
+      tenantId,
+      employeeId,
+      branchId,
+      eventType: eventType as typeof timeEvents.$inferInsert.eventType,
+      eventTime: when,
+      authMethod: authMethod as typeof timeEvents.$inferInsert.authMethod,
+      confidenceScore: confidence,
+    });
   }
 
   for (let i = 0; i < rows.length; i += 200) {
     await db.insert(timeEvents).values(rows.slice(i, i + 200));
   }
-  count('time event', rows.length);
+  if (rows.length > 0) count('time event', rows.length);
 }
 
 async function main(): Promise<void> {
   const tenantId = await ensureTenant();
   const operatorId = await ensureOperator(tenantId);
-  const branchId = await ensureBranch(tenantId, operatorId);
-  const depts = await ensureDepartments(tenantId, branchId);
-  const roleIds = await ensureRoles(tenantId, branchId);
-  const staff = await ensureEmployees(tenantId, branchId, depts, roleIds);
+  const branchIds = await ensureBranches(tenantId, operatorId);
+  const deptIds = await ensureDepartments(tenantId, branchIds);
+  const roleIds = await ensureRoles(tenantId, branchIds);
+  const staffIds = await ensureEmployees(tenantId, branchIds, deptIds, roleIds);
   const adminUserIds = await backfillAdminBranchAccess(tenantId);
-  await ensureAnnouncements(tenantId, branchId);
-  await ensureTasks(tenantId, branchId, depts, staff, adminUserIds);
-  await ensureTimeEvents(tenantId, branchId, staff);
+  await ensureAnnouncements(tenantId, branchIds);
+  await ensureTasks(tenantId, branchIds, deptIds, staffIds, roleIds, adminUserIds);
+  await ensureTimeEvents(tenantId, branchIds, staffIds);
 
   const written = Object.entries(made).filter(([, n]) => n > 0);
   if (written.length === 0) {
@@ -620,10 +672,11 @@ async function main(): Promise<void> {
     console.log('[sample] Written:');
     for (const [what, n] of written) console.log(`  ${n} × ${what}`);
   }
+  const staff = SAMPLE_COUNTS.employees;
   console.log(
-    `[sample] Every person above is invented. Addresses end in ${SAMPLE_EMAIL_DOMAIN} ` +
-      `(a domain RFC 2606 reserves, so none of them can be mailed) and phone numbers ` +
-      `start +6695500.`,
+    `[sample] These are the park's own rows — ${staff?.sample ?? PEOPLE.length} of its ` +
+      `${staff?.export ?? '?'} staff and the work that belongs to them. Nobody here can ` +
+      `sign in, and every address ends in ${SAMPLE_EMAIL_DOMAIN}, which cannot receive mail.`,
   );
 }
 

@@ -1,111 +1,93 @@
 /**
- * The invented staff list behind `script/sample/main.ts`.
+ * What the sample adds on top of the park's own rows.
  *
- * Every person here is made up. None of these names, nicknames, phone numbers
- * or dates came from the park's export — they were written to match its
- * SHAPES (a Thai legal name plus a short nickname staff are actually called, a
- * handful of foreign hires with visa and work-permit dates, a spread of start
- * dates, a few people part way out the door) and its PROPORTIONS, and nothing
- * else. The export holds real children and real staff and never leaves a
- * laptop.
+ * The rows themselves are in `data.generated.ts` and come out of the park's
+ * production export — `extract.ts` cuts them, and its header is where the
+ * sampling rule and the list of what was deliberately left behind live.
  *
- * Two things mark the rows as sample data without making the screens look
- * broken: every address is on `sample.oto.test` — `.test` is reserved by
- * RFC 2606 and can never be a real domain, so nothing here can mail a real
- * person — and every phone number is in the `+6695500xxxx` block this file
- * owns. Search either and you have found the seed.
+ * This file holds the three things that are the *sample's* and not the park's:
+ * the address the real local parts are hung on, the banner that says so on the
+ * announcements board, and the rule that puts a task or two in the signed-in
+ * administrator's own list.
+ *
+ * Nothing here invents a person. The previous version of this file did — it
+ * carried twenty-six made-up staff — and is gone. A deployment that ran that
+ * version still has those rows: the seed never deletes, so they stay until
+ * somebody removes them. They are the ones whose email ends in this domain and
+ * whose phone number starts `+6695500`.
  */
 
-/** Which of the seeded departments a person sits in. */
-export type DeptKey = 'reception' | 'restaurant' | 'floor' | 'nanny' | 'events' | 'management';
+export {
+  ANNOUNCEMENTS,
+  BRANCHES,
+  DEPARTMENTS,
+  OPERATOR,
+  PEOPLE,
+  ROLES,
+  SAMPLE_COUNTS,
+  SAMPLE_EMAIL_DOMAIN,
+  TASKS,
+  TENANT,
+  TIME_EVENTS,
+} from './data.generated';
 
-export interface SamplePerson {
-  /** Stable within the seed, and what re-runs match on. Never shown. */
-  key: string;
-  fullName: string;
-  thaiName: string | null;
-  nickname: string;
-  dept: DeptKey;
-  /** Names from ROLES below. The first is the primary one. */
-  roles: string[];
-  status: 'pending' | 'active' | 'resigned' | 'terminated';
-  employmentState: 'ACTIVE' | 'LEAVING' | 'LEFT';
-  /** Months before today the person started. */
-  startedMonthsAgo: number;
-  employmentBasis: 'FULL_TIME' | 'PART_TIME';
-  /** THB per day, part-timers only — the column is for them alone. */
-  dailyRate?: number;
-  nationality: string;
-  isForeignStaff: boolean;
-  /** 0 = Sunday … 6 = Saturday, as `employees.weekly_off_days` counts. */
-  weeklyOffDays: number[];
-  phoneSuffix: string;
-}
+export type {
+  SampleAnnouncement,
+  SampleBranch,
+  SampleDepartment,
+  SamplePerson,
+  SampleRole,
+  SampleTask,
+  SampleTimeEvent,
+} from './data.generated';
 
-export const DEPARTMENTS: { key: DeptKey; name: string; description: string; order: number }[] = [
-  { key: 'reception', name: 'Reception', description: 'The front desk, admissions and the membership check.', order: 1 },
-  { key: 'restaurant', name: 'Restaurant', description: 'Kitchen, counter and the coffee bar.', order: 2 },
-  { key: 'floor', name: 'Floor', description: 'The play floor — supervision, safety and the slides.', order: 3 },
-  { key: 'nanny', name: 'Nanny', description: 'Supervised care, drop-off and one-to-one nannies.', order: 4 },
-  { key: 'events', name: 'Events', description: 'Birthday parties, camps and school groups.', order: 5 },
-  { key: 'management', name: 'Management', description: 'Duty managers and the branch office.', order: 6 },
-];
+import { SAMPLE_EMAIL_DOMAIN, type SamplePerson } from './data.generated';
 
-export const ROLES: { name: string; description: string }[] = [
-  { name: 'Receptionist', description: 'Takes admissions at the desk and answers the phone.' },
-  { name: 'Cashier', description: 'Runs the till and closes the drawer.' },
-  { name: 'Floor Supervisor', description: 'Runs a floor shift and is responsible for safety.' },
-  { name: 'Play Leader', description: 'Runs games and watches a zone of the floor.' },
-  { name: 'Nanny', description: 'Supervises a named child, drop-off or one-to-one.' },
-  { name: 'Party Host', description: 'Runs a birthday party from welcome to cake.' },
-  { name: 'Head Chef', description: 'Owns the menu, the orders and the kitchen.' },
-  { name: 'Cook', description: 'Cooks the line during service.' },
-  { name: 'Server', description: 'Takes orders and runs food to tables.' },
-  { name: 'Barista', description: 'Coffee bar and the drinks side of the counter.' },
-  { name: 'Duty Manager', description: 'Holds the branch for a shift and signs things off.' },
-  { name: 'Maintenance', description: 'Keeps the equipment, the soft play and the building going.' },
-];
-
-export const PEOPLE: SamplePerson[] = [
-  { key: 'ploy', fullName: 'Siriporn Thongchai', thaiName: 'ศิริพร ทองชัย', nickname: 'Ploy', dept: 'reception', roles: ['Receptionist', 'Cashier'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 29, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [1], phoneSuffix: '0101' },
-  { key: 'bank', fullName: 'Nattapong Wichaikul', thaiName: 'ณัฐพงศ์ วิชัยกุล', nickname: 'Bank', dept: 'floor', roles: ['Floor Supervisor', 'Play Leader'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 34, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [2], phoneSuffix: '0102' },
-  { key: 'mint', fullName: 'Kanyarat Srisuwan', thaiName: 'กัญญารัตน์ ศรีสุวรรณ', nickname: 'Mint', dept: 'reception', roles: ['Cashier', 'Receptionist'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 17, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [3], phoneSuffix: '0103' },
-  { key: 'golf', fullName: 'Thanakorn Phuwanat', thaiName: 'ธนกร ภูวนาถ', nickname: 'Golf', dept: 'floor', roles: ['Play Leader'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 11, employmentBasis: 'PART_TIME', dailyRate: 620, nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [1, 2], phoneSuffix: '0104' },
-  { key: 'fern', fullName: 'Pimchanok Ruangsri', thaiName: 'พิมพ์ชนก เรืองศรี', nickname: 'Fern', dept: 'nanny', roles: ['Nanny'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 22, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [4], phoneSuffix: '0105' },
-  { key: 'tar', fullName: 'Apichat Boonmee', thaiName: 'อภิชาติ บุญมี', nickname: 'Tar', dept: 'restaurant', roles: ['Head Chef', 'Cook'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 41, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [1], phoneSuffix: '0106' },
-  { key: 'nan', fullName: 'Wanida Chaimongkol', thaiName: 'วนิดา ชัยมงคล', nickname: 'Nan', dept: 'restaurant', roles: ['Server'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 14, employmentBasis: 'PART_TIME', dailyRate: 580, nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [2, 3], phoneSuffix: '0107' },
-  { key: 'jack', fullName: 'Sarawut Intharat', thaiName: 'สราวุธ อินทรัตน์', nickname: 'Jack', dept: 'floor', roles: ['Maintenance', 'Play Leader'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 26, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [0], phoneSuffix: '0108' },
-  { key: 'bow', fullName: 'Chayada Petchmanee', thaiName: 'ชญาดา เพชรมณี', nickname: 'Bow', dept: 'nanny', roles: ['Nanny'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 8, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [5], phoneSuffix: '0109' },
-  { key: 'aum', fullName: 'Ekkachai Sangthong', thaiName: 'เอกชัย แสงทอง', nickname: 'Aum', dept: 'restaurant', roles: ['Cook'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 19, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [3], phoneSuffix: '0110' },
-  { key: 'gift', fullName: 'Supaporn Klinmalai', thaiName: 'สุภาพร กลิ่นมาลัย', nickname: 'Gift', dept: 'reception', roles: ['Receptionist'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 6, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [4], phoneSuffix: '0111' },
-  { key: 'ton', fullName: 'Teerapat Chanthawong', thaiName: 'ธีรภัทร จันทวงศ์', nickname: 'Ton', dept: 'floor', roles: ['Play Leader'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 13, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [2], phoneSuffix: '0112' },
-  { key: 'mook', fullName: 'Jiraporn Meesuk', thaiName: 'จิราพร มีสุข', nickname: 'Mook', dept: 'events', roles: ['Party Host', 'Play Leader'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 24, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [1], phoneSuffix: '0113' },
-  { key: 'beer', fullName: 'Panupong Saetang', thaiName: 'ภาณุพงศ์ แซ่ตั้ง', nickname: 'Beer', dept: 'restaurant', roles: ['Barista', 'Server'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 9, employmentBasis: 'PART_TIME', dailyRate: 600, nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [0, 1], phoneSuffix: '0114' },
-  { key: 'ice', fullName: 'Nichakarn Duangjai', thaiName: 'ณิชกานต์ ดวงใจ', nickname: 'Ice', dept: 'reception', roles: ['Cashier'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 4, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [5], phoneSuffix: '0115' },
-  { key: 'off', fullName: 'Worawut Kittichai', thaiName: 'วรวุฒิ กิตติชัย', nickname: 'Off', dept: 'floor', roles: ['Play Leader'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 16, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [3], phoneSuffix: '0116' },
-  { key: 'pui', fullName: 'Ratchanee Pongsak', thaiName: 'รัชนี พงษ์ศักดิ์', nickname: 'Pui', dept: 'nanny', roles: ['Nanny'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 31, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [2], phoneSuffix: '0117' },
-  { key: 'boss', fullName: 'Kittisak Larpwong', thaiName: 'กิตติศักดิ์ ลาภวงศ์', nickname: 'Boss', dept: 'management', roles: ['Duty Manager'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 38, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [1], phoneSuffix: '0118' },
-  { key: 'emma', fullName: 'Emma Lindqvist', thaiName: null, nickname: 'Emma', dept: 'events', roles: ['Party Host'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 12, employmentBasis: 'FULL_TIME', nationality: 'Swedish', isForeignStaff: true, weeklyOffDays: [0], phoneSuffix: '0119' },
-  { key: 'dan', fullName: 'Daniel Whitfield', thaiName: null, nickname: 'Dan', dept: 'management', roles: ['Duty Manager'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 20, employmentBasis: 'FULL_TIME', nationality: 'British', isForeignStaff: true, weeklyOffDays: [4], phoneSuffix: '0120' },
-  { key: 'praew', fullName: 'Phatcharin Yodkaew', thaiName: 'พัชรินทร์ ยอดแก้ว', nickname: 'Praew', dept: 'restaurant', roles: ['Server'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 3, employmentBasis: 'PART_TIME', dailyRate: 560, nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [2, 4], phoneSuffix: '0121' },
-  { key: 'chai', fullName: 'Somchai Tanaphon', thaiName: 'สมชาย ธนาพร', nickname: 'Chai', dept: 'floor', roles: ['Floor Supervisor'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 45, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [5], phoneSuffix: '0122' },
-  { key: 'pang', fullName: 'Kulthida Namwong', thaiName: 'กุลธิดา น้ำวงศ์', nickname: 'Pang', dept: 'reception', roles: ['Receptionist'], status: 'active', employmentState: 'LEAVING', startedMonthsAgo: 27, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [3], phoneSuffix: '0123' },
-  { key: 'win', fullName: 'Anuwat Rungruang', thaiName: 'อนุวัฒน์ รุ่งเรือง', nickname: 'Win', dept: 'floor', roles: ['Play Leader'], status: 'resigned', employmentState: 'LEFT', startedMonthsAgo: 33, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [1], phoneSuffix: '0124' },
-  { key: 'may', fullName: 'Suwanan Pitakkul', thaiName: 'สุวนันท์ พิทักษ์กุล', nickname: 'May', dept: 'nanny', roles: ['Nanny'], status: 'pending', employmentState: 'ACTIVE', startedMonthsAgo: 0, employmentBasis: 'FULL_TIME', nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [2], phoneSuffix: '0125' },
-  { key: 'nok', fullName: 'Benjawan Sukhothai', thaiName: 'เบญจวรรณ สุโขทัย', nickname: 'Nok', dept: 'events', roles: ['Party Host', 'Server'], status: 'active', employmentState: 'ACTIVE', startedMonthsAgo: 7, employmentBasis: 'PART_TIME', dailyRate: 640, nationality: 'Thai', isForeignStaff: false, weeklyOffDays: [0, 3], phoneSuffix: '0126' },
-];
-
-/** The domain is reserved by RFC 2606: nothing here can reach a real inbox. */
-export const SAMPLE_EMAIL_DOMAIN = 'sample.oto.test';
 /**
- * `+66` then five fixed digits, leaving the four in `phoneSuffix` — twelve
- * characters in all, which is what an E.164 Thai mobile is. One grep for the
- * prefix finds every number this seed wrote and nothing else.
+ * The staff member's real mailbox name on a domain that cannot exist.
+ *
+ * `.test` is reserved by RFC 2606, so the address is deliverable nowhere. That
+ * matters more than it sounds: the export's addresses are 61 personal Gmail
+ * accounts, and an app that learns to send mail on a staging deployment would
+ * otherwise reach sixty-one real people. The local part is kept because it is
+ * no more identifying than the name printed beside it, and because it is what
+ * makes the list read as a staff list rather than a fixture.
+ *
+ * It is also the seed's natural key. All sixty-nine local parts in the export
+ * are distinct, so a re-run finds the person it wrote last time.
  */
-export const SAMPLE_PHONE_PREFIX = '+6695500';
+export const emailFor = (p: Pick<SamplePerson, 'emailLocal'>): string =>
+  `${p.emailLocal}@${SAMPLE_EMAIL_DOMAIN}`;
 
-export const emailFor = (p: SamplePerson): string => {
-  const surname = p.fullName.trim().split(/\s+/).slice(-1)[0]!.toLowerCase();
-  return `${p.nickname.toLowerCase()}.${surname}@${SAMPLE_EMAIL_DOMAIN}`;
+/**
+ * Said on the board rather than in a README, because the person who opens this
+ * deployment reads the board and not the repository.
+ */
+export const SAMPLE_BANNER = {
+  title: 'This branch is carrying sampled data',
+  body:
+    'The staff, the clock-ins and the task board here are a sample of the real ones, ' +
+    'taken for testing. Edit anything you like — it saves, and running the sample ' +
+    'loader again will not undo your edit. Email addresses are not the real ones: ' +
+    `every one of them ends in ${SAMPLE_EMAIL_DOMAIN}, a domain that cannot receive mail. ` +
+    'Nobody here can sign in; these are staff records, not accounts.',
+  priority: 'info' as const,
+  days: 365,
 };
-export const phoneFor = (p: SamplePerson): string => `${SAMPLE_PHONE_PREFIX}${p.phoneSuffix}`;
+
+/**
+ * How many of the live tasks are put in the administrator's own list.
+ *
+ * The Today panel is a personal workspace, not a branch board:
+ * `tasks/today` in `server/core/compat/tasksCompat.ts` keeps only what is
+ * assigned to the signed-in person or to their department, and drops
+ * role-only, branch-only and unassigned work by design. An administrator
+ * signing in from the launcher has no employee record, so with the export's
+ * own assignments — which are employee-level or nothing — Today reads
+ * "No pending tasks" however many tasks were loaded, and that looks like a
+ * fault when it is not one.
+ *
+ * This is the one field the seed sets that the export does not have, and it is
+ * set on the two oldest live tasks so the choice is stable across runs.
+ */
+export const TASKS_OWNED_BY_ADMIN = 2;
