@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { verify as verifyArgon2 } from '@node-rs/argon2';
 import { and, asc, eq, isNull, or, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import {
@@ -1481,6 +1482,16 @@ export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent
      * pool this process already holds.
      */
     store: boxStoreFor(db),
+    /**
+     * How the booth checks a PIN (S2-07b).
+     *
+     * `createBooth` verifies a typed PIN against the argon2id hashes on its
+     * cached staff list, and it takes the verifier from here because a box
+     * does not choose its own hashing — without one supplied, `signIn` matches
+     * nobody and every sign-in at the booth is refused whatever PIN has been
+     * set in the Console. A Raspberry Pi passes the same function.
+     */
+    booth: { verifySecret: (hash, secret) => verifyArgon2(hash, secret) },
   });
   try {
     await agent.start();

@@ -1534,17 +1534,29 @@ describe('the cache bundle', () => {
       .where(eq(account.phone, RECEPTION.phone))
       .limit(1);
     expect(staff.map((s) => s.accountId).sort()).toEqual([admin!.id, reception!.id].sort());
-    // What an offline unlock needs, and nothing that identifies the person to
-    // somebody holding the disk. `lastTokenAt` is when THIS box last minted a
-    // shift token for them — the "seen here" half of the 30-day offline
-    // sign-in, and a timestamp rather than a name (S2-06).
+    /**
+     * What an offline unlock and a booth sign-in need, and nothing that
+     * identifies the person to somebody holding the disk. `lastTokenAt` is
+     * when THIS box last minted a shift token for them — the "seen here" half
+     * of the 30-day offline sign-in, and a timestamp rather than a name
+     * (S2-06). `pinHash` is argon2id over the booth PIN or null (S2-07b): a
+     * booth verifies a PIN on the box, so the hash has to reach it, and it is
+     * the same class of secret as the password hash beside it.
+     *
+     * A field added to this list is a field that lands on a Raspberry Pi in a
+     * shopping mall, which is why the list is pinned and has to be edited on
+     * purpose.
+     */
     expect(Object.keys(staff[0]!).sort()).toEqual([
       'accountId',
       'lastTokenAt',
       'mustChangePassword',
       'passwordHash',
+      'pinHash',
       'status',
     ]);
+    // Null for everybody the seed gives no booth PIN, rather than absent.
+    expect(staff.every((s) => 'pinHash' in s)).toBe(true);
   });
 });
 

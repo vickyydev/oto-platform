@@ -58,6 +58,7 @@ import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
 import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
+import { pinHashesByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
@@ -3238,6 +3239,22 @@ export async function cacheBundle(
        * disagree.
        */
       const lastToken = await lastTokenByAccountOnBox(db, auth.boxId);
+      /**
+       * The booth PIN hashes (S2-07b).
+       *
+       * A booth verifies a PIN on the BOX — a television in a shopping centre
+       * is given nothing (D15) — so a PIN set in the Console reaches a booth
+       * only here, as the argon2id hash `BoothStaffCacheFields.pinHash` in
+       * `@oto/shared` was declared for. Without this the admin panel would be
+       * setting PINs that no booth could ever verify.
+       *
+       * It adds no new class of secret to the bundle: this scope already
+       * carries each account's password hash for the offline unlock, under the
+       * same rule that will not serve it without the deny-list beside it.
+       * Accounts with no PIN carry null, which is what every account does
+       * today.
+       */
+      const pinHashes = await pinHashesByAccount(db, rows.map((a) => a.id));
       put(
         'staff',
         rows.map((a) => ({
@@ -3249,6 +3266,8 @@ export async function cacheBundle(
           status: a.status,
           mustChangePassword: a.mustChangePassword,
           lastTokenAt: lastToken.get(a.id)?.toISOString() ?? null,
+          /** argon2id over the booth PIN, or null. Never the PIN. */
+          pinHash: pinHashes.get(a.id) ?? null,
         })),
         // One row per person, so the rows read ARE the items — but the count
         // that decides "cut short" is the one the LIMIT applied to.
