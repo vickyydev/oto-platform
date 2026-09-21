@@ -3,6 +3,52 @@
 _Written 2026-09-21 at the end of a long session. Read this, then
 `SPRINT_2_PROGRESS.md` → Status, then `POS_GAP_REGISTER.md`._
 
+> ## ⚠ READ THIS BEFORE ANYTHING ELSE
+>
+> **Staging is not safe to leave on the public internet with the park's real
+> staff rows on it.** An authorization sweep at the end of this session
+> confirmed fourteen findings (SCRUM-242 to SCRUM-255, all Bugs under epic
+> SCRUM-181, labelled `security` + `authz-sweep`).
+>
+> The one that decides it is **SCRUM-242**: the OTO App's kiosk
+> clock-by-phone endpoint takes an **anonymous** request with no device
+> credential, and its only rate limit sits *inside* a branch that is skipped
+> when no credential is presented. A number that belongs to staff comes back
+> naming the employee and files a clock event; one that does not says so.
+> Reproduced live — fifteen malformed numbers, fifteen refusals, no throttle.
+> Against invented rows that is harmless. Against real phone numbers it is a
+> staff directory and a time-clock anybody can drive.
+>
+> **So the seed was deliberately NOT loaded onto staging** and the deploy was
+> not triggered. The work is committed at `fb07411`; the load is the step
+> that was stopped. The seed is find-or-create and re-runnable, so nothing is
+> lost by waiting.
+>
+> **Do these before running that seed against staging or telling the owner to
+> look:**
+> 1. Put `oto-app-staging` behind access control, or take it off the public
+>    internet.
+> 2. **SCRUM-242** — move the rate limit outside the credential branch and
+>    require the device credential.
+> 3. **SCRUM-247** — the kiosk device id is currently a 30-day bearer token:
+>    `refreshKioskSession` matches the id and `active` only, never the secret
+>    hash.
+> 4. **SCRUM-245** — the null-scope invite fix is committed but the *deployed
+>    POS bundle still contains the old code*, and staging's only
+>    administrator is platform-wide, so the server accepts the null. Ship it.
+> 5. **SCRUM-246** — `GET /members` with no search term returns the whole
+>    register with every child's allergies and medical notes, on the same
+>    permission that looks up one member. One shared till session is the lot.
+>
+> Two things the sweep did **not** find, which is worth knowing: no
+> cross-operator escalation has any live reach on staging today (one operator,
+> one branch), and **the pay figures in the seed are not exposed by any
+> defect** — that is purely a question of who holds the admin password.
+>
+> Full detail, reproductions and what was touched on staging (read-only, two
+> sign-ins, nothing created) are in the sweep's own report referenced from
+> the tickets.
+
 **The one rule that matters most here:** establish what is built from the
 **code** and from **driving staging**, never from a document. A stale line in
 `CLAUDE.md` §11 cost this project a week — it said a member's tier had no UI
@@ -104,8 +150,12 @@ owner. `docs/qa/STAGING_READINESS.md` is what he can try today.
 
 ## 5. What to pick up next, in order
 
+0. **The five security items in the banner at the top**, before anything
+   else and before the owner is told to look at staging again. Everything
+   below assumes those are done.
 1. **Finish what is in Testing.** SCRUM-235/236/237/239/240 need staging to
-   pick up `0abc9ea`, then a look, then Deployed with evidence.
+   pick up `0abc9ea`, then a look, then Deployed with evidence. Shipping that
+   build also closes SCRUM-245, because the null-scope fix is in it.
 2. **The booth's Render service**, so SCRUM-199 can be Deployed and the wheel
    can be opened in a browser. Coordinate with the `render.yaml` session.
 3. **SCRUM-203 — the ticket cart and the sale ledger.** This is the biggest
