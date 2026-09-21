@@ -61,6 +61,15 @@
  * {@link CARRIED_EMPLOYEE_COLUMNS} is an allowlist, so a column is carried only
  * by being named there. Everything dropped is listed in {@link WITHHELD} with the
  * reason, and that list is printed at the end of a run.
+ *
+ * That list used to be long. The owner has since said to carry the park's rows
+ * as they are — the real addresses, the home addresses, the pay figures, the
+ * photographs — so the only things held back now are **credentials**, and the
+ * reason is not privacy. A password hash, a PIN, a kiosk code or a session is a
+ * *way in*: copied onto an internet-facing deployment it would let somebody sign
+ * in as a named member of staff, and none of it makes a screen look any better
+ * because nothing renders it. A home address is a fact about a person and does
+ * render. That is the whole of the distinction being drawn here.
  */
 
 // First, and before `pg`: the export's timestamps carry no offset, and reading
@@ -80,15 +89,24 @@ const PEOPLE_PER_DEPARTMENT = 1;
 const TASK_SAMPLE_RATE = 0.15;
 
 /**
- * The domain every sampled address is rewritten onto. `.test` is reserved by
- * RFC 2606 and can never resolve, so nothing in the sample can mail a real
- * person even if outbound mail were switched on by mistake. The local part is
- * the real one — it is as identifying as the name beside it, which is carried,
- * and it is what makes the list look like a real staff list.
+ * The domain an earlier cut rewrote every address onto.
+ *
+ * It is no longer used for new samples — the real address is carried — but the
+ * seed still needs to recognise it, because a deployment loaded from that cut
+ * carries `someone@sample.oto.test` and the seed matches an employee on their
+ * address. Without this the staff list would be written a second time beside
+ * itself. See `adoptLegacyEmail` in `main.ts`.
  */
-const SAMPLE_EMAIL_DOMAIN = 'sample.oto.test';
+const LEGACY_SAMPLE_EMAIL_DOMAIN = 'sample.oto.test';
 
-/** Every column read out of `employees`. Anything not here is not carried. */
+/**
+ * Every column read out of `employees`. Anything not here is not carried.
+ *
+ * This is now everything the table holds except the six entries in
+ * {@link WITHHELD} — the two PIN columns, the three foreign keys into `users`,
+ * and `person_id`. Housekeeping (`version`, `updated_at`) is left to the
+ * database.
+ */
 const CARRIED_EMPLOYEE_COLUMNS = [
   'id',
   'full_name',
@@ -96,6 +114,8 @@ const CARRIED_EMPLOYEE_COLUMNS = [
   'nickname',
   'email',
   'phone',
+  'phone_e164',
+  'address',
   'branch_id',
   'primary_department_id',
   'status',
@@ -103,58 +123,74 @@ const CARRIED_EMPLOYEE_COLUMNS = [
   'employment_basis',
   'daily_rate',
   'food_allowance_per_day',
+  'incentive_clause_text',
+  'created_at',
   'start_date',
+  'probation_days',
+  'probation_end_date',
+  'probation_review_completed_at',
   'notice_date',
   'last_working_day',
   'end_reason',
   'offboarding_type',
+  'resignation_form_path',
+  'termination_letter_path',
   'nationality',
   'is_foreign_staff',
   'visa_expiry_date',
   'work_permit_expiry_date',
+  'sso_number',
+  'tax_id_number',
+  'visa_wp_company_handles',
+  'visa_wp_company_pays',
+  'visa_wp_cost_thb',
+  'visa_wp_repayment_if_fail_probation',
+  'visa_wp_repayment_if_leave_before_1y',
+  'visa_wp_repayment_terms_text',
+  'visa_wp_notes',
   'job_description',
+  'face_enrollment_status',
+  'face_id',
+  'face_enrolled_at',
+  'timeclock_pin_required',
+  'phone_fallback_count_30day',
+  'phone_fallback_count_reset_at',
+  'pin_usage_count_30day',
+  'pin_usage_count_reset_at',
+  'profile_photo_path',
+  'profile_photo_captured_at',
+  'profile_photo_source',
   'weekly_off_days',
   'display_order',
   'default_merge_data',
 ] as const;
 
-/** Printed at the end of a run, and the source of the report's list. */
+/**
+ * Printed at the end of a run, and the source of the report's list.
+ *
+ * Six entries, and every one of them is a credential or a foreign key into the
+ * credential tables. Nothing descriptive is held back any more.
+ */
 const WITHHELD: { what: string; why: string }[] = [
   {
-    what: 'employees.email domain (local part kept, domain rewritten)',
-    why: '61 of 69 are the staff member\'s personal mailbox. A reserved .test domain keeps the address recognisable and un-mailable.',
-  },
-  {
-    what: 'employees.profile_photo_path / _captured_at / _source / _updated_by',
-    why: 'A photograph of a named person. 65 of 69 have one.',
-  },
-  {
-    what: 'employees.face_id / face_enrollment_status / face_enrolled_at',
-    why: 'A biometric template reference for a named person (AWS Rekognition). 64 of 69 have one.',
-  },
-  {
-    what: 'employees.timeclock_pin_hash / _set_at',
-    why: 'A credential. Empty in the export in any case.',
-  },
-  {
-    what: 'employees.sso_number, employees.tax_id_number',
-    why: 'Government identifiers. 1 of 69 each.',
-  },
-  {
-    what: 'employees.address',
-    why: 'A home address. 58 of 69 have one, and no screen in this app needs it to look real.',
+    what: 'employees.timeclock_pin_hash, employees.timeclock_pin_set_at',
+    why: 'The PIN a member of staff clocks in with. A credential, and empty in the export in any case. `timeclock_pin_required` — the policy flag, not the PIN — is carried.',
   },
   {
     what: 'employees.user_id',
-    why: 'The link to a sign-in account. Accounts come from the platform\'s provisioning; a seeded link would be a second way in that survives being deactivated there.',
+    why: 'The link to a sign-in account, set on 67 of 69. It cannot be carried without the `users` row it points at, and that row is the password hash. Accounts on a deployment come from the platform\'s provisioning instead.',
   },
   {
-    what: 'employees.incentive_clause_text, employees.resignation_form_path, employees.termination_letter_path',
-    why: 'Free-text contract terms and document paths naming an individual.',
+    what: 'employees.updated_by (15 rows), employees.profile_photo_updated_by (0 rows)',
+    why: 'Both are foreign keys into `users` as well — who last edited the record, which renders nowhere.',
   },
   {
     what: 'employees.person_id and the whole `people` table',
-    why: 'It carries its own PIN hash, face id and phone. The seed leaves person_id NULL, as the previous sample did.',
+    why: 'A `people` row is the kiosk identity: PIN hash, PIN fingerprint, verified phone and face id. `person_id` is read only to look up an access policy — who may sign in at a kiosk — so carrying it would buy a way in and no pixel.',
+  },
+  {
+    what: 'branches.google_drive_folder (3 of 3 set; the folder *name* is carried)',
+    why: 'The id of one of the park\'s live Drive folders. A staging deployment that has Google credentials configured would file documents into the real folder. The name is what the branch screen prints.',
   },
   {
     what: 'users, sessions, auth_otp_events, auth_rate_limits, kiosk_* (11,900 rows)',
@@ -307,7 +343,7 @@ async function main(): Promise<void> {
 
   const branchKey = keyer();
   const branchRows = await q(
-    'select id, name, address, timezone, calendar_color from branches order by name',
+    'select id, name, address, timezone, calendar_color, logo_url, google_drive_folder_name from branches order by name',
   );
   const branchKeyById = new Map<string, string>();
   const branches = branchRows.map((b) => {
@@ -319,6 +355,10 @@ async function main(): Promise<void> {
       address: String(b.address),
       timezone: String(b.timezone),
       calendarColor: (b.calendar_color as string | null) ?? null,
+      logoUrl: (b.logo_url as string | null) ?? null,
+      // The label the branch screen prints. The folder id itself is withheld —
+      // see WITHHELD.
+      googleDriveFolderName: (b.google_drive_folder_name as string | null) ?? null,
     };
   });
 
@@ -457,16 +497,29 @@ async function main(): Promise<void> {
   const personKey = keyer();
   const personKeyById = new Map<string, string>();
   const people = chosen.map(({ row: e, deptKey: dk }) => {
-    const local = String(e.email).split('@')[0]!.trim();
-    const key = personKey(local);
+    const email = String(e.email).trim();
+    // The key is only an internal handle for wiring rows together in the
+    // generated file; the local part makes it readable in a diff.
+    const key = personKey(email.split('@')[0]!);
     personKeyById.set(String(e.id), key);
     return {
       key,
       fullName: String(e.full_name),
       thaiName: (e.thai_name as string | null) ?? null,
       nickname: String(e.nickname),
-      emailLocal: local,
+      /**
+       * The park's own address, domain and all. An earlier cut rewrote the
+       * domain to a reserved one; the owner has said to carry the real rows.
+       * Nothing is mailed unless a deployment sets SMTP_HOST / SMTP_USER /
+       * SMTP_PASS — `server/email.ts` logs and returns success when they are
+       * unset — so the address is inert until somebody configures a mailer.
+       */
+      email,
       phone: (e.phone as string | null) ?? null,
+      // NULL on all 69 in the export. `script/backfill-phone-numbers.ts` is
+      // what fills it, from the untidy `phone` above.
+      phoneE164: (e.phone_e164 as string | null) ?? null,
+      address: (e.address as string | null) ?? null,
       deptKey: dk,
       branchKey: branchKeyById.get(String(e.branch_id)) ?? null,
       status: String(e.status),
@@ -474,18 +527,61 @@ async function main(): Promise<void> {
       employmentBasis: String(e.employment_basis),
       dailyRate: (e.daily_rate as number | null) ?? null,
       foodAllowancePerDay: (e.food_allowance_per_day as number | null) ?? null,
+      incentiveClauseText: (e.incentive_clause_text as string | null) ?? null,
+      createdAt: iso(e.created_at as Date | null),
       startDate: iso(e.start_date as Date | null),
+      probationDays: (e.probation_days as number | null) ?? null,
+      probationEndDate: iso(e.probation_end_date as Date | null),
+      probationReviewCompletedAt: iso(e.probation_review_completed_at as Date | null),
       noticeDate: iso(e.notice_date as Date | null),
       lastWorkingDay: iso(e.last_working_day as Date | null),
       endReason: (e.end_reason as string | null) ?? null,
       offboardingType: (e.offboarding_type as string | null) ?? null,
+      resignationFormPath: (e.resignation_form_path as string | null) ?? null,
+      terminationLetterPath: (e.termination_letter_path as string | null) ?? null,
       nationality: (e.nationality as string | null) ?? null,
       isForeignStaff: Boolean(e.is_foreign_staff),
       visaExpiryDate: iso(e.visa_expiry_date as Date | null),
       workPermitExpiryDate: iso(e.work_permit_expiry_date as Date | null),
+      ssoNumber: (e.sso_number as string | null) ?? null,
+      taxIdNumber: (e.tax_id_number as string | null) ?? null,
+      visaWpCompanyHandles: (e.visa_wp_company_handles as boolean | null) ?? null,
+      visaWpCompanyPays: (e.visa_wp_company_pays as boolean | null) ?? null,
+      visaWpCostThb: (e.visa_wp_cost_thb as number | null) ?? null,
+      visaWpRepaymentIfFailProbation:
+        (e.visa_wp_repayment_if_fail_probation as boolean | null) ?? null,
+      visaWpRepaymentIfLeaveBefore1y:
+        (e.visa_wp_repayment_if_leave_before_1y as boolean | null) ?? null,
+      visaWpRepaymentTermsText: (e.visa_wp_repayment_terms_text as string | null) ?? null,
+      visaWpNotes: (e.visa_wp_notes as string | null) ?? null,
       jobDescription: (e.job_description as string | null) ?? null,
+      /**
+       * The enrolment state and the Rekognition id, carried as they are. The id
+       * points into a face collection this deployment will not have, so nothing
+       * can be matched against it — it reads on the screen as "enrolled" and
+       * fails at the kiosk, which is the truth of a copied park.
+       */
+      faceEnrollmentStatus: (e.face_enrollment_status as string | null) ?? null,
+      faceId: (e.face_id as string | null) ?? null,
+      faceEnrolledAt: iso(e.face_enrolled_at as Date | null),
+      timeclockPinRequired: (e.timeclock_pin_required as boolean | null) ?? null,
+      phoneFallbackCount30Day: Number(e.phone_fallback_count_30day ?? 0),
+      phoneFallbackCountResetAt: iso(e.phone_fallback_count_reset_at as Date | null),
+      pinUsageCount30Day: Number(e.pin_usage_count_30day ?? 0),
+      pinUsageCountResetAt: iso(e.pin_usage_count_reset_at as Date | null),
+      /**
+       * `/api/files/profile-photos/<file>.jpg`, served by this app out of its
+       * own object storage. A deployment without those objects returns 404 and
+       * the avatar falls back to initials — `EmployeeAvatar` preloads the image
+       * and only renders it once it has loaded, so nothing shows a broken
+       * image. Checked, not assumed.
+       */
+      profilePhotoPath: (e.profile_photo_path as string | null) ?? null,
+      profilePhotoCapturedAt: iso(e.profile_photo_captured_at as Date | null),
+      profilePhotoSource: (e.profile_photo_source as string | null) ?? null,
       weeklyOffDays: (e.weekly_off_days as number[] | null) ?? [],
       displayOrder: Number(e.display_order),
+      defaultMergeData: (e.default_merge_data as Record<string, unknown> | null) ?? null,
       positionTitle:
         ((e.default_merge_data as { positionTitle?: string } | null)?.positionTitle ?? null) || null,
       roleKeys: [] as string[],
@@ -505,9 +601,17 @@ async function main(): Promise<void> {
     if (p && rk && !p.roleKeys.includes(rk)) p.roleKeys.push(rk);
   }
 
+  /**
+   * `notes` is carried: 217 of the 602 rows have one, and it is the line the
+   * attendance screen shows against an admin correction — without it a
+   * corrected clock-in looks identical to an ordinary one. `kiosk_device_id`
+   * and `created_by` are not: both are foreign keys into tables this sample
+   * does not carry, and both are empty here anyway.
+   */
   const timeEvents = (
     await q(
-      `select employee_id, branch_id, event_type, event_time, auth_method, confidence_score
+      `select employee_id, branch_id, event_type, event_time, auth_method,
+              confidence_score, liveness_score, notes
          from time_events
         where employee_id = any($1::varchar[])
         order by event_time, employee_id, event_type`,
@@ -520,6 +624,8 @@ async function main(): Promise<void> {
     iso(t.event_time as Date)!,
     String(t.auth_method),
     (t.confidence_score as number | null) ?? null,
+    (t.liveness_score as number | null) ?? null,
+    (t.notes as string | null) ?? null,
   ] as const);
 
   // ---- 4. Tasks, by family, to a row budget ------------------------------
@@ -529,7 +635,9 @@ async function main(): Promise<void> {
            assigned_department_id, assigned_role_id, title, description,
            status, priority, recurrence, weekly_days, monthly_day, preferred_due_time,
            is_recurring_definition, due_at, start_at, scheduled_mode, progress_percent,
-           completed_at, task_level, requires_photo_evidence, requires_responses, created_at
+           status_manual_override, blocked_reason, completed_at, task_level,
+           requires_photo_evidence, requires_responses, reference_photo_url,
+           escalated, last_movement_at, archived_at, generated_for_date, created_at
       from tasks
      order by created_at, id
   `);
@@ -602,10 +710,23 @@ async function main(): Promise<void> {
     startAt: iso(t.start_at as Date | null),
     scheduledMode: Boolean(t.scheduled_mode),
     progressPercent: Number(t.progress_percent ?? 0),
+    statusManualOverride: Boolean(t.status_manual_override),
+    blockedReason: (t.blocked_reason as string | null) ?? null,
     completedAt: iso(t.completed_at as Date | null),
     taskLevel: String(t.task_level),
     requiresPhotoEvidence: Boolean(t.requires_photo_evidence),
     requiresResponses: Boolean(t.requires_responses),
+    referencePhotoUrl: (t.reference_photo_url as string | null) ?? null,
+    escalated: Boolean(t.escalated),
+    /**
+     * Set on all 333 rows, and it is what the board sorts and ages by — a task
+     * whose last movement defaults to the seed run reads as touched today.
+     */
+    lastMovementAt: iso(t.last_movement_at as Date | null),
+    archivedAt: iso(t.archived_at as Date | null),
+    /** The day a recurring instance was generated for; set on 164 of 333. */
+    generatedForDate: (t.generated_for_date as string | null) ?? null,
+    createdAt: iso(t.created_at as Date | null),
   }));
 
   /**
@@ -624,11 +745,25 @@ async function main(): Promise<void> {
   }
 
   /** Same argument for people: the seed finds an employee by email address. */
-  const personKeys = new Set(people.map((p) => p.emailLocal.toLowerCase()));
+  const personKeys = new Set(people.map((p) => p.email.toLowerCase()));
   if (personKeys.size !== people.length) {
     throw new Error(
-      `two sampled people share an email local part, which is the seed's key ` +
-        `for an employee. Pick a different key before taking this sample.`,
+      `two sampled people share an email address, which is the seed's key for ` +
+        `an employee. Pick a different key before taking this sample.`,
+    );
+  }
+  /**
+   * And the legacy key, for as long as a deployment might still be carrying
+   * rows from the cut that rewrote the domain. If two of the sampled people
+   * differ only by domain, the seed's adoption path could not tell which row
+   * belonged to which person.
+   */
+  const legacyKeys = new Set(people.map((p) => p.email.split('@')[0]!.toLowerCase()));
+  if (legacyKeys.size !== people.length) {
+    throw new Error(
+      `two sampled people share an email local part. A deployment seeded from ` +
+        `the older sample cannot be matched back to these rows unambiguously; ` +
+        `see adoptLegacyEmail in main.ts.`,
     );
   }
 
@@ -677,15 +812,17 @@ async function main(): Promise<void> {
   push(' *');
   push(' * The sampling rule, what it left behind and why are all in `extract.ts`.');
   push(' *');
-  push(' * Two things are not the park\'s own values and are marked here so nobody');
-  push(' * has to go looking: every email address is the real local part on the');
-  push(` * reserved domain \`${SAMPLE_EMAIL_DOMAIN}\`, which can never resolve; and no`);
-  push(' * row here links to a sign-in account, a face template or a photograph.');
+  push(' * These are the park\'s real values — real addresses, real home addresses,');
+  push(' * real pay figures, real photograph paths. The only thing held back is');
+  push(' * credentials: no PIN, no password, no session, no kiosk registration, and');
+  push(' * no link to a sign-in account. Nobody in here can sign in.');
   push(' */');
   push();
   push('/* eslint-disable */');
   push();
-  push(`export const SAMPLE_EMAIL_DOMAIN = ${j(SAMPLE_EMAIL_DOMAIN)};`);
+  push('/** The domain an earlier cut rewrote addresses onto. Only the seed\'s');
+  push(' *  adoption path still uses it — see `adoptLegacyEmail` in `main.ts`. */');
+  push(`export const LEGACY_SAMPLE_EMAIL_DOMAIN = ${j(LEGACY_SAMPLE_EMAIL_DOMAIN)};`);
   push();
   push('/** What the export held, and what this file carries, table by table. */');
   push(`export const SAMPLE_COUNTS: Record<string, { export: number; sample: number }> = ${j(
@@ -697,7 +834,7 @@ async function main(): Promise<void> {
   push(`export const TENANT = ${j({ name: String(tenant.name), slug: String(tenant.slug) })};`);
   push(`export const OPERATOR = ${j({ name: String(operator.name), status: String(operator.status) })};`);
   push();
-  push('export interface SampleBranch { key: string; name: string; address: string; timezone: string; calendarColor: string | null }');
+  push('export interface SampleBranch { key: string; name: string; address: string; timezone: string; calendarColor: string | null; logoUrl: string | null; googleDriveFolderName: string | null }');
   push(`export const BRANCHES: SampleBranch[] = [`);
   for (const b of branches) push(`  ${j(b)},`);
   push('];');
@@ -714,22 +851,40 @@ async function main(): Promise<void> {
   push();
   push('export interface SamplePerson {');
   push('  key: string; fullName: string; thaiName: string | null; nickname: string;');
-  push('  emailLocal: string; phone: string | null; deptKey: string; branchKey: string | null;');
+  push('  email: string; phone: string | null; phoneE164: string | null;');
+  push('  address: string | null; deptKey: string; branchKey: string | null;');
   push('  status: string; employmentState: string; employmentBasis: string;');
   push('  dailyRate: number | null; foodAllowancePerDay: number | null;');
-  push('  startDate: string | null; noticeDate: string | null; lastWorkingDay: string | null;');
+  push('  incentiveClauseText: string | null; createdAt: string | null;');
+  push('  startDate: string | null; probationDays: number | null;');
+  push('  probationEndDate: string | null; probationReviewCompletedAt: string | null;');
+  push('  noticeDate: string | null; lastWorkingDay: string | null;');
   push('  endReason: string | null; offboardingType: string | null;');
+  push('  resignationFormPath: string | null; terminationLetterPath: string | null;');
   push('  nationality: string | null; isForeignStaff: boolean;');
   push('  visaExpiryDate: string | null; workPermitExpiryDate: string | null;');
-  push('  jobDescription: string | null; weeklyOffDays: number[]; displayOrder: number;');
+  push('  ssoNumber: string | null; taxIdNumber: string | null;');
+  push('  visaWpCompanyHandles: boolean | null; visaWpCompanyPays: boolean | null;');
+  push('  visaWpCostThb: number | null; visaWpRepaymentIfFailProbation: boolean | null;');
+  push('  visaWpRepaymentIfLeaveBefore1y: boolean | null;');
+  push('  visaWpRepaymentTermsText: string | null; visaWpNotes: string | null;');
+  push('  jobDescription: string | null;');
+  push('  faceEnrollmentStatus: string | null; faceId: string | null; faceEnrolledAt: string | null;');
+  push('  timeclockPinRequired: boolean | null;');
+  push('  phoneFallbackCount30Day: number; phoneFallbackCountResetAt: string | null;');
+  push('  pinUsageCount30Day: number; pinUsageCountResetAt: string | null;');
+  push('  profilePhotoPath: string | null; profilePhotoCapturedAt: string | null;');
+  push('  profilePhotoSource: string | null;');
+  push('  weeklyOffDays: number[]; displayOrder: number;');
+  push('  defaultMergeData: Record<string, unknown> | null;');
   push('  positionTitle: string | null; roleKeys: string[];');
   push('}');
   push(`export const PEOPLE: SamplePerson[] = [`);
   for (const p of people) push(`  ${j(p)},`);
   push('];');
   push();
-  push('/** `[personKey, branchKey, eventType, isoTime, authMethod, confidence]` */');
-  push('export type SampleTimeEvent = [string, string, string, string, string, number | null];');
+  push('/** `[personKey, branchKey, eventType, isoTime, authMethod, confidence, liveness, notes]` */');
+  push('export type SampleTimeEvent = [string, string, string, string, string, number | null, number | null, string | null];');
   push(`export const TIME_EVENTS: SampleTimeEvent[] = [`);
   for (const t of timeEvents) push(`  ${j(t)},`);
   push('];');
@@ -741,8 +896,12 @@ async function main(): Promise<void> {
   push('  recurrence: string; weeklyDays: string[]; monthlyDay: number | null;');
   push('  preferredDueTime: string | null; isRecurringDefinition: boolean;');
   push('  dueAt: string | null; startAt: string | null; scheduledMode: boolean;');
-  push('  progressPercent: number; completedAt: string | null; taskLevel: string;');
+  push('  progressPercent: number; statusManualOverride: boolean; blockedReason: string | null;');
+  push('  completedAt: string | null; taskLevel: string;');
   push('  requiresPhotoEvidence: boolean; requiresResponses: boolean;');
+  push('  referencePhotoUrl: string | null; escalated: boolean;');
+  push('  lastMovementAt: string | null; archivedAt: string | null;');
+  push('  generatedForDate: string | null; createdAt: string | null;');
   push('}');
   push(`export const TASKS: SampleTask[] = [`);
   for (const t of tasks) push(`  ${j(t)},`);

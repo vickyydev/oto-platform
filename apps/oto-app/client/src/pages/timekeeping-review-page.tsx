@@ -311,8 +311,24 @@ export default function TimekeepingReviewPage() {
   const { selectedBranchId, isAllBranches } = useBranchContext();
   const { toast } = useToast();
   
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [issuesOnly, setIssuesOnly] = useState(false);
+  /**
+   * Open on the day the link asked for, not on today.
+   *
+   * The dashboard's Timekeeping Issues tile links here as
+   * `/timekeeping-review?date=<yesterday>&issuesOnly=true`, and both parameters
+   * were being thrown away — the page always opened on today, which on a
+   * quiet morning is an empty table where the issues the tile just counted
+   * ought to be. The date picker below still moves freely from wherever it
+   * lands; this only decides where it lands.
+   */
+  const params = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
+  const requestedDate = params.get("date");
+  const [date, setDate] = useState(() =>
+    requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)
+      ? requestedDate
+      : new Date().toISOString().split('T')[0],
+  );
+  const [issuesOnly, setIssuesOnly] = useState(params.get("issuesOnly") === "true");
   const [longShiftOnly, setLongShiftOnly] = useState(false);
   const [authMethodFilter, setAuthMethodFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");

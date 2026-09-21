@@ -44,6 +44,32 @@ interface FilterOption {
   filterValue: string;
 }
 
+/**
+ * The three filters that are switches rather than choices.
+ *
+ * They were part of {@link TaskFilters} and were sent to the API, and the board
+ * passed `showArchivedFilter` to ask for the control — but nothing here ever
+ * rendered one, so there was no way to switch any of them on. That left the
+ * board unable to show completed work at all: the list endpoint hides anything
+ * completed more than seven days ago unless `showArchived` is set, so a task
+ * finished a fortnight ago simply did not exist as far as the screen was
+ * concerned.
+ */
+const VIEW_OPTIONS = [
+  {
+    key: "showArchived" as const,
+    label: "Completed & archived",
+    prop: "showArchivedFilter" as const,
+  },
+  { key: "showEscalated" as const, label: "Escalated only", prop: "showEscalatedFilter" as const },
+  { key: "showStagnant" as const, label: "Not moved recently", prop: "showStagnantFilter" as const },
+];
+
+type ViewFilterKey = (typeof VIEW_OPTIONS)[number]['key'];
+
+const isViewKey = (key: keyof TaskFilters): key is ViewFilterKey =>
+  VIEW_OPTIONS.some((o) => o.key === key);
+
 interface TaskFiltersPanelProps {
   filters: TaskFilters;
   onFiltersChange: (filters: TaskFilters) => void;
@@ -67,7 +93,15 @@ export default function TaskFiltersPanel({
   employees = [],
   showBranchFilter = true,
   showTaskLevelFilter = true,
+  showStagnantFilter = false,
+  showEscalatedFilter = false,
+  showArchivedFilter = false,
 }: TaskFiltersPanelProps) {
+  const viewFilterEnabled: Record<ViewFilterKey, boolean> = {
+    showArchived: showArchivedFilter,
+    showEscalated: showEscalatedFilter,
+    showStagnant: showStagnantFilter,
+  };
   const [query, setQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -75,6 +109,17 @@ export default function TaskFiltersPanel({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const allOptions: FilterOption[] = [];
+
+  for (const v of VIEW_OPTIONS) {
+    if (!viewFilterEnabled[v.key]) continue;
+    allOptions.push({
+      id: `view-${v.key}`,
+      label: v.label,
+      category: 'View',
+      filterKey: v.key,
+      filterValue: 'true',
+    });
+  }
 
   const scopeOptions: { value: TaskScope; label: string }[] = [
     { value: "my_tasks", label: "My Tasks" },
@@ -117,6 +162,9 @@ export default function TaskFiltersPanel({
   }
 
   const isOptionActive = (opt: FilterOption): boolean => {
+    if (isViewKey(opt.filterKey)) {
+      return filters[opt.filterKey] === true;
+    }
     if (opt.filterKey === "taskLevels") {
       return filters.taskLevels.includes(opt.filterValue as TaskLevel);
     }
@@ -150,7 +198,9 @@ export default function TaskFiltersPanel({
 
   const applyFilter = useCallback((opt: FilterOption) => {
     const updated = { ...filters, searchQuery: "" };
-    if (opt.filterKey === "taskLevels") {
+    if (isViewKey(opt.filterKey)) {
+      updated[opt.filterKey] = true;
+    } else if (opt.filterKey === "taskLevels") {
       const level = opt.filterValue as TaskLevel;
       if (!updated.taskLevels.includes(level)) {
         updated.taskLevels = [...updated.taskLevels, level];
@@ -174,7 +224,9 @@ export default function TaskFiltersPanel({
 
   const removeFilter = useCallback((opt: FilterOption) => {
     const updated = { ...filters, searchQuery: "" };
-    if (opt.filterKey === "taskLevels") {
+    if (isViewKey(opt.filterKey)) {
+      updated[opt.filterKey] = false;
+    } else if (opt.filterKey === "taskLevels") {
       updated.taskLevels = updated.taskLevels.filter(l => l !== opt.filterValue);
     } else if (opt.filterKey === "taskScope") {
       updated.taskScope = "all";
@@ -229,6 +281,7 @@ export default function TaskFiltersPanel({
 
   const getCategoryColor = (category: string) => {
     switch (category) {
+      case "View": return "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
       case "Scope": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
       case "Level": return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
       case "Priority": return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";

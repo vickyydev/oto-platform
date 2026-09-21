@@ -13,6 +13,14 @@
  * (an employee with no branch, a branch with no operator), which is the same
  * rule the platform's own seed follows.
  *
+ * The one thing to know about that: the *key itself* is how a row is
+ * recognised, and the keys are an employee's email address and a task's title
+ * with its due and start times. Edit any other field and the edit survives.
+ * Edit the key — rename a task, change an address — and the next run no longer
+ * recognises the row and writes the original back beside it. Measured, not
+ * assumed: renaming one task's title turned 49 rows into 50 on the next run.
+ * Nothing is lost either way; there is simply a duplicate to delete.
+ *
  * It is NOT `script/minimal` or `script/full`. Those assume an empty database,
  * insert blindly, and call `assertDevEnv()` so they refuse to run anywhere
  * else. This one is written for a deployment that is already carrying real
@@ -30,6 +38,12 @@
  * not any more.
  *
  * ## What it deliberately does not create
+ *
+ * The rows are the park's own and they are carried as they are — real
+ * addresses, home addresses, pay figures, photograph paths, the lot. What is
+ * held back is credentials only, and the reason is not squeamishness about
+ * personal data: a hash or a kiosk code is a *way in* on an internet-facing
+ * deployment, and none of it renders on any screen.
  *
  *  - `users`. Accounts on a deployment come from the platform's provisioning
  *    (S2-17a), and a local user here would be a second way in that survives
@@ -51,6 +65,13 @@
  * them; screens that ask for *today* will be empty until somebody clocks in.
  * That is the price of real data and it is the right way round — the fix is a
  * fresher export through `extract.ts`, not invented timestamps here.
+ *
+ * Every screen that carries this data can be moved off today: attendance and
+ * the timesheet take a date range, the task board has an All filter, and the
+ * two that only ever showed today — the attendance day view and the Today
+ * panel — now name the day they are showing and say how to change it, instead
+ * of rendering an empty panel that reads as a fault. The run prints the last
+ * day the sample carries so whoever seeded it knows where to look.
  */
 
 // First, and before the database module: the sample's timestamps are wall
@@ -80,16 +101,15 @@ import {
   ANNOUNCEMENTS,
   BRANCHES,
   DEPARTMENTS,
+  LEGACY_SAMPLE_EMAIL_DOMAIN,
   OPERATOR,
   PEOPLE,
   ROLES,
   SAMPLE_BANNER,
   SAMPLE_COUNTS,
-  SAMPLE_EMAIL_DOMAIN,
   TASKS,
   TASKS_OWNED_BY_ADMIN,
   TIME_EVENTS,
-  emailFor,
 } from './people';
 
 /** Every count the run reports, so the summary is measured and not claimed. */
@@ -165,6 +185,9 @@ async function ensureBranches(tenantId: string, operatorId: string): Promise<Map
         name: b.name,
         address: b.address,
         timezone: b.timezone,
+        logoUrl: b.logoUrl,
+        // The label, not the folder id — see WITHHELD in `extract.ts`.
+        googleDriveFolderName: b.googleDriveFolderName,
         // Unique per tenant on `lower(calendar_color)`, so a colour already
         // taken by a branch somebody made by hand would fail the insert.
         // Dropping ours is the safe half of that trade: the calendar picks a
@@ -180,7 +203,15 @@ async function ensureBranches(tenantId: string, operatorId: string): Promise<Map
     }
     const [retry] = await db
       .insert(branches)
-      .values({ tenantId, operatorId, name: b.name, address: b.address, timezone: b.timezone })
+      .values({
+        tenantId,
+        operatorId,
+        name: b.name,
+        address: b.address,
+        timezone: b.timezone,
+        logoUrl: b.logoUrl,
+        googleDriveFolderName: b.googleDriveFolderName,
+      })
       .returning({ id: branches.id });
     byKey.set(b.key, retry!.id);
     count('branch (without its calendar colour)');
@@ -303,6 +334,41 @@ async function ensureRoles(
   return byKey;
 }
 
+/**
+ * Find a person this seed wrote under the older sample's address.
+ *
+ * An earlier cut rewrote every address onto `sample.oto.test`, and the address
+ * is the seed's key for an employee. Changing the key without looking for the
+ * old one would not update those rows — it would write the whole staff list a
+ * second time beside itself, because `employees.email` has no unique
+ * constraint to stop it.
+ *
+ * So: look for the legacy address, and adopt the row only if its address is
+ * still *exactly* what the old seed wrote. Somebody who corrected an address by
+ * hand has a value that matches neither key, and their row is left alone rather
+ * than quietly overwritten — which is the rule everywhere else in this file.
+ */
+async function adoptLegacyEmail(
+  tenantId: string,
+  email: string,
+): Promise<{ id: string; branchId: string | null; primaryDepartmentId: string | null } | null> {
+  const legacy = `${email.split('@')[0]}@${LEGACY_SAMPLE_EMAIL_DOMAIN}`;
+  if (legacy === email) return null;
+  const [row] = await db
+    .select({
+      id: employees.id,
+      branchId: employees.branchId,
+      primaryDepartmentId: employees.primaryDepartmentId,
+    })
+    .from(employees)
+    .where(and(eq(employees.tenantId, tenantId), eq(employees.email, legacy)))
+    .limit(1);
+  if (!row) return null;
+  await db.update(employees).set({ email }).where(eq(employees.id, row.id));
+  count('employee address restored from the sampled domain');
+  return row;
+}
+
 async function ensureEmployees(
   tenantId: string,
   branchIds: Map<string, string>,
@@ -311,11 +377,11 @@ async function ensureEmployees(
 ): Promise<Map<string, string>> {
   const byKey = new Map<string, string>();
   for (const p of PEOPLE) {
-    const email = emailFor(p);
+    const email = p.email;
     const branchId = p.branchKey ? (branchIds.get(p.branchKey) ?? null) : null;
     const departmentId = deptIds.get(p.deptKey) ?? null;
 
-    const [existing] = await db
+    const [found] = await db
       .select({
         id: employees.id,
         branchId: employees.branchId,
@@ -324,6 +390,7 @@ async function ensureEmployees(
       .from(employees)
       .where(and(eq(employees.tenantId, tenantId), eq(employees.email, email)))
       .limit(1);
+    const existing = found ?? (await adoptLegacyEmail(tenantId, email));
 
     let id: string;
     if (existing) {
@@ -363,7 +430,8 @@ async function ensureEmployees(
           phone: p.phone,
           // NULL in the export for all sixty-nine, so NULL here. The backfill
           // above is what fills it.
-          phoneE164: null,
+          phoneE164: p.phoneE164,
+          address: p.address,
           branchId,
           primaryDepartmentId: departmentId,
           status: p.status as typeof employees.$inferInsert.status,
@@ -371,23 +439,68 @@ async function ensureEmployees(
           employmentBasis: p.employmentBasis as typeof employees.$inferInsert.employmentBasis,
           dailyRate: p.dailyRate,
           foodAllowancePerDay: p.foodAllowancePerDay,
+          incentiveClauseText: p.incentiveClauseText,
+          createdAt: at(p.createdAt) ?? undefined,
           startDate: at(p.startDate),
+          probationDays: p.probationDays,
+          probationEndDate: at(p.probationEndDate),
+          probationReviewCompletedAt: at(p.probationReviewCompletedAt),
           noticeDate: at(p.noticeDate),
           lastWorkingDay: at(p.lastWorkingDay),
           endReason: p.endReason,
           offboardingType: p.offboardingType as typeof employees.$inferInsert.offboardingType,
+          resignationFormPath: p.resignationFormPath,
+          terminationLetterPath: p.terminationLetterPath,
           nationality: p.nationality,
           isForeignStaff: p.isForeignStaff,
           visaExpiryDate: at(p.visaExpiryDate),
           workPermitExpiryDate: at(p.workPermitExpiryDate),
+          ssoNumber: p.ssoNumber,
+          taxIdNumber: p.taxIdNumber,
+          visaWpCompanyHandles: p.visaWpCompanyHandles,
+          visaWpCompanyPays: p.visaWpCompanyPays,
+          visaWpCostThb: p.visaWpCostThb,
+          visaWpRepaymentIfFailProbation: p.visaWpRepaymentIfFailProbation,
+          visaWpRepaymentIfLeaveBefore1y: p.visaWpRepaymentIfLeaveBefore1y,
+          visaWpRepaymentTermsText: p.visaWpRepaymentTermsText,
+          visaWpNotes: p.visaWpNotes,
           jobDescription: p.jobDescription,
+          /**
+           * The enrolment state and its Rekognition reference, as the export
+           * holds them. The id points into a face collection this deployment
+           * does not have, so the kiosk cannot match against it — the staff
+           * record reads "enrolled" and a face clock-in would fail. That is the
+           * honest state of a copied park, and re-enrolling here would write a
+           * biometric template nobody asked for.
+           */
+          faceEnrollmentStatus:
+            p.faceEnrollmentStatus as typeof employees.$inferInsert.faceEnrollmentStatus,
+          faceId: p.faceId,
+          faceEnrolledAt: at(p.faceEnrolledAt),
+          // The policy flag, not the PIN. No PIN hash is carried.
+          timeclockPinRequired: p.timeclockPinRequired,
+          phoneFallbackCount30Day: p.phoneFallbackCount30Day,
+          phoneFallbackCountResetAt: at(p.phoneFallbackCountResetAt),
+          pinUsageCount30Day: p.pinUsageCount30Day,
+          pinUsageCountResetAt: at(p.pinUsageCountResetAt),
+          /**
+           * The real path, `/api/files/profile-photos/…`. The object lives in
+           * the park's storage, so on a deployment without it the route 404s
+           * and `EmployeeAvatar` shows initials — it preloads the image and
+           * only renders it on success, so no screen shows a broken image.
+           */
+          profilePhotoPath: p.profilePhotoPath,
+          profilePhotoCapturedAt: at(p.profilePhotoCapturedAt),
+          profilePhotoSource:
+            p.profilePhotoSource as typeof employees.$inferInsert.profilePhotoSource,
           weeklyOffDays: p.weeklyOffDays,
           displayOrder: p.displayOrder,
           // The Employees list reads its Position column out of this jsonb
           // (`employees-page.tsx`, `defaultMergeData?.positionTitle`) rather
           // than from the roles, so without it every row shows a dash even
           // with roles assigned.
-          defaultMergeData: p.positionTitle ? { positionTitle: p.positionTitle } : undefined,
+          defaultMergeData:
+            (p.defaultMergeData as typeof employees.$inferInsert.defaultMergeData) ?? undefined,
         })
         .returning({ id: employees.id });
       id = created!.id;
@@ -577,6 +690,8 @@ async function ensureTasks(
         startAt,
         scheduledMode: t.scheduledMode,
         progressPercent: t.progressPercent,
+        statusManualOverride: t.statusManualOverride,
+        blockedReason: t.blockedReason,
         completedAt: at(t.completedAt),
         assignedEmployeeId: t.assigneeKey ? (staffIds.get(t.assigneeKey) ?? null) : null,
         assignedDepartmentId: t.assignedDeptKey ? (deptIds.get(t.assignedDeptKey) ?? null) : null,
@@ -585,6 +700,17 @@ async function ensureTasks(
         taskLevel: t.taskLevel as typeof tasks.$inferInsert.taskLevel,
         requiresPhotoEvidence: t.requiresPhotoEvidence,
         requiresResponses: t.requiresResponses,
+        referencePhotoUrl: t.referencePhotoUrl,
+        escalated: t.escalated,
+        /**
+         * Carried, not defaulted. `lastMovementAt` defaults to now, and the
+         * board ages a task by it — left to the default, every sampled task
+         * would read as touched on the day the seed ran.
+         */
+        lastMovementAt: at(t.lastMovementAt),
+        archivedAt: at(t.archivedAt),
+        generatedForDate: t.generatedForDate,
+        createdAt: at(t.createdAt) ?? undefined,
       })
       .returning({ id: tasks.id });
     idByKey.set(t.key, created!.id);
@@ -630,7 +756,16 @@ async function ensureTimeEvents(
   );
 
   const rows: (typeof timeEvents.$inferInsert)[] = [];
-  for (const [personKey, branchKey, eventType, atIso, authMethod, confidence] of TIME_EVENTS) {
+  for (const [
+    personKey,
+    branchKey,
+    eventType,
+    atIso,
+    authMethod,
+    confidence,
+    liveness,
+    notes,
+  ] of TIME_EVENTS) {
     const employeeId = staffIds.get(personKey);
     const branchId = branchIds.get(branchKey);
     if (!employeeId || !branchId) continue;
@@ -644,6 +779,10 @@ async function ensureTimeEvents(
       eventTime: when,
       authMethod: authMethod as typeof timeEvents.$inferInsert.authMethod,
       confidenceScore: confidence,
+      livenessScore: liveness,
+      // The line the attendance screen shows against a correction. Without it
+      // an admin override is indistinguishable from an ordinary clock-in.
+      notes,
     });
   }
 
@@ -675,9 +814,21 @@ async function main(): Promise<void> {
   const staff = SAMPLE_COUNTS.employees;
   console.log(
     `[sample] These are the park's own rows — ${staff?.sample ?? PEOPLE.length} of its ` +
-      `${staff?.export ?? '?'} staff and the work that belongs to them. Nobody here can ` +
-      `sign in, and every address ends in ${SAMPLE_EMAIL_DOMAIN}, which cannot receive mail.`,
+      `${staff?.export ?? '?'} staff and the work that belongs to them, carried as they ` +
+      `are. Nobody here can sign in: no password, no PIN, no kiosk registration and no ` +
+      `link to an account was copied.`,
   );
+  /**
+   * Said out loud, because it is the one thing about this data that looks like
+   * a fault and is not: the clock-ins stop on the day the export was taken.
+   */
+  const last = TIME_EVENTS.reduce((max, e) => (e[3] > max ? e[3] : max), TIME_EVENTS[0]?.[3] ?? '');
+  if (last) {
+    console.log(
+      `[sample] The clock-ins run to ${last.slice(0, 10)} — a screen showing today will ` +
+        `be empty until somebody clocks in. Move the date back to see them.`,
+    );
+  }
 }
 
 main()

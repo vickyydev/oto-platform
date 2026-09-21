@@ -3,29 +3,28 @@
  *
  * The rows themselves are in `data.generated.ts` and come out of the park's
  * production export — `extract.ts` cuts them, and its header is where the
- * sampling rule and the list of what was deliberately left behind live.
+ * sampling rule and the short list of what is deliberately left behind live.
  *
- * This file holds the three things that are the *sample's* and not the park's:
- * the address the real local parts are hung on, the banner that says so on the
- * announcements board, and the rule that puts a task or two in the signed-in
- * administrator's own list.
+ * This file holds the two things that are the *sample's* and not the park's:
+ * the banner that says the branch is carrying sampled data, and the rule that
+ * puts a task or two in the signed-in administrator's own list.
  *
- * Nothing here invents a person. The previous version of this file did — it
+ * Nothing here invents a person. An earlier version of this file did — it
  * carried twenty-six made-up staff — and is gone. A deployment that ran that
  * version still has those rows: the seed never deletes, so they stay until
- * somebody removes them. They are the ones whose email ends in this domain and
- * whose phone number starts `+6695500`.
+ * somebody removes them. They are the ones whose phone number starts
+ * `+6695500` and whose address ends in {@link LEGACY_SAMPLE_EMAIL_DOMAIN}.
  */
 
 export {
   ANNOUNCEMENTS,
   BRANCHES,
   DEPARTMENTS,
+  LEGACY_SAMPLE_EMAIL_DOMAIN,
   OPERATOR,
   PEOPLE,
   ROLES,
   SAMPLE_COUNTS,
-  SAMPLE_EMAIL_DOMAIN,
   TASKS,
   TENANT,
   TIME_EVENTS,
@@ -41,24 +40,6 @@ export type {
   SampleTimeEvent,
 } from './data.generated';
 
-import { SAMPLE_EMAIL_DOMAIN, type SamplePerson } from './data.generated';
-
-/**
- * The staff member's real mailbox name on a domain that cannot exist.
- *
- * `.test` is reserved by RFC 2606, so the address is deliverable nowhere. That
- * matters more than it sounds: the export's addresses are 61 personal Gmail
- * accounts, and an app that learns to send mail on a staging deployment would
- * otherwise reach sixty-one real people. The local part is kept because it is
- * no more identifying than the name printed beside it, and because it is what
- * makes the list read as a staff list rather than a fixture.
- *
- * It is also the seed's natural key. All sixty-nine local parts in the export
- * are distinct, so a re-run finds the person it wrote last time.
- */
-export const emailFor = (p: Pick<SamplePerson, 'emailLocal'>): string =>
-  `${p.emailLocal}@${SAMPLE_EMAIL_DOMAIN}`;
-
 /**
  * Said on the board rather than in a README, because the person who opens this
  * deployment reads the board and not the repository.
@@ -68,9 +49,11 @@ export const SAMPLE_BANNER = {
   body:
     'The staff, the clock-ins and the task board here are a sample of the real ones, ' +
     'taken for testing. Edit anything you like — it saves, and running the sample ' +
-    'loader again will not undo your edit. Email addresses are not the real ones: ' +
-    `every one of them ends in ${SAMPLE_EMAIL_DOMAIN}, a domain that cannot receive mail. ` +
-    'Nobody here can sign in; these are staff records, not accounts.',
+    'loader again will not undo your edit. Nobody here can sign in: these are staff ' +
+    'records, not accounts, and no password, PIN or kiosk registration was copied. ' +
+    'The clock-ins are real and stop on the day the export was taken, so a screen ' +
+    'showing today will be empty until somebody clocks in — move the date back to ' +
+    'see them.',
   priority: 'info' as const,
   days: 365,
 };

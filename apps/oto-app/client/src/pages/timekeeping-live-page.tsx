@@ -101,6 +101,11 @@ export default function TimekeepingLivePage() {
     isAllBranches ? "all" : (selectedBranchId || "all")
   );
   const [photoModalEmployee, setPhotoModalEmployee] = useState<{ name: string; photo: string } | null>(null);
+  // A staff record can carry a photo path whose file is not in this
+  // deployment's storage. Without this the enlarged view draws the browser's
+  // broken-image icon under the person's name; the avatar behind it already
+  // falls back to initials.
+  const [photoModalFailed, setPhotoModalFailed] = useState(false);
   const [detailEmployee, setDetailEmployee] = useState<WorkingEmployee | null>(null);
 
   const isManager = user?.role === "manager" || user?.role === "admin" || user?.role === "operator_admin" || user?.role === "global_admin";
@@ -239,9 +244,27 @@ export default function TimekeepingLivePage() {
                 </div>
               ))
             ) : !liveData?.workingNow?.length ? (
+              /**
+               * This screen only ever shows now — that is what makes it live,
+               * and a date picker here would be a different screen. So when it
+               * is empty it says where the past is instead, because an empty
+               * panel with no explanation reads as a broken one.
+               */
               <div className="p-8 text-center text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No one is currently clocked in</p>
+                <p className="text-sm mt-2">
+                  This screen shows the present moment only.{" "}
+                  <button
+                    type="button"
+                    className="underline underline-offset-2 hover:text-foreground"
+                    onClick={() => setLocation("/timekeeping-review")}
+                    data-testid="link-attendance-history"
+                  >
+                    Open Attendance
+                  </button>{" "}
+                  to pick a day and see earlier clock-ins.
+                </p>
               </div>
             ) : (
               liveData.workingNow.map((emp) => (
@@ -367,17 +390,29 @@ export default function TimekeepingLivePage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={!!photoModalEmployee} onOpenChange={() => setPhotoModalEmployee(null)}>
+      <Dialog
+        open={!!photoModalEmployee}
+        onOpenChange={() => {
+          setPhotoModalEmployee(null);
+          setPhotoModalFailed(false);
+        }}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>{photoModalEmployee?.name}</DialogTitle>
           </DialogHeader>
-          {photoModalEmployee?.photo && (
+          {photoModalEmployee?.photo && !photoModalFailed && (
             <img
               src={photoModalEmployee.photo}
               alt={photoModalEmployee.name}
+              onError={() => setPhotoModalFailed(true)}
               className="w-full max-h-80 object-contain rounded-md"
             />
+          )}
+          {photoModalEmployee?.photo && photoModalFailed && (
+            <p className="text-sm text-muted-foreground text-center py-8" data-testid="photo-unavailable">
+              This photograph is not stored on this deployment.
+            </p>
           )}
         </DialogContent>
       </Dialog>

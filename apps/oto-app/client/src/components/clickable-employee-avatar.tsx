@@ -29,6 +29,15 @@ export function ClickableEmployeeAvatar({
   workStatus,
 }: ClickableEmployeeAvatarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  /**
+   * The enlarged photo is a plain `<img>`, so unlike the avatar itself — which
+   * preloads and falls back to initials — a path whose file is not in this
+   * deployment's storage would draw the browser's broken-image icon under the
+   * person's name. A record can carry a photo path the storage does not have:
+   * data copied from another deployment does exactly that. So the dialog says
+   * the photograph is not on this deployment rather than showing a torn page.
+   */
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   const photoUrl = profilePhotoPath
     ? `/api/files/profile-photos/${profilePhotoPath.split('/').pop()}`
@@ -67,11 +76,21 @@ export function ClickableEmployeeAvatar({
           </DialogHeader>
           {photoUrl && (
             <div className="flex justify-center p-4">
-              <img
-                src={photoUrl}
-                alt={fullName}
-                className="max-w-full max-h-[60vh] rounded-lg object-contain"
-              />
+              {photoFailed ? (
+                <p
+                  className="text-sm text-muted-foreground text-center py-8"
+                  data-testid={`photo-unavailable-${employeeId}`}
+                >
+                  This photograph is not stored on this deployment.
+                </p>
+              ) : (
+                <img
+                  src={photoUrl}
+                  alt={fullName}
+                  onError={() => setPhotoFailed(true)}
+                  className="max-w-full max-h-[60vh] rounded-lg object-contain"
+                />
+              )}
             </div>
           )}
         </DialogContent>

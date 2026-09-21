@@ -301,9 +301,17 @@ export default function OpsPage() {
 
   const coreTaskParams = new URLSearchParams();
   if (selectedBranchId) coreTaskParams.append("branchId", selectedBranchId);
-  
+  /**
+   * Without this the board can never show finished work. The list endpoint
+   * keeps a "virtual archive": anything completed more than seven days ago is
+   * excluded unless `showArchived` is set, and this request never set it — so a
+   * task completed a fortnight ago was not merely filtered out of the screen,
+   * it was never fetched.
+   */
+  if (taskFilters.showArchived) coreTaskParams.append("showArchived", "true");
+
   const { data: coreTasks = [], isLoading: coreTasksLoading } = useQuery<ScheduledTask[]>({
-    queryKey: ["/api/core/tasks", { branchId: selectedBranchId }],
+    queryKey: ["/api/core/tasks", { branchId: selectedBranchId, showArchived: taskFilters.showArchived }],
     queryFn: async () => {
       const res = await fetch(`/api/core/tasks?${coreTaskParams.toString()}`, { credentials: "include" });
       if (!res.ok) return [];
@@ -835,9 +843,15 @@ export default function OpsPage() {
         return false;
       });
     }
-    if (taskFilters.showArchived) {
-      filtered = filtered.filter(t => t.status === "completed");
-    }
+    /**
+     * `showArchived` widens the board rather than narrowing it: the request
+     * above asks the API for completed and archived work as well, and it lands
+     * in the Completed column beside everything else. It used to throw away
+     * every task that was not completed, which made the switch a history-only
+     * view — but nothing ever rendered the switch, so there is no behaviour
+     * here to preserve, and "Completed & archived" is a truer reading of the
+     * chip that now offers it.
+     */
     return filtered;
   };
 
@@ -1033,6 +1047,9 @@ export default function OpsPage() {
             })()}
             showBranchFilter={false}
             showTaskLevelFilter={activeTab === "tasks"}
+            // The chip that reaches finished work. Tasks only — the other tabs
+            // have their own archive control.
+            showArchivedFilter={activeTab === "tasks"}
           />
 
           <div className="flex items-center gap-2 shrink-0">
