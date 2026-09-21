@@ -102,7 +102,7 @@ export function OperatorsPanel() {
         title: 'Administrator invited',
         description: res.codeSent
           ? 'A six-digit setup code has been texted to that number. It lasts 10 minutes and works once.'
-          : (res.warning ??
+          : (res.warning?.message ??
             'The administrator was created, but the setup code could not be texted. Send it again from the lock screen.'),
         variant: res.codeSent ? undefined : 'destructive',
       });

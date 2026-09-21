@@ -169,7 +169,7 @@ export function LoginUsersPanel() {
         title: 'Account invited',
         description: res.codeSent
           ? 'A six-digit setup code has been texted to that number. It lasts 10 minutes and works once — they enter it on the lock screen to set their password.'
-          : (res.warning ??
+          : (res.warning?.message ??
             'The account was created, but the setup code could not be texted. Send it again from the lock screen.'),
         variant: res.codeSent ? undefined : 'destructive',
       });

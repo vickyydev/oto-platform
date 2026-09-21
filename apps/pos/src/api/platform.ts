@@ -290,13 +290,25 @@ export const adminApi = {
     employeeName?: string;
     roles: Array<{ roleName: string; scopeType: string; scopeId: string | null }>;
   }) =>
-    /** `codeSent` is false when the account was created but the text did not
-     *  go out — the account exists and the code can be re-sent (S2-01c). */
-    api.post<{ id: string; status: string; codeSent: boolean; warning?: string }>(
-      '/accounts',
-      body,
-      { idempotencyKey: idemKey() },
-    ),
+    /**
+     * `codeSent` is false when the account was created but the text did not
+     * go out — the account exists and the code can be re-sent (S2-01c).
+     *
+     * `warning` is an OBJECT, not a string. It was typed `string` here, which
+     * is what let `res.warning ?? '…'` compile in two panels: the fallback
+     * never ran, React was handed an object as a child, and creating a staff
+     * account white-screened the whole admin console. The account had been
+     * created, so the person retried and was told the phone was already
+     * taken. It only fired when the text failed, which on staging is every
+     * time. The shape is `CodeDelivery` in `apps/api/src/services/auth.ts`;
+     * keep the two in step.
+     */
+    api.post<{
+      id: string;
+      status: string;
+      codeSent: boolean;
+      warning?: { code: string; message: string };
+    }>('/accounts', body, { idempotencyKey: idemKey() }),
   updateAccount: (id: string, patch: { status?: 'active' | 'inactive'; phone?: string }) =>
     api.patch<{ ok: true }>(`/accounts/${id}`, patch),
   tempPassword: (id: string) => api.post<{ temporaryPassword: string }>(`/accounts/${id}/temp-password`),
@@ -341,11 +353,13 @@ export const adminApi = {
     api.post<{ id: string }>('/operators', { name }, { idempotencyKey: idemKey() }),
   archiveOperator: (id: string) => api.patch<{ ok: true }>(`/operators/${id}`, { archived: true }),
   assignOperatorAdmin: (id: string, body: { phone: string; name: string }) =>
-    api.post<{ accountId: string; codeSent: boolean; warning?: string }>(
-      `/operators/${id}/administrators`,
-      body,
-      { idempotencyKey: idemKey() },
-    ),
+    /** `warning` is an object — see `createAccount` above for what typing it
+     *  as a string cost. */
+    api.post<{
+      accountId: string;
+      codeSent: boolean;
+      warning?: { code: string; message: string };
+    }>(`/operators/${id}/administrators`, body, { idempotencyKey: idemKey() }),
 };
 
 // --- stations, boxes and devices (S2-04) ------------------------------------
