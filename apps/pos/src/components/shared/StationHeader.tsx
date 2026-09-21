@@ -33,8 +33,12 @@ interface StationHeaderProps {
  * squeezed themselves narrower instead of overflowing, the nav never scrolled,
  * and the only label with a break opportunity in it — `Check-in`, on its
  * hyphen — wrapped to two lines and was then clipped by the row's height. It
- * read `Che` over `i` on a perfectly healthy till at 1600px, because six tabs
- * want 770px and the band between the side clusters offers 689px.
+ * read `Che` over `i` on a perfectly healthy till at 1600px, because the six
+ * tabs are wider than the band between the side clusters: measured at 782px
+ * of tabs in a 755px band on one till, and the gap widens with a longer
+ * station name, an extra chip, or a printer fault. The figures move; the
+ * relationship does not, which is why the tabs must overflow rather than
+ * squeeze.
  *
  * A reviewer found it in a screenshot. Nobody had seen it in the code,
  * including in a comment two lines below claiming the nav "shrinks and scrolls

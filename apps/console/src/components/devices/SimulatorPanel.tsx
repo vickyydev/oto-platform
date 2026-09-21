@@ -4,9 +4,10 @@ import type { PrinterFault, SimulatorAction } from '@oto/shared';
 import { isMissingRoute, type BoxRow, type DeviceRow } from '@/api/fleet';
 import { simulatorApi } from '@/components/devices/simulatorApi';
 import { Button } from '@/components/ui/button';
-import { EmptyState, RouteUnavailable } from '@/components/Panel';
+import { EmptyState, Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
 import { Field, Select, TextInput } from '@/components/Form';
 import { StatusPill } from '@/components/Status';
+import type { BoxDeviceList } from '@/lib/deviceList';
 import { deviceKindWord, toneForPaper, toneForReachability } from '@/lib/fleetWords';
 
 /**
@@ -82,12 +83,19 @@ const DEFAULT_BUTTON_KEY = 'F9';
 
 export function SimulatorPanel({
   box,
-  devices,
+  deviceList,
+  onRetryDevices,
   canCommand,
   onSent,
 }: {
   box: BoxRow;
-  devices: DeviceRow[];
+  /**
+   * The box's devices and what they are worth. "Nothing on this box is
+   * simulated" is a statement about the box; it may only be made from a device
+   * list that was actually read.
+   */
+  deviceList: BoxDeviceList;
+  onRetryDevices: () => void;
   canCommand: boolean;
   onSent: (actionId?: string | null) => void;
 }) {
@@ -96,7 +104,7 @@ export function SimulatorPanel({
   const [failed, setFailed] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
 
-  const simulated = devices.filter((d) => !d.archived && d.transport === 'simulated');
+  const simulated = deviceList.devices.filter((d) => !d.archived && d.transport === 'simulated');
   const printers = simulated.filter((d) => isPrinter(d.kind));
   const scanners = simulated.filter((d) => d.kind === 'scanner');
 
@@ -123,10 +131,29 @@ export function SimulatorPanel({
     <section>
       <h3 className="text-sm font-bold mb-2">Simulator</h3>
 
+      {/* Which devices are simulated is a question about the device list, so
+          the panel cannot answer it before the list arrives, and must not
+          answer it at all when the read failed. */}
+      {deviceList.state === 'stale' && deviceList.readAt !== null && (
+        <StaleNote
+          readAt={deviceList.readAt}
+          message={deviceList.error}
+          onRetry={deviceList.refreshing ? undefined : onRetryDevices}
+        />
+      )}
+
       {missing ? (
         <RouteUnavailable
           what="The simulator"
           detail="This deployment's API has no box command route yet."
+        />
+      ) : deviceList.state === 'unread' ? (
+        <Loading what="this box's devices" />
+      ) : deviceList.state === 'failed' ? (
+        <Unreadable
+          what="This box's devices"
+          message={deviceList.error}
+          onRetry={deviceList.refreshing ? undefined : onRetryDevices}
         />
       ) : simulated.length === 0 ? (
         <EmptyState

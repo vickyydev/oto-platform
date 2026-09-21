@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Loader2, Plus, RefreshCw, ShieldOff } from 'lucide-react';
 import {
   boxVitals,
@@ -22,6 +22,14 @@ import { BoxDrawer } from '@/components/devices/BoxDrawer';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
 import { StationDrawer } from '@/components/devices/StationDrawer';
 import { useSession } from '@/auth/SessionContext';
+import {
+  devicesFailed,
+  devicesRead,
+  readFailureMessage,
+  readingDevices,
+  UNREAD_DEVICES,
+  type BoxDeviceList,
+} from '@/lib/deviceList';
 import {
   PAIRABLE_KINDS,
   accessSentence,
@@ -239,7 +247,8 @@ export function Devices() {
       {openBox && (
         <BoxDrawer
           box={openBox}
-          devices={fleet.devices.filter((d) => d.boxId === openBox.id)}
+          deviceList={fleet.deviceList(openBox.id)}
+          onRetryDevices={() => fleet.retryDevices(openBox.id)}
           stations={fleet.stations.filter((s) => s.boxId === openBox.id)}
           timezone={timezone}
           canCommand={canCommandBox}
@@ -257,7 +266,8 @@ export function Devices() {
           branchId={branchId}
           branchLabel={currentBranchName}
           boxes={fleet.boxes.filter((b) => !b.archived)}
-          devices={fleet.devices.filter((d) => !d.archived)}
+          deviceList={fleet.deviceList}
+          onRetryDevices={fleet.retryDevices}
           canEdit={openStation === 'new' ? canCreateStation : canUpdateStation}
           onClose={() => setOpenStation(null)}
           onSaved={() => {
@@ -277,7 +287,12 @@ export function Devices() {
 interface Fleet {
   boxes: BoxRow[];
   stations: StationRow[];
+  /** Every device held right now, across the branch's boxes. Counts use it. */
   devices: DeviceRow[];
+  /** One box's device list, and whether that list can be believed. */
+  deviceList: (boxId: string) => BoxDeviceList;
+  /** Re-read one box's devices — the "try again" the panels offer. */
+  retryDevices: (boxId: string) => void;
   credentials: CredentialRow[];
   /** Per list, because the API half of this ticket lands route by route. */
   missing: { boxes: boolean; stations: boolean; credentials: boolean };
@@ -289,11 +304,47 @@ interface Fleet {
 function useFleet(branchId: string): Fleet {
   const [boxes, setBoxes] = useState<BoxRow[]>([]);
   const [stations, setStations] = useState<StationRow[]>([]);
-  const [devices, setDevices] = useState<DeviceRow[]>([]);
+  const [deviceLists, setDeviceLists] = useState<Record<string, BoxDeviceList>>({});
   const [credentials, setCredentials] = useState<CredentialRow[]>([]);
   const [missing, setMissing] = useState({ boxes: false, stations: false, credentials: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Which read is the newest one asked for, per box.
+   *
+   * Two reads of the same box can be in flight at once — the page re-reads
+   * itself after a command, and a panel's "try again" asks for one box on its
+   * own — and answers come back in whatever order the network gives them. Only
+   * the newest read asked for a box is allowed to write that box's state, so a
+   * slow answer cannot land on top of a fresher one and be stamped with the
+   * time it landed.
+   */
+  const newestRead = useRef(new Map<string, number>());
+  const reads = useRef(0);
+
+  const readDevices = useCallback(async (boxId: string) => {
+    reads.current += 1;
+    const ticket = reads.current;
+    newestRead.current.set(boxId, ticket);
+    setDeviceLists((held) => ({ ...held, [boxId]: readingDevices(held[boxId]) }));
+    try {
+      const { devices } = await fleetApi.boxDevices(boxId);
+      if (newestRead.current.get(boxId) !== ticket) return;
+      setDeviceLists((held) => ({ ...held, [boxId]: devicesRead(devices) }));
+    } catch (err) {
+      if (newestRead.current.get(boxId) !== ticket) return;
+      const message = readFailureMessage(err);
+      setDeviceLists((held) => ({ ...held, [boxId]: devicesFailed(held[boxId], message) }));
+    }
+  }, []);
+
+  // A different branch is a different fleet: nothing read for the last one
+  // says anything about this one, so none of it is carried across.
+  useEffect(() => {
+    newestRead.current.clear();
+    setDeviceLists({});
+  }, [branchId]);
 
   const load = useCallback(async () => {
     if (!branchId) {
@@ -342,28 +393,44 @@ function useFleet(branchId: string): Fleet {
     take(credentialRes, 'credentials', (v) => setCredentials(v.credentials));
 
     // Devices are asked for per box, never per branch — a printer belongs to
-    // the box it is plugged into. One request per box, and a box whose devices
-    // cannot be read contributes none rather than failing the page.
-    const deviceResults = await Promise.allSettled(
-      loadedBoxes.map((box) => fleetApi.boxDevices(box.id)),
-    );
-    setDevices(
-      deviceResults.flatMap((r) => (r.status === 'fulfilled' ? r.value.devices : [])),
-    );
+    // the box it is plugged into. One request per box, and a box whose request
+    // fails does not fail the page: it keeps whatever was last read for it,
+    // marked stale, or says it could not be read if there is nothing to keep.
+    //
+    // What it must NOT do is contribute an empty list, which is what it used to
+    // do. An empty list is indistinguishable on screen from a box with nothing
+    // plugged in, and the drawer's panels then state that as fact — so a failed
+    // request became "No simulated printer on this box" and sent somebody to
+    // check a box that was fine. `readDevices` carries the difference.
+    await Promise.all(loadedBoxes.map((box) => readDevices(box.id)));
 
     setMissing(absent);
     setError(failures[0] ?? null);
     setLoading(false);
-  }, [branchId]);
+  }, [branchId, readDevices]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  // Scoped to the boxes this branch currently has, so a box that has gone does
+  // not go on contributing devices to counts and pickers.
+  const devices = useMemo(
+    () => boxes.flatMap((box) => deviceLists[box.id]?.devices ?? []),
+    [boxes, deviceLists],
+  );
+
+  const deviceList = useCallback(
+    (boxId: string): BoxDeviceList => deviceLists[boxId] ?? UNREAD_DEVICES,
+    [deviceLists],
+  );
+
   return {
     boxes,
     stations,
     devices,
+    deviceList,
+    retryDevices: (boxId: string) => void readDevices(boxId),
     credentials,
     missing,
     loading,

@@ -76,6 +76,106 @@ export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () 
 }
 
 /**
+ * A list that could NOT be read — which is a different thing from a list with
+ * nothing in it, and must never be dressed as one.
+ *
+ * "No simulated printer on this box" is a claim about the park's equipment.
+ * Saying it because a request failed sends somebody to a counter to look at a
+ * box that is working. This says what actually happened instead: the request,
+ * not the box, is what came back empty.
+ */
+export function Unreadable({
+  what,
+  message,
+  onRetry,
+}: {
+  /** The list, named as the reader thinks of it: "This box's devices". */
+  what: string;
+  message?: string | null;
+  onRetry?: () => void;
+}) {
+  return (
+    <div
+      className="rounded-xl border border-dashed px-4 py-8 text-center"
+      style={{
+        borderColor: 'hsl(var(--status-warn) / 0.45)',
+        backgroundColor: 'hsl(var(--status-warn) / 0.07)',
+      }}
+    >
+      <TriangleAlert className="w-5 h-5 mx-auto mb-2" style={{ color: 'hsl(var(--status-warn))' }} />
+      <p className="font-semibold">{what} could not be read</p>
+      <p className="mt-1 text-sm text-muted-foreground break-words">
+        {message ? `${message} ` : ''}That is a request that did not answer, not a fact about this
+        box — it may have everything it had a minute ago.
+      </p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-3 text-sm font-semibold underline underline-offset-4"
+        >
+          Try again
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * What is on screen was read earlier and the last refresh failed.
+ *
+ * Kept rather than dropped, because an older true list beats a confident empty
+ * one — but only while it is labelled as old, which is what this is for.
+ */
+export function StaleNote({
+  readAt,
+  message,
+  onRetry,
+}: {
+  /** When what is on screen was actually read. */
+  readAt: number;
+  message?: string | null;
+  onRetry?: () => void;
+}) {
+  /**
+   * A clock time rather than "read 5s ago".
+   *
+   * A relative age is computed once, at render, and this note sits in a drawer
+   * somebody leaves open — so "5s ago" would still say 5s ago two minutes
+   * later, which is the same kind of confident wrong sentence the note exists
+   * to prevent. A clock time is true for as long as it is on screen.
+   */
+  const at = new Date(readAt).toLocaleTimeString();
+  // The message is a sentence from the API or the fetch and usually ends in a
+  // full stop; this sentence ends in one too, and two of them read as a typo.
+  const reason = message?.trim().replace(/\.+$/, '');
+  return (
+    <p
+      className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-3 py-2 text-xs"
+      style={{
+        borderColor: 'hsl(var(--status-warn) / 0.4)',
+        backgroundColor: 'hsl(var(--status-warn) / 0.07)',
+      }}
+    >
+      <TriangleAlert className="w-3.5 h-3.5 shrink-0" style={{ color: 'hsl(var(--status-warn))' }} />
+      <span className="min-w-0 break-words">
+        Shown as it was read at {at}; the refresh since has failed
+        {reason ? ` — ${reason}` : ''}.
+      </span>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="font-semibold underline underline-offset-4"
+        >
+          Try again
+        </button>
+      )}
+    </p>
+  );
+}
+
+/**
  * The route this panel reads is not on this deployment yet.
  *
  * Said plainly, because the alternative is worse in both directions: an empty

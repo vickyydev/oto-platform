@@ -19,12 +19,13 @@ import {
 } from '@/api/fleet';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/Drawer';
-import { EmptyState, Fact, Loading, RouteUnavailable } from '@/components/Panel';
+import { EmptyState, Fact, Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
 import { Chip, StatusMark, StatusPill } from '@/components/Status';
 import { Field, Select, TextInput } from '@/components/Form';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
 import { SimulatorPanel } from '@/components/devices/SimulatorPanel';
 import { PrintPanel } from '@/components/devices/PrintPanel';
+import type { BoxDeviceList } from '@/lib/deviceList';
 import {
   boxRoleWord,
   boxStatusWord,
@@ -52,7 +53,8 @@ import { elapsed, formatExact, formatWhen, millis, timeAgo } from '@/lib/time';
  */
 export function BoxDrawer({
   box,
-  devices,
+  deviceList,
+  onRetryDevices,
   stations,
   timezone,
   canCommand,
@@ -63,7 +65,14 @@ export function BoxDrawer({
   onChanged,
 }: {
   box: BoxRow;
-  devices: DeviceRow[];
+  /**
+   * This box's devices AND what they are worth. Not a bare array: a list that
+   * has not arrived and a list that failed both look like a box with nothing
+   * plugged in once the difference is thrown away, and all three panels below
+   * would then say so in as many words.
+   */
+  deviceList: BoxDeviceList;
+  onRetryDevices: () => void;
   stations: StationRow[];
   timezone?: string | null;
   canCommand: boolean;
@@ -127,7 +136,8 @@ export function BoxDrawer({
 
       <BoxDevices
         box={box}
-        devices={devices}
+        deviceList={deviceList}
+        onRetryDevices={onRetryDevices}
         canCreate={canCreateDevice}
         canUpdate={canUpdateDevice}
         timezone={timezone}
@@ -169,7 +179,8 @@ export function BoxDrawer({
           paper-out reach the printer" stays one press and one glance. */}
       <SimulatorPanel
         box={box}
-        devices={devices}
+        deviceList={deviceList}
+        onRetryDevices={onRetryDevices}
         canCommand={canCommand}
         onSent={(actionId) => {
           if (actionId) setActionFilter(actionId);
@@ -179,7 +190,7 @@ export function BoxDrawer({
 
       {/* What the faults above actually did to paper (S2-06): the queue, and
           the picture the simulator rebuilt from the bytes it was sent. */}
-      <PrintPanel box={box} devices={devices} />
+      <PrintPanel box={box} deviceList={deviceList} onRetryDevices={onRetryDevices} />
     </Drawer>
   );
 }
@@ -258,21 +269,23 @@ function ClaimCodeRow({
 
 function BoxDevices({
   box,
-  devices,
+  deviceList,
+  onRetryDevices,
   canCreate,
   canUpdate,
   timezone,
   onChanged,
 }: {
   box: BoxRow;
-  devices: DeviceRow[];
+  deviceList: BoxDeviceList;
+  onRetryDevices: () => void;
   canCreate: boolean;
   canUpdate: boolean;
   timezone?: string | null;
   onChanged: () => void;
 }) {
   const [adding, setAdding] = useState(false);
-  const live = devices.filter((d) => !d.archived);
+  const live = deviceList.devices.filter((d) => !d.archived);
 
   return (
     <section>
@@ -296,10 +309,32 @@ function BoxDevices({
         <AddDeviceForm boxId={box.id} onClose={() => setAdding(false)} onAdded={onChanged} />
       )}
 
-      {live.length === 0 ? (
+      {/* Four outcomes, and only one of them is "this box has no devices".
+          The other three are about the request, and say so. */}
+      {deviceList.state === 'stale' && deviceList.readAt !== null && (
+        <StaleNote
+          readAt={deviceList.readAt}
+          message={deviceList.error}
+          onRetry={deviceList.refreshing ? undefined : onRetryDevices}
+        />
+      )}
+
+      {deviceList.state === 'unread' ? (
+        <Loading what="this box's devices" />
+      ) : deviceList.state === 'failed' ? (
+        <Unreadable
+          what="This box's devices"
+          message={deviceList.error}
+          onRetry={deviceList.refreshing ? undefined : onRetryDevices}
+        />
+      ) : live.length === 0 ? (
         <EmptyState
           title="This box has reported no devices"
-          detail="Until it does, a station on this box has nothing to print or scan with."
+          detail={
+            deviceList.state === 'stale'
+              ? 'That is what it reported when this list was last read, above.'
+              : 'Until it does, a station on this box has nothing to print or scan with.'
+          }
         />
       ) : (
         <ul className="flex flex-col divide-y">

@@ -8,7 +8,6 @@ import {
   STATION_KINDS,
   type BoxRow,
   type BranchStaffMember,
-  type DeviceRow,
   type PaymentRouting,
   type StationAccessScope,
   type StationCapability,
@@ -22,6 +21,7 @@ import { Drawer } from '@/components/Drawer';
 import { EmptyState, ErrorNote, Loading } from '@/components/Panel';
 import { Chip } from '@/components/Status';
 import { CheckRow, ChoiceRow, Field, NumberInput, Select, Step, TextInput } from '@/components/Form';
+import type { BoxDeviceList } from '@/lib/deviceList';
 import {
   accessSentence,
   capabilityWord,
@@ -50,7 +50,8 @@ export function StationDrawer({
   branchId,
   branchLabel,
   boxes,
-  devices,
+  deviceList,
+  onRetryDevices,
   canEdit,
   onClose,
   onSaved,
@@ -60,7 +61,13 @@ export function StationDrawer({
   branchId: string;
   branchLabel: string;
   boxes: BoxRow[];
-  devices: DeviceRow[];
+  /**
+   * The chosen box's devices, and whether that list can be believed. Step 3
+   * offers devices and step 1 explains an empty step 3, and neither may say
+   * "this box has none" on the strength of a read that has not come back.
+   */
+  deviceList: (boxId: string) => BoxDeviceList;
+  onRetryDevices: (boxId: string) => void;
   canEdit: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -87,7 +94,11 @@ export function StationDrawer({
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 
-  const boxDevices = useMemo(() => devices.filter((d) => d.boxId === boxId), [devices, boxId]);
+  const boxList = deviceList(boxId);
+  const boxDevices = useMemo(
+    () => boxList.devices.filter((d) => !d.archived && d.boxId === boxId),
+    [boxList, boxId],
+  );
   const roles = rolesForStationKind(kind);
   const takesMoney = kind === 'till' || kind === 'kiosk' || kind === 'booth';
 
@@ -212,9 +223,23 @@ export function StationDrawer({
         </Field>
         {boxId && boxDevices.length === 0 && (
           <p className="text-xs text-muted-foreground">
-            This box has reported no devices yet, so step 3 has nothing to offer. The station can be
-            created anyway and given its devices when they appear.
+            {boxList.state === 'unread'
+              ? "Reading this box's devices…"
+              : boxList.state === 'failed'
+                ? "This box's devices could not be read, so step 3 has nothing to offer — which is not the same as this box having none. Any assignment made now would be made blind."
+                : boxList.state === 'stale'
+                  ? 'This box reported no devices when this list was last read, and the refresh since has failed.'
+                  : 'This box has reported no devices yet, so step 3 has nothing to offer. The station can be created anyway and given its devices when they appear.'}
           </p>
+        )}
+        {boxId && boxList.state === 'failed' && !boxList.refreshing && (
+          <button
+            type="button"
+            onClick={() => onRetryDevices(boxId)}
+            className="self-start text-xs font-semibold underline underline-offset-4"
+          >
+            Try reading them again
+          </button>
         )}
       </Step>
 

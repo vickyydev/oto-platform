@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Printer, RefreshCw } from 'lucide-react';
-import { api, apiUrl } from '@/api/client';
-import { isMissingRoute, type BoxRow, type DeviceRow } from '@/api/fleet';
+import { api, apiUrl, ApiError } from '@/api/client';
+import { isMissingRoute, type BoxRow } from '@/api/fleet';
 import { Button } from '@/components/ui/button';
-import { EmptyState, ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
+import { EmptyState, Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
 import { StatusPill, type Tone } from '@/components/Status';
+import type { BoxDeviceList } from '@/lib/deviceList';
 
 /**
  * What came out of the machine, and what is still waiting to (S2-06).
@@ -75,12 +76,20 @@ const STATUS_TONE: Record<PrintJobRow['status'], Tone> = {
 
 export function PrintPanel({
   box,
-  devices,
+  deviceList,
+  onRetryDevices,
 }: {
   box: BoxRow;
-  devices: DeviceRow[];
+  /**
+   * The box's devices and what they are worth. "No simulated printer on this
+   * box" is a claim about the box, and it may only be made from a list that
+   * was actually read — not from one that has not arrived, and not from one
+   * whose request failed.
+   */
+  deviceList: BoxDeviceList;
+  onRetryDevices: () => void;
 }) {
-  const simulatedPrinters = devices.filter(
+  const simulatedPrinters = deviceList.devices.filter(
     (d) => !d.archived && d.transport === 'simulated' && d.kind.endsWith('printer'),
   );
   /**
@@ -98,25 +107,37 @@ export function PrintPanel({
    */
   const [selected, setSelected] = useState<string | null>(null);
   const [jobs, setJobs] = useState<PrintJobRow[] | null>(null);
+  /** When `jobs` was read, so a queue kept after a failed refresh can say so. */
+  const [jobsReadAt, setJobsReadAt] = useState<number | null>(null);
+  /** Why the last read of the queue failed. Null when the last read worked. */
+  const [jobsFailed, setJobsFailed] = useState<string | null>(null);
   const [printouts, setPrintouts] = useState<Printout[] | null>(null);
   const [missing, setMissing] = useState(false);
   /** The box's previews live on the box; this one is not here. */
   const [elsewhere, setElsewhere] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
+  /** Why the previews could not be read, when that was not the reason above. */
+  const [previewsFailed, setPreviewsFailed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Two reads, two failures, and each is reported where its consequence shows
+  // rather than as one banner over the panel: a queue that could not be read
+  // and previews that could not be read are different things to be told.
   const load = useCallback(async () => {
     setBusy(true);
-    setFailed(null);
     try {
       const { jobs: rows } = await printApi.jobs(box.id);
       setJobs(rows);
+      setJobsReadAt(Date.now());
+      setJobsFailed(null);
       setMissing(false);
     } catch (err) {
       if (isMissingRoute(err)) {
         setMissing(true);
       } else {
-        setFailed(err instanceof Error ? err.message : 'The print queue could not be read.');
+        // Kept, rather than turned into "nothing has been printed on this box"
+        // or left under a spinner that will never stop: the queue below is
+        // whatever was last read, labelled with when that was.
+        setJobsFailed(err instanceof Error ? err.message : 'The print queue could not be read.');
       }
       setBusy(false);
       return;
@@ -131,11 +152,22 @@ export function PrintPanel({
       const { printouts: rows } = await printApi.printouts(selected);
       setPrintouts(rows);
       setElsewhere(false);
+      setPreviewsFailed(null);
     } catch (err) {
-      // 409 BOX_NOT_IN_PROCESS — a real box, whose paper is in Phuket.
       setPrintouts(null);
-      setElsewhere(true);
-      void err;
+      // "This paper is not here" is a claim about WHERE the printout is, and
+      // only two answers establish it: the 409s the API raises for a box that
+      // is not in this process and for a device that is a real printer. Any
+      // other failure — a 500, a dropped connection, the edge answering for
+      // the origin — establishes nothing about the box, so it is reported as
+      // the failed read it is rather than as an explanation.
+      const notHere =
+        err instanceof ApiError &&
+        (err.code === 'BOX_NOT_IN_PROCESS' || err.code === 'DEVICE_NOT_SIMULATED');
+      setElsewhere(notHere);
+      setPreviewsFailed(
+        notHere ? null : err instanceof Error ? err.message : 'The previews could not be read.',
+      );
     } finally {
       setBusy(false);
     }
@@ -144,8 +176,12 @@ export function PrintPanel({
   /**
    * Adopt a printer as soon as there is one, and let go of one that has gone.
    *
-   * Keyed on the ids rather than the array, because the drawer rebuilds
-   * `devices` on every poll and an array identity would re-run this forever.
+   * Keyed on the ids rather than the array, because the drawer rebuilds the
+   * device list on every refresh — and on every re-render that recomputes it —
+   * so an array identity would re-run this forever. Nothing polls devices
+   * today; refreshes are a person pressing a button. The defence is kept
+   * anyway, because it costs a `join` and the alternative is a render loop
+   * whenever something does start refreshing on a timer.
    * A choice a person has made is left alone while that printer still exists;
    * if it is archived or removed from the box, the panel falls back to the
    * first remaining one rather than pointing at a device that is not there.
@@ -182,9 +218,17 @@ export function PrintPanel({
         </Button>
       </div>
 
-      {failed && <ErrorNote message={failed} onRetry={() => void load()} />}
+      {jobsFailed && jobs !== null && jobsReadAt !== null && (
+        <StaleNote readAt={jobsReadAt} message={jobsFailed} onRetry={() => void load()} />
+      )}
 
-      {jobs === null ? (
+      {jobs === null && jobsFailed ? (
+        <Unreadable
+          what="This box's print queue"
+          message={jobsFailed}
+          onRetry={busy ? undefined : () => void load()}
+        />
+      ) : jobs === null ? (
         <Loading what="the print queue" />
       ) : jobs.length === 0 ? (
         <EmptyState
@@ -218,7 +262,25 @@ export function PrintPanel({
         </ul>
       )}
 
-      {simulatedPrinters.length === 0 ? (
+      {/* Which printers this box has is a question about the device list, and
+          the three answers that are not "it has none" say so plainly. */}
+      {deviceList.state === 'stale' && deviceList.readAt !== null && (
+        <StaleNote
+          readAt={deviceList.readAt}
+          message={deviceList.error}
+          onRetry={deviceList.refreshing ? undefined : onRetryDevices}
+        />
+      )}
+
+      {deviceList.state === 'unread' ? (
+        <Loading what="this box's devices" />
+      ) : deviceList.state === 'failed' ? (
+        <Unreadable
+          what="This box's devices"
+          message={deviceList.error}
+          onRetry={deviceList.refreshing ? undefined : onRetryDevices}
+        />
+      ) : simulatedPrinters.length === 0 ? (
         <EmptyState
           title="No simulated printer on this box"
           detail="A real printer's output is on paper, so there is nothing to show here."
@@ -245,6 +307,12 @@ export function PrintPanel({
             <EmptyState
               title="This box's paper is not here"
               detail="Previews are held by the box that printed them. Only the box running inside this api process can show them from the Console."
+            />
+          ) : previewsFailed ? (
+            <Unreadable
+              what="This printer's paper"
+              message={previewsFailed}
+              onRetry={busy ? undefined : () => void load()}
             />
           ) : printouts === null ? (
             <Loading what="the previews" />
