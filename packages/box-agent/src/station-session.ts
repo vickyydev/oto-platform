@@ -8,6 +8,7 @@ import {
   type StationLanguage,
   type StationLease,
   type StationLeaseHolderKind,
+  type StationScanMessage,
   type StationSessionDocument,
   type StationSessionStage,
   type StationView,
@@ -258,6 +259,36 @@ export class StationSessionManager {
         this.log.warn(
           { err: String(error), module: 'station-session' },
           'a station subscriber threw',
+        );
+      }
+    }
+  }
+
+  /**
+   * Fan a scan out to the screens watching this station (S2-06).
+   *
+   * Not a snapshot: a scan does not change the document — what it CAUSES will,
+   * through the intent its handler sends — and a screen that missed one has
+   * missed a moment rather than fallen behind. So it carries no sequence and
+   * nothing rehydrates from it.
+   *
+   * `detail` is the handler's own answer and the one part of the message that
+   * can name a person, so the customer display gets it through the same
+   * key-stripping the document goes through. The fingerprint and the outcome
+   * are safe for any screen: neither opens anything.
+   */
+  emitScan(stationId: string, message: StationScanMessage): void {
+    for (const subscriber of this.subscribers) {
+      if (subscriber.stationId !== stationId) continue;
+      const forView: StationScanMessage =
+        subscriber.view === 'customer' ? { ...message, detail: stripKeys(message.detail) } : message;
+      try {
+        subscriber.send(forView);
+      } catch (error) {
+        /* see broadcast: one dead socket must not stop the other screen */
+        this.log.warn(
+          { err: String(error), module: 'station-session' },
+          'a station subscriber threw on a scan',
         );
       }
     }

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { parseAppOrigins, parseHandoffKeys } from './services/handoff';
+import { parseStaffTokenKey } from './lib/staff-token-key';
 
 // .env lives at the repository root; entrypoints may run from any package cwd.
 loadDotenv({ path: join(dirname(fileURLToPath(import.meta.url)), '../../../.env'), quiet: true });
@@ -97,6 +98,60 @@ const EnvSchema = z.object({
    * nothing by the time it is read.
    */
   HANDOFF_TOKEN_TTL_S: z.coerce.number().int().min(5).max(600).default(60),
+  /**
+   * The Ed25519 private key that signs staff tokens (S2-06), PKCS#8 PEM.
+   *
+   * Its public half is published to `core.signing_key` at boot and travels to
+   * every box in its config bundle, so a box can verify a shift token with no
+   * internet and can never mint one. Accepted as a PEM, as a PEM with its
+   * newlines escaped `\n`, or base64-encoded whole, because those are the
+   * three shapes a deployment dashboard produces.
+   *
+   * Empty means the mint answers 503 and a till can only unlock online. It is
+   * deliberately not generated at boot: a key minted per instance and per
+   * restart would stop every outstanding token verifying on the next deploy —
+   * including on a till that has been offline since the morning, which is the
+   * exact case the token exists for.
+   *
+   * Generate one with:
+   *   openssl genpkey -algorithm ed25519
+   */
+  STAFF_TOKEN_PRIVATE_KEY: z
+    .string()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (!value.trim()) return;
+      try {
+        parseStaffTokenKey(value);
+      } catch (err) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `STAFF_TOKEN_PRIVATE_KEY: ${(err as Error).message}`,
+        });
+      }
+    }),
+  /**
+   * How long a shift token lives, in seconds. Default sixteen hours — long
+   * enough for an opening-to-closing shift plus the close-down, short enough
+   * that a credential left on a disk dies overnight.
+   */
+  STAFF_TOKEN_TTL_S: z.coerce.number().int().min(300).max(7 * 24 * 3600).optional(),
+  /**
+   * Whether somebody the box has minted a token for in the last thirty days
+   * may unlock offline with their password once their token has expired
+   * (S2-06).
+   *
+   * **Off by default**, which is the acceptance criterion: an expired token is
+   * refused with "shift token expired, connect to sign in". Turning it on buys
+   * a till that keeps working through an outage longer than a shift, at the
+   * price of a password being the only thing between a stolen box and an
+   * unlocked till for a month. The unlock is then recorded as
+   * `offline_sign_in`, never as `offline_token`.
+   */
+  STAFF_OFFLINE_SIGN_IN: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   /**
    * Staging opt-in for the destructive operational controls — today the demo
    * reset (S2-01c). Deliberately its own flag rather than a NODE_ENV test:

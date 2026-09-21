@@ -1,10 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useOperator } from '@/auth/OperatorContext';
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { ApiError } from '@/api/client';
-import { authApi } from '@/api/platform';
+import { authApi, scanApi } from '@/api/platform';
 import {
   Lock,
   Loader2,
@@ -16,9 +16,18 @@ import {
   Phone as PhoneIcon,
   ShieldCheck,
   ArrowLeft,
+  ScanLine,
 } from 'lucide-react';
 
 type Mode = 'signin' | 'setup' | 'reset';
+
+/** "4 minutes", "2 hours" — how old the box's copy of the staff list is. */
+function formatAge(seconds: number): string {
+  if (seconds < 90) return `${Math.max(1, Math.round(seconds))} seconds`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)} minutes`;
+  if (seconds < 172800) return `${Math.round(seconds / 3600)} hours`;
+  return `${Math.round(seconds / 86400)} days`;
+}
 
 /**
  * The suite launcher this POS was opened from, when it is deployed behind one
@@ -53,7 +62,7 @@ const LAUNCHER_URL = launcherOrigin();
  * temp module links.
  */
 export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
-  const { signIn, locked, operator, unlock, logout, handoffError } = useOperator();
+  const { signIn, locked, operator, unlock, logout, handoffError, offlineUnlock } = useOperator();
   const [, navigate] = useLocation();
 
   const [mode, setMode] = useState<Mode>('signin');
@@ -61,6 +70,17 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
+  const [badge, setBadge] = useState('');
+  /**
+   * Keystroke times for the badge field, newest last.
+   *
+   * A wedge scanner types its code faster than fingers can — 0 to 40 ms per
+   * character, per the scanner's own keystroke-delay setting — so an average
+   * gap under the box's 50 ms threshold means a scanner typed it. All this
+   * decides is which SOURCE the scan is reported under; nothing depends on it
+   * being right, and a wrong guess costs a wrong label on a log line.
+   */
+  const badgeKeys = useRef<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -150,6 +170,45 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
     }
   };
 
+  /**
+   * Badge or PIN at a locked till (S2-06).
+   *
+   * A wedge scanner IS a keyboard: presenting a badge while this field has
+   * focus types the code into it and presses Enter, which submits — so the
+   * same field serves both a badge and a PIN typed by hand, and the source
+   * sent says which it was. The value goes to the box's scanning service and
+   * is never stored: the station's tape gets a fingerprint and the outcome.
+   *
+   * Nothing links a badge to an account on this build — staff credentials are
+   * the booth's ticket — so the honest answer today is the one the API sends
+   * back, shown as it stands rather than dressed up as a failure of the badge.
+   */
+  /** The 50 ms burst threshold the box's own reader uses, over the whole field. */
+  const typedByHand = (): boolean => {
+    const times = badgeKeys.current;
+    if (times.length < 6) return true;
+    const span = (times[times.length - 1] ?? 0) - (times[0] ?? 0);
+    return span / (times.length - 1) >= 50;
+  };
+
+  const presentBadge = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (busy || !badge.trim()) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const answer = await scanApi.badge(badge.trim(), typedByHand() ? 'manual' : 'keyboard');
+      setBadge('');
+      badgeKeys.current = [];
+      setNotice(answer.message ?? `Badge ${answer.outcome}${answer.handler ? ` by ${answer.handler}` : ''}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not read that badge');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (locked && operator) {
     return (
       <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-background text-foreground px-6 overflow-y-auto">
@@ -186,6 +245,50 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
               {busy ? 'Unlocking…' : 'Unlock'}
             </Button>
           </form>
+
+          {/* Badge or PIN — the same field for both: a scanner types the code
+              in and presses Enter, a person types it and taps Present. */}
+          <form onSubmit={presentBadge} className="w-full flex flex-col gap-3 text-left mt-6">
+            <label className="text-sm font-semibold text-foreground/60 flex items-center gap-2">
+              <ScanLine className="w-4 h-4" /> Badge or PIN
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={badge}
+                onKeyDown={() => {
+                  const now = performance.now();
+                  const times = badgeKeys.current;
+                  times.push(now);
+                  if (times.length > 64) times.shift();
+                }}
+                onChange={(e) => setBadge(e.target.value)}
+                placeholder="Scan a badge or type a PIN"
+                autoComplete="off"
+                className="flex-1 h-12 rounded-2xl border border-input bg-background px-4 text-base focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <Button
+                type="submit"
+                variant="outline"
+                className="h-12 rounded-2xl px-5"
+                disabled={busy || !badge.trim()}
+              >
+                Present
+              </Button>
+            </div>
+          </form>
+
+          {/* Set when the last unlock was decided by the box rather than the
+              platform: which rule allowed it, and how old the copy was. */}
+          {offlineUnlock && (
+            <p className="mt-4 w-full rounded-2xl border border-amber-500/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300 text-left">
+              Working offline — this till was unlocked by its box
+              {offlineUnlock.cacheAgeSeconds !== null
+                ? `, from a copy of the staff list taken ${formatAge(offlineUnlock.cacheAgeSeconds)} ago`
+                : ''}
+              .
+            </p>
+          )}
 
           <button
             type="button"

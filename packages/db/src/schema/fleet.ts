@@ -445,6 +445,26 @@ export const device = core.table(
     /** Payment terminals only, from the acquirer: TID and MID. */
     terminalId: text('terminal_id'),
     merchantId: text('merchant_id'),
+    /**
+     * What is true of THIS unit rather than of its model (S2-06).
+     *
+     * The device research leaves three facts open per physical machine, and
+     * each one changes the bytes we send: whether an XP-80 is 576 or 512 dots
+     * per line, readable only from its self-test page (§9.4, D6); whether a
+     * 4B-2082A is in TSPL2 or its ZPL emulation, and what band stock is loaded
+     * in it (§9.1, D1); whether the DS2278 cradle is presenting as a USB HID
+     * keyboard or as a CDC serial device, and what key the counter button
+     * sends (§9.2, D2). Two printers with the same model string can disagree
+     * about all of it.
+     *
+     * Everything implied by the model — the command set, the status encoding,
+     * the default profile — stays in `@oto/print`'s device profiles and is not
+     * repeated here. An absent section, or an absent key inside one, means
+     * "use the profile". Shape validated by `DeviceSettingsSchema` in
+     * `@oto/shared`, which is `.strict()`, so a mistyped key is refused at the
+     * edit rather than silently doing nothing in the park.
+     */
+    settings: jsonb('settings'),
     reachability: text('reachability')
       .$type<DeviceReachability>()
       .notNull()
@@ -678,7 +698,13 @@ export const signingKey = core.table(
   },
   (t) => [
     uniqueIndex('signing_key_kid_unique').on(t.purpose, t.kid),
-    /** "Which key signs a staff token right now" and "which are still worth shipping to a box". */
+    /**
+     * "Which key signs a staff token right now" — the only question `active`
+     * answers. "Which are still worth shipping to a box" is a different one,
+     * asked by `usableSigningKeys`, which reads `retired_at`, `expires_at`,
+     * `not_before` and `operator_id` and never this column; the leading
+     * `purpose` serves that query too.
+     */
     index('signing_key_purpose_active_idx').on(t.purpose, t.active),
     index('signing_key_operator_idx').on(t.operatorId),
     check(

@@ -16,6 +16,7 @@
     "@node-rs/argon2": "^2.2.1",
     "@oto/box-agent": "workspace:*",
     "@oto/db": "workspace:*",
+    "@oto/print": "workspace:*",
     "@oto/shared": "workspace:*",
     "@oto/telemetry": "workspace:*",
     "dotenv": "^17.2.4",

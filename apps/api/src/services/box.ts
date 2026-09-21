@@ -7,7 +7,7 @@ import {
   boxHeartbeat,
   branch,
   device,
-  signingKey,
+  printTemplate,
   station,
   stationDevice,
   type Db,
@@ -32,6 +32,7 @@ import {
 import type { Env } from '../env';
 import { boxStoreFor } from '../lib/box-store';
 import { AppError } from '../lib/errors';
+import { usableSigningKeys } from '../lib/signing-keys';
 import { audit } from './audit';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
@@ -855,6 +856,14 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
       serialNumber: row.device.serialNumber,
       terminalId: row.device.terminalId,
       merchantId: row.device.merchantId,
+      /**
+       * The per-unit facts nothing about the model implies (S2-06): whether
+       * this XP-80 is 576 or 512 dots per line, what band stock is loaded on
+       * this 4B-2082A. The adapter re-lays a receipt out per device from
+       * these, and `GS v 0` discards anything wider than the head without an
+       * error, so a wrong number here loses the price column in silence.
+       */
+      settings: row.device.settings ?? undefined,
     });
     devicesByStation.set(row.stationId, list);
   }
@@ -874,26 +883,26 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
 
   // Public halves only, and only the ones still worth verifying against: a
   // retired key is dropped from the bundle once nothing it signed can still
-  // be in a visitor's pocket.
-  const keys = await db
-    .select({
-      purpose: signingKey.purpose,
-      kid: signingKey.kid,
-      algorithm: signingKey.algorithm,
-      publicKey: signingKey.publicKey,
-      expiresAt: signingKey.expiresAt,
-      retiredAt: signingKey.retiredAt,
-      operatorId: signingKey.operatorId,
-    })
-    .from(signingKey)
-    .where(eq(signingKey.active, true))
-    .orderBy(asc(signingKey.purpose), asc(signingKey.kid));
+  // be in a visitor's pocket. The rule lives in `usableSigningKeys` because
+  // the offline-unlock path needs the same answer and once had its own.
+  const signingKeys = await usableSigningKeys(db, { operatorId: auth.operatorId });
 
-  const now = Date.now();
-  const signingKeys = keys
-    .filter((k) => k.operatorId === null || k.operatorId === auth.operatorId)
-    .filter((k) => !k.retiredAt && (!k.expiresAt || k.expiresAt.getTime() > now))
-    .map((k) => ({ purpose: k.purpose, kid: k.kid, algorithm: k.algorithm, publicKey: k.publicKey }));
+  const printTemplates = (
+    await db
+      .select()
+      .from(printTemplate)
+      .where(and(eq(printTemplate.branchId, branchRow.id), isNull(printTemplate.archivedAt)))
+      .orderBy(asc(printTemplate.type))
+  ).map((t) => ({
+    id: t.id,
+    type: t.type,
+    name: t.name,
+    showLogo: t.showLogo,
+    headerText: t.headerText,
+    footerText: t.footerText,
+    fields: (t.fields ?? {}) as Record<string, boolean | undefined>,
+    version: t.version,
+  }));
 
   const body = {
     box: {
@@ -920,6 +929,21 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
       businessDayStart: branchRow.businessDayStart,
     },
     stations,
+    /**
+     * The branch's print templates (S2-06).
+     *
+     * They ride the config bundle because that is what makes "toggle a field,
+     * run a test print, see the change" work with no redeploy: they are part
+     * of the hash below, so an edit changes `configVersion`, the next
+     * heartbeat's ack differs from what the box has applied, and the box
+     * pulls. A template cached anywhere else would be a second copy with its
+     * own staleness.
+     *
+     * Archived rows are left out rather than sent with a flag: a box has no
+     * use for a template nobody can pick, and `printFieldOn` reads an absent
+     * template as "print every applicable field", which is the safe direction.
+     */
+    printTemplates,
     signingKeys,
     heartbeatIntervalS: settings.heartbeatIntervalS,
     minSupportedAgentVersion: settings.minAgentVersion,
@@ -1255,9 +1279,41 @@ export async function purgeOldBoxHeartbeats(db: Db, retentionDays?: number): Pro
 
 let runningVirtualBox: BoxAgent | null = null;
 
+/**
+ * Every box agent running inside THIS process, by box id.
+ *
+ * Usually one — the virtual box `startVirtualBox` brings up — but not
+ * necessarily: a demo can run two, and a test drives its own. The distinction
+ * matters to S2-06, because a printer simulator's output is held in the agent
+ * that owns it and can only be read from the process the agent is in. A
+ * Raspberry Pi's simulators are reached through commands and its own log, and
+ * a preview is never pushed up the telemetry wire: a rendered receipt carries
+ * a member's name and what they bought.
+ */
+const inProcessBoxes = new Map<string, BoxAgent>();
+
 /** The handle the Console's test controls reach the in-process box through. */
 export function virtualBoxAgent(): BoxAgent | null {
   return runningVirtualBox;
+}
+
+/** The agent for this box if it is running here, or null if it is elsewhere. */
+export function inProcessBox(boxId: string): BoxAgent | null {
+  return inProcessBoxes.get(boxId) ?? null;
+}
+
+/**
+ * Register an agent as running here.
+ *
+ * Called by `startVirtualBox`, and by a test that drives an agent against this
+ * api — which is the same claim, made by the same kind of process.
+ */
+export function attachInProcessBox(agent: BoxAgent): void {
+  if (agent.state.boxId) inProcessBoxes.set(agent.state.boxId, agent);
+}
+
+export function detachInProcessBox(agent: BoxAgent): void {
+  if (agent.state.boxId) inProcessBoxes.delete(agent.state.boxId);
 }
 
 /**
@@ -1373,11 +1429,13 @@ export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent
     return null;
   }
   runningVirtualBox = agent;
+  attachInProcessBox(agent);
   return agent;
 }
 
 /** Stop the in-process box on shutdown. */
 export function stopVirtualBox(): void {
   runningVirtualBox?.stop();
+  if (runningVirtualBox) detachInProcessBox(runningVirtualBox);
   runningVirtualBox = null;
 }

@@ -350,7 +350,7 @@ export const STATION_INTENT_REFUSALS = [
 ] as const;
 export type StationIntentRefusal = (typeof STATION_INTENT_REFUSALS)[number];
 
-export const STATION_CHANNEL_MESSAGES = ['snapshot', 'refused', 'lease', 'ping'] as const;
+export const STATION_CHANNEL_MESSAGES = ['snapshot', 'refused', 'lease', 'ping', 'scan'] as const;
 export type StationChannelMessageKind = (typeof STATION_CHANNEL_MESSAGES)[number];
 
 export interface StationSnapshotMessage {
@@ -385,5 +385,33 @@ export interface StationPingMessage {
   sequence: number;
 }
 
+/**
+ * A scan, as the screens watching a station see it (S2-06).
+ *
+ * It carries the FINGERPRINT and never the code, for the same reason the tape
+ * does: this message reaches the customer display, which a stranger can read
+ * over a shoulder. `detail` is the handler's own answer and is the one part
+ * that may say something about a person, so a display-side redaction applies
+ * to it exactly as it does to the document.
+ */
+export interface StationScanMessage {
+  kind: 'scan';
+  /** The hardware it came from: `box_hid`, `camera`, `simulator`, … */
+  source: string;
+  codeKind: string;
+  codeFingerprint: string;
+  outcome: string;
+  /** Which registered handler took it. Null when none claimed the code. */
+  handler: string | null;
+  errorCode: string | null;
+  detail: Record<string, unknown> | null;
+  actionId: string | null;
+  scannedAt: string;
+}
+
 export type StationChannelMessage =
-  StationSnapshotMessage | StationRefusedMessage | StationLeaseMessage | StationPingMessage;
+  | StationSnapshotMessage
+  | StationRefusedMessage
+  | StationLeaseMessage
+  | StationPingMessage
+  | StationScanMessage;

@@ -1,27 +1,36 @@
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { PrintTemplate } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { useStation } from '@/station/StationContext';
+import { printApi } from '@/api/platform';
+import { ApiError } from '@/api/client';
 import { Field, TextInput } from '../discounts/fields';
 import { PrintTemplatePreview } from './PrintTemplatePreview';
-import {
-  APPLICABLE_FIELDS,
-  FIELD_META,
-  TEMPLATE_TYPE_META,
-  sampleDataFor,
-} from './templateFields';
+import { APPLICABLE_FIELDS, FIELD_META, TEMPLATE_TYPE_META } from './templateFields';
 
 interface TemplateEditorProps {
   template: PrintTemplate;
+  /** True when this row came from the platform and can really be saved. */
+  live?: boolean;
+  onSaved?: () => void;
   onClose: () => void;
 }
 
 // Edit one template's content config with a side-by-side live preview. Routing
 // (which printer) is NOT here — that lives in Station Setup. Content only.
-export function TemplateEditor({ template, onClose }: TemplateEditorProps) {
+export function TemplateEditor({
+  template,
+  live = false,
+  onSaved,
+  onClose,
+}: TemplateEditorProps) {
   const { mutators } = useCatalogStore();
+  const { station } = useStation();
   const [draft, setDraft] = useState<PrintTemplate>(template);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const meta = TEMPLATE_TYPE_META[draft.type];
   const fieldKeys = APPLICABLE_FIELDS[draft.type];
@@ -34,10 +43,71 @@ export function TemplateEditor({ template, onClose }: TemplateEditorProps) {
   const setField = (key: keyof PrintTemplate['fields'], value: boolean) =>
     setDraft((d) => ({ ...d, fields: { ...d.fields, [key]: value } }));
 
-  const save = () => {
-    if (nameError) return;
-    mutators.upsertPrintTemplate({ ...draft, name: draft.name.trim() });
-    onClose();
+  const save = async () => {
+    if (nameError || busy) return;
+    if (!live) {
+      // The built-in set, on a deployment whose API does not carry these rows.
+      mutators.upsertPrintTemplate({ ...draft, name: draft.name.trim() });
+      onClose();
+      return;
+    }
+    setBusy(true);
+    setNotice(null);
+    try {
+      await printApi.updateTemplate(draft.id, {
+        name: draft.name.trim(),
+        showLogo: draft.showLogo,
+        headerText: draft.headerText ?? null,
+        footerText: draft.footerText ?? null,
+        fields: draft.fields,
+      });
+      onSaved?.();
+      onClose();
+    } catch (err) {
+      setNotice(err instanceof ApiError ? err.message : 'The template could not be saved.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * Print this template's sample on a real printer.
+   *
+   * It goes through the platform and out to the box, where `@oto/print` turns
+   * the template into dots. The preview on the right is a PNG the same package
+   * rendered from the same fixture sample, so the two are one drawing path and
+   * this button is a proof rather than a comparison of two drawings — which is
+   * the only way it means anything. What can still differ is the paper: the
+   * preview is laid out for the printer this test would route to, and a
+   * template with no printer assigned falls back to the default width for its
+   * kind.
+   *
+   * It prints what is SAVED. The job is queued and the answer is immediate: a
+   * printer that is out of paper holds the job and prints it when the roll is
+   * changed, and saying "queued" is the truth, not a hedge.
+   */
+  const testPrint = async () => {
+    if (busy) return;
+    if (!live) {
+      setNotice('Connect this branch to the platform to print a test.');
+      return;
+    }
+    setBusy(true);
+    setNotice(null);
+    try {
+      const { printJob } = await printApi.testPrint(draft.id, {
+        stationId: station?.stationId ?? null,
+      });
+      setNotice(
+        printJob.status === 'skipped'
+          ? `Not printed — ${printJob.errorMessage ?? 'no printer is assigned for this printout'}.`
+          : `Sent to ${printJob.deviceLabel ?? 'the assigned printer'}. Unsaved changes on this screen are not in it.`,
+      );
+    } catch (err) {
+      setNotice(err instanceof ApiError ? err.message : 'The test print could not be sent.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -121,16 +191,43 @@ export function TemplateEditor({ template, onClose }: TemplateEditorProps) {
           <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-foreground/40">
             Live preview
           </div>
-          <PrintTemplatePreview template={draft} data={sampleDataFor(draft.type)} />
+          <PrintTemplatePreview
+            template={draft}
+            live={live}
+            stationId={station?.stationId ?? null}
+          />
         </div>
       </div>
 
-      <div className="mt-5 flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={onClose}>
+      {notice && (
+        <div
+          role="status"
+          className="mt-4 rounded-2xl border border-foreground/10 bg-black/20 px-4 py-3 text-sm text-foreground/70"
+        >
+          {notice}
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-wrap justify-end gap-2">
+        {/* UI addition (S2-06): the prototype had no way to put a template on
+            paper. It sits beside Cancel rather than next to Save because it
+            prints what is SAVED, not what is on this screen. */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="mr-auto"
+          onClick={() => void testPrint()}
+          disabled={busy || !live}
+          title={live ? 'Print the sample on this station’s printer' : 'Needs a connected branch'}
+        >
+          <Printer className="h-4 w-4" />
+          Test print
+        </Button>
+        <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
           <X className="h-4 w-4" />
           Cancel
         </Button>
-        <Button size="sm" onClick={save} disabled={!!nameError}>
+        <Button size="sm" onClick={() => void save()} disabled={!!nameError || busy}>
           <Check className="h-4 w-4" />
           Save changes
         </Button>

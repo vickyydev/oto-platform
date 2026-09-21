@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StationHeader } from '@/components/shared/StationHeader';
+import { setSaleOpen } from '@/pwa/openSale';
 import { ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristband } from '@/types';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
@@ -34,6 +35,14 @@ export default function MerchStation() {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<MerchOrder | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
+
+  // Same reason as the till's (S2-06): a new build must not be swapped in
+  // under a sale somebody is still ringing up.
+  const saleOnScreen = cart.length > 0 || completedOrder !== null;
+  useEffect(() => {
+    setSaleOpen('merch-station', saleOnScreen);
+    return () => setSaleOpen('merch-station', false);
+  }, [saleOnScreen]);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
   const [customerTheme] = useCustomerTheme();
   const [payMethod, setPayMethod] = useState<FnbMethod | null>(null);

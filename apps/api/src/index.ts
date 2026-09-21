@@ -4,6 +4,7 @@ import { loadEnv } from './env';
 import { buildFileStorage } from './services/files';
 import { createJobRunner } from './services/jobs';
 import { startVirtualBox, stopVirtualBox } from './services/box';
+import { publishStaffTokenKey } from './services/staff-token';
 
 /**
  * Process entry point. Everything here exists because of how the api is
@@ -27,6 +28,25 @@ const app = await buildApp({ env, db, fileStorage: buildFileStorage(env) });
  * then a no-op — which is how the api stops competing with the worker service
  * on the day that role splits out.
  */
+/**
+ * Publish the staff token's PUBLIC half (S2-06), before anything can mint one.
+ *
+ * The private half stays in the environment; this writes the public one to
+ * `core.signing_key`, from where every box collects it in its config bundle
+ * and verifies a shift token with no internet. Idempotent on (purpose, kid),
+ * so a redeploy with the same key writes nothing and a rotation adds a row
+ * beside the old one rather than replacing it.
+ */
+const staffTokenKid = await publishStaffTokenKey(db, env);
+app.log.info(
+  staffTokenKid
+    ? { kid: staffTokenKid }
+    : { reason: 'STAFF_TOKEN_PRIVATE_KEY is not set' },
+  staffTokenKid
+    ? 'staff token signing key published'
+    : 'no staff token signing key — tills at this deployment cannot unlock without the internet',
+);
+
 const jobs = createJobRunner({ db, env, log: app.log });
 if (jobs.enabled) {
   await jobs.start();

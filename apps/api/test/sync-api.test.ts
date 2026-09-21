@@ -1368,6 +1368,100 @@ describe('the cache bundle', () => {
     expect(res.json().error.code).toBe('CACHE_SCHEMA_TOO_NEW');
   });
 
+  it('never serves the staff list without the deny-list (S2-06)', async () => {
+    const b = await claim('virtual-1');
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/box/v1/cache?scopes=staff',
+      headers: headers(b),
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { scopes: Record<string, { items: unknown[] }> };
+    /**
+     * A box that asked this way used to get a list of who may work at the
+     * counter and nothing saying whose access had since been withdrawn — and
+     * because a scope is only replaced by a pull that contains it, it stayed
+     * that way. The two are one answer and travel together.
+     */
+    expect(Object.keys(body.scopes).sort()).toEqual(['deny_list', 'staff']);
+    const deny = body.scopes.deny_list!.items[0] as {
+      revokedAccountIds: string[];
+      revokedTokenIds: string[];
+    };
+    expect(Array.isArray(deny.revokedAccountIds)).toBe(true);
+    expect(Array.isArray(deny.revokedTokenIds)).toBe(true);
+
+    // Asking for the deny-list alone is still exactly that: the pairing only
+    // ever adds what makes the staff list safe to hold.
+    const only = await ctx.app.inject({
+      method: 'GET',
+      url: '/box/v1/cache?scopes=deny_list',
+      headers: headers(b),
+    });
+    expect(Object.keys((only.json() as { scopes: object }).scopes)).toEqual(['deny_list']);
+
+    /**
+     * Including with a cursor, which used to be the way round it.
+     *
+     * The pairing skipped anything carrying a cursor, on the reasoning that a
+     * cursor continues a pull whose first page already had the deny-list —
+     * never true of this scope, which mints no cursor at all, so any string
+     * whatsoever bought a staff list served alone. The title of this test says
+     * "never", so "never" is what it asks.
+     */
+    const withCursor = await ctx.app.inject({
+      method: 'GET',
+      url: '/box/v1/cache?scopes=staff&cursor=anything',
+      headers: headers(b),
+    });
+    expect(withCursor.statusCode).toBe(200);
+    const paired = withCursor.json() as {
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+    };
+    expect(Object.keys(paired.scopes).sort()).toEqual(['deny_list', 'staff']);
+    expect(paired.scopes.staff!.items.length).toBeGreaterThan(0);
+    // And the reason the exemption was empty: this scope never issues one.
+    expect(paired.scopes.staff!.nextCursor).toBeNull();
+  });
+
+  it('does not call a scope that fitted exactly a scope that was cut short (S2-06)', async () => {
+    const b = await claim('virtual-1');
+    /**
+     * The catalogue is one composed item — a price list applied as a unit —
+     * and is read with no LIMIT at all. Under the old test for truncation,
+     * `items.length === limit`, asking for it with `limit=1` reported it cut
+     * off at the limit, and the agent does not apply a truncated scope.
+     *
+     * The same arithmetic hit the deny-list, which is also exactly one item,
+     * and that one has teeth: a box that does not apply the deny-list does not
+     * apply the staff list either, which is offline unlock gone from that
+     * counter.
+     */
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/box/v1/cache?scopes=catalogue&limit=1',
+      headers: headers(b),
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    };
+    expect(body.scopes.catalogue!.items).toHaveLength(1);
+    expect(body.truncated).toEqual([]);
+    expect(body.scopes.catalogue!.nextCursor).toBeNull();
+
+    // And a scope that really was cut off still says so: `members` is read
+    // with the limit, and the branch has more members than one.
+    const cut = await ctx.app.inject({
+      method: 'GET',
+      url: '/box/v1/cache?scopes=members&limit=1',
+      headers: headers(b),
+    });
+    const cutBody = cut.json() as { truncated: string[] };
+    expect(cutBody.truncated).toEqual(['members']);
+  });
+
   it('refuses a cursor when more than one scope is asked for', async () => {
     const b = await claim('virtual-1');
     const res = await ctx.app.inject({
@@ -1413,18 +1507,37 @@ describe('the cache bundle', () => {
       headers: headers(b),
     });
     const staff = res.json().scopes.staff.items as Array<Record<string, unknown>>;
-    // The seed puts the administrator on Booth 1's list and nobody else on a
-    // restricted station, so that is exactly who this box holds a hash for.
+    /**
+     * Both halves of the picker's rule, which this scope had only one of until
+     * S2-06.
+     *
+     * A station is either `all_staff` — open to everybody at the branch — or
+     * `selected_staff`, with a named list. This test used to assert that the
+     * bundle held the administrator alone, because the administrator is the
+     * only person the seed NAMES on a station; the branch's reception account,
+     * who works Reception Till 1 all day, was cached by nobody. That is
+     * invisible until the link drops and reception cannot unlock the till,
+     * which is the whole purpose of the scope. So the rule now mirrors
+     * `visibleToAccount` and both are here.
+     */
     const [admin] = await ctx.db
       .select({ id: account.id })
       .from(account)
       .where(eq(account.phone, ADMIN.phone))
       .limit(1);
-    expect(staff.map((s) => s.accountId)).toEqual([admin!.id]);
+    const [reception] = await ctx.db
+      .select({ id: account.id })
+      .from(account)
+      .where(eq(account.phone, RECEPTION.phone))
+      .limit(1);
+    expect(staff.map((s) => s.accountId).sort()).toEqual([admin!.id, reception!.id].sort());
     // What an offline unlock needs, and nothing that identifies the person to
-    // somebody holding the disk.
+    // somebody holding the disk. `lastTokenAt` is when THIS box last minted a
+    // shift token for them — the "seen here" half of the 30-day offline
+    // sign-in, and a timestamp rather than a name (S2-06).
     expect(Object.keys(staff[0]!).sort()).toEqual([
       'accountId',
+      'lastTokenAt',
       'mustChangePassword',
       'passwordHash',
       'status',

@@ -4,6 +4,7 @@ import { StationHeader } from '@/components/shared/StationHeader';
 import { FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, Operator, SelectedModifier, Wristband } from '@/types';
 import { useStation } from '@/station/StationContext';
 import { dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
+import { setSaleOpen } from '@/pwa/openSale';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
@@ -58,6 +59,14 @@ export default function OrderStation() {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<FnbOrder | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
+
+  // Same reason as the till's (S2-06): a new build must not be swapped in
+  // under an order somebody is still taking.
+  const orderOnScreen = cart.length > 0 || completedOrder !== null;
+  useEffect(() => {
+    setSaleOpen('order-station', orderOnScreen);
+    return () => setSaleOpen('order-station', false);
+  }, [orderOnScreen]);
   const [pickupCode, setPickupCode] = useState('');
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();

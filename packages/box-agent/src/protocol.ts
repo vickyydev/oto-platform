@@ -197,6 +197,17 @@ export interface BoxConfigDevice {
   serialNumber: string | null;
   terminalId: string | null;
   merchantId: string | null;
+  /**
+   * Per-unit facts that cannot be derived from the model (S2-06).
+   *
+   * `DeviceSettings` in `@oto/shared`: whether this XP-80 is 576 or 512 dots
+   * per line, what band stock is loaded on this 4B-2082A, which mode this
+   * scanner is in. Typed `unknown` on the wire and validated where it is read,
+   * for the reason the rest of this file gives — a box is updated on its own
+   * schedule, and a field added to this document must not stop an older agent
+   * parsing its bundle.
+   */
+  settings?: unknown;
 }
 
 export interface BoxConfigStation {
@@ -210,6 +221,26 @@ export interface BoxConfigStation {
   offlineWalletCapSatang: number | null;
   accessScope: string;
   devices: BoxConfigDevice[];
+}
+
+/**
+ * A print template as it crosses the wire.
+ *
+ * Structurally `PrintTemplate` from `@oto/shared` and validated with that
+ * package's schema where it is read. Declared structurally here rather than
+ * imported so this file stays the single statement of what the wire carries —
+ * a reader of the contract should not have to open another package to learn
+ * what a box is sent.
+ */
+export interface PrintTemplateWire {
+  id: string;
+  type: string;
+  name: string;
+  showLogo: boolean;
+  headerText?: string | null;
+  footerText?: string | null;
+  fields: Record<string, boolean | undefined>;
+  version: number;
 }
 
 export interface BoxConfigBundle {
@@ -243,6 +274,20 @@ export interface BoxConfigBundle {
     businessDayStart: string;
   };
   stations: BoxConfigStation[];
+  /**
+   * The branch's print templates (S2-06).
+   *
+   * They ride the config bundle rather than a cache scope of their own because
+   * they are branch configuration read by exactly the things the bundle is
+   * already for, and because that is what makes "toggle a field, run a test
+   * print, see the change" work with no redeploy: the edit bumps the bundle's
+   * `configVersion`, the next heartbeat's ack differs, and the box pulls.
+   *
+   * Optional, so a box older than S2-06 still accepts a bundle carrying them,
+   * and an empty list is meaningful: `printFieldOn` treats no template as
+   * "print every applicable field", which is what a new branch does.
+   */
+  printTemplates?: PrintTemplateWire[];
   /** PUBLIC halves only — what a box needs to verify a staff token offline. */
   signingKeys: Array<{ purpose: string; kid: string; algorithm: string; publicKey: string }>;
   heartbeatIntervalS: number;
@@ -251,6 +296,18 @@ export interface BoxConfigBundle {
 
 // --- Commands ---------------------------------------------------------------
 
+/**
+ * What a box can be asked to do.
+ *
+ * **This list is a CHECK constraint in `edge.box_command`**, so it is one of
+ * the few places in this repository where four copies of a vocabulary have to
+ * agree: here, `packages/db/src/schema/edge.ts`, `apps/api/src/routes/fleet.ts`
+ * (which imports the schema's copy) and `apps/console/src/api/fleet.ts`. A kind
+ * the database accepts and the agent does not understand is a command that is
+ * minted, delivered, and answered `UNKNOWN_COMMAND` — which is survivable — but
+ * a kind the Console offers and the database refuses is a 500 on a button
+ * press. `test/contract-drift.test.ts` compares this copy with the schema's.
+ */
 export const BOX_COMMAND_KINDS = [
   'test_print',
   'config_apply',
@@ -260,6 +317,14 @@ export const BOX_COMMAND_KINDS = [
   'go_offline',
   'go_online',
   'reset_store',
+  /**
+   * Make a simulated device pretend something (S2-06): a printer out of paper,
+   * a scanner reading a code, the counter button pressed. One kind rather than
+   * one per action — the discrimination is a zod union in the payload
+   * (`SimulatorActionSchema` in `@oto/shared`), which costs nothing to extend,
+   * while every addition here is a migration.
+   */
+  'simulate',
 ] as const;
 export type BoxCommandKind = (typeof BOX_COMMAND_KINDS)[number];
 

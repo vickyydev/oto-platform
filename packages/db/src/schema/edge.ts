@@ -35,6 +35,19 @@ import { box } from './fleet';
  * box's store and mints a new journal epoch — the destructive one, which the
  * Console gates behind typed confirmation and refuses while the outbox is
  * unsynced.
+ *
+ * `simulate` (S2-06) is every instruction the Console's Simulators panel
+ * sends: inject a paper-out, clear a fault, deliver a scan, press the counter
+ * button. **One kind rather than one per action**, because this list is a CHECK
+ * constraint and therefore a migration per addition, while the simulator grows
+ * with every device ticket left in the sprint — the gate, the terminals, the
+ * kiosk. The discrimination lives in `payload`, validated by
+ * `SimulateCommandPayloadSchema` in `@oto/shared`, where extending it costs
+ * nothing. `edge.sync_event.type` was left un-CHECKed for the same reason.
+ *
+ * Two simulator actions carry a secret — presenting a badge, typing a PIN —
+ * and `payload` is a stored column the Console renders, so those two must not
+ * travel this way as they stand. `SIMULATOR_ACTIONS_WITH_SECRETS` names them.
  */
 export const BOX_COMMAND_KINDS = [
   'test_print',
@@ -45,6 +58,7 @@ export const BOX_COMMAND_KINDS = [
   'go_offline',
   'go_online',
   'reset_store',
+  'simulate',
 ] as const;
 export type BoxCommandKind = (typeof BOX_COMMAND_KINDS)[number];
 
@@ -133,7 +147,7 @@ export const boxCommand = edge.table(
     index('box_command_requested_by_idx').on(t.requestedByAccountId),
     check(
       'box_command_kind_check',
-      sql`${t.kind} in ('test_print','config_apply','clear_cache','collect_logs','restart','go_offline','go_online','reset_store')`,
+      sql`${t.kind} in ('test_print','config_apply','clear_cache','collect_logs','restart','go_offline','go_online','reset_store','simulate')`,
     ),
     check(
       'box_command_state_check',

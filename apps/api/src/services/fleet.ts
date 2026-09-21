@@ -25,12 +25,15 @@ import {
   type StationDeviceRole,
   type StationKind,
 } from '@oto/db';
-import { newId } from '@oto/shared';
+import { SIMULATOR_ACTIONS_WITH_SECRETS, SimulatorActionSchema, newId } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
 import { boxSettings, issueClaimCode, mintClaimCode, normaliseClaimCode, sha256Hex } from './box';
+import { atBranch } from '../lib/staff-scope';
+import { mintStaffToken, staffTokenSettings, type MintedStaffToken } from './staff-token';
 import { withTx, type Exec, type OpContext } from './tx';
+import type { Env } from '../env';
 
 /**
  * The ordinary HTTP surface of the fleet (S2-04): the estate an administrator
@@ -477,12 +480,31 @@ function visibleToAccount(accountId: string) {
  * branch answered 409 would leave a till quietly serving a station at another
  * site. The codes carry the difference; the statuses keep the client correct.
  */
+export interface PickedStation {
+  station: StationView;
+  /**
+   * The shift token, when this deployment can mint one (S2-06).
+   *
+   * Handed back HERE rather than fetched afterwards because the pick is the
+   * moment the ticket names, and because a till that has to make a second call
+   * for it is a till that might not: the one time the token matters is the one
+   * time the second call would have failed.
+   *
+   * Null when `STAFF_TOKEN_PRIVATE_KEY` is unset — the pick still succeeds and
+   * the till works, it simply cannot unlock without the internet, and the
+   * reason is on the response rather than in a log.
+   */
+  staffToken: { token: string; jti: string; expiresAt: string } | null;
+  staffTokenUnavailable: string | null;
+}
+
 export async function pickStation(
   db: Db,
   ctx: OpContext,
   auth: { accountId: string; operatorId: string; branchId: string | null; sessionId: string; stationId: string | null },
   stationId: string,
-): Promise<StationView> {
+  env?: Env,
+): Promise<PickedStation> {
   const [row] = await db
     .select()
     .from(station)
@@ -525,11 +547,39 @@ export async function pickStation(
     throw new AppError(403, 'STATION_NOT_YOURS', 'You are not on this station’s list');
   }
 
+  let minted: MintedStaffToken | null = null;
+  let unavailable: string | null = null;
   await withTx(db, ctx, 'session.station_pick', async (tx) => {
     await tx
       .update(sessionTable)
       .set({ stationId: row.id })
       .where(eq(sessionTable.id, auth.sessionId));
+
+    /**
+     * The shift token, minted inside the same transaction as the pick.
+     *
+     * Together or not at all: a session that is standing at a station with no
+     * token would be a till that cannot unlock offline and has no way to
+     * notice, and a token for a pick that rolled back would be a credential
+     * for a station nobody took.
+     */
+    if (env && staffTokenSettings(env)) {
+      minted = await mintStaffToken(
+        tx,
+        {
+          accountId: auth.accountId,
+          sessionId: auth.sessionId,
+          operatorId: auth.operatorId,
+          branchId: row.branchId,
+          stationId: row.id,
+          requestId: ctx.requestId,
+        },
+        env,
+      );
+    } else if (env) {
+      unavailable =
+        'This deployment has no staff-token key (STAFF_TOKEN_PRIVATE_KEY), so this till cannot be unlocked without the internet.';
+    }
     /**
      * Audited even though it changes no business record: the session row is
      * overwritten in place, so "who was standing at Till 1 at 14:40" has no
@@ -553,7 +603,14 @@ export async function pickStation(
    * the station, and who else may take it is the administrator's business.
    */
   const [view] = await stationViews(db, [row], { withStaff: false });
-  return view!;
+  const token = minted as MintedStaffToken | null;
+  return {
+    station: view!,
+    staffToken: token
+      ? { token: token.token, jti: token.jti, expiresAt: token.expiresAt.toISOString() }
+      : null,
+    staffTokenUnavailable: unavailable,
+  };
 }
 
 // --- Assembling a station for the admin screens -----------------------------
@@ -678,54 +735,6 @@ export async function getStationView(
 }
 
 // --- Writing a station ------------------------------------------------------
-
-/**
- * The staff of a branch, which has no single definition in the schema: there is
- * no `account.branch_id`.
- *
- * The union of three honest halves — somebody whose employee record says they
- * work here, somebody granted a role scoped to this branch, and somebody who
- * administers the whole operator — because any one alone drops real people.
- * The seeded reception account has the employee link and no branch-scoped
- * assignment; a manager granted `branch_manager` here may have no employee row
- * at all. Deactivated accounts are excluded: putting somebody who cannot sign
- * in on a till's list is a list entry that does nothing.
- *
- * The third half is the owner's ruling (2026-09-20). Without it an
- * operator-wide administrator belongs to no branch, so they cannot be put on a
- * restricted station's list and — because `visibleToAccount` has no
- * administrator escape hatch — that station is then absent from their own
- * picker. It worked until now only because the seeded owner's employee record
- * happens to sit at HKT Central, and a second branch would have broken it the
- * day it opened.
- *
- * Taken here rather than as an exception inside the picker, deliberately:
- * widening who counts as staff keeps ONE visibility rule with no special case,
- * while an administrator override would split the rule back into two places
- * and make "absent, not refused" a thing that needs explaining every time
- * somebody asks why a manager can see a booth they are not on. The cost is
- * that a branch's staff picker lists every operator administrator, which grows
- * with the head-office estate; that is a noisier picker, not a wrong one.
- */
-function atBranch(branchId: string) {
-  return and(
-    sql`${account.status} <> 'inactive'`,
-    or(
-      eq(employee.branchId, branchId),
-      sql`exists (
-        select 1 from core.role_assignment ra
-         where ra.account_id = ${account.id}
-           and (
-             (ra.scope_type = 'branch' and ra.scope_id = ${branchId})
-             -- Operator-wide: scope_id names the operator, or is null for a
-             -- platform-wide assignment. Both administer this branch.
-             or (ra.scope_type = 'operator'
-                 and (ra.scope_id is null or ra.scope_id = ${account.operatorId}))
-           )
-      )`,
-    ),
-  );
-}
 
 export async function listBranchStaff(
   db: Db,
@@ -1525,6 +1534,65 @@ export async function queueCommand(
         'That device is not on this box',
         { deviceId },
       );
+    }
+  }
+
+  /**
+   * The simulator's one command kind (S2-06), guarded HERE rather than on the
+   * route that happens to send it.
+   *
+   * There are two doors to this: `POST /boxes/:id/simulate`, which validates
+   * the action against `SimulatorActionSchema`, and `POST /boxes/:id/commands`,
+   * which the Console's Simulators panel uses because the simulator rides the
+   * ordinary command queue. A check on one of those doors is a check somebody
+   * can walk around, and the two below are not the kind that may be walked
+   * around.
+   */
+  if (kind === 'simulate') {
+    /**
+     * Validated here and nowhere else, because this is the only door. An
+     * action the box would not understand is refused at the press rather than
+     * queued, delivered, and answered `SIMULATOR_NOT_BUILT` a poll later.
+     */
+    const parsed = SimulatorActionSchema.safeParse(input.payload?.action);
+    if (!parsed.success) {
+      throw new AppError(
+        400,
+        'COMMAND_PAYLOAD_INVALID',
+        'That is not a simulator action this platform knows',
+        { issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) },
+      );
+    }
+    const action = parsed.data;
+    const name = action.action;
+    /**
+     * A badge value and a PIN are credentials on their way to an
+     * authentication path, and `payload` is a stored jsonb column the Console
+     * renders as command history — so either one written here would sit in the
+     * database and on a web page. Refused rather than stripped: a control that
+     * silently dropped the value would look as though it had worked.
+     */
+    if ((SIMULATOR_ACTIONS_WITH_SECRETS as readonly string[]).includes(name)) {
+      throw new AppError(
+        409,
+        'SIMULATOR_ACTION_CARRIES_SECRET',
+        'A badge or a PIN cannot travel through the command queue — it is stored and shown. That control needs the station channel.',
+      );
+    }
+    /** And a device named in it must be one of THIS box's, as a test print's is. */
+    if ('deviceId' in action && typeof action.deviceId === 'string') {
+      const [row] = await db
+        .select({ id: device.id })
+        .from(device)
+        .where(
+          and(eq(device.id, action.deviceId), eq(device.boxId, boxRow.id), isNull(device.archivedAt)),
+        )
+        .limit(1);
+      if (!row) {
+        throw new AppError(400, 'COMMAND_PAYLOAD_INVALID', 'That device is not on this box', {
+          deviceId: action.deviceId,
+        });
+      }
     }
   }
 

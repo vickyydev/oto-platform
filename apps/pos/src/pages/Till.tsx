@@ -15,6 +15,7 @@ import { resolveGroupRequirements, effectiveRequirement, resolveSupervisionOutco
 import { buildSale, computeTotals } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier } from '@/lib/membership';
+import { setSaleOpen } from '@/pwa/openSale';
 import { getInventoryItem, getAddOns } from '@/store/catalogStore';
 import { getDiscountReasons, getMemberByPhone, getMemberById, createMember, updateMember, verifyMemberTier, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, getAllBookings, redeemBooking, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, addSavedChild, updateSavedChild, removeSavedChild, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
@@ -104,6 +105,19 @@ export default function Till() {
   const [showAddDropOff, setShowAddDropOff] = useState(false);
   const [saleResult, setSaleResult] = useState<Sale | null>(null);
   const [promoError, setPromoError] = useState<string>('');
+
+  /**
+   * Tell the shell this till is mid-sale, so a new build is not swapped in
+   * under the cart (S2-06; read by src/pwa/ServiceWorkerUpdater.tsx). A cart
+   * with lines in it, or a finished sale still on screen waiting to be handed
+   * over, both count. The cleanup clears the flag when this page unmounts,
+   * which is what a lock does.
+   */
+  const saleOnScreen = lines.length > 0 || saleResult !== null;
+  useEffect(() => {
+    setSaleOpen('till', saleOnScreen);
+    return () => setSaleOpen('till', false);
+  }, [saleOnScreen]);
 
   // Event-pass flow — selling a flat-priced camp/event entry is self-contained
   // (capture → pay → check-in choice) and never touches the tier cart, so it runs

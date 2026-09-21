@@ -39,7 +39,7 @@ export const branch = core.table(
     country: text('country'),
     /**
      * When the park is open, per weekday, as
-     * `{ mon: { open: "10:00", close: "21:00" }, … }` in the branch's own
+     * `{ mon: { open: "10:00", close: "20:00" }, … }` in the branch's own
      * timezone; a day may be absent or null for a closing day (S2-04).
      *
      * Null — the whole column — means nobody has said yet, and that is treated
@@ -52,7 +52,7 @@ export const branch = core.table(
     openingHours: jsonb('opening_hours'),
     /**
      * When one trading day becomes the next, in the branch's timezone. Not
-     * midnight: the park closes at 21:00 but a late party, the cash count and
+     * midnight: the park closes at 20:00 but a late party, the cash count and
      * the end-of-day print land after it, and every one of those belongs to the
      * day that is finishing rather than to the one starting. 05:00 puts the
      * boundary in the only hour nothing happens in.

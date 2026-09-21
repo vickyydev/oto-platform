@@ -3,6 +3,10 @@
 // same-origin through the /api rewrite, so the session cookie travels on its
 // own and no CORS is involved.
 
+import { API_PREFIX, apiUrl } from './url';
+
+export { apiUrl };
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -34,7 +38,7 @@ async function request<T>(
   body?: unknown,
   opts: { idempotencyKey?: string } = {},
 ): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_PREFIX}${path}`, {
     method,
     credentials: 'same-origin',
     headers: {

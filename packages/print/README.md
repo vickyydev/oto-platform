@@ -106,3 +106,30 @@ pnpm --filter @oto/print test
 
 Read the diff. A fixture that moved by a dot is usually a metric change worth
 understanding; one that moved by a hundred is a mistake.
+
+## Two subpath exports out of `test/`, and why they are not a mistake
+
+```json
+"./reader":   "./test/escpos-reader.ts"
+"./fixtures": "./test/fixtures.ts"
+```
+
+Both are consumed by the box agent's print pipeline (S2-06), and both are
+deliberate rather than convenient.
+
+`./reader` is the ESC/POS and TSPL parser this package's own `emit.test.ts`
+uses to prove the emitted bytes carry the rendered dots and nothing else. Its
+header already says it "is the shape the S2-06 printer simulator's parser
+needs, so it is written to be lifted". The printer simulator lifts it. A second
+parser written beside it would be a second opinion about what our own bytes
+mean, and the first time the two disagreed the simulator would be the one
+believed — because it is the one somebody is looking at.
+
+`./fixtures` is the nine sample jobs, each carrying the two strings S2-06's
+acceptance criterion names. **A test print's content is fixture content**: it
+exists to prove the renderer, the transport and the paper path, and it says
+nothing about a sale. Rendering it from these means the picture on the Print
+Templates panel, the bytes on the wire and the committed fixture are one input.
+
+Neither export is reachable from `src/index.ts`, so nothing in the ordinary
+render path depends on the test tree.

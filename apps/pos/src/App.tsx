@@ -27,6 +27,7 @@ import { MobileShell } from "@/components/mobile/MobileShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStaffTheme } from "@/lib/themePref";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { ServiceWorkerUpdater } from "@/pwa/ServiceWorkerUpdater";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
@@ -149,6 +150,10 @@ function App() {
                 </Switch>
               </WouterRouter>
               <Toaster />
+              {/* Renders nothing. Registers the service worker that makes the
+                  shell load with no internet, and applies a waiting build only
+                  at the lock screen with no open sale (S2-06). */}
+              <ServiceWorkerUpdater />
             </StationProvider>
           </OperatorProvider>
           </LanguageProvider>

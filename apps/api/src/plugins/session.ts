@@ -117,6 +117,22 @@ const SESSION_STATE_EXEMPT = new Set([
   'POST:/auth/sign-out',
   'POST:/auth/lock',
   'POST:/auth/unlock',
+  /**
+   * The offline unlock (S2-06), beside the online one and for the same
+   * reason: a locked session is exactly the caller it is for. It proves the
+   * password against the box's cached hash rather than against the database,
+   * so it is the one door that still opens when the link is down.
+   */
+  'POST:/auth/unlock-offline',
+  /**
+   * Presenting a badge or typing a PIN (S2-06), which is a SIGN-IN surface and
+   * belongs beside the two unlocks for the same reason: the screen it is for
+   * is the locked one. It reads nothing and changes nothing — the value goes
+   * to the box's scanning service, which today has no handler registered for a
+   * staff badge and answers "not linked yet". The day it does authenticate
+   * somebody, being reachable here is exactly what it needs to be.
+   */
+  'POST:/auth/badge',
   'POST:/auth/change-password',
   'GET:/me',
   'GET:/me/permissions',

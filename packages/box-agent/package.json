@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./protocol": "./src/protocol.ts",
     "./contract": "./src/contract.ts",
+    "./printing": "./src/printing/index.ts",
     "./sqlite": "./src/store-sqlite.ts"
   },
   "scripts": {
@@ -17,6 +18,7 @@
   },
   "dependencies": {
     "zod": "catalog:",
+    "@oto/print": "workspace:*",
     "@oto/shared": "workspace:*"
   },
   "devDependencies": {

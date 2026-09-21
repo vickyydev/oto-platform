@@ -6,6 +6,7 @@ import { OccupancyChip } from '@/components/shared/OccupancyChip';
 import { ThemeMenu } from '@/components/shared/ThemeMenu';
 import { BranchSwitcher } from '@/components/shared/BranchSwitcher';
 import { PricingModeIndicator } from '@/components/shared/PricingModeIndicator';
+import { PrinterHealthIndicator } from '@/components/shared/PrinterHealthIndicator';
 import { StationLinkBanner } from '@/components/shared/StationLinkBanner';
 import { useStation } from '@/station/StationContext';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
@@ -189,6 +190,10 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
       </div>
 
       <div className="flex items-center justify-end gap-3 min-w-0 shrink">
+        {/* Silent while every printer on this station is well; red the moment
+            one is out of paper or stops answering (S2-06, PROJECT_CONTEXT
+            §7.3) — before anybody notices a receipt that never came out. */}
+        <PrinterHealthIndicator />
         <PricingModeIndicator />
         {rightExtra}
         <div className="shrink-0">

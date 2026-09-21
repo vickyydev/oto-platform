@@ -1,9 +1,12 @@
+import { planCacheApply, type CacheFaultReason } from './cache-apply';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
 import { createOutbox, type Outbox } from './outbox';
 import { generateSyncKeyPair, publicKeyFor } from './signing';
+import { ScanRouter, type ScanInput } from './scan';
+import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
 import { StationSessionManager } from './station-session';
-import type { BoxStore, StationIdentity } from './store';
+import type { BoxStore, CachedBundle, StationIdentity } from './store';
 import {
   BOX_AGENT_VERSION,
   boxCredential,
@@ -19,6 +22,15 @@ import {
   type DeviceReport,
 } from './protocol';
 import { httpTransport, silentLog, type AgentFetch, type AgentLog } from './transport';
+import {
+  createPrinting,
+  testPrintJob,
+  type ChannelFactory,
+  type PrintingController,
+  type PrintJobOutcome,
+} from './printing/index';
+import { PrintTemplateSchema } from '@oto/shared';
+import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@oto/shared';
 
 /**
  * The box agent (S2-04).
@@ -83,6 +95,21 @@ export interface BoxAgentOptions {
   operatorId?: string;
   /** How often the outbox tries to hand its queue over. */
   syncIntervalMs?: number;
+  /**
+   * The print pipeline (S2-06).
+   *
+   * On by default, because a box that cannot print is not a box — the only
+   * reason to turn it off is a test that wants the agent without it. Which
+   * printers are real and which are simulated is decided per device by the
+   * `transport` on its row, never here.
+   */
+  printing?: {
+    enabled?: boolean;
+    /** How a socket to a REAL printer is opened. Never used for a simulated one. */
+    openReal?: ChannelFactory;
+    /** How long a job waits before trying a printer that was out of paper. */
+    retryDelayMs?: number;
+  };
 }
 
 export interface BoxAgentState {
@@ -110,6 +137,15 @@ export interface BoxAgent {
   ensureRegistered(): Promise<boolean>;
   /** Pull the bundle and adopt it. Returns true when it changed. */
   syncConfig(): Promise<boolean>;
+  /**
+   * Pull the cache bundles and apply each scope whole (S2-06).
+   *
+   * `GET /box/v1/cache` was built by S2-05 and nothing called it, so every box
+   * in the fleet held an empty cache — which is invisible until the day the
+   * link drops and the till cannot check a password. Returns the scopes that
+   * were applied.
+   */
+  syncCache(): Promise<string[]>;
   heartbeat(): Promise<BoxHeartbeatAck | null>;
   /** Poll, run what comes back, report each result. Returns how many ran. */
   runPendingCommands(): Promise<number>;
@@ -136,10 +172,33 @@ export interface BoxAgent {
   outbox(): Outbox | null;
   /** The station session documents this box serves, or null without a store. */
   sessions(): StationSessionManager | null;
+  /**
+   * The scanning service, or null without a store (S2-06).
+   *
+   * Later tickets register their handlers on it — `agent.scanner()?.register(…)`
+   * — which is what makes a band scan admit a guest without this file growing
+   * a case for every kind of code in the park.
+   */
+  scanner(): ScanRouter | null;
+  /** Where `edge.sync_change` stood when the cache was last applied. */
+  cacheCursorSeq(): number;
+  /** The print pipeline and its simulators, or null when printing is off. */
+  printing(): PrintingController | null;
 }
 
 /** Kept small: it is read by `collect_logs` and it lives in a Pi's memory. */
 const LOG_RING = 500;
+
+/**
+ * The highest cache-bundle schema this agent can read, sent on every pull.
+ *
+ * Mirrors `CACHE_BUNDLE_SCHEMA_VERSION` in the api. A cloud that builds a
+ * NEWER bundle refuses this box with `CACHE_SCHEMA_TOO_NEW` and raises an
+ * alert naming the box, rather than handing over a document the agent would
+ * half-understand — a counter running on a price list missing whatever was
+ * added last week is the failure that rule exists to prevent.
+ */
+const CACHE_SCHEMA_VERSION = 1;
 
 export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   const base = options.apiBaseUrl.replace(/\/$/, '');
@@ -152,6 +211,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let syncPrivateKeyPem: string | null = null;
   let outbox: Outbox | null = null;
   let sessions: StationSessionManager | null = null;
+  let scanner: ScanRouter | null = null;
+  /** The `sync_change` sequence the cache bundles were current to. */
+  let cacheCursorSeq = 0;
   let bundle: BoxConfigBundle | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -165,6 +227,17 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    */
   let lastReportedAt = 0;
 
+  let printing: PrintingController | null = null;
+  /**
+   * Cache scopes that did not land, counted per cause (S2-06).
+   *
+   * A log line on a box in a storeroom is read by nobody, so these ride the
+   * heartbeat's `errors` — fingerprint, code and count, no contents — where
+   * they reach `box.last_status` and the Console's box detail. That is the
+   * difference between a box quietly holding an incomplete cache and somebody
+   * being able to see that it does.
+   */
+  const cacheFaults = new Map<string, { code: string; count: number }>();
   const ring: string[] = [];
   const state: BoxAgentState = {
     boxId: null,
@@ -192,6 +265,24 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     ring.push(`${new Date(clock()).toISOString()} ${level} ${msg}`);
     if (ring.length > LOG_RING) ring.splice(0, ring.length - LOG_RING);
     log[level]({ ...obj, module: 'box-agent' }, msg);
+  }
+
+  function recordCacheFault(reason: CacheFaultReason, scope: string): void {
+    const fingerprint = `${reason}:${scope}`.slice(0, 32);
+    const held = cacheFaults.get(fingerprint) ?? { code: `box.cache_${reason}`, count: 0 };
+    held.count += 1;
+    cacheFaults.set(fingerprint, held);
+  }
+
+  /** A pull in which every scope landed clears them: the fault is over. */
+  function clearCacheFaults(): void {
+    cacheFaults.clear();
+  }
+
+  function cacheFaultReports(): BoxHeartbeatRequest['errors'] {
+    return [...cacheFaults.entries()]
+      .slice(0, 32)
+      .map(([fingerprint, held]) => ({ fingerprint, code: held.code, count: held.count }));
   }
 
   async function request<T>(
@@ -222,6 +313,89 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       body = null;
     }
     return { status: res.status, body, etag };
+  }
+
+  if (options.printing?.enabled !== false) {
+    printing = createPrinting({
+      bundle: () => bundle,
+      /**
+       * Straight out of the config bundle, so an edit made on the Console
+       * reaches the paper by the route every other piece of branch
+       * configuration takes: the edit bumps `configVersion`, the next
+       * heartbeat's ack differs from what this box has applied, and
+       * `syncConfig` pulls. Nothing here caches a template separately, so
+       * there is no second copy to go stale.
+       */
+      templates: () => cachedTemplates,
+      now: () => new Date(clock()),
+      log: (level, msg, detail) => note(level, msg, detail),
+      report: (outcome) => reportPrintJob(outcome),
+      openReal: options.printing?.openReal,
+      retryDelayMs: options.printing?.retryDelayMs,
+    });
+  }
+
+  /**
+   * The bundle's print templates, VALIDATED rather than cast.
+   *
+   * The wire type says `type: string` because the contract is deliberately
+   * loose about a vocabulary the cloud may extend before this agent is
+   * updated. Casting that to the closed union would be this file asserting a
+   * guarantee the wire does not give — and the failure would be silent: a
+   * template of an unknown type would reach the renderer's `resolveTemplate`,
+   * match nothing, and print a receipt missing whatever it carried. So each
+   * one is parsed, an unreadable one is dropped by name, and the rest are
+   * used. Re-computed only when the bundle changes, because a receipt is
+   * rendered per job and this is not free.
+   */
+  let cachedTemplates: readonly PrintTemplate[] = [];
+
+  function adoptTemplates(next: BoxConfigBundle | null): void {
+    const out: PrintTemplate[] = [];
+    for (const raw of next?.printTemplates ?? []) {
+      const parsed = PrintTemplateSchema.safeParse(raw);
+      if (parsed.success) out.push(parsed.data);
+      else note('warn', 'a print template in the bundle could not be read and was dropped', {
+        id: typeof raw?.id === 'string' ? raw.id : null,
+        type: typeof raw?.type === 'string' ? raw.type : null,
+      });
+    }
+    cachedTemplates = out;
+  }
+
+  /**
+   * Tell the cloud how a print job ended.
+   *
+   * Its own endpoint rather than the command result, because the two answer
+   * different questions and a box that conflated them would lie about one of
+   * them: a command result says "I took this instruction", and it is sent once,
+   * seconds after the button; a job outcome says "paper came out", and for a
+   * job that waited half an hour on an empty roll it is sent long after the
+   * command was acknowledged. A box that is offline reports nothing and keeps
+   * the job in its queue — the cloud row stays `queued`, which is true.
+   */
+  async function reportPrintJob(outcome: PrintJobOutcome): Promise<void> {
+    if (!credential || state.offline) return;
+    const { status } = await request(`/box/v1/print-jobs/${outcome.id}/result`, {
+      method: 'POST',
+      body: {
+        status: outcome.status,
+        attempts: outcome.attempts,
+        deviceId: outcome.deviceId,
+        role: outcome.role,
+        stationId: outcome.stationId,
+        errorCode: outcome.errorCode,
+        errorMessage: outcome.errorMessage,
+        overflow: outcome.overflow,
+        elapsedMs: outcome.elapsedMs,
+      },
+    });
+    if (status !== 200) {
+      note('warn', 'the cloud did not accept a print job outcome', {
+        jobId: outcome.id,
+        status,
+      });
+    }
   }
 
   async function ensureRegistered(): Promise<boolean> {
@@ -330,11 +504,37 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       log,
     });
 
+    /**
+     * The scanning service (S2-06).
+     *
+     * It needs the store — every scan leaves a redacted line on the station's
+     * own tape — and the session manager, because the screens watching a
+     * station are where the result is shown. Handlers are registered by the
+     * tickets that own what a code MEANS; today none is, and a scan resolves
+     * `unhandled`, which the till shows rather than swallowing.
+     */
+    scanner = new ScanRouter({
+      boxId,
+      store,
+      publish: (stationId, message) => sessions?.emitScan(stationId, message),
+      now: () => new Date(clock()),
+      log,
+    });
+
     note('info', 'box store attached', {
       boxId,
       offline: persisted.offline,
       epoch: persisted.journalEpoch,
     });
+  }
+
+  /** Which of this box's stations a device is assigned to, if any. */
+  function stationForDevice(deviceId: string | undefined): string | null {
+    if (!deviceId) return null;
+    for (const station of bundle?.stations ?? []) {
+      if (station.devices.some((d) => d.id === deviceId)) return station.id;
+    }
+    return null;
   }
 
   function stationIdentity(boxId: string, stationId: string): StationIdentity | null {
@@ -382,19 +582,36 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     const devices: BoxConfigDevice[] = (bundle?.stations ?? []).flatMap((s) => s.devices);
     const seen = new Set<string>();
     const reports: DeviceReport[] = [];
+    /**
+     * What the printers themselves last said (S2-06).
+     *
+     * Measured, not assumed: before this, every printer on a box reported
+     * `reachable` / `ok` because nothing had asked it anything, which is the
+     * one answer a health indicator must never give by default. A printer the
+     * box has not managed to talk to yet is absent from this map and falls
+     * through to `unknown` below.
+     */
+    const printerHealth = printing?.jobs.health() ?? {};
     for (const device of devices) {
       // One device can serve two roles on one station; it is still one device.
       if (seen.has(device.id)) continue;
       seen.add(device.id);
+      /**
+       * The S2-04 fault injection still wins where it is set. It is how a test
+       * and the Console's older controls make a device misbehave without a
+       * simulator, and a fault somebody deliberately asked for must not be
+       * overwritten by a probe that found the machine healthy.
+       */
       const fault = options.faults?.[device.id] ?? options.faults?.[device.label];
+      const health = printerHealth[device.id];
       reports.push({
         id: device.id,
         address: device.address ?? undefined,
         kind: device.kind,
         model: device.model ?? undefined,
-        reachability: fault?.reachability ?? 'reachable',
-        paperStatus: fault?.paperStatus ?? (device.kind.endsWith('printer') ? 'ok' : 'unknown'),
-        lastError: fault?.lastError,
+        reachability: fault?.reachability ?? health?.reachability ?? 'unknown',
+        paperStatus: fault?.paperStatus ?? health?.paperStatus ?? 'unknown',
+        lastError: fault?.lastError ?? health?.lastError ?? undefined,
       });
     }
     return reports;
@@ -440,6 +657,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
     const changed = body.configVersion !== state.configVersion;
     bundle = body;
+    adoptTemplates(body);
     state.configVersion = body.configVersion;
     state.epoch = body.box.epoch;
     heartbeatIntervalMs = options.heartbeatIntervalMs ?? body.heartbeatIntervalS * 1000;
@@ -459,12 +677,139 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     return changed;
   }
 
+  /**
+   * Take a copy of everything this counter needs with no internet (S2-06).
+   *
+   * The route has existed since S2-05 and nothing called it, which is the
+   * quietest kind of gap: every box in the fleet reported healthy and held an
+   * empty cache, and the first thing to discover it would have been a till
+   * that could not check a password during an outage. Offline unlock is what
+   * needed it, so this is where it gets its caller.
+   *
+   * **Whole or not at all, per scope.** `writeBundle` replaces a scope's
+   * payload, so a person removed from the staff list is gone from the box on
+   * the next pull rather than lingering until something expires — which is the
+   * ticket's "the box drops cached staff not in the latest bundle".
+   *
+   * A scope the cloud TRUNCATED is skipped rather than applied: a half staff
+   * list would silently refuse the people who fell off the end of it. The
+   * honest answer is to keep the last complete copy and say so.
+   *
+   * **The staff list and the deny-list are one answer in two scopes**, and
+   * this is where that is enforced. Written in the order `planCacheApply`
+   * gives — the deny-list first — and abandoned at the first failure, so every
+   * state this loop can stop in has a deny-list at least as fresh as the staff
+   * list beside it. The reverse order was reachable before and was the quiet
+   * one: a box left holding a current staff list and last week's revocations,
+   * with nothing to say it had happened. A skip or a failure is now a fault
+   * the heartbeat carries (`errors`) as well as a line in the box log.
+   */
+  async function syncCache(): Promise<string[]> {
+    if (!credential || !store || !state.boxId || state.offline) return [];
+    const boxId = state.boxId;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      bundleVersion: string;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}`, { method: 'GET' });
+    if (status === 401) {
+      await reregisterAfterRefusal('cache');
+      return [];
+    }
+    if (status !== 200 || !body) {
+      note('warn', 'cache bundle could not be read', { status });
+      recordCacheFault('unreadable', `status ${status}`);
+      return [];
+    }
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const applied: string[] = [];
+    const appliedAt = new Date(clock()).toISOString();
+    for (const scope of plan.apply) {
+      const held = body.scopes[scope];
+      if (!held) continue;
+      try {
+        await store.writeBundle(boxId, {
+          scope: scope as CachedBundle['scope'],
+          schemaVersion: body.schemaVersion,
+          cursorSeq: body.cursorSeq,
+          // One object rather than the array, because a scope is applied whole
+          // and `items` is how the cloud pages it, not what it means.
+          payload: { items: held.items },
+          appliedAt,
+        });
+        applied.push(scope);
+      } catch (err) {
+        /**
+         * One scope failing to write used to end the pull with whatever had
+         * already landed, silently — and because `staff` is written before
+         * `deny_list`, the state it left behind was the dangerous one: a box
+         * that knew who could work here and not who had been stopped. The
+         * write order below puts the deny-list first, and this refuses to go
+         * on past a failure rather than filling in around it.
+         */
+        note('error', 'a cache scope could not be applied; the rest of the pull was abandoned', {
+          scope,
+          err: String(err),
+          applied: [...applied],
+        });
+        recordCacheFault('write_failed', scope);
+        return applied;
+      }
+    }
+    for (const skipped of plan.skipped) {
+      note('warn', 'a cache scope was not applied', skipped);
+      recordCacheFault(skipped.reason, skipped.scope);
+    }
+    if (plan.skipped.length === 0) clearCacheFaults();
+    cacheCursorSeq = body.cursorSeq;
+    /**
+     * Stamps `last_cache_applied_at`, which is what the till's banner reads to
+     * say how old its copy is. Skipped when this box has not applied a config
+     * version yet: the same call carries `applied_config_version`, and writing
+     * a null there would tell the cloud the box is holding no configuration
+     * when all that happened is that the cache was pulled first.
+     */
+    if (state.configVersion) {
+      await store.setAppliedConfigVersion(state.boxId, state.configVersion);
+    }
+    note('info', 'cache applied', {
+      scopes: applied.length,
+      bundleVersion: body.bundleVersion,
+      cursorSeq: body.cursorSeq,
+    });
+    return applied;
+  }
+
   async function heartbeat(): Promise<BoxHeartbeatAck | null> {
     if (!credential || state.heartbeatsPaused) return null;
     // Read before the guard below, so the toggle coming back on is noticed on
     // the very tick that would otherwise have skipped.
     if (await refreshOffline()) return null;
     await refreshOutboxDepth();
+    /**
+     * Ping every assigned printer before saying anything about it
+     * (PROJECT_CONTEXT §7.3: "Box pings every assigned printer on a schedule
+     * and reports reachability and paper status in its heartbeat; the station
+     * screen shows a red indicator before staff notice a missing receipt").
+     *
+     * The heartbeat is that schedule, which puts the worst case at one
+     * interval — sixty seconds — between a roll running out and the header
+     * turning red. Failures are swallowed on purpose: a printer that cannot be
+     * reached is the news this carries, not a reason to skip the heartbeat
+     * that would have carried it.
+     */
+    await printing?.jobs.probeAll().catch((err) => {
+      note('warn', 'a printer could not be probed before the heartbeat', { err: String(err) });
+      return {};
+    });
+    // And give anything waiting on a printer that was out of paper a go, so a
+    // cleared fault prints without waiting for a separate timer.
+    await printing?.jobs.tick().catch((err) => {
+      note('error', 'the print retry tick failed', { err: String(err) });
+      return [];
+    });
     const reportedMs = Math.max(clock(), lastReportedAt + 1);
     lastReportedAt = reportedMs;
     const payload: BoxHeartbeatRequest = {
@@ -480,7 +825,14 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       offline: state.offline,
       devices: deviceReports(),
       leases: await leaseReports(),
-      errors: [],
+      /**
+       * What has gone wrong on the box that nothing else would carry. Today
+       * that is the cache pull: a scope that did not land leaves this box
+       * running on an incomplete copy, and the one that matters is the
+       * deny-list, because without it the till cannot check whether a shift
+       * has been ended and refuses to unlock offline at all.
+       */
+      errors: cacheFaultReports(),
     };
     const { status, body } = await request<BoxHeartbeatAck>('/box/v1/heartbeat', {
       method: 'POST',
@@ -593,33 +945,202 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     note('info', 'running command', { kind: command.kind, actionId: command.actionId });
     switch (command.kind) {
       case 'test_print': {
-        const role = typeof payload.role === 'string' ? payload.role : 'receipt';
-        const stationId = typeof payload.stationId === 'string' ? payload.stationId : null;
-        const station = stationId
-          ? bundle?.stations.find((s) => s.id === stationId)
-          : bundle?.stations[0];
-        const device = station?.devices.find((d) => d.role === role);
-        if (!station || !device) {
+        if (!printing) {
           return {
             state: 'failed',
-            errorCode: 'NO_DEVICE_FOR_ROLE',
-            errorMessage: `No ${role} device is assigned to ${station?.name ?? 'any station on this box'}`,
+            errorCode: 'PRINTING_DISABLED',
+            errorMessage: 'This agent was built without its print pipeline',
           };
         }
-        // S2-06 replaces this with the real adapter; what it proves today is
-        // the whole routed path — Console, cloud, box, back — which is the
-        // part that cannot be tested once and forgotten.
+        const kind = (typeof payload.kind === 'string' ? payload.kind : 'test_page') as PrintKind;
+        const stationId = typeof payload.stationId === 'string' ? payload.stationId : null;
+        const role = typeof payload.role === 'string' ? payload.role : null;
+        /**
+         * The job id is the `edge.print_job` row the cloud already created, so
+         * the box's outcome lands on the row the button created rather than on
+         * a second one nobody asked for. A command with none is a command from
+         * an older api; the box still prints and reports against an id the
+         * cloud will not recognise, which is honest and harmless.
+         */
+        const jobId = typeof payload.printJobId === 'string' ? payload.printJobId : command.id;
+        let job;
+        try {
+          job = await testPrintJob(kind);
+        } catch (err) {
+          return {
+            state: 'failed',
+            errorCode: 'RENDER_FAILED',
+            errorMessage: err instanceof Error ? err.message : String(err),
+          };
+        }
+        const outcome = await printing.submit({
+          id: jobId,
+          kind,
+          job,
+          stationId,
+          role,
+          actionId: command.actionId,
+          copies: typeof payload.copies === 'number' ? payload.copies : 1,
+        });
+        /**
+         * The COMMAND succeeded whenever the box understood it and routed it.
+         * Whether paper came out is the job's answer, on the job's row, and a
+         * job still waiting on an empty roll must not make the command that
+         * queued it look broken — the Console would then show a red command
+         * and a queued job describing one healthy, well-understood situation.
+         */
         return {
-          state: 'succeeded',
+          state: outcome.status === 'failed' ? 'failed' : 'succeeded',
           result: {
-            stationId: station.id,
-            stationName: station.name,
-            deviceId: device.id,
-            deviceLabel: device.label,
-            protocol: device.protocol,
-            transport: device.transport,
-            simulated: true,
+            printJobId: outcome.id,
+            status: outcome.status,
+            kind,
+            deviceId: outcome.deviceId,
+            role: outcome.role,
+            stationId: outcome.stationId,
+            attempts: outcome.attempts,
+            overflow: outcome.overflow,
           },
+          errorCode: outcome.errorCode ?? undefined,
+          errorMessage: outcome.errorMessage ?? undefined,
+        };
+      }
+      case 'simulate': {
+        const action = (payload.action ?? null) as SimulatorAction | null;
+        if (!action || typeof action.action !== 'string') {
+          return {
+            state: 'failed',
+            errorCode: 'BAD_SIMULATOR_ACTION',
+            errorMessage: 'The command carried no simulator action',
+          };
+        }
+        if (
+          (action.action === 'printer.fault' || action.action === 'printer.clear') &&
+          !printing
+        ) {
+          return {
+            state: 'failed',
+            errorCode: 'PRINTING_DISABLED',
+            errorMessage: 'This agent has no printer simulators',
+          };
+        }
+        if (action.action === 'printer.fault' && printing) {
+          const applied = printing.setFault(action.deviceId, action.fault as PrinterFault);
+          return applied
+            ? {
+                state: 'succeeded',
+                result: { deviceId: action.deviceId, fault: action.fault, applied: true },
+              }
+            : {
+                state: 'failed',
+                errorCode: 'DEVICE_NOT_SIMULATED',
+                errorMessage:
+                  'That device is a real printer on this box — a fault can only be injected into a simulated one',
+              };
+        }
+        if (action.action === 'printer.clear' && printing) {
+          const cleared = printing.clearFaults(action.deviceId);
+          return cleared
+            ? { state: 'succeeded', result: { deviceId: action.deviceId, cleared: true } }
+            : {
+                state: 'failed',
+                errorCode: 'DEVICE_NOT_SIMULATED',
+                errorMessage: 'That device is a real printer on this box',
+              };
+        }
+        /**
+         * The scanner (S2-06).
+         *
+         * The typed code is not handed to the scanning service directly: it is
+         * turned into the key events a keyboard-wedge scanner would produce
+         * and fed through `HidBurstReader`, the same state machine that reads
+         * the real DS2278. A simulator that skipped the reader would prove the
+         * service works and nothing about the rule that has to be right — and
+         * the rule is the whole subtlety of scanning.
+         */
+        if (action.action === 'scanner.scan') {
+          if (!scanner) {
+            return {
+              state: 'failed',
+              errorCode: 'SCANNING_UNAVAILABLE',
+              errorMessage: 'This box has no store, so it has no scanning service',
+            };
+          }
+          const stationId = stationForDevice(action.deviceId) ?? bundle?.stations[0]?.id ?? null;
+          if (!stationId) {
+            return {
+              state: 'failed',
+              errorCode: 'NO_STATION_ON_THIS_BOX',
+              errorMessage: 'This box has no station for a scan to arrive at',
+            };
+          }
+          const reader = new HidBurstReader({ source: 'simulator' });
+          let input: ScanInput | null = null;
+          for (const key of simulateHidKeys(action.input.code, { startAt: clock() })) {
+            const event = reader.push(key);
+            if (event?.kind === 'scan') input = event.input;
+          }
+          if (!input) {
+            // Shorter than a code, or the reader refused it. A REFUSAL rather
+            // than a success with nothing behind it: the panel shows what the
+            // reader decided, which is the point of driving it.
+            return {
+              state: 'failed',
+              errorCode: 'SCAN_NOT_RECOGNISED',
+              errorMessage:
+                'The reader did not see that as a scan: a code is at least six characters',
+            };
+          }
+          const outcome = await scanner.deliver(
+            stationId,
+            {
+              ...input,
+              scannedAt: action.input.scannedAt ?? input.scannedAt,
+              actionId: command.actionId,
+            },
+            { screen: 'box' },
+          );
+          return {
+            state: 'succeeded',
+            result: {
+              stationId,
+              codeKind: outcome.kind,
+              outcome: outcome.outcome,
+              handler: outcome.handler,
+              // The fingerprint, never the code: this result is stored on the
+              // command row and rendered in the Console's history.
+              codeFingerprint: outcome.codeFingerprint,
+              handlers: scanner.registered(),
+            },
+          };
+        }
+
+        /**
+         * The counter button, which is NOT a scan.
+         *
+         * It writes no `station_event`: that table's `kind` is a CHECK over
+         * intent, snapshot, lease, scan and error, and recording a press as a
+         * `scan` would make "how many scans failed this afternoon" wrong.
+         * What it does is refuse Enter — the key a wedge scanner ends every
+         * code with — and put a line in the box log the press's action id can
+         * be found by.
+         */
+        if (action.action === 'button.press') {
+          const problem = buttonKeyProblem(action.press.key);
+          if (problem) {
+            return { state: 'failed', errorCode: 'BUTTON_KEY_NOT_ALLOWED', errorMessage: problem };
+          }
+          note('info', 'counter button pressed', {
+            key: action.press.key,
+            actionId: command.actionId,
+          });
+          return { state: 'succeeded', result: { pressed: true, key: action.press.key } };
+        }
+
+        return {
+          state: 'failed',
+          errorCode: 'SIMULATOR_NOT_BUILT',
+          errorMessage: `This agent (${BOX_AGENT_VERSION}) has no simulator for ${action.action}`,
         };
       }
       case 'config_apply': {
@@ -667,6 +1188,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         // epoch comes back on the acknowledgement, which is what makes a batch
         // replayed from the old store recognisably stale.
         bundle = null;
+        adoptTemplates(null);
         state.configVersion = null;
         await syncConfig();
         // The epoch itself is adopted where the acknowledgement arrives, in
@@ -729,6 +1251,18 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     await ensureRegistered();
     if (!credential) return;
     await syncConfig();
+    // Before the first heartbeat, because the window that matters is the one
+    // between a box coming up and the link dropping again: a box that has been
+    // running for a minute with no cache can do less than one that has been
+    // running for a second with one.
+    await syncCache().catch((err) => {
+      note('error', 'cache pull failed at start', { err: String(err) });
+      // Swallowed so the agent still comes up, but not silently: the fault
+      // goes out in the first heartbeat, so a box running on no cache is
+      // visible in the Console rather than only in a log line on the box.
+      recordCacheFault('unreadable', 'pull_threw');
+      return [];
+    });
     await heartbeat();
     await runPendingCommands();
     outbox?.start();
@@ -763,6 +1297,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     state,
     ensureRegistered,
     syncConfig,
+    syncCache,
     heartbeat,
     runPendingCommands,
     start,
@@ -770,6 +1305,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     setOffline,
     outbox: () => outbox,
     sessions: () => sessions,
+    scanner: () => scanner,
+    cacheCursorSeq: () => cacheCursorSeq,
+    printing: () => printing,
     pauseHeartbeats(paused) {
       state.heartbeatsPaused = paused;
       note('info', paused ? 'heartbeats stopped by a test control' : 'heartbeats resumed');

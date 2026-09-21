@@ -32,7 +32,29 @@ import {
   pushEvents,
   registerSyncKey,
 } from '../services/sync';
+import { recordPrintJobResult } from '../services/print';
 import type { OpContext } from '../services/tx';
+
+/**
+ * What a box says about a print job (S2-06).
+ *
+ * Declared here rather than in `@oto/shared` because it is a box-to-cloud
+ * message like every other schema in this file, and the box builds it from
+ * `PrintJobOutcome` in `@oto/box-agent`. Nothing personal crosses it: a device
+ * id, a role, an attempt count and a short error code — never a printed line.
+ */
+const PrintJobResultSchema = z.object({
+  status: z.enum(['queued', 'printed', 'failed', 'skipped']),
+  attempts: z.number().int().min(0).max(1000),
+  deviceId: z.string().uuid().nullish(),
+  role: z.string().max(32).nullish(),
+  stationId: z.string().uuid().nullish(),
+  errorCode: z.string().max(64).nullish(),
+  errorMessage: z.string().max(500).nullish(),
+  /** Layout complaints from the renderer: "the name was cut to fit". */
+  overflow: z.array(z.string().max(200)).max(20).optional(),
+  elapsedMs: z.number().int().min(0).nullish(),
+});
 
 /**
  * What a box may say to the cloud (S2-04).
@@ -187,6 +209,25 @@ export async function boxRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = boxAuth(req);
       return completeCommand(app.db, auth, req.params.commandId, req.body, boxCtx(req, auth));
+    },
+  );
+
+  // --- Printing (S2-06) -----------------------------------------------------
+
+  app.post(
+    '/print-jobs/:id/result',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'What happened to a print job. Its own endpoint rather than a command result: a job that waited half an hour on an empty roll reports long after the command that queued it was acknowledged. Safe to retry — a terminal job is answered as a replay.',
+        params: z.object({ id: z.string().uuid() }),
+        body: PrintJobResultSchema,
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      return recordPrintJobResult(app.db, boxCtx(req, auth), auth, req.params.id, req.body);
     },
   );
 

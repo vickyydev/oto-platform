@@ -1012,6 +1012,31 @@ function statusText(status: Record<string, unknown> | null, key: string): string
 }
 
 /**
+ * The faults a box reported in its last heartbeat — fingerprint, code and
+ * count, never a message. Read defensively because it comes off a jsonb column
+ * written by whatever agent version the box is running, and a box on an older
+ * build simply reports none.
+ */
+function statusErrors(
+  status: Record<string, unknown> | null,
+): Array<{ fingerprint: string; code: string; count: number }> {
+  const value = status?.errors;
+  if (!Array.isArray(value)) return [];
+  const out: Array<{ fingerprint: string; code: string; count: number }> = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') continue;
+    const e = entry as Record<string, unknown>;
+    if (typeof e.code !== 'string' || typeof e.fingerprint !== 'string') continue;
+    out.push({
+      fingerprint: e.fingerprint,
+      code: e.code,
+      count: typeof e.count === 'number' && Number.isFinite(e.count) ? e.count : 1,
+    });
+  }
+  return out;
+}
+
+/**
  * Dotted comparison, the same reading the agent applies to itself. Anything
  * unparseable counts as new enough: refusing a box because its version string
  * was unexpected would be a worse failure than running it.
@@ -1254,6 +1279,41 @@ export function evaluateBox(
   });
 
   /**
+   * **The box's last cache pull was incomplete** (S2-06).
+   *
+   * The box reports these itself, in the heartbeat's `errors`, because it is
+   * the only thing that knows: a scope the cloud truncated, a write its store
+   * refused, or a staff list that arrived without the deny-list governing it
+   * and so was not applied. The cloud cannot infer any of that from a healthy
+   * heartbeat, which is exactly how a box came to hold a current staff list
+   * and no record of who had been stopped — reporting healthy the whole time.
+   *
+   * Raised whatever the hour, because it does not depend on anybody being at
+   * the counter, and it closes on the next pull in which every scope lands.
+   * The till, meanwhile, refuses an offline unlock it cannot check, so the
+   * visible symptom and this alert have the same cause.
+   */
+  const cacheFaults = statusErrors(last);
+  const cacheFaultCount = cacheFaults.reduce((n, e) => n + e.count, 0);
+  conditions.push({
+    key: `box.cache_incomplete:${row.id}`,
+    category: 'box.cache_incomplete',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: expectedAlive && cacheFaults.length > 0,
+    summary: `${subject} could not apply part of its offline copy (${cacheFaults
+      .map((e) => e.code)
+      .join(', ')}) — until it pulls a complete one, its till refuses to unlock offline`,
+    detail: { slot: row.slot, faults: cacheFaults, occurrences: cacheFaultCount },
+    clear: {
+      category: 'box.cache_incomplete',
+      reason: 'recovered',
+      summary: `${subject} has applied a complete offline copy again`,
+    },
+  });
+
+  /**
    * **Quarantine non-empty.** An event the cloud refused is a fact nobody has
    * recorded anywhere, waiting on a person to replay or discard it. Unlike
    * everything else here it does not depend on the box being reachable — the
@@ -1337,7 +1397,27 @@ export function evaluateBox(
   });
 
   // --- And what the box says about the things plugged into it.
-  const visible = reporting && openingHours === 'open';
+  /**
+   * Two audiences, two rules, and the difference is what somebody can do about
+   * it before the doors open.
+   *
+   * A device that did not answer waits for opening hours, like the box itself:
+   * the park's printers are switched off at the end of the night, and calling
+   * a powered-down printer a fault at four in the morning is raising an alert
+   * about somebody having gone home. Note what that means for paper — a
+   * printer that is switched off cannot be asked about its paper either, so
+   * the box's probe reports `unknown` (`unknownHealth` in the agent's printer
+   * adapter) and never `out`.
+   *
+   * So `paperStatus === 'out'` is only ever a printer that answered and said
+   * it has no paper, which stays true until somebody changes the roll. It is
+   * raised whenever the box is reporting it, closed park or not, because the
+   * person who can fix it is the morning shift and the alternative is finding
+   * out at the first sale of the day. It is a `warning` and not a `critical`,
+   * so what it does out of hours is wait on the Health page rather than wake
+   * anybody.
+   */
+  const deviceAnswering = reporting && openingHours === 'open';
   for (const d of devices) {
     const where = `${d.label} on ${row.name}`;
     const deviceDetail = { slot: row.slot, deviceKind: d.kind, deviceLabel: d.label };
@@ -1348,7 +1428,7 @@ export function evaluateBox(
         severity: 'warning',
         subject: where,
         ...scope,
-        active: visible && d.paperStatus === 'out',
+        active: reporting && d.paperStatus === 'out',
         summary: `${where} is out of paper`,
         detail: { ...deviceDetail, paperStatus: d.paperStatus },
         clear: { category: 'device.paper', reason: 'recovered', summary: `${where} has paper again` },
@@ -1365,7 +1445,7 @@ export function evaluateBox(
       severity: 'warning',
       subject: where,
       ...scope,
-      active: visible && d.reachability === 'unreachable',
+      active: deviceAnswering && d.reachability === 'unreachable',
       summary: `${where} did not answer the box`,
       detail: { ...deviceDetail, reachability: d.reachability, lastError: d.lastError },
       clear: {

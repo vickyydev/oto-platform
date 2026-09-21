@@ -23,6 +23,8 @@ import { EmptyState, Fact, Loading, RouteUnavailable } from '@/components/Panel'
 import { Chip, StatusMark, StatusPill } from '@/components/Status';
 import { Field, Select, TextInput } from '@/components/Form';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
+import { SimulatorPanel } from '@/components/devices/SimulatorPanel';
+import { PrintPanel } from '@/components/devices/PrintPanel';
 import {
   boxRoleWord,
   boxStatusWord,
@@ -162,7 +164,22 @@ export function BoxDrawer({
 
       <Heartbeats boxId={box.id} timezone={timezone} />
 
-      <SimulatorPlaceholder hasSimulated={devices.some((d) => d.transport === 'simulated')} />
+      {/* Same `onSent` as the Controls above: a simulator press filters the Box
+          log by the action id the API stamped on it, which is how "did my
+          paper-out reach the printer" stays one press and one glance. */}
+      <SimulatorPanel
+        box={box}
+        devices={devices}
+        canCommand={canCommand}
+        onSent={(actionId) => {
+          if (actionId) setActionFilter(actionId);
+          setCommandsAt(Date.now());
+        }}
+      />
+
+      {/* What the faults above actually did to paper (S2-06): the queue, and
+          the picture the simulator rebuilt from the bytes it was sent. */}
+      <PrintPanel box={box} devices={devices} />
     </Drawer>
   );
 }
@@ -996,7 +1013,10 @@ function LogLine({
 }
 
 // ---------------------------------------------------------------------------
-// Heartbeats and the simulator
+// Heartbeats
+//
+// The simulator that used to sit here as a placeholder is now its own file,
+// `SimulatorPanel.tsx`, because it drives devices rather than describes them.
 // ---------------------------------------------------------------------------
 
 function Heartbeats({ boxId, timezone }: { boxId: string; timezone?: string | null }) {
@@ -1062,31 +1082,3 @@ function Heartbeats({ boxId, timezone }: { boxId: string; timezone?: string | nu
   );
 }
 
-/**
- * The simulator panel's place, held open rather than hidden.
- *
- * S2-06 builds what goes in it. Saying what it will do — and that today it
- * does nothing — is more useful than an empty space somebody rediscovers as a
- * gap, and much more useful than buttons that look live and are not.
- */
-function SimulatorPlaceholder({ hasSimulated }: { hasSimulated: boolean }) {
-  return (
-    <section>
-      <h3 className="text-sm font-bold mb-2">Simulator</h3>
-      <div className="rounded-xl border border-dashed px-4 py-6">
-        <p className="text-sm font-semibold">Not built yet</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          This is where a simulated device is made to misbehave on purpose: paper out on a band
-          printer, a printer that stops answering, a terminal that declines, a gate that refuses a
-          passage. It lands with the device simulators themselves.
-        </p>
-        {!hasSimulated && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            None of this box's devices are simulated, so there would be nothing here to drive even
-            once it is built — simulation applies to the simulated transport only.
-          </p>
-        )}
-      </div>
-    </section>
-  );
-}

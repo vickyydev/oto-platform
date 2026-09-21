@@ -903,6 +903,50 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
     expect((await alertsOf(`box.offline:${(await theBox()).id}`))[0]!.status).toBe('open');
   });
 
+  /**
+   * Paper does not wait for the doors to open, and a device that did not
+   * answer does.
+   *
+   * A printer switched off for the night cannot be asked about its paper, so
+   * `out` is only ever a printer that answered and said it has none — a fact
+   * that is still true at ten in the morning, and one the morning shift can
+   * act on before the first sale. Nobody can do anything about a printer that
+   * is off, which is why the other half of this test is the opposite
+   * assertion: the two rules disagree on purpose.
+   */
+  it('paper out is raised with the park shut; a device that did not answer is not', async () => {
+    const [printer] = await ctx.db
+      .select()
+      .from(device)
+      .where(eq(device.label, 'Receipt Printer 1'))
+      .limit(1);
+    const [scanner] = await ctx.db
+      .select()
+      .from(device)
+      .where(eq(device.label, 'Scanner 1'))
+      .limit(1);
+    await setHours(ALWAYS_SHUT);
+    await callingHome();
+    await ctx.db.update(device).set({ paperStatus: 'out' }).where(eq(device.id, printer!.id));
+    await ctx.db
+      .update(device)
+      .set({ reachability: 'unreachable' })
+      .where(eq(device.id, scanner!.id));
+
+    await watchdog();
+    const paperKey = `device.paper:${printer!.id}`;
+    const unreachableKey = `device.unreachable:${scanner!.id}`;
+    expect(
+      (await alertsOf(paperKey))[0]?.status,
+      'a printer with no paper at 08:00 is a printer with no paper at 10:00',
+    ).toBe('open');
+    expect(await alertsOf(unreachableKey)).toHaveLength(0);
+
+    const [shut] = await boxesOn();
+    expect(shut!.openingHours).toBe('closed');
+    expect(shut!.conditions).toEqual([paperKey]);
+  });
+
   it('an agent below the minimum this build supports raises box.agent', async () => {
     const previous = process.env.BOX_MIN_AGENT_VERSION;
     process.env.BOX_MIN_AGENT_VERSION = '0.2.0';

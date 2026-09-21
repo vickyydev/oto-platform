@@ -5,6 +5,10 @@ import * as box from '../src/contract';
 import * as sharedStation from '../../shared/src/station-session';
 import * as sharedSync from '../../shared/src/sync';
 import { SUPPORTED_LANGS } from '../../shared/src/i18n/index';
+import * as scan from '../src/scan';
+import * as staffToken from '../src/staff-token';
+import * as sharedScanning from '../../shared/src/scanning';
+import * as sharedStaffToken from '../../shared/src/staff-token';
 
 /**
  * The duplication in `src/contract.ts` is made safe here.
@@ -111,4 +115,67 @@ test('a number that has no JSON form fails loudly rather than signing a null', (
     () => sharedSync.canonicalSyncBytes({ payload: { total: Number.POSITIVE_INFINITY } }),
     /non-finite/,
   );
+});
+
+// --- S2-06: scanning and the shift token ------------------------------------
+
+test('the scan vocabularies match @oto/shared item for item', () => {
+  assert.deepEqual([...scan.SCAN_SOURCES], [...sharedScanning.SCAN_SOURCES]);
+  assert.deepEqual([...scan.SCAN_CODE_KINDS], [...sharedScanning.SCAN_CODE_KINDS]);
+  assert.deepEqual([...scan.SCAN_OUTCOMES], [...sharedScanning.SCAN_OUTCOMES]);
+  assert.equal(scan.SCAN_FINGERPRINT_LENGTH, sharedScanning.SCAN_FINGERPRINT_LENGTH);
+});
+
+test('a redacted scan payload is exactly what the shared schema accepts', () => {
+  // The box writes this object by hand in `scan.ts`, and `@oto/shared` is what
+  // the Console and any later reader parse it with. `.strict()` there means an
+  // extra field is a refusal, so this is the assertion that a field added on
+  // one side does not quietly start being dropped on the other.
+  const payload = {
+    source: 'box_hid',
+    codeKind: 'band',
+    codeFingerprint: scan.scanFingerprint('T1-01J8ZQ4F7K'),
+    codeLength: 13,
+    codePrefix: 'T1',
+    outcome: 'handled',
+    handler: 'bands',
+    errorCode: 'SOMETHING',
+    durationMs: 4,
+  };
+  assert.equal(sharedScanning.ScanEventPayloadSchema.safeParse(payload).success, true);
+});
+
+test('the staff token vocabularies match @oto/shared item for item', () => {
+  assert.equal(staffToken.STAFF_TOKEN_SCHEMA_VERSION, sharedStaffToken.STAFF_TOKEN_SCHEMA_VERSION);
+  assert.equal(staffToken.STAFF_TOKEN_ALGORITHM, sharedStaffToken.STAFF_TOKEN_ALGORITHM);
+  assert.equal(
+    staffToken.STAFF_OFFLINE_SIGN_IN_DAYS,
+    sharedStaffToken.STAFF_OFFLINE_SIGN_IN_DAYS,
+  );
+  assert.deepEqual(
+    { ...staffToken.STAFF_TOKEN_REFUSALS },
+    { ...sharedStaffToken.STAFF_TOKEN_REFUSALS },
+  );
+});
+
+test('the claims this package signs are exactly what the shared schema validates', () => {
+  // The api mints with `encodeStaffToken` from this package and the shape is
+  // declared in `@oto/shared`. If one grew a field the other did not, a token
+  // would be minted that the platform's own schema refuses — and the place
+  // that discovered it would be a locked till.
+  const claims = {
+    v: 1,
+    jti: '018f0000-0000-7000-8000-00000000a0d1',
+    sub: '018f0000-0000-7000-8000-0000000000a1',
+    aud: '018f0000-0000-7000-8000-0000000000b2',
+    sid: '018f0000-0000-7000-8000-0000000000e1',
+    sta: '018f0000-0000-7000-8000-0000000057a1',
+    box: '018f0000-0000-7000-8000-00000000b0c5',
+    iat: 1_758_000_000,
+    exp: 1_758_057_600,
+  };
+  assert.equal(sharedStaffToken.StaffTokenClaimsSchema.safeParse(claims).success, true);
+
+  const denyList = { revokedAccountIds: [], revokedTokenIds: [claims.jti] };
+  assert.equal(sharedStaffToken.StaffDenyListSchema.safeParse(denyList).success, true);
 });

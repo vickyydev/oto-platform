@@ -118,18 +118,26 @@ describe('the virtual box agent (S2-04)', () => {
     expect(row!.reachability).toBe('unreachable');
   });
 
-  it('runs a test print queued in the cloud and reports where it went', async () => {
+  /**
+   * S2-04 queued this command and answered it with a shape describing what
+   * WOULD have been printed. S2-06 replaced the placeholder with the real
+   * adapter, so the assertion moved with it: the command now reports the print
+   * job's id and its outcome, and paper — a PNG of exactly the dots the device
+   * was told to burn — is on the simulator.
+   */
+  it('runs a test print queued in the cloud and puts paper on the printer', async () => {
     const agent = await buildAgent();
     await agent.ensureRegistered();
     await agent.syncConfig();
 
     const till = agent.config()!.stations.find((s) => s.name === 'Reception Till 1')!;
+    const printer = till.devices.find((d) => d.role === 'receipt')!;
     const commandId = newId();
     await ctx.db.insert(boxCommand).values({
       id: commandId,
       boxId: agent.state.boxId!,
       kind: 'test_print',
-      payload: { stationId: till.id, role: 'receipt' },
+      payload: { stationId: till.id, role: 'receipt', kind: 'receipt' },
       actionId: 'act-testprint',
     });
 
@@ -139,13 +147,26 @@ describe('the virtual box agent (S2-04)', () => {
     expect(row!.state).toBe('succeeded');
     expect(row!.result).toMatchObject({
       stationId: till.id,
-      deviceLabel: 'Receipt Printer 1',
-      protocol: 'escpos',
-      simulated: true,
+      deviceId: printer.id,
+      role: 'receipt',
+      kind: 'receipt',
+      status: 'printed',
     });
+
+    const printouts = agent.printing()!.printouts(printer.id);
+    expect(printouts).toHaveLength(1);
+    expect(printouts[0]!.truncated).toBe(false);
+    expect(printouts[0]!.widthDots).toBe(576);
+    expect([...printouts[0]!.preview.subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
   });
 
-  it('fails a test print for a role no device is assigned to, by name', async () => {
+  /**
+   * A station with no band printer is a configuration somebody chose, not a
+   * machine that broke — so the box understood the command (succeeded) and the
+   * JOB is skipped with the reason. S2-04 answered `failed` here because there
+   * was no job to carry the outcome; now there is.
+   */
+  it('skips a test print for a role no device is assigned to, by name', async () => {
     const agent = await buildAgent();
     await agent.ensureRegistered();
     await agent.syncConfig();
@@ -156,13 +177,14 @@ describe('the virtual box agent (S2-04)', () => {
       id: commandId,
       boxId: agent.state.boxId!,
       kind: 'test_print',
-      payload: { stationId: booth.id, role: 'kids_band' },
+      payload: { stationId: booth.id, role: 'kids_band', kind: 'kids_wristband' },
     });
     await agent.runPendingCommands();
 
     const [row] = await ctx.db.select().from(boxCommand).where(eq(boxCommand.id, commandId)).limit(1);
-    expect(row!.state).toBe('failed');
+    expect(row!.state).toBe('succeeded');
     expect(row!.errorCode).toBe('NO_DEVICE_FOR_ROLE');
+    expect(row!.result).toMatchObject({ status: 'skipped', role: 'kids_band', deviceId: null });
   });
 
   it('adopts the new journal epoch a reset mints, rather than computing one', async () => {

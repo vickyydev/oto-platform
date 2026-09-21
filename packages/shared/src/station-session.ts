@@ -167,7 +167,7 @@ export type StationIntentRefusal = (typeof STATION_INTENT_REFUSALS)[number];
  * handles exactly one thing: a snapshot. `refused` exists because a rejection
  * has to reach the sender that caused it and nobody else.
  */
-export const STATION_CHANNEL_MESSAGES = ['snapshot', 'refused', 'lease', 'ping'] as const;
+export const STATION_CHANNEL_MESSAGES = ['snapshot', 'refused', 'lease', 'ping', 'scan'] as const;
 export type StationChannelMessageKind = (typeof STATION_CHANNEL_MESSAGES)[number];
 
 export interface StationSnapshotMessage {
@@ -210,8 +210,33 @@ export interface StationPingMessage {
   sequence: number;
 }
 
+/**
+ * A scan reached the station (S2-06).
+ *
+ * The screens are told what was scanned and what became of it, by fingerprint
+ * — the code itself stops at the box. `detail` is the registered handler's own
+ * answer ("member found", "band already admitted") and is the only part that
+ * can name anybody, so it is redacted for the customer view the same way the
+ * document is.
+ */
+export interface StationScanMessage {
+  kind: 'scan';
+  /** The hardware it came from: `box_hid`, `box_serial`, `camera`, `simulator`, … */
+  source: string;
+  codeKind: string;
+  /** SHA-256 of the code, first 16 hex characters. Never the code. */
+  codeFingerprint: string;
+  outcome: string;
+  handler: string | null;
+  errorCode: string | null;
+  detail: Record<string, unknown> | null;
+  actionId: string | null;
+  scannedAt: string;
+}
+
 export type StationChannelMessage =
   | StationSnapshotMessage
   | StationRefusedMessage
   | StationLeaseMessage
-  | StationPingMessage;
+  | StationPingMessage
+  | StationScanMessage;
