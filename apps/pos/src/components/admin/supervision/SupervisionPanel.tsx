@@ -5,7 +5,6 @@ import {
   ShieldCheck,
   AlertTriangle,
   Baby,
-  Info,
   Infinity as InfinityIcon,
   ClipboardCheck,
   ArrowUp,
@@ -20,6 +19,7 @@ import type {
   SiblingWaiver,
   ConfirmationItem,
 } from '@/types';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { TextInput, SelectInput } from '../discounts/fields';
 
 const REQUIREMENT_OPTIONS: { value: SupervisionRequirement; label: string }[] = [
@@ -199,6 +199,11 @@ export function SupervisionPanel() {
 
   return (
     <div className="flex flex-col gap-6">
+      <NotSavedNotice
+        mutators={['updateSupervisionPolicy']}
+        what="age bands, ratios and every supervision rule on this screen"
+      />
+
       {/* Age bands */}
       <section className="rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 sm:p-6">
         <div className="flex items-center gap-2">
@@ -496,12 +501,6 @@ export function SupervisionPanel() {
         </div>
       </section>
 
-      <p className="flex items-center gap-2 text-xs text-foreground/40">
-        <Info className="w-3.5 h-3.5 shrink-0" />
-        Changes save instantly to the shared store and are kept in memory for
-        this prototype (they reset on page reload). Enforcement in the booking
-        and door flows is wired up separately.
-      </p>
     </div>
   );
 }

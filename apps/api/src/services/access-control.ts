@@ -38,6 +38,19 @@ import {
  *     to deactivate an account, change its phone, issue it a temporary
  *     password or read its permissions, the caller must dominate the roles
  *     that account already holds.
+ *
+ * SCRUM-239 adds a fourth, which is not about privilege but about a door that
+ * only opens one way:
+ *
+ *  4. **No last-administrator lockout.** Access is handed out by an account
+ *     holding `admin:role:assign` at operator scope. Take the last one of
+ *     those away — by removing its assignment, or by deactivating the account
+ *     that holds it — and nobody inside the operator can grant it back: a
+ *     branch manager holds the same permission but only over their own
+ *     branch, and `loadTargetAccount` puts every other operator's
+ *     administrator behind a 404. So the removal is refused while it is still
+ *     a sentence on a screen, instead of being discovered by the person it
+ *     locked out.
  */
 
 export const accessErrors = {
@@ -53,6 +66,12 @@ export const accessErrors = {
     new AppError(403, 'SCOPE_NOT_OWNED', message),
   unknownRole: (name: string) =>
     new AppError(400, 'UNKNOWN_ROLE', `Unknown role ${name}`),
+  lastOperatorAdmin: () =>
+    new AppError(
+      409,
+      'LAST_OPERATOR_ADMIN',
+      'This is the only active account that can hand out access for this operator. Give somebody else an operator-wide administrator role first, then try again.',
+    ),
 };
 
 export interface AssignmentScope {
@@ -204,6 +223,74 @@ export async function assertDominatesAccount(
       throw accessErrors.roleNotDominated(permission);
     }
   }
+}
+
+/**
+ * The permission that decides who counts as an administrator for rule 4.
+ *
+ * Not `admin:account:create` — making accounts is no use if you cannot put a
+ * role on one — and not the `operator_admin` role by name, because an
+ * operator may define a role of its own that carries the same grant.
+ */
+export const OPERATOR_ADMIN_PERMISSION: Permission = 'admin:role:assign';
+
+interface AdminGrant {
+  assignmentId: string;
+  accountId: string;
+}
+
+/**
+ * Every live grant that can hand out access across this operator: an
+ * operator-scoped assignment (this operator's id, or platform-wide) of a role
+ * carrying `admin:role:assign`, held by an account that can sign in today.
+ *
+ * `status = 'active'` and nothing else. An `invited` account may never be
+ * claimed — a mistyped phone on the invitation is exactly how an operator
+ * ends up with an administrator who does not exist — so it is not counted as
+ * one; an `inactive` one cannot sign in at all.
+ */
+async function operatorAdminGrants(db: Db, operatorId: string): Promise<AdminGrant[]> {
+  const rows = await db
+    .select({ assignmentId: roleAssignment.id, accountId: roleAssignment.accountId })
+    .from(roleAssignment)
+    .innerJoin(account, eq(account.id, roleAssignment.accountId))
+    .innerJoin(rolePermission, eq(rolePermission.roleId, roleAssignment.roleId))
+    .where(
+      and(
+        eq(account.operatorId, operatorId),
+        eq(account.status, 'active'),
+        eq(roleAssignment.scopeType, 'operator'),
+        or(isNull(roleAssignment.scopeId), eq(roleAssignment.scopeId, operatorId)),
+        eq(rolePermission.permission, OPERATOR_ADMIN_PERMISSION),
+      ),
+    );
+  // One row per permission on the role, so the same assignment arrives many
+  // times over; the count that matters is of assignments, not of rows.
+  const seen = new Map<string, AdminGrant>();
+  for (const r of rows) seen.set(r.assignmentId, r);
+  return [...seen.values()];
+}
+
+/**
+ * Rule 4 — refuse a change that would leave the operator with no active
+ * account able to grant access.
+ *
+ * `losing.assignmentId` is the assignment about to be deleted; without it the
+ * whole account is about to be deactivated and every grant it holds goes with
+ * it. A change that takes none of these grants away is not this rule's
+ * business and returns at once.
+ */
+export async function assertNotLastOperatorAdmin(
+  db: Db,
+  operatorId: string,
+  losing: { accountId: string; assignmentId?: string },
+): Promise<void> {
+  const grants = await operatorAdminGrants(db, operatorId);
+  const surviving = grants.filter((g) =>
+    losing.assignmentId ? g.assignmentId !== losing.assignmentId : g.accountId !== losing.accountId,
+  );
+  if (surviving.length === grants.length) return;
+  if (surviving.length === 0) throw accessErrors.lastOperatorAdmin();
 }
 
 /** Convenience for routes: caller's own effective permissions. */

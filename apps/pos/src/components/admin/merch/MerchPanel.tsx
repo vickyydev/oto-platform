@@ -15,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { MerchItemForm } from './MerchItemForm';
 import { formatPrice } from '../menu/menuItem';
 import { formatWWPrice } from '@/lib/pricingMode';
@@ -80,6 +81,11 @@ export function MerchPanel() {
 
   return (
     <div className="flex flex-col gap-4">
+      <NotSavedNotice
+        mutators={['upsertMerchItem', 'deleteMerchItem', 'adjustMerchStock']}
+        what="retail items, their prices, costs and stock counts"
+      />
+
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-foreground/50">
           {merchItems.length} {merchItems.length === 1 ? 'item' : 'items'}
@@ -189,7 +195,7 @@ export function MerchPanel() {
 
       <p className="flex items-center gap-2 text-xs text-foreground/40">
         <Info className="w-3.5 h-3.5 shrink-0" />
-        Stock levels are managed in the Inventory panel. Changes here are in-memory and reset on reload.
+        Stock levels are managed in the Inventory panel.
       </p>
 
       <MerchItemForm

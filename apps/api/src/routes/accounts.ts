@@ -12,6 +12,7 @@ import { deliverCode, invalidateAllSessions, mintCode, type PendingCode } from '
 import { resolveEffectivePermissions } from '../services/permissions';
 import {
   assertDominatesAccount,
+  assertNotLastOperatorAdmin,
   assertRoleDominated,
   assertScopeOwned,
   loadRoleForOperator,
@@ -257,6 +258,13 @@ export async function accountRoutes(app: App): Promise<void> {
         before.roleId,
         { scopeType: before.scopeType, scopeId: before.scopeId },
       );
+      // And it must not be the grant the operator's remaining access hangs
+      // off — removing a role is the half of SCRUM-239 that already worked,
+      // and it worked all the way to a locked-out operator.
+      await assertNotLastOperatorAdmin(app.db, auth.operatorId, {
+        accountId: req.params.id,
+        assignmentId: req.params.assignmentId,
+      });
       return withTx(app.db, opCtx(req), 'role_assignment.delete', async (tx) => {
         await tx.delete(roleAssignment).where(eq(roleAssignment.id, req.params.assignmentId));
         await audit.record(tx, {
@@ -295,6 +303,11 @@ export async function accountRoutes(app: App): Promise<void> {
         auth.operatorId,
         req.params.id,
       );
+      // Deactivation takes every grant the account holds with it, so it can
+      // empty the operator's administrator set exactly as a removal can.
+      if (req.body.status === 'inactive') {
+        await assertNotLastOperatorAdmin(app.db, auth.operatorId, { accountId: req.params.id });
+      }
       const patch: Partial<typeof account.$inferInsert> = {};
       if (req.body.status) patch.status = req.body.status;
       if (req.body.phone) {

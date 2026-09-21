@@ -39,6 +39,17 @@ interface OperatorContextValue {
   /** Re-enter the password to unlock the SAME session. */
   unlock: (password: string) => Promise<void>;
   /**
+   * This account is on a temporary password (SCRUM-235). The API refuses every
+   * guarded route with MUST_CHANGE_PASSWORD until it is replaced, so the till
+   * has nothing to show but the form that replaces it.
+   */
+  mustChangePassword: boolean;
+  /**
+   * Replace the password and re-hydrate the session. Resolves once the till is
+   * open for business, so the caller can stop showing the form.
+   */
+  changePassword: (current: string, next: string) => Promise<void>;
+  /**
    * Set when the last unlock was decided by the BOX rather than the platform
    * (S2-06): which rule allowed it, and how old the copy of the staff list
    * was. Null on an ordinary unlock, and cleared on the next online one.
@@ -157,6 +168,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [sessionResolved, setSessionResolved] = useState(false);
   const [handoffError, setHandoffError] = useState<string | null>(null);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   const [, setStaffTheme] = useStaffTheme();
   const [, setCustomerTheme] = useCustomerTheme();
@@ -182,6 +194,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setLocked(false);
     setOperator(null);
     setHeld(new Set());
+    setMustChangePassword(false);
     setOfflineUnlock(null);
     /**
      * And the shift token (S2-06). The server revokes it too — that is what
@@ -224,31 +237,64 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     [setStaffTheme, setCustomerTheme],
   );
 
+  /**
+   * Read who this session is and what it may do, and put it into state.
+   *
+   * Shared by sign-in, the on-mount resume and the forced password change
+   * (SCRUM-235), because all three have to leave the till in the same
+   * condition — and a temp-password account reaches two of them. `/me` and
+   * `/me/permissions` are the routes the API exempts from the
+   * MUST_CHANGE_PASSWORD refusal, so they answer for such an account; the
+   * catalog load does not, which is why its failure has never been fatal here.
+   */
+  const hydrate = useCallback(async (): Promise<{ operator: Operator; sessionLocked: boolean }> => {
+    const me = await authApi.me();
+    const { permissions } = await authApi.permissions();
+    // Manager gating mirrors the prototype's role flag: any admin-side
+    // permission beyond branch reads marks the operator as manager.
+    const isManager = permissions.some(
+      (p) => p.permission.startsWith('admin:') && p.permission !== 'admin:branch:read',
+    );
+    const op = toOperator(me, isManager);
+    // Hydrate branches + wired catalog collections from the API before the
+    // till renders, so pricing/packages come from the database.
+    await loadCatalogFromApi(me.branch?.code).catch(() => {
+      // Catalog load failing must not block the lock screen → surfaced by panels.
+    });
+    setHeld(new Set(permissions.map((p) => p.permission)));
+    setMustChangePassword(me.account.mustChangePassword);
+    setOperator(op);
+    applyThemePrefs(op.id);
+    return { operator: op, sessionLocked: me.sessionLocked };
+  }, [applyThemePrefs]);
+
   const signIn = useCallback(
     async (phone: string, password: string): Promise<Operator> => {
       // Signing in by hand answers the hand-off notice, whatever it said.
       setHandoffError(null);
       await authApi.signIn(phone, password);
-      const me = await authApi.me();
-      const { permissions } = await authApi.permissions();
-      // Manager gating mirrors the prototype's role flag: any admin-side
-      // permission beyond branch reads marks the operator as manager.
-      const isManager = permissions.some(
-        (p) => p.permission.startsWith('admin:') && p.permission !== 'admin:branch:read',
-      );
-      const op = toOperator(me, isManager);
-      // Hydrate branches + wired catalog collections from the API before the
-      // till renders, so pricing/packages come from the database.
-      await loadCatalogFromApi(me.branch?.code).catch(() => {
-        // Catalog load failing must not block the lock screen → surfaced by panels.
-      });
-      setHeld(new Set(permissions.map((p) => p.permission)));
-      setOperator(op);
+      const { operator: op } = await hydrate();
       setLocked(false);
-      applyThemePrefs(op.id);
       return op;
     },
-    [applyThemePrefs],
+    [hydrate],
+  );
+
+  /**
+   * Replace a temporary password from inside the till (SCRUM-235).
+   *
+   * `POST /auth/change-password` is on the API's exempt list, so it is
+   * reachable by exactly the account that is otherwise refused everywhere.
+   * Re-hydrating afterwards is what clears `mustChangePassword` and lets the
+   * station picker open — the flag is the account's, so it is re-read from the
+   * server rather than assumed from a 200.
+   */
+  const changePassword = useCallback(
+    async (current: string, next: string): Promise<void> => {
+      await authApi.changePassword(current, next);
+      await hydrate();
+    },
+    [hydrate],
   );
 
   /**
@@ -334,20 +380,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       const refusal = handoffArrival ? await handoffArrival : null;
       if (cancelled) return;
       try {
-        const me = await authApi.me();
-        const { permissions } = await authApi.permissions();
+        const { sessionLocked } = await hydrate();
         if (cancelled) return;
-        const isManager = permissions.some(
-          (p) => p.permission.startsWith('admin:') && p.permission !== 'admin:branch:read',
-        );
-        await loadCatalogFromApi(me.branch?.code).catch(() => {});
-        if (cancelled) return;
-        const op = toOperator(me, isManager);
-        setHeld(new Set(permissions.map((p) => p.permission)));
-        setOperator(op);
         // A reload inside a locked session comes back locked.
-        setLocked(me.sessionLocked);
-        applyThemePrefs(op.id);
+        setLocked(sessionLocked);
       } catch {
         // Not signed in. When a refused hand-off is the reason, the lock
         // screen says so rather than leaving the operator to guess.
@@ -359,7 +395,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [applyThemePrefs]);
+  }, [hydrate]);
 
   // While signed in and unlocked, listen for activity and reset the timer.
   // A locked till must NOT re-arm on touch: tapping the lock screen is not a
@@ -391,6 +427,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       setLocked(false);
       setOperator(null);
       setHeld(new Set());
+      setMustChangePassword(false);
     };
     window.addEventListener('oto:unauthorized', onUnauthorized);
     return () => window.removeEventListener('oto:unauthorized', onUnauthorized);
@@ -410,6 +447,8 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
       value={{
         operator,
         locked,
+        mustChangePassword,
+        changePassword,
         signIn,
         unlock,
         offlineUnlock,

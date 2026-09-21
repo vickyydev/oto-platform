@@ -186,6 +186,58 @@ describe('route guards (S2-01b)', () => {
     }
   });
 
+  /**
+   * The declared guard is not always the guard.
+   *
+   * `config: { permission }` installs a preHandler, so declaring it IS the
+   * guard. `dynamicPermission: true` installs nothing — it says "the handler
+   * asks, because the permission depends on the request" — and forty routes
+   * declare it. Nothing above checks that any of them actually asks. That is
+   * the same shape of hole `credential` had before the box test below was
+   * widened: a label that reads as protection and enforces nothing, which the
+   * next route to declare it and forget would inherit.
+   *
+   * Authentication is not global here — `sessionPlugin` loads `req.auth` and
+   * leaves it to the handler to call `requireAuth()` — so a handler that never
+   * asks runs for a caller with no cookie at all. Every guarded route refuses
+   * one before it does any work: 401 from `requireAuth`, or 400 where a body
+   * schema is validated first.
+   *
+   * **What this does not cover.** On a route with a body schema, validation
+   * runs before the handler, so an unguarded one would answer 400 here and
+   * pass. The 400s are therefore an admission, not a result: what this pins is
+   * that no route answers an anonymous caller with a 2xx, or reaches a lookup
+   * and answers 404.
+   */
+  it('no route answers an anonymous caller', async () => {
+    const reachable = ctx.app.routeRegistry.filter(
+      (r) =>
+        !NOT_OURS.has(r.url) &&
+        r.method !== 'HEAD' &&
+        r.method !== 'OPTIONS' &&
+        !r.config.public &&
+        !r.config.credential,
+    );
+    expect(reachable.length).toBeGreaterThan(40);
+
+    const answered: string[] = [];
+    for (const route of reachable) {
+      const url = route.url.replace(/:[A-Za-z]+/g, '00000000-0000-7000-8000-000000000000');
+      const res = await ctx.app.inject({
+        method: route.method as 'GET',
+        url,
+        ...(route.method === 'GET' || route.method === 'DELETE' ? {} : { payload: {} as never }),
+      });
+      if (![400, 401].includes(res.statusCode)) {
+        answered.push(`${route.method} ${route.url} → ${res.statusCode}`);
+      }
+    }
+    expect(
+      answered,
+      'these routes did something for a caller with no session — a handler that never calls requireAuth/requirePermission',
+    ).toEqual([]);
+  });
+
   it('refuses a route registered without a guard', async () => {
     // The check itself, run against a deliberately bad route.
     const registry = [

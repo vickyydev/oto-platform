@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   KeyRound,
+  Pencil,
   Plus,
   Search,
   ShieldAlert,
@@ -41,7 +42,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { toast } from '@/hooks/use-toast';
-import { adminApi } from '@/api/platform';
+import { adminApi, authApi } from '@/api/platform';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { AccountAppsDialog } from './AccountAppsDialog';
 
@@ -59,6 +60,13 @@ import { AccountAppsDialog } from './AccountAppsDialog';
  * S2-17a adds the app side: the suite's other apps hold users of their own, and
  * an account needs both the permission and an identity in the app before a tile
  * opens onto anything. AccountAppsDialog is where those are linked.
+ *
+ * SCRUM-239 closes two one-way doors this panel had. A role could be removed
+ * here and granted nowhere: the invite dialog chose roles once, and the
+ * permissions drawer offered Remove and nothing else, so stripping an
+ * account's last role left it with no access and no screen able to give any
+ * back. And a phone could be mistyped on an invitation and never corrected —
+ * the route has always accepted one, this panel only ever sent `status`.
  */
 type AccountRow = {
   id: string;
@@ -91,11 +99,26 @@ const when = (iso: string): string =>
 
 const ROLES = ['reception', 'staff', 'branch_manager', 'operator_admin'] as const;
 
+/**
+ * Where a role applies, as one value a `<select>` can hold.
+ *
+ * `operator` is this operator and everything under it. `platform` is the
+ * operator scope with a NULL id, which the API reads as every operator there
+ * is — a different and much larger thing, offered only to somebody who
+ * already holds it. The two were conflated here: an operator_admin invited
+ * from this panel was sent `scopeId: null` and became an administrator of the
+ * whole platform, and a caller who was not platform-wide had the invitation
+ * refused outright (SCOPE_NOT_OWNED).
+ */
+type ScopeKey = 'operator' | 'platform' | `branch:${string}`;
+
 export function LoginUsersPanel() {
   const { branches } = useCatalogStore();
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
+  /** This session's own operator and reach — what scopes it may hand out. */
+  const [me, setMe] = useState<{ operatorId: string; isPlatformAdmin: boolean } | null>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -111,10 +134,26 @@ export function LoginUsersPanel() {
     | null
   >(null);
 
+  /**
+   * A temporary password that has just been issued, and whether the manager
+   * has asked to see it. Held here rather than rendered on arrival, so the
+   * credential is on screen only while somebody is deliberately reading it.
+   */
+  const [issued, setIssued] = useState<{ account: AccountRow; password: string } | null>(null);
+  const [issuedVisible, setIssuedVisible] = useState(false);
+
   const [appsFor, setAppsFor] = useState<AccountRow | null>(null);
   const [sessionsFor, setSessionsFor] = useState<AccountRow | null>(null);
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [denials, setDenials] = useState<DenialRow[]>([]);
+
+  /** Correcting a mistyped phone (SCRUM-239). */
+  const [phoneFor, setPhoneFor] = useState<AccountRow | null>(null);
+  const [newPhoneValue, setNewPhoneValue] = useState('');
+
+  /** Granting a role back from the permissions drawer (SCRUM-239). */
+  const [addRole, setAddRole] = useState<(typeof ROLES)[number]>('reception');
+  const [addScope, setAddScope] = useState<ScopeKey>('operator');
 
   const [permsFor, setPermsFor] = useState<AccountRow | null>(null);
   const [perms, setPerms] = useState<{
@@ -141,20 +180,55 @@ export function LoginUsersPanel() {
   useEffect(() => {
     void refresh('');
     void refreshDenials();
+    void authApi
+      .me()
+      .then((r) => setMe({ operatorId: r.account.operatorId, isPlatformAdmin: r.isPlatformAdmin }))
+      .catch(apiFail("Couldn't read this session"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const serverBranches = branches.filter((b) => b.apiId);
+
+  /**
+   * The scopes this session may grant, in the order they widen. Platform-wide
+   * is absent unless the caller holds it — the API refuses it either way, and
+   * an option that always fails is worse than no option.
+   */
+  const scopeOptions: Array<{ key: ScopeKey; label: string }> = [
+    ...serverBranches.map((b) => ({ key: `branch:${b.apiId!}` as ScopeKey, label: `Branch — ${b.name}` })),
+    { key: 'operator', label: 'Operator-wide (all branches)' },
+    ...(me?.isPlatformAdmin ? [{ key: 'platform' as ScopeKey, label: 'Platform-wide (every operator)' }] : []),
+  ];
+
+  /**
+   * The API's `{ scopeType, scopeId }` for a picked scope, or null while this
+   * session's own operator is still loading.
+   *
+   * Null rather than a fallback on purpose: the only fallback available for
+   * an operator-wide grant is a null scopeId, and that is the platform-wide
+   * scope. A missing id must stop the request, never widen it.
+   */
+  const scopeFromKey = (key: ScopeKey): { scopeType: string; scopeId: string | null } | null => {
+    if (key === 'platform') return { scopeType: 'operator', scopeId: null };
+    if (key === 'operator') return me ? { scopeType: 'operator', scopeId: me.operatorId } : null;
+    return { scopeType: 'branch', scopeId: key.slice('branch:'.length) };
+  };
 
   const create = async () => {
     if (busy || !newPhone.trim() || !newName.trim()) return;
     setBusy(true);
     try {
       const branch = serverBranches.find((b) => b.id === newBranch) ?? serverBranches[0];
-      const scope =
-        newRole === 'operator_admin'
-          ? { scopeType: 'operator', scopeId: null }
-          : { scopeType: 'branch', scopeId: branch?.apiId ?? null };
+      // An operator administrator administers THIS operator. It was being
+      // invited with a null scopeId, which is the platform-wide scope — every
+      // operator on the deployment (SCRUM-239).
+      const scope = newRole === 'operator_admin' ? scopeFromKey('operator') : scopeFromKey(`branch:${branch?.apiId ?? ''}`);
+      if (!scope) {
+        apiFail("Couldn't create the account")(
+          new Error('Still reading which operator this session belongs to. Try again in a moment.'),
+        );
+        return;
+      }
       const res = await adminApi.createAccount({
         phone: newPhone,
         employeeName: newName.trim(),
@@ -190,16 +264,22 @@ export function LoginUsersPanel() {
       .then(() => refresh())
       .catch(apiFail("Couldn't update the account"));
 
+  /**
+   * Issue a temporary password and hold it for a deliberate reveal (SCRUM-235).
+   *
+   * It used to be the description of a toast: a working credential for
+   * somebody else's account, rendered into the DOM of a shared counter screen
+   * for twenty seconds, whether or not the manager was alone. Nobody chose to
+   * show it — it just appeared, and stayed for anyone walking past.
+   *
+   * Now it is kept in state, the dialog shows dots until the manager presses
+   * Show, and closing the dialog drops it. The account it belongs to is named
+   * so two issued in a row cannot be confused.
+   */
   const tempPassword = (a: AccountRow) =>
     adminApi
       .tempPassword(a.id)
-      .then((r) =>
-        toast({
-          title: `Temporary password for ${a.employee?.name ?? a.phone}`,
-          description: `${r.temporaryPassword} — works until they set their own; a change is forced at next sign-in.`,
-          duration: 20000,
-        }),
-      )
+      .then((r) => setIssued({ account: a, password: r.temporaryPassword }))
       .catch(apiFail("Couldn't issue a temporary password"));
 
   const showPerms = (a: AccountRow) => {
@@ -209,6 +289,55 @@ export function LoginUsersPanel() {
       .accountPermissions(a.id)
       .then(setPerms)
       .catch(apiFail("Couldn't load permissions"));
+  };
+
+  /**
+   * Give a role back (SCRUM-239). The API decides whether this session may:
+   * it must already hold every permission the role carries, at a scope that
+   * covers the one being granted, so the refusal is the authority and its
+   * message is what the screen shows.
+   */
+  const grantRole = async () => {
+    if (!permsFor || busy) return;
+    const scope = scopeFromKey(addScope);
+    if (!scope) return;
+    setBusy(true);
+    try {
+      await adminApi.assignRole(permsFor.id, { roleName: addRole, ...scope });
+      showPerms(permsFor);
+      toast({
+        title: 'Role assigned',
+        description: `${addRole} — ${scopeLabel(scope.scopeType, scope.scopeId)}. It applies the next time they load a screen.`,
+      });
+    } catch (err) {
+      apiFail("Couldn't assign the role")(err);
+      void refreshDenials();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * Correct a phone (SCRUM-239). It is the account's only sign-in credential
+   * and the address the setup code goes to, so a mistyped one on an invite
+   * used to be permanent.
+   */
+  const savePhone = async () => {
+    if (!phoneFor || !newPhoneValue.trim() || busy) return;
+    setBusy(true);
+    try {
+      await adminApi.updateAccount(phoneFor.id, { phone: newPhoneValue.trim() });
+      toast({
+        title: 'Phone updated',
+        description: 'They sign in with the new number from now on. A setup code already sent to the old one is dead.',
+      });
+      setPhoneFor(null);
+      await refresh();
+    } catch (err) {
+      apiFail("Couldn't change the phone")(err);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const showSessions = (a: AccountRow) => {
@@ -297,6 +426,17 @@ export function LoginUsersPanel() {
                   <div className="flex items-center justify-end gap-1.5">
                     <Button variant="ghost" size="sm" title="Effective permissions" onClick={() => showPerms(a)}>
                       <ShieldCheck className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Change phone"
+                      onClick={() => {
+                        setPhoneFor(a);
+                        setNewPhoneValue(a.phone);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="sm" title="Apps" onClick={() => setAppsFor(a)}>
                       <LayoutGrid className="w-4 h-4" />
@@ -439,9 +579,38 @@ export function LoginUsersPanel() {
                 </select>
               </div>
             </div>
-            <Button className="mt-2" onClick={() => void create()} disabled={busy || !newName.trim() || !newPhone.trim()}>
+            <Button
+              className="mt-2"
+              onClick={() => void create()}
+              disabled={busy || !me || !newName.trim() || !newPhone.trim()}
+            >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               Create & send invite
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change phone (SCRUM-239) */}
+      <Dialog open={phoneFor !== null} onOpenChange={(o) => !busy && !o && setPhoneFor(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change phone — {phoneFor?.employee?.name ?? phoneFor?.phone}</DialogTitle>
+            <DialogDescription>
+              This is the number they sign in with and the number setup and reset codes are sent
+              to. Changing it does not sign them out.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <label className="text-sm font-semibold text-foreground/60">Phone</label>
+            <PhoneInput value={newPhoneValue} onChange={setNewPhoneValue} />
+            <Button
+              className="mt-2"
+              onClick={() => void savePhone()}
+              disabled={busy || !newPhoneValue.trim() || newPhoneValue.trim() === phoneFor?.phone}
+            >
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
+              Save phone
             </Button>
           </div>
         </DialogContent>
@@ -491,6 +660,45 @@ export function LoginUsersPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* The temporary password, shown only when asked for (SCRUM-235) */}
+      <Dialog
+        open={issued !== null}
+        onOpenChange={(open) => {
+          if (open) return;
+          setIssued(null);
+          setIssuedVisible(false);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Temporary password for {issued?.account.employee?.name ?? issued?.account.phone}
+            </DialogTitle>
+            <DialogDescription>
+              It works once, and the till asks them to choose their own before it opens. Read it to
+              them rather than leaving this on screen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-3">
+            <code className="flex-1 rounded-xl bg-foreground/5 px-4 py-3 font-mono text-lg tracking-widest">
+              {issuedVisible ? issued?.password : '••••••••'}
+            </code>
+            <Button variant="secondary" onClick={() => setIssuedVisible((v) => !v)}>
+              {issuedVisible ? 'Hide' : 'Show'}
+            </Button>
+          </div>
+          <Button
+            className="mt-2"
+            onClick={() => {
+              setIssued(null);
+              setIssuedVisible(false);
+            }}
+          >
+            Done
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* Apps this account is linked to (S2-17a) */}
       <AccountAppsDialog
@@ -598,8 +806,46 @@ export function LoginUsersPanel() {
                     </div>
                   ))}
                   {perms.assignments.length === 0 && (
-                    <p className="text-sm text-foreground/50">No roles assigned.</p>
+                    <p className="text-sm text-foreground/50">
+                      No roles assigned — this account can sign in and reach nothing. Give it one
+                      below.
+                    </p>
                   )}
+                </div>
+                {/* Add a role back (SCRUM-239) */}
+                <div className="mt-3 flex items-end gap-2 rounded-lg border border-dashed border-foreground/15 p-3">
+                  <div className="flex-1">
+                    <label className="text-xs font-semibold text-foreground/60">Role</label>
+                    <select
+                      value={addRole}
+                      onChange={(e) => setAddRole(e.target.value as (typeof ROLES)[number])}
+                      className="mt-1 w-full h-9 rounded-lg border border-input bg-background px-2 text-sm"
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs font-semibold text-foreground/60">Scope</label>
+                    <select
+                      value={addScope}
+                      onChange={(e) => setAddScope(e.target.value as ScopeKey)}
+                      className="mt-1 w-full h-9 rounded-lg border border-input bg-background px-2 text-sm"
+                    >
+                      {scopeOptions.map((s) => (
+                        <option key={s.key} value={s.key}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button size="sm" className="h-9" onClick={() => void grantRole()} disabled={busy || !me}>
+                    {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Add
+                  </Button>
                 </div>
               </div>
               <div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Plus, Info } from 'lucide-react';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 import { AddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import { formatWWPrice } from '@/lib/pricingMode';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
@@ -22,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { AddOnFormDialog } from './AddOnFormDialog';
 
 const formatPrice = formatWWPrice;
@@ -55,6 +56,8 @@ export function AddOnsPanel() {
 
   return (
     <div className="flex flex-col gap-4">
+      <NotSavedNotice mutators={['upsertAddOn', 'deleteAddOn']} what="add-ons and their prices" />
+
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-foreground/50">
           {addOns.length} {addOns.length === 1 ? 'add-on' : 'add-ons'}
@@ -151,10 +154,6 @@ export function AddOnsPanel() {
         </>
       )}
 
-      <p className="flex items-center gap-2 text-xs text-foreground/40">
-        <Info className="w-3.5 h-3.5 shrink-0" />
-        Changes are kept in memory for this prototype and reset on page reload.
-      </p>
 
       <AddOnFormDialog
         open={formOpen}

@@ -22,6 +22,7 @@ import { StationPicker } from "@/components/station/StationPicker";
 import { CatalogStoreProvider } from "@/store/CatalogStoreContext";
 import { BranchProvider } from "@/branch/BranchContext";
 import { LockScreen } from "@/components/auth/LockScreen";
+import { ChangePasswordScreen } from "@/components/auth/ChangePasswordScreen";
 import { InactivityWarning } from "@/components/auth/InactivityWarning";
 import { MobileShell } from "@/components/mobile/MobileShell";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -63,7 +64,7 @@ function Router() {
 // On narrow phone viewports (< 768 px) the MobileShell is rendered in place of
 // the standard iPad Router — same provider tree, additive only.
 function AuthGate() {
-  const { operator, locked, sessionResolved } = useOperator();
+  const { operator, locked, sessionResolved, mustChangePassword } = useOperator();
   const { station, fleetAvailable, resolved: stationResolved } = useStation();
   const [location] = useLocation();
   const isMobile = useIsMobile();
@@ -80,6 +81,11 @@ function AuthGate() {
   // Signed out → sign in. Signed in but locked → unlock the same session
   // with the password (S2-01a); the shift is not ended by inactivity.
   if (!operator || locked) return <LockScreen />;
+  // A temporary password opens the door and nothing else: the API refuses the
+  // station list and everything behind it until it is replaced (SCRUM-235).
+  // The form goes BEFORE the station question, because the station question is
+  // one of the things being refused.
+  if (mustChangePassword) return <ChangePasswordScreen />;
   // The same wait again for the station question: a till that showed the
   // picker and then took it away half a second later, because this deployment
   // turns out to have no fleet, would be worse than a moment of nothing.

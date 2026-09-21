@@ -129,7 +129,14 @@ export function ticketTypeToApiBody(t: TicketType): Record<string, unknown> {
 
 /** API branch → prototype Branch (id stays the slug so mock catalogs keep working). */
 export function apiBranchToBranch(br: ApiBranch): Branch {
-  return { id: br.code, name: br.name, country: br.country ?? undefined, active: !br.archived, apiId: br.id };
+  return {
+    id: br.code,
+    name: br.name,
+    country: br.country ?? undefined,
+    timezone: br.timezone,
+    active: !br.archived,
+    apiId: br.id,
+  };
 }
 
 export function holidayToPricingOverride(h: { id: string; name: string; startsOn: string; endsOn: string }): PricingOverride {

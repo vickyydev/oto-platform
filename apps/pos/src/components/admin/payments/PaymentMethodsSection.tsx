@@ -5,6 +5,7 @@ import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { countTransactionsUsingPaymentMethod } from '@/mockApi';
 import type { PaymentMethod, PaymentMethodKind } from '@/types';
 import { paymentMethodIcon, normalizePaymentMethod } from '@/lib/payments';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { TextInput } from '../discounts/fields';
 
 const KIND_OPTIONS: { value: PaymentMethodKind; label: string }[] = [
@@ -78,6 +79,13 @@ export function PaymentMethodsSection() {
 
   return (
     <section className="rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 sm:p-6">
+      <div className="mb-5">
+        <NotSavedNotice
+          mutators={['upsertPaymentMethod', 'deletePaymentMethod']}
+          what="the tender list, its order and which methods are enabled"
+        />
+      </div>
+
       <div>
         <h2 className="text-lg font-bold">Payment methods</h2>
         <p className="text-sm text-foreground/50">

@@ -4,6 +4,7 @@ import { InventoryItem, InventoryVariant, MerchItem, AddOn, MenuItem } from '@/t
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { InventoryItemFormDialog } from './InventoryItemFormDialog';
 import { StockAdjustModal } from './StockAdjustModal';
 import { StockLocationsPanel } from './StockLocationsPanel';
@@ -169,6 +170,16 @@ export function InventoryPanel() {
 
   return (
     <div className="flex flex-col gap-6">
+      <NotSavedNotice
+        mutators={[
+          'upsertInventoryItem',
+          'deleteInventoryItem',
+          'upsertStockLocation',
+          'commitStockTakeCorrection',
+        ]}
+        what="items, variants, locations, counts and every adjustment made here"
+      />
+
       {/* Tab strip */}
       <div className="flex gap-1 border-b border-foreground/10 -mb-2">
         <TabButton active={tab === 'items'} onClick={() => setTab('items')}>
@@ -257,9 +268,13 @@ export function InventoryPanel() {
             </section>
           )}
 
+          {/* Sale decrements, refund restores and the operator stamp on an
+              adjustment all happen in the in-memory store and nowhere else, so
+              this says "within this session" rather than claiming a ledger. */}
           <p className="text-xs text-foreground/35">
-            Sale decrements and refund restores happen automatically. Use "Adjust" for
-            receive, shrinkage, or recount corrections — these are stamped with your operator ID.
+            Use "Adjust" for receive, shrinkage, or recount corrections. Within this
+            session, sale decrements and refund restores follow automatically and each
+            adjustment carries the operator who made it.
           </p>
         </>
       )}

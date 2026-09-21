@@ -20,6 +20,7 @@ import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { formatDiscountTargetLabel } from '@/lib/discountTarget';
 import { formatWWPrice } from '@/lib/pricingMode';
 import { Field, TextInput, SelectInput } from './fields';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { DiscountTargetPicker } from './DiscountTargetPicker';
 import { downloadDiscountQr } from './qrDownload';
 
@@ -200,6 +201,13 @@ export function DiscountCodesSection() {
 
   return (
     <section className="rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 sm:p-6">
+      <div className="mb-5">
+        <NotSavedNotice
+          mutators={['upsertDiscount', 'deleteDiscount']}
+          what="promo codes, their validity windows, caps and usage counts"
+        />
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold">Discount codes</h2>

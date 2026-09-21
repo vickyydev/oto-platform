@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Plus, Info, SlidersHorizontal } from 'lucide-react';
+import { Pencil, Trash2, Plus, SlidersHorizontal } from 'lucide-react';
 import { type MenuItem, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { MenuItemForm } from './MenuItemForm';
 import { formatPrice } from './menuItem';
 import { formatWWPrice } from '@/lib/pricingMode';
@@ -51,6 +52,11 @@ export function MenuPanel() {
 
   return (
     <div className="flex flex-col gap-4">
+      <NotSavedNotice
+        mutators={['upsertMenuItem', 'deleteMenuItem']}
+        what="menu items, their prices and their categories"
+      />
+
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-foreground/50">
           {menuItems.length} {menuItems.length === 1 ? 'item' : 'items'}
@@ -135,11 +141,6 @@ export function MenuPanel() {
           })}
         </div>
       )}
-
-      <p className="flex items-center gap-2 text-xs text-foreground/40">
-        <Info className="w-3.5 h-3.5 shrink-0" />
-        Changes are kept in memory for this prototype and reset on page reload.
-      </p>
 
       <MenuItemForm
         open={formOpen}

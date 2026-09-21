@@ -6,6 +6,7 @@ import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { useStation } from '@/station/StationContext';
 import { printApi } from '@/api/platform';
 import { ApiError } from '@/api/client';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { Field, TextInput } from '../discounts/fields';
 import { PrintTemplatePreview } from './PrintTemplatePreview';
 import { APPLICABLE_FIELDS, FIELD_META, TEMPLATE_TYPE_META } from './templateFields';
@@ -121,6 +122,18 @@ export function TemplateEditor({
           <p className="truncate text-sm text-foreground/50">{meta.blurb}</p>
         </div>
       </div>
+
+      {/* A template row that did not come from the platform can only be edited
+          in memory — the same editor, a different Save. Say which one this is
+          before the person fills the form in. */}
+      {!live && (
+        <div className="mt-4">
+          <NotSavedNotice
+            mutators={['upsertPrintTemplate']}
+            what="this built-in template, which the platform does not hold"
+          />
+        </div>
+      )}
 
       <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
         {/* Form */}

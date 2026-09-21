@@ -1,27 +1,10 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { Menu, X, ArrowLeft, ShieldCheck, ChevronDown } from 'lucide-react';
-import { adminNav, panelGroupMap, type AdminNavEntry } from './adminSections';
+import { adminNav, panelGroupMap, visibleNavFor } from './adminSections';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { countRestockAlerts } from '@/lib/inventory';
 import { useOperator } from '@/auth/OperatorContext';
-
-/** Drops manager-only groups/panels for a non-manager operator. Staff never
- *  see the Reporting nav at all — the till has no separate admin login, so
- *  this is the single gate for the manager-only Reports module. */
-function visibleNavFor(isManager: boolean): AdminNavEntry[] {
-  if (isManager) return adminNav;
-  return adminNav.reduce<AdminNavEntry[]>((acc, entry) => {
-    if (entry.kind === 'panel') {
-      if (!entry.panel.managerOnly) acc.push(entry);
-      return acc;
-    }
-    if (entry.managerOnly) return acc;
-    const panels = entry.panels.filter((p) => !p.managerOnly);
-    if (panels.length > 0) acc.push({ ...entry, panels });
-    return acc;
-  }, []);
-}
 
 interface AdminLayoutProps {
   activeId: string;
@@ -51,8 +34,8 @@ export function AdminLayout({ activeId, onSelect, children }: AdminLayoutProps) 
   );
   const { inventory } = useCatalogStore();
   const restockCount = countRestockAlerts(inventory);
-  const { operator } = useOperator();
-  const visibleNav = visibleNavFor(operator?.role === 'manager');
+  const { operator, can } = useOperator();
+  const visibleNav = visibleNavFor(can);
 
   // Auto-expand the group containing the newly active panel.
   useEffect(() => {
@@ -148,11 +131,14 @@ export function AdminLayout({ activeId, onSelect, children }: AdminLayoutProps) 
           <span className="text-lg font-black tracking-tight">Oto Admin Console</span>
           <span className="text-xs text-foreground/40">Back-office settings</span>
         </div>
-        {/* Access is gated by AdminAccessGate (signed-in manager only); show
-            who is signed in rather than the old "temporary dev access" badge. */}
+        {/* Who is signed in — and only that. It used to read "· Manager"
+            after the name, which was a claim about the account rather than a
+            fact read from one: a reception session that reached this console
+            was captioned "Manager" too. The nav beside it is now the honest
+            answer to what this account may do. */}
         <span className="ml-2 hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300">
           <ShieldCheck className="w-3.5 h-3.5" />
-          {operator?.name} · Manager
+          {operator?.name}
         </span>
         <Link
           href="/"

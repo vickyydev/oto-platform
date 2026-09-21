@@ -3,7 +3,6 @@ import {
   Pencil,
   Trash2,
   Plus,
-  Info,
   Tags,
   ChevronUp,
   ChevronDown,
@@ -28,6 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { CategoryFormDialog } from './CategoryFormDialog';
 import { PREP_STATION_LABELS, TAX_CATEGORY_LABELS } from './categoryLabels';
 
@@ -155,6 +155,11 @@ export function CategoriesPanel() {
 
   return (
     <div className="flex flex-col gap-6">
+      <NotSavedNotice
+        mutators={['upsertMenuCategory', 'deleteMenuCategory']}
+        what="categories, their nesting, prep stations and tax categories"
+      />
+
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -294,11 +299,6 @@ export function CategoriesPanel() {
           </div>
         )}
       </section>
-
-      <p className="flex items-center gap-2 text-xs text-foreground/40">
-        <Info className="w-3.5 h-3.5 shrink-0" />
-        Changes are kept in memory for this prototype and reset on page reload.
-      </p>
 
       {/* Form */}
       <CategoryFormDialog

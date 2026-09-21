@@ -119,12 +119,90 @@ const wiredUpsertBranch: typeof upsertBranch = (branch) => {
 };
 
 // The mutators are stable module-level functions; bundled here so Admin screens
-// get the live snapshot + writers from a single hook.
-const mutators = {
+// get the live snapshot + writers from a single hook. The bundle is assembled
+// from three named groups and nothing else, so a mutator cannot join it without
+// its author saying which kind it is (SCRUM-236).
+
+/** Writes reach the database and survive a reload. */
+const wiredMutators = {
   upsertTier: wiredUpsertTier,
   deleteTier: wiredDeleteTier,
   upsertTicketType: wiredUpsertTicketType,
   deleteTicketType: wiredDeleteTicketType,
+  updateTaxConfig: wiredUpdateTaxConfig,
+  upsertPricingOverride: wiredUpsertPricingOverride,
+  deletePricingOverride: wiredDeletePricingOverride,
+  upsertBranch: wiredUpsertBranch,
+};
+
+/** Reads in-memory catalogue state; writes nothing, so nothing to persist. */
+const readOnlyHelpers = {
+  branchHasCatalogData,
+};
+
+/**
+ * Mutators that write to the in-memory store only: the edit lands on screen and
+ * is gone on reload. Each is listed against the ticket that owns making it
+ * real, and `NotSavedNotice` renders that ticket on the panel that calls it, so
+ * no such screen can look like it saved.
+ *
+ * Wiring one means deleting its entry here; `MockMutatorName` then stops
+ * accepting it and the compiler points at every notice that has to change with
+ * it. Adding a mutator to the bundle without choosing a group is a type error.
+ */
+export const MOCK_MUTATOR_TICKETS = {
+  // Add-ons and discount/promo definitions have no table and no route.
+  upsertAddOn: 'SCRUM-230',
+  deleteAddOn: 'SCRUM-230',
+  upsertDiscount: 'SCRUM-230',
+  deleteDiscount: 'SCRUM-230',
+  setDiscountReasons: 'SCRUM-230',
+  // F&B menu, categories, modifiers and merch all wait on the product schema
+  // reshape: `product` holds six business columns and the prototype's menu item
+  // carries a weekday/weekend price pair, cost, modifiers and translations.
+  upsertMenuItem: 'SCRUM-232',
+  deleteMenuItem: 'SCRUM-232',
+  upsertMenuCategory: 'SCRUM-232',
+  deleteMenuCategory: 'SCRUM-232',
+  upsertModifierGroup: 'SCRUM-232',
+  deleteModifierGroup: 'SCRUM-232',
+  upsertMerchItem: 'SCRUM-232',
+  deleteMerchItem: 'SCRUM-232',
+  adjustMerchStock: 'SCRUM-232',
+  // Stock tables exist and nothing in the API reads or writes them yet.
+  upsertInventoryItem: 'SCRUM-204',
+  deleteInventoryItem: 'SCRUM-204',
+  upsertStockLocation: 'SCRUM-204',
+  setStockLocationSellPoint: 'SCRUM-204',
+  transferStockBetweenLocations: 'SCRUM-204',
+  replenishStockToLocation: 'SCRUM-204',
+  commitStockTakeCorrection: 'SCRUM-204',
+  // No tender of any kind is recorded yet, so a method list has nowhere to go.
+  upsertPaymentMethod: 'SCRUM-206',
+  deletePaymentMethod: 'SCRUM-206',
+  // Supervision policy and its drop-off / nanny prices.
+  updateDropOffPricing: 'SCRUM-210',
+  updateSupervisionPolicy: 'SCRUM-210',
+  // Per-role staff benefit templates.
+  setRoleBenefitTemplate: 'SCRUM-218',
+  // The POS's own device list is not the fleet: the real one is the Console's
+  // Devices area and each till's Station Setup, both already writable.
+  upsertDevice: 'SCRUM-236',
+  deleteDevice: 'SCRUM-236',
+  upsertEdcTerminal: 'SCRUM-236',
+  deleteEdcTerminal: 'SCRUM-236',
+  // Print templates DO persist through `printApi` when the row came from the
+  // platform; these two are the built-in fallback for rows that did not, which
+  // the editor reaches only when its `live` prop is false.
+  upsertPrintTemplate: 'SCRUM-236',
+  deletePrintTemplate: 'SCRUM-236',
+  // Copying one branch's catalogue onto another is an in-memory convenience.
+  cloneBranchCatalog: 'SCRUM-240',
+} as const;
+
+export type MockMutatorName = keyof typeof MOCK_MUTATOR_TICKETS;
+
+const mockMutators = {
   upsertAddOn,
   deleteAddOn,
   upsertMenuItem,
@@ -145,27 +223,24 @@ const mutators = {
   deletePaymentMethod,
   updateDropOffPricing,
   updateSupervisionPolicy,
-  updateTaxConfig: wiredUpdateTaxConfig,
   upsertEdcTerminal,
   deleteEdcTerminal,
   upsertDevice,
   deleteDevice,
   upsertPrintTemplate,
   deletePrintTemplate,
-  upsertPricingOverride: wiredUpsertPricingOverride,
-  deletePricingOverride: wiredDeletePricingOverride,
   setRoleBenefitTemplate,
-  // Branch management
   cloneBranchCatalog,
-  branchHasCatalogData,
-  upsertBranch: wiredUpsertBranch,
-  // Stock management
   upsertStockLocation,
   setStockLocationSellPoint,
   transferStockBetweenLocations,
   replenishStockToLocation,
   commitStockTakeCorrection,
-};
+  // Every key here must appear in MOCK_MUTATOR_TICKETS and every ticket there
+  // must have its mutator here — a missing entry on either side fails the build.
+} satisfies Record<MockMutatorName, unknown>;
+
+const mutators = { ...wiredMutators, ...readOnlyHelpers, ...mockMutators };
 
 export interface CatalogStoreValue extends CatalogState {
   mutators: typeof mutators;

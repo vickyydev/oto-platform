@@ -122,6 +122,14 @@ export interface Branch {
   id: string;   // stable slug used as branchId on operational records
   name: string; // display name shown in the switcher
   country?: string;
+  /**
+   * IANA zone the branch trades in, e.g. `Asia/Bangkok`. Every date the till
+   * decides — which day a sale belongs to, whether today is weekend pricing —
+   * is resolved against this rather than the browser's clock (SCRUM-229), so
+   * a branch created without one is a branch pricing on somebody's laptop.
+   * Optional only because the mock rows predate it; the API defaults it.
+   */
+  timezone?: string;
   active: boolean; // false = retired (hidden from the switcher)
   /** Platform API uuid for this branch (server-backed branches only). */
   apiId?: string;

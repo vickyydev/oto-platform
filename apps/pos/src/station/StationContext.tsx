@@ -136,7 +136,7 @@ const failure = (err: unknown): string =>
 
 export function StationProvider({ children }: { children: ReactNode }) {
   const { branch } = useBranch();
-  const { operator } = useOperator();
+  const { operator, mustChangePassword } = useOperator();
 
   const [stations, setStations] = useState<PickableStation[] | null>(null);
   const [active, setActive] = useState<ApiStation | null>(null);
@@ -200,9 +200,16 @@ export function StationProvider({ children }: { children: ReactNode }) {
   // a branch change, which are the two moments the answer can differ — the
   // account id rather than the operator object, so a re-render of the same
   // shift does not go and ask again.
+  //
+  // And on the end of a temporary password (SCRUM-235). `GET /me/stations` is
+  // one of the routes refused while one is held, so asking during it buys a
+  // 403 and an audit row saying reception was denied something it is entitled
+  // to. The account id does not change when the password does, so without
+  // this the picker kept showing the refusal it got before the change — the
+  // person fixed the thing they were told to fix and the screen did not move.
   const accountId = operator?.id ?? null;
   useEffect(() => {
-    if (!accountId) {
+    if (!accountId || mustChangePassword) {
       setStations(null);
       setActive(null);
       setPicked(null);
@@ -277,7 +284,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [accountId, branch.id, adopt]);
+  }, [accountId, mustChangePassword, branch.id, adopt]);
 
   const setStation = useCallback(
     (profile: StationProfile) => {

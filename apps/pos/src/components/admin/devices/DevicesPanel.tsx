@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Plus, Info, Printer, CreditCard } from 'lucide-react';
+import { Pencil, Trash2, Plus, Printer, CreditCard } from 'lucide-react';
 import type { Device, EdcTerminal } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { AdminNoticeBanner } from '../NotSavedNotice';
 import { DeviceFormDialog } from './DeviceFormDialog';
 import { EdcTerminalFormDialog } from './EdcTerminalFormDialog';
 import { DEVICE_CONNECTION_LABELS, DEVICE_TYPE_LABELS } from './deviceLabels';
@@ -75,6 +76,17 @@ export function DevicesPanel() {
 
   return (
     <div className="flex flex-col gap-10">
+      {/* This screen is not the fleet. It is the prototype's device list, and
+          the real hardware surface shipped elsewhere — so it says so rather
+          than quietly accepting an afternoon of configuration (SCRUM-236). */}
+      <AdminNoticeBanner>
+        <strong className="font-semibold">Not the hardware the park runs — SCRUM-236.</strong>{' '}
+        Printers, scanners and card machines are paired with a branch in the
+        Console's Devices area, and each till chooses which of them it prints to
+        in Station Setup. Nothing outside this screen reads the list below, and
+        a page reload discards anything changed here.
+      </AdminNoticeBanner>
+
       {/* ───────── Devices ───────── */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
@@ -300,11 +312,6 @@ export function DevicesPanel() {
           </>
         )}
       </section>
-
-      <p className="flex items-center gap-2 text-xs text-foreground/40">
-        <Info className="w-3.5 h-3.5 shrink-0" />
-        Changes are kept in memory for this prototype and reset on page reload.
-      </p>
 
       {/* Forms */}
       <DeviceFormDialog

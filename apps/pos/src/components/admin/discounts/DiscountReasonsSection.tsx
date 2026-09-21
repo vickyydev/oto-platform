@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { TextInput } from './fields';
 
 export function DiscountReasonsSection() {
@@ -40,6 +41,13 @@ export function DiscountReasonsSection() {
 
   return (
     <section className="rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 sm:p-6">
+      <div className="mb-5">
+        <NotSavedNotice
+          mutators={['setDiscountReasons']}
+          what="the reason list staff pick from"
+        />
+      </div>
+
       <div>
         <h2 className="text-lg font-bold">Manual-discount reasons</h2>
         <p className="text-sm text-foreground/50">

@@ -175,6 +175,7 @@ export async function saveBranchToApi(branch: {
   id: string;
   name: string;
   country?: string;
+  timezone?: string;
   active: boolean;
   apiId?: string;
 }): Promise<void> {
@@ -182,10 +183,23 @@ export async function saveBranchToApi(branch: {
     await branchesApi.update(branch.apiId, {
       name: branch.name,
       country: branch.country,
+      ...(branch.timezone ? { timezone: branch.timezone } : {}),
       archived: !branch.active,
     });
   } else {
-    await branchesApi.create({ name: branch.name, code: branch.id, country: branch.country });
+    // The slug the prototype uses as `Branch.id` IS the platform's branch
+    // code — one name for the branch everywhere, which is what lets
+    // `apiBranchIdForSlug` line the two up.
+    await branchesApi.create({
+      name: branch.name,
+      code: branch.id,
+      country: branch.country,
+      ...(branch.timezone ? { timezone: branch.timezone } : {}),
+    });
   }
-  await loadCatalogFromApi();
+  // Re-hydrate around the branch that is OPEN, not around whichever branch
+  // the API listed first: this call also sets the trading-day timezone and
+  // today's rate mode, and doing that from another branch's calendar would
+  // re-price the till that is standing in front of somebody.
+  await loadCatalogFromApi(getActiveBranch().id);
 }

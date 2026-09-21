@@ -1,5 +1,5 @@
 import { useState, useSyncExternalStore } from 'react';
-import { ClipboardList, Info, QrCode as QrCodeIcon, Settings2, ShieldCheck } from 'lucide-react';
+import { ClipboardList, QrCode as QrCodeIcon, Settings2, ShieldCheck } from 'lucide-react';
 import { Operator, RoleBenefitTemplate } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import {
@@ -11,6 +11,7 @@ import {
 import { isEmptyBenefitProfile } from '@/lib/benefits';
 import { formatDiscountTargetLabel } from '@/lib/discountTarget';
 import { Button } from '@/components/ui/button';
+import { NotSavedNotice } from '../NotSavedNotice';
 import { BenefitProfileFields } from './BenefitProfileFields';
 import { BenefitQrDialog } from './BenefitQrDialog';
 import { OperatorOverrideDialog } from './OperatorOverrideDialog';
@@ -62,6 +63,11 @@ export function StaffBenefitsPanel() {
 
   return (
     <div className="flex flex-col gap-8">
+      <NotSavedNotice
+        mutators={['setRoleBenefitTemplate']}
+        what="role templates and personal overrides"
+      />
+
       <section className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-foreground/60" />
@@ -179,11 +185,6 @@ export function StaffBenefitsPanel() {
           </div>
         )}
       </section>
-
-      <p className="flex items-center gap-2 text-xs text-foreground/40">
-        <Info className="w-3.5 h-3.5 shrink-0" />
-        Changes are kept in memory for this prototype and reset on page reload.
-      </p>
 
       <BenefitQrDialog
         operator={qrOperator}

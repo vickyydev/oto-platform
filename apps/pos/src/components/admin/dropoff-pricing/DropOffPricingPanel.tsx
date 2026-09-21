@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Info, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { DropOffPricing, WeekdayWeekendPrice } from '@/types';
 import { MarketsTiersSection } from '../markets-tiers/MarketsTiersSection';
 import { PricingOverridesSection } from '../pricing-overrides/PricingOverridesSection';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WeekdayWeekendPriceInput } from '@/components/shared/WeekdayWeekendPriceInput';
 import { cn } from '@/lib/utils';
+import { NotSavedNotice } from '../NotSavedNotice';
 
 // The plain-number drop-off/nanny values, in the order they appear in the form.
 const FIELDS: {
@@ -186,6 +187,16 @@ export function DropOffPricingPanel() {
             These values feed the POS when pricing a drop-off or nanny check-in.
           </p>
 
+          {/* Scoped to this card on purpose. The holiday ranges further down
+              this same screen DO save, so a banner at the top of the panel
+              would tar them with this one. */}
+          <div className="mt-4">
+            <NotSavedNotice
+              mutators={['updateDropOffPricing']}
+              what="the prices and rules in this box"
+            />
+          </div>
+
           <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
             {PRICE_FIELDS.map((f) => (
               <WeekdayWeekendPriceInput
@@ -274,11 +285,6 @@ export function DropOffPricingPanel() {
           )}
         </div>
       </form>
-
-      <p className="flex items-center gap-2 text-xs text-foreground/40">
-        <Info className="w-3.5 h-3.5 shrink-0" />
-        Changes are kept in memory for this prototype and reset on page reload.
-      </p>
 
       <MarketsTiersSection />
 

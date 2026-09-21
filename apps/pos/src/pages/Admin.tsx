@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Construction, ShieldAlert } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { adminPanelsById, DEFAULT_ADMIN_PANEL } from '@/components/admin/adminSections';
+import {
+  adminPanelsById,
+  DEFAULT_ADMIN_PANEL,
+  firstUsableAdminPanel,
+} from '@/components/admin/adminSections';
 import { AddOnsPanel } from '@/components/admin/addons/AddOnsPanel';
 import { TicketsPanel } from '@/components/admin/tickets/TicketsPanel';
 import { DropOffPricingPanel } from '@/components/admin/dropoff-pricing/DropOffPricingPanel';
@@ -28,23 +32,25 @@ import { DiscountCompReportPanel } from '@/components/admin/reports/DiscountComp
 import { TaxVatReportPanel } from '@/components/admin/reports/TaxVatReportPanel';
 import { useOperator } from '@/auth/OperatorContext';
 
-const REPORT_PANEL_IDS = new Set([
-  'reports-sales',
-  'reports-profitability',
-  'reports-wallet',
-  'reports-discounts',
-  'reports-tax',
-]);
-
 export default function Admin() {
-  const [activeId, setActiveId] = useState<string>(DEFAULT_ADMIN_PANEL);
+  const { can } = useOperator();
+  /**
+   * Land on something this account can use. Tickets is the console's front
+   * page and needs `catalog:package:update`, which an account here to manage
+   * staff accounts does not hold — opening on a refusal would be a poor
+   * welcome and would read as a fault. Computed once, because it answers
+   * "where does this person start", not "what may they do now".
+   */
+  const [activeId, setActiveId] = useState<string>(() => firstUsableAdminPanel(can));
   const panel = adminPanelsById[activeId] ?? adminPanelsById[DEFAULT_ADMIN_PANEL];
-  const { operator } = useOperator();
-  const isManager = operator?.role === 'manager';
-  // Defense in depth: the Reports nav is already hidden from staff in
-  // AdminLayout, but guard direct render too in case activeId state is ever
-  // reached another way (e.g. a future deep link).
-  const blockedReportPanel = REPORT_PANEL_IDS.has(activeId) && !isManager;
+  /**
+   * A panel the nav did not offer, opened anyway — a state edit today, a deep
+   * link when panels get addresses. It gets a refusal that names the
+   * permission rather than a form that will 403 on save: the same choice
+   * App.tsx makes for the station-setup routes, so a person can be shown why
+   * and can screenshot it.
+   */
+  const refusedPermission = panel.permission && !can(panel.permission) ? panel.permission : null;
 
   return (
     <AdminLayout activeId={activeId} onSelect={setActiveId}>
@@ -59,7 +65,9 @@ export default function Admin() {
           </div>
         </div>
 
-        {activeId === 'tickets' ? (
+        {refusedPermission ? (
+          <PermissionRefused label={panel.label} permission={refusedPermission} />
+        ) : activeId === 'tickets' ? (
           <TicketsPanel />
         ) : activeId === 'addons' ? (
           <AddOnsPanel />
@@ -97,8 +105,6 @@ export default function Admin() {
           <BranchesPanel />
         ) : activeId === 'staff-benefits' ? (
           <StaffBenefitsPanel />
-        ) : blockedReportPanel ? (
-          <ManagerOnlyNotice />
         ) : activeId === 'reports-sales' ? (
           <SalesReportPanel />
         ) : activeId === 'reports-profitability' ? (
@@ -117,16 +123,19 @@ export default function Admin() {
   );
 }
 
-function ManagerOnlyNotice() {
+function PermissionRefused({ label, permission }: { label: string; permission: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-red-500/25 bg-red-500/[0.03] px-6 py-16 text-center">
       <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-300">
         <ShieldAlert className="w-7 h-7" />
       </span>
-      <h2 className="text-lg font-bold">Manager access required</h2>
+      <h2 className="text-lg font-bold">You do not have access to {label}</h2>
       <p className="max-w-sm text-sm text-foreground/50">
-        Reporting is restricted to manager-role operators. Sign in as a manager to view this
-        section.
+        This screen needs the{' '}
+        <code className="rounded bg-foreground/10 px-1.5 py-0.5 font-mono text-xs text-foreground/80">
+          {permission}
+        </code>{' '}
+        permission, which this account does not hold. A manager can grant it in Login Users.
       </p>
     </div>
   );
