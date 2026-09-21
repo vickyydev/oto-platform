@@ -10,3 +10,7 @@ export * from './ops';
 export * from './edge';
 export * from './sync';
 export * from './future';
+// Last, because they build on the catalogue, the fleet and the sales tables:
+// `promo` is the voucher a prize turns into, `booth` is the wheel that draws it.
+export * from './promo';
+export * from './booth';

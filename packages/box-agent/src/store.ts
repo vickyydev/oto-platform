@@ -1,3 +1,12 @@
+/**
+ * Type-only, and it has to stay that way: `@oto/print` cannot be LOADED in this
+ * package's test runner at all — Node's strip-only mode refuses `Bitmap1`'s
+ * parameter properties — and a runtime import here would take the store, the
+ * outbox and the station session down with it. `import type` is erased before
+ * Node sees the file, which `packages/box-agent/test/print-restart.test.ts`
+ * demonstrates by importing this module and running.
+ */
+import type { PrintJob as RenderPrintJob } from '@oto/print';
 import type {
   StationLanguage,
   StationLease,
@@ -199,7 +208,206 @@ export interface CachedBundle {
   appliedAt: string;
 }
 
-export interface BoxStore {
+// --- The box's own print queue (S2-07a) -------------------------------------
+
+/**
+ * What a job is doing, from the box's point of view.
+ *
+ * Three states and no terminal one, because a job the box has finished with is
+ * DELETED rather than kept: `edge.print_job` in the cloud is the history, and
+ * it is the copy with the retention sweep and the Console page. What is here is
+ * only the work still outstanding, which is also what keeps a guest's name and
+ * a child's allergy line out of this table for any longer than the paper takes
+ * to come out.
+ *
+ *   - `queued`  — waiting: for its turn, for paper, for the next retry tick.
+ *   - `sending` — bytes are going at a printer RIGHT NOW.
+ *   - `interrupted` — it was `sending` when the process died (D12). Never
+ *     retried; it exists so the cloud can be told the job failed, and it is
+ *     deleted once it has been.
+ */
+export const BOX_PRINT_JOB_STATES = ['queued', 'sending', 'interrupted'] as const;
+export type BoxPrintJobState = (typeof BOX_PRINT_JOB_STATES)[number];
+
+/**
+ * One outstanding print job on this box.
+ *
+ * `id` is the `edge.print_job` id minted where the job was raised, so the row
+ * here and the row in the cloud are the same job under the same name — which is
+ * what lets a restarted box report the outcome of work the cloud is still
+ * showing as queued.
+ *
+ * `job` is the renderer's input, stored as JSON. Every `PrintJob` variant is
+ * plain data — strings, numbers, arrays of them — so it survives the round
+ * trip; `print-restart.test.ts` and `apps/api/test/print-restart.test.ts` both
+ * assert that on a real job rather than trusting the sentence.
+ */
+export interface PrintJobRecord {
+  id: string;
+  boxId: string;
+  /** One of `PRINT_KINDS`. Text here: the vocabulary belongs to `@oto/shared`. */
+  kind: string;
+  role: string | null;
+  stationId: string | null;
+  /** The printer the last attempt went to, so an interrupted job can name it. */
+  deviceId: string | null;
+  copies: number;
+  job: RenderPrintJob;
+  finish: Record<string, unknown> | null;
+  templateId: string | null;
+  templateVersion: number | null;
+  actionId: string | null;
+  state: BoxPrintJobState;
+  attempts: number;
+  nextAttemptAt: string | null;
+  lastErrorCode: string | null;
+  lastErrorMessage: string | null;
+  queuedAt: string;
+  updatedAt: string;
+}
+
+/** What an attempt changes about a stored job. Absent keys are left alone. */
+export interface PrintJobPatch {
+  state?: BoxPrintJobState;
+  attempts?: number;
+  nextAttemptAt?: string | null;
+  deviceId?: string | null;
+  lastErrorCode?: string | null;
+  lastErrorMessage?: string | null;
+}
+
+/**
+ * The narrow view of the store that the print subsystem takes.
+ *
+ * Narrow on purpose: the printing side has no business reaching the outbox or
+ * a station's lease, and a five-method port is a thing a test can stand in for
+ * without building a database.
+ */
+export interface PrintJobStore {
+  /**
+   * Write the job down BEFORE anything is attempted. Insert or replace.
+   *
+   * The print subsystem calls this itself on `submit()`, so a service that
+   * wrote the row inside its own transaction — a spin, whose facts, voucher,
+   * print job and counter have to commit together — and then hands the same
+   * job to `submit()` replaces its own row rather than creating a second one.
+   * The job id is the fence, and it is the same id in both places.
+   */
+  putPrintJob(record: PrintJobRecord): Promise<void>;
+  /** Everything still to do on this box, oldest first. */
+  loadPendingPrintJobs(boxId: string): Promise<PrintJobRecord[]>;
+  /**
+   * Jobs the previous process was writing to a printer when it stopped.
+   *
+   * D12: these are NOT resumed. Bytes that reached the head are already paper
+   * in somebody's hand, and an unattended retry puts a second voucher beside a
+   * torn first one with nobody able to say which is the real one. They come
+   * back so their failure can be reported, and then they are deleted.
+   */
+  loadInterruptedPrintJobs(boxId: string): Promise<PrintJobRecord[]>;
+  updatePrintJob(id: string, patch: PrintJobPatch, now?: string): Promise<void>;
+  deletePrintJob(id: string): Promise<void>;
+}
+
+// --- Booth runtime state (S2-07a) -------------------------------------------
+
+/**
+ * A counter the box keeps for one trading day.
+ *
+ * `businessDate` rather than a timestamp because every question asked of these
+ * — how many spins today, how many of this prize today — is asked about the
+ * park's trading day, which starts at `branch.business_day_start` and is not
+ * midnight. The caller resolves the date; the store only counts.
+ */
+export interface CounterKey {
+  scope: string;
+  key: string;
+  /** `YYYY-MM-DD`, from `businessDate()` in `@oto/shared`. */
+  businessDate: string;
+}
+
+/** Who is signed in at a station, as the box remembers it across a restart. */
+export interface BoxStaffSession {
+  stationId: string;
+  boxId: string;
+  accountId: string;
+  /** How they proved it: `pin`, `badge`, `password`. */
+  credentialKind: string;
+  /** The lookup value the sign-in resolved, where there is one. */
+  staffCode: string | null;
+  signedInAt: string;
+  lastSeenAt: string;
+  /** Null for a session that ends only when somebody signs out. */
+  expiresAt: string | null;
+}
+
+/**
+ * Failed attempts against one subject, counted on disk.
+ *
+ * On disk and not in memory, because a lockout a restart clears is not a
+ * lockout: a booth in a mall is a kiosk anybody can reach the power lead of,
+ * and "five wrong PINs, then wait" has to mean the same thing after somebody
+ * has pulled the plug as before.
+ *
+ * The store counts and remembers; it does not decide. `lockedUntil` is written
+ * by the caller that owns the policy — how many failures, how long, whether it
+ * doubles — because that policy belongs to the service being defended and is
+ * different for a booth PIN and a till password.
+ */
+export interface ThrottleRecord {
+  boxId: string;
+  scope: string;
+  subject: string;
+  failures: number;
+  firstFailureAt: string;
+  lastFailureAt: string;
+  lockedUntil: string | null;
+}
+
+/**
+ * What this store can actually do, as `init()` found it.
+ *
+ * Not a constant, because the two dialects genuinely differ: a Pi's SQLite file
+ * is created by `prepareSqliteBoxStore` and always has every table, while the
+ * `edge` schema of the platform database has only what the migrations have
+ * created. A box whose tables are missing must say so rather than pretend — a
+ * print queue that quietly forgets on restart is the defect this ticket exists
+ * to fix, and a throttle that quietly forgets is a bypass.
+ *
+ * Before `init()` both are false, which is the safe answer to give.
+ */
+export interface BoxStoreFeatures {
+  /** `box_print_job`: a job waiting on paper survives a restart. */
+  printJobs: boolean;
+  /** `box_counter`, `box_staff_session`, `box_throttle`, `box_runtime`. */
+  boothRuntime: boolean;
+}
+
+/**
+ * Raised when a caller asks for state this store has nowhere to keep.
+ *
+ * Thrown rather than swallowed. A daily cap that silently does not count, or a
+ * sign-in throttle that silently does not lock, is worse than an outage,
+ * because nothing about it looks wrong until somebody has been taking the
+ * cash prize twice a day for a fortnight.
+ */
+export class BoxStoreFeatureMissingError extends Error {
+  readonly feature: keyof BoxStoreFeatures;
+  readonly missing: readonly string[];
+
+  constructor(feature: keyof BoxStoreFeatures, missing: readonly string[]) {
+    super(
+      `This box store cannot keep ${feature}: ${missing.join(', ')} ${
+        missing.length === 1 ? 'is' : 'are'
+      } not in its database`,
+    );
+    this.name = 'BoxStoreFeatureMissingError';
+    this.feature = feature;
+    this.missing = missing;
+  }
+}
+
+export interface BoxStore extends PrintJobStore {
   /**
    * Prepare the store and recover from however the last process ended.
    *
@@ -207,9 +415,35 @@ export interface BoxStore {
    * mid-push and does not know whether the cloud saw the batch. Re-sending is
    * always safe and never losing is not, because the dedupe on
    * `(box_id, journal_epoch, box_seq)` turns a re-send into `duplicate`.
+   *
+   * A print job left `sending` is recovered the other way — to `interrupted`,
+   * never retried (D12). The two look alike and are opposites: an event the
+   * cloud may already hold costs one deduplicated insert to send twice, and a
+   * voucher the printer may already have cut costs a second voucher in
+   * somebody's hand.
    */
   init(boxId: string): Promise<BoxStateRecord>;
   close(): Promise<void>;
+
+  /** What this store can keep; see `BoxStoreFeatures`. Answered from `init()`. */
+  features(): BoxStoreFeatures;
+  /** The print port, or null when this store has nowhere durable to put a job. */
+  printJobs(): PrintJobStore | null;
+
+  /**
+   * Run several writes as one unit: all of them, or none.
+   *
+   * A spin is the case this exists for. It queues two facts, mints a voucher,
+   * writes a print job and moves a daily counter, and every half-landing of
+   * that set is a real failure somebody would have to reconcile by hand — a
+   * counter that moved for a spin with no voucher, a voucher with nothing to
+   * print it, a print job for a spin the cloud will never hear about.
+   *
+   * The callback is handed a store bound to the transaction. Use THAT one;
+   * the outer store's writes are not in the transaction. Nesting is safe and
+   * joins the transaction already open rather than opening a second one.
+   */
+  atomically<T>(fn: (tx: BoxStore) => Promise<T>): Promise<T>;
 
   readState(boxId: string): Promise<BoxStateRecord>;
   setOffline(
@@ -229,6 +463,24 @@ export interface BoxStore {
     seal: EnvelopeSealer,
     now?: string,
   ): Promise<OutboxRecord>;
+  /**
+   * Queue several facts as one: consecutive sequences, one transaction.
+   *
+   * A spin is `booth.spin_recorded` and `promo.voucher_issued`, and they must
+   * not be able to half-land — a voucher the cloud has with no spin behind it
+   * is a prize nobody can account for, and a spin with no voucher is a guest
+   * holding a slip the park does not recognise. Sealing happens inside the
+   * transaction, as it does for one fact, so a signing failure returns every
+   * sequence it took and the journal keeps no gap.
+   *
+   * The records come back in the order the facts were given.
+   */
+  enqueueMany(
+    boxId: string,
+    facts: readonly QueuedFact[],
+    seal: EnvelopeSealer,
+    now?: string,
+  ): Promise<OutboxRecord[]>;
   takeBatch(
     boxId: string,
     opts?: { maxEvents?: number; maxBytes?: number; now?: string },
@@ -313,6 +565,62 @@ export interface BoxStore {
   readBundle(boxId: string, scope: SyncChangeScope): Promise<CachedBundle | null>;
   /** Whole or not at all: a half-applied catalogue prices the wrong ticket. */
   writeBundle(boxId: string, bundle: CachedBundle): Promise<void>;
+
+  // --- Booth runtime state (S2-07a) -----------------------------------------
+
+  /** Add to a counter and return what it now reads. Creates it at zero first. */
+  bumpCounter(boxId: string, key: CounterKey, by?: number, now?: string): Promise<number>;
+  /** One counter's value, and zero for one that has never been touched. */
+  readCounter(boxId: string, key: CounterKey): Promise<number>;
+  /**
+   * Every counter in one scope for one trading day, keyed by its `key`.
+   *
+   * This is what a daily cap is checked against: one read before the draw
+   * rather than one read per prize, because eligibility is computed once per
+   * press (D5) and a prize list that changed between two of those reads would
+   * renormalise over a set that never existed.
+   */
+  readCounters(boxId: string, scope: string, businessDate: string): Promise<Record<string, number>>;
+
+  readStaffSession(stationId: string): Promise<BoxStaffSession | null>;
+  /** Sign somebody in at a station. One station holds one session. */
+  writeStaffSession(session: BoxStaffSession): Promise<void>;
+  /** Keep a session alive without changing who is in it. */
+  touchStaffSession(stationId: string, now: string): Promise<void>;
+  clearStaffSession(stationId: string): Promise<void>;
+
+  readThrottle(boxId: string, scope: string, subject: string): Promise<ThrottleRecord | null>;
+  /**
+   * Count one failure and return the record as it now stands.
+   *
+   * `lockedUntil` is the caller's decision, taken with the new failure count
+   * in hand — see `ThrottleRecord`. Passing `undefined` leaves whatever lock
+   * is already on the row, so a policy that only locks on the fifth failure
+   * does not have to clear the lock on the sixth.
+   */
+  recordThrottleFailure(
+    boxId: string,
+    scope: string,
+    subject: string,
+    opts?: { now?: string; lockedUntil?: string | null },
+  ): Promise<ThrottleRecord>;
+  /** A success wipes the count. */
+  clearThrottle(boxId: string, scope: string, subject: string): Promise<void>;
+
+  /**
+   * Remember the latest time this box has good reason to believe in.
+   *
+   * A Pi has no battery-backed clock: unplugged for a week it comes back
+   * believing it is the moment it was switched off, or 1970, and it will
+   * happily stamp a spin with it. Keeping the highest time already seen turns
+   * that into something detectable — a clock now EARLIER than a time this box
+   * has already lived through is wrong, whatever it says — which is what
+   * `SpinResponse.clockSuspect` reports to the television.
+   *
+   * Only ever moves forward. Returns the stored value after the write.
+   */
+  markTimeSeen(boxId: string, at: string): Promise<string>;
+  lastGoodTime(boxId: string): Promise<string | null>;
 }
 
 // --- Migrate on read --------------------------------------------------------

@@ -563,6 +563,15 @@ export const SYNC_CHANGE_SCOPES = [
   'bands',
   'station_config',
   'receipt_series',
+  /**
+   * The booth's published wheel (S2-07a): its settings, its layout and its
+   * prize list, as one `booth.booth_config_version` bundle. Its own scope
+   * rather than a corner of `catalogue`, because a box applies a scope whole
+   * and these two change on completely different clocks — a price list once a
+   * season, a prize weight whenever somebody in the Console decides the
+   * bracelet workshop is going too fast.
+   */
+  'booth',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 
@@ -637,7 +646,7 @@ export const syncChange = edge.table(
     index('sync_change_operator_idx').on(t.operatorId),
     check(
       'sync_change_scope_check',
-      sql`${t.scope} in ('catalogue','members','staff','deny_list','bookings','bands','station_config','receipt_series')`,
+      sql`${t.scope} in ('catalogue','members','staff','deny_list','bookings','bands','station_config','receipt_series','booth')`,
     ),
     check('sync_change_op_check', sql`${t.op} in ('upsert','delete')`),
     check('sync_change_delete_check', sql`${t.op} <> 'delete' or ${t.payload} is null`),

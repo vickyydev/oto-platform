@@ -256,6 +256,8 @@ export const SYNC_CHANGE_SCOPES = [
   'bands',
   'station_config',
   'receipt_series',
+  /** The booth's published wheel (S2-07a) — `booth.booth_config_version`. */
+  'booth',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

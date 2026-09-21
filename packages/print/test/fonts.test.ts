@@ -98,6 +98,39 @@ describe('nothing a guest can type stops a receipt', () => {
     expect(shaped.missing.map((cp) => cp.toString(16))).toEqual(['738b', '660e']);
   });
 
+  it('renders a booth voucher whose prize name no bundled face covers', () => {
+    // A prize name is typed by an administrator into `booth_prize.name_en` /
+    // `name_th` and reaches paper unchecked. The booth is unattended, in
+    // another building, with a queue of children behind the button — a thrown
+    // renderer there is a dead booth, where at a till it is one stuck sale.
+    // So the same rule as everywhere else: box the character, note it, print.
+    const job = renderJob(
+      {
+        kind: 'booth_voucher',
+        data: {
+          venueLine: 'Oto — Kids Play Park · Central Phuket',
+          prizeLine: 'FREE 한국 GIFT',
+          prizeLineThai: null,
+          redemptionLine: 'Show this QR at OTO Reception.',
+          terms: [],
+          voucherCode: 'B1RT7KMQ4X',
+          issuedAt: '17 Sep 2026 15:04',
+          booth: 'Central Phuket · G floor',
+          staff: null,
+          expiresAt: null,
+          footerLine: 'Redeem at Oto Play Park, Central Phuket',
+        },
+      },
+      { device: PROFILES.escpos576!, templates: TEMPLATES },
+    );
+    expect(job.bytes.length).toBeGreaterThan(0);
+    expect(job.bitmap.countInk()).toBeGreaterThan(200);
+    expect(job.overflow.join('\n')).toMatch(/no bundled font covers U\+D55C 한/);
+    // The code is the part that has to survive: a voucher whose prize name is
+    // boxed is still a voucher reception can scan and honour.
+    expect(job.layout.items.some((i) => i.k === 'text' && i.text === 'B1RT7KMQ4X')).toBe(true);
+  });
+
   it('renders a whole receipt for that member and reports it in overflow', () => {
     const job = renderJob(
       {

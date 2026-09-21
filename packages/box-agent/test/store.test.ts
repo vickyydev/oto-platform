@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 
 import { canonicalSyncBytes } from '../src/contract';
 import { verifyCanonical } from '../src/signing';
 import { BOX_ID, openTestStore, plus, STATION_ID } from './_support';
-import { clockTrustFor } from '../src/store-sql';
-import { migrateSessionDocument, StoreSchemaTooNewError } from '../src/store';
+import { BOX_LOCAL_TABLES, clockTrustFor, SqlBoxStore } from '../src/store-sql';
+import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
+import {
+  BoxStoreFeatureMissingError,
+  migrateSessionDocument,
+  StoreSchemaTooNewError,
+  type PrintJobRecord,
+} from '../src/store';
 
 const AT = '2026-09-20T03:00:00.000Z';
 
@@ -468,6 +475,372 @@ test('a cache bundle from a newer agent is dropped rather than half understood',
   // A cache is rebuildable, so the honest answer is to have none and pull
   // again — unlike the outbox, where refusing to read would be losing sales.
   assert.equal(await harness.store.readBundle(BOX_ID, 'members'), null);
+  harness.close();
+});
+
+// --- Several facts at once, and one unit of work (S2-07a) -------------------
+
+test("a spin's two facts get consecutive sequences from one claim", async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+  await harness.store.enqueue(BOX_ID, { type: 'member.created', payload: {} }, harness.seal);
+
+  const pair = await harness.store.enqueueMany(
+    BOX_ID,
+    [
+      { type: 'booth.spin_recorded', payload: { prizeId: 'p1' } },
+      { type: 'promo.voucher_issued', payload: { code: 'B1K7M2QPXR' } },
+    ],
+    harness.seal,
+  );
+
+  assert.deepEqual(
+    pair.map((record) => record.envelope.boxSeq),
+    [2, 3],
+    'consecutive, and in the order the facts were given',
+  );
+  assert.deepEqual(
+    pair.map((record) => record.envelope.type),
+    ['booth.spin_recorded', 'promo.voucher_issued'],
+  );
+  assert.equal((await harness.store.depth(BOX_ID)).queued, 3);
+  harness.close();
+});
+
+test('a pair of facts cannot half-land, and the sequences go back with them', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+
+  let sealed = 0;
+  await assert.rejects(
+    harness.store.enqueueMany(
+      BOX_ID,
+      [
+        { type: 'booth.spin_recorded', payload: {} },
+        { type: 'promo.voucher_issued', payload: {} },
+      ],
+      (draft) => {
+        sealed += 1;
+        // The voucher is the one that fails to sign. A spin the cloud hears
+        // about with no voucher behind it is a prize nobody can account for.
+        if (sealed === 2) throw new Error('the signing key was unreadable');
+        return harness.seal(draft);
+      },
+    ),
+  );
+
+  assert.equal((await harness.store.depth(BOX_ID)).queued, 0, 'neither fact was kept');
+  const next = await harness.store.enqueue(
+    BOX_ID,
+    { type: 'member.created', payload: {} },
+    harness.seal,
+  );
+  assert.equal(next.envelope.boxSeq, 1, 'both sequences went back; the journal has no hole');
+  harness.close();
+});
+
+test('a spin commits as one thing: facts, the voucher to print, and the counter', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+  const key = { scope: 'booth_prize', key: 'prize-1', businessDate: '2026-09-20' };
+
+  await assert.rejects(
+    harness.store.atomically(async (tx) => {
+      await tx.enqueueMany(
+        BOX_ID,
+        [
+          { type: 'booth.spin_recorded', payload: {} },
+          { type: 'promo.voucher_issued', payload: {} },
+        ],
+        harness.seal,
+      );
+      await tx.putPrintJob(printJob('half-landed'));
+      await tx.bumpCounter(BOX_ID, key);
+      throw new Error('the voucher code could not be minted');
+    }),
+  );
+
+  // A counter that moved for a spin with no voucher is a prize given away
+  // twice at the end of the day, and nobody could tell from the rows.
+  assert.equal((await harness.store.depth(BOX_ID)).queued, 0);
+  assert.deepEqual(await harness.store.loadPendingPrintJobs(BOX_ID), []);
+  assert.equal(await harness.store.readCounter(BOX_ID, key), 0);
+
+  const kept = await harness.store.atomically(async (tx) => {
+    const facts = await tx.enqueueMany(
+      BOX_ID,
+      [
+        { type: 'booth.spin_recorded', payload: {} },
+        { type: 'promo.voucher_issued', payload: {} },
+      ],
+      harness.seal,
+    );
+    await tx.putPrintJob(printJob('landed'));
+    await tx.bumpCounter(BOX_ID, key);
+    return facts.length;
+  });
+
+  assert.equal(kept, 2);
+  assert.equal((await harness.store.depth(BOX_ID)).queued, 2);
+  assert.equal((await harness.store.loadPendingPrintJobs(BOX_ID))[0]?.id, 'landed');
+  assert.equal(await harness.store.readCounter(BOX_ID, key), 1);
+  harness.close();
+});
+
+// --- Booth runtime state (S2-07a) -------------------------------------------
+
+test('counters are per scope, per key and per trading day', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+  const today = '2026-09-20';
+
+  assert.equal(await harness.store.bumpCounter(BOX_ID, { scope: 's', key: 'all', businessDate: today }), 1);
+  assert.equal(await harness.store.bumpCounter(BOX_ID, { scope: 's', key: 'all', businessDate: today }), 2);
+  await harness.store.bumpCounter(BOX_ID, { scope: 'p', key: 'prize-1', businessDate: today }, 3);
+  // Yesterday's cap has nothing to do with today's, which is what "daily" means.
+  await harness.store.bumpCounter(BOX_ID, { scope: 'p', key: 'prize-1', businessDate: '2026-09-19' }, 7);
+
+  assert.deepEqual(await harness.store.readCounters(BOX_ID, 'p', today), { 'prize-1': 3 });
+  assert.equal(
+    await harness.store.readCounter(BOX_ID, { scope: 'p', key: 'never-drawn', businessDate: today }),
+    0,
+    'a prize nobody has won reads zero rather than missing',
+  );
+  harness.close();
+});
+
+test('one station holds one staff session, and signing in replaces it', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+
+  await harness.store.writeStaffSession({
+    stationId: STATION_ID,
+    boxId: BOX_ID,
+    accountId: 'acct-som',
+    credentialKind: 'pin',
+    staffCode: 'S-014',
+    signedInAt: AT,
+    lastSeenAt: AT,
+    expiresAt: null,
+  });
+  await harness.store.touchStaffSession(STATION_ID, plus(AT, 60_000));
+  let held = await harness.store.readStaffSession(STATION_ID);
+  assert.equal(held?.accountId, 'acct-som');
+  assert.equal(held?.lastSeenAt, plus(AT, 60_000), 'a touch moves the clock, not the person');
+  assert.equal(held?.signedInAt, AT);
+
+  await harness.store.writeStaffSession({
+    stationId: STATION_ID,
+    boxId: BOX_ID,
+    accountId: 'acct-nok',
+    credentialKind: 'badge',
+    staffCode: null,
+    signedInAt: plus(AT, 120_000),
+    lastSeenAt: plus(AT, 120_000),
+    expiresAt: null,
+  });
+  held = await harness.store.readStaffSession(STATION_ID);
+  assert.equal(held?.accountId, 'acct-nok', 'two people signed in at one booth is not a state');
+  assert.equal(held?.credentialKind, 'badge');
+
+  await harness.store.clearStaffSession(STATION_ID);
+  assert.equal(await harness.store.readStaffSession(STATION_ID), null);
+  harness.close();
+});
+
+test('the throttle counts failures and keeps a lock the caller does not mention', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+
+  const first = await harness.store.recordThrottleFailure(BOX_ID, 'booth_pin', 'station-1', {
+    now: AT,
+  });
+  assert.equal(first.failures, 1);
+  assert.equal(first.lockedUntil, null);
+
+  const locked = await harness.store.recordThrottleFailure(BOX_ID, 'booth_pin', 'station-1', {
+    now: plus(AT, 1_000),
+    lockedUntil: plus(AT, 31_000),
+  });
+  assert.equal(locked.failures, 2);
+  assert.equal(locked.lockedUntil, plus(AT, 31_000));
+
+  // The sixth wrong PIN inside a lockout says nothing about the lock, and must
+  // not lift the one the fifth set.
+  const during = await harness.store.recordThrottleFailure(BOX_ID, 'booth_pin', 'station-1', {
+    now: plus(AT, 2_000),
+  });
+  assert.equal(during.failures, 3);
+  assert.equal(during.lockedUntil, plus(AT, 31_000));
+  assert.equal(during.firstFailureAt, AT);
+
+  // Two booths, two locks: a wrong PIN at one does not lock the other.
+  const elsewhere = await harness.store.recordThrottleFailure(BOX_ID, 'booth_pin', 'station-2', {
+    now: plus(AT, 3_000),
+  });
+  assert.equal(elsewhere.failures, 1);
+
+  await harness.store.clearThrottle(BOX_ID, 'booth_pin', 'station-1');
+  assert.equal(await harness.store.readThrottle(BOX_ID, 'booth_pin', 'station-1'), null);
+  assert.equal(
+    (await harness.store.readThrottle(BOX_ID, 'booth_pin', 'station-2'))?.failures,
+    1,
+    'one success clears one subject',
+  );
+  harness.close();
+});
+
+test('the last time the box believed in only ever moves forward', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+
+  assert.equal(await harness.store.lastGoodTime(BOX_ID), null);
+  assert.equal(await harness.store.markTimeSeen(BOX_ID, AT), AT);
+  assert.equal(await harness.store.markTimeSeen(BOX_ID, plus(AT, 60_000)), plus(AT, 60_000));
+
+  // A Pi with no clock battery boots believing it is whenever it was switched
+  // off, or 1970. That is how the booth can tell its clock is not to be
+  // trusted: this box has already lived through a later moment than "now".
+  assert.equal(
+    await harness.store.markTimeSeen(BOX_ID, '1970-01-01T00:00:00.000Z'),
+    plus(AT, 60_000),
+    'a clock that went backwards does not rewrite what the box has seen',
+  );
+  harness.close();
+});
+
+// --- The print queue on disk (S2-07a) ---------------------------------------
+
+function printJob(id: string, over: Partial<PrintJobRecord> = {}): PrintJobRecord {
+  return {
+    id,
+    boxId: BOX_ID,
+    kind: 'booth_voucher',
+    role: 'receipt',
+    stationId: STATION_ID,
+    deviceId: null,
+    copies: 1,
+    job: {
+      kind: 'booth_voucher',
+      data: {
+        venueLine: 'Oto — Kids Play Park · Central Phuket',
+        prizeLine: '150 THB VOUCHER',
+        prizeLineThai: null,
+        redemptionLine: 'Show this QR at OTO Reception.',
+        terms: [],
+        voucherCode: 'B1K7M2QPXR',
+        issuedAt: '20 Sep 2026 10:00',
+        booth: 'Central Phuket · G floor',
+        staff: null,
+        expiresAt: null,
+        footerLine: 'oto.co.th',
+      },
+    },
+    finish: null,
+    templateId: null,
+    templateVersion: null,
+    actionId: null,
+    state: 'queued',
+    attempts: 0,
+    nextAttemptAt: null,
+    lastErrorCode: null,
+    lastErrorMessage: null,
+    queuedAt: AT,
+    updatedAt: AT,
+    ...over,
+  };
+}
+
+test('a job on the printer right now still counts as pending', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+  await harness.store.putPrintJob(printJob('a'));
+  await harness.store.updatePrintJob('a', { state: 'sending', deviceId: 'dev-1', attempts: 1 });
+
+  // The count the booth reports is "vouchers not yet printed", and a job in
+  // the middle of printing has not been printed. `init()` is what separates a
+  // job this process is printing from one the last process died holding.
+  const pending = await harness.store.loadPendingPrintJobs(BOX_ID);
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0]?.state, 'sending');
+  assert.equal(pending[0]?.deviceId, 'dev-1');
+  assert.equal(pending[0]?.attempts, 1);
+  harness.close();
+});
+
+test('re-submitting a job id replaces the job rather than printing two', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+  await harness.store.putPrintJob(printJob('same-id', { attempts: 4 }));
+  await harness.store.putPrintJob(printJob('same-id', { attempts: 0 }));
+
+  const pending = await harness.store.loadPendingPrintJobs(BOX_ID);
+  assert.equal(pending.length, 1, 'the id the cloud minted is the fence');
+  assert.equal(pending[0]?.attempts, 0);
+  harness.close();
+});
+
+test('an update changes only the fields it names', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+  await harness.store.putPrintJob(
+    printJob('b', { lastErrorCode: 'PRINTER_PAPER_OUT', attempts: 2, deviceId: 'dev-1' }),
+  );
+  await harness.store.updatePrintJob('b', { attempts: 3 });
+
+  const held = (await harness.store.loadPendingPrintJobs(BOX_ID))[0];
+  assert.equal(held?.attempts, 3);
+  assert.equal(held?.lastErrorCode, 'PRINTER_PAPER_OUT', 'not cleared by a patch that is silent');
+  assert.equal(held?.deviceId, 'dev-1');
+
+  // And naming it with null IS how it is cleared — the two are different asks.
+  await harness.store.updatePrintJob('b', { lastErrorCode: null });
+  assert.equal((await harness.store.loadPendingPrintJobs(BOX_ID))[0]?.lastErrorCode, null);
+  harness.close();
+});
+
+test('a store with no tables for this says so, rather than losing it quietly', async () => {
+  // The virtual box's condition today, built deliberately: the S2-05 tables
+  // and none of the S2-07a ones, because no migration has added them to the
+  // `edge` schema yet. Opened here rather than through the shared harness, so
+  // the missing half is missing in the same way the platform database's is.
+  const db = new DatabaseSync(':memory:');
+  prepareSqliteBoxStore(db);
+  for (const table of BOX_LOCAL_TABLES) db.exec(`drop table ${table}`);
+  const store = new SqlBoxStore({ driver: sqliteBoxDriver(db), now: () => new Date(AT) });
+  await store.init(BOX_ID);
+
+  assert.deepEqual(store.features(), { printJobs: false, boothRuntime: false });
+  assert.equal(store.printJobs(), null, 'the print queue is told to keep to memory');
+
+  // A read with nowhere to read from is honestly empty: the print queue asks
+  // at every boot and an exception there would stop a box that can still print.
+  assert.deepEqual(await store.loadPendingPrintJobs(BOX_ID), []);
+
+  // A write is not allowed to look like it worked, and booth state is refused
+  // outright: a daily cap that does not count, or a lockout that does not
+  // lock, is worse than an outage because nothing about it looks wrong.
+  await assert.rejects(store.putPrintJob(printJob('nowhere')), BoxStoreFeatureMissingError);
+  await assert.rejects(
+    store.bumpCounter(BOX_ID, { scope: 'p', key: 'x', businessDate: '2026-09-20' }),
+    BoxStoreFeatureMissingError,
+  );
+  await assert.rejects(
+    store.recordThrottleFailure(BOX_ID, 'booth_pin', 'station-1'),
+    (err: unknown) =>
+      err instanceof BoxStoreFeatureMissingError &&
+      err.missing.includes('box_throttle') &&
+      err.feature === 'boothRuntime',
+  );
+  db.close();
+});
+
+test('a store that was never opened keeps nothing, which is the safe answer', async () => {
+  const harness = openTestStore(AT);
+  // No `init()`: nothing has probed, so nothing is known to be there. Saying
+  // "yes" here would mean a caller writing a lockout into a table this store
+  // has never looked for.
+  assert.deepEqual(harness.store.features(), { printJobs: false, boothRuntime: false });
   harness.close();
 });
 

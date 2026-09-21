@@ -108,24 +108,69 @@ export interface ItemVoucherData {
   qrCode?: string;
 }
 
+/**
+ * The booth voucher (S2-07a).
+ *
+ * **Nullable rather than optional, almost everywhere.** `staff`, `expiresAt`
+ * and `prizeLineThai` are each a fact the booth genuinely may not have — nobody
+ * was signed in, the prize never expires, the Thai name was never filled in —
+ * and each is nullable in the shape it comes from: `SpinResponse.staffAccountId`
+ * and `.expiresAt` in `@oto/shared`, `booth_prize.name_th` in the config
+ * bundle. Optional (`?`) would let a caller reach the printer having simply
+ * forgotten one, and the slip would come out silently short a row. Required and
+ * nullable makes the caller write the word `null`, and the template prints a
+ * visible answer for it.
+ */
 export interface BoothVoucherData {
-  /** "Oto — Kids Play Park · Central Phuket" */
+  /** "Oto — Kids Play Park · Central Phuket" (DEVICE_INVENTORY §7). */
   venueLine: string;
-  /** "150 THB VOUCHER" */
+  /** The prize in English — `booth_prize.name_en`, e.g. "150 THB VOUCHER". */
   prizeLine: string;
-  /** The same prize in Thai (S2-07a). */
-  prizeLineThai?: string;
+  /**
+   * The same prize in Thai — `booth_prize.name_th`, which is nullable in the
+   * bundle. Null prints the English line alone: a prize whose Thai name an
+   * administrator has not filled in, not a rendering failure.
+   */
+  prizeLineThai: string | null;
   /** "Show this QR at OTO Reception and get 150 THB off your ticket order." */
   redemptionLine: string;
-  termsLine: string;
-  /** `LW-YYMMDD-NNNN`, e.g. "LW-260917-0042". */
+  /**
+   * The terms, one line each — `promo.voucher_definition.terms_en` and
+   * `terms_th`, both nullable columns, so an empty array is a real value and
+   * prints no terms at all. That is the definition missing its terms, and the
+   * place to fix it is the definition.
+   */
+  terms: string[];
+  /**
+   * Ten characters: two of booth prefix and eight drawn from the unambiguous
+   * alphabet (D8, `boothCode` in `@oto/shared`). Printed twice — as the QR's
+   * payload and as text under it — from this one string, so the two can never
+   * disagree.
+   */
   voucherCode: string;
-  date: string;
+  /**
+   * When it was printed, date and time together, e.g. "17 Sep 2026 15:04".
+   *
+   * This is the sample's `Date` row and the specification's "issue time" at
+   * finer grain: one fact, so one row. Formatted by the caller in the branch's
+   * timezone — this package owns no clock (see the note at the top of the file)
+   * and a booth box has no real-time clock to own one with.
+   */
+  issuedAt: string;
+  /** Which booth printed it, e.g. "Central Phuket · G floor". */
   booth: string;
-  /** Name and staff code, e.g. "Nok (S-014)". */
-  staff: string;
-  issuedAt?: string;
-  expiresAt?: string;
+  /**
+   * Name and staff code, e.g. "Nok (S-014)".
+   *
+   * **Null is expected, not exceptional.** A sign-in problem must never take
+   * the booth down (`docs/features/booth.md`), so the wheel spins with nobody
+   * signed in and the spin is flagged unattributed. The template prints that
+   * on the slip rather than leaving the row off, because the row going missing
+   * and the row saying "nobody" look identical to reception otherwise.
+   */
+  staff: string | null;
+  /** Formatted by the caller. Null when the voucher never expires. */
+  expiresAt: string | null;
   footerLine: string;
 }
 

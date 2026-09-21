@@ -1,12 +1,28 @@
 {
   "widthDots": 576,
-  "heightDots": 556,
+  "heightDots": 597,
   "overflow": [],
   "items": [
     {
       "k": "text",
+      "x": 268,
+      "baselineY": 28,
+      "w": 39,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "oto"
+    },
+    {
+      "k": "invert",
+      "x": 264,
+      "y": 8,
+      "w": 47,
+      "h": 28
+    },
+    {
+      "k": "text",
       "x": 83,
-      "baselineY": 25,
+      "baselineY": 60,
       "w": 410,
       "sizeDots": 22,
       "weight": "bold",
@@ -15,7 +31,7 @@
     {
       "k": "text",
       "x": 172,
-      "baselineY": 63,
+      "baselineY": 98,
       "w": 233,
       "sizeDots": 30,
       "weight": "bold",
@@ -24,7 +40,7 @@
     {
       "k": "text",
       "x": 152,
-      "baselineY": 94,
+      "baselineY": 129,
       "w": 272,
       "sizeDots": 30,
       "weight": "bold",
@@ -33,7 +49,7 @@
     {
       "k": "text",
       "x": 218,
-      "baselineY": 115,
+      "baselineY": 150,
       "w": 141,
       "sizeDots": 22,
       "weight": "bold",
@@ -42,14 +58,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 124,
+      "y": 159,
       "w": 560,
       "t": 1
     },
     {
       "k": "text",
       "x": 23,
-      "baselineY": 142,
+      "baselineY": 177,
       "w": 530,
       "sizeDots": 18,
       "weight": "regular",
@@ -58,7 +74,7 @@
     {
       "k": "text",
       "x": 264,
-      "baselineY": 164,
+      "baselineY": 199,
       "w": 49,
       "sizeDots": 18,
       "weight": "regular",
@@ -67,23 +83,32 @@
     {
       "k": "text",
       "x": 125,
-      "baselineY": 182,
+      "baselineY": 217,
       "w": 327,
       "sizeDots": 18,
       "weight": "regular",
       "text": "Cannot be combined with other offers."
     },
     {
+      "k": "text",
+      "x": 197,
+      "baselineY": 240,
+      "w": 182,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "ใช้ร่วมกับโปรโมชันอื่นไม่ได้"
+    },
+    {
       "k": "dashes",
       "x": 8,
-      "y": 186,
+      "y": 244,
       "w": 560,
       "t": 1
     },
     {
       "k": "qr",
       "x": 204,
-      "y": 190,
+      "y": 248,
       "moduleDots": 8,
       "modules": 21,
       "version": 1,
@@ -91,78 +116,24 @@
     },
     {
       "k": "text",
-      "x": 170,
-      "baselineY": 383,
-      "w": 236,
+      "x": 188,
+      "baselineY": 441,
+      "w": 200,
       "sizeDots": 30,
       "weight": "bold",
-      "text": "LW-260917-0042"
+      "text": "B1RT7KMQ4X"
     },
     {
       "k": "dashes",
       "x": 8,
-      "y": 387,
+      "y": 450,
       "w": 560,
       "t": 1
     },
     {
       "k": "text",
       "x": 8,
-      "baselineY": 404,
-      "w": 40,
-      "sizeDots": 18,
-      "weight": "regular",
-      "text": "Date"
-    },
-    {
-      "k": "text",
-      "x": 106,
-      "baselineY": 405,
-      "w": 103,
-      "sizeDots": 18,
-      "weight": "bold",
-      "text": "17 Sep 2026"
-    },
-    {
-      "k": "text",
-      "x": 8,
-      "baselineY": 427,
-      "w": 51,
-      "sizeDots": 18,
-      "weight": "regular",
-      "text": "Booth"
-    },
-    {
-      "k": "text",
-      "x": 106,
-      "baselineY": 427,
-      "w": 210,
-      "sizeDots": 18,
-      "weight": "bold",
-      "text": "Central Phuket · G floor"
-    },
-    {
-      "k": "text",
-      "x": 8,
-      "baselineY": 445,
-      "w": 39,
-      "sizeDots": 18,
-      "weight": "regular",
-      "text": "Staff"
-    },
-    {
-      "k": "text",
-      "x": 106,
-      "baselineY": 445,
-      "w": 101,
-      "sizeDots": 18,
-      "weight": "bold",
-      "text": "Nok (S-014)"
-    },
-    {
-      "k": "text",
-      "x": 8,
-      "baselineY": 465,
+      "baselineY": 468,
       "w": 56,
       "sizeDots": 18,
       "weight": "regular",
@@ -171,7 +142,7 @@
     {
       "k": "text",
       "x": 106,
-      "baselineY": 465,
+      "baselineY": 468,
       "w": 154,
       "sizeDots": 18,
       "weight": "bold",
@@ -180,7 +151,43 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 487,
+      "baselineY": 490,
+      "w": 51,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Booth"
+    },
+    {
+      "k": "text",
+      "x": 106,
+      "baselineY": 490,
+      "w": 210,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Central Phuket · G floor"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 508,
+      "w": 39,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Staff"
+    },
+    {
+      "k": "text",
+      "x": 106,
+      "baselineY": 508,
+      "w": 101,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Nok (S-014)"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 528,
       "w": 61,
       "sizeDots": 18,
       "weight": "regular",
@@ -189,23 +196,23 @@
     {
       "k": "text",
       "x": 106,
-      "baselineY": 487,
-      "w": 102,
+      "baselineY": 528,
+      "w": 92,
       "sizeDots": 18,
       "weight": "bold",
-      "text": "17 Oct 2026"
+      "text": "1 Oct 2026"
     },
     {
       "k": "dashes",
       "x": 8,
-      "y": 495,
+      "y": 536,
       "w": 560,
       "t": 1
     },
     {
       "k": "text",
       "x": 193,
-      "baselineY": 518,
+      "baselineY": 559,
       "w": 190,
       "sizeDots": 18,
       "weight": "bold",
@@ -214,7 +221,7 @@
     {
       "k": "text",
       "x": 77,
-      "baselineY": 540,
+      "baselineY": 581,
       "w": 421,
       "sizeDots": 18,
       "weight": "regular",

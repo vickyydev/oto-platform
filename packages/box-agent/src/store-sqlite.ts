@@ -10,9 +10,15 @@ import { normaliseParam, type BoxSqlDriver, type SqlRow } from './store-sql';
  *
  * The tables below are the same tables, with the same column names, as the
  * `edge` schema the virtual box writes to. The differences are the ones a
- * single-tenant file genuinely has: no schema prefix, no foreign keys into a
- * `core` schema that does not exist here, and `box_cache`, which the `edge`
- * schema has no table for yet.
+ * single-tenant file genuinely has: no schema prefix, and no foreign keys into
+ * a `core` schema that does not exist here.
+ *
+ * Six of them have no counterpart in `edge` YET — `box_cache` from S2-05, and
+ * the five box-local tables S2-07a adds. A Pi creates them here at boot; the
+ * platform database gets them only when a migration adds them, and until it
+ * does the virtual box finds them missing and says so (`BOX_LOCAL_TABLES` and
+ * `EDGE_BOX_LOCAL_TABLES_SQL` in `store-sql.ts`). That is why the store probes
+ * for them rather than assuming: the two dialects are genuinely not level.
  */
 
 export interface SqliteStatementLike {
@@ -151,6 +157,97 @@ create table if not exists box_cache (
   payload text not null,
   applied_at text not null,
   primary key (box_id, scope)
+);
+
+-- The box's own print queue (S2-07a).
+--
+-- Not the cloud's edge.print_job, which is the HISTORY and deliberately
+-- stores nothing rendered. This is the outstanding work, and it has to carry
+-- the renderer's input, because the point of the table is that a voucher
+-- waiting on paper still prints after the power has been off. A finished job
+-- is deleted, so a guest's name and a child's allergy line stay here only as
+-- long as the paper takes to come out.
+create table if not exists box_print_job (
+  id text primary key,
+  box_id text not null,
+  kind text not null,
+  role text,
+  station_id text,
+  device_id text,
+  copies integer not null default 1,
+  job text not null,
+  finish text,
+  template_id text,
+  template_version integer,
+  action_id text,
+  state text not null default 'queued',
+  attempts integer not null default 0,
+  next_attempt_at text,
+  last_error_code text,
+  last_error_message text,
+  queued_at text not null,
+  updated_at text not null,
+  check (state in ('queued', 'sending', 'interrupted')),
+  check (copies > 0),
+  check (attempts >= 0)
+);
+
+create index if not exists box_print_job_pending_idx on box_print_job (box_id, queued_at);
+create index if not exists box_print_job_station_idx on box_print_job (station_id);
+create index if not exists box_print_job_device_idx on box_print_job (device_id);
+
+-- Counters for one trading day: spins, and spins per prize, which is what a
+-- daily cap is read from. A business date and not a timestamp, because the
+-- park's day starts at branch.business_day_start and not at midnight.
+create table if not exists box_counter (
+  box_id text not null,
+  scope text not null,
+  counter_key text not null,
+  business_date text not null,
+  counter_value integer not null default 0,
+  updated_at text not null,
+  primary key (box_id, scope, counter_key, business_date)
+);
+
+-- Who is signed in at a station, kept where a restart cannot lose it.
+create table if not exists box_staff_session (
+  station_id text primary key,
+  box_id text not null,
+  account_id text not null,
+  credential_kind text not null default 'pin',
+  staff_code text,
+  signed_in_at text not null,
+  last_seen_at text not null,
+  expires_at text,
+  updated_at text not null
+);
+
+create index if not exists box_staff_session_box_idx on box_staff_session (box_id);
+
+-- Failed sign-ins, counted on disk. In memory a lockout would last until
+-- somebody pulled the booth's power lead, which is not a lockout.
+create table if not exists box_throttle (
+  box_id text not null,
+  scope text not null,
+  subject text not null,
+  failures integer not null default 0,
+  first_failure_at text not null,
+  last_failure_at text not null,
+  locked_until text,
+  updated_at text not null,
+  primary key (box_id, scope, subject),
+  check (failures >= 0)
+);
+
+-- Small singletons the box owns. One key so far: the latest time this box has
+-- reason to believe in, which is how a Pi with no clock battery can tell that
+-- the time it booted with is behind a moment it has already lived through.
+create table if not exists box_runtime (
+  box_id text not null,
+  runtime_key text not null,
+  value text not null,
+  updated_at text not null,
+  primary key (box_id, runtime_key)
 );
 `;
 

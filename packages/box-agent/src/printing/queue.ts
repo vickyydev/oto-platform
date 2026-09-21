@@ -35,6 +35,16 @@
  * printer for is `skipped`**, and the till says "not printed" without blocking
  * the sale. That is the acceptance criterion, and it is a configuration a
  * person chose rather than a fault, so nothing raises an alert.
+ *
+ * **The queue is on disk (S2-07a).** It was not, and that was the sixth case,
+ * found after the fact: a job waiting on paper lived in this module's memory,
+ * so a box restarted with three unprinted vouchers came back with none while
+ * the cloud went on showing them as queued. Every job is now written to the
+ * box's store before it is attempted, moved to `sending` before the socket
+ * opens and deleted when it is finished, and `resume()` picks the queue up at
+ * boot — `queued` jobs go back on the queue, `sending` ones do not (D12).
+ * A box whose store cannot hold jobs still prints; it just forgets on restart,
+ * as before, and says so in the log at start-up.
  */
 
 import {
@@ -47,8 +57,10 @@ import {
   type PrintJob as RenderJob,
   type PrintTemplate as RenderTemplate,
 } from '@oto/print';
+import { PRINT_KINDS } from '@oto/shared';
 import type { DeviceSettings, PrintKind, PrintTemplate } from '@oto/shared';
 import type { BoxConfigBundle, BoxConfigDevice, BoxConfigStation } from '../protocol';
+import type { PrintJobRecord, PrintJobStore } from '../store';
 import { PrinterError, parseAddress, tcpChannel, type ChannelFactory } from './channel';
 import { escposAdapter, tsplAdapter, unknownHealth, type PrinterAdapter, type PrinterHealth } from './adapter';
 
@@ -133,6 +145,34 @@ export interface PrintSubsystemOptions {
   retryDelayMs?: number;
   /** After this many attempts a retryable job is given up as failed. */
   maxAttempts?: number;
+  /**
+   * Where the queue is kept so it outlives the process (S2-07a).
+   *
+   * Optional, and what it fixes is the defect S2-06 shipped: a job waiting on
+   * paper lived only here, in memory, so a box that restarted with three
+   * unprinted vouchers came back with none and the cloud rows stayed `queued`
+   * for ever. With a store, the job is on disk before the first attempt and
+   * the next boot picks it up.
+   *
+   * **A function, and asked again every time**, because the agent builds this
+   * subsystem before it knows its own box id — that is learned at
+   * registration, and a box id read once at construction would be null on
+   * every real box and the durable queue would silently never engage. Nothing
+   * is written while it answers null, and the recovery has not happened yet
+   * rather than having happened emptily.
+   *
+   * Without a store the queue behaves exactly as it did — it prints, it
+   * retries, and it forgets on restart. That is a real loss, not a neutral
+   * default, so it is logged rather than left to be discovered.
+   */
+  durable?: () => DurablePrintQueue | null;
+}
+
+/** The store to keep the queue in, and whose queue it is. */
+export interface DurablePrintQueue {
+  jobs: PrintJobStore;
+  /** Known only once the box has registered, which is why this is resolved late. */
+  boxId: string;
 }
 
 export interface PrintSubsystem {
@@ -140,7 +180,37 @@ export interface PrintSubsystem {
   submit(request: PrintRequest): Promise<PrintJobOutcome>;
   /** Retry everything that is due. Called from the agent's poll tick. */
   tick(): Promise<PrintJobOutcome[]>;
-  /** Jobs still waiting, oldest first. */
+  /**
+   * Pick the durable queue back up after a restart (S2-07a).
+   *
+   * Two different things come off the disk and they are treated as opposites,
+   * which is the whole of D12:
+   *
+   *  - A job still `queued` never reached a printer. It goes back on the queue
+   *    with its attempt count and its next-attempt time, and the next `tick()`
+   *    tries it. Three vouchers waiting on paper are three vouchers waiting on
+   *    paper after a restart, which is the acceptance criterion.
+   *  - A job that was `sending` had bytes going at a head. Some of it is
+   *    already paper in somebody's hand. It is reported `failed` with
+   *    `PRINT_INTERRUPTED`, deleted, and NEVER printed again by anything
+   *    automatic — a person pressing reprint is a different act, and mints its
+   *    own job.
+   *
+   * Returns the outcomes it reported, which is the interrupted ones.
+   *
+   * Idempotent, and called by `submit()` and `tick()` before they do anything,
+   * so a box recovers whether or not anybody remembered to call it: the agent
+   * ticks this queue on every heartbeat.
+   */
+  resume(): Promise<PrintJobOutcome[]>;
+  /**
+   * Jobs still waiting, oldest first.
+   *
+   * The working queue in memory, which is the same list as the durable one
+   * once `resume()` has run — and `resume()` runs on the first `submit()` or
+   * `tick()`. Read straight after a restart and before either, it is empty:
+   * what is on the disk has not been picked up yet.
+   */
   pending(): { id: string; kind: PrintKind; attempts: number; lastError: string | null }[];
   /** What the box currently believes about each printer it can reach. */
   health(): Record<string, PrinterHealth>;
@@ -158,6 +228,10 @@ interface PendingJob {
   lastError: string | null;
   /** Reported once, so the cloud row is not rewritten on every failed retry. */
   queuedReported: boolean;
+  /** When it was first asked for. Kept through a restart so the order is too. */
+  queuedAt: string;
+  /** The printer the last attempt used, so an interrupted job can name it. */
+  deviceId: string | null;
 }
 
 /**
@@ -257,6 +331,180 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
   const health: Record<string, PrinterHealth> = {};
   /** One promise per device id: the tail of the chain of jobs for that printer. */
   const locks = new Map<string, Promise<unknown>>();
+
+  /** Asked again on every write: see `PrintSubsystemOptions.durable`. */
+  const resolveDurable = options.durable ?? (() => null);
+  /** Memoised once a queue has actually been recovered, never before. */
+  let resumed: Promise<PrintJobOutcome[]> | null = null;
+  let warnedMemoryOnly = false;
+
+  /** Said once, when it first matters: at the first job, not at construction. */
+  function warnMemoryOnly(): void {
+    if (warnedMemoryOnly) return;
+    warnedMemoryOnly = true;
+    log(
+      'warn',
+      'this box has no durable print queue: a job waiting on paper will not survive a restart',
+    );
+  }
+
+  /**
+   * Write to the durable queue, and never let it stop the paper.
+   *
+   * A store that will not write is a box that will forget this job — bad, and
+   * worth an error line — but it is not a reason to refuse to print the
+   * voucher somebody is standing waiting for. So every failure here is logged
+   * with the job named and swallowed, and the queue carries on in memory,
+   * which is exactly what a box with no store does anyway.
+   */
+  async function remember(
+    jobId: string,
+    what: string,
+    fn: (jobs: PrintJobStore, boxId: string) => Promise<void>,
+  ): Promise<void> {
+    const held = resolveDurable();
+    if (!held) {
+      warnMemoryOnly();
+      return;
+    }
+    try {
+      await fn(held.jobs, held.boxId);
+    } catch (err) {
+      log('error', `the print queue could not ${what}`, { jobId, err: String(err) });
+    }
+  }
+
+  function recordFor(
+    pending: PendingJob,
+    state: PrintJobRecord['state'],
+    boxId: string,
+    errorMessage: string | null = null,
+  ): PrintJobRecord {
+    const request = pending.request;
+    return {
+      id: request.id,
+      boxId,
+      kind: request.kind,
+      role: request.role ?? ROLE_FOR_KIND[request.kind] ?? null,
+      stationId: request.stationId ?? null,
+      deviceId: pending.deviceId,
+      copies: request.copies ?? 1,
+      job: request.job,
+      finish: (request.finish ?? null) as Record<string, unknown> | null,
+      templateId: request.templateId ?? null,
+      templateVersion: request.templateVersion ?? null,
+      actionId: request.actionId ?? null,
+      state,
+      attempts: pending.attempts,
+      nextAttemptAt: pending.nextAttemptAt
+        ? new Date(pending.nextAttemptAt).toISOString()
+        : null,
+      lastErrorCode: pending.lastError,
+      lastErrorMessage: errorMessage,
+      queuedAt: pending.queuedAt,
+      updatedAt: now().toISOString(),
+    };
+  }
+
+  /**
+   * A stored row as a request again.
+   *
+   * `kind` is checked against the vocabulary rather than cast: the row was
+   * written by some version of this agent, and a kind this one does not know
+   * would otherwise reach `ROLE_FOR_KIND`, resolve to `undefined`, and route
+   * the job to no printer while claiming it was a routing problem. An unknown
+   * kind is a job that cannot be printed by this build, and saying so is the
+   * honest failure.
+   */
+  function requestFrom(record: PrintJobRecord): PrintRequest | null {
+    if (!(PRINT_KINDS as readonly string[]).includes(record.kind)) return null;
+    return {
+      id: record.id,
+      kind: record.kind as PrintKind,
+      job: record.job,
+      stationId: record.stationId,
+      role: record.role,
+      copies: record.copies,
+      actionId: record.actionId,
+      templateId: record.templateId,
+      templateVersion: record.templateVersion,
+      finish: (record.finish ?? undefined) as Partial<Finish> | undefined,
+    };
+  }
+
+  async function recover(held: DurablePrintQueue): Promise<PrintJobOutcome[]> {
+    const { jobs: durable, boxId } = held;
+    const reported: PrintJobOutcome[] = [];
+
+    for (const record of await durable.loadInterruptedPrintJobs(boxId)) {
+      const outcome: PrintJobOutcome = {
+        id: record.id,
+        status: 'failed',
+        attempts: record.attempts,
+        deviceId: record.deviceId,
+        role: record.role,
+        stationId: record.stationId,
+        errorCode: record.lastErrorCode ?? 'PRINT_INTERRUPTED',
+        errorMessage:
+          record.lastErrorMessage ??
+          'The box restarted while this job was going to the printer',
+        overflow: [],
+        elapsedMs: null,
+      };
+      await report(outcome);
+      await remember(record.id, 'forget an interrupted job', (jobs) =>
+        jobs.deletePrintJob(record.id),
+      );
+      log('warn', 'a print job was interrupted by a restart and will not be retried', {
+        jobId: record.id,
+        kind: record.kind,
+        deviceId: record.deviceId,
+      });
+      reported.push(outcome);
+    }
+
+    for (const record of await durable.loadPendingPrintJobs(boxId)) {
+      if (queue.some((inFlight) => inFlight.request.id === record.id)) continue;
+      const request = requestFrom(record);
+      if (!request) {
+        log('error', 'a stored print job names a kind this agent does not know', {
+          jobId: record.id,
+          kind: record.kind,
+        });
+        continue;
+      }
+      queue.push({
+        request,
+        attempts: record.attempts,
+        nextAttemptAt: record.nextAttemptAt ? Date.parse(record.nextAttemptAt) : 0,
+        lastError: record.lastErrorCode,
+        // The cloud row for a resumed job already says `queued` — it was never
+        // told anything else. Reporting it again on the first retry would
+        // rewrite a row to the value it already holds, once per box per boot.
+        queuedReported: true,
+        queuedAt: record.queuedAt,
+        deviceId: record.deviceId,
+      });
+    }
+    return reported;
+  }
+
+  function ensureResumed(): Promise<PrintJobOutcome[]> {
+    const held = resolveDurable();
+    if (!held) {
+      // Nothing is memoised here on purpose. A box asked before it has
+      // registered has not recovered its queue — it has not tried — and
+      // remembering "done" would mean the vouchers on its disk were never
+      // picked up at all.
+      warnMemoryOnly();
+      return Promise.resolve([]);
+    }
+    resumed ??= recover(held).catch((err) => {
+      log('error', 'the durable print queue could not be read at start-up', { err: String(err) });
+      return [];
+    });
+    return resumed;
+  }
 
   function adapterFor(device: BoxConfigDevice): PrinterAdapter | PrinterError {
     const target = parseAddress(device.address);
@@ -360,6 +608,22 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
       };
     }
 
+    /**
+     * On disk as `sending` BEFORE the socket opens, which is the line the
+     * restart rule is drawn at (D12). Everything after this point may have put
+     * ink on paper, and a box that comes back has to be able to tell that from
+     * a job that never left the queue. It costs one write per attempt, on a
+     * box doing a few prints a minute.
+     */
+    pending.deviceId = routed.device.id;
+    await remember(request.id, 'mark a job as going to the printer', (jobs) =>
+      jobs.updatePrintJob(request.id, {
+        state: 'sending',
+        deviceId: routed.device.id,
+        attempts: pending.attempts,
+      }),
+    );
+
     try {
       const result = await serialise(routed.device.id, () =>
         adapter.print({ bytes, copies: request.copies ?? 1 }),
@@ -405,6 +669,12 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
     const outcome = await attempt(pending);
     if (outcome.status === 'queued') {
       pending.nextAttemptAt = now().getTime() + retryDelayMs;
+      // Back to `queued` on disk with the new attempt count and retry time, so
+      // a restart in the middle of a paper-out resumes the wait rather than
+      // starting it again — or, worse, treating it as interrupted.
+      await remember(pending.request.id, 'record a waiting job', (jobs, box) =>
+        jobs.putPrintJob(recordFor(pending, 'queued', box, outcome.errorMessage)),
+      );
       if (!pending.queuedReported) {
         pending.queuedReported = true;
         await report(outcome);
@@ -418,6 +688,11 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
     }
     const at = queue.indexOf(pending);
     if (at >= 0) queue.splice(at, 1);
+    // Finished, one way or another: the cloud's `edge.print_job` row is the
+    // history from here, and nothing about this job needs to stay on the box.
+    await remember(pending.request.id, 'forget a finished job', (jobs) =>
+      jobs.deletePrintJob(pending.request.id),
+    );
     await report(outcome);
     log(outcome.status === 'printed' ? 'info' : 'warn', `print job ${outcome.status}`, {
       jobId: pending.request.id,
@@ -446,22 +721,34 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
 
   return {
     async submit(request) {
+      await ensureResumed();
       const pending: PendingJob = {
         request,
         attempts: 0,
         nextAttemptAt: 0,
         lastError: null,
         queuedReported: false,
+        queuedAt: now().toISOString(),
+        deviceId: null,
       };
       queue.push(pending);
+      // Written down BEFORE the first attempt. A box that dies between the
+      // press and the paper then comes back holding the voucher to print,
+      // which is the difference between a guest waiting and a guest leaving
+      // with nothing.
+      await remember(request.id, 'record a new job', (jobs, box) =>
+        jobs.putPrintJob(recordFor(pending, 'queued', box)),
+      );
       return run(pending);
     },
     async tick() {
+      await ensureResumed();
       const due = queue.filter((p) => p.nextAttemptAt <= now().getTime());
       const outcomes: PrintJobOutcome[] = [];
       for (const pending of due) outcomes.push(await run(pending));
       return outcomes;
     },
+    resume: ensureResumed,
     pending() {
       return queue.map((p) => ({
         id: p.request.id,

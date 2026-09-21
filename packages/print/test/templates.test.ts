@@ -9,10 +9,11 @@ import {
   resolveTemplate,
   seedPrintTemplates,
 } from '../src/index';
-import type { PrintTemplate } from '../src/index';
-import { PROFILES, TEMPLATES } from './fixtures';
+import type { BoothVoucherData, LayoutItem, PrintTemplate } from '../src/index';
+import { FIXTURES, PROFILES, TEMPLATES } from './fixtures';
 
 const escpos576 = PROFILES.escpos576!;
+const escpos512 = PROFILES.escpos512!;
 const tspl400 = PROFILES.tspl400!;
 
 /** Every string a printout put on the page, in order. */
@@ -168,6 +169,172 @@ describe('a band never carries the logo or the header', () => {
     expect(text).not.toContain('oto');
     // Footer text is editable for a band but the prototype never draws it.
     expect(text).not.toContain('Thank you');
+  });
+});
+
+describe('the booth voucher', () => {
+  const sample = FIXTURES.find((f) => f.job.kind === 'booth_voucher')!;
+  const data = sample.job.data as BoothVoucherData;
+
+  /** The committed sample, so this and `test/fixtures/` never describe two vouchers. */
+  function build(overrides: Partial<BoothVoucherData> = {}, device = escpos576) {
+    return renderJob(
+      { kind: 'booth_voucher', data: { ...data, ...overrides } },
+      { device, templates: TEMPLATES },
+    );
+  }
+
+  it('carries every part the specification names', () => {
+    const job = build();
+    const lines = textOf(job).join('\n');
+
+    // The logo: the inverted "oto" badge, which is an `invert` item with the
+    // word inside it. Unconditional here — there is no template to toggle it.
+    expect(job.layout.items.some((i) => i.k === 'invert')).toBe(true);
+    expect(lines).toContain('oto');
+
+    // The prize in both scripts.
+    expect(lines).toContain('150 THB VOUCHER');
+    expect(lines).toContain('คูปอง 150 บาท');
+
+    // The QR and the readable code come from one field, so they cannot differ.
+    const qr = job.document.blocks.find((b) => b.k === 'qr');
+    expect(qr && qr.k === 'qr' ? qr.value : undefined).toBe(data.voucherCode);
+    expect(lines).toContain(data.voucherCode);
+    expect(job.layout.items.some((i) => i.k === 'qr')).toBe(true);
+
+    // Issue time, booth, expiry, terms.
+    expect(lines).toContain('Issued');
+    expect(lines).toContain(data.issuedAt);
+    expect(lines).toContain('Booth');
+    expect(lines).toContain(data.booth);
+    expect(lines).toContain('Expires');
+    expect(lines).toContain('1 Oct 2026');
+    for (const line of data.terms) expect(lines).toContain(line);
+
+    expect(job.overflow).toEqual([]);
+  });
+
+  it('is not admin-editable: a branch’s templates change nothing about it', () => {
+    // `TEMPLATE_FOR_KIND.booth_voucher` is undefined, so the branch's template
+    // list is never consulted. Asserted on the BYTES rather than on the lookup,
+    // because the lookup returning undefined and the builder ignoring what it
+    // returns are two different claims.
+    const withTemplates = build();
+    const without = renderJob(
+      { kind: 'booth_voucher', data },
+      { device: escpos576, templates: [] },
+    );
+    expect(withTemplates.template).toBeUndefined();
+    expect(Buffer.from(withTemplates.bytes).equals(Buffer.from(without.bytes))).toBe(true);
+  });
+
+  it('prints "Not signed in" rather than dropping the row', () => {
+    // A sign-in problem never takes the booth down, so an unattributed voucher
+    // is expected paper. A missing row and a row saying nobody look identical
+    // to reception, so the slip says which.
+    const lines = textOf(build({ staff: null })).join('\n');
+    expect(lines).toContain('Staff');
+    expect(lines).toContain('Not signed in');
+    expect(lines).not.toContain('Nok (S-014)');
+  });
+
+  it('prints "No expiry" rather than dropping the row', () => {
+    const lines = textOf(build({ expiresAt: null })).join('\n');
+    expect(lines).toContain('Expires');
+    expect(lines).toContain('No expiry');
+  });
+
+  it('prints the English prize alone when the prize has no Thai name', () => {
+    const job = build({ prizeLineThai: null });
+    const lines = textOf(job).join('\n');
+    expect(lines).toContain('150 THB VOUCHER');
+    expect(lines).not.toContain('คูปอง 150 บาท');
+    // Still Thai on the slip: the single-use line is fixed text, not the prize.
+    expect(lines).toContain('Single use · ใช้ได้ 1 ครั้ง');
+    expect(job.overflow).toEqual([]);
+  });
+
+  it('prints no terms when the voucher definition carries none', () => {
+    const job = build({ terms: [] });
+    const lines = textOf(job).join('\n');
+    expect(lines).not.toContain('Cannot be combined with other offers.');
+    // The redemption sentence is not a term and still prints.
+    expect(lines).toContain('Show this QR at OTO Reception');
+    expect(job.overflow).toEqual([]);
+  });
+
+  /**
+   * What a wrong width costs, measured on this content rather than reasoned
+   * about.
+   *
+   * The booth printer is in no section of `DEVICE_INVENTORY.md` §2 and 576 dots
+   * is an assumption (`templates/booth.ts`). If the head turns out to be 512,
+   * `GS v 0` drops everything past dot 512 of a 576-dot raster and reports
+   * nothing at all — so this walks the 576 layout and names what would be lost.
+   *
+   * **The result below is a property of THIS content, not of the template.** A
+   * longer prize name, a longer redemption sentence or a wider code moves it,
+   * which is the point: when the fixture changes, this number changes with it
+   * and the diff says what the assumption now costs.
+   */
+  it('what a wrong width costs: names what a 512-dot head would drop', () => {
+    const HEAD_DOTS = 512;
+    const job = build();
+    expect(job.layout.widthDots).toBe(576);
+
+    const rightEdge = (i: LayoutItem): number => {
+      switch (i.k) {
+        case 'text':
+          return i.x + i.widthDots;
+        case 'qr':
+          return i.x + i.matrix.size * i.moduleDots;
+        case 'barcode':
+          return i.x + i.modules.length * i.moduleDots;
+        case 'image':
+          return i.x + i.bitmap.width;
+        case 'warning':
+          return i.x + i.size;
+        case 'dashes':
+          return i.x + i.w;
+        default:
+          return i.x + i.w;
+      }
+    };
+
+    const lost = job.layout.items
+      .filter((i) => rightEdge(i) > HEAD_DOTS)
+      .map((i) => (i.k === 'text' ? `text: ${i.text}` : i.k));
+
+    expect(lost).toEqual([
+      'dashes',
+      'text: Show this QR at OTO Reception and get 150 THB off your ticket',
+      'dashes',
+      'dashes',
+      'dashes',
+    ]);
+
+    // For this content the QR and the readable code both clear the narrower
+    // head, so a truncated slip would still be redeemable while looking broken.
+    // That is a measurement of one voucher, not a guarantee about any voucher.
+    const qr = job.layout.items.find((i) => i.k === 'qr')!;
+    expect(rightEdge(qr)).toBeLessThanOrEqual(HEAD_DOTS);
+    const code = job.layout.items.find((i) => i.k === 'text' && i.text === data.voucherCode)!;
+    expect(rightEdge(code)).toBeLessThanOrEqual(HEAD_DOTS);
+  });
+
+  it('lays out correctly for a 512-dot head when the profile is right', () => {
+    // Which is a different thing from the test above: a correct 512 layout is
+    // not what a 576 layout looks like truncated. Nothing overflows, the QR
+    // keeps its full module size, and every part still prints.
+    const job = build({}, escpos512);
+    expect(job.layout.widthDots).toBe(512);
+    expect(job.overflow).toEqual([]);
+    const qr = job.layout.items.find((i) => i.k === 'qr')!;
+    expect(qr.k === 'qr' ? qr.moduleDots : 0).toBe(8);
+    const lines = textOf(job).join('\n');
+    expect(lines).toContain(data.voucherCode);
+    expect(lines).toContain('คูปอง 150 บาท');
   });
 });
 

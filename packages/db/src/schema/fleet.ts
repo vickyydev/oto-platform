@@ -183,6 +183,101 @@ export const box = core.table(
 );
 
 /**
+ * Every signing key a box has ever presented — the keyring behind
+ * `box.sync_public_key`.
+ *
+ * `box.sync_public_key` holds the CURRENT key and is what a registration
+ * writes. This table holds the ring, and the difference is what makes a
+ * restart survivable.
+ *
+ * **Why a ring and not a column.** A box signs each event as it is queued and
+ * the signature is verified once, at push, long after the connection that
+ * carried it closed. The cloud virtual box mints a fresh keypair on every
+ * boot — it has nowhere private to keep one between restarts — so a box that
+ * goes offline with three vouchers in its outbox, is restarted, and comes back
+ * has three events signed by a key that is no longer its current one. With a
+ * single column those three events fail signature verification and land in
+ * quarantine: the park's staff see `synced_count=0` while three families walk
+ * around holding printed vouchers the platform has never heard of. With a
+ * ring, an event verifies against ANY key of that box that has not been
+ * retired, and the restart is uneventful.
+ *
+ * **Re-signing on the box is not the alternative.** Letting an agent re-sign
+ * its own queue under a new key would mean a re-imaged Pi could put its
+ * signature on facts it did not originate, which is the one thing the
+ * signature exists to prevent. The keyring keeps the old key verifiable
+ * without ever letting anything re-attest to old bytes.
+ *
+ * **Retiring.** A store reset — the act that wipes the box's journal and mints
+ * epoch N+1 — retires the whole ring, because nothing from the old store is
+ * ever expected again and a key kept live past that point only widens what a
+ * stolen private half could forge. That rule lives in the service that
+ * performs the reset; what this table gives it is somewhere to record it.
+ *
+ * **Growth.** One row per boot on the cloud box, which is one per deploy.
+ * These are a few dozen bytes each and nothing joins to them in a hot path, so
+ * the ring is left to grow rather than trimmed on a timer: a key deleted early
+ * is a quarantined sale, and a key kept is a row.
+ *
+ * **Nothing reads this table yet.** The push path still verifies against
+ * `box.sync_public_key`; the booth box role is what teaches it to read the
+ * ring, and the migration backfills a row here for every box already
+ * registered so that the switch does not strand a queue. Until that lands,
+ * this is a table with a backfill and no reader.
+ */
+export const boxSyncKey = core.table(
+  'box_sync_key',
+  {
+    id: idPk(),
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => box.id, { onDelete: 'restrict' }),
+    /** The PUBLIC half — base64url or SPKI PEM, as `box.sync_public_key` is. */
+    publicKey: text('public_key').notNull(),
+    algorithm: text('algorithm').notNull().default('ed25519'),
+    /**
+     * SHA-256 of the public key, lower-case hex. It is what makes
+     * re-presenting the same key idempotent: a box that registers twice with
+     * one key gets one row rather than two, and the unique index below is what
+     * enforces that rather than a read-then-write that two registrations can
+     * both lose.
+     */
+    fingerprint: text('fingerprint').notNull(),
+    /** The journal epoch the box was on when it presented this. */
+    registeredEpoch: integer('registered_epoch').notNull().default(1),
+    registeredAt: timestamp('registered_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    /** When an event last verified against it, which is how a dead key is spotted. */
+    lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true, mode: 'date' }),
+    retiredAt: timestamp('retired_at', { withTimezone: true, mode: 'date' }),
+    /** `store_reset`, `rotation`, `compromised` — one word, for the Console. */
+    retiredReason: text('retired_reason'),
+    ...timestamps,
+  },
+  (t) => [
+    /**
+     * The verification lookup: every key of this box that is still good. The
+     * push path reads it for each batch, so it carries only live keys rather
+     * than reading a year of retired ones and throwing them away.
+     */
+    index('box_sync_key_live_idx')
+      .on(t.boxId)
+      .where(sql`retired_at is null`),
+    /** Re-presenting the same key is idempotent. See `fingerprint`. */
+    uniqueIndex('box_sync_key_fingerprint_unique').on(t.boxId, t.fingerprint),
+    index('box_sync_key_registered_idx').on(t.boxId, t.registeredAt),
+    check('box_sync_key_epoch_check', sql`${t.registeredEpoch} > 0`),
+    check('box_sync_key_fingerprint_check', sql`${t.fingerprint} ~ '^[0-9a-f]{64}$'`),
+    /** A retired key names why. A retirement with no reason is not a decision. */
+    check(
+      'box_sync_key_retired_check',
+      sql`${t.retiredAt} is null or ${t.retiredReason} is not null`,
+    ),
+  ],
+);
+
+/**
  * A place a session can be held: a till, a kiosk, a gate, a customer display,
  * and from S2-07 a booth. Text + CHECK rather than a pg enum so a new kind
  * arrives without a DDL lock (S2-01b).

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>OTO Lucky Wheel</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="same-origin" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!--
+      Thai on the television renders in Noto Sans Thai (D23): the park's brand
+      faces have no Thai glyphs, and every prize on this wheel is named in both
+      languages on the result card.
+
+      It is fetched, not bundled — the layout manifest says `source: 'bundled'`
+      and that is not yet true. A booth with no internet falls back to whatever
+      Thai face the device has, which on Windows, Android and macOS is a real
+      one; the card stays readable, it is simply not the brand's Thai face.
+      Whoever fills the asset slot should ship the woff2 and drop this link.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

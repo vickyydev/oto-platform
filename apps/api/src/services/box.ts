@@ -36,7 +36,13 @@ import { usableSigningKeys } from '../lib/signing-keys';
 import { audit } from './audit';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
-import { boxOutboxState, closeCursorEpoch, normaliseSyncPublicKey } from './sync';
+import {
+  boxOutboxState,
+  closeCursorEpoch,
+  normaliseSyncPublicKey,
+  recordSyncKey,
+  retireSyncKeys,
+} from './sync';
 import { limitPrincipal } from './throttle';
 import { withTx, type Exec, type OpContext } from './tx';
 
@@ -449,6 +455,23 @@ export async function registerBox(
       );
     }
 
+    /**
+     * Onto the ring as well as into the column (S2-07a).
+     *
+     * This is the door the virtual box comes through on every boot, and the
+     * ring exists for what happens on the boot AFTER this one: the key written
+     * here is the one that will have signed whatever is still queued when the
+     * box restarts. Recorded here or it is not recorded at all.
+     */
+    if (syncKey) {
+      await recordSyncKey(tx, {
+        boxId: row.id,
+        publicKeyPem: syncKey.pem,
+        algorithm: input.syncKeyAlgorithm ?? 'ed25519',
+        epoch: row.currentEpoch,
+      });
+    }
+
     await audit.record(tx, {
       // No person did this: a machine redeemed a code a person issued. Who
       // issued it is on the `box.claim_code_issue` row.
@@ -655,6 +678,14 @@ export async function recordHeartbeat(
             .update(box)
             .set({ syncPublicKey: pem, syncKeyRegisteredAt: receivedAt })
             .where(eq(box.id, auth.boxId));
+          // The third door, and the ring has to hear about it for the same
+          // reason as the other two: the key being replaced here is the one
+          // that signed whatever the box has not yet pushed.
+          await recordSyncKey(tx, {
+            boxId: auth.boxId,
+            publicKeyPem: pem,
+            epoch: auth.currentEpoch,
+          });
           await audit.record(tx, {
             actorAccountId: null,
             operatorId: auth.operatorId,
@@ -1095,6 +1126,21 @@ export async function completeCommand(
        * epoch bump is what keeps the two from ever disagreeing.
        */
       await closeCursorEpoch(tx, auth.boxId, auth.currentEpoch);
+      /**
+       * And the ring goes with the journal (S2-07a).
+       *
+       * A push verifies against any key this box has not had retired, which is
+       * what lets a restart with a full outbox sync. A store reset says the
+       * opposite: the queue is gone and nothing sealed before this moment is
+       * expected again, so every old key is closed and only the one the box is
+       * registered with now stays — it is still signing with it, and retiring
+       * that would refuse its next push rather than its last one.
+       */
+      const retiredKeys = await retireSyncKeys(tx, {
+        boxId: auth.boxId,
+        reason: 'store_reset',
+        keepPublicKeyPem: auth.syncPublicKey,
+      });
       await audit.record(tx, {
         actorAccountId: existing.requestedByAccountId ?? null,
         operatorId: auth.operatorId,
@@ -1103,7 +1149,7 @@ export async function completeCommand(
         entityType: 'box',
         entityId: auth.boxId,
         before: { epoch: auth.currentEpoch },
-        after: { epoch, commandId: existing.id, actionId: existing.actionId },
+        after: { epoch, commandId: existing.id, actionId: existing.actionId, retiredKeys },
         requestId: ctx.requestId,
       });
     }

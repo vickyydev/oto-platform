@@ -1,0 +1,231 @@
+{
+  "widthDots": 512,
+  "heightDots": 597,
+  "overflow": [],
+  "items": [
+    {
+      "k": "text",
+      "x": 236,
+      "baselineY": 28,
+      "w": 39,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "oto"
+    },
+    {
+      "k": "invert",
+      "x": 232,
+      "y": 8,
+      "w": 47,
+      "h": 28
+    },
+    {
+      "k": "text",
+      "x": 51,
+      "baselineY": 60,
+      "w": 410,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "Oto — Kids Play Park · Central Phuket"
+    },
+    {
+      "k": "text",
+      "x": 140,
+      "baselineY": 98,
+      "w": 233,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "★ YOU WON ★"
+    },
+    {
+      "k": "text",
+      "x": 120,
+      "baselineY": 129,
+      "w": 272,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "150 THB VOUCHER"
+    },
+    {
+      "k": "text",
+      "x": 186,
+      "baselineY": 150,
+      "w": 141,
+      "sizeDots": 22,
+      "weight": "bold",
+      "text": "คูปอง 150 บาท"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 159,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 16,
+      "baselineY": 177,
+      "w": 479,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Show this QR at OTO Reception and get 150 THB off your"
+    },
+    {
+      "k": "text",
+      "x": 206,
+      "baselineY": 199,
+      "w": 99,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "ticket order."
+    },
+    {
+      "k": "text",
+      "x": 93,
+      "baselineY": 217,
+      "w": 327,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Cannot be combined with other offers."
+    },
+    {
+      "k": "text",
+      "x": 165,
+      "baselineY": 240,
+      "w": 182,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "ใช้ร่วมกับโปรโมชันอื่นไม่ได้"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 244,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "qr",
+      "x": 172,
+      "y": 248,
+      "moduleDots": 8,
+      "modules": 21,
+      "version": 1,
+      "ecc": "M"
+    },
+    {
+      "k": "text",
+      "x": 156,
+      "baselineY": 441,
+      "w": 200,
+      "sizeDots": 30,
+      "weight": "bold",
+      "text": "B1RT7KMQ4X"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 450,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 468,
+      "w": 56,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Issued"
+    },
+    {
+      "k": "text",
+      "x": 106,
+      "baselineY": 468,
+      "w": 154,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "17 Sep 2026 15:04"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 490,
+      "w": 51,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Booth"
+    },
+    {
+      "k": "text",
+      "x": 106,
+      "baselineY": 490,
+      "w": 210,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Central Phuket · G floor"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 508,
+      "w": 39,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Staff"
+    },
+    {
+      "k": "text",
+      "x": 106,
+      "baselineY": 508,
+      "w": 101,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Nok (S-014)"
+    },
+    {
+      "k": "text",
+      "x": 8,
+      "baselineY": 528,
+      "w": 61,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Expires"
+    },
+    {
+      "k": "text",
+      "x": 106,
+      "baselineY": 528,
+      "w": 92,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "1 Oct 2026"
+    },
+    {
+      "k": "dashes",
+      "x": 8,
+      "y": 536,
+      "w": 496,
+      "t": 1
+    },
+    {
+      "k": "text",
+      "x": 161,
+      "baselineY": 559,
+      "w": 190,
+      "sizeDots": 18,
+      "weight": "bold",
+      "text": "Single use · ใช้ได้ 1 ครั้ง"
+    },
+    {
+      "k": "text",
+      "x": 45,
+      "baselineY": 581,
+      "w": 421,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Redeem at Oto Play Park, Central Phuket · Привет"
+    }
+  ]
+}

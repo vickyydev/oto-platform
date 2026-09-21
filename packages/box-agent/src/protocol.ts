@@ -99,6 +99,63 @@ export const DeviceReportSchema = z.object({
 });
 export type DeviceReport = z.infer<typeof DeviceReportSchema>;
 
+/**
+ * What a booth box reports about the wheel it is running (S2-07a).
+ *
+ * Counts and states, like everything else on this wire: no code, no prize
+ * name, no member, and — the one that matters here — no staff identity.
+ * `staffSignedIn` is a boolean rather than an account id on purpose. Health
+ * needs to know that vouchers are printing with nobody attending the booth;
+ * it does not need to know who is standing there, and a telemetry stream is
+ * the last place to put a name that nothing reads until something has already
+ * gone wrong.
+ *
+ * **One booth per box.** The block is a single object, not a list keyed by
+ * station, because a booth box boots into the game and runs one wheel. A box
+ * that ever hosts two booths needs this as an array with a `stationId` on each
+ * entry, and that is a change to the shape rather than a field added to it.
+ */
+export const BoothHeartbeatSchema = z.object({
+  /**
+   * `booth.booth_config_version.version` — the published wheel the box is
+   * actually running. **Null means it has never synced one**, which is a
+   * distinct state from version 1: the television shows "Booth not set up,
+   * connect to internet" and the button does nothing.
+   *
+   * A number rather than the box-wide `configVersion` above, which is a hash
+   * of the whole box's configuration. They answer different questions and a
+   * booth that has pulled its station config but not a wheel is exactly the
+   * case where the two disagree.
+   */
+  configVersion: z.number().int().positive().nullable(),
+  /**
+   * Tri-state, not a boolean, and the distinction is one this fleet has
+   * already been bitten by: "could not ask" is not "not reachable". A booth
+   * whose printer the agent has not probed yet reports `unknown`, and Health
+   * must not draw a fault from it.
+   */
+  printerReachable: z.enum(DEVICE_REACHABILITY),
+  paperStatus: z.enum(DEVICE_PAPER_STATES),
+  /** Minted vouchers whose facts the cloud has not acknowledged. The offline count. */
+  vouchersPending: z.number().int().min(0),
+  /** The box's own stamp, as with every other time on this wire. Null: no spin yet. */
+  lastSpinAt: z.string().datetime().nullable(),
+  /** Whether SOMEBODY is signed in. Never who. See the note above. */
+  staffSignedIn: z.boolean(),
+  /**
+   * The prizes that have hit their daily cap on this booth today, by
+   * `booth.booth_prize.id`. Configuration, not people — which is why ids are
+   * allowed here at all.
+   *
+   * It is a list rather than a count because the alert names the prize, and
+   * because "the 200 baht voucher ran out at eleven" is the fact the booth
+   * report is asked for. Bounded, since a wheel has slices rather than a
+   * catalogue behind it.
+   */
+  dailyCapsReached: z.array(z.string().uuid()).max(64).default([]),
+});
+export type BoothHeartbeat = z.infer<typeof BoothHeartbeatSchema>;
+
 export const BoxHeartbeatRequestSchema = z.object({
   /**
    * The box's own clock. `received_at` is what the cloud trusts; the
@@ -148,6 +205,12 @@ export const BoxHeartbeatRequestSchema = z.object({
     )
     .max(32)
     .default([]),
+  /**
+   * Present only on a box running a booth (S2-07a), and optional so that every
+   * till in the fleet — and every agent built before this ticket — sends a
+   * heartbeat this schema still accepts.
+   */
+  booth: BoothHeartbeatSchema.optional(),
   /**
    * What has been going wrong, as fingerprints and counts. The message itself
    * stays on the box: a printer error can quote the line it failed to print.
@@ -293,6 +356,31 @@ export interface BoxConfigBundle {
   heartbeatIntervalS: number;
   minSupportedAgentVersion: string;
 }
+
+/**
+ * The booth's published wheel, as it reaches a box (S2-07a).
+ *
+ * **It does not ride `BoxConfigBundle`.** That document is the box's stations,
+ * devices and print templates, and it is pulled when its hash changes; a wheel
+ * is published on its own cadence, is compared by its own `bundle_hash`, and
+ * has to be applied whole or not at all. So it travels as the `booth` cache
+ * scope (`SYNC_CHANGE_SCOPES`), beside members and the catalogue, and the box
+ * keeps the latest version it has applied.
+ *
+ * Re-exported from `@oto/shared` rather than restated here, which is the
+ * opposite of what `PrintTemplateWire` above does, and deliberately: a print
+ * template is read by the box alone, while this same document is read by the
+ * page on the television, drawn from by the box, and written by the api that
+ * publishes it. Three readers of one hashed document is the case where a
+ * structural copy that drifts by one optional field costs nothing at compile
+ * time and produces a wheel whose slices do not match its own odds.
+ */
+export type {
+  BoothConfigBundle,
+  BoothConfigLayout,
+  BoothConfigPrize,
+  BoothConfigSettings,
+} from '@oto/shared';
 
 // --- Commands ---------------------------------------------------------------
 

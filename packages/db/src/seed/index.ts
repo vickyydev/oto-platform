@@ -14,6 +14,7 @@
  * demo rows (accounts, members, children) are created once and then left
  * alone, so a password changed or a note edited on staging survives a sync.
  */
+import { createHash } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
 import {
   newId,
@@ -32,6 +33,22 @@ import { closeDb, getDb, type Db } from '../index';
 import * as s from '../schema/index';
 
 const b = satangFromBaht;
+
+/**
+ * JSON with every object's keys in sorted order.
+ *
+ * A booth's `bundle_hash` is what the box compares to decide whether it is
+ * already running a version, so it must not change because somebody wrote two
+ * fields in a different order. The publish path (S2-07b) owns the canonical
+ * form for versions a person creates; this is the same rule, applied to the
+ * one version this file writes.
+ */
+const stableJson = (value: unknown): string =>
+  JSON.stringify(value, (_key, v: unknown) => {
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return v;
+    const src = v as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(src).sort().map((k) => [k, src[k]]));
+  });
 
 // Prototype pricing constants (catalogStore.ts:176-258), in satang.
 const ADULT_ADMISSION: WWPrice = wwp(b(350), b(500));
@@ -270,7 +287,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
     { role: 'platform_admin', scopeType: 'operator', scopeId: null }, // platform-wide
     { role: 'operator_admin', scopeType: 'operator', scopeId: operatorId },
   ]);
-  await mkAccount(empSom, '+66900000002', 'reception1234', [
+  const receptionAccountId = await mkAccount(empSom, '+66900000002', 'reception1234', [
     { role: 'reception', scopeType: 'branch', scopeId: branchId },
   ]);
 
@@ -897,8 +914,354 @@ export async function seed(db: Db = getDb()): Promise<void> {
     .values({ id: newId(), stationId: boothId, accountId: adminAccountId, addedBy: adminAccountId })
     .onConflictDoNothing({ target: [s.stationStaff.stationId, s.stationStaff.accountId] });
 
+  // --- The Lucky Wheel booth (S2-07a) -----------------------------------------
+  //
+  // A fixture wheel, so the game is playable before the admin panel (S2-07b)
+  // exists: one layout, six voucher definitions, six prizes, the booth's own
+  // settings, and version 1 of the bundle the box runs.
+  //
+  // The prizes and their odds are the ones the live booth is running today
+  // (`imports/oto-wheel-fortune/artifacts/spin-win/src/config.ts`): 23.5 / 27.5
+  // / 17.5 / 14.5 / 14.5 / 2.5 per cent, which is the owner's launch list with
+  // the 3 % "Mystery Box — not available yet" spread across the rest. In basis
+  // points those are 2350 / 2750 / 1750 / 1450 / 1450 / 250 and they add to
+  // exactly 10000, which is the whole reason the column is an integer.
+  //
+  // Demo rows, so: created once and then left alone, like the members and the
+  // print templates. A weight changed from the Console on staging survives a
+  // re-sync — the prize editor is how weights change, not this file.
+
+  const [existingLayout] = await db
+    .select()
+    .from(s.boothLayout)
+    .where(and(eq(s.boothLayout.operatorId, operatorId), eq(s.boothLayout.name, 'Classic wheel')))
+    .limit(1);
+  /**
+   * The design, and the SLOT its artwork arrives in.
+   *
+   * No licence-encumbered asset is copied out of `imports/`: the manifest
+   * names what the wheel wants and where each one is expected to come from,
+   * and the booth falls back to a generated face and silent audio for anything
+   * nobody has uploaded. The palette is the live wheel's own six brand
+   * colours. Thai on the television renders in Noto Sans Thai, because the
+   * brand fonts have no Thai glyphs (`docs/features/booth.md`).
+   */
+  const layoutValues = {
+    description: "The live booth's six-slice wheel, in the park's brand colours.",
+    design: {
+      palette: ['#FFE72E', '#FF7BC5', '#FF8A3D', '#55B9FF', '#A6E22C', '#CD8CFF'],
+      defaultTextColor: '#111111',
+      labelMaxLines: 2,
+    },
+    assetManifest: {
+      face: { name: 'wheel-face', source: 'slot', fallback: 'generated' },
+      tick: { name: 'wheel-tick', source: 'slot', fallback: 'silent' },
+      win: { name: 'wheel-win', source: 'slot', fallback: 'silent' },
+      thaiFont: { name: 'Noto Sans Thai', source: 'bundled' },
+    },
+  };
+  const layoutId = existingLayout?.id ?? newId();
+  if (!existingLayout) {
+    await db
+      .insert(s.boothLayout)
+      .values({ id: layoutId, operatorId, name: 'Classic wheel', ...layoutValues });
+  }
+  const layout = existingLayout ?? { id: layoutId, name: 'Classic wheel', version: 1, ...layoutValues };
+
+  /**
+   * What each prize turns into.
+   *
+   * `cost_satang` is the face value for the money vouchers, which is what the
+   * park actually gives up, and **zero for the activity prizes** — nobody has
+   * costed a bracelet workshop, and zero here reads "not costed yet" rather
+   * than "free". Putting a guess in would make a booth report that looks
+   * authoritative and is not. The prize editor (S2-07b) is where the real
+   * numbers are entered.
+   *
+   * The terms line is placeholder copy in the shape the printed voucher wants;
+   * the park's own wording replaces it from the voucher-definition admin.
+   */
+  const fourteenDays = 14;
+  const definitions = [
+    {
+      code: 'spin-voucher-100',
+      nameEn: '100 THB Voucher',
+      nameTh: 'บัตรกำนัล 100 บาท',
+      kind: 'discount' as const,
+      valueType: 'amount' as const,
+      valueSatang: b(100),
+      costSatang: b(100),
+    },
+    {
+      code: 'spin-bracelet-workshop',
+      nameEn: 'Free Bracelet Workshop',
+      nameTh: 'เวิร์กช็อปทำสร้อยข้อมือฟรี',
+      kind: 'free_item' as const,
+      valueType: 'item' as const,
+      costSatang: 0,
+    },
+    {
+      code: 'spin-voucher-150',
+      nameEn: '150 THB Voucher',
+      nameTh: 'บัตรกำนัล 150 บาท',
+      kind: 'discount' as const,
+      valueType: 'amount' as const,
+      valueSatang: b(150),
+      costSatang: b(150),
+    },
+    {
+      code: 'spin-voucher-200',
+      nameEn: '200 THB Voucher',
+      nameTh: 'บัตรกำนัล 200 บาท',
+      kind: 'discount' as const,
+      valueType: 'amount' as const,
+      valueSatang: b(200),
+      costSatang: b(200),
+    },
+    {
+      code: 'spin-kids-pizza',
+      nameEn: 'Kids Pizza',
+      nameTh: 'พิซซ่าสำหรับเด็ก',
+      kind: 'free_item' as const,
+      valueType: 'item' as const,
+      costSatang: 0,
+    },
+    {
+      code: 'spin-kids-ticket-1-plus-1',
+      nameEn: '1+1 Kids Ticket',
+      nameTh: 'บัตรเด็ก 1 แถม 1',
+      kind: 'free_ticket' as const,
+      valueType: 'item' as const,
+      costSatang: 0,
+    },
+  ];
+  const definitionIds: Record<string, string> = {};
+  for (const d of definitions) {
+    const [found] = await db
+      .select({ id: s.voucherDefinition.id })
+      .from(s.voucherDefinition)
+      .where(
+        and(
+          eq(s.voucherDefinition.operatorId, operatorId),
+          eq(s.voucherDefinition.code, d.code),
+        ),
+      )
+      .limit(1);
+    const id = found?.id ?? newId();
+    if (!found) {
+      await db.insert(s.voucherDefinition).values({
+        id,
+        operatorId,
+        expiryDays: fourteenDays,
+        termsEn: 'Valid at OTO Play Park, HKT Central. One use only. No cash value.',
+        termsTh: 'ใช้ได้ที่ OTO Play Park สาขา HKT Central ใช้ได้ครั้งเดียว ไม่สามารถแลกเป็นเงินสดได้',
+        ...d,
+      });
+    }
+    definitionIds[d.code] = id;
+  }
+
+  /**
+   * The six slices, in the live wheel's own order — the money vouchers
+   * alternate with the activity prizes so the 200 and the 100 are never side
+   * by side.
+   */
+  const prizeSeeds = [
+    {
+      definition: 'spin-voucher-100',
+      nameEn: '100 THB Voucher',
+      nameTh: 'บัตรกำนัล 100 บาท',
+      wheelLabel: '100 ฿',
+      weightBp: 2350,
+      sliceColor: '#FFE72E',
+      costSatang: b(100),
+    },
+    {
+      definition: 'spin-bracelet-workshop',
+      nameEn: 'Free Bracelet Workshop',
+      nameTh: 'เวิร์กช็อปทำสร้อยข้อมือฟรี',
+      wheelLabel: 'Bracelet\nWorkshop',
+      weightBp: 2750,
+      sliceColor: '#FF7BC5',
+      costSatang: 0,
+    },
+    {
+      definition: 'spin-voucher-150',
+      nameEn: '150 THB Voucher',
+      nameTh: 'บัตรกำนัล 150 บาท',
+      wheelLabel: '150 ฿',
+      weightBp: 1750,
+      sliceColor: '#FF8A3D',
+      costSatang: b(150),
+    },
+    {
+      definition: 'spin-voucher-200',
+      nameEn: '200 THB Voucher',
+      nameTh: 'บัตรกำนัล 200 บาท',
+      wheelLabel: '200 ฿',
+      weightBp: 1450,
+      sliceColor: '#55B9FF',
+      costSatang: b(200),
+    },
+    {
+      definition: 'spin-kids-pizza',
+      nameEn: 'Kids Pizza',
+      nameTh: 'พิซซ่าสำหรับเด็ก',
+      wheelLabel: 'Kids\nPizza',
+      weightBp: 1450,
+      sliceColor: '#A6E22C',
+      costSatang: 0,
+    },
+    {
+      definition: 'spin-kids-ticket-1-plus-1',
+      nameEn: '1+1 Kids Ticket',
+      nameTh: 'บัตรเด็ก 1 แถม 1',
+      wheelLabel: '1+1 Kids\nTicket',
+      weightBp: 250,
+      sliceColor: '#CD8CFF',
+      costSatang: 0,
+    },
+  ];
+  for (const [i, p] of prizeSeeds.entries()) {
+    const { definition, ...fields } = p;
+    const [found] = await db
+      .select({ id: s.boothPrize.id })
+      .from(s.boothPrize)
+      .where(and(eq(s.boothPrize.stationId, boothId), eq(s.boothPrize.nameEn, p.nameEn)))
+      .limit(1);
+    if (found) continue;
+    await db.insert(s.boothPrize).values({
+      id: newId(),
+      operatorId,
+      branchId,
+      stationId: boothId,
+      voucherDefinitionId: definitionIds[definition]!,
+      textColor: '#111111',
+      sortOrder: i,
+      ...fields,
+    });
+  }
+
+  // Booth settings. `Space` is a default, not an answer: which key the red
+  // button sends has not been read off the real booth yet
+  // (`docs/features/booth.md`). Eligibility is `none` because a mall visitor
+  // has no wristband and the television asks for no phone number (D15).
+  const [existingBoothSettings] = await db
+    .select({ stationId: s.boothSettings.stationId })
+    .from(s.boothSettings)
+    .where(eq(s.boothSettings.stationId, boothId))
+    .limit(1);
+  if (!existingBoothSettings) {
+    await db.insert(s.boothSettings).values({
+      stationId: boothId,
+      operatorId,
+      branchId,
+      layoutId: layout.id,
+      buttonKey: 'Space',
+      eligibility: 'none',
+    });
+  }
+
+  /**
+   * Version 1 of the published wheel.
+   *
+   * Read back from the rows rather than assembled from the arrays above, so
+   * that a database seeded before this block existed — one whose prizes a
+   * person has since edited — publishes what it actually has.
+   */
+  const [existingVersion] = await db
+    .select({ id: s.boothConfigVersion.id })
+    .from(s.boothConfigVersion)
+    .where(
+      and(eq(s.boothConfigVersion.stationId, boothId), eq(s.boothConfigVersion.version, 1)),
+    )
+    .limit(1);
+  if (!existingVersion) {
+    const prizeRows = await db
+      .select()
+      .from(s.boothPrize)
+      .where(and(eq(s.boothPrize.stationId, boothId), isNull(s.boothPrize.archivedAt)))
+      .orderBy(s.boothPrize.sortOrder);
+    const bundle = {
+      schemaVersion: 1,
+      settings: { eligibility: 'none', buttonKey: 'Space', dailySpinCap: null },
+      layout: {
+        id: layout.id,
+        name: layout.name,
+        version: layout.version,
+        design: layout.design,
+        assetManifest: layout.assetManifest,
+      },
+      prizes: prizeRows.map((p) => ({
+        id: p.id,
+        nameEn: p.nameEn,
+        nameTh: p.nameTh,
+        wheelLabel: p.wheelLabel,
+        weightBp: p.weightBp,
+        active: p.active,
+        dailyCap: p.dailyCap,
+        expiryDays: p.expiryDays,
+        costSatang: p.costSatang,
+        sliceColor: p.sliceColor,
+        textColor: p.textColor,
+        sortOrder: p.sortOrder,
+        voucherDefinitionId: p.voucherDefinitionId,
+      })),
+    };
+    await db.insert(s.boothConfigVersion).values({
+      id: newId(),
+      operatorId,
+      branchId,
+      stationId: boothId,
+      version: 1,
+      layoutId: layout.id,
+      bundle,
+      bundleHash: createHash('sha256').update(stableJson(bundle)).digest('hex'),
+      // Nobody published it — it came from this file, and the column says so.
+      publishedByAccountId: null,
+      note: 'Seeded launch wheel: the live booth\'s six prizes and their odds.',
+    });
+  }
+
+  /**
+   * Somebody to sign in at the booth, and a PIN to do it with.
+   *
+   * Reception rather than the administrator: the booth is worked by whoever is
+   * looking after it, and this is also the account S2-07b's PIN management is
+   * demonstrated on. `2468` is a local-dev value in the same class as the
+   * seeded passwords — it is hashed with argon2id here, as every secret on
+   * this platform is, and a staging deployment that wants a different one sets
+   * it from the Console.
+   */
+  await db
+    .insert(s.boothStaffAssignment)
+    .values({
+      id: newId(),
+      stationId: boothId,
+      accountId: receptionAccountId,
+      addedBy: adminAccountId,
+    })
+    .onConflictDoNothing({
+      target: [s.boothStaffAssignment.stationId, s.boothStaffAssignment.accountId],
+    });
+  const [existingPin] = await db
+    .select({ id: s.credential.id })
+    .from(s.credential)
+    .where(and(eq(s.credential.accountId, receptionAccountId), eq(s.credential.kind, 'pin')))
+    .limit(1);
+  if (!existingPin) {
+    await db.insert(s.credential).values({
+      id: newId(),
+      operatorId,
+      accountId: receptionAccountId,
+      kind: 'pin',
+      secretHash: await hash('2468'),
+      createdByAccountId: adminAccountId,
+    });
+  }
+
   console.log(
-    'Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog, two virtual boxes with three stations, the park\'s six printers, and six print templates.',
+    'Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog, two virtual boxes with three stations, the park\'s six printers, six print templates, and Booth 1 with six prizes at config version 1.',
   );
 }
 

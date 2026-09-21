@@ -19,4 +19,6 @@ export * from './print';
 export * from './staff-token';
 export * from './device-settings';
 export * from './scanning';
+export * from './booth';
+export * from './booth-code';
 export * from './simulator';

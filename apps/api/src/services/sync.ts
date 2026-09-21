@@ -7,6 +7,7 @@ import {
   booking,
   box,
   boxOutbox,
+  boxSyncKey,
   branch,
   branchHoliday,
   branchTaxConfig,
@@ -100,7 +101,9 @@ import type { BoxAuth } from './box';
  * against accidental divergence and against nothing an attacker does, because
  * anyone who can rewrite the payload can recompute the hash. `sig` is
  * PROVENANCE: did this come from that box? It is Ed25519 over the same
- * canonical bytes, verified once, at push, against `core.box.sync_public_key`.
+ * canonical bytes, verified once, at push, against any key that box is still
+ * trusted to have signed with — see "The keyring" below, which is why that is a
+ * set rather than the one column it used to be.
  * Both bytes come from `canonicalSyncBytes` in `@oto/shared`, which is the only
  * definition of them — `JSON.stringify` is not a contract, and two ends
  * disagreeing about key order would make every re-send look like a conflict.
@@ -235,6 +238,226 @@ export function normaliseSyncPublicKey(value: string): { pem: string; fingerprin
   return { pem, fingerprint: sha256Hex(pem).slice(0, 16) };
 }
 
+// --- The keyring ------------------------------------------------------------
+
+/**
+ * Why a box has SEVERAL keys the cloud will verify against, and not one.
+ *
+ * A box signs an event the moment it queues it. The signature is checked once,
+ * at push — which can be hours later, across a restart, on a connection that
+ * did not exist when the bytes were sealed. So the key that signed a queued
+ * event and the key the box holds now are two different questions, and they
+ * only have the same answer while nothing has rotated.
+ *
+ * Something rotates every deploy. The cloud virtual box keeps its secret and
+ * its keypair in memory — deliberately: there is nowhere in a container worth
+ * writing them — so every boot registers again and presents a fresh public
+ * half. A box that queued three vouchers, lost its link, and was restarted
+ * comes back holding three events signed by a key the cloud has already
+ * overwritten. Verified against the current key alone, all three are
+ * `signature_invalid`: the Console shows nothing synced while three families
+ * walk around with printed vouchers the platform has never heard of. A Pi
+ * keeps its key on disk and does not hit this, which is exactly why it went
+ * unnoticed — the machine that hits it is the one the demo runs on.
+ *
+ * **Re-signing on the box is not the alternative.** An agent that re-signed
+ * its own queue under a new key would be a re-imaged box putting its signature
+ * on facts it did not originate, which is the one thing the signature exists
+ * to prevent. The ring keeps old bytes verifiable without anything ever
+ * re-attesting to them.
+ *
+ * **What the ring is not.** It is not a defence against whoever holds the box
+ * secret: that secret is the root of trust, and anyone with it can register a
+ * key of their own and sign whatever they like. Retiring a key stops bytes
+ * sealed in the past from applying; it does not stop a box from being a box.
+ */
+
+/** One key a push may check a signature against. */
+interface BoxSyncKey {
+  /** The ring row, or null for a registered key no door has recorded yet. */
+  id: string | null;
+  /** SHA-256 of the stored PEM, lower-case hex — `core.box_sync_key.fingerprint`. */
+  fingerprint: string;
+  key: KeyObject;
+}
+
+/**
+ * How many of a box's live keys one push will try.
+ *
+ * The ring is read newest first, so these are the 32 most recently registered
+ * keys that have not been retired. An event signed by anything older than that
+ * is quarantined as `signature_invalid` exactly as before — the bound is real
+ * and this is what it costs.
+ *
+ * It is here because verification is per event and the ring is per box: a batch
+ * is at most `SYNC_PUSH_MAX_EVENTS` (200) events, so an unbounded ring on a box
+ * that has booted ten thousand times would be two million Ed25519 checks for
+ * one batch of rubbish. 200 × 32 is the ceiling instead, and only a batch where
+ * every event fails against every key reaches it: the key that verified an event
+ * is moved to the front, so after the first event of an ordinarily-signed batch
+ * the rest cost one check each.
+ *
+ * 32 boots is the number to argue with if this is ever wrong. What it costs is
+ * an event that was queued more than 32 rotations ago and never delivered —
+ * which is a box that has been failing to sync for as long as those rotations
+ * took, with `sync.stale` standing on it the whole time if it is calling home
+ * and `offline` if it is not.
+ */
+const SYNC_KEYRING_LIMIT = 32;
+
+/**
+ * Add a key to a box's ring. Idempotent on `(box_id, fingerprint)`.
+ *
+ * Called from every door a key can arrive through — registration, the
+ * heartbeat, `POST /box/v1/sync/key` — because the ring's whole value is
+ * holding the PREVIOUS key, and the previous key is only ever captured at the
+ * moment it is presented. A door that writes `core.box.sync_public_key` without
+ * calling this loses that key the next time the box rotates.
+ *
+ * `publicKeyPem` must be the normalised PEM — what `normaliseSyncPublicKey`
+ * returns and what the column stores. The fingerprint is SHA-256 of exactly
+ * those bytes, which is what `0012_booth.sql` backfilled with, so a key already
+ * on record and the same key presented again land on one row.
+ */
+export async function recordSyncKey(
+  exec: Exec,
+  input: { boxId: string; publicKeyPem: string; algorithm?: string | null; epoch?: number | null },
+): Promise<string> {
+  const fingerprint = sha256Hex(input.publicKeyPem);
+  await exec
+    .insert(boxSyncKey)
+    .values({
+      id: newId(),
+      boxId: input.boxId,
+      publicKey: input.publicKeyPem,
+      algorithm: input.algorithm ?? 'ed25519',
+      fingerprint,
+      registeredEpoch: input.epoch && input.epoch > 0 ? input.epoch : 1,
+    })
+    /**
+     * A box presenting the same key again is the ordinary case — the heartbeat
+     * offers it on every beat — so this is a no-op rather than a second row.
+     * It also does NOT revive a retired key: un-retiring on the box's own word
+     * would undo a person's decision that a key was compromised.
+     */
+    .onConflictDoNothing({ target: [boxSyncKey.boxId, boxSyncKey.fingerprint] });
+  return fingerprint;
+}
+
+/**
+ * Retire a box's old keys. Returns how many rows this actually closed.
+ *
+ * The caller is `reset_store`: the control that wipes the box's journal and
+ * mints epoch N+1. That gesture means everything the box was holding is gone,
+ * so nothing sealed under an old key is expected ever again, and a key left
+ * live past it only widens what a stolen private half could still get applied.
+ *
+ * **`keepPublicKeyPem` is not a softening of that.** A box keeps its keypair
+ * across a store reset: the agent's handler drops its cached config and takes
+ * the new journal epoch from the acknowledgement, and never touches the
+ * credential the private half lives in. Retiring the key it is still signing
+ * with would therefore refuse its very next push rather than its last one. The
+ * key that stays is the one the box is registered with now; the ring is what
+ * goes.
+ */
+export async function retireSyncKeys(
+  exec: Exec,
+  input: { boxId: string; reason: string; keepPublicKeyPem?: string | null },
+): Promise<number> {
+  const keep = input.keepPublicKeyPem ? sha256Hex(input.keepPublicKeyPem) : null;
+  const rows = await exec
+    .update(boxSyncKey)
+    .set({ retiredAt: new Date(), retiredReason: input.reason })
+    .where(
+      and(
+        eq(boxSyncKey.boxId, input.boxId),
+        isNull(boxSyncKey.retiredAt),
+        ...(keep ? [sql`${boxSyncKey.fingerprint} <> ${keep}`] : []),
+      ),
+    )
+    .returning({ id: boxSyncKey.id });
+  return rows.length;
+}
+
+/**
+ * Every key this push may accept, newest first.
+ *
+ * Two sources, and the second one is the awkward half:
+ *
+ *   - the RING — live rows, newest `SYNC_KEYRING_LIMIT` first;
+ *   - `core.box.sync_public_key`, the key the box is registered with right now.
+ *
+ * The column is in the set because it is the authority on the box's current
+ * identity and a door that forgot to call `recordSyncKey` must not take the box
+ * offline. It is left OUT in exactly one case: when the ring holds that same
+ * fingerprint RETIRED. Otherwise "retired" would mean nothing for the key a box
+ * is presenting, and a person who retired a compromised key would be told it
+ * was done while the next batch still applied.
+ *
+ * That second read only happens when the current key is not among the live
+ * rows, which is the unusual case; the ordinary push does one indexed read.
+ */
+async function loadSyncKeys(
+  exec: Exec,
+  boxId: string,
+  currentPem: string | null,
+  log?: OpContext['log'],
+): Promise<BoxSyncKey[]> {
+  const live = await exec
+    .select({
+      id: boxSyncKey.id,
+      publicKey: boxSyncKey.publicKey,
+      fingerprint: boxSyncKey.fingerprint,
+    })
+    .from(boxSyncKey)
+    .where(and(eq(boxSyncKey.boxId, boxId), isNull(boxSyncKey.retiredAt)))
+    .orderBy(desc(boxSyncKey.registeredAt))
+    .limit(SYNC_KEYRING_LIMIT);
+
+  const keys: BoxSyncKey[] = [];
+  for (const row of live) {
+    try {
+      keys.push({
+        id: row.id,
+        fingerprint: row.fingerprint,
+        key: parseSyncPublicKey(row.publicKey),
+      });
+    } catch (err) {
+      /**
+       * Every door normalises through `parseSyncPublicKey` before storing, so
+       * this is a row nothing on this path wrote. Skipped rather than thrown:
+       * one unreadable row must not cost a box every other key it has.
+       */
+      log?.warn({ err, boxId, keyId: row.id }, 'a stored box signing key could not be parsed');
+    }
+  }
+
+  if (currentPem) {
+    const fingerprint = sha256Hex(currentPem);
+    const held = keys.findIndex((k) => k.fingerprint === fingerprint);
+    if (held > 0) {
+      // Newest-first is a good guess at which key signed the batch; the key the
+      // box is registered with now is a better one.
+      keys.unshift(...keys.splice(held, 1));
+    } else if (held < 0) {
+      const [retired] = await exec
+        .select({ id: boxSyncKey.id, retiredAt: boxSyncKey.retiredAt })
+        .from(boxSyncKey)
+        .where(and(eq(boxSyncKey.boxId, boxId), eq(boxSyncKey.fingerprint, fingerprint)))
+        .limit(1);
+      if (retired?.retiredAt) {
+        log?.warn(
+          { boxId, keyId: retired.id },
+          'this box is registered with a key that has been retired; its events will not verify against it',
+        );
+      } else {
+        keys.unshift({ id: retired?.id ?? null, fingerprint, key: parseSyncPublicKey(currentPem) });
+      }
+    }
+  }
+  return keys;
+}
+
 /**
  * Record the public half of the keypair a box signs its events with.
  *
@@ -243,13 +466,11 @@ export function normaliseSyncPublicKey(value: string): { pem: string; fingerprin
  * whose secret has been revoked cannot register a key, and re-issuing a claim
  * code (which drops the secret) therefore cuts off both at once.
  *
- * **Rotation has a cost, stated here rather than discovered later.** Events
- * already queued on the box were signed with the previous key, and the cloud
- * keeps only one. A box that rotates with a full outbox will see those events
- * quarantined as `signature_invalid`. The virtual box rotates on every restart
- * by design — its key lives in memory, like its secret — and its outbox is
- * empty at that moment for the same reason. A Pi keeps both on disk and should
- * rotate only when it has caught up.
+ * **What rotation costs, now that it costs less.** The previous key goes onto
+ * the ring above rather than being overwritten, so events already queued under
+ * it still verify and still apply. What a rotation does NOT survive is a store
+ * reset, which retires the ring, or 32 further rotations — see
+ * `SYNC_KEYRING_LIMIT`.
  */
 export async function registerSyncKey(
   db: Db,
@@ -276,6 +497,14 @@ export async function registerSyncKey(
         syncKeyRegisteredAt: registeredAt,
       })
       .where(eq(box.id, auth.boxId));
+    // In the same transaction as the column: a key that became current without
+    // reaching the ring is a key the next rotation loses for good.
+    await recordSyncKey(tx, {
+      boxId: auth.boxId,
+      publicKeyPem: normalised,
+      algorithm: input.algorithm,
+      epoch: auth.currentEpoch,
+    });
     await audit.record(tx, {
       // A machine presented its own key. Who put the machine there is on the
       // `box.register` row above it.
@@ -1134,18 +1363,32 @@ export async function pushEvents(
    * the events, only with what the cloud is holding about the box. The box
    * registers its key and sends the same batch again, which costs nothing
    * because the cursor makes a replay cheap.
+   *
+   * "No key" now means the whole set is empty — the ring holds nothing live and
+   * the box is registered with nothing this push may use.
    */
-  let publicKey: KeyObject | null = null;
+  let keys: BoxSyncKey[] = [];
   if (!unsigned) {
-    if (!boxRow.syncPublicKey) {
+    keys = await loadSyncKeys(db, auth.boxId, boxRow.syncPublicKey, ctx.log);
+    if (keys.length === 0) {
       throw new AppError(
         409,
         'SYNC_KEY_UNKNOWN',
-        'This box has not registered a signing key — POST /box/v1/sync/key first',
+        boxRow.syncPublicKey
+          ? // It has a key and the set is still empty, so that key is retired.
+            // Presenting it again would not help — a retired row is not revived
+            // — and a person needs to hear which of the two states this is.
+            'Every signing key this box has presented has been retired — register a new one at POST /box/v1/sync/key'
+          : 'This box has not registered a signing key — POST /box/v1/sync/key first',
       );
     }
-    publicKey = parseSyncPublicKey(boxRow.syncPublicKey);
   }
+  /**
+   * What verified something in this batch. Fingerprints rather than rows,
+   * because the current key may have no ring row; the ones that do are stamped
+   * after the walk, which is how a key nothing signs with becomes visible.
+   */
+  const verifiedFingerprints = new Set<string>();
 
   const [branchRow] = await db
     .select({ timezone: branch.timezone, businessDayStart: branch.businessDayStart })
@@ -1598,7 +1841,19 @@ export async function pushEvents(
         // The SAVEPOINT. One bad event rolls back its own work and nothing
         // else's — which is what makes a batch of two hundred worth sending.
         await tx.transaction(async (sp) => {
-          assertEnvelopeUsable(prepared, publicKey, unsigned);
+          const verifiedBy = assertEnvelopeUsable(prepared, keys, unsigned);
+          if (verifiedBy) {
+            verifiedFingerprints.add(verifiedBy);
+            /**
+             * Move the key that worked to the front. A batch is one box's
+             * queue and is normally signed end to end by one key, so after the
+             * first event the rest cost a single check each whatever order the
+             * ring came back in — which is what keeps `SYNC_KEYRING_LIMIT`
+             * from being paid on every event of an ordinary push.
+             */
+            const at = keys.findIndex((k) => k.fingerprint === verifiedBy);
+            if (at > 0) keys.unshift(...keys.splice(at, 1));
+          }
           if (envelope.stationId && !scope.stationIds.has(envelope.stationId)) {
             throw new RefuseEvent(
               'poison',
@@ -1809,6 +2064,26 @@ export async function pushEvents(
         lastPushAt: startedAt,
       })
       .where(and(eq(syncCursor.boxId, auth.boxId), eq(syncCursor.journalEpoch, epoch)));
+
+    /**
+     * Stamp the keys that actually verified something in this batch.
+     *
+     * One statement per batch, not per event, and only for keys that have a
+     * ring row — the current key may not have one, and a read path is not where
+     * to start writing rows. Inside the transaction on purpose: a batch that
+     * rolls back did not verify anything the park keeps, and the stamp should
+     * roll back with it.
+     */
+    if (verifiedFingerprints.size > 0) {
+      const ids: string[] = [];
+      for (const k of keys) if (k.id && verifiedFingerprints.has(k.fingerprint)) ids.push(k.id);
+      if (ids.length > 0) {
+        await tx
+          .update(boxSyncKey)
+          .set({ lastVerifiedAt: startedAt })
+          .where(inArray(boxSyncKey.id, ids));
+      }
+    }
 
     for (const a of anomalies) {
       await tx.insert(syncAnomaly).values({
@@ -2021,10 +2296,16 @@ function prepareEvent(envelope: SyncEventEnvelope, scope: BatchScope): PreparedE
  *
  * Hash first, because it is free and because a mismatch means the envelope is
  * internally inconsistent — there is nothing to verify a signature against.
+ *
+ * Returns the fingerprint of the key that verified it, or null when there was
+ * nothing to verify. Which key it was is worth knowing: it is how the ring's
+ * `last_verified_at` gets written, and therefore how a key that nothing signs
+ * with any more becomes visible as one.
  */
 function assertEnvelopeUsable(
   prepared: PreparedEvent,
-  publicKey: KeyObject | null,
+  /** Newest first, current key first of all. Empty only when `unsigned`. */
+  keys: BoxSyncKey[],
   /**
    * True for the test controls' own events, which the cloud minted and cannot
    * verify because it holds only the public half of the box's key. Decided by
@@ -2033,7 +2314,7 @@ function assertEnvelopeUsable(
    * a box that never has to sign anything.
    */
   unsigned: boolean,
-): void {
+): string | null {
   const { envelope } = prepared;
   if (envelope.schemaVersion > SYNC_EVENT_SCHEMA_VERSION) {
     throw new RefuseEvent(
@@ -2049,26 +2330,26 @@ function assertEnvelopeUsable(
       'The envelope does not hash to the value it carries — it was changed after it was sealed',
     );
   }
-  if (unsigned || !publicKey) return;
-  let ok = false;
-  try {
-    ok = verifyDetached(
-      null,
-      Buffer.from(prepared.canonical, 'utf8'),
-      publicKey,
-      Buffer.from(envelope.sig, 'base64'),
-    );
-  } catch {
-    // A malformed signature is a failed verification, not a server fault.
-    ok = false;
+  if (unsigned || keys.length === 0) return null;
+  const message = Buffer.from(prepared.canonical, 'utf8');
+  const sig = Buffer.from(envelope.sig, 'base64');
+  for (const candidate of keys) {
+    let ok = false;
+    try {
+      ok = verifyDetached(null, message, candidate.key, sig);
+    } catch {
+      // A malformed signature is a failed verification, not a server fault.
+      ok = false;
+    }
+    if (ok) return candidate.fingerprint;
   }
-  if (!ok) {
-    throw new RefuseEvent(
-      'signature_invalid',
-      'SYNC_SIGNATURE_INVALID',
-      'The signature does not verify against this box’s registered key',
-    );
-  }
+  throw new RefuseEvent(
+    'signature_invalid',
+    'SYNC_SIGNATURE_INVALID',
+    keys.length === 1
+      ? 'The signature does not verify against this box’s registered key'
+      : `The signature does not verify against any of this box’s ${keys.length} live signing keys`,
+  );
 }
 
 /**
@@ -2619,6 +2900,13 @@ export const CACHE_SCOPES = [
   'bands',
   'station_config',
   'receipt_series',
+  /**
+   * The booth's published wheel (S2-07a). The vocabulary is here from the
+   * migration that creates `booth.booth_config_version`; the builder that
+   * fills it belongs to the booth box role, and until that lands the scope
+   * contributes nothing to a bundle rather than a half-answer.
+   */
+  'booth',
 ] as const;
 export type CacheScope = (typeof CACHE_SCOPES)[number];
 
@@ -3052,20 +3340,31 @@ export async function cacheBundle(
     // offline, so two boxes cannot mint the same receipt number. The series
     // itself arrives with the money path (S2-11); what is here is the shape and
     // the per-station counter the prefix is built from.
-    const stations = await db
-      .select({ id: station.id, codePrefix: station.codePrefix, name: station.name })
-      .from(station)
-      .where(and(eq(station.boxId, auth.boxId), isNull(station.archivedAt)))
-      .orderBy(asc(station.name));
-    put(
-      'receipt_series',
-      stations.map((s) => ({
-        stationId: s.id,
-        prefix: s.codePrefix,
-        /** Nothing has been issued yet; S2-11 fills this from the sale ledger. */
-        highWaterMark: 0,
-      })),
-    );
+    //
+    // Named rather than left as the fall-through, which is what it was until
+    // `booth` joined the vocabulary: an unhandled scope reaching the end of
+    // this loop used to build a receipt series and `put` it under the receipt
+    // series' name, so `?scopes=booth` would have answered with somebody
+    // else's payload and a full bundle would have built the same list twice.
+    // An unhandled scope now contributes nothing, which the agent reads as
+    // "not present" and skips.
+    if (scope === 'receipt_series') {
+      const stations = await db
+        .select({ id: station.id, codePrefix: station.codePrefix, name: station.name })
+        .from(station)
+        .where(and(eq(station.boxId, auth.boxId), isNull(station.archivedAt)))
+        .orderBy(asc(station.name));
+      put(
+        'receipt_series',
+        stations.map((s) => ({
+          stationId: s.id,
+          prefix: s.codePrefix,
+          /** Nothing has been issued yet; S2-11 fills this from the sale ledger. */
+          highWaterMark: 0,
+        })),
+      );
+      continue;
+    }
   }
 
   const [head] = await db

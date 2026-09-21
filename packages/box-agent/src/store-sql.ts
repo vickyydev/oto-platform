@@ -7,22 +7,31 @@ import {
 } from './contract';
 import {
   BOX_STORE_SCHEMA_VERSION,
+  BoxStoreFeatureMissingError,
   migrateCachedBundle,
   migrateOutboxRecord,
   migrateSessionDocument,
+  type BoxPrintJobState,
   type BoxStateRecord,
+  type BoxStaffSession,
   type BoxStore,
+  type BoxStoreFeatures,
   type CachedBundle,
+  type CounterKey,
   type EnvelopeSealer,
   type LeaseWrite,
   type OutboxBatch,
   type OutboxDepth,
   type OutboxRecord,
   type OutboxState,
+  type PrintJobPatch,
+  type PrintJobRecord,
+  type PrintJobStore,
   type QueuedFact,
   type SessionWrite,
   type StationEventWrite,
   type StationIdentity,
+  type ThrottleRecord,
 } from './store';
 import { uuidv7 } from './signing';
 
@@ -100,9 +109,131 @@ export function normaliseParam(value: unknown, dialect: SqlDialect): unknown {
   return value;
 }
 
+/**
+ * The tables a box keeps for ITSELF, added by S2-07a.
+ *
+ * They are listed here rather than assumed because the two dialects arrive at
+ * them differently. A Pi's file is created by `prepareSqliteBoxStore`, which
+ * runs the DDL next door, so every table is always there. The `edge` schema of
+ * the platform database has only what a migration created, and these have NO
+ * migration yet — writing one belongs to the slice that owns `packages/db`.
+ * Until it exists, the virtual box running inside the api finds them absent,
+ * `features()` says so, and the print subsystem falls back to the in-memory
+ * queue S2-06 shipped. That fallback is the defect this ticket set out to fix,
+ * so it is reported rather than hidden: `init()` cannot log — it has no logger
+ * — but `features()` is what every caller is expected to read, and the booth's
+ * runtime methods throw rather than pretend.
+ *
+ * `EDGE_BOX_LOCAL_TABLES_SQL` below is the exact Postgres shape they must have.
+ */
+export const BOX_LOCAL_TABLES = [
+  'box_print_job',
+  'box_counter',
+  'box_staff_session',
+  'box_throttle',
+  'box_runtime',
+] as const;
+
+const BOOTH_RUNTIME_TABLES = ['box_counter', 'box_staff_session', 'box_throttle', 'box_runtime'];
+
+/**
+ * The migration this store is waiting for, ready to paste.
+ *
+ * Exported so it is one grep away from whoever writes `packages/db`'s next
+ * migration, and so the columns cannot drift from the SQL above them: every
+ * statement here names the same columns the queries in this file read and
+ * write, and the SQLite half in `store-sqlite.ts` is the same list again in
+ * SQLite's types. It is a string and nothing executes it — the api creating
+ * tables in the platform database at boot would be a shape `verify-schema`
+ * cannot see and `pnpm db:generate` would offer to drop.
+ */
+export const EDGE_BOX_LOCAL_TABLES_SQL = `
+create table if not exists "edge"."box_print_job" (
+  id uuid primary key,
+  box_id uuid not null references "core"."box" (id) on delete restrict,
+  kind text not null,
+  role text,
+  station_id uuid references "core"."station" (id) on delete restrict,
+  device_id uuid references "core"."device" (id) on delete restrict,
+  copies smallint not null default 1,
+  job jsonb not null,
+  finish jsonb,
+  template_id uuid,
+  template_version integer,
+  action_id text,
+  state text not null default 'queued',
+  attempts integer not null default 0,
+  next_attempt_at timestamptz,
+  last_error_code text,
+  last_error_message text,
+  queued_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint box_print_job_state_check check (state in ('queued','sending','interrupted')),
+  constraint box_print_job_copies_check check (copies > 0),
+  constraint box_print_job_attempts_check check (attempts >= 0)
+);
+create index if not exists box_print_job_pending_idx on "edge"."box_print_job" (box_id, queued_at);
+create index if not exists box_print_job_station_idx on "edge"."box_print_job" (station_id);
+create index if not exists box_print_job_device_idx on "edge"."box_print_job" (device_id);
+
+create table if not exists "edge"."box_counter" (
+  box_id uuid not null references "core"."box" (id) on delete restrict,
+  scope text not null,
+  counter_key text not null,
+  business_date date not null,
+  counter_value integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (box_id, scope, counter_key, business_date)
+);
+
+create table if not exists "edge"."box_staff_session" (
+  station_id uuid primary key references "core"."station" (id) on delete restrict,
+  box_id uuid not null references "core"."box" (id) on delete restrict,
+  account_id uuid not null references "core"."account" (id) on delete restrict,
+  credential_kind text not null default 'pin',
+  staff_code text,
+  signed_in_at timestamptz not null,
+  last_seen_at timestamptz not null,
+  expires_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+create index if not exists box_staff_session_box_idx on "edge"."box_staff_session" (box_id);
+create index if not exists box_staff_session_account_idx on "edge"."box_staff_session" (account_id);
+
+create table if not exists "edge"."box_throttle" (
+  box_id uuid not null references "core"."box" (id) on delete restrict,
+  scope text not null,
+  subject text not null,
+  failures integer not null default 0,
+  first_failure_at timestamptz not null,
+  last_failure_at timestamptz not null,
+  locked_until timestamptz,
+  updated_at timestamptz not null default now(),
+  primary key (box_id, scope, subject),
+  constraint box_throttle_failures_check check (failures >= 0)
+);
+
+create table if not exists "edge"."box_runtime" (
+  box_id uuid not null references "core"."box" (id) on delete restrict,
+  runtime_key text not null,
+  value text not null,
+  updated_at timestamptz not null default now(),
+  primary key (box_id, runtime_key)
+);
+`;
+
+/** The one `box_runtime` key so far: see `markTimeSeen`. */
+const LAST_GOOD_TIME_KEY = 'last_good_time';
+
 export class SqlBoxStore implements BoxStore {
   private readonly driver: BoxSqlDriver;
   private readonly clock: () => Date;
+  /**
+   * Which of `BOX_LOCAL_TABLES` this database actually has, as `init()` found
+   * them. Empty before `init()`, which reads as "keep nothing", and that is the
+   * answer that fails loudly rather than the one that loses a lockout.
+   */
+  private present = new Set<string>();
   /**
    * Cache bundles on Postgres, and only on Postgres.
    *
@@ -114,11 +245,52 @@ export class SqlBoxStore implements BoxStore {
    * offline flag and its session document, and an empty cache. Closing it is
    * one `edge.box_cache` table in the next migration.
    */
-  private readonly memoryBundles = new Map<string, CachedBundle>();
+  private memoryBundles = new Map<string, CachedBundle>();
 
   constructor(options: SqlBoxStoreOptions) {
     this.driver = options.driver;
     this.clock = options.now ?? (() => new Date());
+  }
+
+  /**
+   * The same store, bound to an open transaction.
+   *
+   * It carries the parent's probe result and its bundle map by reference, so a
+   * bundle written inside the transaction is visible outside it afterwards and
+   * a store that knows its tables does not forget them for the length of a
+   * spin. Private, because handing one of these out after its transaction has
+   * committed would be a store whose writes go nowhere.
+   */
+  private scopedTo(driver: BoxSqlDriver): SqlBoxStore {
+    const child = new SqlBoxStore({ driver, now: this.clock });
+    child.present = this.present;
+    child.memoryBundles = this.memoryBundles;
+    return child;
+  }
+
+  features(): BoxStoreFeatures {
+    return {
+      printJobs: this.present.has('box_print_job'),
+      boothRuntime: BOOTH_RUNTIME_TABLES.every((name) => this.present.has(name)),
+    };
+  }
+
+  printJobs(): PrintJobStore | null {
+    return this.features().printJobs ? this : null;
+  }
+
+  /** Throw with the missing tables named, rather than write into nowhere. */
+  private requireFeature(feature: keyof BoxStoreFeatures): void {
+    if (this.features()[feature]) return;
+    const wanted = feature === 'printJobs' ? ['box_print_job'] : BOOTH_RUNTIME_TABLES;
+    throw new BoxStoreFeatureMissingError(
+      feature,
+      wanted.filter((name) => !this.present.has(name)),
+    );
+  }
+
+  async atomically<T>(fn: (tx: BoxStore) => Promise<T>): Promise<T> {
+    return this.driver.transaction((tx) => fn(this.scopedTo(tx)));
   }
 
   private get dialect(): SqlDialect {
@@ -152,7 +324,55 @@ export class SqlBoxStore implements BoxStore {
         where box_id = ? and state = 'sending'`,
       [boxId],
     );
+
+    this.present = await this.probeBoxLocalTables();
+    if (this.present.has('box_print_job')) {
+      /**
+       * The opposite recovery to the outbox's, three statements above, and
+       * deliberately so (D12). A print job that was `sending` had bytes on
+       * their way to a head: some of that voucher is already paper, and
+       * re-sending it unattended puts a second one beside a torn first with
+       * nobody able to say which is the real one. It is marked `interrupted`
+       * — which no retry ever picks up — and waits to be reported and deleted.
+       *
+       * A job still `queued` is untouched and resumes. Nothing was written to
+       * a printer, so nothing has been half-printed.
+       */
+      await this.driver.query(
+        `update ${this.table('box_print_job')}
+            set state = 'interrupted',
+                last_error_code = 'PRINT_INTERRUPTED',
+                last_error_message = 'The box restarted while this job was going to the printer',
+                updated_at = ?
+          where box_id = ? and state = 'sending'`,
+        [now, boxId],
+      );
+    }
     return this.readState(boxId);
+  }
+
+  /**
+   * Which box-local tables this database has.
+   *
+   * One query at boot rather than a try/catch around every write: a store that
+   * discovers its shape from a failed INSERT has already half-done something,
+   * and on Postgres a failed statement poisons the transaction it was in.
+   */
+  private async probeBoxLocalTables(): Promise<Set<string>> {
+    const names = [...BOX_LOCAL_TABLES];
+    const rows =
+      this.dialect === 'postgres'
+        ? await this.driver.query(
+            `select table_name as name from information_schema.tables
+              where table_schema = 'edge' and table_name in (${placeholders(names.length)})`,
+            names,
+          )
+        : await this.driver.query(
+            `select name from sqlite_master
+              where type = 'table' and name in (${placeholders(names.length)})`,
+            names,
+          );
+    return new Set(rows.map((row) => String(row.name)));
   }
 
   async close(): Promise<void> {
@@ -236,82 +456,106 @@ export class SqlBoxStore implements BoxStore {
     seal: EnvelopeSealer,
     now?: string,
   ): Promise<OutboxRecord> {
+    const [record] = await this.enqueueMany(boxId, [fact], seal, now);
+    // Unreachable with one fact in and none dropped, but the type says
+    // `OutboxRecord` and a cast would be this file asserting that on the
+    // reader's behalf.
+    if (!record) throw new Error('enqueue wrote no row');
+    return record;
+  }
+
+  async enqueueMany(
+    boxId: string,
+    facts: readonly QueuedFact[],
+    seal: EnvelopeSealer,
+    now?: string,
+  ): Promise<OutboxRecord[]> {
+    if (facts.length === 0) return [];
     const at = now ?? this.nowIso();
     return this.driver.transaction(async (tx) => {
       // The row lock this UPDATE takes is the generator. Two tills queueing a
       // sale in the same millisecond serialise here, and a transaction that
-      // rolls back returns its sequence, so the journal has no gaps — and a
+      // rolls back returns its sequences, so the journal has no gaps — and a
       // gap is indistinguishable from an event that went missing.
+      //
+      // Claiming the whole run in ONE statement is what makes a spin's two
+      // facts consecutive: two separate claims could have another station's
+      // sale land between them, which is legal but makes the pair unreadable
+      // in the journal, and it would take the row lock twice for one act.
       const stateRows = await tx.query(
         `update ${this.table('box_state')}
-            set next_box_seq = next_box_seq + 1, updated_at = ?
+            set next_box_seq = next_box_seq + ?, updated_at = ?
           where box_id = ?
           returning journal_epoch, next_box_seq, clock_skew_ms`,
-        [at, boxId],
+        [facts.length, at, boxId],
       );
       const stateRow = stateRows[0];
       if (!stateRow) throw new Error(`No box_state row for ${boxId}; call init() first`);
       const journalEpoch = toNum(stateRow.journal_epoch);
-      const boxSeq = toNum(stateRow.next_box_seq) - 1;
+      const firstSeq = toNum(stateRow.next_box_seq) - facts.length;
       const clockSkewMs = toNum(stateRow.clock_skew_ms);
 
-      const envelope = seal({
-        eventId: uuidv7(this.clock().getTime()),
-        journalEpoch,
-        boxSeq,
-        type: fact.type,
-        schemaVersion: BOX_STORE_SCHEMA_VERSION,
-        occurredAt: fact.occurredAt ?? at,
-        clockTrust: clockTrustFor(clockSkewMs),
-        clockOffsetMs: clockSkewMs,
-        stationId: fact.stationId ?? null,
-        actorKind: fact.actorKind ?? 'account',
-        actorAccountId: fact.actorAccountId ?? null,
-        actorCredentialId: fact.actorCredentialId ?? null,
-        actionId: fact.actionId ?? null,
-        payload: fact.payload,
-      });
+      const records: OutboxRecord[] = [];
+      for (const [index, fact] of facts.entries()) {
+        const envelope = seal({
+          eventId: uuidv7(this.clock().getTime()),
+          journalEpoch,
+          boxSeq: firstSeq + index,
+          type: fact.type,
+          schemaVersion: BOX_STORE_SCHEMA_VERSION,
+          occurredAt: fact.occurredAt ?? at,
+          clockTrust: clockTrustFor(clockSkewMs),
+          clockOffsetMs: clockSkewMs,
+          stationId: fact.stationId ?? null,
+          actorKind: fact.actorKind ?? 'account',
+          actorAccountId: fact.actorAccountId ?? null,
+          actorCredentialId: fact.actorCredentialId ?? null,
+          actionId: fact.actionId ?? null,
+          payload: fact.payload,
+        });
 
-      await tx.query(
-        `insert into ${this.table('box_outbox')} (
-           event_id, box_id, journal_epoch, box_seq, type, schema_version, occurred_at,
-           clock_trust, clock_offset_ms, station_id, actor_kind, actor_account_id,
-           actor_credential_id, action_id, payload, payload_hash, sig, sig_alg,
-           state, attempts, created_at
-         ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?)`,
-        [
-          envelope.eventId,
-          boxId,
-          envelope.journalEpoch,
-          envelope.boxSeq,
-          envelope.type,
-          envelope.schemaVersion,
-          envelope.occurredAt,
-          envelope.clockTrust,
-          envelope.clockOffsetMs ?? null,
-          envelope.stationId ?? null,
-          envelope.actorKind,
-          envelope.actorAccountId ?? null,
-          envelope.actorCredentialId ?? null,
-          envelope.actionId ?? null,
-          JSON.stringify(envelope.payload),
-          envelope.payloadHash,
-          envelope.sig,
-          envelope.sigAlg,
-          at,
-        ],
-      );
+        await tx.query(
+          `insert into ${this.table('box_outbox')} (
+             event_id, box_id, journal_epoch, box_seq, type, schema_version, occurred_at,
+             clock_trust, clock_offset_ms, station_id, actor_kind, actor_account_id,
+             actor_credential_id, action_id, payload, payload_hash, sig, sig_alg,
+             state, attempts, created_at
+           ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?)`,
+          [
+            envelope.eventId,
+            boxId,
+            envelope.journalEpoch,
+            envelope.boxSeq,
+            envelope.type,
+            envelope.schemaVersion,
+            envelope.occurredAt,
+            envelope.clockTrust,
+            envelope.clockOffsetMs ?? null,
+            envelope.stationId ?? null,
+            envelope.actorKind,
+            envelope.actorAccountId ?? null,
+            envelope.actorCredentialId ?? null,
+            envelope.actionId ?? null,
+            JSON.stringify(envelope.payload),
+            envelope.payloadHash,
+            envelope.sig,
+            envelope.sigAlg,
+            at,
+          ],
+        );
 
-      return {
-        envelope,
-        state: 'queued' as OutboxState,
-        attempts: 0,
-        nextAttemptAt: null,
-        lastErrorCode: null,
-        lastErrorMessage: null,
-        createdAt: at,
-        ackedAt: null,
-      };
+        records.push({
+          envelope,
+          state: 'queued' as OutboxState,
+          attempts: 0,
+          nextAttemptAt: null,
+          lastErrorCode: null,
+          lastErrorMessage: null,
+          createdAt: at,
+          ackedAt: null,
+        });
+      }
+      return records;
     });
   }
 
@@ -743,6 +987,338 @@ export class SqlBoxStore implements BoxStore {
     }
     this.memoryBundles.set(`${boxId}:${bundle.scope}`, bundle);
   }
+
+  // --- The print queue on disk (S2-07a) -------------------------------------
+
+  async putPrintJob(record: PrintJobRecord): Promise<void> {
+    this.requireFeature('printJobs');
+    /**
+     * Insert or replace, keyed on the job id the cloud already minted.
+     *
+     * Replace rather than "insert, and ignore a clash": a box that re-submits
+     * an id is either resuming after a restart or being handed the same job
+     * twice by an api that lost the answer, and in both cases the version in
+     * hand is the current one. The id is the fence that stops it becoming two
+     * vouchers.
+     */
+    await this.driver.query(
+      `insert into ${this.table('box_print_job')} (
+         id, box_id, kind, role, station_id, device_id, copies, job, finish,
+         template_id, template_version, action_id, state, attempts, next_attempt_at,
+         last_error_code, last_error_message, queued_at, updated_at
+       ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       on conflict (id) do update set
+         kind = excluded.kind,
+         role = excluded.role,
+         station_id = excluded.station_id,
+         device_id = excluded.device_id,
+         copies = excluded.copies,
+         job = excluded.job,
+         finish = excluded.finish,
+         template_id = excluded.template_id,
+         template_version = excluded.template_version,
+         action_id = excluded.action_id,
+         state = excluded.state,
+         attempts = excluded.attempts,
+         next_attempt_at = excluded.next_attempt_at,
+         last_error_code = excluded.last_error_code,
+         last_error_message = excluded.last_error_message,
+         updated_at = excluded.updated_at`,
+      [
+        record.id,
+        record.boxId,
+        record.kind,
+        record.role,
+        record.stationId,
+        record.deviceId,
+        record.copies,
+        JSON.stringify(record.job),
+        record.finish ? JSON.stringify(record.finish) : null,
+        record.templateId,
+        record.templateVersion,
+        record.actionId,
+        record.state,
+        record.attempts,
+        record.nextAttemptAt,
+        record.lastErrorCode,
+        record.lastErrorMessage,
+        record.queuedAt,
+        record.updatedAt,
+      ],
+    );
+  }
+
+  async loadPendingPrintJobs(boxId: string): Promise<PrintJobRecord[]> {
+    // No table is honestly no jobs, and the print subsystem asks this at every
+    // boot: throwing would stop a box that can still print perfectly well.
+    // The writes are the other way round — see `putPrintJob`.
+    if (!this.features().printJobs) return [];
+    /**
+     * `queued` and `sending` both come back, and `sending` is not a
+     * contradiction here: `init()` has already turned every job the PREVIOUS
+     * process left mid-flight into `interrupted`, so anything still `sending`
+     * belongs to this process and is on a printer right now. Leaving it out
+     * would make the pending count drop for the length of a print — and that
+     * count is what the booth's restart criterion is read from.
+     */
+    const rows = await this.driver.query(
+      `select * from ${this.table('box_print_job')}
+        where box_id = ? and state in ('queued', 'sending')
+        order by queued_at asc, id asc`,
+      [boxId],
+    );
+    return rows.map(decodePrintJob);
+  }
+
+  async loadInterruptedPrintJobs(boxId: string): Promise<PrintJobRecord[]> {
+    if (!this.features().printJobs) return [];
+    const rows = await this.driver.query(
+      `select * from ${this.table('box_print_job')}
+        where box_id = ? and state = 'interrupted'
+        order by queued_at asc, id asc`,
+      [boxId],
+    );
+    return rows.map(decodePrintJob);
+  }
+
+  async updatePrintJob(id: string, patch: PrintJobPatch, now?: string): Promise<void> {
+    this.requireFeature('printJobs');
+    const sets: string[] = ['updated_at = ?'];
+    const params: unknown[] = [now ?? this.nowIso()];
+    // Built from the keys present, so "clear the error" and "leave the error
+    // alone" stay two different requests — the same rule `applySession` keeps.
+    const columns: Array<[keyof PrintJobPatch, string]> = [
+      ['state', 'state'],
+      ['attempts', 'attempts'],
+      ['nextAttemptAt', 'next_attempt_at'],
+      ['deviceId', 'device_id'],
+      ['lastErrorCode', 'last_error_code'],
+      ['lastErrorMessage', 'last_error_message'],
+    ];
+    for (const [key, column] of columns) {
+      if (!(key in patch)) continue;
+      sets.push(`${column} = ?`);
+      params.push(patch[key]);
+    }
+    params.push(id);
+    await this.driver.query(
+      `update ${this.table('box_print_job')} set ${sets.join(', ')} where id = ?`,
+      params,
+    );
+  }
+
+  async deletePrintJob(id: string): Promise<void> {
+    // A delete with no table has nothing to delete: no state is lost by
+    // saying so quietly, which is not true of a write that claims to keep.
+    if (!this.features().printJobs) return;
+    /**
+     * Deleted, not kept as `printed`.
+     *
+     * `edge.print_job` in the cloud is the history — it has the Console page,
+     * the retention sweep and the reprint chain. This table is the outstanding
+     * work, and a finished job left here would be a guest's name and a child's
+     * allergy line sitting on a box in a storeroom for no reason anybody could
+     * name.
+     */
+    await this.driver.query(`delete from ${this.table('box_print_job')} where id = ?`, [id]);
+  }
+
+  // --- Booth runtime state (S2-07a) -----------------------------------------
+
+  async bumpCounter(boxId: string, key: CounterKey, by = 1, now?: string): Promise<number> {
+    this.requireFeature('boothRuntime');
+    const at = now ?? this.nowIso();
+    // One statement, so two presses in the same second cannot both read three
+    // and both write four. A daily cap read from a counter that lost an
+    // increment is a prize given away twice.
+    const rows = await this.driver.query(
+      `insert into ${this.table('box_counter')} as held (
+         box_id, scope, counter_key, business_date, counter_value, updated_at
+       ) values (?, ?, ?, ?, ?, ?)
+       on conflict (box_id, scope, counter_key, business_date) do update set
+         counter_value = held.counter_value + excluded.counter_value,
+         updated_at = excluded.updated_at
+       returning counter_value`,
+      [boxId, key.scope, key.key, key.businessDate, by, at],
+    );
+    return toNum(rows[0]?.counter_value ?? by);
+  }
+
+  async readCounter(boxId: string, key: CounterKey): Promise<number> {
+    this.requireFeature('boothRuntime');
+    const rows = await this.driver.query(
+      `select counter_value from ${this.table('box_counter')}
+        where box_id = ? and scope = ? and counter_key = ? and business_date = ?`,
+      [boxId, key.scope, key.key, key.businessDate],
+    );
+    return toNum(rows[0]?.counter_value ?? 0);
+  }
+
+  async readCounters(
+    boxId: string,
+    scope: string,
+    businessDate: string,
+  ): Promise<Record<string, number>> {
+    this.requireFeature('boothRuntime');
+    const rows = await this.driver.query(
+      `select counter_key, counter_value from ${this.table('box_counter')}
+        where box_id = ? and scope = ? and business_date = ?`,
+      [boxId, scope, businessDate],
+    );
+    const out: Record<string, number> = {};
+    for (const row of rows) out[String(row.counter_key)] = toNum(row.counter_value);
+    return out;
+  }
+
+  async readStaffSession(stationId: string): Promise<BoxStaffSession | null> {
+    this.requireFeature('boothRuntime');
+    const rows = await this.driver.query(
+      `select * from ${this.table('box_staff_session')} where station_id = ?`,
+      [stationId],
+    );
+    const row = rows[0];
+    return row ? decodeStaffSession(row) : null;
+  }
+
+  async writeStaffSession(session: BoxStaffSession): Promise<void> {
+    this.requireFeature('boothRuntime');
+    // One station holds one session: signing in replaces whoever was there.
+    // Two people signed in at one booth is not a state the screen could show.
+    await this.driver.query(
+      `insert into ${this.table('box_staff_session')} (
+         station_id, box_id, account_id, credential_kind, staff_code,
+         signed_in_at, last_seen_at, expires_at, updated_at
+       ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       on conflict (station_id) do update set
+         box_id = excluded.box_id,
+         account_id = excluded.account_id,
+         credential_kind = excluded.credential_kind,
+         staff_code = excluded.staff_code,
+         signed_in_at = excluded.signed_in_at,
+         last_seen_at = excluded.last_seen_at,
+         expires_at = excluded.expires_at,
+         updated_at = excluded.updated_at`,
+      [
+        session.stationId,
+        session.boxId,
+        session.accountId,
+        session.credentialKind,
+        session.staffCode,
+        session.signedInAt,
+        session.lastSeenAt,
+        session.expiresAt,
+        this.nowIso(),
+      ],
+    );
+  }
+
+  async touchStaffSession(stationId: string, now: string): Promise<void> {
+    this.requireFeature('boothRuntime');
+    await this.driver.query(
+      `update ${this.table('box_staff_session')}
+          set last_seen_at = ?, updated_at = ?
+        where station_id = ?`,
+      [now, now, stationId],
+    );
+  }
+
+  async clearStaffSession(stationId: string): Promise<void> {
+    this.requireFeature('boothRuntime');
+    await this.driver.query(
+      `delete from ${this.table('box_staff_session')} where station_id = ?`,
+      [stationId],
+    );
+  }
+
+  async readThrottle(
+    boxId: string,
+    scope: string,
+    subject: string,
+  ): Promise<ThrottleRecord | null> {
+    this.requireFeature('boothRuntime');
+    const rows = await this.driver.query(
+      `select * from ${this.table('box_throttle')}
+        where box_id = ? and scope = ? and subject = ?`,
+      [boxId, scope, subject],
+    );
+    const row = rows[0];
+    return row ? decodeThrottle(row) : null;
+  }
+
+  async recordThrottleFailure(
+    boxId: string,
+    scope: string,
+    subject: string,
+    opts?: { now?: string; lockedUntil?: string | null },
+  ): Promise<ThrottleRecord> {
+    this.requireFeature('boothRuntime');
+    const at = opts?.now ?? this.nowIso();
+    /**
+     * The count moves inside the statement, so two wrong PINs typed at once
+     * count as two. `locked_until` is only written when the caller passed one:
+     * `coalesce(excluded.locked_until, held.locked_until)` keeps a lock that is
+     * already on the row when the caller says nothing, which is what lets a
+     * policy that locks on the fifth failure stay silent about the sixth
+     * without lifting the lock it set.
+     */
+    const rows = await this.driver.query(
+      `insert into ${this.table('box_throttle')} as held (
+         box_id, scope, subject, failures, first_failure_at, last_failure_at,
+         locked_until, updated_at
+       ) values (?, ?, ?, 1, ?, ?, ?, ?)
+       on conflict (box_id, scope, subject) do update set
+         failures = held.failures + 1,
+         last_failure_at = excluded.last_failure_at,
+         locked_until = coalesce(excluded.locked_until, held.locked_until),
+         updated_at = excluded.updated_at
+       returning *`,
+      [boxId, scope, subject, at, at, opts?.lockedUntil ?? null, at],
+    );
+    const row = rows[0];
+    if (!row) throw new Error(`The throttle for ${scope}/${subject} wrote no row`);
+    return decodeThrottle(row);
+  }
+
+  async clearThrottle(boxId: string, scope: string, subject: string): Promise<void> {
+    this.requireFeature('boothRuntime');
+    await this.driver.query(
+      `delete from ${this.table('box_throttle')} where box_id = ? and scope = ? and subject = ?`,
+      [boxId, scope, subject],
+    );
+  }
+
+  async markTimeSeen(boxId: string, at: string): Promise<string> {
+    this.requireFeature('boothRuntime');
+    /**
+     * Forward only, decided in the statement.
+     *
+     * The comparison is string `<` over the value already stored, which orders
+     * the same way as time for what this box writes: `Date#toISOString()` is
+     * fixed-width UTC for every year from 1000 to 9999, and `markTimeSeen` is
+     * the only writer of this key. It is not a general claim about ISO-8601 —
+     * an offset like `+07:00`, or a year outside that range, would not order
+     * this way, and neither reaches here.
+     */
+    await this.driver.query(
+      `insert into ${this.table('box_runtime')} as held (box_id, runtime_key, value, updated_at)
+       values (?, ?, ?, ?)
+       on conflict (box_id, runtime_key) do update set
+         value = excluded.value, updated_at = excluded.updated_at
+       where held.value < excluded.value`,
+      [boxId, LAST_GOOD_TIME_KEY, at, at],
+    );
+    return (await this.lastGoodTime(boxId)) ?? at;
+  }
+
+  async lastGoodTime(boxId: string): Promise<string | null> {
+    this.requireFeature('boothRuntime');
+    const rows = await this.driver.query(
+      `select value from ${this.table('box_runtime')} where box_id = ? and runtime_key = ?`,
+      [boxId, LAST_GOOD_TIME_KEY],
+    );
+    const value = rows[0]?.value;
+    return value === undefined || value === null ? null : String(value);
+  }
 }
 
 /**
@@ -834,6 +1410,66 @@ function decodeOutbox(row: SqlRow): OutboxRecord {
     lastErrorMessage: row.last_error_message ? String(row.last_error_message) : null,
     createdAt: toIso(row.created_at) ?? new Date(0).toISOString(),
     ackedAt: toIso(row.acked_at),
+  };
+}
+
+function decodePrintJob(row: SqlRow): PrintJobRecord {
+  return {
+    id: String(row.id),
+    boxId: String(row.box_id),
+    kind: String(row.kind),
+    role: row.role === null || row.role === undefined ? null : String(row.role),
+    stationId: row.station_id ? String(row.station_id) : null,
+    deviceId: row.device_id ? String(row.device_id) : null,
+    copies: toNum(row.copies),
+    /**
+     * Cast, and this is the one place the cast is honest: what comes back is
+     * whatever `putPrintJob` wrote, and nothing else writes this column. A
+     * `PrintJob` from a version of the renderer this agent no longer matches
+     * would be caught where it is rendered — `renderJob` throws and the queue
+     * ends the job `failed` with `RENDER_FAILED` — rather than here, where
+     * refusing to read would strand a voucher somebody is standing waiting for.
+     */
+    job: (parseJson(row.job) ?? {}) as PrintJobRecord['job'],
+    finish: (parseJson(row.finish) ?? null) as Record<string, unknown> | null,
+    templateId: row.template_id ? String(row.template_id) : null,
+    templateVersion:
+      row.template_version === null || row.template_version === undefined
+        ? null
+        : toNum(row.template_version),
+    actionId: row.action_id ? String(row.action_id) : null,
+    state: String(row.state) as BoxPrintJobState,
+    attempts: toNum(row.attempts),
+    nextAttemptAt: toIso(row.next_attempt_at),
+    lastErrorCode: row.last_error_code ? String(row.last_error_code) : null,
+    lastErrorMessage: row.last_error_message ? String(row.last_error_message) : null,
+    queuedAt: toIso(row.queued_at) ?? new Date(0).toISOString(),
+    updatedAt: toIso(row.updated_at) ?? new Date(0).toISOString(),
+  };
+}
+
+function decodeStaffSession(row: SqlRow): BoxStaffSession {
+  return {
+    stationId: String(row.station_id),
+    boxId: String(row.box_id),
+    accountId: String(row.account_id),
+    credentialKind: String(row.credential_kind),
+    staffCode: row.staff_code ? String(row.staff_code) : null,
+    signedInAt: toIso(row.signed_in_at) ?? new Date(0).toISOString(),
+    lastSeenAt: toIso(row.last_seen_at) ?? new Date(0).toISOString(),
+    expiresAt: toIso(row.expires_at),
+  };
+}
+
+function decodeThrottle(row: SqlRow): ThrottleRecord {
+  return {
+    boxId: String(row.box_id),
+    scope: String(row.scope),
+    subject: String(row.subject),
+    failures: toNum(row.failures),
+    firstFailureAt: toIso(row.first_failure_at) ?? new Date(0).toISOString(),
+    lastFailureAt: toIso(row.last_failure_at) ?? new Date(0).toISOString(),
+    lockedUntil: toIso(row.locked_until),
   };
 }
 

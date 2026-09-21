@@ -202,8 +202,23 @@ export const FIXTURES: Fixture[] = [
     },
   },
   {
+    /**
+     * The booth voucher, on both receipt heads.
+     *
+     * **576 is an assumption** — the booth printer is in no section of
+     * `DEVICE_INVENTORY.md` §2 and nobody has measured it; `templates/booth.ts`
+     * carries the reasoning and the failure mode. It is rendered at 512 as well
+     * so the narrower head can be looked at without hardware, which is the one
+     * thing that is cheap to have ready if the measurement comes back 512.
+     *
+     * The code is one of the shape D8 settles: two characters of booth prefix
+     * and eight from the unambiguous alphabet. §7's `LW-260917-0042` is the
+     * sample's own placeholder — the outgoing booth prints nothing, so no
+     * printed code exists to be faithful to — and the addendum in
+     * `docs/features/booth.md` replaces that scheme with this one.
+     */
     name: 'booth-voucher',
-    profiles: ['escpos576'],
+    profiles: ['escpos576', 'escpos512'],
     job: {
       kind: 'booth_voucher',
       data: {
@@ -212,13 +227,13 @@ export const FIXTURES: Fixture[] = [
         prizeLineThai: 'คูปอง 150 บาท',
         redemptionLine:
           'Show this QR at OTO Reception and get 150 THB off your ticket order.',
-        termsLine: 'Cannot be combined with other offers.',
-        voucherCode: 'LW-260917-0042',
-        date: '17 Sep 2026',
+        terms: ['Cannot be combined with other offers.', 'ใช้ร่วมกับโปรโมชันอื่นไม่ได้'],
+        voucherCode: 'B1RT7KMQ4X',
+        issuedAt: '17 Sep 2026 15:04',
         booth: 'Central Phuket · G floor',
         staff: 'Nok (S-014)',
-        issuedAt: '17 Sep 2026 15:04',
-        expiresAt: '17 Oct 2026',
+        // Fourteen days, which is what the seeded voucher definitions carry.
+        expiresAt: '1 Oct 2026',
         footerLine: `Redeem at Oto Play Park, Central Phuket · ${CYRILLIC_HELLO}`,
       },
     },
