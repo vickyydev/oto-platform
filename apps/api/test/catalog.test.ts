@@ -265,3 +265,137 @@ describe('SCRUM-27 — operators and branches', () => {
     expect(list.json().branches.some((b: { id: string }) => b.id === id)).toBe(false);
   });
 });
+
+describe('SCRUM-228 — customer tiers are data, not a screen-local list', () => {
+  const code = 'student';
+
+  it('creates a tier, lists it, renames it, and refuses a second with the same code', async () => {
+    const create = await ctx.app.inject({
+      method: 'POST',
+      url: '/tiers',
+      headers: { cookie },
+      payload: { code, name: 'Student', requiresVerification: true, sortOrder: 9 },
+    });
+    expect(create.statusCode).toBe(200);
+
+    const listed = await ctx.app.inject({ method: 'GET', url: '/tiers', headers: { cookie } });
+    const added = listed.json().tiers.find((t: { id: string }) => t.id === code);
+    expect(added).toMatchObject({ name: 'Student', requiresVerification: true, isDefault: false });
+
+    const clash = await ctx.app.inject({
+      method: 'POST',
+      url: '/tiers',
+      headers: { cookie },
+      payload: { code, name: 'Student again' },
+    });
+    expect(clash.statusCode).toBe(409);
+    expect(clash.json().error.code).toBe('TIER_CODE_EXISTS');
+
+    const rename = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/tiers/${code}`,
+      headers: { cookie },
+      payload: { name: 'Student (with card)' },
+    });
+    expect(rename.statusCode).toBe(200);
+    const after = await ctx.app.inject({ method: 'GET', url: '/tiers', headers: { cookie } });
+    expect(after.json().tiers.find((t: { id: string }) => t.id === code).name).toBe(
+      'Student (with card)',
+    );
+  });
+
+  it('keeps exactly one baseline tier, and the baseline never asks for a document', async () => {
+    const promote = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/tiers/${code}`,
+      headers: { cookie },
+      payload: { isDefault: true },
+    });
+    expect(promote.statusCode).toBe(200);
+    const listed = await ctx.app.inject({ method: 'GET', url: '/tiers', headers: { cookie } });
+    const defaults = listed.json().tiers.filter((t: { isDefault: boolean }) => t.isDefault);
+    expect(defaults).toHaveLength(1);
+    expect(defaults[0].id).toBe(code);
+    expect(defaults[0].requiresVerification).toBe(false);
+
+    // Demoting the baseline directly leaves the operator without one.
+    const demote = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/tiers/${code}`,
+      headers: { cookie },
+      payload: { isDefault: false },
+    });
+    expect(demote.statusCode).toBe(400);
+
+    // Put the seeded baseline back for the rest of the suite.
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: '/tiers/tourist',
+      headers: { cookie },
+      payload: { isDefault: true },
+    });
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/tiers/${code}`,
+      headers: { cookie },
+      payload: { requiresVerification: true },
+    });
+  });
+
+  it('refuses to archive a tier that prices a member, and archives it once nobody holds it', async () => {
+    const member = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      headers: { cookie },
+      payload: { phone: '0891112233', nickname: 'Tier holder' },
+    });
+    expect(member.statusCode).toBe(200);
+    const memberId = member.json().member.id as string;
+    const verify = await ctx.app.inject({
+      method: 'POST',
+      url: `/members/${memberId}/tier-verification`,
+      headers: { cookie },
+      payload: { toTier: code, evidenceType: 'School card', evidenceExpiresAt: '2030-01-01' },
+    });
+    expect(verify.statusCode).toBe(200);
+
+    const refused = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/tiers/${code}`,
+      headers: { cookie },
+    });
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error.code).toBe('TIER_IN_USE');
+
+    await ctx.app.inject({ method: 'DELETE', url: `/members/${memberId}`, headers: { cookie } });
+    const archived = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/tiers/${code}`,
+      headers: { cookie },
+    });
+    expect(archived.statusCode).toBe(200);
+    const listed = await ctx.app.inject({ method: 'GET', url: '/tiers', headers: { cookie } });
+    expect(listed.json().tiers.some((t: { id: string }) => t.id === code)).toBe(false);
+  });
+
+  it('refuses to archive the baseline tier', async () => {
+    const res = await ctx.app.inject({ method: 'DELETE', url: '/tiers/tourist', headers: { cookie } });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('refuses an adult rule that charges a price it does not carry', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/branches/${branchId}/ticket-packages`,
+      headers: { cookie },
+      payload: {
+        name: 'Unpriced adults',
+        durationLabel: '1 Hour',
+        hours: 1,
+        prices: { tourist: { weekday: 30000, weekend: 35000 } },
+        adultRules: { tourist: { kind: 'set_price' } },
+      },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+});

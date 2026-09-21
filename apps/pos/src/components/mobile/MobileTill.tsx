@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocation } from 'wouter';
 import {
   CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, TicketType,
@@ -9,15 +9,16 @@ import { useStation } from '@/station/StationContext';
 import { dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
-import { computeLineTotal, computeLineBreakdown, priceForTier } from '@/lib/pricing';
+import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, effectiveRequirement, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
 import { buildSale, computeTotals } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
+import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import {
-  getDiscountReasons, getMemberByPhone, createMember, updateMember,
-  verifyMemberTier, recordSale, getTicketTypes, getDropOffPricing,
+  getDiscountReasons, getMemberByPhone, updateMember,
+  recordSale, getTicketTypes, getDropOffPricing,
   getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier,
   getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver,
   getPrintTemplate, redeemBooking, pushWristband, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, getDiscountByCode, incrementPromoUsage,
@@ -361,7 +362,15 @@ export default function MobileTill() {
 
   // ── Handlers (same logic as Till.tsx, mobile-specific step transitions) ───
 
+  /**
+   * Which sale this till is on — see the same ref in `Till.tsx` for what it
+   * stops: a deferred tier save that resolves after Cancel would otherwise
+   * put the previous visitor on the next visitor's sale.
+   */
+  const saleEpochRef = useRef(0);
+
   const resetSale = () => {
+    saleEpochRef.current += 1;
     setMStep('tier');
     setHandoffMode(null);
     setTier(null);
@@ -961,14 +970,35 @@ export default function MobileTill() {
     }
   };
 
+  // A tier verified before the visitor gave their details is saved to their
+  // profile here (SCRUM-227) — same path as the counter till.
   const handleCustomerDone = () => {
     if (pendingVerification && !member && customerPhone.trim()) {
-      const target =
-        getMemberByPhone(customerPhone, customerNickname) ??
-        createMember(customerPhone, customerNickname, customerContactChannel);
-      verifyMemberTier(target.id, pendingVerification);
-      setMember(target);
-      setPendingVerification(null);
+      const verification = pendingVerification;
+      const epoch = saleEpochRef.current;
+      void saveDeferredVerification({
+        phone: customerPhone,
+        nickname: customerNickname,
+        channel: customerContactChannel,
+        verification,
+      })
+        .then((saved) => {
+          if (saleEpochRef.current !== epoch) return;
+          setMember(saved);
+          setPendingVerification(null);
+          toast({
+            title: `${tierLabel(verification.tier)} rate saved to ${saved.nickname}`,
+            description: `${verification.proofType} · valid until ${verification.expiresAt ?? '—'}`,
+          });
+        })
+        .catch((err: unknown) => {
+          if (saleEpochRef.current !== epoch) return;
+          toast({
+            title: "Couldn't save the verified rate to a profile",
+            description: `${err instanceof Error ? err.message : 'Unknown error'} The discount stands on this sale — it is not recorded against a member.`,
+            variant: 'destructive',
+          });
+        });
     }
     setHandoffMode(null);
     setMStep('review');
@@ -1002,6 +1032,22 @@ export default function MobileTill() {
         variant: 'destructive',
       });
       setMStep('dropoff-config');
+      return;
+    }
+    // A tier nobody has priced on this ticket resolves to ฿0 and reads like a
+    // free ticket rather than a missing setting — refuse it (SCRUM-228).
+    const unpriced = unpricedCartLines(lines);
+    if (unpriced.length > 0) {
+      toast({
+        title: 'This tier has no price',
+        description: `${unpriced
+          .map(
+            (u) =>
+              `${u.ticketName} has no ${tierLabel(u.tier)} ${u.what === 'adult' ? 'adult' : ''} price`,
+          )
+          .join(' · ')}. Set it in Admin → Tickets before selling at this tier.`,
+        variant: 'destructive',
+      });
       return;
     }
     if (!station) {

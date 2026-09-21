@@ -1,5 +1,6 @@
 import type { WeekdayWeekendPrice } from '@/types';
 import { getPricingOverrides } from '@/store/catalogStore';
+import { dayOfWeekOfIsoDate, isIsoDate, isoDateInTz } from '@oto/shared';
 
 /**
  * Which rate is active for a sale. Every price in the catalog stores a
@@ -16,12 +17,137 @@ export interface RateModeResult {
   overrideName?: string;
 }
 
-const toISODate = (date: Date): string => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-};
+/**
+ * The branch's timezone, which is the calendar the trading day is read off.
+ *
+ * SCRUM-229: the API resolves the rate mode on `branchToday(branch.timezone)`,
+ * and until this was here the till resolved it on whatever timezone the browser
+ * was set to. The two agreed only on a device set to Asia/Bangkok, and on a
+ * Friday→Saturday boundary they parted company for as long as the offset —
+ * the header chip (which already reads the API) saying weekend while the cart
+ * charged weekday, or the reverse.
+ *
+ * The default is the one branch trading today. It is a starting value, not an
+ * assumption about the estate: `setBranchTimezone` overwrites it with the real
+ * one the moment the catalog loads, on every branch and every branch switch.
+ */
+const DEFAULT_BRANCH_TIMEZONE = 'Asia/Bangkok';
+let branchTimezone = DEFAULT_BRANCH_TIMEZONE;
+
+/**
+ * Point the trading-day calendar at a branch. Called from the catalog
+ * hydration, which is the first thing that knows which branch this till is.
+ *
+ * An unusable zone falls back rather than throwing: a branch row with a typo in
+ * its timezone must not take the till down, and every price on the screen goes
+ * through here.
+ */
+export function setBranchTimezone(timeZone: string | null | undefined): void {
+  if (!timeZone) {
+    branchTimezone = DEFAULT_BRANCH_TIMEZONE;
+    return;
+  }
+  try {
+    isoDateInTz(new Date(), timeZone); // throws RangeError on an unknown zone
+    branchTimezone = timeZone;
+  } catch {
+    branchTimezone = DEFAULT_BRANCH_TIMEZONE;
+  }
+}
+
+export function getBranchTimezone(): string {
+  return branchTimezone;
+}
+
+/**
+ * Today's trading date (yyyy-mm-dd) at the branch, from THIS DEVICE'S clock.
+ *
+ * What this does and does not fix: it places the device's instant on the
+ * branch's calendar, so a till in another timezone now agrees with the API
+ * about which day it is. It cannot correct a device whose clock is simply
+ * wrong — an iPad two days behind computes a branch date two days behind. That
+ * case is covered by the server answer below, which is computed on the
+ * platform's clock; this is the fallback for when the platform is unreachable,
+ * and it is the best a till alone can do.
+ */
+export function branchTradingDate(now: Date = new Date()): string {
+  return isoDateInTz(now, branchTimezone);
+}
+
+/** The API's answer for the branch's today, as `/branches/:id/pricing-mode` returns it. */
+export interface BranchRateModeAnswer extends RateModeResult {
+  /** The branch's trading date the answer was computed for (yyyy-mm-dd). */
+  date: string;
+}
+
+/**
+ * The platform's own answer for today, and when this device received it.
+ *
+ * This is what protects a till with a wrong clock: the date and mode are
+ * decided on the platform's clock in the branch's timezone, so a device that
+ * disagrees about what day it is still charges what the branch is charging.
+ * The header chip polls this endpoint every 60s (PricingModeIndicator); the
+ * cart now reads the same answer, so the chip and the price cannot disagree
+ * while it is live.
+ */
+let serverAnswer: { answer: RateModeResult; date: string; receivedAtMs: number } | null = null;
+
+/**
+ * How long an answer is trusted after it arrives. Ten minutes is ten of the
+ * chip's 60s polls: a blip, a reload or a slow mall connection never drops the
+ * till back onto its own clock, and a till that has been out of contact longer
+ * than that is genuinely offline and falls back to `branchTradingDate` —
+ * timezone-correct, and no staler than the device's own clock.
+ */
+const SERVER_ANSWER_TTL_MS = 10 * 60_000;
+
+/**
+ * Record the platform's answer for the branch's today.
+ *
+ * `null` clears it, for a branch switch or a sign-out. **Nothing passes null
+ * today** — all three callers pass an answer — and this comment said
+ * otherwise until a reviewer checked. The parameter stays because clearing on
+ * a branch switch is the correct behaviour and the poll in
+ * `PricingModeIndicator` does not do it yet; that is SCRUM-242, not a claim
+ * about what happens now.
+ */
+export function setBranchRateMode(answer: BranchRateModeAnswer | null): void {
+  serverAnswer = answer
+    ? {
+        answer: { mode: answer.mode, reason: answer.reason, overrideName: answer.overrideName },
+        date: answer.date,
+        receivedAtMs: Date.now(),
+      }
+    : null;
+}
+
+/** The branch's trading date as the platform last reported it, or null. */
+export function serverTradingDate(): string | null {
+  return liveServerAnswer() ? serverAnswer!.date : null;
+}
+
+function liveServerAnswer(): RateModeResult | null {
+  if (!serverAnswer) return null;
+  const ageMs = Date.now() - serverAnswer.receivedAtMs;
+  // A negative age means the device clock moved backwards under us; that is
+  // the one thing this cache must not treat as "fresh".
+  if (ageMs < 0 || ageMs > SERVER_ANSWER_TTL_MS) return null;
+  /**
+   * An answer is about a DAY, not about a moment, so it expires when that day
+   * does — not only when its ten minutes are up.
+   *
+   * Measured before this guard existed: a poll succeeding at 23:55 Bangkok on
+   * a Friday answered `{date: '2026-09-25', mode: 'weekday'}`; the network
+   * then died; at 00:02 on the Saturday the device knew the trading date had
+   * rolled to the 26th, and this cache still answered weekday, so the till
+   * charged Friday's rate on a Saturday. Before the cache existed the till
+   * would have computed weekend correctly, so the TTL alone made that case
+   * worse rather than better. The answer already carried its own date and
+   * nothing compared it.
+   */
+  if (serverAnswer.date !== branchTradingDate()) return null;
+  return serverAnswer.answer;
+}
 
 /**
  * Resolves the active rate mode for a given date, in order:
@@ -30,10 +156,22 @@ const toISODate = (date: Date): string => {
  *   3. Otherwise → weekday.
  * Reads holiday overrides from the catalog store (never mockApi — see the
  * lib import-cycle rule) so it stays free of the seed-eval TDZ.
+ *
+ * An instant (a Date, e.g. a sale's createdAt) is placed on the BRANCH's
+ * calendar, not the browser's — a sale rung at 18:30 UTC on a Friday is a
+ * Saturday sale in Bangkok and is priced as one. A plain yyyy-mm-dd string is
+ * already a calendar date and is used as given.
  */
 export function getRateModeForDate(date: Date | string): RateModeResult {
-  const d = typeof date === 'string' ? new Date(`${date}T00:00:00`) : date;
-  const iso = toISODate(d);
+  const instant = typeof date === 'string' && !isIsoDate(date) ? new Date(date) : date;
+  // An unparseable timestamp used to fall through to weekday, because NaN is
+  // neither Saturday nor Sunday. `isoDateInTz` throws on one instead, and the
+  // history screens feed this whatever a record carries, so it keeps the old
+  // answer rather than taking a screen down over a bad row.
+  if (instant instanceof Date && Number.isNaN(instant.getTime())) {
+    return { mode: 'weekday', reason: 'Weekday pricing' };
+  }
+  const iso = typeof instant === 'string' ? instant : isoDateInTz(instant, branchTimezone);
 
   const override = getPricingOverrides().find(
     (o) => iso >= o.startDate && iso <= o.endDate
@@ -46,16 +184,22 @@ export function getRateModeForDate(date: Date | string): RateModeResult {
     };
   }
 
-  const day = d.getDay(); // 0 = Sunday, 6 = Saturday
+  const day = dayOfWeekOfIsoDate(iso); // 0 = Sunday, 6 = Saturday
   if (day === 0 || day === 6) {
     return { mode: 'weekend', reason: 'Weekend pricing' };
   }
   return { mode: 'weekday', reason: 'Weekday pricing' };
 }
 
-/** The active rate mode for today (the till always sells "now"). */
+/**
+ * The active rate mode for today (the till always sells "now").
+ *
+ * The platform's answer wins while it is live, because it is decided on a
+ * clock the park controls; otherwise today is read off this device's clock on
+ * the branch's calendar.
+ */
 export function todayRateMode(): RateModeResult {
-  return getRateModeForDate(new Date());
+  return liveServerAnswer() ?? getRateModeForDate(branchTradingDate());
 }
 
 /** Resolves a stored weekday/weekend price to a concrete ฿ number for a mode. */

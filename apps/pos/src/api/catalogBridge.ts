@@ -3,7 +3,8 @@
 // admin mutators call the write-through helpers so the DB is the source of
 // truth while every prototype screen keeps its exact rendering path.
 import type { PricingOverride, TaxConfig, TicketType, TierDef } from '@/types';
-import { hydrateFromApi } from '@/store/catalogStore';
+import { getActiveBranch, hydrateFromApi } from '@/store/catalogStore';
+import { setBranchRateMode, setBranchTimezone } from '@/lib/pricingMode';
 import { branchesApi, catalogApi, type ApiBranch } from './platform';
 import { apiBranchToBranch, apiPackageToTicketType, holidayToPricingOverride, ticketTypeToApiBody } from './mappers';
 
@@ -28,12 +29,20 @@ export async function loadCatalogFromApi(activeSlug?: string): Promise<void> {
 
   const active = branches.find((b) => b.code === slug);
   if (active) {
-    const [tiersRes, packagesRes, holidaysRes, taxRes] = await Promise.all([
+    // The trading day is read off the branch's calendar, not the browser's
+    // (SCRUM-229). Set before anything prices, and re-set on every branch switch.
+    setBranchTimezone(active.timezone);
+    const [tiersRes, packagesRes, holidaysRes, taxRes, rateModeRes] = await Promise.all([
       catalogApi.tiers(),
       catalogApi.packages(active.id),
       catalogApi.holidays(active.id),
       catalogApi.taxConfig(active.id),
+      // The platform's own answer for today, decided on a clock the park
+      // controls. Non-fatal: a till that cannot get it falls back to its own
+      // clock on the branch's calendar, which is what it did before.
+      catalogApi.pricingMode(active.id).catch(() => null),
     ]);
+    setBranchRateMode(rateModeRes);
     const tiers: TierDef[] = tiersRes.tiers.map((t) => ({
       id: t.id,
       name: t.name,
@@ -60,6 +69,10 @@ export async function loadCatalogFromApi(activeSlug?: string): Promise<void> {
 export async function loadPublicCatalog(branchCode: string) {
   const { publicApi } = await import('./platform');
   const cat = await publicApi.catalog(branchCode);
+  // A visitor booking from their phone is in whatever timezone they are in;
+  // the prices they are quoted are the branch's (SCRUM-229).
+  setBranchTimezone(cat.branch.timezone);
+  setBranchRateMode(cat.rateMode);
   hydrateFromApi({
     perBranch: {
       [cat.branch.code]: {
@@ -119,6 +132,37 @@ export async function deleteHolidayInApi(branchSlug: string, id: string): Promis
   if (!branchId) return;
   await catalogApi.deleteHoliday(branchId, id);
   await loadCatalogFromApi(branchSlug);
+}
+
+/**
+ * Tiers are operator-wide, not per branch, so there is no branch id to resolve
+ * and no branch to skip: an edit here always goes to the platform (SCRUM-228).
+ * `exists` says whether the store already held this tier id, which is what
+ * separates a rename from a create — the id is the platform's tier code.
+ */
+export async function saveTierToApi(t: TierDef, exists: boolean): Promise<void> {
+  if (exists) {
+    await catalogApi.updateTier(t.id, {
+      name: t.name,
+      isDefault: t.isDefault,
+      requiresVerification: t.requiresVerification,
+      sortOrder: t.sortOrder,
+    });
+  } else {
+    await catalogApi.createTier({
+      code: t.id,
+      name: t.name,
+      isDefault: t.isDefault,
+      requiresVerification: t.requiresVerification,
+      sortOrder: t.sortOrder,
+    });
+  }
+  await loadCatalogFromApi(getActiveBranch().id);
+}
+
+export async function deleteTierInApi(id: string): Promise<void> {
+  await catalogApi.deleteTier(id);
+  await loadCatalogFromApi(getActiveBranch().id);
 }
 
 export async function saveTaxConfigToApi(branchSlug: string, config: TaxConfig): Promise<void> {

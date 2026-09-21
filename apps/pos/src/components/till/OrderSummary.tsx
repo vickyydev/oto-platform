@@ -8,7 +8,7 @@ import { resolveFreeItem } from '@/lib/promoVoucher';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { computeNannyGroups, resolveDropOffPricing } from '@/lib/dropoff';
 import { getDropOffPricing, getAddOns } from '@/mockApi';
-import { componentKey, priceForTier } from '@/lib/pricing';
+import { adultUnitDisplay, componentKey, priceForTier } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { Ticket, User, Baby, Trash2, Tag, BadgePercent, Footprints, Minus, Plus, HandHeart, UserCheck, Pencil, AlertTriangle, ShoppingBag, PartyPopper, Gift, type LucideIcon } from 'lucide-react';
@@ -88,12 +88,15 @@ function QtyRow({
   label,
   value,
   unitPrice,
+  unitNote,
   onChange,
 }: {
   icon: LucideIcon;
   label: string;
   value: number;
   unitPrice?: number;
+  /** Appended to the "฿x each" hint, e.g. "1 free" on an adult free allowance. */
+  unitNote?: string;
   onChange: (next: number) => void;
 }) {
   return (
@@ -102,7 +105,9 @@ function QtyRow({
         <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
         <span className="truncate">{label}</span>
         {unitPrice !== undefined && (
-          <span className="text-xs text-muted-foreground tabular-nums shrink-0">฿{unitPrice} each</span>
+          <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+            ฿{unitPrice} each{unitNote ? ` · ${unitNote}` : ''}
+          </span>
         )}
       </span>
       <div className="flex items-center gap-1.5 shrink-0">
@@ -126,6 +131,26 @@ function QtyRow({
         </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * The Adults stepper, priced by the line's own per-tier adult rule
+ * (`set_price` / `free_adults` / `same_as_kid`) rather than by the kid price.
+ * SCRUM-226: the kid price is what this row used to show, so the staff panel
+ * quoted a figure the till never charged on every package this branch sells.
+ */
+function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: number) => void }) {
+  const { unitPrice, note } = adultUnitDisplay(line.ticketType, line.tier, line.adults);
+  return (
+    <QtyRow
+      icon={User}
+      label="Adults"
+      value={line.adults}
+      unitPrice={unitPrice}
+      unitNote={note}
+      onChange={onChange}
+    />
   );
 }
 
@@ -367,11 +392,8 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                     onChange={(v) => onUpdateLine(line.id, { kids: v })}
                   />
                   {renderComponentDiscounts(line.id, 'kids')}
-                  <QtyRow
-                    icon={User}
-                    label="Adults"
-                    value={line.adults}
-                    unitPrice={priceForTier(line.ticketType, line.tier)}
+                  <AdultQtyRow
+                    line={line}
                     onChange={(v) => onUpdateLine(line.id, { adults: v })}
                   />
                   {renderComponentDiscounts(line.id, 'adults')}

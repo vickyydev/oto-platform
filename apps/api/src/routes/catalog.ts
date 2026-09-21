@@ -4,6 +4,7 @@ import {
   branch,
   branchHoliday,
   branchTaxConfig,
+  member,
   product,
   productCategory,
   taxOverride,
@@ -37,8 +38,22 @@ async function loadBranch(app: App, branchId: string, operatorId: string) {
 
 const BranchParams = z.object({ branchId: z.string().uuid() });
 
+/**
+ * A tier code is what a ticket package's price map is keyed by and what
+ * `member.tier_code` holds, so it is minted from the name by the admin screen
+ * and never changed afterwards — renaming a tier changes its name only.
+ */
+const TierCodeParams = z.object({ code: z.string().min(1).max(64) });
+
+const TierBody = z.object({
+  name: z.string().min(1).max(80),
+  isDefault: z.boolean().default(false),
+  requiresVerification: z.boolean().default(false),
+  sortOrder: z.number().int().min(0).default(0),
+});
+
 export async function catalogRoutes(app: App): Promise<void> {
-  // Tiers (read path — SCRUM-35 packages reference them; CRUD stays mock, Q4).
+  // Tiers (read path — SCRUM-35 packages reference them; writes below, SCRUM-228).
   app.get('/tiers', { config: { permission: 'catalog:package:read' }, schema: { description: 'Operator tier definitions' } }, async (req) => {
     const auth = req.requireAuth();
     const rows = await app.db
@@ -56,6 +71,201 @@ export async function catalogRoutes(app: App): Promise<void> {
       })),
     };
   });
+
+  // --- SCRUM-228: tier writes ----------------------------------------------
+  // The tier list sets what a visitor can be priced at, so it is operator data
+  // like any other and an admin screen that edits it has to reach the database.
+  // These carry the package permissions rather than ones of their own: adding a
+  // permission string would leave every seeded role without it until the roles
+  // are re-seeded, and whoever may price a ticket is who may name the tiers it
+  // is priced for.
+  app.post(
+    '/tiers',
+    {
+      config: { permission: 'catalog:package:create' },
+      schema: {
+        description: 'Create a customer tier',
+        body: TierBody.extend({ code: z.string().min(1).max(64).regex(/^[a-z0-9_]+$/) }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const [clash] = await app.db
+        .select()
+        .from(tier)
+        .where(and(eq(tier.operatorId, auth.operatorId), eq(tier.code, req.body.code)))
+        .limit(1);
+      if (clash) {
+        throw errors.conflict('TIER_CODE_EXISTS', `A tier with the code "${req.body.code}" already exists`, {
+          code: req.body.code,
+          archived: clash.archivedAt !== null,
+        });
+      }
+      const id = newId();
+      const { code, name, isDefault, requiresVerification, sortOrder } = req.body;
+      return withTx(app.db, opCtx(req), 'tier.create', async (tx) => {
+        // Exactly one baseline per operator, and the baseline never asks for a
+        // document — that is what being the baseline means.
+        if (isDefault) {
+          await tx.update(tier).set({ isDefault: false }).where(eq(tier.operatorId, auth.operatorId));
+        }
+        await tx.insert(tier).values({
+          id,
+          operatorId: auth.operatorId,
+          code,
+          name,
+          isDefault,
+          requiresVerification: isDefault ? false : requiresVerification,
+          sortOrder,
+        });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: auth.branchId,
+          action: 'tier.create',
+          entityType: 'tier',
+          entityId: id,
+          after: { code, name, isDefault, requiresVerification, sortOrder },
+          requestId: req.id,
+        });
+        return { id: code };
+      });
+    },
+  );
+
+  app.patch(
+    '/tiers/:code',
+    {
+      config: { permission: 'catalog:package:update' },
+      schema: {
+        description: 'Rename or re-rank a customer tier',
+        params: TierCodeParams,
+        body: TierBody.partial(),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const [before] = await app.db
+        .select()
+        .from(tier)
+        .where(
+          and(
+            eq(tier.operatorId, auth.operatorId),
+            eq(tier.code, req.params.code),
+            isNull(tier.archivedAt),
+          ),
+        )
+        .limit(1);
+      if (!before) throw errors.notFound('Tier not found');
+
+      const b = req.body;
+      const becomingDefault = b.isDefault === true;
+      if (before.isDefault && b.isDefault === false) {
+        throw errors.badRequest(
+          'Make another tier the baseline instead — an operator always has exactly one',
+        );
+      }
+      const patch: Partial<typeof tier.$inferInsert> = {};
+      if (b.name !== undefined) patch.name = b.name;
+      if (b.sortOrder !== undefined) patch.sortOrder = b.sortOrder;
+      if (b.requiresVerification !== undefined) patch.requiresVerification = b.requiresVerification;
+      if (becomingDefault) {
+        patch.isDefault = true;
+        patch.requiresVerification = false;
+      }
+      if (Object.keys(patch).length === 0) return { ok: true as const };
+
+      return withTx(app.db, opCtx(req), 'tier.update', async (tx) => {
+        if (becomingDefault) {
+          await tx.update(tier).set({ isDefault: false }).where(eq(tier.operatorId, auth.operatorId));
+        }
+        await tx.update(tier).set(patch).where(eq(tier.id, before.id));
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: auth.branchId,
+          action: 'tier.update',
+          entityType: 'tier',
+          entityId: before.id,
+          before: {
+            name: before.name,
+            isDefault: before.isDefault,
+            requiresVerification: before.requiresVerification,
+            sortOrder: before.sortOrder,
+          },
+          after: patch,
+          requestId: req.id,
+        });
+        return { ok: true as const };
+      });
+    },
+  );
+
+  app.delete(
+    '/tiers/:code',
+    {
+      config: { permission: 'catalog:package:update' },
+      schema: {
+        description: 'Archive a customer tier (refused while it prices anyone)',
+        params: TierCodeParams,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const [before] = await app.db
+        .select()
+        .from(tier)
+        .where(
+          and(
+            eq(tier.operatorId, auth.operatorId),
+            eq(tier.code, req.params.code),
+            isNull(tier.archivedAt),
+          ),
+        )
+        .limit(1);
+      if (!before) throw errors.notFound('Tier not found');
+      if (before.isDefault) {
+        throw errors.badRequest(
+          'That is the baseline tier — make another tier the baseline before archiving it',
+        );
+      }
+      // A member whose tier_code points at an archived tier would price against
+      // a tier the catalog no longer offers, which is the ฿0 state this ticket
+      // exists to close.
+      const holders = await app.db
+        .select({ id: member.id })
+        .from(member)
+        .where(
+          and(
+            eq(member.operatorId, auth.operatorId),
+            eq(member.tierCode, req.params.code),
+            isNull(member.archivedAt),
+          ),
+        )
+        .limit(1);
+      if (holders.length > 0) {
+        throw errors.conflict(
+          'TIER_IN_USE',
+          'Members are priced at this tier — move them to another tier before archiving it',
+          { code: req.params.code },
+        );
+      }
+      return withTx(app.db, opCtx(req), 'tier.archive', async (tx) => {
+        await tx.update(tier).set({ archivedAt: new Date() }).where(eq(tier.id, before.id));
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: auth.branchId,
+          action: 'tier.archive',
+          entityType: 'tier',
+          entityId: before.id,
+          before: { code: before.code, name: before.name },
+          requestId: req.id,
+        });
+        return { ok: true as const };
+      });
+    },
+  );
 
   // --- SCRUM-35: ticket packages -------------------------------------------
   app.get(

@@ -23,6 +23,65 @@ export function priceForTier(
   return resolveRate(ticket.prices[tier], mode);
 }
 
+/**
+ * Whether this ticket carries a kid price for this tier at all.
+ *
+ * A missing entry is not "free" — it is a tier nobody has priced on this
+ * ticket, and `priceForTier` resolves it to 0 because a number has to come
+ * back for the card to render. Every path that takes money asks this first
+ * (SCRUM-228). An explicit 0 is a real price and passes.
+ */
+export function isTierPriced(ticket: TicketType, tier: CustomerTier): boolean {
+  const p = ticket.prices[tier];
+  return !!p && Number.isFinite(p.weekday) && Number.isFinite(p.weekend);
+}
+
+/** Whether the adult rule that charges for this tier carries the price it charges. */
+export function isAdultRulePriced(ticket: TicketType, tier: CustomerTier, adults: number): boolean {
+  if (adults <= 0) return true;
+  const rule = ticket.adultRules?.[tier];
+  if (!rule || rule.kind === 'same_as_kid') return isTierPriced(ticket, tier);
+  if (rule.kind === 'set_price') {
+    return !!rule.price && Number.isFinite(rule.price.weekday) && Number.isFinite(rule.price.weekend);
+  }
+  // free_adults: only the adults past the free allowance are charged.
+  const paid = adults - Math.min(adults, Math.max(0, rule.freeAdults ?? 0));
+  if (paid <= 0) return true;
+  return rule.overflow === 'set_price'
+    ? !!rule.price && Number.isFinite(rule.price.weekday) && Number.isFinite(rule.price.weekend)
+    : isTierPriced(ticket, tier);
+}
+
+/** One cart line that would be charged from a price nobody has set. */
+export interface UnpricedLine {
+  ticketName: string;
+  tier: CustomerTier;
+  /** 'kid' — the tier has no price on this ticket; 'adult' — its adult rule has none. */
+  what: 'kid' | 'adult';
+}
+
+/**
+ * The lines in a cart whose price does not exist. Selling one charges ฿0 with
+ * nothing on screen to say so, which is why the till refuses the sale and
+ * names them instead (SCRUM-228).
+ */
+export function unpricedCartLines(lines: CartLine[]): UnpricedLine[] {
+  const out: UnpricedLine[] = [];
+  for (const line of lines) {
+    // A promo line carries its own given price and never resolves a tier rate.
+    if (line.promoItem) continue;
+    const needsKidPrice = line.kids > 0 || line.dropOff !== undefined;
+    if (needsKidPrice && !isTierPriced(line.ticketType, line.tier)) {
+      out.push({ ticketName: line.ticketType.name, tier: line.tier, what: 'kid' });
+      continue;
+    }
+    if (!isAdultRulePriced(line.ticketType, line.tier, line.adults)) {
+      out.push({ ticketName: line.ticketType.name, tier: line.tier, what: 'adult' });
+    }
+  }
+  return out;
+}
+
 export interface ResolvedAdultLine {
   freeCount: number; // adults entering free (free_adults rule)
   paidCount: number; // adults charged paidUnit
@@ -59,6 +118,41 @@ export function resolveAdultLine(
   const paidCount = adults - freeCount;
   const paidUnit = rule.overflow === 'set_price' ? resolveRate(rule.price, mode) : kidPrice;
   return { freeCount, paidCount, paidUnit, total: paidCount * paidUnit };
+}
+
+export interface AdultUnitDisplay {
+  /** ฿ each PAID adult on the line is charged — 0 when every adult is free. */
+  unitPrice: number;
+  /** Free allowance to show beside it, e.g. "1 free", when the line mixes free and paid adults. */
+  note?: string;
+}
+
+/**
+ * What the Adults row on the staff order panel should say, taken from the same
+ * resolver that charges the line.
+ *
+ * SCRUM-226: the panel used to show `priceForTier(...)` — the KID price — on the
+ * Adults row, so on every package this branch sells (all `set_price` or
+ * `free_adults`) the person taking the money read a figure nobody was charged:
+ * "Adults ฿1090 each" beside an adult costing ฿350, or "฿620 each" beside an
+ * adult entering free. The total and the visitor display were right throughout,
+ * because both come from `resolveAdultLine`. This makes the panel read from it too.
+ *
+ * With no adults on the line yet, it prices the NEXT one, which is what a row
+ * showing 0 is being read for. Where a rule gives free adults and the line has
+ * gone past the allowance, `note` carries the free count, so a row whose
+ * quantity mixes free and paid adults cannot be multiplied out to a wrong quote.
+ */
+export function adultUnitDisplay(
+  ticket: TicketType,
+  tier: CustomerTier,
+  adults: number,
+  mode: RateMode = todayRateMode().mode,
+): AdultUnitDisplay {
+  const resolved = resolveAdultLine(ticket, tier, Math.max(adults, 1), mode);
+  const unitPrice = resolved.paidCount > 0 ? resolved.paidUnit : 0;
+  const mixed = adults > 0 && resolved.freeCount > 0 && resolved.paidCount > 0;
+  return mixed ? { unitPrice, note: `${resolved.freeCount} free` } : { unitPrice };
 }
 
 export interface LinePricingInput {

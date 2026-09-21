@@ -73,21 +73,49 @@ export function MembersPanel() {
       variant: 'destructive',
     });
 
-  const handleSave = (data: MemberFormData) => {
-    // Tier-verification editing stays out of Sprint 1 (CLAUDE.md §6 — the
-    // evidence UI is a later ticket); phone/nickname/channel persist to the API.
-    const run = editingMember
-      ? membersApi.update(editingMember.id, {
-          nickname: data.nickname,
-          phone: data.phone,
-          preferredChannel: data.preferredChannel ?? null,
-        })
-      : membersApi.create({
-          phone: data.phone,
-          nickname: data.nickname,
-          preferredChannel: data.preferredChannel,
+  /**
+   * Profile fields go to the member route; a tier change goes to the
+   * verification route, which is the only thing in the platform that writes
+   * `member.tierCode` — and it writes the evidence row in the same
+   * transaction, so a discounted rate can never stand with no document behind
+   * it. Rejects on failure so the dialog stays open holding the entry.
+   */
+  const handleSave = async (data: MemberFormData): Promise<void> => {
+    const saved = editingMember
+      ? (
+          await membersApi.update(editingMember.id, {
+            nickname: data.nickname,
+            phone: data.phone,
+            preferredChannel: data.preferredChannel ?? null,
+          })
+        ).member
+      : (
+          await membersApi.create({
+            phone: data.phone,
+            nickname: data.nickname,
+            preferredChannel: data.preferredChannel,
+          })
+        ).member;
+
+    if (data.tierChange) {
+      try {
+        const { member: verified } = await membersApi.verifyTier(saved.id, data.tierChange);
+        toast({
+          title: `${tierLabel(data.tierChange.toTier)} rate verified`,
+          description: `${verified.nickname} · ${data.tierChange.evidenceType} · valid until ${data.tierChange.evidenceExpiresAt}`,
         });
-    void run.then(refresh).catch(apiFail);
+      } catch (err) {
+        // The profile write already landed; say which half failed rather than
+        // letting the dialog report the whole save as lost.
+        await refresh();
+        throw new Error(
+          `the name and phone saved, but the tier did not: ${
+            err instanceof Error ? err.message : 'Unknown error'
+          }`,
+        );
+      }
+    }
+    await refresh();
   };
 
   const confirmDelete = () => {

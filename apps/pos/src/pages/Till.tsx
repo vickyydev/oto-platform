@@ -8,16 +8,17 @@ import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
-import { computeLineTotal, computeLineBreakdown, priceForTier } from '@/lib/pricing';
+import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, effectiveRequirement, resolveSupervisionOutcome, buildAcknowledgedConfirmations } from '@/lib/supervision';
 import { buildSale, computeTotals } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
-import { resolveAutoTier } from '@/lib/membership';
+import { resolveAutoTier, tierLabel } from '@/lib/membership';
+import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getInventoryItem, getAddOns } from '@/store/catalogStore';
-import { getDiscountReasons, getMemberByPhone, getMemberById, createMember, updateMember, verifyMemberTier, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, getAllBookings, redeemBooking, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, addSavedChild, updateSavedChild, removeSavedChild, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, getMemberByPhone, getMemberById, createMember, updateMember, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, getAllBookings, redeemBooking, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, addSavedChild, updateSavedChild, removeSavedChild, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
@@ -303,7 +304,25 @@ export default function Till() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Which sale the till is on. Bumped by every reset, and captured by anything
+   * that goes away and comes back.
+   *
+   * Saving a tier verified before we knew who the visitor was takes three
+   * round trips — look them up, create them, record the evidence — and it was
+   * made asynchronous in the same change that made it real. A reviewer found
+   * what that opened: staff hand over the display, the visitor keys their
+   * number and presses Done, the visitor changes their mind, staff press
+   * Cancel and start the next person, and the in-flight promise resolves onto
+   * a blank till and sets `member`. The next sale is then built with
+   * `memberId: member?.id` and the wallet grant follows that id — the previous
+   * visitor's name on this visitor's sale. The price is right, because the
+   * tier is re-resolved; the person on the record is wrong.
+   */
+  const saleEpochRef = useRef(0);
+
   const resetSale = () => {
+    saleEpochRef.current += 1;
     setStep(1);
     setTier(null);
     setLines([]);
@@ -1217,14 +1236,40 @@ export default function Till() {
   };
 
   // Customer finished entering their details — control returns to staff for payment.
-  // If a tier was verified before we knew who they are, save it to their profile now.
+  // A tier verified before we knew who they are is saved to their profile now
+  // (SCRUM-227): find or create the member through the API, then record the
+  // evidence against them. Staff carry on to payment while that lands; a
+  // failure says so and leaves the verification pending, so Done retries it.
   const handleCustomerDone = () => {
     if (pendingVerification && !member && customerPhone.trim()) {
-      const target = getMemberByPhone(customerPhone, customerNickname)
-        ?? createMember(customerPhone, customerNickname, customerContactChannel);
-      verifyMemberTier(target.id, pendingVerification);
-      setMember(target);
-      setPendingVerification(null);
+      const verification = pendingVerification;
+      // The sale this belongs to. If the till has moved on by the time the
+      // three round trips finish, the record was still written against the
+      // right member — it is only this screen that must not be touched.
+      const epoch = saleEpochRef.current;
+      void saveDeferredVerification({
+        phone: customerPhone,
+        nickname: customerNickname,
+        channel: customerContactChannel,
+        verification,
+      })
+        .then((saved) => {
+          if (saleEpochRef.current !== epoch) return;
+          setMember(saved);
+          setPendingVerification(null);
+          toast({
+            title: `${tierLabel(verification.tier)} rate saved to ${saved.nickname}`,
+            description: `${verification.proofType} · valid until ${verification.expiresAt ?? '—'}`,
+          });
+        })
+        .catch((err: unknown) => {
+          if (saleEpochRef.current !== epoch) return;
+          toast({
+            title: "Couldn't save the verified rate to a profile",
+            description: `${err instanceof Error ? err.message : 'Unknown error'} The discount stands on this sale — it is not recorded against a member.`,
+            variant: 'destructive',
+          });
+        });
     }
     setStep(5);
   };
@@ -1256,6 +1301,24 @@ export default function Till() {
         variant: 'destructive',
       });
       setStep(3);
+      return;
+    }
+    // Hard preflight: a tier nobody has priced on this ticket resolves to ฿0
+    // and reads like a free ticket rather than a missing setting (SCRUM-228).
+    // Refuse the sale and name what is unpriced, so it gets fixed in Admin →
+    // Tickets rather than given away at the counter.
+    const unpriced = unpricedCartLines(lines);
+    if (unpriced.length > 0) {
+      toast({
+        title: 'This tier has no price',
+        description: `${unpriced
+          .map(
+            (u) =>
+              `${u.ticketName} has no ${tierLabel(u.tier)} ${u.what === 'adult' ? 'adult' : ''} price`,
+          )
+          .join(' · ')}. Set it in Admin → Tickets before selling at this tier.`,
+        variant: 'destructive',
+      });
       return;
     }
     // Can't issue bracelets/receipts until this iPad knows which devices it drives.

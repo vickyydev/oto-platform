@@ -202,6 +202,19 @@ export const catalogApi = {
     api.get<{
       tiers: Array<{ id: string; name: string; isDefault: boolean; requiresVerification: boolean; sortOrder: number }>;
     }>('/tiers'),
+  /** The tier's `id` in the POS store is its `code` on the platform (SCRUM-228). */
+  createTier: (body: {
+    code: string;
+    name: string;
+    isDefault: boolean;
+    requiresVerification: boolean;
+    sortOrder: number;
+  }) => api.post<{ id: string }>('/tiers', body, { idempotencyKey: idemKey() }),
+  updateTier: (
+    code: string,
+    patch: Partial<{ name: string; isDefault: boolean; requiresVerification: boolean; sortOrder: number }>,
+  ) => api.patch<{ ok: true }>(`/tiers/${encodeURIComponent(code)}`, patch),
+  deleteTier: (code: string) => api.delete<{ ok: true }>(`/tiers/${encodeURIComponent(code)}`),
   packages: (branchId: string) =>
     api.get<{ packages: ApiTicketPackage[] }>(`/branches/${branchId}/ticket-packages`),
   createPackage: (branchId: string, body: Record<string, unknown>) =>

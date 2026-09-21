@@ -60,11 +60,13 @@ import {
 import {
   archiveTicketTypeInApi,
   deleteHolidayInApi,
+  deleteTierInApi,
   loadCatalogFromApi,
   saveBranchToApi,
   saveHolidayToApi,
   saveTaxConfigToApi,
   saveTicketTypeToApi,
+  saveTierToApi,
 } from '@/api/catalogBridge';
 import { getActiveBranch, getCatalogSnapshot as snap, getTaxConfig } from '@/store/catalogStore';
 import { toast } from '@/hooks/use-toast';
@@ -102,6 +104,15 @@ const wiredUpdateTaxConfig: typeof updateTaxConfig = (patch) => {
   updateTaxConfig(patch);
   void saveTaxConfigToApi(getActiveBranch().id, getTaxConfig()).catch(apiFail('tax settings'));
 };
+const wiredUpsertTier: typeof upsertTier = (t) => {
+  const exists = snap().tiers.some((x) => x.id === t.id);
+  upsertTier(t);
+  void saveTierToApi(t, exists).catch(apiFail('tier'));
+};
+const wiredDeleteTier: typeof deleteTier = (id) => {
+  deleteTier(id);
+  void deleteTierInApi(id).catch(apiFail('tier'));
+};
 const wiredUpsertBranch: typeof upsertBranch = (branch) => {
   upsertBranch(branch);
   void saveBranchToApi(branch).catch(apiFail('branch'));
@@ -110,8 +121,8 @@ const wiredUpsertBranch: typeof upsertBranch = (branch) => {
 // The mutators are stable module-level functions; bundled here so Admin screens
 // get the live snapshot + writers from a single hook.
 const mutators = {
-  upsertTier,
-  deleteTier,
+  upsertTier: wiredUpsertTier,
+  deleteTier: wiredDeleteTier,
   upsertTicketType: wiredUpsertTicketType,
   deleteTicketType: wiredDeleteTicketType,
   upsertAddOn,

@@ -19,13 +19,29 @@ export const TierPriceRuleSchema = z.object({
   value: z.number().nonnegative(),
 });
 
-/** prototype TierAdultRule (lib/pricing.ts resolveAdultLine semantics). */
-export const TierAdultRuleSchema = z.object({
-  kind: z.enum(['same_as_kid', 'set_price', 'free_adults']),
-  price: WWPriceSchema.optional(),
-  freeAdults: z.number().int().nonnegative().optional(),
-  overflow: z.enum(['same_as_kid', 'set_price']).optional(),
-});
+/**
+ * prototype TierAdultRule (lib/pricing.ts resolveAdultLine semantics).
+ *
+ * A rule that charges a price of its own has to carry one (SCRUM-228): without
+ * the refinement, `kind: 'set_price'` with no `price` — or `free_adults` whose
+ * overflow is `set_price` with no `price` — stored cleanly and then resolved to
+ * ฿0 per adult at the till, with nothing on any screen saying why.
+ */
+export const TierAdultRuleSchema = z
+  .object({
+    kind: z.enum(['same_as_kid', 'set_price', 'free_adults']),
+    price: WWPriceSchema.optional(),
+    freeAdults: z.number().int().nonnegative().optional(),
+    overflow: z.enum(['same_as_kid', 'set_price']).optional(),
+  })
+  .refine((r) => !(r.kind === 'set_price' && !r.price), {
+    message: 'An adult rule that sets its own price must carry that price',
+    path: ['price'],
+  })
+  .refine((r) => !(r.kind === 'free_adults' && r.overflow === 'set_price' && !r.price), {
+    message: 'An overflow adult price of set_price must carry that price',
+    path: ['price'],
+  });
 export type TierAdultRuleShape = z.infer<typeof TierAdultRuleSchema>;
 
 export const TicketFreebieSchema = z.object({

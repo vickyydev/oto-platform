@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CalendarDays, Sun } from 'lucide-react';
-import { todayRateMode } from '@/lib/pricingMode';
+import { setBranchRateMode, todayRateMode } from '@/lib/pricingMode';
 import { useBranch } from '@/branch/BranchContext';
 import { catalogApi } from '@/api/platform';
 import type { RateModeResult } from '@/lib/pricingMode';
@@ -13,6 +13,12 @@ import type { RateModeResult } from '@/lib/pricingMode';
  * resolver for today's date at the active branch; the local ported
  * computation stays as the fallback while the fetch is in flight (its
  * holiday data is hydrated from the same API, so the two agree).
+ *
+ * SCRUM-229: each answer is also handed to the cart's resolver
+ * (`setBranchRateMode`), so the chip and the price the till charges are the
+ * same answer rather than two computations that happened to agree. This poll
+ * is what keeps that answer live — a minute apart, so a day or holiday
+ * rollover reaches the prices as quickly as it reaches the chip.
  */
 export function PricingModeIndicator() {
   const { branch } = useBranch();
@@ -21,12 +27,20 @@ export function PricingModeIndicator() {
   useEffect(() => {
     let cancelled = false;
     setRemote(null);
+    // The answer is NOT cleared here. This header mounts on every page, so
+    // clearing on mount would drop the cart back onto the device's clock for
+    // the length of a fetch on every navigation. A branch switch re-hydrates
+    // the catalog (BranchContext → loadCatalogFromApi), which sets both the
+    // branch timezone and a fresh answer, and the poll below re-aims at the
+    // new branch's id in the same tick.
     if (!branch?.apiId) return;
     const load = () =>
       catalogApi
         .pricingMode(branch.apiId!)
         .then((r) => {
-          if (!cancelled) setRemote({ mode: r.mode, reason: r.reason, overrideName: r.overrideName });
+          if (cancelled) return;
+          setBranchRateMode(r);
+          setRemote({ mode: r.mode, reason: r.reason, overrideName: r.overrideName });
         })
         .catch(() => {});
     load();
