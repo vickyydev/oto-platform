@@ -2,20 +2,35 @@
 
 ## Status
 
-_Last updated 2026-09-21, after S2-06's device half went to review._
+_Last updated 2026-09-21 at the end of a long session._
 
-- **Where this is.** CP1 passed. Since then S2-04 (stations, boxes, devices),
-  S2-05 (the box sync core) and S2-06's print renderer are built, merged and
-  **deployed** — `main` is green at `f117220` and everything on it is live.
-  S2-06's remaining half (adapters, simulators, the print queue, scanning,
-  the staff badge token, the offline shell, the simulator panel) is committed
-  on **`wip/s2-06-devices` at `6440761`** and is **not on main**, because two
-  reviewers found six defects in it, three of them security. A fix round is
-  running. Six services are live in the Render `staging` environment: api,
-  POS, launcher, Console, the lifted OTO App, and the deploy bot.
+> **Resuming? Read `SESSION_HANDOVER.md` first.** It carries where this is,
+> what is blocked and on whom, what to pick up in order, and the working
+> rules that were learned the hard way. This block is the summary; that file
+> is the detail.
 
-- **Tests.** 450 api, 192 print, 49 box-agent, 185 shared; schema verified;
-  migrations applied twice from empty produce an identical catalogue.
+- **Where this is.** CP1 passed. **S2-04, S2-05 and S2-06 are built, merged
+  and deployed.** S2-07a (the Lucky Wheel booth) is built, merged and in
+  **Testing** — its platform side is live, but `apps/booth` has no Render
+  service, so the wheel cannot yet be opened in a browser. That is the only
+  thing between it and Deployed, and it is a change to the deployment
+  blueprint, which another session owns.
+
+- **The POS was audited screen by screen** against the code and against
+  staging, because a gap was found by accident that nobody could classify.
+  The result is `POS_GAP_REGISTER.md`: **33 capabilities work, 15 are broken,
+  36 are not built**, with SCRUM-225 to SCRUM-241 raised from it. Ten of the
+  fifteen are now fixed — five Deployed, five in Testing. Read that register
+  before planning anything on the till.
+
+- **The largest real gap:** admission works end to end up to "Pay ฿1,440" and
+  **nothing after Pay exists** — no `sale` row is written, no tender is
+  recorded. That is SCRUM-203.
+
+- **Tests.** 577 api, 209 print, 197 shared, 167 box-agent, 36 telemetry;
+  schema verified; migrations apply twice from empty to an identical
+  catalogue. Note `apps/pos` has no unit-test runner and is in eslint's
+  ignore list — the compiler is the only automated check on the till.
 
 - **The recurring defect, now four tickets running.** Each of S2-04, S2-05
   and S2-06 shipped something with *no caller* — the fleet API while both
@@ -35,13 +50,27 @@ _Last updated 2026-09-21, after S2-06's device half went to review._
   with evidence; *Done* stays the owner's to set. Evidence comments carry
   screenshots.
 
-- **Next steps, in order.** (1) Land the six S2-06 fixes and merge
-  `wip/s2-06-devices`. (2) **S2-07a** (SCRUM-199), the Lucky Wheel booth →
-  **CP2**. (3) S2-09a's remainder and S2-08.
+- **Next steps, in order** — the full version with reasons is in
+  `SESSION_HANDOVER.md` §5. (1) Let staging pick up `0abc9ea`, look at the
+  five tickets in Testing, move them to Deployed with evidence. (2) The
+  booth's Render service, so SCRUM-199 can be Deployed. (3) **SCRUM-203** —
+  the ticket cart and the sale ledger, which is the biggest real gap.
+  (4) One pricing engine: the tested one has a single caller and the till is
+  not it. (5) **SCRUM-232** — the product tables cannot hold the park's menu,
+  and the menu import the owner asked for arrives with that reshape rather
+  than after it. (6) S2-07b, then the register's remaining broken items.
+
+- **Blocked on somebody else** (`SESSION_HANDOVER.md` §4): the booth's Render
+  service; Twilio, which refuses every message because the trial account owns
+  no number, and which will need Twilio Verify for Thailand regardless; the
+  storage bucket's CORS policy; and two environment values on the owner's
+  dashboard.
 
 - **Done 2026-09-21:** the seeded closing time is now 20:00, matching the
   park's own SOP, so the watchdog stops expecting live boxes for an hour
-  after the park is dark (`OPEN_QUESTIONS.md` §3f).
+  after the park is dark (`OPEN_QUESTIONS.md` §3f). The OTO App is seeded
+  from ~12.7% of the park's own export rather than invented rows, and no
+  longer fails with "tenant not found" on save.
 
 - Resume instructions: read `docs/progress/STATUS.md`, then this file, then
   `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
