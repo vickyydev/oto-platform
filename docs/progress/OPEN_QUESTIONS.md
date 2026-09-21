@@ -4,7 +4,9 @@ Collected as they arise so building never stops on them. Each one names what
 was decided in the meantime, so nothing is blocked and nothing is silently
 assumed. Answered items move to `OWNER_DIRECTION.md` and leave here.
 
-_Last updated 2026-09-20, during S2-17a._
+_Last updated 2026-09-21, after the menu / Twilio / LINE / OTO App / re-test
+investigations. The actions arising from them — as opposed to the decisions
+recorded here — are in `OWNER_ACTIONS_AND_NEXT_BUILD.md`._
 
 ## 0. The OTO App now lives in this repository — say if that is wrong
 
@@ -56,25 +58,54 @@ and S2-18 (Radar) multiply the origins.
 
 **Needed:** a yes or no. Not urgent this week; awkward in three tickets' time.
 
-## 2. Which phone numbers should the Twilio trial account verify?
+## 2. Which phone numbers should the Twilio trial account verify? — **widened 2026-09-21: verifying numbers is not enough**
 
 **Where it bites:** a trial account can only text numbers added to Verified
 Caller IDs. Any walkthrough that creates a staff account or resets a password
 needs the receiving phone on that list first.
 
+**What was measured on 2026-09-21**, against the live API: every attempt is
+refused with `572002` — *"No Twilio trial phone number is assigned for
+messaging to this destination number."* A Thai mobile, a US mobile and a
+sender the account does not own all returned the identical refusal, so Twilio
+stops before it evaluates either the destination country or the sender. The
+account **owns no phone numbers, has no verified caller IDs, and has a zero
+balance**. Because a 422 means no message resource is ever created, none of
+this appears in the message log — which is why it took direct API calls to
+find.
+
+**So the ask has grown:** adding numbers to the allow-list does not fix it on
+its own. Lifting the account out of trial (any prepaid balance) is the step
+that matters, and even that does not guarantee Thai delivery — Twilio's own
+Thailand guidelines say a US long code cannot deliver to Thailand at all, and
+that unregistered senders have been fully blocked there since October 2025.
+The route that avoids a 10-business-day sender registration is **Twilio
+Verify**, which uses Twilio's pre-registered Thai senders. Full write-up and
+the three routes: `OWNER_ACTIONS_AND_NEXT_BUILD.md` half one, actions 1 and 5.
+
 **Meanwhile:** the seeded demo accounts have known passwords, so a
-walkthrough does not have to send a code at all.
+walkthrough does not have to send a code at all; and an administrator can
+stand up a new account with a temporary password, which needs no SMS. That
+path currently dead-ends on the POS station picker — build item B1 fixes it.
 
-**Needed:** the numbers to verify, or Jim's production credentials, whichever
-arrives first.
+**Needed:** the numbers to verify, a prepaid balance on the account, and a
+decision on the production route.
 
-## 3. `TWILIO_AUTH_TOKEN` in `.env` looks like a placeholder
+## 3. `TWILIO_AUTH_TOKEN` in `.env` — **confirmed invalid 2026-09-21**
 
-It is 13 characters; a real Twilio auth token is 32. Harmless today — the
-deployment authenticates with the API key, and the auth token is unused — but
-worth knowing if it was meant to be the real one.
+It is 13 characters; a real Twilio auth token is 32. Twilio now answers
+`20003 "auth token is not valid for account AC…"` when it is used, so it is
+not merely short — it does not work.
 
-**Meanwhile:** the variable is deliberately blank on the Render service.
+Harmless on the deployment, which authenticates with the API key and has the
+variable deliberately unset. The trap is local: the SMS adapter falls back to
+the auth token whenever the API key pair is absent, so anyone who clears the
+key variables on their own machine gets a 401 and a confusing hunt.
+
+Worth knowing if it was meant to be the real one. Separately, the API key in
+use is **restricted** — it can send messages and look up numbers but cannot
+read account status, which is why diagnosing the trial state needed a
+different call.
 
 ## ~~Which branch and operator a provisioned person has inside the OTO App~~ — answered 2026-09-20
 
@@ -248,6 +279,155 @@ the building until question 4 is answered — so today an alert is visible on
 the Console and nowhere else. That is fine while someone is looking at the
 Console; it is not fine at 9pm on a Saturday.
 
+## 7. Six decisions from the 2026-09-21 investigations
+
+All six are the owner's. None blocks building, because each one names what we
+are doing meanwhile.
+
+### 7a. Should importing a menu spreadsheet ever remove things?
+
+**What was found:** the menu screens keep everything in the browser's memory
+today — there is no menu table and no way to save a menu item at all. So the
+import's rules are being set from scratch rather than inherited, and this one
+decides the feature's character.
+
+**The two readings.** Ours: a sheet is a *set of changes*, so an item present
+in the system but absent from the file is left completely alone, and removal
+is explicit only (an `archive` value in a column, or marking an item
+unavailable). His, possibly: the sheet *is* the menu, so anything not in it is
+gone.
+
+**What it costs either way.** Our reading means an import can never remove
+something he forgot to include — which the preview screen will say in as many
+words. His reading means a file exported before a desserts section was added,
+then re-imported, silently withdraws the desserts. The realistic use is
+partial — export, add a section, import — which is why we chose ours.
+
+**Deletion is not on the table in either reading:** past orders reference menu
+items, so an item is archived, never deleted.
+
+**Meanwhile:** built as "never remove, archive only", behind a preview that
+states it.
+
+### 7b. A short code on every menu item
+
+**What was found:** menu items have no human-facing key — only a generated
+internal id. Retail items already have one.
+
+**Why it is needed:** something has to decide whether a row in a spreadsheet
+is a new item or an edit of an existing one. Matching on the name instead
+would silently create a second item the first time "Fresh Orange Juice" is
+renamed to "Orange Juice" — and leave the first one on the till.
+
+**What it costs him:** friction he will feel. Every new row in the sheet
+carries a short code he invents, e.g. `FB-PIZZA-MARG`. Export fills it in
+automatically for everything that already exists, so it only bites on new
+items typed straight into the sheet.
+
+**Meanwhile:** specified as required, and recommended.
+
+### 7c. The member-tier control on the admin Members screen: wire it or remove it?
+
+**What was found — this is a bug, not a missing feature.** The dialog offers
+a tier picker and a proof-type picker, accepts a change, closes without
+complaint, and never sends it. Reproduced on staging: a member showing
+`Thai · exp 2028-09-19` was set to Expat with a passport, saved, and the only
+request sent carried nickname, phone and channel — no tier. The row was
+unchanged. Meanwhile the panel's own footer reads *"Changes are saved to the
+database and audited."*
+
+**Exactly what he remembers.** The code carries a comment saying tier editing
+stays out of Sprint 1, so this is half-built rather than overlooked — but the
+control was left on screen.
+
+**The till path works** and is complete: proof type, required expiry date,
+audited, stamped with who checked it and at which branch, none of which the
+caller can spoof.
+
+**Why it matters beyond tidiness:** the pricing engine reads tier, so a member
+left on the wrong one is charged the wrong price.
+
+**The two options**, roughly equal in effort: **(a)** wire it — which also
+means adding the document-expiry date field the admin dialog does not have at
+all, ~40 lines; or **(b)** remove the control so the till is the single place
+a tier changes, ~30 lines deleted. (a) is better if reception should be able
+to correct a tier without ringing up a sale.
+
+**Meanwhile:** unchanged and still misleading. This one should be settled
+quickly for that reason.
+
+### 7d. What "staff category / department" should mean
+
+**What was found:** missing end to end above the database. The department
+table exists, a staff record has a department field, and the permission engine
+fully supports a department as a permission scope — but the invite dialog has
+no such field, the account endpoints accept none, and no route lists
+departments. The invite dialog's only fields are name, phone, role and branch.
+
+**Why the answer changes the build:** rostering ("Ploy is Restaurant") and
+permission scoping ("Ploy may manage Restaurant, at this branch only") share a
+word and almost nothing else. The second is a bigger piece and touches the
+permission resolver.
+
+**What it costs:** 2–3 days either way, and it needs a database migration, so
+it sits behind the Lucky Wheel booth's hold on the migrations folder.
+
+**Meanwhile:** not built. A staff member's department is not recorded anywhere
+a person can see or set.
+
+### 7e. How far LINE should go
+
+**What was found:** LINE is already scoped as a *messaging* channel — the
+project context names it, the member record already lists it as a contact
+channel, and the inbox design has the right home for a per-channel identifier.
+What is scoped nowhere is LINE as a **registration surface for visitors**,
+which is the new question.
+
+**Also found:** Twilio cannot carry LINE. It announced support in 2018 and the
+press release is still online, but the live documentation no longer lists it.
+Going direct to LINE is free and well documented.
+
+**What it costs:** the messaging adapter rides along with the inbox ticket at
+no extra cost. Visitor self-registration is separate work after it, and brings
+one consequence worth deciding early — LINE will not give us a phone number,
+and the member record is keyed on phone. Our answer is to ask for the phone in
+the registration form, keeping phone as the single identity. That leaves two
+residues: the phone is claimed rather than verified, and the same person can
+end up on two numbers, which phone uniqueness cannot catch. The second
+eventually needs a merge tool — a proper ticket, because a merge must move
+children deliberately rather than let allergy notes vanish with a guardian.
+
+**Free and worth starting regardless:** creating the Official Account and
+applying for verification (5–10 business days), under **one provider owned by
+the park**. That last part is the only irreversible bit — LINE cannot move a
+channel to a different provider later, and messaging and sign-in only share an
+identifier when both sit under the same one.
+
+**Meanwhile:** nothing built, nothing blocked. The adapter is in the inbox
+ticket's scope; the live connection is explicitly out of it.
+
+### 7f. Three smaller questions about the menu spreadsheet
+
+**Allergens.** The task brief floated an allergens column. There are no
+allergens anywhere in the approved design — allergies exist only on a child's
+record. Adding one would invent a field the park has never asked for, with its
+own screen work. **Meanwhile:** excluded.
+
+**Weekday / weekend prices for food and drink.** The type supports a pair and
+**not one seeded item uses it** — every weekend price equals its weekday
+price. If the park never varies food by day, that column will sit empty
+forever and can be dropped. **Meanwhile:** included, blank meaning "same as
+weekday".
+
+**Cost per item in the sheet.** It drives the profitability report, but it
+also means the menu file he emails around contains his margins. **Meanwhile:**
+included, and easy to drop.
+
+**One more, smaller still:** the sheet is specified with English and Thai
+only. The design carries five languages; ten name and description columns make
+a sheet nobody can read. The other three stay in the item form until asked
+for.
+
 ## Recorded, not blocking — deferred work
 
 - **"Expire hand-off now"** (S2-02 QA step 3): the test control is not built.
@@ -277,3 +457,21 @@ Console; it is not fine at 9pm on a Saturday.
   index, and a scheduled ping of `/ready` from outside the platform.
 - ARCHITECTURE.md sections 3 and 6 still describe the pre-2026-09-19
   repository layout.
+- **Photo upload: the server half now works, the browser half does not.** The
+  write permission granted on the storage token was verified end to end on
+  staging on 2026-09-21 — register, upload, ask for it back, exact bytes
+  returned, and the boot probe is clean. A browser upload still fails at the
+  preflight because the bucket carries **no CORS policy at all**; the rule to
+  paste is in `OWNER_ACTIONS_AND_NEXT_BUILD.md` half one, action 2. Nothing is
+  visibly affected either way, because **no screen in any app uploads or
+  displays a photo**, and the profile-editing endpoint has no callers either.
+- **`TWILIO_FROM` is set to a number that is not an SMS sender.** It is a US
+  `+1` number whose digits match a WhatsApp sender on the same account — the
+  only messages this account has ever carried are six WhatsApp ones. It is not
+  the cause of the SMS failure (Twilio refuses before it looks at the sender,
+  §2), but it will need correcting once the account can send at all.
+- **The menu's database migration collides with the Lucky Wheel booth work.**
+  Drizzle writes every migration into one shared journal and the booth session
+  has an uncommitted one there now. The menu tables must be generated after
+  that lands, or handed to that session to generate. It is the only hard
+  ordering dependency in the current build queue.

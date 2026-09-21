@@ -309,6 +309,14 @@ import {
         dutyBlocks,
         type DutyBlock,
         type InsertDutyBlock,
+        /**
+         * `tenants` was missing from this list while two statements below
+         * already referenced it, so `setUserBranchAccess`'s own default-tenant
+         * fallback was a ReferenceError waiting for a caller with no branch
+         * access and no branches — the same state that produced "Tenant ID not
+         * found". Importing it makes that path run as written.
+         */
+        tenants,
         DEFAULT_TENANT_SLUG,
 } from "@shared/schema";
 import { db } from "./db";
@@ -2048,6 +2056,40 @@ export class DatabaseStorage implements IStorage {
                         if (existingBranches.length > 0 && existingBranches[0].tenantId) {
                                 tenantId = existingBranches[0].tenantId;
                         }
+                }
+                if (!tenantId) {
+                        /**
+                         * Last fallback: the default tenant, which is where
+                         * `resolveTenantId` in routes.ts and the six
+                         * `getDefaultTenantId` helpers under server/core all
+                         * end up. Without this step the chain above stops one
+                         * short of theirs, and a user with no branch access in
+                         * a deployment whose `branches` table is still empty
+                         * gets `undefined` — which is what a launcher-
+                         * provisioned user is, because provisioning writes
+                         * `users` and nothing else in this schema. That value
+                         * then reaches handlers as a session field they treat
+                         * as present: `/api/employees/bulk-update` answers
+                         * "Tenant ID not found", `/api/org-chart/nodes`
+                         * answers 401, `POST /api/duty-types` hits a NOT NULL
+                         * on `tenant_id`, and the BEO reads quietly return
+                         * nothing.
+                         *
+                         * This picks a tenant; it does not prove it is the
+                         * right one. In a deployment with more than one tenant
+                         * and a user with no branch access there is no correct
+                         * answer available here, and this returns the default
+                         * rather than none. It also does not create the tenant
+                         * — a read path must not write — so a database with no
+                         * tenant row at all still resolves to undefined, and
+                         * the seed is what fills that in.
+                         */
+                        const [defaultTenant] = await db
+                                .select({ id: tenants.id })
+                                .from(tenants)
+                                .where(eq(tenants.slug, DEFAULT_TENANT_SLUG))
+                                .limit(1);
+                        tenantId = defaultTenant?.id ?? undefined;
                 }
 
                 // Get module access from access_policies
