@@ -14,12 +14,14 @@ import type { Db } from '@oto/db';
  *
  * **One store per pool, not one per caller.** Two things in this process want
  * it — the agent started in `services/box.ts` and the station-session routes —
- * and they have to be the same object: the store holds the cache bundles the
- * `edge` schema has no table for yet, and two instances would mean the routes
- * reading a cache the agent never applied. The pool is lent, never opened
- * here: the connection ceiling on the staging database is budgeted per api
- * instance, and a component that opens its own pool is a component that turns
- * a redeploy into a connection-limit error.
+ * and one object serving both is what keeps the boot-time table probe
+ * (`features()`) to one query instead of one per caller. It is no longer what
+ * makes them agree about the CACHE: since SCRUM-275 the bundles are rows in
+ * `edge.box_cache`, so two instances over the same database would read the same
+ * cache, and a restarted api reads the cache the agent applied before it. The
+ * pool is lent, never opened here: the connection ceiling on the staging
+ * database is budgeted per api instance, and a component that opens its own
+ * pool is a component that turns a redeploy into a connection-limit error.
  */
 const perPool = new WeakMap<object, SqlBoxStore>();
 

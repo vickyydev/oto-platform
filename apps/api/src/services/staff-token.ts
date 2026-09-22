@@ -445,12 +445,13 @@ async function snapshotForBox(
    * holding — which is where these same rows travel — and no database is
    * involved. Here the api is standing in for a box it hosts, and this is the
    * one part of the check that is not literally read off the box's own store:
-   * `SqlBoxStore` keeps its bundles in memory on Postgres because the `edge`
-   * schema has no `box_cache` table yet, so a config bundle does not survive a
-   * restart to be read from. That gap is worth closing and is recorded rather
-   * than papered over; it does not change what is being proved here, which is
-   * that the STAFF LIST and the DENY-LIST — the parts that say who may come in
-   * — are read from the box and from nowhere else.
+   * the public keys are read live from `core.signing_key`, because that is how
+   * retiring a leaked key stops the tokens it signed without waiting for every
+   * box to pull. (The cache bundles themselves survive a restart since
+   * SCRUM-275 — `edge.box_cache` — so the staff list and the deny-list are
+   * read from the box's own rows.) It does not change what is being proved
+   * here, which is that the STAFF LIST and the DENY-LIST — the parts that say
+   * who may come in — are read from the box and from nowhere else.
    *
    * Through `usableSigningKeys`, which is the SAME filter the config bundle
    * applies. This used to be `purpose` and `active` alone, and the difference

@@ -112,17 +112,17 @@ export function normaliseParam(value: unknown, dialect: SqlDialect): unknown {
 /**
  * The tables a box keeps for ITSELF, added by S2-07a.
  *
- * They are listed here rather than assumed because the two dialects arrive at
- * them differently. A Pi's file is created by `prepareSqliteBoxStore`, which
- * runs the DDL next door, so every table is always there. The `edge` schema of
- * the platform database has only what a migration created, and these have NO
- * migration yet — writing one belongs to the slice that owns `packages/db`.
- * Until it exists, the virtual box running inside the api finds them absent,
- * `features()` says so, and the print subsystem falls back to the in-memory
- * queue S2-06 shipped. That fallback is the defect this ticket set out to fix,
- * so it is reported rather than hidden: `init()` cannot log — it has no logger
- * — but `features()` is what every caller is expected to read, and the booth's
- * runtime methods throw rather than pretend.
+ * They are probed rather than assumed because the two dialects arrive at them
+ * differently. A Pi's file is created by `prepareSqliteBoxStore`, which runs the
+ * DDL next door, so every table is always there. The `edge` schema of the
+ * platform database has only what a migration created — migration 0013 created
+ * all five — and a database that has not had it applied yet is a database where
+ * `features()` says so, the print subsystem falls back to the in-memory queue
+ * S2-06 shipped, and the booth's runtime methods throw rather than pretend. The
+ * probe stays because the two ends are versioned separately: a Pi's card and a
+ * platform database are never guaranteed to be at the same migration, and a
+ * store that discovers its shape from a failed INSERT has already half-done
+ * something.
  *
  * `EDGE_BOX_LOCAL_TABLES_SQL` below is the exact Postgres shape they must have.
  */
@@ -137,15 +137,15 @@ export const BOX_LOCAL_TABLES = [
 const BOOTH_RUNTIME_TABLES = ['box_counter', 'box_staff_session', 'box_throttle', 'box_runtime'];
 
 /**
- * The migration this store is waiting for, ready to paste.
+ * The Postgres shape these five must have, as `packages/db` migration 0013
+ * built it.
  *
- * Exported so it is one grep away from whoever writes `packages/db`'s next
- * migration, and so the columns cannot drift from the SQL above them: every
- * statement here names the same columns the queries in this file read and
- * write, and the SQLite half in `store-sqlite.ts` is the same list again in
- * SQLite's types. It is a string and nothing executes it — the api creating
- * tables in the platform database at boot would be a shape `verify-schema`
- * cannot see and `pnpm db:generate` would offer to drop.
+ * Exported so the columns cannot drift from the SQL above them: every statement
+ * here names the same columns the queries in this file read and write, and the
+ * SQLite half in `store-sqlite.ts` is the same list again in SQLite's types. It
+ * is a string and nothing executes it — the api creating tables in the platform
+ * database at boot would be a shape `verify-schema` cannot see and
+ * `pnpm db:generate` would offer to drop.
  */
 export const EDGE_BOX_LOCAL_TABLES_SQL = `
 create table if not exists "edge"."box_print_job" (
@@ -234,18 +234,6 @@ export class SqlBoxStore implements BoxStore {
    * answer that fails loudly rather than the one that loses a lockout.
    */
   private present = new Set<string>();
-  /**
-   * Cache bundles on Postgres, and only on Postgres.
-   *
-   * The `edge` schema has no table for a box's cached bundles — `box_state`
-   * records only which config version was applied and when. On a Pi the
-   * bundles are a real SQLite table and survive a power cut; the virtual box
-   * holds them here and loses them when the api restarts, which is honest but
-   * is a gap: a box toggled offline and then restarted has its outbox, its
-   * offline flag and its session document, and an empty cache. Closing it is
-   * one `edge.box_cache` table in the next migration.
-   */
-  private memoryBundles = new Map<string, CachedBundle>();
 
   constructor(options: SqlBoxStoreOptions) {
     this.driver = options.driver;
@@ -255,16 +243,14 @@ export class SqlBoxStore implements BoxStore {
   /**
    * The same store, bound to an open transaction.
    *
-   * It carries the parent's probe result and its bundle map by reference, so a
-   * bundle written inside the transaction is visible outside it afterwards and
-   * a store that knows its tables does not forget them for the length of a
-   * spin. Private, because handing one of these out after its transaction has
-   * committed would be a store whose writes go nowhere.
+   * It carries the parent's probe result by reference, so a store that knows
+   * its tables does not forget them for the length of a spin. Private, because
+   * handing one of these out after its transaction has committed would be a
+   * store whose writes go nowhere.
    */
   private scopedTo(driver: BoxSqlDriver): SqlBoxStore {
     const child = new SqlBoxStore({ driver, now: this.clock });
     child.present = this.present;
-    child.memoryBundles = this.memoryBundles;
     return child;
   }
 
@@ -937,27 +923,32 @@ export class SqlBoxStore implements BoxStore {
     );
   }
 
+  /**
+   * What this box is holding for a scope, in both dialects (SCRUM-275).
+   *
+   * One statement for the two of them, because `box_cache` is now a real table
+   * on Postgres as well: until migration 0016 the `edge` schema had nowhere to
+   * put a bundle, so the virtual box inside the api kept them in a `Map` and
+   * lost the staff list and the deny-list on every deploy. The read below is
+   * what makes a restarted api a box that still knows who may unlock a till.
+   */
   async readBundle(boxId: string, scope: SyncChangeScope): Promise<CachedBundle | null> {
-    if (this.dialect === 'sqlite') {
-      const rows = await this.driver.query(
-        `select * from ${this.table('box_cache')} where box_id = ? and scope = ?`,
-        [boxId, scope],
-      );
-      const row = rows[0];
-      if (!row) return null;
-      return migrateCachedBundle(
-        {
-          scope,
-          schemaVersion: toNum(row.schema_version),
-          cursorSeq: toNum(row.cursor_seq),
-          payload: parseJson(row.payload) as Record<string, unknown>,
-          appliedAt: toIso(row.applied_at) ?? this.nowIso(),
-        },
-        BOX_STORE_SCHEMA_VERSION,
-      );
-    }
-    const held = this.memoryBundles.get(`${boxId}:${scope}`);
-    return held ? migrateCachedBundle(held, BOX_STORE_SCHEMA_VERSION) : null;
+    const rows = await this.driver.query(
+      `select * from ${this.table('box_cache')} where box_id = ? and scope = ?`,
+      [boxId, scope],
+    );
+    const row = rows[0];
+    if (!row) return null;
+    return migrateCachedBundle(
+      {
+        scope,
+        schemaVersion: toNum(row.schema_version),
+        cursorSeq: toNum(row.cursor_seq),
+        payload: parseJson(row.payload) as Record<string, unknown>,
+        appliedAt: toIso(row.applied_at) ?? this.nowIso(),
+      },
+      BOX_STORE_SCHEMA_VERSION,
+    );
   }
 
   async writeBundle(boxId: string, bundle: CachedBundle): Promise<void> {
@@ -985,7 +976,48 @@ export class SqlBoxStore implements BoxStore {
       });
       return;
     }
-    this.memoryBundles.set(`${boxId}:${bundle.scope}`, bundle);
+    /**
+     * The one genuine difference between the dialects here: `operator_id`.
+     *
+     * A Pi's file is single-tenant and its table has no such column; the
+     * platform database holds every operator's boxes in one `edge` schema, so
+     * the row carries the tenant it belongs to. `writeBundle` is not given one
+     * — its callers are the agent's cache pull, which knows a box id and
+     * nothing about tenancy — so it is taken from `core.box` in the same
+     * statement rather than added to the signature of an interface a Pi also
+     * implements.
+     *
+     * `insert … select … from core.box` also makes the box's existence a
+     * condition of the write: an id with no box writes NO row, and the
+     * `returning` below turns that into a thrown error instead of a cache that
+     * silently kept nothing. Casts are explicit because a parameter in a
+     * SELECT list has no target column to take its type from.
+     */
+    const written = await this.driver.query(
+      `insert into ${this.table('box_cache')} (
+         box_id, operator_id, scope, schema_version, cursor_seq, payload, applied_at
+       )
+       select b.id, b.operator_id, ?::text, ?::integer, ?::bigint, ?::jsonb, ?::timestamptz
+         from "core"."box" b
+        where b.id = ?
+       on conflict (box_id, scope) do update set
+         schema_version = excluded.schema_version,
+         cursor_seq = excluded.cursor_seq,
+         payload = excluded.payload,
+         applied_at = excluded.applied_at
+       returning box_id`,
+      [
+        bundle.scope,
+        bundle.schemaVersion,
+        bundle.cursorSeq,
+        JSON.stringify(bundle.payload),
+        bundle.appliedAt,
+        boxId,
+      ],
+    );
+    if (written.length === 0) {
+      throw new Error(`No core.box row for ${boxId}; the ${bundle.scope} bundle was not cached`);
+    }
   }
 
   // --- The print queue on disk (S2-07a) -------------------------------------

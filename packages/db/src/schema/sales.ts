@@ -139,9 +139,9 @@ export type ReceiptSeriesKind = (typeof RECEIPT_SERIES_KINDS)[number];
  * box resumes from when it comes back, is reimaged, or is replaced. It is
  * already in the sync contract (`receipt_series` is a cache-bundle scope in
  * `packages/box-agent/src/contract.ts` and `apps/api/src/services/sync.ts`,
- * shipping `highWaterMark: 0` with a note that the money path fills it). The
- * box allocates locally while offline; on reconnect the cloud advances
- * `next_seq` past everything it has seen.
+ * which ships `next_seq - 1` per station as the mark since SCRUM-275). The
+ * box will allocate locally while offline once S2-12 gives it an allocator;
+ * on reconnect the cloud advances `next_seq` past everything it has seen.
  *
  * WHAT STOPS TWO BOXES MINTING THE SAME NUMBER: a station belongs to exactly
  * one box, so two allocators for one series can only come from a

@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   check,
   date,
   index,
@@ -13,7 +14,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { edge, idPk } from './helpers';
-import { account } from './tenancy';
+import { account, operator } from './tenancy';
 import { box, device, station } from './fleet';
 
 // --- Box-owned state (schema `edge`) ---------------------------------------
@@ -490,4 +491,57 @@ export const boxRuntime = edge.table(
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.boxId, t.runtimeKey] })],
+);
+
+/**
+ * The copy of the cloud a box is holding (SCRUM-275).
+ *
+ * One row per scope of `GET /box/v1/cache`: the staff list and the deny-list an
+ * offline unlock is decided from, the catalogue a cart is priced against, the
+ * members a counter can identify, the booth's published wheel. A scope is
+ * applied WHOLE — `payload` is the whole document, never a page of it — because
+ * half a staff list silently refuses the people who fell off the end of it and
+ * half a catalogue prices the wrong ticket.
+ *
+ * WHY IT IS A TABLE. A Pi has held these in SQLite since S2-05 and they survive
+ * a power cut; the virtual box that runs inside the api held them in a `Map` on
+ * `SqlBoxStore`, so every Render deploy threw the staff list and the deny-list
+ * away until the next pull. A revocation is the sharp half of that: the box
+ * decides an offline unlock from ITS copy, so a box with no copy is a box that
+ * refuses everybody, and a box that re-pulls without the deny-list is worse.
+ *
+ * `operator_id` is here rather than on the debt list its nine siblings in this
+ * schema are on (`packages/db/test/schema-shape.test.ts`). Those carry only
+ * `box_id` and the column is owed on each of them; adding it once the boxes are
+ * in the field means a backfill against rows that are still arriving. A table
+ * born today is born conforming, and its writer already knows the operator: the
+ * upsert takes it from `core.box` in the same statement.
+ *
+ * The primary key leads with `box_id`, which is also the index the box's foreign
+ * key needs and the scan "everything this box is holding" reads — the same shape
+ * `box_counter` above is keyed in.
+ */
+export const boxCache = edge.table(
+  'box_cache',
+  {
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => box.id, { onDelete: 'restrict' }),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    /** A `SyncChangeScope` — `staff`, `deny_list`, `catalogue`, `members`, `booth`, … */
+    scope: text('scope').notNull(),
+    /** `BOX_STORE_SCHEMA_VERSION` as the writing agent understood it. A newer one is dropped, not half read. */
+    schemaVersion: integer('schema_version').notNull().default(1),
+    /** `edge.sync_change.seq` this copy is current to. */
+    cursorSeq: bigint('cursor_seq', { mode: 'number' }).notNull().default(0),
+    payload: jsonb('payload').notNull(),
+    /** When the box applied it — what the till's "cache is this old" banner reads. */
+    appliedAt: timestamp('applied_at', { withTimezone: true, mode: 'date' }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.boxId, t.scope] }),
+    index('box_cache_operator_idx').on(t.operatorId),
+  ],
 );

@@ -13,12 +13,13 @@ import { normaliseParam, type BoxSqlDriver, type SqlRow } from './store-sql';
  * single-tenant file genuinely has: no schema prefix, and no foreign keys into
  * a `core` schema that does not exist here.
  *
- * Six of them have no counterpart in `edge` YET — `box_cache` from S2-05, and
- * the five box-local tables S2-07a adds. A Pi creates them here at boot; the
- * platform database gets them only when a migration adds them, and until it
- * does the virtual box finds them missing and says so (`BOX_LOCAL_TABLES` and
- * `EDGE_BOX_LOCAL_TABLES_SQL` in `store-sql.ts`). That is why the store probes
- * for them rather than assuming: the two dialects are genuinely not level.
+ * Every one of them now has a counterpart in `edge` — the five box-local
+ * tables since 0013 (S2-07a) and `box_cache` since 0016 (SCRUM-275). A Pi
+ * creates them here at boot; the platform database gets them from its
+ * migrations. The store still probes for the five box-local tables rather
+ * than assuming (`BOX_LOCAL_TABLES` and `EDGE_BOX_LOCAL_TABLES_SQL` in
+ * `store-sql.ts`), because a Pi's card and the platform database version
+ * separately.
  */
 
 export interface SqliteStatementLike {

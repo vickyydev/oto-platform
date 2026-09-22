@@ -16,6 +16,7 @@ import {
   member,
   product,
   productCategory,
+  receiptSeries,
   station,
   stationDevice,
   syncAnomaly,
@@ -3407,32 +3408,90 @@ export async function cacheBundle(
       continue;
     }
 
-    // receipt_series — the high-water marks a box continues from when it is
-    // offline, so two boxes cannot mint the same receipt number. The series
-    // itself arrives with the money path (S2-11); what is here is the shape and
-    // the per-station counter the prefix is built from.
-    //
-    // Named rather than left as the fall-through, which is what it was until
-    // `booth` joined the vocabulary: an unhandled scope reaching the end of
-    // this loop used to build a receipt series and `put` it under the receipt
-    // series' name, so `?scopes=booth` would have answered with somebody
-    // else's payload and a full bundle would have built the same list twice.
-    // An unhandled scope still contributes nothing, which the agent reads as
-    // "not present" and skips.
+    /**
+     * receipt_series — the number each of this box's stations continues FROM
+     * when it is cut off, so two boxes cannot mint the same receipt.
+     *
+     * This shipped `highWaterMark: 0` for every station, with a note saying the
+     * money path would fill it. The money path landed (S2-09a) and this did
+     * not, and the consequence is not a wrong report: two boxes started from 0
+     * both mint `T1-000001`, `sale_receipt_number_unique` refuses the second
+     * one when it reaches the cloud, and offline that means the money was taken
+     * at the counter and the sale is quarantined. It is filled here (SCRUM-275).
+     *
+     * **From `pos.receipt_series`, which is where the number comes from.**
+     * `allocateReceipt` in `services/sale.ts` locks that row, hands out
+     * `next_seq` and writes `next_seq + 1` in the same transaction as the sale,
+     * so the row is the allocator's own mark: it can never be behind a number
+     * that is on paper. `pos.sale.receipt_seq` is the same fact written a second
+     * time, and reading both and taking the larger would make the mark depend on
+     * two things staying in step rather than on the one that issues it. The
+     * obligation that keeps that true belongs to the box-origin path S2-12 will
+     * write: a sale that arrives from a box carrying its own number must
+     * advance this row past it, exactly as `pos.receipt_series`' own comment
+     * says.
+     *
+     * `next_seq` is the number that will be issued NEXT and starts at 1, so the
+     * highest already issued is one less — and a station with no row has issued
+     * nothing, which is the only honest 0 left here.
+     *
+     * A plain read, outside any transaction, like every other scope in this
+     * bundle: the mark only ever moves forward, so a sale finalised between the
+     * two statements below can make it fresher and never staler.
+     *
+     * Named rather than left as the fall-through, which is what it was until
+     * `booth` joined the vocabulary: an unhandled scope reaching the end of
+     * this loop used to build a receipt series and `put` it under the receipt
+     * series' name, so `?scopes=booth` would have answered with somebody
+     * else's payload and a full bundle would have built the same list twice.
+     * An unhandled scope still contributes nothing, which the agent reads as
+     * "not present" and skips.
+     */
     if (scope === 'receipt_series') {
       const stations = await db
         .select({ id: station.id, codePrefix: station.codePrefix, name: station.name })
         .from(station)
         .where(and(eq(station.boxId, auth.boxId), isNull(station.archivedAt)))
         .orderBy(asc(station.name));
+      const marks = stations.length
+        ? await db
+            .select({
+              stationId: receiptSeries.stationId,
+              series: receiptSeries.series,
+              nextSeq: receiptSeries.nextSeq,
+            })
+            .from(receiptSeries)
+            .where(
+              and(
+                inArray(
+                  receiptSeries.stationId,
+                  stations.map((s) => s.id),
+                ),
+                eq(receiptSeries.kind, 'sale'),
+              ),
+            )
+        : [];
+      /**
+       * Keyed on the station AND the series, not on the station alone. The
+       * series name is the station's `code_prefix` and the printed number
+       * carries it, so a station whose prefix was changed starts a new series
+       * at 1 rather than continuing the old one's numbering under a new name —
+       * and the old series keeps its own mark for the numbers it issued.
+       */
+      const byStationSeries = new Map(marks.map((m) => [`${m.stationId}:${m.series}`, m.nextSeq]));
       put(
         'receipt_series',
-        stations.map((s) => ({
-          stationId: s.id,
-          prefix: s.codePrefix,
-          /** Nothing has been issued yet; S2-11 fills this from the sale ledger. */
-          highWaterMark: 0,
-        })),
+        stations.map((s) => {
+          const nextSeq = s.codePrefix
+            ? byStationSeries.get(`${s.id}:${s.codePrefix}`)
+            : undefined;
+          return {
+            stationId: s.id,
+            prefix: s.codePrefix,
+            /** The highest number this series has issued. 0 means it has issued none. */
+            highWaterMark: nextSeq === undefined ? 0 : Math.max(0, Number(nextSeq) - 1),
+          };
+        }),
       );
       continue;
     }

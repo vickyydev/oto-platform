@@ -5,6 +5,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import {
   account,
   auditLog,
+  boxCache,
   boxCommand,
   signingKey,
   staffToken,
@@ -98,13 +99,14 @@ beforeAll(async () => {
     fetch: injectTransport(),
     claimCode: async () => (await provisionVirtualBox(ctx.db, ctx.app.log))?.claimCode ?? null,
     /**
-     * The SAME store the routes read.
+     * The SAME store the routes read — `boxStoreFor(db)`, which is what the
+     * real virtual box is given in `services/box.ts`.
      *
-     * Not a detail: `SqlBoxStore` keeps its cache bundles in memory when it is
-     * on Postgres, because the `edge` schema has no table for them yet, so two
-     * instances would mean the agent filling a cache the routes never see —
-     * and every offline case here would pass for the wrong reason. The real
-     * virtual box uses `boxStoreFor(db)` for this reason too.
+     * Since SCRUM-275 the bundles are rows in `edge.box_cache`, so a second
+     * instance over the same database would read the same cache and these
+     * cases would still be honest. Going through the one the routes use keeps
+     * the seam being tested the real one, and keeps the boot-time table probe
+     * to a single query.
      */
     store: boxStoreFor(ctx.db),
   });
@@ -252,9 +254,10 @@ describe('the box takes a copy of what it needs (S2-06)', () => {
    * know the copy is bad. The agent reads back the two scopes a counter's
    * safety rests on before trusting the etag; a missing one forgets it.
    *
-   * The bundle is removed from underneath the running agent through the
-   * store's own memory map (the virtual box's bundles live there; a Pi's live
-   * in SQLite), which is the honest model of "the file is gone".
+   * The bundle is removed from underneath the running agent by deleting its
+   * row from `edge.box_cache` — where the virtual box's bundles live since
+   * SCRUM-275, as a Pi's live in SQLite — which is the honest model of "the
+   * file is gone".
    */
   it('repairs a cached scope lost while online on the next ordinary tick', async () => {
     const store = boxStoreFor(ctx.db);
@@ -263,9 +266,9 @@ describe('the box takes a copy of what it needs (S2-06)', () => {
     // Nothing changed in the cloud: the tick is a 304 and applies nothing.
     expect(await agent.syncCache()).toEqual([]);
 
-    (store as unknown as { memoryBundles: Map<string, unknown> }).memoryBundles.delete(
-      `${boxId}:deny_list`,
-    );
+    await ctx.db
+      .delete(boxCache)
+      .where(and(eq(boxCache.boxId, boxId), eq(boxCache.scope, 'deny_list')));
     expect(await store.readBundle(boxId, 'deny_list')).toBeNull();
 
     // Still nothing changed in the cloud — and the tick must pull anyway.

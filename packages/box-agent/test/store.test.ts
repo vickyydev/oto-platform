@@ -478,6 +478,41 @@ test('a cache bundle from a newer agent is dropped rather than half understood',
   harness.close();
 });
 
+/**
+ * SCRUM-275 — a bundle is on the disk, not in the object that wrote it.
+ *
+ * The store that reads here is constructed AFTER the write, over the same
+ * database, which is the only shape that can tell a table from a `Map`: a
+ * second read through the writing store passes either way. This is the SQLite
+ * half of the claim `apps/api/test/box-cache-survives.test.ts` makes about the
+ * `edge` schema, and the two matter for the same reason — a box that has lost
+ * its deny-list is a box deciding an offline unlock from a staff list with no
+ * revocations beside it.
+ */
+test('a cached bundle outlives the store that wrote it', async () => {
+  const db = new DatabaseSync(':memory:');
+  prepareSqliteBoxStore(db);
+
+  const writer = new SqlBoxStore({ driver: sqliteBoxDriver(db), now: () => new Date(AT) });
+  await writer.writeBundle(BOX_ID, {
+    scope: 'deny_list',
+    schemaVersion: 1,
+    cursorSeq: 7,
+    payload: { items: [{ revokedTokenIds: ['jti-1'] }] },
+    appliedAt: AT,
+  });
+
+  // The process died here. A Pi's card is all that crosses this line.
+  const reader = new SqlBoxStore({ driver: sqliteBoxDriver(db), now: () => new Date(AT) });
+  const held = await reader.readBundle(BOX_ID, 'deny_list');
+  assert.ok(held, 'the deny-list did not survive the store that wrote it');
+  assert.equal(held.cursorSeq, 7);
+  assert.deepEqual(held.payload, { items: [{ revokedTokenIds: ['jti-1'] }] });
+  assert.equal(await reader.readBundle(BOX_ID, 'staff'), null);
+
+  db.close();
+});
+
 // --- Several facts at once, and one unit of work (S2-07a) -------------------
 
 test("a spin's two facts get consecutive sequences from one claim", async () => {
