@@ -728,10 +728,18 @@ export async function seed(db: Db = getDb()): Promise<void> {
     await db.insert(s.productCategory).values({
       id: catId,
       operatorId,
+      code: 'FB',
       name: 'F&B',
       taxableCategory: 'fnb',
     });
   }
+  // A category the spreadsheet can address: the sheet matches categories by
+  // code, and this row predates codes (seen on staging — a brownie imported
+  // 'under F&B' landed elsewhere). Filled once, never overwritten.
+  await db
+    .update(s.productCategory)
+    .set({ code: 'FB' })
+    .where(and(eq(s.productCategory.id, catId), isNull(s.productCategory.code)));
   const [productRow] = await db
     .select({ id: s.product.id })
     .from(s.product)
