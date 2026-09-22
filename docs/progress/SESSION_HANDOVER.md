@@ -4,7 +4,40 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 (early hours) — `main` is `0662fcb`
+> ## Status on 2026-09-23 03:00 — `main` is `b8029f2`
+>
+> **Landed since the banner below:** SCRUM-308 (chip and receipt agree on
+> the trading day, `155a251`); the box pulls whole after an outage
+> (`72e97fd`); the five ledger items 296/297/299/300/301 (`bcf32d5`,
+> assembled hunk-by-hunk from a tree three slices shared); the tier claim
+> 307/228/203 (`b8029f2`). All in **Testing**; they move to Deployed when
+> Render has `b8029f2` and a screenshot is on each. SCRUM-303 is Deployed
+> (the eight tenancy tickets carry images). Follow-ups raised from the
+> gates: **SCRUM-310** (phone till still cannot sell an Expat walk-in),
+> **311** (claim table + `sale.tier_claim_id`), **312** (visitor display
+> ฿0), **313** (epoch guard on `handleVerified`), **314** (etag vs a bad
+> local bundle while online).
+>
+> **The menu slice is NOT on main.** Its gate said DO NOT MERGE; the slice
+> is saved at `wip/menu-catalogue` (`d79038e`) and a fix round
+> (`wf_cf412d0b`) is working in the tree on: Apply refused (POS sends
+> `{previewToken}` only), the POS Export as a second writer, `sale.ts`
+> reading the now-nullable `taxable_category` raw, re-import with
+> `action=archive` refused, modifier-group archive leaving links. When it
+> lands: commit by explicit list, then `packages/db/{package.json,
+> tsconfig.json,test/**}` with the lockfile (SCRUM-302), then the one-line
+> `setBranchDayStart(active.businessDayStart)` in `catalogBridge.ts`
+> (SCRUM-308's last piece, held back because the menu owns that file).
+>
+> **Mixed-file discipline that worked:** `scratchpad/hunks.mjs list|pick`
+> splits `git diff` by hunk; a temp index (`GIT_INDEX_FILE` + `read-tree
+> HEAD` + `git apply --cached <picked>` + hand-built blobs via
+> `hash-object` + `update-index --cacheinfo`) makes a commit that carries
+> one slice's hunks and leaves the shared working copy untouched; then
+> `git reset -q` aligns the main index. Never `git checkout -- <file>` to
+> "restore" — it restores HEAD, and it wiped a fix once tonight.
+
+> ## Status on 2026-09-23 (early hours) — `main` was `0662fcb`
 >
 > **Landed since the 22nd banner, in order:** the two-branch park with its
 > branch managers and the eight leaks it exposed (SCRUM-248–250, 263–267,
