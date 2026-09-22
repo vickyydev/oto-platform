@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { idPk, pos, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
@@ -329,6 +330,19 @@ export const sale = pos.table(
      * guest was charged as.
      */
     customerTier: text('customer_tier').notNull(),
+    /**
+     * SCRUM-311 — the document check that chose that tier, when one did.
+     *
+     * Null on every sale priced from a member's record or from the operator's
+     * default, which is most of them. When it is set, the row it names is the
+     * passport or residence certificate reception checked at the counter
+     * minutes earlier, with who checked it — so "why was this guest charged the
+     * expat rate" is answerable from the ledger itself rather than by matching
+     * a sale against the audit log by branch, tier and time.
+     */
+    tierClaimId: uuid('tier_claim_id').references((): AnyPgColumn => saleTierClaim.id, {
+      onDelete: 'restrict',
+    }),
     /** `PRICING_ENGINE_VERSION` from `@oto/shared` — which arithmetic produced the totals. */
     engineVersion: text('engine_version').notNull(),
     /** The catalogue bundle the box was holding, when it came from a box (sync `bundleVersion`). */
@@ -428,6 +442,15 @@ export const sale = pos.table(
       .on(t.stationId, t.actionId)
       .where(sql`action_id is not null`),
     index('sale_source_event_idx').on(t.sourceEventId),
+    /**
+     * ONE DOCUMENT CHECK PRICES ONE SALE (SCRUM-311). The service spends the
+     * claim with a conditional update in the same transaction, which is what
+     * decides the race; this is the net under it, so no import, backfill or
+     * psql session can point two sales at one passport check either.
+     */
+    uniqueIndex('sale_tier_claim_unique')
+      .on(t.tierClaimId)
+      .where(sql`tier_claim_id is not null`),
 
     check(
       'sale_status_check',
@@ -471,6 +494,96 @@ export const sale = pos.table(
       sql`${t.status} <> 'voided' or (${t.voidedAt} is not null and ${t.voidReason} is not null)`,
     ),
     check('sale_refunded_check', sql`${t.status} <> 'refunded' or ${t.refundedAt} is not null`),
+  ],
+);
+
+/**
+ * A DOCUMENT CHECK AT THE COUNTER, recorded before it prices anything
+ * (SCRUM-307, given its own table by SCRUM-311).
+ *
+ * WHAT IT IS FOR. A visitor whose passport reception has just checked is not a
+ * member yet, so there is no record to read a tier from and the cart would
+ * price at the operator's default. Reception records the check through
+ * `POST /sales/tier-claims`, the cart names that ACTION ID, and the tier comes
+ * from the row written here — never from the request body, which is the rule
+ * the whole money path stands on (`services/sale.ts`, rule 2).
+ *
+ * WHY IT IS A TABLE AND NOT AN AUDIT ROW, which is where SCRUM-307 left it. A
+ * claim is not only a fact about the past; it is a thing that gets SPENT. One
+ * document check prices one sale, and nothing in an append-only log can hold
+ * that: `spent_by_sale_id` is a column somebody has to be able to set, under a
+ * conditional update, in the transaction that writes the sale. The audit row is
+ * still written beside it — the log is the trail, this is the record.
+ *
+ * WHAT IS NOT HERE, and the omission is the point: no document number, no name,
+ * no free-text note. The kind of document and its expiry are what price a cart;
+ * anything that identifies the document would be an identity number sitting in
+ * a table nothing ever sweeps. The durable evidence record — with its note — is
+ * written against the MEMBER by `POST /members/:id/tier-verification` once the
+ * visitor gives their details.
+ *
+ * TWO PREDICATES END A CLAIM. It is spent, or it is old: the resolver looks
+ * only inside a 30-minute window from `created_at`
+ * (`TIER_CLAIM_WINDOW_MS`), long enough for a party order rung up line by line
+ * and short enough that a claim left behind by a visitor who walked away cannot
+ * price the next person's cart later in the shift. Nothing is deleted when
+ * either happens: the row stays as the record of what was checked.
+ */
+export const saleTierClaim = pos.table(
+  'sale_tier_claim',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    /** The branch the check was made at, from the SESSION rather than the body. */
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    /**
+     * The account that checked the document, also from the session. It is half
+     * the resolver's predicate: a claim prices a cart for the session that made
+     * it and for no other, so one till cannot price from a claim another till
+     * recorded.
+     */
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    /**
+     * `x-oto-action-id` of the tap that confirmed the document — the key the
+     * cart names, and the claim's identity. Unique per operator, so one tap is
+     * one claim however many times the request is retried.
+     */
+    actionId: text('action_id').notNull(),
+    /** `crm.tier.code` the document supports. Text, as on `sale.customer_tier`. */
+    toTier: text('to_tier').notNull(),
+    /** `Passport`, `Residence certificate` — a KIND, never a number. */
+    evidenceType: text('evidence_type').notNull(),
+    /** The document's own expiry. One that has passed prices nothing. */
+    evidenceExpiresAt: date('evidence_expires_at').notNull(),
+    /**
+     * The sale this claim priced, once one did. Set by a conditional update
+     * inside the sale's transaction — `where spent_by_sale_id is null` — so two
+     * carts racing for one claim cannot both win it.
+     */
+    spentBySaleId: uuid('spent_by_sale_id').references((): AnyPgColumn => sale.id, {
+      onDelete: 'restrict',
+    }),
+    spentAt: timestamp('spent_at', { withTimezone: true, mode: 'date' }),
+    ...timestamps,
+  },
+  (t) => [
+    /** One tap, one claim — and what a cart's action id is looked up by. */
+    uniqueIndex('sale_tier_claim_action_unique').on(t.operatorId, t.actionId),
+    /** The resolver's own predicate: this account, this branch, inside the window. */
+    index('sale_tier_claim_session_idx').on(t.accountId, t.branchId, t.createdAt),
+    index('sale_tier_claim_branch_idx').on(t.branchId),
+    index('sale_tier_claim_sale_idx').on(t.spentBySaleId),
+    /** Spent means both, or neither: a claim cannot be half-spent. */
+    check(
+      'sale_tier_claim_spent_check',
+      sql`(${t.spentBySaleId} is null) = (${t.spentAt} is null)`,
+    ),
   ],
 );
 

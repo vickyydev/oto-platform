@@ -11,6 +11,7 @@ import {
   sale,
   saleDiscount,
   saleLine,
+  saleTierClaim,
   stockLevel,
   visit,
   visitChild,
@@ -112,7 +113,21 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   counts.payment_attempt = (
     await tx.delete(paymentAttempt).returning({ id: paymentAttempt.id })
   ).length;
+  /**
+   * SCRUM-311: a sale and the document check that priced it point at each
+   * other — `sale.tier_claim_id` at the claim, `sale_tier_claim.spent_by_sale_id`
+   * back at the sale — and BOTH keys restrict, because neither row may be
+   * quietly detached from the other in normal service. A cycle of restricting
+   * keys cannot be deleted from either end, so one edge is cut first: the
+   * claims are unspent, then the sales go, then the claims. The unspend is
+   * done on the claim side because `pos.sale_freeze` would refuse the same
+   * statement on a finalised sale — as it should.
+   */
+  await tx.update(saleTierClaim).set({ spentBySaleId: null, spentAt: null });
   counts.sale = (await tx.delete(sale).returning({ id: sale.id })).length;
+  counts.sale_tier_claim = (
+    await tx.delete(saleTierClaim).returning({ id: saleTierClaim.id })
+  ).length;
 
   counts.attendee = (await tx.delete(attendee).returning({ id: attendee.id })).length;
   counts.booking = (await tx.delete(booking).returning({ id: booking.id })).length;

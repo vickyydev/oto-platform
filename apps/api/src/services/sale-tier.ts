@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, isNull } from 'drizzle-orm';
-import { auditLog, tier } from '@oto/db';
+import { saleTierClaim, tier } from '@oto/db';
 import { newId } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
@@ -7,9 +7,9 @@ import { isEvidenceExpired } from './members';
 import type { Exec, Tx } from './tx';
 
 /**
- * SCRUM-307 — the tier claim: how a walk-in whose document reception has just
- * checked gets priced at the rate that document supports, WITHOUT the tier
- * coming from the request body.
+ * SCRUM-307 / SCRUM-311 — the tier claim: how a walk-in whose document
+ * reception has just checked gets priced at the rate that document supports,
+ * WITHOUT the tier coming from the request body.
  *
  * WHAT WAS BROKEN. `sale.ts` resolves the tier from the MEMBER and prices a
  * cart with no member at the operator's default. That is right for the case it
@@ -42,23 +42,26 @@ import type { Exec, Tx } from './tx';
  *      record is the stronger fact — a document somebody checked and filed —
  *      and the claim only exists because there is no such record yet.
  *
- * WHERE THE CLAIM IS STORED, and why it is not its own table. `core.audit_log`
- * holds it: `packages/db` belongs to another ticket in flight, and a claim is
- * in any case an append-only fact of the shape the audit log already
- * records — who checked what, at which branch, at what time, under which
- * action id (an indexed column). `sale_tier_claim` rows are therefore read
- * back here as well as written.
+ * WHERE THE CLAIM IS STORED. `pos.sale_tier_claim`, its own table since
+ * SCRUM-311. It began in `core.audit_log` because the schema package belonged
+ * to another ticket in flight, and the two things that cost are what this
+ * ticket is: a claim can now be SPENT, and the sale it priced names it
+ * (`pos.sale.tier_claim_id`). The audit row is still written beside the claim,
+ * in the same transaction — the log is the trail, the table is the record.
  *
- * TWO THINGS THIS DOES NOT DO, so that no comment above is read as more than
- * it says. A claim is NOT single-use: nothing marks it spent when a sale
- * prices from it, because recording which sale spent which claim needs a
- * `tier_claim_id` column on `pos.sale` that this ticket could not add. The
- * window below is the whole of the bound. And the sale row records the tier it
- * was priced at (`customer_tier`) but not the claim id, for the same reason —
- * the two are tied together only through the audit trail today.
+ * THE TWO THINGS THAT END A CLAIM, and a claim ends one way or the other:
+ *
+ *   SPENT   `commitSale` stamps `spent_by_sale_id` on it with a conditional
+ *           update in the transaction that writes the sale, so one document
+ *           check prices one sale and a second cart naming it is refused
+ *           (`TIER_CLAIM_SPENT`). Two carts racing for one claim cannot both
+ *           win it: the second update matches no row.
+ *   OLD     the window below. Nothing is deleted when either happens — the row
+ *           stays as the record of what was checked and, once spent, of which
+ *           sale it paid for.
  */
 
-/** `core.audit_log.entity_type` for a claim row. */
+/** `core.audit_log.entity_type` for the row written beside a claim. */
 export const TIER_CLAIM_ENTITY = 'sale_tier_claim';
 const CLAIM_CREATE_ACTION = 'sale_tier_claim.create';
 
@@ -68,8 +71,8 @@ const CLAIM_CREATE_ACTION = 'sale_tier_claim.create';
  * It covers one visitor at the counter: check the document, build the cart,
  * take the money. Thirty minutes is long enough for a party order rung up line
  * by line and short enough that a claim left behind by a visitor who walked
- * away cannot price the next person's cart later in the shift. Since nothing
- * marks a claim spent (see above), this is the only thing that ends it.
+ * away cannot price the next person's cart later in the shift. It is the
+ * second of the two bounds — being spent is the first.
  */
 export const TIER_CLAIM_WINDOW_MS = 30 * 60 * 1000;
 
@@ -106,11 +109,13 @@ export interface TierClaimView {
   /** The account the session authenticated — never a name the caller sent. */
   verifiedByAccountId: string;
   createdAt: string;
-  /** When this claim stops pricing anything. */
+  /** When this claim stops pricing anything, if nothing spends it first. */
   expiresAt: string;
+  /** The sale that spent it, once one has. */
+  spentBySaleId: string | null;
 }
 
-/** What a claim row's `after` holds. Nothing here identifies the document. */
+/** What the audit row's `after` holds. Nothing here identifies the document. */
 interface ClaimPayload {
   toTier: string;
   evidenceType: string;
@@ -130,12 +135,34 @@ export interface TierBearingCart {
   tierClaimActionId?: string | null;
 }
 
-/** The answer when a claim prices the cart. `null` means: ask the member. */
+/** The answer when a claim prices the cart. */
 export interface ClaimedTier {
   code: string;
   source: 'claim';
-  /** The claim that priced this cart. */
+  /** The claim that priced this cart, stamped onto the sale when it commits. */
   claimId: string;
+}
+
+/**
+ * Why a claim the cart NAMED priced nothing, when the till should be told.
+ *
+ * Only one case produces it, and only because the till cannot work it out for
+ * itself: the claim exists, belongs to this session, is inside its window —
+ * and has already paid for a sale. Everything else a claim can fail on
+ * (another session's, another branch's, expired, withdrawn tier) is answered
+ * with silence and the default tier, which is what a caller holding an action
+ * id that is not theirs should see.
+ */
+export interface TierClaimRefusal {
+  code: 'TIER_CLAIM_SPENT';
+  message: string;
+  details: { claimId: string; saleId: string };
+}
+
+/** What the resolver answers: a tier, or nothing and possibly a reason. */
+export interface TierClaimResolution {
+  claim: ClaimedTier | null;
+  refusal: TierClaimRefusal | null;
 }
 
 /** The date a `YYYY-MM-DD` document expiry means, or null if it is not one. */
@@ -144,12 +171,28 @@ function parseExpiry(value: string): Date | null {
   return Number.isNaN(at.getTime()) ? null : at;
 }
 
+/** A claim row as the rest of this file reads it. */
+function viewOf(row: typeof saleTierClaim.$inferSelect): TierClaimView {
+  return {
+    id: row.id,
+    actionId: row.actionId,
+    branchId: row.branchId,
+    toTier: row.toTier,
+    evidenceType: row.evidenceType,
+    evidenceExpiresAt: row.evidenceExpiresAt,
+    verifiedByAccountId: row.accountId,
+    createdAt: row.createdAt.toISOString(),
+    expiresAt: new Date(row.createdAt.getTime() + TIER_CLAIM_WINDOW_MS).toISOString(),
+    spentBySaleId: row.spentBySaleId,
+  };
+}
+
 /**
  * Record that staff checked a document, so a cart can be priced at the tier it
  * supports before the visitor has a member record.
  *
- * Runs inside the route's transaction: the claim and the audit row ARE the same
- * row, so there is no window in which one exists without the other.
+ * Runs inside the route's transaction: the claim row and the audit row commit
+ * together, so there is no window in which one exists without the other.
  */
 export async function recordTierClaim(
   tx: Tx,
@@ -180,27 +223,51 @@ export async function recordTierClaim(
     );
   }
 
-  // The same tap arriving twice is the same claim. A DIFFERENT claim under the
-  // same action id is not a retry — it is two decisions wearing one id — and
-  // is refused rather than silently answered with the first one.
-  const existing = await findClaim(tx, actor, actor.branchId, input.actionId, now);
-  if (existing) {
-    if (
-      existing.toTier !== input.toTier ||
-      existing.evidenceType !== input.evidenceType ||
-      existing.evidenceExpiresAt !== input.evidenceExpiresAt
-    ) {
-      throw errors.conflict(
-        'TIER_CLAIM_ACTION_REUSED',
-        'This action already recorded a different document check',
-        { claimId: existing.id, toTier: existing.toTier },
-      );
-    }
-    return existing;
-  }
+  /**
+   * The same tap arriving twice is the same claim. A DIFFERENT claim under the
+   * same action id is not a retry — it is two decisions wearing one id — and
+   * is refused rather than silently answered with the first one.
+   *
+   * Looked up on the table's own key, `(operator_id, action_id)`, and NOT
+   * through the resolver's predicate: an action id that another account used,
+   * or one whose claim has aged out of the window, still occupies that key, so
+   * a lookup narrower than the constraint would decide to insert a row the
+   * database is about to refuse.
+   */
+  const existing = await claimByAction(tx, actor.operatorId, input.actionId);
+  if (existing) return sameTapOrRefuse(existing, actor, input);
 
   const id = newId();
   const expiresAt = new Date(now.getTime() + TIER_CLAIM_WINDOW_MS);
+  const [written] = await tx
+    .insert(saleTierClaim)
+    .values({
+      id,
+      operatorId: actor.operatorId,
+      branchId: actor.branchId,
+      accountId: actor.accountId,
+      actionId: input.actionId,
+      toTier: input.toTier,
+      evidenceType: input.evidenceType,
+      evidenceExpiresAt: input.evidenceExpiresAt,
+      createdAt: now,
+    })
+    // Two requests for one tap, arriving together: the loser of the unique
+    // index has nothing to add, and the claim it wanted is the one the winner
+    // wrote. Read back below rather than refused.
+    .onConflictDoNothing()
+    .returning();
+  if (!written) {
+    const raced = await claimByAction(tx, actor.operatorId, input.actionId);
+    if (!raced) {
+      throw errors.conflict(
+        'TIER_CLAIM_UNAVAILABLE',
+        'That document check could not be recorded — try it again',
+      );
+    }
+    return sameTapOrRefuse(raced, actor, input);
+  }
+
   const payload: ClaimPayload = {
     toTier: input.toTier,
     evidenceType: input.evidenceType,
@@ -219,17 +286,54 @@ export async function recordTierClaim(
     requestId: actor.requestId ?? null,
   });
 
-  return {
-    id,
-    actionId: input.actionId,
-    branchId: actor.branchId,
-    toTier: input.toTier,
-    evidenceType: input.evidenceType,
-    evidenceExpiresAt: input.evidenceExpiresAt,
-    verifiedByAccountId: actor.accountId,
-    createdAt: now.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-  };
+  return viewOf(written);
+}
+
+/**
+ * The claim already on this action id, when it is the SAME tap — otherwise a
+ * refusal.
+ *
+ * Same tap means every part of it: the same verifier, the same branch and the
+ * same decision. A retry through a dropped connection matches all of them and
+ * is answered with the claim that exists; anything else is two document checks
+ * wearing one id, and answering that with the first one would price a cart
+ * from a check nobody made.
+ */
+function sameTapOrRefuse(
+  existing: TierClaimView,
+  actor: TierClaimActor,
+  input: TierClaimInput,
+): TierClaimView {
+  if (
+    existing.verifiedByAccountId !== actor.accountId ||
+    existing.branchId !== actor.branchId ||
+    existing.toTier !== input.toTier ||
+    existing.evidenceType !== input.evidenceType ||
+    existing.evidenceExpiresAt !== input.evidenceExpiresAt
+  ) {
+    throw errors.conflict(
+      'TIER_CLAIM_ACTION_REUSED',
+      'This action already recorded a different document check',
+      { claimId: existing.id, toTier: existing.toTier },
+    );
+  }
+  return existing;
+}
+
+/** One operator's claim for one action id, whoever made it and however old. */
+async function claimByAction(
+  db: Exec,
+  operatorId: string,
+  actionId: string,
+): Promise<TierClaimView | null> {
+  const [row] = await db
+    .select()
+    .from(saleTierClaim)
+    .where(
+      and(eq(saleTierClaim.operatorId, operatorId), eq(saleTierClaim.actionId, actionId)),
+    )
+    .limit(1);
+  return row ? viewOf(row) : null;
 }
 
 /**
@@ -252,38 +356,22 @@ async function findClaim(
   const cutoff = new Date(now.getTime() - TIER_CLAIM_WINDOW_MS);
   const [row] = await db
     .select()
-    .from(auditLog)
+    .from(saleTierClaim)
     .where(
       and(
-        eq(auditLog.entityType, TIER_CLAIM_ENTITY),
-        eq(auditLog.action, CLAIM_CREATE_ACTION),
-        eq(auditLog.actionId, actionId),
-        eq(auditLog.actorAccountId, actor.accountId),
-        eq(auditLog.branchId, branchId),
+        eq(saleTierClaim.actionId, actionId),
+        eq(saleTierClaim.accountId, actor.accountId),
+        eq(saleTierClaim.branchId, branchId),
         // The tenant, named rather than inferred from the account: every
         // predicate this platform lost a row through was one somebody was sure
         // the others already implied (SCRUM-280, SCRUM-289).
-        eq(auditLog.operatorId, actor.operatorId),
-        gte(auditLog.createdAt, cutoff),
+        eq(saleTierClaim.operatorId, actor.operatorId),
+        gte(saleTierClaim.createdAt, cutoff),
       ),
     )
-    .orderBy(desc(auditLog.createdAt))
+    .orderBy(desc(saleTierClaim.createdAt))
     .limit(1);
-  if (!row) return null;
-
-  const payload = row.after as ClaimPayload | null;
-  if (!payload?.toTier) return null;
-  return {
-    id: row.entityId,
-    actionId,
-    branchId,
-    toTier: payload.toTier,
-    evidenceType: payload.evidenceType,
-    evidenceExpiresAt: payload.evidenceExpiresAt,
-    verifiedByAccountId: actor.accountId,
-    createdAt: row.createdAt.toISOString(),
-    expiresAt: payload.expiresAt,
-  };
+  return row ? viewOf(row) : null;
 }
 
 /**
@@ -294,6 +382,12 @@ async function findClaim(
  * Called at the one point where both the quote and the commit resolve a tier,
  * so the two cannot answer differently: a quote and a commit disagreeing about
  * who the visitor was IS the defect this closes.
+ *
+ * NOTHING HERE THROWS. A spent claim comes back as a `refusal` beside the
+ * empty answer, and what happens to it is the caller's decision: the quote
+ * prices the cart at the default tier and shows the reason, the commit turns
+ * it into a 409. That split is deliberate — pricing a cart is not the act that
+ * needs refusing, taking money for it is.
  *
  * A MEMBER ON THE CART ENDS IT HERE. Not because a claim would be wrong, but
  * because a member's tier is the stronger record — the verification behind it
@@ -308,15 +402,38 @@ export async function resolveTierClaim(
   branchId: string,
   cart: TierBearingCart,
   now: Date = new Date(),
-): Promise<ClaimedTier | null> {
-  if (cart.memberId || !cart.tierClaimActionId) return null;
+): Promise<TierClaimResolution> {
+  const nothing: TierClaimResolution = { claim: null, refusal: null };
+  if (cart.memberId || !cart.tierClaimActionId) return nothing;
 
   const claim = await findClaim(db, actor, branchId, cart.tierClaimActionId, now);
-  if (!claim) return null;
+  if (!claim) return nothing;
+  /**
+   * ONE DOCUMENT CHECK, ONE SALE. A claim that has already priced a sale
+   * prices nothing else: without this, the passport checked for the family at
+   * 14:30 would still be sitting in the window at 14:50 and the till — which
+   * keeps the action id of the last check it made — could ring the next
+   * visitor up at the expat rate on a document that was never theirs.
+   *
+   * Told apart from every other failure above, because this one is the
+   * session's own claim and staff can do something about it.
+   */
+  if (claim.spentBySaleId) {
+    return {
+      claim: null,
+      refusal: {
+        code: 'TIER_CLAIM_SPENT',
+        message:
+          'That document check has already been used on a sale — check the document again to ' +
+          'price this one',
+        details: { claimId: claim.id, saleId: claim.spentBySaleId },
+      },
+    };
+  }
   // A document that expired between the check and the sale stops pricing it.
   // The claim is still a true record of what was checked; it has just run out
   // of what it was evidence of.
-  if (isEvidenceExpired(parseExpiry(claim.evidenceExpiresAt))) return null;
+  if (isEvidenceExpired(parseExpiry(claim.evidenceExpiresAt))) return nothing;
   // The claim named a tier this operator sold when it was made. If that tier
   // has since been withdrawn, pricing falls back rather than charging against
   // a rate that is no longer in the catalogue.
@@ -331,7 +448,40 @@ export async function resolveTierClaim(
       ),
     )
     .limit(1);
-  if (!tierRow) return null;
+  if (!tierRow) return nothing;
 
-  return { code: claim.toTier, source: 'claim', claimId: claim.id };
+  return { claim: { code: claim.toTier, source: 'claim', claimId: claim.id }, refusal: null };
+}
+
+/**
+ * Spend the claim on the sale it priced — the write that makes it single-use.
+ *
+ * CONDITIONAL, AND THAT IS THE WHOLE MECHANISM: `where spent_by_sale_id is
+ * null` means the second of two carts racing for one claim updates no row and
+ * is refused, inside its own transaction, before its sale can commit. Checking
+ * first and writing after would leave exactly the gap the park would find on a
+ * Saturday — two sales at the expat rate off one passport.
+ *
+ * Called from `commitSale` with the transaction that is writing the sale, so a
+ * sale that fails afterwards takes the spend back with it.
+ */
+export async function spendTierClaim(
+  tx: Tx,
+  claimId: string,
+  saleId: string,
+  now: Date,
+): Promise<void> {
+  const spent = await tx
+    .update(saleTierClaim)
+    .set({ spentBySaleId: saleId, spentAt: now })
+    .where(and(eq(saleTierClaim.id, claimId), isNull(saleTierClaim.spentBySaleId)))
+    .returning({ id: saleTierClaim.id });
+  if (spent.length === 0) {
+    throw errors.conflict(
+      'TIER_CLAIM_SPENT',
+      'That document check has already been used on a sale — check the document again to ' +
+        'price this one',
+      { claimId },
+    );
+  }
 }

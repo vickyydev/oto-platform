@@ -46,7 +46,7 @@ import {
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import { resolveItemTaxCategories } from './menu';
-import { resolveTierClaim } from './sale-tier';
+import { resolveTierClaim, spendTierClaim, type TierClaimRefusal } from './sale-tier';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -395,8 +395,18 @@ export interface PricedCart {
    * The tier that chose the prices, and where it came from: the MEMBER's
    * record, a document check reception recorded for this action (SCRUM-307),
    * or the operator's default. Never the request body — see rule 2 at the top.
+   *
+   * `claimId` is set only on `claim`, and it is what the commit stamps onto the
+   * sale and spends (SCRUM-311).
    */
-  tier: { code: string; source: 'member' | 'claim' | 'default' };
+  tier: { code: string; source: 'member' | 'claim' | 'default'; claimId?: string };
+  /**
+   * SCRUM-311 — why a claim the cart NAMED priced nothing. Null on every cart
+   * that named none, and on every cart whose claim priced it. Today there is
+   * one case: the claim has already paid for a sale. The quote carries it back
+   * so the till can say so; the commit refuses on it.
+   */
+  tierClaimRefusal: TierClaimRefusal | null;
   disagreements: {
     pricingModeSentByTill: string | null;
     tierSentByTill: string | null;
@@ -546,10 +556,15 @@ export async function priceCart(
    * caller naming another session's claim. A body that says `expat` is still
    * ignored, and everything else still resolves from the member or the
    * operator's default.
+   *
+   * SCRUM-311 — a claim that has already paid for a sale resolves to nothing
+   * HERE TOO, so the cart is priced at the default tier and the answer carries
+   * the reason. Pricing is not the act that needs refusing; `commitSale`
+   * refuses on the same reason before it takes any money for it.
    */
-  const resolvedTier =
-    (await resolveTierClaim(db, actor, scope.branchId, input, now)) ??
-    (await resolveTier(db, actor.operatorId, input.memberId));
+  const claimed = await resolveTierClaim(db, actor, scope.branchId, input, now);
+  const resolvedTier: PricedCart['tier'] =
+    claimed.claim ?? (await resolveTier(db, actor.operatorId, input.memberId));
   const catalogue = await loadCatalogue(db, scope, input);
 
   // What the platform stood behind, and what it took on trust. Filled as the
@@ -730,6 +745,7 @@ export async function priceCart(
   return {
     scope,
     tier: resolvedTier,
+    tierClaimRefusal: claimed.refusal,
     disagreements: {
       // The till says what it believed; the platform says what it charged.
       // Neither is refused — a cart open across 05:00 or across a tier change
@@ -920,6 +936,13 @@ export async function quoteSale(
     holidayName: priced.scope.holidayName,
     tier: priced.tier.code,
     tierSource: priced.tier.source,
+    /**
+     * SCRUM-311 — why the claim this cart named priced nothing, when it named
+     * one that did not. Null on everything else. The cart is still priced and
+     * still quoted; this is what the till shows instead of leaving staff to
+     * work out why a checked passport stopped counting.
+     */
+    tierClaimRefusal: priced.tierClaimRefusal,
     customerTier: priced.tier.code,
     engineVersion: priced.engineVersion,
     totals: priced.money,
@@ -1289,6 +1312,26 @@ export async function commitSale(
     }
   }
 
+  /**
+   * SCRUM-311 — the cart named a document check that has already paid for a
+   * sale. The quote priced it at the default tier and said so; taking money
+   * for it is where that has to stop, because the till may be holding the
+   * action id of the last check it made and the guest in front of it is a
+   * different person.
+   *
+   * LAST OF THE REFUSALS, and the order is the point. A cart still holding the
+   * first sale's expat figures is refused as the price mismatch it is, inside
+   * `priceCart`; a RETRY of that first Pay — the same `x-oto-action-id`, a
+   * newly minted sale id — is refused as the replay it is, just above. Both
+   * are more specific than this one, and both tell the till something it can
+   * act on. What is left here is the case this ticket is about: a second cart,
+   * a second guest, one passport.
+   */
+  if (priced.tierClaimRefusal) {
+    const refusal = priced.tierClaimRefusal;
+    throw errors.conflict(refusal.code, refusal.message, refusal.details);
+  }
+
   // A station that cannot number a receipt cannot close a sale, so it must
   // not be allowed to open one. This used to be checked only when finalising,
   // and a merge gate drove what that allowed: Pay on a station with no code
@@ -1342,6 +1385,8 @@ export async function commitSale(
     holidayId: priced.scope.holidayId,
     holidayName: priced.scope.holidayName,
     customerTier: priced.tier.code,
+    /** SCRUM-311 — the document check that chose that tier, when one did. */
+    tierClaimId: priced.tier.claimId ?? null,
     engineVersion: priced.engineVersion,
     taxConfig: priced.scope.taxConfig,
     taxBreakdown: priced.totals.taxBreakdown,
@@ -1370,6 +1415,20 @@ export async function commitSale(
       );
     }
     throw error;
+  }
+
+  /**
+   * SCRUM-311 — the claim is spent HERE, on this sale, in this transaction.
+   *
+   * One document check prices one sale: the update is conditional on the claim
+   * being unspent, so two carts racing for one claim cannot both commit, and
+   * the loser's whole sale rolls back rather than being written at a rate
+   * nothing supports. The sale row already names the claim (`tier_claim_id`)
+   * — this is the other half of the same fact, and the pair is what makes
+   * "which passport priced this sale" answerable from the ledger.
+   */
+  if (priced.tier.claimId) {
+    await spendTierClaim(tx, priced.tier.claimId, saleId, clock.occurredAt);
   }
 
   for (const line of priced.lines) {
