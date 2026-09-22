@@ -245,6 +245,37 @@ describe('the box takes a copy of what it needs (S2-06)', () => {
     expect(JSON.stringify(mine)).not.toContain(RECEPTION.phone);
   });
 
+  /**
+   * SCRUM-314. The pull sends the last bundle version as `If-None-Match`, so
+   * the ordinary tick is a 304. That must not stand between a box whose local
+   * copy went bad WHILE ONLINE and the pull that repairs it — the cloud cannot
+   * know the copy is bad. The agent reads back the two scopes a counter's
+   * safety rests on before trusting the etag; a missing one forgets it.
+   *
+   * The bundle is removed from underneath the running agent through the
+   * store's own memory map (the virtual box's bundles live there; a Pi's live
+   * in SQLite), which is the honest model of "the file is gone".
+   */
+  it('repairs a cached scope lost while online on the next ordinary tick', async () => {
+    const store = boxStoreFor(ctx.db);
+    await agent.syncCache();
+    expect(await store.readBundle(boxId, 'deny_list')).not.toBeNull();
+    // Nothing changed in the cloud: the tick is a 304 and applies nothing.
+    expect(await agent.syncCache()).toEqual([]);
+
+    (store as unknown as { memoryBundles: Map<string, unknown> }).memoryBundles.delete(
+      `${boxId}:deny_list`,
+    );
+    expect(await store.readBundle(boxId, 'deny_list')).toBeNull();
+
+    // Still nothing changed in the cloud — and the tick must pull anyway.
+    const repaired = await agent.syncCache();
+    expect(repaired, 'the etag answered 304 over a bundle the box no longer holds').toContain(
+      'deny_list',
+    );
+    expect(await store.readBundle(boxId, 'deny_list')).not.toBeNull();
+  });
+
   it('drops staff who are not in the latest bundle', async () => {
     const store = boxStoreFor(ctx.db);
     const before = (

@@ -905,6 +905,25 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   async function syncCache(): Promise<string[]> {
     if (!credential || !store || !state.boxId || state.offline) return [];
     const boxId = state.boxId;
+    /**
+     * The etag is only worth sending while the local copy it stands for is
+     * still there (SCRUM-314). A box that stays online with a bundle gone bad
+     * underneath it — a store file lost, a scope unreadable — would otherwise
+     * be told "nothing changed" on every tick, because the cloud cannot know
+     * the copy is bad. The two scopes read back are the ones a counter's
+     * safety rests on; a missing or unreadable one forgets the etag, and the
+     * pull below is a whole one.
+     */
+    if (cacheBundleVersion) {
+      for (const scope of ['deny_list', 'staff'] as const) {
+        const held = await store.readBundle(boxId, scope).catch(() => null);
+        if (!held) {
+          note('warn', 'a cached scope is missing on this box; pulling the cache whole', { scope });
+          cacheBundleVersion = null;
+          break;
+        }
+      }
+    }
     const { status, body } = await request<{
       schemaVersion: number;
       bundleVersion: string;
