@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 let ctx: TestContext;
@@ -138,6 +138,61 @@ describe('SCRUM-36 — pricing-mode resolver (prototype pricingMode.ts rules)', 
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  /**
+   * SCRUM-308. Seen on staging just after midnight: the header chip said
+   * Weekday while the platform priced the same basket as Weekend for a holiday
+   * on the trading day, which was still the 22nd. The chip's default date was
+   * the calendar day; a sale's is the trading day (`business_day_start`,
+   * 05:00). Between midnight and five they disagreed.
+   *
+   * Only `Date` is faked, so the database calls underneath still run on real
+   * time. The clock lands up to a day ahead, past the 12-hour session made
+   * above, so this signs in again under the faked clock and uses that cookie.
+   */
+  it('at 00:30 the chip prices the trading day a sale would be priced on, not the calendar day', async () => {
+    // The next 00:30 Asia/Bangkok (UTC+7) after real now: 17:30 UTC today or tomorrow.
+    const real = new Date();
+    const at = new Date(Date.UTC(real.getUTCFullYear(), real.getUTCMonth(), real.getUTCDate(), 17, 30));
+    if (at.getTime() <= real.getTime()) at.setUTCDate(at.getUTCDate() + 1);
+    const calendarDay = new Date(at.getTime() + 7 * 3600_000).toISOString().slice(0, 10);
+    const tradingDay = new Date(at.getTime() + 7 * 3600_000 - 86_400_000).toISOString().slice(0, 10);
+    expect(tradingDay).not.toBe(calendarDay);
+
+    // A holiday on the trading day only, so the two days answer differently
+    // whatever weekday they fall on.
+    const made = await ctx.app.inject({
+      method: 'POST',
+      url: `/branches/${branchId}/holidays`,
+      headers: { cookie },
+      payload: { name: 'Trading-day holiday (SCRUM-308)', startsOn: tradingDay, endsOn: tradingDay },
+    });
+    expect(made.statusCode, made.body).toBe(200);
+
+    vi.useFakeTimers({ toFake: ['Date'], now: at });
+    try {
+      const lateCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `/branches/${branchId}/pricing-mode`,
+        headers: { cookie: lateCookie },
+      });
+      expect(res.statusCode, res.body).toBe(200);
+      expect(res.json().date, 'the chip answered for the calendar day').toBe(tradingDay);
+      expect(res.json()).toMatchObject({
+        mode: 'weekend',
+        overrideName: 'Trading-day holiday (SCRUM-308)',
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+
+    await ctx.app.inject({
+      method: 'DELETE',
+      url: `/branches/${branchId}/holidays/${made.json().holiday?.id ?? made.json().id}`,
+      headers: { cookie },
+    });
   });
 });
 

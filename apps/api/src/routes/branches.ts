@@ -45,6 +45,9 @@ export async function branchRoutes(app: App): Promise<void> {
           name: b.name,
           code: b.code,
           timezone: b.timezone,
+          // When the trading day starts (SCRUM-308): the till prices on it, so the
+          // till must know it. "05:00:00" as Postgres renders a time column.
+          businessDayStart: b.businessDayStart,
           country: b.country,
           archived: b.archivedAt !== null,
         })),

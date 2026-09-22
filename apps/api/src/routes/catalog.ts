@@ -16,9 +16,10 @@ import {
   TaxConfigSchema,
   TicketPackageBodySchema,
   getRateModeForDate,
-  branchToday,
+  businessDate,
   isIsoDate,
   newId,
+  parseDayStart,
   type TaxConfigShape,
 } from '@oto/shared';
 import type { App } from '../app';
@@ -547,13 +548,22 @@ export async function catalogRoutes(app: App): Promise<void> {
    * The pricing resolver (SCRUM-36): branch + date → applicable rate mode,
    * holiday ranges treated as weekend (prototype pricingMode.ts, tz-aware).
    * Drives the POS header's "Weekday pricing" indicator.
+   *
+   * The default date is the branch's TRADING day, not the calendar day
+   * (SCRUM-308). A sale is priced on `business_day_start` — 05:00 by default —
+   * through `resolvePricingScope`, so between midnight and five the calendar
+   * has moved on and the till has not. Seen on staging: the chip said Weekday
+   * at 00:20 while the same basket was priced Weekend for a holiday on the
+   * 22nd, which was still the trading day. Same helper, same holiday filter
+   * (a withdrawn range prices nothing), so the two cannot drift again.
    */
   app.get(
     '/branches/:branchId/pricing-mode',
     {
       config: { permission: 'catalog:package:read', target: { branchId: 'params.branchId' } },
       schema: {
-        description: 'Rate mode for a date (default: today in the branch timezone)',
+        description:
+          'Rate mode for a date (default: the branch trading day — business_day_start in the branch timezone — which is the day a sale rung now would be priced on)',
         params: BranchParams,
         querystring: z.object({ date: z.string().optional() }),
       },
@@ -561,12 +571,14 @@ export async function catalogRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       const br = await loadBranch(app, req.params.branchId, auth.operatorId);
-      const date = req.query.date ?? branchToday(br.timezone);
+      const date =
+        req.query.date ??
+        businessDate(new Date(), br.timezone, parseDayStart(br.businessDayStart));
       if (!isIsoDate(date)) throw errors.badRequest('date must be yyyy-mm-dd');
       const holidays = await app.db
         .select()
         .from(branchHoliday)
-        .where(eq(branchHoliday.branchId, req.params.branchId));
+        .where(and(eq(branchHoliday.branchId, req.params.branchId), isNull(branchHoliday.archivedAt)));
       const result = getRateModeForDate(
         date,
         holidays.map((h) => ({ name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })),

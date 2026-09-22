@@ -1,6 +1,13 @@
 import type { WeekdayWeekendPrice } from '@/types';
 import { getPricingOverrides } from '@/store/catalogStore';
-import { dayOfWeekOfIsoDate, isIsoDate, isoDateInTz } from '@oto/shared';
+import {
+  DEFAULT_BUSINESS_DAY_START_MINUTES,
+  businessDate,
+  dayOfWeekOfIsoDate,
+  isIsoDate,
+  isoDateInTz,
+  parseDayStart,
+} from '@oto/shared';
 
 /**
  * Which rate is active for a sale. Every price in the catalog stores a
@@ -60,18 +67,46 @@ export function getBranchTimezone(): string {
 }
 
 /**
+ * When the branch's trading day starts, in minutes after midnight (SCRUM-308).
+ *
+ * A sale is priced on the trading day — `branch.business_day_start`, 05:00 by
+ * default — and until this was here the till read the calendar day: between
+ * midnight and five the header chip said one thing and the receipt said
+ * another. Seen on staging at 00:20 on the 23rd: chip Weekday, basket priced
+ * Weekend for a holiday on the 22nd, which was still the trading day. Set from
+ * the same hydration that sets the timezone; unparseable falls back to the
+ * default rather than taking the till down.
+ */
+let branchDayStartMinutes = DEFAULT_BUSINESS_DAY_START_MINUTES;
+
+export function setBranchDayStart(time: string | null | undefined): void {
+  if (!time) {
+    branchDayStartMinutes = DEFAULT_BUSINESS_DAY_START_MINUTES;
+    return;
+  }
+  try {
+    branchDayStartMinutes = parseDayStart(time);
+  } catch {
+    branchDayStartMinutes = DEFAULT_BUSINESS_DAY_START_MINUTES;
+  }
+}
+
+/**
  * Today's trading date (yyyy-mm-dd) at the branch, from THIS DEVICE'S clock.
  *
  * What this does and does not fix: it places the device's instant on the
- * branch's calendar, so a till in another timezone now agrees with the API
- * about which day it is. It cannot correct a device whose clock is simply
- * wrong — an iPad two days behind computes a branch date two days behind. That
- * case is covered by the server answer below, which is computed on the
- * platform's clock; this is the fallback for when the platform is unreachable,
- * and it is the best a till alone can do.
+ * branch's calendar and its trading day, so a till in another timezone now
+ * agrees with the API about which day it is, and a till at 00:30 agrees with
+ * the receipt it is about to print. It cannot correct a device whose clock is
+ * simply wrong — an iPad two days behind computes a branch date two days
+ * behind. That case is covered by the server answer below, which is computed
+ * on the platform's clock; this is the fallback for when the platform is
+ * unreachable, and it is the best a till alone can do.
+ *
+ * The same `businessDate` the sale service prices on, so the two cannot drift.
  */
 export function branchTradingDate(now: Date = new Date()): string {
-  return isoDateInTz(now, branchTimezone);
+  return businessDate(now, branchTimezone, branchDayStartMinutes);
 }
 
 /** The API's answer for the branch's today, as `/branches/:id/pricing-mode` returns it. */

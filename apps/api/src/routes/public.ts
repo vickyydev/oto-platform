@@ -81,7 +81,12 @@ export async function publicRoutes(app: App): Promise<void> {
         holidays.map((h) => ({ name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })),
       );
       return {
-        branch: { code: br.code, name: br.name, timezone: br.timezone },
+        branch: {
+          code: br.code,
+          name: br.name,
+          timezone: br.timezone,
+          businessDayStart: br.businessDayStart,
+        },
         tiers: tiers.map((t) => ({
           id: t.code,
           name: t.name,
