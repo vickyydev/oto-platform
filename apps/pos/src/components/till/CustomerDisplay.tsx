@@ -6,7 +6,16 @@ import { PhoneInput } from '@/components/shared/PhoneInput';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
-import { computeLineBreakdown, componentKey, breakdownComponentKey, type LineBreakdownKind } from '@/lib/pricing';
+import {
+  computeLineBreakdown,
+  componentKey,
+  breakdownComponentKey,
+  isAdultRulePriced,
+  isTierPriced,
+  unpricedCartLines,
+  unpricedLineReason,
+  type LineBreakdownKind,
+} from '@/lib/pricing';
 import { computeTotals } from '@/lib/sale';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
@@ -27,6 +36,7 @@ import {
   Loader2,
   IdCard,
   BadgeCheck,
+  AlertTriangle,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -43,12 +53,15 @@ function BreakdownRow({
   unitPrice,
   quantity,
   subtotal,
+  unpriced,
 }: {
   kind: LineBreakdownKind;
   label: string;
   unitPrice: number;
   quantity: number;
   subtotal: number;
+  /** No price exists for this row — print a dash, never the ฿0 that stands in for one. */
+  unpriced?: boolean;
 }) {
   const Icon = BREAKDOWN_ICONS[kind];
   return (
@@ -58,11 +71,11 @@ function BreakdownRow({
         <span>
           {label}
           <span className="text-foreground/40 text-base ml-2">
-            {quantity} × ฿{unitPrice}
+            {quantity} × {unpriced ? '—' : `฿${unitPrice}`}
           </span>
         </span>
       </span>
-      <span className="text-xl font-bold tabular-nums">฿{subtotal}</span>
+      <span className="text-xl font-bold tabular-nums">{unpriced ? '—' : `฿${subtotal}`}</span>
     </div>
   );
 }
@@ -266,6 +279,20 @@ export function CustomerDisplay({
       computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts);
     const taxRows = summarizeTax(taxBreakdown);
     const orderDiscounts = sale.manualDiscounts.filter((md) => md.scope === 'order');
+    /**
+     * WHAT THIS SCREEN WILL NOT QUOTE A FAMILY (SCRUM-312).
+     *
+     * A tier nobody priced on a ticket resolves to ฿0 here, because
+     * `computeLineBreakdown` and `lineTotal` both go through `priceForTier`,
+     * which flattens the missing price to a number so the arithmetic has one.
+     * Unguarded, the drop-off line a family watches on this half printed
+     * "Kids 1 × ฿0" and a ฿0 total while the staff panel beside it said no
+     * price was set — two answers to the same cart, and the wrong one facing
+     * the person paying. So this half refuses the same lines the order panel
+     * refuses, read from the same helper: a dash where a figure would be, the
+     * reason underneath, and no total while any line is unpriced.
+     */
+    const unpriced = unpricedCartLines(sale.lines);
     return (
       <Shell customerName={displayName}>
         {chargeTarget && <ChargeBanner target={chargeTarget} />}
@@ -309,11 +336,16 @@ export function CustomerDisplay({
                   </div>
                 );
               }
+              // This line's own missing prices, if any — the line total is a
+              // dash while it has one, and each row that lacks a price says so.
+              const lineUnpriced = unpricedCartLines([line]).length > 0;
               return (
                 <div key={line.id} className="bg-foreground/5 rounded-3xl p-6 border border-foreground/10">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-2xl font-bold">{resolveName(line.ticketType, lang)}</div>
-                    <div className="text-2xl font-bold text-primary">฿{line.lineTotal}</div>
+                    <div className="text-2xl font-bold text-primary">
+                      {lineUnpriced ? '—' : `฿${line.lineTotal}`}
+                    </div>
                   </div>
                   <div className="mt-1">
                     {computeLineBreakdown(line).map((item) => {
@@ -321,6 +353,16 @@ export function CustomerDisplay({
                       const matches = componentDiscounts.filter(
                         (md) => componentKey(md.targetComponent!) === key
                       );
+                      // The two rows a missing price reaches: the ticket row
+                      // (kids, and a drop-off child's own ticket) and the paid
+                      // adults row. Socks, add-ons and the drop-off service fee
+                      // carry their own prices and are shown as they are.
+                      const rowUnpriced =
+                        item.kind === 'kids'
+                          ? !isTierPriced(line.ticketType, line.tier)
+                          : item.key === 'adults'
+                            ? !isAdultRulePriced(line.ticketType, line.tier, line.adults)
+                            : false;
                       return (
                         <div key={item.key}>
                           <BreakdownRow
@@ -329,6 +371,7 @@ export function CustomerDisplay({
                             unitPrice={item.unitPrice}
                             quantity={item.quantity}
                             subtotal={item.subtotal}
+                            unpriced={rowUnpriced}
                           />
                           {matches.map((md) => {
                             const amt = manualAmounts[md.id] ?? 0;
@@ -372,27 +415,35 @@ export function CustomerDisplay({
           )}
         </div>
         <div className="p-8 border-t border-foreground/10">
-          {orderDiscounts.map((md) => {
-            const amt = manualAmounts[md.id] ?? 0;
-            if (amt <= 0) return null;
-            return (
-              <div
-                key={md.id}
-                className="flex items-center justify-between mb-2 text-(--cd-success)"
-              >
-                <span className="flex items-center gap-2 text-lg">
-                  <BadgePercent className="w-5 h-5 shrink-0" />
-                  {t('common.discount')} · {formatDiscountDetail(md)}
-                </span>
-                <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
-              </div>
-            );
-          })}
-          {discountAmount > 0 && (
-            <div className="flex items-center justify-between mb-2 text-(--cd-success)">
-              <span className="text-lg">{t('till.order.discountCode')}</span>
-              <span className="text-lg font-bold tabular-nums">−฿{discountAmount}</span>
-            </div>
+          {/* The discount and tax rows are worked out from a subtotal that is
+              missing the price nobody set, so while a line is unpriced they
+              would state amounts of an order that has no amount. They come back
+              with the total, once the price exists. */}
+          {unpriced.length === 0 && (
+            <>
+              {orderDiscounts.map((md) => {
+                const amt = manualAmounts[md.id] ?? 0;
+                if (amt <= 0) return null;
+                return (
+                  <div
+                    key={md.id}
+                    className="flex items-center justify-between mb-2 text-(--cd-success)"
+                  >
+                    <span className="flex items-center gap-2 text-lg">
+                      <BadgePercent className="w-5 h-5 shrink-0" />
+                      {t('common.discount')} · {formatDiscountDetail(md)}
+                    </span>
+                    <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
+                  </div>
+                );
+              })}
+              {discountAmount > 0 && (
+                <div className="flex items-center justify-between mb-2 text-(--cd-success)">
+                  <span className="text-lg">{t('till.order.discountCode')}</span>
+                  <span className="text-lg font-bold tabular-nums">−฿{discountAmount}</span>
+                </div>
+              )}
+            </>
           )}
           {member && tierNeedsProof(sale.tier) && (
             <div className="flex items-center gap-2 mb-3 text-(--cd-success) text-base font-semibold">
@@ -400,15 +451,33 @@ export function CustomerDisplay({
               {t('till.welcome.memberRate')}
             </div>
           )}
-          {taxRows.map((row) => (
-            <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-              <span className="text-lg">{row.label}</span>
-              <span className="text-lg tabular-nums">฿{roundTHB(row.amount)}</span>
+          {unpriced.length === 0 &&
+            taxRows.map((row) => (
+              <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
+                <span className="text-lg">{row.label}</span>
+                <span className="text-lg tabular-nums">฿{roundTHB(row.amount)}</span>
+              </div>
+            ))}
+          {/* The same sentence the staff panel shows, from the same helper, so
+              the two halves of the counter say one thing about the same cart. */}
+          {unpriced.length > 0 && (
+            <div className="mb-3 space-y-1.5 text-foreground/60">
+              {unpriced.map((u) => (
+                <div
+                  key={`${u.ticketName}-${u.tier}-${u.what}`}
+                  className="flex items-center gap-2 text-base"
+                >
+                  <AlertTriangle className="w-5 h-5 shrink-0" />
+                  <span>{unpricedLineReason(u)}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
           <div className="flex items-center justify-between">
             <span className="text-2xl text-foreground/70">{t('common.total')}</span>
-            <span className="text-5xl font-black text-primary">฿{total}</span>
+            <span className="text-5xl font-black text-primary">
+              {unpriced.length > 0 ? '—' : `฿${total}`}
+            </span>
           </div>
         </div>
       </Shell>
