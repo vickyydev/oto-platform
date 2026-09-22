@@ -33,7 +33,6 @@ import { visitRoutes } from './routes/visits';
 import { bookingRoutes } from './routes/bookings';
 import { saleRoutes } from './routes/sales';
 import { catalogRoutes } from './routes/catalog';
-import { menuRoutes } from './routes/menu';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { publicRoutes } from './routes/public';
