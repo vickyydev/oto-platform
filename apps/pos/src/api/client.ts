@@ -155,7 +155,18 @@ export const api = {
     requestBlob('POST', path, body, signal),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
-  delete: <T>(path: string) => request<T>('DELETE', path),
+  /**
+   * A DELETE may carry a body and an idempotency key, and one route needs
+   * both: ending a member's verified tier (SCRUM-241) files the typed reason
+   * with the revocation, and a free-text reason belongs in a body rather than
+   * in a URL that every access log keeps a copy of. Both arguments are
+   * optional, so every existing `api.delete(path)` call is unchanged.
+   */
+  delete: <T>(
+    path: string,
+    body?: unknown,
+    opts?: { idempotencyKey?: string; headers?: Record<string, string> },
+  ) => request<T>('DELETE', path, body, opts),
 };
 
 export const idemKey = (): string => crypto.randomUUID();

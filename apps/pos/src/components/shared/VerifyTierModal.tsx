@@ -8,13 +8,15 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CustomerTier, Member, TierVerification } from '@/types';
-import { verifyMemberTier } from '@/mockApi';
+import { getDefaultTier, updateMember, verifyMemberTier } from '@/mockApi';
 import { TIER_PROOF_TYPES } from '@/lib/tierProof';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
-import { tierLabel } from '@/lib/membership';
+import { isDefaultTier, tierLabel } from '@/lib/membership';
+import { useOperator } from '@/auth/OperatorContext';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { BadgeCheck, CalendarClock, Loader2, ShieldCheck, UserCheck } from 'lucide-react';
+import { BadgeCheck, CalendarClock, Loader2, ShieldCheck, ShieldOff, UserCheck } from 'lucide-react';
 
 interface VerifyTierModalProps {
   open: boolean;
@@ -35,6 +37,10 @@ const isApiMemberId = (id: string) =>
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
+/** Matches the route's floor: a revocation's reason IS its record. */
+const REVOKE_REASON_MIN = 3;
+const REVOKE_REASON_MAX = 200;
+
 export function VerifyTierModal({
   open,
   onOpenChange,
@@ -48,6 +54,10 @@ export function VerifyTierModal({
   const [otherDoc, setOtherDoc] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [busy, setBusy] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+  const [revokeReason, setRevokeReason] = useState('');
+  const [revokeError, setRevokeError] = useState<string | null>(null);
+  const { can } = useOperator();
   // A fixed built-in list — no route serves it (see `lib/tierProof.ts`). The
   // verification it produces is written to the platform, not to the fixtures.
   const proofTypes = TIER_PROOF_TYPES;
@@ -58,8 +68,82 @@ export function VerifyTierModal({
       setOtherDoc('');
       setExpiresAt('');
       setBusy(false);
+      setRevoking(false);
+      setRevokeReason('');
+      setRevokeError(null);
     }
   }, [open]);
+
+  /**
+   * SCRUM-241 — the rate this member already holds, and the way to end it.
+   *
+   * A verified tier at the counter is otherwise permanent until its document
+   * expires, and a document with no expiry never does. The action sits here
+   * because this is the one place at the till that already talks to the tier
+   * routes; the member banner on the customer-type step would be the better
+   * home for it and belongs to another slice's file.
+   *
+   * A verification OF the baseline tier is not an entitlement — it is the
+   * record of one already revoked — so there is nothing to take back.
+   */
+  const held =
+    member &&
+    isApiMemberId(member.id) &&
+    member.tierVerification &&
+    !isDefaultTier(member.tierVerification.tier)
+      ? member.tierVerification
+      : undefined;
+  const mayRevoke = can('pos:member:tier_downgrade');
+  const baselineLabel = tierLabel(getDefaultTier().id);
+
+  const handleRevoke = async () => {
+    if (!member || !held) return;
+    const reason = revokeReason.trim();
+    if (reason.length < REVOKE_REASON_MIN) {
+      setRevokeError(`Say why the ${tierLabel(held.tier)} rate is ending.`);
+      return;
+    }
+    setBusy(true);
+    setRevokeError(null);
+    try {
+      const res = await membersApi.revokeTierVerification(member.id, { reason });
+      // Keep the in-memory sale-flow stores in step, exactly as the grant path
+      // above does.
+      updateMember(member.id, { tierVerification: undefined });
+      const updated = apiMemberToMember(res.member);
+      /**
+       * The same callback the grant takes, carrying the revocation the server
+       * has just written: from here the till reads the tier now in force and
+       * re-states the cart at it. Without this the sale would go on being
+       * priced at a rate the platform no longer recognises — the till would
+       * quote Expat, the platform would price the baseline, and the commit
+       * would refuse the difference as `SALE_LINE_PRICE_MISMATCH` with nothing
+       * on screen to explain it.
+       *
+       * `proofType: 'revoked'` is the evidence row's own kind, not a document:
+       * the baseline rate is the one that needs no proof.
+       */
+      onConfirm({
+        member: { ...member, ...updated },
+        verification: {
+          tier: getDefaultTier().id,
+          proofType: 'revoked',
+          verifiedBy: operatorName,
+          verifiedById: operatorId,
+          verifiedAt: new Date().toISOString(),
+        },
+      });
+      toast({
+        title: `${res.member.nickname} is back on the ${baselineLabel} rate`,
+        description: `Filed: ${reason}`,
+      });
+      onOpenChange(false);
+    } catch (err) {
+      setRevokeError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const isOther = proofType === 'Other';
   const expiryValid = /^\d{4}-\d{2}-\d{2}$/.test(expiresAt) && expiresAt >= todayIso();
@@ -139,6 +223,79 @@ export function VerifyTierModal({
                 <div className="font-bold truncate">{member.nickname}</div>
                 <div className="text-sm text-muted-foreground truncate">{member.phone}</div>
               </div>
+            </div>
+          )}
+
+          {/* The rate this member already holds, and the way to end it
+              (SCRUM-241). Nothing is erased: the document record stays and a
+              revocation is filed after it with the reason typed here. */}
+          {held && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.07] p-4 space-y-3">
+              <div className="flex items-start gap-2 text-sm">
+                <ShieldOff className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+                <span>
+                  Already holds <span className="font-semibold">{tierLabel(held.tier)}</span> on a{' '}
+                  {held.proofType}
+                  {held.expiresAt ? `, valid to ${held.expiresAt}` : ' with no expiry'} — verified by{' '}
+                  {held.verifiedBy}.
+                </span>
+              </div>
+              {!mayRevoke ? (
+                <p className="text-sm text-muted-foreground">
+                  Taking that rate back off a member needs a manager.
+                </p>
+              ) : !revoking ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-11"
+                  onClick={() => setRevoking(true)}
+                >
+                  End the {tierLabel(held.tier)} rate — back to {baselineLabel}
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <label
+                    htmlFor="tier-revoke-reason"
+                    className="text-sm font-medium text-muted-foreground"
+                  >
+                    Why is it ending? <span className="text-destructive">*</span>
+                  </label>
+                  <Input
+                    id="tier-revoke-reason"
+                    value={revokeReason}
+                    maxLength={REVOKE_REASON_MAX}
+                    placeholder="e.g. Residence permit expired and was not renewed"
+                    onChange={(e) => setRevokeReason(e.target.value)}
+                  />
+                  {revokeError && <p className="text-sm text-destructive">{revokeError}</p>}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 h-11"
+                      disabled={busy}
+                      onClick={() => {
+                        setRevoking(false);
+                        setRevokeReason('');
+                        setRevokeError(null);
+                      }}
+                    >
+                      Keep it
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="flex-1 h-11 gap-2"
+                      disabled={busy}
+                      onClick={handleRevoke}
+                    >
+                      {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Back to {baselineLabel}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

@@ -11,6 +11,12 @@ import {
   isEvidenceExpired,
   listRegister,
 } from '../services/members';
+import {
+  REVOKE_REASON_MAX,
+  REVOKE_REASON_MIN,
+  isTierRevocation,
+  revokeTierVerification,
+} from '../services/member-tier';
 import { recordChange } from '../services/sync';
 import { opCtx, withTx } from '../services/tx';
 
@@ -121,8 +127,17 @@ async function memberWithChildren(app: App, memberId: string, operatorId: string
     .limit(1);
   // An expired document no longer entitles the discounted rate: the POS sees
   // no verification and asks for fresh proof (the row itself stays for audit).
+  //
+  // Nor does a revocation (SCRUM-241), which is the latest row from the moment
+  // it is written and entitles nothing — without this the member would read
+  // back as holding a verification OF the baseline tier, which is the rate
+  // that needs no document at all.
   const active =
-    verification && !isEvidenceExpired(verification.evidenceExpiresAt) ? verification : null;
+    verification &&
+    !isTierRevocation(verification) &&
+    !isEvidenceExpired(verification.evidenceExpiresAt)
+      ? verification
+      : null;
   return {
     id: m.id,
     phone: m.phone,
@@ -517,6 +532,75 @@ export async function memberRoutes(app: App): Promise<void> {
           },
           requestId: req.id,
         });
+      });
+      return { member: await memberWithChildren(app, m.id, auth.operatorId) };
+    },
+  );
+
+  /**
+   * SCRUM-241 — take that tier back off the member.
+   *
+   * DELETE names what the caller is asking for: the member's verified
+   * entitlement ends. What it does NOT do is delete anything — the grant row
+   * stays where it was written and a revocation row is appended after it, so
+   * the evidence list reads as who granted this rate and who took it away.
+   * `services/member-tier.ts` holds that account in full.
+   *
+   * On `pos:member:tier_downgrade` and not the `pos:member:update` that guards
+   * recording one: reception checks documents all day and holds the latter,
+   * while the permission vocabulary has carried the former since it was
+   * written, for this act, with its reason on it — "a tier only ever goes down
+   * with someone accountable for it".
+   */
+  app.delete(
+    '/:id/tier-verification',
+    {
+      config: { permission: 'pos:member:tier_downgrade' },
+      schema: {
+        description:
+          "End a member's verified tier: back to the operator's baseline, with the reason filed",
+        params: z.object({ id: z.string().uuid() }),
+        body: z
+          .object({
+            /**
+             * Required, because a revocation has no document behind it: this
+             * note is the entire record of why the rate ended.
+             */
+            reason: z.string().trim().min(REVOKE_REASON_MIN).max(REVOKE_REASON_MAX),
+          })
+          .strict(),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      // Load inside the caller's operator first: a member id proves nothing on
+      // its own, and another tenant's member is a 404 rather than a refusal
+      // that confirms the row exists.
+      const [m] = await app.db
+        .select()
+        .from(member)
+        .where(
+          and(
+            eq(member.id, req.params.id),
+            eq(member.operatorId, auth.operatorId),
+            isNull(member.archivedAt),
+          ),
+        )
+        .limit(1);
+      if (!m) throw errors.notFound('Member not found');
+
+      await withTx(app.db, opCtx(req), 'member.tier_revoke', async (tx) => {
+        await revokeTierVerification(
+          tx,
+          {
+            accountId: auth.accountId,
+            operatorId: auth.operatorId,
+            branchId: auth.branchId,
+            requestId: req.id,
+          },
+          m.id,
+          req.body.reason,
+        );
       });
       return { member: await memberWithChildren(app, m.id, auth.operatorId) };
     },

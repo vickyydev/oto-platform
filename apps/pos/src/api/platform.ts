@@ -147,6 +147,19 @@ export const membersApi = {
     api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch),
   verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt: string; note?: string }) =>
     api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, { idempotencyKey: idemKey() }),
+  /**
+   * End a verified tier (SCRUM-241): the member goes back to the operator's
+   * baseline rate and the typed reason is filed with the revocation.
+   *
+   * Nothing is erased — the grant row and this one both stay, which is what
+   * makes the record readable as "who gave this rate and who took it away".
+   * Needs `pos:member:tier_downgrade`, which reception does not hold; a till
+   * session gets a 403 with that message and the screens ask a manager.
+   */
+  revokeTierVerification: (memberId: string, body: { reason: string }) =>
+    api.delete<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
+      idempotencyKey: idemKey(),
+    }),
   tierVerifications: () =>
     api.get<{ verifications: ApiTierVerificationRecord[] }>('/members/tier-verifications'),
 };

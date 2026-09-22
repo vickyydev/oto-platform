@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { MemberFormDialog, type MemberFormData } from './MemberFormDialog';
 import { getDefaultTier } from '@/mockApi';
-import { tierLabel } from '@/lib/membership';
+import { isDefaultTier, tierLabel } from '@/lib/membership';
 
 /**
  * Admin editing screen for member profiles — the customer records that carry a
@@ -110,6 +110,32 @@ export function MembersPanel() {
         await refresh();
         throw new Error(
           `the name and phone saved, but the tier did not: ${
+            err instanceof Error ? err.message : 'Unknown error'
+          }`,
+        );
+      }
+    }
+
+    /**
+     * Ending a verified tier (SCRUM-241). Its own route, for the same reason
+     * the grant has one: `member.tier_code` is never a field on the profile
+     * form — it moves only alongside the evidence row that accounts for the
+     * move, in one transaction on the server.
+     */
+    if (data.tierRevoke) {
+      try {
+        const { member: cleared } = await membersApi.revokeTierVerification(
+          saved.id,
+          data.tierRevoke,
+        );
+        toast({
+          title: `${cleared.nickname} is back on the ${tierLabel(getDefaultTier().id)} rate`,
+          description: `Filed: ${data.tierRevoke.reason}`,
+        });
+      } catch (err) {
+        await refresh();
+        throw new Error(
+          `the name and phone saved, but the rate did not end: ${
             err instanceof Error ? err.message : 'Unknown error'
           }`,
         );
@@ -274,7 +300,18 @@ export function MembersPanel() {
 }
 
 function TierBadge({ member }: { member: Member }) {
-  const verification = member.tierVerification;
+  /**
+   * A verification OF the baseline tier is not an entitlement: the baseline is
+   * the rate that needs no document, and a row saying so is the record of one
+   * that was revoked (SCRUM-241). `GET /members/:id` filters those out; the
+   * register list this table reads hands the latest row over as it stands, so
+   * the badge applies the same rule rather than showing a green tick against
+   * the rate everybody gets.
+   */
+  const verification =
+    member.tierVerification && !isDefaultTier(member.tierVerification.tier)
+      ? member.tierVerification
+      : undefined;
   if (!verification) {
     return (
       <span className="inline-flex items-center rounded-full bg-foreground/5 px-2.5 py-0.5 text-xs text-foreground/45">

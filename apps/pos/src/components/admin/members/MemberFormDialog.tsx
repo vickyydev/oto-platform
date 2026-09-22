@@ -40,11 +40,24 @@ export interface TierChangeRequest {
   note?: string;
 }
 
+/**
+ * The verified tier ending (SCRUM-241). The reason is the whole record of why
+ * — a revocation has no document behind it — so the form requires one and the
+ * API refuses anything shorter than three characters.
+ */
+export interface TierRevokeRequest {
+  reason: string;
+}
+
+export const REVOKE_REASON_MIN = 3;
+export const REVOKE_REASON_MAX = 200;
+
 export interface MemberFormData {
   phone: string;
   nickname: string;
   preferredChannel?: ContactChannel;
   tierChange?: TierChangeRequest;
+  tierRevoke?: TierRevokeRequest;
 }
 
 interface MemberFormDialogProps {
@@ -70,6 +83,7 @@ interface FormErrors {
   phone?: string;
   operator?: string;
   tier?: string;
+  reason?: string;
   save?: string;
 }
 
@@ -84,7 +98,10 @@ const emptySelection = (): TierSelection => ({
 
 const toSelection = (member: Member | null): TierSelection => {
   const verification = member?.tierVerification;
-  if (!verification) return emptySelection();
+  // A verification of the baseline tier entitles nothing — it is the record of
+  // one that was revoked (SCRUM-241) — so the form opens on the baseline with
+  // no document named, which is what the member now holds.
+  if (!verification || isDefaultTier(verification.tier)) return emptySelection();
   return {
     tier: verification.tier,
     proofType: verification.proofType,
@@ -100,8 +117,9 @@ const toSelection = (member: Member | null): TierSelection => {
  * The tier is not a field on the profile — it is granted by a checked document.
  * Choosing a verified tier here collects the document type and its expiry and
  * sends them to the verification route; the server decides the tier from them.
- * Taking a tier back off a member has no route yet (SCRUM-241), so this form
- * refuses that rather than appearing to do it.
+ * Choosing the baseline rate for a member who holds a verified one ENDS that
+ * entitlement (SCRUM-241) and collects the reason, which is the only record a
+ * revocation has — there is no document behind it.
  */
 export function MemberFormDialog({
   open,
@@ -109,13 +127,22 @@ export function MemberFormDialog({
   onOpenChange,
   onSave,
 }: MemberFormDialogProps) {
-  const { operator } = useOperator();
+  const { operator, can } = useOperator();
   const proofTypes = TIER_PROOF_TYPES;
+  /**
+   * A manager gate, and deliberately not the permission that records a
+   * verification: reception checks documents all day and cannot take a rate
+   * back. The API settles it either way — this only decides what the form
+   * offers, so nobody types a reason into a box that was always going to be
+   * refused.
+   */
+  const mayRevoke = can('pos:member:tier_downgrade');
 
   const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
   const [channel, setChannel] = useState<ContactChannel>('whatsapp');
   const [selection, setSelection] = useState<TierSelection>(() => emptySelection());
+  const [revokeReason, setRevokeReason] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
 
@@ -126,11 +153,24 @@ export function MemberFormDialog({
     setPhone(member?.phone ?? '');
     setChannel(member?.preferredChannel ?? 'whatsapp');
     setSelection(toSelection(member));
+    setRevokeReason('');
     setErrors({});
     setSaving(false);
   }, [open, member]);
 
-  const current = member?.tierVerification;
+  /**
+   * The entitlement this member holds, if any.
+   *
+   * A verification OF the baseline tier is not one: the baseline is the rate
+   * that needs no document, and a row saying so is the record of a revoked
+   * entitlement rather than a live one. `GET /members/:id` already filters
+   * those out; the register list this screen reads (`GET /members`) hands the
+   * latest row over as it stands, so the same rule is applied here.
+   */
+  const current =
+    member?.tierVerification && !isDefaultTier(member.tierVerification.tier)
+      ? member.tierVerification
+      : undefined;
 
   const handleTierChange = (tier: TierChoice) => {
     setSelection((prev) => ({
@@ -168,12 +208,17 @@ export function MemberFormDialog({
       nextErrors.phone = 'Enter a valid phone number.';
     }
 
+    // Ending an entitlement: the reason is the record, so it is required here
+    // exactly as the document is required when granting one.
+    const trimmedReason = revokeReason.trim();
     if (current && clearingTier) {
-      nextErrors.tier =
-        `Taking the ${tierLabel(current.tier)} rate back off a member is not built yet (SCRUM-241). ` +
-        (current.expiresAt
-          ? `It ends on its own when the ${current.proofType} expires on ${current.expiresAt}.`
-          : 'Leave the tier as it is for now.');
+      if (!mayRevoke) {
+        nextErrors.tier =
+          `Taking the ${tierLabel(current.tier)} rate back off a member needs a manager. ` +
+          'Ask someone who can, or leave the tier as it is.';
+      } else if (trimmedReason.length < REVOKE_REASON_MIN) {
+        nextErrors.reason = `Say why the ${tierLabel(current.tier)} rate is ending.`;
+      }
     }
     if (tierChanged) {
       if (!selection.proofType) {
@@ -191,7 +236,13 @@ export function MemberFormDialog({
       }
     }
 
-    if (nextErrors.nickname || nextErrors.phone || nextErrors.operator || nextErrors.tier) {
+    if (
+      nextErrors.nickname ||
+      nextErrors.phone ||
+      nextErrors.operator ||
+      nextErrors.tier ||
+      nextErrors.reason
+    ) {
       setErrors(nextErrors);
       return;
     }
@@ -210,6 +261,7 @@ export function MemberFormDialog({
             },
           }
         : {}),
+      ...(current && clearingTier ? { tierRevoke: { reason: trimmedReason } } : {}),
     };
 
     setErrors({});
@@ -352,6 +404,41 @@ export function MemberFormDialog({
                     setSelection((prev) => ({ ...prev, otherDoc: e.target.value }))
                   }
                 />
+              </div>
+            )}
+
+            {/* Ending an entitlement (SCRUM-241). Shown only when this member
+                actually holds one and the baseline has been chosen for them —
+                the grant row stays either way; this adds the record of why the
+                rate stopped. */}
+            {current && clearingTier && (
+              <div className="flex flex-col gap-1.5 rounded-xl border border-amber-400/30 bg-amber-400/[0.07] p-3">
+                <Label htmlFor="member-tier-revoke-reason">
+                  Why is the {tierLabel(current.tier)} rate ending?
+                </Label>
+                {mayRevoke ? (
+                  <>
+                    <Input
+                      id="member-tier-revoke-reason"
+                      value={revokeReason}
+                      maxLength={REVOKE_REASON_MAX}
+                      placeholder="e.g. Residence permit expired and was not renewed"
+                      onChange={(e) => setRevokeReason(e.target.value)}
+                    />
+                    <p className="text-xs text-foreground/45">
+                      Saving puts {member?.nickname ?? 'this member'} back on the{' '}
+                      {tierLabel(getDefaultTier().id)} rate. The {current.proofType} record
+                      stays — nothing is erased — and this reason is filed beside it.
+                    </p>
+                    {errors.reason && (
+                      <p className="text-xs text-destructive">{errors.reason}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-amber-300">
+                    Taking a verified rate back off a member needs a manager.
+                  </p>
+                )}
               </div>
             )}
 
