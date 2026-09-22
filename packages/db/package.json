@@ -18,7 +18,8 @@
     "platform:sync": "tsx src/seed/index.ts --platform-only",
     "snapshot": "tsx scripts/snapshot.ts",
     "verify-schema": "tsx scripts/verify-schema.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",
@@ -32,6 +33,7 @@
     "drizzle-kit": "^0.31.10",
     "embedded-postgres": "16.14.0-beta.17",
     "tsx": "catalog:",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.4"
   }
 }

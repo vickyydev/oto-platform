@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Plus, SlidersHorizontal } from 'lucide-react';
+import { Download, Pencil, Trash2, Plus, SlidersHorizontal, Upload } from 'lucide-react';
 import { type MenuItem, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { getActiveBranch } from '@/store/catalogStore';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { knownCodes } from '@/api/menu';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -15,6 +18,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { NotSavedNotice } from '../NotSavedNotice';
 import { MenuItemForm } from './MenuItemForm';
+import { ImportMenuDialog } from './ImportMenuDialog';
+import { exportMenuWorkbook } from './menuSheet';
 import { formatPrice } from './menuItem';
 import { formatWWPrice } from '@/lib/pricingMode';
 
@@ -26,7 +31,7 @@ const groupCount = (item: MenuItem) => item.modifierGroups?.length ?? 0;
  * on its next mount.
  */
 export function MenuPanel() {
-  const { menuItems, menuCategories, mutators } = useCatalogStore();
+  const { menuItems, menuCategories, modifierGroups, mutators } = useCatalogStore();
   const orderedCategories = [...menuCategories].sort(
     (a, b) => a.sortOrder - b.sortOrder
   );
@@ -34,6 +39,23 @@ export function MenuPanel() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<MenuItem | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+
+  const branch = getActiveBranch();
+
+  /**
+   * The export doubles as the template, so it runs on an empty menu too: the
+   * headers, the help sheet, three greyed example rows and whatever categories
+   * exist. That is the case it is most needed in — nobody downloads a template
+   * for a menu they have already typed.
+   */
+  const exportMenu = () =>
+    exportMenuWorkbook(branch.name, {
+      items: menuItems,
+      categories: menuCategories,
+      modifierGroups,
+      codes: knownCodes,
+    });
 
   const openAdd = () => {
     setEditing(null);
@@ -61,15 +83,37 @@ export function MenuPanel() {
         <p className="text-sm text-foreground/50">
           {menuItems.length} {menuItems.length === 1 ? 'item' : 'items'}
         </p>
-        <Button onClick={openAdd}>
-          <Plus className="w-4 h-4" />
-          Add item
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="outline" className="gap-1.5" onClick={exportMenu}>
+            <Download className="w-4 h-4" />
+            Export
+          </Button>
+          <Button variant="outline" className="gap-1.5" onClick={() => setImportOpen(true)}>
+            <Upload className="w-4 h-4" />
+            Import
+          </Button>
+          <Button onClick={openAdd}>
+            <Plus className="w-4 h-4" />
+            Add item
+          </Button>
+        </div>
       </div>
 
       {menuItems.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-6 py-12 text-center text-sm text-foreground/50">
           No menu items yet. Use “Add item” to create one.
+          <span className="mt-2 block text-foreground/40">
+            Or press{' '}
+            <button
+              type="button"
+              onClick={exportMenu}
+              className="font-medium text-foreground/70 underline underline-offset-4 hover:text-foreground"
+            >
+              Export
+            </button>{' '}
+            for a spreadsheet to fill in — it comes with the columns, an example of
+            each and a sheet explaining them — then Import it back.
+          </span>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
@@ -170,6 +214,21 @@ export function MenuPanel() {
           }
           mutators.upsertMenuItem(next);
           setFormOpen(false);
+        }}
+      />
+
+      <ImportMenuDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        branchId={apiBranchIdForSlug(branch.id)}
+        items={menuItems}
+        categories={menuCategories}
+        modifierGroups={modifierGroups}
+        codeFor={knownCodes.item}
+        writers={{
+          upsertMenuCategory: mutators.upsertMenuCategory,
+          upsertMenuItem: mutators.upsertMenuItem,
+          deleteMenuItem: mutators.deleteMenuItem,
         }}
       />
 

@@ -6,12 +6,44 @@ import type { PricingOverride, TaxConfig, TicketType, TierDef } from '@/types';
 import { getActiveBranch, hydrateFromApi } from '@/store/catalogStore';
 import { setBranchRateMode, setBranchTimezone } from '@/lib/pricingMode';
 import { branchesApi, catalogApi, type ApiBranch } from './platform';
+import { isMissingRoute } from './client';
+import { mapMenu, menuApi } from './menu';
 import { apiBranchToBranch, apiPackageToTicketType, holidayToPricingOverride, ticketTypeToApiBody } from './mappers';
 
 let _apiBranches: ApiBranch[] = [];
 
 export function apiBranchIdForSlug(slug: string): string | null {
   return _apiBranches.find((b) => b.code === slug)?.id ?? null;
+}
+
+/**
+ * Pull the branch's menu, shop and add-ons off the platform (SCRUM-232).
+ *
+ * Non-fatal, and deliberately so: the menu routes are being built alongside
+ * this, and a deployment without them keeps the ported catalogue the screens
+ * have always shown rather than an empty menu. `pricingMode` above is
+ * non-fatal for the same reason, and only for a route that answers 404 with
+ * none of our own error codes — the platform's words for "that route is not
+ * here". A refusal WITH a code is a real answer and is left to throw.
+ *
+ * Reading is the half that exists. Editing a menu item still writes to the
+ * in-memory store, which is what the panels' notices say.
+ *
+ * Returns whether the menu on screen came from the database.
+ */
+export async function loadMenuFromApi(branchSlug: string): Promise<boolean> {
+  const branchId = apiBranchIdForSlug(branchSlug);
+  if (!branchId) return false;
+  try {
+    const { categories, menuItems, modifierGroups } = mapMenu(await menuApi.load(branchId));
+    hydrateFromApi({
+      perBranch: { [branchSlug]: { menuCategories: categories, menuItems, modifierGroups } },
+    });
+    return true;
+  } catch (err) {
+    if (isMissingRoute(err)) return false;
+    throw err;
+  }
 }
 
 /** Fetch branches + the active branch's wired collections and hydrate the store. */
@@ -59,6 +91,9 @@ export async function loadCatalogFromApi(activeSlug?: string): Promise<void> {
   }
 
   hydrateFromApi({ branches: mapped, perBranch, pricingOverrides });
+
+  // After the branch list is in place, so `apiBranchIdForSlug` can resolve.
+  if (slug) await loadMenuFromApi(slug);
 }
 
 /**

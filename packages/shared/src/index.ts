@@ -6,6 +6,7 @@ export * from './business-date';
 export * from './pricing-mode';
 export * from './permissions';
 export * from './catalog-shapes';
+export * from './menu-shapes';
 export * from './engine';
 export * from './rounding';
 export * from './pricing';

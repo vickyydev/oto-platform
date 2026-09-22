@@ -32,7 +32,9 @@ import { memberRoutes } from './routes/members';
 import { visitRoutes } from './routes/visits';
 import { bookingRoutes } from './routes/bookings';
 import { saleRoutes } from './routes/sales';
+import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
+import { menuRoutes } from './routes/menu';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { publicRoutes } from './routes/public';
@@ -174,6 +176,16 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
    */
   const DENIAL_CODES = new Set([
     'FORBIDDEN',
+    /**
+     * SCRUM-300 — somebody reaching for the other park, which is the single
+     * most interesting thing on that list and was the one refusal missing from
+     * it. Every time a refusal has been made more precise, the new code landed
+     * outside this set and the event stopped being recorded: SCRUM-266 moved
+     * the account writes off `ROLE_NOT_DOMINATED` and SCRUM-264 gave the
+     * session-branch switch a code of its own, and both went quiet here. A
+     * refusal that says which branch is still a refusal.
+     */
+    'OUT_OF_BRANCH_SCOPE',
     'ROLE_NOT_DOMINATED',
     'SCOPE_NOT_OWNED',
     'ACCOUNT_NOT_FOUND',
@@ -292,7 +304,15 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // writes them; these read and redeem them.
   await app.register(bookingRoutes, { prefix: '/bookings' });
   await app.register(saleRoutes, { prefix: '/sales' });
+  // A document reception checked for a visitor who is not a member yet
+  // (SCRUM-307), so the cart can be priced at that tier without the tier ever
+  // being taken from the cart.
+  await app.register(saleTierRoutes, { prefix: '/sales' });
   await app.register(catalogRoutes);
+  // The menu, the modifier library and the discount codes (SCRUM-232). No
+  // prefix, like the catalogue it belongs to: its items hang off
+  // `/branches/:branchId/menu` and the operator-wide rows off `/menu`.
+  await app.register(menuRoutes);
   // No prefix, like the catalogue: the fleet's branch-scoped resources are
   // nested under /branches/:branchId/… and its by-id routes are not, so the
   // paths are declared in full rather than assembled from two places.
