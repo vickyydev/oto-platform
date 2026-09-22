@@ -1,0 +1,18 @@
+SCRUM-300 — driven against the running api as Khun Dao, branch_manager scoped to Oto Play Park, Robinson Chalong.
+Every request below names Central Floresta, the OTHER park. She holds each permission at her own.
+
+GET /stations/01a08f58-22a4-7e7f-9e94-b3b47a6f4eef/session
+  403 {"error":{"code":"OUT_OF_BRANCH_SCOPE","message":"You hold admin:station:read, but not at Oto Play Park, Central Floresta"}}
+
+GET /audit?branchId=01a08f58-21ce-75ff-979b-fc72f35b3870
+  403 {"error":{"code":"OUT_OF_BRANCH_SCOPE","message":"You hold admin:audit:read, but not at Oto Play Park, Central Floresta"}}
+
+GET /branches/01a08f58-21ce-75ff-979b-fc72f35b3870/staff
+  403 {"error":{"code":"OUT_OF_BRANCH_SCOPE","message":"You hold admin:station:read, but not at Oto Play Park, Central Floresta"}}
+
+POST /stations/01a08f58-22a4-7e7f-9e94-b3b47a6f4eef/lease
+  403 {"error":{"code":"OUT_OF_BRANCH_SCOPE","message":"You hold admin:station:read, but not at Oto Play Park, Central Floresta"}}
+
+And at her own park, unchanged:
+GET /branches/01a0ca38-d434-7baa-8e10-13a76ebfa2ba/staff
+  200 (her own park)
