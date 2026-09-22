@@ -412,9 +412,19 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
     /**
      * The seam. Everything above this line is the cloud talking to itself.
      *
-     * The agent pulls its cache and the booth adopts the newer version whole —
-     * the same two calls its own timers make about once a minute, called by
-     * hand so the assertion is about what one pull did.
+     * The agent pulls its cache and the booth adopts the newer version whole.
+     *
+     * **`syncCache()` is called by hand here because nothing else ever calls
+     * it.** `@oto/box-agent` calls it once, from `start()`, and from no timer
+     * and no command; the booth's own minute timer calls `refresh()`, which
+     * re-reads the box's cached bundle rather than fetching a new one. So
+     * this line is not standing in for a timer — it is standing in for an
+     * agent restart, which on this build is the only thing that brings a
+     * published wheel to a running booth. Measured on a live stack: a wheel
+     * published in the Console was still not on the box sixty seconds later,
+     * and arrived the moment the agent was restarted from the Devices drawer.
+     * The next test pins the reading that tells a manager which of the two
+     * they are looking at.
      */
     await agent.syncCache();
     /**
@@ -459,6 +469,71 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
       .limit(1);
     expect(entry, 'a publish was filed with no audit row').toBeTruthy();
     expect((entry!.after as { version: number }).version).toBe(2);
+  });
+
+  /**
+   * The reading a manager decides on, pinned.
+   *
+   * Publishing writes a row in the cloud. It does not, by itself, change the
+   * wheel a child is playing — the box runs what it last pulled, and on this
+   * build nothing on a running box pulls again (see the note in the test
+   * above). So the Console must never say "published" and leave it there:
+   * `GET /booths/:id/status` answers with BOTH numbers, and the Booths page
+   * goes amber and names them whenever they differ.
+   *
+   * Without this, the ordinary failure is silent and expensive: a manager
+   * changes the odds on a Friday, sees a success banner, and the booth gives
+   * away the old wheel all weekend with nothing on any screen saying so.
+   *
+   * `runningVersion` is read off the box's last heartbeat, so each reading
+   * here is taken after one — this agent's timers are never started.
+   */
+  it('reports the booth as behind while a published version has not reached it', async () => {
+    await agent.heartbeat();
+    const runningBefore = booth.config()!.version;
+
+    const [first] = await livePrizes();
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/booths/${boothId}/prizes/${first!.id}`,
+      headers: asAdmin(),
+      payload: { wheelLabel: 'not pulled yet' },
+    });
+    const minted = await publish({ note: 'a version the box has not been given' });
+    expect(minted.statusCode, JSON.stringify(minted.body)).toBe(200);
+    const publishedVersion = minted.body.version!.version;
+    expect(publishedVersion).toBeGreaterThan(runningBefore);
+
+    // Nothing pulled the cache, so the box is still on the older wheel.
+    await agent.heartbeat();
+    expect(booth.config()!.version, 'a publish alone moved the box').toBe(runningBefore);
+
+    const behind = await ctx.app.inject({
+      method: 'GET',
+      url: `/booths/${boothId}/status`,
+      headers: asAdmin(),
+    });
+    expect(behind.statusCode, behind.body).toBe(200);
+    const seen = behind.json();
+    expect(seen.config.publishedVersion).toBe(publishedVersion);
+    expect(
+      seen.config.runningVersion,
+      'the status route claimed the booth was running a version it has never been given',
+    ).toBe(runningBefore);
+
+    // And it catches up only once the cache is pulled — which is what an
+    // agent restart does, and what the Devices drawer's Restart agent causes.
+    await agent.syncCache();
+    await agent.heartbeat();
+    expect(booth.config()!.version).toBe(publishedVersion);
+    const caught = await ctx.app.inject({
+      method: 'GET',
+      url: `/booths/${boothId}/status`,
+      headers: asAdmin(),
+    });
+    expect(caught.json().config.runningVersion).toBe(publishedVersion);
+
+    await db.update(boothPrize).set({ wheelLabel: first!.wheelLabel }).where(eq(boothPrize.id, first!.id));
   });
 
   it('never edits a version: version 1 is what it always was', async () => {
@@ -546,6 +621,73 @@ describe('the prize order is the wheel (S2-07b)', () => {
     });
     expect(whole.statusCode, whole.body).toBe(200);
     expect((await livePrizes()).map((p) => p.id)).toEqual(reversed);
+  });
+});
+
+describe('taking a slice off the wheel (S2-07b)', () => {
+  /**
+   * The console sends this DELETE without an idempotency key — `api.delete`
+   * takes no options — so a double press or a retry after a dropped response
+   * arrives at a row that is already archived. It must not be reported as a
+   * failure: the manager pressed Archive once and it worked.
+   */
+  it('answers a second archive with the same slice, and records the archive once', async () => {
+    const victim = (await livePrizes())[0]!;
+
+    const first = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/booths/${boothId}/prizes/${victim.id}`,
+      headers: asAdmin(),
+    });
+    expect(first.statusCode, first.body).toBe(200);
+    expect(first.json().prize.archivedAt).not.toBeNull();
+
+    const again = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/booths/${boothId}/prizes/${victim.id}`,
+      headers: asAdmin(),
+    });
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.json().prize.id).toBe(victim.id);
+    // The same answer, not a second archive with a later timestamp.
+    expect(again.json().prize.archivedAt).toBe(first.json().prize.archivedAt);
+
+    const rows = await db
+      .select({ id: auditLog.id })
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'booth_prize.archive'), eq(auditLog.entityId, victim.id)));
+    expect(rows).toHaveLength(1);
+
+    expect((await livePrizes()).map((p) => p.id)).not.toContain(victim.id);
+  });
+
+  /** Editing one that is off the wheel is still refused — only DELETE relents. */
+  it('still refuses to edit an archived slice', async () => {
+    const victim = (await livePrizes())[0]!;
+    await ctx.app.inject({
+      method: 'DELETE',
+      url: `/booths/${boothId}/prizes/${victim.id}`,
+      headers: asAdmin(),
+    });
+
+    const edit = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/booths/${boothId}/prizes/${victim.id}`,
+      headers: asAdmin(),
+      payload: { weightBp: 5000 },
+    });
+    expect(edit.statusCode).toBe(404);
+    expect(edit.json().error.code).toBe('BOOTH_PRIZE_NOT_FOUND');
+  });
+
+  it('still 404s an id that was never a prize of this booth', async () => {
+    const res = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/booths/${boothId}/prizes/${newId()}`,
+      headers: asAdmin(),
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('BOOTH_PRIZE_NOT_FOUND');
   });
 });
 

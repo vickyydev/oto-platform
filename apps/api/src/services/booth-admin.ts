@@ -1036,6 +1036,11 @@ export async function archiveBoothPrize(
   row: BoothStationRow,
   before: PrizeRow,
 ): Promise<{ prize: PrizeRow }> {
+  // Already off the wheel. The archive that took it off is the one in the
+  // audit trail; a second press changes nothing and records nothing, and the
+  // caller gets the same answer the first press got.
+  if (before.archivedAt) return { prize: before };
+
   return withTx(db, ctx, 'booth_prize.archive', async (tx) => {
     const archivedAt = new Date();
     await tx
@@ -1115,10 +1120,36 @@ export async function reorderBoothPrizes(
   });
 }
 
-/** Load one prize of THIS booth, or 404. */
+/** Load one LIVE prize of THIS booth, or 404. */
 export async function loadBoothPrize(db: Db, stationId: string, prizeId: string): Promise<PrizeRow> {
+  const prize = await loadBoothPrizeIncludingArchived(db, stationId, prizeId);
+  if (prize.archivedAt) {
+    throw new AppError(404, 'BOOTH_PRIZE_NOT_FOUND', 'No prize with that id on this booth');
+  }
+  return prize;
+}
+
+/**
+ * The same lookup, except that a slice already off the wheel comes back
+ * rather than 404ing.
+ *
+ * Only the archive route uses it, and for one reason: a second archive of the
+ * same prize is the same request, and answering 404 to it tells a manager the
+ * archive failed at the moment it had in fact just succeeded. The console
+ * sends this DELETE without an idempotency key, so a double press or a retry
+ * after a dropped response arrives here with the row already archived — see
+ * `archiveBoothPrize`, which returns it unchanged.
+ *
+ * EDITING an archived slice is still refused: that is `loadBoothPrize`, and
+ * the PATCH route keeps it.
+ */
+export async function loadBoothPrizeIncludingArchived(
+  db: Db,
+  stationId: string,
+  prizeId: string,
+): Promise<PrizeRow> {
   const [prize] = await db.select().from(boothPrize).where(eq(boothPrize.id, prizeId)).limit(1);
-  if (!prize || prize.stationId !== stationId || prize.archivedAt) {
+  if (!prize || prize.stationId !== stationId) {
     throw new AppError(404, 'BOOTH_PRIZE_NOT_FOUND', 'No prize with that id on this booth');
   }
   return prize;
@@ -1694,10 +1725,18 @@ export async function setBoothPin(
  * withdrawn on the 3rd" is the fact an investigation needs.
  *
  * **What it does NOT do is reach the booth.** A box holds the cached staff
- * list until its next pull, so the withdrawal takes effect at the booth when
- * the box next syncs — minutes online, and however long it stays offline
- * otherwise. That is a property of a booth that keeps working without
- * internet, not a defect, and it is the same window the deny-list has.
+ * list until its next pull, and the withdrawal takes effect at the booth only
+ * then. Some of that window is the price of a booth that keeps working
+ * without internet — an offline box cannot be told anything. The rest is a
+ * defect, and it is measured: on this build nothing on a RUNNING box ever
+ * pulls the cache again. `@oto/box-agent` calls `syncCache()` once, from
+ * `start()`, and from no timer and no command — `config_apply` re-pulls the
+ * config bundle and not the cache — so a withdrawn PIN keeps signing that
+ * person in at the booth until the agent restarts. Driven on a live stack:
+ * the four digits were still accepted after the withdrawal and after the
+ * booth's own minute refresh, which re-reads a cache nothing refills.
+ * Raised against `@oto/box-agent`; the deny-list has the same window, for the
+ * same reason.
  */
 export async function clearBoothPin(
   db: Db,

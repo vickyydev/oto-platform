@@ -25,6 +25,7 @@ import {
   listVoucherDefinitions,
   loadBoothLayout,
   loadBoothPrize,
+  loadBoothPrizeIncludingArchived,
   loadVoucherDefinition,
   publishBoothConfig,
   removeBoothStaff,
@@ -493,15 +494,25 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Take a slice off the wheel. Archived rather than deleted — `booth.spin` points at the prize somebody won — and the wheel loses it at the next publish, like every other edit.',
+          'Take a slice off the wheel. Archived rather than deleted — `booth.spin` points at the prize somebody won — and the wheel loses it at the next publish, like every other edit. Archiving a slice that is already archived answers with that slice and changes nothing, so a double press is not reported as a failure.',
         params: PrizeParams,
       },
     },
+    /**
+     * The one by-id prize route that accepts an already-archived row
+     * (`loadBoothPrizeIncludingArchived`). A second DELETE of the same prize
+     * is the same request; answering 404 to it would tell a manager the
+     * archive failed a moment after it succeeded.
+     */
     async (req) => {
       const auth = req.requireAuth();
       const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
-      const prize = await loadBoothPrize(app.db, row.stationId, req.params.prizeId);
+      const prize = await loadBoothPrizeIncludingArchived(
+        app.db,
+        row.stationId,
+        req.params.prizeId,
+      );
       return archiveBoothPrize(
         app.db,
         opCtx(req),

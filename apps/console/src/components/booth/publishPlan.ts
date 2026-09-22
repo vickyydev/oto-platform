@@ -128,6 +128,16 @@ function publishWarnings(draft: BoothDraft): string[] {
  * changed is not computable from what the API returns — and a headline that
  * implied a comparison it had not made would be the exact failure this panel
  * exists to prevent.
+ *
+ * **It says PUBLISHED and never "running", for the same reason.** `draft`
+ * carries the last version that was published; what a booth is actually
+ * drawing from comes from the box's own heartbeat, on `GET /booths/:id/status`
+ * and nowhere near this function. The two are often different — a box adopts
+ * a wheel when it next pulls its cache, which on this build means when its
+ * agent restarts — so a sentence here calling the published version "the one
+ * the booth is running now" would be telling a manager something this module
+ * cannot know and that is frequently untrue. The "Wheel version" fact on the
+ * page is the reading that answers it.
  */
 function headline(draft: BoothDraft, verdict: WeightVerdict, nextVersion: number): string {
   const odds = verdict.balanced
@@ -138,7 +148,7 @@ function headline(draft: BoothDraft, verdict: WeightVerdict, nextVersion: number
     return `This booth has never run a wheel. Publishing gives it version 1, with ${verdict.activeCount} prize${verdict.activeCount === 1 ? '' : 's'} on it, and ${odds}.`;
   }
   if (!draft.changed) {
-    return `Nothing differs from version ${draft.published.version}, which the booth is running now. Publishing would mint an identical version ${nextVersion}, and ${odds}.`;
+    return `Nothing differs from version ${draft.published.version}, the version last published. Publishing would mint an identical version ${nextVersion}, and ${odds}.`;
   }
-  return `Version ${nextVersion} replaces version ${draft.published.version} on this booth: ${verdict.activeCount} active prize${verdict.activeCount === 1 ? '' : 's'}${verdict.inactiveCount > 0 ? `, ${verdict.inactiveCount} switched off` : ''}, and ${odds}.`;
+  return `Version ${nextVersion} replaces version ${draft.published.version} as this booth's published wheel: ${verdict.activeCount} active prize${verdict.activeCount === 1 ? '' : 's'}${verdict.inactiveCount > 0 ? `, ${verdict.inactiveCount} switched off` : ''}, and ${odds}.`;
 }

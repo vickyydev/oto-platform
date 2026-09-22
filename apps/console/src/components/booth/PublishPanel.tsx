@@ -51,7 +51,7 @@ export function PublishPanel({
   return (
     <Panel
       title="Publish"
-      description="Freezes this draft as a new version. The booths pick it up on their own, about a minute later, between spins."
+      description="Freezes this draft as a new version. A booth runs the version it last pulled from the cloud, so publishing does not by itself change the wheel in the mall — “Wheel version” above says which one the booth is actually on."
       actions={
         draft.published ? (
           <StatusPill tone="idle">version {draft.published.version} published</StatusPill>
@@ -77,9 +77,9 @@ export function PublishPanel({
             backgroundColor: 'hsl(var(--status-ok) / 0.07)',
           }}
         >
-          Version {lastPublished.version} published. The booth applies it within about a minute,
-          between spins — the panel above shows which version it is actually running, which is the
-          only reading that says it arrived.
+          Version {lastPublished.version} published. It is on the booth only once the box has pulled
+          it — “Wheel version” in the panel above shows which version the booth is actually running,
+          and that is the only reading that says it arrived.
         </p>
       )}
 
@@ -156,12 +156,12 @@ export function PublishPanel({
 
               {/*
                 Stated rather than left for somebody to assume: the panel is
-                not showing a before-and-after, because the API returns the
-                running version's hash and not its document.
+                not showing a before-and-after, because the draft route returns
+                the last published version's hash and not its document.
               */}
               <p className="text-xs text-muted-foreground">
                 {draft.published
-                  ? `This is what version ${plan.nextVersion} will be. It is not a comparison with version ${draft.published.version} — the running wheel’s own prize list is not something this screen can read back.`
+                  ? `This is what version ${plan.nextVersion} will be. It is not a comparison with version ${draft.published.version} — that version’s own prize list is not something this screen can read back.`
                   : 'This is what version 1 will be.'}
               </p>
 
@@ -199,7 +199,7 @@ export function PublishPanel({
                 </Button>
                 {!plan.changed && draft.published && (
                   <span className="text-xs text-muted-foreground">
-                    Nothing differs from the running version.
+                    Nothing differs from the published version.
                   </span>
                 )}
               </>

@@ -50,12 +50,24 @@ import {
  *
  * The page is built around the distinction the schema is built around: what
  * somebody is EDITING and what a booth is RUNNING are different things, and
- * the gap between them is closed by a publish. Editing a weight changes
- * nothing in the mall; publishing does, about a minute later, without anybody
- * at the booth being asked. So the panels are ordered the way the decision is
- * made — what is out there now, what the draft is, what the odds come to, what
- * publishing commits to — and the word "save" is never used for something that
- * reaches a television.
+ * the gap between them is closed by a publish and then by the box pulling it.
+ * Editing a weight changes nothing in the mall; publishing writes the version
+ * the booth will run once its box has pulled it, without anybody at the booth
+ * being asked. So the panels are ordered the way the decision is made — what
+ * is out there now, what the draft is, what the odds come to, what publishing
+ * commits to — and the word "save" is never used for something that reaches a
+ * television.
+ *
+ * **Which is why "Wheel version" compares two numbers rather than showing
+ * one.** `GET /booths/:id/status` answers with both the published version and
+ * the version the box reports running, and the Fact goes amber and names both
+ * whenever they differ. A page that showed only what had been published would
+ * let a manager believe a wheel had changed in a shopping centre when it had
+ * not — and on this build that is the ordinary case rather than a rare one,
+ * because nothing on a running box re-pulls the cache the wheel arrives in
+ * (`@oto/box-agent` calls `syncCache()` at boot and from no timer). Until
+ * that is fixed, the booth adopts a publish when its agent next restarts, and
+ * this reading is what says whether it has.
  *
  * **What each reading is worth travels with it** (`readState.ts`). A booth
  * whose draft has not come back and a booth with no prizes are not drawn the
@@ -67,6 +79,12 @@ import {
  * one's Publish carries a hash that has moved. That is why every write here
  * re-reads rather than patching what is on screen.
  */
+/**
+ * Which panel a write belongs to, so its refusal is drawn where the button was
+ * pressed rather than in whichever panel happens to hold an error slot.
+ */
+type WriteSite = 'prizes' | 'settings' | 'publish';
+
 export function Booths() {
   const { me, has } = useSession();
   const canManage = has('admin:booth:manage');
@@ -85,9 +103,21 @@ export function Booths() {
 
   const [editing, setEditing] = useState<BoothPrizeDraft | null>(null);
   const [busy, setBusy] = useState(false);
-  const [writeError, setWriteError] = useState<string | null>(null);
+  /**
+   * The last refusal, and WHICH panel's button earned it.
+   *
+   * A publish refused for a stale hash is the message that decides whether
+   * somebody presses again, and it used to be drawn in the prize table —
+   * measured at 1,769 pixels above the Publish button that caused it, which on
+   * any real screen is off it. Each panel is handed only its own failure, so
+   * the answer appears where the person is looking.
+   */
+  const [writeError, setWriteError] = useState<{ where: WriteSite; message: string } | null>(null);
   const [writeUnavailable, setWriteUnavailable] = useState(false);
   const [lastPublished, setLastPublished] = useState<{ version: number } | null>(null);
+
+  const errorAt = (where: WriteSite) =>
+    writeError && writeError.where === where ? writeError.message : null;
 
   useEffect(() => {
     void directoryApi
@@ -197,7 +227,7 @@ export function Booths() {
    * A prize list that drifts from the rows behind it is how somebody publishes
    * a version they did not see.
    */
-  const run = async (write: () => Promise<unknown>) => {
+  const run = async (where: WriteSite, write: () => Promise<unknown>) => {
     if (!selectedId) return;
     setBusy(true);
     setWriteError(null);
@@ -207,7 +237,7 @@ export function Booths() {
       await loadBooth(selectedId);
     } catch (reason) {
       if (isMissingRoute(reason)) setWriteUnavailable(true);
-      else setWriteError(readFailureMessage(reason));
+      else setWriteError({ where, message: readFailureMessage(reason) });
     } finally {
       setBusy(false);
     }
@@ -298,10 +328,19 @@ export function Booths() {
                     <StatusPill tone="warn">eligibility {booth.eligibility}</StatusPill>
                   )}
                   {booth.boxId === null && <StatusPill tone="idle">no box</StatusPill>}
+                  {/*
+                    "published", said rather than left off. The list route
+                    answers with the last version PUBLISHED for each booth and
+                    has no reading of what any of their boxes is actually
+                    running — that costs a heartbeat per booth and is what
+                    `GET /booths/:id/status` is for, one booth at a time. A
+                    bare "version 6" here would be read as the wheel in the
+                    mall, which it frequently is not.
+                  */}
                   <span className="ml-auto text-xs text-muted-foreground tabular-nums">
                     {booth.publishedVersion === null
                       ? 'never published'
-                      : `version ${booth.publishedVersion}`}
+                      : `version ${booth.publishedVersion} published`}
                   </span>
                 </button>
               </li>
@@ -357,7 +396,7 @@ export function Booths() {
               ) : undefined
             }
           >
-            {writeError && <ErrorNote message={writeError} />}
+            {errorAt('prizes') && <ErrorNote message={errorAt('prizes')!} />}
             {selected.prizes.length === 0 ? (
               <EmptyState
                 title="No prizes on this booth"
@@ -387,10 +426,11 @@ export function Booths() {
                 draft={selected}
                 layouts={layouts}
                 saving={busy}
-                unavailable={writeUnavailable || !canManage}
-                error={null}
+                unavailable={writeUnavailable}
+                readOnly={!canManage}
+                error={errorAt('settings')}
                 onSave={(settings: BoothSettingsEdit) =>
-                  void run(() => boothApi.saveSettings(selected.booth.id, settings))
+                  void run('settings', () => boothApi.saveSettings(selected.booth.id, settings))
                 }
               />
 
@@ -399,11 +439,11 @@ export function Booths() {
                   draft={selected}
                   publishing={busy}
                   unavailable={writeUnavailable}
-                  error={null}
+                  error={errorAt('publish')}
                   lastPublished={lastPublished}
                   timezone={timezone}
                   onPublish={(note, expectedBundleHash) =>
-                    void run(async () => {
+                    void run('publish', async () => {
                       const answer = await boothApi.publish(selected.booth.id, {
                         note: note.trim() === '' ? null : note.trim(),
                         // Sent only when the draft had one: the API treats it
@@ -446,18 +486,19 @@ export function Booths() {
           siblings={selected.prizes.filter((p) => p.id !== editing.id)}
           voucherDefinitions={definitions}
           saving={busy}
-          saveUnavailable={writeUnavailable || !canManage}
-          error={writeError}
+          saveUnavailable={writeUnavailable}
+          readOnly={!canManage}
+          error={errorAt('prizes')}
           onClose={() => setEditing(null)}
           onSave={(next) =>
-            void run(async () => {
+            void run('prizes', async () => {
               if (next.id === '') await boothApi.createPrize(selected.booth.id, toInput(next));
               else await boothApi.savePrize(selected.booth.id, next.id, toInput(next));
               setEditing(null);
             })
           }
           onArchive={(p) =>
-            void run(async () => {
+            void run('prizes', async () => {
               await boothApi.archivePrize(selected.booth.id, p.id);
               setEditing(null);
             })

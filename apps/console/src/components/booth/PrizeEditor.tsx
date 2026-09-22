@@ -41,6 +41,7 @@ export function PrizeEditor({
   voucherDefinitions,
   saving,
   saveUnavailable,
+  readOnly = false,
   error,
   onSave,
   onArchive,
@@ -52,8 +53,15 @@ export function PrizeEditor({
   siblings: readonly BoothPrizeDraft[];
   voucherDefinitions: readonly VoucherDefinitionRow[];
   saving: boolean;
-  /** The API half has not shipped here; the form is shown and cannot save. */
+  /**
+   * The API half has not shipped here; the form is shown and cannot save.
+   * A permission must never be passed here — "not deployed" is a claim about
+   * the server, and somebody who simply may not edit this booth would be told
+   * something untrue about it. That is `readOnly`.
+   */
   saveUnavailable: boolean;
+  /** The caller may read this booth but not change it. */
+  readOnly?: boolean;
   error: string | null;
   onSave: (next: BoothPrizeDraft) => void;
   onArchive: (prize: BoothPrizeDraft) => void;
@@ -77,7 +85,8 @@ export function PrizeEditor({
   ]);
 
   const nameGiven = draft.nameEn.trim().length > 0;
-  const canSave = !saving && !saveUnavailable && nameGiven && weightBp !== null && costSatang !== null;
+  const canSave =
+    !saving && !saveUnavailable && !readOnly && nameGiven && weightBp !== null && costSatang !== null;
 
   const save = () => {
     if (!canSave || weightBp === null || costSatang === null) return;
@@ -111,7 +120,7 @@ export function PrizeEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() => setConfirmArchive(true)}
-                disabled={saving || saveUnavailable}
+                disabled={saving || saveUnavailable || readOnly}
               >
                 Archive prize
               </Button>

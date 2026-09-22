@@ -22,6 +22,18 @@ import { chanceBpOf, formatBp, weightVerdict } from './odds';
  * clockwise from twelve o'clock; labels at 0.62 of the radius, rotated
  * radially; the same font-size steps for long and multi-line labels. If the
  * booth's wheel changes shape, this is the other half of that change.
+ *
+ * **A switched-off prize is still a wedge, because it is still a wedge on the
+ * television.** This panel used to drop them, on the belief that the booth
+ * did too. It does not, and cannot: `apps/booth/src/App.tsx` builds its
+ * slices from `bundle.prizes` whole because `SpinResponse.prizeIndex` indexes
+ * that array, so dropping an inactive prize would shift every index after it
+ * and the wheel would stop on the wrong slice. Measured on a live booth: a
+ * version with one active prize of six drew all six wedges on the screen, the
+ * five unwinnable ones included. So they are drawn here too, dimmed, and named
+ * "off the wheel" where their chance would be — a manager switching a prize
+ * off should see what the television will actually show, which is a wedge
+ * nobody can land on rather than a slice that has gone away.
  */
 export function WheelPreview({
   prizes,
@@ -31,16 +43,16 @@ export function WheelPreview({
   prizes: readonly BoothPrizeDraft[];
   className?: string;
 }) {
-  // The wheel the box would draw from: the active prizes, in slice order. A
-  // switched-off prize is not a blank wedge on the television, it is absent.
-  const slices = prizes.filter((p) => p.active);
+  // Every prize, in slice order — the array the television draws from and the
+  // one `prizeIndex` counts along. See the note above.
+  const slices = prizes;
   const verdict = weightVerdict(prizes);
+  const noneActive = !prizes.some((p) => p.active);
 
   if (slices.length === 0) {
     return (
       <div className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
-        Every prize is switched off, so there is no wheel to draw. The booth would refuse each
-        press with “Booth not ready — please call staff”.
+        This booth has no prizes, so there is no wheel to draw.
       </div>
     );
   }
@@ -54,7 +66,7 @@ export function WheelPreview({
   return (
     <div className={className}>
       <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[22rem] mx-auto block" role="img"
-        aria-label={`Wheel preview: ${slices.length} slices in order — ${slices.map((s) => labelOf(s)).join(', ')}`}
+        aria-label={`Wheel preview: ${slices.length} slices in order — ${slices.map((s) => `${labelOf(s)}${s.active ? '' : ' (off the wheel)'}`).join(', ')}`}
       >
         {slices.map((prize, i) => {
           const start = i * step;
@@ -78,7 +90,7 @@ export function WheelPreview({
           const firstY = ly - ((lines.length - 1) * lineHeight) / 2;
 
           return (
-            <g key={prize.id}>
+            <g key={prize.id} opacity={prize.active ? 1 : 0.28}>
               <path
                 d={d}
                 fill={prize.sliceColor ?? placeholderInk(i, slices.length)}
@@ -106,15 +118,21 @@ export function WheelPreview({
 
       <ol className="mt-4 flex flex-col gap-1.5">
         {slices.map((prize, i) => (
-          <li key={prize.id} className="flex items-center gap-2.5 text-sm">
+          <li
+            key={prize.id}
+            className={`flex items-center gap-2.5 text-sm ${prize.active ? '' : 'text-muted-foreground'}`}
+          >
             <span
               className="h-3.5 w-3.5 rounded-sm border shrink-0"
-              style={{ backgroundColor: prize.sliceColor ?? placeholderInk(i, slices.length) }}
+              style={{
+                backgroundColor: prize.sliceColor ?? placeholderInk(i, slices.length),
+                opacity: prize.active ? 1 : 0.28,
+              }}
               aria-hidden
             />
             <span className="min-w-0 flex-1 break-words">{prize.nameEn}</span>
             <span className="tabular-nums font-semibold shrink-0">
-              {formatBp(chanceBpOf(prize, verdict))}
+              {prize.active ? formatBp(chanceBpOf(prize, verdict)) : 'off the wheel'}
             </span>
           </li>
         ))}
@@ -122,8 +140,16 @@ export function WheelPreview({
 
       <p className="mt-3 text-xs text-muted-foreground">
         Every wedge is the same width on the television — the odds decide which slice the box
-        lands on, not how big it looks. The percentage beside each prize is its real chance.
+        lands on, not how big it looks. The percentage beside each prize is its real chance. A
+        prize switched off is dimmed here and still drawn on the television, where it is a wedge
+        the wheel never stops on.
       </p>
+      {noneActive && (
+        <p className="mt-1.5 text-xs" style={{ color: 'hsl(var(--status-down))' }}>
+          Every prize is switched off. This cannot be published, and a booth running it would draw
+          the wheel and refuse every press.
+        </p>
+      )}
       {slices.some((p) => p.sliceColor === null) && (
         <p className="mt-1.5 text-xs text-muted-foreground">
           Slices with no colour of their own take the layout’s palette. This preview draws those in

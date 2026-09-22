@@ -26,6 +26,7 @@ export function BoothSettingsPanel({
   layouts,
   saving,
   unavailable,
+  readOnly = false,
   error,
   onSave,
 }: {
@@ -33,7 +34,15 @@ export function BoothSettingsPanel({
   /** The operator's designs, read separately — a layout is shared between booths. */
   layouts: readonly BoothLayoutRow[];
   saving: boolean;
+  /**
+   * The settings route is not on this deployment — a fact about the SERVER.
+   * Never pass a permission for this: a branch manager reading a booth they
+   * may not re-weight was being told the route was undeployed, which is a
+   * claim about the deployment and was untrue. That is `readOnly`.
+   */
   unavailable: boolean;
+  /** The caller may read this booth but not change it. */
+  readOnly?: boolean;
   error: string | null;
   onSave: (settings: BoothSettingsEdit) => void;
 }) {
@@ -179,13 +188,23 @@ export function BoothSettingsPanel({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2 items-center">
-        <Button onClick={() => onSave(settings)} disabled={!dirty || saving || unavailable}>
+        <Button
+          onClick={() => onSave(settings)}
+          disabled={!dirty || saving || unavailable || readOnly}
+        >
           {saving ? 'Saving…' : 'Save settings'}
         </Button>
-        {dirty && !saving && (
+        {readOnly ? (
           <span className="text-xs text-muted-foreground">
-            Unsaved. Saving does not reach the booth — publishing does.
+            Changing these needs <code className="font-mono">admin:booth:manage</code>.
           </span>
+        ) : (
+          dirty &&
+          !saving && (
+            <span className="text-xs text-muted-foreground">
+              Unsaved. Saving changes the draft; only a published version can reach the booth.
+            </span>
+          )
         )}
       </div>
     </Panel>
