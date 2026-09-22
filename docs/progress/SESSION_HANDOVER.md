@@ -4,7 +4,27 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 06:00 — `main` is `9bcf46e`; staging is `1634f82`; the tree is clean
+> ## Status on 2026-09-23 08:00 — `main` is `0a669f0`; staging is `0a669f0`; the tree is clean
+>
+> **Since 06:00:** SCRUM-268 Deployed with its Console Branches page on
+> staging; SCRUM-275's last two halves landed (`b673948` — `edge.box_cache`,
+> migration 0016; the receipt mark from `pos.receipt_series`); SCRUM-311
+> landed (`0a669f0` — `pos.sale_tier_claim`, migration 0017, single-use
+> claims, the sale names its claim, the demo reset cuts the cycle). Both in
+> **Testing**; an evidence pass (`wf_bcf526b9`) is putting their staging
+> screenshots on and walking them to Deployed. Raised: **SCRUM-322** (the
+> receipt mark moves the bundle etag, so a selling box pulls its whole
+> bundle each minute — plan on the ticket).
+>
+> **Next, in order:** SCRUM-322 (split the mark out of the etag);
+> SCRUM-320 (handheld History); SCRUM-316/317/321/315 (each under an
+> hour; 316 should also show `tierClaimRefusal` on the counter till);
+> SCRUM-304/305/306 (bookings follow-ups); SCRUM-204's carts (S2-09b);
+> S2-10a tenders (SCRUM-206). SCRUM-199 stays blocked on the booth's
+> Render service; the stale "HKT Central" app row awaits the owner
+> (SCRUM-268 comment).
+
+> ## Status on 2026-09-23 06:00 — `main` was `9bcf46e`; staging was `1634f82`
 >
 > **Everything launched tonight has landed.** Since 04:30: SCRUM-268 branch
 > mapping (`6e7d557`, Testing — staging reconciled, Central Floresta and
