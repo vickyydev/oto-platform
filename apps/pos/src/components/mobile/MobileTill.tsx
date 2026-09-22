@@ -50,6 +50,7 @@ import {
 } from '@/api/bookings';
 import {
   buildCartPayload,
+  claimVerifiedTier,
   quotedPricing,
   type ApiSale,
   type CartIdentity,
@@ -325,6 +326,12 @@ export default function MobileTill() {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyTier, setVerifyTier] = useState<CustomerTier | null>(null);
   const [pendingVerification, setPendingVerification] = useState<TierVerification | null>(null);
+  /**
+   * SCRUM-307 — the document check this cart is priced under, when the visitor
+   * has no member record yet. It is an action id, never a tier: the row it
+   * names was written on the platform's side under a permission check.
+   */
+  const [tierClaimActionId, setTierClaimActionId] = useState<string | null>(null);
   const [showManualDiscountModal, setShowManualDiscountModal] = useState(false);
   const [showAddDropOff, setShowAddDropOff] = useState(false);
   const [saleResult, setSaleResult] = useState<Sale | null>(null);
@@ -439,13 +446,25 @@ export default function MobileTill() {
       branchId,
       stationId: station.stationId,
       tier,
+      // SCRUM-307 — names the document check, so the platform prices the cart
+      // at the tier that check supports. A member on the cart decides instead.
+      tierClaimActionId,
       memberId: member?.id ?? null,
       customerPhone: customerPhone || member?.phone || null,
       customerNickname: customerNickname || member?.nickname || null,
       accountId: operator.id,
       accountName: operator.name,
     };
-  }, [branch.id, station?.stationId, operator, tier, member, customerPhone, customerNickname]);
+  }, [
+    branch.id,
+    station?.stationId,
+    operator,
+    tier,
+    tierClaimActionId,
+    member,
+    customerPhone,
+    customerNickname,
+  ]);
 
   const cart = useCartQuote({
     lines,
@@ -475,6 +494,8 @@ export default function MobileTill() {
     setShowVerifyModal(false);
     setVerifyTier(null);
     setPendingVerification(null);
+    // The next visitor is not the one whose document was checked (SCRUM-307).
+    setTierClaimActionId(null);
     setSuperSlots([]);
     setSuperParentName('');
     setSuperConsentAck(false);
@@ -598,13 +619,57 @@ export default function MobileTill() {
     setShowVerifyModal(true);
   };
 
-  const handleVerified = ({
+  // Proof confirmed: apply the tier and go back to ticketing. Same handler as
+  // the counter till's (`pages/Till.tsx`), including the claim below — a phone
+  // held by the same member of staff sells to the same visitors.
+  const handleVerified = async ({
     member: verified,
     verification,
   }: {
     member: Member | null;
     verification: TierVerification;
   }) => {
+    /**
+     * SCRUM-307 — nobody to hold the verification yet, so the platform records
+     * the CLAIM before anything is priced: the tier this document supports,
+     * stamped with the verifier and the branch from the session. Awaited, not
+     * fired off — a cart quoted before it lands is quoted at the tourist rate,
+     * and the commit then refuses the difference as SALE_LINE_PRICE_MISMATCH.
+     *
+     * A refusal stops here with the reason on screen, because a discounted
+     * rate the platform has not recorded is one it will not let anybody
+     * charge. A deployment with no such route is the exception: there the till
+     * prices the cart itself and already says so on the confirmation screen.
+     */
+    const apiBranchId = apiBranchIdForSlug(branch.id);
+    // The sale this check belongs to (SCRUM-313). The modal closes before the
+    // claim lands and Cancel is live for the round trip; a handler resuming
+    // onto a fresh sale would set the tier and the claim id on a family that
+    // showed no document. Same guard as handleCustomerDone.
+    const epoch = saleEpochRef.current;
+    if (!verified && apiBranchId && verification.expiresAt) {
+      try {
+        const claimed = await claimVerifiedTier({
+          branchId: apiBranchId,
+          tier: verification.tier,
+          proofType: verification.proofType,
+          expiresAt: verification.expiresAt,
+        });
+        if (saleEpochRef.current !== epoch) return;
+        setTierClaimActionId(claimed);
+      } catch (err) {
+        if (saleEpochRef.current !== epoch) return;
+        if (!isMissingRoute(err)) {
+          toast({
+            title: 'Discounted rate not recorded',
+            description: err instanceof Error ? err.message : 'Unknown error',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+    }
+    if (saleEpochRef.current !== epoch) return;
     setTier(verification.tier);
     restateLinesToTier(verification.tier);
     if (verified) {
