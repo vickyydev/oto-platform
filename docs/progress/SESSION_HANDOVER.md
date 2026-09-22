@@ -4,7 +4,36 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 03:00 — `main` is `b8029f2`
+> ## Status on 2026-09-23 04:30 — `main` is `de069c1`; staging is `d26e21c`
+>
+> **Since the 03:00 banner:** the menu slice passed its second gate and
+> landed (`d26e21c` — SCRUM-232/230, SCRUM-204's catalogue half, the
+> SCRUM-292 schema-shape test with its lockfile, SCRUM-302); CI green,
+> migration 0015 applied on staging, the menu routes answer there. The
+> Deployed-evidence pass put staging screenshots on 296/297/299/300/301/
+> 200/307/228/308/313/234/238/314 — all **Deployed**. POS round 3 landed:
+> the phone till's tier claim (`d16b27f`, SCRUM-310), the visitor display
+> dashes (`b9c9584`, SCRUM-312), revoking a verified tier (`dd54c79`,
+> SCRUM-241) — all Testing with images; SCRUM-308's last piece
+> (`de069c1`). Raised: SCRUM-315 (member route's free-text evidenceType),
+> 316 (staff-half ฿0), 317 (register's revoked shape).
+>
+> **Running:** SCRUM-268 branch mapping (`wf_884722ad`; owns
+> `routes/{branches,app-identities}.ts`, `services/oto-app-*.ts`,
+> `packages/db/src/{seed/index,schema/otoapp}.ts`, Console `Branches.tsx`),
+> History reading the ledger (`wf_a242658f`; owns `pages/History.tsx`,
+> `components/history/**`, `api/history.ts`, `listSales`'s select),
+> the menu evidence pass on staging (`wf_3a89e172`; SCRUM-232/230/292/302
+> → Deployed). **After 268 lands:** add `await seedMenu(db, { operatorId,
+> branchId })` to `packages/db/src/seed/index.ts` after the branch tax
+> config (the demo menu is dead code until then — staging holds one item).
+>
+> **Staging holds from tonight's evidence:** sale T1-000001 (expat, ฿973)
+> at Central Floresta, booking OTO-1590237-7290 (redeemed), the renamed
+> holiday; the evidence tier was removed. The other session's
+> `render.yaml` and `services/` are still uncommitted in the tree.
+
+> ## Status on 2026-09-23 03:00 — `main` was `b8029f2`
 >
 > **Landed since the banner below:** SCRUM-308 (chip and receipt agree on
 > the trading day, `155a251`); the box pulls whole after an outage
