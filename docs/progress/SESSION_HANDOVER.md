@@ -1,9 +1,37 @@
 # Handover — where this is, and what to do next
 
-_Written 2026-09-21 at the end of a long session. Read this, then
-`SPRINT_2_PROGRESS.md` → Status, then `POS_GAP_REGISTER.md`._
+_Written 2026-09-21 at the end of a long session; updated 2026-09-22. Read
+this, then `SPRINT_2_PROGRESS.md` → Status, then `POS_GAP_REGISTER.md`._
 
-> ## ⚠ READ THIS BEFORE ANYTHING ELSE
+> ## Status on 2026-09-22 — the banner below it is RESOLVED
+>
+> Everything that banner asked for is done and live. SCRUM-242, 243, 245,
+> 247, 259 and 260 are **Deployed**; 246 is Deployed on the api. Every kiosk
+> path now requires a device credential, stays inside its own park, and
+> refuses with one uniform answer. Two small kiosk findings remain as
+> tickets: SCRUM-261 (anonymous image upload) and SCRUM-262 (unthrottled
+> failure log).
+>
+> **The park's real staff rows ARE on staging** — 10 staff, 959 clock-ins,
+> 59 tasks. The workflow stopped on the 21st had reached the load step
+> before the stop landed, and its report never returned, so they were there
+> about a day with the kiosk findings open. **Ten rows carried face
+> enrolment, which was cleared directly**: the mock matcher clocks anyone in
+> as the first enrolled person, so an enrolled row was an impersonation.
+> The seed (`e5649ad`) no longer carries face enrolment for anybody.
+>
+> **Also on 2026-09-22:** the sale ledger (SCRUM-203) is on `main` and
+> **Deployed** — a real sale was rung through staging, receipt `T2-000001`.
+> The booth admin panel (SCRUM-200) is on `main`, In Progress pending its
+> first browser run against a live server. `main` is **`e5649ad`**; §1 and
+> §8 below describe the 21st and are superseded by this.
+>
+> **Next, in order:** the booth's Render service (still the other session's
+> blueprint); S2-07b's first integration run; S2-09b (SCRUM-204), the F&B and
+> shop carts; SCRUM-232, the product tables, which the menu import lands on;
+> then the register's remaining broken items (230, 231, 233, 234, 238).
+
+> ## ⚠ READ THIS BEFORE ANYTHING ELSE — as written on the 21st; resolved above
 >
 > **Staging is not safe to leave on the public internet with the park's real
 > staff rows on it.** An authorization sweep at the end of this session
