@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Sale, CreditGrant } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,11 +9,86 @@ import { computeTotals } from '@/lib/sale';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { getPrintTemplate } from '@/mockApi';
 import { paymentMethodLabel } from '@/lib/payments';
+import { salesApi } from '@/api/sales';
 import { QrCode } from './QrCode';
+
+/**
+ * WHAT THIS SALE IS CALLED — SCRUM-203.
+ *
+ * The screen before this one promises a receipt number, and the number is the
+ * platform's: allocated when the tender closed the sale, printed on the paper
+ * in the visitor's hand, and the only handle either side of the counter can say
+ * out loud. This screen used to show `sale.id` instead — a UUID nobody can read
+ * back over a queue — so a visitor returning with a query and a member of staff
+ * searching for their sale had no word in common.
+ *
+ * A sale the platform holds but has not numbered is a real state, not an error:
+ * the row exists, in `tendering`, and the tender has not closed it. It says so
+ * rather than reaching for an identifier.
+ */
+export type SaleNumber =
+  /** Finalised: the platform allocated this number, e.g. "T2-000002". */
+  | { kind: 'receipt'; number: string }
+  /** The platform holds the sale and has not numbered it. */
+  | { kind: 'recorded' }
+  /** This screen has no answer about a number, and says nothing rather than guess. */
+  | { kind: 'unknown' };
+
+/** The platform's own sale ids are UUIDs; a till-local record carries something else. */
+const PLATFORM_SALE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The sale's number, from the caller where the caller knows it and from the
+ * platform where it does not.
+ *
+ * The ask is one GET on a screen where nothing is waiting on it — the receipt
+ * and the bands have already printed — and it is skipped entirely for a sale
+ * that was never offered to the platform. A refusal or a dead connection
+ * leaves the screen without a number rather than with a wrong one.
+ */
+export function useSaleNumber(saleId: string, given?: SaleNumber): SaleNumber {
+  const [asked, setAsked] = useState<SaleNumber>({ kind: 'unknown' });
+
+  useEffect(() => {
+    if (given || !PLATFORM_SALE_ID.test(saleId)) return;
+    let live = true;
+    setAsked({ kind: 'unknown' });
+    void salesApi
+      .get(saleId)
+      .then(({ sale }) => {
+        if (!live) return;
+        setAsked(
+          sale.receiptNumber
+            ? { kind: 'receipt', number: sale.receiptNumber }
+            : { kind: 'recorded' },
+        );
+      })
+      .catch(() => {
+        // Nothing to say about the number, which is what `unknown` means.
+      });
+    return () => {
+      live = false;
+    };
+  }, [saleId, given]);
+
+  return given ?? asked;
+}
+
+/** How the sale is named on screen, or null when this screen cannot name it. */
+export function saleNumberLabel(number: SaleNumber): string | null {
+  if (number.kind === 'receipt') return `Receipt ${number.number}`;
+  if (number.kind === 'recorded') return 'Recorded — no receipt number yet';
+  return null;
+}
 
 interface StepConfirmationProps {
   sale: Sale;
   onNewSale: () => void;
+  /**
+   * The sale's number where the caller already holds the platform's answer.
+   * Left out, this screen asks the platform for it once.
+   */
+  saleNumber?: SaleNumber;
 }
 
 function CreditGrantRow({ voucher: grant, index }: { voucher: CreditGrant; index: number }) {
@@ -44,7 +120,9 @@ function CreditGrantRow({ voucher: grant, index }: { voucher: CreditGrant; index
   );
 }
 
-export function StepConfirmation({ sale, onNewSale }: StepConfirmationProps) {
+export function StepConfirmation({ sale, onNewSale, saleNumber }: StepConfirmationProps) {
+  const resolvedNumber = useSaleNumber(sale.id, saleNumber);
+  const numberLabel = saleNumberLabel(resolvedNumber);
   // Drop-off / nanny children's bands are issued through the door check-in choice
   // (now or later at check-in), never the standard sale print — so exclude their
   // lines from the "Bracelets to Print" panel.
@@ -86,7 +164,9 @@ export function StepConfirmation({ sale, onNewSale }: StepConfirmationProps) {
         )}
         <h2 className="text-4xl font-bold tracking-tight">Payment Successful</h2>
         <p className="text-muted-foreground mt-2 text-xl">
-          Order #{sale.id} • ฿{sale.total} • {paymentMethodLabel(sale.paymentMethod ?? '')}
+          {[numberLabel, `฿${sale.total}`, paymentMethodLabel(sale.paymentMethod ?? '')]
+            .filter(Boolean)
+            .join(' • ')}
         </p>
         {showTaxBreakdown && taxRows.length > 0 && (
           <p className="text-muted-foreground/80 mt-1 text-sm">

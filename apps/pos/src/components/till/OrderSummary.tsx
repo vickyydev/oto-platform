@@ -8,7 +8,15 @@ import { resolveFreeItem } from '@/lib/promoVoucher';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { computeNannyGroups, resolveDropOffPricing } from '@/lib/dropoff';
 import { getDropOffPricing, getAddOns } from '@/mockApi';
-import { adultUnitDisplay, componentKey, priceForTier } from '@/lib/pricing';
+import {
+  adultUnitDisplay,
+  componentKey,
+  isAdultRulePriced,
+  priceForTier,
+  tierPriceTHB,
+  unpricedCartLines,
+  unpricedLineReason,
+} from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { Ticket, User, Baby, Trash2, Tag, BadgePercent, Footprints, Minus, Plus, HandHeart, UserCheck, Pencil, AlertTriangle, ShoppingBag, PartyPopper, Gift, type LucideIcon } from 'lucide-react';
@@ -105,6 +113,7 @@ function QtyRow({
   value,
   unitPrice,
   unitNote,
+  unitWarning,
   onChange,
 }: {
   icon: LucideIcon;
@@ -113,6 +122,8 @@ function QtyRow({
   unitPrice?: number;
   /** Appended to the "฿x each" hint, e.g. "1 free" on an adult free allowance. */
   unitNote?: string;
+  /** Shown in place of the "฿x each" hint when there is no price to quote. */
+  unitWarning?: string;
   onChange: (next: number) => void;
 }) {
   return (
@@ -120,11 +131,13 @@ function QtyRow({
       <span className="flex items-center gap-2 text-sm text-foreground min-w-0">
         <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
         <span className="truncate">{label}</span>
-        {unitPrice !== undefined && (
+        {unitPrice !== undefined ? (
           <span className="text-xs text-muted-foreground tabular-nums shrink-0">
             ฿{unitPrice} each{unitNote ? ` · ${unitNote}` : ''}
           </span>
-        )}
+        ) : unitWarning ? (
+          <span className="text-xs font-medium text-amber-300 shrink-0">{unitWarning}</span>
+        ) : null}
       </span>
       <div className="flex items-center gap-1.5 shrink-0">
         <button
@@ -158,13 +171,17 @@ function QtyRow({
  */
 function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: number) => void }) {
   const { unitPrice, note } = adultUnitDisplay(line.ticketType, line.tier, line.adults);
+  // The rule that charges the next adult on this line may have no price behind
+  // it (SCRUM-228); "฿0 each" would read as an adult going in free.
+  const priced = isAdultRulePriced(line.ticketType, line.tier, Math.max(line.adults, 1));
   return (
     <QtyRow
       icon={User}
       label="Adults"
       value={line.adults}
-      unitPrice={unitPrice}
+      unitPrice={priced ? unitPrice : undefined}
       unitNote={note}
+      unitWarning="no price set"
       onChange={onChange}
     />
   );
@@ -186,6 +203,22 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
   const socksPrice = socksAddOn ? resolveRateToday(socksAddOn.price) : 0;
   const dropOffExtras = (line: CartLine) =>
     line.socks * socksPrice + line.addOns.reduce((sum, a) => sum + a.price * a.quantity, 0);
+
+  /**
+   * WHAT THIS CART CANNOT BE SOLD AT (SCRUM-228).
+   *
+   * A line priced at a tier nobody set a price for totals ฿0, and every figure
+   * drawn from it — the row, the line total, the amount due on the visitor's
+   * screen — reads as a free ticket rather than a missing setting. So the panel
+   * quotes nothing it cannot price, says which price is missing, and Pay does
+   * not open until it exists.
+   */
+  const unpriced = unpricedCartLines(lines);
+  const lineIsUnpriced = (line: CartLine) => unpricedCartLines([line]).length > 0;
+  const ticketPriceText = (line: CartLine) => {
+    const price = tierPriceTHB(line.ticketType, line.tier);
+    return price === null ? '—' : `฿${price}`;
+  };
 
   // Whole-line discounts (no component target) — shown under the line as before.
   const lineDiscountsFor = (id: string) =>
@@ -306,9 +339,9 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                           the shared nanny fee is its own row below. Plain drop-off
                           shows the full line (ticket + extras + one-time fee). */}
                       <div className="font-bold text-base shrink-0">
-                        {line.dropOff.lengthChosen
-                          ? `฿${line.dropOff.service === 'nanny' ? priceForTier(line.ticketType, line.tier) + dropOffExtras(line) : line.lineTotal}`
-                          : '—'}
+                        {!line.dropOff.lengthChosen || lineIsUnpriced(line)
+                          ? '—'
+                          : `฿${line.dropOff.service === 'nanny' ? priceForTier(line.ticketType, line.tier) + dropOffExtras(line) : line.lineTotal}`}
                       </div>
                     </div>
                     <div className="space-y-1 mt-1 text-sm text-muted-foreground">
@@ -319,7 +352,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                               <Ticket className="w-4 h-4 shrink-0" />
                               <span className="truncate">{line.ticketType.name}</span>
                             </span>
-                            <span className="tabular-nums shrink-0">฿{priceForTier(line.ticketType, line.tier)}</span>
+                            <span className="tabular-nums shrink-0">{ticketPriceText(line)}</span>
                           </div>
                           {line.socks > 0 && (
                             <div className="flex items-center justify-between gap-2">
@@ -398,14 +431,17 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                       </span>
                     )}
                   </div>
-                  <div className="font-bold text-base shrink-0">฿{line.lineTotal}</div>
+                  <div className="font-bold text-base shrink-0">
+                    {lineIsUnpriced(line) ? '—' : `฿${line.lineTotal}`}
+                  </div>
                 </div>
                 <div className="space-y-1.5 mt-2">
                   <QtyRow
                     icon={Baby}
                     label="Kids"
                     value={line.kids}
-                    unitPrice={priceForTier(line.ticketType, line.tier)}
+                    unitPrice={tierPriceTHB(line.ticketType, line.tier) ?? undefined}
+                    unitWarning="no price set"
                     onChange={(v) => onUpdateLine(line.id, { kids: v })}
                   />
                   {renderComponentDiscounts(line.id, 'kids')}
@@ -596,6 +632,20 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
           Add manual discount
         </Button>
 
+        {unpriced.length > 0 && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-300">
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              This tier has no price
+            </div>
+            <ul className="mt-1.5 space-y-1 text-xs">
+              {unpriced.map((u) => (
+                <li key={`${u.ticketName}-${u.tier}-${u.what}`}>{unpricedLineReason(u)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="space-y-2 text-lg">
           <div className="flex justify-between text-muted-foreground">
             <span>Subtotal</span>
@@ -623,7 +673,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
             size="lg" 
             className="col-span-2 text-xl font-bold h-14" 
             onClick={onPay}
-            disabled={!canPay}
+            disabled={!canPay || unpriced.length > 0}
           >
             {payLabel ?? `Pay ฿${total}`}
           </Button>

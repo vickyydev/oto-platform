@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ContactChannel, CustomerTier, Member } from '@/types';
-import { getProofTypes } from '@/mockApi';
+import { TIER_PROOF_NOTE, TIER_PROOF_TYPES } from '@/lib/tierProof';
 import { useOperator } from '@/auth/OperatorContext';
 import {
   Dialog,
@@ -110,7 +110,7 @@ export function MemberFormDialog({
   onSave,
 }: MemberFormDialogProps) {
   const { operator } = useOperator();
-  const proofTypes = getProofTypes();
+  const proofTypes = TIER_PROOF_TYPES;
 
   const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
@@ -334,6 +334,9 @@ export function MemberFormDialog({
                     ))}
                   </SelectContent>
                 </Select>
+              )}
+              {!isDefaultTier(selection.tier) && (
+                <p className="text-xs text-muted-foreground">{TIER_PROOF_NOTE}</p>
               )}
             </div>
 

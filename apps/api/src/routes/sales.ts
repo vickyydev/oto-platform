@@ -145,6 +145,14 @@ const Cart = z.object({
   memberId: z.string().uuid().nullish(),
   /** Ignored for pricing; reported back when it differs from the platform's. */
   tier: z.string().max(40).optional(),
+  /**
+   * SCRUM-307 — the action id of a document check reception recorded through
+   * `POST /sales/tier-claims`. A POINTER, and the one thing in this body that
+   * can move a cart off the default tier: the tier itself is read from that
+   * claim row, which names the account that made it and the branch it was made
+   * at, so naming another session's claim resolves to nothing.
+   */
+  tierClaimActionId: z.string().min(1).max(200).optional(),
   pricingMode: z.enum(['weekday', 'weekend']).optional(),
   pricingModeReason: z.string().max(160).optional(),
   socks: z

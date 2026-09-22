@@ -45,6 +45,7 @@ import {
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import {
   buildCartPayload,
+  claimVerifiedTier,
   quotedPricing,
   type ApiSale,
   type CartIdentity,
@@ -126,6 +127,15 @@ export default function Till() {
   // A verification taken before the customer gave their details; saved to a
   // profile once they key in phone + nickname at the input step.
   const [pendingVerification, setPendingVerification] = useState<TierVerification | null>(null);
+  /**
+   * SCRUM-307 — the platform's record of that same document check, by the
+   * action id it was recorded under. The cart carries it so the PLATFORM
+   * prices at the verified tier: with no member yet there is nothing for it to
+   * read a tier from, and a tier sent in the cart is ignored by design, so
+   * without this every Expat and Thai walk-in was quoted at the tourist rate
+   * and refused at Pay as `SALE_LINE_PRICE_MISMATCH`.
+   */
+  const [tierClaimActionId, setTierClaimActionId] = useState<string | null>(null);
 
   const [showManualDiscountModal, setShowManualDiscountModal] = useState(false);
   const [showAddDropOff, setShowAddDropOff] = useState(false);
@@ -362,13 +372,25 @@ export default function Till() {
       branchId,
       stationId: station.stationId,
       tier,
+      // SCRUM-307 — names the document check, so the platform prices the cart
+      // at the tier that check supports. A member on the cart decides instead.
+      tierClaimActionId,
       memberId: member?.id ?? null,
       customerPhone: customerPhone || member?.phone || null,
       customerNickname: customerNickname || member?.nickname || null,
       accountId: operator.id,
       accountName: operator.name,
     };
-  }, [branch.id, station?.stationId, operator, tier, member, customerPhone, customerNickname]);
+  }, [
+    branch.id,
+    station?.stationId,
+    operator,
+    tier,
+    tierClaimActionId,
+    member,
+    customerPhone,
+    customerNickname,
+  ]);
 
   /**
    * THE PRICE THE PLATFORM QUOTES FOR THIS CART. Every figure the staff panel,
@@ -407,6 +429,8 @@ export default function Till() {
     setShowVerifyModal(false);
     setVerifyTier(null);
     setPendingVerification(null);
+    // The next visitor is not the one whose document was checked (SCRUM-307).
+    setTierClaimActionId(null);
     setSuperSlots([]);
     setSuperParentName('');
     setSuperConsentAck(false);
@@ -692,13 +716,46 @@ export default function Till() {
   // Proof confirmed: apply the tier and advance to ticketing. For an existing
   // member the verification was already stamped in the modal; for a new customer
   // we hold it until they enter their details at the input step.
-  const handleVerified = ({
+  const handleVerified = async ({
     member: verified,
     verification,
   }: {
     member: Member | null;
     verification: TierVerification;
   }) => {
+    /**
+     * SCRUM-307 — nobody to hold the verification yet, so the platform records
+     * the CLAIM before anything is priced: the tier this document supports,
+     * stamped with the verifier and the branch from the session. Awaited, not
+     * fired off — a cart quoted before it lands is quoted at the tourist rate.
+     *
+     * A refusal stops here with the reason on screen, because a discounted
+     * rate the platform has not recorded is one it will not let anybody
+     * charge. A deployment with no such route is the exception: there the till
+     * prices the cart itself and already says so on the confirmation screen.
+     */
+    const apiBranchId = apiBranchIdForSlug(branch.id);
+    if (!verified && apiBranchId && verification.expiresAt) {
+      try {
+        setTierClaimActionId(
+          await claimVerifiedTier({
+            branchId: apiBranchId,
+            tier: verification.tier,
+            proofType: verification.proofType,
+            expiresAt: verification.expiresAt,
+          }),
+        );
+      } catch (err) {
+        if (!isMissingRoute(err)) {
+          toast({
+            title: 'Discounted rate not recorded',
+            description: err instanceof Error ? err.message : 'Unknown error',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+    }
     setTier(verification.tier);
     restateLinesToTier(verification.tier);
     if (verified) {

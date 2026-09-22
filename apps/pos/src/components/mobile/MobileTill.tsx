@@ -10,7 +10,15 @@ import { useStation } from '@/station/StationContext';
 import { dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
-import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
+import {
+  computeLineTotal,
+  computeLineBreakdown,
+  isTierPriced,
+  priceForTier,
+  unpricedCartLines,
+  unpricedLineReason,
+  unpricedReason,
+} from '@/lib/pricing';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, effectiveRequirement, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
 import { buildSale, computeTotals } from '@/lib/sale';
@@ -50,6 +58,7 @@ import {
 import { useCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter } from '@/lib/saleWriter';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
+import { saleNumberLabel, type SaleNumber } from '@/components/till/StepConfirmation';
 import { toast } from '@/hooks/use-toast';
 import { useLanguage } from '@/i18n/LanguageContext';
 
@@ -95,7 +104,16 @@ type HandoffMode = 'input' | 'consent' | 'qr' | null;
 
 // ─── Mobile confirmation screen ───────────────────────────────────────────────
 
-function MobileConfirmation({ sale, onNewSale }: { sale: Sale; onNewSale: () => void }) {
+function MobileConfirmation({
+  sale,
+  saleNumber,
+  onNewSale,
+}: {
+  sale: Sale;
+  /** The platform's answer about this sale's number — see `SaleNumber`. */
+  saleNumber: SaleNumber;
+  onNewSale: () => void;
+}) {
   const braceletRows = sale.lines.flatMap((line) => {
     const rows: { id: string; kind: 'child' | 'adult'; count: number; ticket: string; duration: string }[] = [];
     if (line.kids > 0)
@@ -120,8 +138,11 @@ function MobileConfirmation({ sale, onNewSale }: { sale: Sale; onNewSale: () => 
           <CheckCircle2 className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold tracking-tight">Payment Successful</h2>
+        {/* The receipt number, never the internal id — SCRUM-203. */}
         <p className="text-muted-foreground mt-1 text-sm">
-          Order #{sale.id} · ฿{sale.total} · {paymentMethodLabel(sale.paymentMethod ?? '')}
+          {[saleNumberLabel(saleNumber), `฿${sale.total}`, paymentMethodLabel(sale.paymentMethod ?? '')]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
         {taxRows.length > 0 && (
           <p className="text-muted-foreground/70 mt-0.5 text-[11px]">
@@ -204,6 +225,14 @@ function MobileConfirmation({ sale, onNewSale }: { sale: Sale; onNewSale: () => 
       </div>
     </div>
   );
+}
+
+/**
+ * What the platform calls a sale it holds: its receipt number once the tender
+ * closed it, and plainly "no number yet" until then (SCRUM-203).
+ */
+function saleNumberOf(sale: ApiSale): SaleNumber {
+  return sale.receiptNumber ? { kind: 'receipt', number: sale.receiptNumber } : { kind: 'recorded' };
 }
 
 // ─── Line discount components helper ─────────────────────────────────────────
@@ -299,6 +328,8 @@ export default function MobileTill() {
   const [showManualDiscountModal, setShowManualDiscountModal] = useState(false);
   const [showAddDropOff, setShowAddDropOff] = useState(false);
   const [saleResult, setSaleResult] = useState<Sale | null>(null);
+  /** What the platform calls the finished sale, for the confirmation (SCRUM-203). */
+  const [saleNumber, setSaleNumber] = useState<SaleNumber>({ kind: 'unknown' });
   const [pendingPaymentMethod, setPendingPaymentMethod] = useState<string | null>(null);
   const [promoError, setPromoError] = useState<string>('');
 
@@ -438,6 +469,7 @@ export default function MobileTill() {
     setCustomerContactChannel('whatsapp');
     setActiveLineId(null);
     setSaleResult(null);
+    setSaleNumber({ kind: 'unknown' });
     setPendingPaymentMethod(null);
     setMember(null);
     setShowVerifyModal(false);
@@ -648,6 +680,17 @@ export default function MobileTill() {
 
   const handleSelectTicket = (ticket: TicketType) => {
     if (!tier) return;
+    // The card for an unpriced tier does not answer a press (SCRUM-228); this
+    // refuses the same choice arriving any other way, so a ฿0 line cannot be
+    // built at all rather than being caught on the way to the money.
+    if (!isTierPriced(ticket, tier)) {
+      toast({
+        title: 'This tier has no price',
+        description: unpricedReason(ticket.name, tier),
+        variant: 'destructive',
+      });
+      return;
+    }
     const id = Math.random().toString(36).substring(7);
     const base = { ticketType: ticket, tier, kids: 1, adults: 1, socks: 0, addOns: [] };
     const line: CartLine = { id, ...base, lineTotal: computeLineTotal(base) };
@@ -1127,12 +1170,7 @@ export default function MobileTill() {
     if (unpriced.length > 0) {
       toast({
         title: 'This tier has no price',
-        description: `${unpriced
-          .map(
-            (u) =>
-              `${u.ticketName} has no ${tierLabel(u.tier)} ${u.what === 'adult' ? 'adult' : ''} price`,
-          )
-          .join(' · ')}. Set it in Admin → Tickets before selling at this tier.`,
+        description: unpriced.map(unpricedLineReason).join(' · '),
         variant: 'destructive',
       });
       return false;
@@ -1241,7 +1279,7 @@ export default function MobileTill() {
       if (!closed.ok) return;
       if (closed.written) recorded = closed.sale;
     }
-    finalizeSale(committed.saleId, quotedPricing(cart.quote, recorded));
+    finalizeSale(committed.saleId, quotedPricing(cart.quote, recorded), saleNumberOf(recorded));
   };
 
   const handleRetrySaleWrite = () => {
@@ -1258,8 +1296,17 @@ export default function MobileTill() {
    *
    * `quoted` is the money as the platform charged it, carried onto the sale so
    * nothing downstream re-totals it (S2-09a).
+   *
+   * `number` is what the platform calls it. It defaults to `unknown` for the
+   * paths that never reached the platform, where the confirmation shows no
+   * number at all and the notice above it says the sale was not saved there
+   * (SCRUM-203).
    */
-  const finalizeSale = (saleId: string, quoted: SaleQuotedPricing) => {
+  const finalizeSale = (
+    saleId: string,
+    quoted: SaleQuotedPricing,
+    number: SaleNumber = { kind: 'unknown' },
+  ) => {
     if (!tier || !pendingPaymentMethod || !operator || !station) return;
 
     const dropOffLines = lines.filter((l) => l.dropOff);
@@ -1332,6 +1379,7 @@ export default function MobileTill() {
     // mirrors Till.tsx so mobile sales are gate-resolvable.
     issueWalkInBands(newSale);
     setSaleResult(newSale);
+    setSaleNumber(number);
     setHandoffMode(null);
     setMStep('done');
     dispatchPrintJobs(ticketPrintJobs(station, newSale));
@@ -1543,7 +1591,7 @@ export default function MobileTill() {
           <div className="flex h-full min-h-0 flex-col">
             <SaleNotSavedNotice state={saleWriter.state} />
             <div className="min-h-0 flex-1">
-              <MobileConfirmation sale={saleResult} onNewSale={resetSale} />
+              <MobileConfirmation sale={saleResult} saleNumber={saleNumber} onNewSale={resetSale} />
             </div>
           </div>
         ) : null;

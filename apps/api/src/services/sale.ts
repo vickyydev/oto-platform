@@ -46,6 +46,7 @@ import {
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
+import { resolveTierClaim } from './sale-tier';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -168,6 +169,12 @@ export interface CartInput {
   pricingMode?: 'weekday' | 'weekend';
   /** The tier the till believed. Compared, never used: see rule 2 at the top. */
   tier?: string;
+  /**
+   * SCRUM-307 — the action id of the document check reception recorded through
+   * `POST /sales/tier-claims`. A pointer to a claim row, never a tier; declared
+   * here so the route cannot carry it on a cast alone.
+   */
+  tierClaimActionId?: string | null;
 }
 
 export interface PromoDiscountInput {
@@ -384,7 +391,12 @@ export interface PricedLine {
 
 export interface PricedCart {
   scope: PricingScope;
-  tier: { code: string; source: 'member' | 'default' };
+  /**
+   * The tier that chose the prices, and where it came from: the MEMBER's
+   * record, a document check reception recorded for this action (SCRUM-307),
+   * or the operator's default. Never the request body — see rule 2 at the top.
+   */
+  tier: { code: string; source: 'member' | 'claim' | 'default' };
   disagreements: {
     pricingModeSentByTill: string | null;
     tierSentByTill: string | null;
@@ -513,7 +525,23 @@ export async function priceCart(
   // here" is answerable. Before any row is written, and before a price is
   // quoted for a branch the caller has no business pricing for.
   await actor.assertBranchAllowed?.(scope.branchId);
-  const resolvedTier = await resolveTier(db, actor.operatorId, input.memberId);
+  /**
+   * SCRUM-307 — a walk-in whose document reception has just checked is not a
+   * member yet, so there is no record here to read a tier from and the cart
+   * would price at the default one. The till therefore records the check
+   * through `POST /sales/tier-claims` and the cart names that ACTION ID
+   * (`tierClaimActionId`, declared on the cart body in `routes/sales.ts`).
+   *
+   * That is not rule 2 loosened: what the cart names is a row written on this
+   * side under a permission check, carrying the verifier and the branch from
+   * the session, and the lookup matches on both — so it answers nothing to a
+   * caller naming another session's claim. A body that says `expat` is still
+   * ignored, and everything else still resolves from the member or the
+   * operator's default.
+   */
+  const resolvedTier =
+    (await resolveTierClaim(db, actor, scope.branchId, input, now)) ??
+    (await resolveTier(db, actor.operatorId, input.memberId));
   const catalogue = await loadCatalogue(db, scope, input);
 
   // What the platform stood behind, and what it took on trust. Filled as the

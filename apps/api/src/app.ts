@@ -32,6 +32,7 @@ import { memberRoutes } from './routes/members';
 import { visitRoutes } from './routes/visits';
 import { bookingRoutes } from './routes/bookings';
 import { saleRoutes } from './routes/sales';
+import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
@@ -302,6 +303,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // writes them; these read and redeem them.
   await app.register(bookingRoutes, { prefix: '/bookings' });
   await app.register(saleRoutes, { prefix: '/sales' });
+  // A document reception checked for a visitor who is not a member yet
+  // (SCRUM-307), so the cart can be priced at that tier without the tier ever
+  // being taken from the cart.
+  await app.register(saleTierRoutes, { prefix: '/sales' });
   await app.register(catalogRoutes);
   // No prefix, like the catalogue: the fleet's branch-scoped resources are
   // nested under /branches/:branchId/… and its by-id routes are not, so the

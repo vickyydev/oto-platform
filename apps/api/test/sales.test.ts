@@ -1236,6 +1236,8 @@ describe('the seam between this and the till', () => {
       '/sales/',
       '/sales/{id}/finalise',
       '/sales/{id}',
+      // SCRUM-307 — the document check that prices a walk-in's cart.
+      '/sales/tier-claims',
     ]);
   });
 
@@ -1257,12 +1259,17 @@ describe('the seam between this and the till', () => {
     // reason (SCRUM-297): with no branch in the request the question is not
     // "may you act on this branch" but "which branches do you hold", and a
     // route-level permission with no target cannot ask that one.
+    // The tier claim (SCRUM-307) is guarded on the permission that records a
+    // verification against a member, because it is the same act one step
+    // earlier — and it declares its branch for the same reason the cart routes
+    // do, the handler re-checking the branch it settles on.
     expect(guards).toEqual([
       'GET /sales dynamic no-target',
       'GET /sales/:id pos:sale:read no-target',
       'POST /sales pos:sale:create body.branchId',
       'POST /sales/:id/finalise pos:sale:update no-target',
       'POST /sales/quote pos:sale:create body.branchId',
+      'POST /sales/tier-claims pos:member:update body.branchId',
     ]);
   });
 });

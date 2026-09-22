@@ -3,6 +3,7 @@ export * from './money';
 export * from './phone';
 export * from './dates';
 export * from './business-date';
+export * from './tier-proof';
 export * from './pricing-mode';
 export * from './permissions';
 export * from './catalog-shapes';

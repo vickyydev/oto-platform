@@ -8,7 +8,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CustomerTier, Member, TierVerification } from '@/types';
-import { getProofTypes, verifyMemberTier } from '@/mockApi';
+import { verifyMemberTier } from '@/mockApi';
+import { TIER_PROOF_TYPES } from '@/lib/tierProof';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
 import { tierLabel } from '@/lib/membership';
@@ -47,7 +48,9 @@ export function VerifyTierModal({
   const [otherDoc, setOtherDoc] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [busy, setBusy] = useState(false);
-  const proofTypes = getProofTypes();
+  // A fixed built-in list — no route serves it (see `lib/tierProof.ts`). The
+  // verification it produces is written to the platform, not to the fixtures.
+  const proofTypes = TIER_PROOF_TYPES;
 
   useEffect(() => {
     if (open) {

@@ -3,6 +3,7 @@ import { computeTotals } from '@/lib/sale';
 import { summarizeTax } from '@/lib/tax';
 import {
   computeTicketCartTotals,
+  newId,
   type AppliedPromo,
   type TaxBreakdown as EngineTaxBreakdown,
   type TaxableCategory,
@@ -139,6 +140,19 @@ export interface SaleCartPayload {
   branchId: string;
   stationId: string;
   tier: string;
+  /**
+   * SCRUM-307 — the action id of a document check recorded through
+   * `POST /sales/tier-claims`, when this cart is for a visitor who is not a
+   * member yet.
+   *
+   * It is what makes a discounted walk-in priceable at all: `tier` above is
+   * ignored by the platform, and with no member to read a tier from the cart
+   * would otherwise be priced at the default rate — which is how every Expat
+   * and Thai sale came back as `SALE_LINE_PRICE_MISMATCH`. What this names is
+   * a row the platform wrote under a permission check and stamped with the
+   * verifier and the branch; naming it is not the same as naming a price.
+   */
+  tierClaimActionId?: string | null;
   pricingMode: RateMode;
   pricingModeReason: string;
   /** Read live from the catalogue, never snapshotted — the prototype's rule. */
@@ -365,8 +379,41 @@ function tenderSignature(tender: SaleTenderPayload): string {
   return h.toString(16).padStart(8, '0');
 }
 
+/** What the till sends when staff confirm a discount-tier document. */
+export interface SaleTierClaimBody {
+  /** One tap on Confirm, however many HTTP attempts it takes. */
+  actionId: string;
+  branchId: string;
+  toTier: string;
+  /** The KIND of document — `Passport`, `School card`. Never its number. */
+  evidenceType: string;
+  /** The document's expiry, `YYYY-MM-DD`. */
+  evidenceExpiresAt: string;
+}
+
+/** The claim as the platform answers it. The tier on it is the platform's. */
+export interface ApiTierClaim {
+  id: string;
+  actionId: string;
+  branchId: string;
+  toTier: string;
+  /** When it stops pricing anything. */
+  expiresAt: string;
+}
+
 export const salesApi = {
   quote: (body: SaleCartPayload) => api.post<{ quote: ApiSaleQuote }>('/sales/quote', body),
+  /**
+   * SCRUM-307 — record the document staff just checked for a visitor who has
+   * given no details yet, so the cart that follows is priced at the rate it
+   * supports. The verifier and the branch are stamped from the session on the
+   * platform's side; nothing here says who checked it.
+   */
+  tierClaim: (body: SaleTierClaimBody) =>
+    api.post<{ claim: ApiTierClaim }>('/sales/tier-claims', body, {
+      idempotencyKey: `tier-claim:${body.actionId}`,
+      headers: { 'x-oto-action-id': body.actionId },
+    }),
   /**
    * The action id rides in the body AND in `x-oto-action-id`, because the
    * platform reads either and the header is what a proxy, a log line and the
@@ -399,6 +446,8 @@ export interface CartIdentity {
   branchId: string;
   stationId: string;
   tier: string;
+  /** See `SaleCartPayload.tierClaimActionId` — set when a document was checked. */
+  tierClaimActionId?: string | null;
   memberId?: string | null;
   customerPhone?: string | null;
   customerNickname?: string | null;
@@ -447,6 +496,7 @@ export function buildCartPayload(
     branchId: identity.branchId,
     stationId: identity.stationId,
     tier: identity.tier,
+    ...(identity.tierClaimActionId ? { tierClaimActionId: identity.tierClaimActionId } : {}),
     pricingMode: mode,
     pricingModeReason: options.modeReason ?? rate.reason,
     socks: {
@@ -836,6 +886,37 @@ export interface QuoteCartArgs {
  * its own figure. Only "there is no such route here" and "nothing answered"
  * fall back.
  */
+/**
+ * SCRUM-307 — hand the document check to the platform, and get back the action
+ * id the cart carries from here on.
+ *
+ * Called at the moment staff confirm a passport or a certificate for somebody
+ * who has not given their details yet. Everything after it — the quote, the
+ * sale — prices from the claim this writes, so it is awaited rather than fired
+ * off: a cart quoted before the claim lands is a cart quoted at the tourist
+ * rate, which is the disagreement that made these sales impossible to
+ * complete. It throws on refusal, because a discounted rate the platform has
+ * not recorded is one nobody can charge.
+ */
+export async function claimVerifiedTier(input: {
+  branchId: string;
+  tier: string;
+  /** The document type as the modal named it. */
+  proofType: string;
+  /** `YYYY-MM-DD`. */
+  expiresAt: string;
+}): Promise<string> {
+  const actionId = newId();
+  await salesApi.tierClaim({
+    actionId,
+    branchId: input.branchId,
+    toTier: input.tier,
+    evidenceType: input.proofType,
+    evidenceExpiresAt: input.expiresAt,
+  });
+  return actionId;
+}
+
 export async function quoteCart(args: QuoteCartArgs): Promise<CartQuote> {
   const { lines, discounts, manualDiscounts, identity } = args;
   const local = localQuote(lines, discounts, manualDiscounts, {

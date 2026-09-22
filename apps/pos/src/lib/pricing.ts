@@ -1,4 +1,5 @@
-import { TicketType, CustomerTier, AddOn, SelectedAddOn, AddOnVariantQty, CartLine, DiscountComponentTarget } from '@/types';
+import { TicketType, CustomerTier, AddOn, SelectedAddOn, AddOnVariantQty, CartLine, DiscountComponentTarget, WeekdayWeekendPrice } from '@/types';
+import { tierLabel } from '@/lib/membership';
 // Import the catalog getters from their source (the store), NOT from mockApi.
 // mockApi -> lib/sale -> lib/pricing already forms an import cycle; pulling
 // getAddOns from mockApi closed that loop, so when a module evaluated pricing.ts
@@ -10,30 +11,60 @@ import { RateMode, resolveRate, todayRateMode } from '@/lib/pricingMode';
 const SOCKS_ID = 'a-socks';
 
 /**
- * Defensive per-tier ticket price lookup, resolved to a concrete ฿ number for
- * `mode` (defaults to today's active rate). A tier with no entry in the price
- * map is "not priced" yet (e.g. a tier the owner just added but hasn't priced
- * on this ticket) — treat it as 0 rather than letting `undefined` poison the math.
+ * The weekday/weekend pair this ticket charges a tier, or null when nobody has
+ * set one — the tier was added in Admin and this ticket was never given a price
+ * for it. A pair missing either half is not half-priced, it is unpriced.
+ */
+function pricedPair(ticket: TicketType, tier: CustomerTier): WeekdayWeekendPrice | null {
+  const p = ticket.prices[tier];
+  return p && Number.isFinite(p.weekday) && Number.isFinite(p.weekend) ? p : null;
+}
+
+/**
+ * THE KID PRICE, OR NOTHING — SCRUM-228.
+ *
+ * "No price set" and "฿0" are different answers and this is where they are kept
+ * apart. `null` means nobody priced this tier on this ticket; a number, 0
+ * included, means somebody did. Every surface that decides whether a ticket can
+ * be sold, and every surface that prints a figure at a visitor, reads this one
+ * rather than the number below.
+ */
+export function tierPriceTHB(
+  ticket: TicketType,
+  tier: CustomerTier,
+  mode: RateMode = todayRateMode().mode,
+): number | null {
+  const pair = pricedPair(ticket, tier);
+  return pair ? resolveRate(pair, mode) : null;
+}
+
+/**
+ * The same lookup flattened to a ฿ number, with an unpriced tier as 0.
+ *
+ * The zero is for arithmetic and layout — a subtotal, a row that has to render
+ * something — and it is why an unpriced tier used to reach the payment screen
+ * as a free ticket. It is safe only behind a refusal, and the refusals are the
+ * ticket card, which does not answer a press for a tier it cannot price; the
+ * order panel, which does not open Pay on a cart `unpricedCartLines` names; and
+ * both tills' preflights, which refuse the write.
  */
 export function priceForTier(
   ticket: TicketType,
   tier: CustomerTier,
   mode: RateMode = todayRateMode().mode,
 ): number {
-  return resolveRate(ticket.prices[tier], mode);
+  return tierPriceTHB(ticket, tier, mode) ?? 0;
 }
 
 /**
  * Whether this ticket carries a kid price for this tier at all.
  *
  * A missing entry is not "free" — it is a tier nobody has priced on this
- * ticket, and `priceForTier` resolves it to 0 because a number has to come
- * back for the card to render. Every path that takes money asks this first
- * (SCRUM-228). An explicit 0 is a real price and passes.
+ * ticket. Every path that takes money asks this first (SCRUM-228). An explicit
+ * 0 is a real price and passes.
  */
 export function isTierPriced(ticket: TicketType, tier: CustomerTier): boolean {
-  const p = ticket.prices[tier];
-  return !!p && Number.isFinite(p.weekday) && Number.isFinite(p.weekend);
+  return pricedPair(ticket, tier) !== null;
 }
 
 /** Whether the adult rule that charges for this tier carries the price it charges. */
@@ -80,6 +111,27 @@ export function unpricedCartLines(lines: CartLine[]): UnpricedLine[] {
     }
   }
   return out;
+}
+
+/**
+ * What to put in front of the person at the till when a price is missing: which
+ * tier, on which ticket, and where it is set. One wording, used by the ticket
+ * card that refuses the choice, the order panel that refuses the payment and
+ * the preflight that refuses the write, so staff are told the same thing
+ * wherever they meet it.
+ */
+export function unpricedReason(
+  ticketName: string,
+  tier: CustomerTier,
+  what: 'kid' | 'adult' = 'kid',
+): string {
+  const kind = what === 'adult' ? 'adult price' : 'price';
+  return `No ${tierLabel(tier)} ${kind} for ${ticketName} — set it in Admin → Tickets`;
+}
+
+/** The same sentence for a cart line `unpricedCartLines` named. */
+export function unpricedLineReason(line: UnpricedLine): string {
+  return unpricedReason(line.ticketName, line.tier, line.what);
 }
 
 export interface ResolvedAdultLine {
