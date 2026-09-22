@@ -1,0 +1,17 @@
+Run on 23 September 2026 from apps/api, against Docker Postgres.
+Command: pnpm exec vitest run test/route-scope-target.test.ts --reporter=verbose
+Postgres server log lines removed; everything else is the run as it printed.
+
+RUN  v3.2.7 C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/apps/api
+
+ ✓ test/route-scope-target.test.ts > by-id routes (SCRUM-290) > the source walk found every route the app registered 4ms
+ ✓ test/route-scope-target.test.ts > by-id routes (SCRUM-290) > every by-id route declares a target or establishes ownership before acting 4ms
+ ✓ test/route-scope-target.test.ts > by-id routes (SCRUM-290) > the routes excused from declaring a target are only these, and all are platform-wide 1ms
+ ✓ test/route-scope-target.test.ts > by-id routes (SCRUM-290) > is calibrated against the leaks it was written for > refuses the shift-token revoke as it stood before SCRUM-280 1ms
+ ✓ test/route-scope-target.test.ts > by-id routes (SCRUM-290) > is calibrated against the leaks it was written for > refuses the alert acknowledge as it stood before SCRUM-281, audit row and all 1ms
+ ✓ test/route-scope-target.test.ts > by-id routes (SCRUM-290) > is calibrated against the leaks it was written for > accepts a handler that loads the row and checks the operator on it 0ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  01:49:23
+   Duration  9.86s (transform 3.57s, setup 0ms, collect 8.19s, tests 1.12s, environment 0ms, prepare 232ms)

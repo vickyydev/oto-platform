@@ -1,0 +1,13 @@
+inject poison -> 200 {"ok":true,"message":"Injected one malformed event (poison). It is open on Failures > Quarantine with an alert, and can be replayed or discarded from there."}
+
+target alert 01a0ca78-b075-782d-ab62-76ee8d4bd8b4 sync.quarantine:01a0be8c-89a0-74fa-9495-fb4a4acb65bc 1 event(s) from Virtual box 1 could not be applied and are waiting on Failures > Quarantine
+
+second operator acknowledge -> 404 {"error":{"code":"NOT_FOUND","message":"That alert is not open and unacknowledged"}}
+
+anan acknowledge -> 200 {"ok":true}
+
+audit -> 200 [{"id":"01a0ca78-bd0d-73b2-9697-39cb9346c604","action":"ops.alert_acknowledge","entityType":"alert","entityId":"01a0ca78-b075-782d-ab62-76ee8d4bd8b4","actorAccountId":"01a0bbdc-8c64-7283-aa3b-2af7e79c525d","branchId":"01a0bbdc-8c42-7753-b7e3-5ae19fb66d33","requestId":"ad76cefc-77d2-4722-bdc2-348054df46bb","before":null,"after":{"key":"sync.quarantine:01a0be8c-89a0-74fa-9495-fb4a4acb65bc"},"createdAt":"2026-09-22T18:55:05.484Z"},{"id":"01a0bda1-8faa-73b6-aca4-f2774f8fe2e1","action":"ops.alert_acknowledge","entityType":"alert","entityId":"01a0bd98-812d-7248-a709-6e9e051ff127","actorAccountId":"01a0bbdc-8c64-7283-aa3b-2af7e79c525d","branchId":"01a0bbdc-8c42-7753-b7e3-5ae19fb66d33","requestId":"45b3c3db-08cb-4b77-a847-40e44c8caad9","before":null,"after":{"key":"ops.test:alert"},"createdAt":"2026-09-20T07:04:37.031Z"}]{
+  "alertId": "01a0ca78-b075-782d-ab62-76ee8d4bd8b4",
+  "key": "sync.quarantine:01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+  "title": "1 event(s) from Virtual box 1 could not be applied and are waiting on Failures > Quarantine"
+}

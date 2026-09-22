@@ -1,0 +1,23 @@
+Dao lists Floresta manager shift credentials
+  GET /accounts/01a0c9ae-5377-7b34-a9ab-22bf8086f5f7/staff-tokens
+  -> 403 {"error":{"code":"ROLE_NOT_DOMINATED","message":"You cannot grant or act on a role that carries a permission you do not hold yourself (admin:branch:read)"}}
+
+Dao ends a Floresta shift credential by id
+  DELETE /staff-tokens/01a0c9ae-5377-7b34-a9ab-22bf8086f5f7
+  -> 404 {"error":{"code":"STAFF_TOKEN_NOT_FOUND","message":"No such shift token"}}
+
+Second Operator admin lists the same
+  GET /accounts/01a0c9ae-5377-7b34-a9ab-22bf8086f5f7/staff-tokens
+  -> 404 {"error":{"code":"ACCOUNT_NOT_FOUND","message":"Account not found"}}
+
+Lek lists her own shift credentials
+  GET /accounts/01a0c9ae-5377-7b34-a9ab-22bf8086f5f7/staff-tokens
+  -> 200 {"tokens":[]}
+
+Dao lists her own shift credentials
+  GET /accounts/01a0c9ae-539f-7a52-987e-69d1c1a7a3cf/staff-tokens
+  -> 200 {"tokens":[]}
+
+Anan lists the Chalong manager’s
+  GET /accounts/01a0c9ae-539f-7a52-987e-69d1c1a7a3cf/staff-tokens
+  -> 200 {"tokens":[]}

@@ -1,0 +1,22 @@
+Run on 23 September 2026 from apps/api, against Docker Postgres.
+Command: pnpm exec vitest run test/route-write-conformance.test.ts --reporter=verbose
+Postgres server log lines removed; everything else is the run as it printed.
+
+RUN  v3.2.7 C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos/apps/api
+
+ ✓ test/route-write-conformance.test.ts > the audit row commits with the change (SCRUM-291) > no audit.record inside a transaction is written on the pool 40ms
+ ✓ test/route-write-conformance.test.ts > the audit row commits with the change (SCRUM-291) > catches the child.create call as it stood before SCRUM-283 1ms
+ ✓ test/route-write-conformance.test.ts > the audit row commits with the change (SCRUM-291) > accepts the same call with the transaction handle 0ms
+ ✓ test/route-write-conformance.test.ts > one operation, one transaction (SCRUM-291) > the source walk found every route the app registered 1ms
+ ✓ test/route-write-conformance.test.ts > one operation, one transaction (SCRUM-291) > every mutating route opens a transaction, or writes nothing of its own 6ms
+ ✓ test/route-write-conformance.test.ts > one operation, one transaction (SCRUM-291) > nothing on the no-write list actually writes 3ms
+ ✓ test/route-write-conformance.test.ts > one operation, one transaction (SCRUM-291) > every route on either list is still registered 1ms
+ ✓ test/route-write-conformance.test.ts > one operation, one transaction (SCRUM-291) > every route on the known-failure list does write, so the debt is real 1ms
+ ✓ test/route-write-conformance.test.ts > the idempotency key (SCRUM-291) > only these mutating routes are outside the replay store 1ms
+ ✓ test/route-write-conformance.test.ts > the idempotency key (SCRUM-291) > the plugin still claims a key on all four mutating verbs 1ms
+ ✓ test/route-write-conformance.test.ts > the idempotency key (SCRUM-291) > every other mutating route that has a session is therefore covered 1ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  01:49:35
+   Duration  8.41s (transform 2.93s, setup 0ms, collect 6.73s, tests 1.12s, environment 0ms, prepare 247ms)

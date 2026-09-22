@@ -1,0 +1,9 @@
+PUT /me/session/branch {Chalong} -> 200 {"ok":true}
+
+GET /audit?action=session.branch_switch -> 200 [{"id":"01a0ca79-5931-7876-a9e9-8bad9f46cde5","action":"session.branch_switch","entityType":"session","entityId":"01a0ca79-57f0-7683-a127-b81b022706b8","actorAccountId":"01a0bbdc-8c64-7283-aa3b-2af7e79c525d","branchId":"01a0c9ae-52cf-7aa1-baca-fc55e449148e","requestId":"da1b591e-3847-4b2b-8235-b0534e033f3a","before":{"branchId":"01a0bbdc-8c42-7753-b7e3-5ae19fb66d33"},"after":{"branchId":"01a0c9ae-52cf-7aa1-baca-fc55e449148e"},"createdAt":"2026-09-22T18:55:45.457Z"}]
+
+lek PUT /me/session/branch {Chalong} -> 403 {"error":{"code":"OUT_OF_BRANCH_SCOPE","message":"You hold no access at that branch"}}
+
+PUT /me/session/branch {Floresta} -> 200 {"ok":true}
+
+GET /staff-tokens/settings -> 200 {"available":false,"kid":null,"ttlSeconds":null,"offlineSignIn":false}
