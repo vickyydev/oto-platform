@@ -473,6 +473,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         confidenceScore: missedClockInData.confidenceScore,
         livenessScore: missedClockInData.livenessScore,
         kioskDeviceId: missedClockInData.kioskDeviceId,
+        deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
       });
       const data = await res.json();
       
@@ -520,6 +521,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         confidenceScore: missedClockInData.confidenceScore,
         livenessScore: missedClockInData.livenessScore,
         kioskDeviceId: missedClockInData.kioskDeviceId,
+        deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
       });
       const data = await res.json();
       
@@ -558,6 +560,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         confidenceScore: unscheduledWorkData.confidenceScore,
         livenessScore: unscheduledWorkData.livenessScore,
         kioskDeviceId: unscheduledWorkData.kioskDeviceId,
+        deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
       });
       const data = await res.json();
       

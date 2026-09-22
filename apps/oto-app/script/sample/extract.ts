@@ -556,10 +556,11 @@ async function main(): Promise<void> {
       visaWpNotes: (e.visa_wp_notes as string | null) ?? null,
       jobDescription: (e.job_description as string | null) ?? null,
       /**
-       * The enrolment state and the Rekognition id, carried as they are. The id
-       * points into a face collection this deployment will not have, so nothing
-       * can be matched against it — it reads on the screen as "enrolled" and
-       * fails at the kiosk, which is the truth of a copied park.
+       * Face enrolment is extracted so the sample records that the export had
+       * it, and the WRITER (`main.ts`) discards it on purpose — see the comment
+       * there. Short version: the mock face matcher clocks anyone in as the
+       * first enrolled employee, so an enrolled row on staging is an
+       * impersonation, not a harmless "enrolled but cannot match".
        */
       faceEnrollmentStatus: (e.face_enrollment_status as string | null) ?? null,
       faceId: (e.face_id as string | null) ?? null,

@@ -466,17 +466,25 @@ async function ensureEmployees(
           visaWpNotes: p.visaWpNotes,
           jobDescription: p.jobDescription,
           /**
-           * The enrolment state and its Rekognition reference, as the export
-           * holds them. The id points into a face collection this deployment
-           * does not have, so the kiosk cannot match against it — the staff
-           * record reads "enrolled" and a face clock-in would fail. That is the
-           * honest state of a copied park, and re-enrolling here would write a
-           * biometric template nobody asked for.
+           * NO face enrolment is carried, whatever the export says.
+           *
+           * An earlier version of this comment claimed an enrolled record was
+           * harmless here because the face id points into a collection this
+           * deployment does not have, so a face clock-in "would fail". That
+           * was measured false: with USE_AWS_REKOGNITION unset — the default,
+           * and what staging runs — the mock matcher returns the FIRST
+           * ENROLLED EMPLOYEE for any face at all. Random bytes as a face came
+           * back as a named person. So with real rows and an enrolled status,
+           * anyone at a provisioned kiosk is clocked in as, and shown the name
+           * of, whoever sorts first in that park.
+           *
+           * Leaving everybody unenrolled is what makes the real rows safe to
+           * load. The phone and PIN paths, which check a credential and a
+           * named person, are the ones a kiosk uses on this deployment.
            */
-          faceEnrollmentStatus:
-            p.faceEnrollmentStatus as typeof employees.$inferInsert.faceEnrollmentStatus,
-          faceId: p.faceId,
-          faceEnrolledAt: at(p.faceEnrolledAt),
+          faceEnrollmentStatus: null,
+          faceId: null,
+          faceEnrolledAt: null,
           // The policy flag, not the PIN. No PIN hash is carried.
           timeclockPinRequired: p.timeclockPinRequired,
           phoneFallbackCount30Day: p.phoneFallbackCount30Day,

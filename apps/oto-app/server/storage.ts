@@ -504,6 +504,13 @@ export interface IStorage {
         getEmployees(): Promise<Employee[]>;
         getEmployeesWithAccess(): Promise<EmployeeWithAccess[]>;
         getEmployee(id: string): Promise<Employee | undefined>;
+        // The same read, confined to one tenant. An unauthenticated surface --
+        // the kiosks -- uses this: an employee id is not a secret, and a park's
+        // device may only read the people that park employs.
+        getEmployeeInTenant(
+                id: string,
+                tenantId: string,
+        ): Promise<Employee | undefined>;
         getEmployeeByUserId(userId: string): Promise<Employee | undefined>;
         getEmployeesByPersonId(personId: string): Promise<Employee[]>;
         getEmployeesTransferredFromBranch(
@@ -860,6 +867,13 @@ export interface IStorage {
         // Deliberately no getEmployeeByPin: a PIN identifies nobody on its own.
         // Read the employee, then compare against that employee's stored digest.
         getEmployeeByPhoneE164(phoneE164: string): Promise<Employee | undefined>;
+        // Phone lookup confined to one tenant, for the kiosks: a number that
+        // belongs to another park must read the same as a number that belongs
+        // to nobody.
+        getEmployeeByPhoneE164InTenant(
+                phoneE164: string,
+                tenantId: string,
+        ): Promise<Employee | undefined>;
         updateEmployeePhoneE164(id: string, phoneE164: string): Promise<Employee>;
         incrementEmployeePhoneFallbackUsage(id: string): Promise<void>;
         getEmployeePhoneFallbackCount(
@@ -869,6 +883,12 @@ export interface IStorage {
         incrementEmployeePinUsage(id: string): Promise<void>;
         refreshEmployeePinUsageCount(id: string): Promise<number>;
         getEnrolledEmployees(branchId?: string): Promise<Employee[]>;
+        // The candidate set a face is matched against, confined to one tenant,
+        // so a kiosk never has another park's faces put in front of its matcher.
+        getEnrolledEmployeesInTenant(
+                tenantId: string,
+                branchId?: string,
+        ): Promise<Employee[]>;
 
         // Departments (company-wide, assigned to branches)
         getDepartments(branchId?: string): Promise<Department[]>;
@@ -2995,6 +3015,22 @@ export class DatabaseStorage implements IStorage {
                 return employee || undefined;
         }
 
+        async getEmployeeInTenant(
+                id: string,
+                tenantId: string,
+        ): Promise<Employee | undefined> {
+                const [employee] = await db
+                        .select()
+                        .from(employees)
+                        .where(
+                                and(
+                                        eq(employees.id, id),
+                                        eq(employees.tenantId, tenantId),
+                                ),
+                        );
+                return employee || undefined;
+        }
+
         async getEmployeeByUserId(userId: string): Promise<Employee | undefined> {
                 const [employee] = await db
                         .select()
@@ -4989,6 +5025,22 @@ export class DatabaseStorage implements IStorage {
                 return employee;
         }
 
+        async getEmployeeByPhoneE164InTenant(
+                phoneE164: string,
+                tenantId: string,
+        ): Promise<Employee | undefined> {
+                const [employee] = await db
+                        .select()
+                        .from(employees)
+                        .where(
+                                and(
+                                        eq(employees.phoneE164, phoneE164),
+                                        eq(employees.tenantId, tenantId),
+                                ),
+                        );
+                return employee;
+        }
+
         async updateEmployeePhoneE164(
                 id: string,
                 phoneE164: string,
@@ -5095,6 +5147,23 @@ export class DatabaseStorage implements IStorage {
 
         async getEnrolledEmployees(branchId?: string): Promise<Employee[]> {
                 const conditions = [eq(employees.faceEnrollmentStatus, "ENROLLED")];
+                if (branchId) {
+                        conditions.push(eq(employees.branchId, branchId));
+                }
+                return await db
+                        .select()
+                        .from(employees)
+                        .where(and(...conditions));
+        }
+
+        async getEnrolledEmployeesInTenant(
+                tenantId: string,
+                branchId?: string,
+        ): Promise<Employee[]> {
+                const conditions = [
+                        eq(employees.faceEnrollmentStatus, "ENROLLED"),
+                        eq(employees.tenantId, tenantId),
+                ];
                 if (branchId) {
                         conditions.push(eq(employees.branchId, branchId));
                 }
