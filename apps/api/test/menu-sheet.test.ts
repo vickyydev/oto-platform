@@ -155,20 +155,20 @@ beforeAll(async () => {
   // A small menu of our own, through the real write routes.
   const food = await call('POST', '/menu/categories', {
     cookie,
-    payload: { code: 'FOOD', name: 'Food', taxableCategory: 'fnb', defaultPrepStation: 'kitchen', sortOrder: 0 },
+    payload: { code: 'T-FOOD', name: 'Food', taxableCategory: 'fnb', defaultPrepStation: 'kitchen', sortOrder: 0 },
   });
   const mains = await call('POST', '/menu/categories', {
     cookie,
-    payload: { code: 'FOOD-MAINS', name: 'Mains', parentId: food.body.id as unknown as string, sortOrder: 0 },
+    payload: { code: 'T-FOOD-MAINS', name: 'Mains', parentId: food.body.id as unknown as string, sortOrder: 0 },
   });
   await call('POST', '/menu/categories', {
     cookie,
-    payload: { code: 'DRINKS', name: 'Drinks', taxableCategory: 'fnb', defaultPrepStation: 'bar', sortOrder: 1 },
+    payload: { code: 'T-DRINKS', name: 'Drinks', taxableCategory: 'fnb', defaultPrepStation: 'bar', sortOrder: 1 },
   });
   const ice = await call('POST', '/menu/modifier-groups', {
     cookie,
     payload: {
-      name: 'Ice level',
+      name: 'Test ice level',
       required: true,
       sortOrder: 0,
       options: [
@@ -181,13 +181,13 @@ beforeAll(async () => {
   const mainsId = mains.body.id as unknown as string;
   const drinks = await call('GET', `/branches/${branchId}/menu`, { cookie });
   const drinksId = (drinks.body.categories as unknown as Array<{ id: string; code: string }>).find(
-    (c) => c.code === 'DRINKS',
+    (c) => c.code === 'T-DRINKS',
   )!.id;
 
   await call('POST', `/branches/${branchId}/menu/products`, {
     cookie,
     payload: {
-      code: 'FB-PIZZA',
+      code: 'T-PIZZA',
       name: 'Margherita Pizza',
       description: 'Tomato, mozzarella, basil',
       categoryId: mainsId,
@@ -199,7 +199,7 @@ beforeAll(async () => {
   await call('POST', `/branches/${branchId}/menu/products`, {
     cookie,
     payload: {
-      code: 'FB-SODA',
+      code: 'T-SODA',
       name: 'Soft Drink',
       categoryId: drinksId,
       priceSatang: 4500,
@@ -208,7 +208,7 @@ beforeAll(async () => {
   });
   await call('POST', `/branches/${branchId}/menu/products`, {
     cookie,
-    payload: { code: 'FB-WATER', name: 'Bottled Water', categoryId: drinksId, priceSatang: 2500 },
+    payload: { code: 'T-WATER', name: 'Bottled Water', categoryId: drinksId, priceSatang: 2500 },
   });
 });
 
@@ -225,7 +225,7 @@ describe('the export', () => {
     expect(sheets.get(CATEGORY_SHEET)![0]).toEqual([...CATEGORY_SHEET_COLUMNS]);
 
     const rows = asObjects(sheets.get(MENU_SHEET)!);
-    const pizza = rows.find((r) => r.code === 'FB-PIZZA')!;
+    const pizza = rows.find((r) => r.code === 'T-PIZZA')!;
     // Baht as a person types it, not satang.
     expect(pizza.price_weekday).toBe(220);
     expect(pizza.cost).toBe(78);
@@ -233,13 +233,13 @@ describe('the export', () => {
     expect(pizza.price_weekend).toBeNull();
     expect(pizza.name_en).toBe('Margherita Pizza');
     expect(pizza.name_th).toBe('พิซซ่ามาร์เกอริต้า');
-    expect(pizza.category).toBe('FOOD');
-    expect(pizza.subcategory).toBe('FOOD-MAINS');
+    expect(pizza.category).toBe('T-FOOD');
+    expect(pizza.subcategory).toBe('T-FOOD-MAINS');
     expect(pizza.available).toBe('yes');
     expect(String(pizza.id)).toMatch(/^[0-9a-f-]{36}$/);
 
-    const soda = rows.find((r) => r.code === 'FB-SODA')!;
-    expect(soda.modifier_groups).toBe('Ice level');
+    const soda = rows.find((r) => r.code === 'T-SODA')!;
+    expect(soda.modifier_groups).toBe('Test ice level');
   });
 
   it('names the file for the branch’s own calendar day, not UTC’s', async () => {
@@ -261,9 +261,9 @@ describe('the export', () => {
   it('writes the category tree with parents before their children', async () => {
     const rows = asObjects((await sheetsOf(await exportWorkbook())).get(CATEGORY_SHEET)!);
     const codes = rows.map((r) => r.code);
-    expect(codes.indexOf('FOOD')).toBeLessThan(codes.indexOf('FOOD-MAINS'));
-    const mains = rows.find((r) => r.code === 'FOOD-MAINS')!;
-    expect(mains.parent_code).toBe('FOOD');
+    expect(codes.indexOf('T-FOOD')).toBeLessThan(codes.indexOf('T-FOOD-MAINS'));
+    const mains = rows.find((r) => r.code === 'T-FOOD-MAINS')!;
+    expect(mains.parent_code).toBe('T-FOOD');
     // A sub-category leaves them blank to inherit, which is the prototype's rule.
     expect(mains.default_prep_station).toBeNull();
     expect(mains.default_tax_category).toBeNull();
@@ -313,9 +313,9 @@ describe('export → edit → preview → apply', () => {
     const categories = asObjects(sheets.get(CATEGORY_SHEET)!);
 
     // Exactly what a person does in Excel.
-    menu.find((r) => r.code === 'FB-PIZZA')!.price_weekday = 240;
-    menu.find((r) => r.code === 'FB-PIZZA')!.price_weekend = 260;
-    menu.find((r) => r.code === 'FB-WATER')!.action = 'archive';
+    menu.find((r) => r.code === 'T-PIZZA')!.price_weekday = 240;
+    menu.find((r) => r.code === 'T-PIZZA')!.price_weekend = 260;
+    menu.find((r) => r.code === 'T-WATER')!.action = 'archive';
     menu.push({
       id: null,
       code: 'FB-CAKE',
@@ -323,7 +323,7 @@ describe('export → edit → preview → apply', () => {
       name_th: 'เค้กช็อกโกแลต',
       description_en: 'A slice, with cream',
       description_th: null,
-      category: 'FOOD',
+      category: 'T-FOOD',
       subcategory: null,
       price_weekday: 130.5,
       price_weekend: null,
@@ -356,16 +356,16 @@ describe('export → edit → preview → apply', () => {
     expect(body.filename).toBe('menu.xlsx');
     expect(body.counts).toMatchObject({ create: 1, update: 1, archive: 1 });
     expect(body.notice).toContain('never removes anything you left out');
-    const pizza = body.rows.find((c) => c.code === 'FB-PIZZA')!;
+    const pizza = body.rows.find((c) => c.code === 'T-PIZZA')!;
     expect(pizza.action).toBe('update');
     // Named and valued as the SHEET spells it, because that is what was edited.
     expect(pizza.changes).toContainEqual({ field: 'price_weekday', from: '220', to: '240' });
     expect(pizza.changes).toContainEqual({ field: 'price_weekend', from: null, to: '260' });
-    expect(body.rows.find((c) => c.code === 'FB-SODA')!.action).toBe('unchanged');
+    expect(body.rows.find((c) => c.code === 'T-SODA')!.action).toBe('unchanged');
 
     // Nothing has been written.
     const items = await readMenuItems();
-    expect(items.find((i) => i.code === 'FB-PIZZA')!.priceSatang).toBe(22000);
+    expect(items.find((i) => i.code === 'T-PIZZA')!.priceSatang).toBe(22000);
     expect(items.some((i) => i.code === 'FB-CAKE')).toBe(false);
   });
 
@@ -385,7 +385,7 @@ describe('export → edit → preview → apply', () => {
     });
 
     const items = await readMenuItems();
-    const pizza = items.find((i) => i.code === 'FB-PIZZA')!;
+    const pizza = items.find((i) => i.code === 'T-PIZZA')!;
     expect(pizza.priceSatang).toBe(24000);
     expect(pizza.priceWeekendSatang).toBe(26000);
 
@@ -397,13 +397,13 @@ describe('export → edit → preview → apply', () => {
     expect(cake.effectivePrepStation).toBe('kitchen');
 
     // The withdrawal was explicit, and nothing else went with it.
-    expect(items.some((i) => i.code === 'FB-WATER')).toBe(false);
-    expect(items.some((i) => i.code === 'FB-SODA')).toBe(true);
+    expect(items.some((i) => i.code === 'T-WATER')).toBe(false);
+    expect(items.some((i) => i.code === 'T-SODA')).toBe(true);
   });
 
   it('keeps the languages the sheet has no column for', async () => {
     const items = await readMenuItems();
-    const pizza = items.find((i) => i.code === 'FB-PIZZA')!;
+    const pizza = items.find((i) => i.code === 'T-PIZZA')!;
     expect((pizza.translations as { fr?: { name?: string } }).fr?.name).toBe('Pizza Margherita');
   });
 
@@ -411,10 +411,10 @@ describe('export → edit → preview → apply', () => {
     const menu = await call('GET', `/branches/${branchId}/menu`, { cookie });
     const groups = menu.body.modifierGroups as unknown as Array<{ id: string; name: string }>;
     const soda = (menu.body.products as unknown as Array<{ code: string; linkedModifierGroupIds: string[] }>)
-      .find((i) => i.code === 'FB-SODA')!;
+      .find((i) => i.code === 'T-SODA')!;
     expect(
       soda.linkedModifierGroupIds.map((id) => groups.find((g) => g.id === id)?.name),
-    ).toEqual(['Ice level']);
+    ).toEqual(['Test ice level']);
   });
 
   it('refuses a confirmation once somebody else has moved the menu under it', async () => {
@@ -422,14 +422,14 @@ describe('export → edit → preview → apply', () => {
     // the token, not the rows.
     const sheets = await sheetsOf(await exportWorkbook());
     const menu = asObjects(sheets.get(MENU_SHEET)!);
-    menu.find((r) => r.code === 'FB-PIZZA')!.price_weekday = 245;
+    menu.find((r) => r.code === 'T-PIZZA')!.price_weekday = 245;
     const file = await rewrite(menu, asObjects(sheets.get(CATEGORY_SHEET)!));
 
     const previewed = await preview(file);
     const stale = (previewed.body as unknown as { previewToken: string }).previewToken;
 
     // Meanwhile, in the admin screen.
-    const soda = (await readMenuItems()).find((i) => i.code === 'FB-SODA')!;
+    const soda = (await readMenuItems()).find((i) => i.code === 'T-SODA')!;
     const moved = await call('PATCH', `/branches/${branchId}/menu/products/${soda.id}`, {
       cookie,
       payload: { priceSatang: 4900 },
@@ -440,7 +440,7 @@ describe('export → edit → preview → apply', () => {
     expect(res.statusCode).toBe(409);
     expect((res.body.error as unknown as { code: string }).code).toBe('MENU_CHANGED');
     // And the confirmed change did not land.
-    expect((await readMenuItems()).find((i) => i.code === 'FB-PIZZA')!.priceSatang).toBe(24000);
+    expect((await readMenuItems()).find((i) => i.code === 'T-PIZZA')!.priceSatang).toBe(24000);
   });
 
   it('refuses the same confirmation twice by the token, not by inventing a bad row', async () => {
@@ -466,7 +466,7 @@ describe('export → edit → preview → apply', () => {
     };
     expect(again.errors).toEqual([]);
     expect(again.counts).toMatchObject({ create: 0, archive: 0 });
-    expect(again.rows.find((r) => r.code === 'FB-WATER')!.action).toBe('unchanged');
+    expect(again.rows.find((r) => r.code === 'T-WATER')!.action).toBe('unchanged');
   });
 
   it('re-importing the current export changes nothing', async () => {
@@ -489,7 +489,7 @@ describe('an item left out of the sheet is left alone', () => {
     const before = await readMenuItems();
 
     // One category's worth of rows, the way somebody fixing three prices does it.
-    const trimmed = menu.filter((r) => r.code === 'FB-PIZZA');
+    const trimmed = menu.filter((r) => r.code === 'T-PIZZA');
     trimmed[0]!.price_weekday = 250;
     const file = await rewrite(trimmed, categories);
 
@@ -503,7 +503,7 @@ describe('an item left out of the sheet is left alone', () => {
 
     const after = await readMenuItems();
     expect(after.map((i) => i.code).sort()).toEqual(before.map((i) => i.code).sort());
-    expect(after.find((i) => i.code === 'FB-PIZZA')!.priceSatang).toBe(25000);
+    expect(after.find((i) => i.code === 'T-PIZZA')!.priceSatang).toBe(25000);
   });
 });
 
@@ -514,8 +514,8 @@ describe('a bad row refuses the whole file, and every bad row is named', () => {
     const categories = asObjects(sheets.get(CATEGORY_SHEET)!);
     const before = await readMenuItems();
 
-    menu.find((r) => r.code === 'FB-PIZZA')!.price_weekday = '฿220';
-    menu.find((r) => r.code === 'FB-SODA')!.category = 'NOSUCHCATEGORY';
+    menu.find((r) => r.code === 'T-PIZZA')!.price_weekday = '฿220';
+    menu.find((r) => r.code === 'T-SODA')!.category = 'NOSUCHCATEGORY';
     // A new row with none of what a new row needs.
     menu.push({
       id: null,
@@ -529,7 +529,7 @@ describe('a bad row refuses the whole file, and every bad row is named', () => {
       id: null,
       code: 'lower case',
       name_en: 'Bad code',
-      category: 'FOOD',
+      category: 'T-FOOD',
       price_weekday: 10,
       prep_station: 'microwave',
       available: 'perhaps',
@@ -560,13 +560,13 @@ describe('a bad row refuses the whole file, and every bad row is named', () => {
     expect(applied.statusCode).toBe(400);
     const after = await readMenuItems();
     expect(after.map((i) => i.code).sort()).toEqual(before.map((i) => i.code).sort());
-    expect(after.find((i) => i.code === 'FB-PIZZA')!.priceSatang).toBe(25000);
+    expect(after.find((i) => i.code === 'T-PIZZA')!.priceSatang).toBe(25000);
   });
 
   it('refuses a duplicate code inside one sheet, naming the other row', async () => {
     const sheets = await sheetsOf(await exportWorkbook());
     const menu = asObjects(sheets.get(MENU_SHEET)!);
-    menu.push({ ...menu.find((r) => r.code === 'FB-PIZZA')!, id: null, name_en: 'Twin' });
+    menu.push({ ...menu.find((r) => r.code === 'T-PIZZA')!, id: null, name_en: 'Twin' });
     const res = await preview(await rewrite(menu, asObjects(sheets.get(CATEGORY_SHEET)!)));
     const errors = (res.body as unknown as { errors: Array<{ message: string }> }).errors;
     expect(errors.some((e) => /is also on row \d+ of this sheet/.test(e.message))).toBe(true);
@@ -627,7 +627,7 @@ describe('the Categories sheet builds the tree the items need', () => {
     categories.push({
       code: 'TOO-DEEP',
       name_en: 'Too deep',
-      parent_code: 'FOOD-MAINS',
+      parent_code: 'T-FOOD-MAINS',
       sort_order: 9,
       default_prep_station: null,
       default_tax_category: null,
@@ -654,7 +654,7 @@ describe('confirming twice applies once', () => {
   it('refuses the second press, and replays the first when it carries the same key', async () => {
     const sheets = await sheetsOf(await exportWorkbook());
     const menu = asObjects(sheets.get(MENU_SHEET)!);
-    menu.find((r) => r.code === 'FB-PIZZA')!.price_weekday = 265;
+    menu.find((r) => r.code === 'T-PIZZA')!.price_weekday = 265;
     const file = await rewrite(menu, asObjects(sheets.get(CATEGORY_SHEET)!));
     const { previewToken } = (await preview(file)).body as unknown as { previewToken: string };
 
@@ -680,7 +680,7 @@ describe('confirming twice applies once', () => {
     expect(again.statusCode).toBe(409);
     expect(again.json().error.code).toBe('MENU_CHANGED');
 
-    expect((await readMenuItems()).find((i) => i.code === 'FB-PIZZA')!.priceSatang).toBe(26500);
+    expect((await readMenuItems()).find((i) => i.code === 'T-PIZZA')!.priceSatang).toBe(26500);
   });
 });
 
@@ -749,7 +749,7 @@ describe('re-importing the same file changes nothing the second time', () => {
       id: null,
       code: 'FB-NEVER',
       name_en: 'Never existed',
-      category: 'FOOD',
+      category: 'T-FOOD',
       price_weekday: 10,
       action: 'archive',
     });
@@ -766,7 +766,7 @@ describe('the preview counts what would happen, not what was typed', () => {
     const categories = asObjects(sheets.get(CATEGORY_SHEET)!);
 
     // One good edit, and one new row nothing can be done with.
-    menu.find((r) => r.code === 'FB-PIZZA')!.price_weekday = 270;
+    menu.find((r) => r.code === 'T-PIZZA')!.price_weekday = 270;
     menu.push({
       id: null,
       code: 'FB-BROKEN',

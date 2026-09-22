@@ -307,7 +307,7 @@ describe('the shared modifier library', () => {
     const res = await call('POST', '/menu/modifier-groups', {
       cookie: admin,
       payload: {
-        name: 'Ice level',
+        name: 'Test ice level',
         required: true,
         selectionType: 'single',
         sortOrder: 0,
@@ -354,7 +354,7 @@ describe('the shared modifier library', () => {
     ).find((g) => g.id === groupId)!;
     // A library group carries no product of its own; that is what makes it shared.
     expect(group.productId).toBeNull();
-    expect(group.name).toBe('Ice level');
+    expect(group.name).toBe('Test ice level');
     expect(group.options.map((o) => o.name)).toEqual(['Normal ice', 'Less ice', 'No ice']);
   });
 
@@ -384,7 +384,7 @@ describe('the shared modifier library', () => {
     const made = await call('POST', '/menu/modifier-groups', {
       cookie: admin,
       payload: {
-        name: 'Sugar level',
+        name: 'Test sugar level',
         selectionType: 'single',
         sortOrder: 1,
         options: [{ name: 'No sugar', priceSatang: 0, sortOrder: 0 }],
