@@ -1,5 +1,6 @@
 import {
   Activity,
+  Building2,
   FerrisWheel,
   HeartPulse,
   Plug,
@@ -71,6 +72,17 @@ export const consoleNav: ConsoleNavGroup[] = [
         // the stations but not the fleet gets the half it is entitled to
         // rather than a locked page.
         permission: 'admin:station:read',
+      },
+      {
+        id: 'branches',
+        label: 'Branches',
+        icon: Building2,
+        description:
+          'Every park, and the row it is joined to in the OTO App — mapped, app-only, or not mapped and why.',
+        // Reading the estate is the page; reconciling the two lists needs
+        // `admin:branch:update` and is checked on the button, so a manager who
+        // may see their own park gets the page rather than a locked door.
+        permission: 'admin:branch:read',
       },
       {
         id: 'booths',

@@ -435,9 +435,11 @@ export const branches = pgTable("branches", {
   googleDriveFolderName: text("google_drive_folder_name"),
   timezone: text("timezone").default("Asia/Bangkok").notNull(), // IANA timezone identifier
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  // Core sync fields
+  // Core sync fields. Written by the platform (SCRUM-268): core_branch_id is
+  // the platform branch id as text; APP_ONLY marks a row that trades nowhere
+  // (Head Office) and is deliberately left unmapped.
   coreBranchId: text("core_branch_id"),
-  coreSyncStatus: text("core_sync_status").$type<"PENDING" | "SUCCESS" | "FAILED" | null>(),
+  coreSyncStatus: text("core_sync_status").$type<"PENDING" | "SUCCESS" | "FAILED" | "APP_ONLY" | null>(),
   coreSyncedAt: timestamp("core_synced_at"),
   coreSyncError: text("core_sync_error"),
 }, (table) => [

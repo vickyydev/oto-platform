@@ -84,6 +84,14 @@ export async function appIdentityRoutes(app: App): Promise<void> {
           phone: z.string().optional(),
           name: z.string().min(1).optional(),
           /**
+           * The branch this person is being provisioned at (SCRUM-268).
+           * Optional: without it the seat comes from their employee record, and
+           * failing that from the branch this session is standing at — the
+           * order in `OtoAppSeatSource`. It decides which branch of the OTO App
+           * they land in, and nothing else.
+           */
+          branchId: z.string().uuid().optional(),
+          /**
            * What the OTO App's own user row needs. `role` is from that app's
            * vocabulary, not the platform's — the two describe different jobs.
            * `fullName` falls back to `name`, and then to the employee behind
@@ -278,6 +286,8 @@ export async function appIdentityRoutes(app: App): Promise<void> {
             fullName,
             role: otoAppUser.role,
             phoneE164: phone,
+            branchId: req.body.branchId ?? null,
+            sessionBranchId: auth.branchId,
           });
           externalUserId = created.id;
           appUserCreated = true;

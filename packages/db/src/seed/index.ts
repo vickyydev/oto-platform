@@ -31,6 +31,7 @@ import {
 } from '@oto/shared';
 import { and, eq, isNull, notInArray, sql } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
+import { reconcileAppBranches } from '../schema/otoapp';
 import * as s from '../schema/index';
 
 const b = satangFromBaht;
@@ -253,6 +254,37 @@ export async function seed(db: Db = getDb()): Promise<void> {
       .update(s.branch)
       .set({ country: 'TH' })
       .where(and(eq(s.branch.id, id), isNull(s.branch.country)));
+  }
+
+  /**
+   * The OTO App's own branch list, joined to these two (SCRUM-268).
+   *
+   * The app's rows are not seeded here and never will be: they come from the
+   * park's export through that app's own importer
+   * (`apps/oto-app/script/sample/main.ts`, which find-or-creates each of the
+   * three branches by its exact exported name — trailing space and all). So
+   * this is a reconciliation, not a seed: it matches what is there by trimmed,
+   * case-folded name, writes `core_branch_id`, and from then on the two are
+   * joined by id.
+   *
+   * It runs here rather than being left to an administrator because a database
+   * that has just been seeded and then has the app's baseline imported into it
+   * — which is the order every local and staging build uses — would otherwise
+   * carry two unjoined lists until somebody noticed. Idempotent, so running the
+   * sync a second time changes nothing, and silent when the app is not
+   * installed on this database at all, which is every platform-only deployment
+   * and almost every test.
+   *
+   * Only OTO's branches. `seedSecondOperator` below never reaches this: the
+   * second operator has no anchor in the app and its parks are not the app's
+   * parks, and putting one tenant's branch inside another's would be a leak
+   * dressed up as a convenience.
+   */
+  const appBranches = await reconcileAppBranches(db, { operatorId });
+  if (appBranches.installed && appBranches.writes > 0) {
+    console.log(
+      `OTO App branches: ${appBranches.matchedByName.length} matched by name, ${appBranches.created.length} created, ${appBranches.appOnly.length} app-only (Head Office and its like).`,
+    );
   }
 
   // Departments (CLAUDE.md §4) — per branch, because a department is where a

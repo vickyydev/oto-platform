@@ -443,7 +443,7 @@ export interface IStorage {
                 id: string,
                 branch: Partial<InsertBranch> & {
                         coreBranchId?: string | null;
-                        coreSyncStatus?: "PENDING" | "SUCCESS" | "FAILED" | null;
+                        coreSyncStatus?: "PENDING" | "SUCCESS" | "FAILED" | "APP_ONLY" | null;
                         coreSyncedAt?: Date | null;
                         coreSyncError?: string | null;
                 },
@@ -2645,7 +2645,7 @@ export class DatabaseStorage implements IStorage {
                 id: string,
                 branch: Partial<InsertBranch> & {
                         coreBranchId?: string | null;
-                        coreSyncStatus?: "PENDING" | "SUCCESS" | "FAILED" | null;
+                        coreSyncStatus?: "PENDING" | "SUCCESS" | "FAILED" | "APP_ONLY" | null;
                         coreSyncedAt?: Date | null;
                         coreSyncError?: string | null;
                 },

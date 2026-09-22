@@ -1,6 +1,13 @@
 import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { account, employee, operator, otoappUserBranchAccess, otoappUsers } from '@oto/db';
+import {
+  account,
+  employee,
+  operator,
+  otoappBranches,
+  otoappUserBranchAccess,
+  otoappUsers,
+} from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
@@ -61,6 +68,20 @@ async function platformBranch(name: string, code: string): Promise<string> {
   return res.json().id as string;
 }
 
+/**
+ * Take away the app row that opening a branch now creates for it (SCRUM-268),
+ * so that a test can arrange the app's side for itself.
+ *
+ * Every case below was written when the two lists were joined by nothing, and
+ * opening a park here left the app knowing nothing about it. That is no longer
+ * true — `POST /branches` maps the new branch in the same transaction — so the
+ * cases that are ABOUT an unmapped or differently-named app row have to undo
+ * that deliberately rather than by accident.
+ */
+async function dropAppRowFor(branchId: string): Promise<void> {
+  await ctx.db.delete(otoappBranches).where(eq(otoappBranches.coreBranchId, branchId));
+}
+
 /** A branch of the OTO App, written as that app's own migrator left it. */
 async function appBranch(opts: { name: string; coreBranchId?: string }): Promise<string> {
   const id = newId();
@@ -115,7 +136,10 @@ async function provision(accountId: string, email: string) {
     appBranch: {
       branchId: string | null;
       branchName: string | null;
+      branchIds: string[];
       matchedBy: string | null;
+      /** Which of the three candidates the branch came from — SCRUM-268, decision 3. */
+      seatedFrom: string | null;
       unplacedReason: string | null;
     };
   };
@@ -156,8 +180,11 @@ describe('a person provisioned into the OTO App lands in a branch (SCRUM-268)', 
     expect(rows[0]!.tenantId).toBe(appTenantId);
   });
 
-  it('falls back to an exact name when no row carries the id', async () => {
+  it('falls back to the name when no row carries the id', async () => {
     const platform = await platformBranch('Oto Play Park, Robinson Chalong', 'seam-chalong');
+    // The deployment this stands for is one whose rows predate the mapping:
+    // the app has the park under its own row and nothing carries the id yet.
+    await dropAppRowFor(platform);
     const app = await appBranch({ name: 'Oto Play Park, Robinson Chalong' });
 
     const accountId = await seatedAccount({
@@ -193,6 +220,7 @@ describe('a person provisioned into the OTO App lands in a branch (SCRUM-268)', 
 describe('and when it cannot be resolved, the answer says so (SCRUM-268)', () => {
   it('provisions them anyway when the app has no branch of that name', async () => {
     const platform = await platformBranch('Oto Play Park, Phuket Town', 'seam-town');
+    await dropAppRowFor(platform);
     const accountId = await seatedAccount({
       phone: '+66900000403',
       name: 'Nowhere To Sit',
@@ -210,13 +238,32 @@ describe('and when it cannot be resolved, the answer says so (SCRUM-268)', () =>
     expect(result.appBranch).toEqual({
       branchId: null,
       branchName: null,
+      branchIds: [],
       matchedBy: null,
+      seatedFrom: null,
       unplacedReason: 'no_app_branch',
     });
     expect(await branchAccessOf(result.externalUserId)).toHaveLength(0);
   });
 
-  it('says so when the platform does not know where the person works', async () => {
+  /**
+   * Somebody the platform does not place anywhere — an account created by the
+   * provisioning route itself has an employee record with no branch on it, and
+   * that is the ordinary case, not an edge one. "Which branch do they land in"
+   * has to have an answer, and the branch the provisioning was done at is it
+   * (SCRUM-268, decision 3). Last in the order, never first: the test below
+   * this one is the one that holds it there.
+   */
+  it('falls back to the branch the provisioning was done at', async () => {
+    const platform = await platformBranch('Oto Play Park, Patong', 'seam-patong');
+    const moved = await ctx.app.inject({
+      method: 'PUT',
+      url: '/me/session/branch',
+      headers: { cookie: adminCookie },
+      payload: { branchId: platform },
+    });
+    expect(moved.statusCode, moved.body).toBe(200);
+
     const accountId = await seatedAccount({
       phone: '+66900000404',
       name: 'No Branch On Record',
@@ -224,14 +271,26 @@ describe('and when it cannot be resolved, the answer says so (SCRUM-268)', () =>
     });
     const result = await provision(accountId, 'no.branch.on.record@otopark.test');
 
-    expect(result.appBranch.unplacedReason).toBe('no_platform_branch');
-    expect(await branchAccessOf(result.externalUserId)).toHaveLength(0);
+    expect(result.appBranch.seatedFrom).toBe('session');
+    expect(result.appBranch.branchName).toBe('Oto Play Park, Patong');
+    expect(await branchAccessOf(result.externalUserId)).toHaveLength(1);
   });
 
   it('declines to guess between two app branches of the same name', async () => {
-    const platform = await platformBranch('Oto Play Park, Kata', 'seam-kata');
+    // Both rows go in FIRST, so the branch is opened into an app that already
+    // has two candidates for it: the create hook refuses to choose between them
+    // for exactly the reason the seating does.
     await appBranch({ name: 'Oto Play Park, Kata' });
     await appBranch({ name: 'Oto Play Park, Kata' });
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/branches',
+      headers: { cookie: adminCookie },
+      payload: { name: 'Oto Play Park, Kata', code: 'seam-kata', timezone: 'Asia/Bangkok' },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().otoApp).toMatchObject({ appBranchId: null, reason: 'ambiguous_name' });
+    const platform = res.json().id as string;
 
     const accountId = await seatedAccount({
       phone: '+66900000405',
@@ -324,6 +383,11 @@ describe('the branch is the person’s, not the administrator’s (SCRUM-268)', 
   it('seats them where they work, with the administrator standing somewhere else', async () => {
     const theirs = await platformBranch('Oto Play Park, Kalim', 'seam-kalim');
     const elsewhere = await platformBranch('Oto Play Park, Rawai Two', 'seam-rawai-two');
+    // Opening each park gave it its app row; this is the ordinary shape now,
+    // and the two names are deliberately not the platform's, to prove the seat
+    // is resolved by the id rather than by reading a name twice.
+    await dropAppRowFor(theirs);
+    await dropAppRowFor(elsewhere);
     const theirAppBranch = await appBranch({ name: 'Kalim', coreBranchId: theirs });
     await appBranch({ name: 'Rawai Two', coreBranchId: elsewhere });
 

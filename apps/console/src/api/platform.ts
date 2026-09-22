@@ -74,3 +74,44 @@ export const directoryApi = {
   branches: () => api.get<{ branches: BranchRow[] }>('/branches'),
   accounts: () => api.get<{ accounts: AccountRow[] }>('/accounts'),
 };
+
+/**
+ * Each branch's row in the OTO App (SCRUM-268).
+ *
+ * `status` is the app's own column: SUCCESS once the two are joined, APP_ONLY
+ * for a row that is deliberately not a branch — Head Office trades nowhere —
+ * and FAILED with a reason when the join could not be made. `appBranchId` null
+ * is the fourth state: the app has never heard of this park.
+ */
+export interface BranchAppMappingRow {
+  branchId: string;
+  branchName: string;
+  appBranchId: string | null;
+  appBranchName: string | null;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'APP_ONLY' | null;
+  error: string | null;
+}
+
+export interface BranchAppMapping {
+  /** False when the OTO App's tables are not on this deployment at all. */
+  installed: boolean;
+  branches: BranchAppMappingRow[];
+  /** Rows the app has and the platform does not: Head Office and its like. */
+  appOnly: Array<{ appBranchId: string; appBranchName: string; status: string | null }>;
+}
+
+export interface BranchAppReconcileReport {
+  installed: boolean;
+  alreadyMapped: number;
+  matchedByName: Array<{ branchName: string; appBranchName: string }>;
+  created: Array<{ branchName: string }>;
+  appOnly: Array<{ appBranchName: string; marked: boolean }>;
+  ambiguous: Array<{ appBranchName: string; why: string }>;
+  unmapped: Array<{ branchName: string; reason: string }>;
+  writes: number;
+}
+
+export const branchAppApi = {
+  mapping: () => api.get<BranchAppMapping>('/branches/oto-app'),
+  reconcile: () => api.post<BranchAppReconcileReport>('/branches/oto-app/reconcile'),
+};

@@ -14,6 +14,7 @@ import { PlatformStatusProvider } from '@/lib/platformStatus';
 import { useTheme } from '@/lib/theme';
 import { Activity } from '@/pages/Activity';
 import { Booths } from '@/pages/Booths';
+import { Branches } from '@/pages/Branches';
 import { Devices } from '@/pages/Devices';
 import { Failures } from '@/pages/Failures';
 import { Health } from '@/pages/Health';
@@ -140,6 +141,11 @@ function Routes() {
       <Route path="/devices">
         <Section id="devices">
           <Devices />
+        </Section>
+      </Route>
+      <Route path="/branches">
+        <Section id="branches">
+          <Branches />
         </Section>
       </Route>
       <Route path="/booths">
