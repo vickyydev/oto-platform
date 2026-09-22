@@ -10,7 +10,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { archivedAt, idPk, pos, timestamps } from './helpers';
-import { branch, operator, account } from './tenancy';
+import { branch, operator } from './tenancy';
 import { member } from './members';
 
 // --- Sales and money (schema `pos`) ----------------------------------------
@@ -19,6 +19,13 @@ import { member } from './members';
 // the sprint uses — `sale`, `sale_line`, `payment_attempt`, `band`,
 // `stock_item` — while they are still empty, which is the only cheap moment
 // to do it.
+//
+// `sale`, `sale_line` and `payment_attempt` have left this file: S2-09a
+// (SCRUM-203) replaced the first two with the real ledger and they now live,
+// with the discount rows and the receipt series, in `sales.ts`. The payment
+// placeholder went with them because it is a row on a sale and S2-10a extends
+// it there. What is left here is still what it says: tables Sprint 1 created
+// so the shape was right, waiting for the ticket that owns them.
 
 export const booking = pos.table(
   'booking',
@@ -56,70 +63,6 @@ export const attendee = pos.table(
     ...timestamps,
   },
   (t) => [index('attendee_booking_idx').on(t.bookingId)],
-);
-
-/** The sale the till rings up (Sprint 1 `transaction`). */
-export const sale = pos.table(
-  'sale',
-  {
-    id: idPk(),
-    operatorId: uuid('operator_id').notNull().references(() => operator.id),
-    branchId: uuid('branch_id').notNull().references(() => branch.id),
-    memberId: uuid('member_id').references(() => member.id),
-    createdByAccountId: uuid('created_by_account_id').references(() => account.id),
-    kind: text('kind').notNull().default('sale'),
-    status: text('status').notNull().default('draft'),
-    totalSatang: bigint('total_satang', { mode: 'number' }).notNull().default(0),
-    payload: jsonb('payload'),
-    ...timestamps,
-  },
-  (t) => [
-    index('sale_branch_idx').on(t.branchId),
-    index('sale_member_idx').on(t.memberId),
-    index('sale_operator_idx').on(t.operatorId),
-    index('sale_account_idx').on(t.createdByAccountId),
-  ],
-);
-
-/**
- * A line of a sale (Sprint 1 `transaction_line`). No CASCADE (S2-01b): a
- * ledger is never deleted out from under itself, and a delete that would
- * take lines with it should fail loudly instead.
- */
-export const saleLine = pos.table(
-  'sale_line',
-  {
-    id: idPk(),
-    saleId: uuid('sale_id').notNull().references(() => sale.id),
-    kind: text('kind').notNull(),
-    label: text('label').notNull(),
-    quantity: integer('quantity').notNull().default(1),
-    unitSatang: bigint('unit_satang', { mode: 'number' }).notNull().default(0),
-    totalSatang: bigint('total_satang', { mode: 'number' }).notNull().default(0),
-    payload: jsonb('payload'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  },
-  (t) => [index('sale_line_sale_idx').on(t.saleId)],
-);
-
-/**
- * One attempt to take money (Sprint 1 `payment`). "Attempt" is deliberate:
- * a card can be declined, a QR can expire, and a sale can carry several
- * attempts before one succeeds — all of which have to survive for the day's
- * reconciliation (S2-10).
- */
-export const paymentAttempt = pos.table(
-  'payment_attempt',
-  {
-    id: idPk(),
-    saleId: uuid('sale_id').references(() => sale.id),
-    method: text('method').notNull(),
-    amountSatang: bigint('amount_satang', { mode: 'number' }).notNull().default(0),
-    status: text('status').notNull().default('recorded'),
-    payload: jsonb('payload'),
-    ...timestamps,
-  },
-  (t) => [index('payment_attempt_sale_idx').on(t.saleId)],
 );
 
 export const wallet = pos.table(

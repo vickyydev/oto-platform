@@ -4,6 +4,7 @@ import {
   Discount,
   ManualDiscount,
   Sale,
+  SaleQuotedPricing,
   TaxConfig,
   TaxableCategory,
   TicketType,
@@ -283,17 +284,28 @@ interface BuildSaleParams {
   creditGrants?: CreditGrant[];
   /** Provide a stable timestamp (e.g. seeded history) instead of "now". */
   createdAt?: string;
+  /**
+   * WHAT THE PLATFORM QUOTED FOR THIS CART — S2-09a (SCRUM-203).
+   *
+   * Given, the sale carries these figures and is never re-totalled: the
+   * confirmation screen, the receipt lines and the history detail all read
+   * them, so the amount taken, the amount printed and the amount in the ledger
+   * are one number. Omitted — a preview, a seeded sale, a screen that has no
+   * quote — the prototype's own arithmetic still answers, as it always did.
+   */
+  quoted?: SaleQuotedPricing;
 }
 
 export function buildSale(params: BuildSaleParams): Sale {
   const { operatorId, operatorName, tier, lines, memberId, customerPhone, customerNickname, wristbandCode, paymentMethod, bookingReference } = params;
   const discounts = params.discounts ?? [];
   const manualDiscounts = params.manualDiscounts ?? [];
-  const { total } = computeTotals(lines, discounts, manualDiscounts);
+  const total = params.quoted ? params.quoted.total : computeTotals(lines, discounts, manualDiscounts).total;
   const totalKids = lines.reduce((acc, l) => acc + l.kids, 0);
   const totalAdults = lines.reduce((acc, l) => acc + l.adults, 0);
 
   return {
+    ...(params.quoted ? { quoted: params.quoted } : {}),
     id: params.id ?? Math.random().toString(36).substring(2, 8).toUpperCase(),
     operatorId,
     operatorName,

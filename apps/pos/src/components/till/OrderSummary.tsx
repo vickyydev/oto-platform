@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { CustomerTier, CartLine, Discount, ManualDiscount, ChargeTarget } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -42,6 +42,22 @@ interface OrderSummaryProps {
   chargeTarget?: ChargeTarget;
   /** Override the primary-action button label (defaults to "Pay ฿{total}"). */
   payLabel?: string;
+  /**
+   * THE FIGURES TO SHOW, as the platform quoted them (S2-09a / SCRUM-203).
+   *
+   * Absent means "price it here", which is what every caller did before this
+   * ticket and what the callers that are not the till still do — the party tab,
+   * the booking screen and the mobile cart sheet own their own totals. The Till
+   * passes the platform's quote, so the number a visitor is charged is the
+   * number the platform computed rather than a second implementation of the
+   * same rules that happens to agree.
+   */
+  totals?: Pick<
+    ReturnType<typeof computeTotals>,
+    'subtotal' | 'scannedDiscounts' | 'manualAmounts' | 'total' | 'taxBreakdown'
+  >;
+  /** Shown under the total when the figures did NOT come from the platform. */
+  priceNote?: ReactNode;
 }
 
 function ManualDiscountRow({
@@ -154,10 +170,11 @@ function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: numb
   );
 }
 
-export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, chargeTarget, payLabel }: OrderSummaryProps) {
+export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, chargeTarget, payLabel, totals, priceNote }: OrderSummaryProps) {
   const [promoInput, setPromoInput] = useState('');
 
-  const { subtotal, scannedDiscounts, manualAmounts, total, taxBreakdown } = computeTotals(lines, discounts, manualDiscounts);
+  const { subtotal, scannedDiscounts, manualAmounts, total, taxBreakdown } =
+    totals ?? computeTotals(lines, discounts, manualDiscounts);
   const taxRows = summarizeTax(taxBreakdown);
 
   // Shared nanny supervision: one row per nanny (fee charged once across the kids
@@ -595,6 +612,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
             <span>Total</span>
             <span className="text-primary">฿{total}</span>
           </div>
+          {priceNote}
         </div>
 
         <div className="grid grid-cols-3 gap-3 pt-2">

@@ -9,6 +9,7 @@ import {
   memberTierVerification,
   paymentAttempt,
   sale,
+  saleDiscount,
   saleLine,
   stockLevel,
   visit,
@@ -102,6 +103,12 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   counts.visit = (await tx.delete(visit).returning({ id: visit.id })).length;
 
   counts.sale_line = (await tx.delete(saleLine).returning({ id: saleLine.id })).length;
+  // S2-09a: a sale's discounts are rows of their own now, and they point at
+  // the sale with ON DELETE RESTRICT — so a day with one manual discount on it
+  // would otherwise make the whole reset fail.
+  counts.sale_discount = (
+    await tx.delete(saleDiscount).returning({ id: saleDiscount.id })
+  ).length;
   counts.payment_attempt = (
     await tx.delete(paymentAttempt).returning({ id: paymentAttempt.id })
   ).length;

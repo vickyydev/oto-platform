@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Check } from 'lucide-react';
@@ -11,6 +12,17 @@ interface StepPaymentProps {
   onSelectMethod: (method: string) => void;
   onComplete: () => void;
   onBack: () => void;
+  /**
+   * S2-09a: what the platform said about writing this sale — the "saving…" line
+   * and, when it fails, the panel that says so and offers Try again. It is
+   * rendered inside the step rather than beside it so the approved layout keeps
+   * its scroll and its footer.
+   */
+  notice?: ReactNode;
+  /** A write is in flight: the confirm button must not start a second attempt. */
+  busy?: boolean;
+  /** What the button says while busy. Defaults to the sale being saved. */
+  busyLabel?: string;
 }
 
 // Visual accent per method KIND (the tender list itself is configured in Admin).
@@ -48,12 +60,12 @@ const KIND_STYLE: Record<
   },
 };
 
-export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack }: StepPaymentProps) {
+export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel }: StepPaymentProps) {
   const methods = getEnabledPaymentMethods();
   const isQrPending = !!selectedMethod && paymentMethodKind(selectedMethod) === 'qr';
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
+    <div className="flex flex-col h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="mb-8 text-center">
         <h2 className="text-4xl font-bold tracking-tight mb-2">Amount Due</h2>
         <div className="text-6xl font-black text-primary">฿{total}</div>
@@ -98,17 +110,19 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
         </div>
       )}
 
+      {notice}
+
       <div className="mt-auto pt-6 flex items-center justify-between gap-4">
-        <Button variant="outline" size="lg" className="w-32 h-16" onClick={onBack}>
+        <Button variant="outline" size="lg" className="w-32 h-16" onClick={onBack} disabled={busy}>
           Back
         </Button>
         <Button
           size="lg"
           className="flex-1 h-16 text-xl font-bold"
-          disabled={!selectedMethod}
+          disabled={!selectedMethod || busy}
           onClick={onComplete}
         >
-          Confirm Payment Received
+          {busy ? (busyLabel ?? 'Saving the sale…') : 'Confirm Payment Received'}
         </Button>
       </div>
     </div>

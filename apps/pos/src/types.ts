@@ -633,6 +633,43 @@ export interface CreditGrant {
   gateAccess?: boolean;
 }
 
+/**
+ * WHAT WAS QUOTED FOR THIS SALE, frozen onto it — S2-09a (SCRUM-203).
+ *
+ * The prototype recomputed a finished sale's money wherever it drew it: the
+ * confirmation screen, the receipt lines, the customer display. That was
+ * harmless while one arithmetic existed, and stopped being harmless the day the
+ * platform's engine priced the cart in satang and the screens went on rounding
+ * in baht — a 10% discount on ฿623 came off as ฿62 on the screen and ฿62.30 in
+ * the ledger, and the receipt in the visitor's hand disagreed with the row the
+ * park is audited on.
+ *
+ * So the figures are carried, not recomputed. Every screen that shows a
+ * finished sale's money reads these, and the one number a person sees is the
+ * one the platform charged.
+ */
+export interface SaleQuotedPricing {
+  /** Where the figures came from: the platform's engine, or this till's copy of it. */
+  source: 'platform' | 'till';
+  engineVersion: string;
+  total: number;
+  subtotal: number;
+  discountAmount: number;
+  manualDiscountAmount: number;
+  serviceChargeTotal: number;
+  taxTotal: number;
+  /**
+   * The tax and service rows a receipt prints, exactly as `summarizeTax`
+   * returned them for this sale.
+   */
+  taxRows: {
+    key: string;
+    label: string;
+    amount: number;
+    kind: 'service' | 'tax_included' | 'tax_added';
+  }[];
+}
+
 export interface Sale {
   id: string;
   operatorId: string;
@@ -658,6 +695,12 @@ export interface Sale {
   /** Physical park location where this sale was recorded. Stamped by recordSale(). */
   branchId?: string;
   total: number;
+  /**
+   * The quoted figures this sale was charged at. Absent on sales built before
+   * S2-09a (the seeded history) and on previews, where the screens fall back to
+   * recomputing — see `SaleQuotedPricing`.
+   */
+  quoted?: SaleQuotedPricing;
   creditGrants: CreditGrant[];
   bracelets: {
     adults: number;

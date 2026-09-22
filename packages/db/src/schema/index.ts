@@ -10,6 +10,9 @@ export * from './ops';
 export * from './edge';
 export * from './sync';
 export * from './future';
+// The sales ledger (S2-09a): after `future`, whose `booking` and `band` it
+// points at, and before `promo`, whose vouchers point back at a sale.
+export * from './sales';
 // Last, because they build on the catalogue, the fleet and the sales tables:
 // `promo` is the voucher a prize turns into, `booth` is the wheel that draws it.
 export * from './promo';

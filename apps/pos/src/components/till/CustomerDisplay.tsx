@@ -85,6 +85,17 @@ interface CustomerDisplayProps {
   /** Channel selector attached to the phone field (both identify + input stages). */
   contactChannel?: ContactChannel;
   onContactChannelChange?: (v: ContactChannel) => void;
+  /**
+   * The order's figures as the platform quoted them (S2-09a / SCRUM-203).
+   * Absent = price it here, which is what the harness and the party-tab callers
+   * do. The visitor's screen and the staff panel must never show two different
+   * numbers for the same cart, so when the till has a platform quote it hands
+   * the same one to both.
+   */
+  totals?: Pick<
+    ReturnType<typeof computeTotals>,
+    'manualAmounts' | 'discountAmount' | 'total' | 'taxBreakdown'
+  >;
 }
 
 function ChargeBanner({ target }: { target: ChargeTarget }) {
@@ -150,6 +161,7 @@ export function CustomerDisplay({
   chargeTarget,
   contactChannel,
   onContactChannelChange,
+  totals,
 }: CustomerDisplayProps) {
   const { t, lang } = useLanguage();
   const displayName = nickname.trim() || member?.nickname || '';
@@ -249,11 +261,9 @@ export function CustomerDisplay({
   }
 
   if (stage === 'order') {
-    const { manualAmounts, discountAmount, total, taxBreakdown } = computeTotals(
-      sale.lines,
-      sale.discounts ?? [],
-      sale.manualDiscounts
-    );
+    const { manualAmounts, discountAmount, total, taxBreakdown } =
+      totals ??
+      computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts);
     const taxRows = summarizeTax(taxBreakdown);
     const orderDiscounts = sale.manualDiscounts.filter((md) => md.scope === 'order');
     return (

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import {
   branch,
   branchHoliday,
@@ -7,6 +7,7 @@ import {
   member,
   product,
   productCategory,
+  sale,
   taxOverride,
   ticketPackage,
   tier,
@@ -460,9 +461,29 @@ export async function catalogRoutes(app: App): Promise<void> {
     },
   );
 
+  /**
+   * SCRUM-258 — removing a holiday range once the day has been traded.
+   *
+   * `pos.sale.holiday_id` is ON DELETE RESTRICT, deliberately: a sale records
+   * the range that put it on weekend prices, and a receipt has to go on saying
+   * so years later even if next year's calendar is different. Deleting the row
+   * out from under it was refused by Postgres as a raw 23503, which reached
+   * the admin panel as an unexplained 500.
+   *
+   * SO THE REFUSAL IS MADE HERE, IN WORDS, AND ONLY WHEN IT IS EARNED: a range
+   * nothing was sold under is removed as before, and one that priced real
+   * sales is refused with the count. The alternative — archiving instead —
+   * would have to be understood by every reader of this table before it
+   * meant anything: the branch's own list, the pricing-mode indicator, the
+   * public booking quote and the catalogue bundle a box runs offline all read
+   * the ranges without a withdrawal filter, so an "archived" holiday would go
+   * on setting weekend prices at the counter while the manager believed it was
+   * gone. That is a wider change than this defect, and it is a backlog item
+   * rather than something to slip in behind a delete button.
+   */
   app.delete(
     '/branches/:branchId/holidays/:id',
-    { config: { permission: 'catalog:holiday:manage', target: { branchId: 'params.branchId' } }, schema: { description: 'Remove a holiday range', params: BranchParams.extend({ id: z.string().uuid() }) } },
+    { config: { permission: 'catalog:holiday:manage', target: { branchId: 'params.branchId' } }, schema: { description: 'Remove a holiday range; refused once sales were priced by it', params: BranchParams.extend({ id: z.string().uuid() }) } },
     async (req) => {
       const auth = req.requireAuth();
       const [before] = await app.db
@@ -471,6 +492,20 @@ export async function catalogRoutes(app: App): Promise<void> {
         .where(and(eq(branchHoliday.id, req.params.id), eq(branchHoliday.branchId, req.params.branchId)))
         .limit(1);
       if (!before) throw errors.notFound('Holiday not found');
+      const [priced] = await app.db
+        .select({ sales: count() })
+        .from(sale)
+        .where(eq(sale.holidayId, req.params.id));
+      const sales = priced?.sales ?? 0;
+      if (sales > 0) {
+        throw errors.conflict(
+          'HOLIDAY_HAS_SALES',
+          `"${before.name}" set the prices on ${sales} sale${sales === 1 ? '' : 's'} that have ` +
+            'already been taken, so it cannot be removed — those receipts have to keep saying ' +
+            'which holiday priced them.',
+          { saleCount: sales, startsOn: before.startsOn, endsOn: before.endsOn },
+        );
+      }
       return withTx(app.db, opCtx(req), 'branch_holiday.delete', async (tx) => {
         await tx.delete(branchHoliday).where(eq(branchHoliday.id, req.params.id));
         await audit.record(tx, {

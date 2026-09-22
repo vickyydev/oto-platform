@@ -90,7 +90,7 @@ function promoItemTaxCategory(item: NonNullable<TicketCartLine['promoItem']>): T
  * the rest of this file leans on: the units grouped by category ARE the tax
  * bases, and the units matched by a scope ARE what that scope may discount.
  */
-interface CartUnit {
+export interface CartUnit {
   lineId: string;
   packageId: string;
   /** The rendered breakdown row this unit is, or null for the other two kinds. */
@@ -117,8 +117,16 @@ interface CartUnit {
  *     which is the defect ruling 1 corrects; see `promoItemTaxCategory`.
  *
  * Port of prototype `tillTaxInputs` (lib/sale.ts:27), extended by that ruling.
+ *
+ * EXPORTED for the sales ledger (S2-09a): `pos.sale_line` stores ONE ROW PER
+ * UNIT, because one cart line can hold money from three taxable categories at
+ * once and a per-line tax rate is only meaningful on the unit. The API could
+ * decompose a cart itself from `computeLineBreakdown` plus the two kinds that
+ * are not rows — and would then be a second copy of this rule, drifting from
+ * the one the tax bases and the discount scopes are built from. Storing the
+ * engine's own units keeps the ledger holding what was computed.
  */
-function cartUnits(lines: readonly TicketCartLine[], ctx: PricingContext): CartUnit[] {
+export function cartUnits(lines: readonly TicketCartLine[], ctx: PricingContext): CartUnit[] {
   const units: CartUnit[] = [];
   for (const line of lines) {
     for (const row of computeLineBreakdown(line, ctx)) {

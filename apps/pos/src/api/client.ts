@@ -59,7 +59,7 @@ async function request<T>(
   method: string,
   path: string,
   body?: unknown,
-  opts: { idempotencyKey?: string } = {},
+  opts: { idempotencyKey?: string; headers?: Record<string, string> } = {},
 ): Promise<T> {
   let res: Response;
   try {
@@ -69,6 +69,10 @@ async function request<T>(
       headers: {
         ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
         ...(opts.idempotencyKey ? { 'idempotency-key': opts.idempotencyKey } : {}),
+        // Route-specific correlation headers — `x-oto-action-id` on a sale, so
+        // one press of Pay carries one action id however many times the request
+        // is retried.
+        ...(opts.headers ?? {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
@@ -142,8 +146,11 @@ async function requestBlob(
 
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
-    request<T>('POST', path, body, opts),
+  post: <T>(
+    path: string,
+    body?: unknown,
+    opts?: { idempotencyKey?: string; headers?: Record<string, string> },
+  ) => request<T>('POST', path, body, opts),
   postBlob: (path: string, body?: unknown, signal?: AbortSignal) =>
     requestBlob('POST', path, body, signal),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),

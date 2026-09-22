@@ -60,9 +60,12 @@ export function StepConfirmation({ sale, onNewSale }: StepConfirmationProps) {
   });
 
   const totalBracelets = braceletRows.reduce((sum, row) => sum + row.count, 0);
-  const taxRows = summarizeTax(
-    computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts).taxBreakdown
-  );
+  // The sale's own figures, not a second computation of them (S2-09a): what is
+  // read out here is what the platform charged. A sale with no quoted figures —
+  // seeded history, a deployment with no ledger — still totals the old way.
+  const taxRows =
+    sale.quoted?.taxRows ??
+    summarizeTax(computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts).taxBreakdown);
 
   // The receipt's CONTENT follows the active receipt template. Routing is
   // unchanged. With no template configured, default to showing the breakdown.

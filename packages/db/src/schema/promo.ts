@@ -13,7 +13,7 @@ import { archivedAt, idPk, promo, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
 import { member } from './members';
 import { product, ticketPackage } from './catalog';
-import { sale } from './future';
+import { sale } from './sales';
 
 // --- Vouchers (schema `promo`) ----------------------------------------------
 //

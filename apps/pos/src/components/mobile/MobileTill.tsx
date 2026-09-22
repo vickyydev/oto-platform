@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocation } from 'wouter';
 import {
-  CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, TicketType,
+  CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale,
+  SaleQuotedPricing, TicketType,
   Member, TierVerification, DropOffServiceType, SelectedAddOn, Booking,
 } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
@@ -30,6 +31,18 @@ import { summarizeTax, roundTHB } from '@/lib/tax';
 import { subscribeCatalog } from '@/store/catalogStore';
 
 import { useOperator } from '@/auth/OperatorContext';
+import { useBranch } from '@/branch/BranchContext';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import {
+  buildCartPayload,
+  quotedPricing,
+  type ApiSale,
+  type CartIdentity,
+  type SaleCartPayload,
+} from '@/api/sales';
+import { useCartQuote } from '@/lib/cartQuote';
+import { useSaleWriter } from '@/lib/saleWriter';
+import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { toast } from '@/hooks/use-toast';
 import { useLanguage } from '@/i18n/LanguageContext';
 
@@ -85,8 +98,11 @@ function MobileConfirmation({ sale, onNewSale }: { sale: Sale; onNewSale: () => 
     return rows;
   });
 
-  const { taxBreakdown } = computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts);
-  const taxRows = summarizeTax(taxBreakdown);
+  // The sale's own quoted figures where it has them (S2-09a) — the same rule as
+  // the counter till's confirmation: one price, wherever a person reads one.
+  const taxRows =
+    sale.quoted?.taxRows ??
+    summarizeTax(computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts).taxBreakdown);
   const receiptTpl = getPrintTemplate('receipt');
   const showCreditInfo = receiptTpl ? !!receiptTpl.fields.voucherInfo : true;
 
@@ -244,6 +260,7 @@ function getHandoffCfg(
 export default function MobileTill() {
   const { operator } = useOperator();
   const { station } = useStation();
+  const { branch } = useBranch();
   const { t } = useLanguage();
   const [, navigate] = useLocation();
 
@@ -369,8 +386,40 @@ export default function MobileTill() {
    */
   const saleEpochRef = useRef(0);
 
+  /**
+   * S2-09a (SCRUM-203). The phone-held till writes to the same ledger, through
+   * the same writer, with the same guarantees — one sale per press, a visible
+   * failure, and the platform's own price on the screen. A second till that
+   * quietly kept selling into memory would be the same defect with a smaller
+   * screen.
+   */
+  const saleWriter = useSaleWriter();
+  const cartIdentity: CartIdentity | null = useMemo(() => {
+    const branchId = apiBranchIdForSlug(branch.id);
+    if (!branchId || !station?.stationId || !operator || !tier) return null;
+    return {
+      branchId,
+      stationId: station.stationId,
+      tier,
+      memberId: member?.id ?? null,
+      customerPhone: customerPhone || member?.phone || null,
+      customerNickname: customerNickname || member?.nickname || null,
+      accountId: operator.id,
+      accountName: operator.name,
+    };
+  }, [branch.id, station?.stationId, operator, tier, member, customerPhone, customerNickname]);
+
+  const cart = useCartQuote({
+    lines,
+    discounts,
+    manualDiscounts,
+    identity: cartIdentity,
+    enabled: saleResult === null,
+  });
+
   const resetSale = () => {
     saleEpochRef.current += 1;
+    saleWriter.reset();
     setMStep('tier');
     setHandoffMode(null);
     setTier(null);
@@ -1012,12 +1061,18 @@ export default function MobileTill() {
     }
   };
 
-  const handleCompletePayment = () => {
+  /**
+   * Everything that must be true before this cart becomes a sale — the counter
+   * till's `preflightSale`, on the handheld's own steps. It runs when the
+   * payment screen opens, because that is where the sale is recorded now
+   * (S2-09a), and again at the confirm press.
+   */
+  const preflightSale = (): boolean => {
     if (!supervisionResolved && evaluateUnaccompanied()) {
       openSupervisionGate();
-      return;
+      return false;
     }
-    if (!tier || !pendingPaymentMethod || !operator) return;
+    if (!tier || !operator) return false;
 
     const dropOffs = lines.filter((l) => l.dropOff);
     const lengthsOk = dropOffs.every((l) => l.dropOff!.lengthChosen);
@@ -1032,7 +1087,7 @@ export default function MobileTill() {
         variant: 'destructive',
       });
       setMStep('dropoff-config');
-      return;
+      return false;
     }
     // A tier nobody has priced on this ticket resolves to ฿0 and reads like a
     // free ticket rather than a missing setting — refuse it (SCRUM-228).
@@ -1048,12 +1103,132 @@ export default function MobileTill() {
           .join(' · ')}. Set it in Admin → Tickets before selling at this tier.`,
         variant: 'destructive',
       });
-      return;
+      return false;
     }
     if (!station) {
       promptSetupStation(navigate);
+      return false;
+    }
+    return true;
+  };
+
+  const handleCompletePayment = () => {
+    if (!preflightSale()) return;
+    if (!pendingPaymentMethod) return;
+    // The sale reaches the platform before a child is checked in, a band is
+    // minted or a receipt is printed (S2-09a). A refusal leaves the till on
+    // this screen with the same sale waiting for Try again.
+    void completeSale(saleEpochRef.current);
+  };
+
+  const commitPayload = (): SaleCartPayload | null => {
+    if (!cartIdentity || !cart.quote.satang) return null;
+    return buildCartPayload(lines, discounts, manualDiscounts, cartIdentity, cart.quote.satang, {
+      mode: cart.quote.pricingMode,
+      modeReason: cart.quote.pricingModeReason,
+    });
+  };
+
+  const unwritableReason = (): string =>
+    !cartIdentity
+      ? 'This device is not on a platform station, so there is nowhere to write the sale.'
+      : `This cart could not be priced by the platform's engine: ${cart.quote.reason ?? 'unknown reason'}`;
+
+  const noteSaleLeftBehind = (sale: ApiSale, saleId: string) => {
+    toast({
+      title: 'A sale was saved for the previous visitor',
+      description: `This till moved on before it could finish. Sale ${sale.receiptNumber ?? saleId} is recorded and nothing was printed for it — find it in the sale list.`,
+      variant: 'destructive',
+    });
+  };
+
+  /**
+   * Pay records the sale: reaching the payment screen writes the row in
+   * `tendering`, with no receipt number, because no money has arrived yet. A ฿0
+   * sale has nothing to tender and is closed in the same call. Same seam as the
+   * counter till — see `pages/Till.tsx`.
+   */
+  const recordSaleOnPlatform = async (epoch: number): Promise<void> => {
+    if (!preflightSale()) return;
+    const payload = commitPayload();
+    if (!payload) return;
+    const outcome = await saleWriter.commit({
+      cart: payload,
+      finalise: cart.quote.satang?.total === 0,
+    });
+    if (saleEpochRef.current !== epoch) {
+      if (outcome.ok && outcome.written) noteSaleLeftBehind(outcome.sale, outcome.saleId);
+    }
+  };
+
+  useEffect(() => {
+    if (mStep !== 'payment') return;
+    void recordSaleOnPlatform(saleEpochRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mStep]);
+
+  /** The money arrived: close the sale, then finish it on this device. */
+  const completeSale = async (epoch: number) => {
+    if (!tier || !pendingPaymentMethod || !operator || !station) return;
+
+    const payload = commitPayload();
+    if (!payload) {
+      finalizeSale(saleWriter.declareUnwritten(unwritableReason()), quotedPricing(cart.quote));
       return;
     }
+    const committed = await saleWriter.commit({
+      cart: payload,
+      finalise: cart.quote.satang?.total === 0,
+    });
+    // Cancelled, or already on the next visitor. The sale is written and safe,
+    // and saying nothing would leave a sale nobody on this screen mentions
+    // again (the same rule as `Till.tsx`).
+    if (saleEpochRef.current !== epoch) {
+      if (committed.ok && committed.written) noteSaleLeftBehind(committed.sale, committed.saleId);
+      return;
+    }
+    if (!committed.ok) return;
+    if (!committed.written) {
+      finalizeSale(committed.saleId, quotedPricing(cart.quote));
+      return;
+    }
+
+    let recorded = committed.sale;
+    if (recorded.status !== 'finalised') {
+      const closed = await saleWriter.finalise({
+        method: pendingPaymentMethod,
+        kind: paymentMethodKind(pendingPaymentMethod),
+        amountSatang: recorded.totals.grossSatang,
+        tenderedSatang: recorded.totals.grossSatang,
+        changeSatang: 0,
+      });
+      if (saleEpochRef.current !== epoch) {
+        if (closed.ok && closed.written) noteSaleLeftBehind(closed.sale, closed.saleId);
+        return;
+      }
+      if (!closed.ok) return;
+      if (closed.written) recorded = closed.sale;
+    }
+    finalizeSale(committed.saleId, quotedPricing(cart.quote, recorded));
+  };
+
+  const handleRetrySaleWrite = () => {
+    const epoch = saleEpochRef.current;
+    if (!pendingPaymentMethod) {
+      void recordSaleOnPlatform(epoch);
+      return;
+    }
+    void completeSale(epoch);
+  };
+
+  /**
+   * Check the drop-off children in, record the sale locally, mint and print.
+   *
+   * `quoted` is the money as the platform charged it, carried onto the sale so
+   * nothing downstream re-totals it (S2-09a).
+   */
+  const finalizeSale = (saleId: string, quoted: SaleQuotedPricing) => {
+    if (!tier || !pendingPaymentMethod || !operator || !station) return;
 
     const dropOffLines = lines.filter((l) => l.dropOff);
     if (dropOffLines.length > 0) {
@@ -1090,6 +1265,7 @@ export default function MobileTill() {
     }
 
     const newSale = buildSale({
+      id: saleId,
       operatorId: operator.id,
       operatorName: operator.name,
       tier,
@@ -1100,6 +1276,7 @@ export default function MobileTill() {
       customerPhone,
       customerNickname,
       paymentMethod: pendingPaymentMethod,
+      quoted,
     });
     recordSale(newSale);
     // Increment each applied promo's usage counter after the sale is committed.
@@ -1130,7 +1307,8 @@ export default function MobileTill() {
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
-  const { total } = computeTotals(lines, discounts, manualDiscounts);
+  // The amount due, as the platform quoted it (S2-09a).
+  const total = cart.totals.total;
   const dropOffCartLines = lines.filter((l) => l.dropOff);
   const allLengthsChosen = dropOffCartLines.every((l) => l.dropOff!.lengthChosen);
   const nannyDropOffLines = lines.filter((l) => l.dropOff?.service === 'nanny');
@@ -1139,20 +1317,24 @@ export default function MobileTill() {
     lines.some((l) => l.kids + l.adults > 0) && allLengthsChosen && allNanniesAssigned;
 
   const liveSale: Sale =
-    saleResult ??
-    buildSale({
-      id: 'PREVIEW',
-      operatorId: operator?.id ?? '',
-      operatorName: operator?.name ?? '',
-      tier: tier ?? getDefaultTier().id,
-      lines,
-      discounts,
-      manualDiscounts,
-      memberId: member?.id,
-      customerPhone,
-      customerNickname,
-      paymentMethod: pendingPaymentMethod ?? undefined,
-    });
+    saleResult ?? {
+      ...buildSale({
+        id: 'PREVIEW',
+        operatorId: operator?.id ?? '',
+        operatorName: operator?.name ?? '',
+        tier: tier ?? getDefaultTier().id,
+        lines,
+        discounts,
+        manualDiscounts,
+        memberId: member?.id,
+        customerPhone,
+        customerNickname,
+        paymentMethod: pendingPaymentMethod ?? undefined,
+      }),
+      // What the visitor's screen shows while paying is the quoted figure
+      // (S2-09a), not a second computation of it.
+      total: cart.totals.total,
+    };
 
   const displayName = customerNickname.trim() || member?.nickname || '';
 
@@ -1296,6 +1478,8 @@ export default function MobileTill() {
               onPay={() => setMStep('payment')}
               onCancel={resetSale}
               canPay={canPay}
+              totals={cart.totals}
+              priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
             />
           </div>
         );
@@ -1309,13 +1493,27 @@ export default function MobileTill() {
               onSelectMethod={handleMobileSelectMethod}
               onComplete={handleCompletePayment}
               onBack={() => { setPendingPaymentMethod(null); setMStep('review'); }}
+              busy={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}
+              busyLabel={saleWriter.state.kind === 'finalising' ? 'Recording the payment…' : undefined}
+              notice={
+                <SaleWriteFailure
+                  state={saleWriter.state}
+                  onRetry={handleRetrySaleWrite}
+                  onDismiss={() => { setPendingPaymentMethod(null); setMStep('review'); }}
+                />
+              }
             />
           </div>
         );
 
       case 'done':
         return saleResult ? (
-          <MobileConfirmation sale={saleResult} onNewSale={resetSale} />
+          <div className="flex h-full min-h-0 flex-col">
+            <SaleNotSavedNotice state={saleWriter.state} />
+            <div className="min-h-0 flex-1">
+              <MobileConfirmation sale={saleResult} onNewSale={resetSale} />
+            </div>
+          </div>
         ) : null;
     }
   };

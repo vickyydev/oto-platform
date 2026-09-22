@@ -99,6 +99,13 @@
       "when": 1789974244810,
       "tag": "0013_box_local",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789974245810,
+      "tag": "0014_sales_ledger",
+      "breakpoints": true
     }
   ]
 }

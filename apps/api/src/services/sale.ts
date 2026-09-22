@@ -1,0 +1,1787 @@
+import { and, asc, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
+import {
+  account,
+  branch,
+  branchHoliday,
+  branchTaxConfig,
+  employee,
+  member,
+  paymentAttempt,
+  product,
+  productCategory,
+  receiptSeries,
+  sale,
+  saleDiscount,
+  saleLine,
+  station,
+  ticketPackage,
+  tier,
+  visit,
+  type SaleClockTrust,
+  type SaleLineKind,
+  type SaleStatus,
+} from '@oto/db';
+import {
+  apportion,
+  businessDate,
+  cartUnits,
+  componentKey,
+  computeTicketCartTotals,
+  getRateModeForDate,
+  newId,
+  parseDayStart,
+  PRICING_ENGINE_VERSION,
+  priceCartLine,
+  SERVICE_FEE_ROW_KEY,
+  type CartAddOn,
+  type CartUnit,
+  type DiscountComponentTarget,
+  type ManualDiscount,
+  type PricingContext,
+  type PromoDiscount,
+  type TaxableCategory,
+  type TaxConfigShape,
+  type TicketCartLine,
+  type TicketCartTotals,
+} from '@oto/shared';
+import { errors } from '../lib/errors';
+import { audit } from './audit';
+import type { Exec, Tx } from './tx';
+
+/**
+ * S2-09a (SCRUM-203) — the service that prices a cart and writes a sale.
+ *
+ * WHY IT EXISTS AND WHAT IT REPLACES. Until this file the till could reach
+ * "Pay ฿1,440" and nothing happened: `recordSale` in `apps/pos` pushed onto an
+ * in-memory array a refresh threw away, and it got its figures from the
+ * prototype's own copy of the pricing rules, in baht floats, in the browser.
+ * Meanwhile the ported, tested engine in `@oto/shared` — pricing, tax,
+ * discounts, promos, rounding, business date, ~1,600 lines under a 1,694-line
+ * suite — had exactly ONE caller in the platform, the public booking quote.
+ * Two answers to "what does this cost" is one answer too many, so everything
+ * here prices through that engine and nothing here re-derives a rule.
+ *
+ * THE TWO RULES THAT DECIDE WHOSE NUMBER WINS, both enforced below:
+ *
+ *   1. THE PRICE IS THE PLATFORM'S. Every figure that moves money — the unit
+ *      prices, the rate mode, the add-on prices, the tax, the discount amounts
+ *      — is resolved here from the catalogue and the branch configuration. The
+ *      cart says WHAT was sold (which package, how many kids, which add-ons)
+ *      and never what it cost. A caller may send `expectedTotalSatang`, and
+ *      the only thing that does is make a disagreement LOUD: the sale is
+ *      refused (`SALE_TOTAL_MISMATCH`) rather than either number being taken
+ *      on trust.
+ *   2. THE TIER IS RESOLVED FROM THE MEMBER. Never from the request body. The
+ *      tier picks the price, and it is the one field a visitor would most like
+ *      to change; a body-supplied tier is a price list anybody can choose from.
+ *      A sale with no member is priced at the operator's default tier.
+ */
+
+// --- Inputs -----------------------------------------------------------------
+
+/**
+ * An add-on on a cart line.
+ *
+ * `id` IS RESOLVED AGAINST `pos.product` FIRST, and when it resolves that row
+ * is the price — the catalogue's answer beats the till's. When it does not
+ * (the add-on catalogue is S2-09b; the prototype's ids are strings like
+ * `a-locker`, not platform uuids) the till's snapshot is used, because the
+ * alternative is a park that cannot sell socks or a locker until that ticket
+ * lands. Every line priced that way carries `payload.priceSource =
+ * 'till_snapshot'`, so "which of these figures did the platform stand behind"
+ * is answerable from the ledger instead of from memory.
+ */
+export interface CartAddOnInput {
+  id: string;
+  name?: string;
+  unitSatang?: number;
+  quantity: number;
+  taxCategoryOverride?: TaxableCategory;
+  variantBreakdown?: { variantId: string; variantLabel: string; quantity: number }[];
+}
+
+export interface CartLineInput {
+  /** The till's own cart line id (UUIDv7), kept on every unit of the line. */
+  id: string;
+  packageId: string;
+  kids: number;
+  adults: number;
+  socks?: number;
+  addOns?: CartAddOnInput[];
+  /** Drop-off / nanny fee (S2-13 owns where the number comes from). */
+  serviceFee?: { label: string; amountSatang: number } | null;
+  foodProvision?: { mode: 'prepaid_items' | 'prepaid_credit'; paidSatang: number } | null;
+  promoItem?: { itemId: string; itemKind: 'menu' | 'merch'; name: string; priceSatang: number } | null;
+  /**
+   * WHAT THE SCREEN SHOWED FOR THIS LINE. Not an instruction to charge it: the
+   * platform prices the line from its own catalogue and refuses the sale when
+   * the two disagree, so a till holding a package whose price was edited while
+   * the cart was open is stopped rather than quietly charging the new number
+   * after quoting the old one.
+   */
+  lineTotalSatang?: number;
+}
+
+export interface ManualDiscountInput {
+  id: string;
+  scope: 'order' | 'line';
+  targetLineId?: string;
+  targetComponent?: DiscountComponentTarget;
+  targetLabel?: string;
+  type: 'percent' | 'fixed' | 'comp';
+  /** A percentage for `percent`, SATANG for `fixed`, ignored for `comp`. */
+  value: number;
+  reason: string;
+  note?: string;
+}
+
+export interface CartInput {
+  branchId?: string;
+  memberId?: string | null;
+  /**
+   * The branch's socks add-on. Socks are a separate integer on a cart line in
+   * the prototype rather than an add-on row (`lib/pricing.ts`), so the engine
+   * takes them as context. Resolved against `pos.product` when the id is one,
+   * and otherwise the till's snapshot, exactly as add-ons are.
+   */
+  socks?: { addOnId: string; unitSatang?: number; label?: string };
+  lines: CartLineInput[];
+  manualDiscounts?: ManualDiscountInput[];
+  /**
+   * Promo codes the till resolved from its own catalogue.
+   *
+   * THE PLATFORM HAS NO PROMO-CODE TABLE YET — the Discounts and promo codes
+   * panel is S2-09b — so there is nothing here to validate a code's limits,
+   * its expiry or its very existence against, and the definition arrives with
+   * the code. What keeps that from being a discount anybody can write is the
+   * same thing that governs a manual one: `pos:sale:discount`, an audited row
+   * naming who applied it, and the discounts-given report. It grants no
+   * authority a staff member does not already have — there is no manager
+   * approval step on discounts anywhere in this system, by design (R-08).
+   * When S2-09b lands the catalogue, the definition comes from it and this
+   * becomes the code alone.
+   */
+  promos?: PromoDiscountInput[];
+  /** Codes with no definition attached: refused by name, and nothing is taken off. */
+  promoCodes?: string[];
+  /** The rate mode the cart was priced under at the till. Compared, never used. */
+  pricingMode?: 'weekday' | 'weekend';
+  /** The tier the till believed. Compared, never used: see rule 2 at the top. */
+  tier?: string;
+}
+
+export interface PromoDiscountInput {
+  code: string;
+  label: string;
+  type: 'percent' | 'fixed' | 'free_item';
+  /** A percentage for `percent`; satang for `fixed` and `free_item`. */
+  value: number;
+  freeItemId?: string;
+  freeItemKind?: 'menu' | 'merch';
+  target?: unknown;
+}
+
+export interface CommitSaleInput extends CartInput {
+  /** Client-minted UUIDv7. Re-sending it returns the sale that exists. */
+  id?: string;
+  stationId: string;
+  visitId?: string | null;
+  note?: string;
+  /** `x-oto-action-id` — one tap, however many HTTP attempts it took. */
+  actionId?: string | null;
+  /**
+   * The till's clock when Pay was pressed, ISO 8601. Believed within the same
+   * tolerance the sync path applies to a box's clock, and overruled outside it
+   * — see `resolveOccurredAt`.
+   */
+  occurredAt?: string;
+  /** What the till last showed the guest. Compared, never trusted. */
+  expectedTotalSatang?: number;
+  /**
+   * Finalise in the same transaction when there is nothing to tender — a ฿0
+   * comp, a fully discounted visit. A cart that owes money is committed
+   * unfinalised whatever this says, and the answer reports `finalised: false`
+   * with what is left to take: see the seam described on `commitSale`.
+   */
+  finalise?: boolean;
+}
+
+export interface ActorContext {
+  accountId: string;
+  operatorId: string;
+  branchId: string | null;
+  requestId?: string;
+  /**
+   * THE SCOPE CHECK ON THE BRANCH THIS CART TURNS OUT TO BE FOR, supplied by
+   * the route and run here rather than there.
+   *
+   * A route guard can only check what is in the request. The branch a sale is
+   * written to is not: the cart may name it, may nest it under `cart`, or may
+   * name none at all and inherit the station's — and `requirePermission` falls
+   * back to the SESSION's branch when the target is empty, so a guard with no
+   * target passes whatever branch the cart is actually for. That is how
+   * reception scoped to one branch wrote a sale onto another and only found
+   * out when reading it back returned 403.
+   *
+   * So the check runs at the one point the answer is known: after the branch
+   * is resolved and before anything is written. Optional only so a caller with
+   * no request behind it (a seed, a future box replay) can be written; every
+   * route supplies it.
+   */
+  assertBranchAllowed?: (branchId: string) => Promise<void>;
+}
+
+// --- Pricing ----------------------------------------------------------------
+
+/** The branch's answer to "what day is it and what does that cost". */
+interface PricingScope {
+  branchId: string;
+  operatorId: string;
+  timezone: string;
+  businessDayStart: string;
+  businessDate: string;
+  pricingMode: 'weekday' | 'weekend';
+  pricingModeReason: string;
+  holidayId: string | null;
+  holidayName: string | null;
+  taxConfig: TaxConfigShape;
+}
+
+/**
+ * Where and when the sale is happening, resolved server-side from the branch's
+ * clock — never from the request.
+ *
+ * `businessDate` is the trading day, not the calendar day: a sale at 00:30
+ * belongs to the day that is finishing (`business_day_start`, 05:00 here), and
+ * the engine's ruling 3 says the same date also chooses the price. A caller
+ * that could pass its own date could choose weekend pricing on a Tuesday, so
+ * there is no parameter for it. The station-level "business date override"
+ * S2-09a describes for reproducible weekend demos is a separate, staging-only
+ * control and is not built; a `branch_holiday` range covering today produces
+ * the same weekend prices and is how the tests reach them.
+ */
+export async function resolvePricingScope(
+  db: Exec,
+  branchId: string,
+  operatorId: string,
+  now: Date,
+): Promise<PricingScope> {
+  const [br] = await db.select().from(branch).where(eq(branch.id, branchId)).limit(1);
+  if (!br || br.operatorId !== operatorId) throw errors.notFound('Branch not found');
+
+  const date = businessDate(now, br.timezone, parseDayStart(br.businessDayStart));
+  const holidays = await db
+    .select()
+    .from(branchHoliday)
+    .where(and(eq(branchHoliday.branchId, br.id), isNull(branchHoliday.archivedAt)));
+  const rate = getRateModeForDate(
+    date,
+    holidays.map((h) => ({ name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })),
+  );
+  // The range that forced weekend pricing, so the sale can name it years later
+  // even if the calendar is edited. Same predicate the engine matched on.
+  const holiday = rate.overrideName
+    ? (holidays.find(
+        (h) => h.name === rate.overrideName && date >= h.startsOn && date <= h.endsOn,
+      ) ?? null)
+    : null;
+
+  const [cfg] = await db
+    .select()
+    .from(branchTaxConfig)
+    .where(eq(branchTaxConfig.branchId, br.id))
+    .limit(1);
+  if (!cfg) {
+    throw errors.badRequest(
+      'This branch has no tax configuration, so nothing can be priced (SCRUM-37)',
+    );
+  }
+
+  return {
+    branchId: br.id,
+    operatorId: br.operatorId,
+    timezone: br.timezone,
+    businessDayStart: br.businessDayStart,
+    businessDate: date,
+    pricingMode: rate.mode,
+    pricingModeReason: rate.reason,
+    holidayId: holiday?.id ?? null,
+    holidayName: holiday?.name ?? null,
+    taxConfig: cfg.config as TaxConfigShape,
+  };
+}
+
+/**
+ * The tier that prices this cart, from the MEMBER — or the operator's default
+ * for a walk-in. Never from the request body: see rule 2 at the top.
+ */
+async function resolveTier(
+  db: Exec,
+  operatorId: string,
+  memberId: string | null | undefined,
+): Promise<{ code: string; source: 'member' | 'default' }> {
+  if (memberId) {
+    const [m] = await db.select().from(member).where(eq(member.id, memberId)).limit(1);
+    if (!m || m.operatorId !== operatorId) throw errors.notFound('Member not found');
+    return { code: m.tierCode, source: 'member' };
+  }
+  const [fallback] = await db
+    .select()
+    .from(tier)
+    .where(and(eq(tier.operatorId, operatorId), eq(tier.isDefault, true), isNull(tier.archivedAt)))
+    .limit(1);
+  // The seed guarantees one default tier per operator; an operator configured
+  // without one still has to price a walk-in, and `tourist` is the platform's
+  // no-verification baseline (CLAUDE.md §4).
+  return { code: fallback?.code ?? 'tourist', source: 'default' };
+}
+
+/** A priced unit, ready to become a `pos.sale_line` row. */
+export interface PricedLine {
+  lineNo: number;
+  cartLineId: string;
+  kind: SaleLineKind;
+  componentKey: string | null;
+  ticketPackageId: string | null;
+  productId: string | null;
+  label: string;
+  /**
+   * The reporting bucket this unit's money lands in — what the Sale detail
+   * view groups by and what a day's mix is counted from.
+   *
+   * Taken from the engine's own category for the unit, the areas
+   * `TAXABLE_CATEGORIES` names in `@oto/shared`. Not a second list invented
+   * here: the tax cascade has already split this cart by area, and a separate
+   * hand-made mapping would be a second answer to "what kind of money is
+   * this" that could disagree with the one the tax was charged on. S2-09b
+   * gives packages and add-ons a catalogue-defined revenue category and
+   * sub-category of their own; until then this column carries the engine's and
+   * `revenue_sub_category` stays null rather than holding a guess.
+   */
+  revenueCategory: string;
+  taxableCategory: string;
+  quantity: number;
+  unitSatang: number;
+  baseSatang: number;
+  discountSatang: number;
+  netSatang: number;
+  serviceChargeSatang: number;
+  taxSatang: number;
+  taxMode: string;
+  taxRateBp: number;
+  taxRateId: string | null;
+  taxName: string | null;
+  grossSatang: number;
+  customerTier: string;
+  kidCount: number;
+  adultCount: number;
+  freeAdultCount: number;
+  stayHours: number | null;
+  stayDurationLabel: string | null;
+  /** Non-null when this unit's price came from the till rather than the catalogue. */
+  payload: { priceSource: 'till_snapshot' } | null;
+}
+
+export interface PricedCart {
+  scope: PricingScope;
+  tier: { code: string; source: 'member' | 'default' };
+  disagreements: {
+    pricingModeSentByTill: string | null;
+    tierSentByTill: string | null;
+    pricingModeDiffers: boolean;
+    tierDiffers: boolean;
+  };
+  engineVersion: string;
+  totals: TicketCartTotals;
+  /** What the sale row records, already split the way the ledger stores it. */
+  money: {
+    subtotalSatang: number;
+    manualDiscountSatang: number;
+    promoDiscountSatang: number;
+    discountSatang: number;
+    netSatang: number;
+    serviceChargeSatang: number;
+    taxInclusiveSatang: number;
+    taxExclusiveSatang: number;
+    grossSatang: number;
+    unappliedDiscountSatang: number;
+  };
+  lines: PricedLine[];
+  manualDiscounts: ManualDiscountInput[];
+  rejectedPromoCodes: { code: string; reason: string }[];
+  /** The engine's own cart lines, kept so the committer prices nothing twice. */
+  cartLines: TicketCartLine[];
+}
+
+/** Catalogue rows a cart needs, loaded once for the whole cart. */
+interface CatalogueLookup {
+  packages: Map<string, typeof ticketPackage.$inferSelect>;
+  products: Map<string, { row: typeof product.$inferSelect; category: TaxableCategory | null }>;
+}
+
+/** Only a uuid can be a `pos.product` id; the prototype's are strings like `a-socks`. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function loadCatalogue(
+  db: Exec,
+  scope: PricingScope,
+  input: CartInput,
+): Promise<CatalogueLookup> {
+  const packageIds = [...new Set(input.lines.map((l) => l.packageId))];
+  const productIds = [
+    ...new Set(
+      [
+        ...input.lines.flatMap((l) => (l.addOns ?? []).map((a) => a.id)),
+        ...(input.socks ? [input.socks.addOnId] : []),
+      ].filter((id) => UUID.test(id)),
+    ),
+  ];
+
+  const packages = new Map<string, typeof ticketPackage.$inferSelect>();
+  if (packageIds.length > 0) {
+    const rows = await db
+      .select()
+      .from(ticketPackage)
+      .where(
+        and(
+          inArray(ticketPackage.id, packageIds),
+          eq(ticketPackage.branchId, scope.branchId),
+          eq(ticketPackage.active, true),
+          isNull(ticketPackage.archivedAt),
+        ),
+      );
+    for (const row of rows) packages.set(row.id, row);
+  }
+
+  const products = new Map<string, { row: typeof product.$inferSelect; category: TaxableCategory | null }>();
+  if (productIds.length > 0) {
+    const rows = await db
+      .select({ p: product, taxable: productCategory.taxableCategory })
+      .from(product)
+      .leftJoin(productCategory, eq(product.categoryId, productCategory.id))
+      .where(
+        and(
+          inArray(product.id, productIds),
+          eq(product.operatorId, scope.operatorId),
+          eq(product.active, true),
+          isNull(product.archivedAt),
+        ),
+      );
+    for (const row of rows) {
+      // A product may be operator-wide (branch null) or this branch's; one
+      // belonging to another branch is not on sale here.
+      if (row.p.branchId && row.p.branchId !== scope.branchId) continue;
+      products.set(row.p.id, {
+        row: row.p,
+        category: (row.taxable as TaxableCategory | null) ?? null,
+      });
+    }
+  }
+
+  return { packages, products };
+}
+
+/** What a unit of the engine's decomposition is, as the ledger names it. */
+function lineKindOf(unit: CartUnit): SaleLineKind {
+  if (unit.promoItem) return 'promo_item';
+  const row = unit.row;
+  if (!row) return 'food_provision';
+  if (row.key === SERVICE_FEE_ROW_KEY) return 'service_fee';
+  if (row.kind === 'kids') return 'kids';
+  if (row.kind === 'adults') return row.key === 'adults-free' ? 'adults_free' : 'adults_paid';
+  if (row.kind === 'socks') return 'socks';
+  return 'addon';
+}
+
+/**
+ * Price a cart. Reads the catalogue, the branch's calendar and its tax
+ * configuration, then hands the whole thing to `computeTicketCartTotals` — the
+ * same function the public booking quote and the regression fixtures run
+ * through.
+ */
+export async function priceCart(
+  db: Exec,
+  actor: ActorContext,
+  input: CartInput,
+  now: Date = new Date(),
+): Promise<PricedCart> {
+  const branchId = input.branchId ?? actor.branchId;
+  if (!branchId) throw errors.badRequest('No active branch on this session');
+  const scope = await resolvePricingScope(db, branchId, actor.operatorId, now);
+  // The branch is settled now — including the case where the cart named none
+  // and the station's was used — so this is where "may this account sell
+  // here" is answerable. Before any row is written, and before a price is
+  // quoted for a branch the caller has no business pricing for.
+  await actor.assertBranchAllowed?.(scope.branchId);
+  const resolvedTier = await resolveTier(db, actor.operatorId, input.memberId);
+  const catalogue = await loadCatalogue(db, scope, input);
+
+  // What the platform stood behind, and what it took on trust. Filled as the
+  // cart resolves and written onto the lines that were priced from a snapshot.
+  const snapshotPriced = new Set<string>();
+
+  // Socks: the engine wants the branch's socks add-on in context whether or
+  // not this cart has any. A catalogue product wins; otherwise the till's
+  // snapshot, recorded as one.
+  const socksProduct =
+    input.socks && UUID.test(input.socks.addOnId)
+      ? catalogue.products.get(input.socks.addOnId)
+      : undefined;
+  if (input.socks && !socksProduct) snapshotPriced.add(input.socks.addOnId);
+  const ctx: PricingContext = {
+    mode: scope.pricingMode,
+    socks: {
+      addOnId: socksProduct?.row.id ?? input.socks?.addOnId ?? 'socks-not-configured',
+      price: socksProduct?.row.priceSatang ?? input.socks?.unitSatang ?? 0,
+      label: socksProduct?.row.name ?? input.socks?.label ?? 'Socks',
+    },
+  };
+
+  const cartLines: TicketCartLine[] = [];
+  for (const line of input.lines) {
+    const pkg = catalogue.packages.get(line.packageId);
+    if (!pkg) throw errors.badRequest('A selected ticket is no longer available');
+    const prices = pkg.prices as Record<string, { weekday: number; weekend: number }>;
+    // A tier the package does not price would resolve to 0 in the engine (the
+    // prototype's defensive answer for a picker that only lists priced tiers).
+    // A server writing a money row must not admit somebody free because a
+    // price is missing, so it refuses instead.
+    if (!prices[resolvedTier.code]) {
+      throw errors.badRequest(
+        `"${pkg.name}" has no ${resolvedTier.code} price, so it cannot be sold at that tier`,
+      );
+    }
+    const socks = line.socks ?? 0;
+    if (socks > 0 && !input.socks) {
+      throw errors.badRequest('This cart has socks on it but no socks add-on was named');
+    }
+
+    const addOns: CartAddOn[] = (line.addOns ?? []).map((addOn) => {
+      const found = UUID.test(addOn.id) ? catalogue.products.get(addOn.id) : undefined;
+      if (!found) {
+        if (addOn.unitSatang === undefined || !addOn.name) {
+          throw errors.badRequest(
+            `Add-on "${addOn.id}" is not in this branch catalogue and carries no price`,
+          );
+        }
+        snapshotPriced.add(addOn.id);
+      }
+      return {
+        id: found?.row.id ?? addOn.id,
+        name: found?.row.name ?? addOn.name ?? 'Add-on',
+        price: found?.row.priceSatang ?? addOn.unitSatang ?? 0,
+        quantity: addOn.quantity,
+        ...(addOn.variantBreakdown ? { variantBreakdown: addOn.variantBreakdown } : {}),
+        // The category's taxable area, when it is not the add-ons default —
+        // the seeded ice cream is F&B and its money has to land there. The
+        // catalogue's answer wins; the till's is used when there is none.
+        ...(found?.category && found.category !== 'addons'
+          ? { taxCategoryOverride: found.category }
+          : addOn.taxCategoryOverride
+            ? { taxCategoryOverride: addOn.taxCategoryOverride }
+            : {}),
+      };
+    });
+
+    if (line.serviceFee || line.foodProvision || line.promoItem) {
+      // Drop-off fees, prepaid food and a free-item promo's item have no
+      // platform catalogue to be priced from (S2-13 and S2-09b). The engine
+      // carries them; the ledger records that the figure was the till's.
+      snapshotPriced.add(line.id);
+    }
+
+    const cartLine: TicketCartLine = {
+      id: line.id,
+      packageId: pkg.id,
+      package: { prices, adultRules: pkg.adultRules as never },
+      tier: resolvedTier.code,
+      kids: line.kids,
+      adults: line.adults,
+      socks,
+      addOns,
+      ...(line.serviceFee
+        ? { serviceFee: { label: line.serviceFee.label, amount: line.serviceFee.amountSatang } }
+        : {}),
+      ...(line.foodProvision
+        ? { foodProvision: { mode: line.foodProvision.mode, paid: line.foodProvision.paidSatang } }
+        : {}),
+      ...(line.promoItem
+        ? {
+            promoItem: {
+              itemId: line.promoItem.itemId,
+              itemKind: line.promoItem.itemKind,
+              name: line.promoItem.name,
+              price: line.promoItem.priceSatang,
+            },
+          }
+        : {}),
+      lineTotal: 0,
+    };
+    // Priced here, from the catalogue, at this rate mode. Never from the body.
+    cartLine.lineTotal = priceCartLine(cartLine, ctx);
+    // The till's own figure for the line, reconciled rather than trusted: a
+    // disagreement means the till is holding a stale price and the guest was
+    // quoted something the platform will not charge.
+    if (line.lineTotalSatang !== undefined && line.lineTotalSatang !== cartLine.lineTotal) {
+      throw errors.conflict(
+        'SALE_LINE_PRICE_MISMATCH',
+        'The till and the platform priced a line differently — refresh the catalogue and re-price',
+        {
+          cartLineId: line.id,
+          tillLineTotalSatang: line.lineTotalSatang,
+          platformLineTotalSatang: cartLine.lineTotal,
+        },
+      );
+    }
+    cartLines.push(cartLine);
+  }
+
+  // A code with no definition attached has nothing to validate it against
+  // (S2-09b owns the catalogue), so it is refused by name and takes nothing
+  // off the bill rather than being guessed at.
+  const rejectedPromoCodes = (input.promoCodes ?? []).map((code) => ({
+    code,
+    reason: `Code "${code}" isn't set up at this branch yet.`,
+  }));
+  const promos: PromoDiscount[] = (input.promos ?? []).map((promo) => ({
+    code: promo.code,
+    label: promo.label,
+    type: promo.type,
+    value: promo.value,
+    ...(promo.freeItemId ? { freeItemId: promo.freeItemId } : {}),
+    ...(promo.freeItemKind ? { freeItemKind: promo.freeItemKind } : {}),
+    ...(promo.target ? { target: promo.target as PromoDiscount['target'] } : {}),
+  }));
+
+  const manualDiscounts = input.manualDiscounts ?? [];
+  const totals = computeTicketCartTotals(
+    cartLines,
+    promos,
+    manualDiscounts as ManualDiscount[],
+    scope.taxConfig,
+    ctx,
+  );
+
+  const tb = totals.taxBreakdown;
+  const grossSatang = tb.grandTotal;
+  const serviceChargeSatang = tb.serviceChargeTotal;
+  const taxInclusiveSatang = tb.inclusiveTaxTotal;
+  const taxExclusiveSatang = tb.exclusiveTaxTotal;
+  // The ledger stores the four parts and checks that they add up
+  // (`sale_totals_check`), so net is what is left of the gross once service
+  // and both kinds of tax are taken out of it.
+  const netSatang = grossSatang - serviceChargeSatang - taxInclusiveSatang - taxExclusiveSatang;
+  if (netSatang < 0) {
+    // Reachable only under `discountPlacement: 'after_tax'` with a discount
+    // larger than the money the tax was charged on: the guest pays less than
+    // the tax the cascade reported, which the ledger's split cannot represent.
+    // The seeded configuration is `before_tax`. Refusing keeps it a decision
+    // somebody takes rather than a nonsense row.
+    throw errors.badRequest(
+      'These totals cannot be recorded: the discount exceeds the taxed amount under this ' +
+        "branch's after-tax discount placement",
+    );
+  }
+
+  const lines = buildPricedLines(cartLines, ctx, totals, resolvedTier.code, catalogue, snapshotPriced);
+
+  return {
+    scope,
+    tier: resolvedTier,
+    disagreements: {
+      // The till says what it believed; the platform says what it charged.
+      // Neither is refused — a cart open across 05:00 or across a tier change
+      // is ordinary — but the answer carries both so the till can show the
+      // mode that was actually used, and a report can find the difference.
+      pricingModeSentByTill: input.pricingMode ?? null,
+      tierSentByTill: input.tier ?? null,
+      pricingModeDiffers: input.pricingMode !== undefined && input.pricingMode !== scope.pricingMode,
+      tierDiffers: input.tier !== undefined && input.tier !== resolvedTier.code,
+    },
+    engineVersion: PRICING_ENGINE_VERSION,
+    totals,
+    money: {
+      subtotalSatang: totals.subtotal,
+      manualDiscountSatang: totals.manualDiscountTotal,
+      promoDiscountSatang: totals.promoDiscountTotal,
+      discountSatang: totals.discountTotal,
+      netSatang,
+      serviceChargeSatang,
+      taxInclusiveSatang,
+      taxExclusiveSatang,
+      grossSatang,
+      unappliedDiscountSatang: tb.unappliedDiscount,
+    },
+    lines,
+    manualDiscounts,
+    rejectedPromoCodes,
+    cartLines,
+  };
+}
+
+/**
+ * One `sale_line` per unit the engine computed, with the category's money
+ * split across the units that make it up.
+ *
+ * WHY A LINE IS A UNIT and not a cart line: one cart line can hold money from
+ * three taxable categories at once (tickets, an add-on pointing at F&B, a
+ * drop-off fee), so a per-line tax rate is only meaningful on the unit. The
+ * units come from the engine's own `cartUnits`, which is what the tax bases and
+ * the discount scopes are built from — the ledger therefore stores what was
+ * computed rather than a second decomposition of it.
+ *
+ * THE SPLIT IS AN APPORTIONMENT, and the authoritative per-category figures
+ * are the sale's stored `tax_breakdown`. Each category's post-discount base,
+ * service charge and tax are divided across its units in proportion to their
+ * undiscounted bases, largest remainder, so the parts sum back exactly. A unit
+ * worth nothing (the free-adults row) takes nothing.
+ */
+function buildPricedLines(
+  cartLines: readonly TicketCartLine[],
+  ctx: PricingContext,
+  totals: TicketCartTotals,
+  tierCode: string,
+  catalogue: CatalogueLookup,
+  snapshotPriced: ReadonlySet<string>,
+): PricedLine[] {
+  const units = cartUnits(cartLines, ctx);
+  const byCategory = new Map<TaxableCategory, number[]>();
+  units.forEach((unit, index) => {
+    const list = byCategory.get(unit.category) ?? [];
+    list.push(index);
+    byCategory.set(unit.category, list);
+  });
+
+  // Per-unit money, filled in category by category.
+  const discount = new Array<number>(units.length).fill(0);
+  const baseAfter = new Array<number>(units.length).fill(0);
+  const service = new Array<number>(units.length).fill(0);
+  const taxIncl = new Array<number>(units.length).fill(0);
+  const taxExcl = new Array<number>(units.length).fill(0);
+
+  for (const [category, indexes] of byCategory) {
+    const weights = indexes.map((i) => units[i]?.base ?? 0);
+    const originalBase = weights.reduce((sum, w) => sum + w, 0);
+    const row = totals.taxBreakdown.categories.find((c) => c.category === category);
+    // A category with no row in the breakdown contributed no base at all.
+    const after = row?.base ?? originalBase;
+    const inclusive =
+      (row?.taxMode === 'inclusive' ? (row?.tax ?? 0) : 0) +
+      (row?.secondaryTaxMode === 'inclusive' ? (row?.secondaryTax ?? 0) : 0);
+    const exclusive =
+      (row?.taxMode === 'exclusive' ? (row?.tax ?? 0) : 0) +
+      (row?.secondaryTaxMode === 'exclusive' ? (row?.secondaryTax ?? 0) : 0);
+
+    const shares = {
+      base: apportion(after, weights),
+      discount: apportion(Math.max(0, originalBase - after), weights),
+      service: apportion(row?.serviceCharge ?? 0, weights),
+      inclusive: apportion(inclusive, weights),
+      exclusive: apportion(exclusive, weights),
+    };
+    indexes.forEach((unitIndex, position) => {
+      baseAfter[unitIndex] = shares.base[position] ?? 0;
+      discount[unitIndex] = shares.discount[position] ?? 0;
+      service[unitIndex] = shares.service[position] ?? 0;
+      taxIncl[unitIndex] = shares.inclusive[position] ?? 0;
+      taxExcl[unitIndex] = shares.exclusive[position] ?? 0;
+    });
+  }
+
+  const linesById = new Map(cartLines.map((line) => [line.id, line]));
+  return units.map((unit, index) => {
+    const cartLine = linesById.get(unit.lineId);
+    const row = unit.row;
+    const categoryRow = totals.taxBreakdown.categories.find((c) => c.category === unit.category);
+    const base = baseAfter[index] ?? 0;
+    const incl = taxIncl[index] ?? 0;
+    const excl = taxExcl[index] ?? 0;
+    const serviceCharge = service[index] ?? 0;
+    // Inclusive tax is already inside the base; exclusive tax is added to it.
+    const net = base - incl;
+    const kind = lineKindOf(unit);
+    const productId =
+      kind === 'socks'
+        ? (catalogue.products.get(ctx.socks.addOnId)?.row.id ?? null)
+        : kind === 'addon' && row
+          ? (catalogue.products.get(row.key)?.row.id ?? null)
+          : null;
+    const pkg = cartLine ? catalogue.packages.get(cartLine.packageId) : undefined;
+    const freeAdults = row?.key === 'adults-free' ? row.quantity : 0;
+
+    return {
+      lineNo: index + 1,
+      cartLineId: unit.lineId,
+      kind,
+      componentKey: row
+        ? row.key
+        : unit.promoItem
+          ? `promo-item:${unit.promoItem.itemId}`
+          : 'food-provision',
+      ticketPackageId: pkg?.id ?? null,
+      productId,
+      label: row?.label ?? unit.promoItem?.name ?? 'Prepaid food',
+      revenueCategory: unit.category,
+      taxableCategory: unit.category,
+      quantity: row?.quantity ?? 1,
+      unitSatang: row?.unitPrice ?? unit.base,
+      baseSatang: unit.base,
+      discountSatang: discount[index] ?? 0,
+      netSatang: net,
+      serviceChargeSatang: serviceCharge,
+      taxSatang: incl + excl,
+      taxMode: categoryRow?.taxMode ?? 'none',
+      // Basis points: 7 % is 700. The percent comes from the resolved rate.
+      taxRateBp: Math.round((categoryRow?.taxPercent ?? 0) * 100),
+      taxRateId: categoryRow?.taxRateId ?? null,
+      taxName: categoryRow?.taxName ?? null,
+      grossSatang: net + incl + excl + serviceCharge,
+      customerTier: tierCode,
+      kidCount: cartLine?.kids ?? 0,
+      adultCount: cartLine?.adults ?? 0,
+      freeAdultCount: freeAdults,
+      stayHours: pkg?.hours ?? null,
+      stayDurationLabel: pkg?.durationLabel ?? null,
+      payload:
+        (row && snapshotPriced.has(row.key)) ||
+        (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
+        ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
+          snapshotPriced.has(unit.lineId))
+          ? { priceSource: 'till_snapshot' as const }
+          : null,
+    };
+  });
+}
+
+// --- Quote ------------------------------------------------------------------
+
+/**
+ * What a cart costs, without writing anything — the answer the till shows the
+ * guest before anybody presses Pay, computed by the same engine that will
+ * write the sale.
+ */
+export async function quoteSale(
+  db: Exec,
+  actor: ActorContext,
+  input: CartInput,
+  now: Date = new Date(),
+): Promise<Record<string, unknown>> {
+  const priced = await priceCart(db, actor, input, now);
+  const lineTotals: Record<string, number> = {};
+  for (const cartLine of priced.cartLines) lineTotals[cartLine.id] = cartLine.lineTotal;
+
+  const quote = {
+    branchId: priced.scope.branchId,
+    businessDate: priced.scope.businessDate,
+    pricingMode: priced.scope.pricingMode,
+    pricingModeReason: priced.scope.pricingModeReason,
+    holidayName: priced.scope.holidayName,
+    tier: priced.tier.code,
+    tierSource: priced.tier.source,
+    customerTier: priced.tier.code,
+    engineVersion: priced.engineVersion,
+    totals: priced.money,
+    /** Resolved satang per cart line id — what each line came to. */
+    lineTotals,
+    /** Resolved satang per manual discount id (the prototype's `manualAmounts`). */
+    manualAmounts: priced.totals.manualAmounts,
+    appliedPromos: priced.totals.appliedPromos.map((promo) => ({
+      code: promo.code,
+      label: promo.label,
+      type: promo.type,
+      amountSatang: promo.amount,
+      ...(promo.exhaustedReason ? { exhaustedReason: promo.exhaustedReason } : {}),
+    })),
+    rejectedPromoCodes: priced.rejectedPromoCodes,
+    taxBreakdown: priced.totals.taxBreakdown,
+    lines: priced.lines,
+    disagreements: priced.disagreements,
+  };
+  // Wrapped AND flat: the till's client reads `quote`, and the flat copy is
+  // what the OpenAPI page and a curl from a terminal read. One object, so the
+  // two cannot drift.
+  return { quote, ...quote };
+}
+
+// --- Writing the sale -------------------------------------------------------
+
+/** The sale as every read of it answers. */
+export interface SaleView {
+  id: string;
+  branchId: string;
+  stationId: string;
+  boxId: string | null;
+  memberId: string | null;
+  visitId: string | null;
+  businessDate: string;
+  occurredAt: string;
+  status: SaleStatus;
+  pricingMode: string;
+  pricingModeReason: string;
+  customerTier: string;
+  engineVersion: string;
+  receiptNumber: string | null;
+  receiptSeries: string | null;
+  receiptSeq: number | null;
+  finalisedAt: string | null;
+  note: string | null;
+  totals: {
+    subtotalSatang: number;
+    manualDiscountSatang: number;
+    promoDiscountSatang: number;
+    discountSatang: number;
+    netSatang: number;
+    serviceChargeSatang: number;
+    taxInclusiveSatang: number;
+    taxExclusiveSatang: number;
+    grossSatang: number;
+    unappliedDiscountSatang: number;
+    refundedSatang: number;
+  };
+}
+
+function viewOf(row: typeof sale.$inferSelect): SaleView {
+  return {
+    id: row.id,
+    branchId: row.branchId,
+    stationId: row.stationId,
+    boxId: row.boxId,
+    memberId: row.memberId,
+    visitId: row.visitId,
+    businessDate: row.businessDate,
+    occurredAt: row.occurredAt.toISOString(),
+    status: row.status,
+    pricingMode: row.pricingMode,
+    pricingModeReason: row.pricingModeReason,
+    customerTier: row.customerTier,
+    engineVersion: row.engineVersion,
+    receiptNumber: row.receiptNumber,
+    receiptSeries: row.receiptSeries,
+    receiptSeq: row.receiptSeq,
+    finalisedAt: row.finalisedAt?.toISOString() ?? null,
+    note: row.note,
+    totals: {
+      subtotalSatang: row.subtotalSatang,
+      manualDiscountSatang: row.manualDiscountSatang,
+      promoDiscountSatang: row.promoDiscountSatang,
+      discountSatang: row.discountSatang,
+      netSatang: row.netSatang,
+      serviceChargeSatang: row.serviceChargeSatang,
+      taxInclusiveSatang: row.taxInclusiveSatang,
+      taxExclusiveSatang: row.taxExclusiveSatang,
+      grossSatang: row.grossSatang,
+      unappliedDiscountSatang: row.unappliedDiscountSatang,
+      refundedSatang: row.refundedSatang,
+    },
+  };
+}
+
+/**
+ * A tender that reached `approved` — money the platform says was taken.
+ *
+ * `pos.payment_attempt` is still the Sprint 1 placeholder shape and S2-10a
+ * owns its columns; what is written here is the minimum a cash tender needs
+ * and nothing that pre-empts that ticket's design: the method, the amount, the
+ * status, and what was handed over against what came back in change. EDC and
+ * QR attach to the same row at the same moment (S2-10a) — an attempt reaching
+ * `approved` is what closes a sale, whichever instrument produced it.
+ */
+const TENDER_APPROVED = 'approved';
+
+/**
+ * What a sale still owes: its gross, less every approved tender against it.
+ *
+ * This is the predicate finalisation turns on, and it is now answered from
+ * rows rather than from a constant. Before, it returned the gross
+ * unconditionally, so every sale with a price owed its whole price for ever
+ * and the only sale that could ever be finalised was a ฿0 comp — the till
+ * pressed Pay on a ฿1,440 admission and got a 409 back.
+ */
+async function outstandingOf(db: Exec, row: typeof sale.$inferSelect): Promise<number> {
+  const attempts = await db
+    .select({ amountSatang: paymentAttempt.amountSatang, status: paymentAttempt.status })
+    .from(paymentAttempt)
+    .where(eq(paymentAttempt.saleId, row.id));
+  const taken = attempts
+    .filter((attempt) => attempt.status === TENDER_APPROVED)
+    .reduce((sum, attempt) => sum + attempt.amountSatang, 0);
+  return row.grossSatang - taken;
+}
+
+async function displayNameOf(db: Exec, accountId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ name: employee.name, nickname: employee.nickname })
+    .from(account)
+    .leftJoin(employee, eq(account.employeeId, employee.id))
+    .where(eq(account.id, accountId))
+    .limit(1);
+  return row?.nickname ?? row?.name ?? null;
+}
+
+/**
+ * Allocate the next receipt number for a station, inside the caller's
+ * transaction.
+ *
+ * PER STATION, GAPLESS WITHIN THAT STATION'S SERIES — the numbering decision
+ * recorded on `pos.receipt_series`. A branch-wide counter would need a single
+ * allocator, and a single allocator stops the second till when the first box
+ * does. The row is locked FOR UPDATE so two tills on one station cannot take
+ * the same number; `sale_receipt_unique` is the net underneath that.
+ */
+async function allocateReceipt(
+  tx: Tx,
+  scope: { operatorId: string; branchId: string; stationId: string; series: string },
+): Promise<{ series: string; seq: number; number: string }> {
+  const existing = await tx
+    .select()
+    .from(receiptSeries)
+    .where(
+      and(
+        eq(receiptSeries.stationId, scope.stationId),
+        eq(receiptSeries.series, scope.series),
+        eq(receiptSeries.kind, 'sale'),
+      ),
+    )
+    .for('update')
+    .limit(1);
+
+  let row = existing[0];
+  if (!row) {
+    const inserted = await tx
+      .insert(receiptSeries)
+      .values({
+        id: newId(),
+        operatorId: scope.operatorId,
+        branchId: scope.branchId,
+        stationId: scope.stationId,
+        series: scope.series,
+        kind: 'sale',
+      })
+      .onConflictDoNothing()
+      .returning();
+    row = inserted[0];
+    if (!row) {
+      // Another transaction created it between the select and the insert.
+      const [again] = await tx
+        .select()
+        .from(receiptSeries)
+        .where(
+          and(
+            eq(receiptSeries.stationId, scope.stationId),
+            eq(receiptSeries.series, scope.series),
+            eq(receiptSeries.kind, 'sale'),
+          ),
+        )
+        .for('update')
+        .limit(1);
+      if (!again) throw errors.conflict('RECEIPT_SERIES_UNAVAILABLE', 'Could not open the receipt series');
+      row = again;
+    }
+  }
+
+  const seq = row.nextSeq;
+  await tx
+    .update(receiptSeries)
+    .set({ nextSeq: seq + 1, lastIssuedAt: new Date() })
+    .where(eq(receiptSeries.id, row.id));
+
+  return {
+    series: row.series,
+    seq,
+    number: `${row.series}-${String(seq).padStart(row.seqPadding, '0')}`,
+  };
+}
+
+/**
+ * The tolerance the sync path already applies to a box's clock
+ * (`CLOCK_TOLERANCE_MS` in services/sync.ts), applied here to a till's: past
+ * it, the clock is called skewed and the platform's own is used instead.
+ */
+const CLOCK_TOLERANCE_MS = 60_000;
+
+/**
+ * When the sale happened, and whether the writing clock could be believed.
+ *
+ * A till that has been asleep, or a box that came up after a mall power cut
+ * with no NTP, will stamp a confident and wrong time. The same rule the sync
+ * ledger uses is applied here: inside the tolerance the till's instant is the
+ * one recorded; outside it the platform's clock is used and `clock_trust` says
+ * `skewed`, so a day's figures that look wrong are explainable from the row.
+ * The TRADING DAY is always resolved from the instant this returns, so a wrong
+ * till clock cannot move a sale onto another day's takings.
+ */
+function resolveOccurredAt(
+  sent: string | undefined,
+  now: Date,
+): { occurredAt: Date; clockTrust: SaleClockTrust } {
+  if (!sent) return { occurredAt: now, clockTrust: 'trusted' };
+  const parsed = new Date(sent);
+  if (Number.isNaN(parsed.getTime())) return { occurredAt: now, clockTrust: 'untrusted' };
+  if (Math.abs(parsed.getTime() - now.getTime()) > CLOCK_TOLERANCE_MS) {
+    return { occurredAt: now, clockTrust: 'skewed' };
+  }
+  return { occurredAt: parsed, clockTrust: 'trusted' };
+}
+
+/** A unique-violation on a named index, whatever wrapper Drizzle put round it. */
+function violates(error: unknown, constraint: string): boolean {
+  let err: unknown = error;
+  while (err instanceof Error) {
+    if (err.message.includes(constraint)) return true;
+    err = err.cause;
+  }
+  return false;
+}
+
+export interface CommitResult {
+  /** The till's client reads `replay`; `replayed` is the same fact under the name the API used first. */
+  replay: boolean;
+  replayed: boolean;
+  /** Whether this call also closed the sale and numbered its receipt. */
+  finalised: boolean;
+  /** What is left to tender. Zero on a comp; the gross on everything else. */
+  outstandingSatang: number;
+  sale: SaleView;
+  lines: PricedLine[];
+  rejectedPromoCodes: { code: string; reason: string }[];
+}
+
+/**
+ * Commit a cart as a sale: the row, its lines, its discounts and the audit
+ * entry, in ONE transaction.
+ *
+ * PAY COMMITS THE SALE; A TENDER FINALISES IT. Pressing Pay writes this row
+ * with no receipt number and the status `tendering` — the money record exists
+ * from the moment the cart is left behind, which is the whole point of the
+ * ledger, and the receipt number is allocated when the money is actually
+ * taken (`finaliseSale`). The two are separate because a receipt number is a
+ * document number: once it is spent it is spent, and spending one on a sale
+ * that turns out not to be paid leaves a gap somebody has to explain.
+ *
+ * The one sale with nothing to tender — a ฿0 full comp, a fully discounted
+ * visit — is committed and finalised in the same transaction, because there is
+ * no second step to wait for. A comp that left no record is the thing this
+ * ticket exists to stop.
+ *
+ * A caller asking to finalise a cart that DOES owe money is not refused: the
+ * sale is committed unfinalised and the answer says so — `finalised: false`
+ * and `outstandingSatang` — so the till can go on to its cash step instead of
+ * losing the sale to a 409 it cannot do anything about.
+ *
+ * IDEMPOTENT TWICE OVER. The till mints the sale id, so a retry through a
+ * dropped connection carries the same one and the existing sale is returned;
+ * and `sale_action_unique` refuses a retry that minted a NEW id under the same
+ * `x-oto-action-id`, so a client bug cannot turn one press of Pay into two
+ * sales.
+ */
+export async function commitSale(
+  tx: Tx,
+  actor: ActorContext,
+  input: CommitSaleInput,
+  now: Date = new Date(),
+): Promise<CommitResult> {
+  const saleId = input.id ?? newId();
+
+  // Replay by the till-minted id.
+  const [already] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
+  if (already) {
+    if (already.operatorId !== actor.operatorId) throw errors.notFound('Sale not found');
+    await actor.assertBranchAllowed?.(already.branchId);
+    return {
+      replay: true,
+      replayed: true,
+      finalised: already.status === 'finalised',
+      outstandingSatang: await outstandingOf(tx, already),
+      sale: viewOf(already),
+      lines: [],
+      rejectedPromoCodes: [],
+    };
+  }
+
+  const [st] = await tx.select().from(station).where(eq(station.id, input.stationId)).limit(1);
+  if (!st || st.operatorId !== actor.operatorId) throw errors.notFound('Station not found');
+  if (st.archivedAt) throw errors.badRequest('That station has been taken off the floor');
+
+  const clock = resolveOccurredAt(input.occurredAt, now);
+  const priced = await priceCart(
+    tx,
+    { ...actor, branchId: input.branchId ?? st.branchId },
+    input,
+    clock.occurredAt,
+  );
+  if (st.branchId !== priced.scope.branchId) {
+    throw errors.badRequest('That station belongs to another branch');
+  }
+
+  // The price charged is the price the platform quoted. A till that sends its
+  // own total gets a refusal on a disagreement, never a silent acceptance of
+  // either number.
+  if (
+    input.expectedTotalSatang !== undefined &&
+    input.expectedTotalSatang !== priced.money.grossSatang
+  ) {
+    throw errors.conflict(
+      'SALE_TOTAL_MISMATCH',
+      'The till and the platform priced this cart differently — nothing was saved',
+      { expectedTotalSatang: input.expectedTotalSatang, quotedTotalSatang: priced.money.grossSatang },
+    );
+  }
+
+  if (input.visitId) {
+    const [v] = await tx.select().from(visit).where(eq(visit.id, input.visitId)).limit(1);
+    if (!v || v.operatorId !== actor.operatorId) throw errors.notFound('Visit not found');
+  }
+
+  // An action id that already produced a sale at this station is one tap, not
+  // two: refuse rather than write a second sale under a new id.
+  if (input.actionId) {
+    const [sameAction] = await tx
+      .select({ id: sale.id })
+      .from(sale)
+      .where(and(eq(sale.stationId, st.id), eq(sale.actionId, input.actionId)))
+      .limit(1);
+    if (sameAction) {
+      throw errors.conflict('SALE_ACTION_REPLAY', 'That sale has already been recorded', {
+        saleId: sameAction.id,
+      });
+    }
+  }
+
+  // A station that cannot number a receipt cannot close a sale, so it must
+  // not be allowed to open one. This used to be checked only when finalising,
+  // and a merge gate drove what that allowed: Pay on a station with no code
+  // prefix wrote a ฿1,190 sale as `tendering`, Confirm Payment Received was
+  // then refused for the missing prefix, and the till could never close the
+  // row — money taken at the counter, and Cancel the only way out. The admin
+  // console can create exactly such a station (the prefix is optional on the
+  // station write), so this is a configuration a park can reach. Refusing
+  // here, before anything is written, is the honest answer: nothing to undo.
+  if (!st.codePrefix) {
+    throw errors.badRequest(
+      'This station has no code prefix, so it cannot number a receipt — set one on the station before selling here',
+    );
+  }
+
+  // A sale that has just been written has no tenders against it, so what it
+  // owes is its gross. `finalise` is honoured when that is nothing and is
+  // reported back rather than refused when it is not.
+  const owedAtCommit = priced.money.grossSatang;
+  const finalising = input.finalise === true && owedAtCommit === 0;
+  const receipt = finalising
+    ? await allocateReceipt(tx, {
+        operatorId: actor.operatorId,
+        branchId: st.branchId,
+        stationId: st.id,
+        series: st.codePrefix,
+      })
+    : null;
+
+  const values: typeof sale.$inferInsert = {
+    id: saleId,
+    operatorId: actor.operatorId,
+    branchId: priced.scope.branchId,
+    stationId: st.id,
+    boxId: st.boxId,
+    businessDate: priced.scope.businessDate,
+    businessDayStart: priced.scope.businessDayStart,
+    timezone: priced.scope.timezone,
+    occurredAt: clock.occurredAt,
+    // Written by the api itself. A sale carried up from a box arrives through
+    // the sync ledger and sets its own origin.
+    origin: 'cloud',
+    clockTrust: clock.clockTrust,
+    salesChannel: 'till',
+    actionId: input.actionId ?? null,
+    createdByAccountId: actor.accountId,
+    memberId: input.memberId ?? null,
+    visitId: input.visitId ?? null,
+    pricingMode: priced.scope.pricingMode,
+    pricingModeReason: priced.scope.pricingModeReason,
+    holidayId: priced.scope.holidayId,
+    holidayName: priced.scope.holidayName,
+    customerTier: priced.tier.code,
+    engineVersion: priced.engineVersion,
+    taxConfig: priced.scope.taxConfig,
+    taxBreakdown: priced.totals.taxBreakdown,
+    ...priced.money,
+    status: finalising ? 'finalised' : 'tendering',
+    finalisedAt: finalising ? clock.occurredAt : null,
+    receiptSeries: receipt?.series ?? null,
+    receiptSeq: receipt?.seq ?? null,
+    receiptNumber: receipt?.number ?? null,
+    note: input.note ?? null,
+  };
+
+  try {
+    await tx.insert(sale).values(values);
+  } catch (error) {
+    if (violates(error, 'sale_action_unique')) {
+      throw errors.conflict('SALE_ACTION_REPLAY', 'That sale has already been recorded');
+    }
+    if (violates(error, 'sale_receipt_unique') || violates(error, 'sale_receipt_number_unique')) {
+      // Two allocators in one series — a misconfigured or restored box. The
+      // sale is refused rather than printed under a number another receipt
+      // already carries.
+      throw errors.conflict(
+        'RECEIPT_NUMBER_TAKEN',
+        'That receipt number is already used at this station',
+      );
+    }
+    throw error;
+  }
+
+  for (const line of priced.lines) {
+    await tx.insert(saleLine).values({
+      id: newId(),
+      saleId,
+      operatorId: actor.operatorId,
+      branchId: priced.scope.branchId,
+      businessDate: priced.scope.businessDate,
+      lineNo: line.lineNo,
+      cartLineId: line.cartLineId,
+      kind: line.kind,
+      componentKey: line.componentKey,
+      ticketPackageId: line.ticketPackageId,
+      productId: line.productId,
+      label: line.label,
+      revenueCategory: line.revenueCategory,
+      taxableCategory: line.taxableCategory,
+      quantity: line.quantity,
+      unitSatang: line.unitSatang,
+      baseSatang: line.baseSatang,
+      discountSatang: line.discountSatang,
+      netSatang: line.netSatang,
+      serviceChargeSatang: line.serviceChargeSatang,
+      taxSatang: line.taxSatang,
+      taxMode: line.taxMode,
+      taxRateBp: line.taxRateBp,
+      taxRateId: line.taxRateId,
+      taxName: line.taxName,
+      grossSatang: line.grossSatang,
+      customerTier: line.customerTier,
+      kidCount: line.kidCount,
+      adultCount: line.adultCount,
+      freeAdultCount: line.freeAdultCount,
+      stayHours: line.stayHours,
+      stayDurationLabel: line.stayDurationLabel,
+      payload: line.payload,
+    });
+  }
+
+  const appliedByName = priced.manualDiscounts.length > 0 ? await displayNameOf(tx, actor.accountId) : null;
+  let sequence = 0;
+  for (const discount of priced.manualDiscounts) {
+    sequence += 1;
+    await tx.insert(saleDiscount).values({
+      id: newId(),
+      saleId,
+      operatorId: actor.operatorId,
+      branchId: priced.scope.branchId,
+      businessDate: priced.scope.businessDate,
+      sequence,
+      kind: 'manual',
+      discountType: discount.type,
+      percentBp: discount.type === 'percent' ? Math.round(discount.value * 100) : null,
+      valueSatang: discount.type === 'fixed' ? discount.value : null,
+      amountSatang: priced.totals.manualAmounts[discount.id] ?? 0,
+      // The engine does not return the per-discount allocations it computed —
+      // they stay inside `computeTicketCartTotals` — so the reproducible record
+      // of where each discount landed is the sale's `tax_breakdown` and the
+      // per-line split. S2-11 (refunds) is the ticket that needs them per
+      // instrument.
+      allocations: null,
+      scope:
+        discount.scope === 'line' ? (discount.targetComponent ? 'component' : 'line') : 'order',
+      targetLineId: discount.targetLineId ?? null,
+      targetComponent: discount.targetComponent ? componentKey(discount.targetComponent) : null,
+      targetLabel: discount.targetLabel ?? null,
+      reason: discount.reason,
+      note: discount.note ?? null,
+      appliedByAccountId: actor.accountId,
+      appliedByName,
+      appliedAt: now,
+    });
+  }
+  // What each code was configured to be worth, by code, so the row can record
+  // the instrument as well as what it took.
+  const definitionOf = (code: string): number =>
+    (input.promos ?? []).find((promo) => promo.code === code)?.value ?? 0;
+  for (const promo of priced.totals.appliedPromos) {
+    sequence += 1;
+    await tx.insert(saleDiscount).values({
+      id: newId(),
+      saleId,
+      operatorId: actor.operatorId,
+      branchId: priced.scope.branchId,
+      businessDate: priced.scope.businessDate,
+      sequence,
+      kind: 'promo',
+      discountType: promo.type,
+      // `sale_discount_value_check`: a percent code carries its percentage, a
+      // fixed or free-item code the satang it was worth. The code's own
+      // configured value, not what it happened to take off this cart — that is
+      // `amount_satang` below, and the two differ whenever the balance ran out.
+      percentBp: promo.type === 'percent' ? Math.round(definitionOf(promo.code) * 100) : null,
+      valueSatang: promo.type === 'percent' ? null : definitionOf(promo.code),
+      amountSatang: promo.amount,
+      allocations: null,
+      scope: 'order',
+      code: promo.code,
+      label: promo.label,
+      exhaustedReason: promo.exhaustedReason ?? null,
+      appliedAt: now,
+    });
+  }
+
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: priced.scope.branchId,
+    action: 'sale.create',
+    entityType: 'sale',
+    entityId: saleId,
+    actionId: input.actionId ?? null,
+    requestId: actor.requestId,
+    after: {
+      stationId: st.id,
+      boxId: st.boxId,
+      businessDate: priced.scope.businessDate,
+      pricingMode: priced.scope.pricingMode,
+      customerTier: priced.tier.code,
+      grossSatang: priced.money.grossSatang,
+      discountSatang: priced.money.discountSatang,
+      lineCount: priced.lines.length,
+      status: values.status,
+    },
+  });
+  if (finalising) {
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId: priced.scope.branchId,
+      action: 'sale.finalise',
+      entityType: 'sale',
+      entityId: saleId,
+      actionId: input.actionId ?? null,
+      requestId: actor.requestId,
+      before: { status: 'tendering' },
+      after: {
+        status: 'finalised',
+        stationId: st.id,
+        boxId: st.boxId,
+        receiptNumber: receipt?.number ?? null,
+        grossSatang: priced.money.grossSatang,
+      },
+    });
+  }
+
+  const [written] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
+  if (!written) throw new Error('the sale was not written');
+  return {
+    replay: false,
+    replayed: false,
+    finalised: finalising,
+    outstandingSatang: finalising ? 0 : owedAtCommit,
+    sale: viewOf(written),
+    lines: priced.lines,
+    rejectedPromoCodes: priced.rejectedPromoCodes,
+  };
+}
+
+/** What the till confirms was taken at the cash step. */
+export interface TenderInput {
+  /**
+   * Cash today, because "Confirm Payment Received" is the only tender the till
+   * has. S2-10a brings the EDC and the QR onto this same call; the method is
+   * therefore a string the caller names rather than an assumption made here.
+   */
+  method?: string;
+  /** The till's own classification of that token — cash, card, qr. Recorded as sent. */
+  kind?: string;
+  /** Satang this tender settles. Defaults to everything the sale still owes. */
+  amountSatang?: number;
+  /** What the guest handed over, when staff typed it. Change is the difference. */
+  tenderedSatang?: number;
+  /** The change the TILL showed. Compared with the platform's, never used as it. */
+  changeSatang?: number;
+  /** A slip number, a QR reference — whatever identifies the tender outside the platform. */
+  reference?: string;
+}
+
+export interface FinaliseSaleInput {
+  tender?: TenderInput;
+  /** `x-oto-action-id` — one press of Confirm, however many HTTP attempts it took. */
+  actionId?: string | null;
+}
+
+/** The change owed back on a cash tender, and a refusal if the cash is short. */
+function changeFor(amountSatang: number, tenderedSatang: number | undefined): number {
+  if (tenderedSatang === undefined) return 0;
+  if (tenderedSatang < amountSatang) {
+    throw errors.badRequest(
+      'The cash taken is less than the amount being settled, so this would leave negative change',
+      { amountSatang, tenderedSatang },
+    );
+  }
+  return tenderedSatang - amountSatang;
+}
+
+/**
+ * Take the tender and close the sale: record the payment attempt, allocate the
+ * receipt number, persist it, and finalise — ALL IN ONE TRANSACTION.
+ *
+ * THIS IS THE SEAM S2-10a BUILDS ON. Its design says the sale is "marked paid
+ * inside the sale transaction", and cash is "tendered/change, drawer kick,
+ * finalisation" — so a tender reaching `approved` and the sale reaching
+ * `finalised` are one atomic act, never a payment recorded against a sale that
+ * stayed open or a receipt numbered for money nobody took. Today the caller is
+ * the till's "Confirm Payment Received"; EDC and QR arrive at the same door.
+ *
+ * A SALE THAT STILL OWES MONEY IS STILL REFUSED — an under-tender, or a
+ * finalise called with no tender on a sale with a price. That refusal is the
+ * correct answer to a call that should not have been made; what it is no
+ * longer is the wall the till hit on every paid sale, because Pay no longer
+ * asks for finalisation it cannot have.
+ *
+ * Re-finalising a finalised sale returns it unchanged rather than taking a
+ * second number or a second tender: the retry a dropped connection causes must
+ * not consume either.
+ */
+export async function finaliseSale(
+  tx: Tx,
+  actor: ActorContext,
+  saleId: string,
+  input: FinaliseSaleInput = {},
+  now: Date = new Date(),
+): Promise<{ replay: boolean; replayed: boolean; sale: SaleView }> {
+  const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).for('update').limit(1);
+  if (!row || row.operatorId !== actor.operatorId) throw errors.notFound('Sale not found');
+  // The sale names the branch; the URL does not. So the scope check that a
+  // route guard cannot make is made here, on the row that was found.
+  await actor.assertBranchAllowed?.(row.branchId);
+  if (row.status === 'finalised') return { replay: true, replayed: true, sale: viewOf(row) };
+  if (row.status === 'voided' || row.status === 'refunded') {
+    throw errors.conflict('SALE_CLOSED', `This sale is ${row.status} and cannot be finalised`);
+  }
+
+  let owed = await outstandingOf(tx, row);
+  /** What this call took, for the audit row. Null when there was nothing to take. */
+  let taken: { method: string; amountSatang: number; changeSatang: number | null } | null = null;
+  if (owed > 0) {
+    // CALLING THIS ROUTE IS THE CONFIRMATION THAT THE MONEY WAS TAKEN — it is
+    // what the till's "Confirm Payment Received" does — so a call that names
+    // no tender settles the balance in cash rather than refusing. Staff who
+    // typed what the guest handed over get `tendered` and `change` recorded
+    // with it; staff who only pressed the button get the amount alone.
+    const tender = input.tender ?? {};
+    const amountSatang = tender.amountSatang ?? owed;
+    if (amountSatang <= 0) throw errors.badRequest('A tender has to settle something');
+    if (amountSatang > owed) {
+      throw errors.badRequest('That tender is more than this sale still owes', {
+        amountSatang,
+        outstandingSatang: owed,
+      });
+    }
+    const method = tender.method ?? 'cash';
+    const changeSatang = changeFor(amountSatang, tender.tenderedSatang);
+    await tx.insert(paymentAttempt).values({
+      id: newId(),
+      saleId,
+      method,
+      amountSatang,
+      status: TENDER_APPROVED,
+      payload: {
+        ...(tender.kind ? { kind: tender.kind } : {}),
+        ...(tender.tenderedSatang === undefined
+          ? {}
+          : { tenderedSatang: tender.tenderedSatang, changeSatang }),
+        // Kept only when the till worked the change out differently — a
+        // disagreement about arithmetic this simple is worth being able to
+        // find later, and it is not worth refusing a sale at the counter over.
+        ...(tender.changeSatang !== undefined && tender.changeSatang !== changeSatang
+          ? { tillChangeSatang: tender.changeSatang }
+          : {}),
+        ...(tender.reference ? { reference: tender.reference } : {}),
+        takenByAccountId: actor.accountId,
+        ...(input.actionId ? { actionId: input.actionId } : {}),
+      },
+    });
+    owed -= amountSatang;
+    taken = {
+      method,
+      amountSatang,
+      changeSatang: tender.tenderedSatang === undefined ? null : changeSatang,
+    };
+  }
+
+  if (owed > 0) {
+    throw errors.conflict(
+      'SALE_NOT_PAID',
+      'This sale still has a balance, so it cannot be finalised yet',
+      { outstandingSatang: owed },
+    );
+  }
+
+  const [st] = await tx.select().from(station).where(eq(station.id, row.stationId)).limit(1);
+  if (!st?.codePrefix) {
+    throw errors.badRequest(
+      'This station has no code prefix, so it cannot number a receipt — set one on the station',
+    );
+  }
+  const receipt = await allocateReceipt(tx, {
+    operatorId: row.operatorId,
+    branchId: row.branchId,
+    stationId: row.stationId,
+    series: st.codePrefix,
+  });
+
+  const updated = await tx
+    .update(sale)
+    .set({
+      status: 'finalised',
+      finalisedAt: now,
+      receiptSeries: receipt.series,
+      receiptSeq: receipt.seq,
+      receiptNumber: receipt.number,
+    })
+    .where(eq(sale.id, saleId))
+    .returning();
+  const after = updated[0];
+  if (!after) throw new Error('the sale was not finalised');
+
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: row.branchId,
+    action: 'sale.finalise',
+    entityType: 'sale',
+    entityId: saleId,
+    actionId: input.actionId ?? null,
+    requestId: actor.requestId,
+    before: { status: row.status },
+    after: {
+      status: 'finalised',
+      stationId: row.stationId,
+      boxId: row.boxId,
+      receiptNumber: receipt.number,
+      grossSatang: row.grossSatang,
+      // What closed it, so "who took this money and how" is answerable from
+      // the log and not only from the payment row.
+      tender: taken,
+    },
+  });
+
+  return { replay: false, replayed: false, sale: viewOf(after) };
+}
+
+// --- Reading ----------------------------------------------------------------
+
+export interface SaleListFilters {
+  branchId?: string;
+  stationId?: string;
+  memberId?: string;
+  status?: SaleStatus;
+  from?: string;
+  to?: string;
+  limit: number;
+  offset: number;
+}
+
+export async function listSales(
+  db: Exec,
+  operatorId: string,
+  filters: SaleListFilters,
+): Promise<{ sales: SaleView[] }> {
+  const where = [eq(sale.operatorId, operatorId)];
+  if (filters.branchId) where.push(eq(sale.branchId, filters.branchId));
+  if (filters.stationId) where.push(eq(sale.stationId, filters.stationId));
+  if (filters.memberId) where.push(eq(sale.memberId, filters.memberId));
+  if (filters.status) where.push(eq(sale.status, filters.status));
+  if (filters.from) where.push(gte(sale.businessDate, filters.from));
+  if (filters.to) where.push(lte(sale.businessDate, filters.to));
+
+  const rows = await db
+    .select()
+    .from(sale)
+    .where(and(...where))
+    // The day's sales, newest first — the order Today and History read them in.
+    .orderBy(desc(sale.businessDate), desc(sale.occurredAt))
+    .limit(filters.limit)
+    .offset(filters.offset);
+  return { sales: rows.map(viewOf) };
+}
+
+export async function getSaleDetail(
+  db: Exec,
+  operatorId: string,
+  saleId: string,
+): Promise<Record<string, unknown>> {
+  const [row] = await db.select().from(sale).where(eq(sale.id, saleId)).limit(1);
+  if (!row || row.operatorId !== operatorId) throw errors.notFound('Sale not found');
+  const lines = await db
+    .select()
+    .from(saleLine)
+    .where(eq(saleLine.saleId, saleId))
+    .orderBy(asc(saleLine.lineNo));
+  const discounts = await db
+    .select()
+    .from(saleDiscount)
+    .where(eq(saleDiscount.saleId, saleId))
+    .orderBy(asc(saleDiscount.sequence));
+
+  return {
+    sale: viewOf(row),
+    taxBreakdown: row.taxBreakdown,
+    taxConfig: row.taxConfig,
+    lines: lines.map((line) => ({
+      id: line.id,
+      lineNo: line.lineNo,
+      cartLineId: line.cartLineId,
+      kind: line.kind,
+      label: line.label,
+      componentKey: line.componentKey,
+      ticketPackageId: line.ticketPackageId,
+      productId: line.productId,
+      revenueCategory: line.revenueCategory,
+      taxableCategory: line.taxableCategory,
+      quantity: line.quantity,
+      unitSatang: line.unitSatang,
+      baseSatang: line.baseSatang,
+      discountSatang: line.discountSatang,
+      netSatang: line.netSatang,
+      serviceChargeSatang: line.serviceChargeSatang,
+      taxSatang: line.taxSatang,
+      taxMode: line.taxMode,
+      taxRateBp: line.taxRateBp,
+      taxName: line.taxName,
+      grossSatang: line.grossSatang,
+      customerTier: line.customerTier,
+      kidCount: line.kidCount,
+      adultCount: line.adultCount,
+      freeAdultCount: line.freeAdultCount,
+      stayHours: line.stayHours,
+      stayDurationLabel: line.stayDurationLabel,
+    })),
+    discounts: discounts.map((d) => ({
+      id: d.id,
+      sequence: d.sequence,
+      kind: d.kind,
+      discountType: d.discountType,
+      percentBp: d.percentBp,
+      valueSatang: d.valueSatang,
+      amountSatang: d.amountSatang,
+      scope: d.scope,
+      targetLineId: d.targetLineId,
+      targetComponent: d.targetComponent,
+      targetLabel: d.targetLabel,
+      code: d.code,
+      label: d.label,
+      exhaustedReason: d.exhaustedReason,
+      reason: d.reason,
+      note: d.note,
+      appliedByAccountId: d.appliedByAccountId,
+      appliedByName: d.appliedByName,
+      appliedAt: d.appliedAt?.toISOString() ?? null,
+    })),
+  };
+}

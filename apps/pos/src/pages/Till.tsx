@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, TicketType, Member, TierVerification, DropOffServiceType, AddOn, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
+import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, AddOn, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
 import { useStation } from '@/station/StationContext';
 import { braceletPrintJobs, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
@@ -35,6 +35,18 @@ import { Monitor, User } from 'lucide-react';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { authApi, membersApi } from '@/api/platform';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import {
+  buildCartPayload,
+  quotedPricing,
+  type ApiSale,
+  type CartIdentity,
+  type SaleCartPayload,
+} from '@/api/sales';
+import { paymentMethodKind } from '@/lib/payments';
+import { useCartQuote } from '@/lib/cartQuote';
+import { useSaleWriter } from '@/lib/saleWriter';
+import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { apiMemberToMember } from '@/api/mappers';
 import { VisitChildrenModal } from '@/components/till/VisitChildrenModal';
 import { OrderSummary } from '@/components/till/OrderSummary';
@@ -75,6 +87,12 @@ export default function Till() {
   const { operator } = useOperator();
   const { station } = useStation();
   const { branch } = useBranch();
+  /**
+   * S2-09a: the sale ledger writer, and the platform's price for this cart.
+   * Declared here so `resetSale` can clear the writer and every screen below
+   * reads one set of totals.
+   */
+  const saleWriter = useSaleWriter();
   const [, navigate] = useLocation();
   const [step, setStep] = useState<number>(1);
   const [tier, setTier] = useState<CustomerTier | null>(null);
@@ -321,8 +339,51 @@ export default function Till() {
    */
   const saleEpochRef = useRef(0);
 
+  /**
+   * WHO THIS CART BELONGS TO, in the platform's own ids — S2-09a (SCRUM-203).
+   *
+   * Null when this deployment has no platform station or no platform branch for
+   * the one on screen (a device still on the prototype's own station setup,
+   * which is what a deployment without the fleet routes leaves it on). A sale
+   * then cannot be written, and the till says so on the confirmation screen
+   * rather than showing a saved-looking sale that only exists in this browser.
+   */
+  const cartIdentity: CartIdentity | null = useMemo(() => {
+    const branchId = apiBranchIdForSlug(branch.id);
+    if (!branchId || !station?.stationId || !operator || !tier) return null;
+    return {
+      branchId,
+      stationId: station.stationId,
+      tier,
+      memberId: member?.id ?? null,
+      customerPhone: customerPhone || member?.phone || null,
+      customerNickname: customerNickname || member?.nickname || null,
+      accountId: operator.id,
+      accountName: operator.name,
+    };
+  }, [branch.id, station?.stationId, operator, tier, member, customerPhone, customerNickname]);
+
+  /**
+   * THE PRICE THE PLATFORM QUOTES FOR THIS CART. Every figure the staff panel,
+   * the customer display and the payment screen show comes from here; where the
+   * platform could not be asked, `quote.source` says so and the note beside the
+   * total says it on the screen.
+   *
+   * Switched off once the sale is committed: from step 6 the sale's own frozen
+   * figures stand, and re-quoting a finished sale could only disagree with the
+   * receipt in the visitor's hand.
+   */
+  const cart = useCartQuote({
+    lines,
+    discounts,
+    manualDiscounts,
+    identity: cartIdentity,
+    enabled: saleResult === null,
+  });
+
   const resetSale = () => {
     saleEpochRef.current += 1;
+    saleWriter.reset();
     setStep(1);
     setTier(null);
     setLines([]);
@@ -1274,16 +1335,26 @@ export default function Till() {
     setStep(5);
   };
 
-  const handleCompletePayment = () => {
+  /**
+   * EVERYTHING THAT MUST BE TRUE BEFORE THIS CART BECOMES A SALE.
+   *
+   * Split out of the payment handler because the sale is now recorded when the
+   * payment screen OPENS, not when the money is confirmed (S2-09a): a cart that
+   * may not be sold must be refused before it is written, not after. Each
+   * refusal says what to fix and, where there is somewhere to fix it, goes
+   * there. Run again at the confirm press, because the order panel is still
+   * live on the payment screen and the cart can change under it.
+   */
+  const preflightSale = (): boolean => {
     // Hard re-gate: if the cart was edited back into an unaccompanied state after
     // the supervision gate resolved (cart mutations clear supervisionResolved),
     // force it through step 7 again before any charge — never finalize an
     // age-unchecked kids-only sale via this back door.
     if (!supervisionResolved && evaluateUnaccompanied()) {
       openSupervisionGate();
-      return;
+      return false;
     }
-    if (!tier || !pendingPaymentMethod || !operator) return;
+    if (!tier || !operator) return false;
     // Hard preflight: never finalize while a drop-off child has no chosen play
     // length or a nanny child has no nanny — those would check in free/under-priced
     // (unconfigured lines carry lineTotal 0). The Pay button is already gated on
@@ -1301,7 +1372,7 @@ export default function Till() {
         variant: 'destructive',
       });
       setStep(3);
-      return;
+      return false;
     }
     // Hard preflight: a tier nobody has priced on this ticket resolves to ฿0
     // and reads like a free ticket rather than a missing setting (SCRUM-228).
@@ -1319,12 +1390,12 @@ export default function Till() {
           .join(' · ')}. Set it in Admin → Tickets before selling at this tier.`,
         variant: 'destructive',
       });
-      return;
+      return false;
     }
     // Can't issue bracelets/receipts until this iPad knows which devices it drives.
     if (!station) {
       promptSetupStation(navigate);
-      return;
+      return false;
     }
 
     // Pre-checkout stock guard: aggregate all stocked items in the cart and
@@ -1373,15 +1444,178 @@ export default function Till() {
           description: `Cannot complete sale — stock too low: ${stockViolations.join(' · ')}`,
           variant: 'destructive',
         });
-        return;
+        return false;
       }
     }
+    return true;
+  };
 
-    // Record the sale FIRST so payment is captured for the whole cart (regular
-    // guests + any drop-off / nanny charges). Drop-off children no longer check in
-    // here — after payment, staff decide per registration whether to check each
-    // child in now or leave them booked for later (handled by the choice modal).
+  const handleCompletePayment = () => {
+    if (!preflightSale()) return;
+    if (!pendingPaymentMethod) return;
+    // NOTHING BELOW THE PLATFORM'S ANSWER RUNS UNTIL IT ANSWERS (S2-09a): no
+    // receipt, no band, no wallet, no confirmation screen. A refusal leaves the
+    // till on this screen with the failure panel and the same sale waiting, so
+    // a second press finishes the sale that was started rather than starting a
+    // second one.
+    void completeSale(saleEpochRef.current);
+  };
+
+  /**
+   * The cart as the platform receives it, or null when there is nothing to send
+   * it to — no platform station for this device, or a cart the engine will not
+   * price.
+   */
+  const commitPayload = (): SaleCartPayload | null => {
+    if (!cartIdentity || !cart.quote.satang) return null;
+    return buildCartPayload(lines, discounts, manualDiscounts, cartIdentity, cart.quote.satang, {
+      mode: cart.quote.pricingMode,
+      modeReason: cart.quote.pricingModeReason,
+    });
+  };
+
+  /** Why this sale cannot be offered to the ledger at all. */
+  const unwritableReason = (): string =>
+    !cartIdentity
+      ? 'This device is not on a platform station, so there is nowhere to write the sale.'
+      : `This cart could not be priced by the platform's engine: ${cart.quote.reason ?? 'unknown reason'}`;
+
+  /** A sale finished after this till had moved on to somebody else. */
+  const noteSaleLeftBehind = (sale: ApiSale, saleId: string) => {
+    toast({
+      title: 'A sale was saved for the previous visitor',
+      description: `This till moved on before it could finish. Sale ${sale.receiptNumber ?? saleId} is recorded and nothing was printed for it — find it in the sale list.`,
+      variant: 'destructive',
+    });
+  };
+
+  /**
+   * PAY RECORDS THE SALE. Reaching the payment screen writes the row — its
+   * lines, its discounts, the tier, the trading day — in `tendering`, with no
+   * receipt number, because no money has arrived yet. The screen then shows the
+   * amount due for a sale the platform already holds.
+   *
+   * A ฿0 sale is the exception, and only because it has nothing to tender: it
+   * is committed and finalised in the one call.
+   *
+   * Editing the order after this and paying commits the corrected cart as its
+   * own sale; the one written here stays on the platform, unpaid and unnumbered
+   * — which is what an order that was rung up and not paid for is. Voiding it
+   * is S2-11.
+   */
+  const recordSaleOnPlatform = async (epoch: number): Promise<void> => {
+    if (!preflightSale()) return;
+    const payload = commitPayload();
+    if (!payload) return; // said on the confirmation screen, not in a toast at the visitor
+    const outcome = await saleWriter.commit({
+      cart: payload,
+      finalise: cart.quote.satang?.total === 0,
+    });
+    if (saleEpochRef.current !== epoch) {
+      if (outcome.ok && outcome.written) noteSaleLeftBehind(outcome.sale, outcome.saleId);
+    }
+  };
+
+  // Entering the payment screen is the Pay press. Every route into it — a known
+  // member, the customer-details handoff, the supervision gate — arrives here.
+  useEffect(() => {
+    if (step !== 5) return;
+    void recordSaleOnPlatform(saleEpochRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  /**
+   * The money arrived: close the sale, then do everything a finished sale does.
+   *
+   * The commit is asserted again first. It costs no round trip when the cart on
+   * screen is the one already recorded — the writer answers from the sale it
+   * holds — and when the order was corrected on this screen it is what records
+   * the corrected cart instead of finalising the old one.
+   */
+  const completeSale = async (epoch: number) => {
+    if (!tier || !pendingPaymentMethod || !operator || !station) return;
+
+    const payload = commitPayload();
+    if (!payload) {
+      // Nowhere to write it. Finish on the till and SAY SO, rather than show a
+      // confirmation screen that looks like a saved sale.
+      finalizeSale(saleWriter.declareUnwritten(unwritableReason()), quotedPricing(cart.quote));
+      return;
+    }
+
+    const committed = await saleWriter.commit({
+      cart: payload,
+      finalise: cart.quote.satang?.total === 0,
+    });
+    // The till has moved on — cancelled, or already serving the next visitor.
+    // The sale itself is written and safe; what must not happen is this answer
+    // printing a band for somebody else's child. It must not be silent either:
+    // somebody pressed Cancel while a sale was being saved, and a sale now
+    // exists that nothing on this screen will ever mention again.
+    if (saleEpochRef.current !== epoch) {
+      if (committed.ok && committed.written) noteSaleLeftBehind(committed.sale, committed.saleId);
+      return;
+    }
+    if (!committed.ok) return; // the failure panel is showing; nothing is finalised
+    if (!committed.written) {
+      finalizeSale(committed.saleId, quotedPricing(cart.quote));
+      return;
+    }
+
+    let recorded = committed.sale;
+    if (recorded.status !== 'finalised') {
+      // THE TENDER. One press, one method, and the amount due taken in full —
+      // all this screen knows. S2-10a adds the cash keypad, the card terminal
+      // and the QR result onto this same call.
+      const closed = await saleWriter.finalise({
+        method: pendingPaymentMethod,
+        kind: paymentMethodKind(pendingPaymentMethod),
+        amountSatang: recorded.totals.grossSatang,
+        tenderedSatang: recorded.totals.grossSatang,
+        changeSatang: 0,
+      });
+      if (saleEpochRef.current !== epoch) {
+        if (closed.ok && closed.written) noteSaleLeftBehind(closed.sale, closed.saleId);
+        return;
+      }
+      if (!closed.ok) return;
+      if (closed.written) recorded = closed.sale;
+    }
+    finalizeSale(committed.saleId, quotedPricing(cart.quote, recorded));
+  };
+
+  /**
+   * Try again after a refusal. The same sale where the same cart is still on
+   * screen; a new number where the cart was corrected, or where the platform
+   * says this sale's number was already spent on a different body.
+   */
+  const handleRetrySaleWrite = () => {
+    const epoch = saleEpochRef.current;
+    // Before a method is chosen there is no tender to record, so a retry is the
+    // record alone.
+    if (!pendingPaymentMethod) {
+      void recordSaleOnPlatform(epoch);
+      return;
+    }
+    void completeSale(epoch);
+  };
+
+  /**
+   * Everything a finished sale does: the local record the prototype's History,
+   * Today and reporting screens still read (S2-11 moves them onto the API),
+   * promo counters, wallets, bands and paper.
+   *
+   * `saleId` is the platform's own id for this sale, so the row in the ledger
+   * and the record on this till are the same sale by number.
+   *
+   * `quoted` is the money, carried rather than recomputed: what the platform
+   * charged is what the confirmation screen, the receipt lines and the history
+   * detail read (S2-09a).
+   */
+  const finalizeSale = (saleId: string, quoted: SaleQuotedPricing) => {
+    if (!tier || !pendingPaymentMethod || !operator || !station) return;
     const newSale = buildSale({
+      id: saleId,
       operatorId: operator.id,
       operatorName: operator.name,
       tier,
@@ -1392,6 +1626,7 @@ export default function Till() {
       customerPhone,
       customerNickname,
       paymentMethod: pendingPaymentMethod,
+      quoted,
     });
     recordSale(newSale);
     // Increment each applied promo's usage counter after the sale is committed.
@@ -1545,7 +1780,10 @@ export default function Till() {
     setStep(4);
   };
 
-  const { total } = computeTotals(lines, discounts, manualDiscounts);
+  // The amount due, as the platform quoted it (S2-09a). `cart.quote.source`
+  // says whether that is what happened; the note under the total on the order
+  // panel shows it when it is not.
+  const total = cart.totals.total;
 
   // Pay is blocked until: at least one billable participant, every drop-off child
   // has a play-ticket length chosen, and every nanny drop-off line has a nanny
@@ -1560,20 +1798,26 @@ export default function Till() {
   // Build a live, Sale-shaped view model for the customer display. Once the sale
   // is finalized (step 6) we use the locked-in result so credit grants/ids stay stable.
   const liveSale: Sale =
-    saleResult ??
-    buildSale({
-      id: 'PREVIEW',
-      operatorId: operator?.id ?? '',
-      operatorName: operator?.name ?? '',
-      tier: tier ?? getDefaultTier().id,
-      lines,
-      discounts,
-      manualDiscounts,
-      memberId: member?.id,
-      customerPhone,
-      customerNickname,
-      paymentMethod: pendingPaymentMethod ?? undefined,
-    });
+    saleResult ?? {
+      ...buildSale({
+        id: 'PREVIEW',
+        operatorId: operator?.id ?? '',
+        operatorName: operator?.name ?? '',
+        tier: tier ?? getDefaultTier().id,
+        lines,
+        discounts,
+        manualDiscounts,
+        memberId: member?.id,
+        customerPhone,
+        customerNickname,
+        paymentMethod: pendingPaymentMethod ?? undefined,
+      }),
+      // The amount the visitor's own screen shows while paying is the quoted
+      // one, not a second computation of it (S2-09a). `buildSale` prices the
+      // preview from the prototype's arithmetic; everything else on the
+      // preview — the lines, the grants — is unchanged.
+      total: cart.totals.total,
+    };
 
   // The supervision policy drives the step-7 gate (staff) and consent screen
   // (customer); both read the same lifted draft (superSlots).
@@ -1659,6 +1903,15 @@ export default function Till() {
               onSelectMethod={setPendingPaymentMethod}
               onComplete={handleCompletePayment}
               onBack={handlePaymentBack}
+              busy={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}
+              busyLabel={saleWriter.state.kind === 'finalising' ? 'Recording the payment…' : undefined}
+              notice={
+                <SaleWriteFailure
+                  state={saleWriter.state}
+                  onRetry={handleRetrySaleWrite}
+                  onDismiss={handlePaymentBack}
+                />
+              }
             />
           )}
           {step === 8 && tier && (
@@ -1690,7 +1943,12 @@ export default function Till() {
             />
           )}
           {step === 6 && saleResult && (
-            <StepConfirmation sale={saleResult} onNewSale={resetSale} />
+            <div className="flex h-full min-h-0 flex-col">
+              <SaleNotSavedNotice state={saleWriter.state} />
+              <div className="min-h-0 flex-1">
+                <StepConfirmation sale={saleResult} onNewSale={resetSale} />
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -1716,6 +1974,8 @@ export default function Till() {
             onPay={handlePay}
             onCancel={resetSale}
             canPay={canPay}
+            totals={cart.totals}
+            priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
           />
         </div>
       )}
@@ -1807,6 +2067,7 @@ export default function Till() {
               onCustomerDone={handleCustomerDone}
               contactChannel={customerContactChannel}
               onContactChannelChange={handleCustomerContactChannelChange}
+              totals={saleResult ? undefined : cart.totals}
             />
           </div>
         )}
