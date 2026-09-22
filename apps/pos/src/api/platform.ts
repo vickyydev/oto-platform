@@ -180,6 +180,8 @@ export interface ApiBranch {
   name: string;
   code: string;
   timezone: string;
+  /** When the trading day starts, "05:00:00" (SCRUM-308). Absent on an older api. */
+  businessDayStart?: string;
   country: string | null;
   archived: boolean;
 }
@@ -255,7 +257,7 @@ export const catalogApi = {
 
 // --- public booking site (no session) ---------------------------------------
 export interface PublicCatalog {
-  branch: { code: string; name: string; timezone: string };
+  branch: { code: string; name: string; timezone: string; businessDayStart?: string };
   tiers: Array<{ id: string; name: string; isDefault: boolean; requiresVerification: boolean }>;
   packages: ApiTicketPackage[];
   rateMode: { date: string; mode: 'weekday' | 'weekend'; reason: string; overrideName?: string };

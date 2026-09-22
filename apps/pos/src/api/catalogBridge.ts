@@ -4,7 +4,7 @@
 // truth while every prototype screen keeps its exact rendering path.
 import type { PricingOverride, TaxConfig, TicketType, TierDef } from '@/types';
 import { getActiveBranch, hydrateFromApi } from '@/store/catalogStore';
-import { setBranchRateMode, setBranchTimezone } from '@/lib/pricingMode';
+import { setBranchDayStart, setBranchRateMode, setBranchTimezone } from '@/lib/pricingMode';
 import { branchesApi, catalogApi, type ApiBranch } from './platform';
 import { isMissingRoute } from './client';
 import { mapMenu, menuApi } from './menu';
@@ -71,6 +71,8 @@ export async function loadCatalogFromApi(activeSlug?: string): Promise<void> {
     // The trading day is read off the branch's calendar, not the browser's
     // (SCRUM-229). Set before anything prices, and re-set on every branch switch.
     setBranchTimezone(active.timezone);
+    // And its trading day starts at 05:00, not midnight (SCRUM-308).
+    setBranchDayStart(active.businessDayStart);
     const [tiersRes, packagesRes, holidaysRes, taxRes, rateModeRes] = await Promise.all([
       catalogApi.tiers(),
       catalogApi.packages(active.id),
@@ -114,6 +116,7 @@ export async function loadPublicCatalog(branchCode: string) {
   // A visitor booking from their phone is in whatever timezone they are in;
   // the prices they are quoted are the branch's (SCRUM-229).
   setBranchTimezone(cat.branch.timezone);
+  setBranchDayStart(cat.branch.businessDayStart);
   setBranchRateMode(cat.rateMode);
   hydrateFromApi({
     perBranch: {
