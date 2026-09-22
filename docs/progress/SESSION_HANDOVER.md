@@ -1,7 +1,61 @@
 # Handover — where this is, and what to do next
 
-_Written 2026-09-21 at the end of a long session; updated 2026-09-22. Read
-this, then `SPRINT_2_PROGRESS.md` → Status, then `POS_GAP_REGISTER.md`._
+_Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
+2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
+`POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
+
+> ## Status on 2026-09-23 (early hours) — `main` is `0662fcb`
+>
+> **Landed since the 22nd banner, in order:** the two-branch park with its
+> branch managers and the eight leaks it exposed (SCRUM-248–250, 263–267,
+> Deployed); the tenancy leaks and the three conformance tests that keep them
+> closed (280–284, 289–291, Testing); bookings found and redeemed at the
+> counter (234/238, Testing); screenshots on the 22 tickets that had none;
+> the booth admin panel driven against a live box (SCRUM-200, **Testing**,
+> `388b7c8`); and **the box now refreshes its cache on a timer** (`72a1c48`,
+> SCRUM-275 In Progress) — until then a published wheel, a withdrawn booth
+> PIN or a dismissed employee's revocation reached a running box only at its
+> next restart, and "Apply config" on the Console reported success while
+> changing nothing.
+>
+> **CI note:** `05beeca` was red — it carried `import { menuRoutes }` while
+> `routes/menu.ts` is still the menu slice's uncommitted file. `0662fcb`
+> drops the import from `main` without touching the shared working copy of
+> `app.ts` (built from HEAD's blob through a temp index). When the menu
+> lands, its `app.ts` re-adds the import together with the file.
+>
+> **In flight at the moment of writing — three workflows at their gate
+> stage, all with explicit file ownership, none committed:**
+> - **tier-claim** (`wf_72cfced7`): SCRUM-307/228/203 — `services/sale-tier.ts`,
+>   `routes/sale-tier.ts`, one call site in `services/sale.ts`, till gaps in
+>   `StepPayment/StepConfirmation/OrderSummary/TicketCard.tsx`, `lib/pricing.ts`,
+>   `lib/tierProof.ts`, `MobileTill.tsx`, `VerifyTierModal.tsx`.
+> - **cheap-fixes** (`wf_5694e79e`): SCRUM-296/297/299/300/301 —
+>   `routes/{auth,files,sales,ops}.ts`, `services/{auth,handoff,ops,access-control}.ts`,
+>   `plugins/session.ts`, `console/src/lib/reach.ts`, `pages/{Failures,Health}.tsx`,
+>   `test/{auth-handoff-files-tx,sales-reach}.test.ts`.
+> - **menu** (`wf_25c76908`): SCRUM-232/230/204 — migration `0015_menu_catalogue`,
+>   `packages/shared/src/menu-shapes.ts`, `services/{menu,menu-sheet}.ts`,
+>   `routes/menu.ts`, `packages/db/src/seed/menu.ts`, `pos/src/api/menu.ts`,
+>   `pos/src/components/admin/menu/*`, `apps/api/package.json`, `pnpm-lock.yaml`.
+>   **After it lands:** commit `packages/db/{package.json,tsconfig.json,test/**}`
+>   with the reconciled lockfile (SCRUM-302).
+>
+> Each result is read in full, its files committed by explicit list (never
+> `git add -A`), the commit checked against its message, Jira moved in the
+> same turn, and nothing reaches Deployed without a screenshot on the ticket.
+> If a gate says DO NOT MERGE, the slice goes to a `wip/` branch through a
+> temp index BEFORE any fix round.
+>
+> **Raised this turn:** SCRUM-309 (a holiday that has priced a sale can be
+> neither removed nor renamed — the staging test holiday was renamed directly).
+> **Staging:** the "zz-shot evidence" holiday at Robinson Chalong is now
+> "Weekend pricing test (22 Sept)"; it priced one sale on the 22nd, so the
+> platform correctly refuses to delete it.
+>
+> **Still blocked on the other session:** SCRUM-199's Render service for
+> `apps/booth` (`render.yaml` and `services/deploy-bot/` are theirs — the
+> working tree shows both modified; leave them).
 
 > ## Status on 2026-09-22 — the banner below it is RESOLVED
 >
