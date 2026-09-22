@@ -1737,11 +1737,36 @@ export interface SaleListFilters {
   offset: number;
 }
 
+/**
+ * A sale as a LIST reads it: the row, plus the three names a person needs to
+ * recognise it on a card — who rang it up, which counter, and who it was for.
+ *
+ * SCRUM-238 — History showed eight invented transactions because the platform's
+ * list answered in ids: the till had a `memberId`, an `accountId` and a
+ * `stationId` where the card wanted a guest, a cashier and a counter, and no
+ * route to turn one into the other for a page of sales at once. Resolving them
+ * here is one join each on the query that is already running, instead of the
+ * till firing a lookup per row and showing blanks while they land.
+ *
+ * `lineKinds` and `revenueCategories` are what the card's icon and the page's
+ * Tickets / F&B tabs read. A sale row has no "kind" of its own — a cart can
+ * carry admission, food and a drop-off fee at once — so the list says what the
+ * sale's LINES were and lets the reader's own grouping decide, rather than
+ * inventing a single label on this side.
+ */
+export interface SaleListItem extends SaleView {
+  soldBy: { accountId: string; name: string | null } | null;
+  stationName: string | null;
+  member: { id: string; name: string | null; nickname: string; phone: string } | null;
+  lineKinds: SaleLineKind[];
+  revenueCategories: string[];
+}
+
 export async function listSales(
   db: Exec,
   operatorId: string,
   filters: SaleListFilters,
-): Promise<{ sales: SaleView[] }> {
+): Promise<{ sales: SaleListItem[] }> {
   const where = [eq(sale.operatorId, operatorId)];
   if (filters.branchId) where.push(eq(sale.branchId, filters.branchId));
   if (filters.branchIds) where.push(inArray(sale.branchId, filters.branchIds));
@@ -1752,14 +1777,79 @@ export async function listSales(
   if (filters.to) where.push(lte(sale.businessDate, filters.to));
 
   const rows = await db
-    .select()
+    .select({
+      sale,
+      sellerName: employee.name,
+      sellerNickname: employee.nickname,
+      sellerPhone: account.phone,
+      stationName: station.name,
+      memberName: member.name,
+      memberNickname: member.nickname,
+      memberPhone: member.phone,
+    })
     .from(sale)
+    .leftJoin(account, eq(account.id, sale.createdByAccountId))
+    .leftJoin(employee, eq(employee.id, account.employeeId))
+    .leftJoin(station, eq(station.id, sale.stationId))
+    .leftJoin(member, eq(member.id, sale.memberId))
     .where(and(...where))
     // The day's sales, newest first — the order Today and History read them in.
     .orderBy(desc(sale.businessDate), desc(sale.occurredAt))
     .limit(filters.limit)
     .offset(filters.offset);
-  return { sales: rows.map(viewOf) };
+
+  // What each of those sales was made of, in one more query rather than one
+  // per row. Only the kinds and the revenue areas: the money per line belongs
+  // to the detail read, and a list that carried it would be a receipt.
+  const ids = rows.map((row) => row.sale.id);
+  const lines = ids.length
+    ? await db
+        .select({
+          saleId: saleLine.saleId,
+          kind: saleLine.kind,
+          revenueCategory: saleLine.revenueCategory,
+        })
+        .from(saleLine)
+        .where(inArray(saleLine.saleId, ids))
+    : [];
+  const kindsBySale = new Map<string, Set<SaleLineKind>>();
+  const areasBySale = new Map<string, Set<string>>();
+  for (const line of lines) {
+    const kinds = kindsBySale.get(line.saleId) ?? new Set<SaleLineKind>();
+    kinds.add(line.kind);
+    kindsBySale.set(line.saleId, kinds);
+    if (line.revenueCategory) {
+      const areas = areasBySale.get(line.saleId) ?? new Set<string>();
+      areas.add(line.revenueCategory);
+      areasBySale.set(line.saleId, areas);
+    }
+  }
+
+  return {
+    sales: rows.map((row) => ({
+      ...viewOf(row.sale),
+      soldBy: row.sale.createdByAccountId
+        ? {
+            accountId: row.sale.createdByAccountId,
+            // The nickname is what the park calls them and what the prototype's
+            // card shows; the phone is the last resort for an account with no
+            // employee record behind it.
+            name: row.sellerNickname ?? row.sellerName ?? row.sellerPhone ?? null,
+          }
+        : null,
+      stationName: row.stationName,
+      member: row.sale.memberId
+        ? {
+            id: row.sale.memberId,
+            name: row.memberName,
+            nickname: row.memberNickname ?? '',
+            phone: row.memberPhone ?? '',
+          }
+        : null,
+      lineKinds: [...(kindsBySale.get(row.sale.id) ?? [])],
+      revenueCategories: [...(areasBySale.get(row.sale.id) ?? [])],
+    })),
+  };
 }
 
 export async function getSaleDetail(

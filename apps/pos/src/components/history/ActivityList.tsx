@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { TxnSummary } from '@/types';
+import type { BadgeStatus } from '@/api/history';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TransactionCard } from '@/components/history/TransactionCard';
 import { ScanLine } from 'lucide-react';
@@ -28,12 +29,18 @@ export function ActivityList({
   onOpenTxn,
   emptyTitle,
   emptyBody,
+  badgeFor,
+  timeZone,
 }: {
   transactions: TxnSummary[];
   orderCount: number;
   onOpenTxn: (txn: TxnSummary) => void;
   emptyTitle: string;
   emptyBody: ReactNode;
+  /** The ledger's own state for a platform-backed row (SCRUM-238). */
+  badgeFor?: (txn: TxnSummary) => BadgeStatus | undefined;
+  /** The branch's timezone, so a card's time reads as the counter's. */
+  timeZone?: string;
 }) {
   const [filter, setFilter] = useState<ActivityFilter>('all');
 
@@ -93,6 +100,8 @@ export function ActivityList({
                 key={`${t.kind}-${t.id}`}
                 txn={t}
                 showType
+                {...(badgeFor?.(t) ? { badge: badgeFor(t) } : {})}
+                {...(timeZone ? { timeZone } : {})}
                 onClick={() => onOpenTxn(t)}
               />
             ))}

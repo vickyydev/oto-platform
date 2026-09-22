@@ -1,14 +1,22 @@
 import { TxnSummary } from '@/types';
+import type { BadgeStatus } from '@/api/history';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/history/StatusBadge';
 import { Ticket, GlassWater, Baby, ShoppingBag, ChevronRight, Clock, User as UserIcon, QrCode, MapPin } from 'lucide-react';
 
-const fmtTime = (iso: string) =>
+/**
+ * `timeZone` is the BRANCH's, when the caller knows it (SCRUM-238). A sale is a
+ * fact about a counter in Phuket, so "23 Sep, 03:05" has to be the time the park
+ * rang it up — not the time on the reader's own laptop, which is what this did
+ * when the ledger's UTC instants started arriving.
+ */
+const fmtTime = (iso: string, timeZone?: string) =>
   new Date(iso).toLocaleString('en-GB', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    ...(timeZone ? { timeZone } : {}),
   });
 
 const TYPE_LABEL: Record<'ticket' | 'fnb' | 'merch' | 'dropoff', string> = {
@@ -29,10 +37,16 @@ export function TransactionCard({
   txn,
   onClick,
   showType = false,
+  badge,
+  timeZone,
 }: {
   txn: TxnSummary;
   onClick: () => void;
   showType?: boolean;
+  /** The ledger's own state where it is wider than `txn.status` (SCRUM-238). */
+  badge?: BadgeStatus;
+  /** The branch's timezone, so the time reads as the counter's. */
+  timeZone?: string;
 }) {
   const kind = txn.isDropOff ? 'dropoff' : txn.kind;
   return (
@@ -76,7 +90,7 @@ export function TransactionCard({
           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap mt-0.5">
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {fmtTime(txn.createdAt)}
+              {fmtTime(txn.createdAt, timeZone)}
             </span>
             <span className="flex items-center gap-1">
               <UserIcon className="w-3 h-3" />
@@ -97,7 +111,7 @@ export function TransactionCard({
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <StatusBadge status={txn.status} />
+          <StatusBadge status={badge ?? txn.status} />
           <span className="text-lg font-bold tabular-nums w-20 text-right">฿{txn.total}</span>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>

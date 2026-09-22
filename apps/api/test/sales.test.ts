@@ -893,6 +893,78 @@ describe('reading a sale back', () => {
     expect(sales.every((s) => s.branchId === branchId && s.businessDate === today())).toBe(true);
   });
 
+  /**
+   * SCRUM-238 — the list answers in NAMES, not only in ids.
+   *
+   * History's card shows a receipt number, a time, who rang it up, which
+   * counter, the guest and what kind of sale it was. Every one of those has to
+   * come out of this one call: the page that could not get them is the page
+   * that showed eight invented transactions instead.
+   */
+  it('carries every field the History card reads', async () => {
+    const saleId = newId();
+    const committed = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] });
+    expect(committed.statusCode).toBe(200);
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/finalise`,
+      headers: { cookie },
+      payload: { method: 'cash' },
+    });
+
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales?businessDate=${today()}&limit=200`,
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const row = (
+      res.json().sales as {
+        id: string;
+        occurredAt: string;
+        status: string;
+        receiptNumber: string | null;
+        customerTier: string;
+        stationName: string | null;
+        soldBy: { accountId: string; name: string | null } | null;
+        member: { id: string; nickname: string; phone: string } | null;
+        lineKinds: string[];
+        revenueCategories: string[];
+        totals: { grossSatang: number; refundedSatang: number };
+      }[]
+    ).find((s) => s.id === saleId)!;
+
+    // The visible id on the card, and never the uuid.
+    expect(row.receiptNumber).toMatch(/^T1-\d+$/);
+    expect(row.status).toBe('finalised');
+    expect(Date.parse(row.occurredAt)).not.toBeNaN();
+    expect(row.totals.grossSatang).toBeGreaterThan(0);
+    expect(row.totals.refundedSatang).toBe(0);
+    // Who sold it and where — the card's operator line.
+    expect(row.soldBy?.name).toBeTruthy();
+    expect(row.stationName).toBeTruthy();
+    // The guest, for the card's label and the page's search by phone.
+    expect(row.member?.id).toBe(jamesId);
+    expect(row.member?.phone).toBe('+66822222222');
+    expect(row.member?.nickname).toBeTruthy();
+    expect(row.customerTier).toBe('expat');
+    // What it was made of: the card's icon and the Tickets / F&B tabs.
+    expect(row.lineKinds).toContain('kids');
+    expect(row.revenueCategories).toContain('tickets');
+  });
+
+  it('names no member on a walk-in rather than inventing one', async () => {
+    const saleId = newId();
+    await commit({ id: saleId, lines: [line(twoHoursId, 1, 0)] });
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales?businessDate=${today()}&limit=200`,
+      headers: { cookie },
+    });
+    const row = (res.json().sales as { id: string; member: unknown }[]).find((s) => s.id === saleId)!;
+    expect(row.member).toBeNull();
+  });
+
   it('answers with nothing for a sale belonging to another operator', async () => {
     const res = await ctx.app.inject({
       method: 'GET',

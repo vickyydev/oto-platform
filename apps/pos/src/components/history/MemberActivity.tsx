@@ -1,4 +1,5 @@
 import { MemberActivity as MemberActivityData, TxnSummary } from '@/types';
+import type { BadgeStatus } from '@/api/history';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ActivityList } from '@/components/history/ActivityList';
@@ -14,10 +15,24 @@ export function MemberActivity({
   activity,
   onOpenTxn,
   onBack,
+  spentLabel = 'Total spent (all branches)',
+  bandsLabel,
+  badgeFor,
+  timeZone,
 }: {
   activity: MemberActivityData;
   onOpenTxn: (txn: TxnSummary) => void;
   onBack: () => void;
+  /**
+   * What the spend figure covers. SCRUM-238: read off the platform, this list
+   * is the sales of ONE branch — the caller's — because that is the width the
+   * ledger read answers, so it must not be shown under an all-branches label.
+   */
+  spentLabel?: string;
+  /** Overrides the band line where the source has no band codes to list. */
+  bandsLabel?: string;
+  badgeFor?: (txn: TxnSummary) => BadgeStatus | undefined;
+  timeZone?: string;
 }) {
   const { member, phone, bandCodes, transactions, totalSpent, orderCount, branchVisits } = activity;
 
@@ -50,9 +65,8 @@ export function MemberActivity({
   }
 
   const bandLabel =
-    bandCodes.length === 0
-      ? 'No bands'
-      : bandCodes.map((c) => `#${c}`).join(', ');
+    bandsLabel ??
+    (bandCodes.length === 0 ? 'No bands' : bandCodes.map((c) => `#${c}`).join(', '));
 
   return (
     <div className="h-full flex flex-col min-h-0 animate-in fade-in duration-300">
@@ -78,7 +92,7 @@ export function MemberActivity({
           <div className="rounded-xl bg-muted/50 px-4 py-2 text-right shrink-0">
             <div className="flex items-center gap-1 text-xs text-muted-foreground justify-end">
               <Receipt className="w-3 h-3" />
-              Total spent (all branches)
+              {spentLabel}
             </div>
             <div className="text-xl font-bold tabular-nums">฿{totalSpent}</div>
           </div>
@@ -108,6 +122,8 @@ export function MemberActivity({
         transactions={transactions}
         orderCount={orderCount}
         onOpenTxn={onOpenTxn}
+        {...(badgeFor ? { badgeFor } : {})}
+        {...(timeZone ? { timeZone } : {})}
         emptyTitle="No orders for this member"
         emptyBody={
           <>
