@@ -32,6 +32,7 @@ import {
 import { and, eq, isNull, notInArray, sql } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
 import { reconcileAppBranches } from '../schema/otoapp';
+import { seedMenu } from './menu';
 import * as s from '../schema/index';
 
 const b = satangFromBaht;
@@ -746,6 +747,12 @@ export async function seed(db: Db = getDb()): Promise<void> {
       priceSatang: b(60),
     });
   }
+  // The menu the park actually runs (SCRUM-232): the prototype's twenty items
+  // in their categories and sub-categories, the modifier library, the add-ons
+  // and the launch discount codes — find-or-create on code, so a re-seed
+  // changes nothing a manager has since edited. Written by the menu slice and
+  // hooked here afterwards, because this file was another slice's that night.
+  await seedMenu(db, { operatorId, branchId });
 
   // --- The fleet (S2-04, S2-05) ----------------------------------------------
   //
