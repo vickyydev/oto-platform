@@ -618,7 +618,12 @@ export async function memberRoutes(app: App): Promise<void> {
           entityId: id,
           payload: childCacheView(created!),
         });
-        await audit.record(app.db, {
+        // SCRUM-283 — `tx`, not `app.db`. On the pool this row committed the
+        // moment it was written, from inside a transaction that could still
+        // roll back: an audit entry describing a child that does not exist,
+        // sitting beside the `child.create.failed` row for the same attempt,
+        // and no later cleanup can tell it from a real one.
+        await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
           branchId: auth.branchId,

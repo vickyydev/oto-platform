@@ -23,7 +23,14 @@ import {
   type Outbox,
   type PgPoolLike,
 } from '@oto/box-agent';
-import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  boxBySlot,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 import { boxAuthFromRow, issueClaimCode } from '../src/services/box';
 import { fleetHealth } from '../src/services/ops';
 import { injectPoisonEvent } from '../src/services/sync';
@@ -88,8 +95,9 @@ let slotCounter = 0;
  * then open its store and its outbox over the same database.
  */
 async function startBox(): Promise<RunningBox> {
-  const [seeded] = await ctx.db.select().from(box).where(eq(box.slot, 'virtual-1')).limit(1);
-  if (!seeded) throw new Error('the seed did not create a virtual box');
+  // Scoped to the park (SCRUM-289): this row donates its operator and branch
+  // to the box created below.
+  const seeded = await boxBySlot(ctx.db, 'virtual-1');
 
   const id = newId();
   const slot = `seam-${(slotCounter += 1)}`;

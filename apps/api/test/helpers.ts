@@ -1,4 +1,5 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { and, eq } from 'drizzle-orm';
 import pg from 'pg';
 import { schema, type Db } from '@oto/db';
 import { createTestDatabase, stopTestServer } from '@oto/db/testing';
@@ -107,9 +108,96 @@ export const RECEPTION = { phone: '+66900000002', password: 'reception1234' };
 export const BRANCH_MANAGER = { phone: '+66900000004', password: 'manager1234' };
 export const CHALONG_MANAGER = { phone: '+66900000005', password: 'manager1234' };
 
+/**
+ * The second operator's administrator (SCRUM-289).
+ *
+ * Holds `operator_admin` scoped to its own operator and nothing wider, so it
+ * is the foreign principal every tenancy assertion needs: anything it can
+ * read or change that belongs to OTO is a tenancy hole, and until this account
+ * existed in the default fixture no test could say so without building a
+ * tenant by hand first. Nine did; the other thirty-five did not, which is why
+ * SCRUM-280 and SCRUM-281 reached staging.
+ */
+export const SECOND_OPERATOR_ADMIN = { phone: '+66900000009', password: 'second1234' };
+
 /** The seeded branch slugs. Central Floresta keeps the prototype's original. */
 export const CENTRAL_BRANCH_CODE = 'hkt-central';
 export const CHALONG_BRANCH_CODE = 'robinson-chalong';
+/** The second operator's only branch. Never OTO's — that is the point of it. */
+export const SECOND_OPERATOR_BRANCH_CODE = 'second-operator-1';
+
+/**
+ * The seeded operators, by name. `OTO` is the park; the other is the foreign
+ * tenant above. A test that needs a specific one looks it up by name rather
+ * than taking the first row, because "the first row" is exactly the habit a
+ * single-operator fixture taught.
+ */
+export const OTO_OPERATOR_NAME = 'OTO';
+export const SECOND_OPERATOR_NAME = 'Second Operator';
+
+/** The operator id for a seeded operator name. */
+export async function operatorIdByName(db: Db, name: string): Promise<string> {
+  const [row] = await db
+    .select({ id: schema.operator.id })
+    .from(schema.operator)
+    .where(eq(schema.operator.name, name))
+    .limit(1);
+  if (!row) throw new Error(`No seeded operator named ${name}`);
+  return row.id;
+}
+
+/**
+ * The branch id for a seeded branch code, inside one operator.
+ *
+ * `branch_code_unique` is keyed on (operator, code), so a code is a name in a
+ * tenant and not on the platform — the same reason `boxBySlot` below takes an
+ * operator. No two seeded branches share a code today; scoping it anyway is
+ * what stops this growing into the next unscoped lookup.
+ */
+export async function branchIdByCode(
+  db: Db,
+  code: string,
+  operatorName: string = OTO_OPERATOR_NAME,
+): Promise<string> {
+  const operatorId = await operatorIdByName(db, operatorName);
+  const [row] = await db
+    .select({ id: schema.branch.id })
+    .from(schema.branch)
+    .where(and(eq(schema.branch.operatorId, operatorId), eq(schema.branch.code, code)))
+    .limit(1);
+  if (!row) throw new Error(`No seeded branch with code ${code} for operator ${operatorName}`);
+  return row.id;
+}
+
+/**
+ * A seeded box, by slot, inside one operator (SCRUM-289).
+ *
+ * A slot is unique within a BRANCH — `box_slot_unique` says so — so `virtual-1`
+ * names one box per branch and more than one across the platform. Ten places in
+ * this suite looked that slot up with no operator on the predicate; while the
+ * fixture held a single tenant that read as precise and was not, and the row
+ * that came back was whichever one Postgres happened to return first. Five
+ * broke the day a second operator appeared. The other five went on passing,
+ * which is the worse half of the story.
+ *
+ * This is what to reach for instead. It throws rather than returning undefined,
+ * because a fixture lookup that finds nothing is a broken test and not a
+ * failing assertion.
+ */
+export async function boxBySlot(
+  db: Db,
+  slot: string,
+  operatorName: string = OTO_OPERATOR_NAME,
+): Promise<typeof schema.box.$inferSelect> {
+  const operatorId = await operatorIdByName(db, operatorName);
+  const [row] = await db
+    .select()
+    .from(schema.box)
+    .where(and(eq(schema.box.operatorId, operatorId), eq(schema.box.slot, slot)))
+    .limit(1);
+  if (!row) throw new Error(`No seeded box in slot ${slot} for operator ${operatorName}`);
+  return row;
+}
 
 export async function teardownAll(): Promise<void> {
   await stopTestServer();

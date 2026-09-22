@@ -17,7 +17,15 @@ import {
 } from '@oto/db';
 import { newId } from '@oto/shared';
 import { boxCredential } from '@oto/box-agent';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  RECEPTION,
+  boxBySlot,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 import { expireStaleCommands, issueClaimCode } from '../src/services/box';
 
 /**
@@ -48,9 +56,10 @@ beforeAll(async () => {
   ctx = await createTestContext();
   adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
   receptionCookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
-  const [b] = await ctx.db.select().from(box).where(eq(box.slot, 'virtual-1')).limit(1);
-  boxId = b!.id;
-  branchId = b!.branchId;
+  // Scoped to the park (SCRUM-289).
+  const b = await boxBySlot(ctx.db, 'virtual-1');
+  boxId = b.id;
+  branchId = b.branchId;
   const [till] = await ctx.db
     .select()
     .from(station)

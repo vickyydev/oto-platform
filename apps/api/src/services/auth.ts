@@ -17,7 +17,7 @@ import { phoneHash } from '../lib/scrub';
 import { anyBranchReach, reachCovers } from './access-control';
 import { resolveEffectivePermissions } from './permissions';
 import { audit } from './audit';
-import type { Exec } from './tx';
+import { withTx, type Exec } from './tx';
 import { bumpWindow } from './throttle';
 import { revokeStaffTokens } from './staff-token';
 import type { SmsSender } from './sms';
@@ -501,21 +501,39 @@ export async function signIn(
 
   const token = newSessionToken();
   const sessionId = newId();
-  await db.insert(sessionTable).values({
-    id: sessionId,
-    accountId: acc!.id,
-    tokenHash: hashToken(token),
-    branchId: seat.branchId,
-    expiresAt: new Date(Date.now() + opts.ttlHours * 3600_000),
-  });
-  await audit.record(db, {
-    actorAccountId: acc!.id,
-    operatorId: acc!.operatorId,
-    action: 'auth.sign_in',
-    entityType: 'session',
-    entityId: sessionId,
-    requestId: opts.requestId,
-  });
+  /**
+   * SCRUM-284 — the session and the record of it, together.
+   *
+   * Everything above is a refusal path and stays on the pool, deliberately: a
+   * refused attempt has to outlive the request that was refused, and the
+   * throttle counters behind it must not be rolled back by a later failure —
+   * that would hand an attacker their five guesses back. What goes in the
+   * transaction is the success: the row that lets somebody work, and the row
+   * that says they were let in. A crash between them left a live session
+   * nothing in the trail accounts for.
+   */
+  await withTx(
+    db,
+    { requestId: opts.requestId, actorAccountId: acc!.id, operatorId: acc!.operatorId },
+    'auth.sign_in',
+    async (tx) => {
+      await tx.insert(sessionTable).values({
+        id: sessionId,
+        accountId: acc!.id,
+        tokenHash: hashToken(token),
+        branchId: seat.branchId,
+        expiresAt: new Date(Date.now() + opts.ttlHours * 3600_000),
+      });
+      await audit.record(tx, {
+        actorAccountId: acc!.id,
+        operatorId: acc!.operatorId,
+        action: 'auth.sign_in',
+        entityType: 'session',
+        entityId: sessionId,
+        requestId: opts.requestId,
+      });
+    },
+  );
   return { token, accountId: acc!.id, mustChangePassword: acc!.mustChangePassword };
 }
 
@@ -525,30 +543,49 @@ export async function signIn(
  * refuses a revoked session exactly as it refuses an expired one.
  */
 export async function signOut(db: Db, sessionId: string, actorAccountId: string, requestId?: string): Promise<void> {
-  await db
-    .update(sessionTable)
-    .set({ revokedAt: new Date(), revokedReason: 'sign_out' })
-    .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.revokedAt)));
+  const operatorId = await operatorOfAccount(db, actorAccountId);
   /**
-   * And the shift token minted from it (S2-06).
+   * SCRUM-284 — three writes, one transaction.
    *
-   * Signing out has to end the offline credential too, or a person who handed
-   * the till over would leave behind a token that unlocks it — on a box that
-   * may not hear about the sign-out for hours. The jti joins the deny-list
-   * every box pulls, and until that pull the token's own expiry is the bound.
+   * The session, the shift token it minted and the record of the sign-out are
+   * one act. On the pool they were three, and the middle one is the dangerous
+   * place to stop: a session revoked with its shift token still live is a
+   * credential that unlocks the till the person just walked away from, on a
+   * box that will not hear about it for hours.
    */
-  await revokeStaffTokens(db, { sessionId }, 'sign_out', actorAccountId);
-  await audit.record(db, {
-    actorAccountId,
-    // Sprint 1 left this null, so a sign-out was the one access event that
-    // fell outside its own tenant's audit read. The operator is a property of
-    // the account, not of the request, so it is read back rather than passed.
-    operatorId: await operatorOfAccount(db, actorAccountId),
-    action: 'auth.sign_out',
-    entityType: 'session',
-    entityId: sessionId,
-    requestId,
-  });
+  await withTx(
+    db,
+    { requestId, actorAccountId, operatorId },
+    'auth.sign_out',
+    async (tx) => {
+      await tx
+        .update(sessionTable)
+        .set({ revokedAt: new Date(), revokedReason: 'sign_out' })
+        .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.revokedAt)));
+      /**
+       * And the shift token minted from it (S2-06).
+       *
+       * Signing out has to end the offline credential too, or a person who
+       * handed the till over would leave behind a token that unlocks it — on a
+       * box that may not hear about the sign-out for hours. The jti joins the
+       * deny-list every box pulls, and until that pull the token's own expiry
+       * is the bound.
+       */
+      await revokeStaffTokens(tx, { sessionId }, 'sign_out', actorAccountId);
+      await audit.record(tx, {
+        actorAccountId,
+        // Sprint 1 left this null, so a sign-out was the one access event that
+        // fell outside its own tenant's audit read. The operator is a property
+        // of the account, not of the request, so it is read back rather than
+        // passed.
+        operatorId,
+        action: 'auth.sign_out',
+        entityType: 'session',
+        entityId: sessionId,
+        requestId,
+      });
+    },
+  );
 }
 
 /** Revoke every live session an account holds. Returns how many were ended. */
@@ -581,17 +618,21 @@ export async function lockSession(
   actorAccountId: string,
   requestId?: string,
 ): Promise<void> {
-  await db
-    .update(sessionTable)
-    .set({ lockedAt: new Date() })
-    .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.lockedAt)));
-  await audit.record(db, {
-    actorAccountId,
-    operatorId: await operatorOfAccount(db, actorAccountId),
-    action: 'session.lock',
-    entityType: 'session',
-    entityId: sessionId,
-    requestId,
+  const operatorId = await operatorOfAccount(db, actorAccountId);
+  // SCRUM-284 — locked and recorded as locked, or neither.
+  await withTx(db, { requestId, actorAccountId, operatorId }, 'session.lock', async (tx) => {
+    await tx
+      .update(sessionTable)
+      .set({ lockedAt: new Date() })
+      .where(and(eq(sessionTable.id, sessionId), isNull(sessionTable.lockedAt)));
+    await audit.record(tx, {
+      actorAccountId,
+      operatorId,
+      action: 'session.lock',
+      entityType: 'session',
+      entityId: sessionId,
+      requestId,
+    });
   });
 }
 
@@ -642,19 +683,36 @@ export async function unlockSession(
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Password is incorrect');
   }
 
-  await throttleClear(db, keys);
-  await db
-    .update(sessionTable)
-    .set({ lockedAt: null, lastSeenAt: new Date() })
-    .where(eq(sessionTable.id, opts.sessionId));
-  await audit.record(db, {
-    actorAccountId: opts.accountId,
-    operatorId: acc!.operatorId,
-    action: 'session.unlock',
-    entityType: 'session',
-    entityId: opts.sessionId,
-    requestId: opts.requestId,
-  });
+  /**
+   * SCRUM-284 — clearing the throttle, opening the till and recording it are
+   * one act.
+   *
+   * The refusal path above stays on the pool for the reason sign-in's does:
+   * the counters it bumps are what a rollback must never give back. Here the
+   * opposite holds — a till that came unlocked with the failure count still
+   * standing, or with nothing in the trail saying who opened it, is a half
+   * that should not exist on its own.
+   */
+  await withTx(
+    db,
+    { requestId: opts.requestId, actorAccountId: opts.accountId, operatorId: acc!.operatorId },
+    'session.unlock',
+    async (tx) => {
+      await throttleClear(tx, keys);
+      await tx
+        .update(sessionTable)
+        .set({ lockedAt: null, lastSeenAt: new Date() })
+        .where(eq(sessionTable.id, opts.sessionId));
+      await audit.record(tx, {
+        actorAccountId: opts.accountId,
+        operatorId: acc!.operatorId,
+        action: 'session.unlock',
+        entityType: 'session',
+        entityId: opts.sessionId,
+        requestId: opts.requestId,
+      });
+    },
+  );
 }
 
 export async function setPassword(db: Db, accountId: string, password: string): Promise<void> {

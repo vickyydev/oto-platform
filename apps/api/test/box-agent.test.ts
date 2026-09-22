@@ -8,7 +8,7 @@ import {
   type AgentFetch,
   type BoxAgent,
 } from '@oto/box-agent';
-import { createTestContext, teardownAll, type TestContext } from './helpers';
+import { boxBySlot, createTestContext, teardownAll, type TestContext } from './helpers';
 import { provisionVirtualBox } from '../src/services/box';
 
 /**
@@ -270,7 +270,10 @@ describe('the virtual box agent (S2-04)', () => {
   });
 
   it('refuses to provision a box that is not virtual', async () => {
-    const seeded = (await ctx.db.select().from(box).where(eq(box.slot, 'virtual-1')).limit(1))[0]!;
+    // The park's own `virtual-1` (SCRUM-289). Taking whichever box carried
+    // that slot flipped the OTHER operator's to `counter` and left this one
+    // provisionable, so the refusal under test never happened.
+    const seeded = await boxBySlot(ctx.db, 'virtual-1');
     await ctx.db.update(box).set({ role: 'counter' }).where(eq(box.id, seeded.id));
     expect(await provisionVirtualBox(ctx.db, ctx.app.log)).toBeNull();
     await ctx.db.update(box).set({ role: 'virtual' }).where(eq(box.id, seeded.id));

@@ -1,14 +1,22 @@
 import { z } from 'zod';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
+import {
+  assertDominatesAccount,
+  branchReach,
+  loadTargetAccount,
+} from '../services/access-control';
+import { audit } from '../services/audit';
 import { loadStationRow } from '../services/station-session';
 import {
   listStaffTokens,
+  loadStaffToken,
   mintStaffToken,
   offlineUnlock,
   revokeStaffTokens,
   staffTokenSettings,
 } from '../services/staff-token';
+import { opCtx, withTx } from '../services/tx';
 
 /**
  * The shift token, over HTTP (S2-06).
@@ -97,17 +105,30 @@ export async function staffTokenRoutes(app: App): Promise<void> {
       // same 404 the picker gives; the token would otherwise be minted for a
       // station the caller cannot see.
       const row = await loadStationRow(app.db, auth.operatorId, auth.stationId);
-      const minted = await mintStaffToken(
-        app.db,
-        {
-          accountId: auth.accountId,
-          sessionId: auth.sessionId,
-          operatorId: auth.operatorId,
-          branchId: row.branchId,
-          stationId: row.id,
-          requestId: req.id,
-        },
-        app.env,
+      /**
+       * SCRUM-284 — the mint is one operation, so it is one transaction.
+       *
+       * `mintStaffToken` publishes the key, ends the token this session still
+       * holds, inserts the new row and audits it. On the pool, a failure
+       * between the revoke and the insert left the till with no live shift
+       * token at all — the credential that unlocks it when the mall link is
+       * down. The same function reached through `PUT /me/session/station` was
+       * always inside `pickStation`'s transaction; this path now matches it,
+       * so the invariant holds on both rather than on one.
+       */
+      const minted = await withTx(app.db, opCtx(req), 'staff_token.mint', (tx) =>
+        mintStaffToken(
+          tx,
+          {
+            accountId: auth.accountId,
+            sessionId: auth.sessionId,
+            operatorId: auth.operatorId,
+            branchId: row.branchId,
+            stationId: row.id,
+            requestId: req.id,
+          },
+          app.env,
+        ),
       );
       return {
         token: minted.token,
@@ -170,16 +191,35 @@ export async function staffTokenRoutes(app: App): Promise<void> {
     {
       config: { permission: 'admin:account:read' },
       schema: {
-        description: 'Shift tokens minted for one account, newest first.',
+        description:
+          'Shift tokens minted for one account, newest first — the caller’s own operator, the accounts they may act on, and the branches their grant reaches.',
         params: AccountParams,
         response: { 200: z.object({ tokens: z.array(StaffTokenView) }) },
       },
     },
     async (req) => {
       const auth = req.requireAuth();
+      /**
+       * SCRUM-280 — the three checks every other account route already had,
+       * and this one was written without.
+       *
+       * A row here names a station, a box, a branch and a shift: it is a
+       * colleague's working day, and it was step one of ending their shift —
+       * the list hands over the jti, the revoke below spends it. So: the
+       * account must be this operator's (404 otherwise, because another
+       * operator's account is not ours to confirm), the caller must dominate
+       * the roles it holds, and the tokens themselves are narrowed to the
+       * branches the caller's `admin:account:read` actually reaches. The third
+       * is what holds when the second passes vacuously — a new hire with an
+       * account and no roles yet.
+       */
+      await loadTargetAccount(app.db, auth.operatorId, req.params.id);
+      const effective = await req.effectivePermissions();
+      await assertDominatesAccount(app.db, effective, auth.operatorId, req.params.id);
       const rows = await listStaffTokens(app.db, {
         operatorId: auth.operatorId,
         accountId: req.params.id,
+        reach: branchReach(effective, 'admin:account:read', auth.operatorId),
       });
       return {
         tokens: rows.map((t) => ({
@@ -195,23 +235,70 @@ export async function staffTokenRoutes(app: App): Promise<void> {
   app.delete(
     '/staff-tokens/:jti',
     {
-      config: { permission: 'admin:account:update' },
+      /**
+       * `dynamicPermission`: the branch to ask about is on the row, and the
+       * row has to be read before the question can be put.
+       */
+      config: { dynamicPermission: true },
       schema: {
         description:
-          'End one shift token. It joins the deny-list every box pulls, so a box that is offline honours it from its next pull — until then the token’s own expiry is the bound, which is why the expiry is hours.',
+          'End one shift token, at the branch it was minted at. It joins the deny-list every box pulls, so a box that is offline honours it from its next pull — until then the token’s own expiry is the bound, which is why the expiry is hours.',
         params: JtiParams,
         response: { 200: z.object({ revoked: z.number().int() }) },
       },
     },
     async (req) => {
       const auth = req.requireAuth();
-      const ended = await revokeStaffTokens(
+      /**
+       * SCRUM-280 — LOAD THE TOKEN, THEN ASK ABOUT ITS BRANCH.
+       *
+       * This used to build its whole predicate as `eq(staff_token.jti, jti)`
+       * and declare `admin:account:update` with no target, so the guard fell
+       * back to whatever branch the caller had put their own session on. A
+       * manager at one park ended a live shift credential on the other park's
+       * till — the token that unlocks it with the mall link down — and it
+       * would have surfaced as "the till logged itself out mid-shift".
+       *
+       * The row carries both ids, so both are used: the load is scoped to the
+       * operator, the permission is asked at the branch the token was minted
+       * at, and the caller must dominate the account whose shift this is —
+       * ending somebody's shift is acting on their account, the same rule
+       * `POST /accounts/:id/sessions/revoke` applies to ending their sessions.
+       */
+      const token = await loadStaffToken(app.db, auth.operatorId, req.params.jti);
+      await req.requirePermission('admin:account:update', { branchId: token.branchId });
+      await assertDominatesAccount(
         app.db,
-        { jti: req.params.jti },
-        'admin',
-        auth.accountId,
+        await req.effectivePermissions(),
+        auth.operatorId,
+        token.accountId,
       );
-      return { revoked: ended.length };
+
+      // SCRUM-282 — and it leaves a row. Minting was audited from the start;
+      // an administrator ending somebody's shift was not, which left the
+      // Console's trail silent about the half that takes access away.
+      return withTx(app.db, opCtx(req), 'staff_token.revoke', async (tx) => {
+        const ended = await revokeStaffTokens(
+          tx,
+          { jti: token.jti, operatorId: token.operatorId, branchId: token.branchId },
+          'admin',
+          auth.accountId,
+        );
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: token.operatorId,
+          branchId: token.branchId,
+          action: 'staff_token.revoke',
+          entityType: 'staff_token',
+          entityId: token.jti,
+          // Whose shift, and whether this call is what ended it: a token
+          // already revoked or already expired answers 0, and the row says so
+          // rather than reading as a second revocation.
+          after: { accountId: token.accountId, reason: 'admin', ended: ended.length },
+          requestId: req.id,
+        });
+        return { revoked: ended.length };
+      });
     },
   );
 

@@ -14,7 +14,8 @@ import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { opCtx, withTx } from '../services/tx';
-import { isPlatformWide } from '../services/permissions';
+import { hasPermission, isPlatformWide } from '../services/permissions';
+import { PermissionDeniedError } from '../plugins/session';
 import { branchReach } from '../services/access-control';
 import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
@@ -33,6 +34,7 @@ import {
   buildAlertChannels,
   deliverAlert,
   failureGroups,
+  findAlert,
   findRun,
   healthSnapshot,
   integrationsSnapshot,
@@ -106,6 +108,31 @@ export async function opsRoutes(app: App): Promise<void> {
     return branchReach(await req.effectivePermissions(), 'admin:health:read', auth.operatorId);
   };
 
+  /**
+   * SCRUM-281 — `admin:ops:manage` AT THE ROW'S BRANCH, and nowhere else.
+   *
+   * `req.requirePermission` falls back to the branch on the caller's own
+   * session when it is handed none, and `PUT /me/session/branch` is where that
+   * value comes from — so a by-id route that passes no branch is asking about
+   * a target the caller chose. This asks about the branch that came back on
+   * the row that was loaded, and when that row belongs to no branch — a
+   * platform sweep, a watchdog alert — it asks with no branch at all rather
+   * than borrowing the session's. A branch-scoped grant then denies, which is
+   * `grantCovers` doing what it was built to do: an estate-wide condition is
+   * an estate-wide grant's business.
+   */
+  const requireOpsScope = async (req: FastifyRequest, branchId: string | null) => {
+    const auth = req.requireAuth();
+    const effective = await req.effectivePermissions();
+    const target = branchId === null
+      ? { operatorId: auth.operatorId }
+      : { operatorId: auth.operatorId, branchId };
+    if (!hasPermission(effective, 'admin:ops:manage', target)) {
+      throw new PermissionDeniedError('admin:ops:manage');
+    }
+    return auth;
+  };
+
   // --- Health -------------------------------------------------------------
 
   app.get(
@@ -130,7 +157,8 @@ export async function opsRoutes(app: App): Promise<void> {
   app.post(
     '/alerts/:alertId/acknowledge',
     {
-      config: { permission: 'admin:ops:manage' },
+      // The branch is on the alert, so it is read before it is asked about.
+      config: { dynamicPermission: true },
       schema: {
         description: 'Take an alert — says somebody is on it, and never that it is resolved',
         params: z.object({ alertId: z.string().uuid() }),
@@ -138,8 +166,22 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
+      /**
+       * SCRUM-281 — the rule this file already states further down, applied
+       * here.
+       *
+       * The quarantine pair loads the box FIRST and acts on that row's branch.
+       * This route did neither: it updated on `alert.id` alone, under a
+       * permission declared with no target, and an administrator of one
+       * operator acknowledged another's alert — 200, row taken, and the trail
+       * filed under the wrong park.
+       */
+      const row = await findAlert(app.db, req.params.alertId, auth.operatorId);
+      if (!row) throw errors.notFound('That alert is not open and unacknowledged');
+      await requireOpsScope(req, row.branchId);
+
       return withTx(app.db, opCtx(req), 'ops.alert_acknowledge', async (tx) => {
-        const taken = await acknowledgeAlert(tx, req.params.alertId, auth.accountId);
+        const taken = await acknowledgeAlert(tx, row.id, auth.accountId, auth.operatorId);
         // Gone, already resolved, or already taken by somebody else — none of
         // which is an error worth a stack trace, and all of which the page
         // fixes by refreshing.
@@ -147,7 +189,10 @@ export async function opsRoutes(app: App): Promise<void> {
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
-          branchId: auth.branchId,
+          // The alert's branch, not the session's: the row says where the
+          // condition is, and the session says where the caller happens to be
+          // looking from.
+          branchId: taken.branchId,
           action: 'ops.alert_acknowledge',
           entityType: 'alert',
           entityId: taken.id,
@@ -213,7 +258,8 @@ export async function opsRoutes(app: App): Promise<void> {
   app.post(
     '/runs/:runId/retry',
     {
-      config: { permission: 'admin:ops:manage' },
+      // The branch is on the run, so it is read before it is asked about.
+      config: { dynamicPermission: true },
       schema: {
         description: 'Run a failed scheduled job again. Only jobs; nothing else is safe from here',
         params: z.object({ runId: z.string().uuid() }),
@@ -221,8 +267,10 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      const run = await findRun(app.db, req.params.runId);
+      // SCRUM-281 — inside the caller's operator, and at the run's own branch.
+      const run = await findRun(app.db, req.params.runId, auth.operatorId);
       if (!run) throw errors.notFound('No such run');
+      await requireOpsScope(req, run.branchId);
       /**
        * A job is a sweep: running it again is the whole design. Everything
        * else recorded here — a request, a device call, an adapter — has
@@ -260,7 +308,9 @@ export async function opsRoutes(app: App): Promise<void> {
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
-          branchId: auth.branchId,
+          // The run's branch, for the same reason the acknowledge uses the
+          // alert's: a sweep that belongs to no branch files under none.
+          branchId: run.branchId,
           action: 'ops.run_retry',
           entityType: 'ops_run',
           entityId: run.id,

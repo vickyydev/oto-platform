@@ -19,7 +19,7 @@ import {
   type PgPoolLike,
   type SyncEventEnvelope,
 } from '@oto/box-agent';
-import { createTestContext, teardownAll, type TestContext } from './helpers';
+import { boxBySlot, createTestContext, teardownAll, type TestContext } from './helpers';
 import { issueClaimCode } from '../src/services/box';
 
 /**
@@ -152,8 +152,10 @@ async function boot(base: {
 }
 
 async function startBox(): Promise<RunningBox> {
-  const [seeded] = await ctx.db.select().from(box).where(eq(box.slot, 'virtual-1')).limit(1);
-  if (!seeded) throw new Error('the seed did not create a virtual box');
+  // Scoped to the park (SCRUM-289): this row donates its operator and branch
+  // to the box created below, so the wrong one would build the test's fleet
+  // inside the other tenant.
+  const seeded = await boxBySlot(ctx.db, 'virtual-1');
 
   const boxId = newId();
   const slot = `keyring-${(slotCounter += 1)}`;

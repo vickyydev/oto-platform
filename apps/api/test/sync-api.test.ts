@@ -36,6 +36,7 @@ import {
   BRANCH_MANAGER,
   CHALONG_MANAGER,
   RECEPTION,
+  boxBySlot,
   createTestContext,
   signInAs,
   teardownAll,
@@ -102,8 +103,10 @@ interface TestBox {
 let slotCounter = 0;
 
 async function freshBox(): Promise<TestBox> {
-  const [seeded] = await ctx.db.select().from(box).where(eq(box.slot, 'virtual-1')).limit(1);
-  if (!seeded) throw new Error('the seed did not create a virtual box');
+  // Scoped to the park (SCRUM-289): this row donates its operator and branch
+  // to the box created below, so the wrong one would build every case's fleet
+  // inside the other tenant.
+  const seeded = await boxBySlot(ctx.db, 'virtual-1');
   const id = newId();
   const slot = `test-${(slotCounter += 1)}`;
   await ctx.db.insert(box).values({
@@ -251,13 +254,14 @@ describe('the key a box signs with', () => {
    * at all.
    */
   it('takes the key at registration, so a box can push on its first batch', async () => {
-    const [seeded] = await ctx.db.select().from(box).where(eq(box.slot, 'virtual-1')).limit(1);
+    // Scoped to the park (SCRUM-289).
+    const seeded = await boxBySlot(ctx.db, 'virtual-1');
     const id = newId();
     const slot = `reg-${Date.now()}`;
     await ctx.db.insert(box).values({
       id,
-      operatorId: seeded!.operatorId,
-      branchId: seeded!.branchId,
+      operatorId: seeded.operatorId,
+      branchId: seeded.branchId,
       name: 'Registering box',
       slot,
       role: 'virtual',

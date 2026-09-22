@@ -2631,9 +2631,47 @@ export async function runsForFingerprint(
   }));
 }
 
-/** One run, for the retry route to decide what it is being asked to re-run. */
-export async function findRun(db: Db, id: string) {
-  const [row] = await db.select().from(opsRun).where(eq(opsRun.id, id)).limit(1);
+/**
+ * One run, for the retry route to decide what it is being asked to re-run.
+ *
+ * SCRUM-281 — scoped to the operator, like every list above it. A run id
+ * carries no tenancy, and this selected by id alone: an administrator of one
+ * operator could name another's run, and the audit row for the retry was then
+ * filed under the CALLER's operator for somebody else's sweep, which corrupts
+ * the one record meant to settle who did what.
+ *
+ * `operator_id is null` is kept in reach deliberately, and it is the same
+ * clause `failureGroups` and `runsForFingerprint` use: a scheduled sweep
+ * belongs to the platform rather than to a tenant, and the Failures page that
+ * offers the retry button is reading exactly those rows.
+ */
+export async function findRun(db: Db, id: string, operatorId: string) {
+  const [row] = await db
+    .select()
+    .from(opsRun)
+    .where(and(eq(opsRun.id, id), or(isNull(opsRun.operatorId), eq(opsRun.operatorId, operatorId))))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * One alert, inside the caller's reach — the load half of load-then-check
+ * (SCRUM-281).
+ *
+ * The acknowledge route had no load at all, so it acted on an id and an id
+ * alone. Same reach as `findRun`: this operator's alerts, plus the
+ * platform-wide ones the Health page shows everybody.
+ */
+export async function findAlert(
+  db: Db,
+  id: string,
+  operatorId: string,
+): Promise<{ id: string; key: string; branchId: string | null } | null> {
+  const [row] = await db
+    .select({ id: alert.id, key: alert.key, branchId: alert.branchId })
+    .from(alert)
+    .where(and(eq(alert.id, id), or(isNull(alert.operatorId), eq(alert.operatorId, operatorId))))
+    .limit(1);
   return row ?? null;
 }
 
@@ -2790,13 +2828,25 @@ export async function acknowledgeAlert(
   exec: Exec,
   id: string,
   accountId: string,
-): Promise<{ id: string; key: string } | null> {
+  operatorId: string,
+): Promise<{ id: string; key: string; branchId: string | null } | null> {
   const now = new Date();
   const [row] = await exec
     .update(alert)
     .set({ status: 'acknowledged', acknowledgedAt: now, acknowledgedByAccountId: accountId, updatedAt: now })
-    .where(and(eq(alert.id, id), isNull(alert.resolvedAt), isNull(alert.acknowledgedAt)))
-    .returning({ id: alert.id, key: alert.key });
+    .where(
+      and(
+        eq(alert.id, id),
+        // SCRUM-281 — the tenancy is in the statement that writes, not only in
+        // the load that preceded it. The route checks the caller's permission
+        // at this row's branch; the statement that then acts carries the same
+        // reach, so the two cannot come apart.
+        or(isNull(alert.operatorId), eq(alert.operatorId, operatorId)),
+        isNull(alert.resolvedAt),
+        isNull(alert.acknowledgedAt),
+      ),
+    )
+    .returning({ id: alert.id, key: alert.key, branchId: alert.branchId });
   return row ?? null;
 }
 

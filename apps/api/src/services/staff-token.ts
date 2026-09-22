@@ -24,9 +24,10 @@ import { AppError } from '../lib/errors';
 import { boxStoreFor } from '../lib/box-store';
 import { usableSigningKeys } from '../lib/signing-keys';
 import { parseStaffTokenKey, staffTokenKid } from '../lib/staff-token-key';
+import type { BranchReach } from './access-control';
 import { audit } from './audit';
 import { throttleClear, throttleFail } from './auth';
-import type { Exec } from './tx';
+import { withTx, type Exec } from './tx';
 
 /**
  * The signed staff token, minted (S2-06).
@@ -244,7 +245,18 @@ export async function mintStaffToken(
 // --- Revoking ---------------------------------------------------------------
 
 export type StaffTokenScope =
-  | { jti: string }
+  /**
+   * One token, by name — the administrator's revoke (SCRUM-280).
+   *
+   * The operator and the branch travel WITH the jti and are not optional. A
+   * jti carries no tenancy of its own, so a predicate built on it alone ends
+   * whichever token bears that id anywhere on the platform; the branch is
+   * carried too because the caller's permission was checked at the branch the
+   * token was minted at, and the statement that acts should be the statement
+   * that row was checked for. Read these from the row, through
+   * `loadStaffToken` — never from a request.
+   */
+  | { jti: string; operatorId: string; branchId: string }
   | { sessionId: string }
   | { accountId: string }
   /** Every token for a station — a till taken out of service. */
@@ -266,7 +278,11 @@ export async function revokeStaffTokens(
 ): Promise<string[]> {
   const where =
     'jti' in scope
-      ? eq(staffToken.jti, scope.jti)
+      ? and(
+          eq(staffToken.jti, scope.jti),
+          eq(staffToken.operatorId, scope.operatorId),
+          eq(staffToken.branchId, scope.branchId),
+        )!
       : 'sessionId' in scope
         ? eq(staffToken.sessionId, scope.sessionId)
         : 'accountId' in scope
@@ -580,27 +596,48 @@ export async function offlineUnlock(
     );
   }
 
-  await db
-    .update(sessionTable)
-    .set({ lockedAt: null, lastSeenAt: new Date() })
-    .where(eq(sessionTable.id, input.sessionId));
-
-  await audit.record(db, {
-    actorAccountId: input.accountId,
-    operatorId: input.operatorId,
-    branchId: input.branchId,
-    action: 'session.unlock',
-    entityType: 'session',
-    entityId: input.sessionId,
-    after: {
-      authMethod: result.method,
-      stationId: input.stationId,
-      boxId: stationRow.boxId,
-      jti: result.claims?.jti ?? null,
-      cachedAt: result.cachedAt,
+  /**
+   * The unlock and its record, together (SCRUM-284).
+   *
+   * Two statements on the pool meant a till could come unlocked with nothing
+   * in the trail saying who opened it, or — the other way round — a row
+   * saying somebody unlocked a till that is still locked in front of them.
+   * The refusals above stay outside, because the record of a refused unlock
+   * has to outlive the request that was refused.
+   */
+  await withTx(
+    db,
+    {
+      requestId: input.requestId,
+      actorAccountId: input.accountId,
+      operatorId: input.operatorId,
+      branchId: input.branchId,
     },
-    requestId: input.requestId,
-  });
+    'session.unlock',
+    async (tx) => {
+      await tx
+        .update(sessionTable)
+        .set({ lockedAt: null, lastSeenAt: new Date() })
+        .where(eq(sessionTable.id, input.sessionId));
+
+      await audit.record(tx, {
+        actorAccountId: input.accountId,
+        operatorId: input.operatorId,
+        branchId: input.branchId,
+        action: 'session.unlock',
+        entityType: 'session',
+        entityId: input.sessionId,
+        after: {
+          authMethod: result.method,
+          stationId: input.stationId,
+          boxId: stationRow.boxId,
+          jti: result.claims?.jti ?? null,
+          cachedAt: result.cachedAt,
+        },
+        requestId: input.requestId,
+      });
+    },
+  );
 
   const cachedAt = result.cachedAt;
   return {
@@ -613,10 +650,55 @@ export async function offlineUnlock(
   };
 }
 
-/** Live tokens for one account, newest first — what the Console's panel shows. */
+/**
+ * One token, inside the caller's operator — the load half of load-then-check
+ * (SCRUM-280).
+ *
+ * A jti names a credential and nothing else: it says which token, never whose.
+ * So the revoke route loads the row here, scoped to the operator, and asks its
+ * permission question against the branch that comes back — the same shape
+ * `loadBox` and `loadStationRow` give every other by-id route. Another
+ * operator's token is not found rather than refused: its existence is not ours
+ * to confirm.
+ */
+export async function loadStaffToken(
+  db: Db,
+  operatorId: string,
+  jti: string,
+): Promise<{ jti: string; operatorId: string; branchId: string; accountId: string }> {
+  const [row] = await db
+    .select({
+      jti: staffToken.jti,
+      operatorId: staffToken.operatorId,
+      branchId: staffToken.branchId,
+      accountId: staffToken.accountId,
+    })
+    .from(staffToken)
+    .where(and(eq(staffToken.jti, jti), eq(staffToken.operatorId, operatorId)))
+    .limit(1);
+  if (!row) throw new AppError(404, 'STAFF_TOKEN_NOT_FOUND', 'No such shift token');
+  return row;
+}
+
+/**
+ * Live tokens for one account, newest first — what the Console's panel shows.
+ *
+ * `reach` is where the caller's permission actually reaches (SCRUM-280). A
+ * shift token names a station, a box and a branch, which is a working day at a
+ * park; a manager of one park listing another's was step one of ending a shift
+ * there. `branchReach` answers from grants rather than from the session, and an
+ * empty branch list is a real answer — the caller holds the permission nowhere
+ * and the panel is empty.
+ */
 export async function listStaffTokens(
   db: Db,
-  opts: { operatorId: string; accountId?: string; boxId?: string; limit?: number },
+  opts: {
+    operatorId: string;
+    accountId?: string;
+    boxId?: string;
+    limit?: number;
+    reach?: BranchReach;
+  },
 ): Promise<
   Array<{
     jti: string;
@@ -632,6 +714,10 @@ export async function listStaffTokens(
   const filters = [eq(staffToken.operatorId, opts.operatorId)];
   if (opts.accountId) filters.push(eq(staffToken.accountId, opts.accountId));
   if (opts.boxId) filters.push(eq(staffToken.boxId, opts.boxId));
+  if (opts.reach && opts.reach.kind === 'branches') {
+    if (opts.reach.branchIds.length === 0) return [];
+    filters.push(inArray(staffToken.branchId, opts.reach.branchIds));
+  }
   return db
     .select({
       jti: staffToken.jti,

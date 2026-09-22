@@ -4,7 +4,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { auditLog, box, boxCommand, boxHeartbeat, device, opsRun, station } from '@oto/db';
 import { newId } from '@oto/shared';
 import { boxCredential, type BoxConfigBundle, type BoxHeartbeatAck } from '@oto/box-agent';
-import { createTestContext, teardownAll, type TestContext } from './helpers';
+import { boxBySlot, createTestContext, teardownAll, type TestContext } from './helpers';
 import {
   issueClaimCode,
   markSilentBoxesOffline,
@@ -35,9 +35,8 @@ afterAll(async () => {
 const sha256 = (v: string): string => createHash('sha256').update(v).digest('hex');
 
 async function seededBox(): Promise<typeof box.$inferSelect> {
-  const [row] = await ctx.db.select().from(box).where(eq(box.slot, 'virtual-1')).limit(1);
-  if (!row) throw new Error('the seed did not create a virtual box');
-  return row;
+  // Scoped to the park (SCRUM-289): a slot is unique per branch, not per estate.
+  return boxBySlot(ctx.db, 'virtual-1');
 }
 
 /** Register the seeded box and return the credential it was given. */

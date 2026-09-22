@@ -4,7 +4,15 @@ import { alert, auditLog, box, branch, device, opsExpectation, opsLast, opsRun }
 import { newId } from '@oto/shared';
 import { runWatchdog } from '../src/services/jobs';
 import { recordRun, type AlertChannel, type AlertMessage } from '../src/services/ops';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  RECEPTION,
+  boxBySlot,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 
 /**
  * S2-03 — the routes the Console actually calls.
@@ -586,8 +594,27 @@ describe('S2-03 — who may read any of this', () => {
       const anonymous = await ctx.app.inject({ method: 'GET', url });
       expect(anonymous.statusCode, url).toBe(401);
     }
-    // Managing is a second permission, not the same one.
-    expect((await post(`/ops/alerts/${newId()}/acknowledge`, receptionCookie)).statusCode).toBe(403);
+    /**
+     * Managing is a second permission, not the same one — asked about a REAL
+     * alert (SCRUM-281). The route now loads the row before it asks anything,
+     * the way the quarantine pair does, so an id nobody owns answers 404
+     * whoever sends it; a case built on `newId()` would pass on the absence of
+     * a row rather than on the absence of a permission.
+     */
+    const [open] = await ctx.db
+      .insert(alert)
+      .values({
+        id: newId(),
+        key: 'ops.missing:job:permission-case',
+        category: 'ops.missing',
+        severity: 'warning',
+        subject: 'job:permission-case',
+        summary: 'a condition reception may read about and not act on',
+      })
+      .returning();
+    expect((await post(`/ops/alerts/${open!.id}/acknowledge`, receptionCookie)).statusCode).toBe(403);
+    const [still] = await ctx.db.select().from(alert).where(eq(alert.id, open!.id));
+    expect(still!.status).toBe('open');
   });
 });
 
@@ -606,8 +633,10 @@ describe('S2-03 — who may read any of this', () => {
  * opens the rule does not fire at all.
  */
 describe('S2-04 — boxes on Health and the fleet watchdog', () => {
-  // Central Floresta's first box. Slots are unique per branch, and this is the
-  // only park that has a `virtual-1`, so the slot alone still names one box.
+  // Central Floresta's first box. A slot is unique per BRANCH, and since
+  // SCRUM-289 there is a second operator whose only box sits in `virtual-1`
+  // too — so the slot alone no longer names one box anywhere on the platform,
+  // and every lookup below goes through the park-scoped helper.
   const BOX_SLOT = 'virtual-1';
 
   /**
@@ -630,23 +659,26 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
   const watchdog = () =>
     runWatchdog({ db: ctx.db, env: ctx.app.env, log: ctx.app.log, channels });
 
-  const theBox = async () => {
-    const [row] = await ctx.db.select().from(box).where(eq(box.slot, BOX_SLOT)).limit(1);
-    return row!;
-  };
+  const theBox = async () => boxBySlot(ctx.db, BOX_SLOT);
 
-  const setBox = (values: Partial<typeof box.$inferInsert>) =>
-    ctx.db.update(box).set(values).where(eq(box.slot, BOX_SLOT));
+  /**
+   * By id, never by slot. Keyed on the slot this wrote to BOTH `virtual-1`
+   * boxes, and the case below that sets a claim-code hash then collided with
+   * itself on `box_claim_code_unique` — a fixture writing across a tenant
+   * boundary, reported as a database error three assertions later.
+   */
+  const setBox = async (values: Partial<typeof box.$inferInsert>) =>
+    ctx.db.update(box).set(values).where(eq(box.id, (await theBox()).id));
 
   /**
    * Every branch, not just the one under test.
    *
-   * The watchdog sweeps the whole operator, and the seed now has two parks. If
-   * this only answered for Central Floresta, Robinson Chalong would keep its
-   * real 10:00-20:00 and whether its box was examined at all would depend on
-   * the wall clock at the moment the suite ran — green in the morning, red in
-   * the evening. Setting the hours everywhere is what makes the counts below
-   * mean one thing.
+   * The watchdog sweeps every box on the platform, and the seed now has two
+   * parks and a second operator's branch besides. If this only answered for
+   * Central Floresta, the others would keep their real 10:00-20:00 and whether
+   * their boxes were examined at all would depend on the wall clock at the
+   * moment the suite ran — green in the morning, red in the evening. Setting
+   * the hours everywhere is what makes the counts below mean one thing.
    */
   const setHours = (openingHours: unknown) =>
     ctx.db.update(branch).set({ openingHours: openingHours as never });
@@ -753,9 +785,15 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
     expect(quiet!.detail).toContain('has not called home');
 
     const summary = await watchdog();
-    // All three seeded boxes are examined — Central Floresta's two and Robinson
-    // Chalong's — because the watchdog sweeps the operator, not one park.
-    expect(summary.boxes).toBe(3);
+    /**
+     * Every seeded box is examined — Central Floresta's two, Robinson
+     * Chalong's, and the second operator's — because the watchdog is a
+     * PLATFORM sweep: `fleetHealth` narrows to an operator only when it is
+     * given one, and the scheduled job gives it none. That is deliberate;
+     * nobody is on call for one tenant. It is stated as a number here so that
+     * narrowing it later has to be a decision rather than a drift.
+     */
+    expect(summary.boxes).toBe((await ctx.db.select({ id: box.id }).from(box)).length);
     // But only ONE is moved to offline by this pass, and it stays one however
     // many parks exist: `boxesSilenced` counts boxes that WERE online and have
     // now gone quiet, which is the box this block drives. Virtual box 2 and

@@ -16,7 +16,14 @@ import {
 import { runWatchdog } from '../src/services/jobs';
 import { type AlertChannel, type AlertMessage } from '../src/services/ops';
 import { provisionVirtualBox } from '../src/services/box';
-import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  boxBySlot,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 
 /**
  * S2-07a — a booth on the Health page, from the press to the panel.
@@ -377,8 +384,9 @@ describe('a booth reaches the Health page (S2-07a)', () => {
      * the platform's verdict.
      */
     await ctx.db.delete(alert).where(or(like(alert.key, 'booth.%'), like(alert.key, 'box.%')));
-    const [row] = await ctx.db.select().from(box).where(eq(box.slot, 'virtual-1')).limit(1);
-    const last = row!.lastStatus as Record<string, unknown>;
+    // Scoped to the park (SCRUM-289): `virtual-1` is a slot in two operators.
+    const row = await boxBySlot(ctx.db, 'virtual-1');
+    const last = row.lastStatus as Record<string, unknown>;
     const reported = last.booth as Record<string, unknown>;
     expect(reported, 'this case depends on the booth block the heartbeat above stored').toBeTruthy();
     await ctx.db

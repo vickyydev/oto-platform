@@ -1,0 +1,410 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { buildApp, type App } from '../src/app';
+import { loadEnv } from '../src/env';
+import {
+  matchDelimiter,
+  readFunctions,
+  readRoutes,
+  reachesText,
+  splitArgs,
+  type SourceRoute,
+} from './route-source';
+
+/**
+ * SCRUM-291 (static half) — a mutating route writes in one transaction,
+ * records what it did with that transaction, and takes an idempotency key.
+ *
+ * `test/transactions.test.ts` hand-drives three routes out of a hundred and
+ * twelve. Every drift in this class sits in the hundred and nine nobody wrote
+ * a test for: nine Sprint-1 write paths that write a change and its audit row
+ * as separate statements, and one audit row
+ * written on the POOL from inside its own transaction — which survives the
+ * rollback and describes a child that does not exist, while `withTx` also
+ * writes the failure row beside it. Two rows, both wrong, indistinguishable
+ * from real ones ever after.
+ *
+ * This is the half that can be settled by reading. The other half — driving
+ * each route with a seeded body, crashing it mid-write, and asserting that
+ * nothing but the failure row survives — needs a database and a body fixture
+ * per route, and is a later ticket.
+ *
+ * **What this cannot see.** It follows calls by name, three hops at most, and
+ * a transaction opened further away than that reads as absent. That direction
+ * is the safe one: it names a route for a person to look at, rather than
+ * quietly passing one. Every list below is exact in both directions, so a
+ * fixed entry fails too and has to be deleted.
+ */
+
+const API_SRC = fileURLToPath(new URL('../src', import.meta.url));
+
+let app: App;
+let routes: SourceRoute[];
+let configs: Map<string, App['routeRegistry'][number]['config']>;
+let functions: ReturnType<typeof readFunctions>;
+
+beforeAll(async () => {
+  const env = loadEnv({ NODE_ENV: 'test', DATABASE_URL: 'postgres://oto:oto@localhost:1/unused' });
+  app = await buildApp({ env, db: {} as never, fileStorage: null });
+  configs = new Map(app.routeRegistry.map((r) => [`${r.method} ${r.url}`, r.config]));
+  routes = readRoutes();
+  functions = readFunctions();
+});
+
+afterAll(async () => {
+  await app.close();
+});
+
+const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+function expectKnownFailures(actual: string[], known: string[], label: string, ticket: string): void {
+  const seen = new Set(actual);
+  const expected = new Set(known);
+  expect(
+    actual.filter((v) => !expected.has(v)).sort(),
+    `NEW ${label}. Fix it, or add it to the list in this file with the ticket that will.`,
+  ).toEqual([]);
+  expect(
+    known.filter((v) => !seen.has(v)).sort(),
+    `FIXED ${label} — ${ticket} landed for these. Delete them from the list in this file.`,
+  ).toEqual([]);
+}
+
+// --- 1 · The audit row commits with the change, or not at all ---------------
+
+/**
+ * Every `audit.record(…)` that sits lexically inside a `withTx(…)` call, with
+ * the first argument it was given.
+ *
+ * `services/tx.ts` states the rule this looks for: the SUCCESS row is written
+ * inside the transaction with the `tx` handle, so it cannot survive a
+ * rollback; the FAILURE row is written after the rollback on a separate
+ * connection, because it has to outlive the transaction that failed. An
+ * `app.db` inside the callback is the first rule broken with the second rule's
+ * mechanism.
+ */
+function auditCallsInsideTransactions(): Array<{ where: string; exec: string }> {
+  const found: Array<{ where: string; exec: string }> = [];
+  for (const dir of ['routes', 'services']) {
+    for (const file of readdirSync(join(API_SRC, dir)).filter((f) => f.endsWith('.ts'))) {
+      const src = readFileSync(join(API_SRC, dir, file), 'utf8');
+      let at = 0;
+      while ((at = src.indexOf('withTx(', at)) >= 0) {
+        const open = at + 'withTx'.length;
+        let end: number;
+        try {
+          end = matchDelimiter(src, open);
+        } catch {
+          at = open + 1;
+          continue;
+        }
+        const span = src.slice(open, end);
+        let inner = 0;
+        while ((inner = span.indexOf('audit.record(', inner)) >= 0) {
+          const auditOpen = inner + 'audit.record'.length;
+          let args: string[];
+          try {
+            args = splitArgs(span, auditOpen);
+          } catch {
+            inner = auditOpen + 1;
+            continue;
+          }
+          const line = src.slice(0, open + inner).split('\n').length;
+          found.push({ where: `${dir}/${file}:${line}`, exec: (args[0] ?? '').trim() });
+          inner = auditOpen + 1;
+        }
+        at = end;
+      }
+    }
+  }
+  return found;
+}
+
+/** The handle a transaction hands its callback. Anything else is the pool. */
+const IS_TRANSACTION = /^(tx|trx|sp)$/;
+
+describe('the audit row commits with the change (SCRUM-291)', () => {
+  it('no audit.record inside a transaction is written on the pool', () => {
+    const calls = auditCallsInsideTransactions();
+    // The walk has to be finding them, or the assertion under it is empty.
+    expect(calls.length).toBeGreaterThan(50);
+    const onThePool = calls
+      .filter((c) => !IS_TRANSACTION.test(c.exec))
+      .map((c) => `${c.where}  audit.record(${c.exec}, …)`);
+    expectKnownFailures(
+      onThePool,
+      // Empty, and that is the point of keeping the list: SCRUM-283 was one
+      // character — `app.db` for `tx` in `child.create` — and it was live long
+      // enough to reach staging. The next one fails here on the day it is
+      // written.
+      [],
+      'audit row written on the pool from inside its own transaction',
+      'SCRUM-283',
+    );
+  });
+
+  /**
+   * The scan, run against the call it was written for.
+   *
+   * `routes/members.ts` at `91f5d8b`, inside the `child.create` transaction.
+   * It is fixed, so the live scan can no longer demonstrate that this works —
+   * which is exactly when a check quietly stops meaning anything.
+   */
+  it('catches the child.create call as it stood before SCRUM-283', () => {
+    const before = `
+      await withTx(app.db, opCtx(req), 'child.create', async (tx) => {
+        const [created] = await tx.insert(child).values({ id, name: req.body.name }).returning();
+        await audit.record(app.db, {
+          actorAccountId: auth.accountId,
+          action: 'child.create',
+          entityType: 'child',
+          entityId: id,
+        });
+      });`;
+    const open = before.indexOf('withTx(') + 'withTx'.length;
+    const span = before.slice(open, matchDelimiter(before, open));
+    const auditOpen = span.indexOf('audit.record(') + 'audit.record'.length;
+    const exec = splitArgs(span, auditOpen)[0]!.trim();
+    expect(exec).toBe('app.db');
+    expect(IS_TRANSACTION.test(exec), 'app.db must not read as a transaction handle').toBe(false);
+  });
+
+  it('accepts the same call with the transaction handle', () => {
+    const after = `
+      await withTx(app.db, opCtx(req), 'child.create', async (tx) => {
+        await audit.record(tx, { action: 'child.create', entityId: id });
+      });`;
+    const open = after.indexOf('withTx(') + 'withTx'.length;
+    const span = after.slice(open, matchDelimiter(after, open));
+    const auditOpen = span.indexOf('audit.record(') + 'audit.record'.length;
+    expect(IS_TRANSACTION.test(splitArgs(span, auditOpen)[0]!.trim())).toBe(true);
+  });
+});
+
+// --- 2 · One operation, one transaction --------------------------------------
+
+/**
+ * Mutating routes that reach no database write of their own.
+ *
+ * Measured, not asserted: the assertion below re-derives it, so a route cannot
+ * be parked here to excuse a write. What it means precisely is that neither
+ * the handler nor anything within three calls of it contains a Drizzle
+ * `insert`, `update` or `delete`. Two different reasons for that:
+ *
+ *   - it computes an answer and keeps nothing — a cart quote, a rendered
+ *     preview;
+ *   - the write belongs to the BOX. A spin, a lease, a scan, an intent and a
+ *     booth sign-in all cross into the agent, and what happens on that side is
+ *     the box's own machinery. This says nothing about whether that side is
+ *     transactional; it says the route does not write here.
+ */
+const NO_DIRECT_WRITE = [
+  'POST /auth/badge',
+  'POST /booth/reprint',
+  'POST /booth/spin',
+  'POST /booth/staff/sign-in',
+  'POST /booth/staff/sign-out',
+  'POST /print-templates/:id/preview.png',
+  'POST /sales/quote',
+  'POST /stations/:id/button',
+  'POST /stations/:id/intents',
+  'POST /stations/:id/lease',
+  'POST /stations/:id/lease/release',
+  'POST /stations/:id/lease/renew',
+  'POST /stations/:id/scan',
+  'POST /stations/:id/scan/simulate',
+];
+
+/**
+ * Known failures — SCRUM-284, and SCRUM-287 for the pending-lookup pair.
+ *
+ * Every one writes a row and its audit entry as unrelated statements. Most are
+ * Sprint-1 code, written before `withTx` existed and never migrated; the
+ * hand-off exchange is newer and picked the habit up from the file it was
+ * written into. The windows are not theoretical: a crash between spending a
+ * single-use code and setting the password leaves an invited member of staff
+ * locked out holding a code that has been burnt, and there is no second code
+ * without an administrator.
+ */
+const UNTRANSACTED = [
+  'POST /auth/change-password',
+  'POST /auth/handoff/exchange',
+  'POST /auth/password-reset/complete',
+  'POST /auth/password-reset/request',
+  'POST /auth/setup/complete',
+  'POST /auth/setup/start',
+  'POST /files',
+  'POST /me/session/pending-lookup/consume',
+  'PUT /me/session/pending-lookup',
+];
+
+const opensTransaction = (route: SourceRoute): boolean =>
+  reachesText(route.handlerText, (body) => /\bwithTx\s*\(/.test(body), functions, 3);
+
+const writesToTheDatabase = (route: SourceRoute): boolean =>
+  reachesText(route.handlerText, (body) => /\.(insert|update|delete)\s*\(/.test(body), functions, 3);
+
+/**
+ * The box surface is out of scope here, and pinned in `routes-guarded.test.ts`
+ * rather than restated: its principal is a machine, and a batch of facts from
+ * a box goes through the sync ledger — cursors, epochs, quarantine — which is
+ * its own transaction discipline and its own ticket.
+ */
+const mutatingCloudRoutes = (): SourceRoute[] =>
+  routes.filter(
+    (r) => MUTATING.has(r.method) && !configs.get(`${r.method} ${r.path}`)?.credential,
+  );
+
+describe('one operation, one transaction (SCRUM-291)', () => {
+  it('the source walk found every route the app registered', () => {
+    const live = new Set(
+      app.routeRegistry
+        .filter(
+          (r) =>
+            r.method !== 'HEAD' &&
+            r.method !== 'OPTIONS' &&
+            r.url !== '/docs/json' &&
+            r.url !== '/*',
+        )
+        .map((r) => `${r.method} ${r.url}`),
+    );
+    const parsed = new Set(routes.map((r) => `${r.method} ${r.path}`));
+    expect([...live].filter((k) => !parsed.has(k)).sort()).toEqual([]);
+    expect([...parsed].filter((k) => !live.has(k)).sort()).toEqual([]);
+  });
+
+  it('every mutating route opens a transaction, or writes nothing of its own', () => {
+    const considered = mutatingCloudRoutes();
+    expect(considered.length).toBeGreaterThan(95);
+    const untransacted = considered
+      .filter((r) => !opensTransaction(r))
+      .filter((r) => !NO_DIRECT_WRITE.includes(`${r.method} ${r.path}`))
+      .map((r) => `${r.method} ${r.path}`);
+    expectKnownFailures(
+      untransacted,
+      UNTRANSACTED,
+      'mutating route whose write is not inside a transaction',
+      'SCRUM-284',
+    );
+  });
+
+  it('nothing on the no-write list actually writes', () => {
+    // The list is a measurement, so it is re-measured. Without this it would
+    // be a place to put a route that had become inconvenient.
+    const writing = routes
+      .filter((r) => NO_DIRECT_WRITE.includes(`${r.method} ${r.path}`))
+      .filter((r) => writesToTheDatabase(r))
+      .map((r) => `${r.method} ${r.path}`);
+    expect(
+      writing.sort(),
+      'listed as writing nothing, but it reaches an insert, update or delete',
+    ).toEqual([]);
+  });
+
+  it('every route on either list is still registered', () => {
+    const live = new Set(routes.map((r) => `${r.method} ${r.path}`));
+    expect(
+      [...NO_DIRECT_WRITE, ...UNTRANSACTED].filter((key) => !live.has(key)).sort(),
+      'named in this file but no longer a route — delete the line',
+    ).toEqual([]);
+  });
+
+  it('every route on the known-failure list does write, so the debt is real', () => {
+    const notWriting = routes
+      .filter((r) => UNTRANSACTED.includes(`${r.method} ${r.path}`))
+      .filter((r) => !writesToTheDatabase(r))
+      .map((r) => `${r.method} ${r.path}`);
+    expect(
+      notWriting.sort(),
+      'listed as an untransacted write but it reaches no write — it belongs on the other list',
+    ).toEqual([]);
+  });
+});
+
+// --- 3 · The idempotency key -------------------------------------------------
+
+/**
+ * The mutating routes whose answer never enters the replay store.
+ *
+ * The store keeps a response body verbatim for a day and hands it back to
+ * anybody holding the key, so a route that mints a credential must be
+ * incapable of entering it — `secretResponse` says the answer IS a credential,
+ * and `credential` says the principal is a machine with its own replay
+ * protection. Every other mutating route WITH A SESSION takes a key, because
+ * the plugin is a global preHandler and not a decoration each route
+ * remembers — but the plugin returns before the store when there is no
+ * session (`plugins/idempotency.ts`, `if (!req.auth) return`), so the
+ * sessionless mutating routes never enter it: the `/auth/*` paths, the
+ * booth's `/booth/*` paths and `POST /public/bookings`. That is the
+ * register's own Check 3 item and is not covered here; a comment that said
+ * "every other" without that qualification was found by review to be
+ * papering over a live gap.
+ *
+ * Pinned, because these two declarations are the only way out of the
+ * safeguard for a route that has a session: a thirteenth route quietly
+ * acquiring one is a route that stopped being idempotent, and this is where
+ * that becomes a line in a diff.
+ */
+const OUTSIDE_THE_REPLAY_STORE = [
+  'POST /accounts/:id/temp-password [secretResponse]',
+  'POST /auth/handoff [secretResponse]',
+  'POST /box/v1/commands/:commandId/result [credential:box]',
+  'POST /box/v1/commands/poll [credential:box]',
+  'POST /box/v1/heartbeat [credential:box]',
+  'POST /box/v1/print-jobs/:id/result [credential:box]',
+  'POST /box/v1/register [secretResponse,credential:box-claim]',
+  'POST /box/v1/sync/key [credential:box]',
+  'POST /box/v1/sync/push [credential:box]',
+  'POST /me/staff-token [secretResponse]',
+  'PUT /booths/:id/staff/:accountId/pin [secretResponse]',
+  'PUT /me/session/station [secretResponse]',
+];
+
+describe('the idempotency key (SCRUM-291)', () => {
+  it('only these mutating routes are outside the replay store', () => {
+    const outside = app.routeRegistry
+      .filter((r) => MUTATING.has(r.method))
+      .filter((r) => r.config.secretResponse || r.config.credential)
+      .map((r) => {
+        const why = [
+          r.config.secretResponse ? 'secretResponse' : '',
+          r.config.credential ? `credential:${r.config.credential}` : '',
+        ].filter(Boolean);
+        return `${r.method} ${r.url} [${why.join(',')}]`;
+      })
+      .sort();
+    expect(
+      outside,
+      'a mutating route declared secretResponse or credential — it no longer takes an Idempotency-Key, so say so here on purpose',
+    ).toEqual(OUTSIDE_THE_REPLAY_STORE.slice().sort());
+  });
+
+  it('the plugin still claims a key on all four mutating verbs', () => {
+    // Every route above depends on this: the plugin decides by METHOD, so a
+    // verb dropped from its set silently un-protects every route using it,
+    // and no route declaration anywhere would change.
+    const plugin = readFileSync(join(API_SRC, 'plugins', 'idempotency.ts'), 'utf8');
+    for (const verb of MUTATING) {
+      expect(plugin, `plugins/idempotency.ts no longer claims a key on ${verb}`).toContain(
+        `'${verb}'`,
+      );
+    }
+  });
+
+  it('every other mutating route that has a session is therefore covered', () => {
+    const outside = new Set(
+      OUTSIDE_THE_REPLAY_STORE.map((entry) => entry.slice(0, entry.indexOf(' ['))),
+    );
+    const covered = app.routeRegistry
+      .filter((r) => MUTATING.has(r.method))
+      .filter((r) => !outside.has(`${r.method} ${r.url}`));
+    expect(covered.length).toBeGreaterThan(95);
+    // Nothing in `covered` can opt out: the two declarations that would are
+    // what put a route on the other list.
+    expect(
+      covered.filter((r) => r.config.secretResponse || r.config.credential).map((r) => r.url),
+    ).toEqual([]);
+  });
+});

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import pg from 'pg';
 import { eq } from 'drizzle-orm';
-import { account, box, station } from '@oto/db';
+import { account, station } from '@oto/db';
 import { FIXTURES } from '@oto/print/fixtures';
 import {
   EDGE_BOX_LOCAL_TABLES_SQL,
@@ -25,7 +25,7 @@ import {
   type PrintSubsystem,
 } from '@oto/box-agent';
 import { prepareSqliteBoxStore, sqliteBoxDriver } from '@oto/box-agent/sqlite';
-import { ADMIN, createTestContext, teardownAll, type TestContext } from './helpers';
+import { ADMIN, boxBySlot, createTestContext, teardownAll, type TestContext } from './helpers';
 
 /**
  * S2-07a — the print queue survives a restart, and both dialects can hold it.
@@ -411,8 +411,9 @@ describe('the same store over Postgres (S2-07a)', () => {
      */
     await pool.query(EDGE_BOX_LOCAL_TABLES_SQL);
 
-    const [seeded] = await ctx.db.select().from(box).where(eq(box.slot, 'virtual-1')).limit(1);
-    boxId = seeded!.id;
+    // Scoped to the park (SCRUM-289).
+    const seeded = await boxBySlot(ctx.db, 'virtual-1');
+    boxId = seeded.id;
     const [till] = await ctx.db.select().from(station).limit(1);
     stationId = till!.id;
     const [admin] = await ctx.db

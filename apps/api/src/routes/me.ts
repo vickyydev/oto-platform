@@ -7,6 +7,7 @@ import { errors } from '../lib/errors';
 import { holdsGrantAt, outOfBranchScope } from '../services/access-control';
 import { audit } from '../services/audit';
 import { isPlatformWide } from '../services/permissions';
+import { opCtx, withTx } from '../services/tx';
 
 export async function meRoutes(app: App): Promise<void> {
   // SCRUM-25 / SCRUM-19 — who am I: account, employee, branch, permissions.
@@ -84,20 +85,26 @@ export async function meRoutes(app: App): Promise<void> {
         if (!p) throw errors.badRequest('Invalid phone number');
         patch.phone = p;
       }
-      const [after] = await app.db
-        .update(employee)
-        .set(patch)
-        .where(eq(employee.id, acc.employeeId))
-        .returning();
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        action: 'me.update',
-        entityType: 'employee',
-        entityId: acc.employeeId,
-        before,
-        after,
-        requestId: req.id,
+      // SCRUM-284 — the change and its record commit together. Written as two
+      // statements on the pool, a crash between them left an employee row
+      // edited with nothing in the trail saying who edited it.
+      const employeeId = acc.employeeId;
+      await withTx(app.db, opCtx(req), 'me.update', async (tx) => {
+        const [after] = await tx
+          .update(employee)
+          .set(patch)
+          .where(eq(employee.id, employeeId))
+          .returning();
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'me.update',
+          entityType: 'employee',
+          entityId: employeeId,
+          before,
+          after,
+          requestId: req.id,
+        });
       });
       return { ok: true };
     },
@@ -137,10 +144,35 @@ export async function meRoutes(app: App): Promise<void> {
         // them plainly is what lets somebody ask for access to it.
         throw outOfBranchScope('You hold no access at that branch');
       }
-      await app.db
-        .update(sessionTable)
-        .set({ branchId: br.id })
-        .where(eq(sessionTable.id, auth.sessionId));
+      /**
+       * SCRUM-282 — and it leaves a row.
+       *
+       * SCRUM-264 made this a security boundary: which park a session is
+       * seated at decides which tills the picker offers and which branch every
+       * route that falls back to `auth.branchId` reads. The grant check above
+       * is what stops the move; this is the record that it was made, which is
+       * the only way "who was at Chalong at 14:40" has an answer once the
+       * session row has been overwritten in place. Inside the transaction, so
+       * the move and the record cannot come apart.
+       */
+      const from = auth.branchId;
+      await withTx(app.db, opCtx(req), 'session.branch_switch', async (tx) => {
+        await tx
+          .update(sessionTable)
+          .set({ branchId: br.id })
+          .where(eq(sessionTable.id, auth.sessionId));
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: br.id,
+          action: 'session.branch_switch',
+          entityType: 'session',
+          entityId: auth.sessionId,
+          before: { branchId: from },
+          after: { branchId: br.id },
+          requestId: req.id,
+        });
+      });
       return { ok: true };
     },
   );

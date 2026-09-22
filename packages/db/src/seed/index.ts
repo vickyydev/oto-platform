@@ -1487,9 +1487,237 @@ export async function seed(db: Db = getDb()): Promise<void> {
     });
   }
 
+  await seedSecondOperator(db, roleIds);
+
   console.log(
-    'Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park\'s printers; and Booth 1 with six prizes at config version 1.',
+    'Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park\'s printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.',
   );
+}
+
+/** The second operator's own handles, so a test names them rather than re-deriving them. */
+export const SECOND_OPERATOR_NAME = 'Second Operator';
+export const SECOND_OPERATOR_BRANCH_CODE = 'second-operator-1';
+export const SECOND_OPERATOR_ADMIN_PHONE = '+66900000009';
+export const SECOND_OPERATOR_ADMIN_PASSWORD = 'second1234';
+
+/**
+ * A second operator, present by default (SCRUM-289).
+ *
+ * Row-scoped tenancy is the platform's oldest decision and, until this, the
+ * least exercised one: with a single operator in the fixture, a query that
+ * filtered by operator and a query that filtered by nothing returned the same
+ * rows, so the two were indistinguishable in every test in the suite. Four
+ * cross-operator holes reached staging that way (SCRUM-280, SCRUM-281) — not
+ * because anybody skipped a test, but because the test that would have failed
+ * could not have been written against a database with one tenant in it.
+ *
+ * It is seeded by default rather than behind a flag, and for the same reason
+ * the second BRANCH is: a fixture narrower than the world is how the gap
+ * opened, and a fixture that is only wide in tests is the same gap wearing a
+ * different hat. Every route test now runs with a foreign row present whether
+ * its author thought about tenancy or not.
+ *
+ * Deliberately NOT the park. The name says what it is, so nobody reading a
+ * picker on staging mistakes it for a real business or a third OTO site, and
+ * so the rows it owns are obvious the moment they appear somewhere they should
+ * not. It gets what a tenant needs to be a tenant and nothing more: one
+ * branch, one administrator, one box and one till.
+ *
+ * Its administrator's phone is distinct from every OTO phone on purpose.
+ * `findAccountByPhone` in `apps/api/src/services/auth.ts` searches on the phone
+ * alone when the caller has not said which operator it means, and takes the
+ * first row: the same number in two operators would make sign-in answer with
+ * whichever row Postgres happened to return.
+ *
+ * Its grant is `operator_admin` scoped to itself — never `platform_admin`.
+ * A platform-wide grant would see across tenants, which would make this
+ * account useless as the foreign principal it exists to be.
+ */
+async function seedSecondOperator(
+  db: Db,
+  roleIds: Record<SystemRole, string>,
+): Promise<void> {
+  const [existing] = await db
+    .select({ id: s.operator.id })
+    .from(s.operator)
+    .where(eq(s.operator.name, SECOND_OPERATOR_NAME))
+    .limit(1);
+  const operatorId = existing?.id ?? newId();
+  if (!existing) await db.insert(s.operator).values({ id: operatorId, name: SECOND_OPERATOR_NAME });
+
+  const [createdBranch] = await db
+    .insert(s.branch)
+    .values({
+      id: newId(),
+      operatorId,
+      name: 'Second Operator, Branch 1',
+      code: SECOND_OPERATOR_BRANCH_CODE,
+      timezone: 'Asia/Bangkok',
+      country: 'TH',
+      openingHours: Object.fromEntries(
+        ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day) => [
+          day,
+          { open: '10:00', close: '20:00' },
+        ]),
+      ),
+    })
+    .onConflictDoNothing({ target: [s.branch.operatorId, s.branch.code] })
+    .returning({ id: s.branch.id });
+  const [branchRow] = createdBranch
+    ? [createdBranch]
+    : await db
+        .select({ id: s.branch.id })
+        .from(s.branch)
+        .where(
+          and(
+            eq(s.branch.operatorId, operatorId),
+            eq(s.branch.code, SECOND_OPERATOR_BRANCH_CODE),
+          ),
+        )
+        .limit(1);
+  const branchId = branchRow!.id;
+
+  const phone = normalizePhone(SECOND_OPERATOR_ADMIN_PHONE)!;
+  const [foundEmployee] = await db
+    .select({ id: s.employee.id })
+    .from(s.employee)
+    .where(and(eq(s.employee.operatorId, operatorId), eq(s.employee.phone, phone)))
+    .limit(1);
+  const employeeId = foundEmployee?.id ?? newId();
+  if (!foundEmployee) {
+    await db.insert(s.employee).values({
+      id: employeeId,
+      operatorId,
+      name: 'Second Operator administrator',
+      branchId,
+      phone,
+    });
+  }
+
+  const [createdAccount] = await db
+    .insert(s.account)
+    .values({
+      id: newId(),
+      operatorId,
+      employeeId,
+      phone,
+      passwordHash: await hash(SECOND_OPERATOR_ADMIN_PASSWORD),
+      phoneVerifiedAt: new Date(),
+      status: 'active',
+    })
+    .onConflictDoNothing({ target: [s.account.operatorId, s.account.phone] })
+    .returning({ id: s.account.id });
+  const [accountRow] = createdAccount
+    ? [createdAccount]
+    : await db
+        .select({ id: s.account.id })
+        .from(s.account)
+        .where(and(eq(s.account.operatorId, operatorId), eq(s.account.phone, phone)))
+        .limit(1);
+  const accountId = accountRow!.id;
+
+  const roleId = roleIds.operator_admin;
+  const [held] = await db
+    .select({ id: s.roleAssignment.id })
+    .from(s.roleAssignment)
+    .where(
+      and(
+        eq(s.roleAssignment.accountId, accountId),
+        eq(s.roleAssignment.roleId, roleId),
+        eq(s.roleAssignment.scopeType, 'operator'),
+        eq(s.roleAssignment.scopeId, operatorId),
+      ),
+    )
+    .limit(1);
+  if (!held) {
+    await db.insert(s.roleAssignment).values({
+      id: newId(),
+      accountId,
+      roleId,
+      scopeType: 'operator',
+      scopeId: operatorId,
+    });
+  }
+
+  // Slot `virtual-1`, the same slot the park's first box sits in, and that is
+  // the point rather than a clash to tidy up: `box_slot_unique` is keyed on
+  // (branch, slot), so this is what the second box in any real second operator
+  // would be called. Ten lookups in the api's test suite were reading a box by
+  // that slot with no operator on the predicate, and five of them were finding
+  // the wrong row the moment this existed. `fixture-tenancy.test.ts` asserts
+  // the collision stays, so the habit cannot grow back.
+  const [foundBox] = await db
+    .select({ id: s.box.id })
+    .from(s.box)
+    .where(and(eq(s.box.branchId, branchId), eq(s.box.slot, 'virtual-1')))
+    .limit(1);
+  const boxId = foundBox?.id ?? newId();
+  if (!foundBox) {
+    await db.insert(s.box).values({
+      id: boxId,
+      operatorId,
+      branchId,
+      name: 'Virtual box 1',
+      slot: 'virtual-1',
+      role: 'virtual',
+      status: 'unclaimed',
+    });
+  }
+
+  // `S1` rather than `T1`. The prefix IS the receipt series name
+  // (`allocateReceiptNumber` in `apps/api/src/services/sale.ts`), so a prefix
+  // shared with an OTO till would make two rows that read alike in a log line
+  // belong to two different tenants — which is the confusion this operator
+  // exists to make visible, not to add to.
+  const [foundStation] = await db
+    .select({ id: s.station.id })
+    .from(s.station)
+    .where(and(eq(s.station.branchId, branchId), eq(s.station.name, 'Reception Till 1')))
+    .limit(1);
+  if (!foundStation) {
+    await db.insert(s.station).values({
+      id: newId(),
+      operatorId,
+      branchId,
+      boxId,
+      name: 'Reception Till 1',
+      kind: 'till',
+      codePrefix: 'S1',
+      capabilities: ['tickets'],
+      accessScope: 'all_staff',
+    });
+  }
+
+  // A member with a child, so the foreign operator has a row on the ONE
+  // surface that matters most: the member register is the park's primary
+  // customer key and carries children's allergies and medical notes. The
+  // conformance register's Check 1 asked for this and the first cut of the
+  // fixture left it out — a tenancy test against an operator with no members
+  // proves nothing about member isolation. The phone is a +6699… test number
+  // like the rest of this fixture; the allergy is invented.
+  const [foreignMember] = await db
+    .insert(s.member)
+    .values({
+      id: newId(),
+      operatorId,
+      phone: normalizePhone('0990000010')!,
+      nickname: 'Second-Op Member',
+      tierCode: 'tourist',
+      createdVia: 'import',
+    })
+    .onConflictDoNothing({ target: [s.member.operatorId, s.member.phone] })
+    .returning({ id: s.member.id });
+  if (foreignMember) {
+    await db.insert(s.child).values({
+      id: newId(),
+      memberId: foreignMember.id,
+      name: 'Second-Op Child',
+      ageYears: 6,
+      allergies: 'Eggs',
+      medicalAlert: true,
+      consentRecordedAt: new Date(),
+    });
+  }
 }
 
 /**
