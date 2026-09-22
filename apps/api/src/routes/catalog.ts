@@ -27,6 +27,23 @@ import { audit } from '../services/audit';
 import { resolveTax } from '../services/tax';
 import { opCtx, withTx } from '../services/tx';
 
+/**
+ * THE ONE DOOR INTO A BRANCH'S CATALOGUE (SCRUM-248).
+ *
+ * Every `/branches/:branchId/…` route IN THIS FILE calls this before it
+ * touches a row, and it is the only thing in the request that establishes the
+ * branch in the URL belongs to the caller's operator.
+ *
+ * The route guard does not establish it. When the caller's grant is
+ * operator-scoped, `grantCovers` matches on the operator alone and says yes to
+ * whatever branch id the target happens to name — it is a pure function over
+ * ids and has no way to know which operator a branch belongs to. Three write
+ * routes skipped this call and filtered by `id AND branchId` instead, which is
+ * self-consistent and proves nothing: one operator's administrator renamed and
+ * archived another operator's ticket package and deleted its holiday, 200 on
+ * each, filing audit rows under their own operator carrying the other's branch
+ * id.
+ */
 async function loadBranch(app: App, branchId: string, operatorId: string) {
   const [br] = await app.db
     .select()
@@ -343,6 +360,7 @@ export async function catalogRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
+      await loadBranch(app, req.params.branchId, auth.operatorId);
       const [before] = await app.db
         .select()
         .from(ticketPackage)
@@ -382,6 +400,7 @@ export async function catalogRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
+      await loadBranch(app, req.params.branchId, auth.operatorId);
       const [before] = await app.db
         .select()
         .from(ticketPackage)
@@ -486,6 +505,7 @@ export async function catalogRoutes(app: App): Promise<void> {
     { config: { permission: 'catalog:holiday:manage', target: { branchId: 'params.branchId' } }, schema: { description: 'Remove a holiday range; refused once sales were priced by it', params: BranchParams.extend({ id: z.string().uuid() }) } },
     async (req) => {
       const auth = req.requireAuth();
+      await loadBranch(app, req.params.branchId, auth.operatorId);
       const [before] = await app.db
         .select()
         .from(branchHoliday)

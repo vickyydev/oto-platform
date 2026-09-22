@@ -588,8 +588,23 @@ export interface BoothListItem {
   activePrizes: number;
 }
 
-/** The Console's booth list for one branch. Status tiles are `GET /booths/:id/status`. */
-export async function listBooths(db: Db, branchId: string): Promise<{ booths: BoothListItem[] }> {
+/**
+ * The Console's booth list for one branch. Status tiles are `GET /booths/:id/status`.
+ *
+ * **Takes the operator as well as the branch (SCRUM-267).** This answered with
+ * whatever branch id it was handed, and its route did not load the branch
+ * first, so one operator's administrator read another operator's booth list —
+ * a permission guard cannot establish it, because an operator-scoped grant
+ * matches on the operator alone and has no way to know which operator a branch
+ * id belongs to. The route now loads the branch scoped to the caller before
+ * this runs; the join here is the second fence, so a future caller that forgets
+ * gets an empty list rather than somebody else's booths.
+ */
+export async function listBooths(
+  db: Db,
+  operatorId: string,
+  branchId: string,
+): Promise<{ booths: BoothListItem[] }> {
   const rows = await db
     .select({
       id: station.id,
@@ -600,10 +615,16 @@ export async function listBooths(db: Db, branchId: string): Promise<{ booths: Bo
       layoutName: boothLayout.name,
     })
     .from(station)
+    .innerJoin(branch, eq(branch.id, station.branchId))
     .leftJoin(boothSettings, eq(boothSettings.stationId, station.id))
     .leftJoin(boothLayout, eq(boothLayout.id, boothSettings.layoutId))
     .where(
-      and(eq(station.branchId, branchId), eq(station.kind, 'booth'), isNull(station.archivedAt)),
+      and(
+        eq(station.branchId, branchId),
+        eq(branch.operatorId, operatorId),
+        eq(station.kind, 'booth'),
+        isNull(station.archivedAt),
+      ),
     )
     .orderBy(asc(station.name));
 

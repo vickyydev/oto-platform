@@ -4,6 +4,7 @@ import { account, branch, employee, fileObject, session as sessionTable } from '
 import { normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
+import { holdsGrantAt, outOfBranchScope } from '../services/access-control';
 import { audit } from '../services/audit';
 import { isPlatformWide } from '../services/permissions';
 
@@ -102,10 +103,26 @@ export async function meRoutes(app: App): Promise<void> {
     },
   );
 
-  // Active branch switcher (session-scoped).
+  /**
+   * Active branch switcher (session-scoped).
+   *
+   * SCRUM-264 — ONLY A BRANCH THE CALLER HOLDS SOMETHING AT.
+   *
+   * This used to check that the branch belonged to the operator and stop there,
+   * which made the session's branch a value the caller writes for themselves:
+   * reception at Central Floresta moved their session to Robinson Chalong, and
+   * from there `GET /me/stations` listed that park's tills and the picker
+   * handed one over. Every route that falls back to `auth.branchId` inherited
+   * the same hole, which is why the list routes were moved onto grants
+   * (SCRUM-249) — this closes it where it starts.
+   *
+   * The switcher on the screen was never the way in: it is drawn from
+   * `GET /branches`, which is filtered by grants. Anything that can make an
+   * HTTP request was.
+   */
   app.put(
     '/session/branch',
-    { config: { auth: 'session' }, schema: { description: 'Switch the active branch', body: z.object({ branchId: z.string().uuid() }) } },
+    { config: { auth: 'session' }, schema: { description: 'Switch the active branch, among those the caller holds a grant at', body: z.object({ branchId: z.string().uuid() }) } },
     async (req) => {
       const auth = req.requireAuth();
       const [br] = await app.db
@@ -114,6 +131,12 @@ export async function meRoutes(app: App): Promise<void> {
         .where(and(eq(branch.id, req.body.branchId), eq(branch.operatorId, auth.operatorId)))
         .limit(1);
       if (!br || br.archivedAt) throw errors.notFound('Branch not found');
+      if (!holdsGrantAt(await req.effectivePermissions(), auth.operatorId, br.id)) {
+        // 403 rather than the 404 above: inside the caller's own operator the
+        // branch's existence is not the secret — they named it — and telling
+        // them plainly is what lets somebody ask for access to it.
+        throw outOfBranchScope('You hold no access at that branch');
+      }
       await app.db
         .update(sessionTable)
         .set({ branchId: br.id })

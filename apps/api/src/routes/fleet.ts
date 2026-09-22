@@ -14,6 +14,7 @@ import {
 import { newId } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
+import { holdsGrantAt } from '../services/access-control';
 import {
   archiveBox,
   archiveDevice,
@@ -306,12 +307,27 @@ export async function fleetRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
+      /**
+       * The branch comes off the session and never off a parameter — and, since
+       * SCRUM-264, the session's branch is one the caller holds a grant at:
+       * `PUT /me/session/branch` refuses any other, and this asks again rather
+       * than trusting that, because a session seated before that rule existed
+       * still carries whatever the old sign-in put on it.
+       *
+       * No branch in reach is an empty list, the same answer this route already
+       * gives a platform-wide account that has not picked a branch yet. Nothing
+       * here says a station was withheld: a station somebody may not use is
+       * absent, never flagged.
+       */
+      const seated =
+        auth.branchId &&
+        holdsGrantAt(await req.effectivePermissions(), auth.operatorId, auth.branchId)
+          ? auth.branchId
+          : null;
       return {
         stations: await listPickableStations(app.db, {
           operatorId: auth.operatorId,
-          // The session's branch, never a parameter: a caller must not be able
-          // to ask what stands at a branch they are not signed in to.
-          branchId: auth.branchId,
+          branchId: seated,
           accountId: auth.accountId,
         }),
       };

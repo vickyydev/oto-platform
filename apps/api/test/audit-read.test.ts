@@ -84,11 +84,18 @@ beforeAll(async () => {
 
   // One timestamp for every page row, so the pagination case proves the id
   // tie-break rather than accidentally relying on distinct timestamps.
+  //
+  // They carry the manager's branch (SCRUM-249): `GET /audit` now answers a
+  // branch-scoped reader with the rows of the branches they hold, and a row
+  // with no branch at all is an operator-level event rather than one of
+  // theirs. A branchless fixture would have made the pagination case go red
+  // for a reason that has nothing to do with pagination.
   const stamp = new Date('2026-09-20T03:00:00.000Z');
   await ctx.db.insert(auditLog).values(
     Array.from({ length: PAGE_ROWS }, () => ({
       id: newId(),
       operatorId,
+      branchId: br!.id,
       action: PAGE_ACTION,
       entityType: 'test',
       entityId: 'page',

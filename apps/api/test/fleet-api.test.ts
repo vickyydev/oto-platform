@@ -398,7 +398,7 @@ describe('a station edit resolves its own branch (S2-04 review, finding 2)', () 
       .where(and(eq(roleAssignment.accountId, acc!.id), eq(roleAssignment.roleId, managerRole!.id)));
   });
 
-  it('refuses a station at another branch on the pick, with its own code', async () => {
+  it('refuses a station at a branch the caller works at nowhere, with its own code', async () => {
     const res = await call('PUT', '/me/session/station', {
       cookie: receptionCookie,
       payload: { stationId: otherStationId },
@@ -407,7 +407,44 @@ describe('a station edit resolves its own branch (S2-04 review, finding 2)', () 
     // Not 409: the till forgets a remembered station on 403 and 404 and keeps
     // working on anything else, so a 409 here would leave it serving a station
     // at another site.
+    //
+    // `STATION_OTHER_BRANCH` rather than `STATION_WRONG_BRANCH` since
+    // SCRUM-264: reception holds nothing at Second Branch, which is checked
+    // before the session's branch is looked at. The older code's message —
+    // switch branch first — is advice this caller cannot take, because
+    // `PUT /me/session/branch` refuses a branch they hold nothing at too.
+    expect(errorCode(res)).toBe('STATION_OTHER_BRANCH');
+  });
+
+  it('tells an administrator standing at the wrong branch to switch, which they can', async () => {
+    // The same station, and the other half of the distinction: an operator
+    // administrator reaches every branch, so what is wrong here is only where
+    // their session is sitting — and that they can move.
+    const res = await call('PUT', '/me/session/station', {
+      cookie: adminCookie,
+      payload: { stationId: otherStationId },
+    });
+    expect(res.statusCode).toBe(403);
     expect(errorCode(res)).toBe('STATION_WRONG_BRANCH');
+
+    const moved = await call('PUT', '/me/session/branch', {
+      cookie: adminCookie,
+      payload: { branchId: otherBranchId },
+    });
+    expect(moved.statusCode).toBe(200);
+    const picked = await call('PUT', '/me/session/station', {
+      cookie: adminCookie,
+      payload: { stationId: otherStationId },
+    });
+    expect(picked.statusCode).toBe(200);
+
+    // Back to HKT Central: everything after this reads the administrator's
+    // session as standing at the park the rest of the file is about.
+    const home = await call('PUT', '/me/session/branch', {
+      cookie: adminCookie,
+      payload: { branchId },
+    });
+    expect(home.statusCode).toBe(200);
   });
 
   it('answers another operator’s station as not found, never as not allowed', async () => {

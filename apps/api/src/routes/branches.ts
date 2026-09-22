@@ -1,10 +1,11 @@
 import { z } from 'zod';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import { branch } from '@oto/db';
 import { newId } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { branchReach } from '../services/access-control';
 import { opCtx, withTx } from '../services/tx';
 
 /** SCRUM-27 — branches (with timezone) under the caller's operator. */
@@ -14,16 +15,30 @@ export async function branchRoutes(app: App): Promise<void> {
     {
       config: { permission: 'admin:branch:read' },
       schema: {
-        description: 'List branches (archived hidden unless includeArchived)',
+        description: 'List branches the caller holds (archived hidden unless includeArchived)',
         querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
-      const where = req.query.includeArchived
-        ? eq(branch.operatorId, auth.operatorId)
-        : and(eq(branch.operatorId, auth.operatorId), isNull(branch.archivedAt));
-      const rows = await app.db.select().from(branch).where(where).orderBy(asc(branch.createdAt));
+      /**
+       * SCRUM-249 — the list is what this caller HOLDS, not what the operator
+       * owns. This is the picker the console builds its branch switcher from,
+       * so an unfiltered list is a manager being offered a branch they cannot
+       * work in and the name of a site they have no business knowing about.
+       * An operator administrator's reach is every branch and is unchanged.
+       */
+      const reach = branchReach(await req.effectivePermissions(), 'admin:branch:read', auth.operatorId);
+      if (reach.kind === 'branches' && reach.branchIds.length === 0) return { branches: [] };
+
+      const clauses: SQL[] = [eq(branch.operatorId, auth.operatorId)];
+      if (!req.query.includeArchived) clauses.push(isNull(branch.archivedAt));
+      if (reach.kind === 'branches') clauses.push(inArray(branch.id, reach.branchIds));
+      const rows = await app.db
+        .select()
+        .from(branch)
+        .where(and(...clauses))
+        .orderBy(asc(branch.createdAt));
       return {
         branches: rows.map((b) => ({
           id: b.id,

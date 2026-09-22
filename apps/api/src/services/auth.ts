@@ -1,11 +1,12 @@
 import { hash, verify } from '@node-rs/argon2';
 import { createHash, randomInt } from 'node:crypto';
 import type { FastifyBaseLogger } from 'fastify';
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
   authThrottle,
   branch,
+  employee,
   session as sessionTable,
   verificationCode,
   type Db,
@@ -13,6 +14,8 @@ import {
 import { newId, normalizePhone } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { phoneHash } from '../lib/scrub';
+import { anyBranchReach, reachCovers } from './access-control';
+import { resolveEffectivePermissions } from './permissions';
 import { audit } from './audit';
 import type { Exec } from './tx';
 import { bumpWindow } from './throttle';
@@ -363,6 +366,64 @@ async function operatorOfAccount(db: Db, accountId: string): Promise<string | nu
   return row?.operatorId ?? null;
 }
 
+/**
+ * WHERE A NEW SESSION IS SEATED (SCRUM-263).
+ *
+ * Sign-in used to take `select … from branch where operator_id = … limit 1` —
+ * no ordering, and no regard for where the account works — so every session in
+ * the operator started at whichever branch the database happened to hand back
+ * first. With one branch that was right by accident. With two, the manager of
+ * Robinson Chalong signed in at Central Floresta, where she holds nothing, and
+ * every route that falls back to the session's branch refused her until she
+ * switched by hand.
+ *
+ * The seat is computed from grants, like every other branch question here:
+ *
+ *   - somebody who reaches the whole operator is seated at its first live
+ *     branch, as before — every branch is theirs and one has to be first. The
+ *     ordering is new, so that "first" is the same branch on every sign-in
+ *     rather than whatever the heap returned this time.
+ *   - anyone else is seated at their employee record's branch when they hold
+ *     something there, because that is where they turn up for work, and
+ *     otherwise at the first live branch their grants do cover.
+ *   - an account whose grants reach no live branch is refused, with the reason.
+ *     Seating it anyway would be a session that cannot act at the branch it is
+ *     sitting at — the lockout above, wearing a 200.
+ */
+export type Seat =
+  /** Sit here. Null only when an operator-wide account's operator has no live branch. */
+  | { kind: 'seat'; branchId: string | null }
+  /** Grants cover no live branch of this operator. */
+  | { kind: 'no_reach' };
+
+export async function seatBranch(
+  db: Db,
+  acc: { id: string; operatorId: string; employeeId: string | null },
+): Promise<Seat> {
+  const live = await db
+    .select({ id: branch.id })
+    .from(branch)
+    .where(and(eq(branch.operatorId, acc.operatorId), isNull(branch.archivedAt)))
+    .orderBy(asc(branch.createdAt), asc(branch.id));
+
+  const reach = anyBranchReach(await resolveEffectivePermissions(db, acc.id), acc.operatorId);
+  if (reach.kind === 'operator') return { kind: 'seat', branchId: live[0]?.id ?? null };
+
+  const mine = live.filter((b) => reachCovers(reach, b.id));
+  if (mine.length === 0) return { kind: 'no_reach' };
+
+  const [emp] = acc.employeeId
+    ? await db
+        .select({ branchId: employee.branchId })
+        .from(employee)
+        .where(eq(employee.id, acc.employeeId))
+        .limit(1)
+    : [];
+  const worksAt = emp?.branchId ?? null;
+  const atWork = worksAt !== null && mine.some((b) => b.id === worksAt);
+  return { kind: 'seat', branchId: atWork ? worksAt : mine[0]!.id };
+}
+
 export async function signIn(
   db: Db,
   opts: {
@@ -428,12 +489,15 @@ export async function signIn(
 
   await throttleClear(db, [`phone:${phone}`, `ip:${opts.ip}`]);
 
-  // Active branch defaults to the operator's first active branch.
-  const branches = await db
-    .select()
-    .from(branch)
-    .where(and(eq(branch.operatorId, acc!.operatorId), isNull(branch.archivedAt)))
-    .limit(1);
+  const seat = await seatBranch(db, acc!);
+  if (seat.kind === 'no_reach') {
+    await refuse('no_branch_access');
+    throw new AppError(
+      403,
+      'NO_BRANCH_ACCESS',
+      'This account has no access at any branch yet — a manager needs to give it a role at the branch you work at.',
+    );
+  }
 
   const token = newSessionToken();
   const sessionId = newId();
@@ -441,7 +505,7 @@ export async function signIn(
     id: sessionId,
     accountId: acc!.id,
     tokenHash: hashToken(token),
-    branchId: branches[0]?.id ?? null,
+    branchId: seat.branchId,
     expiresAt: new Date(Date.now() + opts.ttlHours * 3600_000),
   });
   await audit.record(db, {

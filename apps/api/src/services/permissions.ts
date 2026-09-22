@@ -43,6 +43,16 @@ export async function resolveEffectivePermissions(
   return rows as EffectivePermission[];
 }
 
+/**
+ * Does one grant cover one target? A pure comparison of ids, and it reads only
+ * the ids it is given.
+ *
+ * In particular (SCRUM-248): an operator-scoped grant matches on the operator
+ * and ignores `target.branchId` entirely — it cannot look up which operator a
+ * branch belongs to, so it says yes to a branch id belonging to somebody else.
+ * A route whose branch comes out of the URL therefore has to LOAD that branch
+ * scoped to the caller's operator; passing the guard is not that check.
+ */
 export function grantCovers(grant: EffectivePermission, target: ScopeTarget): boolean {
   switch (grant.scopeType) {
     case 'operator':

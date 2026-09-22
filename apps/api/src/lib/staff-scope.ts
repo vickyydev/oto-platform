@@ -52,12 +52,21 @@ export function atBranch(branchId: string) {
       eq(employee.branchId, branchId),
       sql`exists (
         select 1 from core.role_assignment ra
+         join core.role r on r.id = ra.role_id
          where ra.account_id = ${account.id}
            and (
              (ra.scope_type = 'branch' and ra.scope_id = ${branchId})
-             -- Operator-wide: scope_id names the operator, or is null for a
-             -- platform-wide assignment. Both administer this branch.
+             -- Operator-wide, and an ADMINISTRATOR. The owner's ruling was
+             -- that operator-wide administrators belong to every branch; the
+             -- first version of this clause admitted any operator-scoped
+             -- role, and a two-branch proof found that a reception or staff
+             -- role assigned at operator scope made its holder "staff of"
+             -- both parks — visible on every till's list and, through the
+             -- account writes that use this rule to decide dominance, within
+             -- a manager's reach at a branch they never work. scope_id names
+             -- the operator, or is null for a platform-wide assignment.
              or (ra.scope_type = 'operator'
+                 and r.name in ('operator_admin', 'platform_admin')
                  and (ra.scope_id is null or ra.scope_id = ${account.operatorId}))
            )
       )`,

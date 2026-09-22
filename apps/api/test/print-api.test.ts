@@ -4,6 +4,7 @@ import {
   BOX_COMMAND_KINDS as DB_BOX_COMMAND_KINDS,
   auditLog,
   box,
+  branch,
   device,
   opsRun,
   printJob,
@@ -29,7 +30,14 @@ import {
   PRINT_TEMPLATE_TYPE_ORDER,
   TEMPLATE_FOR_KIND,
 } from '@oto/shared';
-import { createTestContext, signInAs, teardownAll, ADMIN, type TestContext } from './helpers';
+import {
+  createTestContext,
+  signInAs,
+  teardownAll,
+  ADMIN,
+  CENTRAL_BRANCH_CODE,
+  type TestContext,
+} from './helpers';
 import { attachInProcessBox, provisionVirtualBox } from '../src/services/box';
 // The Console's own URL rule, not a copy of it — see `fromBrowser` below.
 import { apiUrl } from '../../console/src/api/url';
@@ -207,24 +215,48 @@ async function simulate(boxId: string, action: Record<string, unknown>) {
   return post(`/boxes/${boxId}/commands`, { kind: 'simulate', payload: { action } });
 }
 
+/**
+ * The seeded fleet at Central Floresta.
+ *
+ * Every lookup is scoped to that branch. Station names and device labels are
+ * only unique WITHIN a branch — `station_name_unique` is keyed on
+ * (branch, name), and a device is found by (box, label) — and both parks name
+ * their first counter "Reception Till 1" and its printer "Receipt Printer 1",
+ * exactly as two real sites would. Without the branch filter these queries are
+ * `limit(1)` over two matching rows with no ordering, so they can return
+ * Robinson Chalong's till or its printer, and a command queued against a
+ * printer on another park's box is a command this branch's agent will never
+ * run.
+ */
 async function seededIds() {
-  const [till] = await ctx.db
-    .select()
-    .from(station)
-    .where(eq(station.name, 'Reception Till 1'))
+  const [central] = await ctx.db
+    .select({ id: branch.id })
+    .from(branch)
+    .where(eq(branch.code, CENTRAL_BRANCH_CODE))
     .limit(1);
-  const [booth] = await ctx.db.select().from(station).where(eq(station.name, 'Booth 1')).limit(1);
-  const [receipt] = await ctx.db
-    .select()
-    .from(device)
-    .where(eq(device.label, 'Receipt Printer 1'))
-    .limit(1);
-  const [kidsBand] = await ctx.db
-    .select()
-    .from(device)
-    .where(eq(device.label, 'Band Printer (kids)'))
-    .limit(1);
-  return { till: till!, booth: booth!, receipt: receipt!, kidsBand: kidsBand! };
+  const branchId = central!.id;
+  const stationNamed = async (name: string) => {
+    const [row] = await ctx.db
+      .select()
+      .from(station)
+      .where(and(eq(station.branchId, branchId), eq(station.name, name)))
+      .limit(1);
+    return row!;
+  };
+  const deviceLabelled = async (label: string) => {
+    const [row] = await ctx.db
+      .select()
+      .from(device)
+      .where(and(eq(device.branchId, branchId), eq(device.label, label)))
+      .limit(1);
+    return row!;
+  };
+  return {
+    till: await stationNamed('Reception Till 1'),
+    booth: await stationNamed('Booth 1'),
+    receipt: await deviceLabelled('Receipt Printer 1'),
+    kidsBand: await deviceLabelled('Band Printer (kids)'),
+  };
 }
 
 // --- The vocabulary, in the one place both copies are importable ------------

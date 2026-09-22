@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { and, eq, inArray } from 'drizzle-orm';
-import { branch, child, visit, visitChild } from '@oto/db';
+import { branch, child, member, visit, visitChild } from '@oto/db';
 import { branchToday, newId } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
@@ -17,7 +17,20 @@ export async function visitRoutes(app: App): Promise<void> {
   app.post(
     '/',
     {
-      config: { permission: 'pos:visit:create' },
+      /**
+       * SCRUM-250 — the target is the branch the BODY names.
+       *
+       * The guard declared the permission with no target, so it fell back to
+       * the branch on the caller's session while the handler wrote the visit
+       * onto whatever `branchId` arrived in the payload. Reception at one
+       * branch opened a visit at another, and the audit row went with it.
+       *
+       * Declared here the way the sale routes were, and re-checked below once
+       * the branch is actually settled — the body may omit it, in which case
+       * the fallback to the session's branch is the right answer and the
+       * re-check is what proves it.
+       */
+      config: { permission: 'pos:visit:create', target: { branchId: 'body.branchId' } },
       schema: {
         description: 'Create a draft visit with confirmed children',
         body: z.object({
@@ -39,6 +52,10 @@ export async function visitRoutes(app: App): Promise<void> {
           .where(and(eq(visit.id, req.body.id), eq(visit.operatorId, auth.operatorId)))
           .limit(1);
         if (already) {
+          // A replay answers for the branch the visit is ON, not the one the
+          // request claims — otherwise the replay path is a way around the
+          // check the create path now makes.
+          await req.requirePermission('pos:visit:create', { branchId: already.branchId });
           reply.header('x-oto-replay', 'true');
           return { id: already.id, visitDate: already.visitDate, status: already.status };
         }
@@ -47,6 +64,21 @@ export async function visitRoutes(app: App): Promise<void> {
       if (!branchId) throw errors.badRequest('No active branch on this session');
       const [br] = await app.db.select().from(branch).where(eq(branch.id, branchId)).limit(1);
       if (!br || br.operatorId !== auth.operatorId) throw errors.notFound('Branch not found');
+      // The branch is settled and belongs to the operator; now the caller has
+      // to hold the permission AT it. Nothing is written before this line.
+      await req.requirePermission('pos:visit:create', { branchId });
+
+      // The member is the operator's, checked before the children are read
+      // against it: a foreign member id would otherwise have matched its own
+      // children and put somebody else's family on this park's visit.
+      if (req.body.memberId) {
+        const [m] = await app.db
+          .select({ id: member.id })
+          .from(member)
+          .where(and(eq(member.id, req.body.memberId), eq(member.operatorId, auth.operatorId)))
+          .limit(1);
+        if (!m) throw errors.notFound('Member not found');
+      }
 
       // Children must belong to the visit's member.
       if (req.body.childIds.length > 0) {
@@ -107,6 +139,11 @@ export async function visitRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const [v] = await app.db.select().from(visit).where(eq(visit.id, req.params.id)).limit(1);
       if (!v || v.operatorId !== auth.operatorId) throw errors.notFound('Visit not found');
+      // A visit is a branch's own record, and it carries which children were
+      // in the park and their allergies. Read at the branch it happened at,
+      // the way a sale is — the id in the URL does not name the branch, so the
+      // check waits for the row.
+      await req.requirePermission('pos:visit:read', { branchId: v.branchId });
       const children = await app.db
         .select({ vc: visitChild, c: child })
         .from(visitChild)

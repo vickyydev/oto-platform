@@ -15,6 +15,7 @@ import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { opCtx, withTx } from '../services/tx';
 import { isPlatformWide } from '../services/permissions';
+import { branchReach } from '../services/access-control';
 import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
 import { boxAuthFromRow, boxSettings, virtualBoxAgent } from '../services/box';
@@ -90,6 +91,21 @@ export async function opsRoutes(app: App): Promise<void> {
     failureThreshold: app.env.ALERT_FAILURE_THRESHOLD,
   });
 
+  /**
+   * SCRUM-265 — how far this caller's Console pages look.
+   *
+   * `admin:health:read` is guarded with no target, so the guard falls back to
+   * the branch on the caller's own session, which `PUT /me/session/branch`
+   * lets them set to any branch in the operator. The answer's width therefore
+   * cannot come from the session: it comes from the grants that carry the
+   * permission. An operator-wide holder reads the whole estate; a branch
+   * manager reads their own branches.
+   */
+  const healthReach = async (req: FastifyRequest) => {
+    const auth = req.requireAuth();
+    return branchReach(await req.effectivePermissions(), 'admin:health:read', auth.operatorId);
+  };
+
   // --- Health -------------------------------------------------------------
 
   app.get(
@@ -103,7 +119,11 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      return healthSnapshot({ ...health(), operatorId: auth.operatorId });
+      return healthSnapshot({
+        ...health(),
+        operatorId: auth.operatorId,
+        reach: await healthReach(req),
+      });
     },
   );
 
@@ -159,7 +179,11 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      return failureGroups(app.db, { ...req.query, operatorId: auth.operatorId });
+      return failureGroups(app.db, {
+        ...req.query,
+        operatorId: auth.operatorId,
+        reach: await healthReach(req),
+      });
     },
   );
 
@@ -177,7 +201,11 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      const runs = await runsForFingerprint(app.db, { ...req.query, operatorId: auth.operatorId });
+      const runs = await runsForFingerprint(app.db, {
+        ...req.query,
+        operatorId: auth.operatorId,
+        reach: await healthReach(req),
+      });
       return { runs };
     },
   );
@@ -270,7 +298,13 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      return listQuarantine(app.db, { ...req.query, operatorId: auth.operatorId });
+      // Scoped like its four siblings on this page (SCRUM-265): a manager sees
+      // their own branch's refused events, an operator admin sees them all.
+      return listQuarantine(app.db, {
+        ...req.query,
+        operatorId: auth.operatorId,
+        reach: await healthReach(req),
+      });
     },
   );
 
@@ -300,7 +334,11 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      return anomalyPage(app.db, { ...req.query, operatorId: auth.operatorId });
+      return anomalyPage(app.db, {
+        ...req.query,
+        operatorId: auth.operatorId,
+        reach: await healthReach(req),
+      });
     },
   );
 

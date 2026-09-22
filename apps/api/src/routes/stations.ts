@@ -17,6 +17,7 @@ import type { StationChannelMessage, StationView } from '@oto/box-agent';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { stationChannels } from '../lib/station-channel';
+import { holdsGrantAt } from '../services/access-control';
 import {
   loadStationRow,
   managerForStation,
@@ -149,12 +150,24 @@ export async function stationSessionRoutes(app: App): Promise<void> {
   /**
    * Resolve the station and who is asking about it.
    *
-   * The holder check is `session.station_id`, the same field
-   * `PUT /me/session/station` writes, so "may I work this station" was already
-   * answered by the picker's visibility rule and is not asked twice in two
-   * different ways here. Everyone else has to hold the fleet's read
-   * permission AT THIS STATION'S BRANCH — a manager scoped to one branch
-   * cannot watch a till at another.
+   * The holder check is `session.station_id` — the field `pickStation` writes,
+   * and the only writer of it anywhere: nothing else sets it, and a session is
+   * inserted with it null. Standing at a station therefore means having got
+   * past the picker, which since SCRUM-264 refuses a station at a branch the
+   * caller holds nothing at. "May I work this station" is answered there, and
+   * is not asked again here in a second, different way.
+   *
+   * What that does not cover is a shift outliving the grant behind it. Removing
+   * a role assignment revokes no session — only deactivation and a password
+   * reset do — so on the picker's answer alone, somebody moved to the other
+   * park would keep the till they were standing at until they signed out, while
+   * every other route in the api refused them at their next request. So the
+   * holder's grant is read again, per request, at the STATION's branch: the
+   * same question the picker asked, asked again because its answer moves. The
+   * station's branch itself does not — `updateStation` patches no `branchId`.
+   *
+   * Everyone else has to hold the fleet's read permission AT THIS STATION'S
+   * BRANCH — a manager scoped to one branch cannot watch a till at another.
    */
   async function standing(req: FastifyRequest, stationId: string): Promise<{
     row: StationRow;
@@ -162,7 +175,16 @@ export async function stationSessionRoutes(app: App): Promise<void> {
   }> {
     const auth = req.requireAuth();
     const row = await loadStationRow(app.db, auth.operatorId, stationId);
-    if (auth.stationId === stationId) return { row, role: 'holder' };
+    if (auth.stationId === stationId) {
+      if (!holdsGrantAt(await req.effectivePermissions(), auth.operatorId, row.branchId)) {
+        throw new AppError(
+          403,
+          'STATION_OTHER_BRANCH',
+          'That station is at a branch you do not work at',
+        );
+      }
+      return { row, role: 'holder' };
+    }
     await req.requirePermission('admin:station:read', { branchId: row.branchId });
     return { row, role: 'observer' };
   }

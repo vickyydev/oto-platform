@@ -35,6 +35,7 @@ import {
   updateBoothSettings,
   updateVoucherDefinition,
 } from '../services/booth-admin';
+import { loadBranchForOperator } from '../services/fleet';
 import { opCtx } from '../services/tx';
 
 /**
@@ -371,7 +372,23 @@ export async function boothRoutes(app: App): Promise<void> {
         params: z.object({ branchId: z.string().uuid() }),
       },
     },
-    async (req) => listBooths(app.db, req.params.branchId),
+    /**
+     * The branch is loaded scoped to the caller's operator before a booth is
+     * listed (SCRUM-267).
+     *
+     * The guard above does not establish that the branch in the URL belongs to
+     * the caller: `grantCovers` is a pure function over ids, so an
+     * operator-scoped grant matches on the operator and says yes to whatever
+     * branch id the target happens to name. Without this load the route
+     * answered 200 with another operator's booth while every one of its
+     * `/branches/:branchId/…` siblings refused the same id — the same defect
+     * SCRUM-248 closed in `catalog.ts`, in a file that ticket did not cover.
+     */
+    async (req) => {
+      const auth = req.requireAuth();
+      const br = await loadBranchForOperator(app.db, auth.operatorId, req.params.branchId);
+      return listBooths(app.db, auth.operatorId, br.id);
+    },
   );
 
   app.get(

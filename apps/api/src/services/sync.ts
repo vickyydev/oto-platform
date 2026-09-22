@@ -55,6 +55,7 @@ import { scrubText } from '@oto/telemetry';
 import { z } from 'zod';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
+import type { BranchReach } from './access-control';
 import { audit } from './audit';
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
 import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
@@ -3596,6 +3597,14 @@ export async function listQuarantine(
   db: Db,
   q: {
     operatorId: string;
+    /**
+     * The caller's branch reach, computed from their GRANTS and never from
+     * the session. Its four siblings on the Failures page took this already;
+     * this one did not, and a two-branch proof found Chalong's manager reading
+     * Floresta's refused events by name. A reach of no branches is a real
+     * answer — nothing — and not a missing filter.
+     */
+    reach?: BranchReach;
     status?: SyncQuarantineStatus;
     reason?: SyncQuarantineReason;
     boxId?: string;
@@ -3603,8 +3612,15 @@ export async function listQuarantine(
     limit: number;
   },
 ): Promise<QuarantinePage> {
+  const reachClause =
+    !q.reach || q.reach.kind === 'operator'
+      ? undefined
+      : q.reach.branchIds.length === 0
+        ? sql`false`
+        : inArray(box.branchId, q.reach.branchIds);
   const clauses = [
     eq(box.operatorId, q.operatorId),
+    reachClause,
     q.status ? eq(syncQuarantine.status, q.status) : undefined,
     q.reason ? eq(syncQuarantine.reason, q.reason) : undefined,
     q.boxId ? eq(syncQuarantine.boxId, q.boxId) : undefined,

@@ -28,6 +28,8 @@ import {
 import { SIMULATOR_ACTIONS_WITH_SECRETS, SimulatorActionSchema, newId } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
+import { holdsGrantAt } from './access-control';
+import { resolveEffectivePermissions } from './permissions';
 import { audit } from './audit';
 import { boxSettings, issueClaimCode, mintClaimCode, normaliseClaimCode, sha256Hex } from './box';
 import { atBranch } from '../lib/staff-scope';
@@ -387,9 +389,9 @@ export async function loadCredential(
  *
  *   - the operator, as every tenant-scoped query in this API carries, even
  *     where the branch already implies it;
- *   - the SESSION's branch, read from the auth context and never from a
- *     parameter — a caller must not be able to ask what stands at a branch
- *     they are not signed in to;
+ *   - the branch, which the caller never names: the route passes the session's,
+ *     and passes null unless the caller holds a grant there (SCRUM-264), so
+ *     this list cannot be aimed at a branch somebody does not work at;
  *   - the access scope, which is the rule itself.
  *
  * Archived stations are excluded unconditionally. There is no `includeArchived`
@@ -474,7 +476,7 @@ function visibleToAccount(accountId: string) {
 /**
  * Take a station for this session.
  *
- * Three checks, three answers, and the statuses are chosen for what the till
+ * Four checks, four answers, and the statuses are chosen for what the till
  * already does with them: `StationContext` forgets the station this iPad
  * remembers on a 403 or a 404 and keeps working on anything else, so a wrong
  * branch answered 409 would leave a till quietly serving a station at another
@@ -523,6 +525,34 @@ export async function pickStation(
    * which station ids exist.
    */
   if (!row) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station');
+  /**
+   * SCRUM-264 — A GRANT AT THIS STATION'S BRANCH, BEFORE ANYTHING ELSE.
+   *
+   * The three checks below say: it exists in your operator, it is at the branch
+   * your session is on, and you are on its list. None of them is a permission,
+   * and the second is not the check it reads as — `PUT /me/session/branch` put
+   * the session's branch wherever the caller asked. So reception at Central
+   * Floresta moved their session to Robinson Chalong and took its till: the
+   * station was in the operator, it matched the session's branch, and its
+   * access scope was `all_staff`, which admitted them.
+   *
+   * `all_staff` means all staff OF THAT BRANCH, and that sentence has to be
+   * enforced somewhere. Here, from grants, before the access list is consulted:
+   * the list says which of a branch's staff may work a station, never who is
+   * staff there.
+   *
+   * Asked of the STATION's branch, not the session's, so it holds for a session
+   * that was seated before this rule existed — every live session today carries
+   * whatever the old sign-in put on it.
+   */
+  const effective = await resolveEffectivePermissions(db, auth.accountId);
+  if (!holdsGrantAt(effective, auth.operatorId, row.branchId)) {
+    throw new AppError(
+      403,
+      'STATION_OTHER_BRANCH',
+      'That station is at a branch you do not work at',
+    );
+  }
   if (!auth.branchId || row.branchId !== auth.branchId) {
     throw new AppError(
       403,

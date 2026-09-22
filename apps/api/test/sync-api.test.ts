@@ -33,6 +33,8 @@ import {
 import { boxCredential } from '@oto/box-agent';
 import {
   ADMIN,
+  BRANCH_MANAGER,
+  CHALONG_MANAGER,
   RECEPTION,
   createTestContext,
   signInAs,
@@ -1533,7 +1535,30 @@ describe('the cache bundle', () => {
       .from(account)
       .where(eq(account.phone, RECEPTION.phone))
       .limit(1);
-    expect(staff.map((s) => s.accountId).sort()).toEqual([admin!.id, reception!.id].sort());
+    /**
+     * And the branch's manager, for the same reason as reception: Reception
+     * Till 1 is `all_staff`, so everybody who holds a grant at Central Floresta
+     * may stand at it, and the manager holds `branch_manager` there. A manager
+     * who cannot unlock the till during an outage is the same failure this
+     * scope exists to prevent — they are frequently the person on site when it
+     * happens. Chalong's manager is NOT here, and that is the half of the rule
+     * a second park finally makes testable: their grant is scoped to the other
+     * branch, so this box never learns their hash.
+     */
+    const [manager] = await ctx.db
+      .select({ id: account.id })
+      .from(account)
+      .where(eq(account.phone, BRANCH_MANAGER.phone))
+      .limit(1);
+    const [chalongManager] = await ctx.db
+      .select({ id: account.id })
+      .from(account)
+      .where(eq(account.phone, CHALONG_MANAGER.phone))
+      .limit(1);
+    expect(staff.map((s) => s.accountId).sort()).toEqual(
+      [admin!.id, reception!.id, manager!.id].sort(),
+    );
+    expect(staff.map((s) => s.accountId)).not.toContain(chalongManager!.id);
     /**
      * What an offline unlock and a booth sign-in need, and nothing that
      * identifies the person to somebody holding the disk. `lastTokenAt` is

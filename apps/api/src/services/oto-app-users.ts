@@ -1,6 +1,14 @@
 import { randomBytes } from 'node:crypto';
 import { and, eq, isNull, or } from 'drizzle-orm';
-import { otoappUsers, type OtoAppUserRole } from '@oto/db';
+import {
+  account,
+  branch,
+  employee,
+  otoappBranches,
+  otoappUserBranchAccess,
+  otoappUsers,
+  type OtoAppUserRole,
+} from '@oto/db';
 import { newId } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import type { Exec } from './tx';
@@ -28,9 +36,14 @@ import type { Exec } from './tx';
  * two places, and pasting an id between them — which is the thing this ticket
  * exists to remove.
  *
- * What the app owns and this does not touch: branch access
- * (`otoapp.user_branch_access`), access policies, and the employee record a
- * user is matched to. Those are set inside the OTO App.
+ * What the app owns and this does not touch: access policies, and the employee
+ * record a user is matched to. Those are set inside the OTO App.
+ *
+ * Branch access (`otoapp.user_branch_access`) used to be on that list, and one
+ * row of it no longer is — see `seatInAppBranch` below (SCRUM-268). What is
+ * written is the single row that seats a newly provisioned person in the
+ * branch they already work at; changing anybody's branch access afterwards is
+ * still the app's own screen.
  */
 
 /** Read back from every call. Never the password. */
@@ -127,6 +140,149 @@ export async function unlinkOtoAppUser(
   return cleared.length > 0;
 }
 
+/** How the OTO App's branch was found for a person being provisioned. */
+export type OtoAppBranchMatch = 'core_branch_id' | 'name';
+
+/**
+ * Why they were seated in none. Each is a different thing to fix, so they are
+ * separate values rather than one "failed":
+ *
+ * - `no_platform_branch` — the platform does not say where this person works.
+ *   Their employee record has no branch, or they have no employee record at
+ *   all, which is every account created by the provisioning route itself.
+ * - `no_app_branch` — the platform knows the branch and the OTO App has no row
+ *   carrying its id and none of exactly that name.
+ * - `ambiguous_name` — more than one OTO App branch carries that name, and
+ *   guessing between two parks is worse than seating them in neither.
+ */
+export type OtoAppBranchUnplaced = 'no_platform_branch' | 'no_app_branch' | 'ambiguous_name';
+
+/**
+ * Where a provisioned person landed in the OTO App's own branch list — and,
+ * when nowhere, why (SCRUM-268).
+ *
+ * Returned rather than thrown, deliberately. A person who has an account, a
+ * tile and a user in the app but no branch is worse off silently than loudly:
+ * the app answers every screen with nothing and looks broken. So provisioning
+ * still succeeds, and this travels out to the caller so the tile can say the
+ * person needs their branch access set inside the OTO App.
+ */
+export interface OtoAppBranchPlacement {
+  /** `otoapp.branches.id` they were seated in, or null. */
+  branchId: string | null;
+  branchName: string | null;
+  matchedBy: OtoAppBranchMatch | null;
+  unplacedReason: OtoAppBranchUnplaced | null;
+}
+
+export interface ProvisionedOtoAppUser extends OtoAppUser {
+  branch: OtoAppBranchPlacement;
+}
+
+/**
+ * Seat a newly provisioned person in the OTO App branch they already work at
+ * (SCRUM-268).
+ *
+ * **The two lists are not one list.** `otoapp.branches` and `core.branch` carry
+ * the same three real names and nothing keeps them in step: the app's rows have
+ * their own ids and their own tenant, and `core_branch_id` — the column put
+ * there to join them — was written by nothing in the repository until this. So
+ * this resolves in two steps, preferring the id:
+ *
+ *   1. an app branch whose `core_branch_id` is the platform branch's id, which
+ *      survives a rename on either side;
+ *   2. failing that, an app branch of exactly that name.
+ *
+ * **The name step is a fallback and not the mapping.** Names are edited, and
+ * one of them in the production export carries a trailing space — so an exact
+ * match is deliberate: it declines rather than guesses, and a person who lands
+ * nowhere is visible in the answer. Seating somebody in the wrong park's data
+ * would not be. What the full mapping needs is written up on SCRUM-268.
+ *
+ * **What this does NOT check, said plainly.** The app's own tenant and
+ * operator are not consulted: `otoapp.operators` is a different table from
+ * `core.operator` with different ids and no correspondence between them has
+ * been established, so there is nothing here to check a name match against. On
+ * a deployment whose app carries one tenant — which is every deployment today
+ * — the name step is bounded by the branch names of that one park. On one
+ * carrying two, a name shared across tenants is what `ambiguous_name` exists
+ * for, and the tenant key belongs to the full mapping.
+ *
+ * Runs inside the provisioning transaction, so a failure anywhere after it
+ * takes this row with the user it belongs to.
+ */
+async function seatInAppBranch(
+  exec: Exec,
+  opts: { userId: string; platformAccountId: string },
+): Promise<OtoAppBranchPlacement> {
+  const unplaced = (reason: OtoAppBranchUnplaced): OtoAppBranchPlacement => ({
+    branchId: null,
+    branchName: null,
+    matchedBy: null,
+    unplacedReason: reason,
+  });
+
+  /**
+   * Where the platform says this person works: their employee record's branch.
+   * Not the caller's session branch, which is a value the caller sets for
+   * themselves (SCRUM-264) and would seat a new hire wherever the
+   * administrator happened to be standing.
+   */
+  const [seat] = await exec
+    .select({ id: branch.id, name: branch.name })
+    .from(account)
+    .innerJoin(employee, eq(employee.id, account.employeeId))
+    .innerJoin(branch, eq(branch.id, employee.branchId))
+    .where(eq(account.id, opts.platformAccountId))
+    .limit(1);
+  if (!seat) return unplaced('no_platform_branch');
+
+  const appBranch = {
+    id: otoappBranches.id,
+    name: otoappBranches.name,
+    tenantId: otoappBranches.tenantId,
+  };
+  let found: { row: { id: string; name: string; tenantId: string }; matchedBy: OtoAppBranchMatch } | null =
+    null;
+
+  const [byCoreId] = await exec
+    .select(appBranch)
+    .from(otoappBranches)
+    .where(eq(otoappBranches.coreBranchId, seat.id))
+    .limit(1);
+  if (byCoreId) found = { row: byCoreId, matchedBy: 'core_branch_id' };
+
+  if (!found) {
+    // Two, not one: a second row of the same name is the answer, not an extra
+    // cost — it means there is nothing here that can be decided.
+    const byName = await exec
+      .select(appBranch)
+      .from(otoappBranches)
+      .where(eq(otoappBranches.name, seat.name))
+      .limit(2);
+    if (byName.length > 1) return unplaced('ambiguous_name');
+    if (byName[0]) found = { row: byName[0], matchedBy: 'name' };
+  }
+  if (!found) return unplaced('no_app_branch');
+
+  await exec.insert(otoappUserBranchAccess).values({
+    id: newId(),
+    // The app requires a tenant on this row and takes the session's tenant
+    // from the first one a user has, so it comes off the branch they are being
+    // seated in rather than from anywhere on the platform.
+    tenantId: found.row.tenantId,
+    userId: opts.userId,
+    branchId: found.row.id,
+    accessScope: 'selected_branches',
+  });
+  return {
+    branchId: found.row.id,
+    branchName: found.row.name,
+    matchedBy: found.matchedBy,
+    unplacedReason: null,
+  };
+}
+
 export interface CreateOtoAppUserInput {
   /** `core.account.id`, written straight into `platform_user_id`. */
   platformAccountId: string;
@@ -151,11 +307,14 @@ export interface CreateOtoAppUserInput {
  * email or phone: both are unique there, so the alternative is a constraint
  * violation surfacing as a 500, and the honest answer is "that person is
  * already in the OTO App — link them".
+ *
+ * Seats them in an OTO App branch where one can be resolved, and says on the
+ * answer when it could not (SCRUM-268) — `branch`.
  */
 export async function createOtoAppUser(
   exec: Exec,
   input: CreateOtoAppUserInput,
-): Promise<OtoAppUser> {
+): Promise<ProvisionedOtoAppUser> {
   // Lower-cased because the app resolves a user by `email.toLowerCase()` (its
   // local sign-in and the employee match in `getUserWithBranchAccess`), so a
   // capitalised address stored here is one those lookups never find.
@@ -199,7 +358,14 @@ export async function createOtoAppUser(
     })
     .returning(SELECTION);
   // The insert names every NOT NULL column and nothing filtered the row out.
-  return row!;
+  const user = row!;
+  return {
+    ...user,
+    branch: await seatInAppBranch(exec, {
+      userId: user.id,
+      platformAccountId: input.platformAccountId,
+    }),
+  };
 }
 
 /** The two columns that are unique in the app's own schema. */

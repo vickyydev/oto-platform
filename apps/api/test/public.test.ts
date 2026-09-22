@@ -18,7 +18,8 @@ describe('public catalog (customer /book site)', () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/public/branches/hkt-central/catalog' });
     expect(res.statusCode).toBe(200);
     const body = res.json();
-    expect(body.branch.name).toBe('HKT Central');
+    // The slug is still the prototype's; the name is the park's own.
+    expect(body.branch.name).toBe('Oto Play Park, Central Floresta');
     expect(body.tiers.map((t: { id: string }) => t.id)).toEqual(['tourist', 'expat', 'thai']);
     expect(body.packages).toHaveLength(4);
     for (const pkg of body.packages) {

@@ -1,6 +1,7 @@
 /**
- * Seed (CLAUDE.md §4): one operator "OTO", branch "HKT Central"
- * (Asia/Bangkok), departments, system roles generated from
+ * Seed (CLAUDE.md §4): one operator "OTO", the park's two trading branches —
+ * Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong (both
+ * Asia/Bangkok) — departments, system roles generated from
  * @oto/shared ROLE_BUNDLES, a platform admin + a reception account with known
  * dev passwords, six members with children (≥1 allergy), the prototype's four
  * ticket packages (values ported 1:1 from catalogStore.ts seeds, in satang),
@@ -114,7 +115,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
   const operatorId = existingOperator?.id ?? newId();
   if (!existingOperator) await db.insert(s.operator).values({ id: operatorId, name: 'OTO' });
 
-  // HKT Central opens 10:00-20:00 every day, which is what the park's own SOP
+  // Both parks open 10:00-20:00 every day, which is what the park's own SOP
   // says ("Daily: 10:00 AM - 8:00 PM", order counter closes 19:30) and what
   // Radar has been measuring the live tills against for months. This was
   // seeded at 21:00 until 2026-09-21; the hour mattered because the watchdog
@@ -130,51 +131,155 @@ export async function seed(db: Db = getDb()): Promise<void> {
       { open: '10:00', close: '20:00' },
     ]),
   );
-  const [branchRow] = await db
-    .insert(s.branch)
-    .values({
-      id: newId(),
-      operatorId,
-      name: 'HKT Central',
-      code: 'hkt-central',
-      timezone: 'Asia/Bangkok',
-      country: 'TH',
-      openingHours,
-    })
-    .onConflictDoUpdate({
-      target: [s.branch.operatorId, s.branch.code],
-      set: { name: 'HKT Central', timezone: 'Asia/Bangkok', country: 'TH' },
-    })
-    .returning({ id: s.branch.id });
-  const branchId = branchRow!.id;
 
-  // Opening hours are edited from the Branches panel, so a sync must not push
-  // them back — but a branch seeded before the column existed still has none,
-  // and the watchdog reads "not set" as "do not raise". Backfill the null, and
-  // leave any answer a person has given alone.
+  /**
+   * The park's two trading sites.
+   *
+   * Names and addresses are the park's own rows, from the committed sample cut
+   * of its export (`apps/oto-app/script/sample/data.generated.ts`, `BRANCHES`).
+   * The export's Central Floresta name carries a trailing space; it is trimmed
+   * here rather than reproduced.
+   *
+   * "HKT Central" was the prototype's invention — HKT is Phuket's airport code,
+   * not a mall — standing in for Central Floresta. It is RENAMED below rather
+   * than replaced by a third row, because its id already carries every station,
+   * box, device, package price, holiday, print template and the T1/T2 receipt
+   * series; a new row would strand all of it.
+   *
+   * Its `code` deliberately stays `hkt-central`. The slug is not decoration: the
+   * edge agent finds the branch it is running at by it (`boxSettings()` in
+   * `apps/api/src/services/box.ts` defaults `agentBranchCode` to the literal
+   * `'hkt-central'`, and `registerVirtualBox` matches `branch.code` against it),
+   * and `/public/branches/:code/catalog` serves the till its catalogue under it.
+   * Changing the slug without also setting `BOX_AGENT_BRANCH_CODE` on every
+   * deployment would leave the virtual boxes unable to find their branch. The
+   * name is what people read; the code is an identifier, and this one is already
+   * load-bearing.
+   *
+   * Head Office — the third row in the export — is deliberately not here. It is
+   * an office: it sells no tickets, has no till and no gate, and a `branch` on
+   * this platform is a place that trades. The people who work there are staff
+   * records, not a trading site.
+   */
+  const CENTRAL_CODE = 'hkt-central';
+  const CHALONG_CODE = 'robinson-chalong';
+  /** What the prototype seeded, and the only name the rename below will touch. */
+  const STANDIN_NAME = 'HKT Central';
+
+  const branchSeeds = [
+    {
+      code: CENTRAL_CODE,
+      name: 'Oto Play Park, Central Floresta',
+      address: '199 Moo 4, Vichitsongkram Road, Wichit, Muang, Phuket 83000, Thailand',
+    },
+    {
+      code: CHALONG_CODE,
+      name: 'Oto Play Park, Robinson Chalong',
+      address:
+        '10/53 Moo 1, Chaofah East Road, Tambon Chalong, Mueang Phuket District, Phuket 83130, Thailand',
+    },
+  ] as const;
+
+  const branchIds: Record<string, string> = {};
+  for (const br of branchSeeds) {
+    // A branch someone has since renamed, re-addressed or re-hour-ed stays
+    // theirs: on conflict this does nothing at all. Everything the seed still
+    // owes an existing row is a backfill of a null, below.
+    const [created] = await db
+      .insert(s.branch)
+      .values({
+        id: newId(),
+        operatorId,
+        name: br.name,
+        code: br.code,
+        timezone: 'Asia/Bangkok',
+        country: 'TH',
+        address: br.address,
+        openingHours,
+      })
+      .onConflictDoNothing({ target: [s.branch.operatorId, s.branch.code] })
+      .returning({ id: s.branch.id });
+    const [row] = created
+      ? [created]
+      : await db
+          .select({ id: s.branch.id })
+          .from(s.branch)
+          .where(and(eq(s.branch.operatorId, operatorId), eq(s.branch.code, br.code)))
+          .limit(1);
+    branchIds[br.code] = row!.id;
+  }
+  const branchId = branchIds[CENTRAL_CODE]!;
+  const chalongId = branchIds[CHALONG_CODE]!;
+
+  /**
+   * The one-time rename of the stand-in.
+   *
+   * Guarded on BOTH the seeded code and the seeded name, so it fires exactly
+   * once: a database already renamed, or one where somebody chose their own
+   * name for the branch, matches no row and is left alone. A re-run after the
+   * first therefore changes nothing.
+   *
+   * No migration accompanies this. A migration changes the shape of the schema;
+   * nothing about this row's shape changes, only the text in one column of one
+   * seeded row.
+   */
   await db
     .update(s.branch)
-    .set({ openingHours })
-    .where(and(eq(s.branch.id, branchId), isNull(s.branch.openingHours)));
+    .set({ name: branchSeeds[0].name })
+    .where(
+      and(
+        eq(s.branch.operatorId, operatorId),
+        eq(s.branch.code, CENTRAL_CODE),
+        eq(s.branch.name, STANDIN_NAME),
+      ),
+    );
 
-  // Departments (CLAUDE.md §4).
-  const deptIds: Record<string, string> = {};
-  for (const name of ['reception', 'restaurant', 'floor', 'nanny']) {
-    const [found] = await db
-      .select({ id: s.department.id })
-      .from(s.department)
-      .where(
-        and(
-          eq(s.department.operatorId, operatorId),
-          eq(s.department.branchId, branchId),
-          eq(s.department.name, name),
-        ),
-      )
-      .limit(1);
-    const id = found?.id ?? newId();
-    if (!found) await db.insert(s.department).values({ id, operatorId, branchId, name });
-    deptIds[name] = id;
+  // Backfills only. Opening hours, address and country are all edited from the
+  // Branches panel, so a sync must never push them back — but a branch seeded
+  // before a column existed still has none, and for opening hours the watchdog
+  // reads "not set" as "do not raise". Fill the nulls; leave every answer a
+  // person has given alone.
+  for (const br of branchSeeds) {
+    const id = branchIds[br.code]!;
+    await db
+      .update(s.branch)
+      .set({ openingHours })
+      .where(and(eq(s.branch.id, id), isNull(s.branch.openingHours)));
+    await db
+      .update(s.branch)
+      .set({ address: br.address })
+      .where(and(eq(s.branch.id, id), isNull(s.branch.address)));
+    await db
+      .update(s.branch)
+      .set({ country: 'TH' })
+      .where(and(eq(s.branch.id, id), isNull(s.branch.country)));
   }
+
+  // Departments (CLAUDE.md §4) — per branch, because a department is where a
+  // person is rostered and both parks roster their own reception and kitchen.
+  const departmentsFor = async (forBranch: string): Promise<Record<string, string>> => {
+    const ids: Record<string, string> = {};
+    for (const name of ['reception', 'restaurant', 'floor', 'nanny']) {
+      const [found] = await db
+        .select({ id: s.department.id })
+        .from(s.department)
+        .where(
+          and(
+            eq(s.department.operatorId, operatorId),
+            eq(s.department.branchId, forBranch),
+            eq(s.department.name, name),
+          ),
+        )
+        .limit(1);
+      const id = found?.id ?? newId();
+      if (!found)
+        await db.insert(s.department).values({ id, operatorId, branchId: forBranch, name });
+      ids[name] = id;
+    }
+    return ids;
+  };
+  const deptIds = await departmentsFor(branchId);
+  const chalongDeptIds = await departmentsFor(chalongId);
 
   // Tiers — prototype seedTiers (catalogStore.ts:792), operator-wide.
   for (const [i, t] of (
@@ -199,7 +304,16 @@ export async function seed(db: Db = getDb()): Promise<void> {
   }
 
   // Employees (prototype roster, mockApi.ts:430) + dev accounts.
-  const emp = async (name: string, dept: string, phone: string) => {
+  const emp = async (
+    name: string,
+    dept: string,
+    phone: string,
+    /** Which park they work at. Defaults to Central Floresta. */
+    at: { branch: string; depts: Record<string, string> } = {
+      branch: branchId,
+      depts: deptIds,
+    },
+  ) => {
     const e164 = normalizePhone(phone);
     const [found] = await db
       .select({ id: s.employee.id })
@@ -212,8 +326,8 @@ export async function seed(db: Db = getDb()): Promise<void> {
       id,
       operatorId,
       name,
-      branchId,
-      departmentId: deptIds[dept] ?? null,
+      branchId: at.branch,
+      departmentId: at.depts[dept] ?? null,
       phone: e164,
     });
     return id;
@@ -221,7 +335,11 @@ export async function seed(db: Db = getDb()): Promise<void> {
   const empAnan = await emp('Khun Anan (Owner)', 'reception', '+66900000001');
   const empSom = await emp('Som (Reception)', 'reception', '+66900000002');
   await emp('Nok (Reception)', 'reception', '+66900000003');
-  await emp('Khun Lek (Manager)', 'reception', '+66900000004');
+  const empLek = await emp('Khun Lek (Manager)', 'reception', '+66900000004');
+  const empDao = await emp('Khun Dao (Manager)', 'reception', '+66900000005', {
+    branch: chalongId,
+    depts: chalongDeptIds,
+  });
 
   const mkAccount = async (
     employeeId: string,
@@ -289,6 +407,25 @@ export async function seed(db: Db = getDb()): Promise<void> {
   ]);
   const receptionAccountId = await mkAccount(empSom, '+66900000002', 'reception1234', [
     { role: 'reception', scopeType: 'branch', scopeId: branchId },
+  ]);
+
+  /**
+   * A branch manager at each park.
+   *
+   * One grant each, `branch_manager` scoped to their own branch and nothing
+   * wider — no operator-scoped assignment, which is what an operator admin has.
+   * That is the whole point of the pair: Khun Lek manages Central Floresta's
+   * equipment, prices, holidays and staff and reads its sales and audit; Khun
+   * Dao does the same at Robinson Chalong; neither can see the other's, and
+   * neither can grant past their own branch. With one branch seeded, a
+   * branch-scoped grant and an operator-wide one are indistinguishable at
+   * runtime, so nothing was holding the scope resolver honest. Now something is.
+   */
+  await mkAccount(empLek, '+66900000004', 'manager1234', [
+    { role: 'branch_manager', scopeType: 'branch', scopeId: branchId },
+  ]);
+  await mkAccount(empDao, '+66900000005', 'manager1234', [
+    { role: 'branch_manager', scopeType: 'branch', scopeId: chalongId },
   ]);
 
   // Members + children — ported from mockApi.ts seeds (Mali family incl.
@@ -477,24 +614,48 @@ export async function seed(db: Db = getDb()): Promise<void> {
       },
     },
   ];
-  for (const { name, ...rest } of packages) {
-    // The catalogue is reference data: a price corrected here reaches a
-    // database that already has the package.
-    await db
-      .insert(s.ticketPackage)
-      .values({ id: newId(), operatorId, branchId, name, ...rest })
-      .onConflictDoUpdate({ target: [s.ticketPackage.branchId, s.ticketPackage.name], set: rest });
+  /**
+   * Priced at BOTH parks. A ticket package is branch-owned — the schema keys it
+   * on `branch_id` and the unique key is (branch, name) — because the same
+   * product can carry a different price at a different mall. Seeding it once
+   * would leave Robinson Chalong a branch whose till shows an empty catalogue.
+   *
+   * Same figures at both, because the export says nothing about Chalong pricing
+   * differently; when the park sets its own, it sets them from the Catalogue
+   * panel and the upsert below leaves the name alone but would push a price
+   * back, so a real divergence belongs in this array, per branch, not in a
+   * hand-edit on staging.
+   */
+  for (const forBranch of [branchId, chalongId]) {
+    for (const { name, ...rest } of packages) {
+      // The catalogue is reference data: a price corrected here reaches a
+      // database that already has the package.
+      await db
+        .insert(s.ticketPackage)
+        .values({ id: newId(), operatorId, branchId: forBranch, name, ...rest })
+        .onConflictDoUpdate({
+          target: [s.ticketPackage.branchId, s.ticketPackage.name],
+          set: rest,
+        });
+    }
   }
 
-  // One holiday range (future-dated so "today" stays weekday-priced).
+  // One holiday range (future-dated so "today" stays weekday-priced). Loy
+  // Krathong is a national holiday, so it closes over both parks — but it is
+  // stored per branch, because a branch may trade through a day its neighbour
+  // does not.
   const holiday = { name: 'Loy Krathong', startsOn: '2026-11-24', endsOn: '2026-11-25' };
-  const [holidayRow] = await db
-    .select({ id: s.branchHoliday.id })
-    .from(s.branchHoliday)
-    .where(and(eq(s.branchHoliday.branchId, branchId), eq(s.branchHoliday.name, holiday.name)))
-    .limit(1);
-  if (!holidayRow) {
-    await db.insert(s.branchHoliday).values({ id: newId(), branchId, ...holiday });
+  for (const forBranch of [branchId, chalongId]) {
+    const [holidayRow] = await db
+      .select({ id: s.branchHoliday.id })
+      .from(s.branchHoliday)
+      .where(
+        and(eq(s.branchHoliday.branchId, forBranch), eq(s.branchHoliday.name, holiday.name)),
+      )
+      .limit(1);
+    if (!holidayRow) {
+      await db.insert(s.branchHoliday).values({ id: newId(), branchId: forBranch, ...holiday });
+    }
   }
 
   // Tax: 7% VAT inclusive on every category, stored_value untaxed, service 0,
@@ -514,10 +675,14 @@ export async function seed(db: Db = getDb()): Promise<void> {
     ),
     discountPlacement: 'before_tax',
   };
-  await db
-    .insert(s.branchTaxConfig)
-    .values({ id: newId(), branchId, config: taxConfig })
-    .onConflictDoUpdate({ target: s.branchTaxConfig.branchId, set: { config: taxConfig } });
+  // Per branch: VAT is national, but the rule row is branch-owned and a branch
+  // without one cannot total a sale.
+  for (const forBranch of [branchId, chalongId]) {
+    await db
+      .insert(s.branchTaxConfig)
+      .values({ id: newId(), branchId: forBranch, config: taxConfig })
+      .onConflictDoUpdate({ target: s.branchTaxConfig.branchId, set: { config: taxConfig } });
+  }
 
   // A product category + product so the tax-override resolver has targets.
   const [catRow] = await db
@@ -566,18 +731,18 @@ export async function seed(db: Db = getDb()): Promise<void> {
   // Found by (branch, slot) and then left entirely alone. Everything else a
   // box owns — its secret, its epoch, its last heartbeat — is runtime state,
   // and a sync that reset any of it would take a working box offline.
-  const mkBox = async (name: string, slot: string) => {
+  const mkBox = async (name: string, slot: string, forBranch: string = branchId) => {
     const [found] = await db
       .select({ id: s.box.id })
       .from(s.box)
-      .where(and(eq(s.box.branchId, branchId), eq(s.box.slot, slot)))
+      .where(and(eq(s.box.branchId, forBranch), eq(s.box.slot, slot)))
       .limit(1);
     if (found) return found.id;
     const id = newId();
     await db.insert(s.box).values({
       id,
       operatorId,
-      branchId,
+      branchId: forBranch,
       name,
       slot,
       role: 'virtual',
@@ -598,7 +763,8 @@ export async function seed(db: Db = getDb()): Promise<void> {
   const mkDevice = async (d: {
     kind: (typeof s.DEVICE_KINDS)[number];
     label: string;
-    model: string;
+    /** Optional: the column is nullable, and an unsurveyed unit has no model. */
+    model?: string;
     protocol: string;
     address?: string;
     serialNumber?: string;
@@ -606,8 +772,10 @@ export async function seed(db: Db = getDb()): Promise<void> {
     merchantId?: string;
     /** Which box reported it. Defaults to virtual box 1. */
     box?: string;
+    /** The park it is plugged in at. Defaults to Central Floresta. */
+    branch?: string;
   }) => {
-    const { box: onBox = boxId, ...fields } = d;
+    const { box: onBox = boxId, branch: onBranch = branchId, ...fields } = d;
     const [found] = await db
       .select({ id: s.device.id })
       .from(s.device)
@@ -618,7 +786,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
     await db.insert(s.device).values({
       id,
       operatorId,
-      branchId,
+      branchId: onBranch,
       boxId: onBox,
       transport: 'simulated',
       reachability: 'reachable',
@@ -700,12 +868,14 @@ export async function seed(db: Db = getDb()): Promise<void> {
     accessScope: (typeof s.STATION_ACCESS_SCOPES)[number];
     /** The box that drives it. Defaults to virtual box 1. */
     box?: string;
+    /** The park it stands in. Defaults to Central Floresta. */
+    branch?: string;
   }) => {
-    const { box: onBox = boxId, ...fields } = st;
+    const { box: onBox = boxId, branch: onBranch = branchId, ...fields } = st;
     const [found] = await db
       .select({ id: s.station.id, boxId: s.station.boxId, codePrefix: s.station.codePrefix })
       .from(s.station)
-      .where(and(eq(s.station.branchId, branchId), eq(s.station.name, st.name)))
+      .where(and(eq(s.station.branchId, onBranch), eq(s.station.name, st.name)))
       .limit(1);
     if (found) {
       if (!found.boxId || !found.codePrefix) {
@@ -717,7 +887,9 @@ export async function seed(db: Db = getDb()): Promise<void> {
       return found.id;
     }
     const id = newId();
-    await db.insert(s.station).values({ id, operatorId, branchId, boxId: onBox, ...fields });
+    await db
+      .insert(s.station)
+      .values({ id, operatorId, branchId: onBranch, boxId: onBox, ...fields });
     return id;
   };
 
@@ -804,6 +976,48 @@ export async function seed(db: Db = getDb()): Promise<void> {
    */
   await assign(counter2Id, 'bar', devReceipt2);
 
+  // --- Robinson Chalong, as a place that can trade ----------------------------
+  //
+  // A branch is not a row; it is a counter that can take money. Chalong already
+  // has its opening hours, its tax rule, its holiday and its four ticket
+  // packages from the loops above. What it still needs is somewhere to ring a
+  // sale: a box to run the edge, a printer on that box, and a till whose code
+  // prefix can number a receipt.
+  //
+  // The prefix is `T3` rather than a second `T1`. `station_code_prefix_unique`
+  // is keyed on (branch, prefix), so `T1` here would be legal — and wrong:
+  // `allocateReceiptNumber` in `apps/api/src/services/sale.ts` uses the prefix
+  // AS the series name, so two branches both numbering from `T1` would hand two
+  // different visitors a receipt reading `T1-000001`. The prefixes have to be
+  // distinct across the operator even though the database only asks for them to
+  // be distinct within a branch.
+  const chalongBoxId = await mkBox('Virtual box 3', 'virtual-3', chalongId);
+
+  // No address, and no model. Nobody has surveyed Chalong's hardware — the
+  // models, addresses and terminal identifiers seeded above are Central
+  // Floresta's real units from DEVICE_INVENTORY §2, and there is no equivalent
+  // list for this park. `simulated` transport with an empty address is the
+  // honest shape: it prints in the simulator, and it claims nothing about a
+  // machine on a wall in Chalong. `escpos` is set because the renderer needs a
+  // dialect to speak; it is the one every 80 mm thermal unit here uses.
+  const chalongPrinter = await mkDevice({
+    kind: 'receipt_printer',
+    label: 'Receipt Printer 1',
+    protocol: 'escpos',
+    box: chalongBoxId,
+    branch: chalongId,
+  });
+  const chalongTillId = await mkStation({
+    name: 'Reception Till 1',
+    kind: 'till',
+    codePrefix: 'T3',
+    capabilities: ['tickets', 'fnb'],
+    accessScope: 'all_staff',
+    box: chalongBoxId,
+    branch: chalongId,
+  });
+  await assign(chalongTillId, 'receipt', chalongPrinter);
+
   // --- Print templates (S2-06) ------------------------------------------------
   //
   // The six editable printout types, with the prototype's own values
@@ -823,89 +1037,97 @@ export async function seed(db: Db = getDb()): Promise<void> {
     typeof s.printTemplate.$inferInsert,
     'type' | 'name' | 'showLogo' | 'headerText' | 'footerText' | 'fields'
   >;
-  const mkTemplate = async (t: TemplateSeed) => {
+  const mkTemplate = async (t: TemplateSeed, forBranch: string = branchId) => {
     const [found] = await db
       .select({ id: s.printTemplate.id })
       .from(s.printTemplate)
-      .where(and(eq(s.printTemplate.branchId, branchId), eq(s.printTemplate.type, t.type)))
+      .where(and(eq(s.printTemplate.branchId, forBranch), eq(s.printTemplate.type, t.type)))
       .limit(1);
     if (found) return found.id;
     const id = newId();
-    await db.insert(s.printTemplate).values({ id, operatorId, branchId, ...t });
+    await db.insert(s.printTemplate).values({ id, operatorId, branchId: forBranch, ...t });
     return id;
   };
 
-  await mkTemplate({
-    type: 'receipt',
-    name: 'Standard receipt',
-    showLogo: true,
-    headerText: 'Oto Play Park',
-    footerText: 'Thank you for visiting! · Tax ID 0105500000000',
-    fields: { itemizedLines: true, taxServiceBreakdown: true, voucherInfo: true },
-  });
-  await mkTemplate({
-    type: 'kids_wristband',
-    name: 'Kids wristband',
-    showLogo: false,
-    fields: {
-      holderName: true,
-      durationTime: true,
-      qr: true,
-      allergyLine: true,
-      startEndTime: true,
-      partyName: true,
-      dietaryRequirement: true,
-      supervisionBadge: true,
-      assignedNannyName: true,
+  const templateSeeds: TemplateSeed[] = [
+    {
+      type: 'receipt',
+      name: 'Standard receipt',
+      showLogo: true,
+      headerText: 'Oto Play Park',
+      footerText: 'Thank you for visiting! · Tax ID 0105500000000',
+      fields: { itemizedLines: true, taxServiceBreakdown: true, voucherInfo: true },
     },
-  });
-  await mkTemplate({
-    type: 'adult_wristband',
-    name: 'Adult wristband',
-    showLogo: false,
-    fields: {
-      holderName: false,
-      durationTime: true,
-      qr: true,
-      startEndTime: true,
-      partyName: true,
-      dietaryRequirement: true,
-      supervisionBadge: true,
-      assignedNannyName: true,
+    {
+      type: 'kids_wristband',
+      name: 'Kids wristband',
+      showLogo: false,
+      fields: {
+        holderName: true,
+        durationTime: true,
+        qr: true,
+        allergyLine: true,
+        startEndTime: true,
+        partyName: true,
+        dietaryRequirement: true,
+        supervisionBadge: true,
+        assignedNannyName: true,
+      },
     },
-  });
-  await mkTemplate({
-    type: 'kitchen_ticket',
-    name: 'Kitchen ticket',
-    showLogo: false,
-    fields: {
-      itemizedLines: true,
-      allergyLine: true,
-      orderNotes: true,
-      orderRefTime: true,
-      holderName: true,
+    {
+      type: 'adult_wristband',
+      name: 'Adult wristband',
+      showLogo: false,
+      fields: {
+        holderName: false,
+        durationTime: true,
+        qr: true,
+        startEndTime: true,
+        partyName: true,
+        dietaryRequirement: true,
+        supervisionBadge: true,
+        assignedNannyName: true,
+      },
     },
-  });
-  await mkTemplate({
-    type: 'bar_ticket',
-    name: 'Bar ticket',
-    showLogo: false,
-    fields: {
-      itemizedLines: true,
-      allergyLine: true,
-      orderNotes: true,
-      orderRefTime: true,
-      holderName: true,
+    {
+      type: 'kitchen_ticket',
+      name: 'Kitchen ticket',
+      showLogo: false,
+      fields: {
+        itemizedLines: true,
+        allergyLine: true,
+        orderNotes: true,
+        orderRefTime: true,
+        holderName: true,
+      },
     },
-  });
-  await mkTemplate({
-    type: 'credit_voucher',
-    name: 'Credit voucher',
-    showLogo: true,
-    headerText: 'Oto Play Park',
-    footerText: 'Scan QR or wristband at the F&B or merch counter to spend.',
-    fields: { creditVoucherBalance: true, creditVoucherQr: true },
-  });
+    {
+      type: 'bar_ticket',
+      name: 'Bar ticket',
+      showLogo: false,
+      fields: {
+        itemizedLines: true,
+        allergyLine: true,
+        orderNotes: true,
+        orderRefTime: true,
+        holderName: true,
+      },
+    },
+    {
+      type: 'credit_voucher',
+      name: 'Credit voucher',
+      showLogo: true,
+      headerText: 'Oto Play Park',
+      footerText: 'Scan QR or wristband at the F&B or merch counter to spend.',
+      fields: { creditVoucherBalance: true, creditVoucherQr: true },
+    },
+  ];
+  // Both parks. The header and footer are the operator's own wording and read
+  // the same at either mall; a branch that wants its own edits them, and the
+  // find-first above then leaves it alone.
+  for (const forBranch of [branchId, chalongId]) {
+    for (const t of templateSeeds) await mkTemplate(t, forBranch);
+  }
 
   // Only the administrator may pick Booth 1. Reception's picker must not show
   // it at all — that is the rule this row exists to exercise.
@@ -1053,8 +1275,13 @@ export async function seed(db: Db = getDb()): Promise<void> {
         id,
         operatorId,
         expiryDays: fourteenDays,
-        termsEn: 'Valid at OTO Play Park, HKT Central. One use only. No cash value.',
-        termsTh: 'ใช้ได้ที่ OTO Play Park สาขา HKT Central ใช้ได้ครั้งเดียว ไม่สามารถแลกเป็นเงินสดได้',
+        // The booth stands at Central Floresta, so that is the park its
+        // vouchers name. Placeholder wording in the shape the printed voucher
+        // wants; the park's own replaces it from the voucher-definition admin.
+        termsEn:
+          'Valid at Oto Play Park, Central Floresta. One use only. No cash value.',
+        termsTh:
+          'ใช้ได้ที่ Oto Play Park สาขา Central Floresta ใช้ได้ครั้งเดียว ไม่สามารถแลกเป็นเงินสดได้',
         ...d,
       });
     }
@@ -1261,7 +1488,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
   }
 
   console.log(
-    'Seed complete: operator OTO, branch HKT Central, roles, accounts, members, catalog, two virtual boxes with three stations, the park\'s six printers, six print templates, and Booth 1 with six prizes at config version 1.',
+    'Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park\'s printers; and Booth 1 with six prizes at config version 1.',
   );
 }
 

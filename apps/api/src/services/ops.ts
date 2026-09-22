@@ -15,6 +15,7 @@ import {
   type SQL,
   type SQLWrapper,
 } from 'drizzle-orm';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import type { FastifyBaseLogger } from 'fastify';
 import {
   alert,
@@ -37,6 +38,7 @@ import {
 import { businessDate, newId, parseDayStart } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { isPgError, scrubPgError } from '../lib/scrub';
+import type { BranchReach } from './access-control';
 import { boxSettings, withinOpeningHours } from './box';
 import { syncSettings } from './sync';
 import type { Exec } from './tx';
@@ -633,10 +635,51 @@ function secondsSince(value: Date | null | undefined, now: number): number | nul
   return Math.max(0, Math.round((now - value.getTime()) / 1000));
 }
 
+/**
+ * SCRUM-265 — HOW FAR ACROSS THE ESTATE THE HEALTH PAGE LOOKS.
+ *
+ * Everything below used to narrow on `operatorId` and stop there. While one
+ * park was open that was the right answer by accident, because the operator
+ * and the branch were the same set of boxes. With two open it handed a manager
+ * at one park the other park's box names, every device on them, their printer
+ * labels, paper status, agent versions, outbox depth and clock offset.
+ *
+ * So the reach is the caller's, computed from their GRANTS by `branchReach`
+ * and passed in — never from `auth.branchId`, which `PUT /me/session/branch`
+ * lets any signed-in account move to any branch in the operator (SCRUM-264).
+ * An operator-wide or platform-wide grant still reads the whole fleet; a
+ * branch-scoped one reads its own branches and nothing else.
+ *
+ * `undefined` means no branch narrowing at all, which is what the watchdog
+ * passes: a condition is true whoever happens to be looking, and the sweep is
+ * nobody's session.
+ */
+export type HealthReach = BranchReach | undefined;
+
+/**
+ * The branch clause a reach comes to, against one branch column, or `null` for
+ * "every branch".
+ *
+ * A reach of no branches is a real answer and not a missing filter — the
+ * caller holds the permission nowhere — so it comes back as `false` rather
+ * than as an absent clause, which would have widened it to everything. Rows
+ * with a NULL branch are excluded by `inArray` and that is deliberate: they
+ * are the deployment's own events, not a branch's, and the same ruling the
+ * audit log already makes (`routes/audit.ts`, SCRUM-249).
+ */
+function reachClause(reach: HealthReach, column: AnyPgColumn): SQL | null {
+  if (!reach || reach.kind === 'operator') return null;
+  if (reach.branchIds.length === 0) return sql`false`;
+  return inArray(column, reach.branchIds);
+}
+
 export interface HealthDeps {
   db: Db;
   /** Alerts are filtered to this operator, plus the platform-wide ones. */
   operatorId: string;
+  /** The caller's branch reach (SCRUM-265). Omitted only by callers that are
+   *  nobody's session — the watchdog. */
+  reach?: HealthReach;
   /** `WATCHDOG_JOB` — passed in rather than imported, or services/jobs.ts and
    *  this file would import each other. */
   watchdogJob: string;
@@ -739,8 +782,19 @@ export async function jobRegister(deps: HealthDeps, now = Date.now()): Promise<J
   return [...declared, ...undeclared].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Open alerts for this operator, plus the platform-wide ones (operator null). */
+/**
+ * Open alerts for this operator, plus the platform-wide ones (operator null),
+ * narrowed to the caller's branch reach.
+ *
+ * SCRUM-265: an alert carries the branch it is about, so "Receipt Printer 1 at
+ * Central Floresta is out of paper" is a sentence about one park. A manager at
+ * the other park can do nothing with it and should not be reading it, and the
+ * boxes it names are ones they cannot otherwise see. A branch-scoped caller
+ * therefore gets the alerts of their own branches only — the deployment's own
+ * alerts, which carry no branch, go with the rows they are about.
+ */
 export async function openAlerts(deps: HealthDeps, limit = 50): Promise<AlertRow[]> {
+  const branchClause = reachClause(deps.reach, alert.branchId);
   const rows = await deps.db
     .select()
     .from(alert)
@@ -748,6 +802,7 @@ export async function openAlerts(deps: HealthDeps, limit = 50): Promise<AlertRow
       and(
         isNull(alert.resolvedAt),
         or(isNull(alert.operatorId), eq(alert.operatorId, deps.operatorId)),
+        ...(branchClause ? [branchClause] : []),
       ),
     )
     .orderBy(desc(alert.lastSeenAt))
@@ -1875,11 +1930,12 @@ export function evaluateBox(
  * Health page load and on every watchdog tick, and it must stay one row per box
  * rather than the newest of half a million.
  *
- * `operatorId` narrows it to what one caller may see; the watchdog passes
- * nothing, because a condition is true whoever happens to be looking.
+ * `operatorId` narrows it to one tenant and `reach` to the branches the caller
+ * actually holds (SCRUM-265); the watchdog passes neither, because a condition
+ * is true whoever happens to be looking.
  */
 export async function fleetHealth(
-  deps: { db: Db; operatorId?: string | null },
+  deps: { db: Db; operatorId?: string | null; reach?: HealthReach },
   now = Date.now(),
 ): Promise<FleetSnapshot> {
   const settings = boxSettings();
@@ -1890,6 +1946,10 @@ export async function fleetHealth(
   };
 
   const scope = deps.operatorId ? eq(box.operatorId, deps.operatorId) : undefined;
+  // The branch half of the same question, and the reason it is a separate
+  // clause: an operator-wide grant covers branches that do not exist yet, so
+  // there is no list of ids that means "all of them".
+  const withinReach = reachClause(deps.reach, box.branchId);
   const rows = (await deps.db
     .select({
       id: box.id,
@@ -1911,7 +1971,7 @@ export async function fleetHealth(
     })
     .from(box)
     .innerJoin(branch, eq(box.branchId, branch.id))
-    .where(and(isNull(box.archivedAt), scope))
+    .where(and(isNull(box.archivedAt), scope, withinReach ?? undefined))
     .orderBy(asc(branch.name), asc(box.slot))) as FleetBoxRow[];
 
   if (rows.length === 0) return { boxes: [], conditions: [] };
@@ -2304,7 +2364,7 @@ export async function healthSnapshot(deps: HealthDeps): Promise<HealthSnapshot> 
   const checks = await healthChecks(deps, now);
   const jobs = await probe(() => jobRegister(deps, now), [] as JobStatus[]);
   const fleet = await probe(
-    () => fleetHealth({ db: deps.db, operatorId: deps.operatorId }, now),
+    () => fleetHealth({ db: deps.db, operatorId: deps.operatorId, reach: deps.reach }, now),
     { boxes: [], conditions: [] } as FleetSnapshot,
   );
   const alerts = await probe(() => openAlerts(deps), [] as AlertRow[]);
@@ -2349,6 +2409,8 @@ export interface FailurePage {
 
 export interface FailureQuery {
   operatorId: string;
+  /** SCRUM-265, as on the Health page: the caller's grants, not their session. */
+  reach?: HealthReach;
   windowHours: number;
   kind?: string;
   cursor?: string;
@@ -2414,9 +2476,16 @@ function errorLine(code: string | null, message: string | null): string | null {
  * Only `failed` rows are here. A `skipped` run is a run that declined to
  * happen — a job whose tick another instance had already claimed — which is
  * worth recording and is emphatically not a failure.
+ *
+ * SCRUM-265: a group carries the branch, station, request and action ids of
+ * its newest run, so an unscoped page told a manager at one park which till at
+ * the other park kept failing to print. Narrowed by the caller's reach, which
+ * for a branch-scoped caller also drops the untenanted rows — a sweep, an
+ * uncaught exception — because those are the deployment's, not a branch's.
  */
 export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePage> {
   const since = new Date(Date.now() - q.windowHours * 3_600_000);
+  const withinReach = reachClause(q.reach, opsRun.branchId);
   const clauses: SQL[] = [
     eq(opsRun.outcome, 'failed'),
     gte(opsRun.startedAt, since),
@@ -2425,6 +2494,7 @@ export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePag
     // uncaught exception — none of which has a tenant).
     or(isNull(opsRun.operatorId), eq(opsRun.operatorId, q.operatorId))!,
   ];
+  if (withinReach) clauses.push(withinReach);
   if (q.kind) clauses.push(eq(opsRun.kind, q.kind as OpsKind));
 
   const cursorClause = q.cursor ? groupCursorClause(decodeCursor(q.cursor)) : undefined;
@@ -2495,6 +2565,7 @@ export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePag
           gte(opsRun.startedAt, since),
           isNull(opsRun.fingerprint),
           or(isNull(opsRun.operatorId), eq(opsRun.operatorId, q.operatorId))!,
+          withinReach ?? undefined,
         ),
       );
     page.ungrouped = row?.count ?? 0;
@@ -2519,10 +2590,16 @@ export interface OpsRunRow {
   stationId: string | null;
 }
 
-/** The individual runs behind one group, newest first. */
+/**
+ * The individual runs behind one group, newest first.
+ *
+ * Reached by a fingerprint typed into a query string, so it is narrowed by the
+ * same reach as the list that offers the fingerprint (SCRUM-265) — otherwise
+ * the group is hidden and its rows are one guess away.
+ */
 export async function runsForFingerprint(
   db: Db,
-  q: { operatorId: string; fingerprint: string; limit: number },
+  q: { operatorId: string; reach?: HealthReach; fingerprint: string; limit: number },
 ): Promise<OpsRunRow[]> {
   const rows = await db
     .select()
@@ -2531,6 +2608,7 @@ export async function runsForFingerprint(
       and(
         eq(opsRun.fingerprint, q.fingerprint),
         or(isNull(opsRun.operatorId), eq(opsRun.operatorId, q.operatorId))!,
+        reachClause(q.reach, opsRun.branchId) ?? undefined,
       ),
     )
     .orderBy(desc(opsRun.startedAt))
@@ -2596,6 +2674,8 @@ export interface SyncAnomalyPage {
 
 export interface AnomalyQuery {
   operatorId: string;
+  /** SCRUM-265 — through the box's branch, since the row carries none. */
+  reach?: HealthReach;
   kind?: string;
   boxId?: string;
   cursor?: string;
@@ -2649,6 +2729,10 @@ function safeDetail(value: unknown): Record<string, unknown> | null {
  */
 export async function anomalyPage(db: Db, q: AnomalyQuery): Promise<SyncAnomalyPage> {
   const clauses: SQL[] = [eq(box.operatorId, q.operatorId)];
+  // The branch comes off the same joined box row the tenancy does, so the
+  // reach costs no extra join (SCRUM-265).
+  const withinReach = reachClause(q.reach, box.branchId);
+  if (withinReach) clauses.push(withinReach);
   if (q.kind) clauses.push(eq(syncAnomaly.kind, q.kind as SyncAnomalyKind));
   if (q.boxId) clauses.push(eq(syncAnomaly.boxId, q.boxId));
   if (q.cursor) {

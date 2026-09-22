@@ -1,22 +1,25 @@
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, or, type SQL } from 'drizzle-orm';
 import { account, employee, role, roleAssignment, session } from '@oto/db';
-import { newId, normalizePhone } from '@oto/shared';
+import { newId, normalizePhone, type Permission } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
+import { atBranch } from '../lib/staff-scope';
 import { audit } from '../services/audit';
 import { opCtx, withTx } from '../services/tx';
 import { deliverCode, invalidateAllSessions, mintCode, type PendingCode } from '../services/auth';
-import { resolveEffectivePermissions } from '../services/permissions';
+import { resolveEffectivePermissions, type EffectivePermission } from '../services/permissions';
 import {
   assertDominatesAccount,
   assertNotLastOperatorAdmin,
   assertRoleDominated,
   assertScopeOwned,
+  branchReach,
   loadRoleForOperator,
   loadTargetAccount,
+  outOfBranchScope,
 } from '../services/access-control';
 
 const RoleAssignmentInput = z.object({
@@ -25,20 +28,106 @@ const RoleAssignmentInput = z.object({
   scopeId: z.string().uuid().nullable(),
 });
 
+/**
+ * SCRUM-249 — WHICH PEOPLE ARE THIS CALLER'S TO LOOK AT.
+ *
+ * An account has no branch column, so "who works at this branch" has no single
+ * answer in the schema. Rather than invent a second one here, this reuses
+ * `atBranch` — the same predicate the fleet's station picker and the box's
+ * offline password cache already use: somebody whose employee record says they
+ * work here, somebody granted a role scoped here, or somebody who administers
+ * the whole operator.
+ *
+ * A null `filter` with `empty` false means no filter at all — an operator
+ * administrator goes on seeing every account. `empty` means the caller holds
+ * the permission at no branch, so the answer is nothing rather than everything.
+ *
+ * SCRUM-266 takes the permission as an argument rather than assuming
+ * `admin:account:read`. Reading a colleague's list and taking their account
+ * over are different grants, and the reach has to be the reach of the one the
+ * route is actually exercising: an account may be read at a branch where it
+ * may not be rewritten.
+ */
+function accountScopeFilter(
+  effective: EffectivePermission[],
+  operatorId: string,
+  permission: Permission,
+): { filter: SQL | null; empty: boolean } {
+  const reach = branchReach(effective, permission, operatorId);
+  if (reach.kind === 'operator') return { filter: null, empty: false };
+  if (reach.branchIds.length === 0) return { filter: null, empty: true };
+  // `or` over one clause returns that clause, so the single-branch manager —
+  // which is every branch manager today — gets exactly `atBranch(theirs)`.
+  return { filter: or(...reach.branchIds.map((id) => atBranch(id)))!, empty: false };
+}
+
 export async function accountRoutes(app: App): Promise<void> {
+  /**
+   * The same question asked about ONE account, for the routes that take an id.
+   * The join is the one `atBranch` reads `employee.branch_id` through; without
+   * it the predicate is a SQL error rather than a quietly wrong answer.
+   *
+   * **SCRUM-266 — why this is on the write surface and not only on the reads.**
+   *
+   * Every by-id route here was fenced by `assertDominatesAccount` alone, which
+   * walks the roles the TARGET holds and refuses if the caller does not hold
+   * each of them at a covering scope. Against a colleague with a role it is a
+   * strong check. Against a new hire who has an account and no role yet it
+   * walks an empty list and returns — there is nothing to fail on — so a
+   * manager at one park could issue that hire a working temporary password at
+   * the other, change their phone, deactivate them, end their sessions and
+   * then grant them a role at their own branch. Dominance answers "is the
+   * target above you"; it was never asked "is the target yours", and for a
+   * roleless target those are not the same question.
+   *
+   * So both, in this order: the branch tie first, because it is the one that
+   * holds when the target has no roles, then dominance, because it is the one
+   * that holds when the target has too many.
+   */
+  const assertAccountInScope = async (
+    effective: EffectivePermission[],
+    operatorId: string,
+    accountId: string,
+    permission: Permission,
+  ): Promise<void> => {
+    const { filter, empty } = accountScopeFilter(effective, operatorId, permission);
+    if (!filter && !empty) return;
+    const rows = empty
+      ? []
+      : await app.db
+          .select({ id: account.id })
+          .from(account)
+          .leftJoin(employee, eq(account.employeeId, employee.id))
+          .where(and(eq(account.id, accountId), eq(account.operatorId, operatorId), filter!))
+          .limit(1);
+    if (rows.length === 0) {
+      throw outOfBranchScope('That account is not at a branch you manage');
+    }
+  };
+
   // SCRUM-28 — search/list login users.
   app.get(
     '/',
     {
       config: { permission: 'admin:account:read' },
       schema: {
-        description: 'List/search accounts',
+        description: 'List/search accounts the caller may see (branch-scoped unless operator-wide)',
         querystring: z.object({ q: z.string().optional() }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
-      const filters = [eq(account.operatorId, auth.operatorId)];
+      // SCRUM-249 — this used to filter by operator and nothing else, so a
+      // manager of one branch read every colleague in the operator, phone
+      // numbers included, by opening the Login Users panel.
+      const { filter, empty } = accountScopeFilter(
+        await req.effectivePermissions(),
+        auth.operatorId,
+        'admin:account:read',
+      );
+      if (empty) return { accounts: [] };
+      const filters: SQL[] = [eq(account.operatorId, auth.operatorId)];
+      if (filter) filters.push(filter);
       const rows = await app.db
         .select({ a: account, e: employee })
         .from(account)
@@ -165,12 +254,12 @@ export async function accountRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
-      await assertDominatesAccount(
-        app.db,
-        await req.effectivePermissions(),
-        auth.operatorId,
-        req.params.id,
-      );
+      // SCRUM-266 — an account's roles and effective permissions say where in
+      // the estate that person can act, which is not a manager's to read about
+      // somebody at another park.
+      const callerEffective = await req.effectivePermissions();
+      await assertAccountInScope(callerEffective, auth.operatorId, req.params.id, 'admin:role:read');
+      await assertDominatesAccount(app.db, callerEffective, auth.operatorId, req.params.id);
       const assignments = await app.db
         .select({ ra: roleAssignment, roleName: role.name })
         .from(roleAssignment)
@@ -206,6 +295,19 @@ export async function accountRoutes(app: App): Promise<void> {
       const roleRow = await loadRoleForOperator(app.db, auth.operatorId, req.body.roleName);
       const scope = { scopeType: req.body.scopeType, scopeId: req.body.scopeId };
       const callerEffective = await req.effectivePermissions();
+      /**
+       * SCRUM-266 — WHO, before WHAT.
+       *
+       * The two checks below fence the grant: `assertScopeOwned` that the
+       * scope belongs to this operator, `assertRoleDominated` that the caller
+       * holds everything the role carries there. Both are about the role. A
+       * manager granting `reception` at their OWN branch passes both — and the
+       * register's reproduction did exactly that, to a roleless hire who works
+       * at the other park, which is how somebody at one park acquires a login
+       * at another. The person has to be the caller's before the grant is
+       * considered.
+       */
+      await assertAccountInScope(callerEffective, auth.operatorId, req.params.id, 'admin:role:assign');
       await assertScopeOwned(app.db, callerEffective, auth.operatorId, scope);
       await assertRoleDominated(app.db, callerEffective, auth.operatorId, roleRow.id, scope);
       const id = newId();
@@ -250,14 +352,15 @@ export async function accountRoutes(app: App): Promise<void> {
         .limit(1);
       if (!before || before.accountId !== req.params.id) throw errors.notFound('Assignment not found');
       // Removing a role is as privileged as granting it: you cannot strip a
-      // role you could not have handed out.
-      await assertRoleDominated(
-        app.db,
-        await req.effectivePermissions(),
-        auth.operatorId,
-        before.roleId,
-        { scopeType: before.scopeType, scopeId: before.scopeId },
-      );
+      // role you could not have handed out, and (SCRUM-266) you cannot strip
+      // one from somebody who is not yours to administer. Taking a colleague
+      // at another park off their own till is as much a takeover as granting.
+      const effective = await req.effectivePermissions();
+      await assertAccountInScope(effective, auth.operatorId, req.params.id, 'admin:role:assign');
+      await assertRoleDominated(app.db, effective, auth.operatorId, before.roleId, {
+        scopeType: before.scopeType,
+        scopeId: before.scopeId,
+      });
       // And it must not be the grant the operator's remaining access hangs
       // off — removing a role is the half of SCRUM-239 that already worked,
       // and it worked all the way to a locked-out operator.
@@ -297,12 +400,12 @@ export async function accountRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       const before = await loadTargetAccount(app.db, auth.operatorId, req.params.id);
-      await assertDominatesAccount(
-        app.db,
-        await req.effectivePermissions(),
-        auth.operatorId,
-        req.params.id,
-      );
+      // SCRUM-266 — a phone number is how somebody signs in and where their
+      // reset codes land; `inactive` is the end of their working day. Both are
+      // refused for anybody who is not at a branch this caller manages.
+      const effective = await req.effectivePermissions();
+      await assertAccountInScope(effective, auth.operatorId, req.params.id, 'admin:account:update');
+      await assertDominatesAccount(app.db, effective, auth.operatorId, req.params.id);
       // Deactivation takes every grant the account holds with it, so it can
       // empty the operator's administrator set exactly as a removal can.
       if (req.body.status === 'inactive') {
@@ -347,14 +450,16 @@ export async function accountRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       const acc = await loadTargetAccount(app.db, auth.operatorId, req.params.id);
-      // A temporary password is a full takeover of that account: the caller
-      // must dominate every role it holds.
-      await assertDominatesAccount(
-        app.db,
-        await req.effectivePermissions(),
-        auth.operatorId,
-        req.params.id,
-      );
+      /**
+       * A temporary password is a full takeover of that account, so both gates
+       * apply: the account must be at a branch this caller manages
+       * (SCRUM-266 — dominance alone let a manager at one park mint a working
+       * password for a roleless new hire at the other), and the caller must
+       * dominate every role it holds.
+       */
+      const effective = await req.effectivePermissions();
+      await assertAccountInScope(effective, auth.operatorId, req.params.id, 'admin:account:update');
+      await assertDominatesAccount(app.db, effective, auth.operatorId, req.params.id);
       const temp = randomBytes(6).toString('base64url'); // 8 chars
       const passwordHash = await hash(temp);
       // The new password, the forced change and the eviction of every live
@@ -390,6 +495,18 @@ export async function accountRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
+      /**
+       * SCRUM-249 — the branch scope, and the dominance check every sibling
+       * route had and this one was written without.
+       *
+       * A session row says which branch and which station somebody is signed
+       * in at and when they were last seen there, which is a colleague's
+       * working day. Scope first, then dominance: dominance alone passes
+       * vacuously for an account that holds no roles at all.
+       */
+      const effective = await req.effectivePermissions();
+      await assertAccountInScope(effective, auth.operatorId, req.params.id, 'admin:account:read');
+      await assertDominatesAccount(app.db, effective, auth.operatorId, req.params.id);
       const rows = await app.db
         .select()
         .from(session)
@@ -424,12 +541,11 @@ export async function accountRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
-      await assertDominatesAccount(
-        app.db,
-        await req.effectivePermissions(),
-        auth.operatorId,
-        req.params.id,
-      );
+      // SCRUM-266 — ending somebody's sessions puts them off the till they are
+      // standing at. A manager may do that at their own park only.
+      const effective = await req.effectivePermissions();
+      await assertAccountInScope(effective, auth.operatorId, req.params.id, 'admin:account:update');
+      await assertDominatesAccount(app.db, effective, auth.operatorId, req.params.id);
       // Revoked, not deleted: "who was evicted, when and by whom" has to
       // survive for audit, and loadAuth refuses a revoked session anyway.
       return withTx(app.db, opCtx(req), 'session.force_sign_out', async (tx) => {

@@ -1,12 +1,12 @@
 import { boolean, pgSchema, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 /**
- * The OTO App's own `users` table — as much of it as the platform writes
- * (S2-17a).
+ * The OTO App's own tables — as much of them as the platform reads and writes
+ * (S2-17a, widened for the branch seam in SCRUM-268).
  *
  * The app is a lift, not a port: it keeps its 184 tables, its own migrations
  * and its own npm project outside this pnpm workspace, and
- * `apps/oto-app/shared/schema.ts` stays the definition of this table. What is
+ * `apps/oto-app/shared/schema.ts` stays the definition of these tables. What is
  * here is a narrow re-declaration of the columns the provisioning service
  * reads and writes, because that file cannot be imported from here — pnpm
  * would have to hoist the app's dependency tree against ours for it to
@@ -76,4 +76,52 @@ export const otoappUsers = otoapp.table('users', {
   platformUserId: uuid('platform_user_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+/**
+ * The app's own branch list — the columns needed to seat a provisioned person
+ * in one of them (SCRUM-268).
+ *
+ * It is a different list from `core.branch` with different ids, and the two
+ * are not kept in step by anything: renaming a park on the platform does not
+ * rename it here. `coreBranchId` is the column that was meant to join them and
+ * until SCRUM-268 nothing wrote or read it.
+ */
+export const otoappBranches = otoapp.table('branches', {
+  /** `varchar` here against a platform `uuid`; the app mints its own. */
+  id: varchar('id').primaryKey(),
+  /** NOT NULL there. Copied onto a branch access row, which also requires it. */
+  tenantId: uuid('tenant_id').notNull(),
+  /** `otoapp.operators.id` — the app's own operator table, not `core.operator`. */
+  operatorId: uuid('operator_id'),
+  name: text('name').notNull(),
+  /**
+   * `core.branch.id`, as text. Declared `text` in the app's schema, so a
+   * comparison against a platform uuid is written as text on both sides.
+   */
+  coreBranchId: text('core_branch_id'),
+  coreSyncStatus: text('core_sync_status', {
+    enum: ['PENDING', 'SUCCESS', 'FAILED'],
+  }),
+  coreSyncedAt: timestamp('core_synced_at'),
+  coreSyncError: text('core_sync_error'),
+});
+
+/**
+ * Which branches a user of the app may see.
+ *
+ * `accessScope` `all_branches` carries a null `branchId` and means every
+ * branch; `selected_branches` names one branch per row, and a user with no row
+ * at all sees nothing — which is what everybody provisioned from the platform
+ * was until SCRUM-268. The app reads these rows in `getUserWithBranchAccess`
+ * and takes the session's tenant from the first of them.
+ */
+export const otoappUserBranchAccess = otoapp.table('user_branch_access', {
+  id: varchar('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  userId: varchar('user_id').notNull(),
+  /** Null when the scope is `all_branches`. */
+  branchId: varchar('branch_id'),
+  accessScope: text('access_scope', { enum: ['all_branches', 'selected_branches'] }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });

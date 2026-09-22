@@ -297,3 +297,116 @@ export async function assertNotLastOperatorAdmin(
 export async function callerPermissions(db: Db, accountId: string): Promise<EffectivePermission[]> {
   return resolveEffectivePermissions(db, accountId);
 }
+
+/**
+ * SCRUM-249 — HOW FAR ACROSS THE ESTATE ONE PERMISSION REACHES.
+ *
+ * `requirePermission` answers "may this caller act on THIS branch". A list
+ * route has the opposite question: it is handed no branch and has to decide
+ * which rows to put in the answer. Sprint 1 wrote those routes with a
+ * permission and no target, which meant the guard fell back to the branch on
+ * the caller's own session and the handler then filtered by operator alone.
+ * With one branch open that returned the right rows by accident. With two it
+ * hands a branch manager the other branch's accounts, sessions and audit
+ * trail.
+ *
+ * So the reach is computed from the caller's GRANTS, never from their session.
+ * The session's branch is not a fact about the caller: `PUT /me/session/branch`
+ * moves it to any branch in the operator for any signed-in account, so a guard
+ * checking it is checking a target the caller picked, and a filter built on
+ * `auth.branchId` is a filter they wrote themselves.
+ *
+ * `operator` means every branch, now and the ones that open later — an
+ * operator-wide or platform-wide grant. Otherwise it is the explicit list of
+ * branches named by branch-scoped grants, and an empty list is a real answer:
+ * the caller holds the permission nowhere, and the route returns nothing.
+ *
+ * Department- and record-scoped grants contribute no branches, which is the
+ * same answer `grantCovers` gives them against a branch target. A department
+ * grant covers a department; reading it as a grant over whichever branch that
+ * department sits at would widen it here and nowhere else.
+ */
+export type BranchReach =
+  /** Every branch of the operator. */
+  | { kind: 'operator' }
+  /** Exactly these branches — possibly none. */
+  | { kind: 'branches'; branchIds: string[] };
+
+function reachOf(grants: EffectivePermission[], operatorId: string): BranchReach {
+  const operatorWide = grants.some(
+    (g) => g.scopeType === 'operator' && (g.scopeId === null || g.scopeId === operatorId),
+  );
+  if (operatorWide) return { kind: 'operator' };
+  const branchIds = [
+    ...new Set(
+      grants.flatMap((g) => (g.scopeType === 'branch' && g.scopeId !== null ? [g.scopeId] : [])),
+    ),
+  ];
+  return { kind: 'branches', branchIds };
+}
+
+export function branchReach(
+  effective: EffectivePermission[],
+  permission: Permission,
+  operatorId: string,
+): BranchReach {
+  return reachOf(
+    effective.filter((g) => g.permission === permission),
+    operatorId,
+  );
+}
+
+/**
+ * SCRUM-263 / SCRUM-264 — WHERE A PERSON WORKS, from the same grants.
+ *
+ * `branchReach` answers where ONE permission reaches, which is the question a
+ * list route has. Three others name no permission at all: which branch a new
+ * session is seated at, which branches that session may move to, and whether
+ * the caller belongs at the branch a station stands in. The reading for all
+ * three is the union over every permission the account holds — somebody works
+ * at a branch when they hold anything there.
+ *
+ * Deliberately not one named permission such as `app:pos:access`. That would
+ * put sign-in and every till behind a single string in a role bundle, and the
+ * day it was tidied out of `staff` nobody could be seated anywhere — the
+ * argument `GET /me/stations` already makes for taking no permission at all.
+ */
+export function anyBranchReach(
+  effective: EffectivePermission[],
+  operatorId: string,
+): BranchReach {
+  return reachOf(effective, operatorId);
+}
+
+/** Does a reach cover this branch? An empty branch list covers nothing. */
+export function reachCovers(reach: BranchReach, branchId: string): boolean {
+  return reach.kind === 'operator' || reach.branchIds.includes(branchId);
+}
+
+/**
+ * Does the caller hold anything at this branch (SCRUM-264)?
+ *
+ * The check the session branch, the station picker and the station's holder
+ * all ask. It reads grants and nothing else — in particular not
+ * `auth.branchId`, which the caller moves for themselves.
+ */
+export function holdsGrantAt(
+  effective: EffectivePermission[],
+  operatorId: string,
+  branchId: string,
+): boolean {
+  return reachCovers(anyBranchReach(effective, operatorId), branchId);
+}
+
+/**
+ * A refusal inside the caller's own operator, where the row's EXISTENCE is not
+ * the secret — the asker already named it — but its contents are.
+ *
+ * Deliberately not the 404 `loadTargetAccount` gives a cross-operator id. The
+ * two refusals answer different questions and saying so keeps both honest: 404
+ * means "no such thing here, and I will not confirm it exists anywhere else",
+ * 403 means "it exists in your operator and it is outside what you hold".
+ */
+export function outOfBranchScope(message: string): AppError {
+  return new AppError(403, 'OUT_OF_BRANCH_SCOPE', message);
+}

@@ -98,6 +98,18 @@ export async function signInAs(app: App, phone: string, password: string): Promi
 
 export const ADMIN = { phone: '+66900000001', password: 'admin1234' };
 export const RECEPTION = { phone: '+66900000002', password: 'reception1234' };
+/**
+ * The seeded branch managers, one per park, each holding `branch_manager`
+ * scoped to their own branch and nothing wider. A branch-scoped grant and an
+ * operator-wide one behave identically while only one branch exists, so these
+ * two are what make a scope assertion mean anything.
+ */
+export const BRANCH_MANAGER = { phone: '+66900000004', password: 'manager1234' };
+export const CHALONG_MANAGER = { phone: '+66900000005', password: 'manager1234' };
+
+/** The seeded branch slugs. Central Floresta keeps the prototype's original. */
+export const CENTRAL_BRANCH_CODE = 'hkt-central';
+export const CHALONG_BRANCH_CODE = 'robinson-chalong';
 
 export async function teardownAll(): Promise<void> {
   await stopTestServer();

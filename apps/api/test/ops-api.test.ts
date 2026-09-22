@@ -606,8 +606,9 @@ describe('S2-03 — who may read any of this', () => {
  * opens the rule does not fire at all.
  */
 describe('S2-04 — boxes on Health and the fleet watchdog', () => {
+  // Central Floresta's first box. Slots are unique per branch, and this is the
+  // only park that has a `virtual-1`, so the slot alone still names one box.
   const BOX_SLOT = 'virtual-1';
-  const BRANCH_CODE = 'hkt-central';
 
   /**
    * Midnight to midnight. `withinOpeningHours` reads a close that is not after
@@ -637,11 +638,18 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
   const setBox = (values: Partial<typeof box.$inferInsert>) =>
     ctx.db.update(box).set(values).where(eq(box.slot, BOX_SLOT));
 
+  /**
+   * Every branch, not just the one under test.
+   *
+   * The watchdog sweeps the whole operator, and the seed now has two parks. If
+   * this only answered for Central Floresta, Robinson Chalong would keep its
+   * real 10:00-20:00 and whether its box was examined at all would depend on
+   * the wall clock at the moment the suite ran — green in the morning, red in
+   * the evening. Setting the hours everywhere is what makes the counts below
+   * mean one thing.
+   */
   const setHours = (openingHours: unknown) =>
-    ctx.db
-      .update(branch)
-      .set({ openingHours: openingHours as never })
-      .where(eq(branch.code, BRANCH_CODE));
+    ctx.db.update(branch).set({ openingHours: openingHours as never });
 
   /** The shape `recordHeartbeat` leaves on `box.last_status`. */
   const reported = (patch: Record<string, unknown> = {}) => ({
@@ -745,10 +753,14 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
     expect(quiet!.detail).toContain('has not called home');
 
     const summary = await watchdog();
-    // Both seeded boxes are examined. Only the one this block drives is
-    // silenced: Virtual box 2 has never registered, and nothing is expected of
-    // a box no agent has claimed.
-    expect(summary.boxes).toBe(2);
+    // All three seeded boxes are examined — Central Floresta's two and Robinson
+    // Chalong's — because the watchdog sweeps the operator, not one park.
+    expect(summary.boxes).toBe(3);
+    // But only ONE is moved to offline by this pass, and it stays one however
+    // many parks exist: `boxesSilenced` counts boxes that WERE online and have
+    // now gone quiet, which is the box this block drives. Virtual box 2 and
+    // Virtual box 3 have never registered, so there is no online status to move
+    // and nothing is expected of a box no agent has claimed.
     // The status column moves whatever the hour: that is a fact, not a judgement.
     expect(summary.boxesSilenced).toBe(1);
     expect((await theBox()).status).toBe('offline');

@@ -9,8 +9,10 @@ import {
   boothPrize,
   boothSettings,
   boxCommand,
+  branch,
   credential,
   idempotencyKey,
+  operator,
   station,
   type Db,
 } from '@oto/db';
@@ -26,6 +28,7 @@ import {
   type PgPoolLike,
 } from '@oto/box-agent';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { listBooths } from '../src/services/booth-admin';
 import { provisionVirtualBox } from '../src/services/box';
 
 /**
@@ -715,5 +718,99 @@ describe('the booth PIN (S2-07b)', () => {
     await agent.syncCache();
     const refused = await booth.signIn({ pin: PIN });
     expect(refused.ok, 'a withdrawn PIN still opened the booth after a pull').toBe(false);
+  });
+});
+
+/**
+ * SCRUM-267 — the booth list is the one `/branches/:branchId/…` route that took
+ * the branch id on trust.
+ *
+ * Its twelve siblings refuse another operator's branch id with a 404 and this
+ * one answered 200 with that operator's booth, to the administrator of a park
+ * that does not own it. The guard cannot catch it: an operator-scoped grant
+ * matches on the operator alone and has no way to know which operator a branch
+ * id belongs to, so the branch has to be LOADED. Driven as the operator
+ * administrator, because they are the caller the guard lets through — a branch
+ * manager was already refused by scope and proves nothing about this.
+ */
+describe('the booth list stops at the operator (SCRUM-267)', () => {
+  let ownBranchId: string;
+  let rivalBranchId: string;
+  let rivalBoothId: string;
+
+  beforeAll(async () => {
+    const [own] = await db
+      .select({ branchId: station.branchId })
+      .from(station)
+      .where(eq(station.id, boothId))
+      .limit(1);
+    ownBranchId = own!.branchId;
+
+    // A park belonging to somebody else entirely, with a booth of its own —
+    // written straight in, because no route of this operator's could make it.
+    const [rivalOperator] = await db
+      .insert(operator)
+      .values({ id: newId(), name: 'Rival Park Co' })
+      .returning();
+    const [rivalBranch] = await db
+      .insert(branch)
+      .values({
+        id: newId(),
+        operatorId: rivalOperator!.id,
+        name: 'Rival Park, Patong',
+        code: 'rival-patong',
+      })
+      .returning();
+    rivalBranchId = rivalBranch!.id;
+    const [rivalBooth] = await db
+      .insert(station)
+      .values({
+        id: newId(),
+        operatorId: rivalOperator!.id,
+        branchId: rivalBranchId,
+        name: 'Rival Booth',
+        kind: 'booth',
+      })
+      .returning();
+    rivalBoothId = rivalBooth!.id;
+  });
+
+  it('lists the booths of a branch the caller does own', async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/branches/${ownBranchId}/booths`,
+      headers: asAdmin(),
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().booths.map((b: { id: string }) => b.id)).toContain(boothId);
+  });
+
+  it("refuses another operator's branch id, and hands back none of its booths", async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/branches/${rivalBranchId}/booths`,
+      headers: asAdmin(),
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('BRANCH_NOT_FOUND');
+    expect(res.body).not.toContain(rivalBoothId);
+    expect(res.body).not.toContain('Rival Booth');
+  });
+
+  /**
+   * The second fence, asked of the service directly: the route's load is what
+   * refuses today, and this is what a future caller that forgets one gets.
+   */
+  it('answers a caller who asks the service for that branch under the wrong operator', async () => {
+    const [ownOperator] = await db
+      .select({ operatorId: station.operatorId })
+      .from(station)
+      .where(eq(station.id, boothId))
+      .limit(1);
+    const mine = await listBooths(db, ownOperator!.operatorId, ownBranchId);
+    expect(mine.booths.map((b) => b.id)).toContain(boothId);
+
+    const theirs = await listBooths(db, ownOperator!.operatorId, rivalBranchId);
+    expect(theirs.booths).toEqual([]);
   });
 });

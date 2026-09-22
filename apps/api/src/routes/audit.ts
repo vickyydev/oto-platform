@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { and, desc, eq, gte, lte, not, sql, type SQL } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte, not, sql, type SQL } from 'drizzle-orm';
 import { auditLog } from '@oto/db';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
-import { hasPermission } from '../services/permissions';
+import { branchReach } from '../services/access-control';
 import { opCtx, withTx, type Exec } from '../services/tx';
 
 /**
@@ -107,8 +107,36 @@ export async function auditRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       const q = req.query;
+      const effective = await req.effectivePermissions();
+
+      /**
+       * SCRUM-249 — WHOSE TRAIL THIS IS.
+       *
+       * The filter used to be the operator alone, so a manager of one branch
+       * read the other branch's trail: who sold what, who was refused, who
+       * opened whose record. The reach comes from the caller's grants, and a
+       * branch-scoped reader sees rows carrying one of their branch ids.
+       *
+       * Rows with NO branch — an account created, a role granted, a sign-in
+       * refused before any session existed — are operator-level events and
+       * are not rows "for their branch", so they are not in a branch-scoped
+       * answer. `inArray` excludes a NULL column on its own; saying it here
+       * because it is a decision, not a side effect.
+       *
+       * An explicit `branchId` is answered explicitly: asking for a branch you
+       * do not hold is refused rather than silently returning nothing, which
+       * is how the sale list already answers the same question.
+       */
+      const reach = branchReach(effective, 'admin:audit:read', auth.operatorId);
+      if (q.branchId) await req.requirePermission('admin:audit:read', { branchId: q.branchId });
 
       const clauses: SQL[] = [eq(auditLog.operatorId, auth.operatorId)];
+      if (!q.branchId && reach.kind === 'branches') {
+        if (reach.branchIds.length === 0) {
+          return { entries: [], masked: true, nextCursor: null };
+        }
+        clauses.push(inArray(auditLog.branchId, reach.branchIds));
+      }
       if (q.action) clauses.push(eq(auditLog.action, q.action));
       if (q.entityType) clauses.push(eq(auditLog.entityType, q.entityType));
       if (q.entityId) clauses.push(eq(auditLog.entityId, q.entityId));
@@ -135,11 +163,23 @@ export async function auditRoutes(app: App): Promise<void> {
           .orderBy(desc(auditLog.createdAt), desc(auditLog.id))
           .limit(q.limit);
 
-      const effective = await req.effectivePermissions();
-      const unmasked = hasPermission(effective, 'admin:audit:read_sensitive', {
-        operatorId: auth.operatorId,
-        branchId: auth.branchId ?? undefined,
-      });
+      /**
+       * Unmasking is judged against the rows actually being read, not against
+       * the branch on the caller's session: `PUT /me/session/branch` moves
+       * that branch to anywhere in the operator, so a check on `auth.branchId`
+       * is a check the reader sets for themselves. Every branch in the answer
+       * has to be one they hold `admin:audit:read_sensitive` at; an unbounded
+       * read needs it operator-wide.
+       */
+      const sensitive = branchReach(effective, 'admin:audit:read_sensitive', auth.operatorId);
+      const reading: string[] | 'all' = q.branchId
+        ? [q.branchId]
+        : reach.kind === 'branches'
+          ? reach.branchIds
+          : 'all';
+      const unmasked =
+        sensitive.kind === 'operator' ||
+        (reading !== 'all' && reading.every((b) => sensitive.branchIds.includes(b)));
 
       type Row = Awaited<ReturnType<typeof read>>[number];
       const shape = (rows: Row[]) => ({

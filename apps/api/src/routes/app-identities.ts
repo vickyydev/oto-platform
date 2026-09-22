@@ -14,6 +14,7 @@ import {
   findOtoAppUser,
   linkOtoAppUser,
   unlinkOtoAppUser,
+  type OtoAppBranchPlacement,
 } from '../services/oto-app-users';
 import {
   hasPermission,
@@ -238,6 +239,13 @@ export async function appIdentityRoutes(app: App): Promise<void> {
          */
         let externalUserId: string;
         let appUserCreated = false;
+        /**
+         * Which branch of the OTO App the person was seated in, when this
+         * request created their user there (SCRUM-268). Null on the link path,
+         * where the user already existed and their branch access is whatever
+         * the app already holds — this route does not move it.
+         */
+        let appBranch: OtoAppBranchPlacement | null = null;
         if (externalUserIdGiven) {
           if (isOtoApp) {
             const stamped = await linkOtoAppUser(tx, {
@@ -273,6 +281,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
           });
           externalUserId = created.id;
           appUserCreated = true;
+          appBranch = created.branch;
         } else {
           // Unreachable: both were checked before anything was written.
           throw errors.badRequest('Name the app user to link, or the OTO App user to create');
@@ -303,6 +312,7 @@ export async function appIdentityRoutes(app: App): Promise<void> {
             accountCreated,
             appUserCreated,
             accessGranted,
+            appBranch,
           },
           requestId: req.id,
         });
@@ -314,6 +324,13 @@ export async function appIdentityRoutes(app: App): Promise<void> {
           accountCreated,
           /** Whether the app's own user row was made here, or taken as it was. */
           appUserCreated,
+          /**
+           * Where they landed in the OTO App's branch list, and when nowhere,
+           * why — so the launcher can say "their branch access still has to be
+           * set in the OTO App" rather than opening a tile onto an app that
+           * answers every screen with nothing.
+           */
+          appBranch,
         };
       });
       // A replay of the same idempotency key answers with the stored link;

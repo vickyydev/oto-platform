@@ -6,9 +6,10 @@ export * from './schema/index';
 export { schema };
 
 /**
- * The OTO App's `users` table, for the one service on the platform api that
- * provisions into it. Exported here and not from `./schema/index`, which is
- * what `drizzle.config.ts` reads — see the file for why.
+ * The OTO App's `users`, `branches` and `user_branch_access` tables, for the
+ * one service on the platform api that provisions into it. Exported here and
+ * not from `./schema/index`, which is what `drizzle.config.ts` reads — see the
+ * file for why.
  */
 export * from './schema/otoapp';
 
