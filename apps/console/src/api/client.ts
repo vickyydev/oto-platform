@@ -75,7 +75,10 @@ export const api = {
     request<T>('POST', path, body, opts),
   patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
     request<T>('PATCH', path, body, opts),
-  delete: <T>(path: string) => request<T>('DELETE', path),
+  // A DELETE is a write like any other, and the platform's rule is that every
+  // write carries a key: the api's idempotency plugin covers all four methods.
+  delete: <T>(path: string, opts?: { idempotencyKey?: string }) =>
+    request<T>('DELETE', path, undefined, opts),
 };
 
 /**

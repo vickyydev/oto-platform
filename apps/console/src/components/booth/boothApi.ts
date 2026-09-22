@@ -218,17 +218,14 @@ export interface PublishResult {
 const at = (id: string) => `/booths/${encodeURIComponent(id)}`;
 
 /**
- * Every write with a BODY carries a fresh idempotency key, minted where the
- * person pressed the button — the platform's rule for mutations, and what
- * makes a double press on Publish one version rather than two.
+ * Every write carries a fresh idempotency key, minted where the person
+ * pressed the button — the platform's rule for mutations, and what makes a
+ * double press on Publish one version rather than two.
  *
- * `archivePrize` is the exception, and knowingly: the shared client's
- * `api.delete` takes no options, so the key cannot be attached without
- * changing a file four apps share. What stands in for it is the route's own
- * behaviour — archiving an already-archived slice answers with that slice
- * instead of 404 (`apps/api/src/routes/booth.ts`) — so a double press is
- * harmless here even though it is not deduplicated. Giving `api.delete` a key
- * is worth doing; it is not this page's to do alone.
+ * `archivePrize` carries one too, since `api.delete` learned to take it. The
+ * route is also forgiving on its own — archiving an already-archived slice
+ * answers with that slice instead of 404 (`apps/api/src/routes/booth.ts`) —
+ * so a double press was harmless before and is now also deduplicated.
  */
 export const boothApi = {
   /** Branch-nested, like every branch-scoped resource: the guard needs it in the path. */
@@ -264,7 +261,9 @@ export const boothApi = {
    * month's report able to name what somebody won.
    */
   archivePrize: (id: string, prizeId: string) =>
-    api.delete<unknown>(`${at(id)}/prizes/${encodeURIComponent(prizeId)}`),
+    api.delete<unknown>(`${at(id)}/prizes/${encodeURIComponent(prizeId)}`, {
+      idempotencyKey: idemKey(),
+    }),
 
   /**
    * Freeze the draft as version N+1.
