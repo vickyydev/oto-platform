@@ -103,6 +103,16 @@ export interface BoxAgentOptions {
   /** How often the outbox tries to hand its queue over. */
   syncIntervalMs?: number;
   /**
+   * How often the box asks the cloud whether its cache bundles have moved.
+   *
+   * The ordinary answer is a 304 with no body (the agent sends the last
+   * bundle version as `If-None-Match`), so this is one small request a minute
+   * per box, and the price of it is the difference between a published wheel
+   * or a withdrawn booth PIN reaching the counter within a minute and reaching
+   * it at the next restart (SCRUM-275).
+   */
+  cacheRefreshIntervalMs?: number;
+  /**
    * The print pipeline (S2-06).
    *
    * On by default, because a box that cannot print is not a box — the only
@@ -177,14 +187,15 @@ export interface BoxAgent {
    *
    * `GET /box/v1/cache` was built by S2-05 and nothing called it, so every box
    * in the fleet held an empty cache — which is invisible until the day the
-   * link drops and the till cannot check a password. Returns the scopes that
-   * were applied.
+   * link drops and the till cannot check a password. Called at start, on the
+   * cache refresh timer, and by the `config_apply` command (SCRUM-275).
+   * Returns the scopes that were applied; empty for a 304.
    */
   syncCache(): Promise<string[]>;
   heartbeat(): Promise<BoxHeartbeatAck | null>;
   /** Poll, run what comes back, report each result. Returns how many ran. */
   runPendingCommands(): Promise<number>;
-  /** Register, sync, heartbeat, poll — then set both timers going. */
+  /** Register, sync, heartbeat, poll — then set the three timers going. */
   start(): Promise<void>;
   stop(): void;
   /** The Console's "Stop heartbeats" test control. */
@@ -270,11 +281,20 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let boothStaff: readonly BoothStaffRecord[] = [];
   /** The `sync_change` sequence the cache bundles were current to. */
   let cacheCursorSeq = 0;
+  /**
+   * The `bundleVersion` of the cache last applied, sent back as
+   * `If-None-Match` so a pull that would land the same bytes costs a 304 and
+   * nothing else. Null until the first full pull, and reset by anything that
+   * throws the local copy away, so the pull after that is a whole one.
+   */
+  let cacheBundleVersion: string | null = null;
   let bundle: BoxConfigBundle | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
+  let cacheRefreshTimer: ReturnType<typeof setInterval> | null = null;
   let heartbeatIntervalMs = options.heartbeatIntervalMs ?? 60_000;
   const pollIntervalMs = options.pollIntervalMs ?? 5_000;
+  const cacheRefreshIntervalMs = options.cacheRefreshIntervalMs ?? 60_000;
   /**
    * Strictly increasing, because the cloud refuses a heartbeat whose reported
    * time is not after the last one it accepted — that refusal is its replay
@@ -872,6 +892,15 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    * one: a box left holding a current staff list and last week's revocations,
    * with nothing to say it had happened. A skip or a failure is now a fault
    * the heartbeat carries (`errors`) as well as a line in the box log.
+   *
+   * **Called on a timer, not only at start.** Until SCRUM-275 this had one
+   * caller, in `start()`, and the consequence was measured from the booth's
+   * side: a wheel published in the Console reached the television at the next
+   * agent restart and not before, and a booth PIN withdrawn in the Console
+   * kept signing that person in until then. The timer set in `start()` and the
+   * `config_apply` command both come here now. The ordinary tick is a 304 —
+   * the last `bundleVersion` goes up as `If-None-Match` — so a box that has
+   * nothing new to learn pays one small request a minute for it.
    */
   async function syncCache(): Promise<string[]> {
     if (!credential || !store || !state.boxId || state.offline) return [];
@@ -882,7 +911,14 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       cursorSeq: number;
       scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
       truncated: string[];
-    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}`, { method: 'GET' });
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}`, {
+      method: 'GET',
+      headers: cacheBundleVersion ? { 'if-none-match': `"${cacheBundleVersion}"` } : {},
+    });
+    // Nothing moved since the copy this box holds. Not a pull, so no fault is
+    // recorded or cleared and no timestamp is stamped: the cache is exactly as
+    // old as it was, and the till's banner should say so.
+    if (status === 304) return [];
     if (status === 401) {
       await reregisterAfterRefusal('cache');
       return [];
@@ -933,6 +969,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
     if (plan.skipped.length === 0) clearCacheFaults();
     cacheCursorSeq = body.cursorSeq;
+    // Remembered only for a pull that landed whole. A pull with a skipped
+    // scope keeps asking for the full document, so the scope that fell off is
+    // tried again on every tick rather than answered 304 until something else
+    // in the bundle happens to change.
+    cacheBundleVersion = plan.skipped.length === 0 ? body.bundleVersion : null;
     /**
      * A pull can carry a newer wheel and a changed staff list, and both are
      * adopted here rather than on the booth's own minute timer — so a publish
@@ -1356,8 +1397,17 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         };
       }
       case 'config_apply': {
+        // Both bundles, because the button says "apply" and a manager pressing
+        // it after publishing a wheel means the wheel. The config bundle is
+        // stations and devices; the wheel, the staff list and the price list
+        // travel in the cache, and a press that pulled only the first left the
+        // box on last week's prizes with a green tick on the Console (SCRUM-275).
         const changed = await syncConfig();
-        return { state: 'succeeded', result: { configVersion: state.configVersion, changed } };
+        const cacheScopes = await syncCache();
+        return {
+          state: 'succeeded',
+          result: { configVersion: state.configVersion, changed, cacheScopes },
+        };
       }
       case 'clear_cache': {
         // The bundles only. The outbox is not a cache: those rows are facts
@@ -1368,8 +1418,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         }
         await store.setAppliedConfigVersion(state.boxId, null);
         state.configVersion = null;
+        cacheBundleVersion = null;
         const changed = await syncConfig();
-        return { state: 'succeeded', result: { cleared: true, refetched: changed } };
+        const cacheScopes = await syncCache();
+        return { state: 'succeeded', result: { cleared: true, refetched: changed, cacheScopes } };
       }
       case 'collect_logs': {
         const lines = typeof payload.lines === 'number' ? payload.lines : 200;
@@ -1402,6 +1454,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         bundle = null;
         adoptTemplates(null);
         state.configVersion = null;
+        cacheBundleVersion = null;
         await syncConfig();
         // The epoch itself is adopted where the acknowledgement arrives, in
         // `runPendingCommands` — computing it here would mean the two ends
@@ -1498,21 +1551,38 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         note('error', 'command poll tick failed', { err: String(err) }),
       );
     }, pollIntervalMs);
+    /**
+     * The third timer, and the one that was missing (SCRUM-275): without it
+     * the cache pulled above was the cache this box ran on until its next
+     * restart, whatever was published or withdrawn in the meantime. A tick
+     * that fails is a log line and a fault on the next heartbeat, never a
+     * reason to stop ticking — the next one may be the pull that lands.
+     */
+    cacheRefreshTimer = setInterval(() => {
+      void syncCache().catch((err) => {
+        note('error', 'cache refresh tick failed', { err: String(err) });
+        recordCacheFault('unreadable', 'pull_threw');
+      });
+    }, cacheRefreshIntervalMs);
     // A pending timer must never be the reason the process cannot exit.
     heartbeatTimer.unref?.();
     pollTimer.unref?.();
+    cacheRefreshTimer.unref?.();
     note('info', 'box agent started', {
       boxId: state.boxId,
       heartbeatIntervalMs,
       pollIntervalMs,
+      cacheRefreshIntervalMs,
     });
   }
 
   function stop(): void {
     if (heartbeatTimer) clearInterval(heartbeatTimer);
     if (pollTimer) clearInterval(pollTimer);
+    if (cacheRefreshTimer) clearInterval(cacheRefreshTimer);
     heartbeatTimer = null;
     pollTimer = null;
+    cacheRefreshTimer = null;
     outbox?.stop();
     booth?.stop();
   }

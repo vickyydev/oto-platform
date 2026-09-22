@@ -414,17 +414,16 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
      *
      * The agent pulls its cache and the booth adopts the newer version whole.
      *
-     * **`syncCache()` is called by hand here because nothing else ever calls
-     * it.** `@oto/box-agent` calls it once, from `start()`, and from no timer
-     * and no command; the booth's own minute timer calls `refresh()`, which
-     * re-reads the box's cached bundle rather than fetching a new one. So
-     * this line is not standing in for a timer — it is standing in for an
-     * agent restart, which on this build is the only thing that brings a
-     * published wheel to a running booth. Measured on a live stack: a wheel
+     * **`syncCache()` is called by hand here because this agent's timers are
+     * never started.** On a running box the same call happens on the cache
+     * refresh timer (once a minute, a 304 when nothing moved) and on the
+     * `config_apply` command; the booth's own minute timer calls `refresh()`,
+     * which re-reads the box's cached bundle rather than fetching a new one.
+     * Until SCRUM-275 there was no such timer and no such command, and this
+     * line stood in for an agent restart — measured on a live stack: a wheel
      * published in the Console was still not on the box sixty seconds later,
-     * and arrived the moment the agent was restarted from the Devices drawer.
-     * The next test pins the reading that tells a manager which of the two
-     * they are looking at.
+     * and arrived the moment the agent was restarted. The next two tests pin
+     * the reading a manager decides on, and the command that carries it.
      */
     await agent.syncCache();
     /**
@@ -475,18 +474,19 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
    * The reading a manager decides on, pinned.
    *
    * Publishing writes a row in the cloud. It does not, by itself, change the
-   * wheel a child is playing — the box runs what it last pulled, and on this
-   * build nothing on a running box pulls again (see the note in the test
-   * above). So the Console must never say "published" and leave it there:
-   * `GET /booths/:id/status` answers with BOTH numbers, and the Booths page
-   * goes amber and names them whenever they differ.
+   * wheel a child is playing — the box runs what it last pulled, and until
+   * its next pull (a minute at most on a running box; never, on a box whose
+   * link is down) the two differ. So the Console must never say "published"
+   * and leave it there: `GET /booths/:id/status` answers with BOTH numbers,
+   * and the Booths page goes amber and names them whenever they differ.
    *
    * Without this, the ordinary failure is silent and expensive: a manager
    * changes the odds on a Friday, sees a success banner, and the booth gives
    * away the old wheel all weekend with nothing on any screen saying so.
    *
    * `runningVersion` is read off the box's last heartbeat, so each reading
-   * here is taken after one — this agent's timers are never started.
+   * here is taken after one — this agent's timers are never started, which
+   * is what holds the box behind long enough to read it.
    */
   it('reports the booth as behind while a published version has not reached it', async () => {
     await agent.heartbeat();
@@ -532,6 +532,69 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
       headers: asAdmin(),
     });
     expect(caught.json().config.runningVersion).toBe(publishedVersion);
+
+    await db.update(boothPrize).set({ wheelLabel: first!.wheelLabel }).where(eq(boothPrize.id, first!.id));
+  });
+
+  /**
+   * The seam SCRUM-275 closes, from the Console's side.
+   *
+   * Measured before the fix: "Apply config" in the Devices drawer reported
+   * success and the box stayed on the old wheel, because `config_apply` pulled
+   * the config bundle (stations, devices) and the wheel travels in the cache.
+   * Only "Restart agent" carried it. Now the command pulls both — the same
+   * two calls the refresh timer makes — so the button means what it says.
+   *
+   * The second half pins the cost of the timer: a pull with nothing new is a
+   * 304, applies no scope, and leaves the wheel exactly where it was.
+   */
+  it('the Apply config command carries a published wheel to the box, and a pull with nothing new is a 304', async () => {
+    const boxId = agent.state.boxId!;
+    const runningBefore = booth.config()!.version;
+
+    const [first] = await livePrizes();
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/booths/${boothId}/prizes/${first!.id}`,
+      headers: asAdmin(),
+      payload: { wheelLabel: 'carried by the command' },
+    });
+    const minted = await publish({ note: 'to be applied from the Devices drawer' });
+    expect(minted.statusCode, JSON.stringify(minted.body)).toBe(200);
+    const publishedVersion = minted.body.version!.version;
+    expect(publishedVersion).toBeGreaterThan(runningBefore);
+    expect(booth.config()!.version, 'a publish alone moved the box').toBe(runningBefore);
+
+    const queued = await ctx.app.inject({
+      method: 'POST',
+      url: `/boxes/${boxId}/commands`,
+      headers: asAdmin({ 'x-oto-action-id': `apply-config-v${publishedVersion}` }),
+      payload: { kind: 'config_apply', payload: {} },
+    });
+    expect(queued.statusCode, queued.body).toBe(200);
+    const actionId = queued.json().actionId as string;
+
+    // The box's own poll, called by hand because its timers are not running.
+    expect(await agent.runPendingCommands()).toBe(1);
+    expect(
+      booth.config()!.version,
+      'Apply config succeeded and the box is still on the old wheel',
+    ).toBe(publishedVersion);
+
+    const history = await ctx.app.inject({
+      method: 'GET',
+      url: `/boxes/${boxId}/commands`,
+      headers: asAdmin(),
+    });
+    const ran = (history.json().commands as Array<Record<string, unknown>>).find(
+      (c) => c.actionId === actionId,
+    );
+    expect(ran).toMatchObject({ kind: 'config_apply', state: 'succeeded' });
+    expect((ran!.result as { cacheScopes: string[] }).cacheScopes).toContain('booth');
+
+    // Nothing has changed since: the next tick is a 304 and applies nothing.
+    expect(await agent.syncCache()).toEqual([]);
+    expect(booth.config()!.version).toBe(publishedVersion);
 
     await db.update(boothPrize).set({ wheelLabel: first!.wheelLabel }).where(eq(boothPrize.id, first!.id));
   });
