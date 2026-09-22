@@ -1506,6 +1506,16 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     // Coming back online, try immediately rather than waiting for the tick:
     // whoever pressed the button is watching the outbox depth.
     if (!offline) {
+      /**
+       * The etag is forgotten here so the first pull after an outage is a
+       * whole one. The 304 saves bytes on the ordinary tick; it must not
+       * stand between a box whose local copy went bad while the link was
+       * down and the pull that repairs it — the cloud cannot know the copy
+       * is bad, so "nothing changed" would be the wrong answer for as long
+       * as the bundle stayed the same. Found by scanning-staff-token's repair
+       * test the day the etag arrived.
+       */
+      cacheBundleVersion = null;
       await syncConfig();
       await outbox?.flush();
     }
