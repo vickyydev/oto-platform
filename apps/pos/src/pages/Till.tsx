@@ -735,17 +735,23 @@ export default function Till() {
      * prices the cart itself and already says so on the confirmation screen.
      */
     const apiBranchId = apiBranchIdForSlug(branch.id);
+    // The sale this check belongs to (SCRUM-313). The modal closes before the
+    // claim lands and the order panel's Cancel is live for the round trip; a
+    // handler resuming onto a fresh sale would set the tier and the claim id
+    // on a family that showed no document. Same guard as handleCustomerDone.
+    const epoch = saleEpochRef.current;
     if (!verified && apiBranchId && verification.expiresAt) {
       try {
-        setTierClaimActionId(
-          await claimVerifiedTier({
-            branchId: apiBranchId,
-            tier: verification.tier,
-            proofType: verification.proofType,
-            expiresAt: verification.expiresAt,
-          }),
-        );
+        const claimed = await claimVerifiedTier({
+          branchId: apiBranchId,
+          tier: verification.tier,
+          proofType: verification.proofType,
+          expiresAt: verification.expiresAt,
+        });
+        if (saleEpochRef.current !== epoch) return;
+        setTierClaimActionId(claimed);
       } catch (err) {
+        if (saleEpochRef.current !== epoch) return;
         if (!isMissingRoute(err)) {
           toast({
             title: 'Discounted rate not recorded',
@@ -756,6 +762,7 @@ export default function Till() {
         }
       }
     }
+    if (saleEpochRef.current !== epoch) return;
     setTier(verification.tier);
     restateLinesToTier(verification.tier);
     if (verified) {
