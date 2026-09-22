@@ -30,8 +30,10 @@ import { operatorRoutes } from './routes/operators';
 import { branchRoutes } from './routes/branches';
 import { memberRoutes } from './routes/members';
 import { visitRoutes } from './routes/visits';
+import { bookingRoutes } from './routes/bookings';
 import { saleRoutes } from './routes/sales';
 import { catalogRoutes } from './routes/catalog';
+import { menuRoutes } from './routes/menu';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { publicRoutes } from './routes/public';
@@ -287,6 +289,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(branchRoutes, { prefix: '/branches' });
   await app.register(memberRoutes, { prefix: '/members' });
   await app.register(visitRoutes, { prefix: '/visits' });
+  // The counter's half of the booking site (SCRUM-234). `/public/bookings`
+  // writes them; these read and redeem them.
+  await app.register(bookingRoutes, { prefix: '/bookings' });
   await app.register(saleRoutes, { prefix: '/sales' });
   await app.register(catalogRoutes);
   // No prefix, like the catalogue: the fleet's branch-scoped resources are

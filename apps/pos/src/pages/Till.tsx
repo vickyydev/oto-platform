@@ -18,7 +18,7 @@ import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getInventoryItem, getAddOns } from '@/store/catalogStore';
-import { getDiscountReasons, getMemberByPhone, getMemberById, createMember, updateMember, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, getAllBookings, redeemBooking, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, addSavedChild, updateSavedChild, removeSavedChild, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, getMemberByPhone, getMemberById, createMember, updateMember, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, addSavedChild, updateSavedChild, removeSavedChild, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
@@ -35,6 +35,13 @@ import { Monitor, User } from 'lucide-react';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { authApi, membersApi } from '@/api/platform';
+import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
+import {
+  bookingsApi,
+  redemptionFromConflict,
+  type PlatformBooking,
+  type RedeemOutcome,
+} from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import {
   buildCartPayload,
@@ -527,65 +534,90 @@ export default function Till() {
     }
   };
 
-  // Staff confirmed a paid booking in the RedeemBookingModal. Build + record the
-  // regular-guest sale (drop-off lines are excluded — they get their own check-in
-  // flow), issue wristbands, dispatch print jobs, mark the booking as redeemed,
-  // then offer to check in any drop-off children via the existing registration flow.
-  const handleRedeemConfirm = (booking: Booking) => {
-    if (!operator) return;
+  // Staff confirmed a paid booking in the RedeemBookingModal. Claim the booking
+  // on the platform, then build + record the regular-guest sale (drop-off lines
+  // are excluded — they get their own check-in flow), issue wristbands, dispatch
+  // print jobs, then offer to check in any drop-off children via the existing
+  // registration flow.
+  //
+  // THE CLAIM COMES FIRST — SCRUM-234. The prototype minted the bands and then
+  // asked its in-memory store whether the booking was still unredeemed, which
+  // left a losing race holding printed wristbands. `pos.booking` is now the
+  // thing that decides, and it is asked before anything is minted or printed, so
+  // the second counter to scan the same QR is told who redeemed it and when, and
+  // has issued nothing.
+  const handleRedeemConfirm = async (
+    booking: Booking,
+    platform: PlatformBooking,
+  ): Promise<RedeemOutcome> => {
+    if (!operator) {
+      return { ok: false, message: 'No operator is signed in at this till.' };
+    }
 
     // Regular-guest lines only (drop-off lines are checked in separately).
     const regularLines = booking.lines.filter((l) => !l.dropOff);
-    // Derive counts directly from the lines we're about to issue — never from
-    // booking.willIssue (which includes drop-off children) or sale.creditGrants
-    // (which doesn't map 1:1 to wristbands across ticket configurations).
-    const regularAdults = regularLines.reduce((s, l) => s + l.adults, 0);
-    const regularKids = regularLines.reduce((s, l) => s + l.kids, 0);
-
-    const mintedCodes: string[] = [];
-    if (regularLines.length > 0) {
-      const sale = buildSale({
-        operatorId: operator.id,
-        operatorName: operator.name,
-        tier: booking.tier,
-        lines: regularLines,
-        discounts: booking.promoDiscount ? [booking.promoDiscount] : [],
-        manualDiscounts: [],
-        memberId: booking.memberId,
-        customerPhone: '',
-        customerNickname: '',
-        paymentMethod: booking.paymentMethod,
-        bookingReference: booking.reference,
-      });
-      recordSale(sale);
-      // Track usage for promo codes embedded in the booking at redemption time.
-      if (booking.promoDiscount) {
-        incrementPromoUsage(booking.promoDiscount.code, customerPhone || member?.phone || undefined);
-      }
-
-      // Mint every wristband for the booking from each ticket's own package:
-      // credit-earning persons (adults and/or kids per the ticket's credit rule)
-      // get a scannable wallet band; everyone else gets a 0-balance gate/plain
-      // band. Gate access comes purely from the ticket — not a park-wide config.
-      mintedCodes.push(...issueBookingBands(sale, operator?.name));
-
-      if (station) {
-        dispatchPrintJobs(ticketPrintJobs(station, sale));
-      }
+    if (regularLines.length === 0) {
+      return {
+        ok: false,
+        message: 'None of this booking’s tickets are in this branch’s catalogue, so nothing can be issued here.',
+      };
     }
 
-    // Atomic guard: redeemBooking returns null if the booking was already
-    // redeemed by a concurrent confirmation (race condition). Abort before
-    // showing a success toast — wristbands minted above won't cause double
-    // credit because the sale was already recorded (it's in History).
-    const redeemed = redeemBooking(booking.reference, mintedCodes);
-    if (!redeemed) {
-      toast({
-        title: 'Already redeemed',
-        description: `${booking.reference} was already redeemed. No additional wristbands issued.`,
-        variant: 'destructive',
-      });
-      return;
+    const sale = buildSale({
+      operatorId: operator.id,
+      operatorName: operator.name,
+      tier: booking.tier,
+      lines: regularLines,
+      discounts: booking.promoDiscount ? [booking.promoDiscount] : [],
+      manualDiscounts: [],
+      memberId: booking.memberId,
+      customerPhone: '',
+      customerNickname: '',
+      paymentMethod: booking.paymentMethod,
+      bookingReference: booking.reference,
+    });
+
+    try {
+      await bookingsApi.redeem(
+        platform.id,
+        { stationId: station?.stationId },
+        bookingsApi.newRedeemKey(),
+      );
+    } catch (err) {
+      const first = redemptionFromConflict(err);
+      if (first) return { ok: false, redemption: first };
+      if (err instanceof NetworkError) {
+        return {
+          ok: false,
+          message: 'No connection to the platform, so this booking cannot be redeemed here. Nothing has been issued.',
+        };
+      }
+      if (isMissingRoute(err)) {
+        return {
+          ok: false,
+          message: 'This deployment cannot record a booking redemption yet (SCRUM-234). Nothing has been issued.',
+        };
+      }
+      return {
+        ok: false,
+        message: err instanceof ApiError ? err.message : 'The booking could not be redeemed. Nothing has been issued.',
+      };
+    }
+
+    recordSale(sale);
+    // Track usage for promo codes embedded in the booking at redemption time.
+    if (booking.promoDiscount) {
+      incrementPromoUsage(booking.promoDiscount.code, customerPhone || member?.phone || undefined);
+    }
+
+    // Mint every wristband for the booking from each ticket's own package:
+    // credit-earning persons (adults and/or kids per the ticket's credit rule)
+    // get a scannable wallet band; everyone else gets a 0-balance gate/plain
+    // band. Gate access comes purely from the ticket — not a park-wide config.
+    const mintedCodes = issueBookingBands(sale, operator?.name);
+
+    if (station) {
+      dispatchPrintJobs(ticketPrintJobs(station, sale));
     }
 
     toast({
@@ -623,6 +655,8 @@ export default function Till() {
       const dropOffNames = booking.lines.flatMap((l) => l.dropOff ? [l.dropOff.childName] : []);
       setPendingDropOffRegistration({ registrationId: booking.registrationId, childNames: dropOffNames });
     }
+
+    return { ok: true };
   };
 
   // Re-price every line to a newly-picked tier. Normal lines recompute via
@@ -2115,6 +2149,7 @@ export default function Till() {
       <RedeemBookingModal
         open={showRedeemModal}
         onOpenChange={setShowRedeemModal}
+        branchId={apiBranchIdForSlug(branch.id)}
         onConfirm={handleRedeemConfirm}
       />
 

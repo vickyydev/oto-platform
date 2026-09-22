@@ -1,17 +1,33 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Booking } from '@/types';
-import { getAllBookings, getBooking } from '@/mockApi';
-import { QrCode, CheckCircle2, AlertTriangle, Search, Ticket, Users, Baby, CreditCard, Smartphone } from 'lucide-react';
+import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
+import {
+  bookingsApi,
+  describeRedemption,
+  toPosBooking,
+  type PlatformBooking,
+  type PlatformRedemption,
+  type RedeemOutcome,
+  type UnmappedLine,
+} from '@/api/bookings';
+import { QrCode, CheckCircle2, AlertTriangle, Search, Ticket, Users, Baby, CreditCard, Smartphone, Loader2 } from 'lucide-react';
 
 interface RedeemBookingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Called when staff confirms a valid unredeemed booking — Till handles the rest. */
-  onConfirm: (booking: Booking) => void;
+  /** The branch this till is on, as the platform knows it. Null when unresolved. */
+  branchId: string | null;
+  /**
+   * Called when staff confirms a valid unredeemed booking — Till claims it on
+   * the platform, then records the sale, mints and prints. Its answer decides
+   * whether this dialog closes, shows who redeemed the booking first, or stays
+   * put with the reason nothing was issued.
+   */
+  onConfirm: (booking: Booking, platform: PlatformBooking) => Promise<RedeemOutcome>;
 }
 
 type Stage = 'lookup' | 'summary' | 'already_redeemed';
@@ -27,76 +43,164 @@ function paymentMethodIcon(pm: string) {
   return <CreditCard className="w-4 h-4" />;
 }
 
-export function RedeemBookingModal({ open, onOpenChange, onConfirm }: RedeemBookingModalProps) {
+/**
+ * REDEEMING A BOOKING MADE ONLINE — SCRUM-234.
+ *
+ * The design is the prototype's unchanged: type or scan a reference, a summary
+ * of what the family paid for, Confirm & Issue, and an already-redeemed panel.
+ * What changed is where it reads: `mockApi.getAllBookings` / `getBooking` lived
+ * in the browser tab that made the booking, so a family who booked on their
+ * phone was unknown at the counter. Both reads are now `GET /bookings` and
+ * `GET /bookings/by-reference/:reference` (`api/bookings.ts`).
+ *
+ * THERE IS NO MOCK FALLBACK. A reference reception reads out and issues bands
+ * against has to be the row that took the money. Where the platform cannot
+ * answer, the panel says which of the three things happened — no connection, no
+ * such route on this deployment, or the lookup failed — and nothing is issued.
+ */
+export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: RedeemBookingModalProps) {
   const [stage, setStage] = useState<Stage>('lookup');
   const [refInput, setRefInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [foundBooking, setFoundBooking] = useState<Booking | null>(null);
+  const [foundPlatform, setFoundPlatform] = useState<PlatformBooking | null>(null);
+  const [unmapped, setUnmapped] = useState<UnmappedLine[]>([]);
+  const [redemption, setRedemption] = useState<PlatformRedemption | null>(null);
+  const [waiting, setWaiting] = useState<PlatformBooking[]>([]);
+  const [waitingState, setWaitingState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const [waitingNote, setWaitingNote] = useState<string | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset when modal opens
-  useEffect(() => {
-    if (open) {
-      setStage('lookup');
-      setRefInput('');
-      setError(null);
-      setFoundBooking(null);
-      setTimeout(() => inputRef.current?.focus(), 80);
+  /** One sentence a person on reception can act on, for each way the platform can fail. */
+  const readFailure = useCallback((err: unknown, subject: string): string => {
+    if (err instanceof NetworkError) {
+      return `No connection to the platform, so ${subject} cannot be checked. Nothing has been issued.`;
     }
-  }, [open]);
+    if (isMissingRoute(err)) {
+      return `This deployment has no booking lookup yet (SCRUM-234), so ${subject} cannot be checked here.`;
+    }
+    if (err instanceof ApiError) return err.message;
+    return `${subject} could not be checked.`;
+  }, []);
 
-  const unredeemedBookings = getAllBookings().filter((b) => b.status === 'paid');
+  const show = useCallback((p: PlatformBooking) => {
+    const mapped = toPosBooking(p);
+    setFoundPlatform(p);
+    setFoundBooking(mapped.booking);
+    setUnmapped(mapped.unmapped);
+    setRedemption(p.redemption);
+    setStage(p.redemption ? 'already_redeemed' : 'summary');
+  }, []);
 
-  function lookup(ref: string) {
+  // Reset and reload the waiting list each time the modal opens.
+  useEffect(() => {
+    if (!open) return;
+    setStage('lookup');
+    setRefInput('');
+    setError(null);
+    setFoundBooking(null);
+    setFoundPlatform(null);
+    setUnmapped([]);
+    setRedemption(null);
+    setLookingUp(false);
+    setTimeout(() => inputRef.current?.focus(), 80);
+
+    if (!branchId) {
+      setWaiting([]);
+      setWaitingState('unavailable');
+      setWaitingNote('This till is not linked to a branch on the platform, so today’s bookings cannot be listed.');
+      return;
+    }
+    let live = true;
+    setWaitingState('loading');
+    setWaitingNote(null);
+    void bookingsApi
+      .waiting(branchId)
+      .then((res) => {
+        if (!live) return;
+        setWaiting(res.bookings);
+        setWaitingState('ready');
+      })
+      .catch((err: unknown) => {
+        if (!live) return;
+        setWaiting([]);
+        setWaitingState('unavailable');
+        setWaitingNote(readFailure(err, 'the bookings waiting at reception'));
+      });
+    return () => {
+      live = false;
+    };
+  }, [open, branchId, readFailure]);
+
+  async function lookup(ref: string) {
     const trimmed = ref.trim().toUpperCase();
     if (!trimmed) {
       setError('Enter or scan a booking reference.');
       return;
     }
-    const booking = getBooking(trimmed);
-    if (!booking) {
-      setError(`No booking found for "${trimmed}".`);
-      return;
-    }
+    setLookingUp(true);
     setError(null);
-    setFoundBooking(booking);
-    if (booking.status === 'redeemed') {
-      setStage('already_redeemed');
-    } else {
-      setStage('summary');
+    try {
+      const p = await bookingsApi.byReference(trimmed, branchId ?? undefined);
+      show(p);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404 && !isMissingRoute(err)) {
+        setError(`No booking found for "${trimmed}".`);
+      } else {
+        setError(readFailure(err, `"${trimmed}"`));
+      }
+    } finally {
+      setLookingUp(false);
     }
   }
 
   function handleLookup() {
-    lookup(refInput);
+    void lookup(refInput);
   }
 
-  function handlePickSeeded(booking: Booking) {
-    setRefInput(booking.reference);
-    setFoundBooking(booking);
-    if (booking.status === 'redeemed') {
-      setStage('already_redeemed');
-    } else {
-      setStage('summary');
+  function handlePickWaiting(p: PlatformBooking) {
+    setRefInput(p.reference);
+    setError(null);
+    show(p);
+  }
+
+  async function handleConfirm() {
+    if (!foundBooking || !foundPlatform || confirming) return;
+    setConfirming(true);
+    setError(null);
+    try {
+      const outcome = await onConfirm(foundBooking, foundPlatform);
+      if (outcome.ok) {
+        onOpenChange(false);
+        return;
+      }
+      if ('redemption' in outcome) {
+        setRedemption(outcome.redemption);
+        setStage('already_redeemed');
+        return;
+      }
+      setError(outcome.message);
+    } finally {
+      setConfirming(false);
     }
   }
 
-  function handleConfirm() {
-    if (!foundBooking) return;
-    onConfirm(foundBooking);
-    onOpenChange(false);
-  }
-
+  // Drop-off children and event passes are not columns on `pos.booking` and are
+  // not priced by `POST /public/bookings`, so these are empty until S2-13 and
+  // S2-20 put them on the row. The panels below are the prototype's, unchanged,
+  // and light up when the booking carries them.
   const dropOffChildren = foundBooking
     ? foundBooking.lines.flatMap((l) => (l.dropOff ? [l.dropOff.childName] : []))
     : [];
+  const eventPasses = foundBooking?.eventPasses ?? [];
   const regularKids = foundBooking
     ? foundBooking.lines.reduce((s, l) => (l.dropOff ? s : s + l.kids), 0)
     : 0;
   const regularAdults = foundBooking
     ? foundBooking.lines.reduce((s, l) => (l.dropOff ? s : s + l.adults), 0)
     : 0;
-  const eventPasses = foundBooking?.eventPasses ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,9 +230,14 @@ export function RedeemBookingModal({ open, onOpenChange, onConfirm }: RedeemBook
                 className="font-mono text-base uppercase h-12"
                 spellCheck={false}
                 autoComplete="off"
+                disabled={lookingUp}
               />
-              <Button onClick={handleLookup} className="h-12 px-5 shrink-0">
-                <Search className="w-4 h-4 mr-2" />
+              <Button onClick={handleLookup} className="h-12 px-5 shrink-0" disabled={lookingUp}>
+                {lookingUp ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4 mr-2" />
+                )}
                 Look up
               </Button>
             </div>
@@ -140,16 +249,30 @@ export function RedeemBookingModal({ open, onOpenChange, onConfirm }: RedeemBook
               </div>
             )}
 
-            {unredeemedBookings.length > 0 && (
+            {waitingState === 'loading' && (
+              <p className="text-sm text-muted-foreground text-center py-4 flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading bookings waiting at reception…
+              </p>
+            )}
+
+            {waitingState === 'unavailable' && waitingNote && (
+              <div className="flex items-start gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{waitingNote}</span>
+              </div>
+            )}
+
+            {waitingState === 'ready' && waiting.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
                   Paid bookings waiting at reception
                 </p>
                 <div className="space-y-1.5 max-h-52 overflow-y-auto pr-0.5">
-                  {unredeemedBookings.map((b) => (
+                  {waiting.map((b) => (
                     <button
                       key={b.id}
-                      onClick={() => handlePickSeeded(b)}
+                      onClick={() => handlePickWaiting(b)}
                       className="w-full text-left rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 px-4 py-3 transition-colors flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0">
@@ -160,17 +283,18 @@ export function RedeemBookingModal({ open, onOpenChange, onConfirm }: RedeemBook
                           <span>
                             {b.lines.reduce((s, l) => s + l.kids + l.adults, 0)} guests
                           </span>
-                          {b.registrationId && (
+                          {b.parentName && (
                             <>
                               <span>·</span>
-                              <Baby className="w-3 h-3" />
-                              <span>drop-off</span>
+                              <span className="truncate">{b.parentName}</span>
                             </>
                           )}
+                          {/* The prototype showed a drop-off marker here; drop-off on a
+                              booking is S2-13 and the row does not carry one yet. */}
                         </div>
                       </div>
                       <Badge variant="secondary" className="shrink-0 text-xs">
-                        ฿{b.total.toLocaleString()}
+                        ฿{(b.totalSatang / 100).toLocaleString()}
                       </Badge>
                     </button>
                   ))}
@@ -178,7 +302,7 @@ export function RedeemBookingModal({ open, onOpenChange, onConfirm }: RedeemBook
               </div>
             )}
 
-            {unredeemedBookings.length === 0 && (
+            {waitingState === 'ready' && waiting.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No unredeemed bookings on file — enter the reference above.
               </p>
@@ -222,10 +346,12 @@ export function RedeemBookingModal({ open, onOpenChange, onConfirm }: RedeemBook
                     </span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  {paymentMethodIcon(foundBooking.paymentMethod)}
-                  <span>{paymentMethodLabel(foundBooking.paymentMethod)}</span>
-                </div>
+                {foundBooking.paymentMethod && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    {paymentMethodIcon(foundBooking.paymentMethod)}
+                    <span>{paymentMethodLabel(foundBooking.paymentMethod)}</span>
+                  </div>
+                )}
                 <div className="text-right font-semibold text-foreground">
                   ฿{foundBooking.total.toLocaleString()} paid
                 </div>
@@ -270,12 +396,39 @@ export function RedeemBookingModal({ open, onOpenChange, onConfirm }: RedeemBook
               </div>
             )}
 
+            {unmapped.length > 0 && (
+              <div className="flex items-start gap-2 text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2">
+                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>
+                  {unmapped.map((u) => `${u.name} (${u.kids + u.adults} guest${u.kids + u.adults !== 1 ? 's' : ''})`).join(', ')}{' '}
+                  {unmapped.length === 1 ? 'is' : 'are'} not in this branch's catalogue any more, so
+                  no wristband will be issued for {unmapped.length === 1 ? 'it' : 'them'}. Check with a
+                  manager before confirming.
+                </span>
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                {error}
+              </div>
+            )}
+
             <div className="flex gap-3 pt-1">
-              <Button variant="outline" className="flex-1" onClick={() => setStage('lookup')}>
+              <Button variant="outline" className="flex-1" onClick={() => setStage('lookup')} disabled={confirming}>
                 Back
               </Button>
-              <Button className="flex-1 h-12" onClick={handleConfirm}>
-                <CheckCircle2 className="w-4 h-4 mr-2" />
+              <Button
+                className="flex-1 h-12"
+                onClick={() => void handleConfirm()}
+                disabled={confirming || foundBooking.lines.length === 0}
+              >
+                {confirming ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                )}
                 Confirm &amp; Issue
               </Button>
             </div>
@@ -294,19 +447,17 @@ export function RedeemBookingModal({ open, onOpenChange, onConfirm }: RedeemBook
               </div>
             </div>
 
-            {foundBooking.redeemedAt && (
+            {redemption && (
               <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm space-y-1">
                 <p className="text-muted-foreground">
-                  Redeemed at:{' '}
-                  <span className="text-foreground font-medium">
-                    {new Date(foundBooking.redeemedAt).toLocaleString()}
-                  </span>
+                  Redeemed{' '}
+                  <span className="text-foreground font-medium">{describeRedemption(redemption)}</span>
                 </p>
-                {foundBooking.issuedWristbandCodes && foundBooking.issuedWristbandCodes.length > 0 && (
+                {redemption.bandCodes.length > 0 && (
                   <p className="text-muted-foreground">
                     Wristbands issued:{' '}
                     <span className="text-foreground font-mono font-medium">
-                      {foundBooking.issuedWristbandCodes.join(', ')}
+                      {redemption.bandCodes.join(', ')}
                     </span>
                   </p>
                 )}

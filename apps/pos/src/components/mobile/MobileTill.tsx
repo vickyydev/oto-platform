@@ -22,7 +22,7 @@ import {
   recordSale, getTicketTypes, getDropOffPricing,
   getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier,
   getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver,
-  getPrintTemplate, redeemBooking, pushWristband, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, getDiscountByCode, incrementPromoUsage,
+  getPrintTemplate, pushWristband, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, getDiscountByCode, incrementPromoUsage,
   type CheckInPaymentInput,
 } from '@/mockApi';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
@@ -33,6 +33,13 @@ import { subscribeCatalog } from '@/store/catalogStore';
 import { useOperator } from '@/auth/OperatorContext';
 import { useBranch } from '@/branch/BranchContext';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
+import {
+  bookingsApi,
+  redemptionFromConflict,
+  type PlatformBooking,
+  type RedeemOutcome,
+} from '@/api/bookings';
 import {
   buildCartPayload,
   quotedPricing,
@@ -443,59 +450,82 @@ export default function MobileTill() {
     setShowCartSheet(false);
   };
 
-  // Staff confirmed a paid booking in the RedeemBookingModal. Build + record the
-  // regular-guest sale (drop-off lines are excluded — they get their own check-in
-  // flow), issue wristbands, dispatch print jobs, mark the booking as redeemed,
-  // then offer to check in any drop-off children via the existing registration flow.
-  // Mirrors handleRedeemConfirm in the iPad Till.tsx exactly.
-  const handleRedeemConfirm = (booking: Booking) => {
-    if (!operator) return;
-
-    const regularLines = booking.lines.filter((l) => !l.dropOff);
-    const regularAdults = regularLines.reduce((s, l) => s + l.adults, 0);
-    const regularKids = regularLines.reduce((s, l) => s + l.kids, 0);
-
-    const mintedCodes: string[] = [];
-    if (regularLines.length > 0) {
-      const sale = buildSale({
-        operatorId: operator.id,
-        operatorName: operator.name,
-        tier: booking.tier,
-        lines: regularLines,
-        discounts: booking.promoDiscount ? [booking.promoDiscount] : [],
-        manualDiscounts: [],
-        memberId: booking.memberId,
-        customerPhone: '',
-        customerNickname: '',
-        paymentMethod: booking.paymentMethod,
-        bookingReference: booking.reference,
-      });
-      recordSale(sale);
-      // Track usage for promo codes embedded in the booking at redemption time.
-      if (booking.promoDiscount) {
-        incrementPromoUsage(booking.promoDiscount.code, customerPhone || member?.phone || undefined);
-      }
-
-      // Mint every wristband for the booking from each ticket's own package
-      // (mirrors Till.tsx): credit-earning persons get a scannable wallet band,
-      // everyone else a 0-balance gate/plain band; gate access from the ticket.
-      mintedCodes.push(...issueBookingBands(sale, operator?.name));
-
-      if (station) {
-        dispatchPrintJobs(ticketPrintJobs(station, sale));
-      }
+  // Staff confirmed a paid booking in the RedeemBookingModal. Claim the booking
+  // on the platform, then build + record the regular-guest sale (drop-off lines
+  // are excluded — they get their own check-in flow), issue wristbands, dispatch
+  // print jobs, then offer to check in any drop-off children via the existing
+  // registration flow. Mirrors handleRedeemConfirm in the iPad Till.tsx exactly,
+  // claim first included (SCRUM-234).
+  const handleRedeemConfirm = async (
+    booking: Booking,
+    platform: PlatformBooking,
+  ): Promise<RedeemOutcome> => {
+    if (!operator) {
+      return { ok: false, message: 'No operator is signed in at this till.' };
     }
 
-    // Atomic guard: redeemBooking returns null if already redeemed by a concurrent
-    // confirmation. Abort before showing a success toast.
-    const redeemed = redeemBooking(booking.reference, mintedCodes);
-    if (!redeemed) {
-      toast({
-        title: 'Already redeemed',
-        description: `${booking.reference} was already redeemed. No additional wristbands issued.`,
-        variant: 'destructive',
-      });
-      return;
+    const regularLines = booking.lines.filter((l) => !l.dropOff);
+    if (regularLines.length === 0) {
+      return {
+        ok: false,
+        message: 'None of this booking’s tickets are in this branch’s catalogue, so nothing can be issued here.',
+      };
+    }
+
+    const sale = buildSale({
+      operatorId: operator.id,
+      operatorName: operator.name,
+      tier: booking.tier,
+      lines: regularLines,
+      discounts: booking.promoDiscount ? [booking.promoDiscount] : [],
+      manualDiscounts: [],
+      memberId: booking.memberId,
+      customerPhone: '',
+      customerNickname: '',
+      paymentMethod: booking.paymentMethod,
+      bookingReference: booking.reference,
+    });
+
+    try {
+      await bookingsApi.redeem(
+        platform.id,
+        { stationId: station?.stationId },
+        bookingsApi.newRedeemKey(),
+      );
+    } catch (err) {
+      const first = redemptionFromConflict(err);
+      if (first) return { ok: false, redemption: first };
+      if (err instanceof NetworkError) {
+        return {
+          ok: false,
+          message: 'No connection to the platform, so this booking cannot be redeemed here. Nothing has been issued.',
+        };
+      }
+      if (isMissingRoute(err)) {
+        return {
+          ok: false,
+          message: 'This deployment cannot record a booking redemption yet (SCRUM-234). Nothing has been issued.',
+        };
+      }
+      return {
+        ok: false,
+        message: err instanceof ApiError ? err.message : 'The booking could not be redeemed. Nothing has been issued.',
+      };
+    }
+
+    recordSale(sale);
+    // Track usage for promo codes embedded in the booking at redemption time.
+    if (booking.promoDiscount) {
+      incrementPromoUsage(booking.promoDiscount.code, customerPhone || member?.phone || undefined);
+    }
+
+    // Mint every wristband for the booking from each ticket's own package
+    // (mirrors Till.tsx): credit-earning persons get a scannable wallet band,
+    // everyone else a 0-balance gate/plain band; gate access from the ticket.
+    const mintedCodes = issueBookingBands(sale, operator?.name);
+
+    if (station) {
+      dispatchPrintJobs(ticketPrintJobs(station, sale));
     }
 
     toast({
@@ -508,6 +538,8 @@ export default function MobileTill() {
       const dropOffNames = booking.lines.flatMap((l) => (l.dropOff ? [l.dropOff.childName] : []));
       setPendingDropOffRegistration({ registrationId: booking.registrationId, childNames: dropOffNames });
     }
+
+    return { ok: true };
   };
 
   const restateLinesToTier = (t: CustomerTier) => {
@@ -1725,6 +1757,7 @@ export default function MobileTill() {
       <RedeemBookingModal
         open={showRedeemModal}
         onOpenChange={setShowRedeemModal}
+        branchId={apiBranchIdForSlug(branch.id)}
         onConfirm={handleRedeemConfirm}
       />
 
