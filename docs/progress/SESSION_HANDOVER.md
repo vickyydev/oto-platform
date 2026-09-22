@@ -4,7 +4,39 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 04:30 — `main` is `de069c1`; staging is `d26e21c`
+> ## Status on 2026-09-23 06:00 — `main` is `9bcf46e`; staging is `1634f82`; the tree is clean
+>
+> **Everything launched tonight has landed.** Since 04:30: SCRUM-268 branch
+> mapping (`6e7d557`, Testing — staging reconciled, Central Floresta and
+> Robinson Chalong mapped, Head Office app-only, plus a stale app-only
+> "HKT Central" row that needs the owner's decision); the seed writes the
+> demo menu (`3dc0359`) and the F&B category carries a code (`178567a`);
+> the four menu fixtures that collided with the seeded menu (`1634f82`,
+> CI red for two commits, fixed the same hour); History reads the ledger
+> (`a21d12d`, SCRUM-238). **Deployed with staging screenshots:** 232,
+> 230, 292, 302, 310, 312, 241 — on top of the thirteen at 03:30. Raised:
+> SCRUM-318 (operator-wide by role name), 319 (no unique on
+> core_branch_id), 320 (handheld History still sample rows), 321 (admin
+> Members dialog writes a WhatsApp channel nobody chose).
+>
+> **Running:** one evidence pass (`wf_dd187784`) — SCRUM-268's Console
+> Branches page and History on staging; 268 walks to Deployed on it.
+>
+> **Staging:** the seed was run once from this machine (the database's
+> temporary IP allow-list entry now points at this machine's address —
+> `scratchpad/db-allow.mjs`; it is the same single "remove after" entry
+> as before, re-pointed). Staging holds sales T1-000001/T1-000002 (expat),
+> T2-000001/T2-000002 (tourist), booking OTO-1590237-7290 (redeemed), the
+> renamed holiday, the archived evidence menu rows; James is back on Expat.
+>
+> **Next, in order:** SCRUM-275's two remaining halves (edge.box_cache
+> table; receipt high-water mark from the ledger); SCRUM-311 (claim table
+> + `sale.tier_claim_id`); SCRUM-320 (handheld History); SCRUM-316/317/
+> 321/315 (each under an hour); SCRUM-204's carts (S2-09b); then S2-10a
+> tenders (SCRUM-206), which the ledger's Pay → Confirm flow is waiting on.
+> SCRUM-199 stays blocked on the booth's Render service (other session).
+
+> ## Status on 2026-09-23 04:30 — `main` was `de069c1`; staging was `d26e21c`
 >
 > **Since the 03:00 banner:** the menu slice passed its second gate and
 > landed (`d26e21c` — SCRUM-232/230, SCRUM-204's catalogue half, the
