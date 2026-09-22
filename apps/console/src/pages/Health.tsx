@@ -24,6 +24,7 @@ import {
 } from '@/components/Status';
 import { useSession } from '@/auth/SessionContext';
 import { usePlatformStatus } from '@/lib/platformStatus';
+import { isEstateWide, readReach, reachLabel } from '@/lib/reach';
 import { elapsed, formatWhen, millis, timeAgo } from '@/lib/time';
 
 /**
@@ -43,6 +44,20 @@ export function Health() {
   const timezone = me?.branch?.timezone;
   const canManage = has('admin:ops:manage');
 
+  /**
+   * SCRUM-301 — whose page this is.
+   *
+   * The banner, the dependency tiles and the job register are the DEPLOYMENT's
+   * state. A park manager cannot act on any of them — acknowledging an alert
+   * or retrying a run asks for `admin:ops:manage` at the row's own branch, and
+   * a platform row has no branch — so her page used to open on "2 things need
+   * attention", one of which was a deployment failure that was never hers. The
+   * API now answers her without them, and this is where the page stops drawing
+   * them: what is left is her boxes and her alerts, which are hers to act on.
+   */
+  const reach = readReach(snapshot);
+  const estateWide = isEstateWide(reach);
+
   // The API tile comes from /ready either way: "is it answering, and how fast"
   // is the one reading this page should never lose, and the richer snapshot
   // reports on dependencies rather than on the round trip to itself.
@@ -56,33 +71,47 @@ export function Health() {
     <div className="flex flex-col gap-4">
       {error && <ErrorNote message={error} onRetry={() => void refresh()} />}
 
-      <Verdict
-        tone={verdict}
-        problems={problems}
-        partial={snapshotMissing}
-        checkedAt={lastCheckedAt}
-        loading={loading}
-        onRefresh={() => void refresh()}
-      />
+      {estateWide ? (
+        <Verdict
+          tone={verdict}
+          problems={problems}
+          partial={snapshotMissing}
+          checkedAt={lastCheckedAt}
+          loading={loading}
+          onRefresh={() => void refresh()}
+        />
+      ) : (
+        // The park's own heading: which park, when it was last read, and the
+        // refresh button — which lives inside the verdict above and would
+        // otherwise have gone with it.
+        <ParkHeading
+          label={reachLabel(reach)}
+          checkedAt={lastCheckedAt}
+          loading={loading}
+          onRefresh={() => void refresh()}
+        />
+      )}
 
-      <Panel
-        title="Services"
-        description={
-          snapshotMissing
-            ? 'From /ready, which every deployment answers. The fuller set of checks arrives with the observability API.'
-            : 'What each dependency reported on the last check.'
-        }
-      >
-        {checks.length === 0 ? (
-          <EmptyState title="No checks reported" detail="The API answered without naming any dependency." />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {checks.map((check) => (
-              <CheckTile key={check.key} check={check} />
-            ))}
-          </div>
-        )}
-      </Panel>
+      {estateWide && (
+        <Panel
+          title="Services"
+          description={
+            snapshotMissing
+              ? 'From /ready, which every deployment answers. The fuller set of checks arrives with the observability API.'
+              : 'What each dependency reported on the last check.'
+          }
+        >
+          {checks.length === 0 ? (
+            <EmptyState title="No checks reported" detail="The API answered without naming any dependency." />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {checks.map((check) => (
+                <CheckTile key={check.key} check={check} />
+              ))}
+            </div>
+          )}
+        </Panel>
+      )}
 
       <FleetSummary timezone={timezone} />
 
@@ -96,28 +125,30 @@ export function Health() {
       */}
       <BoothSummary boxes={snapshot?.boxes} alerts={alerts} timezone={timezone} />
 
-      <Panel
-        title="Scheduled jobs"
-        description="Each job the platform expects to run, and how long it has been since it last did."
-      >
-        {snapshotMissing ? (
-          <RouteUnavailable
-            what="The job register"
-            detail="Jobs appear here once the runner and its expectations are deployed to this environment."
-          />
-        ) : jobs.length === 0 ? (
-          <EmptyState
-            title="No jobs registered"
-            detail="Nothing has declared an expectation yet, so there is nothing to be late."
-          />
-        ) : (
-          <ul className="flex flex-col divide-y">
-            {jobs.map((job) => (
-              <JobRow key={job.name} job={job} timezone={timezone} />
-            ))}
-          </ul>
-        )}
-      </Panel>
+      {estateWide && (
+        <Panel
+          title="Scheduled jobs"
+          description="Each job the platform expects to run, and how long it has been since it last did."
+        >
+          {snapshotMissing ? (
+            <RouteUnavailable
+              what="The job register"
+              detail="Jobs appear here once the runner and its expectations are deployed to this environment."
+            />
+          ) : jobs.length === 0 ? (
+            <EmptyState
+              title="No jobs registered"
+              detail="Nothing has declared an expectation yet, so there is nothing to be late."
+            />
+          ) : (
+            <ul className="flex flex-col divide-y">
+              {jobs.map((job) => (
+                <JobRow key={job.name} job={job} timezone={timezone} />
+              ))}
+            </ul>
+          )}
+        </Panel>
+      )}
 
       <Panel
         title="Open alerts"
@@ -230,6 +261,41 @@ function Verdict({
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * What a park manager's Health page opens on instead of the platform verdict:
+ * which park is being reported on, when it was last read, and the refresh.
+ *
+ * Deliberately not a verdict of its own. "Everything is healthy" from a page
+ * that has been told nothing about the database or the job runner would be a
+ * claim this page cannot make; the boxes and alerts below say what is known.
+ */
+function ParkHeading({
+  label,
+  checkedAt,
+  loading,
+  onRefresh,
+}: {
+  label: string | null;
+  checkedAt: number | null;
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-sm text-muted-foreground min-w-0">{label ?? ''}</p>
+      <div className="flex items-center gap-3 shrink-0">
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {checkedAt ? `checked ${timeAgo(new Date(checkedAt).toISOString())}` : 'checking…'}
+        </span>
+        <Button variant="outline" size="sm" className="h-9 gap-2" onClick={onRefresh} disabled={loading}>
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          Refresh
+        </Button>
+      </div>
+    </div>
   );
 }
 

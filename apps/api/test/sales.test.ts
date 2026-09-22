@@ -1243,17 +1243,22 @@ describe('the seam between this and the till', () => {
     const routes = ctx.app.routeRegistry.filter((r) => r.url.startsWith('/sales'));
     const guards = routes
       .filter((r) => r.method !== 'HEAD' && r.method !== 'OPTIONS')
-      .map(
-        (r) =>
-          `${r.method} ${r.url} ${r.config.permission ?? 'NONE'} ${r.config.target?.branchId ?? 'no-target'}`,
-      )
+      .map((r) => {
+        // `dynamic` and `NONE` are different answers: one is a guard the
+        // handler makes, the other is a route nobody guarded at all.
+        const guard = r.config.permission ?? (r.config.dynamicPermission ? 'dynamic' : 'NONE');
+        return `${r.method} ${r.url} ${guard} ${r.config.target?.branchId ?? 'no-target'}`;
+      })
       .sort();
     // The two cart routes declare where the branch is in the request. The
     // finalise route cannot — the branch is the SALE's, not the URL's — so its
     // scope check is made in the service when the row is loaded, and the test
-    // above proves it refuses.
+    // above proves it refuses. The list is dynamic for the same kind of
+    // reason (SCRUM-297): with no branch in the request the question is not
+    // "may you act on this branch" but "which branches do you hold", and a
+    // route-level permission with no target cannot ask that one.
     expect(guards).toEqual([
-      'GET /sales pos:sale:read no-target',
+      'GET /sales dynamic no-target',
       'GET /sales/:id pos:sale:read no-target',
       'POST /sales pos:sale:create body.branchId',
       'POST /sales/:id/finalise pos:sale:update no-target',

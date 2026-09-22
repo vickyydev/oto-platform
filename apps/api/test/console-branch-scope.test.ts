@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { account, alert, branch, employee, roleAssignment } from '@oto/db';
+import { account, alert, auditLog, branch, employee, roleAssignment, station } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
   ADMIN,
@@ -8,6 +8,7 @@ import {
   CENTRAL_BRANCH_CODE,
   CHALONG_BRANCH_CODE,
   CHALONG_MANAGER,
+  RECEPTION,
   createTestContext,
   signInAs,
   teardownAll,
@@ -35,6 +36,12 @@ let ctx: TestContext;
 
 let florestaId: string;
 let chalongId: string;
+/** The parks as they are NAMED, which is what a refusal and a page heading say. */
+let florestaName: string;
+let chalongName: string;
+/** A seeded till at each park, for the station refusals (SCRUM-300). */
+let florestaStation: string;
+let chalongStation: string;
 let adminCookie: string;
 let lek: string; // manager, Central Floresta
 let dao: string; // manager, Robinson Chalong
@@ -118,9 +125,19 @@ beforeAll(async () => {
   ctx = await createTestContext();
 
   const branches = await ctx.db.select().from(branch);
-  florestaId = branches.find((b) => b.code === CENTRAL_BRANCH_CODE)!.id;
-  chalongId = branches.find((b) => b.code === CHALONG_BRANCH_CODE)!.id;
-  const operatorId = branches[0]!.operatorId;
+  const floresta = branches.find((b) => b.code === CENTRAL_BRANCH_CODE)!;
+  const chalong = branches.find((b) => b.code === CHALONG_BRANCH_CODE)!;
+  florestaId = floresta.id;
+  chalongId = chalong.id;
+  florestaName = floresta.name;
+  chalongName = chalong.name;
+  const operatorId = floresta.operatorId;
+
+  // The seed puts a till on a box at each park. Read rather than named: what
+  // matters is that one stands at the OTHER park from the caller.
+  const stations = await ctx.db.select().from(station);
+  florestaStation = stations.find((s) => s.branchId === florestaId && s.boxId !== null)!.id;
+  chalongStation = stations.find((s) => s.branchId === chalongId && s.boxId !== null)!.id;
 
   adminCookie = await signInAtBranch(ADMIN.phone, ADMIN.password, florestaId);
   lek = await signInAtBranch(BRANCH_MANAGER.phone, BRANCH_MANAGER.password, florestaId);
@@ -401,5 +418,233 @@ describe('SCRUM-266 — a roleless account is still somebody, at one branch', ()
       .from(account)
       .where(and(eq(account.id, hireNowhere), eq(account.status, 'inactive')));
     expect(row).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+/** A refusal, flattened: the status, the code and the sentence a person reads. */
+async function refusal(
+  method: 'GET' | 'POST',
+  url: string,
+  cookie: string,
+  payload?: Record<string, unknown>,
+): Promise<{ status: number; code: string | null; message: string }> {
+  const res = payload
+    ? await ctx.app.inject({ method, url, headers: { cookie }, payload })
+    : await ctx.app.inject({ method, url, headers: { cookie } });
+  const body = res.json<{ error?: { code?: string; message?: string } }>();
+  return {
+    status: res.statusCode,
+    code: body.error?.code ?? null,
+    message: body.error?.message ?? '',
+  };
+}
+
+const ok = async (url: string, cookie: string): Promise<number> =>
+  (await ctx.app.inject({ method: 'GET', url, headers: { cookie } })).statusCode;
+
+describe('SCRUM-300 — a refusal that names the park, not a permission she holds', () => {
+  /**
+   * Found by driving the api as each park's manager. Every one of these
+   * refusals was correct and every one of them gave the wrong reason: a
+   * manager who holds `admin:station:read` at her own park was told she was
+   * missing it, which reads as "ask somebody for this role" and ends with the
+   * role being granted a second time at the branch where she already had it.
+   *
+   * What she was actually refused is the OTHER park, and that is now what the
+   * answer says — the refusal the session-branch switch and the account writes
+   * have given since SCRUM-264 and SCRUM-266.
+   */
+  it('names the park when she asks to look at a till standing at it', async () => {
+    const seen = await refusal('GET', `/stations/${florestaStation}/session`, dao);
+    expect(seen.status).toBe(403);
+    expect(seen.code).toBe('OUT_OF_BRANCH_SCOPE');
+    expect(seen.message).toContain(florestaName);
+    expect(seen.message).toContain('admin:station:read');
+  });
+
+  it('says the same thing when she tries to take that till', async () => {
+    const claim = await refusal('POST', `/stations/${florestaStation}/lease`, dao, {
+      holder: 'ipad-chalong-1',
+    });
+    expect(claim.status).toBe(403);
+    expect(claim.code).toBe('OUT_OF_BRANCH_SCOPE');
+    expect(claim.message).toContain(florestaName);
+  });
+
+  it('names the park on the audit trail she asked for', async () => {
+    const trail = await refusal('GET', `/audit?branchId=${florestaId}`, dao);
+    expect(trail.status).toBe(403);
+    expect(trail.code).toBe('OUT_OF_BRANCH_SCOPE');
+    expect(trail.message).toContain(florestaName);
+    expect(trail.message).toContain('admin:audit:read');
+  });
+
+  it('stops naming a station-UPDATE permission for a staff read', async () => {
+    const staff = await refusal('GET', `/branches/${florestaId}/staff`, dao);
+    expect(staff.status).toBe(403);
+    expect(staff.code).toBe('OUT_OF_BRANCH_SCOPE');
+    expect(staff.message).toContain(florestaName);
+    // The second half of the finding: a read that asked to be granted the
+    // permission to CHANGE stations.
+    expect(staff.message).not.toContain('admin:station:update');
+    expect(staff.message).toContain('admin:station:read');
+  });
+
+  it('leaves the ordinary refusal — genuinely not holding it — exactly as it was', async () => {
+    // Reception holds `admin:audit:read` at no branch at all, so for them the
+    // missing thing really is the permission and the sentence must still say
+    // so. This is the case the new refusal must not swallow.
+    const receptionCookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const trail = await refusal('GET', '/audit', receptionCookie);
+    expect(trail.status).toBe(403);
+    expect(trail.code).toBe('FORBIDDEN');
+    expect(trail.message).toBe('Missing permission admin:audit:read');
+  });
+
+  it('still writes the refusal down, which the more precise code nearly cost', async () => {
+    /**
+     * The trap this ticket walked into, found by reading the trail rather than
+     * the answer: the error handler audits a denial only when its CODE is one
+     * it knows, and `OUT_OF_BRANCH_SCOPE` was not one. Every one of these
+     * refusals had been recorded as `auth.permission_denied` while it was a
+     * plain FORBIDDEN, and making the sentence more accurate would have made
+     * the event disappear — a manager probing the other park's tills would
+     * have left no mark at all.
+     *
+     * The same hole had already swallowed the account writes and the
+     * session-branch switch, which moved to this code in earlier tickets. So
+     * the assertion is on the row, not on the sentence.
+     */
+    const before = await ctx.db
+      .select({ id: auditLog.id })
+      .from(auditLog)
+      .where(eq(auditLog.action, 'access.denied'));
+
+    const refused = await refusal('GET', `/branches/${florestaId}/staff`, dao);
+    expect(refused.code).toBe('OUT_OF_BRANCH_SCOPE');
+
+    const after = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.action, 'access.denied'));
+    expect(after.length).toBe(before.length + 1);
+
+    const row = after.find((r) => !before.some((b) => b.id === r.id))!;
+    expect(row.entityType).toBe('request');
+    const detail = row.after as { code?: string; url?: string; method?: string };
+    expect(detail.code).toBe('OUT_OF_BRANCH_SCOPE');
+    expect(detail.method).toBe('GET');
+    expect(detail.url).toContain('/staff');
+  });
+
+  it('refuses nothing at her own park, and nothing anywhere to the administrator', async () => {
+    expect(await ok(`/branches/${chalongId}/staff`, dao)).toBe(200);
+    expect(await ok(`/audit?branchId=${chalongId}`, dao)).toBe(200);
+    expect(await ok(`/stations/${chalongStation}/session`, dao)).toBe(200);
+
+    expect(await ok(`/branches/${florestaId}/staff`, adminCookie)).toBe(200);
+    expect(await ok(`/audit?branchId=${florestaId}`, adminCookie)).toBe(200);
+    expect(await ok(`/stations/${florestaStation}/session`, adminCookie)).toBe(200);
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+interface ReachBody {
+  reach: { scope: string; branches: Array<{ id: string; name: string }> };
+}
+
+const reachOf = async (url: string, cookie: string): Promise<ReachBody['reach']> => {
+  const res = await ctx.app.inject({ method: 'GET', url, headers: { cookie } });
+  expect(res.statusCode).toBe(200);
+  return res.json<ReachBody>().reach;
+};
+
+describe('SCRUM-299 — an empty list says which parks it was answering for', () => {
+  /**
+   * Both lists were already scoped and neither said so, which made "your park
+   * has nothing wrong" and "this page is not showing you your park"
+   * indistinguishable — and only the administrator, who has rows, could tell
+   * the page worked at all.
+   */
+  it("tells Chalong's manager the failure list covers her park and no other", async () => {
+    const reach = await reachOf('/ops/failures?windowHours=24', dao);
+    expect(reach.scope).toBe('branch');
+    expect(reach.branches.map((b) => b.name)).toEqual([chalongName]);
+    expect(reach.branches.map((b) => b.id)).toEqual([chalongId]);
+  });
+
+  it('says the same on the anomaly list', async () => {
+    const reach = await reachOf('/ops/anomalies', dao);
+    expect(reach.scope).toBe('branch');
+    expect(reach.branches.map((b) => b.name)).toEqual([chalongName]);
+  });
+
+  it("names Floresta's manager's own park, and never the other one", async () => {
+    const reach = await reachOf('/ops/failures?windowHours=24', lek);
+    expect(reach.branches.map((b) => b.name)).toEqual([florestaName]);
+    expect(reach.branches.map((b) => b.name)).not.toContain(chalongName);
+  });
+
+  it('tells the administrator the answer covers the whole operator', async () => {
+    for (const url of ['/ops/failures?windowHours=24', '/ops/anomalies']) {
+      const reach = await reachOf(url, adminCookie);
+      expect(reach.scope).toBe('operator');
+      // Deliberately no list: an operator-wide reach includes the parks that
+      // open next year, which no list of ids can say.
+      expect(reach.branches).toEqual([]);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+interface HealthShape extends ReachBody {
+  checks: Array<{ key: string }>;
+  jobs: Array<{ name: string }>;
+  boxes: Array<{ name: string }>;
+}
+
+const healthShape = async (cookie: string): Promise<HealthShape> => {
+  const res = await ctx.app.inject({ method: 'GET', url: '/ops/health', headers: { cookie } });
+  expect(res.statusCode).toBe(200);
+  return res.json<HealthShape>();
+};
+
+describe('SCRUM-301 — the Health page stops handing a manager the deployment', () => {
+  it("answers a branch manager with her boxes and none of the platform's state", async () => {
+    const body = await healthShape(dao);
+
+    /**
+     * Asserted ahead of the reach below, so that this is the line that goes
+     * red when the trimming is missing rather than the one reading a field
+     * that would not be there either.
+     *
+     * The database probe, the pool, the watchdog and the job register are the
+     * deployment's. The acknowledge and retry paths ask for `admin:ops:manage`
+     * at the row's own branch, and a row belonging to no branch is asked about
+     * with none — so she could only ever have read these and been unable to
+     * act on them.
+     */
+    expect(body.checks).toEqual([]);
+    expect(body.jobs).toEqual([]);
+
+    // Her own park is still there, which is the half of the page that is hers.
+    expect(body.boxes.map((b) => b.name)).toEqual(['Virtual box 3']);
+
+    expect(body.reach.scope).toBe('branch');
+    expect(body.reach.branches.map((b) => b.name)).toEqual([chalongName]);
+  });
+
+  it('still answers the administrator with every dependency check', async () => {
+    const body = await healthShape(adminCookie);
+    expect(body.reach.scope).toBe('operator');
+    const keys = body.checks.map((c) => c.key);
+    expect(keys).toContain('database');
+    expect(keys).toContain('pool');
+    expect(keys).toContain('watchdog');
+    expect(body.boxes.length).toBeGreaterThan(1);
   });
 });

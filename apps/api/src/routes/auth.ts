@@ -6,6 +6,7 @@ import { errors } from '../lib/errors';
 import { clearSessionCookie, setSessionCookie, SESSION_COOKIE } from '../plugins/session';
 import {
   consumeCode,
+  verifyCode,
   findAccountByPhone,
   invalidateAllSessions,
   issueCode,
@@ -214,7 +215,11 @@ export async function authRoutes(app: App): Promise<void> {
           // audience check is the only thing tying a token to one app.
           throw new HandoffRejected('origin', 'A hand-off must be exchanged from the app it was issued for');
         }
-        const result = await exchangeHandoff(app.db, config, { token: req.body.token, origin });
+        const result = await exchangeHandoff(app.db, config, {
+          token: req.body.token,
+          origin,
+          requestId: req.id,
+        });
 
         // The SAME session row, so signing out anywhere ends every app at
         // once; the cookie is host-only to this origin and never outlives the
@@ -307,20 +312,49 @@ export async function authRoutes(app: App): Promise<void> {
     async (req) => {
       const { account: acc } = await findAccountByPhone(app.db, req.body.phone);
       if (!acc || acc.status !== 'invited') throw errors.badRequest('No pending setup for this phone');
-      await consumeCode(app.db, acc.id, 'setup', req.body.code, app.env.CODE_MAX_ATTEMPTS);
-      await setPassword(app.db, acc.id, req.body.password);
-      await app.db
-        .update(account)
-        .set({ status: 'active', phoneVerifiedAt: new Date() })
-        .where(eq(account.id, acc.id));
-      await audit.record(app.db, {
-        actorAccountId: acc.id,
-        operatorId: acc.operatorId,
-        action: 'auth.setup_complete',
-        entityType: 'account',
-        entityId: acc.id,
-        requestId: req.id,
-      });
+      /**
+       * SCRUM-296 — spending the code, setting the password and opening the
+       * account are one act.
+       *
+       * Three statements on the pool, and the middle of them is where a crash
+       * costs somebody their first shift: the code is burnt, the password is
+       * not set, the account is still `invited`, and only an administrator can
+       * issue another.
+       *
+       * The check happens first and OUTSIDE, because what it writes on a wrong
+       * guess — the attempt counter, and the invalidation once the budget is
+       * gone — has to survive this transaction rolling back. See `verifyCode`.
+       */
+      const verified = await verifyCode(
+        app.db,
+        acc.id,
+        'setup',
+        req.body.code,
+        app.env.CODE_MAX_ATTEMPTS,
+      );
+      await withTx(
+        app.db,
+        // A public route: the actor is the account finishing its own setup,
+        // and `opCtx` has no session to read it from.
+        { ...opCtx(req), actorAccountId: acc.id, operatorId: acc.operatorId },
+        'auth.setup_complete',
+        async (tx) => {
+          await consumeCode(tx, verified);
+          await setPassword(tx, acc.id, req.body.password);
+          await tx
+            .update(account)
+            .set({ status: 'active', phoneVerifiedAt: new Date() })
+            .where(eq(account.id, acc.id));
+          await audit.record(tx, {
+            actorAccountId: acc.id,
+            operatorId: acc.operatorId,
+            action: 'auth.setup_complete',
+            entityType: 'account',
+            entityId: acc.id,
+            requestId: req.id,
+          });
+        },
+      );
       return { ok: true };
     },
   );
@@ -359,17 +393,43 @@ export async function authRoutes(app: App): Promise<void> {
     async (req) => {
       const { account: acc } = await findAccountByPhone(app.db, req.body.phone);
       if (!acc) throw errors.badRequest('Invalid code');
-      await consumeCode(app.db, acc.id, 'password_reset', req.body.code, app.env.CODE_MAX_ATTEMPTS);
-      await setPassword(app.db, acc.id, req.body.password);
-      await invalidateAllSessions(app.db, acc.id);
-      await audit.record(app.db, {
-        actorAccountId: acc.id,
-        operatorId: acc.operatorId,
-        action: 'auth.password_reset',
-        entityType: 'account',
-        entityId: acc.id,
-        requestId: req.id,
-      });
+      /**
+       * SCRUM-296 — the new password and the end of every session that knew
+       * the old one.
+       *
+       * The dangerous place to stop was between them: a password changed
+       * because somebody had the phone, and the sessions opened with the old
+       * one still working. The shift tokens those sessions minted go with
+       * them, inside the same transaction (`invalidateAllSessions`).
+       *
+       * The code is checked before the transaction opens, for the reason
+       * `verifyCode` gives: a wrong guess has to keep costing one.
+       */
+      const verified = await verifyCode(
+        app.db,
+        acc.id,
+        'password_reset',
+        req.body.code,
+        app.env.CODE_MAX_ATTEMPTS,
+      );
+      await withTx(
+        app.db,
+        { ...opCtx(req), actorAccountId: acc.id, operatorId: acc.operatorId },
+        'auth.password_reset',
+        async (tx) => {
+          await consumeCode(tx, verified);
+          await setPassword(tx, acc.id, req.body.password);
+          await invalidateAllSessions(tx, acc.id);
+          await audit.record(tx, {
+            actorAccountId: acc.id,
+            operatorId: acc.operatorId,
+            action: 'auth.password_reset',
+            entityType: 'account',
+            entityId: acc.id,
+            requestId: req.id,
+          });
+        },
+      );
       return { ok: true };
     },
   );
@@ -391,14 +451,19 @@ export async function authRoutes(app: App): Promise<void> {
       if (!acc?.passwordHash || !(await verify(acc.passwordHash, req.body.currentPassword))) {
         throw errors.badRequest('Current password is incorrect');
       }
-      await setPassword(app.db, auth.accountId, req.body.password);
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        action: 'auth.password_change',
-        entityType: 'account',
-        entityId: auth.accountId,
-        requestId: req.id,
+      // SCRUM-296 — changed and recorded as changed, or neither. The current
+      // password is verified above, on the pool: it is a read, and a refusal
+      // has nothing to roll back.
+      await withTx(app.db, opCtx(req), 'auth.password_change', async (tx) => {
+        await setPassword(tx, auth.accountId, req.body.password);
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'auth.password_change',
+          entityType: 'account',
+          entityId: auth.accountId,
+          requestId: req.id,
+        });
       });
       return { ok: true };
     },

@@ -1678,6 +1678,14 @@ export async function finaliseSale(
 
 export interface SaleListFilters {
   branchId?: string;
+  /**
+   * The branches the caller's grants reach (SCRUM-297), for a list asked with
+   * no branch named. Narrows the answer the way `branchId` does, and for the
+   * same reason — it is just an explicit list rather than one id. Empty is a
+   * real answer and the route handles it before calling: the caller holds the
+   * permission nowhere.
+   */
+  branchIds?: string[];
   stationId?: string;
   memberId?: string;
   status?: SaleStatus;
@@ -1694,6 +1702,7 @@ export async function listSales(
 ): Promise<{ sales: SaleView[] }> {
   const where = [eq(sale.operatorId, operatorId)];
   if (filters.branchId) where.push(eq(sale.branchId, filters.branchId));
+  if (filters.branchIds) where.push(inArray(sale.branchId, filters.branchIds));
   if (filters.stationId) where.push(eq(sale.stationId, filters.stationId));
   if (filters.memberId) where.push(eq(sale.memberId, filters.memberId));
   if (filters.status) where.push(eq(sale.status, filters.status));

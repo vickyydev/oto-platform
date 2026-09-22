@@ -3,6 +3,8 @@ import type { FastifyRequest } from 'fastify';
 import { TaxableCategorySchema, type Permission } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
+import { PermissionDeniedError } from '../plugins/session';
+import { branchReach } from '../services/access-control';
 import { opCtx, withTx } from '../services/tx';
 import {
   commitSale,
@@ -362,7 +364,21 @@ export async function saleRoutes(app: App): Promise<void> {
   app.get(
     '/',
     {
-      config: { permission: 'pos:sale:read' },
+      /**
+       * SCRUM-297 — WHICH BRANCHES THIS ANSWER COVERS.
+       *
+       * Declared dynamic because the branch is not in the URL: it is the one
+       * asked for, or the one the session happens to be sitting at, or — when
+       * there is neither — nothing at all. A route-level `permission` with no
+       * target is checked against `auth.branchId`, and that is the case this
+       * ticket is about: a session with no branch made the guard ask about no
+       * branch, and the handler then filtered by operator alone. Today only an
+       * operator-wide holder gets that far, so nothing leaked; but the width
+       * of the answer was coming from where the session happened to be seated
+       * rather than from what the caller holds, and the seat is something the
+       * caller sets for themselves (SCRUM-249).
+       */
+      config: { dynamicPermission: true },
       schema: {
         description: 'Sales for a branch and business-date range',
         querystring: z.object({
@@ -382,10 +398,31 @@ export async function saleRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       const branchId = req.query.branchId ?? auth.branchId ?? undefined;
-      if (branchId) await req.requirePermission('pos:sale:read', { branchId });
+      let branchIds: string[] | undefined;
+      if (branchId) {
+        // One branch named: answered explicitly, and refused explicitly when
+        // it is not one the caller holds.
+        await req.requirePermission('pos:sale:read', { branchId });
+      } else {
+        const reach = branchReach(
+          await req.effectivePermissions(),
+          'pos:sale:read',
+          auth.operatorId,
+        );
+        if (reach.kind === 'branches') {
+          /**
+           * Holding it nowhere is a refusal, not an empty day. A till that
+           * showed "no sales" to somebody who may not see them would be the
+           * worse of the two answers: one of them is read as the takings.
+           */
+          if (reach.branchIds.length === 0) throw new PermissionDeniedError('pos:sale:read');
+          branchIds = reach.branchIds;
+        }
+      }
       return listSales(app.db, auth.operatorId, {
         ...req.query,
         branchId,
+        branchIds,
         from: req.query.businessDate ?? req.query.from,
         to: req.query.businessDate ?? req.query.to,
       });

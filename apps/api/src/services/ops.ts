@@ -673,6 +673,48 @@ function reachClause(reach: HealthReach, column: AnyPgColumn): SQL | null {
   return inArray(column, reach.branchIds);
 }
 
+/**
+ * SCRUM-299 — THE REACH, SAID OUT LOUD.
+ *
+ * Every list under `/ops` is already narrowed to the branches the caller holds
+ * the permission at, and none of them said so. A manager at one park opened
+ * Failures, read an empty list, and had no way to tell "my park has nothing
+ * wrong" from "this page is not showing me my park" — the two look identical,
+ * and only the administrator, who sees rows, can tell the page works at all.
+ *
+ * So the answer carries the reach it was computed at. Named branches, not ids:
+ * an id names nothing to somebody reading a screen, and the line the Console
+ * draws from this is the same line the Devices page already draws.
+ *
+ * An operator-wide reach lists no branches, deliberately. It is every branch of
+ * the operator INCLUDING the ones that open later, which no list of ids can say.
+ */
+export interface ReachView {
+  scope: 'operator' | 'branch';
+  /** Empty for an operator-wide reach; possibly empty for a branch one too,
+   *  which is a real answer: the caller holds the permission at no branch. */
+  branches: Array<{ id: string; name: string }>;
+}
+
+/**
+ * The reach as names. The lookup is scoped to the operator, so a grant naming
+ * a branch outside it contributes nothing rather than disclosing its name.
+ */
+export async function describeReach(
+  db: Db,
+  operatorId: string,
+  reach: BranchReach,
+): Promise<ReachView> {
+  if (reach.kind === 'operator') return { scope: 'operator', branches: [] };
+  if (reach.branchIds.length === 0) return { scope: 'branch', branches: [] };
+  const rows = await db
+    .select({ id: branch.id, name: branch.name })
+    .from(branch)
+    .where(and(eq(branch.operatorId, operatorId), inArray(branch.id, reach.branchIds)))
+    .orderBy(asc(branch.name));
+  return { scope: 'branch', branches: rows };
+}
+
 export interface HealthDeps {
   db: Db;
   /** Alerts are filtered to this operator, plus the platform-wide ones. */
@@ -2359,10 +2401,28 @@ function overallStatus(
 /** Everything the Health page reads, in one answer. */
 export async function healthSnapshot(deps: HealthDeps): Promise<HealthSnapshot> {
   const now = Date.now();
+  /**
+   * SCRUM-301 — the DEPLOYMENT's own state, answered only where it is somebody's.
+   *
+   * The dependency checks and the job register belong to no branch: a database
+   * probe, a storage probe, a retention sweep that has not run. A branch-scoped
+   * caller cannot act on any of them — the acknowledge and retry paths ask for
+   * `admin:ops:manage` at the row's own branch, and a row with no branch is
+   * asked about with none, which a branch-scoped grant does not cover — so
+   * putting them on her page opened it on a failure that was never hers to fix.
+   *
+   * The boxes and the alerts below are already hers: both are narrowed by the
+   * same reach, and `status` is then computed from what is left, so the verdict
+   * she is answered with is about her park. An operator-wide caller's answer is
+   * unchanged, and so is one that names no reach at all — `reach` is optional
+   * on `HealthDeps`, though `GET /ops/health` is the only caller today and it
+   * always names one.
+   */
+  const estateWide = !deps.reach || deps.reach.kind === 'operator';
   // Sequential rather than parallel: these share one small pool, and a health
   // page must never be the reason a till waits for a connection.
-  const checks = await healthChecks(deps, now);
-  const jobs = await probe(() => jobRegister(deps, now), [] as JobStatus[]);
+  const checks = estateWide ? await healthChecks(deps, now) : [];
+  const jobs = estateWide ? await probe(() => jobRegister(deps, now), [] as JobStatus[]) : [];
   const fleet = await probe(
     () => fleetHealth({ db: deps.db, operatorId: deps.operatorId, reach: deps.reach }, now),
     { boxes: [], conditions: [] } as FleetSnapshot,

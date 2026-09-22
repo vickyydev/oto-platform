@@ -5,6 +5,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { account, session as sessionTable, type Db } from '@oto/db';
 import type { Permission } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
+import { branchScopeRefusal } from '../services/access-control';
 import { hasPermission, resolveEffectivePermissions, type EffectivePermission, type ScopeTarget } from '../services/permissions';
 
 export const SESSION_COOKIE = 'oto_session';
@@ -183,7 +184,29 @@ export const sessionPlugin = fp(async (app: FastifyInstance) => {
         recordId: target.recordId,
       };
       if (!hasPermission(effective, permission, fullTarget)) {
-        throw new PermissionDeniedError(permission);
+        /**
+         * SCRUM-300 — "you do not have this" and "not here" are different
+         * answers, and every branch-targeted route used to give the first one
+         * for both. `branchScopeRefusal` names the branch when the caller holds
+         * the permission at another one, and returns null when they hold it
+         * nowhere, which is where the plain refusal is the accurate sentence.
+         *
+         * Asked of the CALLER's operator rather than `fullTarget.operatorId`:
+         * a route may target another operator, and a refusal that named that
+         * operator's branch would be a worse leak than the message it fixed.
+         * Cross-operator ids simply do not resolve, so they fall through to
+         * the plain refusal.
+         */
+        const elsewhere = fullTarget.branchId
+          ? await branchScopeRefusal(
+              app.db,
+              effective,
+              permission,
+              auth.operatorId,
+              fullTarget.branchId,
+            )
+          : null;
+        throw elsewhere ?? new PermissionDeniedError(permission);
       }
       return auth;
     };

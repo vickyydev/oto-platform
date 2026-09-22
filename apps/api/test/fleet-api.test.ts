@@ -391,7 +391,17 @@ describe('a station edit resolves its own branch (S2-04 review, finding 2)', () 
       payload: { name: 'Renamed from another branch' },
     });
     expect(elsewhere.statusCode).toBe(403);
-    expect(errorCode(elsewhere)).toBe('FORBIDDEN');
+    /**
+     * SCRUM-300 — refused for the same reason as before, and now saying so.
+     * `Missing permission admin:station:update` was a sentence about the
+     * target that read as a sentence about the caller, who holds that
+     * permission at their own branch; what they were refused is this branch,
+     * and the refusal names it.
+     */
+    expect(errorCode(elsewhere)).toBe('OUT_OF_BRANCH_SCOPE');
+    expect(
+      (elsewhere.body as { error?: { message?: string } }).error?.message ?? '',
+    ).toContain('Second Branch');
 
     const [unchanged] = await ctx.db
       .select({ name: station.name })
@@ -636,7 +646,10 @@ describe('writing a station (S2-04)', () => {
     expect(recorded).toBeTruthy();
   });
 
-  it('answers the branch’s staff, and refuses somebody who cannot edit a station', async () => {
+  // SCRUM-300: the gate is `admin:station:read`, not the update — a read asks
+  // to be granted a read. The refusal half is asserted in "who may reach the
+  // admin fleet surface" below, where reception holds neither.
+  it('answers the branch’s staff to whoever may read the estate', async () => {
     const res = await call('GET', `/branches/${branchId}/staff`, { cookie: adminCookie });
     expect(res.statusCode).toBe(200);
     const phones = (res.body.staff as Array<{ phone: string }>).map((s) => s.phone);

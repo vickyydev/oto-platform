@@ -16,7 +16,7 @@ import { audit } from '../services/audit';
 import { opCtx, withTx } from '../services/tx';
 import { hasPermission, isPlatformWide } from '../services/permissions';
 import { PermissionDeniedError } from '../plugins/session';
-import { branchReach } from '../services/access-control';
+import { branchReach, type BranchReach } from '../services/access-control';
 import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
 import { boxAuthFromRow, boxSettings, virtualBoxAgent } from '../services/box';
@@ -33,6 +33,7 @@ import {
   anomalyPage,
   buildAlertChannels,
   deliverAlert,
+  describeReach,
   failureGroups,
   findAlert,
   findRun,
@@ -109,6 +110,17 @@ export async function opsRoutes(app: App): Promise<void> {
   };
 
   /**
+   * SCRUM-299 — and the same reach, in words, on the answer.
+   *
+   * The narrowing above is invisible from the outside: a branch manager whose
+   * park had nothing wrong and a branch manager whose park was not being shown
+   * to her received the same empty list. Saying which parks the answer covers
+   * costs one lookup on a page load and makes an empty list mean something.
+   */
+  const answeredAt = async (req: FastifyRequest, reach: BranchReach) =>
+    describeReach(app.db, req.requireAuth().operatorId, reach);
+
+  /**
    * SCRUM-281 — `admin:ops:manage` AT THE ROW'S BRANCH, and nowhere else.
    *
    * `req.requirePermission` falls back to the branch on the caller's own
@@ -146,11 +158,15 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      return healthSnapshot({
-        ...health(),
-        operatorId: auth.operatorId,
-        reach: await healthReach(req),
-      });
+      const reach = await healthReach(req);
+      return {
+        ...(await healthSnapshot({ ...health(), operatorId: auth.operatorId, reach })),
+        // SCRUM-301: the page branches on this. A branch-scoped caller is
+        // answered with no dependency checks and no job register, and without
+        // the reach the Console could not tell that from a deployment that has
+        // neither.
+        reach: await answeredAt(req, reach),
+      };
     },
   );
 
@@ -224,11 +240,11 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      return failureGroups(app.db, {
-        ...req.query,
-        operatorId: auth.operatorId,
-        reach: await healthReach(req),
-      });
+      const reach = await healthReach(req);
+      return {
+        ...(await failureGroups(app.db, { ...req.query, operatorId: auth.operatorId, reach })),
+        reach: await answeredAt(req, reach),
+      };
     },
   );
 
@@ -384,11 +400,11 @@ export async function opsRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      return anomalyPage(app.db, {
-        ...req.query,
-        operatorId: auth.operatorId,
-        reach: await healthReach(req),
-      });
+      const reach = await healthReach(req);
+      return {
+        ...(await anomalyPage(app.db, { ...req.query, operatorId: auth.operatorId, reach })),
+        reach: await answeredAt(req, reach),
+      };
     },
   );
 

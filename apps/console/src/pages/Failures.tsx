@@ -10,6 +10,7 @@ import { EmptyState, ErrorNote, Fact, Loading, Panel, RouteUnavailable } from '@
 import { Chip, StatusMark, StatusPill, toneForOutcome } from '@/components/Status';
 import { PresetButton, PresetRow, SelectFilter } from '@/components/Filters';
 import { useSession } from '@/auth/SessionContext';
+import { readReach, reachLabel, type Reach } from '@/lib/reach';
 import { elapsed, formatExact, formatWhen, millis, timeAgo } from '@/lib/time';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +50,15 @@ export function Failures() {
 
   const [tab, setTab] = useState<'problems' | 'quarantine'>('problems');
   const [quarantineOpen, setQuarantineOpen] = useState<number | null>(null);
+  /**
+   * SCRUM-299 — which parks this page is answering for.
+   *
+   * Above the tabs rather than inside one, because it is true of both: the
+   * failure groups and the refused events are narrowed by the same reach. It
+   * is read from the failure list, which is what the page opens on, and held
+   * here so that switching tabs does not lose it.
+   */
+  const [reach, setReach] = useState<Reach | null>(null);
 
   // The badge is read once on arrival so it is right on a page somebody opened
   // on the Problems tab — otherwise the only way to learn that a till's sale is
@@ -87,13 +97,28 @@ export function Failures() {
         </Tab>
       </div>
 
+      <ReachLine reach={reach} />
+
       {tab === 'problems' ? (
-        <Problems timezone={timezone} canManage={canManage} />
+        <Problems timezone={timezone} canManage={canManage} onReach={setReach} />
       ) : (
         <Quarantine timezone={timezone} canManage={canManage} onOpenCount={setQuarantineOpen} />
       )}
     </div>
   );
+}
+
+/**
+ * The one line that makes an empty list mean something.
+ *
+ * Without it a manager whose park had nothing wrong and a manager whose park
+ * was not being shown to her read the identical screen — and the second is a
+ * broken page, which is exactly the thing somebody on call has to be able to
+ * tell at a glance.
+ */
+function ReachLine({ reach }: { reach: Reach | null }) {
+  const label = reachLabel(reach);
+  return label === null ? null : <p className="text-sm text-muted-foreground">{label}</p>;
 }
 
 function Tab({
@@ -144,7 +169,16 @@ function Tab({
  * of sixty it reads as what it is — and the count is the useful number, because
  * it separates "happened once" from "happening continuously".
  */
-function Problems({ timezone, canManage }: { timezone?: string | null; canManage: boolean }) {
+function Problems({
+  timezone,
+  canManage,
+  onReach,
+}: {
+  timezone?: string | null;
+  canManage: boolean;
+  /** SCRUM-299 — handed up so the line sits above both tabs. */
+  onReach: (reach: Reach | null) => void;
+}) {
   const [windowHours, setWindowHours] = useState(24);
   const [kind, setKind] = useState('');
   const [groups, setGroups] = useState<FailureGroup[]>([]);
@@ -162,18 +196,20 @@ function Problems({ timezone, canManage }: { timezone?: string | null; canManage
       const page = await failuresApi.groups({ windowHours, kind: kind || undefined, limit: 50 });
       setGroups(page.groups);
       setCursor(page.nextCursor ?? null);
+      onReach(readReach(page));
       setMissing(false);
     } catch (err) {
       if (isMissingRoute(err)) {
         setMissing(true);
         setGroups([]);
+        onReach(null);
       } else {
         setError(err instanceof Error ? err.message : 'Could not read the failure list');
       }
     } finally {
       setLoading(false);
     }
-  }, [windowHours, kind]);
+  }, [windowHours, kind, onReach]);
 
   useEffect(() => {
     void load();

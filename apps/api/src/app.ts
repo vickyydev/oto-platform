@@ -174,6 +174,16 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
    */
   const DENIAL_CODES = new Set([
     'FORBIDDEN',
+    /**
+     * SCRUM-300 — somebody reaching for the other park, which is the single
+     * most interesting thing on that list and was the one refusal missing from
+     * it. Every time a refusal has been made more precise, the new code landed
+     * outside this set and the event stopped being recorded: SCRUM-266 moved
+     * the account writes off `ROLE_NOT_DOMINATED` and SCRUM-264 gave the
+     * session-branch switch a code of its own, and both went quiet here. A
+     * refusal that says which branch is still a refusal.
+     */
+    'OUT_OF_BRANCH_SCOPE',
     'ROLE_NOT_DOMINATED',
     'SCOPE_NOT_OWNED',
     'ACCOUNT_NOT_FOUND',

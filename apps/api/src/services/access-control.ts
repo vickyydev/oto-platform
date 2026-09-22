@@ -410,3 +410,44 @@ export function holdsGrantAt(
 export function outOfBranchScope(message: string): AppError {
   return new AppError(403, 'OUT_OF_BRANCH_SCOPE', message);
 }
+
+/**
+ * SCRUM-300 — WHICH OF THE TWO REFUSALS A BRANCH-TARGETED CHECK DESERVES.
+ *
+ * `Missing permission admin:station:read` is a true sentence about the target
+ * and a false one about the caller. A manager who holds that permission at her
+ * own park reads it as "nobody has given me this yet", asks for the role she
+ * already has, and is granted it a second time at the same branch — while the
+ * thing she was actually refused, the other park, is never mentioned. The
+ * refusal that says what happened is the one the session-branch switch and the
+ * account writes already give: the permission is yours, this branch is not.
+ *
+ * Only for a permission the caller holds at SOME branch. Hold it nowhere and
+ * the plain refusal is the accurate one, because then the missing thing really
+ * is the permission.
+ *
+ * The branch is named only once it has been loaded inside the caller's own
+ * operator. A branch id in a URL carries no tenancy (SCRUM-248), so naming one
+ * straight from the request would answer "does this id exist, and what is it
+ * called" for every operator on the platform. Unknown, or somebody else's, and
+ * this returns null: the caller gets the plain refusal having learnt nothing.
+ */
+export async function branchScopeRefusal(
+  db: Db,
+  effective: EffectivePermission[],
+  permission: Permission,
+  operatorId: string,
+  branchId: string,
+): Promise<AppError | null> {
+  const reach = branchReach(effective, permission, operatorId);
+  // An operator-wide grant cannot fail a branch check inside its own operator,
+  // so `branches` is the only reach that reaches here with anything to say.
+  if (reach.kind !== 'branches' || reach.branchIds.length === 0) return null;
+  const [row] = await db
+    .select({ name: branch.name })
+    .from(branch)
+    .where(and(eq(branch.id, branchId), eq(branch.operatorId, operatorId)))
+    .limit(1);
+  if (!row) return null;
+  return outOfBranchScope(`You hold ${permission}, but not at ${row.name}`);
+}

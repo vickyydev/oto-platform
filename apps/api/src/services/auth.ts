@@ -215,21 +215,47 @@ export async function issueCode(
   await sms.send(pending.phone, pending.message);
 }
 
+/** A code that has been checked and not yet spent. Carries no secret. */
+export interface VerifiedCode {
+  id: string;
+  /** The bucket this account's wrong guesses were counted in. */
+  attemptKey: string;
+}
+
 /**
- * Verify + consume a single-use, time-limited code. Throws when invalid.
+ * Check a single-use, time-limited code and count the guess when it is wrong.
+ * Throws when invalid. Spending it is the caller's next step — `consumeCode`.
  *
  * A six-digit code is one in a million, which a script exhausts in minutes if
  * guesses are free. After `maxAttempts` wrong ones every outstanding code for
  * that account and purpose is invalidated (S2-01a), so the attacker has to go
  * back through the per-phone rate limit to get another.
+ *
+ * WHY THE CHECK AND THE CONSUME ARE TWO CALLS (SCRUM-296).
+ *
+ * Spending the code belongs in the same transaction as the thing it
+ * authorises: a crash between them burns the code and leaves an invited member
+ * of staff locked out holding nothing, and there is no second code without an
+ * administrator. The bookkeeping here is the opposite — it has to survive that
+ * transaction rolling back, because a counter a wrong guess can roll back is
+ * not a counter, and guessing would cost nothing but time.
+ *
+ * So the two are separated in TIME rather than by handle. Everything here runs
+ * on the pool with no transaction open at all, which is the part that matters:
+ * counting the guess from inside the caller's transaction would mean a request
+ * holding one connection and waiting for a second, and enough anonymous wrong
+ * guesses arriving together would then hold every connection in the pool while
+ * each waited for one that was never coming. Nothing else in this codebase
+ * takes a second connection while holding one, and this endpoint — open, and
+ * reachable by anyone with the phone number — is the last place to start.
  */
-export async function consumeCode(
+export async function verifyCode(
   db: Db,
   accountId: string,
   purpose: CodePurpose,
   code: string,
   maxAttempts = 5,
-): Promise<void> {
+): Promise<VerifiedCode> {
   const attemptKey = `code:${accountId}:${purpose}`;
   const rows = await db
     .select()
@@ -264,11 +290,27 @@ export async function consumeCode(
     throw errors.badRequest('Invalid code');
   }
   if (row.expiresAt < new Date()) throw errors.badRequest('Code expired — request a new one');
-  await db
+  return { id: row.id, attemptKey };
+}
+
+/**
+ * Spend a code `verifyCode` accepted, inside the transaction that does what it
+ * authorised.
+ *
+ * Conditional on the row still being unspent, and refused when it is not, so
+ * two requests carrying the same code cannot both be served: the second waits
+ * on the row and finds it taken. It is answered the same way a wrong code is,
+ * because which of the two it was is not the caller's business.
+ */
+export async function consumeCode(exec: Exec, verified: VerifiedCode): Promise<void> {
+  const [spent] = await exec
     .update(verificationCode)
     .set({ consumedAt: new Date() })
-    .where(eq(verificationCode.id, row.id));
-  await throttleClear(db, [attemptKey]);
+    .where(and(eq(verificationCode.id, verified.id), isNull(verificationCode.consumedAt)))
+    .returning({ id: verificationCode.id });
+  if (!spent) throw errors.badRequest('Invalid code');
+  // A code spent for real leaves the next one a fresh budget of guesses.
+  await throttleClear(exec, [verified.attemptKey]);
 }
 
 // --- Accounts & sessions ----------------------------------------------------
@@ -715,7 +757,13 @@ export async function unlockSession(
   );
 }
 
-export async function setPassword(db: Db, accountId: string, password: string): Promise<void> {
+/**
+ * Write a new password hash. Takes an `Exec` (SCRUM-296) so it can be the same
+ * transaction as the code that authorised it, the status change that completes
+ * a setup, and the sessions a reset ends — none of which is safe to have
+ * happen without the others.
+ */
+export async function setPassword(db: Exec, accountId: string, password: string): Promise<void> {
   if (password.length < 8) throw errors.badRequest('Password must be at least 8 characters');
   await db
     .update(account)

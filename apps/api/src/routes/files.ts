@@ -6,6 +6,7 @@ import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { storageFailureReason } from '../services/files';
+import { opCtx, withTx } from '../services/tx';
 import type { AuthContext } from '../plugins/session';
 import type { FastifyRequest } from 'fastify';
 
@@ -131,24 +132,40 @@ export async function fileRoutes(app: App): Promise<void> {
       const uploadUrl = await withStorageLog(req, 'presign upload', () =>
         storage.presignedPut(objectKey),
       );
-      await app.db.insert(fileObject).values({
-        id,
-        operatorId: auth.operatorId,
-        bucket: storage.bucket,
-        objectKey,
-        contentType: req.body.contentType,
-        ownerEntityType: req.body.ownerEntityType,
-        ownerEntityId: req.body.ownerEntityId,
-        uploadedByAccountId: auth.accountId,
-      });
-      await audit.record(app.db, {
-        actorAccountId: auth.accountId,
-        operatorId: auth.operatorId,
-        action: 'file.create',
-        entityType: 'file_object',
-        entityId: id,
-        after: { objectKey, ownerEntityType: req.body.ownerEntityType, ownerEntityId: req.body.ownerEntityId },
-        requestId: req.id,
+      /**
+       * SCRUM-296 — the registration and the record of it, together.
+       *
+       * The plainest of the three writes this ticket carries: two statements
+       * on the pool, and a crash between them left a `file_object` row that
+       * nothing in the trail accounts for — a photo attached to somebody's
+       * account with no answer to who attached it. Signing happens above
+       * because it reaches no storage and no database; the transaction holds
+       * only the two writes that belong to each other.
+       */
+      await withTx(app.db, opCtx(req), 'file.create', async (tx) => {
+        await tx.insert(fileObject).values({
+          id,
+          operatorId: auth.operatorId,
+          bucket: storage.bucket,
+          objectKey,
+          contentType: req.body.contentType,
+          ownerEntityType: req.body.ownerEntityType,
+          ownerEntityId: req.body.ownerEntityId,
+          uploadedByAccountId: auth.accountId,
+        });
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          action: 'file.create',
+          entityType: 'file_object',
+          entityId: id,
+          after: {
+            objectKey,
+            ownerEntityType: req.body.ownerEntityType,
+            ownerEntityId: req.body.ownerEntityId,
+          },
+          requestId: req.id,
+        });
       });
       return { id, uploadUrl };
     },

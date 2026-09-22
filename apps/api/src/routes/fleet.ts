@@ -471,17 +471,24 @@ export async function fleetRoutes(app: App): Promise<void> {
   );
 
   /**
-   * Guarded by `admin:station:update` rather than `admin:account:read`: this
+   * Guarded in the station family rather than by `admin:account:read`: this
    * serves the station editor's own picker and answers "who may I put on this
-   * station's list", not "show me the staff directory". Both seed bundles that
-   * hold the station permission already hold the account one, so it grants
-   * nothing new today — and it keeps a future role that manages tills but not
-   * people from having a broken editor.
+   * station's list", not "show me the staff directory".
+   *
+   * SCRUM-300 — but by the READ of that family, not the update. This route
+   * writes nothing, and a caller refused it was being told they were missing a
+   * permission to CHANGE stations, which is neither what they asked for nor
+   * what they would ask to be granted. `admin:station:read` is the permission
+   * that already opens the admin station list, and that list carries each
+   * station's staff — so the names here are visible to exactly the people who
+   * can already read them one screen along, and to nobody else: the permission
+   * is deliberately kept out of the counter bundle, so reception still cannot
+   * enumerate a park's staff through it.
    */
   app.get(
     '/branches/:branchId/staff',
     {
-      config: { permission: 'admin:station:update', target: { branchId: 'params.branchId' } },
+      config: { permission: 'admin:station:read', target: { branchId: 'params.branchId' } },
       schema: {
         description: 'Accounts that can be put on a station’s list: the staff of that branch',
         params: BranchParams,

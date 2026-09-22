@@ -218,24 +218,24 @@ const NO_DIRECT_WRITE = [
 ];
 
 /**
- * Known failures — SCRUM-284, and SCRUM-287 for the pending-lookup pair.
+ * Known failures — SCRUM-287 for the pending-lookup pair, and the two routes
+ * that send a verification code.
  *
- * Every one writes a row and its audit entry as unrelated statements. Most are
- * Sprint-1 code, written before `withTx` existed and never migrated; the
- * hand-off exchange is newer and picked the habit up from the file it was
- * written into. The windows are not theoretical: a crash between spending a
- * single-use code and setting the password leaves an invited member of staff
- * locked out holding a code that has been burnt, and there is no second code
- * without an administrator.
+ * Each writes a row and a second statement that belongs with it as unrelated
+ * statements. The code-issuing pair mints the code and clears the guess budget
+ * that goes with it; stopping between them leaves a fresh code carrying the
+ * previous one's spent attempts.
+ *
+ * SCRUM-296 took the five that were here before: the two code-CONSUMING routes
+ * and the password change, where a crash between spending a single-use code
+ * and setting the password left an invited member of staff locked out holding
+ * a code that had been burnt; the hand-off exchange, whose claim is now one
+ * transaction with the record of it; and `POST /files`. None of those was a
+ * plain wrap — see the ticket, and the comments at each.
  */
 const UNTRANSACTED = [
-  'POST /auth/change-password',
-  'POST /auth/handoff/exchange',
-  'POST /auth/password-reset/complete',
   'POST /auth/password-reset/request',
-  'POST /auth/setup/complete',
   'POST /auth/setup/start',
-  'POST /files',
   'POST /me/session/pending-lookup/consume',
   'PUT /me/session/pending-lookup',
 ];

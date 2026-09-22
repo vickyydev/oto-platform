@@ -17,7 +17,8 @@ import {
 } from '@oto/db';
 import { newId, type Permission } from '@oto/shared';
 import { AppError } from '../lib/errors';
-import type { Exec } from './tx';
+import { audit } from './audit';
+import { withTx, type Exec } from './tx';
 
 /**
  * The signed hand-off (S2-02).
@@ -363,11 +364,20 @@ export interface ExchangedHandoff {
  * whole thing would roll the claim back when a token turns out to be aimed at
  * another origin, and hand an attacker the one thing this is built to prevent:
  * a second go with the same token.
+ *
+ * What IS one transaction is the claim itself (SCRUM-296): marking the jti
+ * spent, destroying the sealed session it was carrying, and recording that it
+ * was spent. Those three are one act. As three statements on the pool the
+ * middle one could be the last to run — a token marked used with its sealed
+ * session still sitting in the row, readable by anyone who later gets the
+ * signing key — and the third could be lost entirely, leaving a credential
+ * spent with nothing in the trail saying so. Everything after the claim stays
+ * outside, which is what keeps a rejection from un-spending it.
  */
 export async function exchangeHandoff(
   db: Db,
   config: HandoffConfig,
-  opts: { token: string; origin: string },
+  opts: { token: string; origin: string; requestId?: string },
 ): Promise<ExchangedHandoff> {
   const claims = verifyToken(config.keys, opts.token);
   if (!claims) {
@@ -384,24 +394,53 @@ export async function exchangeHandoff(
   // fragment cannot both be served — the same rule as the idempotency claim
   // in plugins/idempotency.ts. The expiry guard repeats the check above
   // against the database's own clock rather than the token's.
-  const [row] = await db
-    .update(handoffToken)
-    .set({ consumedAt: now })
-    .where(
-      and(
-        eq(handoffToken.jti, claims.jti),
-        isNull(handoffToken.consumedAt),
-        gt(handoffToken.expiresAt, now),
-      ),
-    )
-    .returning();
+  const row = await withTx(db, { requestId: opts.requestId }, 'auth.handoff_claim', async (tx) => {
+    const [claimed] = await tx
+      .update(handoffToken)
+      .set({ consumedAt: now })
+      .where(
+        and(
+          eq(handoffToken.jti, claims.jti),
+          isNull(handoffToken.consumedAt),
+          gt(handoffToken.expiresAt, now),
+        ),
+      )
+      .returning();
+    if (!claimed) return null;
+
+    // Spent is spent, whatever the checks below decide: the sealed session has
+    // no further use, and a row that cannot be opened is a row that cannot
+    // leak. The value needed to finish is the one the claim already returned.
+    await tx.update(handoffToken).set({ sessionSecret: null }).where(eq(handoffToken.jti, claimed.jti));
+
+    /**
+     * Whose operator this is, read from OUR row rather than from the token.
+     * `handoff_token.account_id` was written when the token was minted, by a
+     * session we had already authenticated; the `sub` in the claims is a
+     * string off a credential that has not finished being checked. Without
+     * this the row lands with no operator and falls outside its own tenant's
+     * audit read — the gap `auth.sign_out` had until SCRUM-284.
+     */
+    const [owner] = await tx
+      .select({ operatorId: account.operatorId })
+      .from(account)
+      .where(eq(account.id, claimed.accountId))
+      .limit(1);
+
+    await audit.record(tx, {
+      actorAccountId: claimed.accountId,
+      operatorId: owner?.operatorId ?? null,
+      action: 'auth.handoff_claim',
+      entityType: 'handoff',
+      // The jti, never the token.
+      entityId: claimed.jti,
+      after: { audience: claimed.audience, sessionId: claimed.sessionId },
+      requestId: opts.requestId,
+    });
+    return claimed;
+  });
 
   if (!row) throw await classifyLostClaim(db, claims.jti, seen);
-
-  // Spent is spent, whatever the checks below decide: the sealed session has
-  // no further use, and a row that cannot be opened is a row that cannot
-  // leak. The value needed to finish is the one the claim already returned.
-  await db.update(handoffToken).set({ sessionSecret: null }).where(eq(handoffToken.jti, row.jti));
 
   if (row.audience !== claims.aud) {
     // Only reachable if a row and a signed token disagree, which means one of
