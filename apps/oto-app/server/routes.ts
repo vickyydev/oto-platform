@@ -8296,6 +8296,9 @@ OTO Company Limited`,
       res.json({
         token: result.token,
         expiresAt: result.expiresAt.toISOString(),
+        // Returned once, here only. The kiosk stores it and presents it to
+        // reconnect; it is never listed by the device endpoints.
+        deviceSecret: result.deviceSecret,
         device: result.device,
       });
     } catch (error) {
@@ -8307,6 +8310,9 @@ OTO Company Limited`,
     try {
       const refreshSchema = z.object({
         deviceId: z.string().min(1),
+        // Issued once at activation. Without it the device id alone would mint a
+        // 30-day session, and the id is not secret.
+        deviceSecret: z.string().min(1),
       });
 
       const validationResult = refreshSchema.safeParse(req.body);
@@ -8318,7 +8324,12 @@ OTO Company Limited`,
       const userAgent = req.headers["user-agent"];
 
       const { refreshKioskSession } = await import("./kiosk-auth");
-      const result = await refreshKioskSession(validationResult.data.deviceId, ip, userAgent);
+      const result = await refreshKioskSession(
+        validationResult.data.deviceId,
+        validationResult.data.deviceSecret,
+        ip,
+        userAgent,
+      );
 
       if (!result) {
         return res.status(401).json({ message: "Device not found or inactive" });
@@ -9606,7 +9617,67 @@ OTO Company Limited`,
   });
 
   // Kiosk - Clock with phone number fallback (after photo capture)
+  //
+  // Fixed-window attempt counters, held in this process only: they throttle one
+  // API instance, not the deployment as a whole. Two instances behind the load
+  // balancer each allow the quota below.
   const phoneRateLimits = new Map<string, { count: number; resetAt: number }>();
+
+  // Counts one attempt against `key`. Returns false once the window's quota is
+  // spent; the window then resets on the first attempt after `resetAt`.
+  function takeKioskAttempt(key: string, max: number, windowMs: number): boolean {
+    const now = Date.now();
+
+    // The map is keyed by caller, so sweep spent windows rather than let it grow
+    // for the life of the process.
+    if (phoneRateLimits.size > 5000) {
+      for (const [k, v] of phoneRateLimits) {
+        if (v.resetAt <= now) phoneRateLimits.delete(k);
+      }
+    }
+
+    const entry = phoneRateLimits.get(key);
+    if (!entry || entry.resetAt <= now) {
+      phoneRateLimits.set(key, { count: 1, resetAt: now + windowMs });
+      return true;
+    }
+    if (entry.count >= max) return false;
+    entry.count++;
+    return true;
+  }
+
+  // Resolves the kiosk this request is coming from. Returns undefined when no
+  // secret is presented, the secret matches nothing, or the device is inactive —
+  // the caller must not tell those three apart in its response.
+  async function resolveKioskDevice(deviceSecret: string | undefined) {
+    if (!deviceSecret) return undefined;
+    const secretHash = crypto.createHash("sha256").update(deviceSecret).digest("hex");
+    const device = await storage.getKioskDeviceBySecret(secretHash);
+    if (!device || !device.isActive) return undefined;
+    return device;
+  }
+
+  // Compares two hex digests without leaking, through how long the comparison
+  // runs, how many leading characters matched.
+  function timingSafeEqualHex(a: string, b: string): boolean {
+    const left = Buffer.from(a, "utf8");
+    const right = Buffer.from(b, "utf8");
+    if (left.length !== right.length) return false;
+    return crypto.timingSafeEqual(left, right);
+  }
+
+  // One refusal for every reason this endpoint declines to clock somebody in:
+  // no kiosk credential, a number that belongs to nobody, and a number that
+  // belongs to an advisor this branch may not clock. A caller WITHOUT a valid
+  // kiosk credential cannot tell them apart, so an anonymous caller learns
+  // nothing about who is staff. A caller WITH a valid credential learns
+  // exactly that — the person's name comes back on success — which is the
+  // kiosk's job; the credential is what limits who may ask. The person
+  // standing at a real kiosk knows who they are, and the screen tells them to
+  // see their manager.
+  const KIOSK_PHONE_REFUSAL = "Phone number not recognized. Contact your manager.";
+  const refuseKioskPhone = (res: Response) =>
+    res.status(401).json({ message: KIOSK_PHONE_REFUSAL });
 
   app.post("/api/kiosk/clock-phone", async (req, res, next) => {
     try {
@@ -9617,7 +9688,7 @@ OTO Company Limited`,
         sessionId: z.string().optional(),
         deviceSecret: z.string().optional(),
       });
-      
+
       const validationResult = phoneSchema.safeParse(req.body);
       if (!validationResult.success) {
         return res.status(400).json({ message: "Validation failed", errors: validationResult.error.errors });
@@ -9625,30 +9696,26 @@ OTO Company Limited`,
 
       const { phone, photoEvidenceUrl, sessionId, deviceSecret } = validationResult.data;
 
-      let kioskDeviceId: string | undefined;
-      let branchId: string | undefined;
-      
-      if (deviceSecret) {
-        const secretHash = crypto.createHash('sha256').update(deviceSecret).digest('hex');
-        const device = await storage.getKioskDeviceBySecret(secretHash);
-        if (!device || !device.isActive) {
-          return res.status(401).json({ message: "Invalid or inactive device" });
-        }
-        kioskDeviceId = device.id;
-        branchId = device.branchId;
-        await storage.updateKioskDeviceLastSeen(device.id);
+      // Throttle before anything else, so the limit applies to callers that
+      // present no credential as well as to provisioned kiosks.
+      const callerIp = req.ip || req.socket.remoteAddress || "unknown";
+      if (!takeKioskAttempt(`ip:${callerIp}`, 60, 5 * 60 * 1000)) {
+        return res.status(429).json({ message: "Too many attempts. Please wait a few minutes and try again." });
+      }
 
-        const rateLimitKey = `device:${device.id}`;
-        const now = Date.now();
-        const rl = phoneRateLimits.get(rateLimitKey);
-        if (rl && rl.resetAt > now) {
-          if (rl.count >= 10) {
-            return res.status(429).json({ message: "Too many attempts. Please wait a few minutes and try again." });
-          }
-          rl.count++;
-        } else {
-          phoneRateLimits.set(rateLimitKey, { count: 1, resetAt: now + 5 * 60 * 1000 });
-        }
+      // A kiosk credential is required, and it is checked before any lookup, so
+      // an anonymous caller never reaches the employee or advisor tables.
+      const device = await resolveKioskDevice(deviceSecret);
+      if (!device) {
+        return refuseKioskPhone(res);
+      }
+
+      const kioskDeviceId: string | undefined = device.id;
+      let branchId: string | undefined = device.branchId;
+      await storage.updateKioskDeviceLastSeen(device.id);
+
+      if (!takeKioskAttempt(`device:${device.id}`, 10, 5 * 60 * 1000)) {
+        return res.status(429).json({ message: "Too many attempts. Please wait a few minutes and try again." });
       }
 
       const phoneValidation = validatePhoneInput(phone);
@@ -9676,14 +9743,16 @@ OTO Company Limited`,
       if (advisorCandidates.length > 0) {
         // Reuse the advisor clock endpoint semantics here rather than creating a
         // time_events row, since advisor sessions have no employee/schedule FK.
-        if (!deviceSecret) return res.status(400).json({ message: "A configured kiosk is required" });
-        const device = await storage.getKioskDeviceBySecret(crypto.createHash("sha256").update(deviceSecret).digest("hex"));
-        const kioskBranch = device ? await storage.getBranch(device.branchId) : undefined;
+        // The kiosk was already verified above, so use it rather than resolving
+        // the secret a second time.
+        const kioskBranch = await storage.getBranch(device.branchId);
         const advisorIdentity = kioskBranch
           ? advisorCandidates.find(candidate => canAdvisorUseKiosk(candidate.policy, kioskBranch))
           : undefined;
-        if (!device || !device.isActive || !kioskBranch || !advisorIdentity) {
-          return res.status(403).json({ message: "Advisor is not authorized for this branch" });
+        if (!kioskBranch || !advisorIdentity) {
+          // Same refusal as an unknown number: whether this number belongs to an
+          // advisor is not something the response should reveal.
+          return refuseKioskPhone(res);
         }
         const now = new Date();
         const eventType = await db.transaction(async (tx) => {
@@ -9714,23 +9783,17 @@ OTO Company Limited`,
       const employee = await storage.getEmployeeByPhoneE164(normalized);
 
       if (!employee) {
-        if (branchId) {
-          await storage.createKioskAuthAttempt({
-            branchId,
-            kioskDeviceId,
-            attemptTime: new Date(),
-            method: 'PHONE_FALLBACK',
-            outcome: 'FAIL',
-            failReason: 'phone_not_found',
-            photoEvidenceUrl,
-            sessionId,
-          });
-        }
-        return res.status(401).json({ message: "Phone number not recognized. Contact your manager." });
-      }
-
-      if (!branchId) {
-        branchId = employee.branchId || undefined;
+        await storage.createKioskAuthAttempt({
+          branchId,
+          kioskDeviceId,
+          attemptTime: new Date(),
+          method: 'PHONE_FALLBACK',
+          outcome: 'FAIL',
+          failReason: 'phone_not_found',
+          photoEvidenceUrl,
+          sessionId,
+        });
+        return refuseKioskPhone(res);
       }
 
       if (!branchId) {
@@ -9783,58 +9846,74 @@ OTO Company Limited`,
     }
   });
 
-  // Legacy PIN endpoint - kept for backward compatibility but redirects to phone
+  // Legacy PIN endpoint. Superseded by the phone fallback above and called by no
+  // screen in this app. It is kept because removing a route and changing its
+  // contract are different acts and this change only does the second — an
+  // older bundle that sent a bare PIN now gets a 400, not a clock-in, so this
+  // is NOT compatibility with anything in the field. Delete it when the PIN
+  // decision below is settled; SCRUM-243 tracks that.
+  //
+  // A PIN is checked against a named employee. It used to be looked up: the
+  // digest of whatever PIN arrived was matched across the whole employee table,
+  // so any PIN that anybody had clocked in whoever held it, and four digits span
+  // ten thousand values. The digest stored in timeclock_pin_hash is still an
+  // unsalted sha256 over that short numeric space — naming the employee stops
+  // the lookup, it does not make the stored digest expensive to search offline,
+  // and two employees who pick the same PIN still share a digest.
   app.post("/api/kiosk/clock-pin", async (req, res, next) => {
     try {
       const pinSchema = z.object({
+        employeeId: z.string().min(1),
         pin: z.string().min(4).max(8),
         photoEvidenceUrl: z.string(),
         sessionId: z.string().optional(),
         deviceSecret: z.string().optional(),
       });
-      
+
       const validationResult = pinSchema.safeParse(req.body);
       if (!validationResult.success) {
         return res.status(400).json({ message: "Validation failed", errors: validationResult.error.errors });
       }
 
-      const { pin, photoEvidenceUrl, sessionId, deviceSecret } = validationResult.data;
+      const { employeeId, pin, photoEvidenceUrl, sessionId, deviceSecret } = validationResult.data;
 
-      const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
-      const employee = await storage.getEmployeeByPin(pinHash);
-
-      let kioskDeviceId: string | undefined;
-      let branchId: string | undefined;
-      
-      if (deviceSecret) {
-        const secretHash = crypto.createHash('sha256').update(deviceSecret).digest('hex');
-        const device = await storage.getKioskDeviceBySecret(secretHash);
-        if (!device || !device.isActive) {
-          return res.status(401).json({ message: "Invalid or inactive device" });
-        }
-        kioskDeviceId = device.id;
-        branchId = device.branchId;
-        await storage.updateKioskDeviceLastSeen(device.id);
+      const callerIp = req.ip || req.socket.remoteAddress || "unknown";
+      if (!takeKioskAttempt(`pin-ip:${callerIp}`, 60, 5 * 60 * 1000)) {
+        return res.status(429).json({ message: "Too many attempts. Please wait a few minutes and try again." });
       }
 
-      if (!employee) {
-        if (branchId) {
-          await storage.createKioskAuthAttempt({
-            branchId,
-            kioskDeviceId,
-            attemptTime: new Date(),
-            method: 'PIN',
-            outcome: 'FAIL',
-            failReason: 'invalid_pin',
-            photoEvidenceUrl,
-            sessionId,
-          });
-        }
+      const device = await resolveKioskDevice(deviceSecret);
+      if (!device) {
         return res.status(401).json({ message: "Invalid PIN" });
       }
 
-      if (!branchId) {
-        branchId = employee.branchId || undefined;
+      const kioskDeviceId: string | undefined = device.id;
+      const branchId: string | undefined = device.branchId;
+      await storage.updateKioskDeviceLastSeen(device.id);
+
+      if (!takeKioskAttempt(`pin-device:${device.id}`, 10, 5 * 60 * 1000)) {
+        return res.status(429).json({ message: "Too many attempts. Please wait a few minutes and try again." });
+      }
+
+      const named = await storage.getEmployee(employeeId);
+      const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
+      const employee =
+        named && named.timeclockPinHash && timingSafeEqualHex(pinHash, named.timeclockPinHash)
+          ? named
+          : undefined;
+
+      if (!employee) {
+        await storage.createKioskAuthAttempt({
+          branchId,
+          kioskDeviceId,
+          attemptTime: new Date(),
+          method: 'PIN',
+          outcome: 'FAIL',
+          failReason: 'invalid_pin',
+          photoEvidenceUrl,
+          sessionId,
+        });
+        return res.status(401).json({ message: "Invalid PIN" });
       }
 
       if (!branchId) {

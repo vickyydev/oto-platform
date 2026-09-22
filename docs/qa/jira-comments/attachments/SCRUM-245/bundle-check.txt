@@ -1,0 +1,17 @@
+SCRUM-245 — deployed POS bundle check
+run 2026-09-22T11:20:17.455Z
+
+bundle          https://oto-pos-staging.onrender.com/assets/index-Ch6g9At_.js
+                2003477 bytes, HTTP 200
+
+occurrences of "scopeId:null"        1
+occurrences of "operator_admin"      5
+
+WHAT AN operator_admin INVITE NOW SENDS
+c(!0);try{const ce=_e.find(Qt=>Qt.id===w)??_e[0],Lt=De(j==="operator_admin"?"operator":`branch:${ce?.apiId??""}`);if(!Lt){ne("Couldn't create the acco
+
+THE SCOPE IT RESOLVES TO
+latformAdmin?[{key:"platform",label:"Platform-wide (every operator)"}]:[]],De=ce=>ce==="platform"?{scopeType:"operator",scopeId:null}:ce==="operator"?d?{scopeType:"operator",scopeId:d.operatorId}:null:{scopeType:"branch",scopeId:ce.slice(7)},Fe=async()=>{if(!(o||!v.trim()||!x.trim())){c(!0);try{cons
+
+THE ONLY REMAINING null SCOPE, AND WHAT GATES IT
+ce=>ce.apiId),We=[..._e.map(ce=>({key:`branch:${ce.apiId}`,label:`Branch — ${ce.name}`})),{key:"operator",label:"Operator-wide (all branches)"},...d?.isPlatformAdmin?[{key:"platform",label:"Platform-wide (every operator)"}]:[]],De=ce=>ce==="platform"?{scopeType:"operato

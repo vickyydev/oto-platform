@@ -1,10 +1,16 @@
 import { z } from 'zod';
-import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { account, branch, child, employee, member, memberTierVerification, tier } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import {
+  REGISTER_PAGE_DEFAULT,
+  REGISTER_PAGE_MAX,
+  isEvidenceExpired,
+  listRegister,
+} from '../services/members';
 import { recordChange } from '../services/sync';
 import { opCtx, withTx } from '../services/tx';
 
@@ -74,12 +80,6 @@ function serializeChild(c: typeof child.$inferSelect) {
     notes: c.notes,
     lastConfirmedAt: c.lastConfirmedAt?.toISOString() ?? null,
   };
-}
-
-/** The document stays valid through the whole expiry DAY it names. */
-function isEvidenceExpired(expiresAt: Date | null): boolean {
-  if (!expiresAt) return false;
-  return Date.now() >= expiresAt.getTime() + 24 * 60 * 60 * 1000;
 }
 
 /** Display name of the staff account that checked the document. */
@@ -176,37 +176,51 @@ export async function memberRoutes(app: App): Promise<void> {
     },
   );
 
-  // Admin list/search.
+  /**
+   * The register: browse or search every member (SCRUM-246).
+   *
+   * Guarded by `pos:member:list`, NOT by the `pos:member:read` that guards the
+   * lookup above, because the two are different acts. Reception looking up the
+   * visitor at the counter asks by phone and gets one member. This asks for
+   * the list — the park's whole customer file — and until this ticket one
+   * request with no search term answered with all of it, every child's
+   * allergies and medical notes included, on a permission every till session
+   * holds. A shared or phished till was the whole register.
+   *
+   * Why a distinct permission rather than "a search term of at least N
+   * characters": the administrator's Members panel legitimately opens on the
+   * whole list and would break under a mandatory term, and a term would not
+   * stop an enumerator anyway — `a`, `b`, `c` walks the register in
+   * twenty-six requests. Who may browse is the question worth answering, and
+   * a permission is where that answer belongs. The term is escaped and paged
+   * regardless.
+   *
+   * Rows carry each child's identity and never their health notes; those stay
+   * on `GET /members/:id`, which is the read reception already does one
+   * visitor at a time.
+   */
   app.get(
     '/',
     {
-      config: { permission: 'pos:member:read' },
+      config: { permission: 'pos:member:list' },
       schema: {
-        description: 'List/search members',
-        querystring: z.object({ q: z.string().optional() }),
+        description:
+          'Browse or search the member register (paged; no child medical fields in a row)',
+        querystring: z.object({
+          q: z.string().max(200).optional(),
+          limit: z.coerce.number().int().min(1).max(REGISTER_PAGE_MAX).default(REGISTER_PAGE_DEFAULT),
+          offset: z.coerce.number().int().min(0).default(0),
+        }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
-      const base = and(eq(member.operatorId, auth.operatorId), isNull(member.archivedAt));
-      const rows = req.query.q
-        ? await app.db
-            .select()
-            .from(member)
-            .where(
-              and(
-                base,
-                or(
-                  ilike(member.nickname, `%${req.query.q}%`),
-                  ilike(member.phone, `%${req.query.q}%`),
-                ),
-              ),
-            )
-            .limit(50)
-        : await app.db.select().from(member).where(base).limit(50);
-      // Full objects (children + active verification) — the admin panel edits in place.
-      const full = await Promise.all(rows.map((m) => memberWithChildren(app, m.id, auth.operatorId)));
-      return { members: full.filter((m) => m !== null) };
+      return listRegister(app.db, {
+        operatorId: auth.operatorId,
+        q: req.query.q,
+        limit: req.query.limit,
+        offset: req.query.offset,
+      });
     },
   );
 
@@ -508,12 +522,20 @@ export async function memberRoutes(app: App): Promise<void> {
     },
   );
 
-  // Admin record-checking: every tier upgrade with document, expiry, the staff
-  // member who checked it, branch and timestamp (newest first).
+  /**
+   * Admin record-checking: every tier upgrade with document, expiry, the staff
+   * member who checked it, branch and timestamp (newest first).
+   *
+   * On `pos:member:list` with the register, and no longer on the counter's
+   * `pos:member:read` (SCRUM-246). Two hundred rows of member nickname and
+   * phone is a register by another name, so closing `GET /members` to a till
+   * session while leaving this open would have moved the door rather than
+   * shut it. The screen that reads it is an admin panel either way.
+   */
   app.get(
     '/tier-verifications',
     {
-      config: { permission: 'pos:member:read' },
+      config: { permission: 'pos:member:list' },
       schema: { description: 'List tier verification records for record checking' },
     },
     async (req) => {

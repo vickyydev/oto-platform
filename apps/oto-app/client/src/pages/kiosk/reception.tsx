@@ -6,12 +6,19 @@ import { CheckinsContent } from "@/pages/core/checkins";
 interface KioskSession {
   token: string;
   expiresAt: string;
+  // Sent only by the activation exchange, never by a refresh.
+  deviceSecret?: string;
   device: {
     id: string;
     name: string | null;
     branchId: string;
   };
 }
+
+// The secret this kiosk was handed when its QR code was scanned. It is what a
+// silent reconnect proves; the device id travels in responses and is not a
+// credential on its own.
+const DEVICE_SECRET_KEY = "kiosk_reception_device_secret";
 
 interface BranchInfo {
   id: string;
@@ -49,6 +56,9 @@ export default function ReceptionKiosk() {
           const session: KioskSession = await response.json();
           localStorage.setItem("kiosk_session_token", session.token);
           localStorage.setItem("kiosk_device_id", session.device.id);
+          if (session.deviceSecret) {
+            localStorage.setItem(DEVICE_SECRET_KEY, session.deviceSecret);
+          }
           setKioskToken(session.token);
 
           const branchResponse = await fetch("/api/kiosk-reception/branch", {
@@ -92,13 +102,16 @@ export default function ReceptionKiosk() {
       }
 
       // Session token is missing or invalid — try silent auto-reconnect via device ID
+      // A reconnect needs both halves. A kiosk activated before device secrets
+      // existed has the id but no secret, and has to be activated again.
       const storedDeviceId = localStorage.getItem("kiosk_device_id");
-      if (storedDeviceId) {
+      const storedDeviceSecret = localStorage.getItem(DEVICE_SECRET_KEY);
+      if (storedDeviceId && storedDeviceSecret) {
         try {
           const refreshResponse = await fetch("/api/kiosk/refresh-session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deviceId: storedDeviceId }),
+            body: JSON.stringify({ deviceId: storedDeviceId, deviceSecret: storedDeviceSecret }),
           });
 
           if (refreshResponse.ok) {
@@ -120,10 +133,11 @@ export default function ReceptionKiosk() {
             setStatus("active");
             return;
           } else if (refreshResponse.status === 401) {
-            // Explicit deactivation or device not found — clear both keys so staff
-            // knows a new QR code is needed
+            // Explicit deactivation, device not found, or a secret that did not
+            // verify — clear all three keys so staff knows a new QR code is needed
             localStorage.removeItem("kiosk_session_token");
             localStorage.removeItem("kiosk_device_id");
+            localStorage.removeItem(DEVICE_SECRET_KEY);
           }
           // For transient server errors (5xx, etc.), preserve kiosk_device_id so
           // the next page load can retry auto-reconnect automatically
@@ -132,9 +146,11 @@ export default function ReceptionKiosk() {
         }
       }
 
-      // If device ID is still stored, the refresh failed transiently (network/5xx);
-      // show a connectivity error instead of asking staff to scan a new QR code.
-      if (localStorage.getItem("kiosk_device_id")) {
+      // If both halves are still stored, the refresh failed transiently
+      // (network/5xx); show a connectivity error instead of asking staff to scan
+      // a new QR code. With the secret missing there is nothing to retry with,
+      // so fall through to the QR prompt.
+      if (localStorage.getItem("kiosk_device_id") && localStorage.getItem(DEVICE_SECRET_KEY)) {
         setIsConnectivityError(true);
         setError("Unable to connect. Please check the network and reload this page.");
       } else {

@@ -57,6 +57,19 @@ export const PERMISSIONS = [
   'admin:ops:manage',
   // POS — members & visits
   'pos:member:read',
+  /**
+   * Browsing the register, which is a different act from identifying the
+   * visitor at the counter (SCRUM-246).
+   *
+   * `pos:member:read` answers "who is this phone number" — one member, the one
+   * standing there, and reception needs it every few minutes. This one answers
+   * "who are all the members", which is the park's whole customer list and
+   * every guardian's phone number in one response. Reception never needs that,
+   * so it is not in their bundle: a till left unlocked, shared between shifts
+   * or signed in by somebody who should not be cannot page through the
+   * register.
+   */
+  'pos:member:list',
   'pos:member:create',
   'pos:member:update',
   /** Manager gate: a tier only ever goes down with someone accountable for it. */
@@ -255,6 +268,9 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'admin:booth:read',
     'admin:booth:staff_assign',
     'admin:health:read',
+    // The register is a manager's screen, not a counter's: it is in this
+    // bundle and deliberately not in `reception` (SCRUM-246).
+    'pos:member:list',
     'pos:member:create',
     'pos:member:update',
     'pos:member:tier_downgrade',

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { createHash, randomBytes } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { eq, and, gt, isNull } from "drizzle-orm";
 import { db } from "./db";
 import { kioskSessions, kioskDevices, kioskCodes, tenants, settings } from "@shared/schema";
@@ -45,6 +45,25 @@ export function generateKioskCode(): string {
 
 export function generateSessionToken(): string {
   return randomBytes(48).toString("base64url");
+}
+
+export function generateDeviceSecret(): string {
+  return randomBytes(32).toString("hex");
+}
+
+// Matches the hashing the face-recognition kiosks already use for their device
+// secret, so a secret issued here resolves through getKioskDeviceBySecret too.
+// Unpeppered sha256 is weak against an offline attack on a guessable input; a
+// device secret is 32 random bytes, so there is nothing to guess.
+export function hashDeviceSecret(secret: string): string {
+  return createHash("sha256").update(secret).digest("hex");
+}
+
+export function verifyDeviceSecret(secret: string, storedHash: string): boolean {
+  const candidate = Buffer.from(hashDeviceSecret(secret), "utf8");
+  const stored = Buffer.from(storedHash, "utf8");
+  if (candidate.length !== stored.length) return false;
+  return timingSafeEqual(candidate, stored);
 }
 
 export async function validateKioskSession(tokenHash: string): Promise<KioskSessionData | null> {
@@ -166,7 +185,7 @@ export async function exchangeKioskCode(
   code: string,
   ip?: string,
   userAgent?: string
-): Promise<{ token: string; expiresAt: Date; device: { id: string; name: string | null; branchId: string } } | null> {
+): Promise<{ token: string; expiresAt: Date; deviceSecret: string; device: { id: string; name: string | null; branchId: string } } | null> {
   const codeHash = hashKioskCode(code);
   const now = new Date();
 
@@ -220,12 +239,21 @@ export async function exchangeKioskCode(
 
   const kioskCode = updatedCode;
 
+  // The device gets its own secret at activation. The id alone is not a
+  // credential: it is handed to the browser and travels in responses, so a
+  // silent reconnect has to prove possession of something the browser was given
+  // once and nothing else carries. Hashed the same way as a face kiosk's secret
+  // (plain sha256, no pepper) so one device secret works on both paths.
+  const deviceSecret = generateDeviceSecret();
+  const deviceSecretHash = hashDeviceSecret(deviceSecret);
+
   const [device] = await db
     .insert(kioskDevices)
     .values({
       tenantId: kioskCode.tenantId,
       branchId: kioskCode.branchId,
       kioskType: "reception",
+      deviceSecretHash,
       isActive: true,
       lastSeenAt: now,
       lastIp: ip,
@@ -248,6 +276,7 @@ export async function exchangeKioskCode(
   return {
     token: sessionToken,
     expiresAt: sessionExpiresAt,
+    deviceSecret,
     device: {
       id: device.id,
       name: device.name,
@@ -258,6 +287,7 @@ export async function exchangeKioskCode(
 
 export async function refreshKioskSession(
   deviceId: string,
+  deviceSecret: string,
   ip?: string,
   userAgent?: string
 ): Promise<{ token: string; expiresAt: Date; device: { id: string; name: string | null; branchId: string } } | null> {
@@ -280,6 +310,15 @@ export async function refreshKioskSession(
   }
 
   const device = row.device;
+
+  // A session minted here lasts 30 days, so the id is not enough: the caller
+  // must present the secret the device was given when it was activated. A
+  // device with no stored secret was activated before secrets existed and
+  // cannot reconnect silently — it has to be activated again from a QR code.
+  if (!device.deviceSecretHash || !verifyDeviceSecret(deviceSecret, device.deviceSecretHash)) {
+    console.warn("[kiosk-refresh] failed: device secret did not verify", { deviceId, ip, userAgent });
+    return null;
+  }
 
   const sessionToken = generateSessionToken();
   const sessionTokenHash = hashSessionToken(sessionToken);

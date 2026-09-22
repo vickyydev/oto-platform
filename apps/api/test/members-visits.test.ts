@@ -2,13 +2,20 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { auditLog, child, member, memberTierVerification, operator, visit, visitChild } from '@oto/db';
 import { newId } from '@oto/shared';
-import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 let ctx: TestContext;
 let cookie: string;
+/**
+ * The register and the record-checking list are an administrator's screens
+ * since SCRUM-246; reception holds the counter's lookup and not those. The
+ * tests that read a list therefore sign in as an administrator.
+ */
+let adminCookie: string;
 beforeAll(async () => {
   ctx = await createTestContext();
   cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+  adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
 });
 afterAll(async () => {
   await ctx.close();
@@ -206,7 +213,7 @@ describe('Tier verification — proof checked at the counter (beyond the prototy
     const res = await ctx.app.inject({
       method: 'GET',
       url: '/members/tier-verifications',
-      headers: { cookie },
+      headers: { cookie: adminCookie },
     });
     expect(res.statusCode).toBe(200);
     const row = res
@@ -282,7 +289,7 @@ describe('Tier verification — proof checked at the counter (beyond the prototy
     const list = await ctx.app.inject({
       method: 'GET',
       url: '/members/tier-verifications',
-      headers: { cookie },
+      headers: { cookie: adminCookie },
     });
     const row = list
       .json()
@@ -358,13 +365,26 @@ describe('tenancy — another operator\'s member (S2-01d)', () => {
     expect(res.json().member).toBeNull();
   });
 
-  it('does not list the member', async () => {
+  it('does not list the member, even for an administrator of this operator', async () => {
+    // Driven as an administrator: reception no longer holds the register at
+    // all (SCRUM-246), so asking as reception would prove the guard and say
+    // nothing about tenancy. The account that MAY browse still sees only its
+    // own operator's members.
     const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/members?q=Not ours',
+      headers: { cookie: adminCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().members).toHaveLength(0);
+    expect(res.json().total).toBe(0);
+
+    const asReception = await ctx.app.inject({
       method: 'GET',
       url: '/members?q=Not ours',
       headers: { cookie },
     });
-    expect(res.json().members).toHaveLength(0);
+    expect(asReception.statusCode).toBe(403);
   });
 
   it('does not enrich or archive the member', async () => {

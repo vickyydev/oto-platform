@@ -857,7 +857,8 @@ export interface IStorage {
                 status: "ENROLLED" | "SUSPENDED",
         ): Promise<Employee>;
         updateEmployeePin(id: string, pinHash: string): Promise<Employee>;
-        getEmployeeByPin(pinHash: string): Promise<Employee | undefined>;
+        // Deliberately no getEmployeeByPin: a PIN identifies nobody on its own.
+        // Read the employee, then compare against that employee's stored digest.
         getEmployeeByPhoneE164(phoneE164: string): Promise<Employee | undefined>;
         updateEmployeePhoneE164(id: string, phoneE164: string): Promise<Employee>;
         incrementEmployeePhoneFallbackUsage(id: string): Promise<void>;
@@ -4976,14 +4977,6 @@ export class DatabaseStorage implements IStorage {
                         .where(eq(employees.id, id))
                         .returning();
                 return updated;
-        }
-
-        async getEmployeeByPin(pinHash: string): Promise<Employee | undefined> {
-                const [employee] = await db
-                        .select()
-                        .from(employees)
-                        .where(eq(employees.timeclockPinHash, pinHash));
-                return employee;
         }
 
         async getEmployeeByPhoneE164(
