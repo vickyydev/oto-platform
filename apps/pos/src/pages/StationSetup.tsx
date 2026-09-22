@@ -166,6 +166,28 @@ export default function StationSetup() {
   return <StationPicker />;
 }
 
+/**
+ * WHAT THE DEVICE LISTS ARE, WHEN THERE IS NO FLEET — SCRUM-238.
+ *
+ * With the fleet routes deployed, every printer and scanner offered below is one
+ * a box reported. Without them the list is the prototype's four seeded devices,
+ * and a station saved against one of those prints nowhere. The code has always
+ * known this; the screen did not say it, so somebody could finish the wizard
+ * believing a printer had been assigned.
+ */
+function MockDeviceNotice() {
+  return (
+    <div className="max-w-3xl mx-auto w-full mb-4 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+      <Info className="w-4 h-4 shrink-0 mt-0.5" />
+      <span>
+        This deployment has no device fleet yet (SCRUM-238), so the printers and scanners
+        below are the prototype's example list, not hardware anyone has reported. A station
+        saved against them will not print.
+      </span>
+    </div>
+  );
+}
+
 /** What a non-administrator gets for opening the wizard's address directly. */
 function SetupRefused({ action }: { action: string }) {
   const [, navigate] = useLocation();
@@ -628,6 +650,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
 
     return (
       <StationShell subtitle="First-time setup">
+        {!fleet && <MockDeviceNotice />}
         <Card className="p-6 flex flex-col bg-card/50 max-w-3xl mx-auto w-full">
           <div className="flex items-center justify-between mb-1 text-sm text-muted-foreground">
             <span>
@@ -828,6 +851,7 @@ function StationEditor({ wizard }: { wizard: boolean }) {
   return (
     <StationShell subtitle="Station settings">
       <ScrollArea className="flex-1">
+        {!fleet && <MockDeviceNotice />}
         <div className="max-w-3xl mx-auto w-full space-y-5 pb-8">
           {/* Capabilities */}
           <Card className="p-6 bg-card/50">

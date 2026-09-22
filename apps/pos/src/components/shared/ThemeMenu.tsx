@@ -80,6 +80,12 @@ export function ThemeMenu({ triggerClassName }: ThemeMenuProps) {
             className="w-full justify-start"
           />
         </DropdownMenuItem>
+        {/* SCRUM-238: `setOperatorThemePref` writes an in-memory map and no
+            route stores it, so the choice cannot outlive the tab. Said here
+            rather than left for staff to discover on the next reload. */}
+        <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
+          This device only, until reload (SCRUM-238).
+        </p>
       </DropdownMenuContent>
     </DropdownMenu>
   );
