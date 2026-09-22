@@ -157,18 +157,26 @@ export const MOCK_MUTATOR_TICKETS = {
   upsertDiscount: 'SCRUM-230',
   deleteDiscount: 'SCRUM-230',
   setDiscountReasons: 'SCRUM-230',
-  // F&B menu, categories, modifiers and merch all wait on the product schema
-  // reshape: `product` holds six business columns and the prototype's menu item
-  // carries a weekday/weekend price pair, cost, modifiers and translations.
+  // The product schema reshape has landed, so these are no longer waiting on a
+  // table: `product`, `product_category`, `modifier_group` and `modifier_option`
+  // hold the weekday/weekend pair, cost, modifiers and translations, the menu on
+  // screen is READ from them (`api/catalogBridge.ts:loadMenuFromApi`), and the
+  // menu panel's Import WRITES to them. What is left of SCRUM-232 is the
+  // write-through for these editors — one form saving an item is still a change
+  // to this tab and nothing else.
   upsertMenuItem: 'SCRUM-232',
   deleteMenuItem: 'SCRUM-232',
   upsertMenuCategory: 'SCRUM-232',
   deleteMenuCategory: 'SCRUM-232',
   upsertModifierGroup: 'SCRUM-232',
   deleteModifierGroup: 'SCRUM-232',
-  upsertMerchItem: 'SCRUM-232',
-  deleteMerchItem: 'SCRUM-232',
-  adjustMerchStock: 'SCRUM-232',
+  // The shop is the same three tables with `kind = 'merch'`, and rows are
+  // seeded there — but nothing reads or writes them through the API yet:
+  // `mapMenu` keeps only `kind === 'menu'`, so every merch item on screen comes
+  // from the ported mock. That is the shop half of SCRUM-204.
+  upsertMerchItem: 'SCRUM-204',
+  deleteMerchItem: 'SCRUM-204',
+  adjustMerchStock: 'SCRUM-204',
   // Stock tables exist and nothing in the API reads or writes them yet.
   upsertInventoryItem: 'SCRUM-204',
   deleteInventoryItem: 'SCRUM-204',

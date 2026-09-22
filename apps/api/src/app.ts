@@ -34,6 +34,7 @@ import { bookingRoutes } from './routes/bookings';
 import { saleRoutes } from './routes/sales';
 import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
+import { menuRoutes } from './routes/menu';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { publicRoutes } from './routes/public';
@@ -308,6 +309,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // being taken from the cart.
   await app.register(saleTierRoutes, { prefix: '/sales' });
   await app.register(catalogRoutes);
+  // The menu, the modifier library and the discount codes (SCRUM-232). No
+  // prefix, like the catalogue it belongs to: its items hang off
+  // `/branches/:branchId/menu` and the operator-wide rows off `/menu`.
+  await app.register(menuRoutes);
   // No prefix, like the catalogue: the fleet's branch-scoped resources are
   // nested under /branches/:branchId/… and its by-id routes are not, so the
   // paths are declared in full rather than assembled from two places.

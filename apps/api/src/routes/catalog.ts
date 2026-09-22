@@ -25,6 +25,7 @@ import {
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { categoryTaxCategory } from '../services/menu';
 import { resolveTax } from '../services/tax';
 import { opCtx, withTx } from '../services/tx';
 
@@ -737,7 +738,18 @@ export async function catalogRoutes(app: App): Promise<void> {
       .from(product)
       .where(and(eq(product.operatorId, auth.operatorId), isNull(product.archivedAt)));
     return {
-      categories: cats.map((c) => ({ id: c.id, name: c.name, taxableCategory: c.taxableCategory })),
+      categories: cats.map((c) => ({
+        id: c.id,
+        name: c.name,
+        /** What the row itself says — null on a sub-category that inherits. */
+        taxableCategory: c.taxableCategory,
+        /**
+         * What it actually resolves to, so the override picker shows a
+         * sub-category's inherited area instead of a blank. Same walk as the
+         * menu read and the sale ledger (`services/menu.ts`), not a third copy.
+         */
+        effectiveTaxableCategory: categoryTaxCategory(c, cats) ?? null,
+      })),
       products: prods.map((p) => ({ id: p.id, name: p.name, categoryId: p.categoryId })),
     };
   });

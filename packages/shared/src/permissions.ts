@@ -153,6 +153,17 @@ export const PERMISSIONS = [
   'catalog:holiday:manage',
   'catalog:tax:read',
   'catalog:tax:manage',
+  /**
+   * The menu, the shop and the discount codes (SCRUM-232, SCRUM-204).
+   *
+   * `import` is separate from `manage` on purpose: correcting one price and
+   * replacing eighty items in a single click are different risks, and the
+   * second one arrives as a file from outside the system. Reading is in the
+   * counter's bundle because the till cannot sell what it cannot list.
+   */
+  'catalog:menu:read',
+  'catalog:menu:manage',
+  'catalog:menu:import',
   // Analytics — the rollups Radar and Today read (S2-18)
   'analytics:read',
   // Which of the suite's apps a person may open (S2-02). Access is separate
@@ -182,7 +193,12 @@ export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
 const ALL = [...PERMISSIONS];
 
-const READ_CATALOG: Permission[] = ['catalog:package:read', 'catalog:holiday:read', 'catalog:tax:read'];
+const READ_CATALOG: Permission[] = [
+  'catalog:package:read',
+  'catalog:holiday:read',
+  'catalog:tax:read',
+  'catalog:menu:read',
+];
 
 /**
  * What the till reads without being allowed to change it. Every counter role
@@ -305,6 +321,10 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'catalog:package:update',
     'catalog:holiday:manage',
     'catalog:tax:manage',
+    'catalog:menu:manage',
+    // Replacing the menu from a spreadsheet stops here: reception inherits the
+    // read half through READ_COUNTER and neither of the write halves.
+    'catalog:menu:import',
     'analytics:read',
     'app:pos:access',
     'app:console:access',

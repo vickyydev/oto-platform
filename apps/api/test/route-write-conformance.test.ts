@@ -206,6 +206,11 @@ const NO_DIRECT_WRITE = [
   'POST /booth/spin',
   'POST /booth/staff/sign-in',
   'POST /booth/staff/sign-out',
+  // SCRUM-232: the import's first step parses, validates and diffs a workbook
+  // and writes nothing at all — that is the whole point of a preview. The
+  // second step, `POST /branches/:branchId/menu/import`, does the writing and
+  // is transacted.
+  'POST /branches/:branchId/menu/import/preview',
   'POST /print-templates/:id/preview.png',
   'POST /sales/quote',
   'POST /stations/:id/button',

@@ -25,13 +25,37 @@ export async function resolveTax(
   let categoryId = target.categoryId ?? null;
 
   // A product implies its category (and the category its taxable area).
+  //
+  // Resolution order is the prototype's `effectiveTaxCategory`
+  // (`imports/oto-pos/artifacts/oto-till/src/lib/menu.ts:101-110`): the item's
+  // own override, else its category's, else — for a sub-category that leaves
+  // the field unset to inherit — its parent's. Where the prototype then falls
+  // back to 'fnb', the caller here has already declared a taxable area, so that
+  // stands instead.
+  let itemOverride: string | null = null;
   if (target.productId) {
     const [p] = await db.select().from(product).where(eq(product.id, target.productId)).limit(1);
     if (p?.categoryId) categoryId = categoryId ?? p.categoryId;
+    itemOverride = p?.taxCategoryOverride ?? null;
   }
-  if (categoryId) {
-    const [c] = await db.select().from(productCategory).where(eq(productCategory.id, categoryId)).limit(1);
-    if (c) taxableCategory = c.taxableCategory;
+  if (itemOverride) {
+    taxableCategory = itemOverride;
+  } else if (categoryId) {
+    const [c] = await db
+      .select()
+      .from(productCategory)
+      .where(eq(productCategory.id, categoryId))
+      .limit(1);
+    if (c?.taxableCategory) {
+      taxableCategory = c.taxableCategory;
+    } else if (c?.parentId) {
+      const [parent] = await db
+        .select()
+        .from(productCategory)
+        .where(eq(productCategory.id, c.parentId))
+        .limit(1);
+      if (parent?.taxableCategory) taxableCategory = parent.taxableCategory;
+    }
   }
 
   // 1. Branch default from the per-category engine config.

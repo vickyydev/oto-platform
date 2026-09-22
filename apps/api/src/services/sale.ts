@@ -8,7 +8,6 @@ import {
   member,
   paymentAttempt,
   product,
-  productCategory,
   receiptSeries,
   sale,
   saleDiscount,
@@ -46,6 +45,7 @@ import {
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
+import { resolveItemTaxCategories } from './menu';
 import { resolveTierClaim } from './sale-tier';
 import type { Exec, Tx } from './tx';
 
@@ -468,9 +468,8 @@ async function loadCatalogue(
   const products = new Map<string, { row: typeof product.$inferSelect; category: TaxableCategory | null }>();
   if (productIds.length > 0) {
     const rows = await db
-      .select({ p: product, taxable: productCategory.taxableCategory })
+      .select()
       .from(product)
-      .leftJoin(productCategory, eq(product.categoryId, productCategory.id))
       .where(
         and(
           inArray(product.id, productIds),
@@ -479,14 +478,23 @@ async function loadCatalogue(
           isNull(product.archivedAt),
         ),
       );
-    for (const row of rows) {
-      // A product may be operator-wide (branch null) or this branch's; one
-      // belonging to another branch is not on sale here.
-      if (row.p.branchId && row.p.branchId !== scope.branchId) continue;
-      products.set(row.p.id, {
-        row: row.p,
-        category: (row.taxable as TaxableCategory | null) ?? null,
-      });
+    // A product may be operator-wide (branch null) or this branch's; one
+    // belonging to another branch is not on sale here.
+    const onSale = rows.filter((row) => !row.branchId || row.branchId === scope.branchId);
+    /**
+     * The taxable area is RESOLVED, not read off a join.
+     *
+     * `product_category.taxable_category` is null on a sub-category, meaning
+     * "inherit the parent's" (migration 0015), so a single leftJoin answers
+     * null for every item filed under one — the Iced Latte in Drinks / Coffee
+     * among them — and its money would land in the add-ons area rather than in
+     * F&B. `resolveItemTaxCategories` walks the item's own override, then its
+     * category, then that category's parent: the same three steps
+     * `services/tax.ts` and the menu read take.
+     */
+    const areas = await resolveItemTaxCategories(db, onSale);
+    for (const row of onSale) {
+      products.set(row.id, { row, category: areas.get(row.id) ?? null });
     }
   }
 
@@ -594,20 +602,26 @@ export async function priceCart(
         }
         snapshotPriced.add(addOn.id);
       }
+      /**
+       * Which taxable area this add-on's money lands in.
+       *
+       * `found.category` is the RESOLVED area from `loadCatalogue` — the item's
+       * own override, else its category's, else its parent's — so the seeded
+       * Ice Cream Cone reports as F&B, and so does the Iced Latte, filed under
+       * a Coffee sub-category that inherits its area rather than stating one.
+       * The catalogue's answer wins whenever it has one; the till's snapshot is
+       * used only for an add-on the catalogue does not price (the prototype's
+       * `a-locker`), and an area nothing resolves falls to the engine's own
+       * `addons` default.
+       */
+      const taxArea = found?.category ?? addOn.taxCategoryOverride ?? null;
       return {
         id: found?.row.id ?? addOn.id,
         name: found?.row.name ?? addOn.name ?? 'Add-on',
         price: found?.row.priceSatang ?? addOn.unitSatang ?? 0,
         quantity: addOn.quantity,
         ...(addOn.variantBreakdown ? { variantBreakdown: addOn.variantBreakdown } : {}),
-        // The category's taxable area, when it is not the add-ons default —
-        // the seeded ice cream is F&B and its money has to land there. The
-        // catalogue's answer wins; the till's is used when there is none.
-        ...(found?.category && found.category !== 'addons'
-          ? { taxCategoryOverride: found.category }
-          : addOn.taxCategoryOverride
-            ? { taxCategoryOverride: addOn.taxCategoryOverride }
-            : {}),
+        ...(taxArea ? { taxCategoryOverride: taxArea } : {}),
       };
     });
 
