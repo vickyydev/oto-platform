@@ -26,6 +26,14 @@ interface FnbConfirmationProps {
   newBalance: number | null;
   onNewOrder: () => void;
   /**
+   * THE RECEIPT NUMBER THE PLATFORM ALLOCATED (S2-09b), when the order reached
+   * the ledger. Null on a station with no platform station behind it, where
+   * `SaleNotSavedNotice` above says why — so the absence of a number is never
+   * silent, and its presence is the proof the order is in the day's takings
+   * rather than in this browser.
+   */
+  receiptNumber?: string | null;
+  /**
    * When true (mobile portrait), the whole confirmation flows naturally and the
    * surrounding page scrolls — the items list is NOT trapped in a fixed-height
    * inner ScrollArea (which collapses and overlaps siblings on a short screen).
@@ -38,6 +46,7 @@ export function FnbConfirmation({
   order,
   newBalance,
   onNewOrder,
+  receiptNumber = null,
   flowLayout = false,
 }: FnbConfirmationProps) {
   const { payment } = order;
@@ -74,6 +83,11 @@ export function FnbConfirmation({
             Order #{order.id}
             {order.wristband ? ` • ${order.wristband.customerNickname}` : ' • Guest'}
           </p>
+          {receiptNumber && (
+            <p className="mt-1 text-sm font-semibold tabular-nums text-foreground/80">
+              Receipt {receiptNumber}
+            </p>
+          )}
         </div>
 
         <Card className="p-4 mb-4 shrink-0 flex items-center justify-between bg-primary/5 border-primary/30">

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import {
   account,
   branch,
@@ -6,8 +6,11 @@ import {
   branchTaxConfig,
   employee,
   member,
+  modifierGroup,
+  modifierOption,
   paymentAttempt,
   product,
+  productModifierGroup,
   receiptSeries,
   sale,
   saleDiscount,
@@ -31,11 +34,13 @@ import {
   parseDayStart,
   PRICING_ENGINE_VERSION,
   priceCartLine,
+  resolveRate,
   SERVICE_FEE_ROW_KEY,
   type CartAddOn,
   type CartUnit,
   type DiscountComponentTarget,
   type ManualDiscount,
+  type PrepStation,
   type PricingContext,
   type PromoDiscount,
   type TaxableCategory,
@@ -45,7 +50,13 @@ import {
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
-import { resolveItemTaxCategories } from './menu';
+import {
+  assertModifierSelection,
+  effectiveModifierGroups,
+  resolveItemPrepStations,
+  resolveItemTaxCategories,
+  type ModifierGroupWithOptions,
+} from './menu';
 import { resolveTierClaim, spendTierClaim, type TierClaimRefusal } from './sale-tier';
 import type { Exec, Tx } from './tx';
 
@@ -123,6 +134,44 @@ export interface CartLineInput {
   lineTotalSatang?: number;
 }
 
+/**
+ * S2-09b (SCRUM-204) — AN F&B OR SHOP LINE ON THE CART.
+ *
+ * WHAT IT SAYS AND WHAT IT DOES NOT. A product id, how many, which modifier
+ * options were chosen, what staff typed on it and — for a stocked merch item —
+ * which size came off the shelf. NOT a price: the unit price is composed here
+ * from `pos.product` and `pos.modifier_option`, the same way the prototype's
+ * `computeUnitPrice` composes it in the browser (`lib/fnb.ts:28-42`), and
+ * `lineTotalSatang` is reconciled against that rather than charged.
+ *
+ * IDENTICAL LINES ARE MERGED ON THE TILL, NOT HERE. The prototype merges an
+ * item into a twin only when the item, the modifier signature, the note AND the
+ * variant all match (`pages/OrderStation.tsx:236-243`), because a differing
+ * note has to reach the kitchen as its own line. That is a decision about what
+ * the guest asked for, made where the cart is edited; the platform records what
+ * it is sent, so two lines arriving with different notes become two rows.
+ */
+export interface CartItemLineInput {
+  /** The till's own order-line id (UUIDv7), kept on the sale line. */
+  id: string;
+  /** A `pos.product` of kind `menu` or `merch`. */
+  productId: string;
+  quantity: number;
+  /** The prototype's `SelectedModifier[]` — a group, and the options chosen under it. */
+  modifiers?: { groupId: string; optionIds: string[] }[];
+  /** Free-text per-item note: "no pickles". Follows the item to its prep station. */
+  note?: string;
+  /**
+   * Which size came off the shelf. An id and the label staff saw, carried as
+   * sent: stock is S2-14b and there is no variant table to resolve against yet,
+   * which is the same reason `CartAddOnInput.variantBreakdown` carries its own
+   * labels.
+   */
+  variant?: { variantId: string; variantLabel: string } | null;
+  /** What the screen showed for this line. Reconciled against the platform's price, never charged. */
+  lineTotalSatang?: number;
+}
+
 export interface ManualDiscountInput {
   id: string;
   scope: 'order' | 'line';
@@ -146,7 +195,24 @@ export interface CartInput {
    * and otherwise the till's snapshot, exactly as add-ons are.
    */
   socks?: { addOnId: string; unitSatang?: number; label?: string };
-  lines: CartLineInput[];
+  /**
+   * The ticket lines. Optional since S2-09b: an F&B or shop order carries none,
+   * and the cart is refused only when it has neither kind of line.
+   */
+  lines?: CartLineInput[];
+  /** S2-09b — the F&B and shop lines on this cart. See `CartItemLineInput`. */
+  items?: CartItemLineInput[];
+  /**
+   * S2-09b — the order's pick-up code, minted by the till.
+   *
+   * The prototype keys it on a number pad before the payment stage and prints
+   * it on the receipt and on both prep tickets
+   * (`components/fnb/PickupCodeModal.tsx`, `lib/fnb.ts:buildPrepTickets`), so a
+   * guest can be handed the right tray. It is a label, not money: the platform
+   * checks its shape, records it, and REQUIRES one before a sale carrying any
+   * F&B line can be finalised — see `assertPickupCode`.
+   */
+  pickupCode?: string;
   manualDiscounts?: ManualDiscountInput[];
   /**
    * Promo codes the till resolved from its own catalogue.
@@ -343,6 +409,40 @@ async function resolveTier(
   return { code: fallback?.code ?? 'tourist', source: 'default' };
 }
 
+/**
+ * What a `pos.sale_line` carries that has no column of its own.
+ *
+ * `price_source` was the whole of it in S2-09a. S2-09b adds what an F&B or
+ * shop line is made of: the options the guest chose and what each one cost,
+ * the note that follows the item to its station, the size that came off the
+ * shelf, where the prep ticket prints, and the order's pick-up code.
+ *
+ * EVERY ONE OF THOSE IS FROZEN ON THE LINE rather than left to a join. A
+ * modifier option can be renamed, re-priced or withdrawn tomorrow; the receipt
+ * this guest was handed cannot change with it, and neither can the record of
+ * what the kitchen was asked to make.
+ */
+export interface SaleLinePayload {
+  /** Non-null when this unit's price came from the till rather than the catalogue. */
+  priceSource?: 'till_snapshot';
+  /** The chosen options, in the order the item asks its groups, with the per-unit delta each added. */
+  modifiers?: {
+    groupId: string;
+    groupName: string;
+    optionId: string;
+    optionName: string;
+    unitSatang: number;
+  }[];
+  /** The prototype's per-item note (`FnbOrderLine.note`). */
+  note?: string;
+  /** The size sold, as staff saw it (`FnbOrderLine.variantId` / `variantLabel`). */
+  variant?: { variantId: string; variantLabel: string };
+  /** Where this item's prep ticket prints: override → category → parent → kitchen. */
+  prepStation?: PrepStation;
+  /** The order's pick-up code, on every F&B line so each prep ticket carries it. */
+  pickupCode?: string;
+}
+
 /** A priced unit, ready to become a `pos.sale_line` row. */
 export interface PricedLine {
   lineNo: number;
@@ -385,8 +485,8 @@ export interface PricedLine {
   freeAdultCount: number;
   stayHours: number | null;
   stayDurationLabel: string | null;
-  /** Non-null when this unit's price came from the till rather than the catalogue. */
-  payload: { priceSource: 'till_snapshot' } | null;
+  /** What this unit carries that has no column. See `SaleLinePayload`. */
+  payload: SaleLinePayload | null;
 }
 
 export interface PricedCart {
@@ -400,6 +500,8 @@ export interface PricedCart {
    * sale and spends (SCRUM-311).
    */
   tier: { code: string; source: 'member' | 'claim' | 'default'; claimId?: string };
+  /** S2-09b — the order's pick-up code as the cart sent it, trimmed. Null when it sent none. */
+  pickupCode: string | null;
   /**
    * SCRUM-311 — why a claim the cart NAMED priced nothing. Null on every cart
    * that named none, and on every cart whose claim priced it. Today there is
@@ -449,12 +551,15 @@ async function loadCatalogue(
   scope: PricingScope,
   input: CartInput,
 ): Promise<CatalogueLookup> {
-  const packageIds = [...new Set(input.lines.map((l) => l.packageId))];
+  const packageIds = [...new Set((input.lines ?? []).map((l) => l.packageId))];
   const productIds = [
     ...new Set(
       [
-        ...input.lines.flatMap((l) => (l.addOns ?? []).map((a) => a.id)),
+        ...(input.lines ?? []).flatMap((l) => (l.addOns ?? []).map((a) => a.id)),
         ...(input.socks ? [input.socks.addOnId] : []),
+        // S2-09b — an F&B or shop line names a `pos.product` and nothing else,
+        // so it is loaded here with the add-ons and gets the same tax walk.
+        ...(input.items ?? []).map((i) => i.productId),
       ].filter((id) => UUID.test(id)),
     ),
   ];
@@ -523,6 +628,284 @@ function lineKindOf(unit: CartUnit): SaleLineKind {
   return 'addon';
 }
 
+// --- F&B and shop lines (S2-09b) --------------------------------------------
+
+/**
+ * The shape of a pick-up code. The prototype mints it on a number pad capped at
+ * six characters (`components/fnb/PickupCodeModal.tsx:63`) and accepts anything
+ * non-blank; this accepts that, plus letters and an internal dash, so a branch
+ * printing `A-12` is not refused by a rule nobody made.
+ */
+const PICKUP_CODE = /^[A-Za-z0-9][A-Za-z0-9-]{0,11}$/;
+
+/** The trimmed code, or null when there is none. Throws on a code that is not one. */
+function normalisePickupCode(value: string | null | undefined): string | null {
+  const trimmed = (value ?? '').trim();
+  if (trimmed === '') return null;
+  if (!PICKUP_CODE.test(trimmed)) {
+    throw errors.badRequest(
+      'A pick-up code is a short code of letters, digits and dashes — up to twelve characters',
+      { pickupCode: trimmed },
+    );
+  }
+  return trimmed;
+}
+
+/**
+ * The pick-up code recorded on a sale's F&B lines, if one is.
+ *
+ * It lives on the lines rather than on `pos.sale`, which has no column for it
+ * and gets none from this ticket — the F&B lines are also the only rows that
+ * need it, since each prep station's ticket is built from the lines routed to
+ * it. The first code found answers for the order: they are written together in
+ * one transaction, from one string.
+ */
+function recordedPickupCode(lines: readonly { payload: unknown }[]): string | null {
+  for (const line of lines) {
+    const code = (line.payload as SaleLinePayload | null)?.pickupCode;
+    if (code) return code;
+  }
+  return null;
+}
+
+/** The refusal a sale carrying food gets when nobody keyed a pick-up code. */
+function pickupCodeRequired(): never {
+  throw errors.conflict(
+    'PICKUP_CODE_REQUIRED',
+    'This order has food on it, so it needs a pick-up code before it can be paid for',
+  );
+}
+
+/**
+ * The `packageId` an F&B or shop line's cart line carries.
+ *
+ * It is NOT a package and names no row: an item line has no admission on it, so
+ * there is nothing for a `ticketType`-scoped discount to match and a real
+ * package id here would make one match something it never sold. `buildPricedLines`
+ * looks it up in the loaded packages, finds nothing, and writes
+ * `ticket_package_id` null — which is what the ledger should say about a plate
+ * of chips.
+ */
+const ITEM_LINE_PACKAGE_KEY = 'item-line';
+
+/** One F&B or shop line, priced and ready to join the cart the engine totals. */
+interface ResolvedItemLine {
+  cartLineId: string;
+  kind: Extract<SaleLineKind, 'fnb_item' | 'merch_item'>;
+  productId: string;
+  payload: SaleLinePayload;
+  cartLine: TicketCartLine;
+}
+
+/**
+ * Price the cart's F&B and shop lines from the catalogue, and refuse the ones
+ * the menu does not allow.
+ *
+ * THREE RULES, all of them the prototype's:
+ *
+ *   1. THE UNIT PRICE IS THE ITEM'S PRICE PLUS THE CHOSEN OPTIONS' DELTAS, at
+ *      this rate mode — `computeUnitPrice` (`lib/fnb.ts:28-42`), which resolves
+ *      the item's weekday/weekend pair and then every selected option's. Both
+ *      come from `pos.product` and `pos.modifier_option`. Nothing in the body
+ *      contributes a figure.
+ *   2. A TIER DOES NOT DISCOUNT FOOD OR MERCHANDISE. The prototype prices a
+ *      ticket through `priceForTier` and an F&B or merch line through
+ *      `resolveRate(item.price, mode)` with no tier anywhere in the call
+ *      (`lib/fnb.ts:33`, `lib/merch.ts:19` — "Merch is flat-priced (no tier, no
+ *      modifiers)"). So the expat rate takes nothing off a latte, and the
+ *      resolved tier reaches these lines only as the value frozen on the row.
+ *   3. THE MODIFIER RULES ARE THE MENU'S, checked rather than trusted — see
+ *      `assertModifierSelection`.
+ *
+ * HOW IT REACHES THE ENGINE. Each item line becomes a cart line carrying one
+ * priced quantity of one catalogue item with its own taxable area — which is
+ * exactly what `CartAddOn` is — and no participants. That is not a trick to get
+ * around the engine: it means the F&B money is decomposed into units, bounded
+ * by the discount ledger, run through the same tax cascade and apportioned back
+ * the same way admission is, instead of a second set of totals arithmetic
+ * living here. `lineKindOf` would call such a unit an `addon`; `buildPricedLines`
+ * writes the kind this function resolved, `fnb_item` or `merch_item`.
+ *
+ * WHAT IT COSTS, recorded rather than discovered later: `rowMatchesTarget` in
+ * `@oto/shared` answers `false` for the `fnb`, `fnbCategory`, `menuItems` and
+ * `merch` promo scopes on every cart row, and `true` for `addOns` on any
+ * add-on-kind row. So a promo code scoped to F&B finds no base on these lines
+ * and one scoped to add-ons reaches them. Nothing wires those scopes to the
+ * till's F&B lane yet — the promo catalogue is this ticket's admin panel and
+ * the cart carries its definitions from the till — so no code in the park is
+ * affected today; the slice that wires them has to widen that matcher.
+ *
+ * MODIFIERS DO NOT GET THEIR OWN LEDGER ROWS. The ticket asks for a `modifier`
+ * line kind and `pos.sale_line`'s vocabulary has none (`SALE_LINE_KINDS`), and
+ * this ticket adds no migration. It is also what the prototype does: an
+ * option's delta is inside `FnbOrderLine.lineTotal` and there is no modifier
+ * line anywhere in it. So an option's money rides its item's unit price, and
+ * every chosen option is itemised on the line's `payload.modifiers` with the
+ * delta it added — which is what the receipt and the prep ticket print from.
+ */
+async function resolveItemLines(
+  db: Exec,
+  scope: PricingScope,
+  ctx: PricingContext,
+  input: CartInput,
+  catalogue: CatalogueLookup,
+  tierCode: string,
+): Promise<ResolvedItemLine[]> {
+  const itemInputs = input.items ?? [];
+  if (itemInputs.length === 0) return [];
+
+  const rows = itemInputs.map((line) => {
+    const found = catalogue.products.get(line.productId);
+    if (!found) {
+      throw errors.badRequest(
+        'That item is not on this branch’s menu any more, so it cannot be sold',
+        { cartLineId: line.id, productId: line.productId },
+      );
+    }
+    if (found.row.kind === 'addon') {
+      throw errors.badRequest(
+        `"${found.row.name}" is a ticket add-on: it goes on a ticket line, not on its own`,
+        { cartLineId: line.id, productId: line.productId },
+      );
+    }
+    return found.row;
+  });
+
+  const productIds = [...new Set(rows.map((r) => r.id))];
+  // An item's INLINE groups plus the shared LIBRARY, resolved by the same
+  // function the menu screens resolve with (`effectiveModifierGroups`), so the
+  // question the till asked and the question the price is composed from are one
+  // question.
+  const groups = await db
+    .select()
+    .from(modifierGroup)
+    .where(
+      and(
+        eq(modifierGroup.operatorId, scope.operatorId),
+        isNull(modifierGroup.archivedAt),
+        or(inArray(modifierGroup.productId, productIds), isNull(modifierGroup.productId)),
+      ),
+    )
+    .orderBy(asc(modifierGroup.sortOrder), asc(modifierGroup.name));
+  const links = await db
+    .select({
+      productId: productModifierGroup.productId,
+      modifierGroupId: productModifierGroup.modifierGroupId,
+      sortOrder: productModifierGroup.sortOrder,
+    })
+    .from(productModifierGroup)
+    .where(
+      and(
+        eq(productModifierGroup.operatorId, scope.operatorId),
+        inArray(productModifierGroup.productId, productIds),
+      ),
+    );
+  const options = groups.length
+    ? await db
+        .select()
+        .from(modifierOption)
+        .where(
+          and(
+            inArray(
+              modifierOption.modifierGroupId,
+              groups.map((g) => g.id),
+            ),
+            isNull(modifierOption.archivedAt),
+          ),
+        )
+        .orderBy(asc(modifierOption.sortOrder), asc(modifierOption.name))
+    : [];
+  const prepStations = await resolveItemPrepStations(db, rows);
+
+  const inlineGroups = groups.filter((g) => g.productId !== null);
+  const libraryGroups = groups.filter((g) => g.productId === null);
+  /** The weekday/weekend pair as the engine resolves every other one. */
+  const rate = (weekday: number, weekend: number | null): number =>
+    resolveRate({ weekday, weekend: weekend ?? weekday }, ctx.mode);
+
+  const resolved: ResolvedItemLine[] = [];
+  itemInputs.forEach((line, index) => {
+    const row = rows[index]!;
+    const kind = row.kind === 'merch' ? ('merch_item' as const) : ('fnb_item' as const);
+    const itemGroups: ModifierGroupWithOptions[] = effectiveModifierGroups(
+      row.id,
+      inlineGroups,
+      links,
+      libraryGroups,
+    ).map((group) => ({ group, options: options.filter((o) => o.modifierGroupId === group.id) }));
+    const chosen = (line.modifiers ?? []).map((m) => ({
+      groupId: m.groupId,
+      optionIds: m.optionIds,
+    }));
+    assertModifierSelection(row.name, itemGroups, chosen);
+
+    const chosenByGroup = new Map(chosen.map((c) => [c.groupId, c.optionIds]));
+    let unitSatang = rate(row.priceSatang, row.priceWeekendSatang);
+    const modifiers: NonNullable<SaleLinePayload['modifiers']> = [];
+    // Group order, then the order the options were chosen in — the order the
+    // prototype lists them in on the display and the receipt
+    // (`describeModifiers`, `breakdownModifiers`).
+    for (const { group, options: offered } of itemGroups) {
+      for (const optionId of chosenByGroup.get(group.id) ?? []) {
+        const option = offered.find((o) => o.id === optionId)!;
+        const delta = rate(option.priceSatang, option.priceWeekendSatang);
+        unitSatang += delta;
+        modifiers.push({
+          groupId: group.id,
+          groupName: group.name,
+          optionId: option.id,
+          optionName: option.name,
+          unitSatang: delta,
+        });
+      }
+    }
+
+    /**
+     * Which taxable area this item's money lands in: the resolved walk from
+     * `loadCatalogue` — the item's override, else its category's, else its
+     * parent's. Where nothing in the chain answers, a menu item is `fnb` and a
+     * shop item is `merch`, which is the prototype's own fallback on each side
+     * (`lib/menu.ts:101-110`, `lib/merch.ts:merchTaxInputs`).
+     */
+    const taxCategory: TaxableCategory =
+      catalogue.products.get(row.id)?.category ?? (kind === 'merch_item' ? 'merch' : 'fnb');
+    const note = (line.note ?? '').trim();
+    const payload: SaleLinePayload = {
+      ...(modifiers.length > 0 ? { modifiers } : {}),
+      ...(note ? { note } : {}),
+      ...(line.variant ? { variant: line.variant } : {}),
+      // Merchandise is handed over at the till and prints no prep ticket at all
+      // (`types.ts:1213`), so a station on a shop line would be a fact about
+      // nothing.
+      ...(kind === 'fnb_item' ? { prepStation: prepStations.get(row.id) ?? 'kitchen' } : {}),
+    };
+
+    const cartLine: TicketCartLine = {
+      id: line.id,
+      packageId: ITEM_LINE_PACKAGE_KEY,
+      package: { prices: {}, adultRules: null },
+      tier: tierCode,
+      kids: 0,
+      adults: 0,
+      socks: 0,
+      addOns: [
+        {
+          id: row.id,
+          name: row.name,
+          price: unitSatang,
+          quantity: line.quantity,
+          taxCategoryOverride: taxCategory,
+        },
+      ],
+      lineTotal: 0,
+    };
+    cartLine.lineTotal = priceCartLine(cartLine, ctx);
+    resolved.push({ cartLineId: line.id, kind, productId: row.id, payload, cartLine });
+  });
+
+  return resolved;
+}
+
 /**
  * Price a cart. Reads the catalogue, the branch's calendar and its tax
  * configuration, then hands the whole thing to `computeTicketCartTotals` — the
@@ -589,7 +972,7 @@ export async function priceCart(
   };
 
   const cartLines: TicketCartLine[] = [];
-  for (const line of input.lines) {
+  for (const line of input.lines ?? []) {
     const pkg = catalogue.packages.get(line.packageId);
     if (!pkg) throw errors.badRequest('A selected ticket is no longer available');
     const prices = pkg.prices as Record<string, { weekday: number; weekend: number }>;
@@ -705,6 +1088,38 @@ export async function priceCart(
     cartLines.push(cartLine);
   }
 
+  /**
+   * S2-09b — the F&B and shop lines, priced from the catalogue and appended to
+   * the cart the engine totals, so one cascade covers the whole bill.
+   */
+  const itemLines = await resolveItemLines(db, scope, ctx, input, catalogue, resolvedTier.code);
+  for (const item of itemLines) {
+    const sent = (input.items ?? []).find((l) => l.id === item.cartLineId)?.lineTotalSatang;
+    // The same reconciliation a ticket line gets, and yielding to a refused
+    // claim for the same reason: the till's figure is a fact about the till.
+    if (sent !== undefined && sent !== item.cartLine.lineTotal && claimed.refusal === null) {
+      throw errors.conflict(
+        'SALE_LINE_PRICE_MISMATCH',
+        'The till and the platform priced a line differently — refresh the catalogue and re-price',
+        {
+          cartLineId: item.cartLineId,
+          tillLineTotalSatang: sent,
+          platformLineTotalSatang: item.cartLine.lineTotal,
+        },
+      );
+    }
+    cartLines.push(item.cartLine);
+  }
+
+  // The engine keys a line's amount, its component bases and every line-scoped
+  // discount by the cart line id, so two lines sharing one would have the
+  // second's money read off the first. Refused rather than mispriced.
+  const lineIds = cartLines.map((l) => l.id);
+  if (new Set(lineIds).size !== lineIds.length) {
+    throw errors.badRequest('Two lines on this cart carry the same id, so it cannot be priced');
+  }
+  if (cartLines.length === 0) throw errors.badRequest('The cart is empty');
+
   // A code with no definition attached has nothing to validate it against
   // (S2-09b owns the catalogue), so it is refused by name and takes nothing
   // off the bill rather than being guessed at.
@@ -752,11 +1167,22 @@ export async function priceCart(
     );
   }
 
-  const lines = buildPricedLines(cartLines, ctx, totals, resolvedTier.code, catalogue, snapshotPriced);
+  const pickupCode = normalisePickupCode(input.pickupCode);
+  const lines = buildPricedLines(
+    cartLines,
+    ctx,
+    totals,
+    resolvedTier.code,
+    catalogue,
+    snapshotPriced,
+    new Map(itemLines.map((item) => [item.cartLineId, item])),
+    pickupCode,
+  );
 
   return {
     scope,
     tier: resolvedTier,
+    pickupCode,
     tierClaimRefusal: claimed.refusal,
     disagreements: {
       // The till says what it believed; the platform says what it charged.
@@ -813,6 +1239,9 @@ function buildPricedLines(
   tierCode: string,
   catalogue: CatalogueLookup,
   snapshotPriced: ReadonlySet<string>,
+  /** S2-09b — the F&B and shop lines, by cart line id. See `resolveItemLines`. */
+  itemLines: ReadonlyMap<string, ResolvedItemLine>,
+  pickupCode: string | null,
 ): PricedLine[] {
   const units = cartUnits(cartLines, ctx);
   const byCategory = new Map<TaxableCategory, number[]>();
@@ -869,9 +1298,14 @@ function buildPricedLines(
     const serviceCharge = service[index] ?? 0;
     // Inclusive tax is already inside the base; exclusive tax is added to it.
     const net = base - incl;
-    const kind = lineKindOf(unit);
-    const productId =
-      kind === 'socks'
+    // An F&B or shop line reaches the engine as one add-on row on its own cart
+    // line, so `lineKindOf` would call it an `addon`. The kind the ledger
+    // records is the one `resolveItemLines` resolved from `product.kind`.
+    const item = itemLines.get(unit.lineId);
+    const kind = item ? item.kind : lineKindOf(unit);
+    const productId = item
+      ? item.productId
+      : kind === 'socks'
         ? (catalogue.products.get(ctx.socks.addOnId)?.row.id ?? null)
         : kind === 'addon' && row
           ? (catalogue.products.get(row.key)?.row.id ?? null)
@@ -912,11 +1346,18 @@ function buildPricedLines(
       freeAdultCount: freeAdults,
       stayHours: pkg?.hours ?? null,
       stayDurationLabel: pkg?.durationLabel ?? null,
-      payload:
-        (row && snapshotPriced.has(row.key)) ||
-        (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
-        ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
-          snapshotPriced.has(unit.lineId))
+      payload: item
+        ? {
+            ...item.payload,
+            // The pick-up code is the ORDER's, and it is stamped on every F&B
+            // line because each prep station's ticket is built from the lines
+            // that route to it and has to print the code the guest holds.
+            ...(item.kind === 'fnb_item' && pickupCode ? { pickupCode } : {}),
+          }
+        : (row && snapshotPriced.has(row.key)) ||
+            (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
+            ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
+              snapshotPriced.has(unit.lineId))
           ? { priceSource: 'till_snapshot' as const }
           : null,
     };
@@ -1218,6 +1659,8 @@ export interface CommitResult {
   finalised: boolean;
   /** What is left to tender. Zero on a comp; the gross on everything else. */
   outstandingSatang: number;
+  /** S2-09b — the pick-up code recorded on this sale's F&B lines, if it has any. */
+  pickupCode: string | null;
   sale: SaleView;
   lines: PricedLine[];
   rejectedPromoCodes: { code: string; reason: string }[];
@@ -1269,6 +1712,12 @@ export async function commitSale(
       replayed: true,
       finalised: already.status === 'finalised',
       outstandingSatang: await outstandingOf(tx, already),
+      pickupCode: recordedPickupCode(
+        await tx
+          .select({ payload: saleLine.payload })
+          .from(saleLine)
+          .where(and(eq(saleLine.saleId, already.id), eq(saleLine.kind, 'fnb_item'))),
+      ),
       sale: viewOf(already),
       lines: [],
       rejectedPromoCodes: [],
@@ -1368,6 +1817,16 @@ export async function commitSale(
   // reported back rather than refused when it is not.
   const owedAtCommit = priced.money.grossSatang;
   const finalising = input.finalise === true && owedAtCommit === 0;
+  /**
+   * S2-09b — the pick-up code gate, at the one point this path closes a sale.
+   *
+   * `finaliseSale` holds the same line for every other sale. A fully comped
+   * F&B order never goes through it — there is nothing to tender, so it is
+   * closed here — and a tray still has to be handed to somebody.
+   */
+  if (finalising && !priced.pickupCode && priced.lines.some((l) => l.kind === 'fnb_item')) {
+    pickupCodeRequired();
+  }
   const receipt = finalising
     ? await allocateReceipt(tx, {
         operatorId: actor.operatorId,
@@ -1599,6 +2058,7 @@ export async function commitSale(
     replayed: false,
     finalised: finalising,
     outstandingSatang: finalising ? 0 : owedAtCommit,
+    pickupCode: recordedPickupCode(priced.lines.filter((l) => l.kind === 'fnb_item')),
     sale: viewOf(written),
     lines: priced.lines,
     rejectedPromoCodes: priced.rejectedPromoCodes,
@@ -1629,6 +2089,16 @@ export interface FinaliseSaleInput {
   tender?: TenderInput;
   /** `x-oto-action-id` — one press of Confirm, however many HTTP attempts it took. */
   actionId?: string | null;
+  /**
+   * S2-09b — the order's pick-up code, when the cart did not already carry one.
+   *
+   * The prototype keys it in before the payment step, so the ordinary path
+   * sends it with the cart and this stays empty. It is accepted here as well
+   * because the alternative is a sale committed without one that can never be
+   * closed: money taken at the counter and Cancel the only way out, which is
+   * the trap the station's code prefix already taught this file.
+   */
+  pickupCode?: string;
 }
 
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
@@ -1670,15 +2140,47 @@ export async function finaliseSale(
   saleId: string,
   input: FinaliseSaleInput = {},
   now: Date = new Date(),
-): Promise<{ replay: boolean; replayed: boolean; sale: SaleView }> {
+): Promise<{ replay: boolean; replayed: boolean; pickupCode: string | null; sale: SaleView }> {
   const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).for('update').limit(1);
   if (!row || row.operatorId !== actor.operatorId) throw errors.notFound('Sale not found');
   // The sale names the branch; the URL does not. So the scope check that a
   // route guard cannot make is made here, on the row that was found.
   await actor.assertBranchAllowed?.(row.branchId);
-  if (row.status === 'finalised') return { replay: true, replayed: true, sale: viewOf(row) };
+  const fnbLines = await tx
+    .select({ id: saleLine.id, payload: saleLine.payload })
+    .from(saleLine)
+    .where(and(eq(saleLine.saleId, saleId), eq(saleLine.kind, 'fnb_item')));
+  let pickupCode = recordedPickupCode(fnbLines);
+  if (row.status === 'finalised') {
+    return { replay: true, replayed: true, pickupCode, sale: viewOf(row) };
+  }
   if (row.status === 'voided' || row.status === 'refunded') {
     throw errors.conflict('SALE_CLOSED', `This sale is ${row.status} and cannot be finalised`);
+  }
+
+  /**
+   * S2-09b — AN ORDER WITH FOOD ON IT IS NOT CLOSED WITHOUT A PICK-UP CODE.
+   *
+   * The prototype will not let staff reach the payment stage until the code is
+   * keyed (`pages/OrderStation.tsx:463-469`), because the code is how the tray
+   * gets to the right guest and how the kitchen's ticket is matched to the
+   * receipt. A disabled button is that rule on a screen; this is that rule on
+   * the ledger.
+   *
+   * BEFORE THE TENDER, deliberately: a refusal after the money is recorded
+   * would leave a paid sale nobody can close. And before the sale's status
+   * moves, so writing the code onto the lines is not caught by
+   * `pos.sale_line_freeze`.
+   */
+  if (fnbLines.length > 0 && !pickupCode) {
+    pickupCode = normalisePickupCode(input.pickupCode);
+    if (!pickupCode) pickupCodeRequired();
+    for (const line of fnbLines) {
+      await tx
+        .update(saleLine)
+        .set({ payload: { ...((line.payload as SaleLinePayload | null) ?? {}), pickupCode } })
+        .where(eq(saleLine.id, line.id));
+    }
   }
 
   let owed = await outstandingOf(tx, row);
@@ -1785,10 +2287,11 @@ export async function finaliseSale(
       // What closed it, so "who took this money and how" is answerable from
       // the log and not only from the payment row.
       tender: taken,
+      ...(pickupCode ? { pickupCode } : {}),
     },
   });
 
-  return { replay: false, replayed: false, sale: viewOf(after) };
+  return { replay: false, replayed: false, pickupCode, sale: viewOf(after) };
 }
 
 // --- Reading ----------------------------------------------------------------
@@ -1947,6 +2450,8 @@ export async function getSaleDetail(
 
   return {
     sale: viewOf(row),
+    /** S2-09b — the code the guest holds, from the F&B lines that carry it. */
+    pickupCode: recordedPickupCode(lines.filter((line) => line.kind === 'fnb_item')),
     taxBreakdown: row.taxBreakdown,
     taxConfig: row.taxConfig,
     lines: lines.map((line) => ({
@@ -1977,6 +2482,16 @@ export async function getSaleDetail(
       freeAdultCount: line.freeAdultCount,
       stayHours: line.stayHours,
       stayDurationLabel: line.stayDurationLabel,
+      /**
+       * S2-09b — what an F&B or shop line is made of: the options chosen, the
+       * note that went to the station, the size sold, where it printed. Frozen
+       * on the row, so the receipt reprint is the order that was made and not
+       * the menu as it stands today.
+       */
+      modifiers: (line.payload as SaleLinePayload | null)?.modifiers ?? null,
+      note: (line.payload as SaleLinePayload | null)?.note ?? null,
+      variant: (line.payload as SaleLinePayload | null)?.variant ?? null,
+      prepStation: (line.payload as SaleLinePayload | null)?.prepStation ?? null,
     })),
     discounts: discounts.map((d) => ({
       id: d.id,

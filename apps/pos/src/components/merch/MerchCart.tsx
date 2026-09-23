@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ManualDiscount, MerchOrderLine, Wristband } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,6 +22,13 @@ interface MerchCartProps {
   manualDiscounts: ManualDiscount[];
   manualAmounts: Record<string, number>;
   taxBreakdown: TaxBreakdown;
+  /**
+   * WHERE THE FIGURES ON THIS PANEL CAME FROM (S2-09b), drawn just above the
+   * charge button. Passed in, because which engine priced the sale is the
+   * station's business and not this panel's; it renders nothing when the
+   * platform priced it and agreed with the till.
+   */
+  priceNote?: ReactNode;
   onChangeQty: (lineId: string, qty: number) => void;
   onClear: () => void;
   onCheckout: () => void;
@@ -75,6 +83,7 @@ export function MerchCart({
   manualDiscounts,
   manualAmounts,
   taxBreakdown,
+  priceNote,
   onChangeQty,
   onClear,
   onCheckout,
@@ -239,6 +248,8 @@ export function MerchCart({
               <span className="tabular-nums">฿{roundTHB(row.amount)}</span>
             </div>
           ))}
+
+        {priceNote && <div className="mt-3">{priceNote}</div>}
 
         <Button
           size="lg"

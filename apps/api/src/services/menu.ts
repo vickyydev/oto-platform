@@ -145,7 +145,10 @@ export function categoryTaxCategory(
  * (sub)category's, else its parent's, else `kitchen` — the prototype's own
  * fallback at `lib/menu.ts:85-94`.
  */
-export function effectivePrepStation(item: ItemRow, categories: CategoryRow[]): PrepStation {
+export function effectivePrepStation(
+  item: Pick<ItemRow, 'categoryId' | 'prepStationOverride'>,
+  categories: CategoryRow[],
+): PrepStation {
   return (
     item.prepStationOverride ??
     categoryPrepStation(
@@ -231,6 +234,53 @@ export async function resolveItemTaxCategories(
   const categories = [...own, ...parents];
 
   for (const item of items) resolved.set(item.id, itemTaxCategory(item, categories));
+  return resolved;
+}
+
+/**
+ * The categories one set of items needs for a walk: the ones they name, plus
+ * the parents of any sub-category among them.
+ *
+ * Two levels is the whole tree (`types.ts:717-729`), so this is two queries and
+ * never a loop. Split out so the prep-station walk below loads exactly what the
+ * taxable-area walk above does.
+ */
+async function loadCategoryChain(
+  db: Exec,
+  categoryIds: string[],
+): Promise<CategoryRow[]> {
+  if (categoryIds.length === 0) return [];
+  const own = await db.select().from(productCategory).where(inArray(productCategory.id, categoryIds));
+  const parentIds = [
+    ...new Set(own.map((c) => c.parentId).filter((id): id is string => !!id)),
+  ].filter((id) => !own.some((c) => c.id === id));
+  const parents = parentIds.length
+    ? await db.select().from(productCategory).where(inArray(productCategory.id, parentIds))
+    : [];
+  return [...own, ...parents];
+}
+
+/**
+ * Where each item's prep ticket prints, resolved from the DATABASE — the
+ * item's override, else its (sub)category's, else that category's parent's,
+ * else `kitchen`.
+ *
+ * The DB-resolving twin of `resolveItemTaxCategories`, and for the same reason:
+ * `services/sale.ts` prices a cart from rows it loaded itself and holds no menu
+ * snapshot to walk. It answers through `effectivePrepStation`, the SAME
+ * function the menu read and the import resolve with, so an F&B sale line and
+ * the admin panel cannot disagree about which station an item prints at.
+ */
+export async function resolveItemPrepStations(
+  db: Exec,
+  items: Array<Pick<ItemRow, 'id' | 'categoryId' | 'prepStationOverride'>>,
+): Promise<Map<string, PrepStation>> {
+  const categories = await loadCategoryChain(
+    db,
+    [...new Set(items.map((i) => i.categoryId).filter((id): id is string => !!id))],
+  );
+  const resolved = new Map<string, PrepStation>();
+  for (const item of items) resolved.set(item.id, effectivePrepStation(item, categories));
   return resolved;
 }
 
@@ -641,6 +691,113 @@ export async function clearModifierGroupLinks(
         eq(productModifierGroup.modifierGroupId, modifierGroupId),
       ),
     );
+}
+
+// --- What the till chose, checked against what the menu asks -----------------
+
+/**
+ * Whether ONE group's rule is satisfied by the options chosen for it — the
+ * prototype's `isGroupSatisfied` (`lib/fnb.ts:163-173`), ported unchanged:
+ *
+ *   single  required → exactly one; optional → at most one
+ *   multi   between `min` and `max`, where a required group with no `min`
+ *           means at least one and no `max` means no upper bound
+ */
+export function modifierGroupSatisfied(
+  group: Pick<GroupRow, 'required' | 'selectionType' | 'minSelect' | 'maxSelect'>,
+  optionIds: readonly string[],
+): boolean {
+  const count = optionIds.length;
+  if (group.selectionType === 'single') {
+    return group.required ? count === 1 : count <= 1;
+  }
+  const min = group.required ? (group.minSelect ?? 1) : (group.minSelect ?? 0);
+  const max = group.maxSelect ?? Number.POSITIVE_INFINITY;
+  return count >= min && count <= max;
+}
+
+/** One group of an item's effective modifier groups, with the options it offers. */
+export interface ModifierGroupWithOptions {
+  group: GroupRow;
+  options: OptionRow[];
+}
+
+/** What the till chose, by group — the prototype's `SelectedModifier[]`. */
+export interface ChosenModifiers {
+  groupId: string;
+  optionIds: string[];
+}
+
+/**
+ * Refuse a chosen modifier set the menu does not allow, NAMING THE GROUP.
+ *
+ * WHY IT IS CHECKED ON THIS SIDE AT ALL. The prototype answers the same
+ * question in `areModifiersValid` and uses it to grey out "Add to order"
+ * (`components/fnb/ModifierSheet.tsx:81`), which is the right thing for a
+ * screen and no thing at all for a ledger: a disabled button is not a rule, and
+ * the request that reaches this service did not come through that button — it
+ * came over HTTP. An unanswered "Cooked how?" reaches the kitchen as a burger
+ * nobody can cook, and an option id from another group is a price the guest was
+ * never shown.
+ *
+ * Three refusals, all 400 and all naming what is wrong:
+ *   - a group the item does not ask;
+ *   - an option that is not in the group it was chosen under;
+ *   - a group whose required / min / max rule is unsatisfied.
+ */
+export function assertModifierSelection(
+  itemName: string,
+  groups: readonly ModifierGroupWithOptions[],
+  chosen: readonly ChosenModifiers[],
+): void {
+  const byGroup = new Map(groups.map((g) => [g.group.id, g]));
+  for (const selection of chosen) {
+    if (!byGroup.has(selection.groupId)) {
+      throw errors.badRequest(
+        `"${itemName}" does not ask that question, so those choices cannot be priced`,
+        { modifierGroupId: selection.groupId },
+      );
+    }
+  }
+
+  const chosenByGroup = new Map(chosen.map((c) => [c.groupId, c.optionIds]));
+  for (const { group, options } of groups) {
+    const optionIds = chosenByGroup.get(group.id) ?? [];
+    const offered = new Set(options.map((o) => o.id));
+    const seen = new Set<string>();
+    for (const optionId of optionIds) {
+      if (!offered.has(optionId)) {
+        throw errors.badRequest(
+          `That choice is not one of the answers to "${group.name}"`,
+          { modifierGroupId: group.id, modifierGroupName: group.name, modifierOptionId: optionId },
+        );
+      }
+      if (seen.has(optionId)) {
+        throw errors.badRequest(`"${group.name}" was answered twice with the same choice`, {
+          modifierGroupId: group.id,
+          modifierGroupName: group.name,
+          modifierOptionId: optionId,
+        });
+      }
+      seen.add(optionId);
+    }
+    if (!modifierGroupSatisfied(group, optionIds)) {
+      throw errors.badRequest(
+        group.required && optionIds.length === 0
+          ? `"${group.name}" has to be answered before "${itemName}" can be ordered`
+          : `The choices for "${group.name}" are not what that question allows`,
+        {
+          modifierGroupId: group.id,
+          modifierGroupName: group.name,
+          required: group.required,
+          selectionType: group.selectionType,
+          minSelect: group.minSelect,
+          maxSelect: group.maxSelect,
+          chosenCount: optionIds.length,
+        },
+      );
+    }
+  }
 }
 
 /** Replace an item's links into the shared library with exactly this set. */

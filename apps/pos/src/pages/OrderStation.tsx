@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, Operator, SelectedModifier, Wristband } from '@/types';
@@ -9,7 +9,6 @@ import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
 import {
-  getMenuItems,
   chargeFnbCredit,
   redeemPrepaidItem,
   getDiscountReasons,
@@ -21,7 +20,27 @@ import {
 } from '@/mockApi';
 import { INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
-import { computeFnbTotals, computeLineTotal, hasModifiers, modifierSignature } from '@/lib/fnb';
+import { computeLineTotal, hasModifiers, modifierSignature } from '@/lib/fnb';
+import { useItemCartQuote } from '@/lib/cartQuote';
+import { useSaleWriter } from '@/lib/saleWriter';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { useBranch } from '@/branch/BranchContext';
+import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { getDefaultTier } from '@/store/catalogStore';
+import { menuIsServerBacked } from '@/api/menu';
+import {
+  buildItemCartPayload,
+  offLedgerOnly,
+  type ApiSale,
+  type ItemCartIdentity,
+  type SaleCartPayload,
+} from '@/api/sales';
+import {
+  PriceSourceNote,
+  SaleNotSavedNotice,
+  SaleWriteFailure,
+} from '@/components/till/SaleWriteStatus';
+import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
 import { dropDiscountsForRemovedLines } from '@/lib/manualDiscount';
 import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { BenefitScanModal } from '@/components/fnb/BenefitScanModal';
@@ -35,6 +54,7 @@ import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { FnbCustomerDisplay, FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
 import { FoodConsentModal } from '@/components/fnb/FoodConsentModal';
 import { useOperator } from '@/auth/OperatorContext';
+import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Monitor, AlertTriangle, Ban, Gift } from 'lucide-react';
 
@@ -42,14 +62,52 @@ const STAFF_BENEFIT_DISCOUNT_ID = 'staff-benefit';
 
 type Stage = 'scan' | 'order' | 'payment' | 'confirmation';
 
+/**
+ * WHICH TENDER CLOSED THE ORDER.
+ *
+ * The prototype's payment screen splits one order into four buckets and the
+ * platform's finalise records ONE tender token, so the bucket that settled the
+ * balance is the one named. Credit is last rather than first on purpose: the
+ * band's wallet is not money the ledger holds (S2-14a), so where a card or cash
+ * finished the order that is the honest name for what was taken; an order paid
+ * from the band alone is named as the wallet it came from and the panel beside
+ * it says the balance is still this till's own record.
+ */
+function tenderMethodOf(payment: FnbPaymentResult): string {
+  if (payment.cash > 0) return 'cash';
+  if (payment.card > 0) return 'card';
+  if (payment.promptpay > 0) return 'promptpay';
+  return 'wallet_credit';
+}
+
+function tenderKindOf(payment: FnbPaymentResult): 'cash' | 'card' | 'qr' | 'other' {
+  if (payment.cash > 0) return 'cash';
+  if (payment.card > 0) return 'card';
+  if (payment.promptpay > 0) return 'qr';
+  return 'other';
+}
+
 let orderCounter = 1;
 let lineCounter = 1;
 
 export default function OrderStation() {
   const { operator } = useOperator();
   const { station } = useStation();
+  const { branch } = useBranch();
   const [, navigate] = useLocation();
-  const menuItems = useMemo(() => getMenuItems(), []);
+  /**
+   * THE MENU IS THE PLATFORM'S — SCRUM-232 landed `GET /branches/:id/menu` and
+   * the catalogue store is hydrated from it at sign-in
+   * (`api/catalogBridge.loadMenuFromApi`). Read through the store rather than
+   * snapshotted at mount, so an item edited in the admin panel and pulled again
+   * appears here without the station being reopened.
+   *
+   * `menuIsServerBacked()` says whether that hydration actually happened; when
+   * it did not — a deployment with no menu route — the ported catalogue is what
+   * is on screen and the grid says so rather than passing it off as the park's.
+   */
+  const { menuItems } = useCatalogStore();
+  const menuFromPlatform = menuIsServerBacked();
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
@@ -59,6 +117,21 @@ export default function OrderStation() {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<FnbOrder | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
+  /**
+   * WRITING THE ORDER — the same writer the till uses (`lib/saleWriter.ts`), so
+   * pressing Pay twice produces one sale, a retry is the same sale, and a
+   * refusal is shown rather than swallowed. Nothing here re-implements any of
+   * that.
+   */
+  const saleWriter = useSaleWriter();
+  /** The sale the platform holds for the order on the confirmation screen. */
+  const [platformSale, setPlatformSale] = useState<ApiSale | null>(null);
+  /**
+   * Bumped whenever this station starts a new order, so an answer for the
+   * previous guest cannot land on the one now at the counter — the same guard
+   * `saleEpochRef` is in `pages/Till.tsx`.
+   */
+  const orderEpochRef = useRef(0);
 
   // Same reason as the till's (S2-06): a new build must not be swapped in
   // under an order somebody is still taking.
@@ -149,14 +222,69 @@ export default function OrderStation() {
     [manualDiscounts, benefitDiscount]
   );
 
-  // All F&B order totals flow through the shared tax + service engine. With the
-  // seeded config (inclusive VAT, no service) `total` equals subtotal − discount,
-  // so existing behaviour is unchanged; the breakdown is reported on the receipts.
-  const fnbTotals = useMemo(
-    () => computeFnbTotals(lines, effectiveManualDiscounts),
-    [lines, effectiveManualDiscounts]
-  );
-  const { subtotal, total, manualAmounts, taxBreakdown } = fnbTotals;
+  /**
+   * WHO THIS ORDER BELONGS TO, in the platform's own ids — S2-09b.
+   *
+   * Null when this deployment has no platform station or no platform branch for
+   * the one on screen. The order is then priced on this till and said to be, and
+   * the confirmation says plainly that nothing was written to the ledger.
+   */
+  const orderIdentity: ItemCartIdentity | null = useMemo(() => {
+    const branchId = apiBranchIdForSlug(branch.id);
+    if (!branchId || !station?.stationId || !operator) return null;
+    return {
+      branchId,
+      stationId: station.stationId,
+      // An F&B item is priced from its catalogue row, not from a tier table;
+      // the field is the ticket cart's and the platform ignores it here.
+      tier: getDefaultTier()?.id ?? 'tourist',
+      channel: 'fnb',
+      pickupCode: pickupCode || null,
+      memberId: null,
+      customerPhone: null,
+      customerNickname: null,
+      accountId: operator.id,
+      accountName: operator.name,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branch.id, station?.stationId, operator, pickupCode]);
+
+  /**
+   * THE PRICE THE PLATFORM QUOTES FOR THIS ORDER. Every figure the order panel,
+   * the customer display and the payment screen show comes from here. The
+   * prototype totalled the order in the browser (`computeFnbTotals`); that
+   * arithmetic is now only the fallback, and when it is what is on screen
+   * `PriceSourceNote` says so beside the total.
+   *
+   * Switched off once the order is confirmed: the sale's own figures stand from
+   * then on, and re-quoting a finished order could only disagree with the
+   * receipt in the guest's hand.
+   */
+  const order = useItemCartQuote({
+    kind: 'fnb',
+    lines,
+    manualDiscounts: effectiveManualDiscounts,
+    identity: orderIdentity,
+    enabled: stage !== 'confirmation',
+  });
+  const { subtotal, total, manualAmounts, taxBreakdown } = order.totals;
+
+  /**
+   * The rows as the panel draws them: the platform's figure against each line
+   * where it has quoted one, the till's where it has not.
+   *
+   * The cart itself is never rewritten with a quoted figure — `cart` stays the
+   * record of what staff put in it, and this is the view of it. Rewriting the
+   * cart would make the next quote reconcile against the previous quote's
+   * answer instead of against what was ordered.
+   */
+  const displayLines = useMemo(() => {
+    const quoted = order.quote.lineTotals;
+    if (!quoted) return lines;
+    return lines.map((line) =>
+      quoted[line.id] === undefined ? line : { ...line, lineTotal: quoted[line.id] },
+    );
+  }, [lines, order.quote.lineTotals]);
 
   // Total qty per menu item across all lines — drives the badge in the grid.
   const quantities = useMemo(() => {
@@ -449,6 +577,11 @@ export default function OrderStation() {
   };
 
   const resetOrder = () => {
+    // A new order takes new sale ids, and any answer still in flight for the
+    // previous one is ignored rather than drawn onto this guest.
+    orderEpochRef.current += 1;
+    saleWriter.reset();
+    setPlatformSale(null);
     setStage('scan');
     setWristband(null);
     setCart([]);
@@ -478,13 +611,114 @@ export default function OrderStation() {
     setStage('payment');
   };
 
+  /**
+   * The order as the platform receives it, or null when there is nowhere to
+   * send it — no platform station or branch for this device.
+   *
+   * Built from `displayLines`, which is what the panel and the customer display
+   * have on them: the figures reconciled by the platform are the figures the
+   * guest was shown.
+   */
+  const commitPayload = (): SaleCartPayload | null => {
+    if (!orderIdentity || offLedgerOnly(lines)) return null;
+    return buildItemCartPayload(displayLines, effectiveManualDiscounts, orderIdentity, total, {
+      mode: order.quote.pricingMode,
+      modeReason: order.quote.pricingModeReason,
+    });
+  };
+
+  /** Why this order cannot be offered to the ledger at all. */
+  const unwritableReason = (): string =>
+    !orderIdentity
+      ? 'This device is not on a platform station, so there is nowhere to write the order.'
+      : (offLedgerOnly(lines) ??
+        order.quote.reason ??
+        'The platform could not price this order.');
+
+  /**
+   * ENTERING THE PAYMENT SCREEN IS THE PAY PRESS — the same seam the till has
+   * (S2-09a). The order is written in `tendering`, with no receipt number,
+   * because no money has arrived yet; confirming the money finalises it and
+   * that is what allocates the number.
+   */
+  const recordOrderOnPlatform = async (epoch: number): Promise<void> => {
+    const payload = commitPayload();
+    if (!payload) return; // said on the confirmation screen, not in a toast at the guest
+    const outcome = await saleWriter.commit({ cart: payload, finalise: total === 0 });
+    if (orderEpochRef.current !== epoch && outcome.ok && outcome.written) {
+      // This station moved on before the answer landed. The order IS on the
+      // platform and nothing on this screen will ever mention it again, so it
+      // is said out loud rather than dropped — the same thing the till does
+      // when a sale finishes after Cancel (`noteSaleLeftBehind`).
+      toast({
+        title: 'An order was saved for the previous guest',
+        description: `This station moved on before it could finish. Order ${outcome.sale.receiptNumber ?? outcome.saleId} is recorded and nothing was printed for it — find it in the sale list.`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (stage !== 'payment') return;
+    void recordOrderOnPlatform(orderEpochRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
+
   const handleConfirmPayment = (payment: FnbPaymentResult) => {
+    void completeOrder(payment);
+  };
+
+  /**
+   * The money arrived: close the order on the platform, then do everything a
+   * finished order does on this till.
+   *
+   * The commit is asserted again first — it costs no round trip when the order
+   * on screen is the one already recorded, and it is what records a corrected
+   * order instead of finalising the old one.
+   */
+  const completeOrder = async (payment: FnbPaymentResult) => {
     if (!operator) return;
     // Can't print the receipt/pick-up ticket until this iPad is set up.
     if (!station) {
       promptSetupStation(navigate);
       return;
     }
+
+    const epoch = orderEpochRef.current;
+    const payload = commitPayload();
+    let written: ApiSale | null = null;
+    if (!payload) {
+      saleWriter.declareUnwritten(unwritableReason());
+    } else {
+      const committed = await saleWriter.commit({ cart: payload, finalise: total === 0 });
+      if (orderEpochRef.current !== epoch) return;
+      if (!committed.ok) return; // the failure panel is showing; nothing is finalised
+      if (committed.written) {
+        written = committed.sale;
+        if (written.status !== 'finalised') {
+          /**
+           * THE TENDER. The prototype's payment screen splits the amount into
+           * credit, cash, card and QR buckets; the platform records the one
+           * that settles the balance. Wallet credit is not a tender the ledger
+           * can take yet (S2-14a), so an order paid from a band's balance is
+           * closed as the remainder's method with the credit named on it —
+           * which is what the panel beside it says in as many words.
+           */
+          const closed = await saleWriter.finalise({
+            method: tenderMethodOf(payment),
+            kind: tenderKindOf(payment),
+            amountSatang: written.totals.grossSatang,
+            tenderedSatang: written.totals.grossSatang,
+            changeSatang: 0,
+          });
+          if (orderEpochRef.current !== epoch) return;
+          if (!closed.ok) return;
+          if (closed.written) written = closed.sale;
+        }
+      }
+    }
+    setPlatformSale(written);
+
     let balanceAfter: number | null = null;
     if (wristband && payment.creditUsed > 0) {
       balanceAfter = chargeFnbCredit(wristband.id, payment.creditUsed, operator?.name);
@@ -522,12 +756,19 @@ export default function OrderStation() {
       }
     }
 
-    const order: FnbOrder = {
+    /**
+     * The record this till keeps, which History, Today and the reprint path
+     * still read (S2-11 moves them onto the API). Its rows and its total are
+     * the ones the guest was shown — the platform's, where the platform
+     * priced the order — rather than a second arithmetic that happens to
+     * agree.
+     */
+    const record: FnbOrder = {
       id: String(orderCounter++).padStart(4, '0'),
       operatorId: operator.id,
       operatorName: operator.name,
       wristband: wristband ?? undefined,
-      lines,
+      lines: displayLines,
       manualDiscounts: committedDiscounts,
       total,
       pickupCode,
@@ -539,12 +780,12 @@ export default function OrderStation() {
       foodConsentOverride: foodOverride ?? undefined,
       staffBenefit,
     };
-    recordFnbOrder(order);
-    if (staffBenefit) attachBenefitAuditOrderId(staffBenefit.auditId, order.id);
-    setCompletedOrder(order);
+    recordFnbOrder(record);
+    if (staffBenefit) attachBenefitAuditOrderId(staffBenefit.auditId, record.id);
+    setCompletedOrder(record);
     setNewBalance(balanceAfter);
     setStage('confirmation');
-    dispatchPrintJobs(fnbPrintJobs(station, order));
+    dispatchPrintJobs(fnbPrintJobs(station, record));
   };
 
   let customerStage: FnbCustomerStage;
@@ -670,6 +911,26 @@ export default function OrderStation() {
                 </div>
               )}
 
+              {/*
+                WHAT THIS STATION STILL DOES ON ITS OWN. The menu, the prices
+                and the order are the platform's from here on; three things on
+                this screen are not, and each names the ticket that moves it
+                rather than looking like part of the ledger.
+              */}
+              <div className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
+                <span className="font-bold uppercase tracking-wide text-foreground/70">
+                  This till&apos;s own record
+                </span>
+                <span>Stock counts and out-of-stock — S2-14b</span>
+                <span>Wallet credit and prepaid items — S2-14a</span>
+                <span>Kitchen, bar and receipt printing — S2-11</span>
+                {!menuFromPlatform && (
+                  <span className="text-amber-300">
+                    Menu — this deployment has no menu route, so the ported catalogue is shown
+                  </span>
+                )}
+              </div>
+
               <div className="flex-1 min-h-0">
                 <MenuGrid items={menuItems} quantities={quantities} onAdd={handleAdd} />
               </div>
@@ -677,8 +938,16 @@ export default function OrderStation() {
             <div className="w-[380px] shrink-0 bg-sidebar p-6">
               <FnbCart
                 wristband={wristband}
-                lines={lines}
+                lines={displayLines}
                 total={total}
+                priceNote={
+                  lines.length > 0 ? (
+                    <div className="space-y-2">
+                      <QuoteRefusalNote error={order.error} />
+                      <PriceSourceNote quote={order.quote} pending={order.pending} />
+                    </div>
+                  ) : null
+                }
                 manualDiscounts={effectiveManualDiscounts}
                 manualAmounts={manualAmounts}
                 taxBreakdown={taxBreakdown}
@@ -708,21 +977,46 @@ export default function OrderStation() {
         )}
 
         {stage === 'payment' && (
-          <FnbPayment
-            total={total}
-            wristband={wristband}
-            pickupCode={pickupCode}
-            method={payMethod}
-            remainder={payRemainder}
-            onMethodChange={setPayMethod}
-            onRemainderChange={setPayRemainder}
-            onConfirm={handleConfirmPayment}
-            onBack={() => setStage('order')}
-          />
+          <div className="h-full min-h-0 overflow-y-auto">
+            <FnbPayment
+              total={total}
+              wristband={wristband}
+              pickupCode={pickupCode}
+              method={payMethod}
+              remainder={payRemainder}
+              onMethodChange={setPayMethod}
+              onRemainderChange={setPayRemainder}
+              onConfirm={handleConfirmPayment}
+              onBack={() => setStage('order')}
+            />
+            {/*
+              What the platform has done with this order, in the same panels the
+              till uses: saving, recorded-and-unpaid, or a refusal with what to
+              press. Nothing is drawn while there is nothing to say.
+            */}
+            <div className="mx-auto w-full max-w-2xl px-6 pb-6">
+              <SaleWriteFailure
+                state={saleWriter.state}
+                onRetry={() => void recordOrderOnPlatform(orderEpochRef.current)}
+                onDismiss={() => setStage('order')}
+              />
+            </div>
+          </div>
         )}
 
         {stage === 'confirmation' && completedOrder && (
-          <FnbConfirmation order={completedOrder} newBalance={newBalance} onNewOrder={resetOrder} />
+          <div className="h-full min-h-0 overflow-y-auto">
+            <div className="mx-auto w-full max-w-xl px-6 pt-6">
+              <SaleNotSavedNotice state={saleWriter.state} />
+            </div>
+            <FnbConfirmation
+              order={completedOrder}
+              newBalance={newBalance}
+              onNewOrder={resetOrder}
+              receiptNumber={platformSale?.receiptNumber ?? null}
+              flowLayout
+            />
+          </div>
         )}
       </div>
     </div>
@@ -760,7 +1054,7 @@ export default function OrderStation() {
             <FnbCustomerDisplay
               stage={customerStage}
               wristband={wristband}
-              lines={lines}
+              lines={displayLines}
               orderNote={orderNote}
               manualDiscounts={effectiveManualDiscounts}
               total={total}

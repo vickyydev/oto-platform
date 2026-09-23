@@ -1,13 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CartLine, Discount, ManualDiscount } from '@/types';
+import type {
+  CartLine,
+  Discount,
+  FnbOrderLine,
+  ManualDiscount,
+  MerchOrderLine,
+} from '@/types';
 import { computeTotals } from '@/lib/sale';
 import { todayRateMode } from '@/lib/pricingMode';
 import {
+  localItemQuote,
   localQuote,
   quoteCart,
+  quoteItemCart,
   unquotableReason,
   type CartIdentity,
   type CartQuote,
+  type ItemCartIdentity,
   type OrderTotals,
 } from '@/api/sales';
 import { ApiError } from '@/api/client';
@@ -201,5 +210,122 @@ export function useCartQuote(args: {
   }, [signature, enabled, local.engineRefused]);
 
   const live = platform && platform.signature === signature ? platform.quote : local.quote;
+  return { totals: live.totals, quote: live, pending, error };
+}
+
+// --- The F&B and shop orders (S2-09b) ---------------------------------------
+
+/**
+ * The order as a string. The same job `cartSignature` does for the till: only
+ * what can move money is in it, so a re-render does not re-ask the platform.
+ *
+ * The NOTE is in it, and that is not decoration. Two rows of the same item with
+ * different notes are two lines all the way to the kitchen, and merging them
+ * would be a different order — so a note edit has to re-ask.
+ */
+function itemCartSignature(
+  lines: readonly (FnbOrderLine | MerchOrderLine)[],
+  manualDiscounts: readonly ManualDiscount[],
+  identity: ItemCartIdentity | null,
+  mode: string,
+): string {
+  const linePart = lines
+    .map((line) => {
+      const shared = `${line.id}:${line.qty}:${line.lineTotal}:${line.variantId ?? ''}`;
+      if ('menuItem' in line) {
+        const mods = line.selectedModifiers
+          .map((m) => `${m.groupId}=${[...m.optionIds].sort().join(',')}`)
+          .sort()
+          .join('+');
+        return `${shared}:${line.menuItem.id}:${mods}:${line.note ?? ''}:${line.isPrepaid ? 'p' : ''}`;
+      }
+      return `${shared}:${line.merchItem.id}`;
+    })
+    .join('|');
+  const manualPart = manualDiscounts.map((m) => `${m.id}:${m.type}:${m.value}:${m.scope}`).join('|');
+  const who = identity ? `${identity.branchId}/${identity.stationId}/${identity.channel}` : 'none';
+  return `${mode}#${who}#${linePart}#${manualPart}`;
+}
+
+/**
+ * THE PRICE ON THE F&B AND SHOP SCREENS.
+ *
+ * Same contract as `useCartQuote`, and for the same reason: the figure the
+ * order panel, the customer display and the payment screen show is the
+ * platform's, or it says whose it is instead. `lineTotals` on the returned
+ * quote is what lets the panel draw the platform's figure against each ROW as
+ * well as in the total — an order of five items priced right in total and wrong
+ * per line is an order staff cannot check against the screen in front of them.
+ */
+export function useItemCartQuote(args: {
+  kind: 'fnb' | 'shop';
+  lines: readonly (FnbOrderLine | MerchOrderLine)[];
+  manualDiscounts: readonly ManualDiscount[];
+  identity: ItemCartIdentity | null;
+  /** Stop asking once the order is committed — the sale's own figures stand then. */
+  enabled?: boolean;
+}): CartQuoteState {
+  const { kind, lines, manualDiscounts, identity } = args;
+  const enabled = args.enabled ?? true;
+  const rate = todayRateMode();
+  const signature = itemCartSignature(lines, manualDiscounts, identity, rate.mode);
+
+  const local = useMemo(
+    () =>
+      localItemQuote(
+        kind,
+        lines as readonly FnbOrderLine[] & readonly MerchOrderLine[],
+        manualDiscounts,
+      ),
+    // The signature covers every field these two arrays contribute to a price.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [signature, kind],
+  );
+
+  const [platform, setPlatform] = useState<{ signature: string; quote: CartQuote } | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const seqRef = useRef(0);
+
+  useEffect(() => {
+    if (!enabled || !identity || lines.length === 0) {
+      setPending(false);
+      return;
+    }
+    const seq = ++seqRef.current;
+    setPending(true);
+    const timer = window.setTimeout(() => {
+      void quoteItemCart({
+        kind,
+        lines: lines as readonly FnbOrderLine[] & readonly MerchOrderLine[],
+        manualDiscounts,
+        identity,
+      })
+        .then((quote) => {
+          // The order has moved on since this went out, or another request has
+          // overtaken it: this answer is about an order nobody is looking at.
+          if (seqRef.current !== seq) return;
+          setPlatform({ signature, quote });
+          setError(null);
+          setPending(false);
+        })
+        .catch((err: unknown) => {
+          if (seqRef.current !== seq) return;
+          setPlatform(null);
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : 'The platform refused this order.',
+          );
+          setPending(false);
+        });
+    }, QUOTE_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature, enabled]);
+
+  const live = platform && platform.signature === signature ? platform.quote : local;
   return { totals: live.totals, quote: live, pending, error };
 }

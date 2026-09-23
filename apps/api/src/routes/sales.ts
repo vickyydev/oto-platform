@@ -101,6 +101,42 @@ const CartLine = z.object({
   stayDurationLabel: z.string().max(60).optional(),
 });
 
+/**
+ * S2-09b (SCRUM-204) — an F&B or shop line.
+ *
+ * WHAT IT MAY SAY: which item, how many, which options were chosen under which
+ * question, what staff typed on it, and which size came off the shelf. There is
+ * no price field on it and no tax field: the unit price is composed on the
+ * platform from `pos.product` and `pos.modifier_option`, and `lineTotalSatang`
+ * — like a ticket line's — can only cause a refusal.
+ */
+const CartItemLine = z.object({
+  /** The till's own order-line id, so the receipt can group its rows again. */
+  id: z.string().uuid(),
+  productId: z.string().uuid(),
+  quantity: z.number().int().min(1).max(99),
+  /** The prototype's `SelectedModifier[]`: one entry per question answered. */
+  modifiers: z
+    .array(
+      z.object({
+        groupId: z.string().uuid(),
+        optionIds: z.array(z.string().uuid()).max(20),
+      }),
+    )
+    .max(12)
+    .default([]),
+  /** "no pickles" — follows the item to the kitchen or the bar, and to the receipt. */
+  note: z.string().max(280).optional(),
+  variant: z
+    .object({
+      variantId: z.string().min(1).max(100),
+      variantLabel: z.string().min(1).max(60),
+    })
+    .nullish(),
+  /** What the screen showed. Reconciled against the platform's price, never charged. */
+  lineTotalSatang: z.number().int().min(0).optional(),
+});
+
 const ManualDiscount = z.object({
   id: z.string().uuid(),
   scope: z.enum(['order', 'line']),
@@ -162,7 +198,19 @@ const Cart = z.object({
       label: z.string().max(60).optional(),
     })
     .optional(),
-  lines: z.array(CartLine).min(1).max(50),
+  /**
+   * The ticket lines. No longer `.min(1)`: an F&B or shop order has none, and
+   * the service refuses a cart carrying neither kind of line.
+   */
+  lines: z.array(CartLine).max(50).default([]),
+  /** S2-09b — the F&B and shop lines. */
+  items: z.array(CartItemLine).max(100).default([]),
+  /**
+   * S2-09b — the pick-up code the till minted for this order. Required before a
+   * sale carrying any F&B line can be finalised, and accepted again at the cash
+   * step for a sale committed without one.
+   */
+  pickupCode: z.string().max(12).optional(),
   manualDiscounts: z.array(ManualDiscount).max(20).default([]),
   promos: z.array(Promo).max(10).default([]),
   /** Codes with no definition: refused by name. */
@@ -215,6 +263,8 @@ const Tender = z.object({
 const FinaliseBody = Tender.extend({
   tender: Tender.optional(),
   actionId: z.string().min(1).max(200).optional(),
+  /** S2-09b — the pick-up code, for a food order committed without one. */
+  pickupCode: z.string().max(12).optional(),
 }).nullish();
 
 export async function saleRoutes(app: App): Promise<void> {
@@ -296,7 +346,10 @@ export async function saleRoutes(app: App): Promise<void> {
       const actor = actorOf(req, 'pos:sale:create');
       const body = req.body;
       const cart = body.cart ?? (body as unknown as z.infer<typeof Cart>);
-      if (!cart.lines || cart.lines.length === 0) throw errors.badRequest('The cart is empty');
+      // Either kind of line makes a cart: admission, or food and merchandise.
+      if ((cart.lines?.length ?? 0) === 0 && (cart.items?.length ?? 0) === 0) {
+        throw errors.badRequest('The cart is empty');
+      }
       const stationId = body.stationId ?? cart.stationId;
       if (!stationId) throw errors.badRequest('A sale has to name the station that rang it up');
       await requireDiscountPermission(req, cart, actor.branchId);
@@ -362,6 +415,7 @@ export async function saleRoutes(app: App): Promise<void> {
           tender,
           actionId:
             body.actionId ?? (typeof headerActionId === 'string' ? headerActionId : null) ?? null,
+          ...(body.pickupCode ? { pickupCode: body.pickupCode } : {}),
         }),
       );
       if (result.replay) reply.header('x-oto-replay', 'true');

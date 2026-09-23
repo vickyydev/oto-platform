@@ -1,12 +1,17 @@
 import type {
   CartLine,
   Discount,
+  FnbOrderLine,
   ManualDiscount,
+  MenuItem,
+  MerchOrderLine,
+  SelectedModifier,
   TaxConfig,
   TicketType,
   WeekdayWeekendPrice,
 } from '@/types';
 import { getAddOns, getTaxConfig } from '@/store/catalogStore';
+import { getEffectiveModifierGroups } from '@/lib/menu';
 import { resolveRate, todayRateMode, type RateMode } from '@/lib/pricingMode';
 import {
   satangFromBaht,
@@ -352,4 +357,135 @@ export function engineCart(
     config: engineTaxConfig(options.config),
     ctx: pricingContext(options.mode ?? todayRateMode().mode),
   };
+}
+
+// --- The F&B and shop carts, in the platform's own terms (S2-09b) -----------
+//
+// A ticket cart line is a package with participants on it; an F&B or shop line
+// is a CATALOGUE ROW with a quantity, a set of chosen modifier options, a
+// kitchen note and — for a sized item — a variant. The two are priced by
+// different halves of the platform (`ticket_package` against the tier table,
+// `pos.product` against its own price and its modifier options) and they are
+// translated separately here for the same reason `engineCartLine` exists: so
+// that the till's screens keep the prototype's shapes and the platform is sent
+// nothing but ids, counts and the figures the screen showed.
+//
+// WHAT IS A SNAPSHOT AND WHAT IS AN INSTRUCTION. `unitSatang` and
+// `lineTotalSatang` are what the order panel had on it when the cart was sent;
+// they are reconciled by the platform and never charged (the same rule as
+// `SaleCartLinePayload.lineTotalSatang`). The product id, the modifier option
+// ids, the quantity, the note and the variant are the instruction: they say
+// WHAT was ordered, and the price comes back from the catalogue.
+
+/**
+ * One question the item asks and the answers given to it — the prototype's own
+ * `SelectedModifier`, which is also the shape the platform's route declares
+ * (`CartItemLine.modifiers` in `apps/api/src/routes/sales.ts`).
+ *
+ * NO NAME AND NO PRICE TRAVELS WITH IT, deliberately: the platform composes the
+ * unit price from `pos.product` and `pos.modifier_option` and freezes the
+ * option's name onto the sale line from its own row, so anything the till sent
+ * about either could only be a second opinion about money.
+ */
+export interface ItemModifierSelection {
+  groupId: string;
+  optionIds: string[];
+}
+
+/** An F&B or shop cart row in the platform's terms. */
+export interface ItemCartLine {
+  /** The till's own cart line id, translated at the wire (see `platformId`). */
+  id: string;
+  /** `pos.product.id` — what the platform prices from. */
+  productId: string;
+  quantity: number;
+  modifiers: ItemModifierSelection[];
+  /** The kitchen/bar note. Distinct notes keep two otherwise identical rows apart. */
+  note?: string;
+  /** The size or flavour sold, when the item has more than one. */
+  variant?: { variantId: string; variantLabel: string } | null;
+  /** What the screen showed for this row. Reconciled, never charged. */
+  lineTotalSatang: number;
+}
+
+/**
+ * The chosen options of an F&B line, in the order the item asks its questions.
+ *
+ * Walked through `getEffectiveModifierGroups` — the item's inline groups plus
+ * the shared library groups it links — rather than passed through from
+ * `selectedModifiers` as it stands, for two reasons: the walk puts the answers
+ * in GROUP ORDER, which is the order the sheet, the cart row and the prep
+ * ticket print them in, and it drops a selection whose group or option the menu
+ * no longer has. The platform refuses both of those by name
+ * (`assertModifierSelection`), and a refusal for a stale option nobody can see
+ * on screen is a refusal staff cannot act on.
+ */
+export function itemModifierSelections(
+  item: MenuItem,
+  selected: readonly SelectedModifier[],
+): ItemModifierSelection[] {
+  const selections: ItemModifierSelection[] = [];
+  for (const group of getEffectiveModifierGroups(item)) {
+    const chosen = selected.find((s) => s.groupId === group.id);
+    if (!chosen) continue;
+    const offered = new Set(group.options.map((o) => o.id));
+    const optionIds = chosen.optionIds.filter((id) => offered.has(id));
+    if (optionIds.length > 0) selections.push({ groupId: group.id, optionIds });
+  }
+  return selections;
+}
+
+/** An F&B order line as the platform receives it. */
+export function itemCartLineFromFnb(line: FnbOrderLine): ItemCartLine {
+  return {
+    id: platformId(line.id),
+    productId: line.menuItem.id,
+    quantity: line.qty,
+    modifiers: itemModifierSelections(line.menuItem, line.selectedModifiers),
+    ...(line.note ? { note: line.note } : {}),
+    ...(line.variantId
+      ? { variant: { variantId: line.variantId, variantLabel: line.variantLabel ?? line.variantId } }
+      : {}),
+    lineTotalSatang: toSatang(line.lineTotal),
+  };
+}
+
+/** A shop line as the platform receives it. A merch row asks no questions. */
+export function itemCartLineFromMerch(line: MerchOrderLine): ItemCartLine {
+  return {
+    id: platformId(line.id),
+    productId: line.merchItem.id,
+    quantity: line.qty,
+    modifiers: [],
+    ...(line.variantId
+      ? { variant: { variantId: line.variantId, variantLabel: line.variantLabel ?? line.variantId } }
+      : {}),
+    lineTotalSatang: toSatang(line.lineTotal),
+  };
+}
+
+/**
+ * A line the platform cannot be asked about: one that was not bought.
+ *
+ * A prepaid entitlement line is ฿0 on the order panel because it was paid for
+ * at booking, and the platform has no wallet or entitlement ledger to take it
+ * off (S2-14a). Sending it would offer the catalogue price of an item nobody is
+ * paying for now and be refused as a price mismatch. It is therefore kept off
+ * the payload and SAID on the screen, which is the same rule the rest of this
+ * file follows: nothing the platform did not price is presented as if it had.
+ */
+export function isOffLedgerFnbLine(line: FnbOrderLine): boolean {
+  return line.isPrepaid === true;
+}
+
+/**
+ * Both carts as the quote and the commit carry them: the rows that are on the
+ * ledger, and the till's own ids for them so an answer can be read back.
+ */
+export function itemCart(
+  lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
+): ItemCartLine[] {
+  return (lines as readonly (FnbOrderLine | MerchOrderLine)[])
+    .filter((line) => !('menuItem' in line) || !isOffLedgerFnbLine(line))
+    .map((line) => ('menuItem' in line ? itemCartLineFromFnb(line) : itemCartLineFromMerch(line)));
 }

@@ -1,5 +1,15 @@
-import type { CartLine, Discount, ManualDiscount, SaleQuotedPricing, TaxConfig } from '@/types';
+import type {
+  CartLine,
+  Discount,
+  FnbOrderLine,
+  ManualDiscount,
+  MerchOrderLine,
+  SaleQuotedPricing,
+  TaxConfig,
+} from '@/types';
 import { computeTotals } from '@/lib/sale';
+import { computeFnbTotals } from '@/lib/fnb';
+import { computeMerchTotals } from '@/lib/merch';
 import { summarizeTax } from '@/lib/tax';
 import {
   computeTicketCartTotals,
@@ -11,8 +21,13 @@ import {
 } from '@oto/shared';
 import {
   engineCart,
+  engineManualDiscount,
+  itemCart,
+  type ItemCartLine,
   localIdFor,
   platformId,
+  SOCKS_ADDON_ID,
+  SOCKS_LABEL,
   toBaht,
   toSatang,
   unpricedDropOffLines,
@@ -127,6 +142,29 @@ export interface SaleCartManualDiscountPayload {
 }
 
 /**
+ * ONE F&B OR SHOP ROW — S2-09b.
+ *
+ * The ticket cart above says "this package, these participants"; this says
+ * "this catalogue row, this many, with these options, this note and this size".
+ * The two ride in the same cart body because they are the same sale to the
+ * ledger — `pos.sale_line.kind` is `fnb_item` or `merch_item` beside `kids` and
+ * `addon`, and the seed has held those two kinds since migration 0014.
+ *
+ * NOTHING HERE DECIDES A PRICE. The only money on it is `lineTotalSatang`, what
+ * the order panel showed, sent for the same reason a ticket line sends its
+ * total: so a till holding a menu price that was edited while an order was
+ * being taken is REFUSED rather than quietly charging the new figure after
+ * quoting the old one. The unit price is composed on the platform from
+ * `pos.product` and `pos.modifier_option`, and the option NAMES are frozen onto
+ * the sale line from those rows rather than from anything sent here.
+ *
+ * The shape is `lib/cartWire.ts`'s and is the one the route declares
+ * (`CartItemLine` in `apps/api/src/routes/sales.ts`) — restated nowhere, so it
+ * cannot drift from the schema it has to satisfy.
+ */
+export type SaleCartItemPayload = ItemCartLine;
+
+/**
  * ONE CART, as both the quote and the commit carry it.
  *
  * `pricingMode` is the till's snapshot and the platform is free to disagree —
@@ -158,6 +196,22 @@ export interface SaleCartPayload {
   /** Read live from the catalogue, never snapshotted — the prototype's rule. */
   socks: { addOnId: string; unitSatang: number; label: string };
   lines: SaleCartLinePayload[];
+  /**
+   * The F&B and shop rows (S2-09b). Empty on a ticket cart, and the ticket
+   * `lines` are empty on an order taken at the F&B or shop station — one cart
+   * body, two kinds of thing in it, because a sale is a sale to the ledger.
+   */
+  items?: SaleCartItemPayload[];
+  /**
+   * THE PICK-UP CODE, asked for before the tender and carried with the order.
+   *
+   * The prototype asks for it on the way to payment and prints it on the
+   * receipt and on both prep tickets (`components/fnb/PickupCodeModal`), so it
+   * is part of what the order IS, not a printing detail: it is how the guest
+   * and the kitchen find each other. Sent with the cart so the sale the
+   * platform writes carries it too.
+   */
+  pickupCode?: string | null;
   promos: SaleCartPromoPayload[];
   manualDiscounts: SaleCartManualDiscountPayload[];
   memberId?: string | null;
@@ -599,6 +653,207 @@ export function buildCartPayload(
   };
 }
 
+// --- The F&B and shop cart, as the platform receives it (S2-09b) ------------
+
+/**
+ * Who an F&B or shop order belongs to, and which counter took it.
+ *
+ * The same identity a ticket cart carries, plus the two things an order has
+ * that a ticket sale does not: the counter it was rung up at, and the pick-up
+ * code the guest was given. `tier` rides along unused — an F&B item is priced
+ * from the catalogue row and nothing else, with no tier table behind it — and
+ * is kept only so one identity type serves both carts.
+ *
+ * `channel` is this till's own fact and is NOT sent: the platform's cart body
+ * declares no channel field, so `pos.sale.sales_channel` is whatever the sale
+ * service decides. It is kept here because it is what tells the two stations
+ * apart on this side — which totals engine answers when the platform cannot.
+ */
+export interface ItemCartIdentity extends CartIdentity {
+  channel: 'fnb' | 'shop';
+  pickupCode?: string | null;
+}
+
+/**
+ * The F&B or shop cart as the platform receives it.
+ *
+ * THE LINES PASSED IN ARE THE ONES ON SCREEN. `lineTotalSatang` on each row and
+ * `expectedTotalSatang` on the cart are read straight off them, which is what
+ * makes them an honest statement of what the guest was shown: when the platform
+ * has quoted the order, the screen is showing the platform's own figures and
+ * the two agree by construction; when it could not be asked, the till's figures
+ * go up and the platform refuses the commit if it prices the order differently.
+ * Either way nothing is charged from a number that was never on a screen.
+ */
+export function buildItemCartPayload(
+  lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
+  manualDiscounts: readonly ManualDiscount[],
+  identity: ItemCartIdentity,
+  shownTotal: number,
+  options: { mode?: RateMode; modeReason?: string } = {},
+): SaleCartPayload {
+  const rate = todayRateMode();
+  const mode = options.mode ?? rate.mode;
+  const items = itemCart(lines);
+  return {
+    branchId: identity.branchId,
+    stationId: identity.stationId,
+    tier: identity.tier,
+    pricingMode: mode,
+    pricingModeReason: options.modeReason ?? rate.reason,
+    // No socks on an F&B or shop order; the field is the ticket cart's and the
+    // platform reads it only when a line carries socks.
+    socks: { addOnId: SOCKS_ADDON_ID, unitSatang: 0, label: SOCKS_LABEL },
+    // No ticket lines on an order taken at the F&B or shop counter. The
+    // platform's cart accepts either kind and refuses only a cart with neither.
+    lines: [],
+    items,
+    // Omitted rather than sent as null: the route declares it optional, not
+    // nullable, and a null would be refused by the schema before anything read it.
+    ...(identity.pickupCode ? { pickupCode: identity.pickupCode } : {}),
+    promos: [],
+    manualDiscounts: manualDiscounts.map((discount) => ({
+      id: platformId(discount.id),
+      scope: discount.scope,
+      ...(discount.targetLineId ? { targetLineId: platformId(discount.targetLineId) } : {}),
+      ...(discount.targetComponent ? { targetComponent: discount.targetComponent } : {}),
+      ...(discount.targetLabel ? { targetLabel: discount.targetLabel } : {}),
+      type: discount.type,
+      value: engineManualDiscount(discount).value,
+      reason: discount.reason,
+      ...(discount.note ? { note: discount.note } : {}),
+      appliedByAccountId: discount.appliedById || identity.accountId,
+      appliedByName: discount.appliedBy || identity.accountName,
+      appliedAt: discount.appliedAt,
+    })),
+    memberId: identity.memberId ?? null,
+    customerPhone: identity.customerPhone ?? null,
+    customerNickname: identity.customerNickname ?? null,
+    expectedTotalSatang: toSatang(shownTotal),
+  };
+}
+
+/**
+ * THE ORDER'S PRICE, ON THIS DEVICE, when the platform cannot be asked.
+ *
+ * This is the prototype's own arithmetic (`lib/fnb.ts`, `lib/merch.ts`) and it
+ * is labelled as such — `source: 'till'`, `engineVersion: 'prototype'` — for
+ * the reason `cartQuote.ts` sets out: a figure on a screen has to say where it
+ * came from, and an F&B order has no ticket cart for `@oto/shared` to price.
+ * Nothing is SOLD from it silently: the commit carries it as
+ * `expectedTotalSatang` and the platform refuses the sale if it disagrees.
+ */
+export function localItemQuote(
+  kind: 'fnb' | 'shop',
+  lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
+  manualDiscounts: readonly ManualDiscount[],
+  options: { config?: TaxConfig; reason?: string } = {},
+): CartQuote {
+  const rate = todayRateMode();
+  const totals =
+    kind === 'fnb'
+      ? computeFnbTotals([...(lines as readonly FnbOrderLine[])], [...manualDiscounts], options.config)
+      : computeMerchTotals(
+          [...(lines as readonly MerchOrderLine[])],
+          [...manualDiscounts],
+          options.config,
+        );
+  return {
+    totals: {
+      subtotal: totals.subtotal,
+      discountAmount: 0,
+      scannedDiscounts: [],
+      manualDiscountAmount: totals.manualDiscountAmount,
+      manualAmounts: totals.manualAmounts,
+      serviceChargeTotal: totals.serviceChargeTotal,
+      taxTotal: totals.taxTotal,
+      taxBreakdown: totals.taxBreakdown,
+      total: totals.total,
+    },
+    satang: null,
+    source: 'till',
+    pricingMode: rate.mode,
+    pricingModeReason: rate.reason,
+    engineVersion: 'prototype',
+    ...(options.reason ? { reason: options.reason } : {}),
+  };
+}
+
+/**
+ * Why this order has nothing the platform can be asked about. Null when it has.
+ *
+ * An order made up entirely of prepaid entitlement lines is the case: every row
+ * is ฿0 because it was paid for at a booking, the platform has no wallet or
+ * entitlement ledger to take it off (S2-14a), and a cart with no rows on it is
+ * refused as empty. So the platform is not asked, the order stands on this till
+ * and the confirmation says so — rather than reception being shown a refusal
+ * they can do nothing about while a guest waits for an ice cream somebody has
+ * already paid for.
+ */
+export function offLedgerOnly(
+  lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
+): string | null {
+  if (lines.length === 0) return null;
+  if (itemCart(lines).length > 0) return null;
+  return 'Every item on this order was prepaid at booking, which the ledger cannot record yet (S2-14a).';
+}
+
+export interface ItemQuoteArgs {
+  kind: 'fnb' | 'shop';
+  lines: readonly FnbOrderLine[] | readonly MerchOrderLine[];
+  manualDiscounts: readonly ManualDiscount[];
+  identity: ItemCartIdentity | null;
+  config?: TaxConfig;
+}
+
+/**
+ * The order's price, from the platform where it can be had — the F&B and shop
+ * counterpart of `quoteCart`, and it follows the same three rules.
+ *
+ * The local figure is computed first and always, so the panel is never blank
+ * while a round trip is in flight. A platform answer REPLACES it, per line and
+ * in total. A refusal is not swallowed: a 4xx means the platform looked at this
+ * order and objected — a required modifier nobody chose, a menu price that
+ * moved — and the person at the counter must see that rather than be handed the
+ * till's own figure as if the platform had agreed.
+ */
+export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
+  const { kind, lines, manualDiscounts, identity } = args;
+  const local = localItemQuote(kind, lines, manualDiscounts, {
+    ...(args.config ? { config: args.config } : {}),
+  });
+  if (!identity) return { ...local, reason: 'No station or branch on this device yet.' };
+  const offLedger = offLedgerOnly(lines);
+  if (offLedger) return { ...local, reason: offLedger };
+
+  const payload = buildItemCartPayload(lines, manualDiscounts, identity, local.totals.total);
+  try {
+    const { quote } = await salesApi.quote(payload);
+    const notice = platformNoticeOf(quote);
+    const localIds = (lines as readonly { id: string }[]).map((line) => line.id);
+    const lineTotals: Record<string, number> = {};
+    for (const [key, satang] of Object.entries(quote.lineTotals)) {
+      lineTotals[localIdFor(localIds, key) ?? key] = toBaht(satang);
+    }
+    return {
+      totals: quoteToTotals(quote, manualDiscounts.map((discount) => discount.id)),
+      satang: null,
+      source: 'platform',
+      pricingMode: quote.pricingMode,
+      pricingModeReason: quote.pricingModeReason,
+      engineVersion: quote.engineVersion,
+      lineTotals,
+      ...(notice ? { platformNotice: notice } : {}),
+    };
+  } catch (err) {
+    if (isMissingRoute(err)) {
+      return { ...local, reason: 'This deployment has no pricing route yet (SCRUM-203).' };
+    }
+    if (err instanceof ApiError) throw err;
+    return { ...local, reason: 'The platform did not answer; this till priced the order.' };
+  }
+}
+
 // --- Totals, in the shape the prototype's components render -----------------
 
 /** One applied code, as `OrderSummary` and the customer display draw it. */
@@ -750,6 +1005,15 @@ export interface CartQuote {
   totals: OrderTotals;
   /** The same figures in satang — what a commit reconciles against. */
   satang: TicketCartTotals | null;
+  /**
+   * WHAT EACH ROW COSTS, in baht, keyed by the till's own cart line id.
+   *
+   * Set only on an F&B or shop order priced by the platform (S2-09b), where the
+   * order panel draws a figure against every row and each one must be the
+   * platform's rather than the browser's. A ticket cart's rows are drawn from
+   * the cart line's own total and do not need it.
+   */
+  lineTotals?: Record<string, number>;
   source: QuoteSource;
   pricingMode: RateMode;
   pricingModeReason: string;

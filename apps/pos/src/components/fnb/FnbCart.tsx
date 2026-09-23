@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ChargeTarget, FnbOrderLine, ManualDiscount, Wristband } from '@/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,6 +22,16 @@ interface FnbCartProps {
   taxBreakdown: TaxBreakdown;
   /** Per-primitive relief breakdown for the currently-scanned staff benefit, if any. */
   benefitBreakdown?: StaffBenefitBreakdownData | null;
+  /**
+   * WHERE THE FIGURES ON THIS PANEL CAME FROM (S2-09b) — drawn just above the
+   * charge button, where the person taking the money is already looking.
+   *
+   * Passed in rather than decided here: this component draws an order, and
+   * which engine priced it is the station's business. It renders nothing when
+   * the platform priced the order and agreed with the till, so the approved
+   * layout is unchanged in ordinary use.
+   */
+  priceNote?: ReactNode;
   onChangeQty: (lineId: string, qty: number) => void;
   onEditLine: (line: FnbOrderLine) => void;
   onClear: () => void;
@@ -80,6 +90,7 @@ export function FnbCart({
   manualAmounts,
   taxBreakdown,
   benefitBreakdown,
+  priceNote,
   onChangeQty,
   onEditLine,
   onClear,
@@ -379,6 +390,8 @@ export function FnbCart({
               <span className="tabular-nums">฿{roundTHB(row.amount)}</span>
             </div>
           ))}
+
+        {priceNote && <div className="mt-3">{priceNote}</div>}
 
         <Button
           size="lg"

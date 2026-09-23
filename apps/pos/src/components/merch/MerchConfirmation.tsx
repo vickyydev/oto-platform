@@ -17,9 +17,20 @@ interface MerchConfirmationProps {
   order: MerchOrder;
   newBalance: number | null;
   onNewOrder: () => void;
+  /**
+   * THE RECEIPT NUMBER THE PLATFORM ALLOCATED (S2-09b), when the sale reached
+   * the ledger. Null on a device with no platform station behind it, where the
+   * notice above says why — so its absence is never silent.
+   */
+  receiptNumber?: string | null;
 }
 
-export function MerchConfirmation({ order, newBalance, onNewOrder }: MerchConfirmationProps) {
+export function MerchConfirmation({
+  order,
+  newBalance,
+  onNewOrder,
+  receiptNumber = null,
+}: MerchConfirmationProps) {
   const { payment } = order;
   // Printout CONTENT follows the active receipt template (routing is unchanged).
   // With no template configured, default to showing everything.
@@ -47,6 +58,11 @@ export function MerchConfirmation({ order, newBalance, onNewOrder }: MerchConfir
             Sale #{order.id}
             {order.wristband ? ` • ${order.wristband.customerNickname}` : ' • Guest'}
           </p>
+          {receiptNumber && (
+            <p className="mt-1 text-sm font-semibold tabular-nums text-foreground/80">
+              Receipt {receiptNumber}
+            </p>
+          )}
         </div>
 
         <Card className="p-5 flex flex-col bg-card/50 mb-4 min-h-0 flex-1">

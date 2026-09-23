@@ -45,16 +45,28 @@ function CatChip({
 }
 
 function StockLine({
+  tracked,
   out,
   low,
   remaining,
   stock,
 }: {
+  /**
+   * Whether anything counts this item at all (S2-09b).
+   *
+   * `pos.product.stock_item_id` is null on every catalogue row until S2-14b
+   * brings the stock module, and an untracked item used to render its count as
+   * `Infinity in stock` — the literal word, on a shelf tile, in front of a
+   * guest. It now says nothing, which is the truth: nobody is counting these
+   * yet, and the strip above the grid names the ticket that will.
+   */
+  tracked: boolean;
   out: boolean;
   low: boolean;
   remaining: number;
   stock: number;
 }) {
+  if (!tracked) return null;
   if (out) {
     return (
       <div className="flex items-center gap-1.5 text-xs font-bold text-destructive">
@@ -121,7 +133,8 @@ export function MerchGrid({ items, quantities, onAdd }: MerchGridProps) {
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pb-2">
           {shown.map((item) => {
             const inCart = quantities[item.id] ?? 0;
-            const remaining = item.stock !== undefined ? item.stock - inCart : Infinity;
+            const tracked = item.stock !== undefined;
+            const remaining = tracked ? item.stock! - inCart : Infinity;
             const out = isOutOfStock(item);
             const low = isLowStock(item);
             const blocked = out || remaining <= 0;
@@ -174,7 +187,13 @@ export function MerchGrid({ items, quantities, onAdd }: MerchGridProps) {
                   )}
                 </div>
                 <div className="mt-3">
-                  <StockLine out={out} low={low} remaining={remaining} stock={item.stock ?? 0} />
+                  <StockLine
+                    tracked={tracked}
+                    out={out}
+                    low={low}
+                    remaining={remaining}
+                    stock={item.stock ?? 0}
+                  />
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-primary font-bold text-lg tabular-nums">
                       ฿{resolveRateToday(item.price)}

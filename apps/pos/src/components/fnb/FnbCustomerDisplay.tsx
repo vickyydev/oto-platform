@@ -1,5 +1,5 @@
 import { ChargeTarget, FnbOrder, FnbOrderLine, ManualDiscount, Wristband } from '@/types';
-import { breakdownModifiers, computeUnitPrice, describeModifiers } from '@/lib/fnb';
+import { breakdownModifiers, describeModifiers } from '@/lib/fnb';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
 import { computeManualDiscount, formatDiscountDetail } from '@/lib/manualDiscount';
@@ -136,7 +136,14 @@ function OrderLines({
                   <div className="text-foreground/40 text-sm tabular-nums">฿{resolveRateToday(line.menuItem.price)} base</div>
                   {line.qty > 1 && (
                     <div className="text-foreground/40 text-sm tabular-nums">
-                      ฿{computeUnitPrice(line.menuItem, line.selectedModifiers)} each × {line.qty}
+                      {/*
+                        The row's own figure divided by its count, NOT the base
+                        price plus the option deltas worked out again here
+                        (S2-09b): the total beside it is the platform's, and a
+                        second arithmetic on this screen could contradict it in
+                        front of the guest it is being read by.
+                      */}
+                      ฿{roundTHB(line.lineTotal / line.qty)} each × {line.qty}
                     </div>
                   )}
                   {breakdown.length > 0 && (
