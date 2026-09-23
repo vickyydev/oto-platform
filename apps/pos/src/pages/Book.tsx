@@ -730,10 +730,12 @@ export default function Book() {
               onBack={() => setStage('tickets')}
               onContinue={() => setStage('supervise')}
               canContinue={reviewCanContinue}
-              // SCRUM-338: this flow's Confirm and Remove still write to the
-              // browser's copy of the member (handleConfirmSlot and
-              // handleRemoveSaved above), so the note keeps the sentence that
-              // is true of it until this path is converted.
+              // SCRUM-338: on /book, Confirm and Remove write nothing —
+              // handleConfirmSlot and handleRemoveSaved above touch no store
+              // (S2-09b removed the fixture writes), and the stage never opens
+              // here because the public lookup returns no saved children. The
+              // note keeps the browser-only sentence until the booking site
+              // has a member write route of its own.
               detailsStore="browser-memory"
             />
           </div>

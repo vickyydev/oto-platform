@@ -44,8 +44,9 @@ interface SavedChildrenReviewProps {
    * The component is shared by two flows that no longer answer the same way.
    * On the till, Confirm writes to the member's record through the member API
    * (SCRUM-233) and Remove archives the child there (SCRUM-337), both audited;
-   * on the booking site the same buttons still write to this browser's copy of
-   * the member and are gone on reload. One note cannot be true for both, and
+   * on the booking site the same buttons write nothing — the public lookup
+   * returns no saved children, so the stage does not open there (S2-09b removed
+   * the fixture writes). One note cannot be true for both, and
    * the one it carried — "a prototype convenience held in memory only" — was
    * false exactly where staff read it most.
    *
