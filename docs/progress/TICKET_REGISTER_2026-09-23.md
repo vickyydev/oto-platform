@@ -354,3 +354,14 @@ These are still the owner's:
 | **SCRUM-357** | The booking site's saved-children step | Unreachable — the public member lookup answers a nickname and tier only. Exposing more is a privacy decision, not a bug fix. |
 | **SCRUM-268** | The "HKT Central" row that exists only in the OTO App | The platform's branch is now the record and the app's row follows it; this orphan row still has to be decided on. |
 | — | The deploy-bot | Its `render.yaml` entry creates a **paid** service the moment the blueprint is synced. It has never been run live. |
+
+## Addendum — 2026-09-24 (morning)
+
+Statuses read from Jira at 04:35 on the 24th; times are Jira's and git's.
+
+| Key | Type | Summary | Status | Priority | What proved it | Raised on the 24th |
+|---|---|---|---|---|---|---|
+| SCRUM-204 | Subtask | S2-09b — F&B and shop carts, catalogue admin panels, member-API migrations, product barcode | Testing | Medium | members half `f5e5572` (+`3fff2d8`); sizes half `4cad79e`; staging pass 03:52–04:21 at `4cad79e` — `staging-204-sizes.png`, `staging-204-members.png`: the sizes, the picker, the sale record and the four member screens hold; a scan never reaches the shop screen (SCRUM-392). Stays in Testing on 392 |  |
+| SCRUM-202 | Story | S2-09 — Checkout and sales ledger | In Progress | Medium | 203 Deployed; 204 in Testing on SCRUM-392; the two staging cards attached here too (04:29) |  |
+| SCRUM-392 | Bug | The shop screen never hears a scan on staging: the POS site’s /api rewrite holds the station channel’s live stream back | To Do | High | raised 04:28 — the fix round (the shop screen polls `GET /stations/:id/scans?after=n` when the stream has not opened in 4 s) running as `wf_f016b590` | yes |
+| SCRUM-393 | Bug | Booking site: the "Stored as" hint under the phone field shows +660811111111 when a leading 0 is typed after +66 | To Do | Low | raised 04:29 — not started | yes |

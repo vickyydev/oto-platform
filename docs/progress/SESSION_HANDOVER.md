@@ -35,17 +35,39 @@ workflow agent runs there from today — `CLAUDE_CODE_SUBAGENT_MODEL` in
   stale screen dropping a scanned size. 204 is in **Testing** with the four
   cards attached and the comment posted (03:31); 202 carries a status
   comment.
-- **In flight: 204's staging pass** (`wf_f5b585d1`, waiting for the five
-  services live at `4cad79e` — Render was building at 03:41): withdraw the
-  old separate "Grip socks M" and add S/M/L to "Grip Socks" through the back
-  office (the deploy migrates, never seeds), the picker, the Console scan
-  landing on the shop cart through the POS site's `/api/*` rewrite (the
-  unproven path — a broken channel is reported, not fixed, and gets a
-  ticket), the unknown barcode, the receipt and the History detail, then the
-  members half on the seeded member across the phone till, the booking site
-  and the party builder. When it holds: 204 → Deployed by the walker, 202
-  (S2-09) → Deployed, and this block, STATUS.md, the Sprint 2 progress
-  Status block and the register brought to that state.
+- **204's staging pass ran 03:52–04:21** (`wf_f5b585d1`; staging live at
+  `4cad79e` from 03:43): **five of seven steps hold, two are broken at the
+  hosting.** Through the back office the old separate "Grip socks M" was
+  withdrawn (its barcode freed) and S/M/L put on "Grip Socks" with
+  8850000000017 on M; the shop screen's picker asks for the size and the cart
+  reads "Grip Socks (M)"; the cash sale T1-000018 names its line
+  "Grip Socks — M" in History; the phone till, the counter till's drop-off
+  hand-off, the booking site and the party builder all read the seeded member
+  from the platform (proved by a nickname written and put back). **Broken: a
+  scan never reaches the shop screen.** The box reads it and the api's channel
+  streams it on the api origin (200 in 141 ms, both scans live), but the POS
+  site's `/api/*` rewrite on Render holds the never-ending stream back (no
+  headers in 3 min 45 s; `x-accel-buffering: no` and the keepalives do not
+  help), so a screen behind the rewrite hears nothing, and the unknown-barcode
+  message is lost the same way. Cards `staging-204-sizes.png` and
+  `staging-204-members.png` on 204 (comment 04:22) and on 202. Raised:
+  **SCRUM-392 (High)** — the rewrite holds the station channel back; the fix
+  decided: a finite `GET /stations/:id/scans?after=n` fed at the source and
+  the shop screen polling it every 1.5 s when the stream has not opened in
+  4 s (works on any hosting; the hosting alternatives — a streaming web
+  service per static site, or custom domains with a cross-site cookie — are
+  on the ticket for the owner). **SCRUM-393 (Low)** — the booking site's
+  "Stored as" hint shows +660811111111 for a typed leading 0 (the lookup still
+  finds the member). **204 stays in Testing on 392 as its single blocker
+  (comment 04:29); 202 stays In Progress (comment 04:29).**
+- **In flight: 392's gated round** (`wf_f016b590`, build → gate, launched
+  04:29 on `claude-opus-5-5`). When it merges: land by explicit file list,
+  push, the staging pass of 204's scan steps through the rewrite, then 204 →
+  Deployed and 202 (S2-09) → Deployed by the walker (both carry images), and
+  the four progress files brought to that state.
+- **Learned today:** the static sites' `/api/*` rewrite never passes a
+  streaming answer — anything a screen must hear live through it needs a
+  finite fallback (memory `oto-render-staging`).
 
 ## State at the end of 2026-09-23 — read this first
 

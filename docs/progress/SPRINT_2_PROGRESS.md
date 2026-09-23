@@ -2,29 +2,37 @@
 
 ## Status
 
-_Last updated 2026-09-23, end of day._
+_Last updated 2026-09-24, 04:35._
 
-> **Resuming? Read `SESSION_HANDOVER.md` → "State at the end of 2026-09-23"
-> first.** It carries the live commit on every staging service, what landed
+> **Resuming? Read `SESSION_HANDOVER.md` → "2026-09-24 — closing S2-09", then
+> "State at the end of 2026-09-23".** It carries the live commit on every staging service, what landed
 > today, what is in flight, every open defect with its key, the owner decisions
 > outstanding and the recommended next order. `TICKET_REGISTER_2026-09-23.md`
 > has the ticket-by-ticket evidence. This block is the summary; those files are
 > the detail.
 
 - **Current checkpoint.** CP1 passed; the sprint is inside **S2-10 (payments)**,
-  with S2-09b (SCRUM-204) still open beside it. CP2's remaining line is
+  with S2-09b (SCRUM-204) in Testing beside it on one blocker, SCRUM-392 (the
+  scan stream held back by the POS site's rewrite; its fix round is running).
+  CP2's remaining line is
   SCRUM-206's own end-to-end evidence, which waits on Slice F.
 
-- **Last landed.** `main` is **`d435db4`** (20:47) — tenders **Slice G**, offline
-  sales replay and the box's own drawer kick. Staging matches it at
-  `d435db4` on the api, POS, Console, launcher and booth (`oto-app-staging` at
-  `16c621a`, which deploys only on its own files). **Six of
+- **Last landed.** `main` is **`984d04a`** (a docs checkpoint over **`4cad79e`**,
+  03:28 on the 24th — S2-09b's sizes half: a shop product carries its sizes, the
+  shop screen asks for one, a box scan lands on the shop screen; and `f5e5572`,
+  02:05 — every screen reads members from the platform, with a CI check that
+  refuses a screen reading the fixture). Staging runs `4cad79e` on the api, POS,
+  Console, launcher and booth (`oto-app-staging` at `16c621a`, which deploys
+  only on its own files). Before those, `d435db4` (23rd, 20:47) — tenders
+  **Slice G**, offline sales replay and the box's own drawer kick. **Six of
   SCRUM-206's seven slices are in** — see "S2-10a — the tenders (SCRUM-206) —
   landed 2026-09-23" in the ticket log below for the commit and gate outcome of
   each.
 
 - **Next.** The owner has said no new tickets are to be picked up and the next
-  order is the owner's to confirm. The recommendation: (1) the D↔C2 seam and
+  order is the owner's to confirm. The recommendation: (0) **SCRUM-392 (High)**, its round running now — the shop
+  screen's scan fallback, inside S2-09b; then 204 and 202 (S2-09) to Deployed;
+  (1) the D↔C2 seam and
   **SCRUM-391** — a `qr` tender never reaches the gateway — then drive D's QR
   path on staging; (2) **SCRUM-388 (High)**, reserve in-flight tenders, before F;
   (3) **SCRUM-382**, refuse a disabled or archived tender in the attempt service;
@@ -33,9 +41,10 @@ _Last updated 2026-09-23, end of day._
   390), the promotion items (373, 374, 375, 368), the small light-theme and till
   items (370, 372, 379, 380), then 369 and 383; (6) the owner decisions.
 
-- **Where the ticket board stands tonight.** 200 SCRUM issues were touched today:
-  **134 Deployed, 61 To Do, 5 In Progress** (SCRUM-191, 202, 204, 206, 360),
-  nothing in Testing. Ninety-six were raised today and sixty-eight of those were
+- **Where the ticket board stands (24 Sept, 04:30).** 200 SCRUM issues were
+  touched on the 23rd; now **134 Deployed, 63 To Do, 3 In Progress** (SCRUM-191,
+  202, 206) and **1 in Testing** (SCRUM-204; 360 was closed Done; 392 and 393
+  were raised on the 24th). Ninety-six were raised on the 23rd and sixty-eight of those were
   fixed and Deployed the same day.
 
 - **Two registers still govern the till.** `POS_GAP_REGISTER.md` (the screen-by-

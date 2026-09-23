@@ -1,9 +1,10 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-23, end of day (`main` at `d435db4`; staging at `d435db4`)_
+_Last updated: 2026-09-24, 04:35 (`main` at `984d04a`; staging at `4cad79e`, the sizes commit)_
 
-> **Resuming?** Read **`SESSION_HANDOVER.md` → "State at the end of 2026-09-23"**
-> first: it carries the live commit on every service, what landed today, what is
+> **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
+> closing S2-09", then "State at the end of 2026-09-23". Together they carry the
+> live commit on every service, what landed, what is
 > in flight, every open defect with its key, and the recommended next order. The
 > ticket-by-ticket detail for today is `TICKET_REGISTER_2026-09-23.md`. The
 > precise sprint checkpoint is in `SPRINT_2_PROGRESS.md` (Status block first).
@@ -19,8 +20,10 @@ _Last updated: 2026-09-23, end of day (`main` at `d435db4`; staging at `d435db4`
 - **Sprint 2 is being built, and most of it is now live on staging.** The suite
   launcher, the Console, stations and boxes, the box agent's sync core and print
   pipeline, the Lucky Wheel booth, the sales ledger and the F&B/shop lanes, the
-  member and booking work are all deployed. As of tonight **134 tickets read
-  Deployed**, 5 are In Progress (SCRUM-191, 202, 204, 206, 360) and 61 are open.
+  member and booking work are all deployed. On the morning of 24 September **134 tickets
+  read Deployed**, 3 are In Progress (SCRUM-191, 202, 206), 1 is in Testing
+  (SCRUM-204; 360 was closed Done) and 63 are open (SCRUM-392 and 393 were
+  raised on the 24th).
 - **Money can now be taken.** SCRUM-206 (S2-10a, tenders) is the work of the day:
   six of its seven slices landed — the tender ledger (`3317360`), payment methods
   admin (`8ee9a5d`), the cash tender and part-paid sales (`a232059`+`b616191`),
@@ -29,6 +32,14 @@ _Last updated: 2026-09-23, end of day (`main` at `d435db4`; staging at `d435db4`
   (`24e608d`), and offline sales replay with the box's own drawer kick
   (`d435db4`). **Slice F — the POS payment stage — is not started**, and
   SCRUM-206 stays In Progress.
+- **S2-09 (checkout and sales ledger) is one fix from closing.** S2-09b's two
+  halves are on `main` (`f5e5572` — every screen reads members from the
+  platform; `4cad79e` — a shop product carries its sizes, the shop screen asks
+  for one, a box scan lands on the shop screen) and proven on staging on the
+  24th, except that a scan never reaches the shop screen there: the POS site's
+  `/api/*` rewrite holds the station channel's stream back — **SCRUM-392
+  (High)**, whose fix round (the screen polls when the stream cannot open) is
+  running. SCRUM-204 is in Testing on that single blocker; SCRUM-202 waits on it.
 - **The repository is the suite monorepo**: platform at the root, docs split by
   purpose, `imports/` as the local-only drop zone. Remote:
   `github.com/vickyydev/oto-platform` (private).
@@ -53,6 +64,10 @@ _Last updated: 2026-09-23, end of day (`main` at `d435db4`; staging at `d435db4`
 **The owner has said no new tickets are to be picked up; the next order is the
 owner's to confirm.** The recommendation, with the reasoning in
 `SESSION_HANDOVER.md`:
+
+**Already running, inside S2-09b rather than a new ticket: SCRUM-392 (High)** —
+the shop screen's scan fallback; when it lands and the scan steps hold on
+staging, SCRUM-204 and SCRUM-202 (S2-09) move to Deployed.
 
 1. The D↔C2 seam and **SCRUM-391** — a `qr` tender never reaches the gateway —
    then drive D's QR path on staging end to end.
