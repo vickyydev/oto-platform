@@ -1,7 +1,7 @@
-import { hash } from '@node-rs/argon2';
+import { hash, verify } from '@node-rs/argon2';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { account, auditLog, role, roleAssignment } from '@oto/db';
+import { account, auditLog, operator, role, roleAssignment } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import { _resetThrottle } from '../src/services/auth';
 import {
@@ -37,6 +37,12 @@ import {
  * sign-in lock stands; the deactivated one is told by the manager, who can
  * read both the status and the refusals. And the reason stays in the trail on
  * our side, which is what makes "it just says wrong password" diagnosable.
+ *
+ * SCRUM-325 adds the channel the bytes do not cover: the CLOCK. Identical
+ * answers still sorted the same list of numbers if one class of refusal came
+ * back measurably sooner, and one did — argon2 ran only for an active account,
+ * so every other class was answered without it. The last describe below
+ * measures the paths against each other and pins the difference to noise.
  */
 
 const MAX_FAILURES = 5;
@@ -49,6 +55,13 @@ const DEACTIVATED = '+66900000303';
 const ACTIVE = '+66900000304';
 /** A second invited account, for the code flow, so the first stays invited. */
 const INVITED_FOR_CODES = '+66900000305';
+/**
+ * A fifth class, for the timing measurement only: an `active` account whose
+ * whole tenant has been retired (SCRUM-253). It is the newest refusal that
+ * never reaches the password, and therefore the newest one that could be told
+ * apart by a stopwatch.
+ */
+const ARCHIVED_OPERATOR = '+66900000310';
 
 const ACTIVE_PASSWORD = 'active1234pass';
 const WRONG_PASSWORD = 'wrong1234pass';
@@ -97,6 +110,26 @@ beforeAll(async () => {
   await make(INVITED_FOR_CODES, 'invited');
   await make(DEACTIVATED, 'inactive', ACTIVE_PASSWORD);
   await make(ACTIVE, 'active', ACTIVE_PASSWORD);
+
+  /**
+   * A retired tenant of its own, rather than archiving a seeded one: OTO is
+   * what every other case in this file signs in against, and switching it off
+   * would make them all pass for the wrong reason.
+   */
+  const retiredOperatorId = newId();
+  await ctx.db
+    .insert(operator)
+    .values({ id: retiredOperatorId, name: 'Retired Park', archivedAt: new Date() });
+  await ctx.db.insert(account).values({
+    id: newId(),
+    operatorId: retiredOperatorId,
+    phone: normalizePhone(ARCHIVED_OPERATOR)!,
+    // Active, verified and with a real password: the ONLY thing standing
+    // between it and a session is its operator's `archived_at`.
+    passwordHash: await hash(ACTIVE_PASSWORD),
+    phoneVerifiedAt: new Date(),
+    status: 'active',
+  });
 });
 
 afterAll(async () => {
@@ -301,4 +334,122 @@ describe('password-reset/complete answers every phone the same way (SCRUM-251)',
     }
     expect(last.body).toContain('Too many wrong codes');
   });
+});
+
+/**
+ * SCRUM-325 — the same answer, in the same time.
+ *
+ * Making the four classes byte-identical closed the channel you can read; it
+ * left the one you can time. An active account's password goes through argon2
+ * — roughly ten to fifteen milliseconds of deliberately expensive work — and
+ * every other class was refused before reaching it, so a stranger with a list
+ * of numbers and a stopwatch sorted them exactly as the old 403s had. The
+ * throttle caps each number at five attempts per window, which makes that slow
+ * from outside, not impossible: five samples a window against a difference this
+ * large is enough, and a list of numbers has no deadline.
+ *
+ * WHAT "WITHIN NOISE" MEANS HERE, and why it is two assertions.
+ *
+ * The leak has a size: one argon2 verification. So the test measures that cost
+ * on the machine it is running on and requires the gap between the medians to
+ * be under HALF of it — an absolute band, in the unit the vulnerability is
+ * denominated in, which neither a fast laptop nor a loaded CI box can flatter.
+ * The ratio (no median more than 1.5× another) is the second, weaker guard: it
+ * is the one that still bites if argon2 were ever made cheap, and the one that
+ * goes slack if the database is slow, which is why neither is asked to stand
+ * alone.
+ *
+ * Both are comfortable with the dummy verification in place — the paths differ
+ * by one SELECT, the operator's `archived_at`, which the unknown-phone path
+ * has no account to make — and both fail without it.
+ */
+describe('a refusal costs the same work whatever it refuses (SCRUM-325)', () => {
+  /** Attempts per class. Enough that one scheduler hiccup is not the median. */
+  const ROUNDS = 50;
+
+  const median = (xs: number[]): number => {
+    const s = [...xs].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 === 1 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
+  };
+
+  /** What one argon2 verification costs here, right now — the unit of the leak. */
+  const argon2VerifyCost = async (): Promise<number> => {
+    const stored = await hash(ACTIVE_PASSWORD);
+    const samples: number[] = [];
+    for (let n = 0; n < 15; n++) {
+      const t0 = performance.now();
+      await verify(stored, WRONG_PASSWORD);
+      samples.push(performance.now() - t0);
+    }
+    return median(samples);
+  };
+
+  it('no class of refused phone can be told from another by the clock', async () => {
+    /** The baseline every other class is compared against. */
+    const BASELINE = 'active, wrong password';
+    const classes: ReadonlyArray<readonly [string, string]> = [
+      [BASELINE, ACTIVE],
+      ['unknown phone', UNKNOWN],
+      ['invited', INVITED],
+      ['deactivated', DEACTIVATED],
+      ['archived operator', ARCHIVED_OPERATOR],
+    ];
+    const samples = new Map<string, number[]>(classes.map(([label]) => [label, []]));
+
+    // Untimed warm-up. The first call into argon2, the connection pool and the
+    // route pays for a cold start, and whichever class went first would
+    // otherwise wear it and be reported as the slow one.
+    for (const [, phone] of classes) {
+      await _resetThrottle(ctx.db);
+      expect((await signIn(phone)).statusCode).toBe(401);
+    }
+
+    for (let round = 0; round < ROUNDS; round++) {
+      // Round-robin, not fifty of one and then fifty of the next: a machine
+      // that gets slower as the suite runs would hand that drift to whichever
+      // class went last, and the test would report it as a finding.
+      for (const [label, phone] of classes) {
+        // Outside the clock, and between every attempt: the counters are
+        // shared — one per phone, one for the address every inject comes from
+        // — and the per-IP bucket (4 × five) would close after four rounds.
+        await _resetThrottle(ctx.db);
+        const startedAt = performance.now();
+        const res = await signIn(phone);
+        samples.get(label)!.push(performance.now() - startedAt);
+        // A 429, or a 200, would make the numbers above a measurement of
+        // something else entirely.
+        expect(res.statusCode, label).toBe(401);
+      }
+    }
+
+    const medians = new Map([...samples].map(([label, xs]) => [label, median(xs)]));
+    const argonMs = await argon2VerifyCost();
+    const baseline = medians.get(BASELINE)!;
+
+    /**
+     * Printed on every run, pass or fail. The numbers ARE the finding here —
+     * an assertion that only said "expected false to be true" would leave the
+     * next person with no way to tell a closed gap from a quiet machine.
+     * Labels only: the phones themselves never go to a log.
+     */
+    const report = [...medians]
+      .map(([label, ms]) => `  ${label.padEnd(23)} ${ms.toFixed(1)}ms`)
+      .join('\n');
+    console.log(
+      `SCRUM-325 — median sign-in refusal over ${ROUNDS} attempts each\n${report}\n` +
+        `  (one argon2 verification on this machine: ${argonMs.toFixed(1)}ms)`,
+    );
+
+    for (const [label, ms] of medians) {
+      if (label === BASELINE) continue;
+      const gap = Math.abs(ms - baseline);
+      const ratio = Math.max(ms, baseline) / Math.min(ms, baseline);
+      const where = `${label} ${ms.toFixed(1)}ms vs ${BASELINE} ${baseline.toFixed(1)}ms`;
+      expect(gap, `${where} — gap ${gap.toFixed(1)}ms of a ${argonMs.toFixed(1)}ms verify`).toBeLessThan(
+        argonMs / 2,
+      );
+      expect(ratio, `${where} — ratio ${ratio.toFixed(2)}×`).toBeLessThan(1.5);
+    }
+  }, 240_000);
 });

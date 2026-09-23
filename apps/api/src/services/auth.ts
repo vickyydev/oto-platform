@@ -1,5 +1,5 @@
 import { hash, verify } from '@node-rs/argon2';
-import { createHash, randomInt } from 'node:crypto';
+import { createHash, randomBytes, randomInt } from 'node:crypto';
 import type { FastifyBaseLogger } from 'fastify';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
@@ -520,6 +520,47 @@ const STATUS_REASON: Record<string, string> = {
 };
 
 /**
+ * WHAT A REFUSAL COSTS WHEN THERE IS NOTHING TO VERIFY (SCRUM-325).
+ *
+ * A hash nobody's password can match, minted with the parameters every stored
+ * password hash is written with — `setPassword`, the account routes and the
+ * seed all call `hash()` with no options, so the defaults ARE the production
+ * parameters, and taking the same default here is what makes the work the same
+ * work (argon2id, m=19456, t=2, p=1 today; change them in one place and this
+ * follows). The input is random and thrown away: nothing can ever verify
+ * against it, which is the point — the answer is known before the work starts,
+ * so only the work matters.
+ *
+ * Minted ONCE, at module load, and deliberately not per request: a fresh
+ * `hash()` on each refusal would cost a hash on top of a verify and make the
+ * refusals SLOWER than the thing they are imitating, which is the same leak
+ * pointing the other way.
+ */
+const DUMMY_VERIFY_HASH: Promise<string> = hash(randomBytes(32).toString('base64'));
+// Nothing awaits this until the first refusal that needs it, and a promise
+// that rejects unobserved takes the process down with it. This marks it
+// observed; `equalizeVerifyCost` awaits the same promise and swallows it there.
+void DUMMY_VERIFY_HASH.catch(() => {});
+
+/**
+ * Spend one argon2 verification on a password that cannot be right, so that a
+ * refusal which never reached the real one costs the same.
+ *
+ * The result is discarded — it can only ever be false — and a failure to
+ * compute it is swallowed: this is a stopwatch's worth of work and never a
+ * credential, and turning a refusal into a 500 because the dummy hash could
+ * not be minted would be a louder signal than the one being closed.
+ */
+async function equalizeVerifyCost(password: string): Promise<void> {
+  try {
+    await verify(await DUMMY_VERIFY_HASH, password);
+  } catch {
+    // Deliberately nothing: the answer was known before the call, and a dummy
+    // hash that would not mint must not turn a 401 into a 500.
+  }
+}
+
+/**
  * ONE ANSWER FOR EVERY REFUSED SIGN-IN (SCRUM-251).
  *
  * An `invited` account was answered 403 `SETUP_REQUIRED` and a deactivated one
@@ -549,6 +590,12 @@ const STATUS_REASON: Record<string, string> = {
  * row per attempt, carrying `no_account`, `setup_required`, `account_inactive`
  * or `bad_password`, so somebody locked out for a fortnight is still
  * diagnosable from the trail.
+ *
+ * SCRUM-325 — and in the same TIME. Identical bytes still sorted a list of
+ * numbers if one class came back sooner, and one did: argon2 is deliberately
+ * expensive and ran only for an active account, so every refusal that skipped
+ * it was answered milliseconds early. Each of those paths now spends the same
+ * verification against a dummy hash on its way out through `fail`.
  */
 export async function signIn(
   db: Db,
@@ -601,7 +648,18 @@ export async function signIn(
     });
   };
 
+  /**
+   * Whether the supplied password has already been through argon2 against a
+   * real stored hash (SCRUM-325). Set on the one path that does it; `fail`
+   * charges every path that does not, so a refusal added above this line in
+   * future is equalised by default rather than by somebody remembering to.
+   */
+  let verifySpent = false;
+
   const fail = async (reason: string): Promise<never> => {
+    // The work this refusal skipped, paid here. Before the counters and the
+    // audit rows, because those are the same on every path and this is not.
+    if (!verifySpent) await equalizeVerifyCost(opts.password);
     const lockedBuckets = [
       ...(await throttleFail(db, [`phone:${phone}`], opts.maxFailures, opts.cooldownSeconds)),
       ...(await throttleFail(db, [`ip:${opts.ip}`], opts.maxFailures * 4, opts.cooldownSeconds)),
@@ -643,14 +701,19 @@ export async function signIn(
    * statuses by name, so a status added later is refused rather than admitted
    * by omission; the reason keeps its own name in the trail.
    *
-   * The password is not verified at all, because there is nothing it could
-   * unlock. What that leaves is a timing difference — argon2 runs only for an
-   * active account — which this does NOT close: closing it means verifying
-   * every attempt against a dummy hash, and that is its own change.
+   * The password is not verified against THIS account, because there is
+   * nothing it could unlock — but it is verified, against the dummy hash, on
+   * the way out through `fail` (SCRUM-325), so the refusal costs what a wrong
+   * password on an active account costs. Skipping argon2 altogether used to
+   * answer this class about fifteen milliseconds early, which is the same
+   * directory the identical body refuses to publish, read with a stopwatch.
    */
   if (acc!.status !== 'active') {
     await fail(STATUS_REASON[acc!.status] ?? `status_${acc!.status}`);
   }
+  // A row with no hash at all has nothing to verify against either, so it goes
+  // out through `fail` like the refusals above and is charged there.
+  verifySpent = Boolean(acc!.passwordHash);
   if (!acc!.passwordHash || !(await verify(acc!.passwordHash, opts.password))) {
     await fail('bad_password');
   }
