@@ -1300,7 +1300,11 @@ describe('the seam between this and the till', () => {
     // The finalise body is nullish — a press of the button with nothing typed
     // into it — and a schema the generator cannot convert takes the whole
     // document down, not just this route.
-    const res = await ctx.app.inject({ method: 'GET', url: '/docs/json' });
+    //
+    // Read with an administrator's cookie: the document takes
+    // `admin:health:read` since SCRUM-254, where it used to answer anyone.
+    const cookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const res = await ctx.app.inject({ method: 'GET', url: '/docs/json', headers: { cookie } });
     expect(res.statusCode).toBe(200);
     const paths = res.json().paths as Record<string, unknown>;
     expect(Object.keys(paths).filter((p) => p.startsWith('/sales'))).toEqual([

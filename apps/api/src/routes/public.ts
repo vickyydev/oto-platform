@@ -11,6 +11,12 @@ import {
   tier,
 } from '@oto/db';
 import {
+  TicketCreditRuleSchema,
+  TicketFreebieSchema,
+  TierAdultRuleSchema,
+  TierPriceRuleSchema,
+  TranslationsSchema,
+  WWPriceSchema,
   branchToday,
   computeTicketLine,
   getRateModeForDate,
@@ -48,6 +54,87 @@ import { opCtx, withTx } from '../services/tx';
  * which returns a stored body unchanged — and it is a difference no JSON
  * client can see.
  */
+/**
+ * ONE PACKAGE, AS THE BOOKING SITE READS IT (SCRUM-252).
+ *
+ * `packages` was the raw `select()`, so this open URL — addressed by a branch
+ * slug anyone can guess — answered with every column of `pos.ticket_package`:
+ * `operatorId`, `branchId` and the row's `createdAt`, `updatedAt` and
+ * `archivedAt` went to whoever asked.
+ *
+ * Every field below is one the booking site's own package type declares
+ * (`apps/pos/src/api/platform.ts:ApiTicketPackage`); all but `description` and
+ * `active` are read by `apps/pos/src/api/mappers.ts:apiPackageToTicketType`
+ * when the site hydrates its catalogue, and those two are kept for the reason
+ * given at `active` below. `id` is the one internal uuid kept, and it is kept
+ * because the site sends it back: `POST /public/bookings` prices each line by
+ * `packageId`.
+ *
+ * The jsonb payloads are spelled out from the same shapes the admin write path
+ * validates on the way in (`TicketPackageBodySchema`), so the public contract
+ * and the stored shape are one definition rather than two that drift.
+ */
+const PublicPackageSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  durationLabel: z.string(),
+  hours: z.number().int(),
+  prices: z.record(z.string(), WWPriceSchema),
+  tierPricing: z.record(z.string(), TierPriceRuleSchema).nullable(),
+  adultRules: z.record(z.string(), TierAdultRuleSchema).nullable(),
+  freebies: z.array(TicketFreebieSchema).nullable(),
+  creditRule: TicketCreditRuleSchema.nullable(),
+  gateAccess: z.boolean(),
+  translations: TranslationsSchema.nullable(),
+  /**
+   * Always true here — the query filters on it. Kept, as `description` is,
+   * because it is part of the package type the booking site declares
+   * (`ApiTicketPackage`), and a field that type names but the answer does not
+   * carry reads as `undefined` with nothing to warn whoever writes it.
+   */
+  active: z.boolean(),
+});
+type PublicPackage = z.infer<typeof PublicPackageSchema>;
+
+/**
+ * THE WHOLE ANSWER, AND NOTHING ELSE (SCRUM-252).
+ *
+ * Declared as the route's response schema rather than written as a `.map()` in
+ * the handler, because the serializer parses the answer through it: a column
+ * added to `ticket_package` tomorrow is absent from this list and therefore
+ * absent from the answer. A projection written by hand does the opposite —
+ * `select()` grows, and the hand-written map is the only thing that would have
+ * had to notice.
+ */
+const PublicCatalogSchema = z.object({
+  branch: z.object({
+    code: z.string(),
+    name: z.string(),
+    timezone: z.string(),
+    businessDayStart: z.string(),
+  }),
+  tiers: z.array(
+    z.object({
+      /** The tier CODE: what `prices` is keyed by and what a booking sends back. */
+      id: z.string(),
+      name: z.string(),
+      isDefault: z.boolean(),
+      requiresVerification: z.boolean(),
+    }),
+  ),
+  packages: z.array(PublicPackageSchema),
+  rateMode: z.object({
+    date: z.string(),
+    mode: z.enum(['weekday', 'weekend']),
+    reason: z.string(),
+    overrideName: z.string().optional(),
+  }),
+  holidays: z.array(
+    z.object({ name: z.string(), startsOn: z.string(), endsOn: z.string() }),
+  ),
+});
+
 function storedBookingAnswer(row: typeof booking.$inferSelect): {
   id: string;
   reference: string;
@@ -90,6 +177,7 @@ export async function publicRoutes(app: App): Promise<void> {
       schema: {
         description: 'Public booking catalog: branch, tiers, active packages, rate mode',
         params: z.object({ code: z.string() }),
+        response: { 200: PublicCatalogSchema },
       },
     },
     async (req) => {
@@ -131,7 +219,13 @@ export async function publicRoutes(app: App): Promise<void> {
           isDefault: t.isDefault,
           requiresVerification: t.requiresVerification,
         })),
-        packages,
+        /**
+         * The rows as they were read. Drizzle types a `jsonb` column as
+         * `unknown`, so they do not satisfy the schema's own input type; the
+         * cast asserts nothing about the values, and `PublicCatalogSchema` is
+         * what checks them and what strips every column it does not name.
+         */
+        packages: packages as PublicPackage[],
         rateMode: { date: today, ...rate },
         holidays: holidays.map((h) => ({ name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })),
       };

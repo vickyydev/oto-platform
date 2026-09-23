@@ -138,12 +138,14 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // the ones the origin check below refuses before a route is ever chosen.
   await app.register(telemetryPlugin);
 
-  // OpenAPI generated from the zod route schemas (CLAUDE.md §3); JSON at /docs/json.
+  // OpenAPI generated from the zod route schemas (CLAUDE.md §3). The document
+  // is collected by this plugin's own onRoute hook, so it is registered before
+  // the routes; the route that SERVES it is declared below the guard plugins
+  // (SCRUM-254).
   await app.register(swagger, {
     openapi: { info: { title: 'OTO Platform API', version: '0.1.0' } },
     transform: jsonSchemaTransform,
   });
-  app.get('/docs/json', { schema: { hide: true } }, async () => app.swagger());
 
   /**
    * Origin check on state-changing requests (S2-01a). The session cookie is
@@ -290,6 +292,35 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // installs the session guard a route declares, the other the box credential.
   await app.register(credentialPlugin);
   await app.register(idempotencyPlugin);
+
+  /**
+   * THE OPENAPI DOCUMENT (SCRUM-254) — every path, method, parameter and
+   * request body on this api, the admin surface and `/box/v1/*` included. It
+   * was served to anyone on the internet: 174 paths, ~190 KB, no cookie.
+   *
+   * DECLARED HERE, below the plugins, and not beside `app.register(swagger)`
+   * above. `permissionPlugin` installs its guard from an `onRoute` hook, and
+   * Fastify applies a hook only to routes registered after it — so up there
+   * this route got no guard and no entry in `routeRegistry` at all. Adding a
+   * permission to it in its old position would have changed nothing, and the
+   * enumeration test that walks the registry could never have seen it.
+   *
+   * `admin:health:read` is the permission the Console's ops pages take: whoever
+   * reads how the platform is running reads what it exposes. Anonymous gets the
+   * 401 every guarded route gives; a signed-in reception gets 403.
+   *
+   * GUARDED IN EVERY ENVIRONMENT, deliberately. `NODE_ENV` and `DEPLOY_ENV`
+   * both default to their permissive value (`development`, `local`), so a door
+   * left open on either stands open on any host that forgets to set one —
+   * which is the shape of this defect: it was open by omission, not by
+   * decision. A developer reads the document by signing in; `pnpm db:seed`
+   * makes a platform admin.
+   */
+  app.get(
+    '/docs/json',
+    { config: { permission: 'admin:health:read' }, schema: { hide: true } },
+    async () => app.swagger(),
+  );
 
   await app.register(healthRoutes);
   await app.register(authRoutes, { prefix: '/auth' });

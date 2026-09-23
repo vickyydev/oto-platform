@@ -37,6 +37,112 @@ describe('public catalog (customer /book site)', () => {
   });
 });
 
+/**
+ * SCRUM-252 — the open catalogue answers what the booking site reads, and
+ * nothing else.
+ *
+ * `packages` was the raw `select()`, so every column of `pos.ticket_package`
+ * left the building on a URL addressed by a slug a stranger can guess:
+ * `operatorId`, `branchId`, `createdAt`, `updatedAt`, `archivedAt`.
+ *
+ * The lists below are the contract, and they are written out rather than
+ * derived so that a column added to the table is a line somebody has to add
+ * here on purpose. The key set is compared for EQUALITY: a subset check would
+ * pass on the very leak this exists to stop.
+ */
+describe('public catalogue exposure (SCRUM-252)', () => {
+  /** Never in a public answer, whatever it is called. */
+  const INTERNAL = /operator|archived|updated|created|cost|note/i;
+
+  const catalog = async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/public/branches/hkt-central/catalog' });
+    expect(res.statusCode).toBe(200);
+    return res.json();
+  };
+
+  const keys = (o: object) => Object.keys(o).sort();
+
+  it('answers exactly the package fields the site consumes', async () => {
+    const body = await catalog();
+    expect(body.packages.length).toBeGreaterThan(0);
+    for (const pkg of body.packages) {
+      expect(keys(pkg), `package ${pkg.name}`).toEqual(
+        [
+          // The one internal uuid kept: POST /public/bookings takes it back.
+          'id',
+          'name',
+          'description',
+          'durationLabel',
+          'hours',
+          'prices',
+          'tierPricing',
+          'adultRules',
+          'freebies',
+          'creditRule',
+          'gateAccess',
+          'translations',
+          'active',
+        ].sort(),
+      );
+    }
+  });
+
+  it('answers exactly the branch, tier, rate-mode and holiday fields', async () => {
+    const body = await catalog();
+    expect(keys(body)).toEqual(['branch', 'holidays', 'packages', 'rateMode', 'tiers']);
+    expect(keys(body.branch)).toEqual(['businessDayStart', 'code', 'name', 'timezone']);
+    for (const tier of body.tiers) {
+      // `id` here is the tier CODE, not the row's uuid.
+      expect(keys(tier)).toEqual(['id', 'isDefault', 'name', 'requiresVerification']);
+      expect(tier.id).not.toMatch(/^[0-9a-f]{8}-/);
+    }
+    for (const holiday of body.holidays) {
+      expect(keys(holiday)).toEqual(['endsOn', 'name', 'startsOn']);
+    }
+    // `overrideName` is present only on a date a holiday range covers.
+    expect(keys(body.rateMode).filter((k) => k !== 'overrideName')).toEqual([
+      'date',
+      'mode',
+      'reason',
+    ]);
+  });
+
+  it('carries no internal column anywhere in the answer', async () => {
+    const body = await catalog();
+    const walk = (value: unknown, path: string): string[] => {
+      if (Array.isArray(value)) return value.flatMap((v, i) => walk(v, `${path}[${i}]`));
+      if (value && typeof value === 'object') {
+        return Object.entries(value).flatMap(([k, v]) =>
+          INTERNAL.test(k) ? [`${path}.${k}`] : walk(v, `${path}.${k}`),
+        );
+      }
+      return [];
+    };
+    expect(walk(body, 'catalog')).toEqual([]);
+    // And the ids of the rows behind it are not in the bytes either: the
+    // branch and the operator are addressed by slug and by nothing.
+    const [br] = await ctx.db.select().from(branch).where(eq(branch.code, 'hkt-central'));
+    const res = await ctx.app.inject({ method: 'GET', url: '/public/branches/hkt-central/catalog' });
+    expect(res.body).not.toContain(br!.id);
+    expect(res.body).not.toContain(br!.operatorId);
+  });
+
+  it('still carries everything the booking site hydrates from', async () => {
+    // The other half of the contract: a projection that strips too much is the
+    // same defect pointing the other way, and it would show up as a customer
+    // being quoted nothing.
+    const body = await catalog();
+    const fullDay = body.packages.find((p: { name: string }) => p.name === 'Full Day Pass');
+    expect(fullDay.prices.thai).toMatchObject({ weekday: expect.any(Number), weekend: expect.any(Number) });
+    expect(fullDay.adultRules.thai).toMatchObject({ kind: 'free_adults', freeAdults: 1 });
+    expect(fullDay.translations.th.name).toBeTruthy();
+    expect(fullDay.durationLabel).toBe('All Day');
+    expect(fullDay.hours).toBe(8);
+    expect(body.branch.timezone).toBe('Asia/Bangkok');
+    expect(body.branch.businessDayStart).toMatch(/^05:00/);
+  });
+});
+
 describe('public member-tier lookup', () => {
   it('returns nickname + tier ONLY — never children or other PII', async () => {
     const res = await ctx.app.inject({

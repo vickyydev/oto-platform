@@ -21,8 +21,17 @@ afterAll(async () => {
   await teardownAll();
 });
 
-/** Routes Fastify or a plugin registers for us, which we do not configure. */
-const NOT_OURS = new Set(['/docs/json', '/*']);
+/**
+ * Routes Fastify or a plugin registers for us, which we do not configure.
+ *
+ * `/docs/json` was on this list until SCRUM-254 and is ours after all: the
+ * OpenAPI document served to anyone with no session. It was exempt here
+ * because it was declared above the guard plugins, where `permissionPlugin`'s
+ * `onRoute` hook never saw it — so it was absent from `routeRegistry` and the
+ * exemption made that absence look deliberate. It is declared below the
+ * plugins now and takes `admin:health:read`, so it walks with everything else.
+ */
+const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
   it('every registered route declares how it is guarded', () => {

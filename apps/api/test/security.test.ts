@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { account, authThrottle, branch, operator, role, roleAssignment } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import { isPgError, phoneHash, scrubPgError, scrubUrl, uniqueViolationToAppError } from '../src/lib/scrub';
-import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
  * S2-01a dev evidence: the four checks the ticket names — privilege
@@ -490,5 +490,60 @@ describe('locked and temp-password sessions (S2-01a)', () => {
     const [op] = await ctx.db.select().from(operator).limit(1);
     expect(op).toBeTruthy();
     await ctx.db.delete(authThrottle).where(and(like(authThrottle.key, 'ip:%')));
+  });
+});
+
+/**
+ * SCRUM-254 — the OpenAPI document is not an open surface.
+ *
+ * It describes every path, parameter and request body this api has, the admin
+ * routes and `/box/v1/*` included, and it was served to anyone who asked. It
+ * was open by OMISSION rather than by decision: the route was declared above
+ * the guard plugins, where `permissionPlugin`'s `onRoute` hook never saw it,
+ * so it carried no guard and did not even appear in `routeRegistry`.
+ *
+ * Three answers, because the middle one is the part a 401 alone would not
+ * prove: holding a session is not the same as being allowed to read this.
+ */
+describe('the OpenAPI document needs a session (SCRUM-254)', () => {
+  const docs = (cookie?: string) =>
+    ctx.app.inject({ method: 'GET', url: '/docs/json', ...(cookie ? { headers: { cookie } } : {}) });
+
+  it('refuses a caller with no session', async () => {
+    const res = await docs();
+    expect(res.statusCode).toBe(401);
+    // The same refusal as any other guarded route — not a 404 that would say
+    // the document is somewhere else, and not a body with any of it in.
+    expect(res.json().error.code).toBe('UNAUTHORIZED');
+    expect(res.body).not.toContain('openapi');
+    expect(res.body).not.toContain('/box/v1');
+  });
+
+  it('refuses a signed-in reception', async () => {
+    const res = await docs(await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password));
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.code).toBe('FORBIDDEN');
+    expect(res.body).not.toContain('/box/v1');
+  });
+
+  it('answers an administrator with the document', async () => {
+    const res = await docs(await signInAs(ctx.app, ADMIN.phone, ADMIN.password));
+    expect(res.statusCode).toBe(200);
+    const doc = res.json() as { openapi: string; paths: Record<string, unknown> };
+    expect(doc.openapi).toMatch(/^3\./);
+    expect(Object.keys(doc.paths).length).toBeGreaterThan(100);
+    expect(doc.paths['/public/branches/{code}/catalog']).toBeTruthy();
+    // The document does not describe the route that serves it (`hide: true`).
+    expect(doc.paths['/docs/json']).toBeUndefined();
+  });
+
+  it('declares its guard where the enumeration test can see it', async () => {
+    // The half that the three answers above cannot show: the route is now in
+    // the registry at all. While it was declared above the plugins it was not,
+    // so no walk of the surface could have reported it as unguarded.
+    const entries = ctx.app.routeRegistry.filter((r) => r.url === '/docs/json' && r.method === 'GET');
+    expect(entries).toHaveLength(1);
+    expect(entries[0]!.config.permission).toBe('admin:health:read');
+    expect(entries[0]!.config.public).toBeUndefined();
   });
 });
