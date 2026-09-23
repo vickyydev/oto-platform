@@ -1848,6 +1848,8 @@ export default function MobileTill() {
           }}
           canPay={canPay}
           tierClaimRefusal={tierClaimRefusal}
+          totals={cart.totals}
+          priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
         />
       )}
 

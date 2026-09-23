@@ -1,9 +1,11 @@
+import type { ReactNode } from 'react';
 import { CartLine, CustomerTier, Discount, ManualDiscount } from '@/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { OrderSummary } from '@/components/till/OrderSummary';
 import { computeTotals } from '@/lib/sale';
 import { unpricedCartLines } from '@/lib/pricing';
+import type { OrderTotals } from '@/api/sales';
 import { ShoppingCart, ChevronUp } from 'lucide-react';
 
 interface MobileCartSheetProps {
@@ -34,11 +36,24 @@ interface MobileCartSheetProps {
    * why the discounted rate had gone while the Review step explained it.
    */
   tierClaimRefusal?: string | null;
+  /**
+   * THE FIGURES TO SHOW, as the platform quoted them (S2-09a / SCRUM-349).
+   *
+   * The same object the Review step's panel is given (`cart.totals`), handed to
+   * the panel inside this sheet and to the bar above it. Absent means "price it
+   * here", which is what this sheet did for every cart before this ticket: the
+   * phone showed its own arithmetic on the bar and in the sheet while the
+   * Review step one tap away showed the platform's, so a cart the two priced
+   * differently read as two different amounts due.
+   */
+  totals?: OrderTotals;
+  /** Shown under the total in the sheet, as on Review — whose figure this is. */
+  priceNote?: ReactNode;
 }
 
 /**
  * Sticky cart bar + bottom sheet for the mobile Till. The bar shows a compact
- * item count + running total; tapping opens a full-height bottom sheet with
+ * item count + the amount due; tapping opens a full-height bottom sheet with
  * the complete OrderSummary.
  */
 export function MobileCartSheet({
@@ -62,8 +77,18 @@ export function MobileCartSheet({
   onCancel,
   canPay,
   tierClaimRefusal,
+  totals,
+  priceNote,
 }: MobileCartSheetProps) {
-  const { total } = computeTotals(lines, discounts, manualDiscounts);
+  /**
+   * WHAT THE BAR PRINTS (SCRUM-349).
+   *
+   * The quoted total when the caller passes one, so the bar, the panel in the
+   * sheet and the Review step all print the one figure. `computeTotals` is the
+   * fallback for a caller that quotes nothing; it is the till's own arithmetic,
+   * and the sheet's `priceNote` says so beneath the total.
+   */
+  const total = totals ? totals.total : computeTotals(lines, discounts, manualDiscounts).total;
   const itemCount = lines.length;
   /**
    * WHAT THIS CART CANNOT BE PRICED AT (SCRUM-316/329).
@@ -128,6 +153,8 @@ export function MobileCartSheet({
               onCancel={() => { onOpenChange(false); onCancel(); }}
               canPay={canPay}
               tierClaimRefusal={tierClaimRefusal}
+              totals={totals}
+              priceNote={priceNote}
             />
           </div>
         </SheetContent>
