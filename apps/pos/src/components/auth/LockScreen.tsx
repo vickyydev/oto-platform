@@ -107,12 +107,16 @@ export function LockScreen({ adminMode = false }: { adminMode?: boolean }) {
         setAfterSignIn(null);
       }
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'SETUP_REQUIRED') {
-        setMode('setup');
-        setNotice('This account still needs its first-time setup.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Sign-in failed');
-      }
+      // SCRUM-251: sign-in no longer says which phones belong to invited staff,
+      // so there is no SETUP_REQUIRED to route on. A new starter reaches setup
+      // through the button under the form; the error names it.
+      setError(
+        err instanceof ApiError && err.code === 'INVALID_CREDENTIALS'
+          ? `${err.message} First shift? Use "Set up account" below.`
+          : err instanceof Error
+            ? err.message
+            : 'Sign-in failed',
+      );
     } finally {
       setBusy(false);
     }
