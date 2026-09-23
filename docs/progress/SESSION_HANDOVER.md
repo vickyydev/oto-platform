@@ -4,6 +4,22 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:14 — `main` is `803428b`; staging is `097b73b` (Render is deploying `10b1242` → `803428b`); CI green through `10b1242`
+>
+> **Since 15:08:** the resumed 337/338 gate came back MERGE and landed
+> (`803428b` — DELETE /members/children/:childId archives a child; the
+> till's "Remove from saved" uses it and keeps the member in hand; the
+> review names its store). Raised: 356 (a visit still accepts an archived
+> child's id — building), 357 (the booking site's saved-children step is
+> unreachable — a design decision for S2-12).
+>
+> **Running:** evidence — the 097b73b batch (`wf_ea63e5b1`); builds —
+> 206-A (`wf_9a136b60`), 343/344 (`wf_bc7823ac`), 341 (`wf_d527428e`), 353
+> (`wf_41ee7069`), 351 (`wf_b2308782`), 349 (`wf_6e37179b`), 354
+> (`wf_5f8a746b`), 348 (`wf_f270a2cf`), 355 (`wf_93411d0f`), 356
+> (`wf_bd56c962`). Watchers wait for Render at `10b1242`, `4ceb798`,
+> `803428b`; then evidence for 347, 350, 337/338.
+
 > ## Status on 2026-09-23 15:08 — `main` is `4ceb798`; staging is `097b73b` (Render is deploying `10b1242` → `40c69bb`); CI green through `097b73b`
 >
 > **Since 14:58:** the resumed gates for **347** and **350** came back MERGE
