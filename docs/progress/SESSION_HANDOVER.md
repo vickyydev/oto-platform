@@ -4,9 +4,13 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 13:10 — `main` is `1875f56`; staging is `16c621a`; CI green
+> ## Status on 2026-09-23 12:30 — `main` is `1875f56`; staging is `16c621a`; CI green
 >
-> **Since 13:00:** landed 257 (`69af2fb`), 309 (`cc686cc`), 318/319
+> _(The two banners below are labelled 12:00 and 13:00 but were written about
+> an hour earlier than they say; times from here on are the machine clock,
+> Asia/Bangkok.)_
+>
+> **Since the previous banner:** landed 257 (`69af2fb`), 309 (`cc686cc`), 318/319
 > (`16c621a`), the claim-refusal ordering (`77080e9`), **304** (`c6338d6` —
 > `pos.booking_redemption`, migration 0018 with a backfill) and the 336 hint
 > (`1875f56`). **Deployed with staging evidence:** 322/305/323, 316 (+311's
@@ -15,7 +19,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > deploy re-ran the full demo seed** — Render's pre-deploy was
 > `db:seed`, not the `db:platform-sync` render.yaml documents, with
 > `SEED_PROFILE=staging`; changed on Render to `pnpm db:migrate && pnpm
-> db:platform-sync` at 12:30, verified by the next deploy's log line), 333
+> db:platform-sync` at 12:20, verified by the next deploy's log line), 333
 > (sale read lacks the claim id), 334 (Subtotal ฿0 beside a real Total),
 > 335 (21st booking in a minute answers 500), 336. New Bugs go under
 > SCRUM-324 by default (`createInSprint` in the scratchpad).
