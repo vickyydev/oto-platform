@@ -1,6 +1,6 @@
 # Handover — where this is, and what to do next
 
-## 2026-09-24 — closing S2-09 (SCRUM-202): the last of SCRUM-204
+## 2026-09-24 — S2-09 (SCRUM-202) closed at 06:27: the last of SCRUM-204, and SCRUM-392 on the way
 
 The owner's decision (morning): sizes are defined on the shop product now,
 not deferred to inventory. Two gated rounds on `claude-opus-5-5` (every
@@ -81,12 +81,20 @@ workflow agent runs there from today — `CLAUDE_CODE_SUBAGENT_MODEL` in
   is judged by `open` alone — a proxy that passed headers but held the body
   would need the first snapshot as the test instead. 392 is in **Testing**
   (cards `392-poll-fallback.png`, `392-plant.png`; comment 06:00).
-- **In flight: the staging pass of the scan steps** (`wf_f6d189f0`, waiting
-  for the five services live at `003dac7`): the Console's scan landing on the
-  shop cart through the rewrite by polling, the unknown code refused on
-  screen, the poll interval and the cursor in the page's own request log.
-  When it holds: 392 → Deployed, 204 → Deployed, 202 (S2-09) → Deployed by
-  the walker, and the progress files brought to that state.
+- **The staging pass of the scan steps held** (`wf_f6d189f0`, 06:13–06:17,
+  staging live at `003dac7` from 06:12): the shop screen's channel request
+  through the rewrite was never answered, the screen gave up on it after
+  4.00 s and polled every ~2 s (1.5 s after each answer; answers 0.44–1.08 s
+  through the rewrite); the Console's scan of 8850000000017 landed on the
+  cart as "Grip Socks (M)" 5.3 s after Scan with nothing touched (most of it
+  the box collecting the command on its own poll), 0000000000000 showed
+  "Unknown barcode" 6.6 s after Scan and added nothing, sixty seconds
+  untouched brought 30 polls and nothing else, and the box's history shows
+  both Simulate rows succeeded for Reception Till 1. Card
+  `staging-392-scan-lands.png` on 392 and 204 (comments 06:24). **Deployed
+  by the walker, with the commits linked: SCRUM-392 (06:27), SCRUM-204
+  (06:27) and SCRUM-202 (06:27) — S2-09 is closed.** Left on staging: the
+  two simulated scans in the box's history; no sale, no catalogue change.
 - **Learned today:** the static sites' `/api/*` rewrite never passes a
   streaming answer — anything a screen must hear live through it needs a
   finite fallback (memory `oto-render-staging`).

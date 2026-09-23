@@ -2,7 +2,7 @@
 
 ## Status
 
-_Last updated 2026-09-24, 06:02._
+_Last updated 2026-09-24, 06:29._
 
 > **Resuming? Read `SESSION_HANDOVER.md` → "2026-09-24 — closing S2-09", then
 > "State at the end of 2026-09-23".** It carries the live commit on every staging service, what landed
@@ -12,10 +12,9 @@ _Last updated 2026-09-24, 06:02._
 > the detail.
 
 - **Current checkpoint.** CP1 passed; the sprint is inside **S2-10 (payments)**,
-  with S2-09b (SCRUM-204) in Testing beside it on one blocker, SCRUM-392 (the
-  scan stream held back by the POS site's rewrite; fixed at `003dac7`, in
-  Testing until its staging pass).
-  CP2's remaining line is
+  and **S2-09 is closed** — SCRUM-202, 204 and 392 Deployed on the 24th at 06:27
+  (392, the scan stream held back by the POS site's rewrite, fixed at `003dac7`
+  and proven on staging). CP2's remaining line is
   SCRUM-206's own end-to-end evidence, which waits on Slice F.
 
 - **Last landed.** `main` is **`003dac7`** (05:59 — SCRUM-392: the shop screen polls a
@@ -32,9 +31,7 @@ _Last updated 2026-09-24, 06:02._
   each.
 
 - **Next.** The owner has said no new tickets are to be picked up and the next
-  order is the owner's to confirm. The recommendation: (0) **SCRUM-392 (High)**, landed at `003dac7`, its staging pass running —
-  then 392, 204 and 202 (S2-09) to Deployed;
-  (1) the D↔C2 seam and
+  order is the owner's to confirm. The recommendation: (1) the D↔C2 seam and
   **SCRUM-391** — a `qr` tender never reaches the gateway — then drive D's QR
   path on staging; (2) **SCRUM-388 (High)**, reserve in-flight tenders, before F;
   (3) **SCRUM-382**, refuse a disabled or archived tender in the attempt service;
@@ -44,9 +41,9 @@ _Last updated 2026-09-24, 06:02._
   items (370, 372, 379, 380), then 369 and 383; (6) the owner decisions.
 
 - **Where the ticket board stands (24 Sept, 04:30).** 200 SCRUM issues were
-  touched on the 23rd; now **134 Deployed, 63 To Do, 3 In Progress** (SCRUM-191,
-  202, 206) and **1 in Testing** (SCRUM-204; 360 was closed Done; 392 and 393
-  were raised on the 24th). Ninety-six were raised on the 23rd and sixty-eight of those were
+  touched on the 23rd; now **137 Deployed, 62 To Do, 2 In Progress** (SCRUM-191,
+  206) and none in Testing (SCRUM-392, 204 and 202 Deployed on the 24th; 360
+  was closed Done; 393 was raised on the 24th). Ninety-six were raised on the 23rd and sixty-eight of those were
   fixed and Deployed the same day.
 
 - **Two registers still govern the till.** `POS_GAP_REGISTER.md` (the screen-by-

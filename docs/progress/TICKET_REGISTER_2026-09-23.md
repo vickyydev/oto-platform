@@ -43,9 +43,9 @@ closing by hand.
 | SCRUM-199 | Subtask | S2-07a — Booth game, spins, vouchers, printing, offline operation, heartbeat and alerts | Deployed | Medium | fix `451c7b3` · evidence `b9438cd`, `56a5201` · staging-199-ccw.png, staging-199-landscape-rotated.png, staging-199-pair-prompt-rotated.png |  |
 | SCRUM-200 | Subtask | S2-07b — Booth admin control panel: prizes, layouts, publish and version pickup, voucher definitions, marketing channels, staff PIN | Deployed | Medium | fix `388b7c8` · evidence `1a7ed92`, `56a5201` · staging-apply-config-done.png, staging-booth-list.png, staging-booth-status-after-apply.png |  |
 | SCRUM-201 | Story | S2-08 — Customer display as a separate device: /display route, pairing by code, redacted station-session view, display intents, harness kept | To Do | Medium | standing backlog — not started |  |
-| SCRUM-202 | Story | S2-09 — Checkout and sales ledger | In Progress | Medium | parent of SCRUM-203/204 and the gap-register subtasks; stays In Progress while 204 is open |  |
+| SCRUM-202 | Story | S2-09 — Checkout and sales ledger | Deployed | Medium | 203 Deployed on the 23rd; 204 Deployed 06:27; the staging cards attached here too; Deployed 06:27 — S2-09 closed |  |
 | SCRUM-203 | Subtask | S2-09a — Ticket cart, pricing/tax engine, sale and sale_line facts, ฿0 finalise, member tier change | Deployed | Medium | evidence `56a5201` |  |
-| SCRUM-204 | Subtask | S2-09b — F&B and shop carts, catalogue admin panels, member-API migrations, product barcode | In Progress | Medium | three halves evidenced today — `96523cd` (at `849bc17`) and `5d32f16` (at `097b73b`); fixes `fa3785a`, `849bc17`, `2740291`, `bbf1792`. Ticket stays In Progress |  |
+| SCRUM-204 | Subtask | S2-09b — F&B and shop carts, catalogue admin panels, member-API migrations, product barcode | Deployed | Medium | members half `f5e5572` (+`3fff2d8`); sizes half `4cad79e`; staging pass 03:52–04:21 (`staging-204-sizes.png`, `staging-204-members.png`) and the scan steps again 06:13–06:17 after SCRUM-392 (`staging-392-scan-lands.png`); Deployed 06:27 |  |
 | SCRUM-205 | Story | S2-10 — Payments and redemption | To Do | Medium | standing backlog — not started |  |
 | SCRUM-206 | Subtask | S2-10a — Tenders: cash, EDC terminal simulators in the NEXGO and PAX dialects with inquiry-on-no-response, real 2C2P sandbox QR with PAX QR offline fallback, manual recording, payment methods admin | In Progress | Medium | slices A `3317360`, E `8ee9a5d`, B `a232059`+`b616191`, C1 `51fd025`, C2 `83ffc36`, D `24e608d`, G `d435db4`; staging evidence `53c84fc`, `6f687ae`, `5deb2a3`, `9b28f87`. Slice F not started; no end-to-end evidence yet |  |
 | SCRUM-208 | Story | S2-11 — Sale printing and signed bands, History tab with refunds, voids and reprints | To Do | Medium | standing backlog — not started |  |
@@ -357,11 +357,11 @@ These are still the owner's:
 
 ## Addendum — 2026-09-24 (morning)
 
-Statuses read from Jira at 04:35 on the 24th; times are Jira's and git's.
+Statuses read from Jira at 06:29 on the 24th; times are Jira's and git's.
 
 | Key | Type | Summary | Status | Priority | What proved it | Raised on the 24th |
 |---|---|---|---|---|---|---|
 | SCRUM-204 | Subtask | S2-09b — F&B and shop carts, catalogue admin panels, member-API migrations, product barcode | Testing | Medium | members half `f5e5572` (+`3fff2d8`); sizes half `4cad79e`; staging pass 03:52–04:21 at `4cad79e` — `staging-204-sizes.png`, `staging-204-members.png`: the sizes, the picker, the sale record and the four member screens hold; a scan never reaches the shop screen (SCRUM-392). Stays in Testing on 392 |  |
 | SCRUM-202 | Story | S2-09 — Checkout and sales ledger | In Progress | Medium | 203 Deployed; 204 in Testing on SCRUM-392; the two staging cards attached here too (04:29) |  |
-| SCRUM-392 | Bug | The shop screen never hears a scan on staging: the POS site’s /api rewrite holds the station channel’s live stream back | Testing | High | raised 04:28; fixed `003dac7` (05:59; gate MERGE — 1,327 api tests, two plants, the local browser proof `392-poll-fallback.png`, `392-plant.png`); staging pass running | yes |
+| SCRUM-392 | Bug | The shop screen never hears a scan on staging: the POS site’s /api rewrite holds the station channel’s live stream back | Deployed | High | raised 04:28; fixed `003dac7` (05:59; gate MERGE — 1,327 api tests, two plants, `392-poll-fallback.png`, `392-plant.png`); staging pass 06:13–06:17: `staging-392-scan-lands.png` — the scan on the cart 5.3 s after Scan through the poll; Deployed 06:27 | yes |
 | SCRUM-393 | Bug | Booking site: the "Stored as" hint under the phone field shows +660811111111 when a leading 0 is typed after +66 | To Do | Low | raised 04:29 — not started | yes |
