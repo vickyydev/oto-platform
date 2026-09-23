@@ -18,7 +18,7 @@ import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getInventoryItem, getAddOns } from '@/store/catalogStore';
-import { getDiscountReasons, getMemberByPhone, getMemberById, updateMember, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, removeSavedChild, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, getMemberByPhone, updateMember, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
@@ -35,6 +35,7 @@ import { Monitor, User } from 'lucide-react';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { authApi, membersApi, visitsApi } from '@/api/platform';
+import { childrenApi } from '@/api/members';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import {
   bookingsApi,
@@ -1424,13 +1425,41 @@ export default function Till() {
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== slotId));
   };
 
-  // Delete a saved child from the member's profile, then treat its slot as new.
+  /**
+   * SCRUM-337 — "Remove from saved" takes the child off the member's record.
+   *
+   * It used to call the prototype's in-memory removal and then re-read the
+   * member from that same copy. For a member the API answered with, that copy
+   * holds nothing: the read came back undefined, the till lost the member it
+   * was holding mid-visit, and the child was never removed from anything. The
+   * button said "removed" and the next lookup found the child still there.
+   *
+   * This is the audited archive route instead, and the member stays in hand
+   * the way `handleConfirmSlot` keeps it — the child is dropped from the copy
+   * on screen rather than re-fetched from a store that does not have it.
+   *
+   * A failed call changes nothing: the child stays in the list and in its
+   * slot, and the toast says so. Blanking the slot over a removal that did not
+   * land is the same fake success the Confirm button was fixed for.
+   */
   const handleRemoveSaved = (slotId: string, childId: string) => {
-    if (member) {
-      removeSavedChild(member.id, childId);
-      setMember(getMemberById(member.id));
-    }
-    handleMarkNew(slotId);
+    void childrenApi
+      .archive(childId)
+      .then(() => {
+        setMember((m) =>
+          m
+            ? { ...m, savedChildren: (m.savedChildren ?? []).filter((c) => c.id !== childId) }
+            : m,
+        );
+        handleMarkNew(slotId);
+      })
+      .catch((err: unknown) => {
+        toast({
+          title: "Couldn't remove this child",
+          description: `${err instanceof Error ? err.message : 'Unknown error'} They are still on the member's saved list.`,
+          variant: 'destructive',
+        });
+      });
   };
 
   // Every slot must be named + aged; every still-linked saved child re-confirmed.

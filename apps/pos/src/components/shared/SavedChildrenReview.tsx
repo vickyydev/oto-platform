@@ -37,6 +37,24 @@ interface SavedChildrenReviewProps {
   onBack: () => void;
   onContinue: () => void;
   canContinue: boolean;
+  /**
+   * SCRUM-338 — which store the details typed on this screen go to, which is
+   * what the note at the bottom has to tell the person reading it.
+   *
+   * The component is shared by two flows that no longer answer the same way.
+   * On the till, Confirm writes to the member's record through the member API
+   * (SCRUM-233) and Remove archives the child there (SCRUM-337), both audited;
+   * on the booking site the same buttons still write to this browser's copy of
+   * the member and are gone on reload. One note cannot be true for both, and
+   * the one it carried — "a prototype convenience held in memory only" — was
+   * false exactly where staff read it most.
+   *
+   * The caller names its store rather than passing wording, so the sentence
+   * stays here with the screen that shows it. Left out it reads as the
+   * member's record: both of the till's uses are on the API, and a screen that
+   * keeps its details in this browser says so, which is the booking site.
+   */
+  detailsStore?: 'member-record' | 'browser-memory';
 }
 
 /**
@@ -60,6 +78,7 @@ export function SavedChildrenReview({
   onBack,
   onContinue,
   canContinue,
+  detailsStore = 'member-record',
 }: SavedChildrenReviewProps) {
   // Saved children already mapped to a slot — so a swap picker never offers the
   // same child twice across two slots.
@@ -219,14 +238,23 @@ export function SavedChildrenReview({
           );
         })}
 
-        {/* Privacy / backend flag — saved-child data is in-memory prototype only. */}
+        {/* Privacy note — what happens to what is typed here, per detailsStore. */}
         <div className="flex items-start gap-3 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-sm text-foreground/60">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-foreground/40" />
-          <p>
-            These saved details are a prototype convenience held in memory only and reset on reload.
-            Real storage of children's data needs explicit consent records, retention limits and
-            access control (a backend concern). The photo is never saved — it's re-taken each visit.
-          </p>
+          {detailsStore === 'browser-memory' ? (
+            <p>
+              These saved details are a prototype convenience held in memory only and reset on
+              reload. Real storage of children's data needs explicit consent records, retention
+              limits and access control (a backend concern). The photo is never saved — it's
+              re-taken each visit.
+            </p>
+          ) : (
+            <p>
+              These details are saved to the member's record. Every change made here is written to
+              their profile and recorded with who made it and when. The photo is never saved — it's
+              re-taken each visit.
+            </p>
+          )}
         </div>
       </div>
 

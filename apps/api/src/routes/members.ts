@@ -8,6 +8,7 @@ import { audit } from '../services/audit';
 import {
   REGISTER_PAGE_DEFAULT,
   REGISTER_PAGE_MAX,
+  archiveChild,
   isEvidenceExpired,
   listRegister,
 } from '../services/members';
@@ -806,6 +807,69 @@ export async function memberRoutes(app: App): Promise<void> {
         });
         return { child: serializeChild(after!) };
       });
+    },
+  );
+
+  /**
+   * SCRUM-337 — "Remove from saved" at the counter.
+   *
+   * The till's saved-children review has offered this since the prototype and
+   * it removed nothing: the button called the browser's in-memory removal and
+   * then re-read the member from that same copy, which for a real member is
+   * empty — so the till lost the member it was holding and the record was
+   * untouched. There was no route to call, because a child is archived and not
+   * deleted and nothing had asked for that yet.
+   *
+   * Guarded by `pos:child:update`, the same permission as the PATCH above and
+   * targeted the same way — by loading the guardian inside the caller's
+   * operator, since a child id carries no tenancy of its own. That is the
+   * deliberate choice: the permission vocabulary has no `pos:child:delete`,
+   * and this is the same act the PATCH already covers — reception correcting
+   * the member's saved list at the counter, in front of the guardian. Whoever
+   * may rewrite a child's allergies may take the child off the list.
+   *
+   * `services/members.ts` holds what archiving does and does not touch, and
+   * why a second press answers success rather than a conflict.
+   */
+  app.delete(
+    '/children/:childId',
+    {
+      config: { permission: 'pos:child:update' },
+      schema: {
+        description:
+          "Remove a child from the member's saved list — archived, audited, and idempotent",
+        params: z.object({ childId: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const [before] = await app.db
+        .select()
+        .from(child)
+        .where(eq(child.id, req.params.childId))
+        .limit(1);
+      if (!before) throw errors.notFound('Child not found');
+      // The guardian proves the tenancy, and a child belonging to another
+      // operator gets the same 404 as an id that was never real — the
+      // existence of another tenant's record is not ours to confirm.
+      const [owner] = await app.db
+        .select()
+        .from(member)
+        .where(and(eq(member.id, before.memberId), eq(member.operatorId, auth.operatorId)))
+        .limit(1);
+      if (!owner) throw errors.notFound('Child not found');
+      return withTx(app.db, opCtx(req), 'child.archive', (tx) =>
+        archiveChild(
+          tx,
+          {
+            accountId: auth.accountId,
+            operatorId: auth.operatorId,
+            branchId: auth.branchId,
+            requestId: req.id,
+          },
+          req.params.childId,
+        ),
+      );
     },
   );
 }

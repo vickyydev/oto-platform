@@ -1,6 +1,10 @@
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { account, child, employee, member, memberTierVerification, type Db } from '@oto/db';
+import { errors } from '../lib/errors';
+import { audit } from './audit';
 import { isTierRevocation } from './member-tier';
+import { recordChange } from './sync';
+import type { Tx } from './tx';
 
 /**
  * The member register — browsing the list, which is not the same act as
@@ -27,6 +31,88 @@ export const REGISTER_PAGE_MAX = 200;
 export function isEvidenceExpired(expiresAt: Date | null): boolean {
   if (!expiresAt) return false;
   return Date.now() >= expiresAt.getTime() + 24 * 60 * 60 * 1000;
+}
+
+export interface ChildArchiveActor {
+  accountId: string;
+  operatorId: string;
+  branchId: string | null;
+  requestId?: string;
+}
+
+export interface ChildArchiveResult {
+  ok: true;
+  /** True when the row was already archived, so this call wrote nothing. */
+  alreadyArchived: boolean;
+}
+
+/**
+ * SCRUM-337 — take a child off the member's saved list.
+ *
+ * Archived, never deleted. `child.archived_at` is the soft deletion every
+ * business record here uses (CLAUDE.md §3), and the reason it has to be one
+ * for a child in particular: `visit_child` rows name this child, and each of
+ * those is the record that this child WAS at the park on that day. Removing
+ * them from the saved list is a statement about the list, not about the past,
+ * so the child row stays where the visits point at it and stops appearing on
+ * the reads that answer "who is saved against this member" —
+ * `memberWithChildren` (the counter's lookup and the member detail) and
+ * `listRegister` above, both of which have filtered on `archived_at` since
+ * they were written.
+ *
+ * Idempotent, and this is the whole reason the result says which it was: a
+ * second press at the counter, or a retry through a dropped connection whose
+ * first attempt landed, finds the row archived and answers the same success
+ * with nothing written and no second audit row. A conflict here would be a
+ * refusal staff could do nothing about — the child is already off the list,
+ * which is what they asked for.
+ *
+ * The caller has already answered 404 for a child outside its operator; the
+ * same predicate is held again here, on the row the write actually touches.
+ */
+export async function archiveChild(
+  tx: Tx,
+  actor: ChildArchiveActor,
+  childId: string,
+): Promise<ChildArchiveResult> {
+  const [before] = await tx.select().from(child).where(eq(child.id, childId)).for('update').limit(1);
+  if (!before) throw errors.notFound('Child not found');
+  // A child id carries no operator of its own, so the guardian is what proves
+  // the caller may touch this record.
+  const [owner] = await tx
+    .select({ id: member.id })
+    .from(member)
+    .where(and(eq(member.id, before.memberId), eq(member.operatorId, actor.operatorId)))
+    .limit(1);
+  if (!owner) throw errors.notFound('Child not found');
+
+  if (before.archivedAt) return { ok: true, alreadyArchived: true };
+
+  const [after] = await tx
+    .update(child)
+    .set({ archivedAt: new Date() })
+    .where(eq(child.id, childId))
+    .returning();
+  // The same shape the member archive publishes: a box holding this child is
+  // told the row is gone, rather than being left with a copy of a profile the
+  // guardian has asked to be taken off the list.
+  await recordChange(
+    tx,
+    { operatorId: actor.operatorId, branchId: null },
+    { scope: 'members', op: 'delete', entityType: 'child', entityId: childId },
+  );
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'child.archive',
+    entityType: 'child',
+    entityId: childId,
+    before,
+    after,
+    requestId: actor.requestId,
+  });
+  return { ok: true, alreadyArchived: false };
 }
 
 /**

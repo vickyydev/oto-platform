@@ -757,6 +757,11 @@ export default function Book() {
               onBack={() => setStage('tickets')}
               onContinue={() => setStage('supervise')}
               canContinue={reviewCanContinue}
+              // SCRUM-338: this flow's Confirm and Remove still write to the
+              // browser's copy of the member (handleConfirmSlot and
+              // handleRemoveSaved above), so the note keeps the sentence that
+              // is true of it until this path is converted.
+              detailsStore="browser-memory"
             />
           </div>
         )}
