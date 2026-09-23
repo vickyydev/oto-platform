@@ -68,6 +68,10 @@ export async function authRoutes(app: App): Promise<void> {
         ip: req.ip,
         ttlHours: app.env.SESSION_TTL_HOURS,
         maxFailures: app.env.AUTH_MAX_FAILURES,
+        // SCRUM-376: the address half has its own, much higher ceiling —
+        // every till, the Console and the launcher share one address through
+        // their sites' `/api/*` rewrites.
+        maxFailuresPerAddress: app.env.AUTH_MAX_FAILURES_PER_ADDRESS,
         cooldownSeconds: app.env.AUTH_COOLDOWN_SECONDS,
         requestId: req.id,
         // SCRUM-251: the answer says only "phone or password is incorrect",

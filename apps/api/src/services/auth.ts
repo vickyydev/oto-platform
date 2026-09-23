@@ -699,6 +699,12 @@ export async function signIn(
     ip: string;
     ttlHours: number;
     maxFailures: number;
+    /**
+     * The ceiling on the ADDRESS half of the throttle (SCRUM-376), sized for
+     * an address the whole estate shares. See `AUTH_MAX_FAILURES_PER_ADDRESS`
+     * in env.ts and the comment on the two `throttleFail` calls below.
+     */
+    maxFailuresPerAddress: number;
     cooldownSeconds: number;
     requestId?: string;
     /** Scopes the phone lookup when the caller knows the tenant. */
@@ -708,8 +714,8 @@ export async function signIn(
   },
 ): Promise<SignInResult> {
   const { phone, account: acc } = await findAccountByPhone(db, opts.phone, opts.operatorId);
-  // Per-phone at the configured limit; per-IP at 4× so one shared reception
-  // IP isn't locked out by a single guessed phone (many tills share an IP).
+  // Per phone at the configured limit; per address at its own, much higher
+  // ceiling — see the two `throttleFail` calls in `fail` below.
   await throttleCheck(db, [`phone:${phone}`, `ip:${opts.ip}`]);
 
   /**
@@ -754,9 +760,37 @@ export async function signIn(
     // The work this refusal skipped, paid here. Before the counters and the
     // audit rows, because those are the same on every path and this is not.
     if (!verifySpent) await equalizeVerifyCost(opts.password);
+    /**
+     * TWO BUCKETS, AND ONLY ONE OF THEM NAMES A PERSON (SCRUM-376).
+     *
+     * `phone:<phone>` is the bucket with the security value and it is
+     * untouched: five wrong passwords on one number and that number waits out
+     * the cooldown, which is what stops somebody working through a password
+     * list against a member of staff.
+     *
+     * `ip:<addr>` used to be the same count times four, on the reading that a
+     * handful of tills share one mall address. The measurement on 23 Sep 2026
+     * (docs/qa/TRUST_PROXY_REWRITE_MEASUREMENT_2026-09-23.md) found the
+     * sharing is estate-wide, not park-wide: every till, the Console and the
+     * launcher sign in through their own site's `/api/*` rewrite, and the api
+     * sees Render's shared regional proxy fleet as the caller. Twenty mistyped
+     * passwords anywhere therefore locked EVERY till, the Console and the
+     * launcher out of signing in for five minutes — a worse outage than the
+     * thing the bucket prevents, and one a park cannot trade through.
+     *
+     * So the address keeps a ceiling and gets its own number, sized for an
+     * address that many callers share. It is a ceiling on absurdity rather
+     * than a guess-count: nothing an attacker does to one account can reach it
+     * before the per-phone bucket has closed five times over.
+     */
     const lockedBuckets = [
       ...(await throttleFail(db, [`phone:${phone}`], opts.maxFailures, opts.cooldownSeconds)),
-      ...(await throttleFail(db, [`ip:${opts.ip}`], opts.maxFailures * 4, opts.cooldownSeconds)),
+      ...(await throttleFail(
+        db,
+        [`ip:${opts.ip}`],
+        opts.maxFailuresPerAddress,
+        opts.cooldownSeconds,
+      )),
     ];
     logRefusal(reason);
     await recordSignInFailure(db, {

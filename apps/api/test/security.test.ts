@@ -15,8 +15,18 @@ import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestCo
 let ctx: TestContext;
 beforeAll(async () => {
   // Two failures instead of five keeps the throttle cases quick; the
-  // behaviour under test is the same at any limit.
-  ctx = await createTestContext({ env: { AUTH_MAX_FAILURES: '2', AUTH_COOLDOWN_SECONDS: '300' } });
+  // behaviour under test is the same at any limit. The address ceiling is set
+  // here for the same reason — SCRUM-376 gave it its own variable, and the
+  // deployed default of fifty would make the forged-header case below eight
+  // times longer without testing anything it does not already test. Eight is
+  // what that case has always spent.
+  ctx = await createTestContext({
+    env: {
+      AUTH_MAX_FAILURES: '2',
+      AUTH_MAX_FAILURES_PER_ADDRESS: '8',
+      AUTH_COOLDOWN_SECONDS: '300',
+    },
+  });
 });
 afterAll(async () => {
   await ctx.close();
@@ -170,9 +180,10 @@ describe('privilege dominance (S2-01a)', () => {
 
 describe('forged X-Forwarded-For (S2-01a)', () => {
   it('cannot move a caller into a fresh bucket while TRUST_PROXY is off', async () => {
-    // Per-IP allowance is 4x the per-phone limit (2 here) = 8 failures.
-    // Each attempt uses a different unknown phone, so only the IP bucket
-    // accumulates, and each claims to come from a different client.
+    // Per-address allowance is AUTH_MAX_FAILURES_PER_ADDRESS, set to 8 for
+    // this file. Each attempt uses a different unknown phone, so only the
+    // address bucket accumulates, and each claims to come from a different
+    // client.
     const attempt = (n: number) =>
       ctx.app.inject({
         method: 'POST',

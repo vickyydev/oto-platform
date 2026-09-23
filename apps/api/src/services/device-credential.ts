@@ -61,11 +61,12 @@ import type { BoothStationRow } from './booth';
  *     previous unredeemed code, so the live set is the number of booths
  *     somebody is pairing right now, which is normally zero and occasionally
  *     one. A guess has about `k / 1,000,000` of hitting, for that `k`;
- *   - **ten wrong guesses per address per ten minutes** (`rl:booth-pair:<ip>`,
- *     counted only on failure, in Postgres so a deploy does not clear it). At
- *     that rate one address expects to need on the order of 10^5 ten-minute
- *     windows to land one hit on a single outstanding code — and the window is
- *     only open while a member of staff is standing at a booth pairing it.
+ *   - **`PAIR_ATTEMPTS_MAX` wrong guesses per address per ten minutes**
+ *     (`rl:booth-pair:<ip>`, counted only on failure, in Postgres so a deploy
+ *     does not clear it). At a hundred, one address expects to need on the
+ *     order of 10^4 ten-minute windows to land one hit on a single outstanding
+ *     code — and the window is only open while a member of staff is standing
+ *     at a booth pairing it. See the constant for why it is not ten.
  *
  * If a booth is ever paired unattended over a long window, the answer is a
  * shorter TTL or a booth-scoped redeem URL, not more digits on a number pad.
@@ -74,8 +75,27 @@ import type { BoothStationRow } from './booth';
 /** Ten minutes: long enough to walk to the booth, short enough to matter. */
 export const BOOTH_PAIRING_CODE_TTL_MS = 10 * 60 * 1000;
 
-/** Wrong codes tolerated from one address, and the window they are counted in. */
-const PAIR_ATTEMPTS_MAX = 10;
+/**
+ * Wrong codes tolerated from one address, and the window they are counted in.
+ *
+ * SCRUM-376 — RAISED FROM TEN, because of what an address turned out to be.
+ * A pairing code NAMES NOTHING: the redeem route takes six digits and nothing
+ * else, by design (the page cannot say which booth it is), so there is no
+ * identity to count a wrong guess against and the address is all there is. The
+ * measurement on 23 Sep 2026
+ * (docs/qa/TRUST_PROXY_REWRITE_MEASUREMENT_2026-09-23.md) found the address is
+ * never one caller: a television pairs through the booth site's own `/booth/*`
+ * rewrite, so every screen in the estate arrives from Render's shared regional
+ * proxy fleet and ten wrong digits anywhere stopped all of them pairing for
+ * ten minutes — at exactly the moment a member of staff is standing at a booth
+ * typing.
+ *
+ * What bounds a guess is unchanged and is stated in full above: at most one
+ * outstanding code per booth, six digits, ten minutes, and the window only
+ * open while somebody is pairing. A hundred wrong guesses per address per ten
+ * minutes still leaves that on the order of 10^4 windows for one hit.
+ */
+const PAIR_ATTEMPTS_MAX = 100;
 const PAIR_ATTEMPT_WINDOW_S = 600;
 
 /**

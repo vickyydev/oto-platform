@@ -279,10 +279,39 @@ export async function authenticateBox(
       { reason, boxId: presented.boxId, ip: ctx.ip, reqId: ctx.requestId },
       'box credential refused',
     );
-    // Counted only on failure, so an honest box heartbeating every minute
-    // never approaches it and somebody working through box ids does. It also
-    // bounds the audit rows above: past the ceiling nothing reaches them.
-    await limitPrincipal(db, `box-auth:${ctx.ip}`, 30, 300);
+    /**
+     * WHICH BUCKET A REFUSED BOX SPENDS (SCRUM-376).
+     *
+     * Counted only on failure, so an honest box heartbeating every minute
+     * never approaches either of these and somebody working through box ids
+     * does. (They do not bound the audit rows above — those are written
+     * before this runs, deliberately: the refusal that tripped the ceiling is
+     * the one worth having in the trail.)
+     *
+     * When the request NAMED a box — a box id that parsed, with a wrong or
+     * stale secret — the count belongs on that box id, exactly as the sign-in
+     * throttle counts a guess on `phone:<phone>`. That is the identity being
+     * attacked, and it is the one thing the caller cannot change without
+     * starting again against a different box. It is also what keeps one
+     * mall's second box working while somebody hammers its neighbour.
+     *
+     * The address bucket stays beside it, because a caller presenting
+     * malformed rubbish names nothing and there is nothing else to count it
+     * against. Its ceiling is sized for an address a whole park shares rather
+     * than for one machine: the measurement on 23 Sep 2026
+     * (docs/qa/TRUST_PROXY_REWRITE_MEASUREMENT_2026-09-23.md) found an
+     * address on this platform is a shared proxy fleet or a mall NAT and
+     * never one caller. A box reaches `/box/v1/*` directly rather than
+     * through a site rewrite, so the address here is at least the park's own —
+     * which is why this is raised rather than abandoned.
+     *
+     * The order matters: the named bucket is spent FIRST, so once a box has
+     * been hammered shut the attempts that bounce off it stop spending the
+     * park's shared allowance as well. A stolen Pi cannot take the branch's
+     * other boxes down with it.
+     */
+    if (presented.boxId) await limitPrincipal(db, `box-auth:${presented.boxId}`, 30, 300);
+    await limitPrincipal(db, `box-auth-addr:${ctx.ip}`, 300, 300);
     throw error;
   };
 
@@ -385,7 +414,15 @@ export async function registerBox(
     .limit(1);
 
   if (!candidate) {
-    await limitPrincipal(db, `box-claim-miss:${ctx.ip}`, 20, 900);
+    /**
+     * A claim-code miss NAMES NOTHING (SCRUM-376), so the address is all
+     * there is to count it against — the code is the whole credential and a
+     * wrong one identifies no box. The ceiling is raised to match what an
+     * address on this platform actually is: a mall's NAT shared by every box
+     * and till in the park, never one machine. The per-code bucket above is
+     * the tight one, and it is the one guarding the thing being guessed.
+     */
+    await limitPrincipal(db, `box-claim-miss:${ctx.ip}`, 200, 900);
     throw new AppError(
       401,
       'BOX_CLAIM_INVALID',

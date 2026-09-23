@@ -11,10 +11,10 @@ import { bumpWindow, type Window } from '../services/throttle';
  * Two buckets, deliberately:
  *   - PRIMARY, per phone or per account (`limitPrincipal` in the handler) —
  *     the thing an attacker is actually targeting. Tight: 5 in 15 minutes.
- *   - SECONDARY, per IP (this plugin) — generous, because the park's tills,
- *     the office and a mall full of visitors share very few public
- *     addresses. A tight IP bucket here would lock out a whole mall rather
- *     than an attacker.
+ *   - SECONDARY, per caller (this plugin) — generous, because the park's
+ *     tills, the office and a mall full of visitors share very few public
+ *     addresses. A tight address bucket here would lock out a whole mall
+ *     rather than an attacker.
  *
  * The counters live in Postgres (see services/throttle.ts), so a Render
  * restart does not reset them.
@@ -83,6 +83,72 @@ function refusalMessage(req: FastifyRequest, retryAfterSeconds: number): string 
   );
 }
 
+/**
+ * WHO IS BEING RATE LIMITED (SCRUM-376).
+ *
+ * The bucket used to be `req.ip` and nothing else, which was right while the
+ * address named the caller and became wrong the moment it stopped. Measured on
+ * staging on 23 Sep 2026 and written up in
+ * `docs/qa/TRUST_PROXY_REWRITE_MEASUREMENT_2026-09-23.md`: every till, the
+ * Console, the launcher and the booth screen reach this api through their own
+ * static site's `/api/*` rewrite, and what arrives is Render's shared REGIONAL
+ * proxy fleet — two /24s that Render's own API reports as `"type":"shared"`
+ * and its documentation says are shared with every other tenant in the region.
+ * The measurement watched the launcher's requests continue a counter the POS
+ * had opened seconds earlier. So one allowance was being spent by the whole
+ * estate, and the address could not be made to name the caller: the entry
+ * naming the till is dropped at the rewrite, and trusting the fleet that
+ * forwards it would let any tenant in the region forge a caller past every
+ * throttle.
+ *
+ * The fix is to stop asking the network who the caller is and to ask the
+ * request what it has already PROVED. A signed-in request carries a session
+ * that `plugins/session.ts` has already resolved against the `session` table,
+ * and that session names the station it is seated at — which is the till, the
+ * unit an allowance should belong to. The account is the fallback for a
+ * session that has not picked a station yet (the Console, the launcher, a till
+ * before its first shift), so two browsers of one person share one allowance
+ * and two people never do.
+ *
+ * NOTHING HERE READS A HEADER. `auth` is the session row, read from an
+ * httpOnly cookie's hash; a caller who invents one is `null` here and keys on
+ * the address exactly as before. That is the property that makes this safe to
+ * key on at all, and it is what `throttle-keys.test.ts` pins.
+ *
+ * THE ADDRESS REMAINS, for everything that has proved nothing yet: sign-in,
+ * `/public/*`, box registration, booth pairing. By definition those are where
+ * a credential comes from, so there is nothing else to key on, and they keep
+ * the collapse the measurement describes — which is why the ceilings that
+ * fence them are sized for a shared address rather than for one caller
+ * (`AUTH_MAX_FAILURES_PER_ADDRESS`, and the address ceilings in
+ * `services/box.ts` and `services/device-credential.ts`).
+ *
+ * WHAT IS NOT KEYED HERE, and where it is instead. A box and a paired booth
+ * screen also carry a credential, but neither has been verified when this runs:
+ * `plugins/credential.ts` authenticates them from a `preValidation` hook, which
+ * is after the route-level `onRequest` hook this plugin installs, so this key
+ * cannot name them. The box is accounted for in `authenticateBox`
+ * (`services/box.ts`): `box:<boxId>` once the credential is verified, and on a
+ * refusal `box-auth:<boxId>` under the id the caller NAMED — a shape-checked
+ * uuid the caller wrote, not a verified fact — which is safe only because an
+ * address bucket is spent beside it, so inventing ids cannot escape the cap.
+ * The paired booth screen has no throttle of its own today: a wrong device
+ * secret is bounded only by its route's address bucket (its own ticket). A box
+ * reaches the api directly rather than through a rewrite, so its address is
+ * its own and the bucket below is already per park.
+ */
+function callerKey(req: FastifyRequest): string {
+  const auth = req.auth;
+  if (auth) return auth.stationId ? `station:${auth.stationId}` : `account:${auth.accountId}`;
+  // The socket address when no proxy is trusted, otherwise the nearest
+  // X-Forwarded-For entry a trusted proxy recorded — which a caller cannot
+  // write. Which proxies are trusted is decided in app.ts (TRUST_PROXY_ADDRS
+  // by address, the TRUST_PROXY count as the fallback) and proven in
+  // trust-proxy.test.ts; this file has no defence of its own against a forged
+  // header (SCRUM-353, SCRUM-367).
+  return req.ip;
+}
+
 export const rateLimitPlugin = fp(async (app: FastifyInstance) => {
   await app.register(rateLimit, {
     // Only routes that opt in via `config.rateLimit`: signed-in routes are
@@ -91,14 +157,9 @@ export const rateLimitPlugin = fp(async (app: FastifyInstance) => {
     max: app.env.RATE_LIMIT_IP_MAX,
     timeWindow: app.env.RATE_LIMIT_WINDOW_SECONDS * 1000,
     store: buildStore(app.db),
-    // One bucket per caller, and `req.ip` decides who that is: the socket
-    // address when no proxy is trusted, otherwise the nearest X-Forwarded-For
-    // entry a trusted proxy recorded — which a caller cannot write. Which
-    // proxies are trusted is decided in app.ts (TRUST_PROXY_ADDRS by address,
-    // the TRUST_PROXY count as the fallback) and proven in trust-proxy.test.ts;
-    // this file has no defence of its own against a forged header
-    // (SCRUM-353, SCRUM-367).
-    keyGenerator: (req) => req.ip,
+    // One bucket per caller — the station, then the account, then the
+    // address. See `callerKey` above for what each of those proves.
+    keyGenerator: callerKey,
     /**
      * AN `AppError`, NOT THE ENVELOPE (SCRUM-335).
      *
@@ -128,5 +189,12 @@ export const rateLimitPlugin = fp(async (app: FastifyInstance) => {
   });
 });
 
-/** Route option: the secondary per-IP bucket at the configured default. */
+/**
+ * Route option: the secondary per-caller bucket at the configured default.
+ *
+ * The name is the one every route already imports and it stays, because what
+ * it declares has not changed — the generous secondary allowance, as against
+ * the tight `limitPrincipal` one a handler spends. Who it is counted against
+ * is `callerKey`'s question, not the route's.
+ */
 export const ipLimited = { rateLimit: {} } as const;

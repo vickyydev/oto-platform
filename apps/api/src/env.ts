@@ -74,6 +74,27 @@ const EnvSchema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
   AUTH_MAX_FAILURES: z.coerce.number().int().default(5),
+  /**
+   * The SAME failures counted per ADDRESS, and why it is a separate number
+   * (SCRUM-376).
+   *
+   * The address half of the sign-in throttle used to be `AUTH_MAX_FAILURES x
+   * 4` — twenty on the deployed five — on the reading that a few tills share
+   * one mall address. The measurement on 23 Sep 2026
+   * (docs/qa/TRUST_PROXY_REWRITE_MEASUREMENT_2026-09-23.md) found the sharing
+   * is very much wider than that: every till, the Console and the launcher
+   * reach the api through their own site's `/api/*` rewrite, and the api sees
+   * Render's shared regional proxy fleet as the caller. Two apps were measured
+   * sharing one egress address and one bucket within the same minute. Twenty
+   * mistyped passwords ANYWHERE in the estate therefore locked the whole
+   * estate out of signing in for `AUTH_COOLDOWN_SECONDS`.
+   *
+   * `phone:<phone>` is the bucket that carries the security value here and it
+   * is untouched at `AUTH_MAX_FAILURES`: guessing one person's password is
+   * still five attempts a window. This one bounds a shared address, so it is
+   * sized for a shared address.
+   */
+  AUTH_MAX_FAILURES_PER_ADDRESS: z.coerce.number().int().default(50),
   AUTH_COOLDOWN_SECONDS: z.coerce.number().int().default(300),
   /** Wrong codes accepted before every outstanding code is invalidated. */
   CODE_MAX_ATTEMPTS: z.coerce.number().int().default(5),

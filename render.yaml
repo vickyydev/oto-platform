@@ -420,6 +420,10 @@ services:
         value: '12'
       - key: AUTH_MAX_FAILURES
         value: '5'
+      - key: AUTH_MAX_FAILURES_PER_ADDRESS
+        # Sized for a shared address: every till behind one site rewrite
+        # shares it, and so do the Console and the launcher.
+        value: '50'
       - key: AUTH_COOLDOWN_SECONDS
         value: '300'
       - key: CODE_MAX_ATTEMPTS
