@@ -4,6 +4,35 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 14:14 — `main` is `3ba0840`; staging is `7b746f1`; CI green through `b458650`
+>
+> **Since 13:41:** landed the 204 panel fixes (`bbf1792` — its gate was DO NOT
+> MERGE for one line: the scanning test now reads the seeded socks row), **328**
+> (`e977b49` — an offline box polls for go_online only), **325** (`b458650` —
+> every refusal costs one argon2 verification), **329** (`3ba0840`).
+> **Deployed with staging evidence:** 331 (one registration, zero refusals
+> across a real ~61 s two-instance overlap), 253, 255, 327. Raised: 347
+> (codes stored as plain SHA-256 of six digits — building), 348 (unlock
+> route timing, after 347), 349 (the phone sheet prices itself).
+> **SCRUM-206 tenders:** the read-only planning fan-out produced
+> `scratchpad/plan-206/PLAN.md` (eight slices, five waves — A → B/C1/E →
+> C2/D → F/G); the plan and the owner decisions (2C2P sandbox, offline
+> scope, vendor questions) are on the ticket; **Slice A is building**
+> (`wf_60563353`: migration 0019, payment_attempt/notification/method,
+> shared vocabulary, seed:demo-day).
+>
+> **Running:** gates — 333/334 (`wf_e70284a0`); builds — 337/338
+> (`wf_438d7369`), 342 (`wf_eb99843a`), 346 (`wf_d83140b5`), 341
+> (`wf_6eb93633`), 347 (`wf_5543a1c8`), 206-A; evidence — 335
+> (`wf_af70868e`). A watcher waits for Render at `3ba0840`; then evidence
+> for 328, 325, 329, the 204 fixes and 341 when they land.
+>
+> **Next:** 343/344 after 333/334 free `sale.ts`; tenders wave 2 (B, C1, E)
+> after A lands — B must follow 333 (both in `sale.ts`); 348 after 347.
+> Owner decisions outstanding: 206's three (above), 254's two, 306's
+> read-only staff, 327's retried pairing, 345, 326, the "HKT Central"
+> app-only row (268), the deploy-bot paid service.
+
 > ## Status on 2026-09-23 13:41 — `main` is `96523cd`; staging is `adff73c` (Render is deploying `b7d7b67` → `7b746f1`); CI green through `adff73c`
 >
 > **Since 13:12:** landed the branch clone R-03 (`2740291` + the two
