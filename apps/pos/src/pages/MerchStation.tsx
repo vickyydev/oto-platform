@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { setSaleOpen } from '@/pwa/openSale';
-import { ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristband } from '@/types';
+import { Discount, ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristband } from '@/types';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
-import { getActiveMerchItems, chargeMerchCredit, getDiscountReasons, recordMerchOrder, getInventoryItem } from '@/mockApi';
+import { getActiveMerchItems, chargeMerchCredit, getDiscountByCode, getDiscountReasons, recordMerchOrder, getInventoryItem } from '@/mockApi';
 import { computeMerchLineTotal, isOutOfStock } from '@/lib/merch';
-import { useItemCartQuote } from '@/lib/cartQuote';
+import { validateItemPromoCode } from '@/lib/itemPromo';
+import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
 import { useSaleWriter } from '@/lib/saleWriter';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
@@ -77,6 +78,14 @@ export default function MerchStation() {
   const [pendingVariantItem, setPendingVariantItem] = useState<MerchItem | null>(null);
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
+  /**
+   * THE PROMO CODES ON THIS SALE — SCRUM-362, the same state the F&B station
+   * holds: the branch's own discount definitions, sent with the sale so the
+   * platform prices them, and priced here by the same engine when it cannot.
+   */
+  const [promoCodes, setPromoCodes] = useState<Discount[]>([]);
+  /** The refusal for the last code entered, drawn under the entry. */
+  const [promoError, setPromoError] = useState('');
   const [completedOrder, setCompletedOrder] = useState<MerchOrder | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
   /** The same writer the till and the F&B station use — see `lib/saleWriter.ts`. */
@@ -149,10 +158,11 @@ export default function MerchStation() {
    * shop cart in the browser (`computeMerchTotals`); that is now the fallback,
    * and when it is what is on screen the note above the charge button says so.
    */
-  const sale = useItemCartQuote({
+  const sale = useItemCartQuoteWithPromos({
     kind: 'shop',
     lines,
     manualDiscounts,
+    promos: promoCodes,
     identity: saleIdentity,
     enabled: stage !== 'confirmation',
   });
@@ -294,9 +304,37 @@ export default function MerchStation() {
     setManualDiscounts((prev) => prev.filter((md) => md.id !== id));
   };
 
+  /**
+   * Put a promo code on the sale, or say why it cannot go on — the F&B
+   * station's handler, against shop rows. The code is checked against THIS sale
+   * by the engine that will price it (`lib/itemPromo.ts`), so a code accepted
+   * here is a code the platform will honour.
+   */
+  const handleApplyPromoCode = (code: string) => {
+    const promo = getDiscountByCode(code);
+    if (!promo) {
+      setPromoError(`Code "${code.toUpperCase()}" was not found.`);
+      return;
+    }
+    const result = validateItemPromoCode(promo, lines, { applied: promoCodes });
+    if (!result.ok) {
+      setPromoError(result.reason);
+      return;
+    }
+    setPromoError('');
+    setPromoCodes((prev) => [...prev, promo]);
+  };
+
+  const handleRemovePromoCode = (code: string) => {
+    setPromoCodes((prev) => prev.filter((promo) => promo.code !== code));
+    setPromoError('');
+  };
+
   const handleClearCart = () => {
     setCart([]);
     setManualDiscounts([]);
+    setPromoCodes([]);
+    setPromoError('');
   };
 
   const loadBand = (wb: Wristband | null) => {
@@ -314,6 +352,8 @@ export default function MerchStation() {
     setWristband(null);
     setCart([]);
     setManualDiscounts([]);
+    setPromoCodes([]);
+    setPromoError('');
     setCompletedOrder(null);
     setNewBalance(null);
     setPayMethod(null);
@@ -335,6 +375,9 @@ export default function MerchStation() {
     return buildItemCartPayload(displayLines, manualDiscounts, saleIdentity, total, {
       mode: sale.quote.pricingMode,
       modeReason: sale.quote.pricingModeReason,
+      // The codes the quote was answered for, so the sale the platform prices
+      // at commit is the sale it quoted.
+      promos: promoCodes,
     });
   };
 
@@ -506,6 +549,10 @@ export default function MerchStation() {
                 onSwitchTab={resetOrder}
                 onAddManualDiscount={() => setShowDiscountModal(true)}
                 onRemoveManualDiscount={handleRemoveManualDiscount}
+                promoCodes={sale.totals.scannedDiscounts}
+                promoError={promoError}
+                onApplyPromoCode={handleApplyPromoCode}
+                onRemovePromoCode={handleRemovePromoCode}
               />
             </div>
           </div>

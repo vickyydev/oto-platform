@@ -6,6 +6,7 @@ import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
+import { PromoCodeEntry, type PromoCodeRow } from '@/components/fnb/PromoCodeEntry';
 import {
   Wallet,
   UserRound,
@@ -45,12 +46,22 @@ interface MerchCartProps {
    * button already names it — it rides the button as its title.
    */
   chargeBlockedReason?: string | null;
+  /**
+   * THE PROMO CODES ON THIS SALE, as the quote reports them (SCRUM-362) — the
+   * same prop the F&B panel takes, drawn by the same component, so a code reads
+   * identically at either counter. Absent leaves the entry off.
+   */
+  promoCodes?: PromoCodeRow[];
+  /** The refusal for the last code staff entered, shown under the field. */
+  promoError?: string;
   onChangeQty: (lineId: string, qty: number) => void;
   onClear: () => void;
   onCheckout: () => void;
   onSwitchTab: () => void;
   onAddManualDiscount: () => void;
   onRemoveManualDiscount: (id: string) => void;
+  onApplyPromoCode?: (code: string) => void;
+  onRemovePromoCode?: (code: string) => void;
 }
 
 function ManualDiscountRow({
@@ -101,12 +112,16 @@ export function MerchCart({
   taxBreakdown,
   priceNote,
   chargeBlockedReason,
+  promoCodes,
+  promoError,
   onChangeQty,
   onClear,
   onCheckout,
   onSwitchTab,
   onAddManualDiscount,
   onRemoveManualDiscount,
+  onApplyPromoCode,
+  onRemovePromoCode,
 }: MerchCartProps) {
   const isEmpty = lines.length === 0;
   const chargeBlocked = Boolean(chargeBlockedReason);
@@ -230,6 +245,20 @@ export function MerchCart({
       )}
 
       <div className="shrink-0 pt-4 mt-2 border-t">
+        {/* Promo codes above the manual discounts — the order the till's panel
+            puts them in. */}
+        {onApplyPromoCode && onRemovePromoCode && (
+          <div className="mb-3">
+            <PromoCodeEntry
+              applied={promoCodes ?? []}
+              {...(promoError ? { error: promoError } : {})}
+              disabled={isEmpty}
+              onApply={onApplyPromoCode}
+              onRemove={onRemovePromoCode}
+            />
+          </div>
+        )}
+
         {orderDiscounts.map((md) => {
           const amt = manualAmounts[md.id] ?? 0;
           if (amt <= 0) return null;

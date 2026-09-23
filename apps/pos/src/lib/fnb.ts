@@ -1,4 +1,5 @@
 import {
+  Discount,
   FnbOrder,
   FnbOrderLine,
   ManualDiscount,
@@ -10,6 +11,7 @@ import {
   TaxConfig,
 } from '@/types';
 import { computeManualDiscount } from '@/lib/manualDiscount';
+import { computeItemPromoDiscount } from '@/lib/itemPromo';
 import {
   effectivePrepStation,
   effectiveTaxCategory,
@@ -75,21 +77,38 @@ export function fnbTaxInputs(
  * the engine returns service + tax + grand total. With the seeded config (inclusive
  * VAT, no service) the grand total equals subtotal − discount, so totals are unchanged.
  * Credit spend against this grand total (gross) like cash — handled by the caller.
+ *
+ * THE PROMO CODES ARE THE ENGINE'S — SCRUM-362. The codes an order carries are
+ * priced by `@oto/shared` over the same rows the platform prices
+ * (`lib/itemPromo.ts`), never by arithmetic of this file's own, so the figure
+ * this till shows when it prices an order itself is the figure the platform
+ * quotes for it. They run AFTER the manual discounts, which is the engine's
+ * order, and the amount they came to joins the manual total in the one discount
+ * the tax cascade places. Callers that pass no codes are unaffected: the
+ * argument defaults to none and nothing is computed.
  */
 export function computeFnbTotals(
   lines: FnbOrderLine[],
   manualDiscounts: ManualDiscount[] = [],
-  config: TaxConfig = getTaxConfig()
+  config: TaxConfig = getTaxConfig(),
+  promos: readonly Discount[] = []
 ) {
   const subtotal = lines.reduce((sum, l) => sum + l.lineTotal, 0);
   const lineAmounts = Object.fromEntries(lines.map((l) => [l.id, l.lineTotal]));
   const manual = computeManualDiscount(manualDiscounts, subtotal, lineAmounts);
-  const taxBreakdown = computeTaxBreakdown(fnbTaxInputs(lines), manual.total, config);
+  const promo = computeItemPromoDiscount(lines, manualDiscounts, promos, { config });
+  const taxBreakdown = computeTaxBreakdown(
+    fnbTaxInputs(lines),
+    manual.total + promo.discountAmount,
+    config
+  );
 
   return {
     subtotal,
     manualDiscountAmount: manual.total,
     manualAmounts: manual.amounts,
+    promoDiscountAmount: promo.discountAmount,
+    appliedPromos: promo.appliedPromos,
     serviceChargeTotal: taxBreakdown.serviceChargeTotal,
     taxTotal: taxBreakdown.taxTotal,
     taxBreakdown,

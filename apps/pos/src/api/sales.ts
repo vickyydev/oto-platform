@@ -711,13 +711,13 @@ export interface ItemCartIdentity extends CartIdentity {
  * discounted the food. Both are fixed in the engine, so the codes the station
  * holds now travel with the order and the platform honours the scope.
  *
- * WHAT DOES NOT FOLLOW FROM THAT: the local fallback. `computeFnbTotals` and
- * `computeMerchTotals` are the prototype's own arithmetic and take no promo
- * codes at all, so an order with a code on it that the platform cannot be
- * reached for would show an undiscounted figure on the screen and then be
- * refused at the commit against it. Unreachable today — neither station screen
- * has a code entry (the prototype never gave one to the F&B or shop lane) — and
- * the screen that adds one is the one that has to answer it.
+ * WHAT FOLLOWED FROM THAT, and it is answered — SCRUM-362. `computeFnbTotals`
+ * and `computeMerchTotals` took no promo codes, so an order with a code on it
+ * that the platform could not be reached for would have shown an undiscounted
+ * figure on the screen and then been refused at the commit against it. Both now
+ * take the codes and price them through the same engine the platform does
+ * (`lib/itemPromo.ts`), and `localItemQuote` passes them on, so the fallback
+ * figure and the platform's are the same figure.
  */
 export function buildItemCartPayload(
   lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
@@ -780,27 +780,39 @@ export function buildItemCartPayload(
  * came from, and an F&B order has no ticket cart for `@oto/shared` to price.
  * Nothing is SOLD from it silently: the commit carries it as
  * `expectedTotalSatang` and the platform refuses the sale if it disagrees.
+ *
+ * THE CODES ARE THE EXCEPTION TO "the prototype's own arithmetic" — SCRUM-362.
+ * A promo code on the order is priced by `@oto/shared` over the same rows the
+ * platform prices it over, inside those two helpers, because a code the till
+ * discounted differently would be a commit the platform refuses.
  */
 export function localItemQuote(
   kind: 'fnb' | 'shop',
   lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
   manualDiscounts: readonly ManualDiscount[],
-  options: { config?: TaxConfig; reason?: string } = {},
+  options: { config?: TaxConfig; reason?: string; promos?: readonly Discount[] } = {},
 ): CartQuote {
   const rate = todayRateMode();
+  const promos = options.promos ?? [];
   const totals =
     kind === 'fnb'
-      ? computeFnbTotals([...(lines as readonly FnbOrderLine[])], [...manualDiscounts], options.config)
+      ? computeFnbTotals(
+          [...(lines as readonly FnbOrderLine[])],
+          [...manualDiscounts],
+          options.config,
+          promos,
+        )
       : computeMerchTotals(
           [...(lines as readonly MerchOrderLine[])],
           [...manualDiscounts],
           options.config,
+          promos,
         );
   return {
     totals: {
       subtotal: totals.subtotal,
-      discountAmount: 0,
-      scannedDiscounts: [],
+      discountAmount: totals.promoDiscountAmount,
+      scannedDiscounts: totals.appliedPromos,
       manualDiscountAmount: totals.manualDiscountAmount,
       manualAmounts: totals.manualAmounts,
       serviceChargeTotal: totals.serviceChargeTotal,
@@ -843,8 +855,9 @@ export interface ItemQuoteArgs {
   identity: ItemCartIdentity | null;
   /**
    * SCRUM-344 — the promo codes this station holds. Sent with the order so the
-   * quote and the commit describe the same one; the local fallback cannot apply
-   * them (see `buildItemCartPayload`).
+   * quote and the commit describe the same one, and applied by the local
+   * fallback too since SCRUM-362, so the figure on the screen is the same
+   * figure whichever side priced it.
    */
   promos?: readonly Discount[];
   config?: TaxConfig;
@@ -865,6 +878,7 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
   const { kind, lines, manualDiscounts, identity } = args;
   const local = localItemQuote(kind, lines, manualDiscounts, {
     ...(args.config ? { config: args.config } : {}),
+    ...(args.promos ? { promos: args.promos } : {}),
   });
   if (!identity) return { ...local, reason: 'No station or branch on this device yet.' };
   const offLedger = offLedgerOnly(lines);

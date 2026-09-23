@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
-import { FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, Operator, SelectedModifier, Wristband } from '@/types';
+import { Discount, FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, Operator, SelectedModifier, Wristband } from '@/types';
 import { useStation } from '@/station/StationContext';
 import { dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
 import { setSaleOpen } from '@/pwa/openSale';
@@ -11,6 +11,7 @@ import { useCustomerTheme } from '@/lib/themePref';
 import {
   chargeFnbCredit,
   redeemPrepaidItem,
+  getDiscountByCode,
   getDiscountReasons,
   recordFnbOrder,
   getInventoryItem,
@@ -21,7 +22,8 @@ import {
 import { INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
 import { computeLineTotal, hasModifiers, modifierSignature } from '@/lib/fnb';
-import { useItemCartQuote } from '@/lib/cartQuote';
+import { validateItemPromoCode } from '@/lib/itemPromo';
+import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
 import { useSaleWriter } from '@/lib/saleWriter';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
@@ -116,6 +118,15 @@ export default function OrderStation() {
   const [orderNote, setOrderNote] = useState('');
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
+  /**
+   * THE PROMO CODES ON THIS ORDER — SCRUM-362. The branch's own discount
+   * definitions, as the catalogue store holds them; they travel with the order
+   * to the platform, which prices them, and the local fallback prices them with
+   * the same engine when the platform cannot be asked.
+   */
+  const [promoCodes, setPromoCodes] = useState<Discount[]>([]);
+  /** The refusal for the last code entered, drawn under the entry. */
+  const [promoError, setPromoError] = useState('');
   const [completedOrder, setCompletedOrder] = useState<FnbOrder | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
   /**
@@ -261,10 +272,11 @@ export default function OrderStation() {
    * then on, and re-quoting a finished order could only disagree with the
    * receipt in the guest's hand.
    */
-  const order = useItemCartQuote({
+  const order = useItemCartQuoteWithPromos({
     kind: 'fnb',
     lines,
     manualDiscounts: effectiveManualDiscounts,
+    promos: promoCodes,
     identity: orderIdentity,
     enabled: stage !== 'confirmation',
   });
@@ -588,10 +600,44 @@ export default function OrderStation() {
     setManualDiscounts((prev) => prev.filter((md) => md.id !== id));
   };
 
+  /**
+   * Put a promo code on the order, or say why it cannot go on.
+   *
+   * The code is looked up in the branch's discount definitions and checked
+   * against THIS order — its scope, its window, its limits — before it is
+   * applied, the way the ticket till checks one (`pages/Till.tsx`). What makes
+   * a code applicable here is `lib/itemPromo.ts`: the same engine, over the
+   * same rows, that the platform will price the order with.
+   */
+  const handleApplyPromoCode = (code: string) => {
+    const promo = getDiscountByCode(code);
+    if (!promo) {
+      setPromoError(`Code "${code.toUpperCase()}" was not found.`);
+      return;
+    }
+    // No customer phone is passed: an order at this counter is against a band
+    // or no one at all, and a band carries no phone (`types.ts:Wristband`), so
+    // a per-customer limit has nobody to count against here.
+    const result = validateItemPromoCode(promo, lines, { applied: promoCodes });
+    if (!result.ok) {
+      setPromoError(result.reason);
+      return;
+    }
+    setPromoError('');
+    setPromoCodes((prev) => [...prev, promo]);
+  };
+
+  const handleRemovePromoCode = (code: string) => {
+    setPromoCodes((prev) => prev.filter((promo) => promo.code !== code));
+    setPromoError('');
+  };
+
   const handleClearCart = () => {
     setCart([]);
     setOrderNote('');
     setManualDiscounts([]);
+    setPromoCodes([]);
+    setPromoError('');
     setBenefitOperator(null);
     setShowBenefitScan(false);
   };
@@ -614,6 +660,8 @@ export default function OrderStation() {
     setCart([]);
     setOrderNote('');
     setManualDiscounts([]);
+    setPromoCodes([]);
+    setPromoError('');
     setBenefitOperator(null);
     setShowBenefitScan(false);
     setCompletedOrder(null);
@@ -651,6 +699,9 @@ export default function OrderStation() {
     return buildItemCartPayload(displayLines, effectiveManualDiscounts, orderIdentity, total, {
       mode: order.quote.pricingMode,
       modeReason: order.quote.pricingModeReason,
+      // The codes the quote was answered for: the order the platform prices at
+      // commit is the order it quoted, down to the code on it.
+      promos: promoCodes,
     });
   };
 
@@ -999,6 +1050,10 @@ export default function OrderStation() {
                 onSwitchTab={resetOrder}
                 onAddManualDiscount={() => setShowDiscountModal(true)}
                 onRemoveManualDiscount={handleRemoveManualDiscount}
+                promoCodes={order.totals.scannedDiscounts}
+                promoError={promoError}
+                onApplyPromoCode={handleApplyPromoCode}
+                onRemovePromoCode={handleRemovePromoCode}
                 onScanStaffBenefit={() => setShowBenefitScan(true)}
               />
             </div>

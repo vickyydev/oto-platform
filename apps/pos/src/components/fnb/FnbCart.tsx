@@ -7,6 +7,7 @@ import { describeModifiers } from '@/lib/fnb';
 import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { StaffBenefitBreakdown, type StaffBenefitBreakdownData } from '@/components/fnb/StaffBenefitBreakdown';
+import { PromoCodeEntry, type PromoCodeRow } from '@/components/fnb/PromoCodeEntry';
 import { Wallet, UserRound, ShoppingCart, Trash2, X, Pencil, BadgePercent, StickyNote, Gift, ChevronDown, ChevronUp, History, QrCode as QrCodeIcon } from 'lucide-react';
 
 /** The synthetic order-scope ManualDiscount id the staff-benefit preview is folded into (see pages/OrderStation.tsx). */
@@ -47,6 +48,15 @@ interface FnbCartProps {
    * button already names it — it rides the button as its title.
    */
   chargeBlockedReason?: string | null;
+  /**
+   * THE PROMO CODES ON THIS ORDER, as the quote reports them (SCRUM-362) — the
+   * amounts are whoever priced the order's, the same as every other figure on
+   * this panel. Absent leaves the entry off entirely, which is what every
+   * screen that does not enter codes gets.
+   */
+  promoCodes?: PromoCodeRow[];
+  /** The refusal for the last code staff entered, shown under the field. */
+  promoError?: string;
   onChangeQty: (lineId: string, qty: number) => void;
   onEditLine: (line: FnbOrderLine) => void;
   onClear: () => void;
@@ -54,6 +64,8 @@ interface FnbCartProps {
   onSwitchTab: () => void;
   onAddManualDiscount: () => void;
   onRemoveManualDiscount: (id: string) => void;
+  onApplyPromoCode?: (code: string) => void;
+  onRemovePromoCode?: (code: string) => void;
   onScanStaffBenefit?: () => void;
 }
 
@@ -107,6 +119,8 @@ export function FnbCart({
   benefitBreakdown,
   priceNote,
   chargeBlockedReason,
+  promoCodes,
+  promoError,
   onChangeQty,
   onEditLine,
   onClear,
@@ -114,6 +128,8 @@ export function FnbCart({
   onSwitchTab,
   onAddManualDiscount,
   onRemoveManualDiscount,
+  onApplyPromoCode,
+  onRemovePromoCode,
   onScanStaffBenefit,
 }: FnbCartProps) {
   const isEmpty = lines.length === 0;
@@ -355,6 +371,20 @@ export function FnbCart({
             <StaffBenefitBreakdown
               data={benefitBreakdown}
               onRemove={() => onRemoveManualDiscount(STAFF_BENEFIT_DISCOUNT_ID)}
+            />
+          </div>
+        )}
+
+        {/* Promo codes, where the entry is above the manual discounts — the
+            order the till's panel puts them in. */}
+        {onApplyPromoCode && onRemovePromoCode && (
+          <div className="mb-3">
+            <PromoCodeEntry
+              applied={promoCodes ?? []}
+              {...(promoError ? { error: promoError } : {})}
+              disabled={isEmpty}
+              onApply={onApplyPromoCode}
+              onRemove={onRemovePromoCode}
             />
           </div>
         )}
