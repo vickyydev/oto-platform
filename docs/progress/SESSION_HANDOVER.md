@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 16:59 — `main` is `816d30d`; staging is `3317360` on the api (Render is rolling `186316e`+ onto the POS and Console now that CI #128 is green); CI green through `186316e`
+> ## Status on 2026-09-23 17:03 — `main` is `32648ff`; staging is `186316e` on the api and POS (later pushes are docs only); CI green through `186316e`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -145,10 +145,17 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > deprecation notices on the run (Node 20 actions; the `ubuntu-latest`
 > label moving to 26 on 19 Oct) — not ours, worth a line when they bite.
 >
+> **17:02 — 366 Deployed** with staging evidence at `186316e` (POS and
+> api both live by 16:59): a real refusal on the phone — the package's
+> tourist weekday price moved ฿5 under an open cart, the cart grown →
+> `SALE_LINE_PRICE_MISMATCH` → the note and Pay off on Review and on the
+> sheet; price restored (verified by API and database), Pay back. The
+> fault path is not forceable on staging; the comment points at the
+> build's card. Left on staging: the two price-move audit rows only.
+>
 > **Running:** builds — 364 (`wf_ac4191fc`), 206-B (`wf_d5e69115`),
 > 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`); evidence — 361+363
-> (`wf_00be1ca9`), 366 (`wf_f64ff095`); investigation — 376
-> (`wf_78e9c6ef`). After wave 2:
+> (`wf_00be1ca9`); investigation — 376 (`wf_78e9c6ef`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
