@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { branch, child, member, visit, visitChild } from '@oto/db';
 import { branchToday, newId } from '@oto/shared';
 import type { App } from '../app';
@@ -80,13 +80,32 @@ export async function visitRoutes(app: App): Promise<void> {
         if (!m) throw errors.notFound('Member not found');
       }
 
-      // Children must belong to the visit's member.
+      // Children must be on the visit's member's saved list: the member's own,
+      // and not archived.
+      //
+      // SCRUM-356 — the archived half. Since SCRUM-337 a removed child is off
+      // the counter's lookup, so the till cannot offer one; a screen that was
+      // already open when the guardian asked for the removal still holds the
+      // id. A `visit_child` row is the record that this child WAS in the park
+      // that day, which is precisely what must not be written for a child the
+      // guardian has taken off the list.
+      //
+      // An archived child is refused by the same predicate, and therefore with
+      // the same answer, as an id that is not this member's at all: which of
+      // the two it was changes nothing the caller can do — re-read the member
+      // and send what the lookup now lists.
       if (req.body.childIds.length > 0) {
         if (!req.body.memberId) throw errors.badRequest('childIds require a memberId');
         const rows = await app.db
           .select({ id: child.id })
           .from(child)
-          .where(and(inArray(child.id, req.body.childIds), eq(child.memberId, req.body.memberId)));
+          .where(
+            and(
+              inArray(child.id, req.body.childIds),
+              eq(child.memberId, req.body.memberId),
+              isNull(child.archivedAt),
+            ),
+          );
         if (rows.length !== req.body.childIds.length) {
           throw errors.badRequest('One or more children do not belong to this member');
         }

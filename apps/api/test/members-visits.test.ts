@@ -344,6 +344,96 @@ describe('Tier verification — proof checked at the counter (beyond the prototy
 });
 
 /**
+ * SCRUM-356 — a child taken off the saved list cannot open a new visit.
+ *
+ * `POST /visits` checked childIds against the guardian alone. Since SCRUM-337
+ * the counter's lookup stops listing an archived child, so the till cannot
+ * offer one — but a screen that was already open when the guardian asked for
+ * the removal still holds the id, and that request was accepted. A
+ * `visit_child` row is the record that this child WAS in the park that day,
+ * so writing one for a child the guardian has removed is the one outcome the
+ * archive exists to prevent.
+ */
+describe('SCRUM-356 — an archived child on a new visit', () => {
+  let memberId: string;
+  let archivedId: string;
+  let siblingId: string;
+
+  const openVisit = (childIds: string[]) =>
+    ctx.app.inject({ method: 'POST', url: '/visits', headers: { cookie }, payload: { memberId, childIds } });
+
+  /** Every visit this member has, which for this fixture is only what the tests open. */
+  const visitsOfMember = () => ctx.db.select().from(visit).where(eq(visit.memberId, memberId));
+
+  beforeAll(async () => {
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      headers: { cookie },
+      payload: { phone: '0655552001', nickname: 'Visit Archive Test' },
+    });
+    expect(created.statusCode).toBe(200);
+    memberId = created.json().member.id as string;
+
+    const addChild = async (name: string) => {
+      const res = await ctx.app.inject({
+        method: 'POST',
+        url: `/members/${memberId}/children`,
+        headers: { cookie },
+        payload: { name },
+      });
+      expect(res.statusCode).toBe(200);
+      return res.json().child.id as string;
+    };
+    archivedId = await addChild('Nong Removed');
+    siblingId = await addChild('Nong Stays');
+
+    // The guardian asks for the removal — the route SCRUM-337 added.
+    const removed = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/members/children/${archivedId}`,
+      headers: { cookie },
+    });
+    expect(removed.statusCode).toBe(200);
+  });
+
+  it('refuses the visit, and writes no visit and no row saying the child was here', async () => {
+    const res = await openVisit([archivedId]);
+    // The same refusal a child who is not this member's gets, above: the route
+    // does not say which of the two it was.
+    expect(res.statusCode).toBe(400);
+
+    expect(await visitsOfMember()).toHaveLength(0);
+    const vc = await ctx.db.select().from(visitChild).where(eq(visitChild.childId, archivedId));
+    expect(vc).toHaveLength(0);
+    // Nor was the child re-confirmed on the way past.
+    const [row] = await ctx.db.select().from(child).where(eq(child.id, archivedId));
+    expect(row!.lastConfirmedAt).toBeNull();
+    // And the removal stands — a refused visit changes nothing about the list.
+    expect(row!.archivedAt).toBeTruthy();
+  });
+
+  it('refuses the whole visit when one of two named children is archived', async () => {
+    const res = await openVisit([siblingId, archivedId]);
+    expect(res.statusCode).toBe(400);
+    // Not a partial visit with the sibling on it: nothing was written at all.
+    expect(await visitsOfMember()).toHaveLength(0);
+    const [sib] = await ctx.db.select().from(child).where(eq(child.id, siblingId));
+    expect(sib!.lastConfirmedAt).toBeNull();
+  });
+
+  it('still opens the visit for the sibling who is on the list', async () => {
+    const res = await openVisit([siblingId]);
+    expect(res.statusCode).toBe(200);
+    const rows = await ctx.db
+      .select()
+      .from(visitChild)
+      .where(eq(visitChild.visitId, res.json().id as string));
+    expect(rows.map((r) => r.childId)).toEqual([siblingId]);
+  });
+});
+
+/**
  * S2-01d, finding B4 — a member id is not permission to read that member.
  * Ids travel: into a copied URL, a support request, an audit row, the memory
  * of somebody who used to work at the other operator. Reception here holds
