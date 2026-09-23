@@ -244,10 +244,55 @@ describe('Tier verification — proof checked at the counter (beyond the prototy
       method: 'POST',
       url: `/members/${memberId}/tier-verification`,
       headers: { cookie },
-      payload: { toTier: 'thai', evidenceType: 'Thai ID', evidenceExpiresAt: '2020-01-01' },
+      // A real document kind, so the refusal under test is the expiry and not
+      // the kind: since SCRUM-315 the field is the four-name enum, and an
+      // invented kind would have been refused before the date was read.
+      payload: { toTier: 'thai', evidenceType: 'Residence certificate', evidenceExpiresAt: '2020-01-01' },
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.message).toMatch(/expired/i);
+  });
+
+  /**
+   * SCRUM-315 — the document KIND is one of four names, not free text.
+   *
+   * The till has only ever sent one of the four, so this was a hole in the
+   * contract rather than in behaviour: `evidence_type` is a durable column on
+   * the member's record that a record check reads as "what was checked", and
+   * a passport NUMBER typed into it would sit in a table nothing sweeps.
+   */
+  it('refuses a document number typed into the document kind', async () => {
+    // Its own member, so the refusal under test is this route's and not a
+    // dependency on what an earlier test left behind.
+    const created = await ctx.app.inject({
+      method: 'POST',
+      url: '/members',
+      headers: { cookie },
+      payload: { phone: '0633334455', nickname: 'Proof Kind Test' },
+    });
+    expect(created.statusCode).toBe(200);
+    const id = created.json().member.id as string;
+
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/members/${id}/tier-verification`,
+      headers: { cookie },
+      payload: {
+        toTier: 'expat',
+        evidenceType: 'Passport AA1234567',
+        evidenceExpiresAt: '2030-01-01',
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    // Nothing was written: no row at all, and the member never moved off the
+    // full-price rate on a document kind that is not one.
+    const rows = await ctx.db
+      .select()
+      .from(memberTierVerification)
+      .where(eq(memberTierVerification.memberId, id));
+    expect(rows).toHaveLength(0);
+    const [row] = await ctx.db.select().from(member).where(eq(member.id, id));
+    expect(row!.tierCode).toBe('tourist');
   });
 
   it('rejects an unknown tier', async () => {
@@ -413,8 +458,9 @@ describe('tenancy — another operator\'s member (S2-01d)', () => {
       method: 'POST',
       url: `/members/${strangerMemberId}/tier-verification`,
       headers: { cookie },
-      payload: { toTier: 'thai', evidenceType: 'Thai ID', evidenceExpiresAt: '2030-01-01' },
+      payload: { toTier: 'thai', evidenceType: 'Passport', evidenceExpiresAt: '2030-01-01' },
     });
+    // 404, and reached for the tenancy reason: the body itself is valid.
     expect(res.statusCode).toBe(404);
   });
 

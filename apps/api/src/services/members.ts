@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { account, child, employee, member, memberTierVerification, type Db } from '@oto/db';
+import { isTierRevocation } from './member-tier';
 
 /**
  * The member register — browsing the list, which is not the same act as
@@ -173,7 +174,17 @@ export async function listRegister(
       const v = latest.get(r.id);
       // An expired document no longer entitles the discounted rate, and the
       // register hides it exactly as the single-member read does.
-      const active = v && !isEvidenceExpired(v.evidenceExpiresAt) ? v : null;
+      //
+      // Nor does a revocation (SCRUM-317). A revoked member's latest evidence
+      // row is the record of an entitlement ENDING, and handing it back as a
+      // verification — `{tier: 'tourist', proofType: 'revoked'}` — described
+      // the member as holding proof of the rate that needs no proof at all.
+      // `memberWithChildren`, which the counter's lookup reads, has filtered
+      // those out since SCRUM-241; a register row now answers the same null,
+      // so a reader cannot get two different stories about one member from
+      // two routes.
+      const active =
+        v && !isTierRevocation(v) && !isEvidenceExpired(v.evidenceExpiresAt) ? v : null;
       return {
         ...r,
         tierVerification: active

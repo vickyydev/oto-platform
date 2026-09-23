@@ -148,6 +148,32 @@ describe('SCRUM-241 — revoking a verified tier', () => {
     expect(revocation!.branchId).toBeTruthy();
   });
 
+  /**
+   * SCRUM-317 — and the register says the same thing as the counter.
+   *
+   * `GET /members` builds its rows in `services/members.ts`, not through
+   * `memberWithChildren`, and it took the newest evidence row as the member's
+   * entitlement. After a revoke that row IS the revocation, so the register
+   * answered `{tier: 'tourist', proofType: 'revoked'}` — a verification of the
+   * rate that needs no document — while `GET /members/:id` answered null for
+   * the same member. Both screens reading it masked it; the contract hole was
+   * real, and a third reader would have believed the register.
+   */
+  it('and the register answers the same null, not a verification of the baseline rate', async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/members?q=Revoke%20Test',
+      headers: { cookie: admin },
+    });
+    expect(res.statusCode).toBe(200);
+    const row = res.json().members.find((m: { id: string }) => m.id === memberId);
+    expect(row).toBeTruthy();
+    expect(row.tierCode).toBe('tourist');
+    expect(row.tierVerification).toBeNull();
+    // Belt and braces on the wire itself: the word must not reach a client.
+    expect(res.body).not.toContain('revoked');
+  });
+
   it('shows both the grant and the revocation in the record-checking list', async () => {
     const res = await ctx.app.inject({
       method: 'GET',

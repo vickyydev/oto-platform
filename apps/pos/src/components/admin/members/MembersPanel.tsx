@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Pencil, Trash2, Plus, Info, Check } from 'lucide-react';
+import { Pencil, Trash2, Plus, Info, Check, Loader2 } from 'lucide-react';
 import type { Member } from '@/types';
 // Sprint 1 rebuild: members come from the platform API (mockApi retired here).
-import { membersApi } from '@/api/platform';
+import { membersApi, type ApiMember } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,14 @@ export function MembersPanel() {
   const [members, setMembers] = useState<Member[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+  /**
+   * The member as the API holds them, read one at a time (SCRUM-231): the
+   * full name, email and staff notes the list row carries but the POS `Member`
+   * type does not, and the children WITH their medical fields, which a
+   * register row does not carry at all (SCRUM-246).
+   */
+  const [editingRecord, setEditingRecord] = useState<ApiMember | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Member | null>(null);
 
   const refresh = () =>
@@ -59,11 +67,32 @@ export function MembersPanel() {
 
   const openAdd = () => {
     setEditingMember(null);
+    setEditingRecord(null);
     setFormOpen(true);
   };
-  const openEdit = (member: Member) => {
-    setEditingMember(member);
-    setFormOpen(true);
+
+  /**
+   * Read the member before the form opens, rather than opening on the list row
+   * and filling in later: the dialog seeds every field from what it is handed,
+   * and a form that gains an email halfway through typing is how an edit gets
+   * lost. A read that fails opens nothing and says so.
+   */
+  const openEdit = async (member: Member) => {
+    setLoadingId(member.id);
+    try {
+      const { member: detail } = await membersApi.get(member.id);
+      setEditingMember(member);
+      setEditingRecord(detail);
+      setFormOpen(true);
+    } catch (err: unknown) {
+      toast({
+        title: "Couldn't open this member",
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingId(null);
+    }
   };
 
   const apiFail = (err: unknown) =>
@@ -81,21 +110,55 @@ export function MembersPanel() {
    * it. Rejects on failure so the dialog stays open holding the entry.
    */
   const handleSave = async (data: MemberFormData): Promise<void> => {
-    const saved = editingMember
-      ? (
-          await membersApi.update(editingMember.id, {
-            nickname: data.nickname,
-            phone: data.phone,
-            preferredChannel: data.preferredChannel ?? null,
-          })
-        ).member
-      : (
-          await membersApi.create({
-            phone: data.phone,
-            nickname: data.nickname,
-            preferredChannel: data.preferredChannel,
-          })
-        ).member;
+    /**
+     * An edit sends the fields that changed and nothing else (SCRUM-321).
+     * This used to PATCH the nickname, phone and channel every time, so a
+     * save with no edits wrote `preferredChannel: "whatsapp"` onto a member
+     * who had never chosen one. An empty patch is a save with nothing in it,
+     * and makes no request at all.
+     */
+    let saved: ApiMember;
+    if (editingMember) {
+      saved =
+        Object.keys(data.patch).length > 0
+          ? (await membersApi.update(editingMember.id, data.patch)).member
+          : (editingRecord ?? (await membersApi.get(editingMember.id)).member);
+    } else {
+      const created = (
+        await membersApi.create({
+          phone: data.phone,
+          nickname: data.nickname,
+          // Only when one was actually picked: `POST /members` leaves the
+          // column null when the field is absent, which is the honest record
+          // of a member who has not chosen a channel.
+          ...(data.preferredChannel ? { preferredChannel: data.preferredChannel } : {}),
+        })
+      ).member;
+      // The create route takes a phone and a nickname; the rest of the
+      // profile follows in one PATCH when the form carried any of it.
+      saved =
+        Object.keys(data.patch).length > 0
+          ? (await membersApi.update(created.id, data.patch)).member
+          : created;
+    }
+
+    /**
+     * Each child's edits go to that child's own route, and one failing says
+     * which child (SCRUM-231): these are allergies and medical notes, so
+     * "some of it saved" is not a thing to leave a staff member guessing at.
+     */
+    for (const c of data.childPatches) {
+      try {
+        await membersApi.updateChild(c.id, c.patch);
+      } catch (err) {
+        await refresh();
+        throw new Error(
+          `the member saved, but ${c.name}'s details did not: ${
+            err instanceof Error ? err.message : 'Unknown error'
+          }`,
+        );
+      }
+    }
 
     if (data.tierChange) {
       try {
@@ -198,10 +261,15 @@ export function MembersPanel() {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => openEdit(member)}
+                          disabled={loadingId === member.id}
+                          onClick={() => void openEdit(member)}
                           aria-label={`Edit ${member.nickname}`}
                         >
-                          <Pencil className="w-4 h-4" />
+                          {loadingId === member.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Pencil className="w-4 h-4" />
+                          )}
                         </Button>
                         <Button
                           variant="outline"
@@ -239,10 +307,15 @@ export function MembersPanel() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => openEdit(member)}
+                    disabled={loadingId === member.id}
+                    onClick={() => void openEdit(member)}
                     aria-label={`Edit ${member.nickname}`}
                   >
-                    <Pencil className="w-4 h-4" />
+                    {loadingId === member.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Pencil className="w-4 h-4" />
+                    )}
                   </Button>
                   <Button
                     variant="outline"
@@ -267,6 +340,7 @@ export function MembersPanel() {
       <MemberFormDialog
         open={formOpen}
         member={editingMember}
+        record={editingRecord}
         onOpenChange={setFormOpen}
         onSave={handleSave}
       />

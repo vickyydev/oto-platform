@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { account, branch, child, employee, member, memberTierVerification, tier } from '@oto/db';
-import { newId, normalizePhone } from '@oto/shared';
+import { TIER_PROOF_TYPES, newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
@@ -463,7 +463,22 @@ export async function memberRoutes(app: App): Promise<void> {
         body: z
           .object({
             toTier: z.string().min(1),
-            evidenceType: z.string().min(1),
+            /**
+             * One of the four document kinds, not free text (SCRUM-315).
+             *
+             * The same `TIER_PROOF_TYPES` the platform's tier-claim route
+             * accepts (SCRUM-307), and for the same reason: `evidence_type`
+             * is what a record check reads as "what was checked", and a
+             * passport NUMBER typed into it — "Passport AA1234567" — puts a
+             * customer's document id in a durable table nothing ever sweeps,
+             * while also making the column useless to count by. The till
+             * only ever sends one of the four names; this closes the contract
+             * so anything else is refused rather than stored.
+             *
+             * `note` below stays free text on purpose: it is where the
+             * "Other" document gets described.
+             */
+            evidenceType: z.enum(TIER_PROOF_TYPES),
             evidenceExpiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
             note: z.string().optional(),
           })
