@@ -27,6 +27,13 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > Watchers wait for Render at `4f4188a` and `7faf1d0` (the superseded
 > watchers on earlier shas were stopped). **341 Deployed** with staging
 > evidence (`4698326`, 16:02).
+>
+> **Owner request (16:08):** `oto-booth-staging` sat in Render's "Ungrouped
+> Services" because it was created through the API without naming the
+> project's environment. Moved into **OTO Platform → staging**
+> (`POST /v1/environments/evm-danh1brtqb8s73bt5pk0/resources`); from now
+> on every service created through the API is added to that environment
+> in the same step (recorded in memory `oto-render-staging`).
 
 > ## Status on 2026-09-23 15:51 — `main` was `bc05e47`; staging was `2731962`; CI green through `2731962`
 >
