@@ -11,7 +11,7 @@ import {
   STATION_DEVICE_ROLES,
   STATION_KINDS,
 } from '@oto/db';
-import { newId } from '@oto/shared';
+import { newId, PaymentRoutingSchema } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { holdsGrantAt } from '../services/access-control';
@@ -110,7 +110,17 @@ const StationDeviceViewSchema = z.object({
   address: z.string().nullable(),
 });
 
-/** A jsonb document whose shape is still moving (S2-10a names the tenders). */
+/**
+ * A jsonb document with no shape of its own — a command's payload, a box's last
+ * status, and a station's payment routing ON THE WAY OUT.
+ *
+ * S2-10a names the tenders (`PaymentRoutingSchema` in `@oto/shared`) and the
+ * WRITE below is validated against them, so a routing value the platform does
+ * not understand can no longer be stored. The READ deliberately stays open:
+ * a response schema is a serializer, and one that refused a row already in the
+ * database would turn a value somebody typed before the vocabulary existed into
+ * a 500 on the whole stations list.
+ */
 const RoutingSchema = z.record(z.string(), z.unknown());
 
 const StationSchema = z.object({
@@ -168,7 +178,7 @@ const StationWriteSchema = z.object({
     .refine((list) => new Set(list.map((d) => d.role)).size === list.length, {
       message: 'One device per role — a second printer on a role is a change of assignment',
     }),
-  paymentRouting: RoutingSchema.nullable().optional(),
+  paymentRouting: PaymentRoutingSchema.nullable().optional(),
   offlineWalletCapSatang: z.number().int().min(0).nullable().optional(),
 });
 

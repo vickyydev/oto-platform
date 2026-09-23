@@ -35,6 +35,15 @@ import { reconcileAppBranches } from '../schema/otoapp';
 import { seedMenu } from './menu';
 import * as s from '../schema/index';
 
+/**
+ * A trading day of sales across every tender (S2-10a), re-exported so that
+ * `@oto/db/seed` is the one door to every fixture. It is NOT part of `seed()`:
+ * the seed builds a park and this fills its till, and a deploy that wants the
+ * first without the second — which is every deploy that has real sales — runs
+ * `pnpm --filter @oto/db seed:demo-day` or nothing at all.
+ */
+export { seedDemoDay, type DemoDayCounts } from './demo-day';
+
 const b = satangFromBaht;
 
 /**
@@ -333,6 +342,42 @@ export async function seed(db: Db = getDb()): Promise<void> {
           requiresVerification: t.requiresVerification,
           sortOrder: i,
         },
+      });
+  }
+
+  /**
+   * Payment methods — the prototype's `seedPaymentMethods`
+   * (catalogStore.ts:786-790), operator-wide because the store says so in as
+   * many words: "paymentMethods (same physical tenders everywhere)"
+   * (catalogStore.ts:71).
+   *
+   * Three rows, and the park has taken money in all three since before this
+   * platform existed. They are upserted rather than created-once, like the
+   * tiers above, because they are reference data: a label corrected here has
+   * to reach a database that already has the row. `enabled` is NOT pushed
+   * back — a park that unticked PromptPay on the Payments panel meant it, and
+   * a sync that re-enabled a tender would put a button back on the till
+   * nobody asked for.
+   *
+   * `code` is the token the money row carries (`pos.payment_attempt
+   * .method_code`) and `kind` is what the platform does about it
+   * (`pos.payment_attempt.method`): the prototype's rule, ported — behaviour
+   * keys off the kind and never off the token (`lib/payments.ts:41,56,65`).
+   */
+  for (const [i, m] of (
+    [
+      { code: 'cash', label: 'Cash', kind: 'cash' },
+      { code: 'card', label: 'Card', kind: 'card' },
+      { code: 'promptpay', label: 'PromptPay', kind: 'qr' },
+    ] as const
+  ).entries()) {
+    await db
+      .insert(s.paymentMethod)
+      .values({ id: newId(), operatorId, ...m, sortOrder: i })
+      .onConflictDoUpdate({
+        target: [s.paymentMethod.operatorId, s.paymentMethod.code],
+        targetWhere: isNull(s.paymentMethod.archivedAt),
+        set: { label: m.label, kind: m.kind, sortOrder: i },
       });
   }
 

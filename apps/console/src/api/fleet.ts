@@ -178,11 +178,16 @@ export interface StationDeviceAssignment {
 /**
  * Which tender goes where.
  *
- * S2-10a is the ticket that names the tenders properly; this is the subset the
- * wizard sets today, and it is deliberately written as "which of this
- * station's assigned devices takes it" rather than as device ids, so moving a
- * terminal between stations does not silently re-route money. Unknown keys the
- * API grows are preserved on write — see `mergeRouting`.
+ * S2-10a named the tenders: the API now validates these three keys on write
+ * against `PaymentRoutingSchema` in `@oto/shared`, so a value outside the
+ * unions below is refused rather than stored. The `| string` on each stays,
+ * because a station configured before that vocabulary existed still has to
+ * render on this page.
+ *
+ * It is deliberately written as "which of this station's assigned devices takes
+ * it" rather than as device ids, so moving a terminal between stations does not
+ * silently re-route money. Unknown keys the API grows are preserved on write —
+ * see `mergeRouting`.
  */
 export interface PaymentRouting {
   /** `card_terminal` takes it on the tethered EDC; `manual` means staff key it in on the terminal itself. */
@@ -273,6 +278,18 @@ export interface BoxHeartbeatRow {
   outboxDepth?: number | null;
 }
 
+/**
+ * What this Console can ask a box to do.
+ *
+ * The fourth copy of a vocabulary that is a CHECK constraint in
+ * `edge.box_command` — the others are `packages/db/src/schema/edge.ts`,
+ * `packages/box-agent/src/protocol.ts` and `apps/api/src/routes/fleet.ts`
+ * (which imports the schema's). A kind offered here that the database refuses
+ * is a 500 on a button press, which is why the list is kept in step even where
+ * this page has no control for one: `simulate` travels through `simulatorApi`
+ * and the two S2-10a kinds are queued by the payment services, so none of the
+ * three appears in `SAFE_COMMANDS`.
+ */
 export const BOX_COMMAND_KINDS = [
   'test_print',
   'config_apply',
@@ -282,6 +299,11 @@ export const BOX_COMMAND_KINDS = [
   'go_offline',
   'go_online',
   'reset_store',
+  'simulate',
+  /** Take a payment on the station's card terminal (S2-10a). */
+  'terminal_sale',
+  /** Open the cash drawer on the receipt printer's RJ11 (S2-10a). */
+  'drawer_kick',
 ] as const;
 export type BoxCommandKind = (typeof BOX_COMMAND_KINDS)[number];
 

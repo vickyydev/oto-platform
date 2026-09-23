@@ -466,6 +466,87 @@ export const productModifierGroup = pos.table(
   ],
 );
 
+// --- Payment methods --------------------------------------------------------
+// S2-10a (SCRUM-206). The tenders the park takes money in, which the prototype
+// keeps in browser memory (`catalogStore.ts:786-790`, three rows: cash, card,
+// promptpay) behind an admin panel that edits them and loses them on refresh.
+//
+// TWO RULES PORTED FROM THE PROTOTYPE, and both are the reason this is a table
+// rather than a constant:
+//
+//   - **The tender list is data, never hardcoded** (`lib/payments.ts:17`). The
+//     till's method grid is sized from this list, so a park that stops taking
+//     PromptPay unticks a row.
+//   - **Behaviour keys off `kind`, never off the token** (`lib/payments.ts:41,
+//     56,65`), so a second card acquirer or a renamed wallet is a row and not a
+//     branch in the code.
+//
+// OPERATOR-WIDE, not per branch: the prototype says so in as many words —
+// "paymentMethods (same physical tenders everywhere)", `catalogStore.ts:71`.
+//
+// `code` is the token stored on the money row (`pos.payment_attempt
+// .method_code`), and `pos.payment_attempt.method` is the behaviour word the
+// ledger groups by. The two are separate because "PromptPay" is a name the park
+// chose and `qr` is what the platform does about it.
+
+/** What a tender DOES. The same four words as `PAYMENT_METHOD_KINDS` in `@oto/shared`. */
+export const PAYMENT_METHOD_KINDS = ['cash', 'card', 'qr', 'other'] as const;
+export type PaymentMethodKind = (typeof PAYMENT_METHOD_KINDS)[number];
+
+export const paymentMethod = pos.table(
+  'payment_method',
+  {
+    id: idPk(),
+    /** `restrict`, as every tenancy column on the money tables is: a tender list is not deletable history. */
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    /**
+     * The token written onto the money row — `cash`, `card`, `promptpay`. The
+     * prototype's `makeId` can never re-mint `credit_card`
+     * (`PaymentMethodsSection.tsx:20-33`) because a legacy token still resolves
+     * to `card` on read (`normalizePaymentMethod`); that rule stays in the POS,
+     * and this column holds whatever the operator's list actually says.
+     */
+    code: text('code').notNull(),
+    /** What the till's button says. */
+    label: text('label').notNull(),
+    kind: text('kind').$type<PaymentMethodKind>().notNull(),
+    /**
+     * Unticked rather than deleted is the ordinary way a tender leaves the
+     * till: a disabled method disappears from the method grid, while every sale
+     * that already names it still reads back correctly.
+     *
+     * The grid is the whole of the enforcement today. `finaliseSale` reads this
+     * row for a tender's KIND and does not ask whether it is ticked, so a call
+     * that names a disabled token is still recorded; refusing one is the admin
+     * half of this ticket, not a property of the column.
+     */
+    enabled: boolean('enabled').notNull().default(true),
+    /** Reorder is a swap of two of these (`PaymentMethodsSection.tsx:69-77`). */
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+    ...archivedAt,
+  },
+  (t) => [
+    index('payment_method_operator_idx').on(t.operatorId),
+    /**
+     * PARTIAL, where the ticket's own sketch said a plain `unique(operator_id,
+     * code)`: archiving a tender has to free its token for a later one
+     * (SCRUM-273's rule, already followed by every other archivable list here),
+     * and a total unique index would make "PromptPay, archived in March" the
+     * permanent owner of `promptpay`. A reader looking for the constraint by
+     * name will find it; a reader counting on it to hold across archived rows
+     * will not.
+     */
+    uniqueIndex('payment_method_code_unique')
+      .on(t.operatorId, t.code)
+      .where(sql`archived_at is null`),
+    check('payment_method_kind_check', sql`${t.kind} in ('cash','card','qr','other')`),
+    check('payment_method_code_check', sql`${t.code} ~ '^[a-z0-9_]{1,40}$'`),
+  ],
+);
+
 // --- Discount codes ---------------------------------------------------------
 // SCRUM-230 (register P10): `STAFF10`, `MEMBER20`, `SAVE100` and `ICECREAM` are
 // mock rows in the prototype's catalog store, their usage counters live in

@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   bigint,
+  boolean,
   check,
   date,
   index,
@@ -15,7 +16,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { idPk, pos, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
-import { box, station } from './fleet';
+import { box, device, station } from './fleet';
 import { child, member, visit } from './members';
 import { branchHoliday, product, ticketPackage } from './catalog';
 import { band, booking } from './future';
@@ -866,25 +867,388 @@ export const saleDiscount = pos.table(
 );
 
 /**
- * One attempt to take money (Sprint 1 `payment`). "Attempt" is deliberate: a
- * card can be declined, a QR can expire, and a sale can carry several attempts
- * before one succeeds — all of which have to survive for the day's
- * reconciliation.
+ * The tender vocabulary, as the DATABASE enforces it.
  *
- * Still the Sprint 1 placeholder shape. S2-10a owns its columns; it moved here
- * from `future.ts` with the ledger it belongs to, so that `sale` and the rows
- * that point at it live in one file.
+ * Three lists, each a CHECK below, and each repeated from `@oto/shared`'s
+ * `payments.ts` — where the till, the Console and the box agent read them —
+ * because a schema file states its own vocabulary rather than importing the
+ * API's (the same rule as `TAXABLE_CATEGORIES` above and `BOX_COMMAND_KINDS` in
+ * `edge.ts`). The two copies are compared character for character by
+ * `packages/db/test/migration-0019.test.ts`, so a word added to one and not the
+ * other fails a test rather than a payment.
+ *
+ * Each word is documented once, in `@oto/shared/payments.ts`. Read it there.
+ */
+export const PAYMENT_METHODS = ['cash', 'card', 'qr', 'wallet', 'voucher', 'transfer'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export const PAYMENT_PROVIDERS = ['simulator', 'ghl', 'digio', '2c2p', 'manual'] as const;
+export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
+
+export const PAYMENT_ATTEMPT_STATUSES = [
+  'created',
+  'sent_to_terminal',
+  'approved',
+  'declined',
+  'cancelled',
+  'unknown',
+  'inquiring',
+  'not_found',
+  'awaiting_staff_confirmation',
+  'awaiting_settlement',
+] as const;
+export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUSES)[number];
+
+/**
+ * ONE ATTEMPT TO TAKE MONEY (S2-10a, SCRUM-206).
+ *
+ * "Attempt" is deliberate and it is the whole design: a card is declined, a QR
+ * expires, a terminal answers nothing at all, and a sale carries several of
+ * these before one succeeds — all of which have to survive for the day to be
+ * reconciled. Until this migration the table was the Sprint 1 placeholder:
+ * `sale_id`, a free-text `method`, an amount, a status with no CHECK, and a
+ * jsonb. One writer, one value ever written (`'approved'`), and nowhere at all
+ * to put a TID, an approval code, a gateway invoice number or the fact that a
+ * terminal never came back.
+ *
+ * FOUR PROPERTIES THE COLUMN SET IS BUILT AROUND.
+ *
+ * 1. **The row is written before the money is asked for.** `created` is the
+ *    first status and `action_id` is unique per operator, so the attempt IS the
+ *    idempotency key: a tender retried down a dropped connection finds the row
+ *    instead of charging the card twice. `status = 'finalised'` on the sale was
+ *    the only net before this, and it stops being sufficient the moment a sale
+ *    can be part-paid.
+ * 2. **Several attempts per sale, and no unique index on `sale_id`.** Split
+ *    tenders and an asynchronous QR both need an approved attempt sitting on an
+ *    unfinalised sale. `outstandingOf` already sums N rows; the shape simply
+ *    must not forbid it.
+ * 3. **It answers the money questions from itself.** `business_date`,
+ *    `station_id`, `operator_id`/`branch_id` and `paid_at` are on the row so
+ *    the end-of-day (S2-15a) groups without a join and without a backfill; the
+ *    tenancy columns are here rather than being read through `sale_id` because
+ *    an attempt can exist before a sale does.
+ * 4. **No PAN, ever.** What an adapter is allowed to keep is
+ *    `ATTEMPT_ALLOW_LIST` in `@oto/shared`, applied where the frame is parsed;
+ *    `packages/telemetry/src/redact.ts` is the second net under every
+ *    `ops_run`. An approval code on THIS row is correct — it is the money
+ *    record — and the same code in an `ops_run.detail` is redacted, because
+ *    that is a page in a browser. The two are not in conflict.
  */
 export const paymentAttempt = pos.table(
   'payment_attempt',
   {
     id: idPk(),
-    saleId: uuid('sale_id').references(() => sale.id),
-    method: text('method').notNull(),
+
+    // --- Whose, where and when ---------------------------------------------
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    /**
+     * Nullable, and that is the point of property 1 above: the attempt can be
+     * opened before the cart is committed — a QR minted while the guest is
+     * still choosing — and is tied to the sale when there is one.
+     */
+    saleId: uuid('sale_id').references(() => sale.id, { onDelete: 'restrict' }),
+    /**
+     * Where it was taken. Null for money that reaches us with no counter in
+     * the path — the booking site's own QR (S2-12), a back-office correction.
+     */
+    stationId: uuid('station_id').references(() => station.id, { onDelete: 'restrict' }),
+    /**
+     * The terminal that answered. Null for cash, for the gateway, and for a
+     * manual entry — three tenders where no device is involved at all, which
+     * is a different fact from a device we failed to record.
+     */
+    deviceId: uuid('device_id').references(() => device.id, { onDelete: 'restrict' }),
+    /** The trading day, resolved from the branch's day start exactly as `sale.business_date` is. */
+    businessDate: date('business_date').notNull(),
+
+    // --- What kind of money -------------------------------------------------
+    /**
+     * `PAYMENT_METHODS` in `@oto/shared` — what KIND of money this was. Not the
+     * tender the park configured: "PromptPay" and a second acquirer's card are
+     * rows in `pos.payment_method`, and behaviour keys off this word so that
+     * renaming one of them changes a label and nothing else.
+     */
+    method: text('method').$type<PaymentMethod>().notNull(),
+    /**
+     * The configured tender's `code` as the till chose it (`pos.payment_method
+     * .code`) — `promptpay`, `cash`. Kept beside `method` because otherwise the
+     * ledger cannot say WHICH card acquirer or WHICH wallet took the money, and
+     * the receipt cannot print the name the park gave it. No foreign key: a
+     * tender archived next year must not take its own history with it.
+     */
+    methodCode: text('method_code'),
+    /**
+     * Who answered. `manual` covers both a staff-keyed approval code and cash —
+     * in both cases a person recorded it and no device or gateway replied.
+     */
+    provider: text('provider').$type<PaymentProvider>().notNull().default('manual'),
+    /** `PAYMENT_ATTEMPT_STATUSES` in `@oto/shared`, which documents each one. */
+    status: text('status').$type<PaymentAttemptStatus>().notNull().default('created'),
+
+    // --- The money ----------------------------------------------------------
+    /** What was asked for. A part payment is a smaller amount, not a smaller sale. */
     amountSatang: bigint('amount_satang', { mode: 'number' }).notNull().default(0),
-    status: text('status').notNull().default('recorded'),
+    /**
+     * Cash: what was handed over and what went back. Columns rather than jsonb
+     * because the cash-up counts them. The till's own change figure, when it
+     * disagrees with the platform's, stays in `payload.tillChangeSatang`: that
+     * is evidence of a disagreement, not a second figure to add up.
+     */
+    tenderedSatang: bigint('tendered_satang', { mode: 'number' }),
+    changeSatang: bigint('change_satang', { mode: 'number' }),
+
+    // --- What the terminal said --------------------------------------------
+    /** The terminal's own reference: 12-char `pos_ref_no` (GHL) or 6-digit (Digio). */
+    terminalRef: text('terminal_ref'),
+    /**
+     * Frozen onto the row rather than read off `core.device` later: a terminal
+     * re-keyed to another merchant next year must not rewrite which merchant
+     * took this money. For GHL they come from the device row (the card wire
+     * carries neither); for Digio they arrive on the frame.
+     */
+    tid: text('tid'),
+    mid: text('mid'),
+    approvalCode: text('approval_code'),
+    /** Four digits. The only part of a card number that may be stored at all. */
+    last4: text('last4'),
+
+    // --- What the gateway said ---------------------------------------------
+    /**
+     * OUR number, one per attempt, and unique FOR EVER — 2C2P refuses a reused
+     * one (`5005`, `9015`), so a re-shown QR is a new attempt with a new
+     * number. Built by `buildInvoiceNo` in `@oto/shared`; the CHECK below is
+     * the same rule as a property of the column.
+     */
+    invoiceNo: text('invoice_no'),
+    /** THEIR references, as they come back on the notification and the inquiry. */
+    tranRef: text('tran_ref'),
+    paymentId: text('payment_id'),
+    /**
+     * The EMVCo payload the display renders. Stored so that showing the QR
+     * again — or re-rendering it after a refresh — never calls the gateway
+     * back. It is a payment instruction, not a credential: it identifies the
+     * merchant and the amount, and it is displayed on a screen to a stranger.
+     */
+    qrPayload: text('qr_payload'),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+
+    // --- How it ended -------------------------------------------------------
+    /** When the money became ours, by whichever signal said so. */
+    paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+    /**
+     * WHO SAID IT WAS PAID when no machine could. Set only on the
+     * `awaiting_staff_confirmation` path — the NEXGO card sale that has no
+     * QUERY to run — and the same decision is written to the audit log beside
+     * it. A confirmation nobody is named on is the thing an investigation is
+     * looking for.
+     */
+    staffConfirmedByAccountId: uuid('staff_confirmed_by').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
+
+    // --- How it reached us --------------------------------------------------
+    /** Taken while the box could not reach the cloud. Shown on the till and on the Sale detail. */
+    offline: boolean('offline').notNull().default(false),
+    /** The box journal position it arrived at, as `sale.box_seq` is. */
+    boxSeq: bigint('box_seq', { mode: 'number' }),
+    /**
+     * `x-oto-action-id`, minted where the person pressed Pay. Three things hang
+     * off it: the replay guard (the unique below), the Box log line, and the
+     * adapter's `ops_run` — which is the acceptance criterion "the action id on
+     * an attempt matches the Box log line and the adapter ops_run".
+     *
+     * Text, not uuid, like `sale.action_id` and `box_command.action_id`: it is
+     * a header value carried till → box → cloud, and the one place it must not
+     * be is a type that refuses to record what actually arrived. The ticket's
+     * own sketch said `uuid`; the two columns this one is compared against are
+     * both `text`, and a `uuid` here would make a replay guard that throws on
+     * the very requests it exists to recognise.
+     */
+    actionId: text('action_id'),
+    /**
+     * The adapter's answer after the allow-list projection, plus the few facts
+     * with no column of their own (`tillChangeSatang`, `expired`). Never the
+     * raw frame — that stays in the simulator.
+     */
     payload: jsonb('payload'),
     ...timestamps,
   },
-  (t) => [index('payment_attempt_sale_idx').on(t.saleId)],
+  (t) => [
+    index('payment_attempt_sale_idx').on(t.saleId),
+    index('payment_attempt_station_idx').on(t.stationId),
+    index('payment_attempt_device_idx').on(t.deviceId),
+    index('payment_attempt_staff_confirmed_idx').on(t.staffConfirmedByAccountId),
+    /** `job:payments.pending`: everything unresolved and older than N minutes. */
+    index('payment_attempt_status_created_idx').on(t.status, t.createdAt),
+    /** The day's takings by tender — the cash-up, and S2-15a's end of day. */
+    index('payment_attempt_operator_date_idx').on(t.operatorId, t.businessDate),
+    index('payment_attempt_branch_date_idx').on(t.branchId, t.businessDate),
+    /** The webhook and the inquiry both arrive holding one of these. */
+    index('payment_attempt_tran_ref_idx').on(t.tranRef),
+    /**
+     * THE GATEWAY'S KEY, and it is unique for ever rather than per day or per
+     * station: 2C2P's own uniqueness is global to the merchant, and a number we
+     * reused would be refused at the counter with nothing a person could act
+     * on. Partial because most attempts — every cash and card one — have none.
+     */
+    uniqueIndex('payment_attempt_invoice_unique')
+      .on(t.invoiceNo)
+      .where(sql`invoice_no is not null`),
+    /**
+     * PRESSING PAY TWICE. The net under the tender path, in the same shape as
+     * `sale_action_unique`: a retry that reached the database twice writes one
+     * attempt, and the second insert is refused rather than charging a second
+     * time. Scoped to the operator because the id is minted on a till.
+     */
+    uniqueIndex('payment_attempt_action_unique')
+      .on(t.operatorId, t.actionId)
+      .where(sql`action_id is not null`),
+    /**
+     * "Refs are unique per terminal per day" — the ticket's own test. The
+     * counter that mints them is `edge.box_counter` under scope `terminal_ref`
+     * (D-1), whose primary key already carries the business date; this is the
+     * net under it for the write that does not come through the box.
+     */
+    uniqueIndex('payment_attempt_terminal_ref_unique')
+      .on(t.deviceId, t.businessDate, t.terminalRef)
+      .where(sql`device_id is not null and terminal_ref is not null`),
+    check(
+      'payment_attempt_method_check',
+      sql`${t.method} in ('cash','card','qr','wallet','voucher','transfer')`,
+    ),
+    check(
+      'payment_attempt_provider_check',
+      sql`${t.provider} in ('simulator','ghl','digio','2c2p','manual')`,
+    ),
+    check(
+      'payment_attempt_status_check',
+      sql`${t.status} in ('created','sent_to_terminal','approved','declined','cancelled','unknown','inquiring','not_found','awaiting_staff_confirmation','awaiting_settlement')`,
+    ),
+    check(
+      'payment_attempt_amount_check',
+      sql`${t.amountSatang} >= 0
+          and (${t.tenderedSatang} is null or ${t.tenderedSatang} >= 0)
+          and (${t.changeSatang} is null or ${t.changeSatang} >= 0)`,
+    ),
+    /**
+     * A SHORT TENDER IS NOT A TENDER. `changeFor` refuses one at the service
+     * (400, rather than recording negative change); this is the same rule where
+     * an import or a psql session cannot walk around it.
+     */
+    check(
+      'payment_attempt_tendered_check',
+      sql`${t.tenderedSatang} is null or ${t.tenderedSatang} >= ${t.amountSatang}`,
+    ),
+    /** The gateway's charset and length, as a property of the column. */
+    check(
+      'payment_attempt_invoice_no_check',
+      sql`${t.invoiceNo} is null or ${t.invoiceNo} ~ '^[A-Z0-9]{1,20}$'`,
+    ),
+    /** Four digits or nothing. The column is the one place a longer string could start to look acceptable. */
+    check('payment_attempt_last4_check', sql`${t.last4} is null or ${t.last4} ~ '^[0-9]{4}$'`),
+    /** A staff confirmation is a status, not a note: the name and the state travel together. */
+    check(
+      'payment_attempt_staff_confirmed_check',
+      sql`${t.staffConfirmedByAccountId} is null or ${t.status} <> 'created'`,
+    ),
+  ],
+);
+
+/**
+ * ONE NOTIFICATION FROM THE PAYMENT GATEWAY, kept as it arrived.
+ *
+ * WHY IT IS NOT A UNIQUE INDEX ON THE ATTEMPT. 2C2P legitimately sends several
+ * notifications about one payment — a pending one and a paid one, a retry after
+ * our 200 was slow — so "this delivery has been seen" is a fact about the
+ * delivery and not about the attempt. `PAYMENT_GATEWAY.md:650-654` names the
+ * key: `(invoiceNo, tranRef)`, falling back to `paymentID` when `tranRef` is
+ * absent. Both spellings are unique indexes below — TWO where the ticket's own
+ * sketch said one `unique(invoice_no, tran_ref)`, because Postgres treats
+ * nulls as distinct and that single index would have let every `tran_ref`-less
+ * delivery through as often as it arrived, which is the exact thing the key
+ * exists to stop. A CHECK closes the third case, the delivery that carries
+ * neither. So a duplicate delivery is refused by the database rather than by
+ * whichever branch of the handler happened to run first.
+ *
+ * WHY THE RAW ENVELOPE IS KEPT. It is the evidence in a dispute — the park says
+ * a guest paid, the bank's statement disagrees — and it is the only copy of
+ * what was actually signed. It is a payment notification, not a credential: it
+ * carries an invoice number, an amount and a masked account number, and the
+ * key that verified it never appears in it.
+ */
+export const paymentNotification = pos.table(
+  'payment_notification',
+  {
+    id: idPk(),
+    /**
+     * The merchant's operator. Resolved from the matched attempt, or — for a
+     * notification whose invoice matches nothing, which is a case the webhook
+     * must still record — from the configured merchant that signed it. A
+     * notification that fails the merchant check is refused before this row is
+     * written and lives only as an `ops_run`.
+     */
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    /** Null when the invoice number matches no attempt — `unmatched_payment`, alerted, answered 200. */
+    attemptId: uuid('attempt_id').references((): AnyPgColumn => paymentAttempt.id, {
+      onDelete: 'restrict',
+    }),
+    invoiceNo: text('invoice_no').notNull(),
+    tranRef: text('tran_ref'),
+    paymentId: text('payment_id'),
+    /** 2C2P's `respCode` as it arrived, before any mapping to our own status words. */
+    respCode: text('resp_code'),
+    receivedAt: timestamp('received_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    /** The decoded claims, and the envelope they were decoded from. */
+    raw: jsonb('raw'),
+    /**
+     * The `ops_run` that recorded the delivery — source IP, headers, outcome.
+     * No foreign key: runs are pruned after a month and this record is the
+     * park's evidence, so the pointer has to outlive what it points at. Same
+     * rule as `sale.source_event_id`.
+     */
+    opsRunId: uuid('ops_run_id'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('payment_notification_attempt_idx').on(t.attemptId),
+    index('payment_notification_operator_idx').on(t.operatorId),
+    index('payment_notification_invoice_idx').on(t.invoiceNo),
+    index('payment_notification_received_idx').on(t.receivedAt),
+    /**
+     * The idempotency key, in two halves because Postgres treats nulls as
+     * distinct: one delivery with a `tranRef`, one without. A single index over
+     * both columns would let the same `tranRef`-less delivery through twice,
+     * which is the exact thing the key exists to stop.
+     */
+    uniqueIndex('payment_notification_tran_unique')
+      .on(t.invoiceNo, t.tranRef)
+      .where(sql`tran_ref is not null`),
+    uniqueIndex('payment_notification_payment_unique')
+      .on(t.invoiceNo, t.paymentId)
+      .where(sql`tran_ref is null and payment_id is not null`),
+    /**
+     * THE KEY IS NOT OPTIONAL. Both indexes above are partial, so a delivery
+     * carrying neither reference is covered by neither and could be written as
+     * many times as it arrived — the one shape that walks between them, and the
+     * exact thing the key exists to stop. A notification with no reference at
+     * all cannot be matched to an attempt or compared with a later one, so it
+     * is not a delivery this table can hold: the handler refuses it and it
+     * lives as an `ops_run` with its envelope, like a bad signature does
+     * (`PAYMENT_GATEWAY.md:640-654`).
+     */
+    check(
+      'payment_notification_key_check',
+      sql`${t.tranRef} is not null or ${t.paymentId} is not null`,
+    ),
+  ],
 );

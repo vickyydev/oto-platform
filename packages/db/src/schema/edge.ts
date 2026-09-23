@@ -49,9 +49,21 @@ import { box, device, station } from './fleet';
  * `SimulateCommandPayloadSchema` in `@oto/shared`, where extending it costs
  * nothing. `edge.sync_event.type` was left un-CHECKed for the same reason.
  *
- * Two simulator actions carry a secret — presenting a badge, typing a PIN —
- * and `payload` is a stored column the Console renders, so those two must not
- * travel this way as they stand. `SIMULATOR_ACTIONS_WITH_SECRETS` names them.
+ * Some simulator actions carry a secret — presenting a badge, typing a PIN,
+ * setting the approval code a simulated terminal will print — and `payload` is
+ * a stored column the Console renders, so those must not travel this way as
+ * they stand. `SIMULATOR_ACTIONS_WITH_SECRETS` names them.
+ *
+ * `terminal_sale` and `drawer_kick` (S2-10a) are the two additions the
+ * simulator's one-kind rule does NOT cover, and the reason is that neither is a
+ * pretence: a tender really is sent to a terminal on a serial cable, and the
+ * drawer really does open. They are ordinary work for the box, with an outcome
+ * a person is waiting on at a counter.
+ *
+ * `terminal_sale` carries no result of its own. The terminal's answer travels
+ * back on its own route — `POST /payments/attempts/:id/result` — exactly as a
+ * print job's outcome does, because the answer can take the whole 120-second
+ * customer-interaction budget to arrive and a command ack cannot wait that long.
  */
 export const BOX_COMMAND_KINDS = [
   'test_print',
@@ -63,6 +75,8 @@ export const BOX_COMMAND_KINDS = [
   'go_online',
   'reset_store',
   'simulate',
+  'terminal_sale',
+  'drawer_kick',
 ] as const;
 export type BoxCommandKind = (typeof BOX_COMMAND_KINDS)[number];
 
@@ -151,7 +165,7 @@ export const boxCommand = edge.table(
     index('box_command_requested_by_idx').on(t.requestedByAccountId),
     check(
       'box_command_kind_check',
-      sql`${t.kind} in ('test_print','config_apply','clear_cache','collect_logs','restart','go_offline','go_online','reset_store','simulate')`,
+      sql`${t.kind} in ('test_print','config_apply','clear_cache','collect_logs','restart','go_offline','go_online','reset_store','simulate','terminal_sale','drawer_kick')`,
     ),
     check(
       'box_command_state_check',
@@ -360,6 +374,17 @@ export const boxPrintJob = edge.table(
  * so the booth's second counter costs a row instead of a migration. No CHECK on
  * `scope`: the vocabulary is still moving with the sprint, and `edge.sync_event
  * .type` was left open for the same reason.
+ *
+ * THE SCOPES IN USE. `booth` and `booth_prize` are the spin caps (S2-07), and
+ * S2-10a adds `terminal_ref` (`TERMINAL_REF_COUNTER_SCOPE` in `@oto/shared`),
+ * with `counter_key` set to the DEVICE id: the reference a payment terminal is
+ * sent — a 12-character `pos_ref_no` for GHL, six digits for Digio — must be
+ * unique per terminal per day, and that is this table's primary key rather than
+ * a new one. `BoxStore.bumpCounter` already mints it atomically, so the whole
+ * of the ticket's `terminal_counter (device_id, next_ref)` is this sentence:
+ * no table, no migration, no store change, and the daily reset comes free.
+ * Voids and inquiries draw from the same counter — both vendors require a
+ * fresh reference for a void, never the original sale's.
  *
  * The primary key leads with `box_id`, which is also the index the foreign key
  * needs, and its `(box_id, scope)` prefix is what `readCounters` scans for a

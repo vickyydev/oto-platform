@@ -433,6 +433,25 @@ export const BOX_COMMAND_KINDS = [
    * while every addition here is a migration.
    */
   'simulate',
+  /**
+   * Take a payment on the station's card terminal (S2-10a). Not a simulator
+   * action: a real tender goes to a real terminal on a serial cable, and the
+   * simulator answers on the same messages.
+   *
+   * **The outcome does not come back on the command's ack.** It travels on its
+   * own route — `POST /payments/attempts/:id/result` — as a print job's outcome
+   * does, because the customer-interaction budget is 120 seconds
+   * (`DEVICE_INVENTORY.md:948`) and a command ack cannot be held open for it.
+   */
+  'terminal_sale',
+  /**
+   * Open the cash drawer. The pulse rides the receipt printer's RJ11 rather
+   * than being a device of its own, so this is a job for the box's print queue;
+   * it is a command kind because the platform does not print a receipt on
+   * finalise yet, and a drawer that opens only when there is paper to print
+   * would be a till nobody could take cash at.
+   */
+  'drawer_kick',
 ] as const;
 export type BoxCommandKind = (typeof BOX_COMMAND_KINDS)[number];
 

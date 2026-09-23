@@ -23,4 +23,5 @@ export * from './device-settings';
 export * from './scanning';
 export * from './booth';
 export * from './booth-code';
+export * from './payments';
 export * from './simulator';

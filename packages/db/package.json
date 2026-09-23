@@ -15,6 +15,7 @@
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "seed": "tsx src/seed/index.ts",
+    "seed:demo-day": "tsx src/seed/demo-day.ts",
     "platform:sync": "tsx src/seed/index.ts --platform-only",
     "snapshot": "tsx scripts/snapshot.ts",
     "verify-schema": "tsx scripts/verify-schema.ts",

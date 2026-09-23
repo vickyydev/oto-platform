@@ -9,6 +9,7 @@ import {
   modifierGroup,
   modifierOption,
   paymentAttempt,
+  paymentMethod,
   product,
   productCategory,
   productModifierGroup,
@@ -21,6 +22,7 @@ import {
   ticketPackage,
   tier,
   visit,
+  type PaymentMethod,
   type SaleClockTrust,
   type SaleLineKind,
   type SalesChannel,
@@ -1646,12 +1648,13 @@ async function tierClaimsOf(
 /**
  * A tender that reached `approved` — money the platform says was taken.
  *
- * `pos.payment_attempt` is still the Sprint 1 placeholder shape and S2-10a
- * owns its columns; what is written here is the minimum a cash tender needs
- * and nothing that pre-empts that ticket's design: the method, the amount, the
- * status, and what was handed over against what came back in change. EDC and
- * QR attach to the same row at the same moment (S2-10a) — an attempt reaching
- * `approved` is what closes a sale, whichever instrument produced it.
+ * One of ten words `pos.payment_attempt.status` now allows (S2-10a), and the
+ * only one `outstandingOf` counts. A cash tender at the counter is approved at
+ * the moment it is recorded; the words either side of it — `sent_to_terminal`,
+ * `unknown`, `awaiting_staff_confirmation` — are for the instruments that
+ * answer over a cable or not at all, and nothing here writes them yet. EDC and
+ * QR attach to the same row: an attempt reaching `approved` is what closes a
+ * sale, whichever instrument produced it.
  */
 const TENDER_APPROVED = 'approved';
 
@@ -2349,6 +2352,62 @@ export interface FinaliseSaleInput {
   pickupCode?: string;
 }
 
+/**
+ * THE LEDGER'S WORD FOR A TENDER, which is not the token the till sent.
+ *
+ * Two columns, and the difference is the whole point of them (S2-10a):
+ * `method_code` is the token the park configured — `cash`, `promptpay`, a
+ * second acquirer's name — and `method` is what KIND of money it was, from a
+ * CHECK, which is what the day's takings are grouped by. The prototype's rule,
+ * ported: behaviour keys off the kind and never off the token
+ * (`apps/pos/src/lib/payments.ts:41`), so a park renaming "PromptPay" changes a
+ * label and nothing else.
+ *
+ * The kind is read from `pos.payment_method`, which is the park's own list.
+ * `credit_card` resolves to `card` first, because the POS has normalised that
+ * legacy token on read since the prototype (`lib/payments.ts:12`) and the
+ * ledger should not be the one place it stops resolving. The till's own
+ * classification is the fallback for a token this operator has no row for — a
+ * till running an older catalogue, a tender archived between the press and the
+ * write.
+ *
+ * A TENDER NOBODY CAN CLASSIFY IS REFUSED rather than guessed at. The list's
+ * fourth kind, `other`, has no word in the ledger's vocabulary: `wallet` and
+ * `voucher` are named there for the tickets that will write them and nothing
+ * maps to them yet, and money filed under the wrong word is a figure in
+ * somebody's day-end report that no later correction can find.
+ */
+async function tenderMethodOf(
+  db: Exec,
+  operatorId: string,
+  methodCode: string,
+  declaredKind: string | undefined,
+): Promise<PaymentMethod> {
+  const code = methodCode === 'credit_card' ? 'card' : methodCode;
+  const [configured] = await db
+    .select({ kind: paymentMethod.kind })
+    .from(paymentMethod)
+    .where(
+      and(
+        eq(paymentMethod.operatorId, operatorId),
+        eq(paymentMethod.code, code),
+        isNull(paymentMethod.archivedAt),
+      ),
+    )
+    .limit(1);
+  const kind = configured?.kind ?? declaredKind;
+  if (kind === 'cash' || kind === 'card' || kind === 'qr') return kind;
+  // Two different refusals, because they are two different things to go and
+  // fix: a tender the park does not have, and a tender whose kind the ledger
+  // cannot file money under.
+  throw errors.badRequest(
+    kind
+      ? `The tender “${methodCode}” is set up as “${kind}”, and the ledger has no word for that kind of money yet`
+      : `This park takes no tender called “${methodCode}”, so the sale cannot record what kind of money it was`,
+    { method: methodCode, kind: kind ?? null },
+  );
+}
+
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
 function changeFor(amountSatang: number, tenderedSatang: number | undefined): number {
   if (tenderedSatang === undefined) return 0;
@@ -2449,14 +2508,28 @@ export async function finaliseSale(
         outstandingSatang: owed,
       });
     }
-    const method = tender.method ?? 'cash';
+    const methodCode = tender.method ?? 'cash';
+    const method = await tenderMethodOf(tx, row.operatorId, methodCode, tender.kind);
     const changeSatang = changeFor(amountSatang, tender.tenderedSatang);
     await tx.insert(paymentAttempt).values({
       id: newId(),
+      // WHOSE, WHERE AND WHEN — copied off the locked sale row rather than
+      // re-derived. The trading day especially: the tender belongs to the day
+      // the sale it settles belongs to, so a cash-up after midnight counts the
+      // late party's money on the day that is finishing (S2-15a groups on
+      // exactly these four columns, with no join and no backfill).
+      operatorId: row.operatorId,
+      branchId: row.branchId,
+      stationId: row.stationId,
+      businessDate: row.businessDate,
       saleId,
       method,
+      methodCode,
       amountSatang,
       status: TENDER_APPROVED,
+      // Money taken at a counter is paid at the moment it is recorded. The
+      // instruments that answer later set this when their answer arrives.
+      paidAt: now,
       payload: {
         ...(tender.kind ? { kind: tender.kind } : {}),
         ...(tender.tenderedSatang === undefined
@@ -2475,7 +2548,9 @@ export async function finaliseSale(
     });
     owed -= amountSatang;
     taken = {
-      method,
+      // The TOKEN, as the audit row has always carried it: what staff chose on
+      // the screen, not the word the ledger files it under.
+      method: methodCode,
       amountSatang,
       changeSatang: tender.tenderedSatang === undefined ? null : changeSatang,
     };

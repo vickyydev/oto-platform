@@ -154,7 +154,11 @@ const SCOPED_BY_PARENT: Record<string, { column: string; parent: string }> = {
   'pos.stock_level': { column: 'stock_location_id', parent: 'pos.stock_location' },
   'pos.attendee': { column: 'booking_id', parent: 'pos.booking' },
   'pos.wallet_entry': { column: 'wallet_id', parent: 'pos.wallet' },
-  'pos.payment_attempt': { column: 'sale_id', parent: 'pos.sale' },
+  // `pos.payment_attempt` was here until S2-10a, scoped through its sale. It
+  // now carries its own `operator_id` and `branch_id` — it has to, because an
+  // attempt can exist before there is a sale to reach them through — so the
+  // rules below hold it directly and the entry would only have hidden it from
+  // them. A list that only ever grows is a list nobody trusts.
   'booth.booth_staff_assignment': { column: 'station_id', parent: 'core.station' },
 };
 

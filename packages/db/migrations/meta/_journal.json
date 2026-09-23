@@ -134,6 +134,13 @@
       "when": 1790139101465,
       "tag": "0018_booking_redemption",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790147179887,
+      "tag": "0019_payment_tenders",
+      "breakpoints": true
     }
   ]
 }

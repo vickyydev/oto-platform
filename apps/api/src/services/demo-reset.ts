@@ -8,6 +8,7 @@ import {
   member,
   memberTierVerification,
   paymentAttempt,
+  paymentNotification,
   sale,
   saleDiscount,
   saleLine,
@@ -73,6 +74,14 @@ const FACT_ENTITY_TYPES = [
   'sale',
   'sale_line',
   'payment_attempt',
+  /**
+   * S2-10a. A gateway notification is a fact of a day of play, and its audit
+   * rows go with it. `payment_method` is NOT here: the tenders the park takes
+   * money in are configuration, like a ticket package or a tax rule, and a
+   * reset that emptied the method list would leave the till with no way to take
+   * money at all.
+   */
+  'payment_notification',
   'wallet',
   'band',
   'stock_level',
@@ -109,6 +118,14 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   // would otherwise make the whole reset fail.
   counts.sale_discount = (
     await tx.delete(saleDiscount).returning({ id: saleDiscount.id })
+  ).length;
+  /**
+   * S2-10a: a gateway notification points at the attempt it settled with ON
+   * DELETE RESTRICT — the evidence of a payment may not be quietly detached
+   * from the payment — so the notifications go first.
+   */
+  counts.payment_notification = (
+    await tx.delete(paymentNotification).returning({ id: paymentNotification.id })
   ).length;
   counts.payment_attempt = (
     await tx.delete(paymentAttempt).returning({ id: paymentAttempt.id })

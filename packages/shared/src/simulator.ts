@@ -33,6 +33,54 @@ export const PRINTER_FAULTS = [
 ] as const;
 export type PrinterFault = (typeof PRINTER_FAULTS)[number];
 
+/**
+ * The six answers a card terminal can be made to give (S2-10a).
+ *
+ * The words are the ticket's own, and each names a branch of the acceptance:
+ * `partial` is an approval for less than was asked (GHL response `10`; Digio
+ * has no partial code, so its simulator answers `100` with an amount tag below
+ * the request, which drives the same refuse-and-void branch), `no_response`
+ * writes nothing back at all, and `inquiry_unavailable` also refuses the
+ * follow-up QUERY — which is a NEXGO card sale's permanent state, not a fault.
+ */
+export const TERMINAL_OUTCOMES = [
+  'approved',
+  'declined',
+  'partial',
+  'no_response',
+  'inquiry_unavailable',
+  'timeout',
+] as const;
+export type TerminalOutcome = (typeof TERMINAL_OUTCOMES)[number];
+
+/**
+ * The five buttons on the gateway simulator panel (S2-10a).
+ *
+ * `late_paid` is a payment that arrives after the attempt expired or was
+ * cancelled — 2C2P's `5017` — and it is here because it is the case the park
+ * will actually meet: a guest who pays the QR after reception gave up and took
+ * cash. `suppress_webhook` is the absence of a notification, so that the
+ * inquiry poller is demonstrated rather than assumed.
+ *
+ * DIFFERENT FROM THE TICKET'S OWN SKETCH, which named five actions —
+ * `gateway.paid`, `gateway.decline`, `gateway.expire`, `gateway.late_paid`,
+ * `gateway.suppress_webhook`. They are one action with this enum instead,
+ * because all five take the same two arguments (which attempt, and what
+ * happens to it) and a discriminated union of five members that differ only in
+ * their literal is five schemas, five branches in the handler and five entries
+ * in every list of action names. The panel still draws five buttons. Anything
+ * reading for a `gateway.*` action name will not find one: read
+ * `action === 'gateway.event'` and switch on `event`.
+ */
+export const GATEWAY_EVENTS = [
+  'paid',
+  'decline',
+  'expire',
+  'late_paid',
+  'suppress_webhook',
+] as const;
+export type GatewayEvent = (typeof GATEWAY_EVENTS)[number];
+
 const WithAction = { actionId: z.string().max(64).optional() };
 
 /**
@@ -88,6 +136,66 @@ export const SimulatorActionSchema = z.discriminatedUnion('action', [
     pin: z.string().min(1).max(32),
     ...WithAction,
   }),
+  /**
+   * What the card terminal does with the NEXT sale sent to it (S2-10a).
+   *
+   * Six outcomes, and every one of them is an acceptance criterion rather than
+   * a convenience: approved and declined are the two the till already draws,
+   * `partial` is the one that must be refused and voided, `no_response` is what
+   * makes the till block and the inquiry rule run, `inquiry_unavailable` is the
+   * permanent state of a NEXGO card sale (the dialect has no card QUERY) and is
+   * what puts the audited staff-confirmation dialog on the screen, and
+   * `timeout` is Digio's `401`.
+   *
+   * It sets a state on the simulated terminal rather than answering a live
+   * sale: the outcome has to be chosen BEFORE the tender is sent, because a
+   * simulator that answered a question it was asked after the fact could not
+   * reproduce "no final response" at all.
+   */
+  z.object({
+    action: z.literal('terminal.outcome'),
+    deviceId: z.string().uuid(),
+    outcome: z.enum(TERMINAL_OUTCOMES),
+    /** For `partial`: what the terminal approves instead of what was asked. */
+    approvedSatang: z.number().int().min(0).optional(),
+    /**
+     * The approval code the terminal prints. Optional — the simulator mints one
+     * when it is not given — and it is why this action is on
+     * `SIMULATOR_ACTIONS_WITH_SECRETS`.
+     */
+    approvalCode: z.string().min(1).max(12).optional(),
+    ...WithAction,
+  }),
+  /**
+   * Move the simulated terminal's own clock, which is what makes the void
+   * windows real: a GHL card void is refused after settlement and a wallet void
+   * after 23:00 (vendor PDF p.15), and Digio answers `205` "already settled".
+   * None of those can be demonstrated without a clock somebody can push.
+   */
+  z.object({
+    action: z.literal('terminal.advance_clock'),
+    deviceId: z.string().uuid(),
+    minutes: z.number().int().min(1).max(60 * 24 * 7),
+    ...WithAction,
+  }),
+  /**
+   * What the QR GATEWAY does next (S2-10a, Slice D).
+   *
+   * Not a device action: it has no `deviceId` because there is no box in the
+   * path — a 2C2P QR is minted by the api and paid in somebody's banking app.
+   * Each of these posts a synthetic notification, signed with the configured
+   * secret, to the real webhook route, so the production path is what the demo
+   * exercises. `suppress_webhook` sends nothing at all, which is how the
+   * inquiry poller — the safety net that must work when 2C2P's callback does
+   * not arrive — is shown to work.
+   */
+  z.object({
+    action: z.literal('gateway.event'),
+    /** The attempt to act on. The panel offers the ones still awaiting payment. */
+    attemptId: z.string().uuid(),
+    event: z.enum(GATEWAY_EVENTS),
+    ...WithAction,
+  }),
 ]);
 export type SimulatorAction = z.infer<typeof SimulatorActionSchema>;
 
@@ -96,15 +204,22 @@ export type SimulatorAction = z.infer<typeof SimulatorActionSchema>;
  *
  * `edge.box_command.payload` is a stored jsonb column that the Console's
  * command history renders, so a badge value or a PIN written into it straight
- * would sit in the database and on a web page. These two actions must be
+ * would sit in the database and on a web page. These actions must be
  * delivered on the station channel rather than through the command queue, or
  * have their value stripped before the row is written. The list is here so the
  * decision is made once, by name, instead of being remembered at each call
  * site.
+ *
+ * `terminal.outcome` joins them for S2-10a: it can carry the approval code the
+ * simulated terminal will print, and an approval code in a stored command
+ * payload is the same mistake as a PIN there. `services/fleet.ts:1605-1611`
+ * refuses every action on this list at the command queue, which is what makes
+ * the station channel the only way it can travel.
  */
 export const SIMULATOR_ACTIONS_WITH_SECRETS: readonly SimulatorAction['action'][] = [
   'badge.present',
   'pin.enter',
+  'terminal.outcome',
 ];
 
 /** The `payload` of an `edge.box_command` with `kind = 'simulate'`. */
