@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 17:23 — `main` is `4e67aab`; staging is `f212a5d` on the api and POS (Render follows CI on `bce63ad`, 364's Console); CI green through `f212a5d`
+> ## Status on 2026-09-23 17:28 — `main` is `8ee9a5d`; staging is `f212a5d` on the api and POS (Render follows CI on `bce63ad`, 364's Console); CI green through `f212a5d`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -217,9 +217,23 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > 17:20 on C1's untracked `terminal-channel.test.ts` — C1's own gate
 > will see it; not 377's.
 >
+> **17:27 — landed tenders Slice E** (`8ee9a5d`, gate MERGE): five thin
+> routes under `/payment-methods` (operator-wide; list with the in-use
+> count, create, update, move, archive), the prototype's rules in
+> `services/payment-methods.ts`, the back-office panel saving for real
+> (its not-saved notice gone, the two mock mutators wired plus `move`),
+> tenders hydrated on every catalogue load; 20 tests, three plants. Two
+> files E owns that the plan's list did not name: `apps/pos/src/api/
+> platform.ts`, `catalogBridge.ts`. **Carried forward:** the ledger still
+> records a sale against a disabled or archived tender — `tenderMethodOf`
+> falls back to the declared kind; the grid is the only enforcement —
+> pinned by two tests, raised as **382** to land right after B (attempt.ts
+> is B's); **383** the till has no unit-test runner. O-7 is in (refuse a
+> used tender's delete, offer disable).
+>
 > **Running:** builds — 376 (`wf_ae659bf6`), 206-B (`wf_d5e69115`),
-> 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`); evidence — 364
-> (`wf_362f0ec3`), 377 (`wf_b77cdffb`). After wave 2:
+> 206-C1 (`wf_0685188f`); evidence — 364 (`wf_362f0ec3`), 377
+> (`wf_b77cdffb`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
