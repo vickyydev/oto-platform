@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 17:05 — `main` is `979626f`; staging is `186316e` on the api and POS (Render follows CI on `f212a5d`, 362's stations); CI green through `186316e`
+> ## Status on 2026-09-23 17:12 — `main` is `bce63ad`; staging is `186316e` on the api and POS (Render follows CI on `f212a5d`, 362's stations); CI green through `186316e`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -168,10 +168,19 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > warning's triangle one shade light). 362's staging pass queued behind
 > Render (`wf_cd6372b0`).
 >
-> **Running:** builds — 364 (`wf_ac4191fc`), 377 (`wf_03dc00ee`), 206-B
-> (`wf_d5e69115`), 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`);
-> evidence — 362 (`wf_cd6372b0`); investigation — 376 (`wf_78e9c6ef`).
-> After wave 2:
+> **17:11 — landed 364** (`bce63ad`, Testing; gate DO NOT MERGE on one
+> false cross-reference in a comment — the till's test print does carry
+> a key per press — corrected by hand with the drawer's opening line,
+> then committed): the Console's Test print presses the station
+> print-jobs route, so the `print_job` row exists before the box prints,
+> the outcome is accepted and the Printing panel lists it; the bare
+> command route is still the trap — the till's Station Setup test print
+> uses it → **381**. Staging pass queued behind Render (`wf_362f0ec3`).
+>
+> **Running:** builds — 377 (`wf_03dc00ee`), 206-B (`wf_d5e69115`),
+> 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`); evidence — 362
+> (`wf_cd6372b0`), 364 (`wf_362f0ec3`); investigation — 376
+> (`wf_78e9c6ef`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
