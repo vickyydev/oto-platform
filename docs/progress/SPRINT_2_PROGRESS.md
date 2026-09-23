@@ -2,7 +2,7 @@
 
 ## Status
 
-_Last updated 2026-09-24, 04:35._
+_Last updated 2026-09-24, 06:02._
 
 > **Resuming? Read `SESSION_HANDOVER.md` → "2026-09-24 — closing S2-09", then
 > "State at the end of 2026-09-23".** It carries the live commit on every staging service, what landed
@@ -13,11 +13,13 @@ _Last updated 2026-09-24, 04:35._
 
 - **Current checkpoint.** CP1 passed; the sprint is inside **S2-10 (payments)**,
   with S2-09b (SCRUM-204) in Testing beside it on one blocker, SCRUM-392 (the
-  scan stream held back by the POS site's rewrite; its fix round is running).
+  scan stream held back by the POS site's rewrite; fixed at `003dac7`, in
+  Testing until its staging pass).
   CP2's remaining line is
   SCRUM-206's own end-to-end evidence, which waits on Slice F.
 
-- **Last landed.** `main` is **`984d04a`** (a docs checkpoint over **`4cad79e`**,
+- **Last landed.** `main` is **`003dac7`** (05:59 — SCRUM-392: the shop screen polls a
+  finite scan tape when its stream cannot open; gate MERGE) over **`4cad79e`**,
   03:28 on the 24th — S2-09b's sizes half: a shop product carries its sizes, the
   shop screen asks for one, a box scan lands on the shop screen; and `f5e5572`,
   02:05 — every screen reads members from the platform, with a CI check that
@@ -30,8 +32,8 @@ _Last updated 2026-09-24, 04:35._
   each.
 
 - **Next.** The owner has said no new tickets are to be picked up and the next
-  order is the owner's to confirm. The recommendation: (0) **SCRUM-392 (High)**, its round running now — the shop
-  screen's scan fallback, inside S2-09b; then 204 and 202 (S2-09) to Deployed;
+  order is the owner's to confirm. The recommendation: (0) **SCRUM-392 (High)**, landed at `003dac7`, its staging pass running —
+  then 392, 204 and 202 (S2-09) to Deployed;
   (1) the D↔C2 seam and
   **SCRUM-391** — a `qr` tender never reaches the gateway — then drive D's QR
   path on staging; (2) **SCRUM-388 (High)**, reserve in-flight tenders, before F;

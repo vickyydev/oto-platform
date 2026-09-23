@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-24, 04:35 (`main` at `984d04a`; staging at `4cad79e`, the sizes commit)_
+_Last updated: 2026-09-24, 06:02 (`main` at `003dac7`; staging at `4cad79e`, `003dac7` deploying)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
@@ -38,8 +38,9 @@ _Last updated: 2026-09-24, 04:35 (`main` at `984d04a`; staging at `4cad79e`, the
   for one, a box scan lands on the shop screen) and proven on staging on the
   24th, except that a scan never reaches the shop screen there: the POS site's
   `/api/*` rewrite holds the station channel's stream back — **SCRUM-392
-  (High)**, whose fix round (the screen polls when the stream cannot open) is
-  running. SCRUM-204 is in Testing on that single blocker; SCRUM-202 waits on it.
+  (High)**, fixed on `main` at `003dac7` (the screen polls when the stream cannot
+  open; gate MERGE, 1,327 api tests) and in Testing until its staging pass.
+  SCRUM-204 is in Testing on that single point; SCRUM-202 waits on it.
 - **The repository is the suite monorepo**: platform at the root, docs split by
   purpose, `imports/` as the local-only drop zone. Remote:
   `github.com/vickyydev/oto-platform` (private).
@@ -65,9 +66,9 @@ _Last updated: 2026-09-24, 04:35 (`main` at `984d04a`; staging at `4cad79e`, the
 owner's to confirm.** The recommendation, with the reasoning in
 `SESSION_HANDOVER.md`:
 
-**Already running, inside S2-09b rather than a new ticket: SCRUM-392 (High)** —
-the shop screen's scan fallback; when it lands and the scan steps hold on
-staging, SCRUM-204 and SCRUM-202 (S2-09) move to Deployed.
+**Landed, inside S2-09b rather than a new ticket: SCRUM-392 (High)** — the shop
+screen's scan fallback (`003dac7`); its staging pass is running; when the scan
+steps hold on staging, 392, SCRUM-204 and SCRUM-202 (S2-09) move to Deployed.
 
 1. The D↔C2 seam and **SCRUM-391** — a `qr` tender never reaches the gateway —
    then drive D's QR path on staging end to end.

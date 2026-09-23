@@ -60,11 +60,33 @@ workflow agent runs there from today — `CLAUDE_CODE_SUBAGENT_MODEL` in
   "Stored as" hint shows +660811111111 for a typed leading 0 (the lookup still
   finds the member). **204 stays in Testing on 392 as its single blocker
   (comment 04:29); 202 stays In Progress (comment 04:29).**
-- **In flight: 392's gated round** (`wf_f016b590`, build → gate, launched
-  04:29 on `claude-opus-5-5`). When it merges: land by explicit file list,
-  push, the staging pass of 204's scan steps through the rewrite, then 204 →
-  Deployed and 202 (S2-09) → Deployed by the walker (both carry images), and
-  the four progress files brought to that state.
+- **392 landed** (`003dac7`, 05:59; gate MERGE — api 1,327/1,327 with ten
+  new tests, the POS build, root lint and the mock-members check; two plants
+  and a local browser proof with the stream held: the scan on the cart 4.08 s
+  after Scan, 1.0 s after the box read it; with the stream free, no poll at
+  all): `lib/station-scan-tape.ts` keeps each station's last hundred scans
+  with a running number, fed where scans are published (the in-process box's
+  manager through `tapeScansOf`, and the api's own scan route in
+  `routes/scanning.ts`); `GET /stations/:id/scans?after=n` reads it under the
+  channel's standing checks and the customer-view redaction, a first call
+  takes the cursor and replays nothing, and a poll never counts on `/ready`;
+  `lib/scanChannel.ts` tries the stream first and polls every 1.5 s when it
+  has not opened in 4 s or the browser reports it closed. Accepted from the
+  gate's notes: a product scan's answer carries the catalogue SKU, which for
+  a size's barcode is the digits on the label (printed on the product, no
+  secret; a band code never travels); `after=0` returns the whole tape to
+  anyone allowed to watch the station — an age limit is due when a handler
+  puts personal data in `detail`; the in-process tap goes in on a station's
+  first channel or poll, so scans before it are not on the tape; the stream
+  is judged by `open` alone — a proxy that passed headers but held the body
+  would need the first snapshot as the test instead. 392 is in **Testing**
+  (cards `392-poll-fallback.png`, `392-plant.png`; comment 06:00).
+- **In flight: the staging pass of the scan steps** (`wf_f6d189f0`, waiting
+  for the five services live at `003dac7`): the Console's scan landing on the
+  shop cart through the rewrite by polling, the unknown code refused on
+  screen, the poll interval and the cursor in the page's own request log.
+  When it holds: 392 → Deployed, 204 → Deployed, 202 (S2-09) → Deployed by
+  the walker, and the progress files brought to that state.
 - **Learned today:** the static sites' `/api/*` rewrite never passes a
   streaming answer — anything a screen must hear live through it needs a
   finite fallback (memory `oto-render-staging`).
