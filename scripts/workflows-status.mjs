@@ -10,9 +10,11 @@
  * this morning resumed interrupted attempts and wrote the word "interrupted"
  * all over their final reports.
  *
- * An agent that was cut off (Stop key, or a declined permission prompt, which
- * cuts every running subagent at once) leaves no `result` and its transcript
- * ends on "[Request interrupted by user". That is the only stopped signal.
+ * An agent that was cut off leaves no `result` and its transcript ends on
+ * the cut itself: "[Request interrupted by user" (the Stop key, or a declined
+ * permission prompt, which cuts every running subagent at once) or the
+ * session-limit message, which ends every running agent the same way. Those
+ * are the only stopped signals.
  *
  * "done" means every phase that started has returned. The journal records no
  * event for the script itself exiting, so a run can sit in `done` for a few
@@ -72,6 +74,9 @@ function tail(file) {
       const text = b.type === 'text' ? b.text : typeof b.content === 'string' ? b.content : '';
       if (text?.includes('[Request interrupted by user')) interrupted = true;
       else if (text?.includes("doesn't want to proceed with this tool use")) interrupted = true;
+      // The session limit ends every running agent at once; the transcript's
+      // last line is the limit message, not a tool call.
+      else if (text?.includes("You've hit your session limit")) interrupted = true;
       else if (b.type === 'tool_use' || (b.type === 'text' && b.text?.trim())) interrupted = false;
     }
   }
