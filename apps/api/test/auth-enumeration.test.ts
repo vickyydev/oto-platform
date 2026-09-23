@@ -10,6 +10,7 @@ import {
   createTestContext,
   lastCode,
   operatorIdByName,
+  signInAs,
   teardownAll,
   type TestContext,
 } from './helpers';
@@ -41,8 +42,9 @@ import {
  * SCRUM-325 adds the channel the bytes do not cover: the CLOCK. Identical
  * answers still sorted the same list of numbers if one class of refusal came
  * back measurably sooner, and one did — argon2 ran only for an active account,
- * so every other class was answered without it. The last describe below
- * measures the paths against each other and pins the difference to noise.
+ * so every other class was answered without it. The last two describes below
+ * measure the paths against each other and pin the difference to noise —
+ * SCRUM-348 adds the unlock screen, which had the same shape.
  */
 
 const MAX_FAILURES = 5;
@@ -62,6 +64,14 @@ const INVITED_FOR_CODES = '+66900000305';
  * apart by a stopwatch.
  */
 const ARCHIVED_OPERATOR = '+66900000310';
+/**
+ * The two locked tills of the unlock measurement (SCRUM-348). Both are
+ * ordinary active accounts and both sign in for real — the second has its
+ * password hash taken away afterwards, because a session can only be opened by
+ * an account that had one.
+ */
+const UNLOCK_LIVE = '+66900000311';
+const UNLOCK_NO_HASH = '+66900000312';
 
 const ACTIVE_PASSWORD = 'active1234pass';
 const WRONG_PASSWORD = 'wrong1234pass';
@@ -110,6 +120,11 @@ beforeAll(async () => {
   await make(INVITED_FOR_CODES, 'invited');
   await make(DEACTIVATED, 'inactive', ACTIVE_PASSWORD);
   await make(ACTIVE, 'active', ACTIVE_PASSWORD);
+  // Their own accounts rather than ACTIVE's: the unlock measurement leaves one
+  // of them without a password hash, and ACTIVE is what every sign-in case
+  // above signs in with.
+  await make(UNLOCK_LIVE, 'active', ACTIVE_PASSWORD);
+  await make(UNLOCK_NO_HASH, 'active', ACTIVE_PASSWORD);
 
   /**
    * A retired tenant of its own, rather than archiving a seeded one: OTO is
@@ -138,9 +153,11 @@ afterAll(async () => {
 });
 
 /**
- * Every case starts with empty counters. They are shared — one per phone and
- * one for the address every inject comes from — so a case that inherited the
- * previous one's would be measuring the order the file happens to run in.
+ * Every case starts with empty counters. They are shared — sign-in keys one
+ * per phone and one for the address every inject comes from (4 × five
+ * failures would close it after four rounds), unlock keys one per session
+ * and one per account — so a case that inherited the previous one's would
+ * be measuring the order the file happens to run in.
  */
 beforeEach(async () => {
   await _resetThrottle(ctx.db);
@@ -336,6 +353,106 @@ describe('password-reset/complete answers every phone the same way (SCRUM-251)',
   });
 });
 
+/** Attempts per class. Enough that one scheduler hiccup is not the median. */
+const ROUNDS = 50;
+
+const median = (xs: number[]): number => {
+  const s = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 === 1 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
+};
+
+/** What one argon2 verification costs here, right now — the unit of the leak. */
+const argon2VerifyCost = async (): Promise<number> => {
+  const stored = await hash(ACTIVE_PASSWORD);
+  const samples: number[] = [];
+  for (let n = 0; n < 15; n++) {
+    const t0 = performance.now();
+    await verify(stored, WRONG_PASSWORD);
+    samples.push(performance.now() - t0);
+  }
+  return median(samples);
+};
+
+/** One refused request. Only its clock and its status are read, never its body. */
+type RefusedCall = () => Promise<{ statusCode: number }>;
+
+/**
+ * Measure a set of refusal classes against each other and hold the spread to
+ * noise.
+ *
+ * Shared by the sign-in classes (SCRUM-325) and the unlock ones (SCRUM-348)
+ * rather than copied: the leak is the same leak on both screens, measured in
+ * the same unit, and two copies of the rounds, the warm-up and the two
+ * assertions would drift apart at the first machine that needed one of them
+ * loosened.
+ */
+async function refusalsCostTheSame(opts: {
+  /** What the printed line calls this measurement. */
+  heading: string;
+  /** The class every other one is compared against. Must be in `classes`. */
+  baseline: string;
+  classes: ReadonlyArray<readonly [string, RefusedCall]>;
+}): Promise<void> {
+  const { heading, baseline, classes } = opts;
+  const samples = new Map<string, number[]>(classes.map(([label]) => [label, []]));
+
+  // Untimed warm-up. The first call into argon2, the connection pool and the
+  // route pays for a cold start, and whichever class went first would
+  // otherwise wear it and be reported as the slow one.
+  for (const [label, call] of classes) {
+    await _resetThrottle(ctx.db);
+    expect((await call()).statusCode, label).toBe(401);
+  }
+
+  for (let round = 0; round < ROUNDS; round++) {
+    // Round-robin, not fifty of one and then fifty of the next: a machine
+    // that gets slower as the suite runs would hand that drift to whichever
+    // class went last, and the test would report it as a finding.
+    for (const [label, call] of classes) {
+      // Outside the clock, and between every attempt: the counters are
+      // shared — per phone or per session, and one for the address every
+      // inject comes from — and each would close part way through the rounds.
+      await _resetThrottle(ctx.db);
+      const startedAt = performance.now();
+      const res = await call();
+      samples.get(label)!.push(performance.now() - startedAt);
+      // A 429, or a 200, would make the numbers above a measurement of
+      // something else entirely.
+      expect(res.statusCode, label).toBe(401);
+    }
+  }
+
+  const medians = new Map([...samples].map(([label, xs]) => [label, median(xs)]));
+  const argonMs = await argon2VerifyCost();
+  const base = medians.get(baseline)!;
+
+  /**
+   * Printed on every run, pass or fail. The numbers ARE the finding here —
+   * an assertion that only said "expected false to be true" would leave the
+   * next person with no way to tell a closed gap from a quiet machine.
+   * Labels only: the phones themselves never go to a log.
+   */
+  const report = [...medians]
+    .map(([label, ms]) => `  ${label.padEnd(23)} ${ms.toFixed(1)}ms`)
+    .join('\n');
+  console.log(
+    `${heading} over ${ROUNDS} attempts each\n${report}\n` +
+      `  (one argon2 verification on this machine: ${argonMs.toFixed(1)}ms)`,
+  );
+
+  for (const [label, ms] of medians) {
+    if (label === baseline) continue;
+    const gap = Math.abs(ms - base);
+    const ratio = Math.max(ms, base) / Math.min(ms, base);
+    const where = `${label} ${ms.toFixed(1)}ms vs ${baseline} ${base.toFixed(1)}ms`;
+    expect(gap, `${where} — gap ${gap.toFixed(1)}ms of a ${argonMs.toFixed(1)}ms verify`).toBeLessThan(
+      argonMs / 2,
+    );
+    expect(ratio, `${where} — ratio ${ratio.toFixed(2)}×`).toBeLessThan(1.5);
+  }
+}
+
 /**
  * SCRUM-325 — the same answer, in the same time.
  *
@@ -364,92 +481,96 @@ describe('password-reset/complete answers every phone the same way (SCRUM-251)',
  * has no account to make — and both fail without it.
  */
 describe('a refusal costs the same work whatever it refuses (SCRUM-325)', () => {
-  /** Attempts per class. Enough that one scheduler hiccup is not the median. */
-  const ROUNDS = 50;
-
-  const median = (xs: number[]): number => {
-    const s = [...xs].sort((a, b) => a - b);
-    const mid = Math.floor(s.length / 2);
-    return s.length % 2 === 1 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
-  };
-
-  /** What one argon2 verification costs here, right now — the unit of the leak. */
-  const argon2VerifyCost = async (): Promise<number> => {
-    const stored = await hash(ACTIVE_PASSWORD);
-    const samples: number[] = [];
-    for (let n = 0; n < 15; n++) {
-      const t0 = performance.now();
-      await verify(stored, WRONG_PASSWORD);
-      samples.push(performance.now() - t0);
-    }
-    return median(samples);
-  };
-
   it('no class of refused phone can be told from another by the clock', async () => {
     /** The baseline every other class is compared against. */
     const BASELINE = 'active, wrong password';
-    const classes: ReadonlyArray<readonly [string, string]> = [
-      [BASELINE, ACTIVE],
-      ['unknown phone', UNKNOWN],
-      ['invited', INVITED],
-      ['deactivated', DEACTIVATED],
-      ['archived operator', ARCHIVED_OPERATOR],
-    ];
-    const samples = new Map<string, number[]>(classes.map(([label]) => [label, []]));
+    await refusalsCostTheSame({
+      heading: 'SCRUM-325 — median sign-in refusal',
+      baseline: BASELINE,
+      classes: [
+        [BASELINE, () => signIn(ACTIVE)],
+        ['unknown phone', () => signIn(UNKNOWN)],
+        ['invited', () => signIn(INVITED)],
+        ['deactivated', () => signIn(DEACTIVATED)],
+        ['archived operator', () => signIn(ARCHIVED_OPERATOR)],
+      ],
+    });
+  }, 240_000);
+});
 
-    // Untimed warm-up. The first call into argon2, the connection pool and the
-    // route pays for a cold start, and whichever class went first would
-    // otherwise wear it and be reported as the slow one.
-    for (const [, phone] of classes) {
+/**
+ * SCRUM-348 — and the locked till leaves by the same door.
+ *
+ * `POST /auth/unlock` verified the password only when there was one to verify
+ * — `Boolean(acc?.passwordHash) && await verify(...)` — so a session whose
+ * account had no hash was refused without argon2, milliseconds before a wrong
+ * password on a normal till. The same shape SCRUM-325 closed on sign-in, in
+ * the file it was closed in, one screen along.
+ *
+ * WHAT IT IS WORTH, honestly: less than the sign-in leak. That one was keyed
+ * on a phone number, so a stranger with a list could sort it; this one is
+ * keyed on a session id nobody can enumerate, and the only person who can put
+ * a request to it is already holding a locked till. It is closed because the
+ * equalised door is right there and a refusal that answers early is a fact
+ * about the account, whoever can read it.
+ *
+ * THE CLASS THIS CAN REACH. The service guards two states — no account row and
+ * no password hash — with one condition. Only the second is reachable through
+ * the route: the session plugin inner-joins `account`, so a session with no
+ * account row is answered 401 by `requireAuth` and never arrives. Nothing in
+ * the code nulls a hash either, which is why the fixture signs in for real and
+ * then takes the hash away: an imported account, a restored dump or a hand-run
+ * UPDATE is where that row comes from, and the guard already anticipates it.
+ */
+describe('an unlock refusal costs the same work whatever it refuses (SCRUM-348)', () => {
+  /** Two locked tills: one whose account has a password, one whose has none. */
+  let liveCookie: string;
+  let hashlessCookie: string;
+
+  beforeAll(async () => {
+    /** Sign in for real, lock the till, and hand back the locked cookie. */
+    const lockedSession = async (phone: string): Promise<string> => {
       await _resetThrottle(ctx.db);
-      expect((await signIn(phone)).statusCode).toBe(401);
-    }
+      const cookie = await signInAs(ctx.app, phone, ACTIVE_PASSWORD);
+      const locked = await ctx.app.inject({ method: 'POST', url: '/auth/lock', headers: { cookie } });
+      expect(locked.statusCode, phone).toBe(200);
+      return cookie;
+    };
 
-    for (let round = 0; round < ROUNDS; round++) {
-      // Round-robin, not fifty of one and then fifty of the next: a machine
-      // that gets slower as the suite runs would hand that drift to whichever
-      // class went last, and the test would report it as a finding.
-      for (const [label, phone] of classes) {
-        // Outside the clock, and between every attempt: the counters are
-        // shared — one per phone, one for the address every inject comes from
-        // — and the per-IP bucket (4 × five) would close after four rounds.
-        await _resetThrottle(ctx.db);
-        const startedAt = performance.now();
-        const res = await signIn(phone);
-        samples.get(label)!.push(performance.now() - startedAt);
-        // A 429, or a 200, would make the numbers above a measurement of
-        // something else entirely.
-        expect(res.statusCode, label).toBe(401);
-      }
-    }
+    liveCookie = await lockedSession(UNLOCK_LIVE);
+    hashlessCookie = await lockedSession(UNLOCK_NO_HASH);
+    // After the session exists, because sign-in is what mints it and sign-in
+    // needs the hash this takes away.
+    await ctx.db
+      .update(account)
+      .set({ passwordHash: null })
+      .where(eq(account.phone, normalizePhone(UNLOCK_NO_HASH)!));
+  });
 
-    const medians = new Map([...samples].map(([label, xs]) => [label, median(xs)]));
-    const argonMs = await argon2VerifyCost();
-    const baseline = medians.get(BASELINE)!;
+  const unlock = (cookie: string) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: '/auth/unlock',
+      headers: { cookie },
+      payload: { password: WRONG_PASSWORD },
+    });
 
-    /**
-     * Printed on every run, pass or fail. The numbers ARE the finding here —
-     * an assertion that only said "expected false to be true" would leave the
-     * next person with no way to tell a closed gap from a quiet machine.
-     * Labels only: the phones themselves never go to a log.
-     */
-    const report = [...medians]
-      .map(([label, ms]) => `  ${label.padEnd(23)} ${ms.toFixed(1)}ms`)
-      .join('\n');
-    console.log(
-      `SCRUM-325 — median sign-in refusal over ${ROUNDS} attempts each\n${report}\n` +
-        `  (one argon2 verification on this machine: ${argonMs.toFixed(1)}ms)`,
-    );
+  it('a session whose account has no password is refused no sooner than a wrong one', async () => {
+    // Not vacuous: both are 401 INVALID_CREDENTIALS with the same body, which
+    // is what leaves the clock as the only thing left to read.
+    const [live, hashless] = await Promise.all([unlock(liveCookie), unlock(hashlessCookie)]);
+    expect(live.statusCode).toBe(401);
+    expect(hashless.body).toBe(live.body);
 
-    for (const [label, ms] of medians) {
-      if (label === BASELINE) continue;
-      const gap = Math.abs(ms - baseline);
-      const ratio = Math.max(ms, baseline) / Math.min(ms, baseline);
-      const where = `${label} ${ms.toFixed(1)}ms vs ${BASELINE} ${baseline.toFixed(1)}ms`;
-      expect(gap, `${where} — gap ${gap.toFixed(1)}ms of a ${argonMs.toFixed(1)}ms verify`).toBeLessThan(
-        argonMs / 2,
-      );
-      expect(ratio, `${where} — ratio ${ratio.toFixed(2)}×`).toBeLessThan(1.5);
-    }
+    /** The baseline: a wrong password on a till whose account has one. */
+    const BASELINE = 'locked till, wrong password';
+    await refusalsCostTheSame({
+      heading: 'SCRUM-348 — median unlock refusal',
+      baseline: BASELINE,
+      classes: [
+        [BASELINE, () => unlock(liveCookie)],
+        ['account with no hash', () => unlock(hashlessCookie)],
+      ],
+    });
   }, 240_000);
 });

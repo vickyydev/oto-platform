@@ -639,6 +639,11 @@ void DUMMY_VERIFY_HASH.catch(() => {});
  * compute it is swallowed: this is a stopwatch's worth of work and never a
  * credential, and turning a refusal into a 500 because the dummy hash could
  * not be minted would be a louder signal than the one being closed.
+ *
+ * Both password screens leave by it: `signIn` (SCRUM-325) and `unlockSession`
+ * (SCRUM-348), each on the refusal paths where no real verification was
+ * spent — an unknown phone, a status refused before the check, an account
+ * with no stored hash.
  */
 async function equalizeVerifyCost(password: string): Promise<void> {
   try {
@@ -960,7 +965,7 @@ export async function lockSession(
  * Unlock by re-entering the password on the SAME session. Throttled per
  * session and per account so an unattended locked till cannot be guessed at;
  * a wrong password never reveals whether the session or the account is at
- * fault.
+ * fault — nor, since SCRUM-348, does the time it takes to say so.
  */
 export async function unlockSession(
   db: Db,
@@ -978,8 +983,21 @@ export async function unlockSession(
   await throttleCheck(db, keys);
 
   const [acc] = await db.select().from(account).where(eq(account.id, opts.accountId)).limit(1);
-  const ok = Boolean(acc?.passwordHash) && (await verify(acc!.passwordHash!, opts.password));
+  /**
+   * Whether the supplied password has been through argon2 against a real
+   * stored hash (SCRUM-348). It has not when the session's account row has
+   * gone or carries no password: there is nothing to verify against, and the
+   * two states are guarded by this one condition.
+   */
+  const verifySpent = Boolean(acc?.passwordHash);
+  const ok = verifySpent && (await verify(acc!.passwordHash!, opts.password));
   if (!ok) {
+    // The work this refusal skipped, paid here — the same dummy verification
+    // every refused sign-in leaves by (SCRUM-325), so a till refused because
+    // its account has no password answers no sooner than one refused for a
+    // wrong password. Before the counters and the audit rows, because those
+    // are the same on both paths and this is what was not.
+    if (!verifySpent) await equalizeVerifyCost(opts.password);
     const lockedBuckets = await throttleFail(db, keys, opts.maxFailures, opts.cooldownSeconds);
     await audit.record(db, {
       actorAccountId: opts.accountId,
