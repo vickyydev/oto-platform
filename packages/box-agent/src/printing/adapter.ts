@@ -23,6 +23,7 @@
 import {
   decodeLabelStatus,
   decodeStatus,
+  drawerKick,
   statusQuery,
   TSPL,
   type LabelStatus,
@@ -102,6 +103,43 @@ export interface PrinterAdapter {
   probe(): Promise<PrinterHealth>;
   /** Put a rendered job on paper. Throws `PrinterError` on anything but success. */
   print(attempt: PrintAttempt): Promise<PrintResult>;
+  /**
+   * Open the cash drawer, and print NOTHING (S2-10a).
+   *
+   * Its own call rather than a print with an empty document, and the two
+   * reasons are both about the till rather than about tidiness:
+   *
+   *  - **A pulse is not a job.** `print` renders a page, feeds paper past the
+   *    blade and cuts it. The platform does not print a receipt on finalise yet
+   *    (S2-13 does), so a drawer that opened by printing would hand every cash
+   *    guest a blank slip and put a metre of paper on the floor by closing time.
+   *  - **The blockers are the opposite way round.** `print` refuses before it
+   *    writes a byte when the roll is out or the cover is open, which is right
+   *    for a receipt and wrong for a drawer: the cash is in the drawer whatever
+   *    the printer's paper is doing, and a till that cannot open it until
+   *    somebody changes the roll is a till with a queue in front of it.
+   *
+   * Throws `PrinterError` when the machine cannot be reached. `supported` is
+   * false on a printer that has no drawer line at all — a band printer — and
+   * that is an answer, not a failure.
+   */
+  pulseDrawer(pulse: DrawerPulse): Promise<DrawerPulseResult>;
+}
+
+/** `ESC p m t1 t2`, as the renderer emits it. §9.3: 24 V / 1 A on RJ11. */
+export interface DrawerPulse {
+  /** 0 for drawer pin 2, 1 for pin 5. */
+  pin: 0 | 1;
+  onMs: number;
+  offMs: number;
+}
+
+export interface DrawerPulseResult {
+  /** False when this printer has no drawer line to pulse. Nothing was written. */
+  supported: boolean;
+  /** How the machine looked on the way past. Never defaulted cheerful. */
+  health: PrinterHealth;
+  elapsedMs: number;
 }
 
 export interface AdapterDeps {
@@ -282,6 +320,28 @@ export function escposAdapter(deps: AdapterDeps): PrinterAdapter {
         return { health: after, written, elapsedMs: Date.now() - startedAt };
       });
     },
+    async pulseDrawer(pulse) {
+      const startedAt = Date.now();
+      return withChannel(async (channel) => {
+        /**
+         * Written with NO blocker in front of it — see the interface. The
+         * status is still read, because a pulse is also the cheapest health
+         * probe this printer will ever get and a till taking cash is exactly
+         * when somebody wants to know the roll is nearly out; but nothing it
+         * says stops the drawer.
+         */
+        try {
+          await channel.write(drawerKick(pulse.pin, pulse.onMs, pulse.offMs));
+        } catch (err) {
+          if (err instanceof PrinterError) throw err;
+          throw new PrinterError('DRAWER_WRITE_FAILED', `${label} closed before the drawer opened`, {
+            cause: err,
+          });
+        }
+        const health = healthFromEscpos(await readEscposStatus(channel), now().toISOString());
+        return { supported: true, health, elapsedMs: Date.now() - startedAt };
+      });
+    },
   };
 }
 
@@ -428,6 +488,20 @@ export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
         }
         return { health, written: 1, elapsedMs: Date.now() - startedAt };
       });
+    },
+    async pulseDrawer() {
+      /**
+       * A band printer has no drawer line: §9.1 lists `cut_kick: none` for this
+       * family, and the renderer's own band template says the same
+       * (`templates/band.ts:136`). Answering `supported: false` rather than
+       * throwing is what lets the caller say "this station's drawer is on the
+       * receipt printer" instead of painting a failure nobody can fix.
+       */
+      return {
+        supported: false,
+        health: unknownHealth(now().toISOString()),
+        elapsedMs: 0,
+      };
     },
   };
 }

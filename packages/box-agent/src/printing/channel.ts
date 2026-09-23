@@ -54,6 +54,10 @@ export type PrinterErrorCode =
   | 'DEVICE_GONE'
   /** The device has no address, so there is nothing to open. */
   | 'DEVICE_NO_ADDRESS'
+  /** The socket died before the cash-drawer pulse reached the printer (S2-10a). */
+  | 'DRAWER_WRITE_FAILED'
+  /** The printer this station's drawer would ride has no drawer line at all. */
+  | 'PRINTER_HAS_NO_DRAWER'
   /** The renderer refused the job — a bitmap wider than the head, say. */
   | 'RENDER_FAILED';
 

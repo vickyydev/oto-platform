@@ -20,7 +20,13 @@ import type { PrintKind, PrintTemplate, PrinterFault } from '@oto/shared';
 import type { BoxConfigBundle, BoxConfigDevice } from '../protocol';
 import { PrinterError, parseAddress, tcpChannel, type ChannelFactory } from './channel';
 import { createPrinterSimulator, type Printout, type PrinterSimulator, type SimulatorEvent } from './simulator';
-import { createPrintSubsystem, profileFor, type PrintRequest, type PrintSubsystem } from './queue';
+import {
+  createPrintSubsystem,
+  profileFor,
+  type DrawerPulseRequest,
+  type PrintRequest,
+  type PrintSubsystem,
+} from './queue';
 
 export * from './channel';
 export * from './adapter';
@@ -41,6 +47,8 @@ export interface PrintingOptions {
 export interface PrintingController {
   readonly jobs: PrintSubsystem;
   submit(request: PrintRequest): ReturnType<PrintSubsystem['submit']>;
+  /** Open a station's cash drawer through its receipt printer (S2-10a). */
+  pulseDrawer(request: DrawerPulseRequest): ReturnType<PrintSubsystem['pulseDrawer']>;
   /** Every simulator this box currently stands up, keyed by device id. */
   simulators(): PrinterSimulator[];
   simulator(deviceId: string): PrinterSimulator | undefined;
@@ -147,6 +155,7 @@ export function createPrinting(options: PrintingOptions): PrintingController {
   return {
     jobs,
     submit: (request) => jobs.submit(request),
+    pulseDrawer: (request) => jobs.pulseDrawer(request),
     simulators() {
       reconcile();
       return [...sims.values()];

@@ -65,6 +65,20 @@ import { audit } from './audit';
  * inside a call, never while either module is still being evaluated.
  */
 import { loadRedemptions, type StoredRedemption } from './bookings';
+/**
+ * The money a box took while it was cut off (S2-10a, Slice G). It lives beside
+ * the cash tender's own service rather than here, because a replayed sale is
+ * priced, numbered and audited by exactly the code the counter uses — this file
+ * owns the envelope, not the sale.
+ */
+import {
+  OfflinePaymentPayloadSchema,
+  OfflineSalePayloadSchema,
+  replayOfflineSale,
+  replayOfflineTender,
+  type ReplayOutcome,
+  type ReplayScope,
+} from './payments/offline';
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
 import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
 import { pinHashesByAccount } from './booth-admin';
@@ -1311,6 +1325,51 @@ const HANDLERS: Record<string, EventHandler> = {
   },
 
   /**
+   * A SALE TAKEN WITH NO INTERNET (S2-10a, Slice G).
+   *
+   * The first money to travel this way, and the reason the ledger was built
+   * with members and visits first: the rules below are the same three every
+   * handler above follows — the tenancy from the credential, the audit row
+   * naming the event, the refusal filed whole — applied to the one kind of fact
+   * where getting it wrong costs the park money rather than a duplicated
+   * record.
+   *
+   * WHAT IS CHECKED HERE AND WHAT IS CHECKED IN `payments/offline.ts`: this is
+   * the door, and a door's job is identity. The station comes off the envelope
+   * (the push loop has already refused one that is not on this box —
+   * `SYNC_STATION_NOT_ON_BOX`, inside each event's own savepoint), the operator
+   * and branch come off the credential, and the account that took the money
+   * must be named. What the sale IS — the price, the tenders, the receipt
+   * number — belongs to the service, which is the same one the counter uses.
+   */
+  'sale.finalised': {
+    schema: OfflineSalePayloadSchema,
+    async apply(tx, scope, event, payload: z.infer<typeof OfflineSalePayloadSchema>) {
+      const replay = replayScope(scope, event);
+      const outcome = await replayOfflineSale(tx, replay, payload);
+      return saleApplied(outcome);
+    },
+  },
+
+  /**
+   * MONEY AGAINST A SALE THE CLOUD ALREADY HOLDS.
+   *
+   * The second half of a split tender, a terminal that answered after the sale
+   * was pushed, a PAX QR the guest paid later. Separate from `sale.finalised`
+   * because it genuinely happens later — and it is refused when its sale has
+   * not arrived rather than filed against nothing; see `replayOfflineTender`,
+   * which is where that rule is written down and why.
+   */
+  'payment.recorded': {
+    schema: OfflinePaymentPayloadSchema,
+    async apply(tx, scope, event, payload: z.infer<typeof OfflinePaymentPayloadSchema>) {
+      const replay = replayScope(scope, event);
+      const outcome = await replayOfflineTender(tx, replay, payload);
+      return saleApplied(outcome);
+    },
+  },
+
+  /**
    * The Lucky Wheel's three facts (S2-07a) — `booth.spin_recorded`,
    * `promo.voucher_issued`, `booth.voucher_printed`, named as the booth module
    * in `@oto/box-agent` queues them. They live in `sync-booth.ts` because what
@@ -1319,6 +1378,89 @@ const HANDLERS: Record<string, EventHandler> = {
    */
   ...BOOTH_HANDLERS,
 };
+
+/**
+ * The identity half of a money event, taken from the credential and the
+ * envelope and never from the payload.
+ *
+ * WHICH INSTANT THE SALE HAPPENED AT is decided here rather than in the
+ * service, because the evidence is here: `prepareEvent` has already weighed the
+ * box's own reported clock offset and chosen the basis the trading day was
+ * computed from. Using anything else would put the sale on one day and its
+ * `business_date` on another.
+ */
+function replayScope(scope: BatchScope, event: PreparedEvent): ReplayScope {
+  const stationId = event.envelope.stationId;
+  if (!stationId) {
+    throw new RefuseEvent(
+      'poison',
+      'SYNC_STATION_MISSING',
+      'A sale has to name the station it was rung up at',
+    );
+  }
+  // The same line `station.takeover` holds, for a stronger reason: a money row
+  // nobody can be named on is the row an investigation is looking for, and
+  // `pos.sale.created_by_account_id` is NOT NULL precisely so it cannot exist.
+  const actorAccountId = event.envelope.actorAccountId ?? null;
+  if (!actorAccountId) {
+    throw new RefuseEvent(
+      'actor_unknown',
+      'SYNC_SALE_ANONYMOUS',
+      'A sale has to name the account that took the money',
+    );
+  }
+  if (!scope.auth.branchId) {
+    throw new RefuseEvent(
+      'poison',
+      'SYNC_BOX_NO_BRANCH',
+      'This box is not at a branch, so it cannot record a sale',
+    );
+  }
+  return {
+    operatorId: scope.auth.operatorId,
+    branchId: scope.auth.branchId,
+    boxId: scope.auth.boxId,
+    stationId,
+    actorAccountId,
+    occurredAt:
+      event.businessDateSource === 'received_at' ? event.receivedAt : event.occurredAt,
+    boxSeq: event.envelope.boxSeq,
+    eventId: event.envelope.eventId,
+    actionId: event.envelope.actionId ?? null,
+  };
+}
+
+/**
+ * What a replayed sale leaves behind, as the ledger records it.
+ *
+ * The anomaly is the one thing worth flagging without refusing: the box showed
+ * a guest a receipt number and the ledger issued a different one, because the
+ * series had moved on while the box was away. Nothing is wrong with either
+ * number — the allocator's is the real one and can never be a duplicate — but
+ * somebody holding the first is going to ask about it, and `late_arrival` is
+ * exactly what happened.
+ */
+function saleApplied(outcome: ReplayOutcome): ApplyResult {
+  return {
+    entityType: 'sale',
+    entityId: outcome.saleId,
+    ...(outcome.receiptDiffers
+      ? {
+          anomalies: [
+            {
+              kind: 'late_arrival' as const,
+              detail: {
+                saleId: outcome.saleId,
+                boxReceiptNumber: outcome.receiptDiffers.box,
+                receiptNumber: outcome.receiptDiffers.ledger,
+                finalised: outcome.finalised,
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+}
 
 /**
  * What a takeover records, wherever it was decided.

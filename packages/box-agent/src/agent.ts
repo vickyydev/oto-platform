@@ -8,9 +8,17 @@ import {
 import { planCacheApply, type CacheFaultReason } from './cache-apply';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
-import { createOutbox, type Outbox } from './outbox';
+import {
+  createOutbox,
+  paymentRecordedFact,
+  saleFinalisedFact,
+  type OfflineReceiptFact,
+  type OfflineSaleFact,
+  type OfflineTenderFact,
+  type Outbox,
+} from './outbox';
 import { createRefusalBackOff } from './reregister';
-import { generateSyncKeyPair, publicKeyFor } from './signing';
+import { generateSyncKeyPair, publicKeyFor, uuidv7 } from './signing';
 import { ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
 import { StationSessionManager } from './station-session';
@@ -287,6 +295,92 @@ export interface BoxAgent {
    * `createBoothHttp` to this.
    */
   booth(): Booth | null;
+  /**
+   * Sales taken with no internet, or null on a box with no store (S2-10a).
+   *
+   * A box with nowhere to write cannot take an offline sale at all — a queue in
+   * memory is a day's takings lost to a power cut — so this answers null rather
+   * than pretending, and the till refuses the tender by name instead of taking
+   * money it cannot account for.
+   */
+  sales(): SaleQueue | null;
+}
+
+/**
+ * TAKING MONEY WITH THE LINK DOWN (S2-10a, Slice G).
+ *
+ * The rule the outbox states — a fact is on disk before the person who caused
+ * it is told it worked — applied to the one fact that is money. The till hands
+ * the sale over, this writes it to the box's own queue, and it reaches the
+ * ledger whenever the mall's internet comes back: minutes, or tomorrow.
+ *
+ * WHAT THE BOX DECIDES AND WHAT IT DOES NOT. It decides three things, all of
+ * them things only a box can know: the journal position (`box_seq`, from the
+ * store's gapless generator), the receipt number to show the guest (from the
+ * high-water mark the cloud last told it), and whether the drawer opens. It
+ * decides NOTHING about what the sale costs — see `OfflineSaleFact.cart`.
+ */
+export interface SaleQueue {
+  /**
+   * Record a whole sale and its money. On disk when this resolves.
+   *
+   * ONE FACT carries both: the cart and every tender that closed the sale
+   * travel inside a single `sale.finalised`, so a box that loses power has
+   * either the whole sale or none of it, and the cloud applies both halves in
+   * one savepoint. `queueAll` is used rather than `queue` because it is the
+   * transaction the multi-fact case needs and a single fact is the same call
+   * with one entry — money that arrives LATER is `recordTender`, which mints a
+   * second fact of its own.
+   */
+  record(request: OfflineSaleRequest): Promise<OfflineSaleAnswer>;
+  /** A later tender against a sale already queued: a split's second half, a late approval. */
+  recordTender(request: OfflineTenderRequest): Promise<OfflineSaleAnswer>;
+  /** Where this station's receipt numbering stands, as the box last heard. */
+  receiptMark(stationId: string): Promise<ReceiptMark | null>;
+}
+
+export interface OfflineSaleRequest extends Omit<OfflineSaleFact, 'saleId' | 'receipt'> {
+  /** Minted at the till. One is minted here when the till did not send one. */
+  saleId?: string;
+  /**
+   * Open the drawer. Defaults to "whenever one of the tenders was cash", which
+   * is the rule the cloud's own cash finalise applies (`payments/drawer.ts`) —
+   * a card payment leaves it shut.
+   */
+  openDrawer?: boolean;
+}
+
+export interface OfflineTenderRequest {
+  saleId: string;
+  stationId: string;
+  actorAccountId: string;
+  tender: OfflineTenderFact;
+  occurredAt?: string;
+  actionId?: string | null;
+  openDrawer?: boolean;
+}
+
+export interface OfflineSaleAnswer {
+  saleId: string;
+  /** What the till shows the guest. Provisional: the cloud allocates the real one. */
+  receipt: OfflineReceiptFact | null;
+  /** The journal position the first of this sale's facts took. */
+  boxSeq: number;
+  /** How many facts this call put on the queue. One, on both paths today. */
+  queued: number;
+  /** What the drawer did. `not_asked` when this sale took no cash. */
+  drawer: 'opened' | 'failed' | 'not_asked';
+  /** Everything still waiting to go up, so the till can say "3 sales to send". */
+  outboxDepth: number;
+}
+
+/** A station's receipt numbering, as the cache bundle last shipped it. */
+export interface ReceiptMark {
+  stationId: string;
+  /** The station's `code_prefix`, which is the series name printed on the number. */
+  prefix: string | null;
+  /** The highest number the CLOUD has issued in this series. 0 means none. */
+  highWaterMark: number;
 }
 
 /** Kept small: it is read by `collect_logs` and it lives in a Pi's memory. */
@@ -1343,6 +1437,193 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
   }
 
+  // --- Sales taken with no internet (S2-10a, Slice G) -----------------------
+
+  /**
+   * The local half of the receipt numbering, and why it is a counter rather
+   * than a stored "next number".
+   *
+   * `edge.box_counter` moves in ONE statement (`store-sql.ts:1160`), so two
+   * tills finishing in the same second cannot both read 41 and both write 42 —
+   * which is the whole of the problem, and is exactly why the terminal
+   * reference counter next door uses the same row.
+   *
+   * THE KEY CARRIES THE MARK. The counter says how many numbers this box has
+   * minted SINCE the cloud last told it where the series stands, so a mark that
+   * has moved starts a fresh run rather than colliding with the numbers the
+   * cloud issued in between. Without the mark in the key, a box that sold five
+   * offline, reconnected, and went offline again would mint those same five
+   * numbers a second time.
+   *
+   * THE DATE IN THE KEY IS PINNED, which is the one unusual thing here: the
+   * other users of this table are daily caps and want the reset that the
+   * primary key's `business_date` gives them. A receipt series is continuous
+   * and does not reset at 5am — a box that was offline across midnight would
+   * otherwise re-issue the numbers it had already shown guests the evening
+   * before.
+   */
+  const RECEIPT_SEQ_SCOPE = 'receipt_seq';
+  const RECEIPT_SERIES_DAY = '1970-01-01';
+  /**
+   * `pos.receipt_series.seq_padding`'s default, which the cache bundle does not
+   * carry. A series configured wider would make the box's PRINTED string differ
+   * from the cloud's while the number itself is the same; the ledger's is
+   * authoritative either way, and the audit row names both.
+   */
+  const RECEIPT_SEQ_PADDING = 6;
+
+  /** The `receipt_series` scope of the cache, as this box last wrote it. */
+  async function receiptMarks(boxId: string): Promise<ReceiptMark[]> {
+    const held = await store?.readBundle(boxId, RECEIPT_SERIES).catch(() => null);
+    const items = (held?.payload as { items?: unknown[] } | undefined)?.items ?? [];
+    const out: ReceiptMark[] = [];
+    for (const raw of items) {
+      const item = raw as Partial<ReceiptMark>;
+      if (typeof item?.stationId !== 'string') continue;
+      out.push({
+        stationId: item.stationId,
+        prefix: typeof item.prefix === 'string' ? item.prefix : null,
+        highWaterMark: typeof item.highWaterMark === 'number' ? item.highWaterMark : 0,
+      });
+    }
+    return out;
+  }
+
+  /**
+   * The number this sale is shown under at the counter.
+   *
+   * REFUSES rather than guesses, in both of the ways it can fail. A box that
+   * has never been told where the series stands would start at 1 and collide
+   * with numbers the cloud has already issued — and offline that collision is
+   * discovered after the money is in the drawer, with the sale quarantined
+   * (`receipt-hwm.test.ts` says exactly this). A station with no code prefix
+   * cannot number a receipt at all, which the cloud refuses at the same point
+   * on the online path (`sale.ts`, "this station has no code prefix"). Both
+   * are configuration somebody can fix in a minute; taking the money first is
+   * what cannot be fixed.
+   */
+  async function mintReceipt(boxId: string, stationId: string): Promise<OfflineReceiptFact> {
+    if (!store) throw new Error('This box has no store, so it cannot number a sale offline');
+    const marks = await receiptMarks(boxId);
+    const mark = marks.find((m) => m.stationId === stationId);
+    if (!mark) {
+      throw new Error(
+        'This box has not been told where this station’s receipt numbering stands, so it cannot number a sale offline',
+      );
+    }
+    if (!mark.prefix) {
+      throw new Error('This station has no code prefix, so it cannot number a receipt');
+    }
+    const since = await store.bumpCounter(
+      boxId,
+      {
+        scope: RECEIPT_SEQ_SCOPE,
+        key: `${stationId}:${mark.prefix}:${mark.highWaterMark}`,
+        businessDate: RECEIPT_SERIES_DAY,
+      },
+      1,
+      new Date(clock()).toISOString(),
+    );
+    const seq = mark.highWaterMark + since;
+    return {
+      series: mark.prefix,
+      seq,
+      number: `${mark.prefix}-${String(seq).padStart(RECEIPT_SEQ_PADDING, '0')}`,
+    };
+  }
+
+  /** Cash opens the drawer; a card leaves it shut. */
+  function tookCash(tenders: readonly OfflineTenderFact[]): boolean {
+    return tenders.some((t) => t.kind === 'cash' || t.methodCode === 'cash');
+  }
+
+  /**
+   * Open the drawer, and never let it fail a sale.
+   *
+   * The money is already in the till and the fact is already on disk by the
+   * time this runs. A printer that has been unplugged is a drawer somebody
+   * opens with the key, not a sale to roll back.
+   */
+  async function openDrawerFor(stationId: string, actionId: string | null): Promise<'opened' | 'failed'> {
+    if (!printing) return 'failed';
+    try {
+      const outcome = await printing.pulseDrawer({ stationId, actionId });
+      if (!outcome.opened) {
+        note('warn', 'the cash drawer did not open for an offline sale', {
+          stationId,
+          errorCode: outcome.errorCode,
+        });
+      }
+      return outcome.opened ? 'opened' : 'failed';
+    } catch (err) {
+      note('error', 'the cash drawer could not be opened', { stationId, err: String(err) });
+      return 'failed';
+    }
+  }
+
+  function saleQueue(): SaleQueue | null {
+    const queue = outbox;
+    const boxId = state.boxId;
+    if (!store || !queue || !boxId) return null;
+    return {
+      async record(request) {
+        const saleId = request.saleId ?? uuidv7();
+        const receipt = await mintReceipt(boxId, request.stationId);
+        /**
+         * THE ORDER IS THE POINT: on disk, then the drawer.
+         *
+         * A drawer that opened for a sale the box then failed to record is
+         * money in a till with no row behind it — the one outcome this whole
+         * path exists to prevent. The other way round, the worst case is a
+         * recorded sale whose drawer has to be opened by hand.
+         */
+        const records = await queue.queueAll([
+          saleFinalisedFact({ ...request, saleId, receipt }),
+        ]);
+        const drawer =
+          (request.openDrawer ?? tookCash(request.tenders))
+            ? await openDrawerFor(request.stationId, request.actionId ?? null)
+            : ('not_asked' as const);
+        const depth = await queue.depth();
+        note('info', 'an offline sale is on the queue', {
+          saleId,
+          stationId: request.stationId,
+          boxSeq: records[0]?.envelope.boxSeq ?? null,
+          receiptNumber: receipt.number,
+          tenders: request.tenders.length,
+          drawer,
+        });
+        return {
+          saleId,
+          receipt,
+          boxSeq: records[0]?.envelope.boxSeq ?? 0,
+          queued: records.length,
+          drawer,
+          outboxDepth: depth.queued,
+        };
+      },
+      async recordTender(request) {
+        const records = await queue.queueAll([paymentRecordedFact(request)]);
+        const drawer =
+          (request.openDrawer ?? tookCash([request.tender]))
+            ? await openDrawerFor(request.stationId, request.actionId ?? null)
+            : ('not_asked' as const);
+        const depth = await queue.depth();
+        return {
+          saleId: request.saleId,
+          receipt: null,
+          boxSeq: records[0]?.envelope.boxSeq ?? 0,
+          queued: records.length,
+          drawer,
+          outboxDepth: depth.queued,
+        };
+      },
+      async receiptMark(stationId) {
+        return (await receiptMarks(boxId)).find((m) => m.stationId === stationId) ?? null;
+      },
+    };
+  }
+
   async function heartbeat(): Promise<BoxHeartbeatAck | null> {
     if (!credential || state.heartbeatsPaused) return null;
     // Read before the guard below, so the toggle coming back on is noticed on
@@ -1726,6 +2007,63 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           },
           errorCode: outcome.errorCode,
           errorMessage: outcome.errorMessage,
+        };
+      }
+      case 'drawer_kick': {
+        /**
+         * CASH IN THE TILL OPENS THE TILL (S2-10a, decision O-4).
+         *
+         * The cloud resolved the station and queued this the moment a cash
+         * tender closed a sale (`services/payments/drawer.ts`); the pulse
+         * itself is the box's, because the drawer hangs off the receipt
+         * printer's RJ11 and the box is what can reach it.
+         *
+         * **The box re-resolves the printer and its answer wins**, which is the
+         * rule every routed job on this agent follows: the cloud names the
+         * device it can see in the fleet table, the box knows what it can
+         * actually talk to, and a printer swapped on the counter this morning
+         * is a fact only one of them has. The cloud's answer is echoed back so
+         * a disagreement is visible in the Console rather than silent.
+         *
+         * A command that could not open the drawer is `failed` — unlike a print
+         * job, whose command succeeds the moment it is routed. There is no
+         * second row here to carry the outcome: the pulse is not queued and has
+         * no `edge.print_job` of its own, so this ack is the only place the
+         * answer can live, and a green command over a drawer that stayed shut
+         * would be the Console lying about the one thing somebody checked.
+         */
+        if (!printing) {
+          return {
+            state: 'failed',
+            errorCode: 'PRINTING_DISABLED',
+            errorMessage: 'This agent was built without its print pipeline, which is what pulses a drawer',
+          };
+        }
+        const stationId = typeof payload.stationId === 'string' ? payload.stationId : null;
+        const role = typeof payload.role === 'string' ? payload.role : null;
+        const outcome = await printing.pulseDrawer({
+          stationId,
+          role,
+          actionId: command.actionId,
+        });
+        return {
+          state: outcome.opened ? 'succeeded' : 'failed',
+          result: {
+            opened: outcome.opened,
+            deviceId: outcome.deviceId,
+            role: outcome.role,
+            stationId: outcome.stationId,
+            elapsedMs: outcome.elapsedMs,
+            // What the money this pulse belongs to was, so the Console's
+            // command history can be read beside the Sale detail.
+            saleId: typeof payload.saleId === 'string' ? payload.saleId : null,
+            attemptId: typeof payload.attemptId === 'string' ? payload.attemptId : null,
+            ...(typeof payload.deviceId === 'string' && payload.deviceId !== outcome.deviceId
+              ? { cloudDeviceId: payload.deviceId }
+              : {}),
+          },
+          errorCode: outcome.errorCode ?? undefined,
+          errorMessage: outcome.errorMessage ?? undefined,
         };
       }
       case 'simulate': {
@@ -2134,6 +2472,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     printing: () => printing,
     terminal: () => terminals,
     booth: () => booth,
+    sales: saleQueue,
     pauseHeartbeats(paused) {
       state.heartbeatsPaused = paused;
       note('info', paused ? 'heartbeats stopped by a test control' : 'heartbeats resumed');

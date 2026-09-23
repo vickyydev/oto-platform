@@ -28,11 +28,14 @@ import { issueClaimCode, type BoxAuth } from '../src/services/box';
  * `sales.test.ts` does, so the mark is read off numbers that were allocated by
  * `allocateReceipt` rather than by this file.
  *
- * WHAT IT DOES NOT PROVE: that a box CONTINUES from the mark. Nothing on the box
- * allocates a receipt number yet — there is no offline sale path in
- * `@oto/box-agent` to allocate one — so there is nothing to test on that side.
- * The bundle is correct for S2-12 to read; the moment that path exists it owes
- * this file a case saying it starts from `max(local, cloud)`.
+ * WHAT IT DOES NOT PROVE, and where that case now lives: that a box CONTINUES
+ * from the mark. It does now — `agent.sales().record()` mints `mark + n` for a
+ * sale taken with no link (S2-10a) — and the case saying so drives the real
+ * agent against the real route, which needs a box, an outbox and a signing key
+ * that this file has none of. It is `sync-sales.test.ts`, "numbers it from the
+ * mark, queues it, opens the drawer, and banks it once". What stays here is the
+ * narrower claim this file exists for: the mark the bundle ships is the last
+ * number the allocator actually issued.
  */
 
 let ctx: TestContext;

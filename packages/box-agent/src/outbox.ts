@@ -69,6 +69,18 @@ export type FlushOutcome =
 export interface Outbox {
   /** Queue a fact. It is on disk when this resolves. */
   queue(fact: QueuedFact): Promise<OutboxRecord>;
+  /**
+   * Queue several facts as ONE: consecutive sequences, one transaction, all of
+   * them or none (S2-10a).
+   *
+   * A sale is the case this exists for. Its money and the sale it paid for must
+   * not be able to half-land — a tender in the cloud with no sale behind it is
+   * money nobody can account for, and a sale with no tender is a receipt the
+   * park thinks was never paid. `store.enqueueMany` seals inside the
+   * transaction, so a signing failure hands every sequence back and the journal
+   * keeps no gap.
+   */
+  queueAll(facts: readonly QueuedFact[]): Promise<OutboxRecord[]>;
   /** Send one bounded batch. Safe to call concurrently; the second call is a no-op. */
   flush(): Promise<FlushOutcome>;
   depth(): Promise<OutboxDepth>;
@@ -107,6 +119,20 @@ export function createOutbox(options: OutboxOptions): Outbox {
     return store.enqueue(
       boxId,
       fact,
+      (draft) => sealEnvelope(draft, boxId, key),
+      clock().toISOString(),
+    );
+  }
+
+  async function queueAll(facts: readonly QueuedFact[]): Promise<OutboxRecord[]> {
+    const key = privateKey();
+    if (!key) {
+      throw new Error('This box has no signing key yet; it cannot queue a fact');
+    }
+    if (facts.length === 0) return [];
+    return store.enqueueMany(
+      boxId,
+      facts,
       (draft) => sealEnvelope(draft, boxId, key),
       clock().toISOString(),
     );
@@ -203,6 +229,7 @@ export function createOutbox(options: OutboxOptions): Outbox {
 
   return {
     queue,
+    queueAll,
     flush,
     depth: () => store.depth(boxId),
     replayLastBatch: (limit = 50) => store.requeueAcked(boxId, limit),
@@ -220,5 +247,152 @@ export function createOutbox(options: OutboxOptions): Outbox {
       if (timer) clearInterval(timer);
       timer = null;
     },
+  };
+}
+
+// --- A sale taken with no internet (S2-10a, Slice G) -------------------------
+
+/**
+ * THE TWO FACTS A SALE TRAVELS AS, and why there are two.
+ *
+ * `sale.finalised` is the whole thing — the cart and every tender that closed
+ * it — in one event, because the sale and its money either both reach the
+ * ledger or neither does. `payment.recorded` is for money that genuinely comes
+ * later: the second half of a split tender taken after the first was pushed, a
+ * terminal that answered minutes after the till gave up, a PAX QR the guest
+ * paid while the sale sat open. The cloud refuses the second when its sale is
+ * not there yet rather than filing money against nothing, so a box that can
+ * send them in one batch should.
+ *
+ * Both names are the cloud's handler keys (`HANDLERS` in
+ * `apps/api/src/services/sync.ts`); an api too old to know them answers
+ * `unknown_type` and the event lands in quarantine with its payload intact,
+ * which is survivable and visible.
+ */
+export const SALE_FINALISED = 'sale.finalised';
+export const PAYMENT_RECORDED = 'payment.recorded';
+
+/**
+ * One tender, as the box took it.
+ *
+ * `methodCode` is the park's own token for the tender and `kind` is what kind
+ * of money it is — the prototype's rule, ported: behaviour keys off the kind
+ * and never off the token, so a park renaming "PromptPay" changes a label and
+ * nothing else. The cloud resolves the token against its own tender list and
+ * falls back to the kind for one it has no row for.
+ *
+ * A CARD TENDER CARRIES WHAT THE TERMINAL SAID and nothing more: the approval
+ * code, four digits, the identities and the references. The box's own parser
+ * has already reduced the masked PAN to `last4` and dropped the cardholder
+ * name (`terminal/`), so there is nothing here that a queue file on a Pi in a
+ * storeroom should not hold.
+ */
+export interface OfflineTenderFact {
+  /** `x-oto-action-id` — the press. The cloud's replay key; one per tender. */
+  actionId: string;
+  methodCode: string;
+  kind?: 'cash' | 'card' | 'qr' | 'other';
+  provider?: 'simulator' | 'ghl' | 'digio' | '2c2p' | 'manual';
+  amountSatang: number;
+  /** Cash only: what was handed over, and what went back. */
+  tenderedSatang?: number;
+  changeSatang?: number;
+  /**
+   * `awaiting_settlement` for money taken on the terminal's own connection —
+   * a PAX QR (Digio `A18`/`A3`), which the acquirer settles without the
+   * platform ever seeing a gateway notification. It is money that is OURS, so
+   * it closes the sale; what is unsettled about it is the reconciliation.
+   */
+  status?: 'approved' | 'awaiting_settlement';
+  deviceId?: string | null;
+  terminalRef?: string | null;
+  tranRef?: string | null;
+  invoiceNo?: string | null;
+  approvalCode?: string | null;
+  last4?: string | null;
+  tid?: string | null;
+  mid?: string | null;
+  responseCode?: string | null;
+  paidAt?: string;
+  reference?: string | null;
+}
+
+/** The receipt number the box showed the guest. Provisional; the cloud allocates the real one. */
+export interface OfflineReceiptFact {
+  series: string;
+  seq: number;
+  number: string;
+}
+
+export interface OfflineSaleFact {
+  /** Minted at the till, so a re-send finds the sale rather than writing a second. */
+  saleId: string;
+  stationId: string;
+  /** Who took the money. The cloud refuses a sale that names nobody. */
+  actorAccountId: string;
+  /**
+   * The cart, exactly as the till composed it.
+   *
+   * OPAQUE TO THE BOX, on purpose — with ONE field named. The box does not
+   * price and must never start: the pricing engine, the tax rules, the tier and
+   * the trading day all live in the cloud, and a second implementation on a Pi
+   * would be a second answer to "what does this cost" that nobody would notice
+   * diverging. What travels is what was sold; what it costs is re-priced on
+   * arrival.
+   *
+   * `expectedTotalSatang` is the exception and it is required here for the
+   * reason it is required on the cloud's own schema: it is what the till
+   * believed it was charging, the cloud compares it and refuses the event on a
+   * disagreement, and a box that could leave it out would be a box whose sales
+   * are banked at a price only one end ever computed. Naming it costs the box
+   * nothing — it does not read it — and it means a till that forgot it is a
+   * type error here rather than a quarantined sale in Phuket.
+   */
+  cart: Record<string, unknown> & { expectedTotalSatang: number };
+  tenders: readonly OfflineTenderFact[];
+  receipt?: OfflineReceiptFact | null;
+  /** The offline staff token the box verified, by its `jti`, where one was used. */
+  staffTokenJti?: string | null;
+  /** The till's clock when the sale was rung up. The cloud weighs it against the box's skew. */
+  occurredAt?: string;
+  actionId?: string | null;
+}
+
+/** The whole sale as one queued fact. */
+export function saleFinalisedFact(sale: OfflineSaleFact): QueuedFact {
+  return {
+    type: SALE_FINALISED,
+    stationId: sale.stationId,
+    actorKind: 'account',
+    actorAccountId: sale.actorAccountId,
+    actionId: sale.actionId ?? null,
+    ...(sale.occurredAt ? { occurredAt: sale.occurredAt } : {}),
+    payload: {
+      saleId: sale.saleId,
+      cart: sale.cart,
+      tenders: sale.tenders.map((tender) => ({ ...tender })),
+      receipt: sale.receipt ?? null,
+      staffTokenJti: sale.staffTokenJti ?? null,
+    },
+  };
+}
+
+/** A tender against a sale that has already been queued or pushed. */
+export function paymentRecordedFact(input: {
+  saleId: string;
+  stationId: string;
+  actorAccountId: string;
+  tender: OfflineTenderFact;
+  occurredAt?: string;
+  actionId?: string | null;
+}): QueuedFact {
+  return {
+    type: PAYMENT_RECORDED,
+    stationId: input.stationId,
+    actorKind: 'account',
+    actorAccountId: input.actorAccountId,
+    actionId: input.actionId ?? input.tender.actionId,
+    ...(input.occurredAt ? { occurredAt: input.occurredAt } : {}),
+    payload: { saleId: input.saleId, tender: { ...input.tender } },
   };
 }

@@ -114,6 +114,45 @@ export interface PrintRequest {
   finish?: Partial<Finish>;
 }
 
+/**
+ * OPEN THE CASH DRAWER (S2-10a), which is not a print job and is routed like one.
+ *
+ * The drawer has no address of its own: the pulse rides the receipt printer's
+ * RJ11 (§7.3), so what has to be resolved is a printer — the same
+ * station-and-role walk every job takes — and then a pulse rather than a page.
+ * `PrinterAdapter.pulseDrawer` says why it is not simply a job with an empty
+ * document.
+ */
+export interface DrawerPulseRequest {
+  /** Which station's drawer. Null routes through any printer on the box. */
+  stationId?: string | null;
+  /**
+   * The role the pulse rides. `receipt` by default, and NOT `cash_drawer`:
+   * that role is how a station says it HAS a drawer, while the bytes go to the
+   * printer the RJ11 hangs off.
+   */
+  role?: string | null;
+  /** Overrides for the pulse itself. The defaults are the park's drawer (§9.3). */
+  pin?: 0 | 1;
+  onMs?: number;
+  offMs?: number;
+  actionId?: string | null;
+}
+
+export interface DrawerPulseOutcome {
+  /** True only when the bytes reached a printer that has a drawer line. */
+  opened: boolean;
+  deviceId: string | null;
+  role: string;
+  stationId: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  elapsedMs: number | null;
+}
+
+/** `ESC p 0 25 250` — 50 ms on, 500 ms off on pin 2, which is the park's wiring (§9.3). */
+const DRAWER_PULSE = { pin: 0 as const, onMs: 50, offMs: 500 };
+
 export type PrintJobStatus = 'queued' | 'printed' | 'failed' | 'skipped';
 
 export interface PrintJobOutcome {
@@ -178,6 +217,18 @@ export interface DurablePrintQueue {
 export interface PrintSubsystem {
   /** Queue a job and attempt it now. Resolves with the outcome of that attempt. */
   submit(request: PrintRequest): Promise<PrintJobOutcome>;
+  /**
+   * Pulse a station's cash drawer, now or not at all (S2-10a).
+   *
+   * NOT QUEUED, and that is the whole difference from `submit`. A receipt that
+   * waits half an hour on an empty roll is still the right receipt; a drawer
+   * that opens half an hour after the guest has gone is a drawer somebody left
+   * open. So there is no retry, no durable row and no waiting: it reaches the
+   * printer or it answers why, and the counter opens the drawer with the key
+   * underneath, which is what every till on earth does when the pulse does not
+   * arrive.
+   */
+  pulseDrawer(request: DrawerPulseRequest): Promise<DrawerPulseOutcome>;
   /** Retry everything that is due. Called from the agent's poll tick. */
   tick(): Promise<PrintJobOutcome[]>;
   /**
@@ -740,6 +791,92 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         jobs.putPrintJob(recordFor(pending, 'queued', box)),
       );
       return run(pending);
+    },
+    async pulseDrawer(request) {
+      const role = request.role ?? ROLE_FOR_KIND.receipt;
+      const routed = routeTo(options.bundle(), role, request.stationId);
+      const base = {
+        role,
+        stationId: request.stationId ?? null,
+        elapsedMs: null as number | null,
+      };
+      if (!routed) {
+        return {
+          ...base,
+          opened: false,
+          deviceId: null,
+          errorCode: 'NO_DEVICE_FOR_ROLE',
+          errorMessage: `No ${role} printer is assigned${
+            request.stationId ? ' to this station' : ' on this box'
+          }, so there is nothing to open a drawer through`,
+        };
+      }
+      const adapter = adapterFor(routed.device);
+      if (adapter instanceof PrinterError) {
+        return {
+          ...base,
+          opened: false,
+          deviceId: routed.device.id,
+          errorCode: adapter.code,
+          errorMessage: adapter.message,
+        };
+      }
+      try {
+        // Behind the same per-device lock as a print job: the pulse is bytes on
+        // the same socket, and writing them into the middle of a receipt would
+        // put `ESC p` where the raster data should be.
+        const result = await serialise(routed.device.id, () =>
+          adapter.pulseDrawer({
+            pin: request.pin ?? DRAWER_PULSE.pin,
+            onMs: request.onMs ?? DRAWER_PULSE.onMs,
+            offMs: request.offMs ?? DRAWER_PULSE.offMs,
+          }),
+        );
+        // A pulse is also a health reading, and a free one: the drawer is
+        // opened at a counter far more often than anybody presses Test print.
+        if (result.supported) health[routed.device.id] = result.health;
+        log(result.supported ? 'info' : 'warn', 'cash drawer pulse', {
+          deviceId: routed.device.id,
+          stationId: request.stationId ?? null,
+          actionId: request.actionId ?? null,
+          supported: result.supported,
+        });
+        return {
+          ...base,
+          opened: result.supported,
+          deviceId: routed.device.id,
+          elapsedMs: result.elapsedMs,
+          errorCode: result.supported ? null : 'PRINTER_HAS_NO_DRAWER',
+          errorMessage: result.supported
+            ? null
+            : `${routed.device.label} has no cash-drawer line, so this station's drawer is on another printer`,
+        };
+      } catch (err) {
+        const error =
+          err instanceof PrinterError
+            ? err
+            : new PrinterError(
+                'DRAWER_WRITE_FAILED',
+                err instanceof Error ? err.message : String(err),
+              );
+        health[routed.device.id] = {
+          ...(health[routed.device.id] ?? unknownHealth(now().toISOString())),
+          reachability: error.code === 'PRINTER_UNREACHABLE' ? 'unreachable' : 'reachable',
+          lastError: error.code,
+          checkedAt: now().toISOString(),
+        };
+        log('error', 'the cash drawer could not be opened', {
+          deviceId: routed.device.id,
+          errorCode: error.code,
+        });
+        return {
+          ...base,
+          opened: false,
+          deviceId: routed.device.id,
+          errorCode: error.code,
+          errorMessage: error.message,
+        };
+      }
     },
     async tick() {
       await ensureResumed();
