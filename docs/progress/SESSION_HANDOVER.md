@@ -4,6 +4,21 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:44 — `main` is `2845135`; staging is `097b73b` (Render is deploying `803428b` → `2845135`); CI green through `6faf3fb`
+>
+> **Since 15:40:** the 353 fix round's gate came back MERGE and landed
+> (`2845135` — the hop count reaches Fastify as a function; the value
+> stays 1, fail-closed; render.yaml's two comment hunks picked out from
+> the other session's deploy-bot block; ref `wip/353` dropped). **The
+> deploy of `2845135` is the first on which `TRUST_PROXY` takes effect** —
+> after it, the measurement written beside the setting decides whether the
+> Cloudflare and Render hops must be trusted by address.
+>
+> **Running:** gates — 361 (`wf_6be21778`), 206-A (`wf_9a136b60`); builds
+> — 352 (`wf_efab2ab6`), 358 (`wf_69884d8d`), 359 (`wf_4aea465b`), 363
+> (`wf_0834f8e9`), 363b (`wf_b2d75153`); evidence — the beacb6d batch
+> (`wf_300def37`). Watchers wait for Render at `803428b` … `2845135`.
+
 > ## Status on 2026-09-23 15:40 — `main` is `2731962`; staging is `097b73b` (Render is deploying `803428b` → `2731962`); CI green through `6faf3fb`
 >
 > **Since 15:34:** landed **341** (`2731962` — the F&B item and category
