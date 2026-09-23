@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 17:32 — `main` is `75ee360`; staging is `bce63ad` on the api and Console (Render follows CI on `4e67aab` and `8ee9a5d`); CI green through `bce63ad`
+> ## Status on 2026-09-23 17:40 — `main` is `8455b48`; staging is `4e67aab` on the api and Console (Render follows CI on `8ee9a5d`, E's payment methods); CI green through `4e67aab`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -239,9 +239,29 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > staging (358's press had none). Left on staging: that command and its
 > job row. E's staging pass queued (`wf_ef2bc5c4`).
 >
+> **17:38 — C1's gate: DO NOT MERGE, fix round launched**
+> (`wf_0d8bd0bd`; the pre-fix tree is on `wip/206-C1` = `89534f5`, 41
+> files, +6,927). The protocol work held against the vendor documents
+> (the CRC generator, the two code spaces, the tag tables, the counter);
+> two blockers: the amount-mismatch rule lives in the shared answer
+> readers and so reads a successful void or an amount-less GHL inquiry as
+> `partial_approval` — under the handover's own mapping that would
+> decline-and-void a sale the guest paid for; and the contract comment
+> "no path from a wire frame to a log" is false — the simulators' tape
+> records raw frames (masked PAN and cardholder on a Digio A1) through
+> `TerminalController.events`. Also: `packages/box-agent/src/index.ts`
+> gained a barrel export (six lines, outside the plan's list — needed so
+> C2 can import the contract); the report's "one 6+ digit literal" was
+> nine, all benign.
+>
+> **17:39 — 377 Deployed** with staging evidence at `4e67aab`: both
+> dialogs on `body` at the full viewport, a press at each button's centre
+> lands on the button, Cancel closes creating nothing; nothing left on
+> staging.
+>
 > **Running:** builds — 376 (`wf_ae659bf6`), 206-B (`wf_d5e69115`),
-> 206-C1 (`wf_0685188f`); evidence — 377 (`wf_b77cdffb`), 206-E
-> (`wf_ef2bc5c4`). After wave 2:
+> C1 fix round (`wf_0d8bd0bd`); evidence — 206-E (`wf_ef2bc5c4`). After
+> wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
