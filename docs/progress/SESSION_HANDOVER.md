@@ -4,7 +4,12 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 15:47 — `main` is `ce8a9d9`; staging is `097b73b` (Render is deploying `803428b` → `ce8a9d9`); CI green through `2731962`
+> ## Status on 2026-09-23 15:51 — `main` is `bc05e47`; staging is `2731962` (Render is deploying `2845135` → `ce8a9d9`); CI green through `2731962`
+>
+> **Since 15:47:** staging reached `2731962` (341 included) — the 341
+> evidence pass launched (`wf_bc39bddd`); the beacb6d batch is capturing.
+
+> ## Status on 2026-09-23 15:47 — `main` is `ce8a9d9`; staging was `097b73b`; CI green through `2731962`
 >
 > **Since 15:40:** landed **361** (`ce8a9d9` — a box's replayed visit is
 > refused whole when a child is not the member's own or is archived).
