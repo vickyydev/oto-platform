@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 18:21 — `main` is `51fd025`; staging is `9b86938` on the api and POS (Render follows CI on `51fd025`); CI green through `9b86938`
+> ## Status on 2026-09-23 18:30 — `main` is `c61289d`; staging is `9b86938` on the api and POS (Render follows CI on `51fd025`, `af1e41c`, `c61289d`); CI green through `9b86938`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -344,9 +344,18 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > still the egress for what has not signed in — by definition, with its
 > ceiling at 50. 367 walked to Deployed on the same evidence.
 >
-> **Running:** builds — tenders sync (`wf_581116c6`), D (`wf_987e09f1`),
-> C2 (`wf_5922a49a`); evidence — 376 measurement (`wf_f1d12c3d`), 206-B
-> (`wf_81b0abc0`). After wave 3: F and G (G after C1 — now free — and
+> **18:28 — landed 384** (`c61289d`, gate MERGE — the gate's own live
+> probe: archived all three then synced → nothing resurrected, the guard
+> is "zero rows including archived"; the full api suite 1,203 green
+> beside it): `platformSync` writes cash/card/promptpay for a park with
+> none through `seed/tenders.ts`, the seed sharing the one list; seven
+> tests. Staging keeps the three E's pass typed in; its staging pass
+> reads the rows unchanged across the deploy and shows the fresh case on
+> a throwaway database (`wf_dcbd81d4`). Known and pinned: the demo seed's
+> second park gets its tenders on the following sync.
+>
+> **Running:** builds — D (`wf_987e09f1`), C2 (`wf_5922a49a`); evidence
+> — 206-B (`wf_81b0abc0`), 384 (`wf_dcbd81d4`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
