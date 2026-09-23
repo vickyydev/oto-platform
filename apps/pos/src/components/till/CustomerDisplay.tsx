@@ -366,7 +366,18 @@ export function CustomerDisplay({
               return (
                 <div key={line.id} className="bg-foreground/5 rounded-3xl p-6 border border-foreground/10">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-2xl font-bold">{resolveName(line.ticketType, lang)}</div>
+                    {/* The card's title. While the length is still to be chosen
+                        the ticket on the line is the placeholder — the first
+                        package in the catalog — so naming it printed "1 Hour
+                        Play" at the family for a length nobody had picked,
+                        above a card whose every figure was already a dash
+                        (SCRUM-355). The line's data is untouched: it is the
+                        title that stops naming a length until one exists. */}
+                    <div className="text-2xl font-bold">
+                      {lineAwaitingLength
+                        ? t('till.order.dropOffChooseLength')
+                        : resolveName(line.ticketType, lang)}
+                    </div>
                     <div className="text-2xl font-bold text-primary">
                       {lineUnpriced || lineAwaitingLength ? '—' : `฿${line.lineTotal}`}
                     </div>

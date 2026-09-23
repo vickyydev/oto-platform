@@ -43,6 +43,11 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'till.order.yourOrder': { en: 'Your Order', zh: '您的订单', th: 'คำสั่งซื้อของคุณ', ru: 'Ваш заказ', fr: 'Votre commande' },
   'till.order.building': { en: 'Building your order…', zh: '正在为您准备订单…', th: 'กำลังจัดเตรียมคำสั่งซื้อของคุณ…', ru: 'Формируем ваш заказ…', fr: 'Préparation de votre commande…' },
   'till.order.complimentary': { en: 'Complimentary — enjoy!', zh: '免费赠送——尽情享用！', th: 'ของฟรี — เชิญเพลิดเพลิน!', ru: 'Бесплатно — приятного пользования!', fr: 'Offert — profitez-en !' },
+  // The title of a drop-off child's line while staff have not chosen the play
+  // length yet. It names no length, because none has been chosen: the card
+  // carries the placeholder ticket only so the line has a type (lib/dropoff.ts),
+  // and until then every figure on the card is a dash (SCRUM-350/355).
+  'till.order.dropOffChooseLength': { en: 'Drop-off — choose a play length', zh: '托管 — 请选择游玩时长', th: 'รับฝากเด็ก — เลือกระยะเวลาเล่น', ru: 'Присмотр — выберите длительность игры', fr: 'Garde — choisissez une durée de jeu' },
   'till.order.discountCode': { en: 'Discount code', zh: '优惠码', th: 'รหัสส่วนลด', ru: 'Промокод', fr: 'Code promo' },
   'till.order.discount': { en: 'Discount', zh: '折扣', th: 'ส่วนลด', ru: 'Скидка', fr: 'Remise' },
   'till.input.yourTurn': { en: 'Your turn', zh: '轮到您了', th: 'ถึงตาคุณ', ru: 'Ваша очередь', fr: 'À votre tour' },
