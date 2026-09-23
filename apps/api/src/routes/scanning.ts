@@ -17,6 +17,7 @@ import { AppError } from '../lib/errors';
 import { boxStoreFor } from '../lib/box-store';
 import { virtualBoxAgent } from '../services/box';
 import { registerProductBarcodeHandler } from '../services/scanning-product';
+import { publishStationScan } from '../services/station-scans';
 import { loadStationRow, managerForStation } from '../services/station-session';
 
 /**
@@ -117,7 +118,11 @@ export async function scanningRoutes(app: App): Promise<void> {
       new ScanRouter({
         boxId,
         store: boxStoreFor(app.db),
-        publish: (id, message) => manager.emitScan(id, message),
+        // Onto the station's scan tape as well as out to the screens attached
+        // here: a screen that polls is never attached (SCRUM-392,
+        // `services/station-scans.ts`). The agent's router needs no such line —
+        // its manager's scans are taped where the box is joined.
+        publish: (id, message) => publishStationScan(manager, id, message),
         log: app.log,
       });
     // The product barcode handler (S2-09b). Registered here rather than at boot

@@ -23,6 +23,11 @@
  * station reading as busy for the life of the process, which is worse than not
  * reporting at all, so both halves live in that single function rather than
  * being spread across four event handlers.
+ *
+ * A screen that reads the station's scans by polling `GET /stations/:id/scans`
+ * instead (SCRUM-392) is NOT counted here. A poll ends with its answer, so it
+ * is not a connection, and a count that rose and fell with every poll would
+ * report a station as watched for a few milliseconds every second and a half.
  */
 
 const perStation = new Map<string, number>();

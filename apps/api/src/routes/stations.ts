@@ -24,7 +24,7 @@ import {
   stationLink,
   type StationRow,
 } from '../services/station-session';
-import { relayInProcessBoxScans } from '../services/station-scans';
+import { readStationScans, relayInProcessBoxScans } from '../services/station-scans';
 
 /**
  * The station session document, over HTTP (S2-05).
@@ -47,7 +47,10 @@ import { relayInProcessBoxScans } from '../services/station-scans';
  *     rather than a WebSocket: nothing travels UP it, the intents above are
  *     ordinary requests, and an EventSource reconnects on its own where a
  *     socket needs a reconnect loop written by hand. It is also the one thing
- *     `/ready` can count, so it opens and closes `stationChannels`.
+ *     `/ready` can count, so it opens and closes `stationChannels`. Its scans
+ *     can also be READ, finitely, from `GET /stations/:id/scans`, by a screen
+ *     that cannot hold a stream open at all (SCRUM-392) — a poll, which is not
+ *     a connection and is not counted.
  *   - **The link** — what the till's banner reads to say whether the counter
  *     is working with the internet or without it.
  *
@@ -86,6 +89,31 @@ import { relayInProcessBoxScans } from '../services/station-scans';
 
 const IdParams = z.object({ id: z.string().uuid() });
 const ViewQuery = z.object({ view: z.enum(STATION_VIEWS).default('staff') });
+const ScansQuery = ViewQuery.extend({
+  /** The `next` of the previous answer. Absent on a screen's first call. */
+  after: z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+});
+
+/** One scan as the channel sends it (`StationScanMessage`): the fingerprint, never the code. */
+const ScanMessageSchema = z.object({
+  kind: z.literal('scan'),
+  source: z.string(),
+  codeKind: z.string(),
+  codeFingerprint: z.string(),
+  outcome: z.string(),
+  handler: z.string().nullable(),
+  errorCode: z.string().nullable(),
+  detail: z.record(z.string(), z.unknown()).nullable(),
+  actionId: z.string().nullable(),
+  scannedAt: z.string(),
+});
+
+const ScansSchema = z.object({
+  /** What to send as `after` on the next call. */
+  next: z.number().int(),
+  /** Oldest first; never more than the tape keeps (`STATION_SCAN_TAPE_SIZE`). */
+  scans: z.array(ScanMessageSchema),
+});
 
 /** The document as it goes out. Open records, because their shapes are later tickets'. */
 const LeaseSchema = z.object({
@@ -487,6 +515,57 @@ export async function stationSessionRoutes(app: App): Promise<void> {
     },
   );
 
+  // --- The channel's scans, for a screen that cannot hold it open ------------
+
+  /**
+   * The same scans the channel sends as `event: scan`, as a finite read.
+   *
+   * Why a screen needs it (SCRUM-392): on staging the POS is a static site,
+   * and its `/api/*` rewrite on Render never passes a streaming answer through
+   * — the channel above got no status, no headers and no bytes for minutes
+   * there, while the same URL on the api's own origin answered at once. The
+   * `x-accel-buffering: no` and the keepalive comments in `openChannel` do not
+   * reach a rewrite that waits for the end of the answer. So a screen whose
+   * stream has not opened polls this instead, with the `next` of its previous
+   * answer as `after` (`useStationScans` in apps/pos/src/lib/scanChannel.ts).
+   *
+   * Everything a screen is told matches the channel: the same standing and
+   * permission (`standing`), the same refusal for a station with no box, and
+   * the same per-view redaction of a scan (`readStationScans`). What it is not
+   * is a connection: it ends with its answer, so it never touches
+   * `stationChannels`, and `/ready` counts streams, not readers.
+   */
+  app.get(
+    '/stations/:id/scans',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The scans this station has heard since `after`, oldest first, at most 100, and the number to send as `after` next time: the channel’s `event: scan` messages as a finite read, for a screen that cannot hold a stream open. Without `after` it answers the current number and no scans — scans are live, and a screen that has just opened is sent none from before it was there. The same standing, permission and view rules as the channel; not counted by /ready.',
+        params: IdParams,
+        querystring: ScansQuery,
+        response: { 200: ScansSchema },
+      },
+    },
+    async (req, reply) => {
+      const { row } = await standing(req, req.params.id);
+      // The channel's refusal for a station nobody has put a box behind (409
+      // STATION_HAS_NO_BOX), and the api's manager for the box, so the box
+      // running in this process is never joined through it twice. The
+      // document is not opened: a poll reads the tape, not the session.
+      const { manager } = managerForStation(app.db, row, req.log);
+      // Every answer is a moment; a copy kept by anything in between is a
+      // screen that stops hearing scans.
+      reply.header('cache-control', 'private, no-store');
+      return readStationScans(app.db, {
+        boxId: row.boxId,
+        stationId: row.id,
+        view: req.query.view,
+        after: req.query.after,
+        attachedTo: manager,
+      });
+    },
+  );
 }
 
 /** The same shape the telemetry plugin accepts, so one id follows one gesture. */
