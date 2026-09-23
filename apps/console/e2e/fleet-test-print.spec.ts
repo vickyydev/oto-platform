@@ -13,10 +13,12 @@ import { CENTRAL_FLORESTA, chooseBranch, openSection, signInAndWait } from './co
  * no device, the platform refused every press, and the drawer said "queued"
  * over the top of it.
  *
- * So the case asserts the two halves separately: that the picker NAMES the
- * right printer, and that the box ran what it was handed. A press that queues
- * and never succeeds passes the first and fails the second, which is the shape
- * the bug had.
+ * So the case asserts the halves separately: that the picker NAMES the right
+ * printer, that the box ran what it was handed, and — since SCRUM-364 — that
+ * the platform has a print job for it with the box's own result on it. A press
+ * that queues and never succeeds passes the first and fails the second; a press
+ * that prints paper the platform never records passes both and fails the third,
+ * which is the shape each bug had.
  *
  * It runs against the harness's own seeded database (`e2e/run.mjs`), with the
  * api carrying the `edge` role so the virtual box is there to take the command
@@ -72,4 +74,30 @@ test('the test print names the station’s receipt printer, and the box reports 
   // A command the box refused is also "finished", so the reading that matters
   // is the state and not the timestamp beside it.
   await expect(testPrint).not.toContainText('failed');
+
+  /**
+   * AND THE PRINT JOB — the half SCRUM-364 was about.
+   *
+   * A succeeded command says the box understood the instruction and routed it.
+   * It does NOT say the platform has any record of what came out: the drawer
+   * used to queue a bare `test_print` command, so the outcome the box reported
+   * afterwards named an `edge.print_job` row nobody had written and was refused
+   * `PRINT_JOB_NOT_FOUND` — paper on the counter, a green command, and this
+   * panel empty. Reading it here is what tells the two apart, and it is read
+   * the way a person reads it: press the Printing panel's own Refresh, because
+   * that panel reloads on its button and not on a timer.
+   */
+  const printing = drawer
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Printing', exact: true }) });
+  const job = printing.getByRole('listitem').filter({ hasText: 'test page' }).first();
+
+  await expect(async () => {
+    await printing.getByRole('button', { name: 'Refresh' }).click();
+    await expect(job).toContainText('printed', { timeout: 2_000 });
+  }).toPass({ timeout: 90_000, intervals: [2_000] });
+
+  // The row carries WHERE it went as well as what became of it, which is the
+  // reason the panel is worth opening: the printer the picker named above.
+  await expect(job).toContainText('Receipt Printer 1');
 });

@@ -502,6 +502,12 @@ export const fleetApi = {
    * to the lines this command wrote, which is the whole point of the log
    * drawer: press the button, then watch that one action rather than the noise
    * of a working box.
+   *
+   * **Test print is not one of these** (SCRUM-364). It goes through
+   * `printApi.stationTestPrint` in `api/print.ts`, because a command queued
+   * here is the only row a test print leaves: the box then reports its outcome
+   * against an `edge.print_job` that was never written, the platform answers
+   * `PRINT_JOB_NOT_FOUND`, and the Printing panel lists nothing.
    */
   sendCommand: (boxId: string, body: { kind: BoxCommandKind; payload?: Record<string, unknown> }) =>
     api.post<{ commandId: string; actionId?: string | null }>(

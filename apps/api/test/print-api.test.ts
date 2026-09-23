@@ -822,3 +822,172 @@ describe('the print record (S2-06)', () => {
     expect(rows[0]!.label).toBe('Receipt Printer 3');
   });
 });
+
+// --- The Console's Test print -----------------------------------------------
+
+/**
+ * SCRUM-364 — the Box drawer's Test print, and the row its outcome lands on.
+ *
+ * The drawer used to queue a bare `test_print` command, which is one row where
+ * the flow needs two: the command the box collects, and the `edge.print_job`
+ * the box's outcome is reported against. Paper came out, the command read
+ * `succeeded`, the report was refused `PRINT_JOB_NOT_FOUND`, and the drawer's
+ * Printing panel listed nothing — a control whose failure mode was being
+ * quietly right-looking.
+ *
+ * So the drawer now presses `POST /stations/:id/test-print`, which is
+ * `requestTestPrint`'s door and the only path that writes both rows. What
+ * follows sends exactly what the drawer sends and then lets the box speak for
+ * itself: no row is written here, and the assertion is that the outcome the
+ * agent posts up `/box/v1/print-jobs/:id/result` is accepted and lands on the
+ * job the press created.
+ */
+describe('the Console’s Test print (SCRUM-364)', () => {
+  it('leaves a print job the box’s own outcome report lands on', async () => {
+    const { agent } = await buildAgent();
+    const { till, receipt } = await seededIds();
+
+    /**
+     * Whatever the cases above left queued on this box is collected first, so
+     * the poll under test carries this press and the leftovers' own noise is
+     * behind the mark — one of those cases repoints a job at the other box on
+     * purpose, and the refusal that earns is a line in this agent's log that
+     * says nothing about this case.
+     */
+    await agent.runPendingCommands();
+    const logged = agent.recentLogs(500).length;
+
+    /**
+     * The drawer's two pickers, as a request body: the station it chose, and
+     * the job that station's printer does. `station_device_role_unique` makes
+     * (station, role) name one device, which is why the press need not — and
+     * on the box, cannot — name a device id.
+     */
+    const pressed = await post(`/stations/${till.id}/test-print`, {
+      kind: 'test_page',
+      role: 'receipt',
+    });
+    expect(pressed.statusCode, pressed.body).toBe(200);
+    const queuedJob = pressed.json().printJob as {
+      id: string;
+      boxId: string;
+      status: string;
+      deviceId: string | null;
+      role: string | null;
+    };
+    const commandId = pressed.json().commandId as string;
+    expect(queuedJob.status).toBe('queued');
+    // The cloud's own routing of the same pair, on the row, so the panel can
+    // say which machine it is waiting on rather than only that it is waiting.
+    expect(queuedJob.deviceId).toBe(receipt.id);
+    expect(queuedJob.role).toBe('receipt');
+
+    /**
+     * The link, which is the whole fix: the command the box collects carries
+     * the id of the row written for it. Without it the box reports against its
+     * own command id and the cloud has nothing to write on.
+     */
+    const commands = (await get(`/boxes/${queuedJob.boxId}/commands?limit=5`)).json()
+      .commands as { id: string; kind: string; payload: Record<string, unknown> | null }[];
+    const command = commands.find((c) => c.id === commandId);
+    expect(command?.kind).toBe('test_print');
+    expect(command?.payload?.printJobId).toBe(queuedJob.id);
+    // SCRUM-358's behaviour, still on the payload: the box routes by the job a
+    // printer does at a station, never by a device id.
+    expect(command?.payload?.role).toBe('receipt');
+    expect(command?.payload?.stationId).toBe(till.id);
+
+    /**
+     * The box takes it, prints it, and reports the outcome on its own route.
+     * Counted as "at least this one" rather than exactly one: the cases above
+     * share this box, and whatever they left queued is collected in the same
+     * poll — which is why the state below is read off THIS command by id.
+     */
+    expect(await agent.runPendingCommands()).toBeGreaterThanOrEqual(1);
+    const ran = (await get(`/boxes/${queuedJob.boxId}/commands?limit=25`)).json().commands as {
+      id: string;
+      state: string;
+    }[];
+    expect(ran.find((c) => c.id === commandId)?.state).toBe('succeeded');
+    expect(
+      agent
+        .recentLogs(500)
+        .slice(logged)
+        .some((line) => line.includes('did not accept a print job outcome')),
+      'the box was refused when it reported what happened to the paper',
+    ).toBe(false);
+
+    const [row] = await ctx.db.select().from(printJob).where(eq(printJob.id, queuedJob.id)).limit(1);
+    expect(row!.status, `the job ended ${row!.status} (${row!.errorCode})`).toBe('printed');
+    expect(row!.finishedAt).toBeTruthy();
+    expect(row!.deviceId).toBe(receipt.id);
+    expect(row!.attempts).toBe(1);
+
+    /**
+     * And what the drawer's Printing panel actually reads — `GET /boxes/:id/
+     * print-jobs`, with the device label joined on, which is the line a person
+     * looks at after pressing the button.
+     */
+    const listed = (await get(`/boxes/${queuedJob.boxId}/print-jobs?limit=12`)).json().jobs as {
+      id: string;
+      status: string;
+      kind: string;
+      deviceLabel: string | null;
+      role: string | null;
+    }[];
+    expect(listed[0]).toMatchObject({
+      id: queuedJob.id,
+      status: 'printed',
+      kind: 'test_page',
+      deviceLabel: 'Receipt Printer 1',
+      role: 'receipt',
+    });
+  });
+
+  /**
+   * The door the drawer no longer uses, and why — kept as a reading rather
+   * than as a rule.
+   *
+   * `POST /boxes/:id/commands` queues the command and writes no print job, so
+   * the box prints and is then refused when it says what happened. That is
+   * still true of every caller of that route (the till's Station Setup screen
+   * is one, `apps/pos/src/api/platform.ts`), which is why this is written down
+   * here: whoever fixes those has this test to delete, and knows what it was
+   * for.
+   */
+  it('a bare test_print command leaves no job, and the box’s report is refused', async () => {
+    const { agent } = await buildAgent();
+    const { receipt } = await seededIds();
+    const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, agent.state.boxId!)).limit(1);
+    // As above: anything left queued is collected before the mark, so the log
+    // line read afterwards belongs to this press.
+    await agent.runPendingCommands();
+    const logged = agent.recentLogs(500).length;
+    const before = await ctx.db.select().from(printJob).where(eq(printJob.boxId, boxRow!.id));
+
+    const queued = await post(`/boxes/${boxRow!.id}/commands`, {
+      kind: 'test_print',
+      payload: { deviceId: receipt.id },
+    });
+    expect(queued.statusCode, queued.body).toBe(200);
+    expect(await agent.runPendingCommands()).toBeGreaterThanOrEqual(1);
+
+    // The command itself is fine: the box understood it and paper came out.
+    const commands = (await get(`/boxes/${boxRow!.id}/commands?limit=25`)).json().commands as {
+      id: string;
+      state: string;
+    }[];
+    expect(commands.find((c) => c.id === queued.json().commandId)?.state).toBe('succeeded');
+
+    // And the platform has no record of the printout.
+    const after = await ctx.db.select().from(printJob).where(eq(printJob.boxId, boxRow!.id));
+    expect(after.length).toBe(before.length);
+    expect(
+      agent
+        .recentLogs(500)
+        .slice(logged)
+        .some((line) => line.includes('did not accept a print job outcome')),
+      'the box reported an outcome against a job the cloud never wrote',
+    ).toBe(true);
+  });
+});

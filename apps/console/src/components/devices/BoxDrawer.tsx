@@ -17,6 +17,7 @@ import {
   type StationAssignmentRef,
   type StationRow,
 } from '@/api/fleet';
+import { printApi } from '@/api/print';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/Drawer';
 import { EmptyState, Fact, Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
@@ -853,16 +854,60 @@ function BoxControls({
   const [failed, setFailed] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
 
-  const send = async (kind: BoxCommandKind, payload?: Record<string, unknown>) => {
+  const send = async (kind: BoxCommandKind) => {
     setBusyKind(kind);
     setNote(null);
     setFailed(null);
     try {
-      const result = await fleetApi.sendCommand(box.id, { kind, payload });
+      const result = await fleetApi.sendCommand(box.id, { kind });
       setNote(`${commandWord(kind)} queued. The box takes it on its next poll.`);
       onSent(result.actionId);
     } catch (err) {
       setFailed(err instanceof Error ? err.message : `${commandWord(kind)} could not be queued`);
+    } finally {
+      setBusyKind(null);
+    }
+  };
+
+  /**
+   * Test print is the one control here that does not press the bare command
+   * route (SCRUM-364).
+   *
+   * It queues the same `test_print` command in the end — with the station and
+   * the role on its payload, as SCRUM-358 put them there — but through the
+   * route that writes the `edge.print_job` row first and carries that row's id
+   * in the payload. Without the row the box's outcome report lands on nothing:
+   * the platform answers `PRINT_JOB_NOT_FOUND`, the paper is out of the
+   * machine, the command reads `succeeded`, and the Printing panel below shows
+   * no trace of it. `api/print.ts` carries the rest of the reasoning.
+   *
+   * The station and the role are what is sent, because those are what the box
+   * routes on; the picker above resolves them to the one device that does that
+   * job at that station, and the cloud resolves the same pair onto the job row.
+   */
+  const testPrint = async (stationId: string, printer: StationPrinter) => {
+    setBusyKind('test_print');
+    setNote(null);
+    setFailed(null);
+    try {
+      const { printJob, actionId } = await printApi.stationTestPrint(stationId, {
+        kind: 'test_page',
+        role: printer.role,
+      });
+      setNote(
+        /**
+         * The button is off when the station has no printer for the role, so
+         * this is the case where one went away between the read and the press
+         * — a job recorded `skipped` and nothing queued for the box. Saying
+         * "queued" over it would be the quiet wrong answer again.
+         */
+        printJob.status === 'skipped'
+          ? `Nothing printed — ${printJob.errorMessage ?? `${printer.label} did not take it`}.`
+          : `${commandWord('test_print')} queued. The box takes it on its next poll.`,
+      );
+      onSent(actionId);
+    } catch (err) {
+      setFailed(err instanceof Error ? err.message : 'Test print could not be queued');
     } finally {
       setBusyKind(null);
     }
@@ -933,12 +978,9 @@ function BoxControls({
               title={blocked ? (blockedReason ?? 'There is no printer to print on') : command.detail}
               disabled={busyKind !== null || blocked}
               onClick={() =>
-                void send(
-                  command.kind,
-                  command.needsPrinter && selected
-                    ? { deviceId: selected.deviceId, stationId, role: selected.role }
-                    : undefined,
-                )
+                void (command.needsPrinter && selected
+                  ? testPrint(stationId, selected)
+                  : send(command.kind))
               }
             >
               {busyKind === command.kind ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
