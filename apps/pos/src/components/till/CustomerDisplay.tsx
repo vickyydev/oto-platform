@@ -16,6 +16,7 @@ import {
   unpricedLineReason,
   type LineBreakdownKind,
 } from '@/lib/pricing';
+import { unpricedDropOffLines } from '@/lib/cartWire';
 import { computeTotals } from '@/lib/sale';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
@@ -293,6 +294,26 @@ export function CustomerDisplay({
      * reason underneath, and no total while any line is unpriced.
      */
     const unpriced = unpricedCartLines(sale.lines);
+    /**
+     * THE SECOND WAY THIS SCREEN HAS NOTHING TO QUOTE (SCRUM-350).
+     *
+     * A drop-off child sits in the cart at `lineTotal: 0` until staff pick the
+     * play length (`lib/dropoff.ts`), carrying a placeholder ticket so the line
+     * has a type at all. Nothing above read that state, so this half priced the
+     * placeholder: the card's own figure came from `lineTotal`, so ฿0, while
+     * the Kids row, the VAT row and the total came from the ticket the line is
+     * pointing at, so "1 × ฿690", "฿45.14" and "฿690". The family read ฿690 for
+     * a length nobody has chosen, at the same moment the staff panel beside
+     * them said "—" (SCRUM-334).
+     *
+     * So this half refuses that line the way it already refuses an unpriced
+     * tier (SCRUM-312): a dash on the card, a dash on the row the placeholder
+     * priced, and no VAT, no discount amounts and no total while the cart
+     * cannot be totalled. Every figure comes back, from the same arithmetic as
+     * before, the moment a length is chosen.
+     */
+    const awaitingLength = new Set(unpricedDropOffLines(sale.lines));
+    const unquotable = unpriced.length > 0 || awaitingLength.size > 0;
     return (
       <Shell customerName={displayName}>
         {chargeTarget && <ChargeBanner target={chargeTarget} />}
@@ -339,12 +360,15 @@ export function CustomerDisplay({
               // This line's own missing prices, if any — the line total is a
               // dash while it has one, and each row that lacks a price says so.
               const lineUnpriced = unpricedCartLines([line]).length > 0;
+              // A drop-off child whose play length is not chosen yet: the same
+              // dash, for the ฿0 the line carries until it is.
+              const lineAwaitingLength = awaitingLength.has(line.id);
               return (
                 <div key={line.id} className="bg-foreground/5 rounded-3xl p-6 border border-foreground/10">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-2xl font-bold">{resolveName(line.ticketType, lang)}</div>
                     <div className="text-2xl font-bold text-primary">
-                      {lineUnpriced ? '—' : `฿${line.lineTotal}`}
+                      {lineUnpriced || lineAwaitingLength ? '—' : `฿${line.lineTotal}`}
                     </div>
                   </div>
                   <div className="mt-1">
@@ -357,9 +381,14 @@ export function CustomerDisplay({
                       // (kids, and a drop-off child's own ticket) and the paid
                       // adults row. Socks, add-ons and the drop-off service fee
                       // carry their own prices and are shown as they are.
+                      //
+                      // The kids row is also the one the placeholder ticket
+                      // prices on a drop-off child with no length chosen — it
+                      // is where "1 × ฿690" was printed — so it dashes for that
+                      // too. The line's adults are 0 while it is unconfigured.
                       const rowUnpriced =
                         item.kind === 'kids'
-                          ? !isTierPriced(line.ticketType, line.tier)
+                          ? lineAwaitingLength || !isTierPriced(line.ticketType, line.tier)
                           : item.key === 'adults'
                             ? !isAdultRulePriced(line.ticketType, line.tier, line.adults)
                             : false;
@@ -416,10 +445,11 @@ export function CustomerDisplay({
         </div>
         <div className="p-8 border-t border-foreground/10">
           {/* The discount and tax rows are worked out from a subtotal that is
-              missing the price nobody set, so while a line is unpriced they
-              would state amounts of an order that has no amount. They come back
-              with the total, once the price exists. */}
-          {unpriced.length === 0 && (
+              missing a figure — the price nobody set, or the length nobody has
+              chosen — so while the cart cannot be totalled they would state
+              amounts of an order that has no amount. They come back with the
+              total, once the figure exists. */}
+          {!unquotable && (
             <>
               {orderDiscounts.map((md) => {
                 const amt = manualAmounts[md.id] ?? 0;
@@ -451,7 +481,7 @@ export function CustomerDisplay({
               {t('till.welcome.memberRate')}
             </div>
           )}
-          {unpriced.length === 0 &&
+          {!unquotable &&
             taxRows.map((row) => (
               <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
                 <span className="text-lg">{row.label}</span>
@@ -476,7 +506,7 @@ export function CustomerDisplay({
           <div className="flex items-center justify-between">
             <span className="text-2xl text-foreground/70">{t('common.total')}</span>
             <span className="text-5xl font-black text-primary">
-              {unpriced.length > 0 ? '—' : `฿${total}`}
+              {unquotable ? '—' : `฿${total}`}
             </span>
           </div>
         </div>
