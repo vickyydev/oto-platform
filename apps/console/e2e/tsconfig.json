@@ -1,0 +1,16 @@
+{
+  // The harness is TypeScript that the app's own tsconfig deliberately does
+  // not cover: `../tsconfig.json` describes what the browser bundle is built
+  // from, and these files run in Node, under Playwright, against the DOM of a
+  // page rather than inside it. They are still typechecked — `pnpm --filter
+  // @oto/console typecheck` runs this project after the app's — because a
+  // spec that no longer compiles is a spec nobody finds out about until the
+  // day they need it.
+  "extends": "../../../packages/config/tsconfig.base.json",
+  "include": ["**/*.ts", "../playwright.config.ts"],
+  "compilerOptions": {
+    "types": ["node"],
+    // The specs describe pages, so the DOM types come with them.
+    "lib": ["esnext", "dom", "dom.iterable"]
+  }
+}

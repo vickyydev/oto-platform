@@ -210,6 +210,9 @@ importers:
       '@oto/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@playwright/test':
+        specifier: ^1.63.0
+        version: 1.63.0
       '@radix-ui/react-slot':
         specifier: ^1.2.0
         version: 1.3.3(@types/react@19.3.0)(react@19.1.0)
