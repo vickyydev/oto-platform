@@ -44,11 +44,24 @@ export function SaleDetail({
   txn,
   timeZone,
   onBack,
+  layout = 'columns',
 }: {
   txn: HistoryTxn;
   timeZone?: string;
   onBack: () => void;
+  /**
+   * `columns` is the counter: contents on the left, money on the right, each
+   * scrolling in its own pane inside a fixed-height page.
+   *
+   * `stacked` is the handheld (SCRUM-320). Same cards, same order, one column —
+   * but the page scrolls as ONE thing rather than nesting a scroller inside a
+   * scroller, which on a 390px screen means a guest's items scrolling under a
+   * thumb while the total stays off-screen below. Nothing is hidden and nothing
+   * is restyled; only which element owns the scrollbar changes.
+   */
+  layout?: 'columns' | 'stacked';
 }) {
+  const stacked = layout === 'stacked';
   const [detail, setDetail] = useState<ApiSaleDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,6 +125,48 @@ export function SaleDetail({
   const taxName =
     detail?.taxBreakdown?.categories?.find((c) => c.taxName)?.taxName ?? 'VAT';
 
+  const contents = error ? (
+    <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+      {error}
+    </div>
+  ) : !detail ? (
+    <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+      Reading this sale…
+    </div>
+  ) : (
+    <div className="space-y-3">
+      {[...groups.entries()].map(([cartLineId, lines]) => {
+        const first = lines[0]!;
+        const name = packageName(first.ticketPackageId) ?? first.stayDurationLabel ?? 'Items';
+        const groupTotal = lines.reduce((sum, l) => sum + l.grossSatang, 0);
+        return (
+          <div key={cartLineId} className="rounded-xl border bg-background/40 p-4">
+            <div className="flex items-center justify-between font-bold text-lg">
+              <span>
+                {name}
+                <span className="text-muted-foreground font-normal text-base">
+                  {' '}
+                  · {tierLabel(first.customerTier)}
+                </span>
+              </span>
+              <span className="tabular-nums">฿{baht(groupTotal)}</span>
+            </div>
+            <div className="mt-2 space-y-1">
+              {lines.map((line) => (
+                <div key={line.id} className="flex justify-between text-sm text-muted-foreground">
+                  <span>
+                    {line.label} {line.quantity}× ฿{baht(line.unitSatang)}
+                  </span>
+                  <span className="tabular-nums">฿{baht(line.grossSatang)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
@@ -123,9 +178,15 @@ export function SaleDetail({
         <StatusBadge status={txn.badge} />
       </div>
 
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+      <div
+        className={
+          stacked
+            ? 'flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 pb-4'
+            : 'flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6'
+        }
+      >
         {/* Left: contents */}
-        <Card className="p-6 flex flex-col min-h-0 bg-card/50">
+        <Card className={`p-6 flex flex-col bg-card/50 ${stacked ? 'shrink-0' : 'min-h-0'}`}>
           <div className="flex items-start gap-4 mb-5 shrink-0">
             <div className="w-16 h-16 rounded-2xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
               {kind === 'dropoff' ? (
@@ -163,53 +224,11 @@ export function SaleDetail({
             </div>
           </div>
 
-          <ScrollArea className="flex-1 -mx-2 px-2">
-            {error ? (
-              <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                {error}
-              </div>
-            ) : !detail ? (
-              <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                Reading this sale…
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {[...groups.entries()].map(([cartLineId, lines]) => {
-                  const first = lines[0]!;
-                  const name =
-                    packageName(first.ticketPackageId) ?? first.stayDurationLabel ?? 'Items';
-                  const groupTotal = lines.reduce((sum, l) => sum + l.grossSatang, 0);
-                  return (
-                    <div key={cartLineId} className="rounded-xl border bg-background/40 p-4">
-                      <div className="flex items-center justify-between font-bold text-lg">
-                        <span>
-                          {name}
-                          <span className="text-muted-foreground font-normal text-base">
-                            {' '}
-                            · {tierLabel(first.customerTier)}
-                          </span>
-                        </span>
-                        <span className="tabular-nums">฿{baht(groupTotal)}</span>
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        {lines.map((line) => (
-                          <div
-                            key={line.id}
-                            className="flex justify-between text-sm text-muted-foreground"
-                          >
-                            <span>
-                              {line.label} {line.quantity}× ฿{baht(line.unitSatang)}
-                            </span>
-                            <span className="tabular-nums">฿{baht(line.grossSatang)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </ScrollArea>
+          {stacked ? (
+            contents
+          ) : (
+            <ScrollArea className="flex-1 -mx-2 px-2">{contents}</ScrollArea>
+          )}
         </Card>
 
         {/* Right: money + actions */}

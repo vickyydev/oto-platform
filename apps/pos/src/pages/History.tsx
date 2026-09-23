@@ -5,6 +5,7 @@ import {
   businessDateToday,
   calendarDateIn,
   listSales,
+  saleCountLabel,
   type HistoryTxn,
 } from '@/api/history';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
@@ -362,7 +363,7 @@ export default function History() {
                 </div>
                 {txns && (
                   <span className="text-sm text-muted-foreground">
-                    {txns.length} {txns.length === 1 ? 'sale' : 'sales'} recorded at {branch.name}
+                    {saleCountLabel(txns.length)} recorded at {branch.name}
                   </span>
                 )}
               </div>

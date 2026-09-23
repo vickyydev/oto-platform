@@ -208,12 +208,42 @@ export function toTxn(sale: ApiSaleListItem, branch: { id?: string; name?: strin
 }
 
 /**
+ * How many sales one History read asks for.
+ *
+ * `GET /sales` answers a page, not a day, and this is the page size. It is
+ * named rather than written into the query string because the screen has to say
+ * which of the two it is showing — see `saleCountLabel`.
+ */
+export const SALES_PAGE_LIMIT = 200;
+
+/**
+ * What the figure under the list means — SCRUM-320.
+ *
+ * The count is the number of rows THIS READ returned, which is the day's total
+ * only while the day fits in one page. A busy Saturday does not: the read asks
+ * for the newest 200, the ledger has more, and "200 sales recorded at Central
+ * Floresta" then understates the takings of the branch it is standing in. So a
+ * full page says it is a page. The handheld reads its figure from here so that
+ * it never has to know the limit; `pages/History.tsx` still counts its own rows
+ * inline and so still calls a full page a day — one import and two lines, left
+ * to whoever next has that file open, and the reason this lives here rather
+ * than inside the handheld component.
+ */
+export function saleCountLabel(shown: number, limit = SALES_PAGE_LIMIT): string {
+  if (shown >= limit) return `showing the newest ${limit} sales`;
+  return `${shown} ${shown === 1 ? 'sale' : 'sales'}`;
+}
+
+/**
  * The branch's sales for one trading day, newest first.
  *
  * The date is the BUSINESS date, not the calendar one: the park's day starts at
  * 05:00, so a sale rung at 03:00 belongs to the day that is finishing, and
  * asking for it by the wall-clock date would answer with somebody else's
  * takings. `businessDateToday` below gets that date from the branch itself.
+ *
+ * It answers at most `SALES_PAGE_LIMIT` rows; `saleCountLabel` is how a caller
+ * tells the reader when that is what they are looking at.
  */
 export async function listSales(
   branchId: string | null,
@@ -223,7 +253,7 @@ export async function listSales(
   if (branchId) params.set('branchId', branchId);
   if (opts.date) params.set('businessDate', opts.date);
   if (opts.memberId) params.set('memberId', opts.memberId);
-  params.set('limit', String(opts.limit ?? 200));
+  params.set('limit', String(opts.limit ?? SALES_PAGE_LIMIT));
   const { sales } = await api.get<{ sales: ApiSaleListItem[] }>(`/sales?${params.toString()}`);
   return sales.map((sale) => toTxn(sale, {}));
 }
