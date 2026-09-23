@@ -66,7 +66,7 @@ export function TicketsPanel() {
         ) : (
           <span className="tabular-nums">{baht(price)}</span>
         )}
-        {badge && <span className="text-[10px] text-emerald-300/80">{badge}</span>}
+        {badge && <span className="text-[10px] text-emerald-700/80">{badge}</span>}
       </div>
     );
   };
@@ -236,7 +236,7 @@ export function TicketsPanel() {
                         <div className="text-[10px] uppercase tracking-wide text-foreground/45">
                           {tier.name}
                           {badge && (
-                            <span className="ml-1 text-emerald-300/80">
+                            <span className="ml-1 text-emerald-700/80">
                               {badge}
                             </span>
                           )}

@@ -261,11 +261,11 @@ export function BranchesPanel() {
                 />
                 <p className="text-xs text-foreground/40">
                   {codeTaken ? (
-                    <span className="text-amber-400">
+                    <span className="text-amber-700">
                       Another branch already uses this ID.
                     </span>
                   ) : code && !codeValid ? (
-                    <span className="text-amber-400">
+                    <span className="text-amber-700">
                       Lowercase letters, numbers and hyphens only.
                     </span>
                   ) : (
@@ -488,9 +488,9 @@ export function BranchesPanel() {
 
                   {plan.targetHasSales && (
                     <div className="flex items-start gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-5">
-                      <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
+                      <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
                       <div>
-                        <p className="text-sm font-semibold text-amber-300">
+                        <p className="text-sm font-semibold text-amber-700">
                           {plan.targetBranch.name} has already taken sales
                         </p>
                         <p className="text-xs text-foreground/60 mt-1">
@@ -521,7 +521,7 @@ export function BranchesPanel() {
                           <span className="text-foreground/70">{label}</span>
                           <span
                             className={`text-right tabular-nums ${
-                              c.created > 0 ? 'font-semibold text-emerald-300' : 'text-foreground/30'
+                              c.created > 0 ? 'font-semibold text-emerald-700' : 'text-foreground/30'
                             }`}
                           >
                             {c.created}
@@ -531,7 +531,7 @@ export function BranchesPanel() {
                           </span>
                           <span
                             className={`text-right tabular-nums ${
-                              c.blocked > 0 ? 'text-amber-300' : 'text-foreground/30'
+                              c.blocked > 0 ? 'text-amber-700' : 'text-foreground/30'
                             }`}
                           >
                             {c.blocked}
@@ -631,9 +631,9 @@ function blockedReasons(plan: ApiClonePreview): string[] {
 function CloneSuccessBanner({ stamp }: { stamp: CloneStamp }) {
   return (
     <div className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
-      <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
+      <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
       <div className="flex flex-col gap-0.5">
-        <p className="text-sm font-semibold text-emerald-300">Catalog cloned successfully</p>
+        <p className="text-sm font-semibold text-emerald-700">Catalog cloned successfully</p>
         <p className="text-xs text-foreground/60">
           {stamp.created} row{stamp.created === 1 ? '' : 's'} from{' '}
           <strong>{stamp.sourceName}</strong> were copied into{' '}

@@ -544,7 +544,7 @@ export function MemberFormDialog({
 
           <div className="flex flex-col gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground/80">
-              <ShieldCheck className="w-4 h-4 text-emerald-300" />
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
               Verified tier
             </div>
             <p className="text-xs text-foreground/45">

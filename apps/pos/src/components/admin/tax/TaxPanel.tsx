@@ -614,7 +614,7 @@ export function TaxPanel() {
           Save changes
         </Button>
         {saved && (
-          <span className="inline-flex items-center gap-1.5 text-sm text-emerald-300">
+          <span className="inline-flex items-center gap-1.5 text-sm text-emerald-700">
             <Check className="w-4 h-4" />
             Saved — live in the till.
           </span>

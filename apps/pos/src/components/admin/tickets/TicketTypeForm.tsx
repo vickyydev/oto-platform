@@ -594,7 +594,7 @@ export function TicketTypeForm({
                           </span>
                         )}
                         {resolved !== null && (
-                          <span className="font-semibold tabular-nums text-emerald-300">
+                          <span className="font-semibold tabular-nums text-emerald-700">
                             = ฿{resolved.weekday.toLocaleString()} / ฿
                             {resolved.weekend.toLocaleString()} wknd
                           </span>

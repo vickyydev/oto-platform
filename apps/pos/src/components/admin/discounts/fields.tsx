@@ -23,7 +23,7 @@ export function Field({
       </span>
       {children}
       {error ? (
-        <span className="text-xs font-medium text-rose-400">{error}</span>
+        <span className="text-xs font-medium text-destructive">{error}</span>
       ) : hint ? (
         <span className="text-xs text-foreground/35">{hint}</span>
       ) : null}

@@ -63,7 +63,7 @@ export function MerchPanel() {
     }
     if (isLowStock(item)) {
       return (
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-400/10 px-2 py-0.5 text-[11px] font-medium text-amber-300">
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-600">
           <AlertTriangle className="h-3 w-3" />
           Low · {item.stock} left
         </span>
@@ -71,7 +71,7 @@ export function MerchPanel() {
     }
     if (item.stock !== undefined) {
       return (
-        <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-400/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300 tabular-nums">
+        <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-600 tabular-nums">
           {item.stock} in stock
         </span>
       );
@@ -108,13 +108,13 @@ export function MerchPanel() {
       {lowStock.length > 0 && (
         <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-amber-300">
+            <div className="flex items-center gap-2 text-amber-700">
               <AlertTriangle className="w-4 h-4" />
               <span className="text-xs font-semibold uppercase tracking-wider">
                 Needs restocking ({lowStock.length})
               </span>
             </div>
-            <span className="flex items-center gap-1 text-xs text-amber-200/70">
+            <span className="flex items-center gap-1 text-xs text-amber-700/80">
               <Package className="w-3.5 h-3.5" />
               Adjust in Inventory panel
             </span>

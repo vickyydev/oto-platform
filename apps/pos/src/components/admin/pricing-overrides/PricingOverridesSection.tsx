@@ -169,7 +169,7 @@ export function PricingOverridesSection() {
               covered. The name can still be corrected.
             </p>
           )}
-          {error && <p className="mt-2 text-xs font-medium text-rose-400">{error}</p>}
+          {error && <p className="mt-2 text-xs font-medium text-destructive">{error}</p>}
           <div className="mt-4 flex gap-2">
             <Button onClick={save}>
               <Check className="w-4 h-4" />
