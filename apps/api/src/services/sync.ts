@@ -1172,6 +1172,62 @@ const HANDLERS: Record<string, EventHandler> = {
         }
       }
 
+      /**
+       * SCRUM-361 — the children `POST /visits` would accept, and no others.
+       *
+       * A `visit_child` row is the record that this child WAS in the park that
+       * day. This path wrote one for every id the payload carried: the member
+       * was checked against the operator, the children against nothing. So a
+       * visit queued on a box could put another member's child, or a child the
+       * guardian has asked to be taken off the saved list, on a visit — the
+       * outcome SCRUM-337's archive and SCRUM-356's check on the route exist to
+       * prevent, reached through the door that was still open behind them.
+       *
+       * The predicate is the route's: every named child is this member's own
+       * and unarchived. Which way an id fails it — another member's, archived,
+       * or not on this cloud at all — is not separated, for the reason the
+       * route gives: nothing that can be done about it differs between them,
+       * and all three say the same thing about the event, that the list it was
+       * built from is not the list the cloud holds.
+       *
+       * Filed as `apply_failed` rather than `poison`: the payload is well
+       * formed, and one of the ways to fail this is a `child.created` that has
+       * not landed yet, which a replay of the quarantined event can still fix.
+       *
+       * The whole event is refused rather than the failing ids dropped. Half a
+       * visit is a worse record than none: it would read as a day a child was
+       * here without the rest of the party, filed by a box, with nobody told.
+       */
+      if (payload.childIds.length > 0) {
+        if (!payload.memberId) {
+          throw new RefuseEvent(
+            'poison',
+            'SYNC_VISIT_CHILD_NO_MEMBER',
+            'Children on a visit need the member they are saved against',
+          );
+        }
+        // Distinct, because the insert below tolerates a repeated id with
+        // `onConflictDoNothing` and a repeat must not become a refusal.
+        const named = [...new Set(payload.childIds)];
+        const saved = await tx
+          .select({ id: child.id })
+          .from(child)
+          .where(
+            and(
+              inArray(child.id, named),
+              eq(child.memberId, payload.memberId),
+              isNull(child.archivedAt),
+            ),
+          );
+        if (saved.length !== named.length) {
+          throw new RefuseEvent(
+            'apply_failed',
+            'SYNC_VISIT_CHILD_NOT_SAVED',
+            "One or more children are not on this member's saved list",
+          );
+        }
+      }
+
       await tx.insert(visit).values({
         id: payload.visitId,
         operatorId: scope.auth.operatorId,

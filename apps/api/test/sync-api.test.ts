@@ -501,6 +501,136 @@ describe('applying a batch', () => {
   });
 });
 
+/**
+ * SCRUM-361 — the offline path cannot put a child on a visit that the counter
+ * could not have offered.
+ *
+ * `POST /visits` checks every named child against the member's saved list —
+ * the member's own (always) and unarchived (SCRUM-356). The box's replay path
+ * checked the member against the operator and the children against nothing, so
+ * a visit queued on a box could name another member's child, or one the
+ * guardian has asked to be taken off the list, and the cloud would write the
+ * `visit_child` row that says the child WAS in the park that day.
+ *
+ * What is pinned here is the refusal reaching the box the way every other
+ * refusal does — quarantined, with the reason and the code on the answer and
+ * on the filed row — and that a refused event leaves nothing behind: not a
+ * visit, not a row for the sibling who was fine.
+ */
+describe("SCRUM-361 — the children a box's visit may name", () => {
+  /** A member with two saved children, created the way a box creates them. */
+  async function family(b: TestBox): Promise<{ memberId: string; stays: string; removed: string }> {
+    const m = memberPayload(uniquePhone(), 'Sync saved-list family');
+    const stays = newId();
+    const removed = newId();
+    const { body } = await push(b, [
+      mint(b, 'member.created', m),
+      mint(b, 'child.created', { childId: stays, memberId: m.memberId, name: 'Nong Stays' }),
+      mint(b, 'child.created', { childId: removed, memberId: m.memberId, name: 'Nong Removed' }),
+    ]);
+    expect(body.applied).toBe(3);
+    return { memberId: m.memberId, stays, removed };
+  }
+
+  const visitEvent = (b: TestBox, memberId: string, childIds: string[]): SyncEventEnvelope =>
+    mint(b, 'visit.created', {
+      visitId: newId(),
+      memberId,
+      visitDate: new Date().toISOString().slice(0, 10),
+      childIds,
+    });
+
+  const visitIdOf = (e: SyncEventEnvelope): string => (e.payload as { visitId: string }).visitId;
+
+  /** Every row saying this child was in the park, which is what must not appear. */
+  const dayRowsFor = (childId: string) =>
+    ctx.db.select().from(visitChild).where(eq(visitChild.childId, childId));
+
+  it('refuses the whole event when a named child is off the saved list, and writes nothing', async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const { memberId, stays, removed } = await family(b);
+
+    // The guardian asks for the removal at the counter — SCRUM-337's route.
+    const archived = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/members/children/${removed}`,
+      headers: { cookie: adminCookie },
+    });
+    expect(archived.statusCode).toBe(200);
+
+    const event = visitEvent(b, memberId, [stays, removed]);
+    const { body } = await push(b, [event]);
+    expect(body).toMatchObject({ applied: 0, duplicates: 0, quarantined: 1 });
+    expect(body.results[0]).toMatchObject({
+      result: 'quarantined',
+      reason: 'apply_failed',
+      errorCode: 'SYNC_VISIT_CHILD_NOT_SAVED',
+    });
+
+    // Nothing at all: not the visit, not a row saying the removed child was
+    // here, and not a partial visit carrying only the sibling.
+    expect(await ctx.db.select().from(visit).where(eq(visit.memberId, memberId))).toEqual([]);
+    expect(await dayRowsFor(removed)).toEqual([]);
+    expect(await dayRowsFor(stays)).toEqual([]);
+    // The event was never accepted, so it is not in the ledger either.
+    const ledger = await ctx.db
+      .select()
+      .from(syncEvent)
+      .where(eq(syncEvent.eventId, event.eventId));
+    expect(ledger).toEqual([]);
+
+    // Filed whole, with the reason the Failures tab groups by and the code
+    // underneath it — the same shape as every other refusal a box is told about.
+    const [filed] = await ctx.db
+      .select()
+      .from(syncQuarantine)
+      .where(eq(syncQuarantine.eventId, event.eventId));
+    expect(filed?.reason).toBe('apply_failed');
+    expect(filed?.errorCode).toBe('SYNC_VISIT_CHILD_NOT_SAVED');
+    expect(filed?.status).toBe('open');
+  });
+
+  it("refuses a visit naming another member's child", async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const ours = await family(b);
+    const theirs = await family(b);
+
+    const event = visitEvent(b, ours.memberId, [ours.stays, theirs.stays]);
+    const { body } = await push(b, [event]);
+    // The same answer the archived child gets: which of the two it was is not
+    // separated, because nothing the box can do about it differs.
+    expect(body.results[0]).toMatchObject({
+      result: 'quarantined',
+      reason: 'apply_failed',
+      errorCode: 'SYNC_VISIT_CHILD_NOT_SAVED',
+    });
+    expect(await ctx.db.select().from(visit).where(eq(visit.id, visitIdOf(event)))).toEqual([]);
+    expect(await dayRowsFor(theirs.stays)).toEqual([]);
+    // Nor the child of the member the visit really is for.
+    expect(await dayRowsFor(ours.stays)).toEqual([]);
+  });
+
+  it('writes the visit and a row per child when every one of them is on the list', async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const { memberId, stays, removed } = await family(b);
+
+    const event = visitEvent(b, memberId, [stays, removed]);
+    const { body } = await push(b, [event]);
+    expect(body.applied).toBe(1);
+
+    const [v] = await ctx.db.select().from(visit).where(eq(visit.id, visitIdOf(event)));
+    expect(v?.memberId).toBe(memberId);
+    const rows = await ctx.db
+      .select()
+      .from(visitChild)
+      .where(eq(visitChild.visitId, visitIdOf(event)));
+    expect(rows.map((r) => r.childId).sort()).toEqual([stays, removed].sort());
+  });
+});
+
 describe('a batch that arrives twice', () => {
   it('applies nothing the second time, counts every event as a duplicate, and leaves the cursor alone', async () => {
     const b = await freshBox();
