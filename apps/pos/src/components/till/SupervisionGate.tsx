@@ -96,6 +96,9 @@ interface SupervisionGateProps {
   onToggleWaiver: (id: string) => void;
   onBack: () => void;
   onContinue: () => void;
+  // True while Continue's work is in flight — the children are being saved to
+  // the member's record (SCRUM-233), which is a round trip that can fail.
+  busy?: boolean;
 }
 
 /**
@@ -117,6 +120,7 @@ export function SupervisionGate({
   onToggleWaiver,
   onBack,
   onContinue,
+  busy = false,
 }: SupervisionGateProps) {
   // Only resolve children with a valid age — feeding a placeholder age for a
   // not-yet-typed child would trip the policy's "no band" warning on every
@@ -286,10 +290,10 @@ export function SupervisionGate({
         <Button
           size="lg"
           className="h-14 flex-1 rounded-2xl text-lg font-bold"
-          disabled={!canContinue}
+          disabled={!canContinue || busy}
           onClick={onContinue}
         >
-          Continue to payment
+          {busy ? 'Saving…' : 'Continue to payment'}
         </Button>
       </div>
     </div>

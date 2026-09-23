@@ -18,11 +18,11 @@ import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getInventoryItem, getAddOns } from '@/store/catalogStore';
-import { getDiscountReasons, getMemberByPhone, getMemberById, createMember, updateMember, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, addSavedChild, updateSavedChild, removeSavedChild, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, getMemberByPhone, getMemberById, updateMember, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, removeSavedChild, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
-import { prefillSlots, slotPatchFromSavedChild, savedChildInputFromSlot } from '@/lib/savedChildren';
+import { prefillSlots, slotPatchFromSavedChild } from '@/lib/savedChildren';
 import type { SavedChild } from '@/types';
 import { sellEventPass, checkInSoldPass } from '@/lib/eventPass';
 import { AddAttendeeModal } from '@/components/parties/AddAttendeeModal';
@@ -34,7 +34,7 @@ import { Monitor, User } from 'lucide-react';
 
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
-import { authApi, membersApi } from '@/api/platform';
+import { authApi, membersApi, visitsApi } from '@/api/platform';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import {
   bookingsApi,
@@ -55,7 +55,7 @@ import { paymentMethodKind } from '@/lib/payments';
 import { useCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter } from '@/lib/saleWriter';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
-import { apiMemberToMember } from '@/api/mappers';
+import { apiChildToSavedChild, apiMemberToMember } from '@/api/mappers';
 import { VisitChildrenModal } from '@/components/till/VisitChildrenModal';
 import { OrderSummary } from '@/components/till/OrderSummary';
 import { StepIdentify } from '@/components/till/StepIdentify';
@@ -546,29 +546,94 @@ export default function Till() {
       return;
     }
 
-    const found = getMemberByPhone(phone);
-    if (found) {
-      // Recognised member — carry into pre-fill.
-      setMember(found);
-      setCustomerPhone(found.phone);
-      if (found.nickname) setCustomerNickname(found.nickname);
-      setEventPassPrefilledMember(found);
-      setEventPassFor(event);
-      return;
-    }
+    // SCRUM-233: asked of the member API, not of this browser's copy of the
+    // member list. The in-memory store holds the prototype's six demo
+    // families and nobody else, so a real member standing at the counter was
+    // answered "not recognised" here and offered registration they already
+    // have — while the membership check one step away finds them.
+    void (async () => {
+      let found: Member | null = null;
+      try {
+        const res = await membersApi.lookup(phone);
+        found = res.member ? apiMemberToMember(res.member) : null;
+      } catch (err) {
+        toast({
+          title: 'Membership lookup failed',
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    // Unknown phone — need a name to create the member record.
-    const name = customerNickname.trim();
-    if (name) {
-      const newMember = createMember(phone, name);
-      setMember(newMember);
-      setEventPassPrefilledMember(newMember);
-      setEventPassFor(event);
-    } else {
-      // No nickname yet — prompt staff for it.
-      setCaptureNameInput('');
-      setCaptureNameFor(event);
-    }
+      if (found) {
+        // Recognised member — carry into pre-fill.
+        setMember(found);
+        setCustomerPhone(found.phone);
+        if (found.nickname) setCustomerNickname(found.nickname);
+        setEventPassPrefilledMember(found);
+        setEventPassFor(event);
+        return;
+      }
+
+      // Unknown phone — need a name to create the member record.
+      const name = customerNickname.trim();
+      if (!name) {
+        // No nickname yet — prompt staff for it.
+        setCaptureNameInput('');
+        setCaptureNameFor(event);
+        return;
+      }
+      try {
+        const created = apiMemberToMember((await membersApi.create({ phone, nickname: name })).member);
+        setMember(created);
+        setCustomerPhone(created.phone);
+        setEventPassPrefilledMember(created);
+        setEventPassFor(event);
+      } catch (err) {
+        toast({
+          title: "Couldn't create the member",
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+      }
+    })();
+  };
+
+  /**
+   * Register the guest whose name staff just typed, then open the pass form.
+   *
+   * SCRUM-233: the same `POST /members` the membership check makes. The
+   * prototype wrote this one into browser memory, so "so they're remembered
+   * next time" — what the dialog promises — lasted until the page reloaded.
+   * A failure says so and keeps the dialog open with the name still in it.
+   */
+  const [captureNameBusy, setCaptureNameBusy] = useState(false);
+
+  const registerEventPassGuest = () => {
+    const event = captureNameFor;
+    const name = captureNameInput.trim();
+    if (!event || !name || captureNameBusy) return;
+    setCaptureNameBusy(true);
+    void membersApi
+      .create({ phone: customerPhone.trim(), nickname: name, preferredChannel: customerContactChannel })
+      .then((res) => {
+        const created = apiMemberToMember(res.member);
+        setMember(created);
+        setCustomerPhone(created.phone);
+        setCustomerNickname(name);
+        setEventPassPrefilledMember(created);
+        setEventPassFor(event);
+        setCaptureNameFor(null);
+        setCaptureNameInput('');
+      })
+      .catch((err: unknown) => {
+        toast({
+          title: "Couldn't register this guest",
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+      })
+      .finally(() => setCaptureNameBusy(false));
   };
 
   // Staff confirmed a paid booking in the RedeemBookingModal. Claim the booking
@@ -1226,15 +1291,118 @@ export default function Till() {
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== id));
   };
 
+  /**
+   * SCRUM-233 — A CHILD AT THIS GATE IS THE MEMBER'S RECORD, NOT A DRAFT.
+   *
+   * The two screens that hold a child's allergies and medical notes wrote to
+   * two different places: the membership check's confirm step saved through
+   * the member API (SCRUM-32/231, audited, `last_confirmed_at` stamped) while
+   * this gate — the one reception is standing on when a child is being left in
+   * the park's care — pushed the same fields into the browser's copy of the
+   * member, where they were gone on the next reload. Nothing on either screen
+   * said which one you were on.
+   *
+   * These three helpers put the gate on the same route. Only what the gate
+   * actually captures is sent: a name, an age (a real date of birth when the
+   * picker was used), the allergy/medical line and the dietary restriction.
+   * The medical ALERT is deliberately not sent — the gate has no switch for
+   * it, and the API raises it from the allergy text, which is the answer the
+   * counter wants when nobody chose otherwise (see ChildDetailsFields, where
+   * the switch exists and is therefore sent).
+   */
+  const gateChildBody = (slot: SupervisedSlot, age: number): Record<string, unknown> => ({
+    name: slot.name.trim(),
+    dateOfBirth: slot.dateOfBirth ?? null,
+    ageYears: age,
+    allergies: slot.allergiesMedical.trim() || null,
+    foodRestrictions: slot.foodRestrictions.trim() || null,
+  });
+
+  /**
+   * What actually changed against the saved record — or null when nothing did.
+   *
+   * Only changed fields go in, for the reason `childDetailsPatch` gives: a
+   * PATCH that names a field sets it, so re-sending the whole slot would
+   * overwrite the medical notes and the staff notes this gate cannot even
+   * show, and would fill the audit row's before/after with fields nobody
+   * touched.
+   */
+  const gateChildPatch = (
+    slot: SupervisedSlot,
+    age: number,
+    saved: SavedChild,
+  ): Record<string, unknown> | null => {
+    const patch: Record<string, unknown> = {};
+    const name = slot.name.trim();
+    if (name && name !== saved.childName.trim()) patch.name = name;
+    if ((slot.dateOfBirth ?? '') !== (saved.dateOfBirth ?? '')) {
+      patch.dateOfBirth = slot.dateOfBirth ?? null;
+      patch.ageYears = age;
+    } else if (age !== saved.childAge) {
+      patch.ageYears = age;
+    }
+    const allergies = slot.allergiesMedical.trim();
+    if (allergies !== (saved.allergiesMedical ?? '').trim()) patch.allergies = allergies || null;
+    // The slot's dietary box is pre-filled from food restrictions FALLING BACK
+    // to the dietary line (slotPatchFromSavedChild), so it is compared against
+    // the same fallback — otherwise every confirm of an untouched child would
+    // write a copy of their dietary line into their food restrictions.
+    const food = slot.foodRestrictions.trim();
+    if (food !== (saved.foodRestrictions ?? saved.dietary ?? '').trim()) {
+      patch.foodRestrictions = food || null;
+    }
+    return Object.keys(patch).length > 0 ? patch : null;
+  };
+
+  /** Put a child the API has just answered with back onto the member in hand. */
+  const applySavedChild = (child: SavedChild) =>
+    setMember((m) => {
+      if (!m) return m;
+      const children = m.savedChildren ?? [];
+      return {
+        ...m,
+        savedChildren: children.some((c) => c.id === child.id)
+          ? children.map((c) => (c.id === child.id ? child : c))
+          : [...children, child],
+      };
+    });
+
+  /** The slot whose save is in flight, so a second press cannot double-write. */
+  const [confirmingSlotId, setConfirmingSlotId] = useState<string | null>(null);
+
   // "Still correct?" → write any edits back to the saved profile and mark done.
+  // The profile is the member's record on the platform; a correction here is
+  // the same audited PATCH the membership check makes. A slot nobody edited
+  // sends nothing. A failed write leaves the slot UNCONFIRMED and says why —
+  // a green tick over a correction that did not land is the fake success this
+  // ticket exists to remove.
   const handleConfirmSlot = (id: string) => {
+    if (confirmingSlotId) return;
     const slot = superSlots.find((s) => s.id === id);
     const age = slot ? slotAge(slot) : null;
-    if (member && slot?.savedChildId && age !== null) {
-      updateSavedChild(member.id, slot.savedChildId, savedChildInputFromSlot(slot, age));
-      setMember(getMemberById(member.id));
+    const saved = slot?.savedChildId
+      ? member?.savedChildren?.find((c) => c.id === slot.savedChildId)
+      : undefined;
+    const patch = slot && saved && age !== null ? gateChildPatch(slot, age, saved) : null;
+    if (!patch || !slot?.savedChildId) {
+      setConfirmedSavedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      return;
     }
-    setConfirmedSavedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setConfirmingSlotId(id);
+    void membersApi
+      .updateChild(slot.savedChildId, patch)
+      .then((res) => {
+        applySavedChild(apiChildToSavedChild(res.child));
+        setConfirmedSavedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      })
+      .catch((err: unknown) => {
+        toast({
+          title: `Couldn't save ${slot.name.trim() || 'this child'}'s details`,
+          description: `${err instanceof Error ? err.message : 'Unknown error'} The change is still on screen — try again.`,
+          variant: 'destructive',
+        });
+      })
+      .finally(() => setConfirmingSlotId(null));
   };
 
   // Swap a different saved child into this slot (pre-fill, must re-confirm).
@@ -1283,7 +1451,10 @@ export default function Till() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
-  const handleSupervisionContinue = () => {
+  /** True while the gate's children are being written to the member's record. */
+  const [gateSaving, setGateSaving] = useState(false);
+
+  const resolveSupervisionGate = async () => {
     if (!tier || !operator) return;
     const policy = getSupervisionPolicy();
     const resolved = resolveGroupRequirements(
@@ -1321,6 +1492,80 @@ export default function Till() {
       }
     }
 
+    /**
+     * SCRUM-233 — THE CHILDREN ARE SAVED BEFORE ANYTHING ELSE HAPPENS HERE.
+     *
+     * These are the records carrying the allergies and the medical notes for
+     * children about to be left in the park's care, so they go to the member
+     * API — the same `POST /members/:id/children` / `PATCH` the membership
+     * check makes, both audited server-side — and they go FIRST: a failure
+     * leaves the gate exactly as it was, with the form filled in, and nothing
+     * registered, converted or charged behind a save that did not happen.
+     *
+     * A walk-in with no member yet is registered the way the deferred tier
+     * verification registers one (lib/deferredTierVerification): find the
+     * parent's number, or create the member from the number and the name the
+     * consent form already required, then write the children against it. With
+     * no phone on the consent form there is nothing to key a record against —
+     * nothing is written and nothing is claimed.
+     *
+     * A failure part-way through a group leaves the children already written
+     * standing: they are records on the member, each one audited, and the
+     * retry finds them by their slot's `savedChildId` and corrects them rather
+     * than entering them twice.
+     */
+    let guardian = member;
+    try {
+      const parentPhone = superParentPhone.trim();
+      if (!guardian && parentPhone && supervised.length > 0) {
+        guardian = await findOrCreateGateMember(parentPhone, superParentName.trim());
+        setMember(guardian);
+      }
+      if (guardian) {
+        const confirmedChildIds: string[] = [];
+        for (const { slot } of supervised) {
+          const age = slotAge(slot);
+          if (age === null) continue;
+          const saved = slot.savedChildId
+            ? guardian.savedChildren?.find((c) => c.id === slot.savedChildId)
+            : undefined;
+          if (slot.savedChildId && saved) {
+            const patch = gateChildPatch(slot, age, saved);
+            const child = patch
+              ? apiChildToSavedChild((await membersApi.updateChild(slot.savedChildId, patch)).child)
+              : saved;
+            applySavedChild(child);
+            confirmedChildIds.push(child.id);
+          } else {
+            // The photo is deliberately NOT saved (re-taken each visit).
+            const child = apiChildToSavedChild(
+              (await membersApi.addChild(guardian.id, gateChildBody(slot, age))).child,
+            );
+            applySavedChild(child);
+            // Linked to the record it just became, one child at a time: if the
+            // next child's write fails, pressing Continue again corrects this
+            // one instead of entering them a second time.
+            setSuperSlots((prev) =>
+              prev.map((s) => (s.id === slot.id ? { ...s, savedChildId: child.id } : s)),
+            );
+            confirmedChildIds.push(child.id);
+          }
+        }
+        // The visit is what stamps each child as confirmed today — the same
+        // step the membership check takes once its edits have landed.
+        if (confirmedChildIds.length > 0) {
+          await visitsApi.create({ memberId: guardian.id, childIds: confirmedChildIds });
+        }
+      }
+    } catch (err) {
+      toast({
+        title: "Couldn't save these children",
+        description: `${err instanceof Error ? err.message : 'Unknown error'} Nobody has been checked in or charged — the details are still on screen.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Register the supervised children as a walk-in group (consent already taken),
     // so checkInFamilyWithPayment can check them in atomically at payment.
     // Parent phone + contactMethod are shared across all siblings in the group —
@@ -1345,24 +1590,6 @@ export default function Till() {
         acknowledgedConfirmations: buildAcknowledgedConfirmations(policy, superAcknowledgedConfirmationIds),
       },
     );
-
-    // Save / update each supervised child against the member's profile so they
-    // pre-fill next visit. The photo is deliberately NOT saved (re-taken each
-    // visit); a slot already linked to a saved child updates it, otherwise it's
-    // added new. Walk-ins without a member are skipped (nothing to key against).
-    if (member) {
-      for (const { slot } of supervised) {
-        const age = slotAge(slot);
-        if (age === null) continue;
-        const input = savedChildInputFromSlot(slot, age);
-        if (slot.savedChildId) {
-          updateSavedChild(member.id, slot.savedChildId, input);
-        } else {
-          addSavedChild(member.id, input, operator.name);
-        }
-      }
-      setMember(getMemberById(member.id));
-    }
 
     // Audit each staff-authorized sibling waiver.
     for (const { slot, covering } of waiversToAudit) {
@@ -1439,6 +1666,47 @@ export default function Till() {
     } else {
       setActiveLineId(null);
       setStep(5);
+    }
+  };
+
+  // Resolving the gate now writes to the member API, so it is asynchronous and
+  // can be pressed only once at a time; `gateSaving` also parks the Continue
+  // button while the children are being saved.
+  const handleSupervisionContinue = () => {
+    if (gateSaving) return;
+    setGateSaving(true);
+    void resolveSupervisionGate().finally(() => setGateSaving(false));
+  };
+
+  /**
+   * The parent's own record, found by their number or created from it.
+   *
+   * The same two steps `saveDeferredVerification` takes, and for the same
+   * reason: a child's record has to belong to somebody, and the number on the
+   * consent form is who. A create that races another counter comes back
+   * naming the member that already exists, so the children still land on the
+   * right profile rather than failing the gate.
+   */
+  const findOrCreateGateMember = async (phone: string, name: string): Promise<Member> => {
+    const found = (await membersApi.lookup(phone)).member;
+    if (found) return apiMemberToMember(found);
+    if (!name) {
+      throw new Error("Add the parent's name — a child's record has to belong to somebody.");
+    }
+    try {
+      const created = await membersApi.create({
+        phone,
+        nickname: name,
+        preferredChannel: superParentContactMethod,
+      });
+      return apiMemberToMember(created.member);
+    } catch (err) {
+      const existingId =
+        err instanceof ApiError && err.code === 'MEMBER_PHONE_EXISTS'
+          ? (err.details as { memberId?: string } | undefined)?.memberId
+          : undefined;
+      if (!existingId) throw err;
+      return apiMemberToMember((await membersApi.get(existingId)).member);
     }
   };
 
@@ -2109,6 +2377,7 @@ export default function Till() {
               onToggleWaiver={handleToggleWaiver}
               onBack={handleSupervisionBack}
               onContinue={handleSupervisionContinue}
+              busy={gateSaving}
             />
           )}
           {step === 6 && saleResult && (
@@ -2330,15 +2599,7 @@ export default function Till() {
                 value={captureNameInput}
                 onChange={(e) => setCaptureNameInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && captureNameInput.trim() && captureNameFor) {
-                    const newMember = createMember(customerPhone, captureNameInput.trim(), customerContactChannel);
-                    setMember(newMember);
-                    setCustomerNickname(captureNameInput.trim());
-                    setEventPassPrefilledMember(newMember);
-                    setEventPassFor(captureNameFor);
-                    setCaptureNameFor(null);
-                    setCaptureNameInput('');
-                  }
+                  if (e.key === 'Enter') registerEventPassGuest();
                 }}
                 placeholder="e.g. Mama, John"
                 className="mt-1 w-full h-12 rounded-lg border border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
@@ -2354,17 +2615,8 @@ export default function Till() {
               </Button>
               <Button
                 className="flex-1"
-                disabled={!captureNameInput.trim()}
-                onClick={() => {
-                  if (!captureNameFor || !captureNameInput.trim()) return;
-                  const newMember = createMember(customerPhone, captureNameInput.trim(), customerContactChannel);
-                  setMember(newMember);
-                  setCustomerNickname(captureNameInput.trim());
-                  setEventPassPrefilledMember(newMember);
-                  setEventPassFor(captureNameFor);
-                  setCaptureNameFor(null);
-                  setCaptureNameInput('');
-                }}
+                disabled={!captureNameInput.trim() || captureNameBusy}
+                onClick={registerEventPassGuest}
               >
                 Register &amp; continue
               </Button>
