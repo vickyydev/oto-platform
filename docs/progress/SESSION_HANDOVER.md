@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 17:40 — `main` is `8455b48`; staging is `4e67aab` on the api and Console (Render follows CI on `8ee9a5d`, E's payment methods); CI green through `4e67aab`
+> ## Status on 2026-09-23 17:42 — `main` is `58df0e9`; staging is `4e67aab` on the api and Console (Render follows CI on `8ee9a5d`, E's payment methods); CI green through `4e67aab`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -259,9 +259,27 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > lands on the button, Cancel closes creating nothing; nothing left on
 > staging.
 >
-> **Running:** builds — 376 (`wf_ae659bf6`), 206-B (`wf_d5e69115`),
-> C1 fix round (`wf_0d8bd0bd`); evidence — 206-E (`wf_ef2bc5c4`). After
-> wave 2:
+> **17:44 — B's gate: DO NOT MERGE, fix round launched** (`wf_140102f5`; the pre-fix
+> tree on `wip/206-B`). One blocker the suite could not see: the drawer
+> kick's `queueCommand` runs its own `withTx` under the request's
+> idempotency claim AFTER the finalise wrote its answer, so a cash
+> finalise sent with the till's Idempotency-Key stores the command's
+> `{commandId, actionId}` under the key and the dropped-connection retry
+> replays that — no sale, no receipt. No test sent the header. Everything
+> else green (171 tests, the full api suite 1190/1191 with the one red
+> E's transient probe), both plants reproduced plus the gate's own
+> (`paid_at` guarded). B's deviations, accepted: the drawer kick is a
+> `drawer_kick` BOX COMMAND with `finish.drawerKick`, not a print job
+> (`PrintKind` is a closed union in three copies); the box side —
+> `case 'drawer_kick'` in `executeCommand` — is still missing and goes to
+> G (agent.ts's sale-facing part); until then the box answers
+> `UNKNOWN_COMMAND` and the drawer opens by hand. Part payment (O-5) is
+> live: a short tender answers 200 `finalised:false`, `SALE_NOT_PAID` is
+> gone; the replay net on `action_id` is armed; `tenderMethodOf` moved to
+> `attempt.ts` (382's fix lands there).
+>
+> **Running:** builds — 376 (`wf_ae659bf6`), B fix round (`wf_140102f5`), C1 fix round
+> (`wf_0d8bd0bd`); evidence — 206-E (`wf_ef2bc5c4`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
