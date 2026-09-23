@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 19:56 — `main` is `0a91bd1`; staging is `83ffc36` on the api, POS and Console; CI green through `83ffc36`
+> ## Status on 2026-09-23 20:13 — `main` is `24e608d`; staging is `83ffc36` on the api, POS and Console; CI green through `83ffc36`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -455,7 +455,22 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > nothing taken; EDC 1's next outcome left at Decline, EDC 3's at
 > Approve (in-process; reset on restart — set before a demo).
 >
-> **Running:** D fix round (`wf_b6ffb273`), G fix round (`wf_1bc3a29f`).
+> **20:12 — landed tenders Slice D** (`24e608d`, 37 files; fix-round gate
+> MERGE — boot-guard 20/20, the full api suite 1,282 green, six findings
+> folded: the poller comment, an over-long path token now 200 + a run,
+> an absent currency is a mismatch, `isAboutTheMerchant` called at the
+> top of the non-paid path, the poller oldest-first, the stamp kept
+> unparsed; one false citation `:527` → `:349` corrected by hand in four
+> places; `wip/206-D` dropped). `packages/payments-2c2p` (node:crypto
+> only), `services/payments/gateway.ts`, the webhook, two jobs, 19
+> `PGW_*`/`PAYMENT_PENDING_MIN` variables (names in `.env.example` and
+> render.yaml's api block; the three non-secret ones set on the Render api
+> service: provider simulator, prefix SBX, inquiry 10 s), the Console's
+> gateway simulator panel. Open for the sandbox session: the gateway
+> stamp's zone (paid_at is our receipt clock until 2C2P settles it);
+> O-1 the credentials. Staging pass queued (`wf_…de`).
+>
+> **Running:** G fix round (`wf_1bc3a29f`); evidence — D (`wf_…de`).
 > checkpoint part 1 landed: the tenders plan and its five reader findings in `docs/progress/plans/206-tenders/` (the void password redacted in its plain AND hex forms — the gate found the seventh, hex-encoded in a sample frame), the session helpers in `scripts/session/` with a README (the two mutating Render scripts now need `--apply`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
