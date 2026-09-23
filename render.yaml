@@ -262,6 +262,11 @@ services:
 
       # -- how the api sits behind Render's proxy ----------------------------
       - key: TRUST_PROXY
+        # THE FALLBACK, not what decides here: TRUST_PROXY_ADDRS below is set on
+        # this service and replaces this count entirely. It stays at 1 so that a
+        # deployment which somehow loses the list still trusts one hop rather
+        # than none — the fail-closed count, not the right answer.
+        #
         # One hop, counted inward from the socket. X-Forwarded-For is appended
         # left to right, so one trusted hop makes req.ip the LAST entry — the
         # address the proxy on the socket recorded, the one part of the header
@@ -269,30 +274,55 @@ services:
         # bucket, the sign-in failure count and the booth and box credential
         # throttles, so it has to be an address nobody chose for themselves.
         #
-        # 1 IS THE FAIL-CLOSED CHOICE, NOT A MEASURED CHAIN DEPTH. This service
-        # answers on its own hostname, but not directly: GET /health comes back
-        # server: cloudflare with a cf-ray, so Cloudflare fronts it and Render's
-        # load balancer sits behind that. How many of those proxies append to
-        # X-Forwarded-For — and whether the POS site's /api/* rewrite adds one
-        # more — is UNMEASURED. Too low a count only aggregates callers who
-        # share a proxy into one bucket; too high files a request under an entry
-        # the caller wrote, buying them a fresh rate-limit bucket and a fresh
-        # run of password guesses per request. So it stays at the value that
-        # cannot be wrong in the dangerous direction.
+        # MEASURED ON THIS SERVICE, 23 Sep 2026, at deploy 2845135 — the first
+        # deploy on which the count took effect at all (SCRUM-353's measurement
+        # card). One trusted hop reaches CLOUDFLARE'S EDGE and stops there. The
+        # forged header stayed ignored and the POS site's /api/* rewrite added
+        # no hop of its own, but the caller was never reached: one machine's 20
+        # requests were spread across four counters, one per edge that answered
+        # it (104.22.66.228, 104.22.147.184, 104.22.160.51, 172.71.124.164),
+        # and everyone else arriving through one edge shares that edge's single
+        # allowance. So the count is wrong in both directions at once here.
         #
-        # STILL TO MEASURE ON THE RUNNING DEPLOYMENT (SCRUM-353), and only
-        # measurable once this deploys: until fastify's numeric trustProxy was
-        # replaced with the equivalent function in apps/api/src/app.ts, the
-        # count was not applied at all, so nothing about the chain could be read
-        # off the live service. After the redeploy, send one request through the
-        # /api/* rewrite carrying a junk X-Forwarded-For and one without, then
-        # the same pair straight to this hostname, and watch
-        # x-ratelimit-remaining: if a caller's own address does not key the
-        # bucket, the chain is deeper than one hop. The answer then is to trust
-        # the Cloudflare and Render hops by ADDRESS, never to raise this count,
-        # which would reopen the forgery above. The loud symptom of being a hop
-        # short is a whole mall sharing one bucket and being refused at once.
+        # RAISING IT IS NOT THE ANSWER AND NEVER WILL BE: a count cannot check
+        # that hop 1 really is Cloudflare, so 2 would equally trust whatever a
+        # request that bypassed Cloudflare wrote in that position — a fresh
+        # rate-limit bucket and a fresh run of password guesses per request.
+        # The hops are named by address instead, immediately below (SCRUM-367).
         value: '1'
+      - key: TRUST_PROXY_ADDRS
+        # WHICH proxies in front of this service are ours, by address. Set, it
+        # replaces the count above: X-Forwarded-For is walked from the right and
+        # every entry whose address is on this list is stepped over, so req.ip
+        # is the first entry no listed proxy wrote — the caller. An entry only
+        # carries weight if the address in it is one of ours, so a request that
+        # reached the api without passing through these proxies cannot buy
+        # itself a hop by writing one.
+        #
+        # NOT A SECRET: every address here is published, and the list says only
+        # which public networks are allowed to speak for a caller.
+        #
+        # TWO SOURCES, both fetched 23 Sep 2026:
+        #   10.0.0.0/8   Render's internal network — the peer on the socket,
+        #                which is the balancer in front of this container. The
+        #                addresses seen on it were 10.24-10.30.x (SCRUM-353);
+        #                the /8 is the whole private range rather than a guess
+        #                at which part of it this service is scheduled onto.
+        #   the rest     Cloudflare's published ranges, verbatim, IPv4 then
+        #                IPv6: https://www.cloudflare.com/ips-v4 and
+        #                https://www.cloudflare.com/ips-v6 — 15 and 7 blocks.
+        #                104.16.0.0/13 and 172.64.0.0/13 are the two the
+        #                measurement actually saw; the others are the same
+        #                service's other edges.
+        #
+        # MAINTENANCE: Cloudflare changes these rarely and announces it. If a
+        # range is retired the worst case is a caller filed under a Cloudflare
+        # edge again — the same defect this closes, not a new hole — and if one
+        # is added before it is listed here, the same. Re-fetch both lists when
+        # Cloudflare publishes a change. A malformed entry refuses the boot
+        # (apps/api/src/env.ts), so a typo here is a deploy that does not start
+        # rather than a service that quietly trusts nothing.
+        value: '10.0.0.0/8,173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32'
       - key: COOKIE_SECURE
         # HTTPS only. The api refuses to boot in production without this.
         value: 'true'
@@ -829,6 +859,19 @@ services:
         # X-Forwarded-For is unmeasured here as well — 1 trusts only the entry
         # the socket peer wrote, and every hop past the real ones is an entry
         # the caller could have written themselves.
+        #
+        # AND WHAT THE MEASUREMENT ON THE API SUGGESTS IS TRUE HERE TOO, though
+        # it has NOT been measured on this hostname: there one trusted hop
+        # reached Cloudflare's edge rather than the caller (SCRUM-353), which
+        # is what TRUST_PROXY_ADDRS on the api service now fixes by naming the
+        # hops. This app reads req.ip for its per-address kiosk throttles
+        # (server/routes.ts, takeKioskAttempt with an `…-ip:` key), so those
+        # are very likely counting an edge rather than a device — one kiosk
+        # spread over several edges, and every caller behind one edge sharing a
+        # ceiling. The cookie reason for 1 is unaffected either way: Express
+        # reads X-Forwarded-Proto as soon as it trusts the socket peer. Giving
+        # this app the same address list is a change to this app and its own
+        # measurement, and SCRUM-367 did not make it.
         value: '1'
 
       # -- secrets ------------------------------------------------------------

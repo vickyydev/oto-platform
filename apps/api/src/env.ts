@@ -1,5 +1,6 @@
 import { config as loadDotenv } from 'dotenv';
 import { fileURLToPath } from 'node:url';
+import { isIP } from 'node:net';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { parseAppOrigins, parseHandoffKeys } from './services/handoff';
@@ -7,6 +8,52 @@ import { parseStaffTokenKey } from './lib/staff-token-key';
 
 // .env lives at the repository root; entrypoints may run from any package cwd.
 loadDotenv({ path: join(dirname(fileURLToPath(import.meta.url)), '../../../.env'), quiet: true });
+
+/**
+ * `TRUST_PROXY_ADDRS` split into the entries `@fastify/proxy-addr` compiles:
+ * one IP address or CIDR block each, in order, with blanks dropped.
+ *
+ * The check is here for the diagnosis, not the refusal. proxy-addr compiles
+ * the list when the Fastify instance is built and throws on a bad entry, so a
+ * mistyped block refuses the boot either way — but as a bare
+ * `TypeError: invalid range on address` from inside the constructor, with
+ * nothing pointing at the variable. Checking here names `TRUST_PROXY_ADDRS`
+ * and the offending entry in the message the deploy log shows.
+ *
+ * Accepted: an address (`10.0.0.1`, `2400:cb00::1`) or an address with a
+ * prefix length (`10.0.0.0/8`, `2400:cb00::/32`), the prefix checked against
+ * the same bounds proxy-addr applies — 1 to 32 for IPv4 and 1 to 128 for IPv6.
+ * NOT accepted, though proxy-addr would take them: its named ranges
+ * (`loopback`, `linklocal`, `uniquelocal`) and an IPv4 netmask in place of a
+ * prefix length. This variable names the proxies of one deployment, and a
+ * shorter vocabulary is one fewer way for a typo to land as something valid.
+ */
+function parseTrustedProxies(value: string): string[] {
+  const entries = value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+  for (const entry of entries) {
+    const slash = entry.lastIndexOf('/');
+    const address = slash === -1 ? entry : entry.slice(0, slash);
+    const kind = isIP(address);
+    if (kind === 0) {
+      throw new Error(`"${entry}" is not an IP address or a CIDR block`);
+    }
+    if (slash !== -1) {
+      const prefix = entry.slice(slash + 1);
+      const max = kind === 6 ? 128 : 32;
+      if (!/^\d+$/.test(prefix) || Number(prefix) < 1 || Number(prefix) > max) {
+        throw new Error(
+          `"${entry}" needs a prefix length between 1 and ${max} for an IPv${kind} block`,
+        );
+      }
+    }
+  }
+
+  return entries;
+}
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -32,6 +79,9 @@ const EnvSchema = z.object({
   CODE_MAX_ATTEMPTS: z.coerce.number().int().default(5),
   /**
    * How many proxy hops in front of the api are ours (S2-01a, SCRUM-353).
+   * THE FALLBACK: `TRUST_PROXY_ADDRS` below replaces this wherever it is set,
+   * which on the deployments is everywhere. This is the local-development
+   * form, and the form the api falls back to with no list configured.
    *
    * A COUNT INWARD FROM THE SOCKET. `X-Forwarded-For` is appended left to
    * right, so its rightmost entry is the one the nearest proxy wrote and its
@@ -43,10 +93,13 @@ const EnvSchema = z.object({
    * than generous: `req.ip` keys the per-IP rate-limit bucket
    * (plugins/rate-limit.ts) and the sign-in failure count (services/auth.ts).
    *
-   * On Render this is 1: one trusted hop makes `req.ip` the entry the proxy on
-   * the other end of the socket wrote, which is the one part of the header no
-   * caller can reach. It is the fail-closed choice rather than a measured chain
-   * depth — render.yaml carries the reasoning and the measurement still to run.
+   * A COUNT CANNOT NAME A PROXY, which is why the deployments do not use one
+   * (SCRUM-367): raising it to reach past a proxy trusts whatever wrote the
+   * entry at that position, including on a request that never passed through
+   * that proxy at all. Left at 1 it is the fail-closed choice — it trusts only
+   * the entry the socket peer wrote — and on staging that reached Cloudflare's
+   * edge and stopped there, filing every caller under the edge that answered
+   * them.
    *
    * IT MUST REACH FASTIFY AS A FUNCTION, NOT AS THIS NUMBER. Since
    * fastify@5.12 a numeric `trustProxy` is failed closed — lib/request.js
@@ -57,6 +110,47 @@ const EnvSchema = z.object({
    * function; apps/api/test/trust-proxy.test.ts is what keeps that true.
    */
   TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
+  /**
+   * WHICH proxies in front of the api are ours, by address (SCRUM-367).
+   * Comma-separated addresses and CIDR blocks; empty means the count above
+   * decides instead.
+   *
+   * Set, it REPLACES the count. Fastify hands the list to `@fastify/proxy-addr`
+   * (app.ts), which walks `X-Forwarded-For` from the RIGHT and steps over every
+   * entry whose address is on the list, so `req.ip` is the first entry no
+   * listed proxy wrote — however many listed proxies are in front of it, and
+   * whatever the caller wrote in front of them. An entry only carries weight if
+   * the address in it is one of ours, so a request that reached the api without
+   * passing through those proxies cannot buy itself a hop.
+   *
+   * WHAT IT IS FOR. Measured on staging at deploy 2845135 (SCRUM-353's
+   * measurement card): with the count at 1 the addresses keying the rate-limit
+   * buckets, the per-address sign-in failure count and the booth and box
+   * credential throttles were Cloudflare's — one trusted hop reaches the edge
+   * that answered the caller, and the caller sits one entry further left. So
+   * one machine spent four allowances across four edges while everyone behind
+   * one edge shared a single one. The deployments therefore list the platform's
+   * internal balancer (the socket peer) and Cloudflare's published ranges; the
+   * value, its two sources and the date they were fetched are in render.yaml.
+   *
+   * A malformed entry refuses the boot here, naming the variable and the
+   * entry, rather than as a bare `TypeError` from inside the Fastify
+   * constructor.
+   */
+  TRUST_PROXY_ADDRS: z
+    .string()
+    .default('')
+    .transform((value, ctx): string[] => {
+      try {
+        return parseTrustedProxies(value);
+      } catch (err) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `TRUST_PROXY_ADDRS: ${(err as Error).message}`,
+        });
+        return z.NEVER;
+      }
+    }),
   /**
    * Browser origins allowed to send state-changing requests. Empty = same
    * origin only (the POS is served through the api's own origin rewrite).

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { authThrottle } from '@oto/db';
 import { buildApp, type App } from '../src/app';
@@ -48,8 +49,15 @@ import { createTestContext, teardownAll, type TestContext } from './helpers';
  *     trustProxy:
  *       opts.env.TRUST_PROXY > 0 ? (_addr, hop) => hop < opts.env.TRUST_PROXY : false,
  *
- * These tests are what keeps it in that form: revert it to the number and five
- * of the six below fail, every one of them returning the socket address.
+ * The first describe block is what keeps it in that form: revert it to the
+ * number and five of its six cases fail, every one of them returning the socket
+ * address.
+ *
+ * WHAT THE DEPLOYMENT DOES NOW. The count answered the forgery but not the
+ * question "who is the caller" — measured, it reached Cloudflare's edge and
+ * stopped (SCRUM-353) — so the deployments name their proxies by address in
+ * `TRUST_PROXY_ADDRS` instead, and the count is the fallback behind it. The
+ * second describe block covers that (SCRUM-367).
  */
 
 let ctx: TestContext;
@@ -62,25 +70,22 @@ afterAll(async () => {
 });
 
 /**
- * The count render.yaml sets for `oto-api-staging`, and the one this file
- * defends. ONE hop: `req.ip` is the last `X-Forwarded-For` entry — the address
- * written by the proxy on the other end of the socket, which is the one part
- * of the header no caller can reach.
+ * The count render.yaml still sets for `oto-api-staging`, now as the FALLBACK
+ * behind the address list below (SCRUM-367). ONE hop: `req.ip` is the last
+ * `X-Forwarded-For` entry — the address written by the proxy on the other end
+ * of the socket, which is the one part of the header no caller can reach.
  *
- * ONE IS THE FAIL-CLOSED CHOICE, NOT A MEASURED CHAIN DEPTH. The api answers
- * on its own hostname, but not directly: `GET /health` comes back with
- * `server: cloudflare` and a `cf-ray`, so Cloudflare fronts the service and
- * Render's load balancer sits behind it. How many of those proxies append to
- * `X-Forwarded-For` — and whether the POS site's `/api/*` rewrite adds one
- * more — is UNMEASURED. It could not be measured while the count was being
- * ignored altogether, and can only be measured against the deployment once the
- * app.ts line above ships. Until then 1 is the value that cannot be wrong in
- * the dangerous direction: too low aggregates callers who share a proxy into
- * one bucket, while too high files a request under an address the caller wrote
- * themselves, buying a fresh rate-limit bucket and a fresh run of password
- * guesses on every request. If the measurement then shows a real proxy is
- * being missed, the answer is to trust that hop by ADDRESS, never to raise
- * this count.
+ * ONE IS THE FAIL-CLOSED CHOICE, AND IT IS NOT ENOUGH. Measured on staging at
+ * deploy 2845135, the first on which the count took effect at all: one trusted
+ * hop reaches CLOUDFLARE'S EDGE and stops there. Forged entries stayed ignored
+ * and the POS site's `/api/*` rewrite added no hop, but the caller was never
+ * reached — one machine's requests spread over four edge counters, and
+ * everyone behind one edge shares that edge's allowance. Raising the count is
+ * not the answer, because a count cannot check that hop 1 really is
+ * Cloudflare: 2 would trust the same position on a request that bypassed
+ * Cloudflare, buying a fresh rate-limit bucket and a fresh run of password
+ * guesses on demand. The hops are named by address instead — the second
+ * describe block below.
  */
 const DEPLOYED_HOPS = 1;
 
@@ -101,7 +106,38 @@ async function addressFiledUnder(
   chain: string | null,
   socketAddress = '10.201.0.9',
 ): Promise<string> {
-  const env = loadEnv({ NODE_ENV: 'test', TRUST_PROXY: String(hops) });
+  return filedUnder(loadEnv({ NODE_ENV: 'test', TRUST_PROXY: String(hops) }), chain, socketAddress);
+}
+
+/**
+ * The same question of an api configured with an address LIST (SCRUM-367).
+ *
+ * The count is handed over as well, and deliberately: it is the value the
+ * deployment carries, so every case below would file the request under the
+ * last header entry if the list were being ignored. That is the difference the
+ * list has to make, and it is what the first plant on this file removes.
+ */
+async function addressFiledUnderList(
+  trusted: string,
+  chain: string | null,
+  socketAddress = '10.201.0.9',
+): Promise<string> {
+  return filedUnder(
+    loadEnv({
+      NODE_ENV: 'test',
+      TRUST_PROXY: String(DEPLOYED_HOPS),
+      TRUST_PROXY_ADDRS: trusted,
+    }),
+    chain,
+    socketAddress,
+  );
+}
+
+async function filedUnder(
+  env: ReturnType<typeof loadEnv>,
+  chain: string | null,
+  socketAddress: string,
+): Promise<string> {
   const app: App = await buildApp({ env, db: ctx.db, fileStorage: null });
   try {
     await ctx.db.delete(authThrottle);
@@ -125,8 +161,8 @@ async function addressFiledUnder(
 
 /**
  * A fixture chain, three entries deep, the way one reads on the wire. It is
- * not a claim about how deep the deployment's chain is — that is unmeasured
- * (see DEPLOYED_HOPS); it is a chain long enough to show what each count
+ * not a claim about the deployment's own chain — the measured one is in the
+ * second block below; it is a chain long enough to show what each count
  * reaches.
  *   198.51.100.66  what the client itself put in the header — a forgery
  *   203.0.113.7    the caller, as the front-most proxy actually saw them
@@ -201,5 +237,121 @@ describe('TRUST_PROXY counts hops inward, and a forged entry stays outside them 
       await app.close();
       await ctx.db.delete(authThrottle);
     }
+  });
+});
+
+/**
+ * SCRUM-367 — the same question, answered by ADDRESS instead of by count.
+ *
+ * `TRUST_PROXY_ADDRS` lists the proxies that are ours. proxy-addr walks
+ * `X-Forwarded-For` from the right and steps over every entry whose address is
+ * on the list, so `req.ip` is the first entry no listed proxy wrote. Two
+ * things follow, and they are what the cases below hold: a chain through as
+ * many listed proxies as the deployment has still reaches the caller, and an
+ * entry a caller wrote can never become `req.ip`, because the address in it is
+ * not ours — including on a request that reached the api without passing
+ * through those proxies at all, which is the case a raised hop count gets
+ * wrong.
+ */
+
+/**
+ * The chain the deployment actually produces, from SCRUM-353's measurement on
+ * 23 Sep 2026. The socket is Render's internal balancer; the last header entry
+ * is the Cloudflare edge that answered the caller — `104.22.66.228` is one of
+ * the four that turned up in the buckets that day, and it falls in
+ * `104.16.0.0/13`; the caller's own address is one entry further left.
+ */
+const CF_EDGE = '104.22.66.228';
+/**
+ * The measuring machine was on IPv6 (`2405:9800:…`, AIS Thailand), and its
+ * address keyed nothing. Not in any Cloudflare range — `2405:8100::/32` and
+ * `2405:b500::/32` are the two that start `2405:`, and this is neither.
+ */
+const IPV6_CALLER = '2405:9800:b060::1';
+
+/**
+ * The list render.yaml sets on the api service, read out of the blueprint
+ * rather than copied here. These cases are then about the value the deployment
+ * actually receives: an edit that drops a hop from it fails here rather than on
+ * the running service, and the parse below is the same one that runs at boot.
+ */
+function deployedTrustedProxies(): string {
+  const blueprint = readFileSync(new URL('../../../render.yaml', import.meta.url), 'utf8');
+  const lines = blueprint.split('\n').map((line) => line.trimEnd());
+  const values = lines.flatMap((line, i) => {
+    if (line.trim() !== '- key: TRUST_PROXY_ADDRS') return [];
+    const value = lines.slice(i + 1).find((next) => next.trim().startsWith('value:'));
+    return value ? [value.trim().slice('value:'.length).trim().replace(/^'|'$/g, '')] : [];
+  });
+  expect(values, 'exactly one TRUST_PROXY_ADDRS entry in render.yaml').toHaveLength(1);
+  return values[0]!;
+}
+
+const TRUSTED = deployedTrustedProxies();
+
+describe('TRUST_PROXY_ADDRS names the hops, so the caller keys the bucket (SCRUM-367)', () => {
+  it('reaches past Cloudflare to the caller the edge saw', async () => {
+    // The whole point: the deployed chain, keyed under the visitor rather than
+    // under whichever edge answered them.
+    expect(await addressFiledUnderList(TRUSTED, `${CALLER}, ${CF_EDGE}`)).toBe(CALLER);
+  });
+
+  it('still ignores an entry the caller wrote in front of that', async () => {
+    // Reaching further must not reach as far as the forgery. The list stops at
+    // the first entry no listed proxy wrote, and that entry is the caller — the
+    // invented one in front of them is never read.
+    const filed = await addressFiledUnderList(TRUSTED, `${SPOOF}, ${CALLER}, ${CF_EDGE}`);
+    expect(filed).toBe(CALLER);
+    expect(filed).not.toBe(SPOOF);
+  });
+
+  it('files a request that bypassed Cloudflare under the address the balancer recorded', async () => {
+    // The case a hop count cannot get right. Here the chain is one entry short
+    // — the caller reached Render without passing through Cloudflare, so the
+    // only appended entry is the balancer's — and the caller has written an
+    // address of their own in front of it. A count of 2 would file this under
+    // the forgery; the list files it under the address the balancer recorded,
+    // because the forgery's address is not one of ours.
+    const filed = await addressFiledUnderList(TRUSTED, `${SPOOF}, ${CALLER}`);
+    expect(filed).toBe(CALLER);
+    expect(filed).not.toBe(SPOOF);
+  });
+
+  it('reaches an IPv6 caller the same way', async () => {
+    // The address the measurement expected to see and never did.
+    expect(await addressFiledUnderList(TRUSTED, `${IPV6_CALLER}, ${CF_EDGE}`)).toBe(IPV6_CALLER);
+  });
+
+  it('leaves the count in charge when no list is set', async () => {
+    // The fallback still works, and this is also the defect the list closes:
+    // at the deployed count and with no list, the same chain keys the edge.
+    expect(await addressFiledUnder(DEPLOYED_HOPS, `${CALLER}, ${CF_EDGE}`)).toBe(CF_EDGE);
+  });
+
+  it('carries the hops the measurement saw', () => {
+    const entries = TRUSTED.split(',').map((entry) => entry.trim());
+    // Render's internal network: the peer on the socket, without which the
+    // header is not read at all.
+    expect(entries).toContain('10.0.0.0/8');
+    // The two Cloudflare ranges the staging buckets were keyed on.
+    expect(entries).toContain('104.16.0.0/13');
+    expect(entries).toContain('172.64.0.0/13');
+    // Published IPv6 as well: an IPv6 edge that is not listed would put the
+    // deployment straight back where it started.
+    expect(entries.some((entry) => entry.includes(':'))).toBe(true);
+  });
+
+  it('refuses the boot on a malformed block, naming the variable', () => {
+    // proxy-addr would refuse it too, when the Fastify instance is built, but
+    // as a bare TypeError with nothing pointing at the variable — the check in
+    // env.ts is what names TRUST_PROXY_ADDRS and the entry in the deploy log.
+    expect(() => loadEnv({ NODE_ENV: 'test', TRUST_PROXY_ADDRS: '10.0.0.0/8,104.16.0.0/64' })).toThrow(
+      /TRUST_PROXY_ADDRS/,
+    );
+    expect(() => loadEnv({ NODE_ENV: 'test', TRUST_PROXY_ADDRS: '10.0.0.0/8,cloudflare' })).toThrow(
+      /TRUST_PROXY_ADDRS/,
+    );
+    // And the value the deployment is given is not one of those.
+    expect(() => loadEnv({ NODE_ENV: 'test', TRUST_PROXY_ADDRS: TRUSTED })).not.toThrow();
   });
 });

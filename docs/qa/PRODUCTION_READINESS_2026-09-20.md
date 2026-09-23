@@ -442,8 +442,10 @@ POS's own on-screen wording — "client activity", the History tab's client view
 These are not defects. They are things the code cannot tell me and one look at
 the running deployment can.
 
-1. ~~**The proxy hop count.**~~ **CLOSED 23 Sep 2026 — measured, and worse than
-   the question assumed (SCRUM-353).** The count was not one hop short; it was
+1. **The proxy hop count.** **ANSWERED TWICE, 23 Sep 2026, and open only on the
+   deployment now: the count was inert, and once fixed it reached Cloudflare
+   rather than the caller, so the hops are named by address instead
+   (SCRUM-353, SCRUM-367).** The count was not one hop short; it was
    not being applied at all. Since `fastify@5.12` a numeric `trustProxy` is
    failed closed — `lib/request.js` returns `function () { return false }` for
    it, on the reasoning that a hop count cannot validate the immediate peer —
@@ -466,21 +468,42 @@ the running deployment can.
    equivalent hop-count *function*, which `proxy-addr` has always accepted and
    Fastify's own types declare, pinned by `apps/api/test/trust-proxy.test.ts`.
 
-   The count itself stays **1**, and it is worth being exact about why, because
-   the obvious reason is wrong: this service does *not* answer the internet
-   directly. `GET /health` comes back `server: cloudflare` with a `cf-ray`, so
-   Cloudflare fronts it and Render's load balancer sits behind that. How many of
-   those proxies append to `X-Forwarded-For`, and whether the static site's
-   `/api/*` rewrite adds one more, is **unmeasured** — it could not be measured
-   while the count was being ignored altogether, and can only be measured
-   against the deployment once this line ships. 1 is therefore the fail-closed
-   choice rather than a measured depth: too low only aggregates callers who
-   share a proxy into one bucket, while too high files requests under an entry
-   the caller wrote and hands out fresh buckets and fresh password-guess runs on
-   demand. What remains open, and the two-request check that settles it, is
-   recorded against the api's `TRUST_PROXY` in `render.yaml`; if the
-   measurement shows a real proxy is being missed, the answer is to trust that
-   hop by address rather than to raise the count.
+   **Then measured, 23 Sep 2026, on the deploy that made the count take effect
+   — and the count is not the answer either (SCRUM-367).** Twenty-eight
+   requests from one machine against staging, straight to the api and through
+   the POS site's `/api/*` rewrite, with and without a forged
+   `X-Forwarded-For`, watching `x-ratelimit-remaining` and the `auth_throttle`
+   rows afterwards. Three findings. The forgery is **ignored**: ten requests
+   carried `198.51.100.66` and no counter was ever keyed on it, so
+   `TRUST_PROXY=1` does exactly what it promises. The rewrite adds **no hop**:
+   those requests landed in the same counters as the direct ones. But the
+   caller is **not reached**: the four addresses keying the buckets were
+   Cloudflare's (`104.22.66.228`, `104.22.147.184`, `104.22.160.51`,
+   `172.71.124.164` — `104.16.0.0/13` and `172.64.0.0/13`), and the measuring
+   machine's own address appeared nowhere. One trusted hop reaches the edge
+   that answered the caller, and the caller sits one entry further left. So the
+   original fear stands in a different shape: one machine held four allowances,
+   one per edge, while everyone arriving through a single edge shares that
+   edge's one — a noisy caller can still spend the park's allowance, and the
+   sign-in throttle groups whole districts under one edge.
+
+   **The fix is to name the hops, never to raise the count.** A count cannot
+   check that hop 1 really *is* Cloudflare, so 2 would equally trust whatever a
+   request that bypassed Cloudflare wrote in that position. `apps/api/src/app.ts`
+   therefore takes an address list — `TRUST_PROXY_ADDRS`, comma-separated CIDR
+   blocks, validated at boot in `apps/api/src/env.ts` so a malformed block
+   refuses the deploy — and hands it to Fastify, which walks `X-Forwarded-For`
+   from the right and steps over every entry whose address is listed. The list
+   is Render's internal network (`10.0.0.0/8`, the socket peer) plus
+   Cloudflare's published IPv4 and IPv6 ranges, fetched 23 Sep 2026 and carried
+   with its sources in `render.yaml`; `TRUST_PROXY=1` stays behind it as the
+   fail-closed fallback. `apps/api/test/trust-proxy.test.ts` holds it there:
+   the deployed chain keys the caller, a forgery in front of the caller is
+   still out of reach, a request that never passed through Cloudflare is keyed
+   on the address Render's balancer recorded rather than on the one it invented,
+   and the blueprint's own value is the one the cases run against. **Open until
+   the variable is set on Render and the four series are re-run:** the counters
+   must then key on the caller's own address.
 2. **The `Origin` header survives the rewrite.** The whole write surface
    depends on it (`app.ts:149-157`). If Render's rewrite rewrites or strips
    `Origin`, either every write is refused (`ORIGIN_NOT_ALLOWED`) or the check
