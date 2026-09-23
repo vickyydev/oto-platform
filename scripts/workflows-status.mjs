@@ -117,12 +117,16 @@ function collect() {
           return { label: e.label ?? e.phase, state, age, last };
         });
 
-      const live = agents.some((a) => ['working', 'quiet', 'spawning'].includes(a.state));
+      // A resumed run keeps its cut-off agents beside the ones that replaced
+      // them (same label, started later), so the run's state is read from the
+      // LAST agent of each label — the earlier one is history, still listed.
+      const latest = [...new Map(agents.map((a) => [a.label, a])).values()];
+      const live = latest.some((a) => ['working', 'quiet', 'spawning'].includes(a.state));
       const state = live
         ? 'running'
-        : agents.some((a) => a.state === 'stopped')
+        : latest.some((a) => a.state === 'stopped')
           ? 'stopped'
-          : agents.every((a) => a.state === 'returned')
+          : latest.every((a) => a.state === 'returned')
             ? 'done'
             : 'stalled';
       runs.push({ run, touched, agents, state });
