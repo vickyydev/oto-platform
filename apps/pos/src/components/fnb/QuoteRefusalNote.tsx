@@ -1,4 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
+import type { QuoteError } from '@/lib/cartQuote';
 
 /**
  * THE PLATFORM LOOKED AT THIS ORDER AND OBJECTED — S2-09b.
@@ -17,20 +18,30 @@ import { AlertTriangle } from 'lucide-react';
  * the note tells the person at the counter what the disabled button is waiting
  * for instead of leaving them to guess. The caller decides: the station that
  * turns the button off passes it, one that only reports the refusal does not.
+ *
+ * SCRUM-351 gave the hook a typed error, and this note prints `.message` — the
+ * platform's own words, the string this prop used to be — so its wording is
+ * what it was before that ticket. It draws whatever it is handed and does not
+ * read the kind: the F&B station (`pages/OrderStation.tsx`) hands it refusals
+ * only and draws a fault in `QuoteFaultNote` beside it, while the shop station
+ * (`pages/MerchStation.tsx`) still hands over both, unchanged by that ticket and
+ * with a fault still shown here as a refusal until it is given the same
+ * treatment.
  */
 export function QuoteRefusalNote({
   error,
   blocking = false,
 }: {
-  error: string | null;
+  error: QuoteError | null;
   blocking?: boolean;
 }) {
   if (!error) return null;
+  const message = error.message;
   return (
     <div className="flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0">
-        <span className="font-semibold">The platform refused this order:</span> {error}
+        <span className="font-semibold">The platform refused this order:</span> {message}
         {blocking && (
           <span className="mt-1 block text-rose-200/80">
             Fix this to charge — the sale would be refused for the same reason.

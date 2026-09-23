@@ -48,14 +48,80 @@ import { ApiError } from '@/api/client';
  * signature; an answer whose sequence is not the latest is dropped.
  */
 
+/**
+ * WHAT CAME BACK INSTEAD OF A PRICE — SCRUM-351.
+ *
+ * Two facts that a counter has to act on differently used to arrive here as one
+ * string, and the F&B station told them apart by matching the message text
+ * (`PLATFORM_FAULT_MESSAGES` in `pages/OrderStation.tsx`, now deleted):
+ *
+ *   - a REFUSAL is about THIS cart. The platform read it and objected — a
+ *     required question nobody answered, an option that is not in its group, a
+ *     price that moved. The commit meets the same rule the quote did, so
+ *     charging on it can only carry the guest to the payment screen and fail
+ *     there.
+ *   - a FAULT says nothing about the cart: the api's own 5xx envelope, or a
+ *     status text from a proxy when nothing of ours ran. This till's arithmetic
+ *     is the documented fallback for exactly that, and an outage upstream is not
+ *     a reason to stop taking money.
+ *
+ * `message` is the string this field used to be — the platform's own words — so
+ * a component that only prints the error reads `.message` and changes nothing
+ * else about what it shows.
+ */
+export interface QuoteError {
+  kind: 'refusal' | 'fault';
+  /** The HTTP status that carried it; null when the rejection was not an `ApiError`. */
+  status: number | null;
+  /** The platform's error code, `UNKNOWN` for a body with no envelope of ours; null off an `ApiError`. */
+  code: string | null;
+  /** The platform's own words, for the note at the counter. */
+  message: string;
+}
+
+/**
+ * A REFUSAL IS A 4xx THAT CARRIED A PLATFORM ERROR ENVELOPE, and nothing else.
+ *
+ * The envelope is the evidence that our code read the cart and judged it:
+ * `api/client.ts` takes `code` from the body's `error.code` and falls back to
+ * `UNKNOWN` when the body had no envelope, which is what a proxy's own page
+ * arrives as. A 5xx is our code failing rather than judging.
+ *
+ * The last arm is defensive rather than a case seen in practice: `quoteCart` and
+ * `quoteItemCart` re-throw an `ApiError` and answer every other failure with
+ * this till's own figures (`api/sales.ts`), so a request that reached no server
+ * arrives as a quote and not as an error at all. It is written down so that an
+ * unexpected rejection cannot read as the platform refusing the cart.
+ */
+function quoteErrorOf(err: unknown, fallbackMessage: string): QuoteError {
+  if (err instanceof ApiError) {
+    const refused = err.status >= 400 && err.status < 500 && err.code !== 'UNKNOWN';
+    return {
+      kind: refused ? 'refusal' : 'fault',
+      status: err.status,
+      code: err.code,
+      message: err.message,
+    };
+  }
+  return {
+    kind: 'fault',
+    status: null,
+    code: null,
+    message: err instanceof Error ? err.message : fallbackMessage,
+  };
+}
+
 export interface CartQuoteState {
   /** What every component that shows money reads. Never null — there is always a figure. */
   totals: OrderTotals;
   quote: CartQuote;
   /** A platform round trip is in flight and this figure may yet be replaced. */
   pending: boolean;
-  /** The platform looked at this cart and objected. The figure shown is this till's. */
-  error: string | null;
+  /**
+   * What came back instead of a price, and whether it was about this cart. Null
+   * when the platform answered. The figure shown is this till's either way.
+   */
+  error: QuoteError | null;
 }
 
 /** The prototype's own totals, for a cart the engine will not price. */
@@ -171,7 +237,7 @@ export function useCartQuote(args: {
 
   const [platform, setPlatform] = useState<{ signature: string; quote: CartQuote } | null>(null);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<QuoteError | null>(null);
   const seqRef = useRef(0);
 
   useEffect(() => {
@@ -195,13 +261,7 @@ export function useCartQuote(args: {
         .catch((err: unknown) => {
           if (seqRef.current !== seq) return;
           setPlatform(null);
-          setError(
-            err instanceof ApiError
-              ? err.message
-              : err instanceof Error
-                ? err.message
-                : 'The platform refused this cart.',
-          );
+          setError(quoteErrorOf(err, 'The platform did not price this cart.'));
           setPending(false);
         });
     }, QUOTE_DEBOUNCE_MS);
@@ -284,7 +344,7 @@ export function useItemCartQuote(args: {
 
   const [platform, setPlatform] = useState<{ signature: string; quote: CartQuote } | null>(null);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<QuoteError | null>(null);
   const seqRef = useRef(0);
 
   useEffect(() => {
@@ -312,13 +372,7 @@ export function useItemCartQuote(args: {
         .catch((err: unknown) => {
           if (seqRef.current !== seq) return;
           setPlatform(null);
-          setError(
-            err instanceof ApiError
-              ? err.message
-              : err instanceof Error
-                ? err.message
-                : 'The platform refused this order.',
-          );
+          setError(quoteErrorOf(err, 'The platform did not price this order.'));
           setPending(false);
         });
     }, QUOTE_DEBOUNCE_MS);
