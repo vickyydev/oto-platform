@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 16:48 — `main` is `186316e`; staging is `a0d8cab` (Render is deploying `3317360`); CI green through `a0d8cab`
+> ## Status on 2026-09-23 16:57 — `main` is `f212a5d`; staging is `3317360` on the api (the POS and Console wait on the first CI run with the Console job); CI green through `3317360`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -113,10 +113,34 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > and walks 365 to Deployed only on green; a red run holds deploys at
 > `3368e82` until fixed.
 >
-> **Running:** builds — 362 (`wf_a0a8fac3`), 364 (`wf_ac4191fc`), 206-B
-> (`wf_d5e69115`), 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`);
-> evidence — 367 (`wf_65113495`), 361+363 (`wf_00be1ca9`), 365's CI run
-> watcher. After wave 2:
+> **16:54 — landed 362** (`f212a5d`, gate MERGE, Testing): the F&B and
+> shop stations take a promo code in the till's design, price it locally
+> the way the platform does (item lines mapped into the engine's terms
+> with kind and category walk; local = platform proved on the wire on
+> every quote), and send it with the sale; a free-item code is refused at
+> the entry with the reason. Raised from it: **373** (the station's
+> receipt and the till's own reports don't see the code — the ledger
+> does), **374** (a code's usage limit is enforced nowhere on the
+> platform; the stations count nothing), **375** (fold the twin quote
+> hook into `cartQuote.ts`); 368 updated (a free-item line has no
+> platform id until SCRUM-203's id question is settled). The lock
+> decision from 360 is **371**; the Pay-button reason is **372**.
+>
+> **16:54 — 367 measured on the live deploy: 3 of 4, NOT walked.** Direct
+> to the api host the caller keys the buckets, the forgery is ignored,
+> nothing keys on an edge — but through the POS site's `/api/*` rewrite,
+> the path EVERY till uses, the platform sees Render's egress
+> (`74.220.48.5`, oregon-egress, a /20 shared with other tenants) as the
+> caller: every till shares one throttle bucket. Trusting that range is
+> not the fix (any tenant could forge past the throttle). Raised **376**
+> (High, blocks 367); an investigation run (`wf_78e9c6ef`) measures what
+> the rewrite carries and proposes the shape — no code until it returns.
+> The measured card is on 367 (`staging-367-measured.png`).
+>
+> **Running:** builds — 364 (`wf_ac4191fc`), 206-B (`wf_d5e69115`),
+> 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`); evidence — 361+363
+> (`wf_00be1ca9`), 365's CI run watcher (`wf_51fc683a`), 366
+> (`wf_f64ff095`); investigation — 376 (`wf_78e9c6ef`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
