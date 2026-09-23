@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 18:47 — `main` is `3d1c4ef`; staging is `c61289d` on the api (POS at `9b86938`+); CI green through `c61289d`
+> ## Status on 2026-09-23 19:31 — `main` is `83ffc36`; staging is `c61289d` on the api (POS at `9b86938`+); CI green through `c61289d`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -380,7 +380,47 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > goes in the drawer each time), stated so it is a decision when the
 > box handler lands.
 >
-> **Running:** builds — D (`wf_987e09f1`), C2 (`wf_5922a49a`), G (`wf_fdfec96a`);
+> **19:29 — landed tenders Slice C2** (`83ffc36`, gate MERGE — 22+5
+> tests end to end through the real command queue and result route, the
+> Console e2e driving the simulator panel, four plants incl. the gate's
+> own two): the card tender in the cloud — `services/payments/terminal.ts`,
+> the `/payments` routes (attempts, poll, inquire, confirm, manual, the
+> box's result route under a box credential), the Console's terminal
+> simulator panel; nothing in it closes a sale (an approved tender covers
+> the balance; finalise allocates the receipt — F wires that). Raised from
+> its gate: **388** (High) a second Card press while the first
+> is at the terminal opens a second full tender (before F); **390** a late
+> progress report can overwrite a settled attempt's references; **389**
+> the box's result route has no per-address ceiling. **Gate incident, recovered:**
+> the C2 gate ran `git stash push --keep-index` + `git checkout -- .`
+> mid-review — every live slice's tracked edits stashed — and popped
+> them back at once; the tree was verified identical (24 files, same
+> diffstat, untracked never touched). A lint error in the committed
+> `scripts/session/jira-lib.mjs` (`no-empty`) would have held CI —
+> fixed (`97d738c`). `route-write-conformance.test.ts` carries D's and
+> an unclaimed refactor's hunks (readSourceFiles walking subdirectories;
+> `test/route-source.ts` +45 — D-flavoured); C2's two entries were
+> hunk-picked. Staging pass queued (`wf_61eb87e3`).
+>
+> **19:36 — D's gate: DO NOT MERGE, fix round launched** (`wf_b6ffb273`;
+> the pre-fix tree on `wip/206-D` = `558776c`, 35 files, render.yaml's
+> api hunk only). The slice held on substance — the nine webhook steps
+> read hunk by hunk against PAYMENT_GATEWAY.md, 67 package + 30 api
+> tests, both plants reproduced, the gate's own three (dedupe, signature,
+> production refusal) red as required, zero secrets, no third-party
+> dependency (node:crypto for HS256/RSA-OAEP/A256GCM/PS256). One blocker:
+> `resolveGatewayProvider` dereferences `PGW_MERCHANT_ID.trim()` unguarded
+> and `assertProductionSafe` now calls it, so `boot-guard.test.ts` (a
+> partial Env) throws on all 13 assertions — the production boot guard's
+> test masked. Six small findings folded into the round (the poller
+> comment's arithmetic, a >200-char token answering 400, the currency
+> check skipped when absent, an unused export, the poller's order
+> starving the oldest past 200, the stamp's timezone). D's facts for F
+> are in its build report (openQrAttempt → qrPayload rendered locally;
+> poll the attempt at ~3 s; created → sent_to_terminal → approved /
+> cancelled / awaiting_staff_confirmation; no push).
+>
+> **Running:** builds — G (`wf_fdfec96a`), D fix round (`wf_b6ffb273`); evidence — C2 (`wf_61eb87e3`);
 > checkpoint part 1 landed: the tenders plan and its five reader findings in `docs/progress/plans/206-tenders/` (the void password redacted in its plain AND hex forms — the gate found the seventh, hex-encoded in a sample frame), the session helpers in `scripts/session/` with a README (the two mutating Render scripts now need `--apply`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
