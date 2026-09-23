@@ -4,6 +4,33 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 14:36 — `main` is `097b73b`; staging is `7b746f1` (Render is deploying `604ef31` → `097b73b`); CI green through `3ba0840`
+>
+> **Since 14:14:** landed **333/334** (`bb8be9a` — the sale read names its
+> document check; dashes until a play length is chosen), **342** (`604ef31`
+> — Charge disabled during a platform refusal, enabled through an outage),
+> **346** (`097b73b` — the Discounts rows on the light admin). **Deployed:**
+> 335 (its pass also confirmed live that `TRUST_PROXY=1` is one hop short
+> behind Cloudflare + Render → 353). Raised: 350 (customer display ฿0 for a
+> drop-off child awaiting a length — building), 351 (the quote hook should
+> carry the error kind — building), 352 (mobile sheet and shop cart charge
+> gate — after 351 and 349), 353 (proxy hops — building), 354 (back-office
+> dark-surface sweep — building).
+>
+> **Running:** gates — 337/338 (`wf_438d7369`); builds — 341
+> (`wf_6eb93633`), 347 (`wf_5543a1c8`), 206-A (`wf_60563353`), 343/344
+> (`wf_af0f3e9b`), 349 (`wf_d3ec6f47`), 350 (`wf_a39c3940`), 351
+> (`wf_017e29f0`), 353 (`wf_e71240e6`), 354 (`wf_ccf15052`); evidence —
+> 328/325/333/334 and 329/342/346/204-fixes waiting for Render at `097b73b`
+> (`wf_ea63e5b1`). Watchers wait for Render at `604ef31` and `097b73b`.
+>
+> **Next:** 352 after 351 and 349; 348 after 347; tenders wave 2 (B, C1, E)
+> after A lands. When 353 lands, set `TRUST_PROXY` on the Render api
+> service to the value its report names (a redeploy). Owner decisions
+> outstanding: 206's three, 254's two, 306's read-only staff, 327's retried
+> pairing, 345, 326, the "HKT Central" app-only row (268), the deploy-bot
+> paid service.
+
 > ## Status on 2026-09-23 14:14 — `main` is `3ba0840`; staging is `7b746f1`; CI green through `b458650`
 >
 > **Since 13:41:** landed the 204 panel fixes (`bbf1792` — its gate was DO NOT
