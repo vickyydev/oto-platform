@@ -31,10 +31,30 @@ const EnvSchema = z.object({
   /** Wrong codes accepted before every outstanding code is invalidated. */
   CODE_MAX_ATTEMPTS: z.coerce.number().int().default(5),
   /**
-   * How many proxy hops in front of the api are ours (S2-01a). 0 = none:
-   * `req.ip` is the socket address and a forged X-Forwarded-For changes
-   * nothing. On Render this is 1 — the caller's ip is then the first hop the
-   * platform did not add, i.e. the entry before our own.
+   * How many proxy hops in front of the api are ours (S2-01a, SCRUM-353).
+   *
+   * A COUNT INWARD FROM THE SOCKET. `X-Forwarded-For` is appended left to
+   * right, so its rightmost entry is the one the nearest proxy wrote and its
+   * leftmost is whatever the original client chose to send. 0 trusts nothing
+   * and `req.ip` is the peer on the socket; 1 trusts the socket and so reads
+   * the last entry of the header; each further hop reads one entry further
+   * left. Every hop counted past the real ones is an entry the caller could
+   * have written themselves, which is why this is small and deliberate rather
+   * than generous: `req.ip` keys the per-IP rate-limit bucket
+   * (plugins/rate-limit.ts) and the sign-in failure count (services/auth.ts).
+   *
+   * On Render this is 1: one trusted hop makes `req.ip` the entry the proxy on
+   * the other end of the socket wrote, which is the one part of the header no
+   * caller can reach. It is the fail-closed choice rather than a measured chain
+   * depth — render.yaml carries the reasoning and the measurement still to run.
+   *
+   * IT MUST REACH FASTIFY AS A FUNCTION, NOT AS THIS NUMBER. Since
+   * fastify@5.12 a numeric `trustProxy` is failed closed — lib/request.js
+   * returns `function () { return false }` for it, because a hop count cannot
+   * validate the immediate peer — so a number enables the proxy-aware request
+   * and then trusts nothing, and `req.ip` silently falls back to the socket
+   * address whatever is set here. app.ts hands it over as the equivalent
+   * function; apps/api/test/trust-proxy.test.ts is what keeps that true.
    */
   TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
   /**

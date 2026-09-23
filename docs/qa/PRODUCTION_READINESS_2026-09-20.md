@@ -442,14 +442,45 @@ POS's own on-screen wording — "client activity", the History tab's client view
 These are not defects. They are things the code cannot tell me and one look at
 the running deployment can.
 
-1. **The proxy hop count.** `TRUST_PROXY=1` assumes exactly one proxy in front
-   of the api. Browser traffic reaches it through the **static site's**
-   `/api/*` rewrite, which may add a hop of its own. If it does, `req.ip` is a
-   Render address rather than the visitor's, and the entire mall shares one
-   120-per-minute bucket. Symptom: `TOO_MANY_REQUESTS` for everyone at once,
-   or every `access.denied` audit row showing the same address. Check
-   `req.ip` in a request log line against a known public address on the first
-   day.
+1. ~~**The proxy hop count.**~~ **CLOSED 23 Sep 2026 — measured, and worse than
+   the question assumed (SCRUM-353).** The count was not one hop short; it was
+   not being applied at all. Since `fastify@5.12` a numeric `trustProxy` is
+   failed closed — `lib/request.js` returns `function () { return false }` for
+   it, on the reasoning that a hop count cannot validate the immediate peer —
+   and `apps/api/src/app.ts` handed `TRUST_PROXY` over as a number, so the
+   proxy-aware request was built and then trusted nothing, leaving `req.ip` as
+   the socket address whatever was configured. On staging four requests
+   carrying four *different* forged `X-Forwarded-For` values walked a single
+   counter down 119 → 118 → 117, requests with no header at all continued the
+   same trail, and requests through the POS site's `/api/*` rewrite landed in
+   those same counters: so the fear in this question was real but understated —
+   not one mall sharing a bucket, but every caller on the internet sharing the
+   two buckets produced by the two socket addresses the platform proxies from,
+   which is a ~240-a-minute global cap on the whole public surface and a way
+   for one abuser to refuse the park's own tills. The blast radius is wider
+   than the rate limit: `req.ip` is also the per-address half of the sign-in
+   throttle (`services/auth.ts`, keyed `ip:<addr>`) and the key of the booth and
+   box credential throttles (`plugins/credential.ts`, used by `routes/booth.ts`
+   and `routes/box.ts`), so all four were counting the platform's own address
+   instead of the caller's. The fix, applied here, is to hand Fastify the
+   equivalent hop-count *function*, which `proxy-addr` has always accepted and
+   Fastify's own types declare, pinned by `apps/api/test/trust-proxy.test.ts`.
+
+   The count itself stays **1**, and it is worth being exact about why, because
+   the obvious reason is wrong: this service does *not* answer the internet
+   directly. `GET /health` comes back `server: cloudflare` with a `cf-ray`, so
+   Cloudflare fronts it and Render's load balancer sits behind that. How many of
+   those proxies append to `X-Forwarded-For`, and whether the static site's
+   `/api/*` rewrite adds one more, is **unmeasured** — it could not be measured
+   while the count was being ignored altogether, and can only be measured
+   against the deployment once this line ships. 1 is therefore the fail-closed
+   choice rather than a measured depth: too low only aggregates callers who
+   share a proxy into one bucket, while too high files requests under an entry
+   the caller wrote and hands out fresh buckets and fresh password-guess runs on
+   demand. What remains open, and the two-request check that settles it, is
+   recorded against the api's `TRUST_PROXY` in `render.yaml`; if the
+   measurement shows a real proxy is being missed, the answer is to trust that
+   hop by address rather than to raise the count.
 2. **The `Origin` header survives the rewrite.** The whole write surface
    depends on it (`app.ts:149-157`). If Render's rewrite rewrites or strips
    `Origin`, either every write is refused (`ORIGIN_NOT_ALLOWED`) or the check

@@ -91,8 +91,11 @@ export const rateLimitPlugin = fp(async (app: FastifyInstance) => {
     max: app.env.RATE_LIMIT_IP_MAX,
     timeWindow: app.env.RATE_LIMIT_WINDOW_SECONDS * 1000,
     store: buildStore(app.db),
-    // req.ip already honours TRUST_PROXY: with it off, a forged
-    // X-Forwarded-For cannot move a caller into a fresh bucket.
+    // One bucket per caller, and `req.ip` decides who that is: at TRUST_PROXY=0
+    // the socket address, and at 1 the last X-Forwarded-For entry — the address
+    // the proxy on the socket recorded, which a caller cannot write. The count
+    // is the whole of the defence here, so app.ts and trust-proxy.test.ts are
+    // where a forged header is kept out of a fresh bucket (SCRUM-353).
     keyGenerator: (req) => req.ip,
     /**
      * AN `AppError`, NOT THE ENVELOPE (SCRUM-335).

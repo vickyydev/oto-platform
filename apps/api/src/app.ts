@@ -107,9 +107,25 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
      * replaces both with one completion line that never sees a query string.
      */
     disableRequestLogging: true,
-    // Cast: Fastify's types omit the documented hop-count form ("trust N hops
-    // from the front-facing proxy"), which proxy-addr accepts underneath.
-    trustProxy: (opts.env.TRUST_PROXY > 0 ? opts.env.TRUST_PROXY : false) as unknown as boolean,
+    /**
+     * Which address `req.ip` reports: the peer on the socket, or an entry of
+     * `X-Forwarded-For`. `env.TRUST_PROXY` counts hops inward from the socket,
+     * and it has to reach Fastify as a FUNCTION. Since fastify@5.12 a NUMBER is
+     * failed closed — `getTrustProxyFn` (lib/request.js) returns
+     * `function () { return false }` for one, on the reasoning that a hop count
+     * cannot validate the immediate peer — so handing over the number built the
+     * proxy-aware request and then trusted no hop at all, leaving `req.ip` on
+     * the socket address whatever was configured (SCRUM-353). Below is the same
+     * count in the form proxy-addr has always taken: hop 0 is the socket, hop 1
+     * the last `X-Forwarded-For` entry, and `hop < n` trusts n of them inward.
+     *
+     * `req.ip` keys the per-IP rate-limit bucket (plugins/rate-limit.ts), the
+     * sign-in failure count (services/auth.ts) and the booth and box credential
+     * throttles (plugins/credential.ts), so apps/api/test/trust-proxy.test.ts
+     * holds this line to the behaviour those depend on.
+     */
+    trustProxy:
+      opts.env.TRUST_PROXY > 0 ? (_addr: string, hop: number) => hop < opts.env.TRUST_PROXY : false,
   }).withTypeProvider<ZodTypeProvider>() as unknown as App;
 
   app.setValidatorCompiler(validatorCompiler);

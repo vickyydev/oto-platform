@@ -262,9 +262,36 @@ services:
 
       # -- how the api sits behind Render's proxy ----------------------------
       - key: TRUST_PROXY
-        # One hop: Render's load balancer. req.ip then reads the entry before
-        # Render's own, which is the caller — and a forged X-Forwarded-For
-        # cannot move that caller into a fresh rate-limit bucket.
+        # One hop, counted inward from the socket. X-Forwarded-For is appended
+        # left to right, so one trusted hop makes req.ip the LAST entry — the
+        # address the proxy on the socket recorded, the one part of the header
+        # a caller cannot write. That address keys the per-IP rate-limit
+        # bucket, the sign-in failure count and the booth and box credential
+        # throttles, so it has to be an address nobody chose for themselves.
+        #
+        # 1 IS THE FAIL-CLOSED CHOICE, NOT A MEASURED CHAIN DEPTH. This service
+        # answers on its own hostname, but not directly: GET /health comes back
+        # server: cloudflare with a cf-ray, so Cloudflare fronts it and Render's
+        # load balancer sits behind that. How many of those proxies append to
+        # X-Forwarded-For — and whether the POS site's /api/* rewrite adds one
+        # more — is UNMEASURED. Too low a count only aggregates callers who
+        # share a proxy into one bucket; too high files a request under an entry
+        # the caller wrote, buying them a fresh rate-limit bucket and a fresh
+        # run of password guesses per request. So it stays at the value that
+        # cannot be wrong in the dangerous direction.
+        #
+        # STILL TO MEASURE ON THE RUNNING DEPLOYMENT (SCRUM-353), and only
+        # measurable once this deploys: until fastify's numeric trustProxy was
+        # replaced with the equivalent function in apps/api/src/app.ts, the
+        # count was not applied at all, so nothing about the chain could be read
+        # off the live service. After the redeploy, send one request through the
+        # /api/* rewrite carrying a junk X-Forwarded-For and one without, then
+        # the same pair straight to this hostname, and watch
+        # x-ratelimit-remaining: if a caller's own address does not key the
+        # bucket, the chain is deeper than one hop. The answer then is to trust
+        # the Cloudflare and Render hops by ADDRESS, never to raise this count,
+        # which would reopen the forgery above. The loud symptom of being a hop
+        # short is a whole mall sharing one bucket and being refused at once.
         value: '1'
       - key: COOKIE_SECURE
         # HTTPS only. The api refuses to boot in production without this.
@@ -792,6 +819,16 @@ services:
         # looks secure, and behind a TLS terminator the only evidence of that
         # is X-Forwarded-Proto, which Express reads only when it trusts the
         # proxy. At 0 the app would sign a person in and issue no cookie.
+        #
+        # This app is Express, which still honours the count as written, so the
+        # setting does here what it says. SCRUM-353 is about the api service
+        # above, where Fastify stopped honouring the number form and the count
+        # had to be handed over as a function; nothing about that applies to
+        # this app. What does apply is the reason for 1 rather than more: this
+        # service is fronted by Cloudflare too, and how many proxies append to
+        # X-Forwarded-For is unmeasured here as well — 1 trusts only the entry
+        # the socket peer wrote, and every hop past the real ones is an entry
+        # the caller could have written themselves.
         value: '1'
 
       # -- secrets ------------------------------------------------------------
