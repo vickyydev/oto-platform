@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 17:42 — `main` is `58df0e9`; staging is `4e67aab` on the api and Console (Render follows CI on `8ee9a5d`, E's payment methods); CI green through `4e67aab`
+> ## Status on 2026-09-23 18:02 — `main` is `9b86938`; staging is `8ee9a5d` on the api and POS (Render follows CI on `9b86938`, 376's throttles); CI green through `8ee9a5d`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -278,8 +278,34 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > gone; the replay net on `action_id` is armed; `tenderMethodOf` moved to
 > `attempt.ts` (382's fix lands there).
 >
-> **Running:** builds — 376 (`wf_ae659bf6`), B fix round (`wf_140102f5`), C1 fix round
-> (`wf_0d8bd0bd`); evidence — 206-E (`wf_ef2bc5c4`). After wave 2:
+> **17:57 — E's staging pass found the deploy had left the till unable
+> to take money.** `pos.payment_method` was EMPTY on staging: only the
+> full demo seed writes the three tenders, the pre-deploy runs
+> `platform-sync` (roles and permissions only), and E's hydration
+> replaces the built-in three with the platform's list — so from 17:41
+> Som's till had ฿1,040 owing and an empty method grid. The pass typed
+> Cash/Card/PromptPay back in through the panel (17:46) and then proved
+> everything (untick → grid loses it, delete cash refused 409 with 12
+> attempts, order survives a reload, a tender added and archived;
+> `53c84fc`). Raised **384** (High); a build makes `platformSync`
+> converge the three defaults for a park with none (`wf_581116c6`).
+> Rule recorded in memory: anything a screen cannot work without is
+> converged by the sync, never left to the demo seed.
+>
+> **18:01 — landed 376** (`9b86938`, gate DO NOT MERGE on one comment
+> paragraph — corrected by hand: the box's named bucket is the CLAIMED
+> id with an address bucket beside it, and the booth screen has no
+> throttle of its own; then committed): the rate-limit key is the
+> session's station, else account; `AUTH_MAX_FAILURES_PER_ADDRESS` (50,
+> set on the Render api service too); box refusals counted under the
+> named id + address; 183 tests, three plants. Raised: a booth screen's
+> wrong credential is never throttled on its own; the throttle table is
+> never swept and an invented box id opens a row (**385**, **386**).
+> Measurement pass launched (`wf_f1d12c3d`).
+>
+> **Running:** builds — B fix round (`wf_140102f5`), C1 fix round
+> (`wf_0d8bd0bd`), tenders sync (`wf_581116c6`); evidence — 376
+> measurement (`wf_f1d12c3d`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
