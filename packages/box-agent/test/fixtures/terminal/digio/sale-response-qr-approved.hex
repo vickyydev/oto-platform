@@ -1,0 +1,12 @@
+# Digio - QR sale response (A3), the SECOND answer, when the guest has paid.
+# Tags from §5.4.2.3. TID on tag 16, MID on tag 17.
+# Two responses to one request is why the adapter keeps reading after the
+#   first complete frame and dispatches on tag 21.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E5569210241330406343830303031220331303001053130303530051835343335353534383236303932333134303530303030303114083230323630393233150531343A303516083534333535353438170C53494D554C415445444D4944180C53494D554C415445444D494445

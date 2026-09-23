@@ -1,0 +1,11 @@
+# Digio - SALE response, 401 Host timeout (§6.2).
+# The terminal is alive and its own host is not, so whether the money moved
+#   is unknown - a different fact from silence, and not a decline.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E55182102413122033430310406343830303031010531303035300B

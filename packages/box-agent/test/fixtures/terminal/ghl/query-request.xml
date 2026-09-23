@@ -1,0 +1,13 @@
+# GHL LinkPOS - QUERY request.
+# Fields: p.13. pos_ref_no is the ORIGINAL sale’s ("Same as Original Sale")
+#   and not a fresh one - it is the lookup key.
+# There is NO QUERY for trade_type CARD (p.13). The adapter refuses that
+#   before a byte goes out, which is why the audited staff-confirmation
+#   dialog is permanent for a NEXGO card rather than a fallback.
+# Source: GHL "SMART POS API - Integration POS to SmartEDC for Siam Commercial
+#   Bank PCL" v1.4 (Jan 2025). Element order from the C# sample on p.18, the
+#   only literal message in the document; field names, types and requiredness
+#   from the parameter tables named per fixture.
+# Recorded from the wire between src/terminal/ghl.ts and simulator-ghl.ts.
+
+<xml><trade_type>THAIQRCODE</trade_type><pos_ref_no>NOSUCHREF001</pos_ref_no><amount></amount><invoice_no></invoice_no><transaction_id></transaction_id><transaction_type>QUERY</transaction_type><service_type></service_type><card_approval_code></card_approval_code><cashier>Jane Doe</cashier></xml>

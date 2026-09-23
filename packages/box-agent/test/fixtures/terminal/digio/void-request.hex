@@ -1,0 +1,14 @@
+# Digio - VOID request (A10).
+# Tags from §5.5.1: 21 A10, 03 POS user, 04 a FRESH six-digit reference, 05
+#   the transaction id of the sale being voided, 06 the void password.
+# THE PASSWORD IN THIS FIXTURE IS A PLACEHOLDER WITH NO DIGITS IN IT. The
+#   specification prints a fixed one; a credential in a vendor document is
+#   still a credential, and the real one is configuration on the box.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E5539210341313003084A616E6520446F65040634383030303205183534333535353438323630393233313430353030303030310606564F4944505771

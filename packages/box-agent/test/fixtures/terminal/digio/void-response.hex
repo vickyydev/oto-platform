@@ -1,0 +1,10 @@
+# Digio - VOID response (A11), approved.
+# Tags from §5.5.2.1. Response code 100.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E555C21034131312203313030040634383030303201053130303530051835343335353534383236303932333134303530303030303111083230323630393233120531343A303513083534333535353438140C53494D554C415445444D49444B

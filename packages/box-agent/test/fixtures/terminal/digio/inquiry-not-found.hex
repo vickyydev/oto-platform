@@ -1,0 +1,14 @@
+# Digio - INQUIRY response (T3), transaction not found.
+# Tags from §5.13.2: 21 T3, 22 = 203 "Transaction not found", 04 echoed.
+# Found instead, the terminal answers with the SALE response (A1, A3, ...)
+#   carrying the same transaction id and approval code as the answer that
+#   was lost - which is what lets the cloud settle the attempt it has
+#   instead of charging the guest again.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E5511210254332203323033040634383030303121

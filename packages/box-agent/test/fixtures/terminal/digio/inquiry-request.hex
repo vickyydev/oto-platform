@@ -1,0 +1,12 @@
+# Digio - INQUIRY request (T2).
+# Tags from §5.13.1: 21 T2, 03 POS user, 04 a FRESH reference, 05 the
+#   transaction being asked about.
+# This is the only inquiry either vendor gives us, and it is Digio-only.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E55302102543203084A616E6520446F65040634383030303105184E4F535543485452414E53414354494F4E4944585858585854

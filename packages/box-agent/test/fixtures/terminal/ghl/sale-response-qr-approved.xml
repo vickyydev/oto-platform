@@ -1,0 +1,13 @@
+# GHL LinkPOS - Thai QR SALE response, approved.
+# INFERRED FROM THE PARAMETER TABLES: p.11 response table (pos_ref_no,
+#   response_code, response_msg, transaction_id, invoice_no, amount). No
+#   card_no and no card_approval_code on a wallet sale.
+# response_code 00 here is the SmartEDC’s own 00/01 space, NOT the ISO
+#   space the card fixture above answers in. Same field, two vocabularies.
+# Source: GHL "SMART POS API - Integration POS to SmartEDC for Siam Commercial
+#   Bank PCL" v1.4 (Jan 2025). Element order from the C# sample on p.18, the
+#   only literal message in the document; field names, types and requiredness
+#   from the parameter tables named per fixture.
+# Recorded from the wire between src/terminal/ghl.ts and simulator-ghl.ts.
+
+<xml><pos_ref_no>260923860001</pos_ref_no><response_code>00</response_code><response_msg>SUCCESS</response_msg><invoice_no>000001</invoice_no><transaction_id>1790147100000000001</transaction_id><amount>100.25</amount></xml>

@@ -1,0 +1,12 @@
+# Digio - TERMINAL INFO response (T1).
+# Tags from §5.1.2: 22 response code, 04 reference, 05 versionCode, 06
+#   serialNo. On THIS action tag 05 is a version string, while on every sale
+#   response it is the transaction id.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E5526210254312203313030040650524F4245300507312E382E313237060A3138353433353535343852

@@ -38,6 +38,14 @@ import {
   type PrintingController,
   type PrintJobOutcome,
 } from './printing/index';
+import {
+  TerminalCommandPayloadSchema,
+  createTerminals,
+  type SerialOpener,
+  type TerminalController,
+  type TerminalProgress,
+  type TerminalResult,
+} from './terminal/index';
 import { PrintTemplateSchema } from '@oto/shared';
 import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@oto/shared';
 
@@ -128,6 +136,35 @@ export interface BoxAgentOptions {
     openReal?: ChannelFactory;
     /** How long a job waits before trying a printer that was out of paper. */
     retryDelayMs?: number;
+  };
+  /**
+   * The card terminals (S2-10a).
+   *
+   * On by default for the same reason printing is: whether a station takes card
+   * is a property of its configuration — a device row with a dialect on it —
+   * and not of how the process was started. A box with no terminal in its
+   * bundle builds the module and never has one to talk to.
+   */
+  terminal?: {
+    /** Off only for a test that wants the agent without it. */
+    enabled?: boolean;
+    /**
+     * How a REAL serial port is opened, and why there is no default.
+     *
+     * This package carries no native dependency, so it cannot configure a
+     * `/dev/ttyACM*` line itself; a box with real terminals passes an opener
+     * in. Both of the park's EDC rows are `transport: 'simulated'` today, and a
+     * simulated terminal never reaches this.
+     */
+    openSerial?: SerialOpener;
+    /**
+     * The Digio void password, from the host's configuration.
+     *
+     * A credential printed in a vendor specification is still a credential: it
+     * reaches the box as an environment value, and a box without one refuses to
+     * send a void rather than guessing.
+     */
+    voidPassword?: string | null;
   };
   /**
    * The Lucky Wheel (S2-07a).
@@ -232,6 +269,15 @@ export interface BoxAgent {
   cacheCursorSeq(): number;
   /** The print pipeline and its simulators, or null when printing is off. */
   printing(): PrintingController | null;
+  /**
+   * The card terminals and their simulators (S2-10a).
+   *
+   * Non-null does not mean this box HAS a terminal: the module answers an empty
+   * list until a device row in its bundle carries a dialect it speaks. What
+   * reaches it is the `terminal_sale` command and the two `terminal.*`
+   * simulator actions.
+   */
+  terminal(): TerminalController | null;
   /**
    * The Lucky Wheel, or null on a box with no store (S2-07a).
    *
@@ -348,6 +394,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let lastReportedAt = 0;
 
   let printing: PrintingController | null = null;
+  let terminals: TerminalController | null = null;
   /**
    * Cache scopes that did not land, counted per cause (S2-06).
    *
@@ -455,6 +502,27 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     });
   }
 
+  if (options.terminal?.enabled !== false) {
+    terminals = createTerminals({
+      bundle: () => bundle,
+      /**
+       * The store, because the reference counter lives in it.
+       *
+       * A box without one refuses card tenders by name rather than minting
+       * references from memory: an in-memory counter restarts at one after a
+       * power cut, and a reference a terminal has already seen today is either
+       * refused by it or — worse, on the inquiry path — matched to the wrong
+       * transaction.
+       */
+      store,
+      boxId: () => state.boxId,
+      now: () => new Date(clock()),
+      log: (level, msg, detail) => note(level, msg, detail),
+      openSerial: options.terminal?.openSerial,
+      voidPassword: options.terminal?.voidPassword ?? null,
+    });
+  }
+
   /**
    * The bundle's print templates, VALIDATED rather than cast.
    *
@@ -535,6 +603,71 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         status,
       });
     }
+  }
+
+  /**
+   * A tender's outcome, on its own route (S2-10a).
+   *
+   * NOT on the command's acknowledgement, and the reason is the one at
+   * `:474-484`: a command result says "I took this instruction" and an outcome
+   * says what the terminal did, which can be a hundred and twenty seconds later
+   * while a guest finds a card. A command ack held open for that is a box that
+   * looks hung on the Console, and a poll cycle that cannot deliver the next
+   * instruction.
+   *
+   * Two stages on one route. `progress` carries the QR payload the moment the
+   * terminal mints it, because the customer display has to draw the code BEFORE
+   * the guest pays; `final` carries the outcome. The route itself is the
+   * cloud's (Slice C2) — what this file fixes is the shape.
+   */
+  async function reportTerminalResult(
+    attemptId: string,
+    body: Record<string, unknown>,
+    actionId: string | null,
+  ): Promise<void> {
+    if (!credential || state.offline) return;
+    const { status } = await request(`/payments/attempts/${attemptId}/result`, {
+      method: 'POST',
+      body,
+      headers: actionId ? { 'x-oto-action-id': actionId } : {},
+    });
+    if (status !== 200 && status !== 202) {
+      note('warn', 'the cloud did not accept a terminal outcome', { attemptId, status });
+    }
+  }
+
+  function terminalResultBody(result: TerminalResult): Record<string, unknown> {
+    return {
+      stage: 'final',
+      deviceId: result.deviceId,
+      protocol: result.protocol,
+      outcome: result.outcome,
+      requestedSatang: result.requestedSatang,
+      approvedSatang: result.approvedSatang,
+      terminalRef: result.terminalRef,
+      tranRef: result.tranRef,
+      invoiceNo: result.invoiceNo,
+      approvalCode: result.approvalCode,
+      last4: result.last4,
+      tid: result.tid,
+      mid: result.mid,
+      qrPayload: result.qrPayload,
+      responseCode: result.responseCode,
+      responseText: result.responseText,
+      elapsedMs: result.elapsedMs,
+      at: result.at,
+    };
+  }
+
+  function terminalProgressBody(event: TerminalProgress): Record<string, unknown> {
+    return {
+      stage: 'progress',
+      kind: event.kind,
+      deviceId: event.deviceId,
+      qrPayload: event.qrPayload ?? null,
+      tranRef: event.tranRef ?? null,
+      at: event.at,
+    };
   }
 
   async function ensureRegistered(): Promise<boolean> {
@@ -1532,6 +1665,69 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           errorMessage: outcome.errorMessage ?? undefined,
         };
       }
+      case 'terminal_sale': {
+        if (!terminals) {
+          return {
+            state: 'failed',
+            errorCode: 'TERMINALS_DISABLED',
+            errorMessage: 'This agent was built without its terminal pipeline',
+          };
+        }
+        const parsed = TerminalCommandPayloadSchema.safeParse(payload);
+        if (!parsed.success) {
+          return {
+            state: 'failed',
+            errorCode: 'BAD_TENDER',
+            errorMessage: `The command did not describe a tender: ${parsed.error.issues[0]?.message ?? 'unreadable'}`,
+          };
+        }
+        const tender = parsed.data;
+        const outcome = await terminals.runCommand(tender, {
+          onProgress: (event) => {
+            void reportTerminalResult(
+              tender.attemptId,
+              terminalProgressBody(event),
+              command.actionId,
+            ).catch((err) => note('warn', 'a terminal progress report failed', { err: String(err) }));
+          },
+        });
+        if (outcome.result) {
+          /**
+           * Reported before the command is acknowledged, but on its own route.
+           *
+           * Awaited rather than left in flight because the till is waiting on
+           * exactly this: the command ack tells the Console the box acted, and
+           * the attempt row is what the screen in front of a guest reads.
+           */
+          await reportTerminalResult(
+            tender.attemptId,
+            terminalResultBody(outcome.result),
+            command.actionId,
+          );
+        }
+        /**
+         * The COMMAND succeeded whenever the box understood it and reached a
+         * terminal. A declined card is a command that worked perfectly — the
+         * same rule the test print states at `:1512-1518`, and the reason the
+         * Console does not paint a red command for a guest whose card was
+         * refused.
+         */
+        return {
+          state: outcome.result || !outcome.errorCode ? 'succeeded' : 'failed',
+          result: {
+            attemptId: tender.attemptId,
+            mode: tender.mode,
+            ...(outcome.routed ?? {}),
+            outcome: outcome.result?.outcome ?? null,
+            // The reference and the response code, which is what ties this
+            // command to the attempt row and to the terminal's own slip.
+            terminalRef: outcome.result?.terminalRef ?? null,
+            responseCode: outcome.result?.responseCode ?? null,
+          },
+          errorCode: outcome.errorCode,
+          errorMessage: outcome.errorMessage,
+        };
+      }
       case 'simulate': {
         const action = (payload.action ?? null) as SimulatorAction | null;
         if (!action || typeof action.action !== 'string') {
@@ -1662,6 +1858,55 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
             actionId: command.actionId,
           });
           return { state: 'succeeded', result: { pressed: true, key: action.press.key } };
+        }
+
+        /**
+         * The card terminals (S2-10a).
+         *
+         * `terminal.outcome` sets what the NEXT tender will do rather than
+         * answering one in flight: a simulator asked after the fact could not
+         * reproduce "no final response" at all, because the answer to that is
+         * silence at the moment the sale is sent. `terminal.advance_clock`
+         * moves the terminal's own clock, which is the only way the void
+         * windows — before settlement, before 11PM — can be shown to exist.
+         */
+        if (action.action === 'terminal.outcome' || action.action === 'terminal.advance_clock') {
+          if (!terminals) {
+            return {
+              state: 'failed',
+              errorCode: 'TERMINALS_DISABLED',
+              errorMessage: 'This agent has no terminal simulators',
+            };
+          }
+          const applied =
+            action.action === 'terminal.outcome'
+              ? terminals.setOutcome(action.deviceId, action.outcome, {
+                  ...(action.approvedSatang === undefined
+                    ? {}
+                    : { approvedSatang: action.approvedSatang }),
+                  ...(action.approvalCode === undefined
+                    ? {}
+                    : { approvalCode: action.approvalCode }),
+                })
+              : terminals.advanceClock(action.deviceId, action.minutes);
+          if (!applied) {
+            return {
+              state: 'failed',
+              errorCode: 'DEVICE_NOT_SIMULATED',
+              errorMessage:
+                'That device is a real terminal on this box — an outcome can only be set on a simulated one',
+            };
+          }
+          return {
+            state: 'succeeded',
+            result:
+              action.action === 'terminal.outcome'
+                ? // The approval code is NOT echoed: it is the reason this
+                  // action is on `SIMULATOR_ACTIONS_WITH_SECRETS`, and a
+                  // command result is a stored column the Console renders.
+                  { deviceId: action.deviceId, outcome: action.outcome, applied: true }
+                : { deviceId: action.deviceId, minutes: action.minutes, applied: true },
+          };
         }
 
         return {
@@ -1887,6 +2132,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     scanner: () => scanner,
     cacheCursorSeq: () => cacheCursorSeq,
     printing: () => printing,
+    terminal: () => terminals,
     booth: () => booth,
     pauseHeartbeats(paused) {
       state.heartbeatsPaused = paused;

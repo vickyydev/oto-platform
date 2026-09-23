@@ -1,0 +1,13 @@
+# Digio - SALE request (A0), credit card.
+# Tags from §5.4.1: 21 action A0, 01 amount in satang as ASCII digits, 03
+#   POS user name, 04 six-digit reference, 05 payment type A1 (credit).
+# Tag 05 is always sent: "if you not set default will be select payment type
+#   screen", which would put the choice on the terminal instead of the till.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E5521210241300105313030353003084A616E6520446F6504063438303030310502413115

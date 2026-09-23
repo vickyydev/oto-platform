@@ -1,0 +1,14 @@
+# GHL LinkPOS - card VOID request.
+# Fields: p.16. The key is invoice_no PLUS card_approval_code; pos_ref_no is
+#   a FRESH reference for the void itself ("3rd party mobile app generates
+#   to reference the transaction (Unique)"), never the sale’s.
+# card_approval_code appears in no message the document prints - the p.18
+#   sample has eight elements and not this one - so its position in the
+#   envelope is reconstructed.
+# Source: GHL "SMART POS API - Integration POS to SmartEDC for Siam Commercial
+#   Bank PCL" v1.4 (Jan 2025). Element order from the C# sample on p.18, the
+#   only literal message in the document; field names, types and requiredness
+#   from the parameter tables named per fixture.
+# Recorded from the wire between src/terminal/ghl.ts and simulator-ghl.ts.
+
+<xml><trade_type>CARD</trade_type><pos_ref_no>260923860002</pos_ref_no><amount>100.25</amount><invoice_no>000001</invoice_no><transaction_id></transaction_id><transaction_type>VOID</transaction_type><service_type></service_type><card_approval_code>R00001</card_approval_code><cashier>Jane Doe</cashier></xml>

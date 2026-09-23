@@ -24,6 +24,12 @@ export * from './outbox';
 export * from './station-session';
 export * from './printing/index';
 /**
+ * The card terminals (S2-10a). Exported for the same reason printing is: the
+ * api resolves a station's routing, queues the tender and records its outcome,
+ * and it needs the `PaymentTerminal` contract's words to do any of that.
+ */
+export * from './terminal/index';
+/**
  * Scanning and the signed staff token (S2-06). `scan-input` is the part that
  * has no I/O in it — the burst rule and the record rule — so the api imports
  * it to drive a simulated scanner through exactly the state machine that will

@@ -1,0 +1,13 @@
+# Digio - TERMINAL INFO request (T0), the health probe.
+# Tags from §5.1.1. "POS can send request the terminal info for test connect
+#   edc device" - the only message in the dialect with no financial effect,
+#   which is what a health probe has to be.
+# The reference is alphabetic so it can never be one the counter minted.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E550C21025430040650524F42453058

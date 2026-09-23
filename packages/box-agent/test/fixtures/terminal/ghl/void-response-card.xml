@@ -1,0 +1,11 @@
+# GHL LinkPOS - card VOID response.
+# INFERRED FROM THE PARAMETER TABLES: p.16.
+# response_code 00 is the 00/01 space: EVERY void answers there, including a
+#   card’s, while a card SALE answers in the ISO space.
+# Source: GHL "SMART POS API - Integration POS to SmartEDC for Siam Commercial
+#   Bank PCL" v1.4 (Jan 2025). Element order from the C# sample on p.18, the
+#   only literal message in the document; field names, types and requiredness
+#   from the parameter tables named per fixture.
+# Recorded from the wire between src/terminal/ghl.ts and simulator-ghl.ts.
+
+<xml><pos_ref_no>260923860002</pos_ref_no><response_code>00</response_code><response_msg>SUCCESS</response_msg><invoice_no>000001</invoice_no><amount>100.25</amount></xml>

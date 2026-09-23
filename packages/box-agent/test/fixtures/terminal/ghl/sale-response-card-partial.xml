@@ -1,0 +1,12 @@
+# GHL LinkPOS - card SALE response, PARTIAL approval.
+# INFERRED FROM THE PARAMETER TABLES (see the approved fixture).
+# response_code 10 "Partial approval", p.8, with an amount below the request.
+# The adapter refuses the sale on this and voids the tender: the platform
+#   cannot take the difference.
+# Source: GHL "SMART POS API - Integration POS to SmartEDC for Siam Commercial
+#   Bank PCL" v1.4 (Jan 2025). Element order from the C# sample on p.18, the
+#   only literal message in the document; field names, types and requiredness
+#   from the parameter tables named per fixture.
+# Recorded from the wire between src/terminal/ghl.ts and simulator-ghl.ts.
+
+<xml><pos_ref_no>260923860001</pos_ref_no><response_code>10</response_code><response_msg>SUCCESS</response_msg><invoice_no>000001</invoice_no><card_no>424242******4242</card_no><amount>50.00</amount><card_approval_code>R00001</card_approval_code></xml>

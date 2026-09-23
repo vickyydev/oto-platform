@@ -1,0 +1,15 @@
+# Digio - QR code data response (A18), the FIRST of two answers.
+# Tags from the §"Response QR Code Data" block. The payload is on tag QR -
+#   0x51 0x52 - with a BER long-form length, which is exactly the shape a
+#   strict BER reader mis-reads (0x51 as a tag, 0x52 as a length).
+# The payload here is a SIMULATED string, not an EMVCo code: the simulator
+#   is not a PromptPay issuer and will not pretend to mint a payable one.
+#   The real payload arrives on this same tag.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E558201152103413138220331303001053130303530040634383030303105183534333535353438323630393233313430353030303030310602413314083230323630393233150531343A303516083534333535353438170C53494D554C415445444D4944515281B153494D554C415445442D454D56434F2D5041594C4F41447C6D69643D53494D554C415445444D49447C7469643D35343335353534387C7265663D3438303030317C616D6F756E743D31303035307C7472616E5265663D3534333535353438323630393233313430353030303030317C6E6F74653D746869732D636F64652D69732D6E6F742D70617961626C652D616E642D6578697374732D746F2D70726F76652D7468652D646973706C61792D70617468A5

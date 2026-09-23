@@ -1,0 +1,16 @@
+# Digio - SALE response (A1), approved.
+# Tags from §5.4.2.1. Approved is response code 100 on tag 22 - three
+#   characters, not 00.
+# On THIS action the TID is tag 13 and the MID tag 14. On an A3 they are 16
+#   and 17, and 13 means Ref3. That is why the parser has a table per action.
+# Tag 09 is a masked card number and tag 0A a cardholder name, both carried
+#   here so the adapter is seen keeping four digits of one and none of the
+#   other. The card number is a placeholder.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E5581E82102413101053130303530040634383030303122033130300518353433353535343832363039323331343035303030303031060652303030303107023030080B566973612043726564697409103432343234322A2A2A2A2A2A343234320A0F544553542043415244484F4C4445520B063030303030310D0E41303030303030303033313031300E02303111083230323630393233120531343A303513083534333535353438140C53494D554C415445444D494415023031170C323331343035303030303031180436383030190A38304130303438303030200F43686970204F6E6C696E652050696E44

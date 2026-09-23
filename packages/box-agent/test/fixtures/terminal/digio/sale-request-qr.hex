@@ -1,0 +1,14 @@
+# Digio - SALE request (A0), Thai QR, asking for the payload.
+# Tag 05 = A3 (QR Thai STD), tag 06 = 02 ("request QR code data"), tag CN =
+#   02 (C-scan-B: the guest scans a code we draw).
+# CN is one of the six tags spelled with two ASCII characters rather than a
+#   binary octet - 0x43 0x4E. §4.1.1’s generic BER rule does not describe
+#   this tag set.
+# Source: Digio "A920 Link-PoS-Spec" v2.21 (20 Oct 2025), section numbers as
+#   printed there.
+# Framing per §4: [3E 55][BER length][content][XOR CRC over header..content].
+# THE CRC IS GENERATED, NEVER COPIED: seven of the ten complete frames the
+#   document prints carry a CRC its own §4 rule does not produce.
+# Recorded from the wire between src/terminal/digio.ts and simulator-digio.ts.
+
+3E552A210241300105313030353003084A616E6520446F6504063438303030310502413306023032434E02303217
