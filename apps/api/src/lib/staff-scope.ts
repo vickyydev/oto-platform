@@ -1,5 +1,6 @@
 import { and, eq, or, sql } from 'drizzle-orm';
 import { account, employee } from '@oto/db';
+import type { Permission } from '@oto/shared';
 
 /**
  * Who counts as the staff of a branch (S2-04, widened S2-06).
@@ -16,6 +17,33 @@ import { account, employee } from '@oto/db';
  * predicate reads `employee.branch_id`, and a query without that join is a SQL
  * error rather than a silently wrong answer.
  */
+
+/**
+ * The permission that MEANS "administers the whole operator", declared for
+ * exactly this question and guarding no route (SCRUM-318). `platform_admin`
+ * and `operator_admin` carry it because they carry the whole vocabulary; no
+ * branch-scoped bundle does.
+ *
+ * Asked here as a permission rather than as a role NAME (SCRUM-330). Role
+ * names are unique per operator and nothing reserves the system ones, so an
+ * operator that mints its own role literally called `operator_admin` — a
+ * plausible name for "manages our admin paperwork" — was read by this clause
+ * as administering the estate, and everybody holding it became staff of every
+ * park: on every till's staff list, and — through the account writes that
+ * answer "is this account yours" with this rule — within reach of a manager
+ * at a branch they never work.
+ *
+ * The permission rather than `role.operator_id is null` beside the name, which
+ * would close the same hole: that keeps a name as an authority and only
+ * narrows it to the platform's two bundles, so an operator could never define
+ * an administrator bundle of its own, and renaming a system role would quietly
+ * change who is staff everywhere. It is also the answer
+ * `oto-app-users.administersWholeOperator` already gives to this same
+ * question, through the resolver; two answers to one question drift apart. A
+ * custom role carrying this permission does make its holder operator-wide —
+ * that is a deliberate grant, which is the point of the permission existing.
+ */
+const OPERATOR_WIDE_PERMISSION: Permission = 'admin:operator:all';
 
 /**
  * The staff of a branch, which has no single definition in the schema: there is
@@ -52,7 +80,6 @@ export function atBranch(branchId: string) {
       eq(employee.branchId, branchId),
       sql`exists (
         select 1 from core.role_assignment ra
-         join core.role r on r.id = ra.role_id
          where ra.account_id = ${account.id}
            and (
              (ra.scope_type = 'branch' and ra.scope_id = ${branchId})
@@ -61,13 +88,16 @@ export function atBranch(branchId: string) {
              -- first version of this clause admitted any operator-scoped
              -- role, and a two-branch proof found that a reception or staff
              -- role assigned at operator scope made its holder "staff of"
-             -- both parks — visible on every till's list and, through the
-             -- account writes that use this rule to decide dominance, within
-             -- a manager's reach at a branch they never work. scope_id names
-             -- the operator, or is null for a platform-wide assignment.
+             -- both parks. Which roles are administrators is the permission
+             -- above, not their name. scope_id names the operator, or is null
+             -- for a platform-wide assignment.
              or (ra.scope_type = 'operator'
-                 and r.name in ('operator_admin', 'platform_admin')
-                 and (ra.scope_id is null or ra.scope_id = ${account.operatorId}))
+                 and (ra.scope_id is null or ra.scope_id = ${account.operatorId})
+                 and exists (
+                   select 1 from core.role_permission rp
+                    where rp.role_id = ra.role_id
+                      and rp.permission = ${OPERATOR_WIDE_PERMISSION}
+                 ))
            )
       )`,
     ),
