@@ -4,6 +4,24 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:08 — `main` is `4ceb798`; staging is `097b73b` (Render is deploying `10b1242` → `40c69bb`); CI green through `097b73b`
+>
+> **Since 14:58:** the resumed gates for **347** and **350** came back MERGE
+> and both landed (`10b1242` — codes hashed with argon2id and a per-code
+> salt, a legacy read path until the old codes expire; `40c69bb` — the
+> customer display's dashes while a drop-off child awaits a length).
+> Raised: 355 (the placeholder line title "1 Hour Play" before a length —
+> building). Launched 348 behind 347 (same file). The monitor now reads
+> the session-limit message as a stopped agent and a resumed run's state
+> from the last agent of each label.
+>
+> **Running:** gate — 337/338 (`wf_438d7369`, resumed); evidence — the
+> 097b73b batch (`wf_ea63e5b1`, resumed); builds — 206-A (`wf_9a136b60`),
+> 343/344 (`wf_bc7823ac`), 341 (`wf_d527428e`), 353 (`wf_41ee7069`), 351
+> (`wf_b2308782`), 349 (`wf_6e37179b`), 354 (`wf_5f8a746b`), 348
+> (`wf_f270a2cf`), 355 (`wf_93411d0f`). Watchers wait for Render at
+> `10b1242` and `4ceb798`; then evidence for 347 and 350.
+
 > ## Status on 2026-09-23 14:58 — `main` is `d6e1592`; staging is `097b73b`; CI green through `097b73b`
 >
 > **14:37–14:50: the session limit cut every running agent.** Three builds
