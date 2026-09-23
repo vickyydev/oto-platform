@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 20:13 — `main` is `24e608d`; staging is `83ffc36` on the api, POS and Console; CI green through `83ffc36`
+> ## Status on 2026-09-23 20:35 — `main` is `ee4d618`; staging is `24e608d` on the api and Console (POS at `83ffc36`+); CI green through `24e608d`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -470,7 +470,24 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > stamp's zone (paid_at is our receipt clock until 2C2P settles it);
 > O-1 the credentials. Staging pass queued (`wf_52e1356a`).
 >
-> **Running:** G fix round (`wf_1bc3a29f`); evidence — D (`wf_52e1356a`).
+> **20:35 — D on staging at `24e608d`: the announcement holds, the QR
+> flow is not yet reachable.** Integrations shows the simulator (chosen
+> by `PGW_PROVIDER=simulator`, so `fellBack` is false), names and
+> presence only. But `openQrAttempt` has NO caller outside its test, and
+> `payment_routing.qr` has no reader: a `qr` tender on `/payments/
+> attempts` goes to the station's EDC 3 whatever the routing says (driven
+> both ways, T1-000015/16 closed by the terminal simulator; 0 rows in
+> `payment_notification` on all of staging; the pending job ticking).
+> This is the D↔C2 seam the plan gave to F ("C2's route calling D's
+> service") — nobody wired it. **First item of F, or a small seam round:**
+> route a `qr` tender to the gateway when the station's `qr` routing is
+> `gateway`, then drive the QR path on staging (open → paid by the signed
+> notification → receipt; decline; mismatch parked; suppressed webhook →
+> the poller). The pass raised **391** (a station routed `gateway` for QR
+> still sends the tender to its card terminal — the saved setting does
+> nothing). 206 must not be Deployed on tonight's evidence.
+>
+> **Running:** G fix round (`wf_1bc3a29f`).
 > checkpoint part 1 landed: the tenders plan and its five reader findings in `docs/progress/plans/206-tenders/` (the void password redacted in its plain AND hex forms — the gate found the seventh, hex-encoded in a sample frame), the session helpers in `scripts/session/` with a README (the two mutating Render scripts now need `--apply`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
