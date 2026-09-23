@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, Plus, RefreshCw, ShieldOff } from 'lucide-react';
 import {
   boxVitals,
@@ -1030,6 +1031,22 @@ function CodeWithheld({ what, detail }: { what: string; detail: string }) {
  * A short form over the page. The drawer is for one record's detail; these two
  * are one question each, and a slide-over for "name this box" would be a lot
  * of furniture for three fields.
+ *
+ * IT IS MOUNTED ON THE BODY, and that is the whole of SCRUM-377.
+ *
+ * Both of the buttons that open one — "Add a box" and "Pair a screen" — sit in
+ * a `Panel`, which is a `<section>` carrying `backdrop-blur-sm`. A
+ * backdrop-filter makes that section the containing block for fixed-position
+ * descendants AND a stacking context of its own, so a dialog rendered where it
+ * is written resolved `fixed inset-0` to the Boxes panel's box — 1022×271 at
+ * y=57, not the 1440×1024 viewport — and `z-50` could not lift it above the
+ * next panel. Cancel and "Add the box" landed under the Stations card:
+ * `elementFromPoint` at their centres returned that card's heading, a real
+ * mouse press went to the panel behind, and nobody could add a box from the
+ * Console at all. The portal puts the same markup on `document.body`, where
+ * `fixed` means the viewport again and z-50 is in the page's own stacking
+ * order — the reason `Drawer` was never affected, since it is mounted beside
+ * the panels rather than inside one.
  */
 function Dialog({
   title,
@@ -1040,7 +1057,7 @@ function Dialog({
   onClose: () => void;
   children: ReactNode;
 }) {
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6"
       role="dialog"
@@ -1052,6 +1069,7 @@ function Dialog({
         <h2 className="text-lg font-bold tracking-tight">{title}</h2>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

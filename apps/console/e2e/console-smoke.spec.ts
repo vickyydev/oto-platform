@@ -4,6 +4,7 @@ import {
   ROBINSON_CHALONG,
   chooseBranch,
   openSection,
+  pressLandsOn,
   signIn,
   signInAndWait,
 } from './console';
@@ -58,6 +59,63 @@ test('Branches: both parks are listed', async ({ page }) => {
 
   await expect(page.getByText(CENTRAL_FLORESTA, { exact: true })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(ROBINSON_CHALONG, { exact: true })).toBeVisible();
+});
+
+/**
+ * DEVICES — adding a box, with a real mouse rather than a dispatched event.
+ *
+ * SCRUM-377: the dialog behind "Add a box" rendered inside the Boxes panel,
+ * and that panel's `backdrop-blur` made it the containing block and the
+ * stacking context for everything fixed inside it — so the dialog was sized to
+ * the panel instead of the viewport and the Stations card painted over its
+ * foot. It LOOKED right in a screenshot and read as visible to a locator;
+ * Cancel and "Add the box" simply could not be pressed, and an administrator
+ * could not add a box from the Console at all.
+ *
+ * Which is why this case asserts where a press lands before it asserts what a
+ * press does: `toBeVisible` was true throughout the bug. Cancel is pressed
+ * first and must add nothing — a dialog that closes on Cancel but files the
+ * form anyway is the other half of the same button working.
+ */
+test('Devices: a box is added by pressing the dialog, and Cancel adds nothing', async ({ page }) => {
+  await signInAndWait(page);
+  await openSection(page, 'Devices');
+  await chooseBranch(page, CENTRAL_FLORESTA);
+
+  const boxes = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Boxes', exact: true }) });
+  const trigger = boxes.getByRole('button', { name: 'Add a box', exact: true });
+  await expect(trigger).toBeVisible({ timeout: 30_000 });
+
+  // Named for this case, so the row asserted at the end is this run's own.
+  const dialog = page.getByRole('dialog', { name: 'Add a box' });
+  const added = boxes.getByRole('button', { name: 'Smoke box 377', exact: true });
+  const openFilledIn = async () => {
+    await trigger.click();
+    await expect(dialog).toBeVisible({ timeout: 30_000 });
+    await dialog.getByLabel('Name').fill('Smoke box 377');
+    await dialog.getByLabel('Slot').fill('smoke-377');
+  };
+
+  await openFilledIn();
+  const cancel = dialog.getByRole('button', { name: 'Cancel', exact: true });
+  const add = dialog.getByRole('button', { name: 'Add the box', exact: true });
+  expect(await pressLandsOn(cancel)).toBe('button “Cancel”');
+  expect(await pressLandsOn(add)).toBe('button “Add the box”');
+
+  await cancel.click();
+  await expect(dialog).toHaveCount(0);
+  await expect(added).toHaveCount(0);
+
+  await openFilledIn();
+  await add.click();
+  // The claim code, which is the dialog's whole point: it is shown once and
+  // only its hash is kept, so "Done" is the only way out of this step.
+  const done = dialog.getByRole('button', { name: 'Done', exact: true });
+  await expect(done).toBeVisible({ timeout: 30_000 });
+  await done.click();
+  await expect(added).toBeVisible({ timeout: 30_000 });
 });
 
 /**

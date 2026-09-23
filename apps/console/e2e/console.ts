@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /**
  * What every case here needs before it can look at anything: who is signed in,
@@ -55,4 +55,30 @@ export async function openSection(page: Page, label: string): Promise<void> {
  */
 export async function chooseBranch(page: Page, name: string): Promise<void> {
   await page.getByLabel('Branch').selectOption({ label: name });
+}
+
+/**
+ * What a mouse press at the centre of this element would actually land on,
+ * named the way a person would say it: `button “Add the box”`.
+ *
+ * Being visible is not the same as being pressable, and SCRUM-377 was the gap
+ * between them: the add-a-box dialog rendered, read correctly to a locator and
+ * to `toBeVisible`, and a press at its Cancel button went to the Stations card
+ * painted over it. Playwright's own click would have caught that too, but only
+ * as a timeout that says "element intercepts pointer events" with no word on
+ * WHAT is in front — so this asks the browser directly and returns the
+ * offender, which is the line worth having in a red run.
+ */
+export async function pressLandsOn(locator: Locator): Promise<string> {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('That element has no box on screen, so nothing could be pressed on it');
+  return locator.page().evaluate(
+    ({ x, y }) => {
+      const el = document.elementFromPoint(x, y);
+      if (!el) return 'nothing';
+      const words = (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      return `${el.tagName.toLowerCase()}${words ? ` “${words}”` : ''}`;
+    },
+    { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+  );
 }
