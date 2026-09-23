@@ -4,6 +4,20 @@ import { attendee, auditLog, booking, branch, operator } from '@oto/db';
 import { newId } from '@oto/shared';
 import { createTestContext, teardownAll, type TestContext } from './helpers';
 
+/**
+ * BUDGET: `POST /public/bookings` is capped at 20 a minute per address
+ * (routes/public.ts), and `inject` always arrives from 127.0.0.1, so every
+ * booking in this file shares one bucket. This file spends 12 of them — five
+ * in the pricing block (the three refusals count too: the limiter runs in
+ * `onRequest`, before the body is validated) and seven in the double-submit
+ * block. Adding nine more here starts answering 429; `bookings-redeem.test.ts`
+ * already sits at 19 and plants its remaining rows for that reason.
+ *
+ * Past the cap the answer is a 429 `TOO_MANY_REQUESTS` carrying
+ * `details.retryAfterSeconds` and a `Retry-After` header — pinned by
+ * `rate-limit-public.test.ts`, not here (SCRUM-335).
+ */
+
 let ctx: TestContext;
 beforeAll(async () => {
   ctx = await createTestContext();

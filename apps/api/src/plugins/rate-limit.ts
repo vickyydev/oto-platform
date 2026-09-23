@@ -1,7 +1,8 @@
 import rateLimit, { type FastifyRateLimitStore } from '@fastify/rate-limit';
 import fp from 'fastify-plugin';
-import type { FastifyInstance, RouteOptions } from 'fastify';
+import type { FastifyInstance, FastifyRequest, RouteOptions } from 'fastify';
 import type { Db } from '@oto/db';
+import { AppError } from '../lib/errors';
 import { bumpWindow, type Window } from '../services/throttle';
 
 /**
@@ -61,6 +62,27 @@ function buildStore(db: Db) {
   };
 }
 
+/**
+ * What the caller was doing too much of, per route.
+ *
+ * One registration serves /auth, /public, /booth and /box, so the builder
+ * below cannot know the noun on its own — and the one refusal a member of the
+ * public reads is the booking site's. Everything else is answered by the
+ * generic line, which is what an operator, a box or a script gets.
+ */
+const ROUTE_MESSAGE: Record<string, string> = {
+  'POST /public/bookings':
+    'Too many bookings from this connection — please wait a minute and try again.',
+};
+
+function refusalMessage(req: FastifyRequest, retryAfterSeconds: number): string {
+  const url = req.routeOptions?.url ?? req.url;
+  return (
+    ROUTE_MESSAGE[`${req.method} ${url}`] ??
+    `Too many requests. Try again in ${retryAfterSeconds}s.`
+  );
+}
+
 export const rateLimitPlugin = fp(async (app: FastifyInstance) => {
   await app.register(rateLimit, {
     // Only routes that opt in via `config.rateLimit`: signed-in routes are
@@ -72,12 +94,32 @@ export const rateLimitPlugin = fp(async (app: FastifyInstance) => {
     // req.ip already honours TRUST_PROXY: with it off, a forged
     // X-Forwarded-For cannot move a caller into a fresh bucket.
     keyGenerator: (req) => req.ip,
-    errorResponseBuilder: (_req, ctx) => ({
-      error: {
-        code: 'TOO_MANY_REQUESTS',
-        message: `Too many requests. Try again in ${Math.ceil(ctx.ttl / 1000)}s.`,
-      },
-    }),
+    /**
+     * AN `AppError`, NOT THE ENVELOPE (SCRUM-335).
+     *
+     * `@fastify/rate-limit` does not send what this returns — it `throw`s it
+     * (index.js: `throw params.errorResponseBuilder(req, respCtx)`). Returning
+     * the response body meant a plain object with no `statusCode` reached
+     * app.ts's error handler, which recognises `AppError`, a zod failure, a pg
+     * unique violation and then anything carrying `statusCode < 500` — and
+     * matched none of them. Every refusal past a cap was answered 500
+     * INTERNAL, reported to Sentry and logged as a request failure: the 21st
+     * booking in a minute told a parent on mall wifi the park was broken
+     * rather than to wait. The headers were right the whole time
+     * (`retry-after`, `x-ratelimit-*` are set by the plugin before it throws),
+     * which is why nothing looked wrong from the outside.
+     *
+     * `ctx.statusCode` is 429 unless the plugin's `ban` option is configured,
+     * and it is not.
+     */
+    errorResponseBuilder: (req, ctx) => {
+      // The same number the plugin has already put in the `retry-after`
+      // header, computed the same way, so the two can never disagree.
+      const retryAfterSeconds = Math.ceil(ctx.ttl / 1000);
+      return new AppError(ctx.statusCode, 'TOO_MANY_REQUESTS', refusalMessage(req, retryAfterSeconds), {
+        retryAfterSeconds,
+      });
+    },
   });
 });
 
