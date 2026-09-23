@@ -46,6 +46,28 @@ export interface ApiSaleTotals {
   refundedSatang: number;
 }
 
+/**
+ * THE DOCUMENT CHECK A SALE WAS PRICED ON — SCRUM-333.
+ *
+ * Null on almost every sale: it is set only where a visitor who was not yet a
+ * member had a passport or a residence certificate checked at the counter, and
+ * that check chose the rate (SCRUM-307 / SCRUM-311). There is no document
+ * number and no part of one — the platform's claim row records the KIND of
+ * document and its expiry and nothing that identifies it — so the drawer names
+ * what was checked and when, which is what makes the rate defensible.
+ */
+export interface ApiSaleTierClaim {
+  id: string;
+  /** "Passport", "Residence certificate". A kind, never a number. */
+  documentKind: string;
+  /** The tier the document supported — the one this sale was charged at. */
+  toTier: string;
+  /** The document's own expiry as the check recorded it (`YYYY-MM-DD`). */
+  evidenceExpiresOn: string;
+  /** When reception checked it. */
+  verifiedAt: string;
+}
+
 export interface ApiSale {
   id: string;
   branchId: string;
@@ -58,6 +80,12 @@ export interface ApiSale {
   pricingMode: string;
   pricingModeReason: string;
   customerTier: string;
+  /**
+   * Optional because a deployment that has not taken SCRUM-333 yet answers
+   * without it, and a drawer that read `undefined.documentKind` would take the
+   * whole sale down rather than simply not show the line.
+   */
+  tierClaim?: ApiSaleTierClaim | null;
   receiptNumber: string | null;
   receiptSeries: string | null;
   receiptSeq: number | null;

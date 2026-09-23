@@ -632,3 +632,76 @@ describe('a spent claim is answered as itself, not as the price mismatch it caus
     expect(paid.json().error.code).toBe('TIER_CLAIM_SPENT');
   });
 });
+
+/**
+ * SCRUM-333 — the other direction of SCRUM-311's join.
+ *
+ * The refusal above names the sale that spent a claim. Reading that sale back
+ * answered its tier and its receipt number and nothing pointing at the check,
+ * so the one question the column exists for — why was this guest charged the
+ * expat rate — was answerable only in psql, and the refusal named a receipt
+ * whose own read could not corroborate it.
+ */
+describe('a read of the sale names the document check it was priced on', () => {
+  const read = (url: string) => ctx.app.inject({ method: 'GET', url, headers: { cookie } });
+
+  async function commit(payload: Record<string, unknown>, id: string) {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie },
+      payload: { id, stationId, branchId, lines: [line(twoHoursId, 2, 1)], ...payload },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    return res;
+  }
+
+  it('carries the claim on GET /sales/:id and null where the default priced it', async () => {
+    const actionId = await expatClaim();
+    const claimedSaleId = newId();
+    await commit({ tierClaimActionId: actionId }, claimedSaleId);
+    const [claimRow] = await ctx.db
+      .select()
+      .from(saleTierClaim)
+      .where(eq(saleTierClaim.actionId, actionId));
+
+    const detail = await read(`/sales/${claimedSaleId}`);
+    expect(detail.statusCode, detail.body).toBe(200);
+    const claimed = detail.json().sale;
+    expect(claimed.customerTier).toBe('expat');
+    expect(claimed.tierClaim, 'the sale read still points at no document check').not.toBeNull();
+    expect(claimed.tierClaim.id).toBe(claimRow!.id);
+    expect(claimed.tierClaim.documentKind).toBe('Passport');
+    expect(claimed.tierClaim.toTier).toBe('expat');
+    expect(claimed.tierClaim.evidenceExpiresOn).toBe(VALID_UNTIL);
+    expect(new Date(claimed.tierClaim.verifiedAt).getTime()).toBe(claimRow!.createdAt.getTime());
+    /**
+     * EXACTLY THESE FIVE, which is the assertion that keeps a document number
+     * out of a read. The claim row holds no number to leak today; this fails
+     * the day somebody widens the mapper to the whole row.
+     */
+    expect(Object.keys(claimed.tierClaim).sort()).toEqual([
+      'documentKind',
+      'evidenceExpiresOn',
+      'id',
+      'toTier',
+      'verifiedAt',
+    ]);
+
+    // A walk-in priced at the operator's default — most sales — says so.
+    const plainSaleId = newId();
+    await commit({}, plainSaleId);
+    const plain = await read(`/sales/${plainSaleId}`);
+    expect(plain.statusCode, plain.body).toBe(200);
+    expect(plain.json().sale.customerTier).toBe('tourist');
+    expect(plain.json().sale.tierClaim).toBeNull();
+
+    // And the list the History page reads, which is where the drawer gets the
+    // sale it opens from.
+    const list = await read(`/sales?branchId=${branchId}&limit=200`);
+    expect(list.statusCode, list.body).toBe(200);
+    const sales = list.json().sales as { id: string; tierClaim: { id: string } | null }[];
+    expect(sales.find((s) => s.id === claimedSaleId)?.tierClaim?.id).toBe(claimRow!.id);
+    expect(sales.find((s) => s.id === plainSaleId)?.tierClaim).toBeNull();
+  });
+});

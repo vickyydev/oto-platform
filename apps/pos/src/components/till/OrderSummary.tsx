@@ -7,6 +7,7 @@ import { computeTotals } from '@/lib/sale';
 import { resolveFreeItem } from '@/lib/promoVoucher';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { computeNannyGroups, resolveDropOffPricing } from '@/lib/dropoff';
+import { unpricedDropOffLines } from '@/lib/cartWire';
 import { getDropOffPricing, getAddOns } from '@/mockApi';
 import {
   adultUnitDisplay,
@@ -227,6 +228,26 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
    */
   const unpriced = unpricedCartLines(lines);
   const lineIsUnpriced = (line: CartLine) => unpricedCartLines([line]).length > 0;
+  /**
+   * THE SECOND WAY THIS CART HAS NO FIGURES YET (SCRUM-334).
+   *
+   * A drop-off child sits in the cart at `lineTotal: 0` until staff pick the
+   * play length (`lib/dropoff.ts`), and while one does the platform is not
+   * asked to quote at all (`unpricedDropOffLines`, `api/sales.ts`). The line's
+   * own row has said "—" since that line was added; the three figures at the
+   * foot did not, and they came from two different places — a subtotal summed
+   * from line totals, so ฿0, beside a VAT and a total worked out from the
+   * ticket the line is pointing at, so ฿45.14 and ฿690. "Subtotal ฿0 · Total
+   * ฿690" is not a quote in either direction, and ฿690 is the figure staff
+   * would read out to the family.
+   *
+   * So the foot treats it exactly as SCRUM-228's missing price: it quotes
+   * nothing it cannot total. Pay was already closed in this state by the till's
+   * own `canPay` (every drop-off length chosen); what changes is that the
+   * disabled button stops printing a price with it.
+   */
+  const awaitingLength = unpricedDropOffLines(lines);
+  const unquotable = unpriced.length > 0 || awaitingLength.length > 0;
   const ticketPriceText = (line: CartLine) => {
     const price = tierPriceTHB(line.ticketType, line.tier);
     return price === null ? '—' : `฿${price}`;
@@ -669,21 +690,21 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
         )}
 
         <div className="space-y-2 text-lg">
-          {/* The figures at the foot of the panel, dashed while a line is
-              unpriced (SCRUM-316). The rows above have said "—" since
-              SCRUM-228 and the visitor's half since SCRUM-312, but these three
-              still printed the ฿0 that `priceForTier` substitutes for a missing
-              price — so the person taking the money read "Subtotal ฿0 · Total
-              ฿0 · Pay ฿0" directly beneath "This tier has no price", and the
-              one figure that looks like an instruction said the family owed
-              nothing. The tax rows go with them: they are worked out from that
-              same subtotal, so they would state the VAT of an order that has no
-              amount. */}
+          {/* The figures at the foot of the panel, dashed while the cart cannot
+              be totalled (SCRUM-316, widened by SCRUM-334). The rows above have
+              said "—" since SCRUM-228 and the visitor's half since SCRUM-312,
+              but these three still printed the ฿0 that `priceForTier`
+              substitutes for a missing price — so the person taking the money
+              read "Subtotal ฿0 · Total ฿0 · Pay ฿0" directly beneath "This tier
+              has no price", and the one figure that looks like an instruction
+              said the family owed nothing. The tax rows go with them: they are
+              worked out from that same subtotal, so they would state the VAT of
+              an order that has no amount. */}
           <div className="flex justify-between text-muted-foreground">
             <span>Subtotal</span>
-            <span>{unpriced.length > 0 ? '—' : `฿${subtotal}`}</span>
+            <span>{unquotable ? '—' : `฿${subtotal}`}</span>
           </div>
-          {unpriced.length === 0 &&
+          {!unquotable &&
             taxRows.map((row) => (
               <div key={row.key} className="flex justify-between text-muted-foreground text-sm">
                 <span>{row.label}</span>
@@ -693,7 +714,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
           <Separator />
           <div className="flex justify-between font-bold text-2xl pt-2">
             <span>Total</span>
-            <span className="text-primary">{unpriced.length > 0 ? '—' : `฿${total}`}</span>
+            <span className="text-primary">{unquotable ? '—' : `฿${total}`}</span>
           </div>
           {priceNote}
         </div>
@@ -706,12 +727,13 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
             size="lg" 
             className="col-span-2 text-xl font-bold h-14" 
             onClick={onPay}
-            disabled={!canPay || unpriced.length > 0}
+            disabled={!canPay || unquotable}
           >
             {/* A disabled button still reads as a quote. "Pay ฿0" on a cart
-                nobody has priced is the one figure staff would repeat out loud
-                to the family in front of them. */}
-            {payLabel ?? (unpriced.length > 0 ? 'Pay —' : `Pay ฿${total}`)}
+                nobody has priced — or "Pay ฿690" on one whose subtotal says ฿0
+                — is the one figure staff would repeat out loud to the family in
+                front of them. */}
+            {payLabel ?? (unquotable ? 'Pay —' : `Pay ฿${total}`)}
           </Button>
         </div>
       </div>

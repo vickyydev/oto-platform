@@ -120,6 +120,7 @@ export function SaleDetail({
   const packageName = (packageId: string | null): string | null =>
     packageId ? (getTicketTypes().find((t) => t.id === packageId)?.name ?? null) : null;
 
+  const tierClaim = detail?.sale.tierClaim ?? sale.tierClaim ?? null;
   const totals = sale.totals;
   const taxTotal = totals.taxInclusiveSatang + totals.taxExclusiveSatang;
   const taxName =
@@ -220,6 +221,23 @@ export function SaleDetail({
                 <MonitorSmartphone className="w-4 h-4" />
                 {sale.stationName ?? 'Unknown station'} · trading day {sale.businessDate} ·{' '}
                 {tierLabel(sale.customerTier)} · {sale.pricingModeReason}
+                {/* WHY THIS SALE WAS CHARGED AT THAT TIER, where a document
+                    check chose it — SCRUM-333. It sits on the tier's own line
+                    because it is the rest of that sentence: "Expat" alone does
+                    not say who decided, and the discounted rate is the one
+                    figure on this page somebody may have to defend. Absent on
+                    the sales priced from a member's record or the default,
+                    which is almost all of them. The detail read is preferred
+                    over the list row only because it lands second; both carry
+                    it, so the line does not appear and then move.
+
+                    A STRING AND NOT A SPAN: this row is a flex container, so
+                    an element here would be a second flex item and split the
+                    row into two columns. Text stays in the run beside the tier
+                    it is explaining. */}
+                {tierClaim
+                  ? ` · Priced on ${tierClaim.documentKind.toLowerCase()}, checked ${fmt(tierClaim.verifiedAt)}`
+                  : ''}
               </div>
             </div>
           </div>

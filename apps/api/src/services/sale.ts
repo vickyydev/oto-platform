@@ -15,6 +15,7 @@ import {
   sale,
   saleDiscount,
   saleLine,
+  saleTierClaim,
   station,
   ticketPackage,
   tier,
@@ -1495,6 +1496,94 @@ function viewOf(row: typeof sale.$inferSelect): SaleView {
 }
 
 /**
+ * THE DOCUMENT CHECK A SALE WAS PRICED ON, as a READ of that sale answers it
+ * (SCRUM-333).
+ *
+ * WHY IT IS HERE. SCRUM-311 gave the sale row `tier_claim_id` and made it
+ * single-use: a second cart naming a spent claim is refused, and the refusal
+ * names the sale that spent it. The other direction was missing — reading the
+ * sale back answered its tier and its receipt number and nothing pointing at
+ * the check — so "why was this guest charged the expat rate" was answerable
+ * only in psql, and the refusal named a receipt whose own read could not
+ * corroborate it.
+ *
+ * WHAT IS NOT HERE, AND CANNOT BE: any part of a document number, last digits
+ * included. `pos.sale_tier_claim` records the KIND of document and its expiry
+ * and deliberately nothing that identifies it — see that table's comment — so
+ * there are no digits on the row to carry up. What the counter gets is what
+ * was checked and when it was checked, which is what makes the rate defensible
+ * without putting a passport number in a table nothing sweeps.
+ *
+ * It is narrower than `TierClaimView` in `services/sale-tier.ts` on purpose:
+ * that is the till's view of a claim it is about to price a cart with, and it
+ * carries the action id and the window. A sale that has already been paid for
+ * has no use for either.
+ */
+export interface SaleTierClaimView {
+  id: string;
+  /** `evidence_type`: "Passport", "Residence certificate". A kind, never a number. */
+  documentKind: string;
+  /** The tier the document supported — the one that priced this sale. */
+  toTier: string;
+  /** The document's own expiry, as the check recorded it (`YYYY-MM-DD`). */
+  evidenceExpiresOn: string;
+  /** When reception checked it: the claim row's `created_at`. */
+  verifiedAt: string;
+}
+
+/**
+ * A sale as a READ of it answers: the row, plus the one thing only a read
+ * joins. The write paths (`commitSale`, `finaliseSale`) answer `SaleView`
+ * unchanged — the till already holds the claim it priced with, and a `null`
+ * there would be a claim-priced sale saying it had none.
+ */
+export interface SaleReadView extends SaleView {
+  tierClaim: SaleTierClaimView | null;
+}
+
+/**
+ * The document checks behind a page of sales, by sale id, in one query rather
+ * than one per row — the same rule the list's line query follows.
+ */
+async function tierClaimsOf(
+  db: Exec,
+  rows: { id: string; tierClaimId: string | null }[],
+): Promise<Map<string, SaleTierClaimView>> {
+  const claimIds = [
+    ...new Set(rows.map((row) => row.tierClaimId).filter((id): id is string => id !== null)),
+  ];
+  if (claimIds.length === 0) return new Map();
+  const claims = await db
+    .select({
+      id: saleTierClaim.id,
+      toTier: saleTierClaim.toTier,
+      evidenceType: saleTierClaim.evidenceType,
+      evidenceExpiresAt: saleTierClaim.evidenceExpiresAt,
+      createdAt: saleTierClaim.createdAt,
+    })
+    .from(saleTierClaim)
+    .where(inArray(saleTierClaim.id, claimIds));
+  const byClaimId = new Map(
+    claims.map((claim) => [
+      claim.id,
+      {
+        id: claim.id,
+        documentKind: claim.evidenceType,
+        toTier: claim.toTier,
+        evidenceExpiresOn: claim.evidenceExpiresAt,
+        verifiedAt: claim.createdAt.toISOString(),
+      },
+    ]),
+  );
+  const bySaleId = new Map<string, SaleTierClaimView>();
+  for (const row of rows) {
+    const claim = row.tierClaimId ? byClaimId.get(row.tierClaimId) : undefined;
+    if (claim) bySaleId.set(row.id, claim);
+  }
+  return bySaleId;
+}
+
+/**
  * A tender that reached `approved` — money the platform says was taken.
  *
  * `pos.payment_attempt` is still the Sprint 1 placeholder shape and S2-10a
@@ -2332,7 +2421,7 @@ export interface SaleListFilters {
  * sale's LINES were and lets the reader's own grouping decide, rather than
  * inventing a single label on this side.
  */
-export interface SaleListItem extends SaleView {
+export interface SaleListItem extends SaleReadView {
   soldBy: { accountId: string; name: string | null } | null;
   stationName: string | null;
   member: { id: string; name: string | null; nickname: string; phone: string } | null;
@@ -2403,9 +2492,18 @@ export async function listSales(
     }
   }
 
+  // SCRUM-333 — the document check each of these was priced on, where one was.
+  // The History drawer reads the sale it opens out of this list row, so the
+  // line naming the check has to be here as well as on the detail.
+  const claims = await tierClaimsOf(
+    db,
+    rows.map((row) => row.sale),
+  );
+
   return {
     sales: rows.map((row) => ({
       ...viewOf(row.sale),
+      tierClaim: claims.get(row.sale.id) ?? null,
       soldBy: row.sale.createdByAccountId
         ? {
             accountId: row.sale.createdByAccountId,
@@ -2447,9 +2545,11 @@ export async function getSaleDetail(
     .from(saleDiscount)
     .where(eq(saleDiscount.saleId, saleId))
     .orderBy(asc(saleDiscount.sequence));
+  /** SCRUM-333 — the document check that chose this sale's tier, where one did. */
+  const claims = await tierClaimsOf(db, [row]);
 
   return {
-    sale: viewOf(row),
+    sale: { ...viewOf(row), tierClaim: claims.get(row.id) ?? null } satisfies SaleReadView,
     /** S2-09b — the code the guest holds, from the F&B lines that carry it. */
     pickupCode: recordedPickupCode(lines.filter((line) => line.kind === 'fnb_item')),
     taxBreakdown: row.taxBreakdown,
