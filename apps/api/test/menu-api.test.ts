@@ -604,16 +604,17 @@ describe('every change is on the record', () => {
 });
 
 /**
- * The barcoded shop row the seed carries (S2-09b).
+ * The grip socks the seed carries, with their sizes (S2-09b).
  *
- * The acceptance line reads "the seeded barcode 8850000000017 resolves to Grip
- * socks M", and the resolver's own file proves the resolving. What is pinned
- * here is the other half of that sentence: that a database nobody has typed
- * into already has the row, so the scanner and the shop grid have something to
- * find. It was a fixture inside the scanner's test file while the seed's socks
- * carried `OTO-SOCK` and no size.
+ * The acceptance line reads "scanning the seeded barcode 8850000000017 adds
+ * Grip socks M to the shop cart", and the resolver's own file proves the
+ * resolving. What is pinned here is the other half of that sentence: that a
+ * database nobody has typed into already has the socks in three sizes with the
+ * barcode on the M — the owner's decision of 2026-09-24, which made the size a
+ * property of the item. Until then the seed carried a second product, "Grip
+ * socks M" (`MR-SOCKS-M`), because a product had nowhere to put a size.
  */
-describe('the seed carries the barcoded shop row', () => {
+describe('the seed carries the grip socks in three sizes, with the barcode on the M', () => {
   const BARCODE = '8850000000017';
 
   interface MenuProduct {
@@ -622,28 +623,40 @@ describe('the seed carries the barcoded shop row', () => {
     code: string | null;
     name: string;
     sku: string | null;
+    variants: Array<{ id: string; label: string; sku?: string; barcode?: string }>;
     categoryId: string | null;
     priceSatang: number;
     archivedAt: string | null;
   }
 
-  it('is one live merch row, in a shop category, beside the prototype’s own socks', async () => {
+  it('is one live merch row, in a shop category, with S, M and L', async () => {
     const res = await call('GET', `/branches/${branchId}/menu`, { cookie: admin });
     expect(res.statusCode).toBe(200);
     const products = res.body.products as unknown as MenuProduct[];
 
-    const scanned = products.filter((p) => p.sku === BARCODE);
-    expect(scanned).toHaveLength(1);
-    const socks = scanned[0]!;
-    expect(socks.name).toBe('Grip socks M');
-    expect(socks.code).toBe('MR-SOCKS-M');
+    const socks = products.find((p) => p.code === 'MR-SOCKS')!;
+    expect(socks.name).toBe('Grip Socks');
     expect(socks.kind).toBe('merch');
     expect(socks.priceSatang).toBe(12000);
     expect(socks.archivedAt).toBeNull();
+    // The whole item keeps the prototype's stock-keeping code; the barcode is
+    // the M's, and only the M's.
+    expect(socks.sku).toBe('OTO-SOCK');
+    expect(socks.variants).toEqual([
+      { id: 's', label: 'S' },
+      { id: 'm', label: 'M', barcode: BARCODE },
+      { id: 'l', label: 'L' },
+    ]);
 
-    // A size is its own sellable row, so the prototype's Grip Socks stays where
-    // it was with its stock-keeping code rather than being rewritten into this.
-    expect(products.find((p) => p.code === 'MR-SOCKS')?.sku).toBe('OTO-SOCK');
+    // No product answers to the barcode whole any more, and the separate
+    // "Grip socks M" row is no longer seeded.
+    expect(products.filter((p) => p.sku === BARCODE)).toEqual([]);
+    expect(products.find((p) => p.code === 'MR-SOCKS-M')).toBeUndefined();
+
+    // Every other seeded item comes in one size.
+    expect(
+      products.filter((p) => p.variants.length > 0 && p.code?.startsWith('MR-')).map((p) => p.code),
+    ).toEqual(['MR-SOCKS']);
 
     const categories = res.body.categories as unknown as Array<{
       id: string;
@@ -652,7 +665,7 @@ describe('the seed carries the barcoded shop row', () => {
     expect(categories.find((c) => c.id === socks.categoryId)?.taxableCategory).toBe('merch');
   });
 
-  it('refuses a second live row for the same barcode, and names the constraint', async () => {
+  it('refuses a new item that would answer to the M’s barcode, and names who has it', async () => {
     const res = await makeItem({
       code: 'T-SAME-BARCODE',
       name: 'Someone else’s socks',
@@ -661,12 +674,285 @@ describe('the seed carries the barcoded shop row', () => {
       sku: BARCODE,
     });
     expect(res.statusCode).toBe(409);
+    // What the Merch panel's toast is made of: the barcode and the size that
+    // already holds it. A barcode is printed on a tag in the shop; naming it
+    // leaks nothing, and not naming it leaves staff hunting for it.
+    expect(res.body.error as unknown as Record<string, unknown>).toMatchObject({
+      code: 'BARCODE_IN_USE',
+      message: `The barcode ${BARCODE} is already on "Grip Socks — M" — a barcode can name only one thing`,
+      details: { barcode: BARCODE, variantId: 'm' },
+    });
+  });
+});
+
+/**
+ * An item's sizes through the Merch panel's routes (S2-09b).
+ *
+ * `pos.product.variants` is jsonb and the database checks only that it is a
+ * list. Every other rule is the route's, and each is refused here in the words
+ * the panel's toast will show.
+ */
+describe('an item’s sizes', () => {
+  type Size = { id: string; label: string; sku?: string; barcode?: string };
+  let apparelId: string;
+
+  beforeAll(async () => {
+    const apparel = await makeCategory({
+      code: 'T-APPAREL',
+      name: 'Test apparel',
+      taxableCategory: 'merch',
+      defaultPrepStation: 'none',
+      sortOrder: 30,
+    });
+    apparelId = apparel.body.id as unknown as string;
+  });
+
+  const makeMerch = (code: string, extra: Record<string, unknown> = {}) =>
+    makeItem({
+      code,
+      name: `Tee ${code}`,
+      kind: 'merch',
+      priceSatang: 30000,
+      categoryId: apparelId,
+      ...extra,
+    });
+
+  const patch = (id: string, payload: Record<string, unknown>) =>
+    call('PATCH', `/branches/${branchId}/menu/products/${id}`, { cookie: admin, payload });
+
+  const sizesOf = async (id: string): Promise<Size[]> => {
+    const res = await call('GET', `/branches/${branchId}/menu`, { cookie: admin });
+    const products = res.body.products as unknown as Array<{ id: string; variants: Size[] }>;
+    return products.find((p) => p.id === id)!.variants;
+  };
+
+  it('saves S, M and L with a barcode on one, and reads them back in order', async () => {
+    const created = await makeMerch('T-TEE-1', {
+      variants: [
+        { id: 's', label: 'S' },
+        { id: 'm', label: ' M ', barcode: '8851234567895' },
+        { id: 'l', label: 'L', barcode: null, sku: null },
+      ],
+    });
+    expect(created.statusCode, JSON.stringify(created.body)).toBe(200);
+    const id = created.body.id as unknown as string;
+    // Trimmed, and a null barcode or code is left off the stored size.
+    expect(await sizesOf(id)).toEqual([
+      { id: 's', label: 'S' },
+      { id: 'm', label: 'M', barcode: '8851234567895' },
+      { id: 'l', label: 'L' },
+    ]);
+  });
+
+  it('replaces the whole list on an edit, leaves it alone when the edit names none, and [] takes them away', async () => {
+    const created = await makeMerch('T-TEE-2', { variants: [{ id: 's', label: 'S' }] });
+    const id = created.body.id as unknown as string;
+
+    const renamed = await patch(id, {
+      variants: [
+        { id: 's', label: 'Small' },
+        { id: 'xl', label: 'XL' },
+      ],
+    });
+    expect(renamed.statusCode).toBe(200);
+    expect(await sizesOf(id)).toEqual([
+      { id: 's', label: 'Small' },
+      { id: 'xl', label: 'XL' },
+    ]);
+
+    // A price edit from a form that knows nothing of sizes keeps them.
+    expect((await patch(id, { priceSatang: 31000 })).statusCode).toBe(200);
+    expect(await sizesOf(id)).toHaveLength(2);
+
+    expect((await patch(id, { variants: [] })).statusCode).toBe(200);
+    expect(await sizesOf(id)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'two sizes with one id',
+      [
+        { id: 'm', label: 'M' },
+        { id: 'm', label: 'Medium' },
+      ],
+      'Two sizes of "Tee T-TEE-BAD" have the id "m" — each size needs its own',
+    ],
+    [
+      'two sizes with one label, whatever its case',
+      [
+        { id: 'm', label: 'M' },
+        { id: 'm2', label: 'm' },
+      ],
+      '"Tee T-TEE-BAD" has two sizes called "m"',
+    ],
+    [
+      'a barcode no scanner could read',
+      [{ id: 'm', label: 'M', barcode: '885-ABC' }],
+      'The barcode on size "M" is not one a scanner can read — a barcode is 8 to 14 digits',
+    ],
+    [
+      'one barcode on two sizes',
+      [
+        { id: 'm', label: 'M', barcode: '8851111111118' },
+        { id: 'l', label: 'L', barcode: '8851111111118' },
+      ],
+      'Sizes "M" and "L" of "Tee T-TEE-BAD" carry the same barcode, 8851111111118',
+    ],
+  ])('refuses %s, in a sentence', async (_what, variants, message) => {
+    const res = await makeMerch('T-TEE-BAD', { variants });
+    expect(res.statusCode).toBe(400);
+    expect((res.body.error as unknown as { message: string }).message).toBe(message);
+  });
+
+  it('refuses a size whose barcode is the item’s own', async () => {
+    const res = await makeMerch('T-TEE-OWN', {
+      sku: '8852222222222',
+      variants: [{ id: 'm', label: 'M', barcode: '8852222222222' }],
+    });
+    expect(res.statusCode).toBe(400);
+    expect((res.body.error as unknown as { message: string }).message).toBe(
+      `8852222222222 is both "Tee T-TEE-OWN"'s own barcode and size "M"'s — a scan has to name one of them`,
+    );
+  });
+
+  it('refuses a size with no label, or an id the till could not carry', async () => {
+    expect((await makeMerch('T-TEE-EMPTY', { variants: [{ id: 'm', label: '   ' }] })).statusCode).toBe(400);
+    expect((await makeMerch('T-TEE-ID', { variants: [{ id: 'Size M!', label: 'M' }] })).statusCode).toBe(400);
+  });
+
+  /**
+   * THE COLLISION — the rule the owner named: a size's barcode is unique across
+   * the operator's live items and sizes. Its plant removes the check in
+   * `assertBarcodesFree`; this test then goes red, because the second item is
+   * saved with a barcode the first one's size already answers to.
+   */
+  it('PLANT — refuses a size barcode another item’s size already carries, and names that size', async () => {
+    const first = await makeMerch('T-TEE-A', {
+      variants: [{ id: 'm', label: 'M', barcode: '8853333333338' }],
+    });
+    expect(first.statusCode).toBe(200);
+
+    const second = await makeMerch('T-TEE-B', {
+      variants: [{ id: 'l', label: 'L', barcode: '8853333333338' }],
+    });
+    expect(second.statusCode).toBe(409);
+    expect(second.body.error as unknown as Record<string, unknown>).toMatchObject({
+      code: 'BARCODE_IN_USE',
+      message:
+        'The barcode 8853333333338 is already on "Tee T-TEE-A — M" — a barcode can name only one thing',
+      details: { barcode: '8853333333338', productId: first.body.id, variantId: 'm' },
+    });
+    // Nothing was written: the refusal came before the insert.
+    const rows = await ctx.db.select().from(product).where(eq(product.code, 'T-TEE-B'));
+    expect(rows).toEqual([]);
+  });
+
+  it('refuses a size barcode that is another item’s own barcode', async () => {
+    await makeMerch('T-TEE-C', { sku: '8854444444445' });
+    const res = await makeMerch('T-TEE-D', {
+      variants: [{ id: 's', label: 'S', barcode: '8854444444445' }],
+    });
+    expect(res.statusCode).toBe(409);
+    expect((res.body.error as unknown as { message: string }).message).toBe(
+      'The barcode 8854444444445 is already on "Tee T-TEE-C" — a barcode can name only one thing',
+    );
+  });
+
+  it('refuses an item’s own barcode when another item’s size already carries it, on an edit too', async () => {
+    await makeMerch('T-TEE-E', { variants: [{ id: 'm', label: 'M', barcode: '8855555555552' }] });
+    const other = await makeMerch('T-TEE-F');
+    const res = await patch(other.body.id as unknown as string, { sku: '8855555555552' });
+    expect(res.statusCode).toBe(409);
+    expect((res.body.error as unknown as { code: string }).code).toBe('BARCODE_IN_USE');
+  });
+
+  /**
+   * The one barcode collision these routes leave to the database, as the header
+   * of `services/product-variants.ts` says: two live items with the same OWN
+   * code. `assertBarcodesFree` compares sizes with items and items with sizes,
+   * never one item's own code with another's — `product_sku_unique` refuses
+   * that pair, on a create and on an edit alike.
+   */
+  it('refuses a second live item on the same own barcode, and names the constraint', async () => {
+    const holder = await makeMerch('T-TEE-SKU-1', { sku: '8858888888883' });
+    expect(holder.statusCode).toBe(200);
+
+    const second = await makeMerch('T-TEE-SKU-2', { sku: '8858888888883' });
+    expect(second.statusCode).toBe(409);
     // What the Merch panel's toast is made of: a code, a sentence about the
     // value, and the constraint — never the item already holding it.
-    expect(res.body.error as unknown as Record<string, unknown>).toMatchObject({
+    expect(second.body.error as unknown as Record<string, unknown>).toMatchObject({
       code: 'DUPLICATE',
       message: 'That value is already taken',
       details: { constraint: 'product_sku_unique' },
     });
+    expect(await ctx.db.select().from(product).where(eq(product.code, 'T-TEE-SKU-2'))).toEqual([]);
+
+    // An edit that moves another item onto the same code meets the same rule.
+    const other = await makeMerch('T-TEE-SKU-3', { sku: '8858888888890' });
+    expect(other.statusCode).toBe(200);
+    const moved = await patch(other.body.id as unknown as string, { sku: '8858888888883' });
+    expect(moved.statusCode).toBe(409);
+    expect(moved.body.error as unknown as Record<string, unknown>).toMatchObject({
+      code: 'DUPLICATE',
+      message: 'That value is already taken',
+      details: { constraint: 'product_sku_unique' },
+    });
+  });
+
+  it('lets an item keep its own sizes on an edit — its barcodes do not collide with themselves', async () => {
+    const created = await makeMerch('T-TEE-G', {
+      variants: [{ id: 'm', label: 'M', barcode: '8856666666669' }],
+    });
+    const id = created.body.id as unknown as string;
+    const res = await patch(id, {
+      variants: [
+        { id: 'm', label: 'Medium', barcode: '8856666666669' },
+        { id: 'l', label: 'L' },
+      ],
+    });
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+  });
+
+  it('frees a barcode when the item holding it is withdrawn', async () => {
+    const holder = await makeMerch('T-TEE-H', {
+      variants: [{ id: 'm', label: 'M', barcode: '8857777777776' }],
+    });
+    const blocked = await makeMerch('T-TEE-I', {
+      variants: [{ id: 'm', label: 'M', barcode: '8857777777776' }],
+    });
+    expect(blocked.statusCode).toBe(409);
+
+    const withdrawn = await call(
+      'DELETE',
+      `/branches/${branchId}/menu/products/${holder.body.id as unknown as string}`,
+      { cookie: admin },
+    );
+    expect(withdrawn.statusCode).toBe(200);
+    const again = await makeMerch('T-TEE-I', {
+      variants: [{ id: 'm', label: 'M', barcode: '8857777777776' }],
+    });
+    expect(again.statusCode, JSON.stringify(again.body)).toBe(200);
+  });
+
+  it('puts the sizes on the audit row, before and after', async () => {
+    const created = await makeMerch('T-TEE-J', { variants: [{ id: 's', label: 'S' }] });
+    const id = created.body.id as unknown as string;
+    await patch(id, {
+      variants: [
+        { id: 's', label: 'S' },
+        { id: 'm', label: 'M' },
+      ],
+    });
+    const rows = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.entityType, 'product'), eq(auditLog.entityId, id)));
+    const update = rows.find((r) => r.action === 'menu_item.update')!;
+    expect((update.before as { variants: Size[] }).variants).toEqual([{ id: 's', label: 'S' }]);
+    expect((update.after as { variants: Size[] }).variants).toEqual([
+      { id: 's', label: 'S' },
+      { id: 'm', label: 'M' },
+    ]);
   });
 });

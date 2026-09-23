@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { MerchItem, TaxableCategory, WeekdayWeekendPrice } from '@/types';
+import { Plus, Trash2 } from 'lucide-react';
+import type { MerchItem, MerchVariant, TaxableCategory, WeekdayWeekendPrice } from '@/types';
 import { WeekdayWeekendPriceInput } from '@/components/shared/WeekdayWeekendPriceInput';
 import {
   Dialog,
@@ -46,10 +47,26 @@ interface MerchItemFormProps {
   onSave: (item: MerchItem, trackStock: boolean) => void;
 }
 
+/**
+ * One row of the Sizes editor (S2-09b). `id` is the platform's stable size id
+ * and is set only on a size that already exists — renaming a size keeps it, so
+ * the sales that recorded it still name it. A new row is given one on save.
+ * `key` is React's, and nothing else's.
+ */
+interface SizeRow {
+  key: string;
+  id?: string;
+  label: string;
+  barcode: string;
+  /** A size's own stock code has no field here; it is carried through untouched. */
+  sku?: string;
+}
+
 interface FormState {
   name: string;
   category: string;
   sku: string;
+  sizes: SizeRow[];
   price: WeekdayWeekendPrice;
   cost: string;
   active: boolean;
@@ -59,14 +76,19 @@ interface FormState {
 
 interface FormErrors {
   name?: string;
+  sizes?: string;
   price?: string;
   cost?: string;
 }
+
+let sizeKeyCounter = 0;
+const nextSizeKey = () => `size-row-${++sizeKeyCounter}`;
 
 const blankState = (): FormState => ({
   name: '',
   category: '',
   sku: '',
+  sizes: [],
   price: { weekday: 0, weekend: 0 },
   cost: '',
   active: true,
@@ -79,12 +101,86 @@ const fromItem = (m: MerchItem): FormState => ({
   name: m.name,
   category: m.category ?? '',
   sku: m.sku ?? '',
+  sizes: (m.variants ?? []).map((v) => ({
+    key: nextSizeKey(),
+    id: v.id,
+    label: v.label,
+    barcode: v.barcode ?? '',
+    ...(v.sku ? { sku: v.sku } : {}),
+  })),
   price: m.price,
   cost: m.cost != null ? String(m.cost) : '',
   active: m.active,
   trackStock: !!m.inventoryItemId,
   taxCategoryOverride: m.taxCategoryOverride ?? USE_DEFAULT,
 });
+
+/** A barcode the scanner can read: digits, eight to fourteen of them. */
+const BARCODE_SHAPE = /^[0-9]{8,14}$/;
+
+/**
+ * A size id minted from its label — `M` becomes `m`, `Extra large` becomes
+ * `extra-large` — in the shape the platform takes (a–z, 0–9, hyphen, at most
+ * 32). A label with no such characters in it (a Thai one, say) falls back to
+ * `size-<n>`. Never one already taken on this item.
+ */
+function mintSizeId(label: string, taken: Set<string>): string {
+  const slug = label
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 28);
+  const base = slug || 'size';
+  let id = slug || `size-${taken.size + 1}`;
+  for (let n = 2; taken.has(id); n += 1) id = `${base}-${n}`;
+  return id;
+}
+
+/**
+ * The Sizes editor's rules — the platform's own (`services/product-variants.ts`),
+ * asked here first so the admin sees the reason beside the field rather than
+ * after a round trip. The platform still asks them all, and the one question
+ * only it can answer — is a barcode already on ANOTHER item — comes back from
+ * it as the save's toast.
+ */
+function sizesProblem(sizes: SizeRow[], itemSku: string): string | undefined {
+  const labels = new Set<string>();
+  const barcodes = new Set<string>();
+  for (const size of sizes) {
+    const label = size.label.trim();
+    if (!label) return 'Every size needs a name, e.g. S, M or L.';
+    if (labels.has(label.toLocaleLowerCase())) return `Two sizes are both called "${label}".`;
+    labels.add(label.toLocaleLowerCase());
+    const barcode = size.barcode.trim();
+    if (!barcode) continue;
+    if (!BARCODE_SHAPE.test(barcode)) return `The barcode on size "${label}" must be 8 to 14 digits.`;
+    if (barcodes.has(barcode)) return `Two sizes carry the barcode ${barcode}.`;
+    if (barcode === itemSku) return `${barcode} is already this item's own barcode.`;
+    barcodes.add(barcode);
+  }
+  return undefined;
+}
+
+/** The rows as the item's sizes, keeping every existing size's id. */
+function sizesToVariants(sizes: SizeRow[]): MerchVariant[] {
+  const taken = new Set(sizes.map((s) => s.id).filter((id): id is string => !!id));
+  return sizes.map((size) => {
+    const label = size.label.trim();
+    let id = size.id;
+    if (!id) {
+      id = mintSizeId(label, taken);
+      taken.add(id);
+    }
+    const barcode = size.barcode.trim();
+    return {
+      id,
+      label,
+      ...(size.sku ? { sku: size.sku } : {}),
+      ...(barcode ? { barcode } : {}),
+    };
+  });
+}
 
 /**
  * Add/edit dialog for a retail/merch item. Handles item metadata only (name,
@@ -104,6 +200,16 @@ export function MerchItemForm({ open, item, onClose, onSave }: MerchItemFormProp
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  const addSize = () =>
+    setForm((f) => ({ ...f, sizes: [...f.sizes, { key: nextSizeKey(), label: '', barcode: '' }] }));
+  const setSize = (key: string, patch: Partial<Pick<SizeRow, 'label' | 'barcode'>>) =>
+    setForm((f) => ({
+      ...f,
+      sizes: f.sizes.map((s) => (s.key === key ? { ...s, ...patch } : s)),
+    }));
+  const removeSize = (key: string) =>
+    setForm((f) => ({ ...f, sizes: f.sizes.filter((s) => s.key !== key) }));
+
   const validate = (): MerchItem | null => {
     const next: FormErrors = {};
     const name = form.name.trim();
@@ -119,13 +225,16 @@ export function MerchItemForm({ open, item, onClose, onSave }: MerchItemFormProp
       next.cost = 'Cost must be 0 or more.';
     }
 
-    if (next.name || next.price || next.cost) {
+    const sku = form.sku.trim();
+    next.sizes = sizesProblem(form.sizes, sku);
+
+    if (next.name || next.sizes || next.price || next.cost) {
       setErrors(next);
       return null;
     }
 
     const category = form.category.trim();
-    const sku = form.sku.trim();
+    const variants = sizesToVariants(form.sizes);
     return {
       id: item?.id ?? slugId(name),
       name,
@@ -135,6 +244,9 @@ export function MerchItemForm({ open, item, onClose, onSave }: MerchItemFormProp
       ...(item?.inventoryItemId ? { inventoryItemId: item.inventoryItemId } : {}),
       ...(hasCost ? { cost: costNum } : {}),
       ...(sku ? { sku } : {}),
+      // Always set, so an edit that removed the last size saves "no sizes"
+      // rather than leaving the old ones on the item.
+      variants,
       ...(category ? { category } : {}),
       ...(form.taxCategoryOverride !== USE_DEFAULT
         ? { taxCategoryOverride: form.taxCategoryOverride as TaxableCategory }
@@ -191,6 +303,55 @@ export function MerchItemForm({ open, item, onClose, onSave }: MerchItemFormProp
               value={form.sku}
               onChange={(e) => setField('sku', e.target.value)}
             />
+          </div>
+
+          {/* Sizes (S2-09b) */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <Label>Sizes</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addSize}>
+                <Plus className="w-3.5 h-3.5" />
+                Add size
+              </Button>
+            </div>
+            {form.sizes.length === 0 ? (
+              <p className="text-xs text-foreground/50">
+                One size. Add sizes (S, M, L…) and the shop asks which one before it adds the item.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {form.sizes.map((size, index) => (
+                  <div key={size.key} className="grid grid-cols-[5.5rem_1fr_auto] items-center gap-2">
+                    <Input
+                      aria-label={`Size ${index + 1} name`}
+                      placeholder="e.g. M"
+                      value={size.label}
+                      onChange={(e) => setSize(size.key, { label: e.target.value })}
+                    />
+                    <Input
+                      aria-label={`Size ${index + 1} barcode`}
+                      placeholder="Barcode (optional)"
+                      inputMode="numeric"
+                      value={size.barcode}
+                      onChange={(e) => setSize(size.key, { barcode: e.target.value })}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeSize(size.key)}
+                      aria-label={`Remove size ${size.label || index + 1}`}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <p className="text-xs text-foreground/50">
+                  Scanning a size&apos;s barcode adds that size without asking.
+                </p>
+              </div>
+            )}
+            {errors.sizes && <p className="text-xs text-destructive">{errors.sizes}</p>}
           </div>
 
           {/* Price + Cost */}

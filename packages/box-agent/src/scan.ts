@@ -218,7 +218,10 @@ export type ProductBarcodeLookup = (
 export interface ProductBarcodeMatch {
   productId: string;
   name: string;
-  /** The code as the catalogue holds it — `product.sku`. */
+  /**
+   * The code as the catalogue holds it — the item's own `product.sku`, or the
+   * barcode on the size it names.
+   */
   sku: string;
   priceSatang: number;
   /** Null on the row means "the same as the weekday price". */
@@ -226,10 +229,10 @@ export interface ProductBarcodeMatch {
   categoryId?: string | null;
   branchId?: string | null;
   /**
-   * The size, colour or pack the barcode picks out, when the catalogue models
-   * one. Null today and honestly so: a retail barcode identifies ONE sellable
-   * thing, so "Grip socks M" is its own `product` row with its own code, and
-   * there is no variant table under it to name.
+   * The size the barcode is on, when it is on one of the item's sizes
+   * (`product.variants`, S2-09b) rather than on the item itself. Null for the
+   * item's own code, which names no size — the till asks for one then, when
+   * the item has more than one.
    */
   variant?: { id: string; label: string } | null;
 }
@@ -295,6 +298,10 @@ export function productBarcodeHandler(lookup: ProductBarcodeLookup): ScanHandler
             kind: 'product',
             productId: match.productId,
             name: match.name,
+            // What was scanned, in words: the item, and the size when the code
+            // is on one — "Grip Socks M". The shop line itself is built from
+            // `productId` and `variant`, so this is for whoever reads the answer.
+            label: match.variant ? `${match.name} ${match.variant.label}` : match.name,
             sku: match.sku,
             priceSatang: match.priceSatang,
             priceWeekendSatang: match.priceWeekendSatang ?? null,

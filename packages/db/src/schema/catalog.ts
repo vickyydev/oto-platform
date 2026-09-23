@@ -242,6 +242,26 @@ export const productCategory = pos.table(
 export const PRODUCT_KINDS = ['menu', 'merch', 'addon'] as const;
 export type ProductKind = (typeof PRODUCT_KINDS)[number];
 
+/**
+ * One size of a product — the owner's decision of 2026-09-24 (S2-09b): the
+ * shop's grip socks come in S, M and L, the till asks which, and the sale line
+ * records the one sold.
+ *
+ * The same shape as `ProductVariantSchema` in `@oto/shared` (`menu-shapes.ts`),
+ * repeated here because a schema file states its own vocabulary rather than
+ * importing the API's.
+ */
+export interface ProductVariant {
+  /** Stable within its product — `s`, `m`, `l`. What a sale line records. */
+  id: string;
+  /** What the size picker, the cart and the receipt say — `S`, `M`, `L`. */
+  label: string;
+  /** This size's own stock-keeping code, when it has one. */
+  sku?: string;
+  /** The code printed on this size's tag. A scan of it adds this size. */
+  barcode?: string;
+}
+
 export const product = pos.table(
   'product',
   {
@@ -284,8 +304,27 @@ export const product = pos.table(
     taxCategoryOverride: text('tax_category_override').$type<TaxableCategory>(),
     /** Partial<Record<lang, { name, description? }>> — display only. */
     translations: jsonb('translations'),
-    /** Barcode / stock-keeping unit. Merch carries one; the menu does not. */
+    /**
+     * Barcode / stock-keeping unit, for the WHOLE item. Merch carries one; the
+     * menu does not. A size's own barcode is on the size, in `variants`.
+     */
     sku: text('sku'),
+    /**
+     * The sizes this item is sold in (`ProductVariant[]`). `[]` for an item
+     * that comes in one size, which sells exactly as it did before sizes
+     * existed — and so does an item with a single size.
+     *
+     * jsonb rather than a table because nothing is priced or counted per size
+     * yet: a size is a label, an id a sale line can record, and optionally the
+     * barcode on its tag. Stock per size is S2-14b, and a priced or counted
+     * size is when a row earns a table of its own.
+     *
+     * The database holds only the shape it can check: an array. What is not a
+     * shape — ids and labels unique within the item, a barcode naming one thing
+     * across the operator's live items and sizes — is held where sizes are
+     * written through the API, `apps/api/src/services/product-variants.ts`.
+     */
+    variants: jsonb('variants').$type<ProductVariant[]>().notNull().default([]),
     /** The prototype's `inventoryItemId`: set = stock-tracked, null = not. */
     stockItemId: uuid('stock_item_id').references(() => stockItem.id, { onDelete: 'restrict' }),
     /** Order within its category on the sell grid. */
@@ -312,7 +351,14 @@ export const product = pos.table(
     uniqueIndex('product_sku_unique')
       .on(t.operatorId, t.sku)
       .where(sql`sku is not null and archived_at is null`),
+    /**
+     * The scanner's second question, after "is this an item's own barcode":
+     * "is it one of an item's sizes" — `variants @> '[{"barcode": …}]'`, which
+     * `jsonb_path_ops` answers from the index.
+     */
+    index('product_variants_idx').using('gin', t.variants.op('jsonb_path_ops')),
     check('product_kind_check', sql`${t.kind} in ('menu','merch','addon')`),
+    check('product_variants_array_check', sql`jsonb_typeof(${t.variants}) = 'array'`),
     check('product_price_check', sql`${t.priceSatang} >= 0`),
     check(
       'product_price_weekend_check',

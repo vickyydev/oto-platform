@@ -6,8 +6,8 @@
  * menu categories, twenty menu items with their modifier groups, eight retail
  * items, five ticket add-ons, the three shared modifier groups and the four
  * discount codes. Nothing here comes from the park's live catalogue. The one
- * addition is `MR-SOCKS-M`, the barcoded shop row the scanner's acceptance line
- * names — see the comment on it.
+ * addition is the grip socks' three sizes and the barcode on the M — see the
+ * comment on `MR-SOCKS`.
  *
  * Two things it demonstrates on purpose:
  *
@@ -25,7 +25,7 @@ import { newId, satangFromBaht } from '@oto/shared';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../index';
 import * as s from '../schema/index';
-import type { PrepStation, TaxableCategory } from '../schema/catalog';
+import type { PrepStation, ProductVariant, TaxableCategory } from '../schema/catalog';
 
 const b = satangFromBaht;
 
@@ -82,6 +82,8 @@ interface ItemSeed {
   costBaht?: number;
   kind?: 'menu' | 'merch' | 'addon';
   sku?: string;
+  /** The sizes it is sold in (`product.variants`). Absent = one size. */
+  variants?: ProductVariant[];
   active?: boolean;
   translations?: Record<string, { name: string }>;
   /** Groups specific to this item (prototype `MenuItem.modifierGroups`). */
@@ -208,20 +210,44 @@ const MENU: ItemSeed[] = [
   // --- The shop (prototype `seedMerchItems`) --------------------------------
   { code: 'MR-TSHIRT', name: 'Oto T-Shirt', category: 'MERCH-APPAREL', baht: 350, costBaht: 120, kind: 'merch', sku: 'OTO-TS' },
   { code: 'MR-CAP', name: 'Oto Cap', category: 'MERCH-APPAREL', baht: 250, costBaht: 90, kind: 'merch', sku: 'OTO-CAP' },
-  { code: 'MR-SOCKS', name: 'Grip Socks', category: 'MERCH-APPAREL', baht: 120, costBaht: 35, kind: 'merch', sku: 'OTO-SOCK' },
   /**
-   * The one row here the prototype does not have, and the only one carrying a
-   * real barcode: S2-09b's acceptance line is that a scan of `8850000000017`
-   * answers "Grip socks M", and until this row existed the seed's socks carried
-   * the stock-keeping code `OTO-SOCK` and no size.
+   * The prototype's shop Grip Socks (`mr-socks`, `catalogStore.ts:483`), sold
+   * here in sizes S, M and L — one product with sizes, which is the owner's
+   * decision of 2026-09-24. The sizes come with that decision, not from the
+   * prototype: its stock module counts these socks in one size, their stock
+   * item `inv-mr-socks` holding a single default variant
+   * (`catalogStore.ts:585`). The S, M and L it does count belong to the ticket
+   * ADD-ON's grip socks (`inv-a-grip-socks`, `catalogStore.ts:617`) —
+   * `AO-GRIPSOCKS` below, a separate product this seed gives no sizes.
    *
-   * Added beside `MR-SOCKS` rather than folded into it. A retail barcode picks
-   * out ONE sellable thing and there is no variant table under `product`, so a
-   * size is its own row with its own code — and rewriting `MR-SOCKS` would take
-   * the prototype's own shop row away with it. No cost is set: the park has
-   * never quoted one for this size and a made-up margin is worse than none.
+   * The M carries the one real barcode in this seed, `8850000000017`: S2-09b's
+   * acceptance line is that a scan of it adds the socks in size M. It used to
+   * be a product of its own ("Grip socks M", `MR-SOCKS-M`) because there was
+   * nowhere under a product to put a size; that row is no longer seeded. The
+   * seed leaves existing rows alone, so a database seeded before this keeps
+   * that row until someone withdraws it — and while it is live the Merch panel
+   * refuses to put the same barcode on this M, because a barcode names one
+   * thing.
+   *
+   * `OTO-SOCK` stays the WHOLE item's code. It is not a barcode shape, so the
+   * scanner never reads it, and it names no size. S and L carry no barcode:
+   * the park has never printed one for them, and an invented number would be
+   * a label nobody can scan.
    */
-  { code: 'MR-SOCKS-M', name: 'Grip socks M', category: 'MERCH-APPAREL', baht: 120, kind: 'merch', sku: '8850000000017' },
+  {
+    code: 'MR-SOCKS',
+    name: 'Grip Socks',
+    category: 'MERCH-APPAREL',
+    baht: 120,
+    costBaht: 35,
+    kind: 'merch',
+    sku: 'OTO-SOCK',
+    variants: [
+      { id: 's', label: 'S' },
+      { id: 'm', label: 'M', barcode: '8850000000017' },
+      { id: 'l', label: 'L' },
+    ],
+  },
   { code: 'MR-BOTTLE', name: 'Water Bottle', category: 'MERCH-ACCESSORIES', baht: 180, costBaht: 60, kind: 'merch', sku: 'OTO-BTL' },
   { code: 'MR-PLUSH', name: 'Oto Mascot Plush', category: 'MERCH-TOYS', baht: 450, costBaht: 160, kind: 'merch', sku: 'OTO-PLUSH' },
   { code: 'MR-STICKERS', name: 'Sticker Pack', category: 'MERCH-TOYS', baht: 60, costBaht: 12, kind: 'merch', sku: 'OTO-STK' },
@@ -334,6 +360,7 @@ export async function seedMenu(
         costSatang: i.costBaht === undefined ? null : b(i.costBaht),
         translations: i.translations ?? null,
         sku: i.sku ?? null,
+        variants: i.variants ?? [],
         sortOrder: index,
         active: i.active ?? true,
       };

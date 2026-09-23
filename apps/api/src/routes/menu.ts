@@ -43,6 +43,11 @@ import {
   parseMenuWorkbook,
   planMenuImport,
 } from '../services/menu-sheet';
+import {
+  assertBarcodesFree,
+  assertVariantsWellFormed,
+  normaliseVariants,
+} from '../services/product-variants';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -318,8 +323,14 @@ export async function menuRoutes(app: App): Promise<void> {
       await loadMenuCategory(app.db, auth.operatorId, categoryId);
       await assertItemCodeFree(app.db, auth.operatorId, body.code);
       await assertLibraryGroups(app.db, auth.operatorId, body.modifierGroupIds ?? []);
+      // The sizes (S2-09b): the rules about the item itself first, then — in
+      // the transaction, behind the barcode lock — whether a barcode on it is
+      // already on another live item.
+      const variants = normaliseVariants(body.variants ?? []);
+      assertVariantsWellFormed(body.name, variants, body.sku ?? null);
       const id = newId();
       return withTx(app.db, opCtx(req), 'menu_item.create', async (tx) => {
+        await assertBarcodesFree(tx, auth.operatorId, { id: null, sku: body.sku ?? null, variants });
         await tx.insert(product).values({
           id,
           operatorId: auth.operatorId,
@@ -336,6 +347,7 @@ export async function menuRoutes(app: App): Promise<void> {
           taxCategoryOverride: body.taxCategoryOverride ?? null,
           translations: body.translations ?? null,
           sku: body.sku ?? null,
+          variants,
           sortOrder: body.sortOrder,
           active: body.active,
         });
@@ -383,7 +395,24 @@ export async function menuRoutes(app: App): Promise<void> {
       if (body.modifierGroupIds) {
         await assertLibraryGroups(app.db, auth.operatorId, body.modifierGroupIds);
       }
+      // The sizes and the item's own barcode are checked as the row WILL be:
+      // what the body changes, over what the row already holds. Either one
+      // changing can make a barcode name two things, so either triggers it.
+      const variants = body.variants !== undefined ? normaliseVariants(body.variants) : null;
+      const barcodesMove = variants !== null || body.sku !== undefined;
+      const skuAfter = body.sku !== undefined ? (body.sku ?? null) : before.sku;
+      const variantsAfter = variants ?? before.variants;
+      if (barcodesMove) {
+        assertVariantsWellFormed(body.name ?? before.name, variantsAfter, skuAfter);
+      }
       return withTx(app.db, opCtx(req), 'menu_item.update', async (tx) => {
+        if (barcodesMove) {
+          await assertBarcodesFree(tx, auth.operatorId, {
+            id: before.id,
+            sku: skuAfter,
+            variants: variantsAfter,
+          });
+        }
         const [after] = await tx
           .update(product)
           .set({
@@ -409,6 +438,7 @@ export async function menuRoutes(app: App): Promise<void> {
               : {}),
             ...(body.translations !== undefined ? { translations: body.translations } : {}),
             ...(body.sku !== undefined ? { sku: body.sku } : {}),
+            ...(variants !== null ? { variants } : {}),
             ...(body.sortOrder !== undefined ? { sortOrder: body.sortOrder } : {}),
             ...(body.active !== undefined ? { active: body.active } : {}),
           })

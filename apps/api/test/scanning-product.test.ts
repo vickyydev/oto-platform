@@ -37,11 +37,16 @@ import { resolveProductBarcode } from '../src/services/scanning-product';
  * can tell them apart. Delete `eq(product.operatorId, …)` from
  * `resolveProductBarcode` and this file goes red.
  *
+ * **Sizes (S2-09b, the owner's decision of 2026-09-24).** The seeded barcode is
+ * on a SIZE: the grip socks come in S, M and L and the digits are printed on
+ * the M's tag, so the answer names the item AND the size. An item's own code
+ * names no size. Both are asked below.
+ *
  * **What it does not prove.** Nothing here adds a line to a cart: the scan
  * answer carries the line as an INTENT on the station channel
- * (`detail.add`), and the shop screen that consumes it belongs to the cart
- * slice. The intent's shape is asserted, because that is the contract between
- * the two.
+ * (`detail.add`), and the shop screen consumes it. The intent's shape is
+ * asserted, because that is the contract between the two;
+ * `station-scans.test.ts` follows it onto the channel.
  */
 
 /** The seeded barcode from the acceptance criterion. 885 is GS1 Thailand. */
@@ -80,18 +85,20 @@ beforeAll(async () => {
   tillId = stations.find((s) => s.name === 'Reception Till 1')!.id;
 
   /**
-   * The seed carries the barcode: `packages/db/src/seed/menu.ts` holds
-   * "Grip socks M" (`MR-SOCKS-M`) with `8850000000017` beside the prototype's
-   * own Grip Socks row, so the acceptance criterion's "seeded barcode" is read
-   * back here rather than minted. The second operator's twin below is still
-   * created through the Merch panel's route, which keeps that column proven
-   * reachable from the admin screen as well as from the scanner.
+   * The seed carries the barcode: `packages/db/src/seed/menu.ts` holds the
+   * prototype's Grip Socks (`MR-SOCKS`) in S, M and L, with `8850000000017` on
+   * the M, so the acceptance criterion's "seeded barcode" is read back here
+   * rather than minted. The second operator's twin below is still created
+   * through the Merch panel's route, which keeps that path proven reachable
+   * from the admin screen as well as from the scanner.
    */
   const [seeded] = await ctx.db
-    .select({ id: product.id })
+    .select({ id: product.id, variants: product.variants })
     .from(product)
-    .where(and(eq(product.operatorId, otoOperatorId), eq(product.sku, SEEDED_BARCODE)));
-  if (!seeded) throw new Error(`the seed no longer carries ${SEEDED_BARCODE}`);
+    .where(and(eq(product.operatorId, otoOperatorId), eq(product.code, 'MR-SOCKS')));
+  if (!seeded?.variants.some((v) => v.barcode === SEEDED_BARCODE)) {
+    throw new Error(`the seed's grip socks no longer carry ${SEEDED_BARCODE} on a size`);
+  }
   socksId = seeded.id;
 });
 
@@ -170,7 +177,7 @@ async function simulate(code: string, cookie = adminCookie) {
 }
 
 describe('a scanned barcode resolves to the merch item (S2-09b)', () => {
-  it('turns the seeded barcode into a shop line for Grip socks M', async () => {
+  it('turns the seeded barcode into a shop line for the grip socks in size M', async () => {
     const res = await simulate(SEEDED_BARCODE);
     expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
     expect(res.body.kind).toBe('product');
@@ -180,17 +187,14 @@ describe('a scanned barcode resolves to the merch item (S2-09b)', () => {
 
     const add = (res.body.detail as { add?: Record<string, unknown> }).add!;
     expect(add.productId).toBe(socksId);
-    expect(add.name).toBe('Grip socks M');
+    expect(add.name).toBe('Grip Socks');
+    // The answer names the size the digits are on, and says the pair in words.
+    expect(add.variant).toEqual({ id: 'm', label: 'M' });
+    expect(add.label).toBe('Grip Socks M');
     expect(add.sku).toBe(SEEDED_BARCODE);
     expect(add.priceSatang).toBe(12000);
     expect(add.quantity).toBe(1);
     expect(add.branchId).toBe(centralBranchId);
-    /**
-     * No variant, and deliberately: a retail barcode picks out ONE sellable
-     * thing, so the size is its own `product` row with its own code. There is
-     * no variant table under `product` to name.
-     */
-    expect(add.variant).toBeNull();
   });
 
   it('answers "unknown barcode" and adds nothing for a code nobody sells', async () => {
@@ -222,7 +226,7 @@ describe('a scanned barcode resolves to the merch item (S2-09b)', () => {
       .limit(1);
     const whole = JSON.stringify(row);
     expect(whole).not.toContain(SEEDED_BARCODE);
-    expect(whole).not.toContain('Grip socks');
+    expect(whole).not.toContain('Grip Socks');
     const payload = row!.payload as Record<string, unknown>;
     expect(payload.codeKind).toBe('product');
     expect(payload.outcome).toBe('handled');
@@ -245,7 +249,7 @@ describe('the barcode is read inside the station’s own operator, and no other'
     const res = await simulate(SEEDED_BARCODE);
     const add = (res.body.detail as { add?: Record<string, unknown> }).add!;
     expect(add.productId).toBe(socksId);
-    expect(add.name).toBe('Grip socks M');
+    expect(add.label).toBe('Grip Socks M');
     expect(add.priceSatang).toBe(12000);
   });
 
@@ -319,7 +323,8 @@ describe('the barcode is read inside the station’s own operator, and no other'
       { operatorId: otoOperatorId, branchId: centralBranchId },
       SEEDED_BARCODE,
     );
-    expect(ours?.name).toBe('Grip socks M');
+    expect(ours?.name).toBe('Grip Socks');
+    expect(ours?.variant).toEqual({ id: 'm', label: 'M' });
 
     const theirs = await resolveProductBarcode(
       ctx.db,
@@ -373,6 +378,119 @@ describe('the barcode is read inside the station’s own operator, and no other'
     );
     expect(archived.statusCode).toBe(200);
     const res = await simulate('8853333333330');
+    expect(res.body.outcome).toBe('refused');
+    expect(res.body.errorCode).toBe('UNKNOWN_BARCODE');
+  });
+});
+
+describe('a barcode on a size names the item and the size (S2-09b)', () => {
+  /** A merch item with sizes, through the route the Merch panel's form calls. */
+  async function createSized(
+    cookie: string,
+    operatorId: string,
+    branchId: string,
+    categoryCode: string,
+    body: {
+      name: string;
+      code: string;
+      sku?: string;
+      variants: Array<{ id: string; label: string; barcode?: string }>;
+    },
+    kind: 'merch' | 'menu' = 'merch',
+  ): Promise<string> {
+    const categoryId = await ensureCategory(cookie, operatorId, categoryCode, 'Apparel');
+    const res = await call('POST', `/branches/${branchId}/menu/products`, {
+      cookie,
+      headers: { 'idempotency-key': `sized-${body.code}-${branchId}` },
+      payload: { ...body, kind, priceSatang: 25000, categoryId, sortOrder: 0, active: true },
+    });
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+    return res.body.id as string;
+  }
+
+  it('names no size for the item’s OWN code, even on an item that has sizes', async () => {
+    // The whole item's code picks out the item; which size is still a
+    // question, and the shop screen asks it exactly as a tap on the tile does.
+    const id = await createSized(adminCookie, otoOperatorId, centralBranchId, 'MERCH-APPAREL', {
+      name: 'Rash vest',
+      code: 'MR-VEST',
+      sku: '8858888888887',
+      variants: [
+        { id: 's', label: 'S', barcode: '8858888888801' },
+        { id: 'm', label: 'M' },
+      ],
+    });
+    const whole = await simulate('8858888888887');
+    const add = (whole.body.detail as { add?: Record<string, unknown> }).add!;
+    expect(add.productId).toBe(id);
+    expect(add.variant).toBeNull();
+    expect(add.label).toBe('Rash vest');
+
+    const small = await simulate('8858888888801');
+    const sized = (small.body.detail as { add?: Record<string, unknown> }).add!;
+    expect(sized.productId).toBe(id);
+    expect(sized.variant).toEqual({ id: 's', label: 'S' });
+    expect(sized.label).toBe('Rash vest S');
+    expect(sized.sku).toBe('8858888888801');
+  });
+
+  it('keeps a size barcode printed by another operator out of this park', async () => {
+    await createSized(secondCookie, secondOperatorId, secondBranchId, 'SO-APPAREL', {
+      name: 'Their sized socks',
+      code: 'SO-SIZED',
+      variants: [{ id: 'm', label: 'M', barcode: '8855555555500' }],
+    });
+    const here = await simulate('8855555555500');
+    expect(here.body.outcome).toBe('refused');
+    expect(here.body.errorCode).toBe('UNKNOWN_BARCODE');
+    expect(
+      await resolveProductBarcode(
+        ctx.db,
+        { operatorId: otoOperatorId, branchId: centralBranchId },
+        '8855555555500',
+      ),
+    ).toBeNull();
+    expect(
+      (
+        await resolveProductBarcode(
+          ctx.db,
+          { operatorId: secondOperatorId, branchId: secondBranchId },
+          '8855555555500',
+        )
+      )?.variant,
+    ).toEqual({ id: 'm', label: 'M' });
+  });
+
+  it('answers unknown for a size barcode once its item is withdrawn', async () => {
+    const id = await createSized(adminCookie, otoOperatorId, centralBranchId, 'MERCH-APPAREL', {
+      name: 'Old hoodie',
+      code: 'MR-HOODIE-OLD',
+      variants: [{ id: 'l', label: 'L', barcode: '8856666666600' }],
+    });
+    expect((await simulate('8856666666600')).body.outcome).toBe('handled');
+    await call('DELETE', `/branches/${centralBranchId}/menu/products/${id}`, {
+      cookie: adminCookie,
+    });
+    const res = await simulate('8856666666600');
+    expect(res.body.outcome).toBe('refused');
+    expect(res.body.errorCode).toBe('UNKNOWN_BARCODE');
+  });
+
+  it('does not reach a size on an F&B item through the scanner', async () => {
+    // The route takes sizes on any item; the scanner still reads only the shop.
+    await createSized(
+      adminCookie,
+      otoOperatorId,
+      centralBranchId,
+      'FOOD',
+      {
+        name: 'Sized fries',
+        code: 'FB-SIZED',
+        variants: [{ id: 'l', label: 'Large', barcode: '8857777777700' }],
+      },
+      'menu',
+    );
+    const res = await simulate('8857777777700');
     expect(res.body.outcome).toBe('refused');
     expect(res.body.errorCode).toBe('UNKNOWN_BARCODE');
   });

@@ -37,6 +37,7 @@ import { usableSigningKeys } from '../lib/signing-keys';
 import { audit } from './audit';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
+import { registerProductBarcodeHandler } from './scanning-product';
 import {
   boxOutboxState,
   closeCursorEpoch,
@@ -1567,6 +1568,13 @@ export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent
   }
   runningVirtualBox = agent;
   attachInProcessBox(agent);
+  // The shop's barcodes (S2-09b) on the box's OWN scanner, so a code the box
+  // reads itself — its scanner, or the Console's simulator, which reaches it as
+  // a command — resolves against the catalogue exactly as one sent to the scan
+  // route does. Null when the box could not register yet; the station channel
+  // registers it once the scanner exists (`services/station-scans.ts`).
+  const scanner = agent.scanner();
+  if (scanner) registerProductBarcodeHandler(scanner, db);
   return agent;
 }
 

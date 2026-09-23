@@ -65,6 +65,7 @@ import {
   tenderMethodOf,
 } from './payments/attempt';
 import { resolveDrawerKick, type DrawerKick } from './payments/drawer';
+import { resolveLineVariant, variantLineLabel } from './product-variants';
 import {
   assertModifierSelection,
   effectiveModifierGroups,
@@ -153,7 +154,7 @@ export interface CartLineInput {
  * S2-09b (SCRUM-204) — AN F&B OR SHOP LINE ON THE CART.
  *
  * WHAT IT SAYS AND WHAT IT DOES NOT. A product id, how many, which modifier
- * options were chosen, what staff typed on it and — for a stocked merch item —
+ * options were chosen, what staff typed on it and — for a merch item that has sizes —
  * which size came off the shelf. NOT a price: the unit price is composed here
  * from `pos.product` and `pos.modifier_option`, the same way the prototype's
  * `computeUnitPrice` composes it in the browser (`lib/fnb.ts:28-42`), and
@@ -177,10 +178,15 @@ export interface CartItemLineInput {
   /** Free-text per-item note: "no pickles". Follows the item to its prep station. */
   note?: string;
   /**
-   * Which size came off the shelf. An id and the label staff saw, carried as
-   * sent: stock is S2-14b and there is no variant table to resolve against yet,
-   * which is the same reason `CartAddOnInput.variantBreakdown` carries its own
-   * labels.
+   * Which size came off the shelf.
+   *
+   * ON A SHOP LINE the id is checked against the item's own sizes
+   * (`product.variants`, S2-09b): a size the item does not have is refused, and
+   * so is a line that names none when the item comes in two sizes or more. The
+   * label recorded is the catalogue's; `variantLabel` here is only what the
+   * screen showed. ON AN F&B LINE it is carried as sent and checked against
+   * nothing: the item routes accept sizes on an item of any kind, but only a
+   * shop line is read against them, and stock by flavour is S2-14b.
    */
   variant?: { variantId: string; variantLabel: string } | null;
   /** What the screen showed for this line. Reconciled against the platform's price, never charged. */
@@ -461,7 +467,11 @@ export interface SaleLinePayload {
   }[];
   /** The prototype's per-item note (`FnbOrderLine.note`). */
   note?: string;
-  /** The size sold, as staff saw it (`FnbOrderLine.variantId` / `variantLabel`). */
+  /**
+   * The size sold. On a shop line, the item's own size — its id and its label
+   * as the catalogue names it (`product.variants`); on an F&B line, what the
+   * till sent (`FnbOrderLine.variantId` / `variantLabel`).
+   */
   variant?: { variantId: string; variantLabel: string };
   /** Where this item's prep ticket prints: override → category → parent → kitchen. */
   prepStation?: PrepStation;
@@ -903,6 +913,21 @@ async function resolveItemLines(
       optionIds: m.optionIds,
     }));
     assertModifierSelection(row.name, itemGroups, chosen);
+    /**
+     * The size, on a shop line (S2-09b): one of the ITEM's sizes, the same way
+     * a modifier option has to be one the item offers — and on an item sold in
+     * two sizes or more, a required one, the way a required question is
+     * (`resolveLineVariant`). Only the id is taken from the till; the label
+     * frozen on the line is the catalogue's. No size carries a price of its
+     * own, so the unit price below is the item's whichever size it is.
+     */
+    const variant =
+      kind === 'merch_item'
+        ? resolveLineVariant(row.name, row.variants, line.variant, {
+            cartLineId: line.id,
+            productId: row.id,
+          })
+        : null;
 
     const chosenByGroup = new Map(chosen.map((c) => [c.groupId, c.optionIds]));
     let unitSatang = rate(row.priceSatang, row.priceWeekendSatang);
@@ -938,7 +963,11 @@ async function resolveItemLines(
     const payload: SaleLinePayload = {
       ...(modifiers.length > 0 ? { modifiers } : {}),
       ...(note ? { note } : {}),
-      ...(line.variant ? { variant: line.variant } : {}),
+      ...(variant
+        ? { variant: { variantId: variant.id, variantLabel: variant.label } }
+        : kind === 'fnb_item' && line.variant
+          ? { variant: line.variant }
+          : {}),
       // Merchandise is handed over at the till and prints no prep ticket at all
       // (`types.ts:1213`), so a station on a shop line would be a fact about
       // nothing.
@@ -956,7 +985,9 @@ async function resolveItemLines(
       addOns: [
         {
           id: row.id,
-          name: row.name,
+          // The line's label: "Grip Socks — M" when a size was sold, which is
+          // what the receipt and the Sale detail read back.
+          name: variant ? variantLineLabel(row.name, variant.label) : row.name,
           price: unitSatang,
           quantity: line.quantity,
           taxCategoryOverride: taxCategory,

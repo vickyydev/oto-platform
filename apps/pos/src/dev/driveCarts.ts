@@ -18,7 +18,8 @@
  *      here is that the platform prices each shape the way the panel drew it.)
  *   4. Pay records the order unfinalised, the tender closes it, and it takes a
  *      receipt number. Pressing Pay twice is one sale.
- *   5. A shop sale with a variant on the line does the same.
+ *   5. A shop sale with a size on the line — one of the item's own sizes — does
+ *      the same.
  *
  * HOW TO RUN IT:
  *
@@ -249,18 +250,24 @@ async function main(): Promise<void> {
 
   // --- 5. The shop ----------------------------------------------------------
   const shopIdentity: ItemCartIdentity = { ...identity, channel: 'shop', pickupCode: null };
-  const item = merch[0]!;
+  // An item the platform sells in sizes, and one of ITS sizes (S2-09b): the
+  // platform checks the size against the item, so a made-up one is refused.
+  const item = merch.find((m) => (m.variants?.length ?? 0) > 1) ?? merch[0]!;
+  const size = item.variants?.find((v) => v.label === 'M') ?? item.variants?.[0];
   const shopLine: MerchOrderLine = {
     id: newId(),
     merchItem: item,
     qty: 1,
     lineTotal: computeMerchLineTotal(item, 1),
-    variantId: 'M',
-    variantLabel: 'M',
+    ...(size ? { variantId: size.id, variantLabel: size.label } : {}),
   };
   const shopLocal = localItemQuote('shop', [shopLine], []);
   const shopPayload = buildItemCartPayload([shopLine], [], shopIdentity, shopLocal.totals.total);
-  check('the size rides on the shop line', shopPayload.items?.[0]?.variant?.variantLabel === 'M');
+  check(
+    'the size rides on the shop line',
+    !!size && shopPayload.items?.[0]?.variant?.variantId === size.id,
+    size ? `${item.name} — ${size.label}` : `${item.name} has no sizes on this platform`,
+  );
   try {
     const { quote } = await salesApi.quote(shopPayload);
     const shopSatang = quote.totals.grossSatang;

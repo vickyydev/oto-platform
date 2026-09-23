@@ -1081,6 +1081,21 @@ export interface MerchItem {
   // Override the default 'merch' taxable category for this specific item.
   // Absent = inherit the 'merch' category rule from the tax config.
   taxCategoryOverride?: TaxableCategory;
+  // The sizes the platform sells this item in (`pos.product.variants`, S2-09b).
+  // Absent or one entry = the item sells as it always has; two or more = the
+  // shop grid asks which size before it adds a line.
+  variants?: MerchVariant[];
+}
+
+// One size of a shop item, as the platform defines it (S2-09b). `id` is what a
+// sale line records and never changes when the size is renamed; `label` is what
+// the picker, the cart and the receipt say. `barcode` is the code on this
+// size's tag — a scan of it adds the item in this size.
+export interface MerchVariant {
+  id: string;
+  label: string;
+  sku?: string;
+  barcode?: string;
 }
 
 // A stamped manual stock adjustment (Admin). Front-end only logs it; a real
@@ -1250,12 +1265,15 @@ export interface MerchOrderLine {
   merchItem: MerchItem;
   qty: number;
   lineTotal: number; // merchItem.price * qty
-  // Which inventory variant was sold (matches InventoryVariant.id). Set when the
-  // item is linked to inventory; absent = no stock tracking or default variant.
+  // Which size was sold. On a platform item it is the size's id
+  // (MerchVariant.id, S2-09b), which the platform checks against the item's
+  // own sizes; on the ported catalogue with no platform behind it, it is the
+  // inventory variant (InventoryVariant.id). Absent = one size.
   variantId?: string;
-  // Human-readable variant label for display (e.g. "S", "M", "L"). Baked in at
-  // line-creation time from InventoryVariant.label so display doesn't need to
-  // re-look-up the inventory item.
+  // Human-readable size label (e.g. "S", "M", "L"), which the cart line shows
+  // as "Grip Socks (M)". Baked in at line-creation time so the cart needs no
+  // re-lookup. It travels to the platform beside the id, and the platform
+  // records its own catalogue's label rather than this one.
   variantLabel?: string;
 }
 

@@ -3,6 +3,7 @@ import {
   ManualDiscount,
   MerchItem,
   MerchOrderLine,
+  MerchVariant,
   TaxConfig,
 } from '@/types';
 import { computeManualDiscount } from '@/lib/manualDiscount';
@@ -22,6 +23,22 @@ export function computeMerchLineTotal(
   mode: RateMode = todayRateMode().mode,
 ): number {
   return resolveRate(item.price, mode) * qty;
+}
+
+/**
+ * The sizes the platform sells an item in (S2-09b), in the order it lists them.
+ * Empty for an item that comes in one size.
+ */
+export function merchSizes(item: MerchItem): MerchVariant[] {
+  return item.variants ?? [];
+}
+
+/**
+ * Whether adding this item needs a size chosen first: two sizes or more. An
+ * item with one size, or none, sells exactly as it did before sizes existed.
+ */
+export function asksForSize(item: MerchItem): boolean {
+  return merchSizes(item).length > 1;
 }
 
 /** True when an item has no units left to sell. */

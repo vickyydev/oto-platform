@@ -5,7 +5,8 @@ import { Discount, ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristb
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
 import { getActiveMerchItems, chargeMerchCredit, getDiscountByCode, getDiscountReasons, recordMerchOrder, getInventoryItem } from '@/mockApi';
-import { computeMerchLineTotal, isOutOfStock } from '@/lib/merch';
+import { asksForSize, computeMerchLineTotal, isOutOfStock, merchSizes } from '@/lib/merch';
+import { readProductScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
 import { useSaleWriter } from '@/lib/saleWriter';
@@ -74,7 +75,8 @@ export default function MerchStation() {
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
   const [cart, setCart] = useState<MerchOrderLine[]>([]);
-  // Item awaiting variant selection (multi-variant inventory items).
+  // Item awaiting a size: one the platform sells in two or more sizes (S2-09b),
+  // or — on the ported catalogue — a multi-variant inventory item.
   const [pendingVariantItem, setPendingVariantItem] = useState<MerchItem | null>(null);
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
@@ -251,9 +253,15 @@ export default function MerchStation() {
     });
   };
 
-  // Tap on the merch grid: multi-variant items open a picker first.
+  // Tap on the merch grid: an item with sizes opens a picker first. The
+  // platform's sizes win (S2-09b); the inventory's are the ported catalogue's,
+  // for a deployment with no platform menu behind it.
   const handleAdd = (item: MerchItem) => {
     if (isOutOfStock(item)) return;
+    if (asksForSize(item)) {
+      setPendingVariantItem(item);
+      return;
+    }
     if (item.inventoryItemId) {
       const invItem = getInventoryItem(item.inventoryItemId);
       if (invItem && invItem.variants.length > 1) {
@@ -266,11 +274,83 @@ export default function MerchStation() {
 
   const handlePickMerchVariant = (variantId: string) => {
     if (!pendingVariantItem) return;
-    const invItem = getInventoryItem(pendingVariantItem.inventoryItemId!);
-    const label = invItem?.variants.find((v) => v.id === variantId)?.label;
+    const label = asksForSize(pendingVariantItem)
+      ? merchSizes(pendingVariantItem).find((v) => v.id === variantId)?.label
+      : getInventoryItem(pendingVariantItem.inventoryItemId!)?.variants.find(
+          (v) => v.id === variantId,
+        )?.label;
     addToCart(pendingVariantItem, variantId, label);
     setPendingVariantItem(null);
   };
+
+  /**
+   * A BARCODE SCANNED AT THIS STATION (S2-09b) — from the scanner on the box,
+   * the Console's scanner simulator, or anything else that reaches the box.
+   *
+   * The box has already decided what the code means (`lib/scanChannel.ts`);
+   * this puts it on the sale the way a tap would. A code on one size's tag adds
+   * that size — even one this screen's copy of the catalogue does not list yet;
+   * the item's own code on an item with sizes asks which one, as the tile does;
+   * "Unknown barcode" adds nothing and says so. Scanned before a wristband is
+   * chosen, it starts a guest sale — the guest at the counter is holding the
+   * thing. During payment it adds nothing: the sale being paid for must not
+   * change under the person paying.
+   */
+  const handleScan = (event: StationScanEvent) => {
+    const scan = readProductScan(event);
+    if (!scan) return;
+    if (scan.kind === 'unknown') {
+      toast({
+        title: scan.message,
+        description: 'Nothing was added to the sale.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const scannedSize = scan.line.variant;
+    // What was scanned, in the words the cart line uses: "Grip Socks (M)".
+    const scanned = scannedSize ? `${scan.line.name} (${scannedSize.label})` : scan.line.label;
+    if (stage === 'payment' || stage === 'confirmation') {
+      toast({
+        title: `Scanned ${scanned}`,
+        description: 'Finish this sale first — nothing was added.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const item = merchItems.find((m) => m.id === scan.line.productId);
+    if (!item) {
+      toast({
+        title: `${scanned} is not on this shop's grid`,
+        description: 'Nothing was added. It may be retired, or sold at another branch.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (isOutOfStock(item)) {
+      toast({
+        title: `${scanned} is out of stock`,
+        description: 'Nothing was added to the sale.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (stage === 'scan') loadBand(null);
+    if (scannedSize) {
+      // The box named the size from the platform's catalogue as it read the
+      // tag. This screen's copy can be older than that — a size added since it
+      // loaded — so when the grid does not list the size, the line takes the
+      // scan's own id and label rather than losing the size. The platform
+      // checks the id when it prices the sale, and refuses one the item does
+      // not have.
+      const listed = merchSizes(item).find((v) => v.id === scannedSize.id);
+      addToCart(item, scannedSize.id, listed?.label ?? scannedSize.label);
+      return;
+    }
+    if (asksForSize(item)) setPendingVariantItem(item);
+    else addToCart(item);
+  };
+  useStationScans(station?.stationId, handleScan);
 
   const handleChangeQty = (lineId: string, qty: number) => {
     if (qty <= 0) {
@@ -503,16 +583,16 @@ export default function MerchStation() {
           <div className="flex h-full min-h-0">
             <div className="flex-1 min-w-0 flex flex-col p-6 border-r bg-card/20">
               {/*
-                WHAT THIS STATION STILL DOES ON ITS OWN. The catalogue and the
-                prices are the platform's; the counts under each tile, the sizes
-                a tile asks for and the band's balance are not, and each names
-                the ticket that moves it.
+                WHAT THIS STATION STILL DOES ON ITS OWN. The catalogue, the
+                prices and the sizes a tile asks for are the platform's (sizes
+                since S2-09b); the counts under each tile and the band's balance
+                are not, and each names the ticket that moves it.
               */}
               <div className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
                 <span className="font-bold uppercase tracking-wide text-foreground/70">
                   This till&apos;s own record
                 </span>
-                <span>Stock counts, sizes and out-of-stock — S2-14b</span>
+                <span>Stock counts and out-of-stock — S2-14b</span>
                 <span>Wallet credit — S2-14a</span>
                 <span>Receipt printing — S2-11</span>
                 {!shopFromPlatform && (
@@ -598,8 +678,19 @@ export default function MerchStation() {
         )}
       </div>
 
-      {/* Variant picker for multi-variant merch items */}
-      {pendingVariantItem && pendingVariantItem.inventoryItemId && (() => {
+      {/* Size picker for an item sold in sizes (S2-09b) */}
+      {pendingVariantItem && asksForSize(pendingVariantItem) && (
+        <VariantPickerModal
+          open={true}
+          itemName={pendingVariantItem.name}
+          variants={merchSizes(pendingVariantItem)}
+          onPick={handlePickMerchVariant}
+          onCancel={() => setPendingVariantItem(null)}
+        />
+      )}
+
+      {/* Variant picker for multi-variant inventory items (the ported catalogue) */}
+      {pendingVariantItem && !asksForSize(pendingVariantItem) && pendingVariantItem.inventoryItemId && (() => {
         const invItem = getInventoryItem(pendingVariantItem.inventoryItemId!);
         return invItem ? (
           <VariantPickerModal

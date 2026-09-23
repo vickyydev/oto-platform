@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, isNull, or, type SQL } from 'drizzle-orm';
 import { product, station, type Db } from '@oto/db';
 import {
   PRODUCT_BARCODE_HANDLER,
@@ -7,6 +7,7 @@ import {
   type ScanHandlerContext,
   type ScanRouter,
 } from '@oto/box-agent';
+import { hasVariantBarcode } from './product-variants';
 
 /**
  * A scanned barcode becomes a merch line (S2-09b).
@@ -17,12 +18,21 @@ import {
  * The two halves meet at `ProductBarcodeLookup`, so the box keeps no product
  * table and this service keeps no opinion about scanners.
  *
- * **Where the barcode is stored.** `pos.product.sku`, the column migration 0015
- * gave merch, unique per operator over live rows
- * (`product_sku_unique … where sku is not null and archived_at is null`). There
- * is no second `barcode` column and there should not be: a merch SKU and the
- * number printed on its label are the same string at this park, and two columns
- * would mean two answers to "what did they just scan".
+ * **Where the barcode is stored.** Two places, asked in this order:
+ *
+ *   1. `pos.product.sku`, the WHOLE item's code — the column migration 0015
+ *      gave merch, unique per operator over live rows
+ *      (`product_sku_unique … where sku is not null and archived_at is null`).
+ *      A merch SKU and the number printed on its label are the same string at
+ *      this park, so there is no separate barcode column for the item.
+ *   2. `pos.product.variants[].barcode`, the code on ONE SIZE's tag (migration
+ *      0020, the owner's decision of 2026-09-24). A scan of it names the item
+ *      and the size, so the till adds that size without asking.
+ *
+ * A barcode names one thing across the operator's live items and sizes: the
+ * Merch panel's routes refuse a second holder (`services/product-variants.ts`),
+ * and the two lookups below cannot both answer for one code on a catalogue
+ * written through them.
  *
  * **Why the lookup is scoped to the station's own operator and branch.** The
  * uniqueness constraint is per OPERATOR, so the same thirteen digits can
@@ -60,7 +70,8 @@ export async function stationCatalogScope(
 }
 
 /**
- * The live merch row this barcode names inside one park, or null.
+ * The live merch row this barcode names inside one park — and, when the code is
+ * on one of its sizes, which size — or null.
  *
  * `kind = 'merch'` is deliberate: an F&B item and a ticket add-on are sold from
  * a grid a person taps, not from a label a scanner reads, and letting a barcode
@@ -74,51 +85,76 @@ export async function stationCatalogScope(
  *
  * The branch clause is the same `or(branch, null)` the menu read uses: an item
  * belongs to one park, and a row with no branch belongs to all of them.
+ *
+ * The item's own code is asked first. A size's code is asked only when no item
+ * answers to the digits whole — and if two rows' sizes both carried them, which
+ * the Merch panel refuses but a hand-written row could still do, the older row
+ * answers, so the same code never adds a different thing on the next scan.
  */
 export async function resolveProductBarcode(
   db: Db,
   scope: StationCatalogScope,
   code: string,
 ): Promise<ProductBarcodeMatch | null> {
-  const [row] = await db
-    .select({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      priceSatang: product.priceSatang,
-      priceWeekendSatang: product.priceWeekendSatang,
-      categoryId: product.categoryId,
-      branchId: product.branchId,
-    })
+  const columns = {
+    id: product.id,
+    name: product.name,
+    sku: product.sku,
+    variants: product.variants,
+    priceSatang: product.priceSatang,
+    priceWeekendSatang: product.priceWeekendSatang,
+    categoryId: product.categoryId,
+    branchId: product.branchId,
+  };
+  const inThisPark = (matches: SQL) =>
+    and(
+      eq(product.operatorId, scope.operatorId),
+      matches,
+      eq(product.kind, 'merch'),
+      isNull(product.archivedAt),
+      or(eq(product.branchId, scope.branchId), isNull(product.branchId)),
+    );
+
+  const [whole] = await db
+    .select(columns)
     .from(product)
-    .where(
-      and(
-        eq(product.operatorId, scope.operatorId),
-        eq(product.sku, code),
-        eq(product.kind, 'merch'),
-        isNull(product.archivedAt),
-        or(eq(product.branchId, scope.branchId), isNull(product.branchId)),
-      ),
-    )
+    .where(inThisPark(eq(product.sku, code)))
     .limit(1);
-  if (!row) return null;
+  if (whole) {
+    return {
+      productId: whole.id,
+      name: whole.name,
+      // Non-null by the WHERE clause above; the column is nullable for the menu
+      // rows that carry no code at all.
+      sku: whole.sku ?? code,
+      priceSatang: whole.priceSatang,
+      priceWeekendSatang: whole.priceWeekendSatang,
+      categoryId: whole.categoryId,
+      branchId: whole.branchId,
+      // The whole item's code names no size. The till asks for one when the
+      // item has more than one, exactly as a tap on its tile does.
+      variant: null,
+    };
+  }
+
+  const [sized] = await db
+    .select(columns)
+    .from(product)
+    .where(inThisPark(hasVariantBarcode(code)))
+    .orderBy(asc(product.createdAt), asc(product.id))
+    .limit(1);
+  const size = sized?.variants.find((v) => v.barcode === code);
+  if (!sized || !size) return null;
   return {
-    productId: row.id,
-    name: row.name,
-    // Non-null by the WHERE clause above; the column is nullable for the menu
-    // rows that carry no code at all.
-    sku: row.sku ?? code,
-    priceSatang: row.priceSatang,
-    priceWeekendSatang: row.priceWeekendSatang,
-    categoryId: row.categoryId,
-    branchId: row.branchId,
-    /**
-     * Null, and the report says why: a retail barcode picks out one sellable
-     * thing, so a size is its own `product` row with its own code. There is no
-     * variant table under `product` to name, and inventing one here would be
-     * inventing a shape the shop cart would then have to match.
-     */
-    variant: null,
+    productId: sized.id,
+    name: sized.name,
+    // The code as the catalogue holds it: on this size.
+    sku: code,
+    priceSatang: sized.priceSatang,
+    priceWeekendSatang: sized.priceWeekendSatang,
+    categoryId: sized.categoryId,
+    branchId: sized.branchId,
+    variant: { id: size.id, label: size.label },
   };
 }
 

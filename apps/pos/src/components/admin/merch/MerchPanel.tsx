@@ -89,9 +89,9 @@ export function MerchPanel() {
           of the item beside them. */}
       <AdminNoticeBanner>
         <strong className="font-semibold">Stock counts are this tab only — SCRUM-204.</strong>{' '}
-        The item, its price, its category and its barcode save to the database and
-        survive a reload. What is on the shelf, and the Track stock switch that
-        starts counting it, stay in this browser tab.
+        The item, its price, its category, its barcode and its sizes save to the
+        database and survive a reload. What is on the shelf, and the Track stock
+        switch that starts counting it, stay in this browser tab.
       </AdminNoticeBanner>
 
       <div className="flex items-center justify-between gap-3">
@@ -167,6 +167,11 @@ export function MerchPanel() {
                     <span className="ml-2 text-foreground/35">cost {formatPrice(item.cost)}</span>
                   )}
                   {item.sku && <span className="ml-2 text-foreground/35">SKU {item.sku}</span>}
+                  {item.variants && item.variants.length > 0 && (
+                    <span className="ml-2 text-foreground/35">
+                      Sizes {item.variants.map((v) => v.label).join(' · ')}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">

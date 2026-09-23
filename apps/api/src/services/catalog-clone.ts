@@ -291,7 +291,10 @@ export async function planBranchClone(
       // The operator-unique keys. See the header: a schema limit, reported
       // rather than worked around — dropping the code would leave the copy
       // unscannable and un-reimportable, and changing it would invent data.
-      if (row.code !== null || row.sku !== null) {
+      // A barcode on one of the item's sizes is the same kind of key (S2-09b):
+      // the Merch panel refuses a second live holder of one across the
+      // operator, and a copy would be exactly that.
+      if (row.code !== null || row.sku !== null || row.variants.some((v) => !!v.barcode)) {
         plan.products.blocked.push({ name: label, reason: OPERATOR_UNIQUE_CODE });
         continue;
       }

@@ -77,6 +77,41 @@ export type MenuCategoryBody = z.infer<typeof MenuCategoryBodySchema>;
 const PriceSatangSchema = z.number().int().min(0).max(10_000_000);
 
 /**
+ * One size of an item — `pos.product.variants`, the owner's decision of
+ * 2026-09-24 (S2-09b). The grip socks come in S, M and L; the till asks which,
+ * and the sale line records the one sold.
+ *
+ * `id` is what a sale line records, so it is stable: renaming a size changes
+ * its `label` and keeps its `id`. Lower case, like the ids the seed gives the
+ * socks (`s`, `m`, `l`).
+ *
+ * `barcode` is optional and is what the scanner reads off this size's tag; a
+ * scan of it adds this item IN THIS SIZE. The item's own `sku` stays the code
+ * for the whole item.
+ *
+ * Only the SHAPE is here. The rules that need the rest of the item or the rest
+ * of the catalogue — ids and labels unique within the item, a barcode that is
+ * digits, a barcode naming one thing across the operator — are the API's
+ * (`services/product-variants.ts`), where they can answer in a sentence.
+ */
+export const ProductVariantSchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .regex(
+      /^[a-z0-9][a-z0-9_-]{0,31}$/,
+      'A size id is 1–32 characters of a–z, 0–9, hyphen or underscore',
+    ),
+  label: z.string().trim().min(1).max(24),
+  sku: z.string().trim().min(1).max(64).nullish(),
+  barcode: z.string().trim().min(1).max(64).nullish(),
+});
+export type ProductVariant = z.infer<typeof ProductVariantSchema>;
+
+/** Every size an item comes in. Empty = one size, which sells as items always have. */
+export const ProductVariantsSchema = z.array(ProductVariantSchema).max(24);
+
+/**
  * One body for all three kinds, because the prototype's `MenuItem`,
  * `MerchItem` and `AddOn` are one shape — see the note on `product` in
  * `packages/db/src/schema/catalog.ts`.
@@ -98,6 +133,12 @@ export const MenuItemBodySchema = z.object({
   taxCategoryOverride: TaxableCategorySchema.nullable().optional(),
   translations: MenuTranslationsSchema.nullable().optional(),
   sku: z.string().trim().min(1).max(64).nullable().optional(),
+  /**
+   * The sizes, as a whole list: what is sent replaces what was there, and an
+   * empty list takes the sizes away. Absent leaves them as they are — the F&B
+   * item form and the add-on form have no sizes to send.
+   */
+  variants: ProductVariantsSchema.optional(),
   sortOrder: z.number().int().min(0).default(0),
   active: z.boolean().default(true),
   /** Shared library groups this item asks, by id (prototype `linkedModifierGroupIds`). */

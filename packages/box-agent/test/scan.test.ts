@@ -235,7 +235,7 @@ test('a barcode is claimed by its shape, and nothing else is', () => {
   assert.equal(isProductBarcode(''), false);
 });
 
-test('the seeded barcode resolves to the merch item, and the till is told what to add', async () => {
+test('the seeded barcode resolves to the socks in size M, and the till is told what to add', async () => {
   const t = open();
   const published: StationScanMessage[] = [];
   const router = new ScanRouter({
@@ -247,13 +247,15 @@ test('the seeded barcode resolves to the merch item, and the till is told what t
   router.register(
     productBarcodeHandler((ctx) => {
       asked.push(ctx.code);
+      // The catalogue's answer for a code printed on one SIZE's tag (S2-09b):
+      // the item, and which of its sizes.
       return ctx.code === '8850000000017'
         ? {
-            productId: 'p-socks-m',
-            name: 'Grip socks M',
+            productId: 'p-socks',
+            name: 'Grip Socks',
             sku: '8850000000017',
             priceSatang: 12000,
-            variant: null,
+            variant: { id: 'm', label: 'M' },
           }
         : null;
     }),
@@ -268,11 +270,13 @@ test('the seeded barcode resolves to the merch item, and the till is told what t
   assert.equal(result.handler, 'product-barcode');
   assert.deepEqual(asked, ['8850000000017']);
   const add = (result.detail?.add ?? {}) as Record<string, unknown>;
-  assert.equal(add.productId, 'p-socks-m');
-  assert.equal(add.name, 'Grip socks M');
+  assert.equal(add.productId, 'p-socks');
+  assert.equal(add.name, 'Grip Socks');
+  // The answer carries the size, and says the pair in words.
+  assert.deepEqual(add.variant, { id: 'm', label: 'M' });
+  assert.equal(add.label, 'Grip Socks M');
   assert.equal(add.priceSatang, 12000);
   assert.equal(add.quantity, 1);
-  assert.equal(add.variant, null);
   // The screens get the line; the tape does not — it names a product and a price.
   assert.equal(published[0]?.outcome, 'handled');
   assert.equal(
@@ -280,8 +284,29 @@ test('the seeded barcode resolves to the merch item, and the till is told what t
     true,
   );
   const [row] = events(t.db);
-  assert.equal(JSON.stringify(row).includes('Grip socks'), false);
+  assert.equal(JSON.stringify(row).includes('Grip Socks'), false);
   assert.equal(JSON.stringify(row).includes('8850000000017'), false);
+  t.close();
+});
+
+test('an item’s own code names no size, and the answer says so', async () => {
+  const t = open();
+  const router = new ScanRouter({ boxId: BOX_ID, store: t.store });
+  router.register(
+    productBarcodeHandler(() => ({
+      productId: 'p-vest',
+      name: 'Rash vest',
+      sku: '8858888888887',
+      priceSatang: 25000,
+      variant: null,
+    })),
+  );
+  const result = await router.deliver(STATION_ID, { code: '8858888888887', source: 'box_hid' });
+  const add = (result.detail?.add ?? {}) as Record<string, unknown>;
+  assert.equal(result.outcome, 'handled');
+  assert.equal(add.variant, null);
+  // No size, so the words are the item's name alone.
+  assert.equal(add.label, 'Rash vest');
   t.close();
 });
 

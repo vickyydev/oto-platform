@@ -459,3 +459,74 @@ describe('the refusals', () => {
     expect(res.statusCode).toBe(401);
   });
 });
+
+describe('sizes travel with a copy, and a size barcode blocks it (S2-09b)', () => {
+  /**
+   * A barcode on a SIZE is an operator-unique key like the item's own barcode:
+   * the Merch panel refuses a second live holder across the operator, so a
+   * copy at another branch of the same operator would be exactly the second
+   * holder. Sizes with no barcode are plain labels and are copied with the item.
+   */
+  let targetId: string;
+
+  beforeAll(async () => {
+    targetId = await makeEmptyBranch('clone-sizes', 'Clone Sizes');
+    const [category] = await ctx.db
+      .select()
+      .from(productCategory)
+      .where(and(eq(productCategory.operatorId, operatorId), isNull(productCategory.archivedAt)))
+      .limit(1);
+    await ctx.db.insert(product).values([
+      {
+        id: newId(),
+        operatorId,
+        branchId: centralId,
+        categoryId: category!.id,
+        kind: 'merch',
+        name: 'Tagged tee',
+        priceSatang: 30000,
+        variants: [{ id: 'm', label: 'M', barcode: '8859900000011' }],
+      },
+      {
+        id: newId(),
+        operatorId,
+        branchId: centralId,
+        categoryId: category!.id,
+        kind: 'merch',
+        name: 'Plain tee',
+        priceSatang: 30000,
+        variants: [
+          { id: 's', label: 'S' },
+          { id: 'm', label: 'M' },
+        ],
+      },
+    ]);
+  });
+
+  it('blocks the item whose size carries a barcode, with the operator-wide reason', async () => {
+    const res = await preview(targetId, centralId);
+    expect(res.statusCode).toBe(200);
+    const blocked = res.json().plan.products.blocked as Array<{ name: string; reason: string }>;
+    const tagged = blocked.find((b) => b.name === 'Tagged tee');
+    expect(tagged?.reason).toMatch(/whole operator/);
+    expect(res.json().plan.products.create).toContain('Plain tee');
+  });
+
+  it('copies an item’s barcode-free sizes with it', async () => {
+    const res = await clone(targetId, centralId);
+    expect(res.statusCode).toBe(200);
+    const [copy] = await ctx.db
+      .select()
+      .from(product)
+      .where(and(eq(product.branchId, targetId), eq(product.name, 'Plain tee')));
+    expect(copy!.variants).toEqual([
+      { id: 's', label: 'S' },
+      { id: 'm', label: 'M' },
+    ]);
+    const tagged = await ctx.db
+      .select()
+      .from(product)
+      .where(and(eq(product.branchId, targetId), eq(product.name, 'Tagged tee')));
+    expect(tagged).toEqual([]);
+  });
+});

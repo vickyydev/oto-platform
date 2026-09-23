@@ -30,7 +30,7 @@ import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext }
  *   French Fries     ฿90, "Sauces" multi, max 2 — Cheese sauce is +฿25
  *   Iced Latte       ฿95, filed under Coffee, a sub-category of Drinks that
  *                    sets NEITHER a prep station NOR a taxable area
- *   Grip Socks       ฿120 of merchandise, under Apparel
+ *   Grip Socks       ฿120 of merchandise, under Apparel, in sizes S, M and L
  *   VAT              7 %, inclusive, on every category; no service charge
  * Not one seeded item sets a weekend price, so every figure below holds on a
  * Tuesday and on a Sunday alike.
@@ -69,6 +69,15 @@ const itemLine = (
   quantity,
   ...extra,
 });
+
+/**
+ * The socks as the shop screen sends them: in a size. They come in S, M and L,
+ * and a line on them that names no size is refused (the owner's decision of
+ * 2026-09-24, pinned in "what the line records"), so every case here that is
+ * about something else sells the M.
+ */
+const socksLine = (quantity = 1, extra: Record<string, unknown> = {}): Record<string, unknown> =>
+  itemLine('MR-SOCKS', quantity, { variant: { variantId: 'm', variantLabel: 'M' }, ...extra });
 
 /** The group id and one of its option ids, by the names the seed gives them. */
 const choose = (code: string, groupName: string, ...optionNames: string[]) => {
@@ -297,26 +306,170 @@ describe('what the line records', () => {
     expect(new Set(lines.map((l) => l.cartLineId)).size).toBe(2);
   });
 
-  it('writes the size a merch line sold, and books it as merchandise', async () => {
+  it('writes the size a merch line sold, names it on the line, and books it as merchandise', async () => {
     const saleId = newId();
     const res = await commit({
       id: saleId,
       items: [
-        itemLine('MR-SOCKS', 1, { variant: { variantId: 'size-m', variantLabel: 'M' } }),
+        // The label is what the till's screen said; the one recorded is the
+        // catalogue's, because the till only picks the size.
+        itemLine('MR-SOCKS', 1, { variant: { variantId: 'm', variantLabel: 'Medium?' } }),
       ],
     });
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode, res.body).toBe(200);
 
     const lines = await linesOf(saleId);
     expect(lines).toHaveLength(1);
     const line = lines[0]!;
     expect(line.kind).toBe('merch_item');
-    expect(line.label).toBe('Grip Socks');
+    expect(line.label).toBe('Grip Socks — M');
+    // No size carries a price of its own: the M is the item's ฿120.
     expect(line.unitSatang).toBe(b(120));
     expect(line.taxableCategory).toBe('merch');
-    expect(line.payload).toMatchObject({ variant: { variantId: 'size-m', variantLabel: 'M' } });
+    expect(line.payload).toMatchObject({ variant: { variantId: 'm', variantLabel: 'M' } });
     // Merchandise is handed over at the till and prints no prep ticket at all.
     expect((line.payload as { prepStation?: string }).prepStation).toBeUndefined();
+
+    // And the Sale detail reads the same line back.
+    const detail = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales/${saleId}`,
+      headers: { cookie },
+    });
+    expect(detail.statusCode).toBe(200);
+    const shown = (
+      detail.json() as { lines: Array<{ label: string; variant: unknown }> }
+    ).lines[0]!;
+    expect(shown.label).toBe('Grip Socks — M');
+    expect(shown.variant).toEqual({ variantId: 'm', variantLabel: 'M' });
+  });
+
+  /**
+   * THE BAD SIZE — the plant for this one removes the check in
+   * `resolveLineVariant`; the line is then written with a size the socks do not
+   * come in, and this test goes red on the status.
+   */
+  it('PLANT — refuses a size the item does not come in, names the sizes it does, and writes nothing', async () => {
+    const saleId = newId();
+    const line = itemLine('MR-SOCKS', 1, { variant: { variantId: 'xl', variantLabel: 'XL' } });
+    const res = await commit({ id: saleId, items: [line] });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toMatchObject({
+      code: 'BAD_REQUEST',
+      message: '"Grip Socks" has no size "xl" — it comes in S, M, L',
+      details: { cartLineId: line.id, productId: items.get('MR-SOCKS')!.id, variantId: 'xl' },
+    });
+    expect(await linesOf(saleId)).toEqual([]);
+
+    // The quote the till asks first says the same, so the charge button is off
+    // before anybody presses it.
+    const quote = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie },
+      payload: { stationId, items: [line] },
+    });
+    expect(quote.statusCode).toBe(400);
+    expect(quote.json().error.message).toBe('"Grip Socks" has no size "xl" — it comes in S, M, L');
+  });
+
+  it('refuses a size on an item that comes in one size', async () => {
+    const res = await commit({
+      id: newId(),
+      items: [itemLine('MR-TSHIRT', 1, { variant: { variantId: 'm', variantLabel: 'M' } })],
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toBe(
+      '"Oto T-Shirt" does not come in sizes, so a size cannot be sold on it',
+    );
+  });
+
+  /**
+   * A SIZED ITEM SOLD WITH NO SIZE — refused, the owner's decision of
+   * 2026-09-24. The socks come in S, M and L; a line that names none is not a
+   * pair anybody could hand over, and the shop screen asks before it adds one.
+   * The plant for this one takes the refusal out of `resolveLineVariant`; the
+   * line is then written as the item alone, and this test goes red on the
+   * status.
+   */
+  it('PLANT — refuses a line with no size on an item sold in sizes, names the sizes, and writes nothing', async () => {
+    const saleId = newId();
+    const line = itemLine('MR-SOCKS', 1);
+    const res = await commit({ id: saleId, items: [line] });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toMatchObject({
+      code: 'BAD_REQUEST',
+      message: 'A size has to be chosen before "Grip Socks" can be sold — it comes in S, M, L',
+      details: { cartLineId: line.id, productId: items.get('MR-SOCKS')!.id, required: true },
+    });
+    expect(await linesOf(saleId)).toEqual([]);
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, saleId))).toEqual([]);
+
+    // The quote the till asks first refuses it in the same words, so the
+    // charge button is off before anybody presses it.
+    const quote = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie },
+      payload: { stationId, items: [line] },
+    });
+    expect(quote.statusCode).toBe(400);
+    expect(quote.json().error.message).toBe(
+      'A size has to be chosen before "Grip Socks" can be sold — it comes in S, M, L',
+    );
+  });
+
+  it('sells an item in one size, or in none, with no size named — as before sizes existed', async () => {
+    // An item defined with a single size has nothing to choose between. It is
+    // inserted rather than posted because this file's session is reception's,
+    // which does not write the menu.
+    const [socks] = await ctx.db
+      .select()
+      .from(product)
+      .where(eq(product.id, items.get('MR-SOCKS')!.id));
+    const oneSizeId = newId();
+    await ctx.db.insert(product).values({
+      id: oneSizeId,
+      operatorId,
+      branchId,
+      categoryId: socks!.categoryId,
+      kind: 'merch',
+      code: 'T-ONE-SIZE',
+      name: 'One-size Tote',
+      priceSatang: b(200),
+      variants: [{ id: 'one', label: 'One size' }],
+    });
+
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      items: [
+        { id: newId(), productId: oneSizeId, quantity: 1 },
+        // ...and the T-shirt, which comes in no sizes at all.
+        itemLine('MR-TSHIRT', 1),
+      ],
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const lines = await linesOf(saleId);
+    expect(lines.map((l) => l.label).sort()).toEqual(['One-size Tote', 'Oto T-Shirt']);
+    for (const l of lines) {
+      expect((l.payload as { variant?: unknown } | null)?.variant).toBeUndefined();
+    }
+
+    // A size it does not have is still refused, one size or not.
+    const bad = await commit({
+      id: newId(),
+      items: [
+        {
+          id: newId(),
+          productId: oneSizeId,
+          quantity: 1,
+          variant: { variantId: 'xl', variantLabel: 'XL' },
+        },
+      ],
+    });
+    expect(bad.statusCode).toBe(400);
+    expect(bad.json().error.message).toBe('"One-size Tote" has no size "xl" — it comes in One size');
   });
 
   it('routes a sub-category item with no override to its parent’s prep station', async () => {
@@ -350,7 +503,7 @@ describe('what the line records', () => {
 
   it('ignores a line total the till sends, and refuses the sale when it disagrees', async () => {
     const res = await commit({
-      items: [itemLine('MR-SOCKS', 1, { lineTotalSatang: b(1) })],
+      items: [socksLine(1, { lineTotalSatang: b(1) })],
     });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe('SALE_LINE_PRICE_MISMATCH');
@@ -414,7 +567,7 @@ describe('an order with food on it is not closed without a pick-up code', () => 
 
   it('asks nothing of a shop order — merchandise is handed over at the till', async () => {
     const saleId = newId();
-    await commit({ id: saleId, items: [itemLine('MR-SOCKS', 1)] });
+    await commit({ id: saleId, items: [socksLine()] });
     const closed = await finalise(saleId, { method: 'cash' });
     expect(closed.statusCode).toBe(200);
     expect(closed.json().pickupCode).toBeNull();
@@ -450,14 +603,14 @@ describe('the cart names its lane and the platform checks it', () => {
 
   it('files a shop order under shop', async () => {
     const saleId = newId();
-    const res = await commit({ id: saleId, channel: 'shop', items: [itemLine('MR-SOCKS', 1)] });
+    const res = await commit({ id: saleId, channel: 'shop', items: [socksLine()] });
     expect(res.statusCode).toBe(200);
     expect(await channelOf(saleId)).toBe('shop');
   });
 
   it('files a cart that claims the ticket counter under till', async () => {
     const saleId = newId();
-    const res = await commit({ id: saleId, channel: 'till', items: [itemLine('MR-SOCKS', 1)] });
+    const res = await commit({ id: saleId, channel: 'till', items: [socksLine()] });
     expect(res.statusCode).toBe(200);
     expect(await channelOf(saleId)).toBe('till');
   });
@@ -480,7 +633,7 @@ describe('the cart names its lane and the platform checks it', () => {
     const res = await commit({
       stationId: boothStationId,
       channel: 'fnb',
-      items: [itemLine('MR-SOCKS', 1)],
+      items: [socksLine()],
     });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe('SALE_CHANNEL_MISMATCH');
@@ -496,7 +649,7 @@ describe('the cart names its lane and the platform checks it', () => {
     const res = await commit({
       id: saleId,
       stationId: boothStationId,
-      items: [itemLine('MR-SOCKS', 1)],
+      items: [socksLine()],
     });
     expect(res.statusCode).toBe(200);
     expect(await channelOf(saleId)).toBe('booth');
@@ -509,7 +662,7 @@ describe('the cart names its lane and the platform checks it', () => {
     const res = await commit({
       stationId: ticketsOnlyStationId,
       channel: 'fnb',
-      items: [itemLine('MR-SOCKS', 1)],
+      items: [socksLine()],
     });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe('SALE_CHANNEL_MISMATCH');
@@ -572,7 +725,7 @@ describe('the cart names its lane and the platform checks it', () => {
 describe('a promo scope reaches the right item lines', () => {
   const lattePlusSocks = () => [
     itemLine('FB-LATTE', 1, { modifiers: [choose('FB-LATTE', 'Ice', 'No ice')] }),
-    itemLine('MR-SOCKS', 1),
+    socksLine(),
   ];
   const promo = (target: unknown) => ({
     code: 'TENOFF',

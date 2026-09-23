@@ -24,6 +24,7 @@ import {
   stationLink,
   type StationRow,
 } from '../services/station-session';
+import { relayInProcessBoxScans } from '../services/station-scans';
 
 /**
  * The station session document, over HTTP (S2-05).
@@ -465,7 +466,20 @@ export async function stationSessionRoutes(app: App): Promise<void> {
         // The current state first, so a screen that reconnects is correct
         // after one message and needs no catch-up protocol.
         send(manager.snapshotFor(document, view, null));
-        return manager.subscribe(row.id, view, send);
+        const detach = manager.subscribe(row.id, view, send);
+        // And the scans a box running in this process reads itself (S2-09b):
+        // see `services/station-scans.ts`.
+        const detachScans = relayInProcessBoxScans(app.db, {
+          boxId: row.boxId,
+          stationId: row.id,
+          view,
+          attachedTo: manager,
+          send,
+        });
+        return () => {
+          detach();
+          detachScans?.();
+        };
       });
       // Hijacked: the stream is written to `reply.raw` for as long as the
       // screen is there, so nothing is returned for Fastify to serialise.

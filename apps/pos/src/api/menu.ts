@@ -26,6 +26,7 @@ import type {
   MenuCategoryDef,
   MenuItem,
   MerchItem,
+  MerchVariant,
   ModifierGroup,
   ModifierOption,
   PrepStation,
@@ -93,8 +94,13 @@ export interface ApiProduct {
   /** Null = inherit the category's. */
   taxCategoryOverride: TaxableCategory | null;
   translations: Translations | null;
-  /** Merch only. */
+  /** Merch only. The whole item's code. */
   sku: string | null;
+  /**
+   * The sizes it is sold in (`pos.product.variants`, S2-09b); `[]` for one
+   * size. Optional because an api older than the column does not send it.
+   */
+  variants?: ApiProductVariant[];
   /** Set = stock-tracked (the prototype's `inventoryItemId`). */
   stockItemId: string | null;
   sortOrder: number;
@@ -102,6 +108,14 @@ export interface ApiProduct {
   archivedAt: string | null;
   /** `product_modifier_group` — the shared groups this item asks, in order. */
   linkedModifierGroupIds: string[];
+}
+
+/** One size, as the platform stores it — `ProductVariant` in `@oto/shared`. */
+export interface ApiProductVariant {
+  id: string;
+  label: string;
+  sku?: string;
+  barcode?: string;
 }
 
 /**
@@ -549,6 +563,17 @@ export function apiProductToMerchItem(p: ApiProduct): MerchItem {
       : {}),
     ...(p.taxCategoryOverride ? { taxCategoryOverride: p.taxCategoryOverride } : {}),
     ...(p.stockItemId ? { inventoryItemId: p.stockItemId } : {}),
+    ...(p.variants && p.variants.length > 0 ? { variants: p.variants.map(apiVariantToVariant) } : {}),
+  };
+}
+
+/** A platform size as the shop screens hold it. */
+function apiVariantToVariant(v: ApiProductVariant): MerchVariant {
+  return {
+    id: v.id,
+    label: v.label,
+    ...(v.sku ? { sku: v.sku } : {}),
+    ...(v.barcode ? { barcode: v.barcode } : {}),
   };
 }
 
@@ -579,6 +604,17 @@ export function merchItemToApiBody(
     // (`packages/telemetry/src/scrub.ts`). Finding which item has it is a
     // search of the catalogue.
     sku: item.sku?.trim() || null,
+    // The sizes, as the whole list (S2-09b). Always sent, because this form is
+    // where they are edited: an item with none sends `[]`, which is how the
+    // last size is taken off. The platform refuses a barcode already on another
+    // live item or size with a 409 `BARCODE_IN_USE` that names the holder,
+    // and that sentence is what the panel's toast shows.
+    variants: (item.variants ?? []).map((v) => ({
+      id: v.id,
+      label: v.label,
+      ...(v.sku ? { sku: v.sku } : {}),
+      ...(v.barcode ? { barcode: v.barcode } : {}),
+    })),
     taxCategoryOverride: item.taxCategoryOverride ?? null,
     // `inventoryItemId` is deliberately NOT sent. The prototype's Track stock
     // switch mints a local id (`inv-m-<item>`) for a row that exists only in

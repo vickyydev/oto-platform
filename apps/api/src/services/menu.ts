@@ -465,6 +465,8 @@ export function presentMenu(snapshot: MenuSnapshot) {
       effectivePrepStation: effectivePrepStation(i, categories),
       effectiveTaxCategory: effectiveTaxCategory(i, categories),
       sku: i.sku,
+      /** The sizes it is sold in, `[]` for one size (S2-09b). */
+      variants: i.variants,
       stockItemId: i.stockItemId,
       sortOrder: i.sortOrder,
       active: i.active,
