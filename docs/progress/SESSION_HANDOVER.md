@@ -26,7 +26,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > evidence — the beacb6d batch (`wf_300def37`), 341 (`wf_bc39bddd`).
 > Watchers wait for Render at `4f4188a` and `7faf1d0` (the superseded
 > watchers on earlier shas were stopped). **341 Deployed** with staging
-> evidence (`4698326`, 16:06).
+> evidence (`4698326`, 16:02).
 
 > ## Status on 2026-09-23 15:51 — `main` was `bc05e47`; staging was `2731962`; CI green through `2731962`
 >
