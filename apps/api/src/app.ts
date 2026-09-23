@@ -32,6 +32,8 @@ import { memberRoutes } from './routes/members';
 import { visitRoutes } from './routes/visits';
 import { bookingRoutes } from './routes/bookings';
 import { saleRoutes } from './routes/sales';
+import { paymentRoutes } from './routes/payments';
+import { webhookRoutes } from './routes/webhooks';
 import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
 import { branchCloneRoutes } from './routes/branch-clone';
@@ -402,6 +404,20 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // `/booths/:id/status`. Declared in full like the fleet's, because the two
   // halves answer to different callers and share no prefix.
   await app.register(boothRoutes);
+  /**
+   * The tender surface (S2-10a): card routing, the inquiry, the audited staff
+   * confirmation. Under `/payments` and not `/sales` because `/sales` is the
+   * ledger's surface, with its path list and its guards pinned exactly — a
+   * tender in flight is not a sale. Empty until the terminal slice lands; the
+   * registration is here now so that this file is not reopened for it.
+   */
+  await app.register(paymentRoutes, { prefix: '/payments' });
+  /**
+   * What the payment gateway posts to us (S2-10a). Its caller is a machine
+   * with no session and its own signature is the authentication, so it sits
+   * beside the public routes rather than behind the session plugin.
+   */
+  await app.register(webhookRoutes, { prefix: '/webhooks' });
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
   await app.register(opsRoutes, { prefix: '/ops' });

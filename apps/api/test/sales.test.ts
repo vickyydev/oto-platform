@@ -510,10 +510,12 @@ describe('pay commits the sale, the tender finalises it', () => {
     expect(attempts[0]!.method).toBe('cash');
     expect(attempts[0]!.status).toBe('approved');
     expect(attempts[0]!.amountSatang).toBe(owed);
-    expect(attempts[0]!.payload).toMatchObject({
-      tenderedSatang: owed + b(60),
-      changeSatang: b(60),
-    });
+    // S2-10a — what was handed over and what went back are COLUMNS, because
+    // the cash-up adds them up. They were in the payload until this ticket.
+    expect(attempts[0]!.tenderedSatang).toBe(owed + b(60));
+    expect(attempts[0]!.changeSatang).toBe(b(60));
+    // And the money has a time of its own, which the end of day groups by.
+    expect(attempts[0]!.paidAt).not.toBeNull();
 
     const audits = await ctx.db
       .select()
@@ -540,25 +542,46 @@ describe('pay commits the sale, the tender finalises it', () => {
     expect(attempt!.method).toBe('cash');
     expect(attempt!.amountSatang).toBe(owed);
     // Nothing was typed, so nothing is claimed about what was handed over.
-    expect(attempt!.payload).not.toHaveProperty('tenderedSatang');
+    expect(attempt!.tenderedSatang).toBeNull();
+    expect(attempt!.changeSatang).toBeNull();
   });
 
-  it('refuses a part payment, and leaves neither a number nor a tender behind', async () => {
+  /**
+   * REWRITTEN BY S2-10a (decision O-5), and the meaning of the case is the
+   * thing that changed rather than the assertion.
+   *
+   * It read "refuses a part payment, and leaves neither a number nor a tender
+   * behind": the refusal rolled the attempt back with it, on the ground that a
+   * sale which is not closed must not carry money the day's reconciliation
+   * would count. That made a split tender impossible and an asynchronous QR
+   * impossible with it — both need an approved attempt on an open sale — so
+   * the rule is now the other way round and the reconciliation is where the
+   * open balance shows. What has NOT changed, and is asserted here as firmly
+   * as it was: no receipt number is spent on a sale that still owes money.
+   */
+  it('records a part payment, leaves the sale open, and spends no receipt number', async () => {
     const saleId = newId();
     const committed = await commit(paidCart(saleId));
     const owed = committed.json().outstandingSatang as number;
+    const half = Math.floor(owed / 2);
 
-    const res = await finalise(saleId, { method: 'cash', amountSatang: Math.floor(owed / 2) });
-    expect(res.statusCode).toBe(409);
-    expect(res.json().error.code).toBe('SALE_NOT_PAID');
-    expect(res.json().error.details.outstandingSatang).toBe(owed - Math.floor(owed / 2));
+    const res = await finalise(saleId, { method: 'cash', amountSatang: half });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().finalised).toBe(false);
+    expect(res.json().outstandingSatang).toBe(owed - half);
+    expect(res.json().sale.receiptNumber).toBeNull();
 
     const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
     expect(row!.status).toBe('tendering');
     expect(row!.receiptNumber).toBeNull();
-    // The refusal rolled the attempt back with it: a sale that is not closed
-    // must not be carrying money the day's reconciliation would count.
-    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
+
+    const attempts = await ctx.db
+      .select()
+      .from(paymentAttempt)
+      .where(eq(paymentAttempt.saleId, saleId));
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]!.status).toBe('approved');
+    expect(attempts[0]!.amountSatang).toBe(half);
   });
 
   it('refuses cash short of the amount being settled rather than giving negative change', async () => {
@@ -609,7 +632,10 @@ describe('pay commits the sale, the tender finalises it', () => {
       .where(eq(paymentAttempt.saleId, saleId));
     expect(attempt!.method).toBe('cash');
     expect(attempt!.amountSatang).toBe(owed);
-    expect(attempt!.payload).toMatchObject({ kind: 'cash', tenderedSatang: owed, changeSatang: 0 });
+    expect(attempt!.tenderedSatang).toBe(owed);
+    expect(attempt!.changeSatang).toBe(0);
+    // The till's own classification of its token still rides the payload.
+    expect(attempt!.payload).toMatchObject({ kind: 'cash' });
     // The till and the platform agree on the change, so there is nothing to keep.
     expect(attempt!.payload).not.toHaveProperty('tillChangeSatang');
   });
@@ -628,8 +654,10 @@ describe('pay commits the sale, the tender finalises it', () => {
       .select()
       .from(paymentAttempt)
       .where(eq(paymentAttempt.saleId, saleId));
-    // ฿100 went back in the guest's hand whatever the screen said it did.
-    expect(attempt!.payload).toMatchObject({ changeSatang: b(100), tillChangeSatang: 0 });
+    // ฿100 went back in the guest's hand whatever the screen said it did — and
+    // the disagreement is kept beside it as evidence, not as a second figure.
+    expect(attempt!.changeSatang).toBe(b(100));
+    expect(attempt!.payload).toMatchObject({ tillChangeSatang: 0 });
   });
 
   it('takes the tender nested under `tender`, as the till may send it', async () => {
@@ -643,7 +671,80 @@ describe('pay commits the sale, the tender finalises it', () => {
       .from(paymentAttempt)
       .where(eq(paymentAttempt.saleId, saleId));
     expect(attempt!.amountSatang).toBe(owed);
-    expect(attempt!.payload).toMatchObject({ changeSatang: 0 });
+    expect(attempt!.changeSatang).toBe(0);
+  });
+
+  /**
+   * S2-10a — TWO TENDERS ON ONE SALE, which is the point of letting a sale sit
+   * part-paid at all. The second one closes it and takes the number.
+   */
+  it('closes the sale when a second tender covers the balance', async () => {
+    const saleId = newId();
+    const committed = await commit(paidCart(saleId));
+    const owed = committed.json().outstandingSatang as number;
+    const half = Math.floor(owed / 2);
+
+    const first = await finalise(saleId, { method: 'cash', amountSatang: half });
+    expect(first.statusCode).toBe(200);
+    expect(first.json().finalised).toBe(false);
+
+    const second = await finalise(saleId, { method: 'cash', amountSatang: owed - half });
+    expect(second.statusCode).toBe(200);
+    expect(second.json().finalised).toBe(true);
+    expect(second.json().outstandingSatang).toBe(0);
+    expect(second.json().sale.receiptNumber).toMatch(/^T1-\d{6}$/);
+
+    const attempts = await ctx.db
+      .select()
+      .from(paymentAttempt)
+      .where(eq(paymentAttempt.saleId, saleId));
+    expect(attempts).toHaveLength(2);
+    expect(attempts.reduce((sum, a) => sum + a.amountSatang, 0)).toBe(owed);
+    expect(attempts.every((a) => a.status === 'approved')).toBe(true);
+  });
+
+  /** A third tender on a settled sale has nothing to settle, and is refused. */
+  it('refuses a tender over the balance and writes no attempt for it', async () => {
+    const saleId = newId();
+    const committed = await commit(paidCart(saleId));
+    const owed = committed.json().outstandingSatang as number;
+
+    const res = await finalise(saleId, { method: 'cash', amountSatang: owed + 1 });
+    expect(res.statusCode).toBe(400);
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
+
+    // And once it IS settled, another tender finds the sale closed rather than
+    // opening an attempt against it.
+    expect((await finalise(saleId, { method: 'cash' })).statusCode).toBe(200);
+    const third = await finalise(saleId, { method: 'cash', amountSatang: 100 });
+    expect(third.statusCode).toBe(200);
+    expect(third.headers['x-oto-replay']).toBe('true');
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(1);
+  });
+
+  /**
+   * THE REPLAY NET ON THE PRESS, not on the sale's status: a part payment
+   * leaves the sale open, so `status = 'finalised'` no longer catches the
+   * retry of a press that took money. `x-oto-action-id` does.
+   */
+  it('answers a replayed part payment with the attempt it already wrote', async () => {
+    const saleId = newId();
+    const committed = await commit(paidCart(saleId));
+    const owed = committed.json().outstandingSatang as number;
+    const actionId = newId();
+    const tender = { method: 'cash', amountSatang: Math.floor(owed / 2), actionId };
+
+    const first = await finalise(saleId, tender);
+    expect(first.statusCode).toBe(200);
+    const second = await finalise(saleId, tender);
+    expect(second.statusCode).toBe(200);
+
+    // The same answer, and the one attempt it describes.
+    expect(second.json().attempt.id).toBe(first.json().attempt.id);
+    expect(second.json().outstandingSatang).toBe(first.json().outstandingSatang);
+    expect(second.json().sale.receiptNumber).toBeNull();
+    expect(second.headers['x-oto-replay']).toBe('true');
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(1);
   });
 });
 
@@ -879,6 +980,51 @@ describe('reading a sale back', () => {
     expect(lines.every((l) => l.kidCount === 2 && l.adultCount === 3)).toBe(true);
     expect(lines.every((l) => l.stayDurationLabel === 'All Day')).toBe(true);
     expect(lines.find((l) => l.kind === 'adults_free')!.freeAdultCount).toBe(1);
+  });
+
+  /**
+   * S2-10a — the detail read answers HOW the money was taken, which is what
+   * `SaleDetail.tsx` says on the screen. Before this ticket it answered the
+   * sale, its lines and its discounts and nothing at all about the tender.
+   */
+  it('answers the sale’s tenders, in the order they were taken', async () => {
+    const saleId = newId();
+    const committed = await commit({
+      id: saleId,
+      memberId: jamesId,
+      lines: [line(twoHoursId, 1, 1)],
+      finalise: true,
+    });
+    const owed = committed.json().outstandingSatang as number;
+    const half = Math.floor(owed / 2);
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/finalise`,
+      headers: { cookie },
+      payload: { method: 'cash', amountSatang: half },
+    });
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/finalise`,
+      headers: { cookie },
+      payload: { method: 'card', kind: 'card', amountSatang: owed - half },
+    });
+
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales/${saleId}`,
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const attempts = res.json().attempts as {
+      method: string;
+      status: string;
+      amountSatang: number;
+      paidAt: string | null;
+    }[];
+    expect(attempts.map((a) => a.method)).toEqual(['cash', 'card']);
+    expect(attempts.every((a) => a.status === 'approved' && a.paidAt !== null)).toBe(true);
+    expect(attempts.reduce((sum, a) => sum + a.amountSatang, 0)).toBe(owed);
   });
 
   it('lists the day’s sales for the branch', async () => {

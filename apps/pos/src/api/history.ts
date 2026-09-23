@@ -18,8 +18,11 @@
 // rather than invented, and the page's "Scan bracelet" path has nothing to read.
 // Nor is there a booking reference on a sale: a redemption links the booking to
 // the visit, not to the money, so `bookingReference` stays unset too.
+import type { PaymentAttemptView } from '@oto/shared';
 import { api } from './client';
 import type { TxnKind, TxnStatus, TxnSummary } from '@/types';
+
+export type { PaymentAttemptView };
 
 /** The ledger's own words for where a sale has got to. */
 export type LedgerStatus = 'tendering' | 'paid' | 'finalised' | 'voided' | 'refunded';
@@ -152,6 +155,21 @@ export interface ApiSaleDetail {
   taxBreakdown: { categories?: { category: string; tax: number; serviceCharge: number; taxName?: string | null }[] } | null;
   lines: ApiSaleLine[];
   discounts: ApiSaleDiscount[];
+  /**
+   * HOW THE MONEY WAS TAKEN — S2-10a, and the thing this page could not show
+   * before.
+   *
+   * Every attempt against the sale, in the order they were taken, including
+   * the ones that failed: a declined card followed by cash is the evening as
+   * it happened, and a detail showing only the cash is what makes a guest's
+   * complaint unanswerable. The shape is the platform's own
+   * (`PaymentAttemptView` in `@oto/shared`) rather than a copy of it here, so
+   * a field added to the ledger cannot quietly stop reaching this screen.
+   *
+   * Optional on the wire: a deployment older than S2-10a answers without it,
+   * and History has to keep opening sales on that deployment.
+   */
+  attempts?: PaymentAttemptView[];
 }
 
 /**

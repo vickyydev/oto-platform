@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { getSale, baht, type ApiSaleDetail, type HistoryTxn } from '@/api/history';
+import {
+  getSale,
+  baht,
+  type ApiSaleDetail,
+  type HistoryTxn,
+  type PaymentAttemptView,
+} from '@/api/history';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import { getTicketTypes } from '@/store/catalogStore';
 import { tierLabel } from '@/lib/membership';
@@ -11,8 +17,11 @@ import { LEDGER_ONLY_NOTICE } from './ledgerNotice';
 import {
   ArrowLeft,
   Baby,
+  Banknote,
+  CreditCard,
   Ticket,
   GlassWater,
+  QrCode,
   ShoppingBag,
   Undo2,
   User as UserIcon,
@@ -33,13 +42,104 @@ import {
  * same cards, same order — contents on the left, money on the right — because
  * §7 says the design stays and only the data source changes.
  *
- * WHAT IT CANNOT SHOW, and does not pretend to: `GET /sales/:id` answers with
- * the sale, its lines and its discounts, and no tender — how the money was
- * taken lives on `pos.payment_attempt`, which that read does not join (S2-10a
- * owns its shape). So there is no payment row here rather than a made-up one,
- * and the actions that would change a real sale are disabled with the ticket
- * that brings them.
+ * HOW THE MONEY WAS TAKEN — S2-10a. Until this ticket `GET /sales/:id` answered
+ * with the sale, its lines and its discounts and no tender at all, so this view
+ * said so rather than inventing a payment row. It now answers `attempts`, and
+ * the card below shows them: every one, in the order they were taken, the
+ * failed ones included. A guest disputing a charge and a manager counting a
+ * drawer are both asking about attempts rather than about the total, and a
+ * screen that showed only the tender that worked is the one that cannot answer
+ * either of them.
+ *
+ * The actions that would CHANGE a recorded sale — reprint, add time, refund —
+ * are still disabled with the ticket that brings them.
  */
+/**
+ * WHAT EACH TENDER IS CALLED ON A SCREEN A PERSON READS.
+ *
+ * The ledger's own six words (`PAYMENT_METHODS` in `@oto/shared`) are what the
+ * money is filed under; these are what the counter calls them. `transfer` is
+ * named here because the column allows it, not because anything writes one
+ * yet.
+ */
+const METHOD_LABEL: Record<PaymentAttemptView['method'], string> = {
+  cash: 'Cash',
+  card: 'Card',
+  qr: 'QR',
+  wallet: 'Wallet',
+  voucher: 'Voucher',
+  transfer: 'Transfer',
+};
+
+/**
+ * The ten states an attempt can be in, in the words staff use for them.
+ *
+ * Only `approved` is money in the till. Everything else is said plainly rather
+ * than dressed up: "waiting" on a screen where a guest is standing is worth
+ * more than a green tick that turns out to have been a guess.
+ */
+const STATUS_LABEL: Record<PaymentAttemptView['status'], { label: string; tone: string }> = {
+  approved: { label: 'Approved', tone: 'text-emerald-400' },
+  awaiting_settlement: { label: 'Taken, not settled', tone: 'text-amber-400' },
+  declined: { label: 'Declined', tone: 'text-rose-400' },
+  cancelled: { label: 'Cancelled', tone: 'text-muted-foreground' },
+  not_found: { label: 'Not on the terminal', tone: 'text-rose-400' },
+  created: { label: 'Not sent', tone: 'text-muted-foreground' },
+  sent_to_terminal: { label: 'Waiting', tone: 'text-amber-400' },
+  inquiring: { label: 'Checking', tone: 'text-amber-400' },
+  unknown: { label: 'No answer', tone: 'text-rose-400' },
+  awaiting_staff_confirmation: { label: 'Needs confirming', tone: 'text-amber-400' },
+};
+
+/**
+ * One tender: what kind, how much, and whether the money is ours.
+ *
+ * The second line carries only what that particular instrument actually
+ * produced — change on cash, the last four and the approval code on a card,
+ * the gateway's reference on a QR — so the row is short on the tenders that
+ * have nothing to say and complete on the ones that do. No PAN and no part of
+ * one beyond the four digits the ledger is allowed to hold.
+ */
+function PaymentRow({
+  attempt,
+  fmt,
+}: {
+  attempt: PaymentAttemptView;
+  fmt: (iso: string) => string;
+}) {
+  const status = STATUS_LABEL[attempt.status];
+  const Icon =
+    attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : CreditCard;
+  const detail = [
+    attempt.changeSatang !== null && attempt.changeSatang > 0
+      ? `฿${baht(attempt.tenderedSatang ?? 0)} given, ฿${baht(attempt.changeSatang)} change`
+      : null,
+    attempt.last4 ? `•••• ${attempt.last4}` : null,
+    attempt.approvalCode ? `Approval ${attempt.approvalCode}` : null,
+    attempt.terminalRef ?? attempt.tranRef ?? attempt.invoiceNo,
+    attempt.offline ? 'Taken offline' : null,
+  ].filter(Boolean) as string[];
+
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <span className="flex items-start gap-2 min-w-0">
+        <Icon className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+        <span className="min-w-0">
+          <span className="block font-semibold">
+            {METHOD_LABEL[attempt.method]}
+            <span className={`font-normal text-sm ${status.tone}`}> · {status.label}</span>
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            {attempt.paidAt ? fmt(attempt.paidAt) : fmt(attempt.createdAt)}
+            {detail.length > 0 ? ` · ${detail.join(' · ')}` : ''}
+          </span>
+        </span>
+      </span>
+      <span className="tabular-nums shrink-0 font-semibold">฿{baht(attempt.amountSatang)}</span>
+    </div>
+  );
+}
+
 export function SaleDetail({
   txn,
   timeZone,
@@ -120,6 +220,7 @@ export function SaleDetail({
   const packageName = (packageId: string | null): string | null =>
     packageId ? (getTicketTypes().find((t) => t.id === packageId)?.name ?? null) : null;
 
+  const attempts = detail?.attempts ?? [];
   const tierClaim = detail?.sale.tierClaim ?? sale.tierClaim ?? null;
   const totals = sale.totals;
   const taxTotal = totals.taxInclusiveSatang + totals.taxExclusiveSatang;
@@ -309,6 +410,24 @@ export function SaleDetail({
               <div className="border-t pt-2 text-sm text-muted-foreground">{sale.note}</div>
             )}
           </Card>
+
+          {/* S2-10a — the tenders, under the money they settled.
+              ONE INSERTION COVERS BOTH LAYOUTS: `columns` and `stacked` differ
+              in which element owns the scrollbar, not in what hangs off this
+              column, so the card follows the totals on the counter and on the
+              handheld alike. */}
+          {attempts.length > 0 && (
+            <Card className="p-6 shrink-0 bg-card/50 space-y-3">
+              <div className="text-base font-semibold text-muted-foreground">
+                {attempts.length === 1 ? 'Payment' : 'Payments'}
+              </div>
+              <div className="space-y-3">
+                {attempts.map((attempt) => (
+                  <PaymentRow key={attempt.id} attempt={attempt} fmt={fmt} />
+                ))}
+              </div>
+            </Card>
+          )}
 
           {/* Actions — every one of these changes a recorded sale, and none of
               them can yet, so they say so instead of pretending. */}

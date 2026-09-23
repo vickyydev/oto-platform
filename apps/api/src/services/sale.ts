@@ -8,8 +8,6 @@ import {
   member,
   modifierGroup,
   modifierOption,
-  paymentAttempt,
-  paymentMethod,
   product,
   productCategory,
   productModifierGroup,
@@ -22,7 +20,6 @@ import {
   ticketPackage,
   tier,
   visit,
-  type PaymentMethod,
   type SaleClockTrust,
   type SaleLineKind,
   type SalesChannel,
@@ -54,9 +51,20 @@ import {
   type TaxConfigShape,
   type TicketCartLine,
   type TicketCartTotals,
+  type PaymentAttemptView,
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
+import {
+  attemptView,
+  attemptsForSale,
+  findAttemptByAction,
+  openAttempt,
+  outstandingAfter,
+  settleAttempt,
+  tenderMethodOf,
+} from './payments/attempt';
+import { resolveDrawerKick, type DrawerKick } from './payments/drawer';
 import {
   assertModifierSelection,
   effectiveModifierGroups,
@@ -1646,36 +1654,19 @@ async function tierClaimsOf(
 }
 
 /**
- * A tender that reached `approved` — money the platform says was taken.
+ * What a sale still owes: its gross, less every tender that was actually
+ * taken. The sum lives in `services/payments/attempt.ts` now, because the EDC,
+ * the QR and the offline replay all have to ask the same question and none of
+ * them comes through this file to ask it.
  *
- * One of ten words `pos.payment_attempt.status` now allows (S2-10a), and the
- * only one `outstandingOf` counts. A cash tender at the counter is approved at
- * the moment it is recorded; the words either side of it — `sent_to_terminal`,
- * `unknown`, `awaiting_staff_confirmation` — are for the instruments that
- * answer over a cable or not at all, and nothing here writes them yet. EDC and
- * QR attach to the same row: an attempt reaching `approved` is what closes a
- * sale, whichever instrument produced it.
- */
-const TENDER_APPROVED = 'approved';
-
-/**
- * What a sale still owes: its gross, less every approved tender against it.
- *
- * This is the predicate finalisation turns on, and it is now answered from
- * rows rather than from a constant. Before, it returned the gross
+ * This is the predicate finalisation turns on, and it is answered from rows
+ * rather than from a constant. Before S2-09a it returned the gross
  * unconditionally, so every sale with a price owed its whole price for ever
  * and the only sale that could ever be finalised was a ฿0 comp — the till
  * pressed Pay on a ฿1,440 admission and got a 409 back.
  */
 async function outstandingOf(db: Exec, row: typeof sale.$inferSelect): Promise<number> {
-  const attempts = await db
-    .select({ amountSatang: paymentAttempt.amountSatang, status: paymentAttempt.status })
-    .from(paymentAttempt)
-    .where(eq(paymentAttempt.saleId, row.id));
-  const taken = attempts
-    .filter((attempt) => attempt.status === TENDER_APPROVED)
-    .reduce((sum, attempt) => sum + attempt.amountSatang, 0);
-  return row.grossSatang - taken;
+  return outstandingAfter(db, row);
 }
 
 async function displayNameOf(db: Exec, accountId: string): Promise<string | null> {
@@ -2352,62 +2343,6 @@ export interface FinaliseSaleInput {
   pickupCode?: string;
 }
 
-/**
- * THE LEDGER'S WORD FOR A TENDER, which is not the token the till sent.
- *
- * Two columns, and the difference is the whole point of them (S2-10a):
- * `method_code` is the token the park configured — `cash`, `promptpay`, a
- * second acquirer's name — and `method` is what KIND of money it was, from a
- * CHECK, which is what the day's takings are grouped by. The prototype's rule,
- * ported: behaviour keys off the kind and never off the token
- * (`apps/pos/src/lib/payments.ts:41`), so a park renaming "PromptPay" changes a
- * label and nothing else.
- *
- * The kind is read from `pos.payment_method`, which is the park's own list.
- * `credit_card` resolves to `card` first, because the POS has normalised that
- * legacy token on read since the prototype (`lib/payments.ts:12`) and the
- * ledger should not be the one place it stops resolving. The till's own
- * classification is the fallback for a token this operator has no row for — a
- * till running an older catalogue, a tender archived between the press and the
- * write.
- *
- * A TENDER NOBODY CAN CLASSIFY IS REFUSED rather than guessed at. The list's
- * fourth kind, `other`, has no word in the ledger's vocabulary: `wallet` and
- * `voucher` are named there for the tickets that will write them and nothing
- * maps to them yet, and money filed under the wrong word is a figure in
- * somebody's day-end report that no later correction can find.
- */
-async function tenderMethodOf(
-  db: Exec,
-  operatorId: string,
-  methodCode: string,
-  declaredKind: string | undefined,
-): Promise<PaymentMethod> {
-  const code = methodCode === 'credit_card' ? 'card' : methodCode;
-  const [configured] = await db
-    .select({ kind: paymentMethod.kind })
-    .from(paymentMethod)
-    .where(
-      and(
-        eq(paymentMethod.operatorId, operatorId),
-        eq(paymentMethod.code, code),
-        isNull(paymentMethod.archivedAt),
-      ),
-    )
-    .limit(1);
-  const kind = configured?.kind ?? declaredKind;
-  if (kind === 'cash' || kind === 'card' || kind === 'qr') return kind;
-  // Two different refusals, because they are two different things to go and
-  // fix: a tender the park does not have, and a tender whose kind the ledger
-  // cannot file money under.
-  throw errors.badRequest(
-    kind
-      ? `The tender “${methodCode}” is set up as “${kind}”, and the ledger has no word for that kind of money yet`
-      : `This park takes no tender called “${methodCode}”, so the sale cannot record what kind of money it was`,
-    { method: methodCode, kind: kind ?? null },
-  );
-}
-
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
 function changeFor(amountSatang: number, tenderedSatang: number | undefined): number {
   if (tenderedSatang === undefined) return 0;
@@ -2420,26 +2355,59 @@ function changeFor(amountSatang: number, tenderedSatang: number | undefined): nu
   return tenderedSatang - amountSatang;
 }
 
+export interface FinaliseResult {
+  /** The till's client reads `replay`; `replayed` is the same fact under the name the API used first. */
+  replay: boolean;
+  replayed: boolean;
+  /** Whether this call closed the sale and numbered its receipt. */
+  finalised: boolean;
+  /** What is still owed after this tender. Zero on the call that closes the sale. */
+  outstandingSatang: number;
+  /** The tender this call took, as the Attempts list shows it. Null when there was nothing to take. */
+  attempt: PaymentAttemptView | null;
+  pickupCode: string | null;
+  sale: SaleView;
+  /**
+   * The drawer the caller should now ask the box to open — resolved inside
+   * this transaction, queued outside it, because a box asked to open a drawer
+   * for a sale that rolls back is a drawer opened for money nobody took.
+   */
+  drawerKick: DrawerKick | null;
+}
+
 /**
- * Take the tender and close the sale: record the payment attempt, allocate the
- * receipt number, persist it, and finalise — ALL IN ONE TRANSACTION.
+ * Take a tender, and close the sale when the tenders cover it: record the
+ * payment attempt, allocate the receipt number, persist it, and finalise —
+ * ALL IN ONE TRANSACTION.
  *
- * THIS IS THE SEAM S2-10a BUILDS ON. Its design says the sale is "marked paid
- * inside the sale transaction", and cash is "tendered/change, drawer kick,
- * finalisation" — so a tender reaching `approved` and the sale reaching
- * `finalised` are one atomic act, never a payment recorded against a sale that
- * stayed open or a receipt numbered for money nobody took. Today the caller is
- * the till's "Confirm Payment Received"; EDC and QR arrive at the same door.
+ * THE ATOMIC ACT IS "the tender and the closing", never one without the other:
+ * no payment recorded against a sale that then stayed open, and no receipt
+ * numbered for money nobody took. Today the callers are the till's "Confirm
+ * Payment Received" and the four counters that share its writer; the EDC (C2),
+ * the QR webhook (D) and the offline replay (G) arrive at the same door.
  *
- * A SALE THAT STILL OWES MONEY IS STILL REFUSED — an under-tender, or a
- * finalise called with no tender on a sale with a price. That refusal is the
- * correct answer to a call that should not have been made; what it is no
- * longer is the wall the till hit on every paid sale, because Pay no longer
- * asks for finalisation it cannot have.
+ * A SALE MAY NOW SIT PART-PAID — decision O-5, and the control-flow change of
+ * this ticket. Before it, a tender that did not cover the balance was refused
+ * and the refusal rolled the attempt back with it, which made a split tender
+ * impossible and an asynchronous QR impossible with it: both need an approved
+ * attempt on an unfinalised sale. The rule now is the one a till already
+ * behaves as though it had — money is recorded when it is taken, and the sale
+ * closes the moment what is outstanding reaches zero, whether that is the
+ * second tender at the counter or a webhook twenty minutes later. What is NOT
+ * relaxed: a tender bigger than the balance is still refused (there is nothing
+ * to settle with it and the excess would be change nobody handed over), and
+ * cash short of the amount being settled is still refused rather than recorded
+ * as negative change.
+ *
+ * The owner-visible consequence, stated plainly because it is real: a sale can
+ * be left open with money against it. That is what `job:payments.pending` and
+ * the end of day (S2-15a) are for, and it is strictly better than the sale
+ * that vanished with the money uncounted.
  *
  * Re-finalising a finalised sale returns it unchanged rather than taking a
- * second number or a second tender: the retry a dropped connection causes must
- * not consume either.
+ * second number or a second tender; and a tender replayed under the same
+ * `x-oto-action-id` finds the attempt it already wrote instead of taking the
+ * money twice.
  */
 export async function finaliseSale(
   tx: Tx,
@@ -2447,7 +2415,7 @@ export async function finaliseSale(
   saleId: string,
   input: FinaliseSaleInput = {},
   now: Date = new Date(),
-): Promise<{ replay: boolean; replayed: boolean; pickupCode: string | null; sale: SaleView }> {
+): Promise<FinaliseResult> {
   const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).for('update').limit(1);
   if (!row || row.operatorId !== actor.operatorId) throw errors.notFound('Sale not found');
   // The sale names the branch; the URL does not. So the scope check that a
@@ -2459,7 +2427,22 @@ export async function finaliseSale(
     .where(and(eq(saleLine.saleId, saleId), eq(saleLine.kind, 'fnb_item')));
   let pickupCode = recordedPickupCode(fnbLines);
   if (row.status === 'finalised') {
-    return { replay: true, replayed: true, pickupCode, sale: viewOf(row) };
+    return {
+      replay: true,
+      replayed: true,
+      finalised: true,
+      outstandingSatang: 0,
+      // The tender this press took, read back rather than re-derived: a retry
+      // of the press that closed the sale gets the same answer as the press.
+      attempt: input.actionId
+        ? await attemptOfAction(tx, row.operatorId, saleId, input.actionId)
+        : null,
+      pickupCode,
+      sale: viewOf(row),
+      // The drawer opened on the first answer. A retry down a dropped
+      // connection must not open it again with a queue in front of it.
+      drawerKick: null,
+    };
   }
   if (row.status === 'voided' || row.status === 'refunded') {
     throw errors.conflict('SALE_CLOSED', `This sale is ${row.status} and cannot be finalised`);
@@ -2490,9 +2473,17 @@ export async function finaliseSale(
     }
   }
 
+  const [st] = await tx.select().from(station).where(eq(station.id, row.stationId)).limit(1);
+
   let owed = await outstandingOf(tx, row);
   /** What this call took, for the audit row. Null when there was nothing to take. */
   let taken: { method: string; amountSatang: number; changeSatang: number | null } | null = null;
+  /** The attempt this call wrote or found, as every read answers with it. */
+  let attempt: PaymentAttemptView | null = null;
+  /** True when this press had already been recorded and this call wrote nothing. */
+  let replayedTender = false;
+  /** Ask the box to open the drawer, once the transaction has committed. */
+  let drawerKick: DrawerKick | null = null;
   if (owed > 0) {
     // CALLING THIS ROUTE IS THE CONFIRMATION THAT THE MONEY WAS TAKEN — it is
     // what the till's "Confirm Payment Received" does — so a call that names
@@ -2500,71 +2491,151 @@ export async function finaliseSale(
     // typed what the guest handed over get `tendered` and `change` recorded
     // with it; staff who only pressed the button get the amount alone.
     const tender = input.tender ?? {};
-    const amountSatang = tender.amountSatang ?? owed;
-    if (amountSatang <= 0) throw errors.badRequest('A tender has to settle something');
-    if (amountSatang > owed) {
-      throw errors.badRequest('That tender is more than this sale still owes', {
+
+    /**
+     * PRESSING PAY TWICE, ON A SALE THAT IS STILL OPEN.
+     *
+     * `status = 'finalised'` above catches the retry of a press that CLOSED
+     * the sale, and until this ticket that was every press. It stops being
+     * sufficient the moment a sale can sit part-paid: the retry of a press
+     * that took half the balance finds a sale still `tendering` and would take
+     * half of it again. So the press itself is the key — `x-oto-action-id`,
+     * unique per operator on the attempt — and a retry is answered with what
+     * the first call recorded. The database index is the net under the race
+     * this read cannot see; the read is what turns a 23505 at a counter into
+     * an ordinary answer.
+     */
+    const already = input.actionId
+      ? await findAttemptByAction(tx, row.operatorId, input.actionId)
+      : null;
+    if (already) {
+      if (already.saleId !== saleId) {
+        throw errors.conflict(
+          'ACTION_ID_REUSED',
+          'That action id already recorded a tender against another sale',
+          { actionId: input.actionId, saleId: already.saleId },
+        );
+      }
+      attempt = attemptView(already);
+      replayedTender = true;
+    } else {
+      const amountSatang = tender.amountSatang ?? owed;
+      if (amountSatang <= 0) throw errors.badRequest('A tender has to settle something');
+      if (amountSatang > owed) {
+        throw errors.badRequest('That tender is more than this sale still owes', {
+          amountSatang,
+          outstandingSatang: owed,
+        });
+      }
+      const methodCode = tender.method ?? 'cash';
+      const method = await tenderMethodOf(tx, row.operatorId, methodCode, tender.kind);
+      const changeSatang = changeFor(amountSatang, tender.tenderedSatang);
+      /**
+       * OPENED, THEN SETTLED — the lifecycle every tender shares, run here in
+       * one transaction because cash is taken before the call is made.
+       *
+       * WHOSE, WHERE AND WHEN are copied off the locked sale row rather than
+       * re-derived. The trading day especially: the tender belongs to the day
+       * the sale it settles belongs to, so a cash-up after midnight counts the
+       * late party's money on the day that is finishing (S2-15a groups on
+       * exactly these four columns, with no join and no backfill).
+       */
+      const opened = await openAttempt(tx, {
+        operatorId: row.operatorId,
+        branchId: row.branchId,
+        stationId: row.stationId,
+        businessDate: row.businessDate,
+        saleId,
+        method,
+        methodCode,
         amountSatang,
-        outstandingSatang: owed,
-      });
-    }
-    const methodCode = tender.method ?? 'cash';
-    const method = await tenderMethodOf(tx, row.operatorId, methodCode, tender.kind);
-    const changeSatang = changeFor(amountSatang, tender.tenderedSatang);
-    await tx.insert(paymentAttempt).values({
-      id: newId(),
-      // WHOSE, WHERE AND WHEN — copied off the locked sale row rather than
-      // re-derived. The trading day especially: the tender belongs to the day
-      // the sale it settles belongs to, so a cash-up after midnight counts the
-      // late party's money on the day that is finishing (S2-15a groups on
-      // exactly these four columns, with no join and no backfill).
-      operatorId: row.operatorId,
-      branchId: row.branchId,
-      stationId: row.stationId,
-      businessDate: row.businessDate,
-      saleId,
-      method,
-      methodCode,
-      amountSatang,
-      status: TENDER_APPROVED,
-      // Money taken at a counter is paid at the moment it is recorded. The
-      // instruments that answer later set this when their answer arrives.
-      paidAt: now,
-      payload: {
-        ...(tender.kind ? { kind: tender.kind } : {}),
+        // What was handed over and what went back are COLUMNS now, not jsonb:
+        // the cash-up adds them up. Only the till's own change figure, when it
+        // disagrees with the platform's, stays in the payload — that is
+        // evidence of a disagreement, not a second figure to count.
         ...(tender.tenderedSatang === undefined
           ? {}
           : { tenderedSatang: tender.tenderedSatang, changeSatang }),
-        // Kept only when the till worked the change out differently — a
-        // disagreement about arithmetic this simple is worth being able to
-        // find later, and it is not worth refusing a sale at the counter over.
-        ...(tender.changeSatang !== undefined && tender.changeSatang !== changeSatang
-          ? { tillChangeSatang: tender.changeSatang }
-          : {}),
-        ...(tender.reference ? { reference: tender.reference } : {}),
-        takenByAccountId: actor.accountId,
-        ...(input.actionId ? { actionId: input.actionId } : {}),
-      },
-    });
-    owed -= amountSatang;
-    taken = {
-      // The TOKEN, as the audit row has always carried it: what staff chose on
-      // the screen, not the word the ledger files it under.
-      method: methodCode,
-      amountSatang,
-      changeSatang: tender.tenderedSatang === undefined ? null : changeSatang,
+        actionId: input.actionId ?? null,
+        payload: {
+          ...(tender.kind ? { kind: tender.kind } : {}),
+          // A disagreement about arithmetic this simple is worth being able to
+          // find later, and it is not worth refusing a sale at the counter over.
+          ...(tender.changeSatang !== undefined && tender.changeSatang !== changeSatang
+            ? { tillChangeSatang: tender.changeSatang }
+            : {}),
+          ...(tender.reference ? { reference: tender.reference } : {}),
+          takenByAccountId: actor.accountId,
+          ...(input.actionId ? { actionId: input.actionId } : {}),
+        },
+      });
+      // Money taken at a counter is paid at the moment it is recorded. The
+      // instruments that answer later stamp this when their answer arrives.
+      attempt = attemptView(await settleAttempt(tx, opened.id, { paidAt: now }));
+      owed -= amountSatang;
+      taken = {
+        // The TOKEN, as the audit row has always carried it: what staff chose on
+        // the screen, not the word the ledger files it under.
+        method: methodCode,
+        amountSatang,
+        changeSatang: tender.tenderedSatang === undefined ? null : changeSatang,
+      };
+      /**
+       * CASH IN THE TILL OPENS THE TILL (O-4). Resolved here, inside the
+       * transaction, on the station row it locked the sale against; queued by
+       * the caller once this has committed. A card or a QR leaves it shut.
+       */
+      if (method === 'cash' && st) {
+        drawerKick = await resolveDrawerKick(tx, {
+          stationRow: st,
+          saleId,
+          attemptId: opened.id,
+          actionId: input.actionId ?? null,
+        });
+      }
+    }
+  }
+
+  /**
+   * THE SALE MAY SIT PART-PAID (O-5). The money is recorded, the sale stays
+   * open, and no receipt number is spent — a document number is spent once and
+   * spending it on a sale that is not settled leaves a gap somebody has to
+   * explain. The next tender, at this counter or from a webhook, closes it.
+   */
+  if (owed > 0) {
+    if (!replayedTender) {
+      await audit.record(tx, {
+        actorAccountId: actor.accountId,
+        operatorId: actor.operatorId,
+        branchId: row.branchId,
+        action: 'sale.tender',
+        entityType: 'sale',
+        entityId: saleId,
+        actionId: input.actionId ?? null,
+        requestId: actor.requestId,
+        before: { status: row.status, outstandingSatang: owed + (taken?.amountSatang ?? 0) },
+        after: {
+          status: row.status,
+          stationId: row.stationId,
+          boxId: row.boxId,
+          grossSatang: row.grossSatang,
+          outstandingSatang: owed,
+          tender: taken,
+        },
+      });
+    }
+    return {
+      replay: replayedTender,
+      replayed: replayedTender,
+      finalised: false,
+      outstandingSatang: owed,
+      attempt,
+      pickupCode,
+      sale: viewOf(row),
+      drawerKick,
     };
   }
 
-  if (owed > 0) {
-    throw errors.conflict(
-      'SALE_NOT_PAID',
-      'This sale still has a balance, so it cannot be finalised yet',
-      { outstandingSatang: owed },
-    );
-  }
-
-  const [st] = await tx.select().from(station).where(eq(station.id, row.stationId)).limit(1);
   if (!st?.codePrefix) {
     throw errors.badRequest(
       'This station has no code prefix, so it cannot number a receipt — set one on the station',
@@ -2614,7 +2685,33 @@ export async function finaliseSale(
     },
   });
 
-  return { replay: false, replayed: false, pickupCode, sale: viewOf(after) };
+  return {
+    replay: replayedTender,
+    replayed: replayedTender,
+    finalised: true,
+    outstandingSatang: 0,
+    attempt,
+    pickupCode,
+    sale: viewOf(after),
+    drawerKick,
+  };
+}
+
+/**
+ * The attempt one press wrote against THIS sale, for the answer a retry gets.
+ *
+ * Scoped to the sale as well as to the press: an action id that recorded money
+ * against another sale is a different problem, and this read is not the place
+ * to raise it.
+ */
+async function attemptOfAction(
+  db: Exec,
+  operatorId: string,
+  saleId: string,
+  actionId: string,
+): Promise<PaymentAttemptView | null> {
+  const found = await findAttemptByAction(db, operatorId, actionId);
+  return found && found.saleId === saleId ? attemptView(found) : null;
 }
 
 // --- Reading ----------------------------------------------------------------
@@ -2781,11 +2878,21 @@ export async function getSaleDetail(
     .orderBy(asc(saleDiscount.sequence));
   /** SCRUM-333 — the document check that chose this sale's tier, where one did. */
   const claims = await tierClaimsOf(db, [row]);
+  /**
+   * S2-10a — HOW THE MONEY WAS TAKEN, which this read could not answer before.
+   *
+   * Every attempt, not only the ones that worked: a declined card followed by
+   * cash is the evening as it happened, and a Sale detail showing only the
+   * cash is the one that makes a guest's complaint unanswerable. The view is
+   * `PaymentAttemptView` — no payload, no QR payload, no tenancy columns.
+   */
+  const attempts = await attemptsForSale(db, saleId);
 
   return {
     sale: { ...viewOf(row), tierClaim: claims.get(row.id) ?? null } satisfies SaleReadView,
     /** S2-09b — the code the guest holds, from the F&B lines that carry it. */
     pickupCode: recordedPickupCode(lines.filter((line) => line.kind === 'fnb_item')),
+    attempts,
     taxBreakdown: row.taxBreakdown,
     taxConfig: row.taxConfig,
     lines: lines.map((line) => ({

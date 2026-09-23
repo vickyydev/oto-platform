@@ -6,6 +6,7 @@ import { errors } from '../lib/errors';
 import { PermissionDeniedError } from '../plugins/session';
 import { branchReach } from '../services/access-control';
 import { opCtx, withTx } from '../services/tx';
+import { queueDrawerKick } from '../services/payments/drawer';
 import {
   commitSale,
   finaliseSale,
@@ -430,8 +431,27 @@ export async function saleRoutes(app: App): Promise<void> {
           ...(body.pickupCode ? { pickupCode: body.pickupCode } : {}),
         }),
       );
+      /**
+       * S2-10a (O-4) — THE DRAWER, once the money is committed and not before.
+       *
+       * Outside the transaction deliberately: the command is the box's own row
+       * with its own audit entry, and a drawer asked to open for a sale that
+       * then rolled back is a drawer open with nothing in it. It cannot fail
+       * this request — `queueDrawerKick` answers null and logs instead — because
+       * the money is already taken and the receipt is already numbered.
+       *
+       * It is handed this request's context for the actor, the branch and the
+       * request id, and drops the idempotency claim off it before opening its
+       * own transaction (`services/payments/drawer.ts`,
+       * `withoutIdempotencyClaim`): the answer stored under the till's key must
+       * stay the finalise's, or the retry replays a command instead of a sale.
+       */
+      const { drawerKick, ...answer } = result;
+      if (drawerKick) {
+        await queueDrawerKick(app.db, opCtx(req), actor, drawerKick);
+      }
       if (result.replay) reply.header('x-oto-replay', 'true');
-      return result;
+      return answer;
     },
   );
 
