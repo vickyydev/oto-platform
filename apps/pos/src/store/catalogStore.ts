@@ -1818,6 +1818,13 @@ export function hydrateFromApi(data: {
   /** Patches keyed by branch slug (Branch.id). */
   perBranch: Record<string, Partial<BranchCatalog>>;
   pricingOverrides?: PricingOverride[];
+  /**
+   * The tenders the park takes money in (SCRUM-206). Global, not per branch —
+   * "paymentMethods (same physical tenders everywhere)" above — and omitted on
+   * the public /book hydration and by a deployment whose API has no
+   * `/payment-methods` route yet, both of which keep the seeded three.
+   */
+  paymentMethods?: PaymentMethod[];
 }): void {
   const branchCatalogs = { ...state.branchCatalogs };
   for (const [slug, patch] of Object.entries(data.perBranch)) {
@@ -1828,6 +1835,7 @@ export function hydrateFromApi(data: {
     ...(data.branches ? { branches: data.branches } : {}),
     branchCatalogs,
     ...(data.pricingOverrides ? { pricingOverrides: data.pricingOverrides } : {}),
+    ...(data.paymentMethods ? { paymentMethods: data.paymentMethods } : {}),
   };
   if (!state.branches.some((b) => b.id === _activeBranchId) && state.branches[0]) {
     _activeBranchId = state.branches[0].id;

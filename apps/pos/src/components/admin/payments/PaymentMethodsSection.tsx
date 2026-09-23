@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
+import { PAYMENT_METHODS, PAYMENT_METHOD_KINDS } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
-import { countTransactionsUsingPaymentMethod } from '@/mockApi';
+import { paymentMethodUsage } from '@/api/catalogBridge';
+import { toast } from '@/hooks/use-toast';
 import type { PaymentMethod, PaymentMethodKind } from '@/types';
 import { paymentMethodIcon, normalizePaymentMethod } from '@/lib/payments';
-import { NotSavedNotice } from '../NotSavedNotice';
+import { AdminNoticeBanner } from '../NotSavedNotice';
 import { TextInput } from '../discounts/fields';
 
 const KIND_OPTIONS: { value: PaymentMethodKind; label: string }[] = [
@@ -14,6 +16,28 @@ const KIND_OPTIONS: { value: PaymentMethodKind; label: string }[] = [
   { value: 'qr', label: 'QR / PromptPay' },
   { value: 'other', label: 'Other' },
 ];
+
+/**
+ * The kinds the platform can file money under today (SCRUM-206).
+ *
+ * `pos.payment_attempt.method` is the word the ledger groups money by, and
+ * `other` is the one tender kind with no word waiting for it — so a sale
+ * tendered against an `other` method is refused at the counter, after the
+ * customer has paid. Derived from the two vocabularies rather than typed out,
+ * so the day a kind gains a ledger word this list grows with it.
+ */
+const LEDGER_BACKED_KINDS: readonly string[] = PAYMENT_METHOD_KINDS.filter((kind) =>
+  (PAYMENT_METHODS as readonly string[]).includes(kind),
+);
+
+const kindNames = LEDGER_BACKED_KINDS.join(', ');
+
+const KIND_REFUSAL =
+  `A tender has to be a kind the platform can file money under, and today those are ${kindNames}. ` +
+  `Nothing records money against an “other” tender yet, so the till would take the payment and ` +
+  `then refuse the sale.`;
+
+const isTenderable = (kind: PaymentMethodKind): boolean => LEDGER_BACKED_KINDS.includes(kind);
 
 // Slug a label into a stable token id, kept unique against existing methods.
 // Run through normalizePaymentMethod so a label like "Credit Card" can never
@@ -36,56 +60,98 @@ function makeId(label: string, taken: Set<string>): string {
 export function PaymentMethodsSection() {
   const { paymentMethods, mutators } = useCatalogStore();
   const [newLabel, setNewLabel] = useState('');
-  const [newKind, setNewKind] = useState<PaymentMethodKind>('other');
+  /**
+   * The label being typed, held here until the field is left.
+   *
+   * The prototype wrote every keystroke straight into the store, which cost
+   * nothing when the store was a variable in the tab. Each one is now a PATCH
+   * and a re-read of the catalogue, so a five-letter correction would be five
+   * writes, five audit rows and five reloads racing each other back into the
+   * input. The field looks and behaves the same; it saves when you leave it or
+   * press Enter.
+   */
+  const [draft, setDraft] = useState<{ id: string; label: string } | null>(null);
+  // The prototype's new-method kind started at "other", which cost nothing when
+  // the list lived in browser memory. It is now the one kind that cannot be
+  // saved, so the box opens on the first kind that can — otherwise every visit
+  // to this panel starts on a refusal.
+  const [newKind, setNewKind] = useState<PaymentMethodKind>('cash');
 
   const sorted = [...paymentMethods].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const refuseKind = () => {
+    toast({ title: 'That kind of tender cannot be saved yet', description: KIND_REFUSAL });
+  };
 
   const add = () => {
     const label = newLabel.trim();
     if (!label) return;
+    if (!isTenderable(newKind)) return refuseKind();
     const taken = new Set(paymentMethods.map((m) => m.id));
     const id = makeId(label, taken);
     const sortOrder = sorted.length ? sorted[sorted.length - 1].sortOrder + 1 : 0;
     mutators.upsertPaymentMethod({ id, label, kind: newKind, enabled: true, sortOrder });
     setNewLabel('');
-    setNewKind('other');
+    setNewKind('cash');
   };
 
   const patch = (m: PaymentMethod, fields: Partial<PaymentMethod>) =>
     mutators.upsertPaymentMethod({ ...m, ...fields });
 
+  /** Commit the label being typed, if it changed and is not empty. */
+  const commitLabel = (m: PaymentMethod) => {
+    const label = draft?.id === m.id ? draft.label.trim() : null;
+    setDraft(null);
+    if (label && label !== m.label) patch(m, { label });
+  };
+
+  const changeKind = (m: PaymentMethod, kind: PaymentMethodKind) => {
+    // Refused here as well as at the door, so a tender the platform would send
+    // back never appears in the method grid even for the moment it takes the
+    // panel to hear the refusal and reload.
+    if (!isTenderable(kind)) return refuseKind();
+    patch(m, { kind });
+  };
+
+  /**
+   * Remove a tender, or offer to disable it (SCRUM-206, decision O-7).
+   *
+   * The prototype warned and let the delete through, because its transactions
+   * were browser memory. The platform's are a ledger: it counts the money rows
+   * naming the token and refuses the delete with that count, so the panel makes
+   * the same offer the prototype's warning was already recommending — disable
+   * it, which hides it at checkout and keeps every past sale readable.
+   *
+   * The count is the platform's, read on the last hydration. It is used to
+   * choose the question, never to authorise the delete: that answer is the
+   * server's, and a race between two managers ends in its refusal, not here.
+   */
   const remove = (m: PaymentMethod) => {
-    const used = countTransactionsUsingPaymentMethod(m.id);
+    const used = paymentMethodUsage(m.id);
     if (used > 0) {
       const ok = window.confirm(
         `“${m.label}” is referenced by ${used} transaction${used === 1 ? '' : 's'}. ` +
-          `Deleting it will leave those records labelled by their raw token in reports. ` +
-          `Delete anyway? (Disabling it instead hides it at checkout but keeps reporting clean.)`,
+          `Deleting it would leave those records labelled by their raw token in reports, so it ` +
+          `cannot be deleted. Disable it instead? (Disabling hides it at checkout but keeps ` +
+          `reporting clean.)`,
       );
-      if (!ok) return;
+      if (ok) patch(m, { enabled: false });
+      return;
     }
     mutators.deletePaymentMethod(m.id);
   };
 
+  // Reorder is a swap of two sort orders, and the swap is one write: the store
+  // moves the row under the finger and the platform does the same swap in one
+  // transaction, so a till reading the list never sees both rows on one number.
   const move = (index: number, dir: -1 | 1) => {
     const target = index + dir;
     if (target < 0 || target >= sorted.length) return;
-    const a = sorted[index];
-    const b = sorted[target];
-    // Swap their sort orders so the configured checkout order changes.
-    patch(a, { sortOrder: b.sortOrder });
-    patch(b, { sortOrder: a.sortOrder });
+    mutators.movePaymentMethod(sorted[index].id, dir === -1 ? 'up' : 'down');
   };
 
   return (
     <section className="rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 sm:p-6">
-      <div className="mb-5">
-        <NotSavedNotice
-          mutators={['upsertPaymentMethod', 'deletePaymentMethod']}
-          what="the tender list, its order and which methods are enabled"
-        />
-      </div>
-
       <div>
         <h2 className="text-lg font-bold">Payment methods</h2>
         <p className="text-sm text-foreground/50">
@@ -121,11 +187,21 @@ export function PaymentMethodsSection() {
             </option>
           ))}
         </select>
-        <Button onClick={add} disabled={!newLabel.trim()} className="shrink-0">
+        <Button
+          onClick={add}
+          disabled={!newLabel.trim() || !isTenderable(newKind)}
+          className="shrink-0"
+        >
           <Plus className="w-4 h-4" />
           Add
         </Button>
       </div>
+
+      {!isTenderable(newKind) && (
+        <div className="mt-3">
+          <AdminNoticeBanner>{KIND_REFUSAL}</AdminNoticeBanner>
+        </div>
+      )}
 
       {/* Methods list */}
       <div className="mt-4 flex flex-col gap-2">
@@ -146,13 +222,17 @@ export function PaymentMethodsSection() {
               <GripVertical className="w-4 h-4 shrink-0 text-foreground/25" />
               <Icon className="w-4 h-4 shrink-0 text-foreground/50" />
               <TextInput
-                value={m.label}
-                onChange={(e) => patch(m, { label: e.target.value })}
+                value={draft?.id === m.id ? draft.label : m.label}
+                onChange={(e) => setDraft({ id: m.id, label: e.target.value })}
+                onBlur={() => commitLabel(m)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur();
+                }}
                 className="flex-1"
               />
               <select
                 value={m.kind}
-                onChange={(e) => patch(m, { kind: e.target.value as PaymentMethodKind })}
+                onChange={(e) => changeKind(m, e.target.value as PaymentMethodKind)}
                 className="h-10 shrink-0 rounded-xl border border-foreground/10 bg-foreground/5 px-2 text-sm text-foreground/90 outline-none focus:border-foreground/30"
                 aria-label={`${m.label} kind`}
               >

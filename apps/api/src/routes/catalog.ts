@@ -13,6 +13,7 @@ import {
   tier,
 } from '@oto/db';
 import {
+  PAYMENT_METHOD_KINDS,
   TaxConfigSchema,
   TicketPackageBodySchema,
   getRateModeForDate,
@@ -26,6 +27,13 @@ import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { categoryTaxCategory } from '../services/menu';
+import {
+  archivePaymentMethod,
+  createPaymentMethod,
+  listPaymentMethods,
+  movePaymentMethod,
+  updatePaymentMethod,
+} from '../services/payment-methods';
 import { resolveTax } from '../services/tax';
 import { opCtx, withTx } from '../services/tx';
 
@@ -284,6 +292,149 @@ export async function catalogRoutes(app: App): Promise<void> {
         });
         return { ok: true as const };
       });
+    },
+  );
+
+  // --- SCRUM-206 (S2-10a): the tenders the park takes money in -------------
+  //
+  // Operator-wide, like the tiers above and for the same kind of reason: the
+  // prototype's store says "paymentMethods (same physical tenders everywhere)"
+  // (`apps/pos/src/store/catalogStore.ts:71`), so there is no branch in any of
+  // these paths. The rules they enforce are in `services/payment-methods.ts`;
+  // these five are the thin callers.
+  //
+  // They carry the MENU permissions rather than ones of their own. The panel
+  // that edits them is "Discounts & Payments" — the discount codes beside them
+  // already save through `catalog:menu:manage` — and a new permission string
+  // would leave every seeded role without it until the roles are re-seeded,
+  // which is the argument the tier routes above make in full. Reading is in
+  // `READ_CATALOG`, so every counter role can list the tenders its till has to
+  // draw.
+  const MethodCodeParams = z.object({ code: z.string().min(1).max(40) });
+  const MethodKind = z.enum(PAYMENT_METHOD_KINDS);
+
+  app.get(
+    '/payment-methods',
+    {
+      config: { permission: 'catalog:menu:read' },
+      schema: { description: 'The operator’s configured tenders, in till order' },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return { methods: await listPaymentMethods(app.db, auth.operatorId) };
+    },
+  );
+
+  app.post(
+    '/payment-methods',
+    {
+      config: { permission: 'catalog:menu:manage' },
+      schema: {
+        description: 'Add a tender (refused for a kind the ledger has no word for)',
+        body: z.object({
+          /**
+           * Minted from the label by the admin panel and never changed
+           * afterwards — it is the token written onto every sale paid in this
+           * tender, so renaming one changes its label and nothing else. The
+           * pattern is `payment_method_code_check` in the schema.
+           */
+          code: z.string().min(1).max(40).regex(/^[a-z0-9_]+$/),
+          label: z.string().min(1).max(80),
+          kind: MethodKind,
+          sortOrder: z.number().int().min(0).optional(),
+        }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      // Spelled out rather than spread: the operator on the audit row and the
+      // operator the write is scoped to are the same one, and this is where a
+      // reader — and `route-scope-target.test.ts` — can see that it is.
+      const actor = {
+        accountId: auth.accountId,
+        operatorId: auth.operatorId,
+        branchId: auth.branchId,
+        requestId: req.id,
+      };
+      return withTx(app.db, opCtx(req), 'payment_method.create', (tx) =>
+        createPaymentMethod(tx, actor, req.body),
+      );
+    },
+  );
+
+  app.patch(
+    '/payment-methods/:code',
+    {
+      config: { permission: 'catalog:menu:manage' },
+      schema: {
+        description: 'Rename a tender, change its kind, or tick it on and off',
+        params: MethodCodeParams,
+        body: z.object({
+          label: z.string().min(1).max(80).optional(),
+          kind: MethodKind.optional(),
+          enabled: z.boolean().optional(),
+          sortOrder: z.number().int().min(0).optional(),
+        }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const actor = {
+        accountId: auth.accountId,
+        operatorId: auth.operatorId,
+        branchId: auth.branchId,
+        requestId: req.id,
+      };
+      return withTx(app.db, opCtx(req), 'payment_method.update', (tx) =>
+        updatePaymentMethod(tx, actor, req.params.code, req.body),
+      );
+    },
+  );
+
+  app.post(
+    '/payment-methods/:code/move',
+    {
+      config: { permission: 'catalog:menu:manage' },
+      schema: {
+        description: 'Move a tender one place up or down the till’s method grid',
+        params: MethodCodeParams,
+        body: z.object({ direction: z.enum(['up', 'down']) }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const actor = {
+        accountId: auth.accountId,
+        operatorId: auth.operatorId,
+        branchId: auth.branchId,
+        requestId: req.id,
+      };
+      return withTx(app.db, opCtx(req), 'payment_method.reorder', (tx) =>
+        movePaymentMethod(tx, actor, req.params.code, req.body.direction),
+      );
+    },
+  );
+
+  app.delete(
+    '/payment-methods/:code',
+    {
+      config: { permission: 'catalog:menu:manage' },
+      schema: {
+        description: 'Remove a tender; refused once money has been taken in it',
+        params: MethodCodeParams,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const actor = {
+        accountId: auth.accountId,
+        operatorId: auth.operatorId,
+        branchId: auth.branchId,
+        requestId: req.id,
+      };
+      return withTx(app.db, opCtx(req), 'payment_method.archive', (tx) =>
+        archivePaymentMethod(tx, actor, req.params.code),
+      );
     },
   );
 

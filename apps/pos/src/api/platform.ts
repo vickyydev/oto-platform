@@ -338,7 +338,51 @@ export const catalogApi = {
   taxConfig: (branchId: string) => api.get<{ config: unknown | null }>(`/branches/${branchId}/tax-config`),
   putTaxConfig: (branchId: string, config: unknown) =>
     api.put<{ ok: true }>(`/branches/${branchId}/tax-config`, config),
+
+  /**
+   * The tenders the park takes money in (SCRUM-206).
+   *
+   * Operator-wide, so there is no branch id on any of these — the prototype's
+   * store says "paymentMethods (same physical tenders everywhere)"
+   * (`catalogStore.ts:71`) and the routes match it. `id` in the answer is the
+   * tender's CODE, which is the token a sale carries and the id the store
+   * keys by.
+   *
+   * `attempts` is how many money rows name it. The panel needs it before it
+   * offers a delete: the platform refuses one that has taken money, and a
+   * screen that cannot see the count can only discover that by being refused.
+   */
+  paymentMethods: () => api.get<{ methods: ApiPaymentMethod[] }>('/payment-methods'),
+  createPaymentMethod: (body: {
+    code: string;
+    label: string;
+    kind: ApiPaymentMethod['kind'];
+    sortOrder?: number;
+  }) => api.post<{ id: string }>('/payment-methods', body, { idempotencyKey: idemKey() }),
+  updatePaymentMethod: (
+    code: string,
+    patch: Partial<{ label: string; kind: ApiPaymentMethod['kind']; enabled: boolean; sortOrder: number }>,
+  ) => api.patch<{ ok: true }>(`/payment-methods/${encodeURIComponent(code)}`, patch),
+  /** One place up or down — the prototype's swap of two sort orders, done atomically. */
+  movePaymentMethod: (code: string, direction: 'up' | 'down') =>
+    api.post<{ ok: true; moved: boolean }>(
+      `/payment-methods/${encodeURIComponent(code)}/move`,
+      { direction },
+      { idempotencyKey: idemKey() },
+    ),
+  deletePaymentMethod: (code: string) =>
+    api.delete<{ ok: true }>(`/payment-methods/${encodeURIComponent(code)}`),
 };
+
+export interface ApiPaymentMethod {
+  /** The tender's code — the token stored on a sale, and the store's `id`. */
+  id: string;
+  label: string;
+  kind: 'cash' | 'card' | 'qr' | 'other';
+  enabled: boolean;
+  sortOrder: number;
+  attempts: number;
+}
 
 // --- public booking site (no session) ---------------------------------------
 export interface PublicCatalog {

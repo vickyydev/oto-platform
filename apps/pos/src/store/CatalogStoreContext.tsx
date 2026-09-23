@@ -61,10 +61,13 @@ import {
   apiBranchIdForSlug,
   archiveTicketTypeInApi,
   deleteHolidayInApi,
+  deletePaymentMethodInApi,
   deleteTierInApi,
   loadCatalogFromApi,
+  movePaymentMethodInApi,
   saveBranchToApi,
   saveHolidayToApi,
+  savePaymentMethodToApi,
   saveTaxConfigToApi,
   saveTicketTypeToApi,
   saveTierToApi,
@@ -131,6 +134,40 @@ const wiredDeleteTier: typeof deleteTier = (id) => {
 const wiredUpsertBranch: typeof upsertBranch = (branch) => {
   upsertBranch(branch);
   void saveBranchToApi(branch).catch(apiFail('branch'));
+};
+
+/**
+ * The tenders (SCRUM-206). Operator-wide, like the tiers: no branch is resolved
+ * and no edit stays in the tab.
+ */
+const wiredUpsertPaymentMethod: typeof upsertPaymentMethod = (m) => {
+  const exists = snap().paymentMethods.some((x) => x.id === m.id);
+  upsertPaymentMethod(m);
+  void savePaymentMethodToApi(m, exists).catch(apiFail('payment method'));
+};
+const wiredDeletePaymentMethod: typeof deletePaymentMethod = (id) => {
+  deletePaymentMethod(id);
+  void deletePaymentMethodInApi(id).catch(apiFail('payment method'));
+};
+
+/**
+ * Move a tender one place up or down the checkout order.
+ *
+ * The local half is the prototype's own gesture — a swap of two `sortOrder`s
+ * (`PaymentMethodsSection.tsx:69-77`) — so the row moves under the finger. The
+ * platform half is ONE request that does the same swap in one transaction,
+ * rather than the two writes the swap would otherwise become.
+ */
+const wiredMovePaymentMethod = (code: string, direction: 'up' | 'down'): void => {
+  const sorted = [...snap().paymentMethods].sort((x, y) => x.sortOrder - y.sortOrder);
+  const at = sorted.findIndex((m) => m.id === code);
+  const to = at + (direction === 'up' ? -1 : 1);
+  const moving = sorted[at];
+  const neighbour = sorted[to];
+  if (!moving || !neighbour) return;
+  upsertPaymentMethod({ ...moving, sortOrder: neighbour.sortOrder });
+  upsertPaymentMethod({ ...neighbour, sortOrder: moving.sortOrder });
+  void movePaymentMethodInApi(code, direction).catch(apiFail('the checkout order'));
 };
 
 /**
@@ -260,6 +297,9 @@ const wiredMutators = {
   deleteModifierGroup: wiredDeleteModifierGroup,
   upsertDiscount: wiredUpsertDiscount,
   deleteDiscount: wiredDeleteDiscount,
+  upsertPaymentMethod: wiredUpsertPaymentMethod,
+  deletePaymentMethod: wiredDeletePaymentMethod,
+  movePaymentMethod: wiredMovePaymentMethod,
 };
 
 /** Reads in-memory catalogue state; writes nothing, so nothing to persist. */
@@ -291,9 +331,6 @@ export const MOCK_MUTATOR_TICKETS = {
   transferStockBetweenLocations: 'SCRUM-204',
   replenishStockToLocation: 'SCRUM-204',
   commitStockTakeCorrection: 'SCRUM-204',
-  // No tender of any kind is recorded yet, so a method list has nowhere to go.
-  upsertPaymentMethod: 'SCRUM-206',
-  deletePaymentMethod: 'SCRUM-206',
   // Supervision policy and its drop-off / nanny prices.
   updateDropOffPricing: 'SCRUM-210',
   updateSupervisionPolicy: 'SCRUM-210',
@@ -321,8 +358,6 @@ const mockMutators = {
   upsertInventoryItem,
   deleteInventoryItem,
   setDiscountReasons,
-  upsertPaymentMethod,
-  deletePaymentMethod,
   updateDropOffPricing,
   updateSupervisionPolicy,
   upsertEdcTerminal,

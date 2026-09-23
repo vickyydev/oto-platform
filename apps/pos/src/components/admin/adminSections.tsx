@@ -163,9 +163,10 @@ export const adminNav: AdminNavEntry[] = [
         label: 'Discounts & Payments',
         icon: BadgePercent,
         description: 'Manage discount codes, reasons and payment methods.',
-        // The codes save through `POST/PATCH/DELETE /menu/discounts`, which is
-        // guarded as catalogue. The reasons and the payment methods beside them
-        // still reach no route, and the panel says so.
+        // The codes save through `POST/PATCH/DELETE /menu/discounts` and the
+        // payment methods through `/payment-methods` (SCRUM-206), both guarded
+        // as catalogue. The discount REASONS beside them are the one list here
+        // that still reaches no route, and the panel says so.
         permission: 'catalog:menu:manage',
       },
       {
