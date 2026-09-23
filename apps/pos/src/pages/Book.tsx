@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AddOn, Booking, CartLine, ContactChannel, CustomerTier, Member, OtoEvent, SelectedAddOn, TicketType } from '@/types';
 import {
-  getMemberById,
-  addSavedChild,
-  updateSavedChild,
-  removeSavedChild,
   createBooking,
   getDropOffPricing,
   getActiveEventPasses,
   getActiveBranch,
   checkNannyAvailability,
-  updateMember,
 } from '@/mockApi';
 import { resolveAutoTier } from '@/lib/membership';
 import { computeLineTotal } from '@/lib/pricing';
@@ -21,7 +16,7 @@ import { getSupervisionPolicy, wwp, subscribeCatalog } from '@/store/catalogStor
 import { resolveRateToday } from '@/lib/pricingMode';
 import { slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
-import { slotPatchFromSavedChild, savedChildInputFromSlot } from '@/lib/savedChildren';
+import { slotPatchFromSavedChild } from '@/lib/savedChildren';
 import type { SavedChild } from '@/types';
 import { ConsentCapture } from '@/components/till/ConsentCapture';
 import { BookIdentify } from '@/components/book/BookIdentify';
@@ -263,11 +258,12 @@ export default function Book() {
     };
   }, []);
 
-  // Same "save per member" behaviour as the till: persist the new preference
-  // immediately if this booking belongs to an already-identified member.
+  // The channel picked here goes to the platform with the booking
+  // (`publicApi.createBooking`), not onto the member's profile: this page has
+  // no session, and the open member route only reads (S2-09b). The fixture
+  // write that stood here matched no platform member's id.
   const handleContactChannelChange = (channel: ContactChannel) => {
     setContactChannel(channel);
-    if (member) updateMember(member.id, { preferredChannel: channel });
   };
   const [lines, setLines] = useState<CartLine[]>([]);
   const [passes, setPasses] = useState<PassSelection[]>([]);
@@ -480,14 +476,10 @@ export default function Book() {
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== id));
   };
 
-  // "Still correct?" → write any edits back to the saved profile and mark done.
+  // "Still correct?" → mark done. Edits stay on this booking's slot: the
+  // member this page identifies comes from the open lookup, which carries no
+  // saved children and writes none (S2-09b).
   const handleConfirmSlot = (id: string) => {
-    const slot = superSlots.find((s) => s.id === id);
-    const age = slot ? slotAge(slot) : null;
-    if (member && slot?.savedChildId && age !== null) {
-      updateSavedChild(member.id, slot.savedChildId, savedChildInputFromSlot(slot, age));
-      setMember(getMemberById(member.id));
-    }
     setConfirmedSavedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
   };
 
@@ -508,11 +500,7 @@ export default function Book() {
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== slotId));
   };
 
-  const handleRemoveSaved = (slotId: string, childId: string) => {
-    if (member) {
-      removeSavedChild(member.id, childId);
-      setMember(getMemberById(member.id));
-    }
+  const handleRemoveSaved = (slotId: string, _childId: string) => {
     handleMarkNew(slotId);
   };
 
@@ -632,25 +620,10 @@ export default function Book() {
   };
 
   const finalizeBooking = (paymentMethod: 'card' | 'promptpay', serverReference: string | null) => {
-    // Save / update each supervised child against the member's profile so they
-    // pre-fill next time. Photo is never saved (re-taken each visit); a slot
-    // linked to a saved child updates it, otherwise it's added new. Stamped as an
-    // online booking. Guests without a member account are skipped.
-    if (member) {
-      for (const slot of superSlots) {
-        const age = slotAge(slot);
-        if (age === null || !slot.name.trim()) continue;
-        const req = resolveRequirement(age);
-        const outcome = resolveSupervisionOutcome(req, slot.waived, slot.optIn);
-        if (outcome.service === null) continue;
-        const input = savedChildInputFromSlot(slot, age);
-        if (slot.savedChildId) {
-          updateSavedChild(member.id, slot.savedChildId, input);
-        } else {
-          addSavedChild(member.id, input, 'Online booking');
-        }
-      }
-    }
+    // Children named on this booking are not saved to the member's profile for
+    // next time. The prototype saved them into this browser's fixture members,
+    // which no platform member id matched; the open route this page uses reads
+    // a member and cannot write one (S2-09b).
     const made = createBooking({
       memberId: member?.id,
       tier,

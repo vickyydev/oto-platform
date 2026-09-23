@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { useLanguage } from '@/i18n/LanguageContext';
 import type { ContactChannel } from '@/types';
-import { getMemberByPhone } from '@/mockApi';
+import { publicApi } from '@/api/platform';
+import { getActiveBranch } from '@/store/catalogStore';
 
 interface BookIdentifyProps {
   onContinue: (phone: string, nickname: string, channel: ContactChannel) => void;
@@ -17,13 +18,30 @@ export function BookIdentify({ onContinue }: BookIdentifyProps) {
   const [nickname, setNickname] = useState('');
   const [channel, setChannel] = useState<ContactChannel>('whatsapp');
 
-  const handlePhoneChange = (v: string) => {
-    setPhone(v);
-    // Pre-select a returning member's saved channel preference as soon as the
-    // phone matches — the same phone→member lookup used at booking time.
-    const found = v.trim() ? getMemberByPhone(v, nickname) : null;
-    if (found?.preferredChannel) setChannel(found.preferredChannel);
-  };
+  // Pre-select a returning member's saved channel preference as soon as the
+  // phone matches — the same phone→member lookup used at booking time, which
+  // is the platform's open one (`publicApi.memberTier`, S2-09b): this page has
+  // no session to ask the staff lookup with. Asked once the typing pauses; an
+  // answer for a number that has since changed is dropped, and a failed one
+  // pre-selects nothing. The match is on the phone alone — the name typed
+  // below it was passed to the fixture lookup, which never read it.
+  useEffect(() => {
+    const typed = phone.trim();
+    if (!typed) return;
+    let current = true;
+    const timer = setTimeout(() => {
+      publicApi.memberTier(typed, getActiveBranch().id).then(
+        (res) => {
+          if (current && res.found && res.preferredChannel) setChannel(res.preferredChannel);
+        },
+        () => {},
+      );
+    }, 300);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [phone]);
 
   return (
     <div className="flex-1 flex flex-col px-6 py-10 relative animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -48,7 +66,7 @@ export function BookIdentify({ onContinue }: BookIdentifyProps) {
           <label className="text-sm text-slate-500 mb-2 block">{t('book.identify.mobileNumber')}</label>
           <PhoneInput
             value={phone}
-            onChange={handlePhoneChange}
+            onChange={setPhone}
             label=""
             inputClassName="h-14 text-lg bg-white border-slate-200"
             channel={channel}

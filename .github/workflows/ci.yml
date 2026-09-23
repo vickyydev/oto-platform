@@ -39,6 +39,14 @@ jobs:
         run: pnpm typecheck
       - name: Lint
         run: pnpm lint
+      # One member record, and it is the platform's (S2-09b, SCRUM-204).
+      # `apps/pos/src/mockApi.ts` still carries the prototype's fixture
+      # members, and a screen that reads them finds a family the platform does
+      # not have. This fails when a file under apps/pos/src other than
+      # mockApi.ts imports one of its member functions, naming the file and
+      # the line. Plain Node and the TypeScript parser the install brings.
+      - name: No screen reads mock members
+        run: node scripts/check-no-mock-members.mjs
       # The lifted OTO App carries a byte-for-byte copy of the platform's
       # redactor, because it is outside the pnpm workspace and cannot import
       # @oto/telemetry. A copy nobody checks is a copy that diverges, and the

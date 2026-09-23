@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,8 +19,9 @@ import {
 import {
   getDefaultTier,
   getDiscountReasons,
-  getMemberByPhone,
 } from '@/mockApi';
+import { lookupMember } from '@/api/members';
+import { toast } from '@/hooks/use-toast';
 import { computeLineTotal, computeLineBreakdown } from '@/lib/pricing';
 import { computeTotals } from '@/lib/sale';
 import { resolveAutoTier } from '@/lib/membership';
@@ -83,16 +84,50 @@ export function PartyTicketModal({
     [party.id, party.title, party.childName, party.parentName, party.whatsapp],
   );
 
-  // Member identity comes from the party's parent (same name + phone).
-  const member: Member | null = useMemo(
-    () => (party.whatsapp ? getMemberByPhone(party.whatsapp) : null),
-    [party.whatsapp],
-  );
+  // Member identity comes from the party's parent (same name + phone), looked
+  // up on the platform each time the builder opens (S2-09b, SCRUM-204) — the
+  // member the till's membership check finds, not this browser's fixtures. A
+  // number the platform does not know leaves no member and the default rate,
+  // as before; a lookup that fails says so and leaves the same.
+  const [member, setMember] = useState<Member | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const phone = party.whatsapp?.trim() ?? '';
+    if (!phone) {
+      setMember(null);
+      return;
+    }
+    let current = true;
+    lookupMember(phone).then(
+      (found) => {
+        if (current) setMember(found);
+      },
+      (err: unknown) => {
+        if (!current) return;
+        setMember(null);
+        toast({
+          title: 'Membership lookup failed',
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [open, party.whatsapp]);
 
   const [phase, setPhase] = useState<'tier' | 'build'>('tier');
   const [tier, setTier] = useState<CustomerTier>(
     member ? resolveAutoTier(member) : getDefaultTier().id,
   );
+  // The member's own rate is the tier step's first offer, as it was when the
+  // lookup answered at once — it now arrives with the answer. A tier staff
+  // have already picked stands.
+  useEffect(() => {
+    if (phase === 'tier') setTier(member ? resolveAutoTier(member) : getDefaultTier().id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on the answer, not on a step change
+  }, [member]);
   const [lines, setLines] = useState<CartLine[]>([]);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);

@@ -26,7 +26,7 @@ import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import {
-  getDiscountReasons, getMemberByPhone, updateMember,
+  getDiscountReasons,
   recordSale, getTicketTypes, getDropOffPricing,
   getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier,
   getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver,
@@ -42,6 +42,8 @@ import { useOperator } from '@/auth/OperatorContext';
 import { useBranch } from '@/branch/BranchContext';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
+import { membersApi } from '@/api/platform';
+import { lookupMember } from '@/api/members';
 import {
   bookingsApi,
   redemptionFromConflict,
@@ -318,10 +320,11 @@ export default function MobileTill() {
   const [customerContactChannel, setCustomerContactChannel] = useState<ContactChannel>('whatsapp');
 
   // Same "save per member" behaviour as Till.tsx: persist the new preference
-  // immediately if the person is already an identified member.
+  // on the member's platform profile (fire and forget) if the person is
+  // already an identified member.
   const handleCustomerContactChannelChange = (channel: ContactChannel) => {
     setCustomerContactChannel(channel);
-    if (member) updateMember(member.id, { preferredChannel: channel });
+    if (member) void membersApi.update(member.id, { preferredChannel: channel }).catch(() => {});
   };
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   const [member, setMember] = useState<Member | null>(null);
@@ -390,13 +393,34 @@ export default function MobileTill() {
 
   // Shared helper: load a drop-off registration into the till as drop-off lines.
   // Used by both the handoff useEffect and the booking redemption "Check in now" flow.
-  const loadDropOffRegistration = (registrationId: string) => {
+  //
+  // S2-09b (SCRUM-204): the parent is looked up on the platform — the member
+  // the counter's membership check finds — not in this browser's fixtures. A
+  // number the platform does not know loads at the default rate with no
+  // member, as before; a lookup that fails says so and loads the same way,
+  // as the counter's membership check does. A Cancel pressed while the lookup
+  // is out wins (`saleEpochRef`).
+  const loadDropOffRegistration = async (registrationId: string) => {
     const children = getCheckInsByRegistration(registrationId).filter(
       (c) => c.status === 'registered',
     );
     if (children.length === 0) return;
     const phone = children[0]?.phone ?? '';
-    const found = phone ? getMemberByPhone(phone) : null;
+    const epoch = saleEpochRef.current;
+    let found: Member | null = null;
+    if (phone) {
+      try {
+        found = await lookupMember(phone);
+      } catch (err) {
+        if (saleEpochRef.current !== epoch) return;
+        toast({
+          title: 'Membership lookup failed',
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+      }
+    }
+    if (saleEpochRef.current !== epoch) return;
     const resolvedTier = found ? resolveAutoTier(found) : getDefaultTier().id;
     const defaultTicket = getTicketTypes()[0];
     setMember(found);
@@ -428,7 +452,7 @@ export default function MobileTill() {
   useEffect(() => {
     const registrationId = takeDropOffHandoff();
     if (!registrationId) return;
-    loadDropOffRegistration(registrationId);
+    void loadDropOffRegistration(registrationId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -2028,7 +2052,7 @@ export default function MobileTill() {
               className="flex-1"
               onClick={() => {
                 if (pendingDropOffRegistration) {
-                  loadDropOffRegistration(pendingDropOffRegistration.registrationId);
+                  void loadDropOffRegistration(pendingDropOffRegistration.registrationId);
                   setPendingDropOffRegistration(null);
                 }
               }}

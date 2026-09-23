@@ -18,7 +18,7 @@ import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getInventoryItem, getAddOns } from '@/store/catalogStore';
-import { getDiscountReasons, getMemberByPhone, updateMember, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
@@ -35,7 +35,7 @@ import { Monitor, User } from 'lucide-react';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { authApi, membersApi, visitsApi } from '@/api/platform';
-import { childrenApi } from '@/api/members';
+import { childrenApi, lookupMember } from '@/api/members';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import {
   bookingsApi,
@@ -310,11 +310,32 @@ export default function Till() {
 
   // Shared helper: load a drop-off registration into the till as drop-off lines.
   // Used by both the handoff useEffect and the booking redemption "Check in now" flow.
-  const loadDropOffRegistration = (registrationId: string) => {
+  //
+  // S2-09b (SCRUM-204): the parent is looked up on the platform — the member
+  // the membership check finds — not in this browser's fixtures. A number the
+  // platform does not know loads at the default rate with no member, as
+  // before; a lookup that fails says so and loads the same way, as
+  // `handleIdentify` does. A Cancel pressed while the lookup is out wins
+  // (`saleEpochRef`).
+  const loadDropOffRegistration = async (registrationId: string) => {
     const children = getCheckInsByRegistration(registrationId).filter((c) => c.status === 'registered');
     if (children.length === 0) return;
     const phone = children[0]?.phone ?? '';
-    const found = phone ? getMemberByPhone(phone) : null;
+    const epoch = saleEpochRef.current;
+    let found: Member | null = null;
+    if (phone) {
+      try {
+        found = await lookupMember(phone);
+      } catch (err) {
+        if (saleEpochRef.current !== epoch) return;
+        toast({
+          title: 'Membership lookup failed',
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+      }
+    }
+    if (saleEpochRef.current !== epoch) return;
     const resolvedTier = found ? resolveAutoTier(found) : getDefaultTier().id;
     const defaultTicket = getTicketTypes()[0];
     setMember(found);
@@ -348,7 +369,7 @@ export default function Till() {
   useEffect(() => {
     const registrationId = takeDropOffHandoff();
     if (!registrationId) return;
-    loadDropOffRegistration(registrationId);
+    void loadDropOffRegistration(registrationId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -2685,7 +2706,7 @@ export default function Till() {
               className="flex-1"
               onClick={() => {
                 if (pendingDropOffRegistration) {
-                  loadDropOffRegistration(pendingDropOffRegistration.registrationId);
+                  void loadDropOffRegistration(pendingDropOffRegistration.registrationId);
                   setPendingDropOffRegistration(null);
                 }
               }}

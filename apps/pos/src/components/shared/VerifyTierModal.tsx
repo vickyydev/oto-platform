@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CustomerTier, Member, TierVerification } from '@/types';
-import { getDefaultTier, updateMember, verifyMemberTier } from '@/mockApi';
+import { getDefaultTier } from '@/mockApi';
 import { TIER_PROOF_TYPES } from '@/lib/tierProof';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
@@ -30,8 +30,9 @@ interface VerifyTierModalProps {
   onConfirm: (result: { member: Member | null; verification: TierVerification }) => void;
 }
 
-/** Members loaded from the platform API carry UUID ids; mock sale-flow members
- *  (Sprint 2 territory) don't — only the former can be persisted right now. */
+/** Members loaded from the platform API carry UUID ids, and only those can be
+ *  persisted. Every screen that opens this modal finds its member on the
+ *  platform (S2-09b); a member object from anywhere else is not written. */
 const isApiMemberId = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
@@ -107,9 +108,6 @@ export function VerifyTierModal({
     setRevokeError(null);
     try {
       const res = await membersApi.revokeTierVerification(member.id, { reason });
-      // Keep the in-memory sale-flow stores in step, exactly as the grant path
-      // above does.
-      updateMember(member.id, { tierVerification: undefined });
       const updated = apiMemberToMember(res.member);
       /**
        * The same callback the grant takes, carrying the revocation the server
@@ -174,7 +172,6 @@ export function VerifyTierModal({
           note: isOther ? otherDoc.trim() : undefined,
         });
         const updated = apiMemberToMember(res.member);
-        verifyMemberTier(member.id, verification); // keep the in-memory sale-flow stores in step
         toast({
           title: `${tierLabel(tier)} rate verified`,
           description: `${proofType} · valid until ${expiresAt} · recorded by ${operatorName}`,
@@ -193,7 +190,6 @@ export function VerifyTierModal({
       return;
     }
 
-    if (member) verifyMemberTier(member.id, verification);
     onConfirm({ member, verification });
     onOpenChange(false);
   };
