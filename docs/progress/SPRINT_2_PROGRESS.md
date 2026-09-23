@@ -2,118 +2,72 @@
 
 ## Status
 
-_Last updated 2026-09-21 at the end of a long session._
+_Last updated 2026-09-23, end of day._
 
-> **Resuming? Read `SESSION_HANDOVER.md` first.** It carries where this is,
-> what is blocked and on whom, what to pick up in order, and the working
-> rules that were learned the hard way. This block is the summary; that file
-> is the detail.
+> **Resuming? Read `SESSION_HANDOVER.md` → "State at the end of 2026-09-23"
+> first.** It carries the live commit on every staging service, what landed
+> today, what is in flight, every open defect with its key, the owner decisions
+> outstanding and the recommended next order. `TICKET_REGISTER_2026-09-23.md`
+> has the ticket-by-ticket evidence. This block is the summary; those files are
+> the detail.
 
-- **Where this is.** CP1 passed. **S2-04, S2-05 and S2-06 are built, merged
-  and deployed.** S2-07a (the Lucky Wheel booth) is built, merged and in
-  **Testing** — its platform side is live, but `apps/booth` has no Render
-  service, so the wheel cannot yet be opened in a browser. That is the only
-  thing between it and Deployed, and it is a change to the deployment
-  blueprint, which another session owns.
+- **Current checkpoint.** CP1 passed; the sprint is inside **S2-10 (payments)**,
+  with S2-09b (SCRUM-204) still open beside it. CP2's remaining line is
+  SCRUM-206's own end-to-end evidence, which waits on Slice F.
 
-- **The POS was audited screen by screen** against the code and against
-  staging, because a gap was found by accident that nobody could classify.
-  The result is `POS_GAP_REGISTER.md`: **33 capabilities work, 15 are broken,
-  36 are not built**, with SCRUM-225 to SCRUM-241 raised from it. Ten of the
-  fifteen are now fixed — five Deployed, five in Testing. Read that register
-  before planning anything on the till.
+- **Last landed.** `main` is **`d435db4`** (20:47) — tenders **Slice G**, offline
+  sales replay and the box's own drawer kick. Staging matches it at
+  `d435db4` on the api, POS, Console, launcher and booth (`oto-app-staging` at
+  `16c621a`, which deploys only on its own files). **Six of
+  SCRUM-206's seven slices are in** — see "S2-10a — the tenders (SCRUM-206) —
+  landed 2026-09-23" in the ticket log below for the commit and gate outcome of
+  each.
 
-- **The largest real gap:** admission worked end to end up to "Pay ฿1,440" and
-  **nothing after Pay existed** — no `sale` row, no tender. That is SCRUM-203,
-  and **all three of its parts are now built in this tree**. **The schema**
-  (migration `0014_sales_ledger`: sale, sale_line, sale_discount,
-  receipt_series, with the money checks and a freeze on finalised sales).
-  **The till**: the cart is priced by the platform's own tested engine rather
-  than the browser's baht floats, Pay writes through a client-minted id so two
-  presses are one sale, and a failure is a panel with a Try again rather than a
-  lost sale. **The service and the routes**: `POST /sales/quote` prices from
-  the shared engine and `POST /sales` writes the sale, its lines and its
-  discounts in one transaction, with the tier resolved from the member and a
-  till-sent total able only to cause a refusal; a ฿0 comp finalises with a
-  receipt number out of the station's series.
-  **THE THREE PARTS DO NOT YET MEET.** An integration check drove a real
-  server with the till's own payload and read the rows back: a ฿0 comp lands
-  and **every sale with money on it is refused 409 `SALE_NOT_PAID`, writing
-  nothing** — the till sends `finalise: true`, the service will not finalise a
-  sale that owes money until tenders exist. Two more blockers with it (a
-  refused cart can then only be sold by discarding it; a branch-scoped account
-  can write a sale at another branch). The pricing itself is right on all
-  thirteen shapes driven, quote to stored row. See the ticket log entry
-  *"S2-09a — the integration check"* for the evidence and the two ways out.
-  **Nothing is committed or
-  deployed**, so on staging today the till still prices locally, says so on the
-  screen, and the confirmation still carries "Saved on this till only" until
-  this lands. Tenders are S2-10a.
+- **Next.** The owner has said no new tickets are to be picked up and the next
+  order is the owner's to confirm. The recommendation: (1) the D↔C2 seam and
+  **SCRUM-391** — a `qr` tender never reaches the gateway — then drive D's QR
+  path on staging; (2) **SCRUM-388 (High)**, reserve in-flight tenders, before F;
+  (3) **SCRUM-382**, refuse a disabled or archived tender in the attempt service;
+  (4) **Slice F**, the POS payment stage on all four tills, then SCRUM-206's
+  Deployed evidence; (5) the Console and box items (378, 381, 385, 386, 387, 389,
+  390), the promotion items (373, 374, 375, 368), the small light-theme and till
+  items (370, 372, 379, 380), then 369 and 383; (6) the owner decisions.
 
-- **Tests.** 643 api, 209 print, 197 shared, 167 box-agent, 36 telemetry;
-  schema verified; migrations apply twice from empty to an identical
-  catalogue. `apps/pos` still has no unit-test runner and is still in
-  eslint's ignore list — the compiler is the only automated check on the
-  till. SCRUM-203's till half added the next best thing for the one path
-  where that hurts most: `apps/pos/src/dev/checkCartPricing.ts` walks the
-  seeded catalogue and asserts the platform engine and the prototype's
-  arithmetic agree to the satang (69/69 carts, weekday and weekend). One
-  command, not in CI.
+- **Where the ticket board stands tonight.** 200 SCRUM issues were touched today:
+  **134 Deployed, 61 To Do, 5 In Progress** (SCRUM-191, 202, 204, 206, 360),
+  nothing in Testing. Ninety-six were raised today and sixty-eight of those were
+  fixed and Deployed the same day.
 
-- **The recurring defect, now four tickets running.** Each of S2-04, S2-05
-  and S2-06 shipped something with *no caller* — the fleet API while both
-  front ends called it, the station-session document, the anomalies panel's
-  missing route, and now an offline unlock reachable only from the cloud.
-  Each time the tests passed, because each test mirrored **one side of a
-  seam**. Two rules came out of it and are now standing: *a service with no
-  caller is not built*, and *a test that talks to Fastify directly does not
-  prove a browser can reach the route*. Every ticket now gets an independent
-  reviewer whose job is to reproduce rather than to read.
+- **Two registers still govern the till.** `POS_GAP_REGISTER.md` (the screen-by-
+  screen audit that produced SCRUM-225…241) and
+  `ARCHITECTURE_CONFORMANCE_REGISTER.md`. Read the first before planning anything
+  on the till.
 
-- **Jira.** Sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of
-  project SCRUM: 24 stories under four epics, 16 sub-tasks; the pre-existing
-  177 issues were labelled rather than deleted. Keys and the full account:
-  `SPRINT_2_JIRA_MAP.md`. Status moves with the work — **In Progress** when
-  it starts, **Testing** when it is committed, **Deployed** when it is live
-  with evidence; *Done* stays the owner's to set. Evidence comments carry
-  screenshots.
+- **The standing rule that keeps being earned.** A service with no caller is not
+  built, and a test that talks to Fastify directly does not prove a browser can
+  reach the route. Today's proof: D's `openQrAttempt` has no caller outside its
+  own test, which is why the QR path cannot yet be driven on staging (SCRUM-391).
+  Every ticket gets an independent reviewer whose job is to reproduce rather than
+  to read.
 
-- **Next steps, in order** — the full version with reasons is in
-  `SESSION_HANDOVER.md` §5. (1) Let staging pick up `0abc9ea`, look at the
-  five tickets in Testing, move them to Deployed with evidence. (2) The
-  booth's Render service, so SCRUM-199 can be Deployed. (3) **SCRUM-203** —
-  the ticket cart and the sale ledger, which is the biggest real gap.
-  (4) One pricing engine: the tested one has a single caller and the till is
-  not it. (5) **SCRUM-232** — the product tables cannot hold the park's menu,
-  and the menu import the owner asked for arrives with that reshape rather
-  than after it. (6) S2-07b — **both halves are now built**: the Console
-  screens and the API behind them (see the ticket log, two entries). What is
-  left of it is the **first integration run in a browser**, the
-  `promo.marketing_channel` / `promo.campaign` tables (blocked: they need a
-  migration, and migrations are another workflow's file today), and the badge
-  open decision. Then the register's remaining broken items.
+- **Jira.** Sprint **"Sprint 2 - Complete build"** (id 3) on board 1 of project
+  SCRUM. Keys and the full account: `SPRINT_2_JIRA_MAP.md`. Status moves with the
+  work — **In Progress** when it starts, **Testing** when it is committed,
+  **Deployed** when it is live with evidence; *Done* stays the owner's to set.
+  Evidence comments carry screenshots.
 
-- **Blocked on somebody else** (`SESSION_HANDOVER.md` §4): the booth's Render
-  service; Twilio, which refuses every message because the trial account owns
-  no number, and which will need Twilio Verify for Thailand regardless; the
-  storage bucket's CORS policy; and two environment values on the owner's
-  dashboard.
-
-- **Done 2026-09-21:** the seeded closing time is now 20:00, matching the
-  park's own SOP, so the watchdog stops expecting live boxes for an hour
-  after the park is dark (`OPEN_QUESTIONS.md` §3f). The OTO App is seeded
-  from ~12.7% of the park's own export rather than invented rows, and no
-  longer fails with "tenant not found" on save.
-
-- Resume instructions: read `docs/progress/STATUS.md`, then this file, then
-  `docs/progress/SPRINT_2_PLAN.md` (the whole thing — it is the ticket
-  source) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build
-  recipe, plus `docs/briefs/OWNER_DIRECTION.md` (section 2026-09-20 wins).
-  Branch off `main`; commit per `CONTRIBUTING.md`, no attribution lines;
-  never commit `imports/` beyond its READMEs. `pnpm test` needs no Docker —
-  the API tests start an embedded Postgres per file. **`services/deploy-bot/`
-  and `render.yaml` belong to a separate session — do not touch either.**
-  To play with what is deployed: `docs/qa/SIMULATION_AND_TEST_CONTROLS.md`.
+- **Resume instructions.** Read `docs/progress/STATUS.md`, then
+  `SESSION_HANDOVER.md` → the 2026-09-23 block, then this file, then
+  `docs/progress/plans/206-tenders/PLAN.md` (the slice plan and §4, the owner
+  decisions) and `docs/architecture/DEVELOPMENT_PLAN.md` §5 for the build recipe,
+  plus `docs/briefs/OWNER_DIRECTION.md` (section 2026-09-20 wins). The session
+  helpers and what each is allowed to print are in `scripts/session/README.md`.
+  Branch off `main`; commit per `CONTRIBUTING.md`, no attribution lines, and
+  never filter a commit's file list by a word; never commit `imports/` beyond its
+  READMEs. `pnpm test` needs no Docker — the API tests start an embedded Postgres
+  per file. **`services/deploy-bot/` and `render.yaml` belong to a separate
+  session — do not touch either.** To play with what is deployed:
+  `docs/qa/SIMULATION_AND_TEST_CONTROLS.md`.
 
 ## Done on 2026-09-20 (all committed)
 
@@ -1772,6 +1726,85 @@ documents are on it, and nothing else — the sync/box edits and
 and were left alone. `main` stays at `14201bc` and the working tree was not
 disturbed, so neither of those workflows lost a step. Resume on the branch by
 taking the finalise decision above.
+
+## S2-10a — the tenders (SCRUM-206) — landed 2026-09-23
+
+Six of the seven slices are on `main`. Each was built by its own agent, held at
+an independent gate, and committed only on the gate's verdict. The ticket stays
+**In Progress**: Slice F is not started, and nothing in tonight's evidence shows
+a guest paying end to end from the till.
+
+**A — the tender ledger. Landed 2026-09-23 at `3317360` (16:36).** Migration 0019
+widens `payment_attempt` and adds `payment_method` and `payment_notification`,
+with the shared payment vocabulary and `finaliseSale` resolving the method token.
+*Gate: MERGE on the fix round* — the full api suite 1,156 green, two-database
+dumps identical, five plants. Its first pass was refused: the schema was sound
+but the one writer of `payment_attempt` still supplied the old column set, and
+the gate found a vendor void password typed into a test fixture, replaced with a
+placeholder before anything was committed.
+
+**E — payment methods on the platform. Landed 2026-09-23 at `8ee9a5d` (17:27).**
+Five thin routes under `/payment-methods`, the prototype's rules in
+`services/payment-methods.ts`, the back office saving for real, tenders hydrated
+on every catalogue load. *Gate: MERGE* — 20 tests, three plants. Carried forward:
+a sale can still be recorded against a disabled or archived tender (**SCRUM-382**).
+
+**B — the cash tender. Landed 2026-09-23 at `a232059` (18:10), completed by
+`b616191` (18:12).** The attempt ledger through `services/payments/attempt.ts`,
+part-paid sales (O-5), the replay net on `action_id`, the drawer kick as a box
+command, and payments listed on the Sale detail. *Gate: MERGE on the fix round* —
+the full api suite 1,203 green, the header-path retry proven both ways. Its first
+pass was refused on one blocker no test could see: the drawer kick ran under the
+request's idempotency claim after the finalise had written its answer, so a
+retried cash finalise would have replayed the command instead of the sale. The
+second commit added `routes/webhooks.ts`, which the first commit's file list
+missed.
+
+**C1 — the card terminals on the box. Landed 2026-09-23 at `51fd025` (18:19).**
+The `PaymentTerminal` contract, the GHL and Digio adapters, two simulators
+answering on the same bytes, 22 cited fixtures, the per-terminal reference
+counter as a `box_counter` scope (O-3). *Gate: MERGE, after two refusals* — both
+on statements in comments that were not true of the code (the amount-mismatch
+rule's reach, and a claim that a wire frame could not reach a log), corrected by
+hand before the commit. 251 box-agent tests.
+
+**C2 — the card tender in the cloud. Landed 2026-09-23 at `83ffc36` (19:29).**
+`services/payments/terminal.ts`, the `/payments` routes, the box's result route
+under a box credential, and the Console's terminal simulator panel. *Gate: MERGE*
+— 22 + 5 tests end to end through the real command queue and result route, four
+plants. Proven on staging the same evening: approved in 4.4 s with the TID, MID
+and reference learned onto the device row; declined in the vendor's own words; a
+partial approval refused and voided on a fresh reference; the PAX's no-answer
+path walked to `not_found`. Raised from its gate: **388**, **389**, **390**.
+
+**D — the 2C2P QR tender. Landed 2026-09-23 at `24e608d` (20:12).**
+`packages/payments-2c2p` on `node:crypto` alone, `services/payments/gateway.ts`,
+the signed webhook, two jobs, 19 `PGW_*` variables and the Console's gateway
+simulator panel. *Gate: MERGE on the fix round* — the boot guard 20/20, the full
+api suite 1,282 green, six findings folded in. Its first pass was refused because
+an unguarded read of `PGW_MERCHANT_ID` masked every production boot-guard
+assertion. On staging the announcement holds but **the QR path has no caller**:
+`openQrAttempt` is reached by nothing outside its own test and `payment_routing.qr`
+has no reader, so a `qr` tender still goes to the station's card terminal
+(**SCRUM-391**).
+
+**G — offline sales. Landed 2026-09-23 at `d435db4` (20:47).**
+`services/payments/offline.ts` replaying through B's commit and finalise, `box_seq`,
+the `sale.finalised` and `payment.recorded` sync handlers, the box's sale queue
+with provisional receipts, and the drawer pulse with `case 'drawer_kick'`. Landed
+after a fix round that closed the two blockers its first gate found: the offline
+price guard was opt-in, so nothing capped what a box could bank; and no test
+reached the drawer-kick case while a test title claimed it. **Its staging pass held
+on every point** (21:02–21:08: an offline cash sale replayed once, a re-send
+answered with both receipt numbers, the drawer opened on the command) and is on
+the ticket. O-2 — whether this half
+belongs to SCRUM-206 at all — is still the owner's.
+
+**F — the POS payment stage — not started.** Its first item is the D↔C2 seam:
+route a `qr` tender to the gateway when the station's `qr` routing says gateway
+(**SCRUM-391**), then drive the QR path on staging. After that, the payment stage
+itself on all four tills — cash keypad, card states, QR on the display, manual
+entry and split — and only then SCRUM-206's end-to-end Deployed evidence.
 
 ## D-3 — the two payment status vocabularies, mapped once (S2-10a, SCRUM-206)
 

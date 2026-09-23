@@ -1,0 +1,13 @@
+active
+adultRules
+creditRule
+description
+durationLabel
+freebies
+gateAccess
+hours
+id
+name
+prices
+tierPricing
+translations

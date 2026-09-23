@@ -1,8 +1,258 @@
 # Handover — where this is, and what to do next
 
-_Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
-2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
-`POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
+## State at the end of 2026-09-23 — read this first
+
+_This block replaces the running notes that used to sit here. Everything below
+it is the chronological log of the day, newest first; it is kept as written._
+
+### Where the code is
+
+`main` is **`d435db4`**, committed at **20:47** — "sales taken while the box is
+offline replay once, and the box opens the drawer itself" (tenders Slice G).
+There were 191 commits on `main` today.
+
+Staging (Render project **OTO Platform**, environment `staging`) — the live
+commit on each service, read from Render at the time of writing:
+
+| Service | Live commit | Went live |
+|---|---|---|
+| `oto-api-staging` | `d435db4` | 21:01 |
+| `oto-pos-staging` | `d435db4` | 21:01 |
+| `oto-console-staging` | `d435db4` | 21:01 |
+| `oto-launcher-staging` | `d435db4` | 21:01 |
+| `oto-booth-staging` | `d435db4` | 21:01 |
+| `oto-app-staging` | `16c621a` | 12:24 |
+
+So the five root-built services match `main`; `oto-app-staging` deploys only on
+its own files. Auto-deploy is on for all six and waits for the GitHub checks.
+
+**CI.** Green through `d435db4` (its run started at 20:47 and was green at 20:59;
+the deploy that followed went live at 21:01).
+Two runs went red today and both were fixed forward within minutes: `a232059`
+(Slice B's commit left out `routes/webhooks.ts`, which `app.ts` registers —
+`b616191`) and `54160b0` (a `no-empty` lint error in the committed
+`scripts/session/jira-lib.mjs` — `97d738c`).
+
+### What landed today
+
+**The tenders — SCRUM-206, six of seven slices.** Every slice was built, gated by
+an independent reviewer, and only then committed.
+
+- **A — the tender ledger** (`3317360`, 16:36). Migration 0019: `payment_attempt`
+  widened, `payment_method`, `payment_notification`, the shared vocabulary.
+  Fix-round gate MERGE — full api suite 1,156 green, two-database dumps identical.
+- **E — payment methods on the platform** (`8ee9a5d`, 17:27). Five routes under
+  `/payment-methods`, the back-office panel saving for real, tenders hydrated on
+  every catalogue load. Gate MERGE — 20 tests, three plants.
+- **B — the cash tender** (`a232059` + `b616191`, 18:10 and 18:12). The attempt
+  ledger, part-paid sales, the replay net on `action_id`, the drawer kick as a box
+  command, payments on the Sale detail. Fix-round gate MERGE — full api suite
+  1,203 green, the header-path retry proven both ways.
+- **C1 — the card terminals on the box** (`51fd025`, 18:19). The PaymentTerminal
+  contract, the GHL and Digio adapters, two simulators answering on the same
+  bytes, 22 cited fixtures, the per-terminal counter. The gate refused twice on
+  statements in comments that were not true of the code; both corrected by hand
+  before the commit. 251 box-agent tests.
+- **C2 — the card tender in the cloud** (`83ffc36`, 19:29). The terminal service,
+  the `/payments` routes, the box's result route, the Console's terminal
+  simulator panel. Gate MERGE — 22 + 5 tests end to end through the real command
+  queue. Proven on staging at 19:55: approved in 4.4 s, declined, a partial
+  approval refused and voided, the PAX's no-answer path walked to the end.
+- **D — the 2C2P QR tender** (`24e608d`, 20:12). `packages/payments-2c2p` on
+  `node:crypto` alone, the signed webhook, the polling safety net, the gateway
+  simulator, 19 `PGW_*` variables. Fix-round gate MERGE — boot guard 20/20, full
+  api suite 1,282 green, six findings folded in.
+- **G — offline sales** (`d435db4`, 20:47). The replay through B's commit and
+  finalise, `box_seq`, two sync handlers, the box's sale queue with provisional
+  receipts, and the drawer pulse with `case 'drawer_kick'`. Landed after a fix
+  round that closed two blockers its gate found: the offline price guard was
+  opt-in, and no test reached the drawer-kick case.
+- **F — the POS payment stage — is not started.** Its first item is the D↔C2 seam
+  (below).
+
+**206 stays In Progress** and must not be walked on tonight's evidence.
+
+**Deployed today with staging evidence — 66 tickets walked from 11:46** (98
+reached Deployed today in all; 32 of those in the overnight run, 01:58–06:09). The large ones, in the
+order they went: the booth and its security (199, 244, 278, 298, 336, 320, 231,
+315, 317, 321); the box cache and redemption work (305, 322, 323, 311, 316, 257,
+309); the tenancy and API-surface fixes (318, 319, 252, 254, 304, 233, 306, 253,
+255); the light-theme back-office sweep and the till's pricing honesty (325, 327,
+328, 329, 330, 331, 333, 334, 335, 341, 342, 346, 349, 350, 351, 353, 354, 355,
+337, 338, 343, 347, 348, 356, 344, 352, 359); the Console and printing work (358,
+364, 365, 377); then 361, 366, 363, 362, 332, 367, 376, 384. The launcher halves
+of 192 (Deployed on 20 Sept) and 251 (walked to Deployed at 11:46 today) were
+added with a plain addendum after the launcher's own deploy was found three
+days stale.
+
+**Nothing is sitting in Testing.** Every ticket walked today reached Deployed.
+**In Progress tonight: 191, 202, 204, 206.** 360 was closed Done at 21:13 by its
+direct transition (not reproducible; 371 carries the decision) — the walker's
+ladder has no Done step, which is why the 16:45 banner's "closed Done" was not
+true until now.
+
+### In flight right now
+
+Nothing. G's staging pass ran 21:02–21:08 at `d435db4` and its result is on 206
+(comment 21:08, two cards, committed `60b8459`): a box paired on staging took a
+cash sale with its connection cut (provisional T2-000003), replayed it once on
+reconnect to one sale and one attempt; a verbatim re-send answered as a
+duplicate and a re-queued one carried both numbers on the audit row with a
+`late_arrival` anomaly; the till's cash sale's `drawer_kick` read `succeeded`
+(T1-000017) where six earlier rows read `UNKNOWN_COMMAND`. Left on staging:
+two evidence boxes (361, 206-G) paired and offline with no stations.
+
+### Raised today and still open
+
+Ninety-six tickets were created today; sixty-eight of them were fixed and
+Deployed the same day, one is the defect epic (324), and these twenty-seven
+are still open:
+
+**Payments (all from the tenders slices' gates and staging passes)**
+- **391** — a station routed to the gateway for QR still sends the tender to its
+  card terminal; the saved setting does nothing. *This is the D↔C2 seam.*
+- **388 (High)** — two presses of Card while the first is at the terminal open two
+  full tenders on one sale.
+- **382** — a sale can still be recorded against a disabled or archived tender.
+- **390** — a late progress report can overwrite the references on an attempt
+  already settled.
+- **389** — the box's payment result route carries no per-address ceiling.
+- **387** — only the outermost transaction under an idempotency key may write the
+  stored answer; `print.ts` still carries the dormant class.
+
+**Console, boxes and printing**
+- **378** — a box can be created but never retired.
+- **381** — the till's own Station Setup test print records no print job, so the
+  box's outcome is refused.
+- **385** — a wrong booth screen credential is never throttled on its own.
+- **386** — the throttle table is never swept, and an invented box id opens a row.
+
+**Promotions**
+- **368** — a free-item promo code takes nothing off on the F&B and shop lanes.
+- **373** — a code used at those stations is invisible to the till's reports and
+  receipt.
+- **374** — a code's usage limit is enforced nowhere on the platform.
+- **375** — fold the station promo quote hook into the shared one.
+
+**The till and the light theme**
+- **360 (In Progress)** — the phone till's hand-to-customer overlay appears to
+  reset the sale. Driven for 45 s with the network captured and nothing moved;
+  what loses the sale is the 120 s inactivity lock unmounting the till. The
+  ticket is still open in Jira even though the finding is settled — see
+  "What Jira does not agree with" below.
+- **371** — the lock policy that 360 turned into: should the sale survive a lock?
+- **372** — the phone's Pay button carries no reason, and a refusal on the payment
+  step draws no note.
+- **370** — the refusal note's "Fix this to charge" line measures 3.86:1.
+- **380** — the clone warning's triangle is a shade too light.
+- **379** — the Merch panel's low-stock notice and stock badges can never show.
+
+**Testing and the rest**
+- **369** — the till's own browser checks never run in CI.
+- **383** — the till has no unit-test runner.
+- **339** — a family confirmed twice gets two draft visits.
+- **340** — the drop-off registration lookup still reads the prototype's store.
+- **345** — product and discount codes are unique per operator, so a coded item
+  cannot be cloned into a second branch (a decision, not only a defect).
+- **357** — the booking site's saved-children step is unreachable.
+- **326** — the booth's result card runs past a 16:9 stage by 36 logical pixels.
+
+### What Jira does not agree with
+
+One thing the log below says that Jira does not: the 16:45 banner records **360
+closed Done, not reproducible**. In Jira, **SCRUM-360 is In Progress** (last
+updated 16:47). Nobody walked it, and the helper's status ladder
+(`To Do → In Progress → Testing → Deployed`) has no *Done* step, so it could not
+have been walked with the tooling. The finding itself is settled and 371 carries
+the decision; the ticket still needs closing by hand. Everything else in the log
+matches Jira as queried tonight.
+
+### Decisions still with the owner
+
+Taken inside the tenders plan without the owner, each already a recommendation on
+the ticket: **O-3** (the counter is a `box_counter` scope, not a table), **O-4(a)**
+(the drawer opens by its own command now, folded into receipt printing later),
+**O-5** (yes, a sale may sit part-paid), **O-7** (the server refuses a used
+tender's delete and offers disable).
+
+Still the owner's to settle:
+
+- **O-1 — the 2C2P sandbox.** Which portal the park holds and its sandbox
+  credentials. Blocks only the real-QR half; the simulator carries the acceptance.
+- **O-2 — the offline scope.** G was built inside SCRUM-206, so the question is
+  now whether to accept that or split it out as its own ticket.
+- **O-6 — the vendor questions** for GHL Thailand and Digio (serial parity, the
+  `pos_ref_no` length, whether a card can be recalled, whether a PromptPay QR can
+  be voided, and the TID/MID for the park's two PAX terminals).
+- **371** — the lock policy: does the sale survive the inactivity lock?
+- **254's two** — what the API description should show once signing in is required.
+- **306** — whether a read-only member of staff needs its own grant.
+- **327** — whether a retried pairing should mint a new code.
+- **345** — may a branch carry the same product or discount code as another?
+- **326** — the booth's result card on a true 16:9 stage.
+- **357** — the booking site's saved-children step.
+- **268** — the "HKT Central" row that exists only in the OTO App.
+- **The deploy-bot** — its `render.yaml` entry creates a paid service on sync.
+
+**The owner has said no new tickets are to be picked up. The order below is a
+recommendation; the next order is the owner's to confirm.**
+
+### Recommended next order
+
+1. **The D↔C2 seam and 391**, then drive D's QR path on staging end to end (open
+   → paid by the signed notification → receipt; decline; mismatch parked;
+   suppressed webhook → the poller).
+2. **388 (High)** — reserve in-flight tenders, before F touches the payment stage.
+3. **382** — refuse a disabled or archived tender in the attempt service, with its
+   two fold-ins.
+4. **Slice F** — the POS payment stage on all four tills (cash keypad, card
+   states, QR on the display, manual entry, split) — then SCRUM-206's end-to-end
+   Deployed evidence.
+5. Then, in order: the Console and box items **378, 381, 385, 386, 387, 389, 390**;
+   the promotion items **373, 374, 375, 368**; the small light-theme and till items
+   **370, 372, 379, 380**; and the testing items **369, 383**.
+6. Then the owner decisions above.
+
+### Working rules learned today
+
+- **A commit's file list is never filtered by a word.** Slice B's list filtered on
+  "payments" and missed `routes/webhooks.ts`, which `app.ts` registers; CI on
+  `a232059` alone would have been red. List the files the work touched, all of
+  them. (Memory `oto-commit-style`; `CONTRIBUTING.md`.)
+- **A credential is searched for in every encoding.** The gate found the Digio
+  void password a seventh time, hex-encoded inside a sample frame, after the plain
+  form had already been redacted. (`scripts/session/README.md` → Credentials;
+  memory `oto-session-working-rules`.)
+- **A reviewer never stashes a shared tree.** The C2 gate ran
+  `git stash push --keep-index` and `git checkout -- .` mid-review with several
+  slices live in the tree, then popped them back at once; the tree was verified
+  identical afterwards, but nothing about that was safe. (Memory
+  `oto-session-working-rules`.)
+- **A deploy writes no reference data unless the sync writes it.** Staging's
+  `payment_method` table was empty after E's deploy and the till could not take
+  money for nineteen minutes; only the full demo seed wrote the three tenders and
+  the pre-deploy runs `platform-sync`. Anything a screen cannot work without is
+  converged by the sync, never left to the seed (SCRUM-384). (Memory
+  `oto-render-staging`.)
+- **Compare every service's live commit before calling a ticket Deployed.** The
+  launcher's Render auto-deploy trigger had been `off` for three days, so two
+  tickets read Deployed with their launcher half never on staging. (Memory
+  `oto-render-staging`.)
+
+### How to resume
+
+1. `docs/progress/STATUS.md` — the short version of where the programme is.
+2. **This block**, then the chronological log below it for the detail of any one
+   hour.
+3. `docs/progress/plans/206-tenders/PLAN.md` — the slice plan and §4, the owner
+   decisions.
+4. `docs/progress/SPRINT_2_PROGRESS.md` → Status, and its SCRUM-206 section.
+5. `docs/progress/TICKET_REGISTER_2026-09-23.md` — every ticket touched today,
+   what proved it, and the open list in the recommended order.
+6. `scripts/session/README.md` — the Jira and Render helpers, and what each one
+   is allowed to print.
+
+---
 
 > ## Status on 2026-09-23 20:35 — `main` is `ee4d618`; staging is `24e608d` on the api and Console (POS at `83ffc36`+); CI green through `24e608d`
 >

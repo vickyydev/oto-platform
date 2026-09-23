@@ -1,0 +1,18 @@
+{
+  "registryEntries": [
+    {
+      "method": "GET",
+      "url": "/docs/json",
+      "config": {
+        "permission": "admin:health:read"
+      }
+    },
+    {
+      "method": "HEAD",
+      "url": "/docs/json",
+      "config": {
+        "permission": "admin:health:read"
+      }
+    }
+  ]
+}

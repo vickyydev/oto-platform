@@ -1,0 +1,37 @@
+{
+  "anonymous": {
+    "status": 401,
+    "bytes": 59,
+    "error": {
+      "code": "UNAUTHORIZED",
+      "message": "Not signed in"
+    }
+  },
+  "reception": {
+    "status": 403,
+    "bytes": 79,
+    "error": {
+      "code": "FORBIDDEN",
+      "message": "Missing permission admin:health:read"
+    }
+  },
+  "admin": {
+    "status": 200,
+    "bytes": 197500,
+    "pathCount": 174,
+    "samplePaths": [
+      "/health",
+      "/ready",
+      "/auth/sign-in",
+      "/auth/sign-out",
+      "/auth/lock",
+      "/auth/unlock",
+      "/auth/handoff",
+      "/auth/handoff/exchange",
+      "/auth/setup/start",
+      "/auth/setup/complete",
+      "/auth/password-reset/request",
+      "/auth/password-reset/complete"
+    ]
+  }
+}

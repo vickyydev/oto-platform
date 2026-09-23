@@ -1,0 +1,347 @@
+{
+  "status": 200,
+  "body": {
+    "branch": {
+      "code": "hkt-central",
+      "name": "Oto Play Park, Central Floresta",
+      "timezone": "Asia/Bangkok",
+      "businessDayStart": "05:00:00"
+    },
+    "tiers": [
+      {
+        "id": "tourist",
+        "name": "Tourist",
+        "isDefault": true,
+        "requiresVerification": false
+      },
+      {
+        "id": "expat",
+        "name": "Expat",
+        "isDefault": false,
+        "requiresVerification": true
+      },
+      {
+        "id": "thai",
+        "name": "Thai",
+        "isDefault": false,
+        "requiresVerification": true
+      }
+    ],
+    "packages": [
+      {
+        "id": "01a0cc9e-42c7-7d36-893b-6072c283a156",
+        "operatorId": "01a0cc9e-4251-7b9f-9390-724a487bc882",
+        "branchId": "01a0cc9e-4252-7f76-bda8-061cc42752da",
+        "name": "1 Hour Play",
+        "description": "One hour of play — perfect for a quick visit.",
+        "durationLabel": "1 Hour",
+        "hours": 1,
+        "prices": {
+          "thai": {
+            "weekday": 42000,
+            "weekend": 52000
+          },
+          "expat": {
+            "weekday": 48300,
+            "weekend": 55200
+          },
+          "tourist": {
+            "weekday": 69000,
+            "weekend": 69000
+          }
+        },
+        "tierPricing": null,
+        "adultRules": {
+          "thai": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 50000
+            }
+          },
+          "expat": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 50000
+            }
+          },
+          "tourist": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 50000
+            }
+          }
+        },
+        "freebies": null,
+        "creditRule": {
+          "basis": "full_price",
+          "appliesTo": "adults"
+        },
+        "gateAccess": true,
+        "translations": {
+          "fr": {
+            "name": "Jeu 1 heure",
+            "description": "Une heure de jeu — parfait pour une visite rapide."
+          },
+          "ru": {
+            "name": "Игра 1 час",
+            "description": "Один час игры — идеально для короткого визита."
+          },
+          "th": {
+            "name": "เล่น 1 ชั่วโมง",
+            "description": "เล่นสนุก 1 ชั่วโมง เหมาะกับการแวะมาเล่นสั้น ๆ"
+          },
+          "zh": {
+            "name": "1小时畅玩",
+            "description": "畅玩一小时——适合短暂到访。"
+          }
+        },
+        "active": true,
+        "createdAt": "2026-09-23T04:55:18.984Z",
+        "updatedAt": "2026-09-23T04:55:18.984Z",
+        "archivedAt": null
+      },
+      {
+        "id": "01a0cc9e-42cb-7638-b28d-f50ec6181138",
+        "operatorId": "01a0cc9e-4251-7b9f-9390-724a487bc882",
+        "branchId": "01a0cc9e-4252-7f76-bda8-061cc42752da",
+        "name": "2 Hours Play",
+        "description": "Two full hours in the park.",
+        "durationLabel": "2 Hours",
+        "hours": 2,
+        "prices": {
+          "thai": {
+            "weekday": 52000,
+            "weekend": 62000
+          },
+          "expat": {
+            "weekday": 62300,
+            "weekend": 71200
+          },
+          "tourist": {
+            "weekday": 89000,
+            "weekend": 89000
+          }
+        },
+        "tierPricing": null,
+        "adultRules": {
+          "thai": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 50000
+            }
+          },
+          "expat": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 50000
+            }
+          },
+          "tourist": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 50000
+            }
+          }
+        },
+        "freebies": null,
+        "creditRule": {
+          "basis": "full_price",
+          "appliesTo": "adults"
+        },
+        "gateAccess": true,
+        "translations": {
+          "fr": {
+            "name": "Jeu 2 heures",
+            "description": "Deux heures complètes dans le parc."
+          },
+          "ru": {
+            "name": "Игра 2 часа",
+            "description": "Два полных часа в парке."
+          },
+          "th": {
+            "name": "เล่น 2 ชั่วโมง",
+            "description": "สนุกเต็มที่ 2 ชั่วโมงในสวนสนุก"
+          },
+          "zh": {
+            "name": "2小时畅玩",
+            "description": "在乐园尽情玩两小时。"
+          }
+        },
+        "active": true,
+        "createdAt": "2026-09-23T04:55:18.988Z",
+        "updatedAt": "2026-09-23T04:55:18.988Z",
+        "archivedAt": null
+      },
+      {
+        "id": "01a0cc9e-42cc-7c5b-b297-82db0d6b61ff",
+        "operatorId": "01a0cc9e-4251-7b9f-9390-724a487bc882",
+        "branchId": "01a0cc9e-4252-7f76-bda8-061cc42752da",
+        "name": "Full Day Pass",
+        "description": "Unlimited play from open to close.",
+        "durationLabel": "All Day",
+        "hours": 8,
+        "prices": {
+          "thai": {
+            "weekday": 62000,
+            "weekend": 72000
+          },
+          "expat": {
+            "weekday": 76300,
+            "weekend": 87200
+          },
+          "tourist": {
+            "weekday": 109000,
+            "weekend": 109000
+          }
+        },
+        "tierPricing": null,
+        "adultRules": {
+          "thai": {
+            "kind": "free_adults",
+            "price": {
+              "weekday": 35000,
+              "weekend": 50000
+            },
+            "overflow": "set_price",
+            "freeAdults": 1
+          },
+          "expat": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 50000
+            }
+          },
+          "tourist": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 50000
+            }
+          }
+        },
+        "freebies": null,
+        "creditRule": {
+          "basis": "full_price",
+          "appliesTo": "adults"
+        },
+        "gateAccess": true,
+        "translations": {
+          "fr": {
+            "name": "Pass journée complète",
+            "description": "Jeu illimité de l'ouverture à la fermeture."
+          },
+          "ru": {
+            "name": "Билет на весь день",
+            "description": "Неограниченная игра с открытия до закрытия."
+          },
+          "th": {
+            "name": "บัตรเล่นทั้งวัน",
+            "description": "เล่นไม่จำกัดตั้งแต่เปิดถึงปิด"
+          },
+          "zh": {
+            "name": "全日通票",
+            "description": "从开园玩到闭园，不限时畅玩。"
+          }
+        },
+        "active": true,
+        "createdAt": "2026-09-23T04:55:18.988Z",
+        "updatedAt": "2026-09-23T04:55:18.988Z",
+        "archivedAt": null
+      },
+      {
+        "id": "01a0cc9e-42cd-7223-a114-76b9e0d8739c",
+        "operatorId": "01a0cc9e-4251-7b9f-9390-724a487bc882",
+        "branchId": "01a0cc9e-4252-7f76-bda8-061cc42752da",
+        "name": "Eat & Play Kids Pass",
+        "description": "All-day play plus a kids' meal — the full ticket value comes back as F&B credit.",
+        "durationLabel": "All Day + Meal",
+        "hours": 8,
+        "prices": {
+          "thai": {
+            "weekday": 130000,
+            "weekend": 130000
+          },
+          "expat": {
+            "weekday": 130000,
+            "weekend": 130000
+          },
+          "tourist": {
+            "weekday": 130000,
+            "weekend": 130000
+          }
+        },
+        "tierPricing": null,
+        "adultRules": {
+          "thai": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 35000
+            }
+          },
+          "expat": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 35000
+            }
+          },
+          "tourist": {
+            "kind": "set_price",
+            "price": {
+              "weekday": 35000,
+              "weekend": 35000
+            }
+          }
+        },
+        "freebies": null,
+        "creditRule": {
+          "basis": "full_price",
+          "appliesTo": "both"
+        },
+        "gateAccess": true,
+        "translations": {
+          "fr": {
+            "name": "Pass enfant Manger & Jouer",
+            "description": "Jeu toute la journée avec repas enfant — valeur du billet créditée en restauration."
+          },
+          "ru": {
+            "name": "Детский билет «Ешь и играй»",
+            "description": "Игра весь день и детское питание; стоимость билета возвращается кредитом на еду."
+          },
+          "th": {
+            "name": "บัตรเด็ก กิน & เล่น",
+            "description": "เล่นทั้งวันพร้อมอาหารเด็ก รับเครดิตอาหารเต็มมูลค่าบัตร"
+          },
+          "zh": {
+            "name": "吃喝玩乐儿童通票",
+            "description": "全天畅玩加儿童餐，票面金额全额返还为餐饮额度。"
+          }
+        },
+        "active": true,
+        "createdAt": "2026-09-23T04:55:18.989Z",
+        "updatedAt": "2026-09-23T04:55:18.989Z",
+        "archivedAt": null
+      }
+    ],
+    "rateMode": {
+      "date": "2026-09-23",
+      "mode": "weekday",
+      "reason": "Weekday pricing"
+    },
+    "holidays": [
+      {
+        "name": "Loy Krathong",
+        "startsOn": "2026-11-24",
+        "endsOn": "2026-11-25"
+      }
+    ]
+  }
+}

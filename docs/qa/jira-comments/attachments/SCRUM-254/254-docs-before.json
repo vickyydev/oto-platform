@@ -1,0 +1,59 @@
+{
+  "anonymous": {
+    "status": 200,
+    "bytes": 193956,
+    "pathCount": 174,
+    "samplePaths": [
+      "/health",
+      "/ready",
+      "/auth/sign-in",
+      "/auth/sign-out",
+      "/auth/lock",
+      "/auth/unlock",
+      "/auth/handoff",
+      "/auth/handoff/exchange",
+      "/auth/setup/start",
+      "/auth/setup/complete",
+      "/auth/password-reset/request",
+      "/auth/password-reset/complete"
+    ]
+  },
+  "reception": {
+    "status": 200,
+    "bytes": 193956,
+    "pathCount": 174,
+    "samplePaths": [
+      "/health",
+      "/ready",
+      "/auth/sign-in",
+      "/auth/sign-out",
+      "/auth/lock",
+      "/auth/unlock",
+      "/auth/handoff",
+      "/auth/handoff/exchange",
+      "/auth/setup/start",
+      "/auth/setup/complete",
+      "/auth/password-reset/request",
+      "/auth/password-reset/complete"
+    ]
+  },
+  "admin": {
+    "status": 200,
+    "bytes": 193956,
+    "pathCount": 174,
+    "samplePaths": [
+      "/health",
+      "/ready",
+      "/auth/sign-in",
+      "/auth/sign-out",
+      "/auth/lock",
+      "/auth/unlock",
+      "/auth/handoff",
+      "/auth/handoff/exchange",
+      "/auth/setup/start",
+      "/auth/setup/complete",
+      "/auth/password-reset/request",
+      "/auth/password-reset/complete"
+    ]
+  }
+}
