@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 16:38 — `main` is `3317360`; staging is `a0d8cab` (Render is deploying `3317360`); CI green through `a0d8cab`
+> ## Status on 2026-09-23 16:44 — `main` is `e6f6477`; staging is `a0d8cab` (Render is deploying `3317360`); CI green through `a0d8cab`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -82,10 +82,28 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > **369** (the POS's own Playwright set is not in CI), **370** (the refusal
 > note's "Fix this to charge" line measures 3.86:1 — land after 360/366).
 >
+> **16:42 — wave 2 launched.** Tenders **B** (cash, the attempt service,
+> part-paid sales, attempts on the sale read — `wf_d5e69115`; kept out of
+> `services/print.ts` because 364 is in it: the drawer kick writes the
+> print-job row from `services/payments/drawer.ts` if no export fits),
+> **C1** (the GHL and Digio terminal adapters, simulators, fixtures, the
+> `box_counter` ref scope — `wf_0685188f`; its gate greps for the vendor
+> documents' literals), **E** (payment methods admin wired, O-7 refuse a
+> used tender's delete — `wf_8090465a`); **364** (Console test print
+> records a print job — `wf_ac4191fc`); evidence — **367**'s four-series
+> re-measurement once the api runs with the variable (`wf_65113495`,
+> Deployed only if the caller keys every bucket), **363** whole and **361**
+> (a paired evidence box replaying a bad visit, or a local card and no
+> walk — `wf_00be1ca9`). Decisions taken from the plan's §4 without the
+> owner: O-3, O-4 (a), O-5 yes, O-7 refuse+disable — all recommendations
+> already on the ticket; O-1, O-2, O-6 stay with the owner.
+>
 > **Running:** builds — 360+366 (`wf_24c97017`), 362 (`wf_a0a8fac3`),
-> 365's CI half (`wf_a49a824d`). Next to launch: 367's measurement pass
-> once the api deploy with the variable is live; tenders wave 2 (B, C1, E)
-> and 364 now that A is in.
+> 365's CI half (`wf_a49a824d`), 364 (`wf_ac4191fc`), 206-B
+> (`wf_d5e69115`), 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`);
+> evidence — 367 (`wf_65113495`), 361+363 (`wf_00be1ca9`). After wave 2:
+> C2 and D (D needs O-1 only for the real-QR half; the simulator carries
+> the acceptance), then F and G (G after C1, never beside it).
 
 > ## Status on 2026-09-23 16:02 — `main` was `0e5e2c6`; staging was `ce8a9d9`; CI green through `ce8a9d9`
 >
