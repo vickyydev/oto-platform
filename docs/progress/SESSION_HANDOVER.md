@@ -4,6 +4,34 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 13:10 — `main` is `1875f56`; staging is `16c621a`; CI green
+>
+> **Since 13:00:** landed 257 (`69af2fb`), 309 (`cc686cc`), 318/319
+> (`16c621a`), the claim-refusal ordering (`77080e9`), **304** (`c6338d6` —
+> `pos.booking_redemption`, migration 0018 with a backfill) and the 336 hint
+> (`1875f56`). **Deployed with staging evidence:** 322/305/323, 316 (+311's
+> live refusal), 257, 309. Raised: 331 (the virtual box re-registers in a
+> storm around every deploy — 637 refusals a day), 332 (**every staging
+> deploy re-ran the full demo seed** — Render's pre-deploy was
+> `db:seed`, not the `db:platform-sync` render.yaml documents, with
+> `SEED_PROFILE=staging`; changed on Render to `pnpm db:migrate && pnpm
+> db:platform-sync` at 12:30, verified by the next deploy's log line), 333
+> (sale read lacks the claim id), 334 (Subtotal ฿0 beside a real Total),
+> 335 (21st booking in a minute answers 500), 336. New Bugs go under
+> SCRUM-324 by default (`createInSprint` in the scratchpad).
+>
+> **Running:** builds — 233 (`wf_f769bf02`), carts 204 (`wf_cde4e3cd`),
+> tenancy 253/255/327 (`wf_0532c182`), barcode + admin panels
+> (`wf_344f565a`), 330 (`wf_b892a282`), branch clone R-03 (`wf_70c3b1f2`),
+> **331** (`wf_0cb720ff` — advisory-lock lease + refusal back-off); gate —
+> 252/254 (`wf_effd34f0`); evidence — 318/319 (`wf_22423a2a`). A watcher
+> waits for Render at `c6338d6`; then an evidence pass for 304, 332 (the
+> "Platform sync only" log line) and 336.
+>
+> **Next:** land each on its gate; 306 after 304 (redeem's own permission);
+> 333/334 after the carts slice frees `sale.ts` and the staff panel; then
+> tenders (206), 207, 208.
+
 > ## Status on 2026-09-23 13:00 — `main` is `b9438cd`; staging is `d1d0bd7`; CI green again
 >
 > **Since 12:00:** the box slice landed (`d1d0bd7`, 322/305/323 Testing;
