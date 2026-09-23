@@ -255,6 +255,14 @@ const LOG_RING = 500;
  */
 const CACHE_SCHEMA_VERSION = 1;
 
+/**
+ * The one cached scope that moves without anybody administering anything
+ * (SCRUM-322): it carries where each station's receipt numbering stands, so a
+ * finalised sale advances it. The cloud leaves it out of the bundle's version
+ * for that reason, and the agent reads it on its own tick instead.
+ */
+const RECEIPT_SERIES = 'receipt_series' satisfies CachedBundle['scope'];
+
 export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   const base = options.apiBaseUrl.replace(/\/$/, '');
   const call = options.fetch ?? httpTransport();
@@ -288,6 +296,29 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    * throws the local copy away, so the pull after that is a whole one.
    */
   let cacheBundleVersion: string | null = null;
+  /**
+   * When the offline copies were last WRITTEN, when the cloud last CONFIRMED
+   * them, and which of them this box has (SCRUM-323).
+   *
+   * All three ride the heartbeat, so the Console's box drawer can say whether a
+   * box's copies are minutes or a week old — which it could not, because the
+   * only record of it was `last_cache_applied_at` in the box's own store, and a
+   * Pi's store is on the Pi. They are two timestamps rather than one because a
+   * 304 confirms a copy without changing it: a healthy box that is told
+   * "nothing has moved" all day has a fresh CHECK and an old APPLY, and painting
+   * that box red would be wrong.
+   *
+   * The scopes are a SET that accumulates rather than the last pull's count,
+   * which is not the same number the moment a pull is partial: a bundle with
+   * one scope truncated would otherwise report a box holding eight copies as
+   * holding eight NEW ones and the drawer would read it as what it has. A
+   * process that has just started holds whatever the last one left in the store
+   * and this set is empty — for one tick, because a start sends no
+   * `If-None-Match` and the pull that follows is a whole one.
+   */
+  let cacheAppliedAt: string | null = null;
+  let cacheCheckedAt: string | null = null;
+  const cacheScopesHeld = new Set<string>();
   let bundle: BoxConfigBundle | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -905,6 +936,34 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   async function syncCache(): Promise<string[]> {
     if (!credential || !store || !state.boxId || state.offline) return [];
     const boxId = state.boxId;
+    const applied = await pullBundle(boxId);
+    /**
+     * The receipt mark, always, whatever the bundle answered (SCRUM-322).
+     *
+     * It is the one cached scope that moves without anybody administering
+     * anything — every finalised sale advances it — so it is no longer part of
+     * what the bundle's etag stands for, and a 304 above says nothing about it.
+     * This is where it is kept current: one small unconditional read, on the
+     * tick the timer was already making.
+     *
+     * **It is deliberately not in what this returns.** The answer is the
+     * ADMINISTERED scopes this tick applied — it is what the Console prints
+     * beside an Apply config press, and naming a scope nobody published there
+     * every single time would make the reading worthless. A full pull still
+     * lists it, because `receipt_series` is in the bundle and `pullBundle`
+     * reports what it wrote. Where the mark itself has to be proved, the box's
+     * own store is the evidence (`box-cache-survives.test.ts`).
+     */
+    await pullReceiptSeries(boxId);
+    return applied;
+  }
+
+  /**
+   * The administered half of the cache: everything the bundle's version stands
+   * for, taken whole and written scope by scope.
+   */
+  async function pullBundle(boxId: string): Promise<string[]> {
+    if (!store) return [];
     /**
      * The etag is only worth sending while the local copy it stands for is
      * still there (SCRUM-314). A box that stays online with a bundle gone bad
@@ -936,8 +995,13 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     });
     // Nothing moved since the copy this box holds. Not a pull, so no fault is
     // recorded or cleared and no timestamp is stamped: the cache is exactly as
-    // old as it was, and the till's banner should say so.
-    if (status === 304) return [];
+    // old as it was, and the till's banner should say so. The cloud HAS just
+    // confirmed the copy is current, which is a different fact and the one the
+    // Console's box drawer paints its tone from (SCRUM-323).
+    if (status === 304) {
+      cacheCheckedAt = new Date(clock()).toISOString();
+      return [];
+    }
     if (status === 401) {
       await reregisterAfterRefusal('cache');
       return [];
@@ -988,6 +1052,19 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
     if (plan.skipped.length === 0) clearCacheFaults();
     cacheCursorSeq = body.cursorSeq;
+    /**
+     * When this box last WROTE its offline copies, and how many it holds
+     * (SCRUM-323). Both ride the heartbeat, because a manager looking at a box
+     * in the Console could otherwise not tell whether its copies were an hour
+     * or a week old. `checkedAt` moves on a 304 as well; `appliedAt` only when
+     * bytes actually landed, which is the difference between "confirmed
+     * current" and "changed".
+     */
+    cacheCheckedAt = appliedAt;
+    if (applied.length > 0) {
+      cacheAppliedAt = appliedAt;
+      for (const scope of applied) cacheScopesHeld.add(scope);
+    }
     // Remembered only for a pull that landed whole. A pull with a skipped
     // scope keeps asking for the full document, so the scope that fell off is
     // tried again on every tick rather than answered 304 until something else
@@ -1014,7 +1091,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      * when all that happened is that the cache was pulled first.
      */
     if (state.configVersion) {
-      await store.setAppliedConfigVersion(state.boxId, state.configVersion);
+      await store.setAppliedConfigVersion(boxId, state.configVersion);
     }
     note('info', 'cache applied', {
       scopes: applied.length,
@@ -1022,6 +1099,68 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       cursorSeq: body.cursorSeq,
     });
     return applied;
+  }
+
+  /**
+   * Where this box's receipt numbering stands, read on its own (SCRUM-322).
+   *
+   * Asked for with `?scopes=receipt_series` and NO `If-None-Match`, because
+   * this is the scope the bundle's version deliberately does not stand for: it
+   * moves on every finalised sale, and hashing it into the version made a
+   * selling box pull its whole cache every minute. Unconditional is what makes
+   * it correct — the answer is a row per station and a few hundred bytes.
+   *
+   * It writes that one scope and nothing else, and it does NOT move
+   * `cacheCursorSeq`: this box has not applied the deltas the cloud has since
+   * published, and claiming otherwise would make it skip them. The row keeps
+   * the cursor the box is actually at.
+   *
+   * A failure is a fault on the heartbeat and never a throw: the mark being
+   * stale costs a box its offline receipt numbering, which S2-12 will care
+   * about, and costs an online counter nothing at all today.
+   */
+  async function pullReceiptSeries(boxId: string): Promise<void> {
+    if (!store) return;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=${RECEIPT_SERIES}`, {
+      method: 'GET',
+    });
+    if (status === 401) {
+      await reregisterAfterRefusal('cache');
+      return;
+    }
+    if (status !== 200 || !body) {
+      note('warn', 'the receipt mark could not be read', { status });
+      recordCacheFault('unreadable', RECEIPT_SERIES);
+      return;
+    }
+    // The same rule-applier the bundle goes through, so a scope the cloud cut
+    // short is skipped here too rather than half-written. The staff/deny-list
+    // pairing it also enforces cannot bite: neither is in this answer.
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    for (const skipped of plan.skipped) {
+      note('warn', 'the receipt mark was not applied', skipped);
+      recordCacheFault(skipped.reason, skipped.scope);
+    }
+    const held = plan.apply.includes(RECEIPT_SERIES) ? body.scopes[RECEIPT_SERIES] : undefined;
+    if (!held) return;
+    try {
+      await store.writeBundle(boxId, {
+        scope: RECEIPT_SERIES,
+        schemaVersion: body.schemaVersion,
+        cursorSeq: cacheCursorSeq,
+        payload: { items: held.items },
+        appliedAt: new Date(clock()).toISOString(),
+      });
+      cacheScopesHeld.add(RECEIPT_SERIES);
+    } catch (err) {
+      note('error', 'the receipt mark could not be written', { err: String(err) });
+      recordCacheFault('write_failed', RECEIPT_SERIES);
+    }
   }
 
   async function heartbeat(): Promise<BoxHeartbeatAck | null> {
@@ -1076,6 +1215,27 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
        */
       errors: cacheFaultReports(),
     };
+    /**
+     * What this box is holding offline (SCRUM-323).
+     *
+     * `appliedAt` is when administered bytes last landed and `checkedAt` when
+     * the cloud last said the copy was current — a 304 moves the second alone,
+     * which is the difference between a box nobody has published anything to
+     * and a box that has stopped asking. The receipt mark is written on every
+     * tick and deliberately moves NEITHER: an `appliedAt` of "just now" on
+     * every heartbeat would answer the only question this line is read for
+     * with the same word for ever.
+     *
+     * Sent only once something has been pulled: a block of nulls would give the
+     * Console a cache to report on for a box that has never had one.
+     */
+    if (cacheCheckedAt || cacheAppliedAt) {
+      payload.cache = {
+        appliedAt: cacheAppliedAt,
+        checkedAt: cacheCheckedAt,
+        scopes: cacheScopesHeld.size,
+      };
+    }
     /**
      * What this booth is doing, MEASURED (S2-07a).
      *

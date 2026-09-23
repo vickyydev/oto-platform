@@ -27,6 +27,7 @@ import {
   SYNC_EVENT_TYPES,
   SyncKeyRegisterSchema,
   assertBundleReadable,
+  bundleVersionCovers,
   cacheBundle,
   pullChanges,
   pushEvents,
@@ -336,12 +337,23 @@ export async function boxRoutes(app: App): Promise<void> {
        * Same `If-None-Match` courtesy as the config bundle: a box polls this
        * and the answer usually has not moved, so the ordinary case is a 304
        * with no body rather than the branch's whole member list again.
+       *
+       * **Only when the version stands for something in the answer**
+       * (SCRUM-322). The version is hashed over the administered scopes, so an
+       * answer made of volatile ones alone — `?scopes=receipt_series`, which is
+       * how the agent reads the receipt mark every tick — has a version hashed
+       * over nothing, identical to every other such answer. Sending it would
+       * make the next tick a 304 and freeze the mark at whatever the box first
+       * saw. No validator is sent for one of those, so it is always answered
+       * whole; it is a few hundred bytes.
        */
-      const etag = `"${bundle.bundleVersion}"`;
-      reply.header('etag', etag);
-      const inm = req.headers['if-none-match'];
-      if (typeof inm === 'string' && inm.split(',').some((v) => v.trim() === etag)) {
-        return reply.code(304).send();
+      if (bundleVersionCovers(bundle)) {
+        const etag = `"${bundle.bundleVersion}"`;
+        reply.header('etag', etag);
+        const inm = req.headers['if-none-match'];
+        if (typeof inm === 'string' && inm.split(',').some((v) => v.trim() === etag)) {
+          return reply.code(304).send();
+        }
       }
       return bundle;
     },

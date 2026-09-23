@@ -127,6 +127,9 @@ export function BoxDrawer({
           </Fact>
           <Fact label="Registered">{formatWhen(box.registeredAt, timezone)}</Fact>
           <Fact label="Last heartbeat">{formatExact(box.lastHeartbeatAt, timezone)}</Fact>
+          <Fact label="Offline copies">
+            <CacheAge box={box} timezone={timezone} />
+          </Fact>
         </dl>
 
         {box.status === 'unclaimed' && (
@@ -196,6 +199,99 @@ export function BoxDrawer({
 }
 
 // ---------------------------------------------------------------------------
+
+/**
+ * How long a box may go without confirming its cache before this is amber.
+ *
+ * Two refresh intervals (60s each) plus room for the heartbeat that has to
+ * carry the news, which is on its own 60s clock: a box that has missed one
+ * refresh reads late here, and a box that is keeping up never does.
+ */
+const CACHE_CHECK_LATE_AFTER_S = 150;
+/** And before it is red: a box that has not confirmed its copies in a day. */
+const CACHE_CHECK_STALE_AFTER_S = 86_400;
+
+/**
+ * When this box last applied its offline copies, and how many it holds
+ * (SCRUM-323).
+ *
+ * The one reading that says whether a box could actually sell through an
+ * outage, and the drawer did not have it: the only record was
+ * `last_cache_applied_at` in the box's own store, and a Pi's store is on the
+ * Pi. The heartbeat carries it now, so this reads `last_status.cache` and
+ * nothing else — no request of its own, no route to be unavailable.
+ *
+ * **The words come from `appliedAt` and the colour from `checkedAt`**, which
+ * are two different questions and were worth separating. A box whose cache has
+ * not CHANGED for a week is in perfectly good order — nobody published
+ * anything, and every tick was answered 304 — so painting it red on the age of
+ * the bytes would call the healthy case a fault and make the colour worthless.
+ * What is worth a colour is a box that has stopped CHECKING: amber past a
+ * missed refresh, red past a day, which is the point at which its staff list
+ * and its deny-list are old enough to matter.
+ */
+function CacheAge({ box, timezone }: { box: BoxRow; timezone?: string | null }) {
+  const cache = boxCacheReport(box);
+  if (!cache) {
+    return (
+      <span className="text-muted-foreground">
+        nothing reported
+        <span className="block text-xs">
+          This box has not said what it is holding. Before the agent that reports it, or it has
+          pulled nothing yet.
+        </span>
+      </span>
+    );
+  }
+
+  const checkedAgo = cache.checkedAt ? ageSeconds(cache.checkedAt) : null;
+  const tone =
+    checkedAgo === null || checkedAgo > CACHE_CHECK_STALE_AFTER_S
+      ? 'down'
+      : checkedAgo > CACHE_CHECK_LATE_AFTER_S
+        ? 'warn'
+        : 'ok';
+  const copies = cache.scopes === null ? null : `${cache.scopes} cop${cache.scopes === 1 ? 'y' : 'ies'}`;
+
+  return (
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <StatusMark tone={tone} />
+      <span title={cache.appliedAt ? formatExact(cache.appliedAt, timezone) : undefined}>
+        {cache.appliedAt ? `applied ${timeAgo(cache.appliedAt)}` : 'never applied'}
+        {copies ? ` (${copies})` : ''}
+      </span>
+      {tone !== 'ok' && (
+        <span className="text-xs" style={{ color: `hsl(var(--status-${tone}))` }}>
+          {checkedAgo === null
+            ? 'and never confirmed with the cloud'
+            : `last confirmed ${elapsed(checkedAgo)} ago`}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** The `cache` block of the newest heartbeat, or null when the box sent none. */
+function boxCacheReport(
+  box: BoxRow,
+): { appliedAt: string | null; checkedAt: string | null; scopes: number | null } | null {
+  const raw = box.lastStatus?.cache;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const bag = raw as Record<string, unknown>;
+  const at = (key: string): string | null => (typeof bag[key] === 'string' ? (bag[key] as string) : null);
+  const scopes = typeof bag.scopes === 'number' && Number.isFinite(bag.scopes) ? bag.scopes : null;
+  const report = { appliedAt: at('appliedAt'), checkedAt: at('checkedAt'), scopes };
+  // A block with neither timestamp says nothing; "nothing reported" is the
+  // honest reading of it rather than a row of dashes with a green mark.
+  return report.appliedAt || report.checkedAt ? report : null;
+}
+
+/** Seconds since an instant, as this machine's clock sees it. */
+function ageSeconds(iso: string): number | null {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return null;
+  return Math.max(0, Math.round((Date.now() - then) / 1000));
+}
 
 function ClaimCodeRow({
   box,

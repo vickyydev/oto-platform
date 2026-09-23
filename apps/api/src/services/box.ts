@@ -747,6 +747,16 @@ export async function recordHeartbeat(
      * Console reads over somebody's shoulder in a back office.
      */
     ...(input.booth ? { booth: input.booth } : {}),
+    /**
+     * The offline copies the box is holding (SCRUM-323), when it reports any.
+     *
+     * Stored whole under the key the box sent it under, for the same reason the
+     * booth block is: two timestamps and a count, nothing that names a person
+     * or quotes a record. It is the only way the Console can say how old a
+     * box's cache is — `last_cache_applied_at` lives in the box's OWN store,
+     * and a Pi's store is on the Pi.
+     */
+    ...(input.cache ? { cache: input.cache } : {}),
   }) as Record<string, unknown>;
 
   await withTx(db, ctx, 'box.heartbeat', async (tx) => {

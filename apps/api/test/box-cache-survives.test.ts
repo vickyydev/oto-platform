@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
-import { account, boxCache, station } from '@oto/db';
+import { account, boxCache, station, ticketPackage } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
   SqlBoxStore,
@@ -44,17 +44,26 @@ import { boxStoreFor } from '../src/lib/box-store';
 let ctx: TestContext;
 let agent: BoxAgent;
 let boxId: string;
+let tillId: string;
+let packageId: string;
+let cookie: string;
 let receptionAccountId: string;
+/** Every path the agent under test has asked for, for the SCRUM-322 case. */
+const calls: string[] = [];
 /** Shared between the agents below, the way a Pi's credentials outlive its process. */
 const credentials = memoryCredentialStore();
 
 beforeAll(async () => {
   ctx = await createTestContext();
-  await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+  cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
 
   const stations = await ctx.db.select().from(station);
   const till = stations.find((s) => s.name === 'Reception Till 1')!;
   boxId = till.boxId!;
+  tillId = till.id;
+  packageId = (
+    await ctx.db.select().from(ticketPackage).where(eq(ticketPackage.branchId, till.branchId))
+  ).find((p) => p.name === '2 Hours Play')!.id;
   receptionAccountId = (
     await ctx.db.select({ id: account.id }).from(account).where(eq(account.phone, RECEPTION.phone))
   )[0]!.id;
@@ -63,7 +72,7 @@ beforeAll(async () => {
     apiBaseUrl: 'http://virtual-box.test',
     credentials,
     hostname: 'cache-survives-test',
-    fetch: injectTransport(),
+    fetch: injectTransport((path) => calls.push(path)),
     claimCode: async () => (await provisionVirtualBox(ctx.db, ctx.app.log))?.claimCode ?? null,
     store: boxStoreFor(ctx.db),
   });
@@ -201,5 +210,85 @@ describe('the cache survives the process that pulled it (SCRUM-275)', () => {
     expect(rows).toHaveLength(1);
     expect((rows[0]!.payload as { items: unknown[] }).items).toHaveLength(1);
     expect(await store.readBundle(boxId, 'deny_list')).not.toBeNull();
+  });
+});
+
+/**
+ * SCRUM-322 — the agent's half: the receipt mark is read on its own tick.
+ *
+ * The cloud stopped hashing `receipt_series` into the bundle's version, because
+ * it moves on every finalised sale and was making a SELLING box pull its whole
+ * cache every minute. That trade is only safe if the box still gets the mark,
+ * so this is the half that says it does: a tick in which the bundle is answered
+ * 304 still leaves the box holding the number the cloud last issued.
+ *
+ * It drives the real agent against the real route — `pullReceiptSeries` is not
+ * reachable from `@oto/box-agent`'s own test runner, which cannot load
+ * `agent.ts` at all — and the sale is a real finalised sale, so the mark is one
+ * `allocateReceipt` actually issued.
+ */
+describe('the receipt mark rides its own tick (SCRUM-322)', () => {
+  /** The mark this box holds for T1, out of its own cached scope. */
+  async function heldMark(): Promise<number> {
+    const held = await freshStore().readBundle(boxId, 'receipt_series');
+    expect(held, 'the box has never cached where its numbering stands').not.toBeNull();
+    const items = (held!.payload as { items: Array<{ prefix: string | null; highWaterMark: number }> })
+      .items;
+    return items.find((i) => i.prefix === 'T1')!.highWaterMark;
+  }
+
+  /** A ฿0 comp at the till: one call, one finalised sale, one receipt number. */
+  async function sellOnce(): Promise<number> {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie },
+      payload: {
+        stationId: tillId,
+        id: newId(),
+        lines: [{ id: newId(), packageId, kids: 1, adults: 0 }],
+        manualDiscounts: [
+          { id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Staff / family' },
+        ],
+        finalise: true,
+      },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    return Number(res.json().sale.receiptSeq);
+  }
+
+  it('is refreshed on a tick the bundle answers 304, and rewrites nothing else', async () => {
+    const before = await heldMark();
+    const staffBefore = await freshStore().readBundle(boxId, 'staff');
+
+    const seq = await sellOnce();
+    expect(seq).toBeGreaterThan(before);
+
+    calls.length = 0;
+    const applied = await agent.syncCache();
+
+    /**
+     * Nothing an administrator changed, so the bundle leg was a 304 and no
+     * administered scope was rewritten — which is what the empty answer says.
+     * Before this ticket the same tick rewrote all nine `edge.box_cache` rows
+     * and carried the branch's whole member page to do it.
+     *
+     * The two calls are the whole of the new shape: the conditional bundle,
+     * then the mark on its own scope with no validator on it.
+     */
+    expect(applied).toEqual([]);
+
+    // And the box is standing on the number the cloud just issued anyway,
+    // which is the whole of what makes the 304 above safe.
+    expect(await heldMark(), 'the box is holding a receipt number already spent').toBe(seq);
+    expect(calls).toEqual([
+      '/box/v1/cache?schemaVersion=1',
+      '/box/v1/cache?schemaVersion=1&scopes=receipt_series',
+    ]);
+
+    const staffAfter = await freshStore().readBundle(boxId, 'staff');
+    expect(staffAfter!.appliedAt, 'the staff list was rewritten for nothing').toBe(
+      staffBefore!.appliedAt,
+    );
   });
 });

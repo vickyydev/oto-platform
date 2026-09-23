@@ -3,6 +3,7 @@ import { account, attendee, booking, branch, employee, member, station } from '@
 import { isoDateInTz, wallClockMinutesInTz } from '@oto/shared';
 import { errors, type AppError } from '../lib/errors';
 import { audit } from './audit';
+import { bookingChange, recordChange } from './sync';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -483,6 +484,36 @@ export async function redeemBooking(tx: Tx, args: RedeemBookingArgs): Promise<Bo
     },
     requestId: args.requestId ?? null,
   });
+
+  /**
+   * Tell the boxes at this branch (SCRUM-305).
+   *
+   * `bookings` has been a cache scope since S2-05, so a box holds the arrivals
+   * for today and tomorrow in order to greet a family with no internet — and
+   * nothing here published the redemption. That box went on believing the
+   * booking unredeemed for as long as its copy stood, which is the state in
+   * which a second family walks in on one payment and the counter has no reason
+   * to refuse them.
+   *
+   * In the same transaction as the row and the audit line, on the same handle:
+   * a delta that committed without the redemption would be a box told the
+   * opposite of what happened, and one that was rolled back with it leaves the
+   * box exactly where it was — stale, which is what the next bundle repairs.
+   *
+   * The box-side offline redeem, where two boxes each claim the same booking
+   * and the second claim has to be quarantined, is S2-12. This is the half that
+   * makes the first one possible: the boxes now know.
+   */
+  await recordChange(
+    tx,
+    { operatorId: row.operatorId, branchId: row.branchId },
+    {
+      scope: 'bookings',
+      entityType: 'booking',
+      entityId: row.id,
+      payload: bookingChange(after),
+    },
+  );
   return after;
 }
 

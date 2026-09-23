@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { account, auditLog, booking, branch, employee, station } from '@oto/db';
+import { account, auditLog, booking, box, branch, employee, station, syncChange } from '@oto/db';
 import {
   CENTRAL_BRANCH_CODE,
   CHALONG_BRANCH_CODE,
@@ -12,6 +12,8 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
+import { cacheBundle, pullChanges } from '../src/services/sync';
+import type { BoxAuth } from '../src/services/box';
 
 /**
  * SCRUM-234 — a booking made online is found and redeemed at the counter.
@@ -50,6 +52,8 @@ let receptionStaffName: string;
 let som: string;
 let dao: string;
 let packageId: string;
+/** The box standing behind Central's reception till, as its own credential sees it. */
+let centralBox: BoxAuth;
 
 interface Res {
   statusCode: number;
@@ -185,6 +189,20 @@ beforeAll(async () => {
 
   const catalog = await call('GET', `/public/branches/${CENTRAL_BRANCH_CODE}/catalog`);
   packageId = (catalog.body.packages as Array<{ id: string }>)[0]!.id;
+
+  const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, centralTill.boxId!)).limit(1);
+  centralBox = {
+    boxId: boxRow!.id,
+    operatorId: boxRow!.operatorId,
+    branchId: boxRow!.branchId,
+    name: boxRow!.name,
+    slot: boxRow!.slot,
+    role: boxRow!.role,
+    status: boxRow!.status,
+    currentEpoch: boxRow!.currentEpoch,
+    syncPublicKey: boxRow!.syncPublicKey,
+    lastStatus: boxRow!.lastStatus as Record<string, unknown> | null,
+  };
 });
 
 afterAll(async () => {
@@ -486,6 +504,93 @@ describe('SCRUM-234 — redemption happens once', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(404);
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+/**
+ * SCRUM-305 — and the boxes at that park are told.
+ *
+ * `bookings` has been a cache scope since S2-05, so a box holds today's and
+ * tomorrow's arrivals in order to greet a family with no internet. A counter
+ * redemption wrote nothing to the change feed, so that copy said "paid" for as
+ * long as it stood — and a box that believes a booking unredeemed is a box with
+ * no reason to refuse the second family arriving on one payment.
+ *
+ * Both halves are asserted, and the last assertion is the one that keeps them
+ * honest: the delta and the bundle item are compared to each other, because a
+ * box learns about a booking through whichever of the two arrives first and the
+ * copy it ends up holding must not depend on which.
+ */
+describe('SCRUM-305 — a box that cached the booking learns it was redeemed', () => {
+  /** Where the change feed stands now, so a pull reads this case and no other. */
+  async function feedHead(): Promise<number> {
+    const [row] = await ctx.db
+      .select({ seq: sql<number>`coalesce(max(${syncChange.seq}), 0)::bigint` })
+      .from(syncChange);
+    return Number(row?.seq ?? 0);
+  }
+
+  it('publishes the redemption to its branch, in the shape the bundle carries', async () => {
+    const made = await bookOnline({ phone: '0812226600', kids: 1, adults: 1 });
+    const from = await feedHead();
+
+    const redeemed = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId, bandCodes: ['B-3030'] },
+    });
+    expect(redeemed.statusCode, JSON.stringify(redeemed.body)).toBe(200);
+
+    const pulled = await pullChanges(ctx.db, centralBox, {
+      cursorSeq: from,
+      limit: 100,
+      scopes: ['bookings'],
+    });
+    const delta = pulled.changes.find((c) => c.entityId === made.id);
+    expect(delta, 'the boxes holding this booking were never told').toBeTruthy();
+    expect(delta!.op).toBe('upsert');
+    expect(delta!.entityType).toBe('booking');
+
+    const sent = delta!.payload as {
+      status: string;
+      reference: string;
+      payload: { redemption?: { stationId: string; accountId: string; bandCodes: string[] } };
+    };
+    expect(sent.status).toBe('redeemed');
+    expect(sent.reference).toBe(made.reference);
+    // Ids, as the row holds them: a till renamed or a member of staff who
+    // leaves must not change what the box was told happened.
+    expect(sent.payload.redemption).toMatchObject({
+      stationId: centralTillId,
+      accountId: receptionAccountId,
+      bandCodes: ['B-3030'],
+    });
+
+    const bundle = await cacheBundle(ctx.db, centralBox, { scopes: ['bookings'] });
+    const items = (bundle.scopes.bookings?.items ?? []) as Array<{ id: string }>;
+    const item = items.find((b) => b.id === made.id);
+    expect(item, 'a box pulling the bundle whole gets the same booking').toBeTruthy();
+    // Field for field. One function shapes both, and this is what says so.
+    expect(item).toEqual(sent);
+  });
+
+  it('a refused redemption publishes nothing', async () => {
+    const made = await bookOnline({ phone: '0812226611', kids: 1, adults: 0 });
+    const from = await feedHead();
+    // The other park's till: refused before anything is written, so there is
+    // nothing for a box to be told about.
+    const res = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: chalongTillId },
+    });
+    expect(res.statusCode).toBe(400);
+    const pulled = await pullChanges(ctx.db, centralBox, {
+      cursorSeq: from,
+      limit: 100,
+      scopes: ['bookings'],
+    });
+    expect(pulled.changes.map((c) => c.entityId)).not.toContain(made.id);
   });
 });
 

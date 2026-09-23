@@ -212,6 +212,26 @@ export const BoxHeartbeatRequestSchema = z.object({
    */
   booth: BoothHeartbeatSchema.optional(),
   /**
+   * The offline copies this box is holding (SCRUM-323).
+   *
+   * `appliedAt` is when bytes last landed, `checkedAt` when the cloud last said
+   * the copy was current — a 304 moves the second and not the first — and
+   * `scopes` is how many documents the box holds. Nothing in it names a person
+   * or quotes a record, which is what lets it sit on `box.last_status` and be
+   * read over somebody's shoulder in a back office.
+   *
+   * Optional, like the booth block: a box that has pulled nothing yet sends no
+   * block rather than a block of nulls, and an older agent's heartbeat is still
+   * accepted.
+   */
+  cache: z
+    .object({
+      appliedAt: z.string().datetime().nullable().optional(),
+      checkedAt: z.string().datetime().nullable().optional(),
+      scopes: z.number().int().min(0).max(64).optional(),
+    })
+    .optional(),
+  /**
    * What has been going wrong, as fingerprints and counts. The message itself
    * stays on the box: a printer error can quote the line it failed to print.
    */

@@ -761,6 +761,42 @@ function childChange(row: typeof child.$inferSelect): unknown {
   };
 }
 
+/**
+ * The booking row a box's cache needs — and the shape a redemption travels in
+ * (SCRUM-305).
+ *
+ * One function for both, because a box learns about a booking two ways: from
+ * the `bookings` scope of a cache bundle, and from a `sync_change` delta. Two
+ * shapes would mean a box whose copy depended on which door the news came
+ * through, and the door depends on nothing but timing.
+ *
+ * `status` and `payload.redemption` are what make "this one has been used"
+ * answerable with no internet. Before this, a counter redemption wrote no delta
+ * at all: a box that had cached the booking went on believing it unredeemed,
+ * and the guard against a second family on one payment lived only in the cloud.
+ *
+ * `payload` travels whole — it is what `POST /public/bookings` priced and what
+ * `bookingView` in `services/bookings.ts` reads back — so the till's own view
+ * can be rebuilt on the box. It carries the customer's phone and the name they
+ * gave, which the bundle's doctrine allows for the same reason the member list
+ * is there: a counter with no internet still has to recognise who is standing
+ * at it. It carries no payment instrument and no wallet.
+ */
+export function bookingChange(row: typeof booking.$inferSelect): unknown {
+  return {
+    id: row.id,
+    branchId: row.branchId,
+    memberId: row.memberId,
+    reference: row.reference,
+    bookingDate: row.bookingDate,
+    status: row.status,
+    totalSatang: row.totalSatang,
+    createdAt: row.createdAt.toISOString(),
+    /** The lines, the tier, the name and phone, and the redemption once there is one. */
+    payload: row.payload ?? null,
+  };
+}
+
 const HANDLERS: Record<string, EventHandler> = {
   /**
    * A member created at a counter, possibly with no internet.
@@ -2952,6 +2988,45 @@ export const CACHE_SCOPES = [
 ] as const;
 export type CacheScope = (typeof CACHE_SCOPES)[number];
 
+/**
+ * The scopes the bundle's VERSION does not stand for (SCRUM-322).
+ *
+ * Everything else in `CACHE_SCOPES` moves when somebody administers something —
+ * a price is published, a person is hired, a wheel is changed — which is what an
+ * `If-None-Match` is really asking about. `receipt_series` does not: since the
+ * mark became real (SCRUM-275) it carries `next_seq - 1` for every station on
+ * the box, so it moves on every finalised sale. While the version was a hash
+ * over every scope, a box that was SELLING changed its own etag every few
+ * minutes, and its sixty-second refresh then took a full 200 — the branch's
+ * whole member page, and all nine `edge.box_cache` rows rewritten — instead of
+ * the 304 this route was built to answer. An idle box was unaffected, which is
+ * why nothing showed it.
+ *
+ * **What the split costs, stated plainly.** A 304 now means "nothing
+ * administered has moved" and NOT "your receipt mark is current". The agent
+ * therefore reads `?scopes=receipt_series` on its own on every tick, with no
+ * validator — a few hundred bytes, and only that row written (`syncCache` in
+ * `@oto/box-agent`). An agent that does not make that tick learns the mark only
+ * when something administered changes, so the two halves belong in one change.
+ */
+export const CACHE_VOLATILE_SCOPES = ['receipt_series'] as const satisfies readonly CacheScope[];
+
+function isVolatileScope(name: string): boolean {
+  return (CACHE_VOLATILE_SCOPES as readonly string[]).includes(name);
+}
+
+/**
+ * Whether a bundle's version stands for anything that bundle contains.
+ *
+ * False for an answer made of volatile scopes alone — `?scopes=receipt_series`
+ * — whose version is then a hash over an empty set and would match every other
+ * such answer. The route sends no validator at all for one of those, rather than
+ * an etag that would 304 a mark that has in fact moved.
+ */
+export function bundleVersionCovers(bundle: CacheBundle): boolean {
+  return Object.keys(bundle.scopes).some((name) => !isVolatileScope(name));
+}
+
 export interface CacheQuery {
   scopes?: CacheScope[];
   /** The bundle version this agent can read. A newer bundle is refused. */
@@ -3337,7 +3412,9 @@ export async function cacheBundle(
         )
         .orderBy(asc(booking.bookingDate))
         .limit(limit);
-      put('bookings', rows, { rowsRead: rows.length });
+      // Through the same shaper the redemption delta uses, so the two agree by
+      // construction rather than by inspection (SCRUM-305).
+      put('bookings', rows.map(bookingChange), { rowsRead: rows.length });
       continue;
     }
 
@@ -3501,7 +3578,18 @@ export async function cacheBundle(
     .select({ seq: sql<number>`coalesce(max(${syncChange.seq}), 0)::bigint` })
     .from(syncChange);
 
-  const body = { schemaVersion: CACHE_BUNDLE_SCHEMA_VERSION, scopes };
+  /**
+   * The version is hashed over the ADMINISTERED scopes only — see
+   * `CACHE_VOLATILE_SCOPES`. `scopes` is built in `wanted` order and filtering
+   * preserves it, so a full bundle hashes the same eight documents in the same
+   * order every time. The value moved once, when this landed: every box's held
+   * etag stopped matching and took one full pull, after which a selling box
+   * pays a 304 a minute like an idle one.
+   */
+  const versioned = Object.fromEntries(
+    Object.entries(scopes).filter(([name]) => !isVolatileScope(name)),
+  );
+  const body = { schemaVersion: CACHE_BUNDLE_SCHEMA_VERSION, scopes: versioned };
   return {
     schemaVersion: CACHE_BUNDLE_SCHEMA_VERSION,
     bundleVersion: sha256Hex(JSON.stringify(body)).slice(0, 16),

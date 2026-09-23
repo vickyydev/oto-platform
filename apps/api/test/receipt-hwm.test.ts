@@ -2,9 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { box, branch, receiptSeries, sale, station, ticketPackage } from '@oto/db';
 import { newId } from '@oto/shared';
+import { boxCredential } from '@oto/box-agent';
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 import { cacheBundle } from '../src/services/sync';
-import type { BoxAuth } from '../src/services/box';
+import { issueClaimCode, type BoxAuth } from '../src/services/box';
 
 /**
  * SCRUM-275, half two — the receipt high-water mark the cache bundle ships.
@@ -173,5 +174,83 @@ describe('the cache bundle tells a box where its receipt numbering stands (SCRUM
       await ctx.db.update(station).set({ codePrefix: 'T1' }).where(eq(station.id, tillId));
     }
     expect((await marks()).get('T1')!.highWaterMark).toBe(carried);
+  });
+});
+
+/**
+ * SCRUM-322 — and the mark does not drag the whole bundle along with it.
+ *
+ * The moment the mark became real it also became the only cached scope that
+ * moves without anybody administering anything, and the bundle's version was a
+ * hash over every scope — so a box that was SELLING changed its own etag every
+ * few minutes. Its sixty-second refresh then took a full 200, the branch's
+ * whole member page included, and rewrote all nine `edge.box_cache` rows,
+ * where the route was built to answer 304. An idle box kept getting its 304s,
+ * which is why nothing showed it.
+ *
+ * These go through the HTTP route rather than `cacheBundle` directly, because
+ * what is being tested is the conditional request: the etag, the `If-None-Match`
+ * and what the route does with them.
+ */
+describe('a sale moves the mark without moving the bundle (SCRUM-322)', () => {
+  /** A bearer credential for this box, claimed the way `sync-api.test.ts` does. */
+  async function boxBearer(): Promise<Record<string, string>> {
+    const { code: claimCode } = await issueClaimCode(ctx.db, auth.boxId);
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/box/v1/register',
+      payload: { claimCode, agentVersion: '0.1.0', hostname: 'receipt-hwm-test' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { boxId: string; secret: string };
+    return { authorization: `Bearer ${boxCredential(body.boxId, body.secret)}` };
+  }
+
+  /** T1's mark out of a bundle response, whole or scoped. */
+  function markOf(body: unknown): number {
+    const bundle = body as { scopes: Record<string, { items: SeriesItem[] }> };
+    const item = (bundle.scopes.receipt_series?.items ?? []).find((i) => i.prefix === 'T1');
+    expect(item, 'the till is in the receipt_series scope').toBeTruthy();
+    return item!.highWaterMark;
+  }
+
+  it('answers the next tick 304, and hands the mark over on its own scope', async () => {
+    const headers = await boxBearer();
+
+    const first = await ctx.app.inject({ method: 'GET', url: '/box/v1/cache', headers });
+    expect(first.statusCode).toBe(200);
+    const etag = first.headers.etag as string;
+    expect(etag).toBeTruthy();
+    const before = markOf(first.json());
+
+    // One finalised sale between the two ticks: the mark moves, and nothing an
+    // administrator would recognise as a change has happened at all.
+    const seq = await comp();
+    expect(seq).toBeGreaterThan(before);
+
+    const second = await ctx.app.inject({
+      method: 'GET',
+      url: '/box/v1/cache',
+      headers: { ...headers, 'if-none-match': etag },
+    });
+    expect(second.statusCode, 'a selling box was pulling its whole cache every minute').toBe(304);
+
+    const scoped = await ctx.app.inject({
+      method: 'GET',
+      url: '/box/v1/cache?scopes=receipt_series',
+      headers,
+    });
+    expect(scoped.statusCode).toBe(200);
+    // The tick the agent makes on every refresh, and the reason the 304 above
+    // is safe: the number is current even though the bundle did not move.
+    expect(markOf(scoped.json())).toBe(seq);
+    expect(Object.keys((scoped.json() as { scopes: object }).scopes)).toEqual(['receipt_series']);
+    /**
+     * And no validator on it. Its version is hashed over the administered
+     * scopes, of which this answer contains none — so an etag here would be a
+     * hash over nothing, identical every time, and the next tick would be
+     * answered 304 with the mark frozen at whatever the box first saw.
+     */
+    expect(scoped.headers.etag).toBeUndefined();
   });
 });

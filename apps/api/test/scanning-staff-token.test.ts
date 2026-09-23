@@ -263,7 +263,13 @@ describe('the box takes a copy of what it needs (S2-06)', () => {
     const store = boxStoreFor(ctx.db);
     await agent.syncCache();
     expect(await store.readBundle(boxId, 'deny_list')).not.toBeNull();
-    // Nothing changed in the cloud: the tick is a 304 and applies nothing.
+    /**
+     * Nothing changed in the cloud: the tick is a 304 and no administered scope
+     * is applied. The receipt mark is refreshed on the same tick and is not in
+     * this answer (SCRUM-322) — it moves on every sale rather than when anybody
+     * administers anything, and `box-cache-survives.test.ts` is where it is
+     * proved out of the box's own store.
+     */
     expect(await agent.syncCache()).toEqual([]);
 
     await ctx.db
