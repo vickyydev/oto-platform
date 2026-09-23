@@ -119,6 +119,53 @@ test('Devices: a box is added by pressing the dialog, and Cancel adds nothing', 
 });
 
 /**
+ * THE CARD TERMINALS — SCRUM-206's Console surface.
+ *
+ * These buttons are what makes the tender ticket's hard cases demonstrable at
+ * all: a host that declines, one that approves less than was asked, one that
+ * says nothing and leaves a till blocked. None of them can be rehearsed on a
+ * real EDC in Phuket from here.
+ *
+ * The case is about the seam this panel does NOT share with the ones around
+ * it. Every other simulator control rides the box command queue and answers
+ * "queued"; this one cannot — `terminal.outcome` can carry the approval code
+ * the terminal will print, and a command payload is stored and rendered — so
+ * it posts to `/payments/terminal-simulator` and the answer is immediate and
+ * says whether it LANDED. The harness runs the api with the `edge` role
+ * (`playwright.config.ts`), so the virtual box and its two simulated EDCs are
+ * in that process and can actually be reached; a press that answered "sent"
+ * over a simulator nobody set would pass a weaker assertion than this one.
+ */
+test('Devices: a simulated card terminal can be told what to do with the next tender', async ({
+  page,
+}) => {
+  await signInAndWait(page);
+  await openSection(page, 'Devices');
+  await chooseBranch(page, CENTRAL_FLORESTA);
+
+  const terminals = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Card terminals', exact: true }) });
+  // The park's NEXGO, by its own label — the seeded row this branch's till
+  // routes a card tender to.
+  const row = terminals.getByRole('listitem').filter({ hasText: 'EDC 1' });
+  await expect(row).toBeVisible({ timeout: 30_000 });
+  // The dialect, so the panel is naming the real device and not a placeholder.
+  await expect(row).toContainText('GHL LinkPOS');
+
+  await row.getByRole('button', { name: 'Decline', exact: true }).click();
+
+  // The platform's own answer, not a queue receipt: it either reached the
+  // simulator or it did not.
+  await expect(
+    terminals.getByText('EDC 1 will decline the next tender.'),
+  ).toBeVisible({ timeout: 30_000 });
+  // And the row says the setting is still standing, because it is chosen
+  // before a tender is sent and stays until it is changed.
+  await expect(row).toContainText('next: Decline');
+});
+
+/**
  * A WRONG PASSWORD.
  *
  * The console is a back-office door and this is the one case about it being

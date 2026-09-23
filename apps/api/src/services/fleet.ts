@@ -26,6 +26,7 @@ import {
   type StationKind,
 } from '@oto/db';
 import { SIMULATOR_ACTIONS_WITH_SECRETS, SimulatorActionSchema, newId } from '@oto/shared';
+import { TerminalCommandPayloadSchema } from '@oto/box-agent';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { holdsGrantAt } from './access-control';
@@ -1564,6 +1565,41 @@ export async function queueCommand(
         'That device is not on this box',
         { deviceId },
       );
+    }
+  }
+
+  /**
+   * A TENDER, guarded here because this is the OTHER door to one (S2-10a).
+   *
+   * The money path does not come through `queueCommand` at all — it writes the
+   * command with the sale's own transaction handle so that an attempt saying
+   * `inquiring` and an inquiry that was never queued cannot both exist
+   * (`services/payments/terminal.ts`). What comes through here is
+   * `POST /boxes/:id/commands`, the Console's generic control, and a
+   * `terminal_sale` queued from there would drive a REAL EDC on a real counter
+   * and charge a guest against an attempt this ledger has never heard of. So
+   * it is checked the way a test print is: the payload has to describe a
+   * tender, and the device it names has to be one of this box's.
+   */
+  if (kind === 'terminal_sale') {
+    const parsed = TerminalCommandPayloadSchema.safeParse(input.payload);
+    if (!parsed.success) {
+      throw new AppError(400, 'COMMAND_PAYLOAD_INVALID', 'That is not a tender this platform knows', {
+        issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      });
+    }
+    const named = parsed.data.deviceId;
+    if (named) {
+      const [row] = await db
+        .select({ id: device.id })
+        .from(device)
+        .where(and(eq(device.id, named), eq(device.boxId, boxRow.id), isNull(device.archivedAt)))
+        .limit(1);
+      if (!row) {
+        throw new AppError(400, 'COMMAND_PAYLOAD_INVALID', 'That device is not on this box', {
+          deviceId: named,
+        });
+      }
     }
   }
 

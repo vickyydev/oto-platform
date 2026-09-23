@@ -22,6 +22,7 @@ import { Field, Select, TextInput } from '@/components/Form';
 import { BoxDrawer } from '@/components/devices/BoxDrawer';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
 import { StationDrawer } from '@/components/devices/StationDrawer';
+import { TerminalSimulatorPanel } from '@/components/devices/TerminalSimulatorPanel';
 import { useSession } from '@/auth/SessionContext';
 import {
   devicesFailed,
@@ -244,6 +245,19 @@ export function Devices() {
         canRevoke={canRevoke}
         onChanged={fleet.reload}
       />
+
+      {/**
+       * The card terminals (S2-10a, SCRUM-206).
+       *
+       * On the PAGE rather than inside the box drawer, where the printer
+       * simulator sits, and for a reason a reader should be able to see: these
+       * controls do not ride the command queue — an approval code cannot be
+       * stored in a command payload the drawer renders as history — so they are
+       * not "things to ask a box to do". A tender is routed to a terminal by
+       * the STATION it hangs off, which is the list directly above this, and
+       * both of the park's EDCs are on one box anyway.
+       */}
+      <TerminalSimulatorPanel devices={fleet.devices} canCommand={canCommandBox} />
 
       {openBox && (
         <BoxDrawer

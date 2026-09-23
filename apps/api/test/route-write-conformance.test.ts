@@ -212,6 +212,17 @@ const NO_DIRECT_WRITE = [
   // is transacted.
   'POST /branches/:branchId/menu/import/preview',
   'POST /print-templates/:id/preview.png',
+  /**
+   * S2-10a — what a SIMULATED card terminal will do with the next tender.
+   *
+   * It writes nothing on purpose. The state belongs to the simulator inside
+   * the agent in this process, and the value it carries can be the approval
+   * code that terminal will print — which is precisely why it may not ride the
+   * command queue, whose payload is a stored jsonb column the Console renders
+   * (`SIMULATOR_ACTIONS_WITH_SECRETS`). Same shape, same reason, as the badge
+   * and scan-simulate routes above it.
+   */
+  'POST /payments/terminal-simulator',
   'POST /sales/quote',
   'POST /stations/:id/button',
   'POST /stations/:id/intents',
@@ -403,6 +414,18 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /box/v1/sync/key [credential:box]',
   'POST /box/v1/sync/push [credential:box]',
   'POST /me/staff-token [secretResponse]',
+  /**
+   * S2-10a — what the card terminal did, reported by the box that drove it.
+   *
+   * On this list for the same reason `POST /box/v1/print-jobs/:id/result` is:
+   * the principal is a machine with its own replay protection, and the replay
+   * store cannot hold a key for a caller with no account. What makes a retry
+   * safe here is stronger than a stored body — the service refuses to move an
+   * attempt that has already reached a state nothing can move it out of, so a
+   * second `approved` for one tender writes nothing and is answered as a
+   * replay. `payments-terminal.test.ts` plants exactly that.
+   */
+  'POST /payments/attempts/:id/result [credential:box]',
   'POST /stations/:id/credentials [secretResponse]',
   'PUT /booths/:id/staff/:accountId/pin [secretResponse]',
   'PUT /me/session/station [secretResponse]',

@@ -31,4 +31,39 @@ export const simulatorApi = {
       { kind: 'simulate', payload: { action } },
       { idempotencyKey: idemKey() },
     ),
+
+  /**
+   * The two CARD TERMINAL instructions, which cannot go through the door above
+   * (S2-10a).
+   *
+   * `terminal.outcome` can carry the approval code the simulated terminal will
+   * print, and `edge.box_command.payload` is a stored jsonb column that the
+   * command history on this very page renders — so `@oto/shared` puts it on
+   * `SIMULATOR_ACTIONS_WITH_SECRETS` and `services/fleet.ts` refuses it at the
+   * queue. `POST /payments/terminal-simulator` is the path that carries the
+   * value without keeping it, the same shape the badge and scan controls use.
+   *
+   * It is also NOT QUEUED: the state belongs to the simulator inside the agent,
+   * so the answer is immediate and says whether it landed. A box the api does
+   * not run in its own process answers `BOX_NOT_IN_THIS_PROCESS` rather than
+   * reporting a success to nobody.
+   */
+  terminal: (action: TerminalSimulatorAction) =>
+    api.post<{ applied: boolean; deviceLabel: string; actionId: string }>(
+      '/payments/terminal-simulator',
+      action,
+      { idempotencyKey: idemKey() },
+    ),
 };
+
+/**
+ * The two terminal actions, narrowed out of the shared union.
+ *
+ * Derived rather than restated, so an outcome added or renamed in
+ * `@oto/shared` fails this file at the keyboard instead of quietly dropping a
+ * button off the panel.
+ */
+export type TerminalSimulatorAction = Extract<
+  SimulatorAction,
+  { action: 'terminal.outcome' | 'terminal.advance_clock' }
+>;
