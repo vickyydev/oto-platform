@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 17:20 — `main` is `e4408a0`; staging is `f212a5d` on the api and POS (Render follows CI on `bce63ad`, 364's Console); CI green through `f212a5d`
+> ## Status on 2026-09-23 17:23 — `main` is `4e67aab`; staging is `f212a5d` on the api and POS (Render follows CI on `bce63ad`, 364's Console); CI green through `f212a5d`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -206,9 +206,20 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > `AUTH_MAX_FAILURES_PER_ADDRESS`, default 50, to set on the Render api
 > service when it lands — or leave the default).
 >
-> **Running:** builds — 377 (`wf_03dc00ee`), 376 (`wf_ae659bf6`), 206-B
-> (`wf_d5e69115`), 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`);
-> evidence — 364 (`wf_362f0ec3`). After wave 2:
+> **17:22 — landed 377** (`4e67aab`, gate MERGE, Testing): the Devices
+> page's dialog renders through a portal to the body — the blurred panel
+> it lived in was the containing block and stacking context for a fixed
+> child, so it was sized to the panel and painted under the Stations
+> section; Pair a screen shared it and is fixed by the same change; a
+> Console e2e case hit-tests both buttons and adds a box. Staging pass
+> queued (`wf_b77cdffb` — Cancel only, since a box cannot be retired on
+> staging yet, 378). Note from the gate: the root typecheck was red at
+> 17:20 on C1's untracked `terminal-channel.test.ts` — C1's own gate
+> will see it; not 377's.
+>
+> **Running:** builds — 376 (`wf_ae659bf6`), 206-B (`wf_d5e69115`),
+> 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`); evidence — 364
+> (`wf_362f0ec3`), 377 (`wf_b77cdffb`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
