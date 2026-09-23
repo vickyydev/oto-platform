@@ -185,7 +185,24 @@ than by a rewrite, and each also recorded in `SPRINT_2_PROGRESS.md`.
    later improvement. The cost is a few satang a code; the alternative was an
    account takeover path that only existed on the environment people are
    invited to play with.
+7. **The staging services live in one Render project.** Every staging
+   service and the database belong to the project *OTO Platform*, environment
+   *staging* (a *production* environment exists beside it, empty). Nothing in
+   `render.yaml` expresses that, and no blueprint is linked to the services —
+   the dashboard and API settings are what runs, and the yaml documents them.
+   A service created through the API lands in "Ungrouped Services" unless it
+   is added to the environment in the same step
+   (`POST /v1/environments/<staging>/resources` with the service id); the
+   booth's site was created that way on 2026-09-23 and moved into the group
+   the same afternoon. The environment ids are in the session memory and in
+   `docs/progress/SESSION_HANDOVER.md`.
 
-Deploys are gated on CI rather than on the push: every service sets
-`autoDeploy: false` and the `deploy` job in `.github/workflows/ci.yml` calls
-Render's deploy hooks only after the build is green on `main`.
+Deploys are gated on CI rather than on the push: every service auto-deploys
+from `main` only once the GitHub checks pass (`autoDeployTrigger:
+checksPass` on the service), so a red run holds the last green commit live.
+That setting lives on each service, not in the yaml, and one had drifted:
+the launcher's trigger was found `off` on 2026-09-23, three days and two
+launcher commits behind the others. It was set to match and the current
+tip deployed by hand. When a staging screen looks older than the ticket
+says, compare each service's live commit (`render-deploys.mjs` in the
+session scratchpad, or the dashboard) before assuming the code.
