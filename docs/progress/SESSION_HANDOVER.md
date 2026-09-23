@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 16:16 — `main` is `a0d8cab`; staging is `7faf1d0` (Render is deploying `a0d8cab`); CI green through `7faf1d0`
+> ## Status on 2026-09-23 16:26 — `main` is `ee2d7a6`; staging is `7faf1d0` (Render is deploying `a0d8cab`); CI green through `7faf1d0`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -25,14 +25,24 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > commit before calling a ticket Deployed (memory `oto-render-staging`).
 >
 > **16:24 — Deployed with staging evidence:** 350, 355, 349, 354, 351
-> (the beacb6d batch's POS half, `e7b913f`); its api half (347, 348, 356,
-> 343, 344, 337, 338) is still capturing.
+> (the beacb6d batch's POS half, `e7b913f`).
+>
+> **16:26 — Deployed with staging evidence:** 347, 348, 356, 343, 344,
+> 337, 338 (the batch's api half, `ee2d7a6`). 347's card shows the
+> setup-code row's shape only (argon2id, 97 chars) beside seven expired
+> 64-hex rows and a measured recovery cost per shape; 348's timing proof
+> stays the committed test — staging's network noise is twenty times the
+> effect. Left on staging by the pass: an invited throwaway account
+> (+66 80 000 0347), one archived child on the evidence family, two small
+> station sales (T1-000008 fnb, T1-000009 shop). The 344 pass found that a
+> **free-item code takes nothing off on the F&B and shop lanes** — only the
+> ticket till adds the free item as a line for the markdown to land on —
+> raised as **368** (depends on 362's code box; linked to both).
 >
 > **Running:** builds — 365 (`wf_243eed56`), 360+366 (`wf_24c97017`), 362
 > (`wf_a0a8fac3`), 367 (`wf_f27b330d`); the tenders Slice A fix round, in
-> its gate (`wf_042f927c`); evidence — the beacb6d api half
-> (`wf_300def37`), the 7faf1d0 batch (`wf_4cefb317`), the launcher
-> (`wf_01b1b4bd`).
+> its gate (`wf_042f927c`); evidence — the 7faf1d0 batch (`wf_4cefb317`),
+> the launcher (`wf_01b1b4bd`).
 
 > ## Status on 2026-09-23 16:02 — `main` was `0e5e2c6`; staging was `ce8a9d9`; CI green through `ce8a9d9`
 >
