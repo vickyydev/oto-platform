@@ -4,6 +4,20 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:40 — `main` is `2731962`; staging is `097b73b` (Render is deploying `803428b` → `2731962`); CI green through `6faf3fb`
+>
+> **Since 15:34:** landed **341** (`2731962` — the F&B item and category
+> forms save to the platform and re-read; the dead stockItemId dropped;
+> F&B Menu and F&B Categories leave `localOnly` for `catalog:menu:manage`
+> — the two adminSections lines added by the parent). Launched the
+> MenuItemForm sweep 363 had to leave for 341 (`wf_b2d75153`).
+>
+> **Running:** builds — 206-A (`wf_9a136b60`), 353 fix (`wf_4493be0c`),
+> 359 (`wf_4aea465b`), 358 (`wf_69884d8d`), 352 (`wf_efab2ab6`), 361
+> (`wf_6be21778`), 363 (`wf_0834f8e9`), 363b (`wf_b2d75153`); evidence —
+> the beacb6d batch (`wf_300def37`). Watchers wait for Render at `803428b`
+> … `2731962`.
+
 > ## Status on 2026-09-23 15:34 — `main` is `5d32f16`; staging is `097b73b` (Render is deploying `803428b` → `beacb6d`; CI has seven pushes queued); CI green through `237ca54`
 >
 > **Since 15:32:** **Deployed with staging evidence:** 329, 342, 346, and
