@@ -55,9 +55,9 @@ interface OrderSummaryProps {
    * THE FIGURES TO SHOW, as the platform quoted them (S2-09a / SCRUM-203).
    *
    * Absent means "price it here", which is what every caller did before this
-   * ticket and what the callers that are not the till still do — the party tab,
-   * the booking screen and the mobile cart sheet own their own totals. The Till
-   * passes the platform's quote, so the number a visitor is charged is the
+   * ticket and what the callers that are not a till still do — the party tab
+   * and the booking screen own their own totals. The Till and the phone till's
+   * cart sheet pass the platform's quote, so the number a visitor is charged is the
    * number the platform computed rather than a second implementation of the
    * same rules that happens to agree.
    */
