@@ -14,10 +14,20 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > 358, 359, 363's form half (`wf_4cefb317`). The superseded deploy
 > watchers were stopped; one waits for Render at `a0d8cab`.
 >
+> **16:22 — the staging launcher was three days stale.** Its Render
+> auto-deploy trigger was `off` (the other five are `checksPass`), so it
+> sat at `f0c710c` and never received `26bd73b` (SCRUM-251's sign-in copy)
+> or `5fe007d` (SCRUM-192's launcher sign-on) — both tickets read Deployed
+> with the launcher half not on staging. Trigger set to `checksPass`, the
+> tip deployed by hand, `DEPLOYMENT_TOPOLOGY.md` corrected (`7c2a89b`), a
+> launcher evidence pass launched (`wf_01b1b4bd`) to add the two screens
+> to 251 and 192 with a plain addendum. Rule: compare every service's live
+> commit before calling a ticket Deployed (memory `oto-render-staging`).
+>
 > **Running:** builds — 365 (`wf_243eed56`), 360+366 (`wf_24c97017`), 362
 > (`wf_a0a8fac3`), 367 (`wf_f27b330d`); the tenders Slice A fix round
 > (`wf_042f927c`); evidence — the beacb6d batch (`wf_300def37`), the
-> 7faf1d0 batch.
+> 7faf1d0 batch (`wf_4cefb317`), the launcher (`wf_01b1b4bd`).
 
 > ## Status on 2026-09-23 16:02 — `main` was `0e5e2c6`; staging was `ce8a9d9`; CI green through `ce8a9d9`
 >
