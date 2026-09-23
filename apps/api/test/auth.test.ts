@@ -98,8 +98,14 @@ describe('SCRUM-21 + SCRUM-20 — invite, setup, first sign-in', () => {
       url: '/auth/sign-in',
       payload: { phone: newPhone, password: 'whatever123' },
     });
-    expect(res.statusCode).toBe(403);
-    expect(res.json().error.code).toBe('SETUP_REQUIRED');
+    // SCRUM-251 — refused, and refused in the same words as a wrong password.
+    // This used to be 403 `SETUP_REQUIRED`, which told anybody holding a list
+    // of numbers which of them belong to staff who have not started yet. What
+    // still matters here is unchanged: the account cannot sign in until setup
+    // is done. That the answer no longer says WHY is pinned in
+    // `auth-enumeration.test.ts`, beside the invited person's own way in.
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error.code).toBe('INVALID_CREDENTIALS');
   });
 
   it('completes setup with the SMS code, then signs in', async () => {
@@ -231,8 +237,13 @@ describe('SCRUM-28 — deactivation and temporary passwords', () => {
       url: '/auth/sign-in',
       payload: { phone: target.phone, password: 'permanent123' },
     });
-    expect(refused.statusCode).toBe(403);
-    expect(refused.json().error.code).toBe('ACCOUNT_INACTIVE');
+    // SCRUM-251 — deactivated, and refused with the right password in hand.
+    // This used to be 403 `ACCOUNT_INACTIVE`, which turned the sign-in screen
+    // into a way to ask whether somebody still works here. The person who
+    // needs to know is told by the manager who switched the account off; the
+    // Login Users panel shows the status and the refusals.
+    expect(refused.statusCode).toBe(401);
+    expect(refused.json().error.code).toBe('INVALID_CREDENTIALS');
     const dead = await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie: live } });
     expect(dead.statusCode).toBe(401);
   });

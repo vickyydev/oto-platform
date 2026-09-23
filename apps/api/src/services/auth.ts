@@ -294,6 +294,35 @@ export async function verifyCode(
 }
 
 /**
+ * The refusal a code check gives when there is no account behind the phone
+ * (SCRUM-251).
+ *
+ * `/auth/setup/complete` answered "No pending setup for this phone", which is
+ * a different sentence from "Invalid code" and therefore a directory: a
+ * stranger with a list of numbers learned which of them belong to staff who
+ * have been invited and not yet started, and learned it without a code and
+ * without a cost. This gives the same two sentences a wrong code gives, in the
+ * same order, and spends a guess from a window of the same length — keyed on
+ * the phone, because there is no account id to key on.
+ *
+ * It RETURNS the error rather than throwing it, so the caller's `throw` is
+ * what ends the request and TypeScript can see that it does.
+ */
+export async function codeRefusalForUnknownPhone(
+  db: Db,
+  phone: string,
+  purpose: CodePurpose,
+  maxAttempts = 5,
+): Promise<AppError> {
+  const { current } = await bumpWindow(db, `code:phone:${phone}:${purpose}`, CODE_TTL_MS);
+  // The same threshold and the same words as `verifyCode`. There is no
+  // outstanding code to invalidate here, which is the only thing that differs
+  // and the one thing the caller cannot see.
+  if (current >= maxAttempts) return errors.badRequest('Too many wrong codes — request a new one');
+  return errors.badRequest('Invalid code');
+}
+
+/**
  * Spend a code `verifyCode` accepted, inside the transaction that does what it
  * authorised.
  *
@@ -466,6 +495,43 @@ export async function seatBranch(
   return { kind: 'seat', branchId: atWork ? worksAt : mine[0]!.id };
 }
 
+/** The audit reason for an account refused for its status rather than its password. */
+const STATUS_REASON: Record<string, string> = {
+  invited: 'setup_required',
+  inactive: 'account_inactive',
+};
+
+/**
+ * ONE ANSWER FOR EVERY REFUSED SIGN-IN (SCRUM-251).
+ *
+ * An `invited` account was answered 403 `SETUP_REQUIRED` and a deactivated one
+ * 403 `ACCOUNT_INACTIVE`, each with a sentence of its own. That made this
+ * endpoint a staff directory: anybody with a list of Thai mobile numbers could
+ * sort them into "works here", "starts next week" and "was let go" without
+ * knowing a single password. Neither branch counted a failure either — the
+ * comment here said throttling them would lock out a colleague who finished
+ * their setup late — so the sorting was free and there was no rate at which it
+ * stopped.
+ *
+ * Every phone whose password does not let it in now gets the same 401
+ * `INVALID_CREDENTIALS` with the same message, and every one of those attempts
+ * counts in the same per-phone and per-IP buckets.
+ *
+ * The two people who used to be told something are told it where knowing costs
+ * nothing:
+ *   - the invited member of staff taps "First shift? Set up account" and the
+ *     code goes to THEIR phone. That path has its own bucket
+ *     (`rl:setup:<phone>`), so a locked sign-in does not close it, and
+ *     finishing setup clears the sign-in lock — see `/auth/setup/complete`;
+ *   - the deactivated one is told by the manager who deactivated them. The
+ *     Login Users panel shows the status and the refusals; the sign-in screen
+ *     is not the place to publish it.
+ *
+ * Which refusal it was stays readable on OUR side: one log line and one audit
+ * row per attempt, carrying `no_account`, `setup_required`, `account_inactive`
+ * or `bad_password`, so somebody locked out for a fortnight is still
+ * diagnosable from the trail.
+ */
 export async function signIn(
   db: Db,
   opts: {
@@ -478,6 +544,8 @@ export async function signIn(
     requestId?: string;
     /** Scopes the phone lookup when the caller knows the tenant. */
     operatorId?: string;
+    /** Request logger: where the reason a sign-in was refused stays readable. */
+    log?: FastifyBaseLogger;
   },
 ): Promise<SignInResult> {
   const { phone, account: acc } = await findAccountByPhone(db, opts.phone, opts.operatorId);
@@ -485,7 +553,27 @@ export async function signIn(
   // IP isn't locked out by a single guessed phone (many tills share an IP).
   await throttleCheck(db, [`phone:${phone}`, `ip:${opts.ip}`]);
 
+  /**
+   * The reason, where only we can read it: the answer is byte-identical for
+   * every class of phone, so the log line is the one place a manager's "she
+   * says it just says wrong password" can be traced. The number is hashed —
+   * the same hash the audit row carries — because a log stream is not a place
+   * to keep customers' and staff's phone numbers.
+   */
+  const logRefusal = (reason: string): void => {
+    opts.log?.warn(
+      {
+        reason,
+        phoneHash: phoneHash(phone),
+        accountId: acc?.id ?? null,
+        reqId: opts.requestId,
+      },
+      'sign-in refused',
+    );
+  };
+
   const refuse = async (reason: string): Promise<void> => {
+    logRefusal(reason);
     await recordSignInFailure(db, {
       phone,
       reason,
@@ -500,6 +588,7 @@ export async function signIn(
       ...(await throttleFail(db, [`phone:${phone}`], opts.maxFailures, opts.cooldownSeconds)),
       ...(await throttleFail(db, [`ip:${opts.ip}`], opts.maxFailures * 4, opts.cooldownSeconds)),
     ];
+    logRefusal(reason);
     await recordSignInFailure(db, {
       phone,
       reason,
@@ -513,17 +602,19 @@ export async function signIn(
   };
 
   if (!acc) await fail('no_account');
-  // Status checks come BEFORE the password check so invited/inactive accounts
-  // get their clear message (SCRUM-19) rather than a generic 401. They count
-  // as a refused sign-in but not as a guess: the password was never tried, so
-  // throttling them would lock a colleague out for finishing their setup late.
-  if (acc!.status === 'invited') {
-    await refuse('setup_required');
-    throw new AppError(403, 'SETUP_REQUIRED', 'Finish your account setup before signing in');
-  }
-  if (acc!.status === 'inactive') {
-    await refuse('account_inactive');
-    throw new AppError(403, 'ACCOUNT_INACTIVE', 'This account has been deactivated — contact a manager');
+  /**
+   * Anything but `active` is refused exactly as a wrong password is — the same
+   * answer, and the same guess spent. `!== 'active'` rather than the two
+   * statuses by name, so a status added later is refused rather than admitted
+   * by omission; the reason keeps its own name in the trail.
+   *
+   * The password is not verified at all, because there is nothing it could
+   * unlock. What that leaves is a timing difference — argon2 runs only for an
+   * active account — which this does NOT close: closing it means verifying
+   * every attempt against a dummy hash, and that is its own change.
+   */
+  if (acc!.status !== 'active') {
+    await fail(STATUS_REASON[acc!.status] ?? `status_${acc!.status}`);
   }
   if (!acc!.passwordHash || !(await verify(acc!.passwordHash, opts.password))) {
     await fail('bad_password');

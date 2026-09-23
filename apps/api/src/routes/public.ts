@@ -34,6 +34,44 @@ import { opCtx, withTx } from '../services/tx';
  *     SERVER-SIDE from the packages via the ported pricing rules — the client
  *     figure is never trusted.
  */
+/**
+ * A booking that already exists, answered as the call that wrote it answered
+ * it (SCRUM-298).
+ *
+ * Read back from the row rather than recomputed: the reference is random, and
+ * re-pricing a booking made last night against tonight's packages would hand
+ * the same family a different total for the same submit.
+ *
+ * Every VALUE is the first answer's; the bytes are not, because `lines` comes
+ * back through a `jsonb` column and Postgres orders an object's keys its own
+ * way. That is the difference between this and the platform's replay store,
+ * which returns a stored body unchanged — and it is a difference no JSON
+ * client can see.
+ */
+function storedBookingAnswer(row: typeof booking.$inferSelect): {
+  id: string;
+  reference: string;
+  visitDate: string;
+  rateMode: 'weekday' | 'weekend';
+  totalSatang: number;
+  lines: Array<Record<string, unknown>>;
+} {
+  const payload = (row.payload ?? {}) as {
+    rateMode?: string;
+    lines?: Array<Record<string, unknown>>;
+  };
+  return {
+    id: row.id,
+    reference: row.reference,
+    visitDate: row.bookingDate,
+    // There are two modes and weekday is the pair's default, so anything but
+    // 'weekend' reads as 'weekday' — the same convention the resolver uses.
+    rateMode: payload.rateMode === 'weekend' ? 'weekend' : 'weekday',
+    totalSatang: row.totalSatang,
+    lines: payload.lines ?? [],
+  };
+}
+
 export async function publicRoutes(app: App): Promise<void> {
   const loadBranchByCode = async (code: string) => {
     const [br] = await app.db
@@ -151,8 +189,25 @@ export async function publicRoutes(app: App): Promise<void> {
       // park a held slot, so one address gets far fewer of them.
       config: { public: true, rateLimit: { max: 20, timeWindow: 60_000 } },
       schema: {
-        description: 'Create a customer booking; total computed server-side',
+        description:
+          'Create a customer booking; total computed server-side. `id` is the booking id the SITE mints, and sending it again returns the booking that exists rather than making a second one.',
         body: z.object({
+          /**
+           * The booking's own id, minted by the site before it submits
+           * (SCRUM-298).
+           *
+           * This route is open, and the platform's idempotency store is not
+           * available to it: the store's rows are owned by an account
+           * (`core.idempotency_key.account_id`, not null, foreign key), and a
+           * customer on the booking page has none — so the plugin returns
+           * before the store and the `Idempotency-Key` the site already sends
+           * does nothing here. A client-minted id needs no migration and no
+           * anonymous principal: the primary key IS the unique constraint, and
+           * the check below turns the second submit into the first one's
+           * answer. A double-tap on a Thai mall's wifi was two bookings, two
+           * references and two held slots for one family.
+           */
+          id: z.string().uuid().optional(),
           branchCode: z.string(),
           phone: z.string().optional(),
           parentName: z.string().min(1).max(120),
@@ -166,8 +221,28 @@ export async function publicRoutes(app: App): Promise<void> {
         }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const br = await loadBranchByCode(req.body.branchCode);
+
+      /**
+       * The same submit arriving twice (SCRUM-298).
+       *
+       * Everything the first call answered is on the row — the reference and
+       * the priced lines included, because the total is computed here and
+       * stored — so the replay is that answer and not a fresh computation
+       * against today's prices.
+       */
+      if (req.body.id) {
+        const [already] = await app.db
+          .select()
+          .from(booking)
+          .where(and(eq(booking.id, req.body.id), eq(booking.operatorId, br.operatorId)))
+          .limit(1);
+        if (already) {
+          reply.header('x-oto-replay', 'true');
+          return storedBookingAnswer(already);
+        }
+      }
 
       // Tier must exist for this operator; unverifiable tiers are allowed for
       // the ONLINE flow only as a claim — reception re-verifies at the door
@@ -240,31 +315,57 @@ export async function publicRoutes(app: App): Promise<void> {
         memberId = m?.id ?? null;
       }
 
-      const id = newId();
+      const id = req.body.id ?? newId();
       const reference = `OTO-${String(randomInt(0, 36 ** 4)).padStart(4, '0')}-${randomInt(1000, 9999)}`;
       // Booking, attendees and the audit row are one operation: a booking
       // whose attendees are missing is a family turned away at the door.
       return withTx(app.db, opCtx(req), 'booking.create', async (tx) => {
-        await tx.insert(booking).values({
-          id,
-          operatorId: br.operatorId,
-          branchId: br.id,
-          memberId,
-          reference,
-          bookingDate: visitDate,
-          status: 'paid', // payment recording is M2; the online flow simulates it (prototype behaviour)
-          totalSatang,
-          payload: {
-            tier: req.body.tier,
-            rateMode: rate.mode,
-            parentName: req.body.parentName,
-            phone,
-            contactChannel: req.body.contactChannel ?? 'whatsapp',
-            locale: req.body.locale ?? 'en',
-            lines: computedLines,
-            clientSnapshot: req.body.clientSnapshot ?? null,
-          },
-        });
+        /**
+         * `onConflictDoNothing` closes what the read above cannot: two submits
+         * in flight together both pass that check, and the loser waits here on
+         * the winner's row and is handed nothing. It answers with the row that
+         * exists and writes no attendees and no audit entry — the winner wrote
+         * both.
+         */
+        const [inserted] = await tx
+          .insert(booking)
+          .values({
+            id,
+            operatorId: br.operatorId,
+            branchId: br.id,
+            memberId,
+            reference,
+            bookingDate: visitDate,
+            status: 'paid', // payment recording is M2; the online flow simulates it (prototype behaviour)
+            totalSatang,
+            payload: {
+              tier: req.body.tier,
+              rateMode: rate.mode,
+              parentName: req.body.parentName,
+              phone,
+              contactChannel: req.body.contactChannel ?? 'whatsapp',
+              locale: req.body.locale ?? 'en',
+              lines: computedLines,
+              clientSnapshot: req.body.clientSnapshot ?? null,
+            },
+          })
+          .onConflictDoNothing({ target: booking.id })
+          .returning({ id: booking.id });
+        if (!inserted) {
+          const [already] = await tx
+            .select()
+            .from(booking)
+            .where(and(eq(booking.id, id), eq(booking.operatorId, br.operatorId)))
+            .limit(1);
+          if (already) {
+            reply.header('x-oto-replay', 'true');
+            return storedBookingAnswer(already);
+          }
+          // The id is taken by a booking of ANOTHER operator: the site sent an
+          // id that is not its own to use. Nothing is written, and it is not
+          // told whose it is.
+          throw errors.badRequest('This booking id is already in use');
+        }
         for (const line of req.body.lines) {
           for (let i = 0; i < line.kids; i++) {
             await tx.insert(attendee).values({

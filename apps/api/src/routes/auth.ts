@@ -5,6 +5,7 @@ import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { clearSessionCookie, setSessionCookie, SESSION_COOKIE } from '../plugins/session';
 import {
+  codeRefusalForUnknownPhone,
   consumeCode,
   verifyCode,
   findAccountByPhone,
@@ -14,6 +15,7 @@ import {
   setPassword,
   signIn,
   signOut,
+  throttleClear,
   unlockSession,
 } from '../services/auth';
 import {
@@ -68,6 +70,9 @@ export async function authRoutes(app: App): Promise<void> {
         maxFailures: app.env.AUTH_MAX_FAILURES,
         cooldownSeconds: app.env.AUTH_COOLDOWN_SECONDS,
         requestId: req.id,
+        // SCRUM-251: the answer says only "phone or password is incorrect",
+        // so the reason has to be readable somewhere. It is this line.
+        log: req.log,
       });
       setSessionCookie(reply, result.token, app.env.SESSION_TTL_HOURS, app.env.COOKIE_SECURE);
       return { accountId: result.accountId, mustChangePassword: result.mustChangePassword };
@@ -310,8 +315,20 @@ export async function authRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const { account: acc } = await findAccountByPhone(app.db, req.body.phone);
-      if (!acc || acc.status !== 'invited') throw errors.badRequest('No pending setup for this phone');
+      const { account: acc, phone } = await findAccountByPhone(app.db, req.body.phone);
+      /**
+       * SCRUM-251 — a phone with no pending setup is answered exactly as a
+       * wrong code is, and costs the same guess.
+       *
+       * "No pending setup for this phone" was a second sentence, and a second
+       * sentence is a directory: it separated invited staff from everybody
+       * else for anyone willing to POST a six-digit number. `code:phone:<…>`
+       * is the window those attempts land in — see
+       * `codeRefusalForUnknownPhone`.
+       */
+      if (!acc || acc.status !== 'invited') {
+        throw await codeRefusalForUnknownPhone(app.db, phone, 'setup', app.env.CODE_MAX_ATTEMPTS);
+      }
       /**
        * SCRUM-296 — spending the code, setting the password and opening the
        * account are one act.
@@ -345,6 +362,24 @@ export async function authRoutes(app: App): Promise<void> {
             .update(account)
             .set({ status: 'active', phoneVerifiedAt: new Date() })
             .where(eq(account.id, acc.id));
+          /**
+           * SCRUM-251 — and the sign-in lock their own fumbling earned.
+           *
+           * Typing a password on an account that is still `invited` now counts
+           * as a failure like any other, because the answer no longer says
+           * which it was. Five of those and the phone is in a cooldown; the
+           * setup flow is deliberately outside that bucket, so they can still
+           * get a code and finish — and would then have completed setup only
+           * to find the till refusing them for the next fifteen minutes. A
+           * code delivered to their phone and spent is the same proof of
+           * possession a successful sign-in gives, so the phone's bucket is
+           * cleared with it.
+           *
+           * The IP bucket is NOT cleared: it is shared by every till in
+           * reception, and one valid code should not hand an attacker sitting
+           * on that network a clean slate for guessing at other phones.
+           */
+          await throttleClear(tx, [`phone:${phone}`]);
           await audit.record(tx, {
             actorAccountId: acc.id,
             operatorId: acc.operatorId,
@@ -391,8 +426,18 @@ export async function authRoutes(app: App): Promise<void> {
       },
     },
     async (req) => {
-      const { account: acc } = await findAccountByPhone(app.db, req.body.phone);
-      if (!acc) throw errors.badRequest('Invalid code');
+      const { account: acc, phone } = await findAccountByPhone(app.db, req.body.phone);
+      // SCRUM-251 — already the same sentence a wrong code gets; now it also
+      // costs the same guess, so the two cannot be told apart by how many
+      // times they can be asked.
+      if (!acc) {
+        throw await codeRefusalForUnknownPhone(
+          app.db,
+          phone,
+          'password_reset',
+          app.env.CODE_MAX_ATTEMPTS,
+        );
+      }
       /**
        * SCRUM-296 — the new password and the end of every session that knew
        * the old one.
@@ -420,6 +465,11 @@ export async function authRoutes(app: App): Promise<void> {
           await consumeCode(tx, verified);
           await setPassword(tx, acc.id, req.body.password);
           await invalidateAllSessions(tx, acc.id);
+          // The phone's sign-in cooldown goes with the old password: the
+          // person holding a code delivered to that number has proved as much
+          // as a successful sign-in proves. The shared IP bucket stays — see
+          // `/auth/setup/complete`.
+          await throttleClear(tx, [`phone:${phone}`]);
           await audit.record(tx, {
             actorAccountId: acc.id,
             operatorId: acc.operatorId,
