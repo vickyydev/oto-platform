@@ -15,6 +15,13 @@
       "when": 1789888049933,
       "tag": "0001_platform_user_id",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790138278147,
+      "tag": "0002_core_branch_id_unique",
+      "breakpoints": true
     }
   ]
 }

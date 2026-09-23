@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { and, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, eq, isNull, or } from 'drizzle-orm';
 import {
   account,
   branch,
@@ -8,12 +8,11 @@ import {
   mappedAppBranches,
   otoappUserBranchAccess,
   otoappUsers,
-  role,
-  roleAssignment,
   type OtoAppUserRole,
 } from '@oto/db';
-import { newId } from '@oto/shared';
+import { newId, type Permission } from '@oto/shared';
 import { AppError } from '../lib/errors';
+import { hasPermission, resolveEffectivePermissions } from './permissions';
 import type { Exec } from './tx';
 
 /**
@@ -279,11 +278,12 @@ async function seatInAppBranch(
    * app has to be told so in rows — its `getUserWithBranchAccess` reads this
    * table and a user with none sees nothing.
    *
-   * Asked as "holds an ADMINISTRATOR role operator-wide", never as "holds
-   * anything operator-wide". The app-access grant this same provisioning writes
-   * is itself operator-scoped, so the looser reading would make every person
-   * provisioned into the app an administrator of every park — which is the door
-   * the branch isolation register found open at `atBranch`.
+   * Asked as "holds the one permission that MEANS operator-wide, at operator
+   * scope", never as "holds anything operator-wide" and no longer as "holds a
+   * role called operator_admin" (SCRUM-318). The app-access grant this same
+   * provisioning writes is itself operator-scoped, so the loosest reading would
+   * make every person provisioned into the app an administrator of every park —
+   * which is the door the branch isolation register found open at `atBranch`.
    */
   if (await administersWholeOperator(exec, opts.platformAccountId, operatorId)) {
     const mapped = await mappedAppBranches(exec, operatorId);
@@ -355,31 +355,40 @@ async function seatInAppBranch(
 }
 
 /**
+ * The permission that says someone's reach is the whole operator rather than
+ * one park. `platform_admin` and `operator_admin` carry it because they carry
+ * the whole vocabulary; no branch-scoped bundle does.
+ */
+const OPERATOR_WIDE_PERMISSION: Permission = 'admin:operator:all';
+
+/**
  * Does this account administer the whole operator?
  *
- * The two administrator roles held at operator scope — `platform_admin` carries
- * a null scope id and `operator_admin` carries the operator's. A role held at
- * one branch, and any other role held operator-wide, is not this.
+ * Asked as a PERMISSION held at operator scope, through the same resolver every
+ * guard uses — never as a role NAME (SCRUM-318). Role names are unique per
+ * operator and nothing reserves the system ones, so an operator that mints its
+ * own role literally called `operator_admin` — a plausible name for "manages
+ * our admin paperwork" — was read here as administering the estate, and
+ * everybody holding it was seated in every park of the OTO App. The same
+ * reasoning is already written down at `OPERATOR_ADMIN_PERMISSION` in
+ * `access-control.ts`: an operator may define a role of its own carrying any
+ * name, so a name is not an authority.
+ *
+ * `hasPermission` with an operator-only target is exactly "held at operator
+ * scope, covering this operator": a branch-, department- or record-scoped grant
+ * covers nothing when the target names no branch, department or record.
+ *
+ * Resolved on `exec` and not on the pool, so a role granted earlier in THIS
+ * transaction — provisioning creates the account and its grants in one — is
+ * visible to the question.
  */
 async function administersWholeOperator(
   exec: Exec,
   accountId: string,
   operatorId: string,
 ): Promise<boolean> {
-  const rows = await exec
-    .select({ name: role.name })
-    .from(roleAssignment)
-    .innerJoin(role, eq(role.id, roleAssignment.roleId))
-    .where(
-      and(
-        eq(roleAssignment.accountId, accountId),
-        eq(roleAssignment.scopeType, 'operator'),
-        or(isNull(roleAssignment.scopeId), eq(roleAssignment.scopeId, operatorId)),
-        inArray(role.name, ['platform_admin', 'operator_admin']),
-      ),
-    )
-    .limit(1);
-  return rows.length > 0;
+  const effective = await resolveEffectivePermissions(exec, accountId);
+  return hasPermission(effective, OPERATOR_WIDE_PERMISSION, { operatorId });
 }
 
 export interface CreateOtoAppUserInput {

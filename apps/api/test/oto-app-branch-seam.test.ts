@@ -305,8 +305,46 @@ describe('and when it cannot be resolved, the answer says so (SCRUM-268)', () =>
     expect(await branchAccessOf(result.externalUserId)).toHaveLength(0);
   });
 
+  /**
+   * SCRUM-319 — the name is the FIRST-TIME join and nothing else.
+   *
+   * The reconciliation's name step has always required `core_branch_id IS NULL`
+   * and the seating's did not, so an app row that had already said which park
+   * it belongs to could be claimed a second time by anything sharing its name.
+   * Two parks carrying one name is not exotic: a rename half-done on one side,
+   * or the pair the reconciliation refused to guess between and left for
+   * somebody to sort out.
+   */
+  it('never takes an app row that already belongs to another park', async () => {
+    const mapped = await platformBranch('Oto Play Park, Thalang', 'seam-thalang');
+    await dropAppRowFor(mapped);
+    const theirs = await appBranch({ name: 'Oto Play Park, Thalang', coreBranchId: mapped });
+
+    // A second park of the same name, with no app row of its own.
+    const newcomer = await platformBranch('Oto Play Park, Thalang', 'seam-thalang-two');
+    await dropAppRowFor(newcomer);
+
+    const accountId = await seatedAccount({
+      phone: '+66900000409',
+      name: 'Same Name, Other Park',
+      branchId: newcomer,
+    });
+    const result = await provision(accountId, 'same.name.other.park@otopark.test');
+
+    // Nowhere, and it says so. Seating them in `theirs` would have put them in
+    // the first park's data — invisible from either side afterwards.
+    expect(result.appBranch.branchId).not.toBe(theirs);
+    expect(result.appBranch.unplacedReason).toBe('no_app_branch');
+    expect(await branchAccessOf(result.externalUserId)).toHaveLength(0);
+  });
+
   it('leaves no branch access behind when a later step fails', async () => {
     const platform = await platformBranch('Oto Play Park, Rawai', 'seam-rawai');
+    // The row `POST /branches` just made goes first: one platform branch may
+    // have one app row and the database now holds that (SCRUM-319), so a
+    // fixture arranging the app's side for itself has to replace rather than
+    // add.
+    await dropAppRowFor(platform);
     await appBranch({ name: 'Oto Play Park, Rawai', coreBranchId: platform });
     const accountId = await seatedAccount({
       phone: '+66900000406',
@@ -340,6 +378,7 @@ describe('and when it cannot be resolved, the answer says so (SCRUM-268)', () =>
 describe('the branch seam does not move anybody who was already in the app', () => {
   it('leaves a linked user’s branch access alone', async () => {
     const platform = await platformBranch('Oto Play Park, Kamala', 'seam-kamala');
+    await dropAppRowFor(platform);
     await appBranch({ name: 'Oto Play Park, Kamala', coreBranchId: platform });
 
     const existingUserId = newId();

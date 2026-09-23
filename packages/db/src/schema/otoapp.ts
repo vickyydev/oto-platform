@@ -120,6 +120,17 @@ export const otoappBranches = otoapp.table('branches', {
   /**
    * `core.branch.id`, as text. Declared `text` in the app's schema, so a
    * comparison against a platform uuid is written as text on both sides.
+   *
+   * At most one app row may carry a given platform branch, and the database
+   * says so: `branches_core_branch_id_unique`, a unique index over the column
+   * where it is not null, added in the app's own migration `0002` (SCRUM-319).
+   * Every "is it mapped already" test below reads rows this transaction cannot
+   * see uncommitted, so two concurrent creates of one branch both found nothing
+   * and both wrote — leaving one platform branch with two app rows, and which
+   * of them a person was seated in decided by which the reader happened to
+   * find first. Declared there rather than here: the app owns this table and
+   * this file is a narrow re-declaration that no migration is ever generated
+   * from.
    */
   coreBranchId: text('core_branch_id'),
   coreSyncStatus: text('core_sync_status', { enum: OTO_APP_BRANCH_SYNC_STATUSES }),
@@ -465,6 +476,14 @@ export interface AppBranchLookup {
  * `'ambiguous'` rather than a guess when two app rows carry that name: seating
  * somebody in the wrong park's data is invisible afterwards, and landing
  * nowhere is not.
+ *
+ * The name step is the FIRST-TIME join and nothing else, which is why it takes
+ * only rows carrying no `core_branch_id` — the same requirement the
+ * reconciliation's name step has always had, and missing here until SCRUM-319.
+ * Without it, two parks sharing a name where one is already mapped to the other
+ * park's branch seated this one's staff in that other park's data: the id says
+ * whose row it is, and a row that has already answered that question is not
+ * available to be claimed again by a name.
  */
 export async function findAppBranchForCore(
   exec: OtoAppExec,
@@ -479,7 +498,10 @@ export async function findAppBranchForCore(
   const ourIds = new Set((await loadCoreBranches(exec, input.operatorId)).map((b) => b.id));
   const foreign = foreignTenantsOf(rows, ourIds);
   const folded = foldBranchName(input.name);
-  const named = rows.filter((r) => !foreign.has(r.tenantId) && foldBranchName(r.name) === folded);
+  const named = rows.filter(
+    (r) =>
+      r.coreBranchId === null && !foreign.has(r.tenantId) && foldBranchName(r.name) === folded,
+  );
   if (named.length > 1) return 'ambiguous';
   const one = named[0];
   return one ? { id: one.id, name: one.name, tenantId: one.tenantId, matchedBy: 'name' } : null;

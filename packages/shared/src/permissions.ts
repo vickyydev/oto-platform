@@ -20,6 +20,24 @@ export const PERMISSIONS = [
   'admin:operator:create',
   'admin:operator:read',
   'admin:operator:update',
+  /**
+   * The marker for "administers the WHOLE operator" (SCRUM-318).
+   *
+   * It guards no route. It exists to be asked about: several places have to
+   * decide whether an account's reach is the entire operator rather than one
+   * park — provisioning into the OTO App seats such a person at every mapped
+   * branch — and the alternatives were both wrong. Asking by ROLE NAME reads an
+   * operator's own custom role literally named `operator_admin` as the system
+   * one, because role names are unique per operator and nothing stops an
+   * operator minting that name. Asking by some other permission held at
+   * operator scope (`admin:role:assign`, say) answers a different question and
+   * drags every role that happens to carry it along.
+   *
+   * Carried by `platform_admin` and `operator_admin` because both take the
+   * whole vocabulary; deliberately absent from `branch_manager` and below. A
+   * custom role may carry it — that is a deliberate grant, which is the point.
+   */
+  'admin:operator:all',
   'admin:branch:create',
   'admin:branch:read',
   'admin:branch:update',

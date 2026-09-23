@@ -448,6 +448,16 @@ export const branches = pgTable("branches", {
   uniqueIndex("branches_tenant_calendar_color_unique")
     .on(table.tenantId, sql`lower(${table.calendarColor})`)
     .where(sql`${table.calendarColor} IS NOT NULL`),
+  // One platform branch, at most one row here (SCRUM-319). The platform maps a
+  // branch into this table by reading the rows first and writing if it finds
+  // none, and a concurrent create reads the same "none" — so two rows could
+  // carry one core_branch_id, and which of them a person was seated in came
+  // down to which the next reader happened to find first. Partial, because
+  // every row that predates the mapping carries null and Head Office always
+  // will.
+  uniqueIndex("branches_core_branch_id_unique")
+    .on(table.coreBranchId)
+    .where(sql`${table.coreBranchId} IS NOT NULL`),
 ]);
 
 export const insertBranchSchema = createInsertSchema(branches).omit({

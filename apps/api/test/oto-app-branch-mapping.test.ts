@@ -1,12 +1,14 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   account,
   auditLog,
   employee,
+  mapCoreBranchIntoApp,
   otoappBranches,
   otoappUserBranchAccess,
   role,
+  rolePermission,
   roleAssignment,
 } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
@@ -333,7 +335,15 @@ describe('provisioning seats a person at the park they work at (SCRUM-268)', () 
     phone: string;
     name: string;
     branchId: string | null;
+    /**
+     * The SYSTEM role of that name, granted operator-wide. Resolved on a null
+     * `operator_id` because an operator may mint a role of its own carrying the
+     * same name (SCRUM-318) — and one test below does exactly that, so "the
+     * role called operator_admin" stopped being a single row.
+     */
     roleName?: 'operator_admin';
+    /** A specific role row, granted operator-wide — an operator's own, say. */
+    roleId?: string;
   }): Promise<string> {
     const employeeId = newId();
     await ctx.db
@@ -347,16 +357,20 @@ describe('provisioning seats a person at the park they work at (SCRUM-268)', () 
       phone: normalizePhone(opts.phone)!,
       status: 'invited',
     });
-    if (opts.roleName) {
+    let roleId = opts.roleId ?? null;
+    if (!roleId && opts.roleName) {
       const [row] = await ctx.db
         .select({ id: role.id })
         .from(role)
-        .where(eq(role.name, opts.roleName))
+        .where(and(eq(role.name, opts.roleName), isNull(role.operatorId)))
         .limit(1);
+      roleId = row!.id;
+    }
+    if (roleId) {
       await ctx.db.insert(roleAssignment).values({
         id: newId(),
         accountId,
-        roleId: row!.id,
+        roleId,
         scopeType: 'operator',
         scopeId: operatorId,
       });
@@ -460,5 +474,131 @@ describe('provisioning seats a person at the park they work at (SCRUM-268)', () 
     expect(res.statusCode, res.body).toBe(200);
     expect(res.json().appBranch.unplacedReason).toBe('no_platform_branch');
     expect(await accessOf(res.json().externalUserId)).toHaveLength(0);
+  });
+
+  /**
+   * SCRUM-318 — "administers the whole operator" is a PERMISSION held at
+   * operator scope, and was a role NAME.
+   *
+   * Role names are unique per operator and nothing reserves the system ones,
+   * so `operator_admin` is a name any operator may mint for a role of its own —
+   * "handles our admin paperwork" is a plausible reason to. While the question
+   * was asked by name, everybody holding that role was seated in every park of
+   * the OTO App, which is every park's member data, on a role the park meant as
+   * a clerical one.
+   */
+  describe('operator-wide is a permission, not a role name (SCRUM-318)', () => {
+    /** The operator's own role, carrying the system role's name and none of its authority. */
+    let lookalikeRoleId: string;
+
+    it('an operator’s own role called operator_admin seats a person in one park', async () => {
+      lookalikeRoleId = newId();
+      await ctx.db.insert(role).values({
+        id: lookalikeRoleId,
+        operatorId,
+        name: 'operator_admin',
+        description: 'The park’s own paperwork role, which happens to be called this',
+      });
+      await ctx.db
+        .insert(rolePermission)
+        .values({ id: newId(), roleId: lookalikeRoleId, permission: 'pos:member:read' });
+
+      const accountId = await staffAt({
+        phone: '+66900000425',
+        name: 'Named Like An Administrator',
+        branchId: chalongId,
+        roleId: lookalikeRoleId,
+      });
+      const result = await provision(accountId, 'named.like.an.administrator@otopark.test');
+
+      // Their own park, from their employee record — not every park.
+      expect(result.appBranch.seatedFrom).toBe('employee');
+      const rows = await accessOf(result.externalUserId);
+      expect(rows.map((r) => r.branchId)).toEqual([chalongAppId]);
+      expect(rows.map((r) => r.branchId)).not.toContain(florestaAppId);
+    });
+
+    it('and the real operator_admin still reaches every mapped park', async () => {
+      // The lookalike is in the database by now, so "the role called
+      // operator_admin" is two rows and only one of them is the estate's.
+      expect(
+        await ctx.db.select().from(role).where(eq(role.name, 'operator_admin')),
+      ).toHaveLength(2);
+
+      const accountId = await staffAt({
+        phone: '+66900000426',
+        name: 'Actually An Administrator',
+        branchId: chalongId,
+        roleName: 'operator_admin',
+      });
+      const result = await provision(accountId, 'actually.an.administrator@otopark.test');
+
+      expect(result.appBranch.seatedFrom).toBe('operator_wide');
+      const seated = (await accessOf(result.externalUserId)).map((r) => r.branchId);
+      expect(seated).toContain(florestaAppId);
+      expect(seated).toContain(chalongAppId);
+      expect(seated).not.toContain(headOfficeAppId);
+    });
+  });
+});
+
+/**
+ * SCRUM-319 — one platform branch, at most one row in the app.
+ *
+ * Every "is it mapped already" question the mapping asks is a read, and a read
+ * cannot see a row another transaction has not committed. Two creates of one
+ * branch therefore both found nothing and both wrote, and which of the two rows
+ * a person was afterwards seated in came down to which the next reader happened
+ * to find first. The database is what settles it now.
+ */
+describe('one platform branch maps to one app row (SCRUM-319)', () => {
+  it('two mappings of one branch racing each other leave one row', async () => {
+    const branchId = newId();
+    const input = {
+      operatorId,
+      branchId,
+      name: 'Oto Play Park, Bang Tao',
+      address: 'A mall in Phuket',
+      timezone: 'Asia/Bangkok',
+    };
+
+    const racers = await Promise.allSettled([
+      ctx.db.transaction((tx) => mapCoreBranchIntoApp(tx, input)),
+      ctx.db.transaction((tx) => mapCoreBranchIntoApp(tx, input)),
+    ]);
+
+    const rows = await ctx.db
+      .select()
+      .from(otoappBranches)
+      .where(eq(otoappBranches.coreBranchId, branchId));
+    expect(rows).toHaveLength(1);
+
+    // At most one of the two may claim it made the row. The loser either found
+    // the committed row and said `core_branch_id`, or was refused by the index
+    // and rolled back — both are correct, and which one happens depends on how
+    // the two transactions interleave, so neither is asserted.
+    const created = racers.filter(
+      (r) => r.status === 'fulfilled' && r.value.mappedBy === 'created',
+    );
+    expect(created).toHaveLength(1);
+  });
+
+  it('refuses a second app row carrying a platform branch another row already has', async () => {
+    const refusal = await ctx.db
+      .execute(
+        sql`insert into otoapp.branches (id, tenant_id, name, address, core_branch_id)
+            values (${newId()}, ${appTenantId}, 'A second row for Floresta', 'A mall in Phuket', ${florestaId})`,
+      )
+      .then(
+        () => null,
+        (err: unknown) => err,
+      );
+    expect(refusal, 'a second row for one platform branch was accepted').not.toBeNull();
+    // Drizzle wraps the driver's error, so the constraint is named on the cause.
+    const cause = (refusal as { cause?: unknown }).cause ?? refusal;
+    expect(cause).toMatchObject({
+      code: '23505',
+      constraint: 'branches_core_branch_id_unique',
+    });
   });
 });

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "branches_core_branch_id_unique" ON "branches" USING btree ("core_branch_id") WHERE "branches"."core_branch_id" IS NOT NULL;
