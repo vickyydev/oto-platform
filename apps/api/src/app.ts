@@ -34,6 +34,7 @@ import { bookingRoutes } from './routes/bookings';
 import { saleRoutes } from './routes/sales';
 import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
+import { branchCloneRoutes } from './routes/branch-clone';
 import { menuRoutes } from './routes/menu';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
@@ -340,6 +341,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // being taken from the cart.
   await app.register(saleTierRoutes, { prefix: '/sales' });
   await app.register(catalogRoutes);
+  await app.register(branchCloneRoutes);
   // The menu, the modifier library and the discount codes (SCRUM-232). No
   // prefix, like the catalogue it belongs to: its items hang off
   // `/branches/:branchId/menu` and the operator-wide rows off `/menu`.

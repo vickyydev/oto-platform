@@ -186,11 +186,79 @@ export interface ApiBranch {
   archived: boolean;
 }
 
+/**
+ * What a branch catalogue clone would do, or did, per entity (SCRUM-204).
+ *
+ * `blocked` carries a `name` rather than a `key` on purpose — the api's
+ * idempotency store refuses to keep a response with a `key`-suffixed field in
+ * it, so the name is what makes a retried clone replayable.
+ */
+export interface ApiCloneEntityPlan {
+  create: string[];
+  exists: string[];
+  blocked: Array<{ name: string; reason: string }>;
+}
+
+export interface ApiCloneCounts {
+  created: number;
+  existing: number;
+  blocked: number;
+}
+
+/** The entity keys the preview and the clone both answer with. */
+export type ApiCloneEntity =
+  | 'ticketPackages'
+  | 'holidays'
+  | 'taxConfig'
+  | 'products'
+  | 'modifierGroups'
+  | 'modifierOptions'
+  | 'modifierLinks'
+  | 'discountCodes'
+  | 'taxOverrides'
+  | 'printTemplates'
+  | 'stockLocations';
+
+export interface ApiClonePreview {
+  sourceBranch: { id: string; name: string };
+  targetBranch: { id: string; name: string };
+  /** True when the target has traded: the clone is refused. */
+  targetHasSales: boolean;
+  plan: Record<ApiCloneEntity, ApiCloneEntityPlan>;
+  counts: Record<ApiCloneEntity, ApiCloneCounts>;
+  /** Operator-wide rows a copied item points at rather than duplicates. */
+  shared: string[];
+}
+
+export interface ApiCloneResult {
+  sourceBranchId: string;
+  targetBranchId: string;
+  counts: Record<ApiCloneEntity, ApiCloneCounts>;
+  plan: Record<ApiCloneEntity, ApiCloneEntityPlan>;
+  created: number;
+}
+
 export const branchesApi = {
   list: () => api.get<{ branches: ApiBranch[] }>('/branches'),
   create: (body: { name: string; code: string; timezone?: string; country?: string }) =>
     api.post<{ id: string }>('/branches', body, { idempotencyKey: idemKey() }),
   update: (id: string, patch: Record<string, unknown>) => api.patch<{ ok: true }>(`/branches/${id}`, patch),
+  /** What copying `sourceBranchId` into `branchId` would create. Reads only. */
+  clonePreview: (branchId: string, sourceBranchId: string) =>
+    api.get<ApiClonePreview>(
+      `/branches/${branchId}/clone-preview?from=${encodeURIComponent(sourceBranchId)}`,
+    ),
+  /**
+   * Copy it, once, in one transaction. Carries a key for the same reason every
+   * write does: a retry through a dropped connection must not run the copy a
+   * second time while the first one is still committing.
+   */
+  clone: (branchId: string, sourceBranchId: string) =>
+    api.post<ApiCloneResult>(
+      `/branches/${branchId}/clone`,
+      { sourceBranchId },
+      { idempotencyKey: idemKey() },
+    ),
 };
 
 export interface ApiTicketPackage {

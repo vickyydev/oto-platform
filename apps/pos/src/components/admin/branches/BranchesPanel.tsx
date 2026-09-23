@@ -11,9 +11,39 @@ import {
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { useBranch } from '@/branch/BranchContext';
 import { useOperator } from '@/auth/OperatorContext';
-import { NotSavedNotice } from '../NotSavedNotice';
+import {
+  branchesApi,
+  type ApiCloneCounts,
+  type ApiCloneEntity,
+  type ApiClonePreview,
+} from '@/api/platform';
+import { loadCatalogFromApi } from '@/api/catalogBridge';
+import { AdminNoticeBanner } from '../NotSavedNotice';
 
-type CloneStep = 'idle' | 'pick-source' | 'confirm-overwrite' | 'done';
+type CloneStep = 'idle' | 'pick-source' | 'preview' | 'running' | 'done';
+
+/**
+ * The clone's entities, in the order a person reads them: what the park sells,
+ * then what prices it, then what it prints. The labels are the panel's own —
+ * the api answers with table-shaped keys, and "Ticket packages" is what this
+ * screen has always called them.
+ */
+const CLONE_ROWS: Array<{ entity: ApiCloneEntity; label: string }> = [
+  { entity: 'ticketPackages', label: 'Ticket packages' },
+  { entity: 'products', label: 'Menu, shop and add-on items' },
+  { entity: 'modifierGroups', label: 'Item modifier groups' },
+  { entity: 'modifierOptions', label: 'Modifier options' },
+  { entity: 'modifierLinks', label: 'Links to the shared modifier library' },
+  { entity: 'holidays', label: 'Holiday pricing ranges' },
+  { entity: 'taxConfig', label: 'Tax configuration' },
+  { entity: 'taxOverrides', label: 'Tax overrides' },
+  { entity: 'discountCodes', label: 'Branch discount codes' },
+  { entity: 'printTemplates', label: 'Print templates' },
+  { entity: 'stockLocations', label: 'Stockrooms' },
+];
+
+const total = (counts: Record<ApiCloneEntity, ApiCloneCounts>, of: keyof ApiCloneCounts): number =>
+  CLONE_ROWS.reduce((sum, row) => sum + (counts[row.entity]?.[of] ?? 0), 0);
 
 /**
  * The zones a branch can trade in. Taken from the browser's own IANA database
@@ -57,6 +87,8 @@ interface CloneStamp {
   targetName: string;
   by: string;
   at: string;
+  /** How many rows were actually written. Zero when the target already had them. */
+  created: number;
 }
 
 export function BranchesPanel() {
@@ -67,6 +99,8 @@ export function BranchesPanel() {
   const [step, setStep] = useState<CloneStep>('idle');
   const [sourceId, setSourceId] = useState<string>('');
   const [stamp, setStamp] = useState<CloneStamp | null>(null);
+  const [plan, setPlan] = useState<ApiClonePreview | null>(null);
+  const [cloneError, setCloneError] = useState<string | null>(null);
 
   // Opening a branch (SCRUM-240). `POST /branches` and the write-through have
   // been here since Sprint 1 with no screen calling them, so an operator
@@ -117,34 +151,61 @@ export function BranchesPanel() {
     setSourceId(sourceBranches[0]?.id ?? '');
     setStep('pick-source');
     setStamp(null);
+    setPlan(null);
+    setCloneError(null);
   }
 
-  function confirmSource() {
-    if (!sourceId) return;
-    const hasData = mutators.branchHasCatalogData(activeBranch.id);
-    if (hasData) {
-      setStep('confirm-overwrite');
-    } else {
-      runClone();
+  /**
+   * The preview replaces the old "are you sure" (SCRUM-204). The question a
+   * person actually has is not "do you want to overwrite" — nothing is
+   * overwritten, and never was — it is "what will this put in my branch". So
+   * Continue fetches the answer from the api and shows it, row by row.
+   */
+  async function confirmSource() {
+    const source = branches.find((b) => b.id === sourceId);
+    if (!source?.apiId || !activeBranch.apiId) {
+      setCloneError('That branch has not been saved to the platform yet, so its catalogue cannot be copied.');
+      return;
+    }
+    setCloneError(null);
+    setStep('preview');
+    try {
+      setPlan(await branchesApi.clonePreview(activeBranch.apiId, source.apiId));
+    } catch (err) {
+      setPlan(null);
+      setCloneError(err instanceof Error ? err.message : 'Could not read the source catalogue.');
     }
   }
 
-  function runClone() {
-    const result = mutators.cloneBranchCatalog(sourceId, activeBranch.id);
-    const src = branches.find((b) => b.id === result.sourceBranchId);
-    const tgt = branches.find((b) => b.id === result.targetBranchId);
-    setStamp({
-      sourceName: src?.name ?? result.sourceBranchId,
-      targetName: tgt?.name ?? result.targetBranchId,
-      by: operator?.name ?? 'Unknown',
-      at: result.at,
-    });
-    setStep('done');
+  async function runClone() {
+    const source = branches.find((b) => b.id === sourceId);
+    if (!source?.apiId || !activeBranch.apiId) return;
+    setStep('running');
+    setCloneError(null);
+    try {
+      const result = await branchesApi.clone(activeBranch.apiId, source.apiId);
+      setStamp({
+        sourceName: source.name,
+        targetName: activeBranch.name,
+        by: operator?.name ?? 'Unknown',
+        at: new Date().toISOString(),
+        created: result.created,
+      });
+      // Server truth, not a local copy: the panel has just changed what this
+      // branch sells, and every other admin screen reads it from the store.
+      await loadCatalogFromApi(activeBranch.id).catch(() => {});
+      setStep('done');
+    } catch (err) {
+      setCloneError(err instanceof Error ? err.message : 'The catalogue could not be copied.');
+      setStep('preview');
+    }
   }
 
   function cancel() {
     setStep('idle');
     setSourceId('');
+    setPlan(null);
+    setCloneError(null);
   }
 
   return (
@@ -331,22 +392,18 @@ export function BranchesPanel() {
         <div className="px-5 py-4 border-b border-foreground/10 bg-foreground/[0.02]">
           <h2 className="font-semibold text-sm">Clone from another branch</h2>
           <p className="text-xs text-foreground/50 mt-0.5">
-            Copy the entire catalog (tickets, menu, tax, devices, etc.) from a source
+            Copy the catalog (tickets, menu, tax rules, print templates) from a source
             branch into <strong>{activeBranch.name}</strong>. After cloning the
             branches are fully independent — changing one never affects the other.
           </p>
         </div>
 
         <div className="px-5 py-5">
-          {/* The branch list above is the platform's. The clone is not: it
-              copies the in-memory catalogue only, so it gets its own notice
-              rather than one over the whole screen. */}
-          <div className="mb-4">
-            <NotSavedNotice
-              mutators={['cloneBranchCatalog']}
-              what="the catalogue a clone copies into this branch"
-            />
-          </div>
+          {cloneError && (
+            <div className="mb-4">
+              <AdminNoticeBanner>{cloneError}</AdminNoticeBanner>
+            </div>
+          )}
 
           {step === 'idle' && (
             <div className="flex flex-col gap-3">
@@ -390,15 +447,15 @@ export function BranchesPanel() {
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
                 </div>
                 <p className="text-xs text-foreground/40">
-                  All catalog items (tickets, menu, tax rules, devices, etc.) from
-                  this branch will be deep-copied into{' '}
-                  <strong>{activeBranch.name}</strong>.
+                  The next screen lists exactly what would be copied into{' '}
+                  <strong>{activeBranch.name}</strong> and what it already has. Nothing
+                  is written until you confirm it there.
                 </p>
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={confirmSource}
+                  onClick={() => void confirmSource()}
                   disabled={!sourceId}
                   className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
                 >
@@ -415,41 +472,132 @@ export function BranchesPanel() {
             </div>
           )}
 
-          {step === 'confirm-overwrite' && (
-            <div className="flex flex-col gap-4 max-w-sm rounded-2xl border border-amber-400/30 bg-amber-400/5 p-5">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-amber-300">
-                    This will overwrite existing catalog data
+          {(step === 'preview' || step === 'running') && (
+            <div className="flex flex-col gap-4 max-w-2xl">
+              {!plan && !cloneError && (
+                <p className="text-sm text-foreground/50 italic">Reading both catalogues…</p>
+              )}
+
+              {plan && (
+                <>
+                  <p className="text-xs text-foreground/50">
+                    Copying <strong>{plan.sourceBranch.name}</strong> into{' '}
+                    <strong>{plan.targetBranch.name}</strong>. Rows are created fresh —
+                    nothing this branch already has is changed or replaced.
                   </p>
-                  <p className="text-xs text-foreground/60 mt-1">
-                    <strong>{activeBranch.name}</strong> already has catalog items.
-                    Cloning from{' '}
-                    <strong>
-                      {branches.find((b) => b.id === sourceId)?.name ?? sourceId}
-                    </strong>{' '}
-                    will replace all of them with fresh copies. This cannot be
-                    undone in this session.
+
+                  {plan.targetHasSales && (
+                    <div className="flex items-start gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-5">
+                      <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-amber-300">
+                          {plan.targetBranch.name} has already taken sales
+                        </p>
+                        <p className="text-xs text-foreground/60 mt-1">
+                          Its catalogue cannot be filled from another branch: every
+                          receipt it has printed answers to the prices and tax rules it
+                          sold under. Build this branch's catalogue up on the Catalogue
+                          screens instead.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl border border-foreground/10 overflow-hidden">
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 px-4 py-2 border-b border-foreground/10 bg-foreground/[0.02] text-[10px] font-semibold uppercase tracking-wide text-foreground/40">
+                      <span>Catalogue</span>
+                      <span className="text-right">To create</span>
+                      <span className="text-right">Already here</span>
+                      <span className="text-right">Cannot copy</span>
+                    </div>
+                    {CLONE_ROWS.map(({ entity, label }) => {
+                      const c = plan.counts[entity];
+                      if (!c || c.created + c.existing + c.blocked === 0) return null;
+                      return (
+                        <div
+                          key={entity}
+                          className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 px-4 py-2 text-xs border-b border-foreground/5 last:border-b-0"
+                        >
+                          <span className="text-foreground/70">{label}</span>
+                          <span
+                            className={`text-right tabular-nums ${
+                              c.created > 0 ? 'font-semibold text-emerald-300' : 'text-foreground/30'
+                            }`}
+                          >
+                            {c.created}
+                          </span>
+                          <span className="text-right tabular-nums text-foreground/40">
+                            {c.existing}
+                          </span>
+                          <span
+                            className={`text-right tabular-nums ${
+                              c.blocked > 0 ? 'text-amber-300' : 'text-foreground/30'
+                            }`}
+                          >
+                            {c.blocked}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {total(plan.counts, 'blocked') > 0 && (
+                    <AdminNoticeBanner>
+                      <strong className="font-semibold">
+                        {total(plan.counts, 'blocked')} row
+                        {total(plan.counts, 'blocked') === 1 ? '' : 's'} cannot be copied.
+                      </strong>{' '}
+                      {blockedReasons(plan).join(' ')}
+                    </AdminNoticeBanner>
+                  )}
+
+                  <p className="text-xs text-foreground/40">
+                    Shared with the whole operator and pointed at rather than copied:{' '}
+                    {plan.shared.join(', ')}.
                   </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={runClone}
-                  className="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-black hover:opacity-90 transition-opacity"
-                >
-                  Yes, overwrite and clone
-                </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void runClone()}
+                      disabled={
+                        plan.targetHasSales ||
+                        step === 'running' ||
+                        total(plan.counts, 'created') === 0
+                      }
+                      className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
+                    >
+                      {/* The sales refusal is named first: it is the reason the
+                          button is disabled, and "nothing to copy" would blame
+                          the wrong thing on a branch that has traded. */}
+                      {step === 'running'
+                        ? 'Copying…'
+                        : plan.targetHasSales
+                          ? 'Refused — this branch has taken sales'
+                          : total(plan.counts, 'created') === 0
+                            ? 'Nothing left to copy'
+                            : `Copy ${total(plan.counts, 'created')} rows into ${plan.targetBranch.name}`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancel}
+                      className="rounded-xl border border-foreground/15 px-4 py-2.5 text-sm font-medium text-foreground/60 hover:text-foreground hover:border-foreground/30 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {!plan && cloneError && (
                 <button
                   type="button"
                   onClick={cancel}
-                  className="rounded-xl border border-foreground/15 px-4 py-2.5 text-sm font-medium text-foreground/60 hover:text-foreground hover:border-foreground/30 transition-colors"
+                  className="self-start rounded-xl border border-foreground/15 px-4 py-2.5 text-sm font-medium text-foreground/60 hover:text-foreground hover:border-foreground/30 transition-colors"
                 >
-                  Cancel
+                  Back
                 </button>
-              </div>
+              )}
             </div>
           )}
 
@@ -471,6 +619,15 @@ export function BranchesPanel() {
   );
 }
 
+/** The distinct reasons behind the blocked rows, each said once. */
+function blockedReasons(plan: ApiClonePreview): string[] {
+  const reasons = new Set<string>();
+  for (const { entity } of CLONE_ROWS) {
+    for (const row of plan.plan[entity]?.blocked ?? []) reasons.add(row.reason);
+  }
+  return [...reasons].map((r) => `${r.charAt(0).toUpperCase()}${r.slice(1)}.`);
+}
+
 function CloneSuccessBanner({ stamp }: { stamp: CloneStamp }) {
   return (
     <div className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
@@ -478,7 +635,8 @@ function CloneSuccessBanner({ stamp }: { stamp: CloneStamp }) {
       <div className="flex flex-col gap-0.5">
         <p className="text-sm font-semibold text-emerald-300">Catalog cloned successfully</p>
         <p className="text-xs text-foreground/60">
-          All items from <strong>{stamp.sourceName}</strong> were deep-copied into{' '}
+          {stamp.created} row{stamp.created === 1 ? '' : 's'} from{' '}
+          <strong>{stamp.sourceName}</strong> were copied into{' '}
           <strong>{stamp.targetName}</strong> with fresh IDs — the branches are now
           fully independent.
         </p>
