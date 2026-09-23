@@ -4,6 +4,27 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:47 — `main` is `ce8a9d9`; staging is `097b73b` (Render is deploying `803428b` → `ce8a9d9`); CI green through `2731962`
+>
+> **Since 15:40:** landed **361** (`ce8a9d9` — a box's replayed visit is
+> refused whole when a child is not the member's own or is archived).
+> **Slice A of the tenders (206) was held at its gate**: the schema is
+> verified (migration from empty twice, the backfill proved on a 0018
+> database, demo-day seeded twice), but the one writer of
+> `payment_attempt` — the `settleSale` insert in `sale.ts` — still
+> supplies the old column set, so every cash finalise would fail the
+> moment the schema landed; and the gate caught a **vendor void password
+> typed into a test fixture** — replaced with a placeholder before
+> anything was committed. A's state is on ref `wip/206-A`; the fix round
+> (`wf_042f927c`) owns the insert region of `sale.ts` and closes the
+> small findings (a notification dedupe CHECK, a restrict FK, a stale
+> sweep entry, the four undeclared plan deviations).
+>
+> **Running:** builds — 352 (`wf_efab2ab6`), 358 (`wf_69884d8d`), 359
+> (`wf_4aea465b`), 363 (`wf_0834f8e9`), 363b (`wf_b2d75153`); the A fix
+> round; evidence — the beacb6d batch (`wf_300def37`). Watchers wait for
+> Render at `6faf3fb` … `ce8a9d9`.
+
 > ## Status on 2026-09-23 15:40 — `main` is `2845135`; staging is `097b73b` (Render is deploying `803428b` → `2845135`); CI green through `4155ab9`
 >
 > **Since 15:40:** the 353 fix round's gate came back MERGE and landed
