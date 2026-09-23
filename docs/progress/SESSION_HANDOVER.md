@@ -4,6 +4,35 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 13:12 — `main` is `2a9dd25`; staging is `deaf34d` (Render is deploying `849bc17`); CI green through `fa3785a`
+>
+> **Since 12:30:** landed 252/254 (`6ea6220`), 330 (`deaf34d`), 233
+> (`3d0cfb6` — the supervision gate writes through the member API), the
+> 204 barcode + admin panels (`fa3785a`), 306 (`28d2e65` — the booking
+> permission pair), the **204 carts** (`849bc17` — F&B and shop orders
+> through the sale ledger, priced on the platform, pick-up code before the
+> tender) and their evidence. **Deployed with staging evidence:** 318, 319,
+> 304, 332, 336, 252, 254, 330. Raised: 337–340 (233's follow-ups: no
+> child-archive route, the review's stale "held in memory" note, two draft
+> visits, the mock drop-off lookup), 341 (F&B item form still tab-only),
+> 342–344 (carts follow-ups: Charge stays enabled after a refusal,
+> sales_channel always "till", promo scopes miss F&B lines).
+>
+> **Running:** gates — tenancy 253/255/327 (`wf_0532c182`), branch clone
+> R-03 (`wf_70c3b1f2` — the parent adds its one `app.ts` line), 331
+> (`wf_0cb720ff`); builds — 337/338 (`wf_438d7369`), 204 panel fixes
+> (`wf_7d83497d`: localOnly flags, merch-under-F&B category, seed barcode),
+> 335 (`wf_e175b9c5`: the 21st booking answers 429). Watchers wait for
+> Render at `849bc17`; then one evidence pass for 233, 306 and the two 204
+> halves.
+>
+> **Next:** 341 after the 204 fixes free `api/menu.ts`; 333/334 now that
+> `sale.ts` and the staff panel are free; 328 after 331 frees `agent.ts`;
+> then tenders (206), 207, 208. Owner decisions outstanding: 254's two
+> judgement calls (docs gated everywhere; branch managers can read it),
+> 306's read-only staff losing the arrivals list, 326's fix choice, the
+> stale "HKT Central" app-only row (268), the deploy-bot paid service.
+
 > ## Status on 2026-09-23 12:30 — `main` is `1875f56`; staging is `16c621a`; CI green
 >
 > _(The two banners below are labelled 12:00 and 13:00 but were written about
