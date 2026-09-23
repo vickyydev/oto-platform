@@ -33,6 +33,7 @@ import { and, eq, isNull, notInArray, sql } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
 import { reconcileAppBranches } from '../schema/otoapp';
 import { seedMenu } from './menu';
+import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
 import * as s from '../schema/index';
 
 /**
@@ -76,8 +77,15 @@ const expatFromTourist = (t: WWPrice): WWPrice =>
 
 /**
  * The rows the platform owns rather than any operator: the system role
- * bundles. Separate from the demo tenant below so a deploy can re-sync access
- * against a real database without seeding fixtures into it.
+ * bundles, and the tender list a park cannot take money without. Separate
+ * from the demo tenant below so a deploy can re-sync access against a real
+ * database without seeding fixtures into it.
+ *
+ * Both halves converge the same way — the platform writes a starting point,
+ * and a park that has since made its own decision keeps it. For roles that
+ * means a permission added to a bundle reaches a database already seeded; for
+ * tenders it means a park with NO list gets the three defaults and a park with
+ * any list at all is left alone (`./tenders.ts`).
  */
 export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole, string>> {
   const roleIds = {} as Record<SystemRole, string>;
@@ -110,6 +118,16 @@ export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole,
       .values(bundle.map((permission) => ({ id: newId(), roleId, permission })))
       .onConflictDoNothing({ target: [s.rolePermission.roleId, s.rolePermission.permission] });
   }
+
+  // The till's method grid is hydrated from `pos.payment_method`, so a park
+  // with no rows is a counter that cannot take money (staging, 2026-09-23).
+  const converged = await syncDefaultTenders(db);
+  if (converged.length > 0) {
+    console.log(
+      `Payment methods: wrote the ${DEFAULT_TENDERS.length} default tenders for ${converged.length} park(s) that had none.`,
+    );
+  }
+
   return roleIds;
 }
 
@@ -351,35 +369,18 @@ export async function seed(db: Db = getDb()): Promise<void> {
    * many words: "paymentMethods (same physical tenders everywhere)"
    * (catalogStore.ts:71).
    *
-   * Three rows, and the park has taken money in all three since before this
-   * platform existed. They are upserted rather than created-once, like the
-   * tiers above, because they are reference data: a label corrected here has
-   * to reach a database that already has the row. `enabled` is NOT pushed
-   * back — a park that unticked PromptPay on the Payments panel meant it, and
-   * a sync that re-enabled a tender would put a button back on the till
-   * nobody asked for.
+   * The three rows and both ways of writing them live in `./tenders.ts`, which
+   * `platformSync` reads as well — so the tenders a deploy converges and the
+   * tenders this fixture writes can never be two different lists. This call is
+   * the upsert: a label corrected in that file reaches a database that already
+   * has the row, while `enabled` is left as the park set it.
    *
-   * `code` is the token the money row carries (`pos.payment_attempt
-   * .method_code`) and `kind` is what the platform does about it
-   * (`pos.payment_attempt.method`): the prototype's rule, ported — behaviour
-   * keys off the kind and never off the token (`lib/payments.ts:41,56,65`).
+   * On a fresh database the sync at the top of `seed()` wrote nothing here —
+   * the operator did not exist yet — so this is what gives the demo tenant its
+   * list. On every run after, the sync has already seen a park with rows and
+   * left it alone, and this keeps the labels current.
    */
-  for (const [i, m] of (
-    [
-      { code: 'cash', label: 'Cash', kind: 'cash' },
-      { code: 'card', label: 'Card', kind: 'card' },
-      { code: 'promptpay', label: 'PromptPay', kind: 'qr' },
-    ] as const
-  ).entries()) {
-    await db
-      .insert(s.paymentMethod)
-      .values({ id: newId(), operatorId, ...m, sortOrder: i })
-      .onConflictDoUpdate({
-        target: [s.paymentMethod.operatorId, s.paymentMethod.code],
-        targetWhere: isNull(s.paymentMethod.archivedAt),
-        set: { label: m.label, kind: m.kind, sortOrder: i },
-      });
-  }
+  await upsertDefaultTenders(db, operatorId);
 
   // Employees (prototype roster, mockApi.ts:430) + dev accounts.
   const emp = async (
@@ -1818,9 +1819,11 @@ async function seedSecondOperator(
  *
  *   SEED_PROFILE=staging     the demo tenant as well, so there is something
  *                            to sign in as and play with
- *   SEED_PROFILE=production  the platform's own rows only — system roles and
- *                            their permissions. A real branch's data arrives
- *                            by restore (S2-22), never from a fixture file.
+ *   SEED_PROFILE=production  the platform's own rows only — system roles,
+ *                            their permissions, and the default tender list
+ *                            for a park that has none. A real branch's data
+ *                            arrives by restore (S2-22), never from a fixture
+ *                            file.
  *
  * `--platform-only` forces the second regardless, and `--demo` the first, for
  * the times a person wants one without changing the environment.
@@ -1833,7 +1836,7 @@ if (isMain) {
   const platformOnly = forcedPlatform || (!forcedDemo && profile === 'production');
   console.log(
     platformOnly
-      ? `Platform sync only (SEED_PROFILE=${profile}): system roles and permissions.`
+      ? `Platform sync only (SEED_PROFILE=${profile}): system roles, permissions and tenders.`
       : `Full seed (SEED_PROFILE=${profile}): platform rows plus the demo tenant.`,
   );
   (platformOnly ? platformSync() : seed())
