@@ -4,6 +4,20 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:34 — `main` is `5d32f16`; staging is `097b73b` (Render is deploying `803428b` → `beacb6d`; CI has seven pushes queued); CI green through `237ca54`
+>
+> **Since 15:32:** **Deployed with staging evidence:** 329, 342, 346, and
+> the 204 fixes evidenced on the ticket (`5d32f16`). Launched the next
+> evidence batch, waiting for Render at `beacb6d`: 347, 348, 356, 343,
+> 344, 337, 338 (api side) and 350, 355, 349, 354, 351 (POS side)
+> (`wf_300def37`).
+>
+> **Running:** builds — 206-A (`wf_9a136b60`), 341 (`wf_d527428e`), 353
+> fix (`wf_4493be0c`), 359 (`wf_4aea465b`), 358 (`wf_69884d8d`), 352
+> (`wf_efab2ab6`), 361 (`wf_6be21778`), 363 (`wf_0834f8e9`); evidence —
+> the beacb6d batch. Watchers wait for Render at `803428b`, `237ca54`,
+> `6faf3fb`, `beacb6d`.
+
 > ## Status on 2026-09-23 15:32 — `main` is `beacb6d`; staging is `097b73b` (Render is deploying `803428b` → `beacb6d`; CI has seven pushes queued); CI green through `237ca54`
 >
 > **Since 15:28:** landed **343/344** (`6e5926d` — a sale records its lane,
