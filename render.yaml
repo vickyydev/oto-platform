@@ -549,6 +549,43 @@ services:
         value: https://oto-launcher-staging.onrender.com
 
   # ---------------------------------------------------------------------------
+  # booth — static site. The Lucky Wheel television (S2-07a, SCRUM-199).
+  #
+  # The game is served by the booth's BOX, and on staging that box is the
+  # virtual one the api hosts, so /booth/* is rewritten to the api the same
+  # way the POS rewrites /api/*: one origin in the browser, no CORS. The page
+  # itself carries nothing — no cookie, no key (D15); a paired device
+  # credential is what lets it press the button (SCRUM-244).
+  #
+  # The television is mounted portrait on a landscape signal; the page's
+  # OrientationFrame rotates and scales its stage to fit (#cw / #ccw / #off,
+  # #lite for the Android TV stick), ported from the wheel it replaces.
+  - type: web
+    name: oto-booth-staging
+    runtime: static
+    branch: main
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @oto/booth build
+    staticPublishPath: apps/booth/dist/public
+    autoDeployTrigger: checksPass
+    routes:
+      # The booth's own surface, relayed by the api to the box that serves it.
+      # CHECK THIS HOST AFTER THE FIRST DEPLOY, as the POS block says above.
+      - type: rewrite
+        source: /booth/*
+        destination: https://oto-api-staging.onrender.com/booth/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: VITE_BOOTH_FAKE
+        # Read at BUILD time. The page runs on its own fake wheel in
+        # development; on staging it must talk to the real booth surface.
+        value: '0'
+
+  # ---------------------------------------------------------------------------
   # launcher — static site. The suite's front door (S2-02).
   #
   # It signs a person in once and hands them on to an app, so it is a real
