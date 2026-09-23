@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 16:44 — `main` is `e6f6477`; staging is `a0d8cab` (Render is deploying `3317360`); CI green through `a0d8cab`
+> ## Status on 2026-09-23 16:48 — `main` is `186316e`; staging is `a0d8cab` (Render is deploying `3317360`); CI green through `a0d8cab`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -98,10 +98,25 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > owner: O-3, O-4 (a), O-5 yes, O-7 refuse+disable — all recommendations
 > already on the ticket; O-1, O-2, O-6 stay with the owner.
 >
-> **Running:** builds — 360+366 (`wf_24c97017`), 362 (`wf_a0a8fac3`),
-> 365's CI half (`wf_a49a824d`), 364 (`wf_ac4191fc`), 206-B
+> **16:45 — landed 366 and 365's CI half.** **366** (`3368e82`, gate
+> MERGE, Testing): the phone reads its quote error by kind — a refusal
+> draws the note and keeps Pay off on Review and the cart sheet alike,
+> a fault leaves Pay live; two plants each way. **360 closed Done, not
+> reproducible**: the hand-over overlay sat 45 s with the network captured
+> and nothing moved; what loses the sale is the 120 s inactivity lock
+> unmounting the phone till — a policy decision, raised as a Task with a
+> recommendation (keep the sale across a lock). Raised too: a Low Task
+> for the phone's button carrying no title and a refusal landing on the
+> payment step drawing no note (lands with Slice F). **365's CI job**
+> (`186316e`): Chromium on the runners, Edge locally, report on failure;
+> the FIRST Linux run is the proof — an agent watches it (`wf_51fc683a`)
+> and walks 365 to Deployed only on green; a red run holds deploys at
+> `3368e82` until fixed.
+>
+> **Running:** builds — 362 (`wf_a0a8fac3`), 364 (`wf_ac4191fc`), 206-B
 > (`wf_d5e69115`), 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`);
-> evidence — 367 (`wf_65113495`), 361+363 (`wf_00be1ca9`). After wave 2:
+> evidence — 367 (`wf_65113495`), 361+363 (`wf_00be1ca9`), 365's CI run
+> watcher. After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
