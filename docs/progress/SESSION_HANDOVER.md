@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 16:26 — `main` is `ee2d7a6`; staging is `7faf1d0` (Render is deploying `a0d8cab`); CI green through `7faf1d0`
+> ## Status on 2026-09-23 16:38 — `main` is `3317360`; staging is `a0d8cab` (Render is deploying `3317360`); CI green through `a0d8cab`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -39,10 +39,53 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > ticket till adds the free item as a line for the markdown to land on —
 > raised as **368** (depends on 362's code box; linked to both).
 >
-> **Running:** builds — 365 (`wf_243eed56`), 360+366 (`wf_24c97017`), 362
-> (`wf_a0a8fac3`), 367 (`wf_f27b330d`); the tenders Slice A fix round, in
-> its gate (`wf_042f927c`); evidence — the 7faf1d0 batch (`wf_4cefb317`),
-> the launcher (`wf_01b1b4bd`).
+> **16:30 — the launcher's missing halves are on staging.** Its deploy of
+> `326fd4c` went live at 16:18; the addenda are on **251** (a real account
+> and an unknown number with a wrong password get the identical refusal;
+> the first-shift line points at set-up) and **192** (launcher sign-in →
+> Open OTO App → the app names Anan with no second password and nothing
+> left in the URL), each saying plainly why the launcher half was late
+> (`9a72d81`). Both tickets were already Deployed; neither was walked. The
+> scratchpad `commentWithImages` helper cannot inline images on this Jira
+> (the ADF media node wants a media-services id the REST attachment API
+> does not expose) — comments name their attached files instead.
+>
+> **16:31 — landed 365's harness** (`7f3b00d`, gate MERGE — Testing): the
+> Console's Playwright set on a throwaway database it makes and drops
+> itself, four cases (358's Test print drive, a booth's spins figure, both
+> branches, a wrong password), config refuses to run without the harness
+> so it can never reach a working box. Its CI half is a second round
+> (`wf_a49a824d`): Chromium on the Linux runners, Edge locally — decided,
+> not reopened. The POS's own set is not in CI either — raised as a Task
+> (see below). 365 stays in Testing until the first green run on GitHub.
+>
+> **16:36 — landed 367 and the tenders Slice A.** **367** (`cb977c7`, gate
+> MERGE after its one comment defect was corrected by hand — proxy-addr
+> compiles the list at construction, so the env check's worth is the
+> diagnosis, not the refusal; the rate-limit plugin's stale comment fixed
+> in the same commit): `TRUST_PROXY_ADDRS` set on the staging api from
+> render.yaml's value (23 entries — first PUT carried the yaml's quote,
+> re-set clean); Testing until 353's four series re-run on the live
+> deploy. **Slice A** (`3317360`, fix-round gate MERGE — full api suite
+> 1,156 green, two-database dumps identical, five plants; `wip/206-A`
+> dropped): 0019 lands `payment_attempt` widened, `payment_method`,
+> `payment_notification`, the shared vocabulary, four command-kind copies
+> in step, `finaliseSale` resolving the method token and refusing an
+> unresolvable one; 206 commented with the three cards. Fourteen facts
+> for later slices are in the fix-round report (`wf_042f927c` journal) —
+> `CASH_ROUTES = ['cash_drawer','none']`, `method_code`, the notification
+> key CHECK Slice D must pre-empt, `tenderMethodOf` moving to
+> `services/payments/attempt.ts` in B, E must not create an `other`
+> tender without a ledger word. **7faf1d0 evidence:** 352, 359, 358
+> Deployed; 363's form half commented (`ec21582`, which also swept in the
+> three tickets' build-time cards that had never been committed). Raised:
+> **369** (the POS's own Playwright set is not in CI), **370** (the refusal
+> note's "Fix this to charge" line measures 3.86:1 — land after 360/366).
+>
+> **Running:** builds — 360+366 (`wf_24c97017`), 362 (`wf_a0a8fac3`),
+> 365's CI half (`wf_a49a824d`). Next to launch: 367's measurement pass
+> once the api deploy with the variable is live; tenders wave 2 (B, C1, E)
+> and 364 now that A is in.
 
 > ## Status on 2026-09-23 16:02 — `main` was `0e5e2c6`; staging was `ce8a9d9`; CI green through `ce8a9d9`
 >
