@@ -439,6 +439,19 @@ export type BoxCommandKind = (typeof BOX_COMMAND_KINDS)[number];
 export const BoxCommandPollRequestSchema = z.object({
   /** How many to take at once. Small: a box that dies mid-batch re-runs less. */
   max: z.number().int().min(1).max(10).default(5),
+  /**
+   * Hand out only these kinds; leave every other queued command where it is
+   * (SCRUM-328). Absent means all of them, which is what an online box sends.
+   *
+   * It narrows the CLAIM rather than what the box does with the answer,
+   * because a command handed out is a command marked `running`: a box that
+   * took a test print it had no intention of carrying out would leave that row
+   * claimed by nobody, and the Console would show a print somebody pressed as
+   * in progress for ever. An offline box asks for `go_online` and nothing
+   * else, so the test print queued behind it is still `queued` when the box
+   * comes back.
+   */
+  kinds: z.array(z.enum(BOX_COMMAND_KINDS)).min(1).max(BOX_COMMAND_KINDS.length).optional(),
 });
 
 export interface BoxCommandHandout {

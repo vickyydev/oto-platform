@@ -19,6 +19,7 @@ import {
   BOX_AGENT_VERSION,
   boxCredential,
   type BoxCommandHandout,
+  type BoxCommandKind,
   type BoxCommandPollResponse,
   type BoxCommandResultRequest,
   type BoxCommandResultResponse,
@@ -263,6 +264,17 @@ const CACHE_SCHEMA_VERSION = 1;
  * for that reason, and the agent reads it on its own tick instead.
  */
 const RECEIPT_SERIES = 'receipt_series' satisfies CachedBundle['scope'];
+
+/**
+ * The only commands an offline box takes (SCRUM-328).
+ *
+ * One kind, and the one that undoes the switch: a box that has been told to
+ * stop talking to the cloud still has to be reachable by the instruction to
+ * start again, or the Console's "Go online" is a button that cannot reach the
+ * box it is for. Everything else stays queued in the cloud — the box does not
+ * ask for it, so nothing hands it over and nothing marks it running.
+ */
+const OFFLINE_COMMAND_KINDS: readonly BoxCommandKind[] = ['go_online'];
 
 export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   const base = options.apiBaseUrl.replace(/\/$/, '');
@@ -873,12 +885,14 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   /**
    * Re-read the persisted offline flag.
    *
-   * The Console's toggle writes `edge.box_state` directly, and for the virtual
-   * box that row IS this box's store — so the button reaches a box that has
-   * stopped listening to the network, which is the only way a box put offline
-   * on purpose can be brought back without walking to it. A Pi cannot be
-   * reached that way while its link is down: its `go_online` command is
-   * delivered when the link returns, and its own till has a local control.
+   * The second way a box comes back, and the slower one. For the virtual box
+   * the store IS `edge.box_state`, so anything that writes that row — a hand
+   * edit, another process holding the same box — is noticed on the next
+   * heartbeat tick. Nothing in the Console writes it: "Go online" queues a
+   * `go_online` command like every other button on the drawer
+   * (`BoxDrawer.tsx`), and `runPendingCommands` below is what collects it
+   * while the box is offline. That is the way back that also works for a Pi,
+   * whose only link to the cloud is that poll.
    */
   async function refreshOffline(): Promise<boolean> {
     if (!store || !state.boxId) return state.offline;
@@ -1351,11 +1365,35 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     return reports;
   }
 
+  /**
+   * Take the commands somebody queued on the Console, and while offline take
+   * exactly one kind of them (SCRUM-328).
+   *
+   * This opened with `if (!credential || state.offline) return 0`, and the
+   * consequence was that the Console's "Go online" could not reach the box it
+   * had put offline: that button queues a `go_online` command like every other
+   * one, and nothing was left polling to collect it. A queued `go_online` sat
+   * there for as long as anyone watched, and the only way back was editing
+   * `edge.box_state` by hand.
+   *
+   * So an offline box keeps this one request, on its ordinary cadence, and
+   * asks for `OFFLINE_COMMAND_KINDS` and nothing else. The switch still means
+   * what it meant — no heartbeat, no config pull, no cache pull, no push — and
+   * the kinds filter is honoured on the CLOUD's side of the claim, so a test
+   * print queued behind the `go_online` is never handed out and never marked
+   * running: it is still queued, un-attempted, when the box is back.
+   */
   async function runPendingCommands(): Promise<number> {
-    if (!credential || state.offline) return 0;
+    if (!credential) return 0;
+    /**
+     * Read before the request rather than per command: a `go_online` in this
+     * batch flips it half way through the loop, and what the box asked the
+     * cloud for is a fact about the request that was sent.
+     */
+    const askedOffline = state.offline;
     const { status, body } = await request<BoxCommandPollResponse>('/box/v1/commands/poll', {
       method: 'POST',
-      body: { max: 5 },
+      body: askedOffline ? { max: 1, kinds: OFFLINE_COMMAND_KINDS } : { max: 5 },
     });
     if (status === 401) {
       await reregisterAfterRefusal('command poll');
@@ -1364,7 +1402,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     if (status !== 200 || !body) return 0;
     let ran = 0;
     for (const command of body.commands) {
-      const outcome = await executeCommand(command);
+      const outcome = offlineRefusal(command) ?? (await executeCommand(command));
       const { status: resultStatus, body: ack } = await request<BoxCommandResultResponse>(
         `/box/v1/commands/${command.id}/result`,
         {
@@ -1403,6 +1441,30 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       state.commandsRun += 1;
     }
     return ran;
+  }
+
+  /**
+   * A command an offline box must not run, handed out to it anyway.
+   *
+   * Two ways that happens, and neither is the ordinary one: an api too old to
+   * honour the `kinds` filter, or a `go_offline` earlier in the same batch
+   * that turned the box off between the claim and this command's turn. The row
+   * is already `running` by then, so saying nothing would leave a command
+   * claimed by nobody and in progress for ever on the Console. It is reported
+   * `failed` by name instead — true, terminal, and something whoever pressed
+   * the button can press again once the box is back.
+   */
+  function offlineRefusal(command: BoxCommandHandout): BoxCommandResultRequest | null {
+    if (!state.offline || OFFLINE_COMMAND_KINDS.includes(command.kind)) return null;
+    note('warn', 'a command reached an offline box, which runs none but go_online', {
+      kind: command.kind,
+      actionId: command.actionId,
+    });
+    return {
+      state: 'failed',
+      errorCode: 'BOX_OFFLINE',
+      errorMessage: `This box is offline and runs nothing but ${OFFLINE_COMMAND_KINDS.join(', ')}`,
+    };
   }
 
   async function executeCommand(command: BoxCommandHandout): Promise<BoxCommandResultRequest> {

@@ -1045,28 +1045,45 @@ interface RawCommandRow extends Record<string, unknown> {
  * both be handed the same test print. `attempts` is incremented rather than
  * assumed to be one, so a box stuck taking a command it never finishes shows
  * up as a number climbing instead of as silence.
+ *
+ * `kinds` narrows what may be claimed (SCRUM-328). An offline box polls for
+ * `go_online` alone — it is the one command that can reach a box that has
+ * stopped listening to everything else — and the filter is here, on the claim,
+ * so that everything it did not ask for stays `queued` rather than being
+ * handed to a box that would not run it. Absent means every kind.
  */
 export async function pollCommands(
   db: Db,
   auth: BoxAuth,
   max: number,
+  kinds?: readonly BoxCommandKind[],
 ): Promise<BoxCommandHandout[]> {
   return db.transaction(async (tx) => {
     // A test print queued for a box that was offline all week must not fire
     // when it finally wakes up. Expiring them here rather than in a sweep
-    // means it is true at the only moment it matters.
+    // means it is true at the only moment it matters. Deliberately not
+    // narrowed by `kinds`: a command is out of time whatever this poll came
+    // for, and leaving stale rows queued because an offline box asked for
+    // something else is how the late test print survives to fire.
     await tx.execute(
       sql`update edge.box_command set state = 'expired', finished_at = now(), updated_at = now()
           where box_id = ${auth.boxId} and state = 'queued'
             and expires_at is not null and expires_at <= now()`,
     );
+    /**
+     * `sql.param`, not the array on its own: an array interpolated bare into a
+     * template is flattened into one placeholder per element, which is a
+     * different query and not a valid one under `any(…::text[])`. This binds
+     * the whole list as a single array parameter.
+     */
+    const onlyKinds = kinds?.length ? sql` and kind = any(${sql.param([...kinds])}::text[])` : sql``;
     const claimed = await tx.execute<RawCommandRow>(
       sql`update edge.box_command
              set state = 'running', claimed_at = now(), attempts = attempts + 1, updated_at = now()
            where id in (
              select id from edge.box_command
               where box_id = ${auth.boxId} and state = 'queued'
-                and (expires_at is null or expires_at > now())
+                and (expires_at is null or expires_at > now())${onlyKinds}
               order by created_at
               limit ${max}
               for update skip locked

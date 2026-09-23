@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { box, boxCommand, device, stationDevice } from '@oto/db';
+import { box, boxCommand, boxState, device, stationDevice } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
   createBoxAgent,
@@ -9,6 +9,7 @@ import {
   type BoxAgent,
 } from '@oto/box-agent';
 import { boxBySlot, createTestContext, teardownAll, type TestContext } from './helpers';
+import { boxStoreFor } from '../src/lib/box-store';
 import { provisionVirtualBox } from '../src/services/box';
 
 /**
@@ -34,10 +35,25 @@ afterAll(async () => {
   await teardownAll();
 });
 
+/**
+ * One request a box made, kept for the one case below that is about what an
+ * offline box does NOT send.
+ */
+interface SentRequest {
+  method: string;
+  path: string;
+  body: unknown;
+}
+
 /** `app.inject` behind the agent's transport interface. */
-function injectTransport(): AgentFetch {
+function injectTransport(sent?: SentRequest[]): AgentFetch {
   return async (url, init) => {
     const path = url.replace(/^https?:\/\/[^/]+/, '');
+    sent?.push({
+      method: init.method,
+      path,
+      body: typeof init.body === 'string' ? (JSON.parse(init.body) as unknown) : null,
+    });
     const res = await ctx.app.inject({
       method: init.method as 'GET',
       url: path,
@@ -57,14 +73,26 @@ function injectTransport(): AgentFetch {
 }
 
 async function buildAgent(
-  opts: { faults?: Record<string, { paperStatus?: 'ok' | 'out'; reachability?: 'reachable' | 'unreachable' }> } = {},
+  opts: {
+    faults?: Record<string, { paperStatus?: 'ok' | 'out'; reachability?: 'reachable' | 'unreachable' }>;
+    sent?: SentRequest[];
+    /**
+     * A box that remembers, over the `edge` schema — the store the api's own
+     * virtual box runs on. Off by default, which is the S2-04 box these cases
+     * were written against; on where a case is about the offline flag, since
+     * without a store `syncCache` returns early for want of somewhere to write
+     * rather than because the box is offline.
+     */
+    store?: boolean;
+  } = {},
 ): Promise<BoxAgent> {
   return createBoxAgent({
     apiBaseUrl: 'http://box-agent.test',
     credentials: memoryCredentialStore(),
     hostname: 'virtual-test',
-    fetch: injectTransport(),
+    fetch: injectTransport(opts.sent),
     faults: opts.faults,
+    store: opts.store ? boxStoreFor(ctx.db) : undefined,
     claimCode: async () => (await provisionVirtualBox(ctx.db, ctx.app.log))?.claimCode ?? null,
   });
 }
@@ -267,6 +295,96 @@ describe('the virtual box agent (S2-04)', () => {
     expect(agent.state.boxId).toBe(firstBoxId);
     expect(agent.state.registered).toBe(true);
     expect(await agent.heartbeat()).toBeTruthy();
+  });
+
+  /**
+   * SCRUM-328 — the way back into a box that has been told to stop listening.
+   *
+   * The Console's "Go online" queues a `go_online` command like every other
+   * button on the drawer, and until this the agent returned early on
+   * `state.offline` before it polled: the one command that could undo the
+   * switch was the one command the box had stopped collecting, and the only
+   * way back was editing `edge.box_state` by hand.
+   *
+   * The case is written as one story because both halves have to hold at once:
+   * an offline box has to be reachable by `go_online`, AND the offline switch
+   * has to keep meaning what it meant. So the leak half asserts on the
+   * requests the box actually made — the only one is the command poll, and it
+   * asks for one kind — rather than on the absence of an effect, and the test
+   * print queued behind it is checked to be still `queued` and un-attempted,
+   * because a command a box did not run must not be marked as taken.
+   *
+   * It runs in this file, not in `packages/box-agent/test`, for a mechanical
+   * reason: that suite is Node's own runner under `--experimental-strip-types`
+   * and `agent.ts` cannot be imported there (it reaches `@oto/print`, whose
+   * constructor parameter properties strip-only mode refuses).
+   */
+  it('while offline polls for the one command that brings it back, and leaves the rest queued', async () => {
+    const sent: SentRequest[] = [];
+    const agent = await buildAgent({ sent, store: true });
+    await agent.ensureRegistered();
+    await agent.syncConfig();
+
+    const till = agent.config()!.stations.find((s) => s.name === 'Reception Till 1')!;
+    const printId = newId();
+    await ctx.db.insert(boxCommand).values({
+      id: printId,
+      boxId: agent.state.boxId!,
+      kind: 'test_print',
+      payload: { stationId: till.id, role: 'receipt', kind: 'receipt' },
+      actionId: 'act-offline-waits',
+    });
+
+    await agent.setOffline(true, { reason: 'test' });
+    sent.length = 0;
+
+    // Every tick an offline box takes, by hand: the heartbeat timer's, the
+    // cache timer's and the poll timer's.
+    expect(await agent.heartbeat()).toBeNull();
+    expect(await agent.syncConfig()).toBe(false);
+    expect(await agent.syncCache()).toEqual([]);
+    expect(await agent.runPendingCommands()).toBe(0);
+
+    // The only request it made — no heartbeat, no config pull, no cache pull,
+    // no push — and the one kind of command it asked for.
+    expect(sent.map((r) => `${r.method} ${r.path}`)).toEqual(['POST /box/v1/commands/poll']);
+    expect(sent[0]!.body).toMatchObject({ kinds: ['go_online'] });
+
+    // And the test print is exactly where it was left: not handed out, not
+    // attempted, not marked as taken by a box that never ran it.
+    const [waiting] = await ctx.db.select().from(boxCommand).where(eq(boxCommand.id, printId)).limit(1);
+    expect(waiting!.state).toBe('queued');
+    expect(waiting!.attempts).toBe(0);
+    expect(waiting!.claimedAt).toBeNull();
+
+    // Now the button. Same queue, same route, nothing special about it.
+    const onlineId = newId();
+    await ctx.db.insert(boxCommand).values({
+      id: onlineId,
+      boxId: agent.state.boxId!,
+      kind: 'go_online',
+      actionId: 'act-go-online',
+    });
+
+    expect(await agent.runPendingCommands()).toBe(1);
+    expect(agent.state.offline).toBe(false);
+    const [back] = await ctx.db.select().from(boxCommand).where(eq(boxCommand.id, onlineId)).limit(1);
+    expect(back!.state).toBe('succeeded');
+    expect(back!.result).toMatchObject({ offline: false });
+    // The box is online in its own store too, not only in this process.
+    const [stateRow] = await ctx.db
+      .select()
+      .from(boxState)
+      .where(eq(boxState.boxId, agent.state.boxId!))
+      .limit(1);
+    expect(stateRow!.offline).toBe(false);
+
+    // And the print that waited runs on the next poll, because it was never
+    // taken away from the queue.
+    expect(await agent.runPendingCommands()).toBe(1);
+    const [printed] = await ctx.db.select().from(boxCommand).where(eq(boxCommand.id, printId)).limit(1);
+    expect(printed!.state).toBe('succeeded');
+    expect(printed!.attempts).toBe(1);
   });
 
   it('refuses to provision a box that is not virtual', async () => {

@@ -185,13 +185,14 @@ export async function boxRoutes(app: App): Promise<void> {
     {
       config: { credential: 'box', ...limited },
       schema: {
-        description: 'Take the oldest queued commands for this box and mark them running',
+        description:
+          'Take the oldest queued commands for this box and mark them running. `kinds` narrows what may be claimed — an offline box asks for `go_online` alone, and everything else stays queued until it is back.',
         body: BoxCommandPollRequestSchema,
       },
     },
     async (req) => {
       const auth = boxAuth(req);
-      const commands = await pollCommands(app.db, auth, req.body.max);
+      const commands = await pollCommands(app.db, auth, req.body.max, req.body.kinds);
       return { commands, serverTime: new Date().toISOString() };
     },
   );
