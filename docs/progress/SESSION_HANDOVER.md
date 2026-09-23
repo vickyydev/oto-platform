@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 17:03 — `main` is `32648ff`; staging is `186316e` on the api and POS (later pushes are docs only); CI green through `186316e`
+> ## Status on 2026-09-23 17:05 — `main` is `979626f`; staging is `186316e` on the api and POS (Render follows CI on `f212a5d`, 362's stations); CI green through `186316e`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -153,9 +153,25 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > fault path is not forceable on staging; the comment points at the
 > build's card. Left on staging: the two price-move audit rows only.
 >
-> **Running:** builds — 364 (`wf_ac4191fc`), 206-B (`wf_d5e69115`),
-> 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`); evidence — 361+363
-> (`wf_00be1ca9`); investigation — 376 (`wf_78e9c6ef`). After wave 2:
+> **17:06 — 361 and 363 Deployed** (`979626f`). **361** by the real
+> route: a box "Evidence box 361" paired on staging through the Console,
+> the agent run locally against the staging api, a `visit.created`
+> naming another member's child → quarantined `SYNC_VISIT_CHILD_NOT_SAVED`,
+> nothing written; the same visit with her own child applied. Left on
+> staging: that box row (offline, no stations), one open quarantine row,
+> one counter-proof draft visit. **363**: seven panels measured from the
+> painted pixels (4.47–4.96:1). Found on the way: **377** (High — the
+> Console's add-a-box dialog is painted over by the panel behind it; an
+> administrator cannot add a box by mouse — building, `wf_03dc00ee`),
+> **378** (no control to retire a box), **379** (the Merch panel's stock
+> notice and badges can never show — dead reads), **380** (the clone
+> warning's triangle one shade light). 362's staging pass queued behind
+> Render (`wf_cd6372b0`).
+>
+> **Running:** builds — 364 (`wf_ac4191fc`), 377 (`wf_03dc00ee`), 206-B
+> (`wf_d5e69115`), 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`);
+> evidence — 362 (`wf_cd6372b0`); investigation — 376 (`wf_78e9c6ef`).
+> After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
