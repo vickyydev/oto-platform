@@ -420,7 +420,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > poll the attempt at ~3 s; created → sent_to_terminal → approved /
 > cancelled / awaiting_staff_confirmation; no push).
 >
-> **19:45 — G's gate: DO NOT MERGE, fix round launched** (the pre-fix
+> **19:45 — G's gate: DO NOT MERGE, fix round launched** (`wf_1bc3a29f`; the pre-fix
 > tree on `wip/206-G`). The slice: `services/payments/offline.ts` (the
 > replay through B's commit/finalise and attempt service), two sync
 > handlers `sale.finalised` / `payment.recorded` beside the six, the
@@ -439,7 +439,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > `Error`. Non-blocking: a ฿0 offline cart quarantines forever on
 > `sale_freeze`; a fully comped offline sale cannot be expressed (F).
 >
-> **Running:** D fix round (`wf_b6ffb273`), G fix round (see the launch line); evidence — C2 (`wf_61eb87e3`);
+> **Running:** D fix round (`wf_b6ffb273`), G fix round (`wf_1bc3a29f`); evidence — C2 (`wf_61eb87e3`);
 > checkpoint part 1 landed: the tenders plan and its five reader findings in `docs/progress/plans/206-tenders/` (the void password redacted in its plain AND hex forms — the gate found the seventh, hex-encoded in a sample frame), the session helpers in `scripts/session/` with a README (the two mutating Render scripts now need `--apply`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
