@@ -26,6 +26,7 @@ import {
   SaleWriteFailure,
 } from '@/components/till/SaleWriteStatus';
 import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
+import { QuoteFaultNote } from '@/components/fnb/QuoteFaultNote';
 import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
 import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { MerchGrid } from '@/components/merch/MerchGrid';
@@ -156,6 +157,33 @@ export default function MerchStation() {
     enabled: stage !== 'confirmation',
   });
   const { subtotal, total, manualAmounts, taxBreakdown } = sale.totals;
+
+  /**
+   * THE PLATFORM LOOKED AT THIS SALE AND OBJECTED — SCRUM-352, the rule the
+   * F&B station has carried since SCRUM-342/351 (`pages/OrderStation.tsx`).
+   *
+   * While a refusal stands the charge button is off. The rule that refused the
+   * quote is the rule the commit meets, so the press could only carry the guest
+   * to the payment screen and fail there; before this the refusal was advisory
+   * — the note said the sale was refused and the button beneath it invited the
+   * press anyway. It clears the moment a later quote answers — the stale line
+   * re-priced, the item taken off — and the button comes back with it.
+   *
+   * A FAULT IS NOT THAT: the api breaking, or a proxy answering in its place.
+   * Neither is a judgement on this sale, so the button stays on and the shop
+   * sells through the outage on this till's own figures — `QuoteFaultNote` says
+   * the platform failed and `PriceSourceNote` says whose figure is on the
+   * screen. Until this ticket both arrived at `QuoteRefusalNote` together and
+   * an outage read to the counter as "the platform refused this order".
+   *
+   * A sale the platform was never asked about is a third thing and reaches
+   * neither note: `quoteItemCart` answers that one with this till's figures and
+   * a reason rather than rejecting (`api/sales.ts`), so `sale.error` is null
+   * and only the source note is drawn.
+   */
+  const quoteError = sale.error;
+  const quoteRefusal = quoteError && quoteError.kind === 'refusal' ? quoteError : null;
+  const quoteFault = quoteError && quoteError.kind === 'fault' ? quoteError : null;
 
   /** The rows as the panel draws them — the platform's figure where it quoted one. */
   const displayLines = useMemo(() => {
@@ -465,11 +493,13 @@ export default function MerchStation() {
                 priceNote={
                   lines.length > 0 ? (
                     <div className="space-y-2">
-                      <QuoteRefusalNote error={sale.error} />
+                      <QuoteRefusalNote error={quoteRefusal} blocking />
+                      <QuoteFaultNote error={quoteFault} />
                       <PriceSourceNote quote={sale.quote} pending={sale.pending} />
                     </div>
                   ) : null
                 }
+                chargeBlockedReason={quoteRefusal?.message ?? null}
                 onChangeQty={handleChangeQty}
                 onClear={handleClearCart}
                 onCheckout={handleCheckout}

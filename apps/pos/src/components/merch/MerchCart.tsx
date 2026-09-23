@@ -29,6 +29,22 @@ interface MerchCartProps {
    * platform priced it and agreed with the till.
    */
   priceNote?: ReactNode;
+  /**
+   * WHY THE CHARGE BUTTON IS OFF, beyond an empty sale — SCRUM-352, the same
+   * prop the F&B panel takes (`components/fnb/FnbCart.tsx`, SCRUM-342).
+   *
+   * Set when the sale as it stands cannot be sold: the platform refused to
+   * price it, so the press could only carry the guest to the payment screen and
+   * meet the same rule at commit. Null when there is no such reason, which
+   * includes a sale this till priced on its own — that figure is the documented
+   * fallback and the panel says whose it is.
+   *
+   * Passed in rather than decided here, for the reason `priceNote` is: this
+   * component draws a sale, and whether the platform will take it is the
+   * station's business. The reason is not drawn twice — `priceNote` above the
+   * button already names it — it rides the button as its title.
+   */
+  chargeBlockedReason?: string | null;
   onChangeQty: (lineId: string, qty: number) => void;
   onClear: () => void;
   onCheckout: () => void;
@@ -84,6 +100,7 @@ export function MerchCart({
   manualAmounts,
   taxBreakdown,
   priceNote,
+  chargeBlockedReason,
   onChangeQty,
   onClear,
   onCheckout,
@@ -92,6 +109,7 @@ export function MerchCart({
   onRemoveManualDiscount,
 }: MerchCartProps) {
   const isEmpty = lines.length === 0;
+  const chargeBlocked = Boolean(chargeBlockedReason);
 
   const lineDiscountsFor = (id: string) =>
     manualDiscounts.filter((md) => md.scope === 'line' && md.targetLineId === id);
@@ -254,7 +272,8 @@ export function MerchCart({
         <Button
           size="lg"
           className="w-full h-16 text-xl font-bold mt-3"
-          disabled={isEmpty}
+          disabled={isEmpty || chargeBlocked}
+          title={chargeBlockedReason ?? undefined}
           onClick={onCheckout}
         >
           Charge ฿{total}
