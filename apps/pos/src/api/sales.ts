@@ -256,6 +256,24 @@ export interface ApiSaleTotals {
   unappliedDiscountSatang: number;
 }
 
+/**
+ * WHY A DOCUMENT CHECK THIS CART NAMED PRICED NOTHING — SCRUM-311.
+ *
+ * The platform answers this beside an ordinary quote, not as an error: the
+ * cart is still priced, at the default rate, and this says what the till was
+ * holding that no longer counts. One case produces it today — the claim has
+ * already paid for a sale, so a second visitor cannot be rung up on the first
+ * one's passport. `apps/api/src/services/sale-tier.ts` owns the vocabulary;
+ * every other way a claim can fail is answered with silence and the default
+ * tier, because a caller holding an action id that is not theirs is told
+ * nothing.
+ */
+export interface TierClaimRefusal {
+  code: 'TIER_CLAIM_SPENT';
+  message: string;
+  details: { claimId: string; saleId: string };
+}
+
 export interface ApiSaleQuote {
   pricingMode: RateMode;
   pricingModeReason: string;
@@ -264,6 +282,14 @@ export interface ApiSaleQuote {
   businessDate?: string;
   /** The tier the PLATFORM resolved, which is the one that chose the prices. */
   tier?: string;
+  /**
+   * Where that tier came from: the member's record, the document check the
+   * cart named, or the operator's default. `default` beside a refusal is the
+   * till's signal that the discounted rate on its screen is no longer real.
+   */
+  tierSource?: 'member' | 'claim' | 'default';
+  /** Set only when the claim this cart NAMED priced nothing. Null otherwise. */
+  tierClaimRefusal?: TierClaimRefusal | null;
   totals: ApiSaleTotals;
   /** Resolved satang per line id, in cart order. */
   lineTotals: Record<string, number>;
@@ -737,6 +763,18 @@ export interface CartQuote {
    * platform agreed with everything the till sent.
    */
   platformNotice?: string;
+  /**
+   * SCRUM-311 — the document check this cart named priced nothing, and why.
+   *
+   * Carried on the quote rather than folded into `platformNotice` because the
+   * till does more than print it: it drops the tier back, restates the lines
+   * and forgets the claim, and it needs the machine-readable code to know that
+   * is what happened. Absent on a locally-priced quote, which has no claim to
+   * refuse.
+   */
+  tierClaimRefusal?: TierClaimRefusal | null;
+  /** Where the platform took the tier it priced at, when the platform priced it. */
+  tierSource?: 'member' | 'claim' | 'default';
 }
 
 /**
@@ -945,6 +983,8 @@ export async function quoteCart(args: QuoteCartArgs): Promise<CartQuote> {
       pricingModeReason: quote.pricingModeReason,
       engineVersion: quote.engineVersion,
       ...(notice ? { platformNotice: notice } : {}),
+      ...(quote.tierClaimRefusal ? { tierClaimRefusal: quote.tierClaimRefusal } : {}),
+      ...(quote.tierSource ? { tierSource: quote.tierSource } : {}),
     };
   } catch (err) {
     if (isMissingRoute(err)) {

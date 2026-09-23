@@ -532,6 +532,29 @@ export function CustomerDisplay({
   }
 
   if (stage === 'payment') {
+    /**
+     * THE AMOUNT THE FAMILY IS ASKED FOR (SCRUM-316).
+     *
+     * The order stage stopped quoting a cart it could not price (SCRUM-312);
+     * this stage — the one that says "please pay" — went on printing
+     * `sale.total`, which is the ฿0 `priceForTier` substitutes for a price
+     * nobody set, in seven-rem type. It now reads the same helper the rows and
+     * the staff panel read.
+     *
+     * A SECOND LOCK, NOT THE FIRST. Three routes set the payment step without
+     * passing the order panel's Pay button — the supervision gate, the
+     * customer-input step's Done, and "Done adding" for a known member — and
+     * none of them asks whether the cart is priced. What keeps an unpriced cart
+     * off this screen today is further upstream: `TicketCard` does not answer a
+     * press for a tier it cannot price, so a line at such a tier never enters
+     * the cart (the drop-off path attaches one by name, but its play length is
+     * chosen from those same refused cards, so it cannot be configured or
+     * advanced past the ticket step either). Driving it in a browser, an
+     * unpriced cart could not be walked to this stage at all. So the guard is
+     * here because this is where the figure is printed and nothing at this
+     * stage checks it — not because a way through is known.
+     */
+    const unpriced = unpricedCartLines(sale.lines);
     if (sale.paymentMethod && paymentMethodKind(sale.paymentMethod) === 'qr') {
       return (
         <Shell customerName={displayName}>
@@ -544,7 +567,9 @@ export function CustomerDisplay({
             <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
               <QrCode seed={`promptpay-${sale.id}-${sale.total}`} className="w-64 h-64" />
             </div>
-            <div className="text-6xl font-black text-(--cd-violet) mt-8">฿{sale.total}</div>
+            <div className="text-6xl font-black text-(--cd-violet) mt-8">
+              {unpriced.length > 0 ? '—' : `฿${sale.total}`}
+            </div>
             <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('till.payment.openBankingApp')}</p>
             <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -562,7 +587,9 @@ export function CustomerDisplay({
             <Wallet className="w-12 h-12" />
           </div>
           <p className="text-2xl text-foreground/70 mb-2">{t('common.pleasePay')}</p>
-          <div className="text-7xl font-black text-primary mb-4">฿{sale.total}</div>
+          <div className="text-7xl font-black text-primary mb-4">
+            {unpriced.length > 0 ? '—' : `฿${sale.total}`}
+          </div>
           <p className="text-2xl text-foreground/70">{t('common.toStaff')}</p>
           {sale.paymentMethod && (
             <div className="mt-6 px-5 py-2 rounded-full bg-foreground/5 border border-foreground/10 text-lg text-foreground/80">

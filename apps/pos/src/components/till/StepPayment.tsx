@@ -23,6 +23,21 @@ interface StepPaymentProps {
   busy?: boolean;
   /** What the button says while busy. Defaults to the sale being saved. */
   busyLabel?: string;
+  /**
+   * A line in this cart is priced at a tier nobody has set a price for, so
+   * `total` is the ฿0 that stands in for the missing price (SCRUM-316).
+   *
+   * The staff half of the same moment the customer display guards: "Amount Due
+   * ฿0" beside a panel that says no price is set. Dashed while it holds, and
+   * Confirm shut with it.
+   *
+   * Like the display's, a second lock rather than the first: three routes set
+   * this step without passing the order panel's Pay button and none of them
+   * asks whether the cart is priced, but `TicketCard` refuses a tier it cannot
+   * price, so no such line reaches the cart today. Callers that price their own
+   * carts (the party tab) leave it unset and nothing changes for them.
+   */
+  unpriced?: boolean;
 }
 
 // Visual accent per method KIND (the tender list itself is configured in Admin).
@@ -60,7 +75,7 @@ const KIND_STYLE: Record<
   },
 };
 
-export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel }: StepPaymentProps) {
+export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced }: StepPaymentProps) {
   const methods = getEnabledPaymentMethods();
   const isQrPending = !!selectedMethod && paymentMethodKind(selectedMethod) === 'qr';
 
@@ -68,7 +83,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
     <div className="flex flex-col h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="mb-8 text-center">
         <h2 className="text-4xl font-bold tracking-tight mb-2">Amount Due</h2>
-        <div className="text-6xl font-black text-primary">฿{total}</div>
+        <div className="text-6xl font-black text-primary">{unpriced ? '—' : `฿${total}`}</div>
       </div>
 
       <h3 className="text-xl font-bold mb-4">Select Payment Method</h3>
@@ -119,7 +134,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
         <Button
           size="lg"
           className="flex-1 h-16 text-xl font-bold"
-          disabled={!selectedMethod || busy}
+          disabled={!selectedMethod || busy || unpriced}
           onClick={onComplete}
         >
           {busy ? (busyLabel ?? 'Saving the sale…') : 'Confirm Payment Received'}

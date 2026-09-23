@@ -137,6 +137,18 @@ export default function Till() {
    */
   const [tierClaimActionId, setTierClaimActionId] = useState<string | null>(null);
 
+  /**
+   * SCRUM-311 — why the discounted rate that was on this screen has gone.
+   *
+   * Held here rather than read straight off the live quote, because acting on
+   * the refusal is what makes it disappear: the moment the till forgets the
+   * claim, the next quote names none and answers no refusal. Staff would be
+   * left with a cart that had silently reverted to the tourist total and
+   * nothing on screen to say why. It clears when the sale does, and when a
+   * fresh document check is recorded.
+   */
+  const [tierClaimRefusal, setTierClaimRefusal] = useState<string | null>(null);
+
   const [showManualDiscountModal, setShowManualDiscountModal] = useState(false);
   const [showAddDropOff, setShowAddDropOff] = useState(false);
   const [saleResult, setSaleResult] = useState<Sale | null>(null);
@@ -431,6 +443,7 @@ export default function Till() {
     setPendingVerification(null);
     // The next visitor is not the one whose document was checked (SCRUM-307).
     setTierClaimActionId(null);
+    setTierClaimRefusal(null);
     setSuperSlots([]);
     setSuperParentName('');
     setSuperConsentAck(false);
@@ -750,6 +763,8 @@ export default function Till() {
         });
         if (saleEpochRef.current !== epoch) return;
         setTierClaimActionId(claimed);
+        // A fresh check answers the last one's refusal (SCRUM-311).
+        setTierClaimRefusal(null);
       } catch (err) {
         if (saleEpochRef.current !== epoch) return;
         if (!isMissingRoute(err)) {
@@ -775,6 +790,61 @@ export default function Till() {
     setStep(3);
   };
 
+  /**
+   * THE DOCUMENT CHECK BEHIND THIS CART HAS ALREADY PAID FOR A SALE — SCRUM-311.
+   *
+   * The platform made a claim single-use: it prices one sale, and a second
+   * cart naming it is answered with the default tier and a refusal beside the
+   * quote. Until this, the till did nothing with that refusal. The screen went
+   * on saying EXPAT in the corner and showing the expat prices it had worked
+   * out itself, the platform's total quietly landed at the tourist figure, and
+   * the first anyone knew was a 409 at Pay with the family already at the
+   * counter — the exact shape of the bug SCRUM-307 was raised for, one layer
+   * further in.
+   *
+   * So the till follows the platform: it stops naming a claim that prices
+   * nothing, puts the tier back where the platform has it, restates the lines
+   * at that rate so the panel's figures and the platform's agree again, and
+   * leaves the reason on the panel. What it does NOT do is guess that the
+   * document is still good — re-checking it is a decision for the person
+   * holding it, and the modal is one press away.
+   *
+   * `getDefaultTier()` rather than the tier code on the answer: the lines have
+   * to be re-priced from the catalogue this device holds, so the tier that
+   * does it must be one that catalogue knows. `tierSource === 'default'` is
+   * what the platform says it fell back to.
+   *
+   * WHAT STILL STANDS BETWEEN THIS AND THE COUNTER. The platform only reaches
+   * the refusal (`priceCart`, sale.ts:748) if it gets past its line-price
+   * reconciliation (sale.ts:682), and it cannot: a till holding the expat rate
+   * necessarily disagrees with a platform that has just fallen back to the
+   * default one, so the quote is refused 409 SALE_LINE_PRICE_MISMATCH and the
+   * answer this reads never arrives. `lineTotalSatang` is optional in the API
+   * and omitting it produces the refusal, but `buildCartPayload` always sends
+   * it — rightly, it is what stops a stale price being charged. So this
+   * handler is correct and driven (see the Jira evidence, which omits that one
+   * optional field), and it is not yet what staff meet: until the platform
+   * answers a spent claim ahead of the mismatch it raises, the counter keeps
+   * the Expat chip and the expat figures, is told only "Priced on this till.
+   * The platform did not price this cart.", and meets the 409 at Pay.
+   */
+  useEffect(() => {
+    const refusal = cart.quote.tierClaimRefusal;
+    // No claim on this cart means nothing was refused for it — and the guard
+    // is also what stops this from running a second time, because forgetting
+    // the claim is the first thing it does.
+    if (!refusal || cart.quote.tierSource !== 'default' || !tierClaimActionId) return;
+    const fallback = getDefaultTier().id;
+    setTierClaimActionId(null);
+    setTierClaimRefusal(refusal.message);
+    if (tier && tier !== fallback) {
+      setTier(fallback);
+      restateLinesToTier(fallback);
+    }
+    // `restateLinesToTier` closes over the cart it restates and is redefined
+    // every render; listing it would re-run this on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.quote.tierClaimRefusal, cart.quote.tierSource, tierClaimActionId, tier]);
 
   const handleRemoveLine = (id: string) => {
     // Removing a line changes the cart composition — re-run supervision if needed.
@@ -1997,6 +2067,7 @@ export default function Till() {
           {step === 5 && (
             <StepPayment
               total={total}
+              unpriced={unpricedCartLines(lines).length > 0}
               selectedMethod={pendingPaymentMethod}
               onSelectMethod={setPendingPaymentMethod}
               onComplete={handleCompletePayment}
@@ -2074,6 +2145,7 @@ export default function Till() {
             canPay={canPay}
             totals={cart.totals}
             priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
+            tierClaimRefusal={tierClaimRefusal}
           />
         </div>
       )}

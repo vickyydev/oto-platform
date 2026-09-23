@@ -66,6 +66,18 @@ interface OrderSummaryProps {
   >;
   /** Shown under the total when the figures did NOT come from the platform. */
   priceNote?: ReactNode;
+  /**
+   * A DISCOUNT THE PLATFORM WOULD NOT HONOUR ON THIS CART, in one sentence for
+   * the counter (SCRUM-311).
+   *
+   * Today there is one: the document check this cart was priced under has
+   * already paid for a sale, so the platform priced it at the default rate
+   * instead. The till drops its tier to match before it reaches here — this is
+   * the sentence that says why the Expat rate the screen was showing has gone,
+   * and it sits with the panel's other refusals rather than in a toast that is
+   * gone by the time staff look up.
+   */
+  tierClaimRefusal?: string | null;
 }
 
 function ManualDiscountRow({
@@ -187,7 +199,7 @@ function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: numb
   );
 }
 
-export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, chargeTarget, payLabel, totals, priceNote }: OrderSummaryProps) {
+export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal }: OrderSummaryProps) {
   const [promoInput, setPromoInput] = useState('');
 
   const { subtotal, scannedDiscounts, manualAmounts, total, taxBreakdown } =
@@ -632,6 +644,16 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
           Add manual discount
         </Button>
 
+        {tierClaimRefusal && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-300">
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              The discounted rate has gone
+            </div>
+            <p className="mt-1.5 text-xs">{tierClaimRefusal}</p>
+          </div>
+        )}
+
         {unpriced.length > 0 && (
           <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-300">
             <div className="flex items-center gap-2 font-semibold text-sm">
@@ -647,20 +669,31 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
         )}
 
         <div className="space-y-2 text-lg">
+          {/* The figures at the foot of the panel, dashed while a line is
+              unpriced (SCRUM-316). The rows above have said "—" since
+              SCRUM-228 and the visitor's half since SCRUM-312, but these three
+              still printed the ฿0 that `priceForTier` substitutes for a missing
+              price — so the person taking the money read "Subtotal ฿0 · Total
+              ฿0 · Pay ฿0" directly beneath "This tier has no price", and the
+              one figure that looks like an instruction said the family owed
+              nothing. The tax rows go with them: they are worked out from that
+              same subtotal, so they would state the VAT of an order that has no
+              amount. */}
           <div className="flex justify-between text-muted-foreground">
             <span>Subtotal</span>
-            <span>฿{subtotal}</span>
+            <span>{unpriced.length > 0 ? '—' : `฿${subtotal}`}</span>
           </div>
-          {taxRows.map((row) => (
-            <div key={row.key} className="flex justify-between text-muted-foreground text-sm">
-              <span>{row.label}</span>
-              <span className="tabular-nums">฿{roundTHB(row.amount)}</span>
-            </div>
-          ))}
+          {unpriced.length === 0 &&
+            taxRows.map((row) => (
+              <div key={row.key} className="flex justify-between text-muted-foreground text-sm">
+                <span>{row.label}</span>
+                <span className="tabular-nums">฿{roundTHB(row.amount)}</span>
+              </div>
+            ))}
           <Separator />
           <div className="flex justify-between font-bold text-2xl pt-2">
             <span>Total</span>
-            <span className="text-primary">฿{total}</span>
+            <span className="text-primary">{unpriced.length > 0 ? '—' : `฿${total}`}</span>
           </div>
           {priceNote}
         </div>
@@ -675,7 +708,10 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
             onClick={onPay}
             disabled={!canPay || unpriced.length > 0}
           >
-            {payLabel ?? `Pay ฿${total}`}
+            {/* A disabled button still reads as a quote. "Pay ฿0" on a cart
+                nobody has priced is the one figure staff would repeat out loud
+                to the family in front of them. */}
+            {payLabel ?? (unpriced.length > 0 ? 'Pay —' : `Pay ฿${total}`)}
           </Button>
         </div>
       </div>

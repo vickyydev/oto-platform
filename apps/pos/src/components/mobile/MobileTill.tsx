@@ -332,6 +332,14 @@ export default function MobileTill() {
    * names was written on the platform's side under a permission check.
    */
   const [tierClaimActionId, setTierClaimActionId] = useState<string | null>(null);
+  /**
+   * SCRUM-311 — why the discounted rate that was on this screen has gone.
+   *
+   * Held rather than read off the live quote: acting on the refusal is what
+   * makes it disappear, so without somewhere to keep it the cart would revert
+   * to the default total with nothing on screen to say why.
+   */
+  const [tierClaimRefusal, setTierClaimRefusal] = useState<string | null>(null);
   const [showManualDiscountModal, setShowManualDiscountModal] = useState(false);
   const [showAddDropOff, setShowAddDropOff] = useState(false);
   const [saleResult, setSaleResult] = useState<Sale | null>(null);
@@ -496,6 +504,7 @@ export default function MobileTill() {
     setPendingVerification(null);
     // The next visitor is not the one whose document was checked (SCRUM-307).
     setTierClaimActionId(null);
+    setTierClaimRefusal(null);
     setSuperSlots([]);
     setSuperParentName('');
     setSuperConsentAck(false);
@@ -657,6 +666,8 @@ export default function MobileTill() {
         });
         if (saleEpochRef.current !== epoch) return;
         setTierClaimActionId(claimed);
+        // A fresh check answers the last one's refusal (SCRUM-311).
+        setTierClaimRefusal(null);
       } catch (err) {
         if (saleEpochRef.current !== epoch) return;
         if (!isMissingRoute(err)) {
@@ -681,6 +692,41 @@ export default function MobileTill() {
     }
     setMStep('tickets');
   };
+
+  /**
+   * THE DOCUMENT CHECK BEHIND THIS CART HAS ALREADY PAID FOR A SALE — SCRUM-311.
+   *
+   * The counter till's handler, for the same reason (`pages/Till.tsx`): a
+   * claim prices one sale, and a second cart naming it is quoted at the
+   * default tier with a refusal beside it. The phone showed none of that — the
+   * corner still said EXPAT, the panel still showed the expat prices it had
+   * worked out itself, and the first sign was a 409 at Pay. So the till stops
+   * naming a claim that prices nothing, puts the tier back where the platform
+   * has it, restates the lines at that rate, and leaves the reason on the
+   * panel for the person holding the phone.
+   *
+   * The same caveat as the counter's, written out there in full: the
+   * platform's line-price reconciliation refuses the quote before it answers
+   * the refusal, so this fires only for a cart sent without the optional
+   * `lineTotalSatang`. The reason also reaches the REVIEW step's panel only —
+   * `MobileCartSheet` renders its own `OrderSummary` and is not passed it.
+   */
+  useEffect(() => {
+    const refusal = cart.quote.tierClaimRefusal;
+    // Forgetting the claim is the first thing this does, so the same guard
+    // that asks "was a claim named?" is what stops it running twice.
+    if (!refusal || cart.quote.tierSource !== 'default' || !tierClaimActionId) return;
+    const fallback = getDefaultTier().id;
+    setTierClaimActionId(null);
+    setTierClaimRefusal(refusal.message);
+    if (tier && tier !== fallback) {
+      setTier(fallback);
+      restateLinesToTier(fallback);
+    }
+    // `restateLinesToTier` is redefined every render and closes over the cart
+    // it restates; listing it would re-run this on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.quote.tierClaimRefusal, cart.quote.tierSource, tierClaimActionId, tier]);
 
   const handleRemoveLine = (id: string) => {
     setSupervisionResolved(false);
@@ -1625,6 +1671,7 @@ export default function MobileTill() {
               canPay={canPay}
               totals={cart.totals}
               priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
+              tierClaimRefusal={tierClaimRefusal}
             />
           </div>
         );
@@ -1634,6 +1681,7 @@ export default function MobileTill() {
           <div className="h-full overflow-y-auto p-4">
             <StepPayment
               total={total}
+              unpriced={unpricedCartLines(lines).length > 0}
               selectedMethod={pendingPaymentMethod}
               onSelectMethod={handleMobileSelectMethod}
               onComplete={handleCompletePayment}
