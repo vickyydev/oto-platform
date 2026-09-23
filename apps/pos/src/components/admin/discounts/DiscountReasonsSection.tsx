@@ -85,7 +85,7 @@ export function DiscountReasonsSection() {
         {discountReasons.map((reason, i) => (
           <div
             key={i}
-            className="flex items-center gap-2 rounded-2xl border border-foreground/10 bg-black/20 px-3 py-2"
+            className="flex items-center gap-2 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2"
           >
             <GripVertical className="w-4 h-4 shrink-0 text-foreground/25" />
             <TextInput
@@ -117,9 +117,8 @@ export function DiscountReasonsSection() {
                 size="sm"
                 onClick={() => remove(i)}
                 aria-label="Remove reason"
-                className="text-rose-300 hover:text-rose-200"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 text-destructive" />
               </Button>
             </div>
           </div>

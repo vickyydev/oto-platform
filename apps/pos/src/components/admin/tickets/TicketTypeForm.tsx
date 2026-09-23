@@ -827,7 +827,7 @@ export function TicketTypeForm({
               form.freebies.map((fb) => (
                 <div
                   key={fb.id}
-                  className="flex flex-col gap-2 rounded-xl bg-black/20 p-3"
+                  className="flex flex-col gap-2 rounded-xl bg-foreground/[0.02] p-3"
                 >
                   <div className="flex gap-2">
                     <Select

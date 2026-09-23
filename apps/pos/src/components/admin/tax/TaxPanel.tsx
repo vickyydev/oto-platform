@@ -296,9 +296,9 @@ export function TaxPanel() {
 
                 {isPendingDelete && (
                   <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                     <div className="flex flex-col gap-2">
-                      <p className="text-amber-200">
+                      <p className="text-amber-700">
                         <strong>{rate.name}</strong> is assigned to{' '}
                         {(rateUsers.get(rate.id) ?? [])
                           .map((c) => CATEGORY_LABELS[c] ?? c)
@@ -364,7 +364,7 @@ export function TaxPanel() {
           {rules.map((r) => (
             <div
               key={r.category}
-              className="flex flex-col gap-3 rounded-xl bg-black/20 p-4"
+              className="flex flex-col gap-3 rounded-xl bg-foreground/[0.02] p-4"
             >
               <span className="font-medium">
                 {CATEGORY_LABELS[r.category] ?? r.category}
@@ -591,7 +591,7 @@ export function TaxPanel() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-xl bg-black/30 p-4 font-mono text-sm leading-6">
+        <div className="mt-4 rounded-xl bg-foreground/5 p-4 font-mono text-sm leading-6">
           <ExampleBreakdown
             category={exampleCategory}
             base={liveExample.base}
@@ -601,7 +601,7 @@ export function TaxPanel() {
           />
         </div>
 
-        <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-300/70">
+        <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-700/80">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           Tax rules and sequences should be validated with a qualified accountant before going live.
         </p>

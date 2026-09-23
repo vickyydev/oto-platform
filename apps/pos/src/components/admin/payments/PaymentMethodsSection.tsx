@@ -112,7 +112,7 @@ export function PaymentMethodsSection() {
         <select
           value={newKind}
           onChange={(e) => setNewKind(e.target.value as PaymentMethodKind)}
-          className="h-10 shrink-0 rounded-xl border border-foreground/10 bg-black/30 px-3 text-sm text-foreground/90 outline-none focus:border-foreground/30"
+          className="h-10 shrink-0 rounded-xl border border-foreground/10 bg-foreground/5 px-3 text-sm text-foreground/90 outline-none focus:border-foreground/30"
           aria-label="New method kind"
         >
           {KIND_OPTIONS.map((k) => (
@@ -139,7 +139,7 @@ export function PaymentMethodsSection() {
           return (
             <div
               key={m.id}
-              className={`flex items-center gap-2 rounded-2xl border border-foreground/10 bg-black/20 px-3 py-2 ${
+              className={`flex items-center gap-2 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 ${
                 m.enabled ? '' : 'opacity-60'
               }`}
             >
@@ -153,7 +153,7 @@ export function PaymentMethodsSection() {
               <select
                 value={m.kind}
                 onChange={(e) => patch(m, { kind: e.target.value as PaymentMethodKind })}
-                className="h-10 shrink-0 rounded-xl border border-foreground/10 bg-black/30 px-2 text-sm text-foreground/90 outline-none focus:border-foreground/30"
+                className="h-10 shrink-0 rounded-xl border border-foreground/10 bg-foreground/5 px-2 text-sm text-foreground/90 outline-none focus:border-foreground/30"
                 aria-label={`${m.label} kind`}
               >
                 {KIND_OPTIONS.map((k) => (
@@ -194,9 +194,8 @@ export function PaymentMethodsSection() {
                   size="sm"
                   onClick={() => remove(m)}
                   aria-label="Remove method"
-                  className="text-rose-300 hover:text-rose-200"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
               </div>
             </div>

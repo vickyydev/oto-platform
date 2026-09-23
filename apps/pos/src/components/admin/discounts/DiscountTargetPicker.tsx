@@ -186,7 +186,7 @@ export function DiscountTargetPicker({
         >
           <div
             id="disc-scope-items"
-            className="flex max-h-44 flex-col gap-1 overflow-y-auto rounded-xl border border-foreground/10 bg-black/20 p-2"
+            className="flex max-h-44 flex-col gap-1 overflow-y-auto rounded-xl border border-foreground/10 bg-foreground/[0.02] p-2"
           >
             {menuItems.map((m) => {
               const checked = value.menuItemIds.includes(m.id);

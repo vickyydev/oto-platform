@@ -78,7 +78,7 @@ export function ReportFilterBar({
 /** Small amber banner marking a report/section as a thin-history prototype shell. */
 export function ShellBanner({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2 text-xs text-amber-200/90">
+    <div className="flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2 text-xs text-amber-700">
       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span>{children}</span>
     </div>

@@ -232,7 +232,7 @@ export function CategoriesPanel() {
 
                   {/* Sub-category rows */}
                   {subs.length > 0 && (
-                    <div className="flex flex-col border-t border-foreground/5 bg-black/20">
+                    <div className="flex flex-col border-t border-foreground/5 bg-foreground/[0.02]">
                       {subs.map((sub, i) => (
                         <div
                           key={sub.id}

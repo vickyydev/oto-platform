@@ -87,7 +87,7 @@ function UnpricedBadge({ tickets, total }: { tickets: TicketType[]; total: numbe
   if (tickets.length === 0) return null;
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-400/10 px-2 py-1 text-xs text-amber-300"
+      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-500/15 px-2 py-1 text-xs text-amber-600"
       title={`Not sellable at this tier until a price is set: ${tickets
         .map((t) => t.name)
         .join(', ')}`}
@@ -205,7 +205,7 @@ function TiersEditor({
         {sorted.map((t, i) => (
           <div
             key={t.id}
-            className="flex flex-wrap items-center gap-2 rounded-2xl border border-foreground/10 bg-black/20 px-3 py-2"
+            className="flex flex-wrap items-center gap-2 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2"
           >
             <GripVertical className="w-4 h-4 shrink-0 text-foreground/25" />
             <TierNameInput value={t.name} onCommit={(name) => patch(t, { name })} />
@@ -261,9 +261,8 @@ function TiersEditor({
                 size="sm"
                 onClick={() => remove(t)}
                 aria-label="Remove tier"
-                className="text-rose-300 hover:text-rose-200"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 text-destructive" />
               </Button>
             </div>
           </div>

@@ -218,13 +218,13 @@ export function SupervisionPanel() {
 
         {problems.length > 0 && (
           <div className="mt-4 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-3">
-            <div className="flex items-center gap-2 text-amber-300">
+            <div className="flex items-center gap-2 text-amber-700">
               <AlertTriangle className="w-4 h-4" />
               <span className="text-sm font-semibold">
                 Fix these so every age resolves cleanly:
               </span>
             </div>
-            <ul className="mt-2 list-disc space-y-1 pl-6 text-xs text-amber-200/90">
+            <ul className="mt-2 list-disc space-y-1 pl-6 text-xs text-amber-700">
               {problems.map((p, i) => (
                 <li key={i}>{p}</li>
               ))}
@@ -245,7 +245,7 @@ export function SupervisionPanel() {
           {sorted.map((b) => (
             <div
               key={b.id}
-              className="grid grid-cols-1 gap-2 rounded-2xl border border-foreground/10 bg-black/20 px-3 py-3 sm:grid-cols-[1fr_5rem_5rem_1fr_2.5rem] sm:items-center sm:py-2"
+              className="grid grid-cols-1 gap-2 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-3 sm:grid-cols-[1fr_5rem_5rem_1fr_2.5rem] sm:items-center sm:py-2"
             >
               <TextInput
                 value={b.label}
@@ -267,7 +267,7 @@ export function SupervisionPanel() {
                 <button
                   type="button"
                   onClick={() => patchBand(b.id, { maxAge: Math.max(b.minAge, 0) })}
-                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-foreground/10 bg-black/20 px-3 text-xs text-foreground/50 hover:text-foreground"
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-foreground/10 bg-foreground/5 px-3 text-xs text-foreground/50 hover:text-foreground"
                   title="Click to set an upper bound"
                 >
                   <InfinityIcon className="w-4 h-4" /> No max
@@ -315,9 +315,9 @@ export function SupervisionPanel() {
                 size="sm"
                 onClick={() => removeBand(b.id)}
                 aria-label="Remove band"
-                className="justify-self-end text-rose-300 hover:text-rose-200"
+                className="justify-self-end"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 text-destructive" />
               </Button>
             </div>
           ))}
@@ -349,7 +349,7 @@ export function SupervisionPanel() {
           {sortedConfirmations.map((c, i) => (
             <div
               key={c.id}
-              className="grid grid-cols-1 gap-2 rounded-2xl border border-foreground/10 bg-black/20 px-3 py-3 sm:grid-cols-[1fr_5rem_5.5rem_2.5rem] sm:items-center sm:py-2"
+              className="grid grid-cols-1 gap-2 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-3 sm:grid-cols-[1fr_5rem_5.5rem_2.5rem] sm:items-center sm:py-2"
             >
               <TextInput
                 value={c.text}
@@ -391,9 +391,9 @@ export function SupervisionPanel() {
                 size="sm"
                 onClick={() => removeConfirmation(c.id)}
                 aria-label="Remove confirmation"
-                className="justify-self-end text-rose-300 hover:text-rose-200"
+                className="justify-self-end"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 text-destructive" />
               </Button>
             </div>
           ))}
@@ -419,7 +419,7 @@ export function SupervisionPanel() {
         </p>
 
         <div className="mt-5 flex flex-col gap-4">
-          <label className="flex items-center justify-between gap-3 rounded-2xl border border-foreground/10 bg-black/20 px-4 py-3">
+          <label className="flex items-center justify-between gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
             <div>
               <div className="text-sm font-semibold">Enable sibling waiver</div>
               <div className="text-xs text-foreground/40">
@@ -482,7 +482,7 @@ export function SupervisionPanel() {
             </label>
           </div>
 
-          <label className="flex items-center justify-between gap-3 rounded-2xl border border-foreground/10 bg-black/20 px-4 py-3">
+          <label className="flex items-center justify-between gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
             <div>
               <div className="text-sm font-semibold">Staff-only (at the door)</div>
               <div className="text-xs text-foreground/40">

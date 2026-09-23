@@ -192,7 +192,7 @@ export function PricingOverridesSection() {
         {sorted.map((o) => (
           <div
             key={o.id}
-            className="flex items-center gap-3 rounded-2xl border border-foreground/10 bg-black/20 px-4 py-3"
+            className="flex items-center gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3"
           >
             <CalendarRange className="w-4 h-4 shrink-0 text-foreground/40" />
             <div className="min-w-0 flex-1">
@@ -215,9 +215,8 @@ export function PricingOverridesSection() {
                 size="sm"
                 onClick={() => setPendingDelete(o)}
                 aria-label={`Remove ${o.name}`}
-                className="text-rose-300 hover:text-rose-200"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 text-destructive" />
               </Button>
             </div>
           </div>

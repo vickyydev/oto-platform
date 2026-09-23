@@ -31,8 +31,11 @@ export function Field({
   );
 }
 
+// The back office renders light, so the field surface is the neighbour
+// panels' `bg-foreground/[0.02]`; a black overlay reads as a grey block here
+// (SCRUM-354).
 const fieldBase =
-  'h-10 w-full rounded-xl border bg-black/20 px-3 text-sm text-foreground placeholder:text-foreground/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50';
+  'h-10 w-full rounded-xl border bg-foreground/[0.02] px-3 text-sm text-foreground placeholder:text-foreground/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50';
 
 export function TextInput({
   invalid,

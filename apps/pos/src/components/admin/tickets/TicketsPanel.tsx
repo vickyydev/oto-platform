@@ -78,7 +78,7 @@ export function TicketsPanel() {
         {t.freebies.map((f) => (
           <span
             key={f.id}
-            className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300"
+            className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-600"
           >
             <Gift className="h-3 w-3" />
             {freebieLabel(f, addOns)}
@@ -97,18 +97,18 @@ export function TicketsPanel() {
     return (
       <div className="mt-1.5 flex flex-wrap gap-1">
         {adult && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-black/20 px-2 py-0.5 text-[11px] text-foreground/60">
+          <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 px-2 py-0.5 text-[11px] text-foreground/60">
             {adult}
           </span>
         )}
         {credit && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
             <Gift className="h-3 w-3" />
             {credit}
           </span>
         )}
         {t.gateAccess && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-black/20 px-2 py-0.5 text-[11px] text-foreground/60">
+          <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 px-2 py-0.5 text-[11px] text-foreground/60">
             <DoorOpen className="h-3 w-3" />
             Opens gate
           </span>
@@ -224,7 +224,7 @@ export function TicketsPanel() {
                     return (
                       <div
                         key={tier.id}
-                        className="rounded-xl bg-black/20 px-3 py-2 text-center"
+                        className="rounded-xl bg-foreground/[0.02] px-3 py-2 text-center"
                       >
                         <div className="text-sm font-bold tabular-nums">
                           {price == null ? (

@@ -215,7 +215,7 @@ export function TemplateEditor({
       {notice && (
         <div
           role="status"
-          className="mt-4 rounded-2xl border border-foreground/10 bg-black/20 px-4 py-3 text-sm text-foreground/70"
+          className="mt-4 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3 text-sm text-foreground/70"
         >
           {notice}
         </div>
@@ -264,7 +264,7 @@ function ToggleRow({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex items-start justify-between gap-3 rounded-2xl border border-foreground/10 bg-black/20 px-4 py-3 text-left transition-colors hover:border-foreground/25"
+      className="flex items-start justify-between gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3 text-left transition-colors hover:border-foreground/25"
     >
       <span className="min-w-0">
         <span className="block text-sm font-medium text-foreground">{label}</span>

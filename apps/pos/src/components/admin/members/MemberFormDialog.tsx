@@ -554,7 +554,7 @@ export function MemberFormDialog({
             </p>
 
             {current && (
-              <p className="rounded-lg bg-emerald-400/10 px-3 py-2 text-xs text-emerald-300">
+              <p className="rounded-lg bg-emerald-500/15 px-3 py-2 text-xs text-emerald-700">
                 Holds {tierLabel(current.tier)} on a {current.proofType}
                 {current.expiresAt ? `, valid to ${current.expiresAt}` : ''} — verified by{' '}
                 {current.verifiedBy}.
@@ -562,7 +562,7 @@ export function MemberFormDialog({
             )}
 
             {!operator && (
-              <p className="rounded-lg bg-amber-400/10 px-3 py-2 text-xs text-amber-300">
+              <p className="rounded-lg bg-amber-500/15 px-3 py-2 text-xs text-amber-700">
                 No operator is signed in — you can edit the name and phone, but
                 verifying or changing a tier requires a logged-in operator.
               </p>
@@ -658,7 +658,7 @@ export function MemberFormDialog({
                     )}
                   </>
                 ) : (
-                  <p className="text-xs text-amber-300">
+                  <p className="text-xs text-amber-700">
                     Taking a verified rate back off a member needs a manager.
                   </p>
                 )}
@@ -726,7 +726,7 @@ export function MemberFormDialog({
                       )}
                       <span className="shrink-0 font-medium">{draft.name || c.name}</span>
                       {draft.medicalAlert && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-red-400">
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-destructive">
                           <AlertTriangle className="w-3 h-3" />
                           Medical alert
                         </span>

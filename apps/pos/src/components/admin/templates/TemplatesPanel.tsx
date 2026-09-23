@@ -149,7 +149,7 @@ function TemplateRow({
     .map((key) => FIELD_META[key].label);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-foreground/10 bg-black/20 px-4 py-3">
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
       <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground/5 text-foreground/70">
         <meta.icon className="h-5 w-5" />
       </span>
@@ -167,7 +167,7 @@ function TemplateRow({
             enabled.map((label) => (
               <span
                 key={label}
-                className="rounded-full bg-sky-400/10 px-2 py-0.5 text-[11px] font-medium text-sky-300"
+                className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] font-medium text-sky-600"
               >
                 {label}
               </span>
