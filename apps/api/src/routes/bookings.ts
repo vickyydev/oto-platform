@@ -14,8 +14,8 @@ import {
   findBookings,
   loadBookingForOperator,
   memberIdForPhone,
-  namesFor,
   normalizeReference,
+  readBookings,
   redeemBooking,
   stationAtBranch,
   viewBookings,
@@ -165,7 +165,7 @@ export async function bookingRoutes(app: App): Promise<void> {
         limit: 1,
       });
       if (!row) throw errors.notFound('No booking with that reference at this branch');
-      return bookingView(row, await namesFor(app.db, [row]));
+      return bookingView(row, await readBookings(app.db, [row]));
     },
   );
 
@@ -227,7 +227,9 @@ export async function bookingRoutes(app: App): Promise<void> {
           bandCodes: req.body.bandCodes,
           requestId: req.id,
         });
-        return { booking: bookingView(row, await namesFor(tx, [row])) };
+        // Read back inside the transaction that wrote it, so the answer carries
+        // the redemption row this claim just made (SCRUM-304).
+        return { booking: bookingView(row, await readBookings(tx, [row])) };
       });
     },
   );

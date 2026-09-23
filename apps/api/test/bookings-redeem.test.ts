@@ -1,6 +1,20 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { account, auditLog, booking, box, branch, employee, station, syncChange } from '@oto/db';
+import {
+  account,
+  auditLog,
+  booking,
+  bookingRedemption,
+  box,
+  branch,
+  employee,
+  station,
+  syncChange,
+} from '@oto/db';
+import { newId } from '@oto/shared';
 import {
   CENTRAL_BRANCH_CODE,
   CHALONG_BRANCH_CODE,
@@ -42,6 +56,7 @@ import type { BoxAuth } from '../src/services/box';
 
 let ctx: TestContext;
 let centralId: string;
+let centralOperatorId: string;
 let chalongId: string;
 let centralTillId: string;
 let chalongTillId: string;
@@ -148,11 +163,80 @@ async function bookOnline(opts: {
   return res.body as unknown as { id: string; reference: string; totalSatang: number };
 }
 
-/** The redemption as the database holds it, not as a response described it. */
-async function storedRedemption(id: string): Promise<Record<string, unknown> | null> {
+let planted = 0;
+
+/**
+ * A booking row as a release left it, written straight into the table.
+ *
+ * Everything else in this file goes through the real public route, and says
+ * why. These do not, for two reasons. `POST /public/bookings` is rate-limited
+ * to twenty a minute from one address — it is a customer-facing route and that
+ * cap is the point — and this file already spends nearly all of them. And the
+ * cases that use this are about rows that ALREADY EXIST when a release ships:
+ * a redemption written into the jsonb before there was a table, a stale block
+ * the migration left behind. Planting one is what those are.
+ */
+async function plantBooking(opts: {
+  status?: string;
+  payloadRedemption?: Record<string, unknown> | null;
+}): Promise<{ id: string; reference: string }> {
+  const id = newId();
+  const reference = `OTO-PLANT-${String(++planted).padStart(4, '0')}`;
+  await ctx.db.insert(booking).values({
+    id,
+    operatorId: centralOperatorId,
+    branchId: centralId,
+    reference,
+    bookingDate: new Date().toISOString().slice(0, 10),
+    status: opts.status ?? 'paid',
+    totalSatang: 120000,
+    payload: {
+      tier: 'tourist',
+      rateMode: 'weekday',
+      parentName: 'Khun Ploy',
+      phone: '+66812229900',
+      contactChannel: 'whatsapp',
+      locale: 'en',
+      lines: [
+        {
+          packageId,
+          name: 'Planted package',
+          kids: 1,
+          adults: 1,
+          kidUnitSatang: 80000,
+          adultsFree: 1,
+          adultUnitSatang: 40000,
+          lineTotalSatang: 120000,
+        },
+      ],
+      clientSnapshot: null,
+      ...(opts.payloadRedemption ? { redemption: opts.payloadRedemption } : {}),
+    },
+  });
+  return { id, reference };
+}
+
+/**
+ * The redemption as the database holds it, not as a response described it —
+ * `pos.booking_redemption` since SCRUM-304.
+ */
+async function redemptionRows(id: string): Promise<Array<typeof bookingRedemption.$inferSelect>> {
+  return ctx.db.select().from(bookingRedemption).where(eq(bookingRedemption.bookingId, id));
+}
+
+/** The one redemption row, or null. Fails loudly if a booking ever has two. */
+async function storedRedemption(
+  id: string,
+): Promise<typeof bookingRedemption.$inferSelect | null> {
+  const rows = await redemptionRows(id);
+  expect(rows.length, 'a booking may be redeemed once').toBeLessThanOrEqual(1);
+  return rows[0] ?? null;
+}
+
+/** What the booking's own jsonb holds — where the redemption used to live. */
+async function payloadRedemption(id: string): Promise<unknown> {
   const [row] = await ctx.db.select().from(booking).where(eq(booking.id, id)).limit(1);
-  const payload = (row?.payload ?? {}) as Record<string, unknown>;
-  return (payload.redemption as Record<string, unknown> | undefined) ?? null;
+  return ((row?.payload ?? {}) as Record<string, unknown>).redemption ?? null;
 }
 
 async function redeemAuditRows(id: string): Promise<Array<typeof auditLog.$inferSelect>> {
@@ -169,6 +253,7 @@ beforeAll(async () => {
 
   const [central] = await ctx.db.select().from(branch).where(eq(branch.id, centralId)).limit(1);
   centralName = central!.name;
+  centralOperatorId = central!.operatorId;
   const tills = await ctx.db.select().from(station).where(eq(station.name, 'Reception Till 1'));
   const centralTill = tills.find((s) => s.branchId === centralId)!;
   centralTillId = centralTill.id;
@@ -390,16 +475,25 @@ describe('SCRUM-234 — redemption happens once', () => {
     // The row, not the answer. A response can describe a write that did not
     // commit; this is what the next shift reads. It keeps IDS — a till renamed
     // or a member of staff who leaves must not change the record.
-    expect(await storedRedemption(made.id)).toMatchObject({
+    const stored = await storedRedemption(made.id);
+    expect(stored, 'one row in pos.booking_redemption').toMatchObject({
+      bookingId: made.id,
+      operatorId: (await ctx.db.select().from(booking).where(eq(booking.id, made.id)).limit(1))[0]!
+        .operatorId,
       stationId: centralTillId,
       accountId: receptionAccountId,
       branchId: centralId,
       bandCodes: [],
     });
+    // The instant is the row's own column, and it is what the wire said.
+    expect(stored!.redeemedAt.toISOString()).toBe(redeemed.redemption!.at);
+
     const [row] = await ctx.db.select().from(booking).where(eq(booking.id, made.id)).limit(1);
     expect(row!.status).toBe('redeemed');
-    // Everything the booking site wrote is still there beside the redemption.
+    // Everything the booking site wrote is still there, and the counter added
+    // nothing to it: since SCRUM-304 the payload is the booking site's alone.
     expect((row!.payload as { parentName?: string }).parentName).toBe('Khun Ploy');
+    expect(await payloadRedemption(made.id)).toBeNull();
     expect(await redeemAuditRows(made.id)).toHaveLength(1);
   });
 
@@ -566,6 +660,11 @@ describe('SCRUM-305 — a box that cached the booking learns it was redeemed', (
       accountId: receptionAccountId,
       bandCodes: ['B-3030'],
     });
+    // And it came from `pos.booking_redemption`, not from the booking's jsonb:
+    // since SCRUM-304 nothing writes a redemption block there, so a box that
+    // is told one has been told what the table says.
+    expect(await payloadRedemption(made.id)).toBeNull();
+    expect((await storedRedemption(made.id))!.bandCodes).toEqual(['B-3030']);
 
     const bundle = await cacheBundle(ctx.db, centralBox, { scopes: ['bookings'] });
     const items = (bundle.scopes.bookings?.items ?? []) as Array<{ id: string }>;
@@ -591,6 +690,208 @@ describe('SCRUM-305 — a box that cached the booking learns it was redeemed', (
       scopes: ['bookings'],
     });
     expect(pulled.changes.map((c) => c.entityId)).not.toContain(made.id);
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+/**
+ * SCRUM-304 — the redemption moves into a table, and nothing else moves.
+ *
+ * SCRUM-234 wrote the claim into `booking.payload.redemption` and said in the
+ * service what that cost: no foreign keys behind the two ids that say who let a
+ * family in, "once" resting entirely on the service taking a row lock, and no
+ * way to report on redemptions without reading jsonb. `pos.booking_redemption`
+ * is those three sentences withdrawn.
+ *
+ * The risk in the move is the till, which has not changed and must not have to:
+ * `PlatformBooking` and `PlatformRedemption` in `apps/pos/src/api/bookings.ts`
+ * are read field by field by `toPosBooking` and `describeRedemption`. So the
+ * first test here is a DEEP COMPARE of the whole answer rather than a field
+ * check — a renamed key, a dropped field or a null that used to be a string
+ * fails here instead of at a counter.
+ */
+describe('SCRUM-304 — redemption lives in its own table', () => {
+  /** The backfill statement, taken out of the committed migration itself. */
+  function backfillStatement(): string {
+    const file = join(
+      dirname(fileURLToPath(import.meta.url)),
+      '..',
+      '..',
+      '..',
+      'packages',
+      'db',
+      'migrations',
+      '0018_booking_redemption.sql',
+    );
+    const chunk = readFileSync(file, 'utf8')
+      .split('--> statement-breakpoint')
+      .find((s) => s.includes('INSERT INTO "pos"."booking_redemption"'));
+    expect(chunk, 'migration 0018 has no backfill in it').toBeTruthy();
+    return chunk!;
+  }
+
+  it('the redeem answer is the read answer plus a status and a redemption, field for field', async () => {
+    const made = await bookOnline({ phone: '0812227700', kids: 2, adults: 1 });
+    const before = await call('GET', `/bookings/by-reference/${made.reference}`, { cookie: som });
+    const was = before.body as unknown as BookingView;
+    expect(was.redemption).toBeNull();
+
+    const res = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId, bandCodes: ['B-4040'] },
+    });
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+    const now = res.body.booking as BookingView;
+    const stored = await storedRedemption(made.id);
+
+    // Everything the till reads, pinned: the same object it had before the
+    // claim, with exactly two things different.
+    expect(now).toEqual({
+      ...was,
+      status: 'redeemed',
+      redemption: {
+        at: stored!.redeemedAt.toISOString(),
+        branchName: centralName,
+        stationName: centralTillName,
+        staffName: receptionStaffName,
+        bandCodes: ['B-4040'],
+      },
+    });
+
+    // And the same object comes back on the next read, from the table rather
+    // than from the transaction that wrote it.
+    const again = await call('GET', `/bookings/by-reference/${made.reference}`, { cookie: som });
+    expect(again.body).toEqual(now);
+
+    // A list row carries it too: the modal shows a redeemed booking straight
+    // off the list without fetching it again.
+    const listed = await call('GET', `/bookings?branchId=${centralId}&status=redeemed`, {
+      cookie: som,
+    });
+    const fromList = (listed.body.bookings as BookingView[]).find((b) => b.id === made.id);
+    expect(fromList).toEqual(now);
+  });
+
+  it('the second claim is refused with what the TABLE holds, not what the jsonb holds', async () => {
+    // Paid, and carrying a leftover block of the shape SCRUM-234 used to
+    // write. A reader still looking there would answer the counter with this,
+    // and the family would be told a time and a place that never happened.
+    const made = await plantBooking({
+      payloadRedemption: {
+        redeemedAt: '2020-01-01T00:00:00.000Z',
+        branchId: chalongId,
+        stationId: chalongTillId,
+        accountId: null,
+        bandCodes: ['B-GHOST'],
+      },
+    });
+    const first = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId, bandCodes: ['B-5050'] },
+    });
+    expect(first.statusCode, JSON.stringify(first.body)).toBe(200);
+    // The stale block is not what the first claim answered with either.
+    expect((first.body.booking as BookingView).redemption!.bandCodes).toEqual(['B-5050']);
+
+    const second = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId },
+    });
+    expect(second.statusCode).toBe(409);
+    const err = errorOf(second);
+    expect(err.code).toBe('BOOKING_ALREADY_REDEEMED');
+    const stored = await storedRedemption(made.id);
+    expect(err.details!.redemption).toEqual({
+      at: stored!.redeemedAt.toISOString(),
+      branchName: centralName,
+      stationName: centralTillName,
+      staffName: receptionStaffName,
+      bandCodes: ['B-5050'],
+    });
+    expect(JSON.stringify(err.details)).not.toContain('B-GHOST');
+    // Still one redemption, and the refused claim wrote nothing.
+    expect(await redemptionRows(made.id)).toHaveLength(1);
+    expect(await redeemAuditRows(made.id)).toHaveLength(1);
+  });
+
+  it('a box is told what the table says, and a stale jsonb block does not reach it', async () => {
+    // Never redeemed — and carrying exactly the block the old release would
+    // have written. The bundle must call this booking unredeemed.
+    const made = await plantBooking({
+      payloadRedemption: {
+        redeemedAt: '2020-01-01T00:00:00.000Z',
+        branchId: centralId,
+        stationId: centralTillId,
+        accountId: receptionAccountId,
+        bandCodes: ['B-GHOST'],
+      },
+    });
+
+    const bundle = await cacheBundle(ctx.db, centralBox, { scopes: ['bookings'] });
+    const items = (bundle.scopes.bookings?.items ?? []) as Array<{
+      id: string;
+      status: string;
+      payload: Record<string, unknown> | null;
+    }>;
+    const item = items.find((b) => b.id === made.id);
+    expect(item, 'the booking is in the branch’s cache bundle').toBeTruthy();
+    expect(item!.status).toBe('paid');
+    expect(item!.payload!.redemption).toBeUndefined();
+    // The rest of what the booking site wrote still travels.
+    expect(item!.payload!.parentName).toBe('Khun Ploy');
+
+    // Take the stale block away again, so the backfill below meets only the
+    // row it plants itself. Nothing in the release writes one any more.
+    const [row] = await ctx.db.select().from(booking).where(eq(booking.id, made.id)).limit(1);
+    const payload = { ...(row!.payload as Record<string, unknown>) };
+    delete payload.redemption;
+    await ctx.db.update(booking).set({ payload }).where(eq(booking.id, made.id));
+  });
+
+  it('the migration’s backfill copies a payload redemption into the table', async () => {
+    const redeemedAt = new Date('2026-09-01T08:15:00.000Z');
+    // A booking as the deployed release left it: redeemed, with the claim in
+    // the jsonb and no row in the table. This is what staging holds.
+    const made = await plantBooking({
+      status: 'redeemed',
+      payloadRedemption: {
+        redeemedAt: redeemedAt.toISOString(),
+        branchId: centralId,
+        stationId: centralTillId,
+        accountId: receptionAccountId,
+        bandCodes: ['B-6060', 'B-6061'],
+      },
+    });
+    expect(await redemptionRows(made.id)).toHaveLength(0);
+
+    await ctx.db.execute(sql.raw(backfillStatement()));
+
+    const stored = await storedRedemption(made.id);
+    expect(stored, 'the redemption staging holds was left behind').toBeTruthy();
+    expect(stored).toMatchObject({
+      operatorId: centralOperatorId,
+      branchId: centralId,
+      stationId: centralTillId,
+      accountId: receptionAccountId,
+      bandCodes: ['B-6060', 'B-6061'],
+    });
+    expect(stored!.redeemedAt.toISOString()).toBe(redeemedAt.toISOString());
+
+    // And the counter reads it back by name, the same as one redeemed today.
+    const res = await call('GET', `/bookings/by-reference/${made.reference}`, { cookie: som });
+    expect((res.body as unknown as BookingView).redemption).toEqual({
+      at: redeemedAt.toISOString(),
+      branchName: centralName,
+      stationName: centralTillName,
+      staffName: receptionStaffName,
+      bandCodes: ['B-6060', 'B-6061'],
+    });
+
+    // Re-runnable: a migration that is applied twice, or a backfill re-run by
+    // hand, must not give one booking two redemptions.
+    await ctx.db.execute(sql.raw(backfillStatement()));
+    expect(await redemptionRows(made.id)).toHaveLength(1);
   });
 });
 

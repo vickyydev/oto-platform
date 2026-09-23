@@ -1,6 +1,15 @@
 import { and, desc, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
-import { account, attendee, booking, branch, employee, member, station } from '@oto/db';
-import { isoDateInTz, wallClockMinutesInTz } from '@oto/shared';
+import {
+  account,
+  attendee,
+  booking,
+  bookingRedemption,
+  branch,
+  employee,
+  member,
+  station,
+} from '@oto/db';
+import { isoDateInTz, newId, wallClockMinutesInTz } from '@oto/shared';
 import { errors, type AppError } from '../lib/errors';
 import { audit } from './audit';
 import { bookingChange, recordChange } from './sync';
@@ -32,17 +41,27 @@ import type { Exec, Tx } from './tx';
  * reception reads back to a family has to be resolved when it is read, while
  * the record of who did what stays an id.
  *
- * **Redemption is recorded on the row, not in a new table.** `booking.status`
- * carries the state and `booking.payload.redemption` carries when, where, by
- * whom and which bands went out. A redemption table with its own foreign keys
- * is the better home and it needs a migration; this ticket has none in it, and
- * the jsonb is the shape the row already has. What it costs is queryability —
- * reporting on redemptions means reading jsonb — and that is recorded here
- * rather than hidden.
+ * **Redemption has its own table** — `pos.booking_redemption`, SCRUM-304.
+ * `booking.status` still carries the state, and when, where, by whom and which
+ * bands went out are a row with foreign keys and a unique on the booking. This
+ * paragraph used to say the opposite and say why: SCRUM-234 had no migration in
+ * it, so the claim went into `booking.payload.redemption` and the cost was
+ * written down rather than hidden. All three parts of that cost are now paid —
+ * the ids are constrained, "once" is a unique index rather than a promise the
+ * service keeps, and a report can ask which till redeemed what without reading
+ * jsonb.
+ *
+ * Nothing about the WIRE changed with it. The till's `PlatformBooking` and
+ * `PlatformRedemption` (`apps/pos/src/api/bookings.ts`) are the same fields in
+ * the same shape; only where they are read from moved. The old payload blocks
+ * are left where they are — the migration copies them into the table and
+ * deletes nothing — but nothing here reads them any more, so the table is the
+ * one answer to "was this redeemed".
  */
 
 export type BookingRow = typeof booking.$inferSelect;
 export type AttendeeRow = typeof attendee.$inferSelect;
+export type BookingRedemptionRow = typeof bookingRedemption.$inferSelect;
 
 /** How many bookings one list may answer with. */
 export const BOOKING_PAGE_MAX = 100;
@@ -90,20 +109,38 @@ function stringsIn(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
-/** The redemption recorded on a row, or null when it has not been redeemed. */
-export function storedRedemptionOf(row: BookingRow): StoredRedemption | null {
-  const raw = payloadOf(row).redemption;
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  const bag = raw as Record<string, unknown>;
-  const redeemedAt = stringOrNull(bag.redeemedAt);
-  if (!redeemedAt) return null;
+/** The redemption row as the rest of this file speaks of it. */
+export function storedRedemptionOf(row: BookingRedemptionRow): StoredRedemption {
   return {
-    redeemedAt,
-    branchId: stringOrNull(bag.branchId) ?? row.branchId,
-    stationId: stringOrNull(bag.stationId),
-    accountId: stringOrNull(bag.accountId),
-    bandCodes: stringsIn(bag.bandCodes),
+    redeemedAt: row.redeemedAt.toISOString(),
+    branchId: row.branchId,
+    stationId: row.stationId,
+    accountId: row.accountId,
+    bandCodes: stringsIn(row.bandCodes),
   };
+}
+
+/**
+ * The redemptions of a set of bookings, keyed by booking id — one query for a
+ * whole list rather than one per row.
+ *
+ * A booking with no entry here has not been redeemed. That is the whole of the
+ * question now: the payload blocks SCRUM-234 wrote are still in the rows and
+ * are deliberately not consulted, because two places to look is how a booking
+ * comes to be redeemed in one of them and not the other.
+ */
+export async function loadRedemptions(
+  exec: Exec,
+  bookingIds: string[],
+): Promise<Map<string, StoredRedemption>> {
+  const found = new Map<string, StoredRedemption>();
+  if (bookingIds.length === 0) return found;
+  const rows = await exec
+    .select()
+    .from(bookingRedemption)
+    .where(inArray(bookingRedemption.bookingId, bookingIds));
+  for (const row of rows) found.set(row.bookingId, storedRedemptionOf(row));
+  return found;
 }
 
 // --- What goes on the wire ---------------------------------------------------
@@ -181,16 +218,36 @@ export interface NameBook {
 const EMPTY_NAMES: NameBook = { branches: new Map(), stations: new Map(), staff: new Map() };
 
 /**
+ * Everything one batch of bookings is read back with: their redemptions, and
+ * the names those redemptions carry.
+ *
+ * One object rather than two arguments because the two are fetched together and
+ * the names depend on the redemptions — a station is only looked up because a
+ * redemption named it.
+ */
+export interface BookingReadModel {
+  /** Keyed by booking id. Absent means "not redeemed". */
+  redemptions: Map<string, StoredRedemption>;
+  names: NameBook;
+}
+
+const EMPTY_READ: BookingReadModel = { redemptions: new Map(), names: EMPTY_NAMES };
+
+/**
  * Resolve every name a set of bookings will be read back with, in three
  * queries rather than three per row.
  */
-export async function namesFor(exec: Exec, rows: BookingRow[]): Promise<NameBook> {
+export async function namesFor(
+  exec: Exec,
+  rows: BookingRow[],
+  redemptions: Map<string, StoredRedemption>,
+): Promise<NameBook> {
   const branchIds = new Set<string>();
   const stationIds = new Set<string>();
   const accountIds = new Set<string>();
   for (const row of rows) {
     branchIds.add(row.branchId);
-    const redemption = storedRedemptionOf(row);
+    const redemption = redemptions.get(row.id);
     if (!redemption) continue;
     branchIds.add(redemption.branchId);
     if (redemption.stationId) stationIds.add(redemption.stationId);
@@ -238,9 +295,23 @@ export function redemptionView(stored: StoredRedemption, names: NameBook): Redem
   };
 }
 
-export function bookingView(row: BookingRow, names: NameBook = EMPTY_NAMES): BookingView {
+/**
+ * The redemptions of a set of bookings and the names they read back with —
+ * what every read here answers through.
+ */
+export async function readBookings(exec: Exec, rows: BookingRow[]): Promise<BookingReadModel> {
+  if (rows.length === 0) return EMPTY_READ;
+  const redemptions = await loadRedemptions(
+    exec,
+    rows.map((row) => row.id),
+  );
+  return { redemptions, names: await namesFor(exec, rows, redemptions) };
+}
+
+export function bookingView(row: BookingRow, read: BookingReadModel = EMPTY_READ): BookingView {
   const payload = payloadOf(row);
-  const stored = storedRedemptionOf(row);
+  const stored = read.redemptions.get(row.id) ?? null;
+  const names = read.names;
   return {
     id: row.id,
     reference: row.reference,
@@ -261,11 +332,11 @@ export function bookingView(row: BookingRow, names: NameBook = EMPTY_NAMES): Boo
   };
 }
 
-/** Rows and their names together, which is how every read here answers. */
+/** Rows, their redemptions and their names together, which is how every read here answers. */
 export async function viewBookings(exec: Exec, rows: BookingRow[]): Promise<BookingView[]> {
   if (rows.length === 0) return [];
-  const names = await namesFor(exec, rows);
-  return rows.map((row) => bookingView(row, names));
+  const read = await readBookings(exec, rows);
+  return rows.map((row) => bookingView(row, read));
 }
 
 // --- Reads -------------------------------------------------------------------
@@ -384,11 +455,15 @@ function branchWallClock(instant: Date, timeZone: string): string {
  * is wrong and wave the second family through. `details.redemption` is the
  * shape `redemptionFromConflict` in `apps/pos/src/api/bookings.ts` reads; the
  * message carries the same facts for anyone reading the response by hand.
+ *
+ * Read from `pos.booking_redemption`, which is where the first claim wrote it
+ * (SCRUM-304). A redeemed booking with no row there answers with the facts it
+ * has — the reference and the refusal — rather than inventing a time.
  */
 async function alreadyRedeemed(exec: Exec, row: BookingRow): Promise<AppError> {
-  const stored = storedRedemptionOf(row);
-  const names = await namesFor(exec, [row]);
-  const view = stored ? redemptionView(stored, names) : null;
+  const read = await readBookings(exec, [row]);
+  const stored = read.redemptions.get(row.id) ?? null;
+  const view = stored ? redemptionView(stored, read.names) : null;
   const [br] = await exec
     .select({ timezone: branch.timezone })
     .from(branch)
@@ -432,6 +507,13 @@ export interface RedeemBookingArgs {
  * to nothing and this throws rather than overwriting the first redemption. The
  * audit row is written with the same handle, so it commits with the change or
  * not at all.
+ *
+ * Since SCRUM-304 there is a third: the redemption is a row in
+ * `pos.booking_redemption` with a unique on `booking_id`, written in this same
+ * transaction. Where the first two are the service keeping a promise, that one
+ * is the database refusing — so a second claim through a path that never took
+ * the lock is a constraint violation rather than a second family through the
+ * gate.
  */
 export async function redeemBooking(tx: Tx, args: RedeemBookingArgs): Promise<BookingRow> {
   const [row] = await tx
@@ -451,20 +533,36 @@ export async function redeemBooking(tx: Tx, args: RedeemBookingArgs): Promise<Bo
   }
 
   const now = args.now ?? new Date();
-  const stored: StoredRedemption = {
-    redeemedAt: now.toISOString(),
-    branchId: row.branchId,
-    stationId: args.stationId,
-    accountId: args.actorAccountId,
-    bandCodes: args.bandCodes,
-  };
   const updated = await tx
     .update(booking)
-    .set({ status: REDEEMED_STATUS, payload: { ...payloadOf(row), redemption: stored } })
+    .set({ status: REDEEMED_STATUS })
     .where(and(eq(booking.id, row.id), eq(booking.status, REDEEMABLE_STATUS)))
     .returning();
   const after = updated[0];
   if (!after) throw await alreadyRedeemed(tx, row);
+
+  /**
+   * The redemption itself, beside the status and inside the same transaction.
+   *
+   * The payload is no longer touched: `booking.payload` is what the booking
+   * site wrote and priced, and a counter now adds nothing to it. The blocks
+   * written before SCRUM-304 stay in the rows they are in — migration 0018
+   * copies them here and deletes nothing — and nothing reads them.
+   */
+  const inserted = await tx
+    .insert(bookingRedemption)
+    .values({
+      id: newId(),
+      operatorId: row.operatorId,
+      branchId: row.branchId,
+      bookingId: row.id,
+      stationId: args.stationId,
+      accountId: args.actorAccountId,
+      redeemedAt: now,
+      bandCodes: args.bandCodes,
+    })
+    .returning();
+  const stored = storedRedemptionOf(inserted[0]!);
 
   await audit.record(tx, {
     actorAccountId: args.actorAccountId,
@@ -503,6 +601,10 @@ export async function redeemBooking(tx: Tx, args: RedeemBookingArgs): Promise<Bo
    * The box-side offline redeem, where two boxes each claim the same booking
    * and the second claim has to be quarantined, is S2-12. This is the half that
    * makes the first one possible: the boxes now know.
+   *
+   * The redemption is handed to the shaper rather than read back off the row:
+   * since SCRUM-304 it is a row of its own, and what a box is told has to be
+   * what this transaction wrote.
    */
   await recordChange(
     tx,
@@ -511,7 +613,7 @@ export async function redeemBooking(tx: Tx, args: RedeemBookingArgs): Promise<Bo
       scope: 'bookings',
       entityType: 'booking',
       entityId: row.id,
-      payload: bookingChange(after),
+      payload: bookingChange(after, stored),
     },
   );
   return after;

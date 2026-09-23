@@ -127,6 +127,13 @@
       "when": 1790114960752,
       "tag": "0017_sale_tier_claim",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790139101465,
+      "tag": "0018_booking_redemption",
+      "breakpoints": true
     }
   ]
 }

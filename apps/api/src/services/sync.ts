@@ -58,6 +58,13 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
+/**
+ * The redemption a booking travels with (SCRUM-304). `services/bookings.ts`
+ * imports `recordChange` from here, so this pair is a cycle — the same
+ * function-level one `./ops` and this file already have, and used the same way:
+ * inside a call, never while either module is still being evaluated.
+ */
+import { loadRedemptions, type StoredRedemption } from './bookings';
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
 import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
 import { pinHashesByAccount } from './booth-admin';
@@ -781,8 +788,27 @@ function childChange(row: typeof child.$inferSelect): unknown {
  * gave, which the bundle's doctrine allows for the same reason the member list
  * is there: a counter with no internet still has to recognise who is standing
  * at it. It carries no payment instrument and no wallet.
+ *
+ * **The redemption is passed in, not read off the payload** (SCRUM-304). It
+ * lives in `pos.booking_redemption` now, and the wire keeps the shape a box
+ * already parses: `payload.redemption`, the same five ids and instant as
+ * before. The block is written into the copy here and REMOVED where there is no
+ * redemption row, so a pre-SCRUM-304 payload block that the migration left in
+ * place cannot tell a box a booking was claimed when the table says it was not.
+ * The table is the one answer; this is only how it travels.
  */
-export function bookingChange(row: typeof booking.$inferSelect): unknown {
+export function bookingChange(
+  row: typeof booking.$inferSelect,
+  redemption: StoredRedemption | null,
+): unknown {
+  const raw = row.payload;
+  const bag =
+    raw && typeof raw === 'object' && !Array.isArray(raw)
+      ? { ...(raw as Record<string, unknown>) }
+      : null;
+  let payload: Record<string, unknown> | null = bag;
+  if (redemption) payload = { ...(bag ?? {}), redemption };
+  else if (bag) delete bag.redemption;
   return {
     id: row.id,
     branchId: row.branchId,
@@ -793,7 +819,7 @@ export function bookingChange(row: typeof booking.$inferSelect): unknown {
     totalSatang: row.totalSatang,
     createdAt: row.createdAt.toISOString(),
     /** The lines, the tier, the name and phone, and the redemption once there is one. */
-    payload: row.payload ?? null,
+    payload,
   };
 }
 
@@ -3412,9 +3438,19 @@ export async function cacheBundle(
         )
         .orderBy(asc(booking.bookingDate))
         .limit(limit);
+      // Their redemptions, from the table that holds them since SCRUM-304 — one
+      // query for the page, and the same source the counter's own reads use.
+      const redemptions = await loadRedemptions(
+        db,
+        rows.map((r) => r.id),
+      );
       // Through the same shaper the redemption delta uses, so the two agree by
       // construction rather than by inspection (SCRUM-305).
-      put('bookings', rows.map(bookingChange), { rowsRead: rows.length });
+      put(
+        'bookings',
+        rows.map((r) => bookingChange(r, redemptions.get(r.id) ?? null)),
+        { rowsRead: rows.length },
+      );
       continue;
     }
 
