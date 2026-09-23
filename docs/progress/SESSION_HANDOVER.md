@@ -4,7 +4,29 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 12:00 — `main` is `6f266d0`; staging is `0da5441` (CI was red for four pushes, fixed; deploy pending)
+> ## Status on 2026-09-23 13:00 — `main` is `b9438cd`; staging is `d1d0bd7`; CI green again
+>
+> **Since 12:00:** the box slice landed (`d1d0bd7`, 322/305/323 Testing;
+> its first gate answered the monitoring question instead — re-run and
+> MERGE); the till slice landed (`a872d9d`, SCRUM-316 Testing) and its
+> finding is fixed on the platform (`77080e9`: a spent claim answers as
+> itself, not as the price mismatch it causes); the booth is **Deployed
+> with staging photographs** — SCRUM-199, 244, 278 and the **S2-07 story**
+> — one screen paired to Booth 1 on staging by design, one spin. Raised:
+> SCRUM-328 (Go online cannot reach an offline box), 329 (phone cart
+> sheet). The Defects epic is SCRUM-324.
+>
+> **Running:** Round B builds — 257 (spin cap, `wf_88a379f8`), 309 (holiday
+> rename, `wf_1a4a0748`), 318/319 (`wf_aad4bc77`), 304 (redemption table,
+> `wf_fe4ec6dc`), 252/254 (public surface, `wf_effd34f0`); evidence passes
+> for the seven Round A tickets (`wf_890979a3`) and the box (`wf_77dec1e1`).
+> Watch with `node scripts/workflows-status.mjs`.
+>
+> **Next:** land those on their gates; 233 (supervision-gate child — Till.tsx
+> is free now); 306 after 318/319 releases `permissions.ts`; 255; then the
+> carts (204) and tenders (206).
+
+> ## Status on 2026-09-23 12:00 — `main` was `6f266d0`; staging was `0da5441` (CI was red for four pushes, fixed; deploy pending)
 >
 > **Owner decisions this morning:** every Bug/Task lives in the sprint
 > (88 moved into "Sprint 2 – Complete build", id 3); defects sit under the
