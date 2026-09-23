@@ -19,22 +19,33 @@ workflow agent runs there from today — `CLAUDE_CODE_SUBAGENT_MODEL` in
   `VerifyTierModal.tsx`) — accepted. Known gap in the guard: a destructured
   `const { x } = mock` slips past it. The booking site saves nothing back to
   a member — noted on 357.
-- **The sizes half is in its fix round** (`wf_ade3ffcd`; the pre-fix tree on
-  `wip/204-variants` = `6885bb3`): migration 0020 `product.variants`, the
-  API rules (ids, labels, barcode collisions across the operator, 409
-  `BARCODE_IN_USE`), the scan resolving a size's barcode, the sale line
-  carrying the size, the shop screen's picker on platform variants, the
-  Merch form's Sizes editor, and the first station-channel client in any
-  screen (`lib/scanChannel.ts` — a scan from the box lands on the shop
-  screen; the virtual box's scans are relayed onto the api's session
-  manager by `services/station-scans.ts`). The first gate refused on a
-  deleted uniqueness test, a wrong prototype citation, and a stale screen
-  dropping a scanned size; decided inside the round: the platform refuses a
-  sized item sold without a size, and the on-screen size text keeps the
-  prototype's "(M)" form. Before its staging pass: withdraw the old separate
-  "Grip socks M" on staging and add S/M/L to "Grip Socks" through the back
-  office (the deploy migrates, never seeds); the scan stream through
-  Render's `/api/*` rewrite is unproven until then.
+- **The sizes half landed** (`4cad79e`, 03:28; the fix round
+  `wf_ade3ffcd` returned MERGE — api 1,317/1,317, db 54/54, box-agent
+  259/259, the migration applied twice identical, the three plants
+  reproduced; CI green; `wip/204-variants` dropped): migration 0020
+  `product.variants`, the API rules (ids, labels, barcode collisions across
+  the operator, 409 `BARCODE_IN_USE`), the scan resolving a size's barcode,
+  the sale line carrying the size ("Grip Socks — M" in the ledger), the shop
+  screen's picker on platform variants with the prototype's "(M)" on screen,
+  the platform refusing a sized item sold without a size, the Merch form's
+  Sizes editor, and the first station-channel client in any screen
+  (`lib/scanChannel.ts`; the virtual box's scans relayed onto the api's
+  session manager by `services/station-scans.ts`). The first gate had
+  refused on a deleted uniqueness test, a wrong prototype citation, and a
+  stale screen dropping a scanned size. 204 is in **Testing** with the four
+  cards attached and the comment posted (03:31); 202 carries a status
+  comment.
+- **In flight: 204's staging pass** (`wf_f5b585d1`, waiting for the five
+  services live at `4cad79e` — Render was building at 03:41): withdraw the
+  old separate "Grip socks M" and add S/M/L to "Grip Socks" through the back
+  office (the deploy migrates, never seeds), the picker, the Console scan
+  landing on the shop cart through the POS site's `/api/*` rewrite (the
+  unproven path — a broken channel is reported, not fixed, and gets a
+  ticket), the unknown barcode, the receipt and the History detail, then the
+  members half on the seeded member across the phone till, the booking site
+  and the party builder. When it holds: 204 → Deployed by the walker, 202
+  (S2-09) → Deployed, and this block, STATUS.md, the Sprint 2 progress
+  Status block and the register brought to that state.
 
 ## State at the end of 2026-09-23 — read this first
 
