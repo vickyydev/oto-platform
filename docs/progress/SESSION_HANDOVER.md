@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 18:12 — `main` is `b616191`; staging is `8ee9a5d` on the api and POS (Render follows CI on `9b86938`, 376's throttles); CI green through `8ee9a5d`
+> ## Status on 2026-09-23 18:21 — `main` is `51fd025`; staging is `9b86938` on the api and POS (Render follows CI on `51fd025`); CI green through `9b86938`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -320,9 +320,34 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > selects the simulator on local/staging only and refuses the boot on
 > production). C2 waits for C1's fix round.
 >
-> **Running:** builds — C1 fix round (`wf_0d8bd0bd`), tenders sync
-> (`wf_581116c6`), D (`wf_987e09f1`); evidence — 376 measurement
-> (`wf_f1d12c3d`). After wave 2:
+> **18:19 — landed tenders Slice C1** (`51fd025`, 42 files; the fix
+> round's gate refused once more on one surviving sentence in
+> `contract.ts` — the payload doc still said an inquiry's answer is
+> compared against its amount — corrected by hand, then committed;
+> `wip/206-C1` dropped). The PaymentTerminal contract, GHL and Digio
+> adapters, two simulators answering on the same bytes, 22 cited
+> fixtures, the `terminal_ref` counter scope, 251 box-agent tests. Facts
+> for C2/G: only a sale is judged against the amount asked; a void's
+> amount is the amount taken; an inquiry needs no amount; the tape is
+> codes/amounts/references only; `drawer_kick` is NOT handled by the box
+> yet (G). **C2 launched** (`wf_5922a49a` — the card tender in the cloud on
+> B's service and C1's contract).
+>
+> **18:19 — 376 Deployed** with the staging measurement at `9b86938`:
+> two tills signed in from one machine, seated at Reception Till 1 and
+> Counter 2, spent two separate allowances (119→115 each, keyed on the
+> stations, no address row moved); five wrong passwords on five phones
+> from one address — spread by the host over THREE egress addresses —
+> locked nobody and a sixth signed in; five on one phone locked that
+> phone for 300 s (Som, deliberate, self-clearing); the four
+> unauthenticated series unchanged from 367's pass. The rewrite path is
+> still the egress for what has not signed in — by definition, with its
+> ceiling at 50. 367 walked to Deployed on the same evidence.
+>
+> **Running:** builds — tenders sync (`wf_581116c6`), D (`wf_987e09f1`),
+> C2 (`wf_5922a49a`); evidence — 376 measurement (`wf_f1d12c3d`), 206-B
+> (`wf_81b0abc0`). After wave 3: F and G (G after C1 — now free — and
+> never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
