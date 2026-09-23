@@ -14,7 +14,7 @@ import {
   type BoxAgent,
   type BoxStaffSession,
 } from '@oto/box-agent';
-import type { SpinResponse } from '@oto/shared';
+import { BOOTH_DEVICE_HEADER, type SpinResponse } from '@oto/shared';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 import { attachInProcessBox, detachInProcessBox } from '../src/services/box';
 
@@ -43,6 +43,8 @@ let receptionCookie: string;
 let boothStationId: string;
 let boothBoxId: string;
 let tillStationId: string;
+/** The paired screen's credential, sent on every `/booth/*` call below (SCRUM-244). */
+let deviceHeader: Record<string, string>;
 
 beforeAll(async () => {
   ctx = await createTestContext();
@@ -57,6 +59,36 @@ beforeAll(async () => {
     .where(eq(station.name, 'Reception Till 1'))
     .limit(1);
   tillStationId = till!.id;
+
+  /**
+   * SCRUM-244 — this file's television is now a PAIRED one.
+   *
+   * The six `/booth/*` routes used to be open and every request below was
+   * anonymous. They are not open any more: a screen is paired once by an
+   * administrator and sends its credential on every call. So the fixture pairs
+   * one, through the two routes rather than by writing the row, and every
+   * request in this file carries the header — which means the pass-through
+   * assertions go on saying exactly what they said, about a caller that is
+   * now entitled to be making them.
+   *
+   * What this file deliberately does NOT test is the pairing itself. That is
+   * `booth-pairing.test.ts`: an anonymous press, a wrong code, a spent code, a
+   * revoked screen, a screen paired to another booth.
+   */
+  const minted = await ctx.app.inject({
+    method: 'POST',
+    url: `/booths/${boothStationId}/pairing-codes`,
+    headers: { cookie: adminCookie },
+    payload: { label: 'booth-api.test' },
+  });
+  if (minted.statusCode !== 200) throw new Error(`pairing code mint failed: ${minted.body}`);
+  const paired = await ctx.app.inject({
+    method: 'POST',
+    url: '/booth/pair',
+    payload: { code: minted.json().pairingCode },
+  });
+  if (paired.statusCode !== 200) throw new Error(`pairing failed: ${paired.body}`);
+  deviceHeader = { [BOOTH_DEVICE_HEADER]: paired.json().deviceSecret as string };
 });
 
 afterAll(async () => {
@@ -181,7 +213,12 @@ function attachBoxWithoutBooth(): BoxAgent {
 }
 
 const press = (payload: Record<string, unknown> = {}, headers: Record<string, string> = {}) =>
-  ctx.app.inject({ method: 'POST', url: '/booth/spin', payload, headers });
+  ctx.app.inject({
+    method: 'POST',
+    url: '/booth/spin',
+    payload,
+    headers: { ...deviceHeader, ...headers },
+  });
 
 describe('the booth surface is a pass-through (S2-07a)', () => {
   it('with no in-process agent, a press is refused — 503, and not a prize', async () => {
@@ -219,6 +256,7 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
       const res = await ctx.app.inject({
         method: method as 'GET' | 'POST',
         url,
+        headers: deviceHeader,
         ...(method === 'POST' ? { payload: url.endsWith('sign-in') ? { pin: '2468' } : {} } : {}),
       });
       expect(res.statusCode, `${method} ${url}`).toBe(503);
@@ -273,6 +311,44 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     // that the api invents nothing — the key the box saw is the box's own.
     expect(calls.spin[0]!.idempotencyKey).toMatch(/[0-9a-f-]{36}/);
     expect(calls.spin[0]!.actionId).toBeNull();
+  });
+
+  it('the same press key twice reaches the box twice — the api replays nothing (SCRUM-298)', async () => {
+    const calls = newCalls();
+    attachBooth(stubBooth(calls));
+
+    const key = 'press-0199a0f0-retry';
+    const first = await press({}, { [BOOTH_IDEMPOTENCY_HEADER]: key });
+    const second = await press({}, { [BOOTH_IDEMPOTENCY_HEADER]: key });
+
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(200);
+    /**
+     * This is the positive form of what the idempotency plugin does NOT do
+     * here, and it is deliberate rather than a gap.
+     *
+     * A row in the platform's replay store is owned by an account
+     * (`core.idempotency_key.account_id` references `core.account`), so a
+     * television — which carries no session by D15, and now a paired device
+     * credential rather than an account — cannot hold one. If the api DID
+     * answer the second press from a store, it would be answering for a draw
+     * it never made: the prize, the voucher code and the cap all belong to the
+     * box that spun the wheel, and a second press arriving after the box has
+     * gone offline must be the box's to refuse, not ours to invent.
+     *
+     * So both presses arrive at the box, carrying the key the page minted, and
+     * the box decides which of the two is a retry.
+     * `packages/box-agent/test/booth.test.ts` pins that decision: the second
+     * bump of one key is refused `duplicate_press`, and the held answer is
+     * returned rather than a second draw.
+     */
+    expect(calls.spin).toEqual([
+      { simulate: false, idempotencyKey: key, actionId: null },
+      { simulate: false, idempotencyKey: key, actionId: null },
+    ]);
+    // And nothing up here marked the second one as replayed, because nothing
+    // up here could have known.
+    expect(second.headers['x-oto-replay']).toBeUndefined();
   });
 
   it('a refusal the box names arrives with the box’s own code and status', async () => {
@@ -345,6 +421,7 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
       const mine = await ctx.app.inject({
         method,
         url: `/booth${path}`,
+        headers: deviceHeader,
         ...(method === 'POST' ? { payload: {} } : {}),
       });
       const theirs = await direct({ method, path, body: {} });
@@ -361,7 +438,7 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     const bundle = { ...BUNDLE, somethingNewerBoxesSend: { keepMe: true } } as BoothConfigBundle;
     attachBooth(stubBooth(calls, { config: () => ({ version: 7, bundle }) }));
 
-    const res = await ctx.app.inject({ method: 'GET', url: '/booth/config' });
+    const res = await ctx.app.inject({ method: 'GET', url: '/booth/config', headers: deviceHeader });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ version: 7, bundle });
   });
@@ -370,7 +447,7 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     const calls = newCalls();
     attachBooth(stubBooth(calls), { offline: true });
 
-    const res = await ctx.app.inject({ method: 'GET', url: '/booth/status' });
+    const res = await ctx.app.inject({ method: 'GET', url: '/booth/status', headers: deviceHeader });
 
     // The one field on this surface the booth module has no opinion about.
     // The offline toggle the demo flips lives on the agent, and it is what
@@ -393,6 +470,7 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     const refused = await ctx.app.inject({
       method: 'POST',
       url: '/booth/staff/sign-in',
+      headers: deviceHeader,
       payload: { pin: '0000' },
     });
     // A refusal is 200 with `ok: false`: the panel shows a countdown somebody
@@ -402,7 +480,12 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     expect(refused.json()).toEqual({ ok: false, retryAfterMs: 30_000 });
     expect(calls.signIn).toEqual([{ pin: '0000' }]);
 
-    const out = await ctx.app.inject({ method: 'POST', url: '/booth/staff/sign-out', payload: {} });
+    const out = await ctx.app.inject({
+      method: 'POST',
+      url: '/booth/staff/sign-out',
+      headers: deviceHeader,
+      payload: {},
+    });
     expect(out.statusCode).toBe(204);
     expect(calls.signOut).toBe(1);
   });
@@ -414,6 +497,7 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     const res = await ctx.app.inject({
       method: 'POST',
       url: '/booth/reprint',
+      headers: deviceHeader,
       payload: { spinId: SPIN.spinId },
     });
 
@@ -438,7 +522,7 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
 
     const calls = newCalls();
     attachBooth(stubBooth(calls));
-    const status = await ctx.app.inject({ method: 'GET', url: '/booth/status' });
+    const status = await ctx.app.inject({ method: 'GET', url: '/booth/status', headers: deviceHeader });
     // The document is the box's; what this pins is that the api adds nothing
     // to it on the way past — no station, no box, no branch, no account. The
     // shape's own rule, that `staffSignedIn` is a boolean rather than a
@@ -468,12 +552,15 @@ describe('the booth surface declares its guards (S2-07a)', () => {
    * this file. Anything ADDED to this list is a new open endpoint and has to
    * be a decision somebody made on purpose.
    */
-  it('the booth routes are the open ones, and the Console route is not', () => {
-    const open = ctx.app.routeRegistry
-      .filter((r) => r.url.startsWith('/booth') && r.config.public && r.method !== 'HEAD')
+  it('the booth routes carry the screen’s credential, and the Console route is not one of them', () => {
+    // SCRUM-244: these six were `public` and are now `credential: 'booth'` —
+    // the same six, guarded rather than open. The only open booth route left
+    // is `POST /booth/pair`, which is where a screen with no credential goes.
+    const television = ctx.app.routeRegistry
+      .filter((r) => r.url.startsWith('/booth/') && r.config.credential && r.method !== 'HEAD')
       .map((r) => `${r.method} ${r.url}`)
       .sort();
-    expect(open).toEqual([
+    expect(television).toEqual([
       'GET /booth/config',
       'GET /booth/status',
       'POST /booth/reprint',
@@ -481,6 +568,11 @@ describe('the booth surface declares its guards (S2-07a)', () => {
       'POST /booth/staff/sign-in',
       'POST /booth/staff/sign-out',
     ]);
+    const open = ctx.app.routeRegistry
+      .filter((r) => r.url.startsWith('/booth') && r.config.public && r.method !== 'HEAD')
+      .map((r) => `${r.method} ${r.url}`)
+      .sort();
+    expect(open).toEqual(['POST /booth/pair']);
 
     const consoleRoute = ctx.app.routeRegistry.find(
       (r) => r.url === '/booths/:id/status' && r.method === 'GET',

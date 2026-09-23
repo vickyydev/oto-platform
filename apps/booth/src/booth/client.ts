@@ -15,6 +15,7 @@
  * `VITE_BOOTH_FAKE=0|1` overrides at build time.
  */
 
+import { BOOTH_DEVICE_HEADER } from '@oto/shared';
 import { flags } from '../flags';
 import {
   BOOTH_ERROR_CODES,
@@ -29,6 +30,85 @@ import {
   type StaffSignInResponse,
 } from './contract';
 import { FakeBooth } from './fake';
+
+/**
+ * The paired screen's credential (SCRUM-244).
+ *
+ * **Why `localStorage` and not a cookie.** A booth carries no session and
+ * wants none — every call sends `credentials: 'omit'` — and a cookie would
+ * travel automatically on requests this page did not make. This is sent by
+ * hand, on booth calls only, and is the only thing about this browser that
+ * outlives a reload.
+ *
+ * **What D15 permits, and this is the line.** The rule is that nothing ships
+ * a token TO a screen in a shopping centre: a secret in a build would be on
+ * every booth at once, readable by anyone who opened the page. This secret was
+ * typed in at this booth, by a member of staff, for this booth, and can be
+ * revoked from the Console. It is still readable by somebody with the device's
+ * developer tools, which is why revocation exists and why it names one booth.
+ *
+ * Every access is wrapped: a television in kiosk mode with site data disabled
+ * throws on `localStorage`, and a booth that cannot remember its credential
+ * must show the pairing prompt rather than a blank screen.
+ */
+const CREDENTIAL_KEY = 'oto.booth.device';
+
+function readCredential(): string | null {
+  try {
+    const held = window.localStorage.getItem(CREDENTIAL_KEY);
+    return held !== null && held !== '' ? held : null;
+  } catch {
+    return null;
+  }
+}
+
+export const boothCredential = {
+  /** Whether this screen holds one at all. Not whether it still works. */
+  has(): boolean {
+    return readCredential() !== null;
+  },
+
+  /**
+   * Exchange the six digits for this screen's credential and keep it.
+   *
+   * Throws `BoothCallError` like every other call here — `'unpaired'` for a
+   * code the service refused, `'unreachable'` when it did not answer — so the
+   * pairing panel branches on exactly the same thing the rest of the page
+   * does.
+   */
+  async redeem(code: string): Promise<void> {
+    const answer = await call<{ deviceSecret: string }>('/pair', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+      // A pairing request cannot carry a credential: not holding one is the
+      // whole reason it is being made.
+      noCredential: true,
+    });
+    try {
+      window.localStorage.setItem(CREDENTIAL_KEY, answer.deviceSecret);
+    } catch {
+      /**
+       * Paired, and unable to remember it.
+       *
+       * The credential is real and the server has already spent the code, so
+       * this cannot be retried with the same digits. Refused loudly rather
+       * than left to fail on the next call, where it would look like a wrong
+       * code: a television that cannot keep site data has to be fixed at the
+       * device, not paired again.
+       */
+      throw new BoothCallError('unpaired', null);
+    }
+  },
+
+  /** Forget it — after a 401, or when staff unpair this screen deliberately. */
+  forget(): void {
+    try {
+      window.localStorage.removeItem(CREDENTIAL_KEY);
+    } catch {
+      // Nothing to do: a browser that cannot write could not have stored one.
+    }
+  },
+};
 
 /** Long enough for a Pi under a television, short enough that a press is not dead. */
 const REQUEST_TIMEOUT_MS = 6000;
@@ -65,15 +145,26 @@ async function errorFrom(response: Response): Promise<BoothCallError> {
   return new BoothCallError(null, response.status);
 }
 
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
+async function call<T>(
+  path: string,
+  init?: RequestInit & { noCredential?: boolean },
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const held = init?.noCredential === true ? null : readCredential();
   let response: Response;
   try {
     response = await fetch(`${baseUrl()}${path}`, {
       ...init,
       signal: controller.signal,
-      headers: { 'content-type': 'application/json', ...init?.headers },
+      headers: {
+        'content-type': 'application/json',
+        // The paired screen's credential (SCRUM-244). Absent when this screen
+        // holds none, which the service answers 401 — and that 401 is what
+        // puts the pairing prompt on the television.
+        ...(held !== null ? { [BOOTH_DEVICE_HEADER]: held } : {}),
+        ...init?.headers,
+      },
       // The booth service is same-origin behind the rewrite; a booth carries
       // no session cookie and wants none.
       credentials: 'omit',
@@ -86,6 +177,19 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     clearTimeout(timer);
   }
 
+  if (response.status === 401) {
+    /**
+     * Not paired, or not paired any more (SCRUM-244).
+     *
+     * The credential is dropped here rather than in the page, so a screen that
+     * was unpaired from the Console cannot go on sending a secret that is dead
+     * — and so that "we hold one" and "it works" cannot disagree. The status
+     * is what decides, not the envelope's code: every way of not being paired
+     * answers the same code on purpose.
+     */
+    boothCredential.forget();
+    throw new BoothCallError('unpaired', 401);
+  }
   if (!response.ok) throw await errorFrom(response);
   if (response.status === 204) return undefined as T;
   try {

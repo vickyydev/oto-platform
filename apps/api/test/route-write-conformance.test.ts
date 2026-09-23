@@ -342,10 +342,10 @@ describe('one operation, one transaction (SCRUM-291)', () => {
  * remembers — but the plugin returns before the store when there is no
  * session (`plugins/idempotency.ts`, `if (!req.auth) return`), so the
  * sessionless mutating routes never enter it: the `/auth/*` paths, the
- * booth's `/booth/*` paths and `POST /public/bookings`. That is the
- * register's own Check 3 item and is not covered here; a comment that said
- * "every other" without that qualification was found by review to be
- * papering over a live gap.
+ * booth's `/booth/*` paths and `POST /public/bookings`. Those are pinned
+ * below in `OPEN_WITHOUT_A_KEY`, each with the thing that protects it instead
+ * (SCRUM-298); a comment that said "every other" without that qualification
+ * was found by review to be papering over a live gap.
  *
  * Pinned, because these two declarations are the only way out of the
  * safeguard for a route that has a session: a thirteenth route quietly
@@ -355,6 +355,27 @@ describe('one operation, one transaction (SCRUM-291)', () => {
 const OUTSIDE_THE_REPLAY_STORE = [
   'POST /accounts/:id/temp-password [secretResponse]',
   'POST /auth/handoff [secretResponse]',
+  /**
+   * SCRUM-244 — the booth's television surface and its pairing pair.
+   *
+   * The four `/booth/*` writes moved here from `OPEN_WITHOUT_A_KEY` the day
+   * they stopped being open: their principal is now a paired screen with a
+   * credential, and the replay protection that matters for a press is the
+   * BOX's — the television mints a key per press and the box refuses the
+   * second bump of the same one (`packages/box-agent/src/booth.ts`).
+   *
+   * The two that mint something are here because their answers ARE
+   * credentials: six digits somebody types at a booth, and the 256-bit secret
+   * those digits buy. Neither may sit in a store that replays a body for a day
+   * to anyone holding a key. What makes a repeated press of "Pair a screen"
+   * safe instead is that minting revokes the booth's previous unredeemed code.
+   */
+  'POST /booth/pair [secretResponse]',
+  'POST /booth/reprint [credential:booth]',
+  'POST /booth/spin [credential:booth]',
+  'POST /booth/staff/sign-in [credential:booth]',
+  'POST /booth/staff/sign-out [credential:booth]',
+  'POST /booths/:id/pairing-codes [secretResponse]',
   'POST /box/v1/commands/:commandId/result [credential:box]',
   'POST /box/v1/commands/poll [credential:box]',
   'POST /box/v1/heartbeat [credential:box]',
@@ -365,6 +386,49 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /me/staff-token [secretResponse]',
   'PUT /booths/:id/staff/:accountId/pin [secretResponse]',
   'PUT /me/session/station [secretResponse]',
+];
+
+/**
+ * The mutating routes that can be called with no session at all, and what
+ * stands in for the replay store on each (SCRUM-298).
+ *
+ * A row in that store is owned by an account — `core.idempotency_key` has a
+ * not-null `account_id` referencing `core.account` — so a caller without a
+ * session cannot hold one, and the plugin returns before claiming anything.
+ * That is not a judgement about these routes; it is the store's shape. Each of
+ * them therefore has to say what makes a retry safe, and the three answers are
+ * genuinely different:
+ *
+ *   - **self-idempotent by construction** — `/auth/*`. A second identical
+ *     sign-in IS a second attempt and has to count as one; a second
+ *     `setup/complete` with the same code has to find that code spent; a
+ *     second `sign-out` has nothing left to end. Replaying a stored answer
+ *     here would be the defect, not the safeguard. `setup/start` and
+ *     `password-reset/request` send a second SMS on purpose and are bounded by
+ *     `rl:setup:<phone>` and `rl:reset:<phone>` instead;
+ *   - **single-use by construction** — `POST /booth/pair` (SCRUM-244). The six
+ *     digits are spent by the UPDATE that redeems them, conditional on the
+ *     hash still being on the row, so a second send of the same code updates
+ *     nothing and is refused. Replaying a stored answer here would be the
+ *     defect: it would hand the same device secret to a second screen;
+ *   - **a client-minted id** — `POST /public/bookings`. The site mints the
+ *     booking id, the primary key is the unique constraint, and the second
+ *     submit is answered with the first one's row. `public.test.ts` pins it.
+ *
+ * Pinned as a list because the gap is invisible from a route declaration: a
+ * new open mutating route inherits none of this and looks exactly like the
+ * guarded ones above.
+ */
+const OPEN_WITHOUT_A_KEY = [
+  'POST /auth/handoff/exchange',
+  'POST /auth/password-reset/complete',
+  'POST /auth/password-reset/request',
+  'POST /auth/setup/complete',
+  'POST /auth/setup/start',
+  'POST /auth/sign-in',
+  'POST /auth/sign-out',
+  'POST /booth/pair',
+  'POST /public/bookings',
 ];
 
 describe('the idempotency key (SCRUM-291)', () => {
@@ -384,6 +448,18 @@ describe('the idempotency key (SCRUM-291)', () => {
       outside,
       'a mutating route declared secretResponse or credential — it no longer takes an Idempotency-Key, so say so here on purpose',
     ).toEqual(OUTSIDE_THE_REPLAY_STORE.slice().sort());
+  });
+
+  it('only these mutating routes can be called without a session (SCRUM-298)', () => {
+    const open = app.routeRegistry
+      .filter((r) => MUTATING.has(r.method))
+      .filter((r) => r.config.public)
+      .map((r) => `${r.method} ${r.url}`)
+      .sort();
+    expect(
+      open,
+      'a mutating route became open — the replay store cannot hold a key for it, so say in OPEN_WITHOUT_A_KEY what makes a retry safe',
+    ).toEqual(OPEN_WITHOUT_A_KEY.slice().sort());
   });
 
   it('the plugin still claims a key on all four mutating verbs', () => {

@@ -117,6 +117,31 @@ export const COPY = {
   todayOnly: { en: 'Today only', th: 'เฉพาะวันนี้' } satisfies BilingualLine,
 } as const;
 
+/**
+ * Pairing a screen (SCRUM-244).
+ *
+ * Its own deck rather than entries in the two above, because it is the one
+ * place where a guest-facing line and a staff-facing panel sit on the same
+ * screen: `guest` is bilingual and goes under the wordmark where "Booth not
+ * set up" would be, and the rest is English and lives in the panel, like every
+ * other staff word here.
+ *
+ * Nothing in it names the booth, the branch, the service or the Console's
+ * address (D15). "Ask our staff" is the whole instruction a visitor needs, and
+ * a member of staff already knows where the code comes from.
+ */
+export const PAIR_COPY = {
+  guest: {
+    en: 'This screen is not set up yet — please ask our staff',
+    th: 'หน้าจอนี้ยังไม่ได้ตั้งค่า กรุณาสอบถามพนักงาน',
+  } satisfies BilingualLine,
+  title: 'Pair this screen',
+  hint: 'Enter the 6-digit code from the Console',
+  refused: 'That code was not accepted — ask for a new one',
+  unreachable: 'The booth service did not answer',
+  working: 'Pairing…',
+} as const;
+
 /** Staff-facing words. English only: these appear in panels, never on the game. */
 export const STAFF_COPY = {
   signInTitle: 'Staff sign-in',

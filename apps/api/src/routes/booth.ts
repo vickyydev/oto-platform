@@ -8,7 +8,16 @@ import {
   VOUCHER_VALUE_TYPES,
 } from '@oto/db';
 import type { App } from '../app';
+import { boothDeviceOf } from '../plugins/credential';
 import { boothConsoleStatus, boothHeaders, callBooth, loadBoothStation } from '../services/booth';
+import {
+  BOOTH_PAIRING_CODE_TTL_MS,
+  listBoothScreens,
+  loadBoothScreen,
+  mintBoothPairingCode,
+  redeemBoothPairingCode,
+  revokeBoothScreen,
+} from '../services/device-credential';
 import {
   BOOTH_TOTAL_WEIGHT_BP,
   addBoothStaff,
@@ -57,38 +66,45 @@ import { opCtx } from '../services/tx';
  *
  * ---
  *
- * **Why the booth surface is open, what that costs, and what fences it.**
+ * **The booth surface is paired, not open (SCRUM-244).**
  *
- * The television carries nothing: no cookie, no account, no device key. D15
- * put it there deliberately — the outgoing game shipped a staff PIN in a
- * public bundle, and the rule that came out of it is that nothing on a screen
- * in a shopping centre may carry a token, a key or an origin. `apps/booth`
- * sends `credentials: 'omit'` for the same reason. So these six routes declare
- * `public: true`, which is the only honest label for them, and they appear on
- * the pinned open-surface list in `routes-guarded.test.ts` where anybody can
- * see them.
+ * It used to be open, and the note that stood here said what that cost: on a
+ * deployment running the virtual box — which staging is — `POST /booth/spin`
+ * was a URL a stranger could press, and pressing it minted a voucher the park
+ * would honour. That is the shape of the flaw the intake recorded against the
+ * outgoing game, where `POST /api/wins` was open to anybody who found it.
  *
- * What that leaves open, stated rather than glossed: on a deployment that runs
- * the virtual box, `POST /booth/spin` is a URL a stranger can press. It is the
- * shape of the flaw the intake recorded against the old game (`POST /api/wins`
- * was open, so anyone who found it could mint vouchers), and what makes it
- * tolerable here is underneath rather than on it:
+ * D15 is why it was open and D15 is unchanged: **nothing on a screen in a
+ * shopping centre carries a bundled token.** A secret baked into `apps/booth`
+ * would be readable by anyone who opened the page, on every booth at once, for
+ * the life of the build. What closes the hole without breaking that rule is a
+ * PAIRED credential: minted for ONE screen by a member of staff holding
+ * `admin:booth:manage`, typed in at the booth, kept by that browser, naming
+ * that booth, revocable from the Console. `services/device-credential.ts` is
+ * where it lives and states the arithmetic behind the six digits.
+ *
+ * So the six television routes declare `credential: 'booth'` and are verified
+ * by `plugins/credential.ts` before their bodies are even validated. They are
+ * off the pinned open-surface list in `routes-guarded.test.ts`; the one route
+ * that replaces them there is `POST /booth/pair`, which is open because a
+ * screen with no credential is exactly what it is for.
+ *
+ * Three fences are underneath it and none of them were removed:
  *
  *   - **Topology.** A booth is served by ITS box. An api instance that is not
  *     the booth's box has no in-process agent and answers 503, so the api in
  *     front of the park mints nothing whatever anybody sends it. On a
- *     Raspberry Pi the surface is on the booth's own LAN and reachable from
- *     the kiosk in front of it.
+ *     Raspberry Pi the surface is on the booth's own LAN.
  *   - **The box's own limits.** Eligibility, daily caps and stock are applied
- *     per draw (D5), so a stranger pressing the button exhausts the same caps
- *     a child would and cannot exceed them.
+ *     per draw (D5).
  *   - **Rate limits**, per IP, sized for the `#debug` distribution run rather
  *     than for one child — see the note on the bucket below.
  *
- * What would actually close it is a credential the booth BOX verifies for the
- * browser in front of it; `core.device_credential` already has a `booth` kind
- * and nothing mints or checks one yet. That belongs with whoever gives the
- * booth its pairing flow, and it is not this slice.
+ * What is still NOT closed, said plainly: the credential lives in a browser's
+ * `localStorage` on a television in a mall, so somebody with physical access
+ * to the glass can read it. The answer to that is the Unpair button and the
+ * box's per-draw limits, not the credential — and it is a different order of
+ * problem from a URL anybody on the internet can press.
  */
 
 /**
@@ -158,6 +174,12 @@ export async function boothRoutes(app: App): Promise<void> {
         body: req.body,
         headers: boothHeaders(req.headers as Record<string, unknown>),
       },
+      /**
+       * The paired screen, which `callBooth` checks against the booth this
+       * process actually serves. The credential plugin has already refused an
+       * absent, unknown or revoked one before this line runs.
+       */
+      boothDeviceOf(req),
     );
     // 204 carries no document; everything else is sent exactly as given —
     // the platform's error envelope included, which is the shape the box's
@@ -170,7 +192,7 @@ export async function boothRoutes(app: App): Promise<void> {
   app.get(
     '/booth/config',
     {
-      config: { public: true, ...limited },
+      config: { credential: 'booth', ...limited },
       schema: {
         description:
           'The published wheel this booth is running, and the version number that names it — the number travels beside the bundle because the document does not carry it. A booth nobody has published to answers both as null, which is a screen ("Booth not set up, connect to internet") rather than an error.',
@@ -191,7 +213,7 @@ export async function boothRoutes(app: App): Promise<void> {
   app.get(
     '/booth/status',
     {
-      config: { public: true, ...limited },
+      config: { credential: 'booth', ...limited },
       schema: {
         description:
           'Counts and states for the corner of the television and the #debug panel: link, config version, printer, paper, vouchers pending sync, last spin, whether anybody is signed in, and which prizes have hit their cap today. Whether the box has the cloud is the agent’s answer; everything else is the booth’s. Never who is signed in.',
@@ -203,7 +225,7 @@ export async function boothRoutes(app: App): Promise<void> {
   app.post(
     '/booth/spin',
     {
-      config: { public: true, ...limited },
+      config: { credential: 'booth', ...limited },
       schema: {
         description:
           `One press of the red button. The BOX draws, records the spin and mints the code before this answers; the press key travels in \`${BOOTH_IDEMPOTENCY_HEADER}\` or in the body, so a network retry is one spin and a second press is two. \`simulate\` draws and changes nothing — no spin row, no voucher, no print, no cap consumed. \`${BOOTH_ACTION_HEADER}\` is carried through to the spin row.`,
@@ -216,7 +238,7 @@ export async function boothRoutes(app: App): Promise<void> {
   app.post(
     '/booth/staff/sign-in',
     {
-      config: { public: true, ...limited },
+      config: { credential: 'booth', ...limited },
       schema: {
         description:
           'Sign a staff member in at this booth by PIN or badge. The value is verified on the box against the booth’s allowed staff and is held by nobody afterwards. A refusal is 200 with `ok: false` and how long to wait — not a 4xx, because a sign-in problem must never look like the booth being broken.',
@@ -229,7 +251,7 @@ export async function boothRoutes(app: App): Promise<void> {
   app.post(
     '/booth/staff/sign-out',
     {
-      config: { public: true, ...limited },
+      config: { credential: 'booth', ...limited },
       schema: {
         description:
           'End the booth’s staff session. The wheel keeps spinning afterwards and the spins are recorded unattributed, which is the specification’s rule: a sign-in problem must never take the booth down.',
@@ -241,7 +263,7 @@ export async function boothRoutes(app: App): Promise<void> {
   app.post(
     '/booth/reprint',
     {
-      config: { public: true, ...limited },
+      config: { credential: 'booth', ...limited },
       schema: {
         description:
           'Print a voucher that has already been issued, again: the SAME code, never a new draw. Staff-only, and the box is what enforces that — the person at the booth proved who they are to the box with a PIN and there is no cloud session in this flow. NOTE: the box’s booth surface does not implement this path yet and answers 404 until it does.',
@@ -260,6 +282,56 @@ export async function boothRoutes(app: App): Promise<void> {
      * booth route", which is the truth: nobody has built it.
      */
     async (req, reply) => relay(req, reply, 'POST', '/reprint'),
+  );
+
+  // --- Pairing the screen (SCRUM-244) ---------------------------------------
+
+  app.post(
+    '/booth/pair',
+    {
+      /**
+       * The one genuinely open booth route, and the only one that can be:
+       * a screen with no credential is precisely what it is for. The code IS
+       * the credential here, exactly as a claim code is on
+       * `POST /box/v1/register`, and it is fenced the same way — single use,
+       * ten minutes, and counted per address on failure inside the service.
+       *
+       * `secretResponse` because the answer is a 256-bit device secret. The
+       * idempotency plugin returns before the store for a caller with no
+       * session anyway, so this is belt and braces — and it is the belt that
+       * keeps working the day somebody calls this from a browser that does
+       * happen to hold a cookie.
+       *
+       * The bucket is tighter than the booth's: pairing is a member of staff
+       * typing six digits once, not two hundred simulated presses.
+       */
+      config: {
+        public: true,
+        secretResponse: true,
+        rateLimit: { max: 30, timeWindow: 60_000 },
+      },
+      schema: {
+        description:
+          `Exchange the six digits an administrator read out of the Console for this screen's own credential. Single use, valid ${BOOTH_PAIRING_CODE_TTL_MS / 60_000} minutes, and refused per address after repeated wrong codes. The secret is returned ONCE and stored only as a hash: a screen that loses it is paired again rather than recovered. Every refusal — wrong, expired, spent, revoked — is the same 401 BOOTH_UNPAIRED, because telling a caller which it got is telling it whether the code it tried exists.`,
+        body: z.object({ code: z.string().min(1).max(32) }),
+        response: {
+          200: z.object({
+            deviceSecret: z.string(),
+            /** The booth this screen is now paired to. The page shows nothing with it. */
+            stationId: z.string().uuid(),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const paired = await redeemBoothPairingCode(
+        app.db,
+        opCtx(req),
+        { code: req.body.code },
+        { ip: req.ip, log: req.log },
+      );
+      return { deviceSecret: paired.deviceSecret, stationId: paired.stationId };
+    },
   );
 
   // --- The Console ----------------------------------------------------------
@@ -769,6 +841,132 @@ export async function boothRoutes(app: App): Promise<void> {
         req.params.accountId,
         req.query.reason ?? null,
       );
+    },
+  );
+
+  // --- Which screens may press this booth's button (SCRUM-244) --------------
+  //
+  // Three routes, all keyed on the booth and all `dynamicPermission`, checked
+  // against the BOOTH's branch exactly as their siblings above are.
+  //
+  // **Why `admin:booth:manage` and not `admin:device:pair`.** There is already
+  // a general pairing route — `POST /stations/:id/credentials` in `fleet.ts` —
+  // and a booth IS a station, so it would work. What it would not do is put
+  // the control where the decision is made: the person who sets up a Lucky
+  // Wheel does it on the Booths page holding the booth permissions, and
+  // sending them to Devices for `admin:device:pair` would mean either a second
+  // grant or a second person for a step that belongs to the same job. Reading
+  // and revoking follow the same rule, so the whole life of a booth screen is
+  // one permission family.
+
+  const ScreenSchema = z.object({
+    id: z.string().uuid(),
+    label: z.string().nullable(),
+    pairingOutstanding: z.boolean(),
+    pairingCodeExpiresAt: z.string().nullable(),
+    pairedAt: z.string().nullable(),
+    pairedByAccountId: z.string().uuid().nullable(),
+    lastSeenAt: z.string().nullable(),
+    revokedAt: z.string().nullable(),
+    revokedReason: z.string().nullable(),
+  });
+
+  app.get(
+    '/booths/:id/screens',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The televisions paired to this booth, newest first, with any code still outstanding and every screen that has been unpaired. Revoked rows are kept and shown: “which screen was unpaired, and when” is what somebody asks after a television goes missing. Never a code and never a hash.',
+        params: BoothIdParams,
+        response: { 200: z.object({ screens: z.array(ScreenSchema) }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:read', { branchId: row.branchId });
+      return { screens: await listBoothScreens(app.db, row.stationId) };
+    },
+  );
+
+  app.post(
+    '/booths/:id/pairing-codes',
+    {
+      /**
+       * `secretResponse`, and what it means for a retry.
+       *
+       * The answer carries the code, so the idempotency plugin claims no key
+       * and a repeated press genuinely mints again rather than replaying.
+       * That is why the mint REVOKES this booth's previous outstanding code in
+       * the same transaction: the code a manager is looking at is the only one
+       * that works, and the one they pressed past is dead rather than lying
+       * around for ten minutes. A store-backed replay could not have given
+       * that — it would have handed the same code back to whoever held the
+       * key, for a day, which is the thing `secretResponse` exists to stop.
+       */
+      config: { dynamicPermission: true, secretResponse: true },
+      schema: {
+        description:
+          `Mint the six digits somebody types into a booth television to pair it. Shown once — only its hash is stored — and valid ${BOOTH_PAIRING_CODE_TTL_MS / 60_000} minutes. Pressing this again replaces the booth's previous unredeemed code rather than adding a second, so there is never more than one live code per booth.`,
+        params: BoothIdParams,
+        body: z
+          .object({ label: z.string().min(1).max(80).nullable().optional() })
+          .optional(),
+        response: {
+          200: z.object({
+            credential: ScreenSchema,
+            pairingCode: z.string(),
+            expiresAt: z.string(),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
+      return mintBoothPairingCode(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        { label: req.body?.label ?? null },
+      );
+    },
+  );
+
+  app.post(
+    '/booths/:id/screens/:credentialId/revoke',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Unpair a screen. The row stays, with who unpaired it and why; the live secret and any unredeemed code go. The television finds out on its next call — within five seconds, because it polls status on a timer — and falls back to asking staff to pair it again.',
+        params: z.object({ id: z.string().uuid(), credentialId: z.string().uuid() }),
+        body: z.object({ reason: z.string().min(1).max(200).nullable().optional() }).optional(),
+        response: { 200: z.object({ screen: ScreenSchema }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
+      const before = await loadBoothScreen(
+        app.db,
+        auth.operatorId,
+        row.stationId,
+        req.params.credentialId,
+      );
+      return {
+        screen: await revokeBoothScreen(
+          app.db,
+          opCtx(req),
+          { accountId: auth.accountId, operatorId: auth.operatorId },
+          before,
+          req.body?.reason ?? null,
+        ),
+      };
     },
   );
 

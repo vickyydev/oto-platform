@@ -304,3 +304,45 @@ export interface BoothStaffCacheFields {
    */
   staffCode?: string | null;
 }
+
+// --- The paired screen (SCRUM-244) ------------------------------------------
+
+/**
+ * The header a booth television sends on every `/booth/*` call.
+ *
+ * Named here because three places have to spell it identically and none of
+ * them can see the other two: the page (`apps/booth/src/booth/client.ts`), the
+ * api's credential plugin, and whatever proxy or rewrite sits between them.
+ * Lower case, because Fastify lower-cases incoming header names and a
+ * constant that only matches when someone remembers to `.toLowerCase()` is a
+ * constant that will one day not match.
+ *
+ * **Not `Authorization`.** A booth carries no session and no bearer token in
+ * the platform's sense; a header of its own keeps "this is a paired screen"
+ * visibly distinct from "this is a box" and from "this is a signed-in person"
+ * in a log, in a proxy rule and in a reviewer's head.
+ */
+export const BOOTH_DEVICE_HEADER = 'x-oto-booth-device';
+
+/** `POST /booth/pair` — the six digits a member of staff types at the booth. */
+export interface BoothPairRequest {
+  code: string;
+}
+
+/**
+ * What the screen keeps afterwards.
+ *
+ * `deviceSecret` is returned exactly once and is stored on the server only as
+ * a hash, so a page that loses it has to be paired again — which is a member
+ * of staff pressing "Pair a screen" in the Console, not a recovery flow.
+ *
+ * **No booth NAME and no branch on this answer** (D15): the page has no use
+ * for either and a television in a shopping centre should not be able to say
+ * which park it belongs to. The station id is here because the page shows
+ * nothing with it — it is what makes "this credential is for another booth"
+ * a refusal the api can make rather than a mystery.
+ */
+export interface BoothPairResponse {
+  deviceSecret: string;
+  stationId: string;
+}

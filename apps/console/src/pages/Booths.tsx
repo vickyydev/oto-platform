@@ -24,11 +24,14 @@ import {
   type BoothLayoutRow,
   type BoothListRow,
   type BoothPrizeDraft,
+  type BoothScreenRow,
   type BoothStatus,
   type BoothVersionRow,
+  type MintedPairingCode,
   type PrizeInput,
   type VoucherDefinitionRow,
 } from '@/components/booth/boothApi';
+import { BoothScreensPanel } from '@/components/booth/BoothScreensPanel';
 import { BoothSettingsPanel, type BoothSettingsEdit } from '@/components/booth/BoothSettingsPanel';
 import { PrizeEditor } from '@/components/booth/PrizeEditor';
 import { PrizeTable } from '@/components/booth/PrizeTable';
@@ -83,7 +86,7 @@ import {
  * Which panel a write belongs to, so its refusal is drawn where the button was
  * pressed rather than in whichever panel happens to hold an error slot.
  */
-type WriteSite = 'prizes' | 'settings' | 'publish';
+type WriteSite = 'prizes' | 'settings' | 'publish' | 'screens';
 
 export function Booths() {
   const { me, has } = useSession();
@@ -100,6 +103,16 @@ export function Booths() {
   const [versions, setVersions] = useState<Read<BoothVersionRow[]>>(() => unread<BoothVersionRow[]>([]));
   const [layouts, setLayouts] = useState<BoothLayoutRow[]>([]);
   const [definitions, setDefinitions] = useState<VoucherDefinitionRow[]>([]);
+  const [screens, setScreens] = useState<Read<BoothScreenRow[]>>(() => unread<BoothScreenRow[]>([]));
+  /**
+   * The pairing code just minted (SCRUM-244).
+   *
+   * Held here and nowhere else: the API returns it once and stores only a
+   * hash, so this is the only copy in existence and it lasts exactly as long
+   * as the panel is on screen. Cleared when the booth selection changes, so a
+   * code for one booth can never be read beside another booth's name.
+   */
+  const [mintedCode, setMintedCode] = useState<MintedPairingCode | null>(null);
 
   const [editing, setEditing] = useState<BoothPrizeDraft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -190,6 +203,16 @@ export function Booths() {
               : readFailed(held, readFailureMessage(reason), []),
           ),
         ),
+      boothApi
+        .screens(id)
+        .then((r) => setScreens(readOk(r.screens)))
+        .catch((reason: unknown) =>
+          setScreens((held) =>
+            isMissingRoute(reason)
+              ? readAbsent<BoothScreenRow[]>([])
+              : readFailed(held, readFailureMessage(reason), []),
+          ),
+        ),
     ]);
   }, []);
 
@@ -219,6 +242,9 @@ export function Booths() {
 
   useEffect(() => {
     if (selectedId) void loadBooth(selectedId);
+    // A code is for one booth. Selecting another must not leave six digits on
+    // screen under a different booth's name.
+    setMintedCode(null);
   }, [selectedId, loadBooth]);
 
   /**
@@ -467,6 +493,30 @@ export function Booths() {
               )}
             </div>
           </div>
+
+          <BoothScreensPanel
+            screens={screens}
+            minted={mintedCode}
+            busy={busy}
+            readOnly={!canManage}
+            error={errorAt('screens')}
+            timezone={timezone}
+            onMint={() =>
+              void run('screens', async () => {
+                // The answer is the only copy of the code there will ever be,
+                // so it is put on screen before anything else can throw.
+                setMintedCode(await boothApi.mintPairingCode(selected.booth.id, 'Booth television'));
+              })
+            }
+            onUnpair={(screen) =>
+              void run('screens', async () => {
+                await boothApi.unpairScreen(selected.booth.id, screen.id, 'unpaired from the Console');
+                setMintedCode(null);
+              })
+            }
+            onRetry={() => selectedId && void loadBooth(selectedId)}
+            onDismissCode={() => setMintedCode(null)}
+          />
 
           <VersionHistory
             versions={versions}

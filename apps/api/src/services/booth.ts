@@ -23,6 +23,7 @@ import {
 import type { FastifyBaseLogger } from 'fastify';
 import { AppError } from '../lib/errors';
 import { boxSettings, inProcessBox } from './box';
+import { boothUnpaired, type BoothDeviceAuth } from './device-credential';
 
 /**
  * The cloud's booth surface (S2-07a).
@@ -307,8 +308,33 @@ export async function callBooth(
   db: Db,
   logs: BoothLogs,
   request: BoothHttpRequest,
+  device: BoothDeviceAuth,
 ): Promise<BoothHttpResponse> {
   const booth = await resolveInProcessBooth(db, logs);
+  /**
+   * The credential names a booth; this process serves a booth. They have to be
+   * the same booth (SCRUM-244).
+   *
+   * Without this, a screen paired at any booth of any operator could press
+   * THIS one's button — the credential would authenticate and the relay would
+   * hand the press to whichever booth happened to be in this process, because
+   * nothing else in the request says which booth is meant. It is not a
+   * hypothetical: a park with two booths pairs two screens from the same
+   * Console, and each code is minted for one booth and no other.
+   *
+   * Refused as `BOOTH_UNPAIRED` rather than as its own code, and deliberately:
+   * from the screen's side "you are paired to a different booth" and "you are
+   * not paired" are one fact — ask staff to pair this screen — and a separate
+   * code would tell a caller holding a stolen credential which booth it came
+   * from.
+   */
+  if (device.stationId !== booth.station.stationId) {
+    logs.request.warn(
+      { paired: device.stationId, serving: booth.station.stationId },
+      'booth call refused: this screen is paired to another booth',
+    );
+    throw boothUnpaired();
+  }
   return booth.call(request);
 }
 

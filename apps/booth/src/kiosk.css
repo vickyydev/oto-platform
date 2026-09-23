@@ -1244,3 +1244,66 @@ body {
   color: rgba(0, 0, 0, 0.6);
   line-height: 1.6;
 }
+
+/* ---------------- television performance mode (.k-lite) ----------------
+   Auto-on for Android and smart-television browsers, forced with #lite or
+   #full (src/stageState.ts). The attract is what stops a still screen in a
+   shopping centre reading as broken, but it is also a dozen always-running
+   compositor layers, and on a television stick they cost the spin its frame
+   rate. Here they stop, and every frame goes to the turn and the reveal.
+
+   What stays: the one-shot entrances (k-rise, k-bounce-in, k-pop-big, the
+   wheel's settle and won-flash) — they are brief and they are what makes the
+   card feel like it arrived rather than appeared — and the pulsing red dome,
+   the single "press me" cue on the whole screen.
+
+   ORDERING TRAP, the same one the .k-screen--spinning guard sits in: these
+   guards beat an equal-specificity animation assignment only by coming after
+   it. A new ambient animator added BELOW this block therefore keeps running in
+   lite mode unless it is added to the list here or given lower specificity.
+   The layout check for SCRUM-199 reads the computed animation of the ambient
+   classes under #lite, so that mistake shows up as a red check rather than as
+   a television that janks on site. */
+.k-lite .k-blob,
+.k-lite .k-fs,
+.k-lite .k-title,
+.k-lite .k-hero .k-title,
+.k-lite .k-badge,
+.k-lite .k-cta,
+.k-lite .k-cta--invite,
+.k-lite .k-cta-label,
+.k-lite .k-cta-label--pulse,
+.k-lite .k-dot-a,
+.k-lite .k-dot-b,
+.k-lite .k-star,
+.k-lite .k-burst,
+.k-lite .k-scan-pill,
+.k-lite .k-again {
+  animation: none;
+}
+/* Static mid-brightness glow instead of the breathing loop. */
+.k-lite .k-wheel-glow {
+  animation: none;
+  opacity: 0.55;
+}
+/* The sweep across the prompt is a whole extra moving layer of its own. */
+.k-lite .k-shine {
+  display: none;
+}
+
+/* ---------------- pairing a screen (SCRUM-244) ---------------- */
+
+/*
+ * The one addition the pairing prompt needs.
+ *
+ * `.k-panel` is pinned to the bottom-right corner because the staff sign-in
+ * panel is furniture beside a running game. The pairing panel is not beside
+ * anything — there is no wheel yet — so it sits in the flow of the centred
+ * body under the wordmark, which is where the eye already is on the "not set
+ * up" screen it replaces. Everything else about it (the border, the shadow,
+ * the number pad, the button) is `.k-panel`'s own and is untouched.
+ */
+.k-panel--center {
+  position: static;
+  margin: 18px auto 0;
+}

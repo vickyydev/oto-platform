@@ -128,7 +128,23 @@ export interface BoothStatus {
  * when the booth service could not be reached, kept in the same union so that
  * one branch on the page covers "it said no" and "it said nothing".
  */
-export const BOOTH_ERROR_CODES = ['booth_not_ready', 'not_configured', 'unreachable'] as const;
+export const BOOTH_ERROR_CODES = [
+  'booth_not_ready',
+  'not_configured',
+  'unreachable',
+  /**
+   * SCRUM-244 — this screen is not paired, or its credential no longer works.
+   *
+   * Not a code the booth service spells: it is what the client returns for a
+   * 401 on any `/booth/*` call, whatever the envelope says. Deliberately
+   * derived from the STATUS rather than from `error.code`, because the four
+   * ways of not being paired — absent, wrong, expired, revoked, paired to
+   * another booth — all answer `BOOTH_UNPAIRED` on purpose, and this page
+   * would do the same thing with each of them anyway: show the pairing prompt
+   * and ask for staff.
+   */
+  'unpaired',
+] as const;
 export type BoothErrorCode = (typeof BOOTH_ERROR_CODES)[number];
 
 /**

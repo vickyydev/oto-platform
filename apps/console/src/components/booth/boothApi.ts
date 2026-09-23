@@ -212,6 +212,35 @@ export interface PublishResult {
 }
 
 // ---------------------------------------------------------------------------
+// The televisions paired to a booth (SCRUM-244)
+// ---------------------------------------------------------------------------
+
+/**
+ * `BoothScreenView`. Never a code and never a hash — the API does not serve
+ * either, and this page has no use for one after the moment it is read out.
+ */
+export interface BoothScreenRow {
+  id: string;
+  label: string | null;
+  /** A code has been minted and nobody has typed it into a screen yet. */
+  pairingOutstanding: boolean;
+  pairingCodeExpiresAt: string | null;
+  pairedAt: string | null;
+  pairedByAccountId: string | null;
+  /** When this screen last called the booth surface. */
+  lastSeenAt: string | null;
+  revokedAt: string | null;
+  revokedReason: string | null;
+}
+
+export interface MintedPairingCode {
+  credential: BoothScreenRow;
+  /** Shown once. It is not stored here, and asking again mints a new one. */
+  pairingCode: string;
+  expiresAt: string;
+}
+
+// ---------------------------------------------------------------------------
 // The calls
 // ---------------------------------------------------------------------------
 
@@ -275,4 +304,28 @@ export const boothApi = {
    */
   publish: (id: string, body: { note?: string | null; expectedBundleHash?: string }) =>
     api.post<PublishResult>(`${at(id)}/publish`, body, { idempotencyKey: idemKey() }),
+
+  screens: (id: string) => api.get<{ screens: BoothScreenRow[] }>(`${at(id)}/screens`),
+
+  /**
+   * Mint the six digits somebody types into a television.
+   *
+   * **No idempotency key, and that is the API's rule rather than an
+   * oversight.** The answer carries a credential, so the route declares
+   * `secretResponse` and the platform's replay store refuses to hold it — a
+   * key would be claimed and then released, and a retry would do the work
+   * again regardless. What makes a double press safe is on the server: minting
+   * revokes this booth's previous unredeemed code, so there is never more than
+   * one live code and the one on screen is always the one that works.
+   */
+  mintPairingCode: (id: string, label?: string | null) =>
+    api.post<MintedPairingCode>(`${at(id)}/pairing-codes`, { label: label ?? null }),
+
+  /** Unpair a screen. The row stays; the secret goes. */
+  unpairScreen: (id: string, credentialId: string, reason?: string | null) =>
+    api.post<{ screen: BoothScreenRow }>(
+      `${at(id)}/screens/${encodeURIComponent(credentialId)}/revoke`,
+      { reason: reason ?? null },
+      { idempotencyKey: idemKey() },
+    ),
 };

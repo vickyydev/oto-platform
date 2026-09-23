@@ -112,9 +112,41 @@ export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
     if (unstorable(req)) return;
     const key = req.headers['idempotency-key'];
     if (typeof key !== 'string' || key.length === 0 || key.length > 200) return;
-    // The principal owning the key. Today that is always an account; a box
-    // or station credential becomes a principal of its own in S2-05. This is
-    // NOT what keeps the box surface out of the store — `unstorable` is.
+    /**
+     * The principal owning the key. Today that is always an account; a box
+     * or station credential becomes a principal of its own in S2-05. This is
+     * NOT what keeps the box surface out of the store — `unstorable` is.
+     *
+     * **A caller with no session gets no key, and that is a real gap rather
+     * than a decision about them (SCRUM-298).** A row here is owned by an
+     * account — `core.idempotency_key.account_id` is not null and references
+     * `core.account` — so an anonymous caller has nothing to own one with. Two
+     * mutating families reach this line, and each is protected somewhere else
+     * instead:
+     *
+     *   - `/auth/*` is self-idempotent by construction. A second identical
+     *     sign-in is a second attempt and must count as one; a second
+     *     `setup/complete` with the same code must find that code spent. There
+     *     is nothing here to replay, and replaying it would be the defect.
+     *     `setup/start` and `password-reset/request` send a second SMS on
+     *     purpose, and are bounded by `rl:setup:<phone>` / `rl:reset:<phone>`;
+     *   - `POST /public/bookings` keys on the booking id the site mints. The
+     *     primary key is the constraint, so a double submit is one booking and
+     *     the second call is answered with the first one's row.
+     *
+     * The booth's television surface never gets this far: `/booth/*` declares
+     * `credential: 'booth'` and `POST /booth/pair` declares `secretResponse`,
+     * so `unstorable` above turns them away first (SCRUM-244). That is the
+     * right fence for them and not this one — a press belongs to the box. The
+     * television mints a key per press and the box de-duplicates on it,
+     * durably, on the machine that drew the prize
+     * (`packages/box-agent/src/booth.ts` — the replay map and the per-press
+     * counter that refuses `duplicate_press`); a store up here would answer
+     * for a draw it did not make.
+     *
+     * `test/route-write-conformance.test.ts` pins both lists, so a new open
+     * mutating route has to say which of these it is.
+     */
     if (!req.auth) return;
     const accountId = req.auth.accountId;
 

@@ -1,7 +1,13 @@
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyRequest, RouteOptions } from 'fastify';
+import { BOOTH_DEVICE_HEADER } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { authenticateBox, type BoxAuth } from '../services/box';
+import {
+  authenticateBoothDevice,
+  boothUnpaired,
+  type BoothDeviceAuth,
+} from '../services/device-credential';
 import type { PermissionConfig } from './permission';
 
 /**
@@ -29,6 +35,8 @@ declare module 'fastify' {
   interface FastifyRequest {
     /** Set by this plugin on a `credential: 'box'` route, null everywhere else. */
     boxAuth: BoxAuth | null;
+    /** Set by this plugin on a `credential: 'booth'` route, null everywhere else. */
+    boothDevice: BoothDeviceAuth | null;
   }
 }
 
@@ -41,8 +49,22 @@ export function boxAuthOf(req: FastifyRequest): BoxAuth {
   return req.boxAuth;
 }
 
+/**
+ * The paired screen, for a handler on a route that declared one.
+ *
+ * Reading it is how a `/booth/*` route learns WHICH booth the browser in front
+ * of it belongs to — which the request itself does not say and, under D15,
+ * never will.
+ */
+export function boothDeviceOf(req: FastifyRequest): BoothDeviceAuth {
+  // Only reachable if a route read this without declaring `credential: 'booth'`.
+  if (!req.boothDevice) throw boothUnpaired();
+  return req.boothDevice;
+}
+
 export const credentialPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest('boxAuth', null);
+  app.decorateRequest('boothDevice', null);
 
   app.addHook('onRoute', (route: RouteOptions) => {
     const kind = (route.config as PermissionConfig | undefined)?.credential;
@@ -55,6 +77,23 @@ export const credentialPlugin = fp(async (app: FastifyInstance) => {
           log: req.log,
           requestId: req.id,
         });
+        return;
+      }
+      if (kind === 'booth') {
+        /**
+         * The television's own credential (SCRUM-244).
+         *
+         * It runs at `preValidation` like the rest, which matters more here
+         * than anywhere: an anonymous caller who found `POST /booth/spin` is
+         * refused before the spin body is validated, so the refusal cannot be
+         * mined for what a press is supposed to look like.
+         */
+        const header = req.headers[BOOTH_DEVICE_HEADER];
+        req.boothDevice = await authenticateBoothDevice(
+          app.db,
+          typeof header === 'string' ? header : undefined,
+          { ip: req.ip, log: req.log },
+        );
         return;
       }
       /**

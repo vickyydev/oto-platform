@@ -50,9 +50,10 @@ export interface PermissionConfig {
    */
   platformWide?: true;
   /**
-   * Authenticated by a MACHINE credential the handler checks itself (S2-04).
-   * `box` is a registered box's secret; `box-claim` is the single-use code a
-   * box redeems to get one.
+   * Authenticated by a MACHINE credential, verified by `plugins/credential.ts`
+   * before the handler runs (S2-04). `box` is a registered box's secret;
+   * `box-claim` is the single-use code a box redeems to get one; `booth` is
+   * the credential a booth television was paired with (SCRUM-244).
    *
    * Its own kind rather than `public: true`, because these routes are not
    * open: they refuse an anonymous caller. Calling them public would have
@@ -60,7 +61,7 @@ export interface PermissionConfig {
    * five entries to the pinned list of genuinely open endpoints, which is the
    * one thing that list exists to stop.
    */
-  credential?: 'box' | 'box-claim';
+  credential?: 'box' | 'box-claim' | 'booth';
   /**
    * This route's answer IS a credential — a box secret, a temporary password,
    * a hand-off token — so it must never enter the idempotency store, which

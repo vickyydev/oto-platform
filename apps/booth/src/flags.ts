@@ -65,12 +65,24 @@ export const flags: BoothFlags = parseHash(
   typeof window === 'undefined' ? '' : window.location.hash,
 );
 
-export function parseHash(hash: string): BoothFlags {
-  const tokens = hash
+/**
+ * The hash, split into whole tokens.
+ *
+ * Exported because the stage overrides (`#cw`, `#off`, `#lite`, ...) are read
+ * by the orientation frame rather than here — they configure a screen, not a
+ * booth — and two tokenisers would be two answers to "does `#not-debug` count
+ * as debug". This one says no.
+ */
+export function hashTokens(hash: string): string[] {
+  return hash
     .replace(/^#/, '')
     .split(/[,;&\s]+/)
     .map((token) => token.trim().toLowerCase())
     .filter((token) => token !== '');
+}
+
+export function parseHash(hash: string): BoothFlags {
+  const tokens = hashTokens(hash);
 
   const has = (name: string) => tokens.includes(name);
   const value = (name: string): string | null => {

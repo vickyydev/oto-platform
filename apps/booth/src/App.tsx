@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BoothConfigBundle, SpinResponse } from '@oto/shared';
-import { booth } from './booth/client';
+import { booth, boothCredential } from './booth/client';
 import { BoothCallError, type BoothStatus } from './booth/contract';
 import { readAssetManifest, readColor, readDesign, type WheelDesign } from './booth/design';
 import { COPY, type BilingualLine } from './copy';
@@ -12,21 +12,31 @@ import {
   RESULT_PRESS_LOCKOUT_MS,
 } from './press';
 import { configureSounds } from './sound';
+import { isPerfLite } from './stageState';
 import { DebugOverlay } from './components/DebugOverlay';
 import OtoWordmark from './components/OtoWordmark';
+import { PairScreen } from './components/PairScreen';
 import { ResultModal } from './components/ResultModal';
 import { StaffSignIn } from './components/StaffSignIn';
 import { Wheel, type WheelSlice } from './components/Wheel';
 
 /**
  * boot     — nothing has answered yet
+ * unpaired — no staff member has paired this screen to a booth (SCRUM-244)
  * unsynced — no wheel has ever been published to this booth
  * ready    — the attract; a press starts a draw
  * starting — the press is with the booth and the wheel has not moved
  * spinning — the wheel is turning toward a slice already decided
  * result   — the prize card
+ *
+ * `unpaired` and `unsynced` are deliberately different states and look
+ * different on the television. "Nobody has given this screen a credential" is
+ * fixed by a member of staff standing at the booth with a code; "nobody has
+ * published a wheel to this booth" is fixed in the Console and then by the box
+ * pulling it. Collapsing them would send whoever is on shift to the wrong
+ * place.
  */
-type Phase = 'boot' | 'unsynced' | 'ready' | 'starting' | 'spinning' | 'result';
+type Phase = 'boot' | 'unpaired' | 'unsynced' | 'ready' | 'starting' | 'spinning' | 'result';
 
 interface AppliedConfig {
   version: number;
@@ -53,7 +63,19 @@ const NOTICE_MS = 6000;
 const INPUT_LOG_MAX = 8;
 
 export default function App() {
-  const [phase, setPhase] = useState<Phase>('boot');
+  /**
+   * A screen that has never been paired opens on the pairing prompt rather
+   * than on `boot` (SCRUM-244).
+   *
+   * Asked at mount and not on a timer: whether this browser holds a credential
+   * is a fact about this browser, and every LATER change of it — a revoke, an
+   * expiry, a secret that was never valid — arrives as a 401 from a call and
+   * is handled by `noteError` below. The fake transport needs none of this and
+   * is never sent here, which is what keeps `pnpm dev` a playable wheel.
+   */
+  const [phase, setPhase] = useState<Phase>(() =>
+    booth.kind === 'http' && !boothCredential.has() ? 'unpaired' : 'boot',
+  );
   const [config, setConfig] = useState<AppliedConfig | null>(null);
   const [status, setStatus] = useState<BoothStatus | null>(null);
   const [spin, setSpin] = useState<SpinResponse | null>(null);
@@ -93,6 +115,23 @@ export default function App() {
 
   const recordKey = useCallback((line: string) => {
     setInputLog((current) => [line, ...current].slice(0, INPUT_LOG_MAX));
+  }, []);
+
+  /**
+   * Every failed call comes through here, and one of them changes the screen.
+   *
+   * A 401 means this screen is not paired any more — unpaired from the
+   * Console, or holding a credential that was never good — and the client has
+   * already dropped the stored secret by the time this runs. The booth then
+   * shows the pairing prompt instead of a wheel nobody can spin, which is the
+   * only state a member of staff can act on. Every other failure is recorded
+   * for `#debug` and leaves the screen alone: a booth that cannot reach its
+   * service keeps showing the wheel it has, and the corner dot says the link
+   * is down.
+   */
+  const noteError = useCallback((error: unknown): void => {
+    setLastErrorCode(errorCode(error));
+    if (error instanceof BoothCallError && error.code === 'unpaired') setPhase('unpaired');
   }, []);
 
   // ---- Configuration ---------------------------------------------------
@@ -143,8 +182,10 @@ export default function App() {
         }
       } catch (error) {
         // A booth that cannot reach its own service keeps showing the wheel it
-        // has. The corner dot says the link is down; the screen does not.
-        if (!cancelled) setLastErrorCode(errorCode(error));
+        // has. The corner dot says the link is down; the screen does not. A
+        // screen that has been unpaired is the exception, and `noteError`
+        // knows it.
+        if (!cancelled) noteError(error);
       } finally {
         if (!cancelled) timer = window.setTimeout(() => void tick(), CONFIG_POLL_MS);
       }
@@ -155,7 +196,7 @@ export default function App() {
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [applyConfig, fetchConfig]);
+  }, [applyConfig, fetchConfig, noteError]);
 
   // The parked bundle goes in the moment the wheel is at rest.
   useEffect(() => {
@@ -168,12 +209,12 @@ export default function App() {
     try {
       setStatus(await booth.getStatus());
     } catch (error) {
-      setLastErrorCode(errorCode(error));
+      noteError(error);
       setStatus((current) =>
         current === null ? null : { ...current, online: false, printerReachable: 'unknown' },
       );
     }
-  }, []);
+  }, [noteError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -289,7 +330,11 @@ export default function App() {
       setTargetIndex(index);
       setPhase('spinning');
     } catch (error) {
-      setLastErrorCode(errorCode(error));
+      noteError(error);
+      // An unpaired screen has already been moved to its own state by
+      // `noteError`; putting a notice under a wheel it is no longer showing
+      // would leave "please call staff" sitting on the pairing prompt.
+      if (error instanceof BoothCallError && error.code === 'unpaired') return;
       setNotice(
         error instanceof BoothCallError && error.code === 'not_configured'
           ? COPY.notSetUp
@@ -297,7 +342,7 @@ export default function App() {
       );
       setPhase('ready');
     }
-  }, [applyConfig, fetchConfig]);
+  }, [applyConfig, fetchConfig, noteError]);
 
   /**
    * One press on the prize card ARMS the restart; a second within the window
@@ -462,14 +507,58 @@ export default function App() {
   // ---- Render ----------------------------------------------------------
 
   const isSpinning = phase === 'spinning';
+
+  /**
+   * Television performance mode: the ambient attract animation is dropped so
+   * the spin and the reveal get every frame (stageState.isPerfLite — auto on
+   * Android and smart-television browsers, `#lite` / `#full` to force it). It
+   * is a boot decision, so it is read, not watched.
+   */
+  const liteClass = isPerfLite() ? ' k-lite' : '';
+
   const prize = useMemo(() => {
     if (!spin || !config) return null;
     return config.bundle.prizes.find((candidate) => candidate.id === spin.prizeId) ?? null;
   }, [spin, config]);
 
+  if (phase === 'unpaired') {
+    /**
+     * No staff sign-in panel and no status chip here, deliberately.
+     *
+     * Both are calls to `/booth/*`, and every one of them is refused until
+     * this screen is paired — a chip that could only ever show the offline
+     * dot, and a PIN pad that could only ever say "that was not right", are
+     * two controls that make a booth look broken in the one state where it is
+     * merely new. The pairing panel is the only thing there is to do here.
+     */
+    return (
+      <div className={'k-screen' + liteClass} data-kiosk-surface="1">
+        <Ambient />
+        <PairScreen
+          onPaired={() => {
+            // Back to boot rather than straight to ready: the config and
+            // status polls are still running, and which screen comes next —
+            // a wheel, or "not set up, connect to internet" — is their answer
+            // to give rather than this callback's.
+            setPhase('boot');
+            void refreshStatus();
+            // And the wheel now, not at the poll's next tick: the effect's
+            // first tick 401'd while the screen was unpaired and its next is
+            // CONFIG_POLL_MS away, which left a paired television on an
+            // empty wheel reading "Starting…" for up to thirty seconds —
+            // long enough for staff to decide the pairing failed.
+            void fetchConfig()
+              .then((next) => applyConfig(next))
+              .catch(noteError);
+          }}
+        />
+      </div>
+    );
+  }
+
   if (phase === 'unsynced') {
     return (
-      <div className="k-screen" data-kiosk-surface="1">
+      <div className={'k-screen' + liteClass} data-kiosk-surface="1">
         <Ambient />
         <div className="k-body k-body--center">
           <OtoWordmark height={56} />
@@ -490,7 +579,10 @@ export default function App() {
   }
 
   return (
-    <div className={'k-screen' + (isSpinning ? ' k-screen--spinning' : '')} data-kiosk-surface="1">
+    <div
+      className={'k-screen' + (isSpinning ? ' k-screen--spinning' : '') + liteClass}
+      data-kiosk-surface="1"
+    >
       <Ambient />
 
       <div className="k-body">
