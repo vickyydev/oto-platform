@@ -16,6 +16,19 @@ import type { CartQuote } from '@/api/sales';
  * Design: the prototype's own vocabulary — a tinted rounded panel with a border
  * and an icon, the same shape as the QR-pending note in `StepPayment` and the
  * harness banner in `Till`. Nothing here is a new visual idea.
+ *
+ * The tints are the prototype's, but its inks were not: it rendered on a dark
+ * surface, so `rose-200` and `amber-200` on a 10% tint of the same hue were
+ * legible there and pale-on-pale once this port went light — the failure
+ * headline and `PriceSourceNote` measured 1.13:1 and 1.07:1 against their own
+ * panels. Both now take the light back office's deep ink (SCRUM-346's recipe)
+ * with the prototype's shade kept behind `dark:`, so the dark theme is
+ * untouched (SCRUM-359). Amber goes a step deeper than rose because it is the
+ * lighter hue: measured on the cream ground, `amber-700` on this tint reaches
+ * only 4.33:1 where `rose-700` reaches 4.83:1, so the source note takes
+ * `amber-800` and the pair reads alike. `SaleNotSavedNotice` below still
+ * carries the pale pair and wants the same treatment; it was outside that
+ * ticket.
  */
 
 /**
@@ -119,9 +132,9 @@ export function SaleWriteFailure({
   return (
     <div className="mt-6 rounded-xl border border-rose-500/40 bg-rose-500/10 p-4">
       <div className="flex items-start gap-3">
-        <ServerCrash className="mt-0.5 h-5 w-5 shrink-0 text-rose-400" />
+        <ServerCrash className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400" />
         <div className="min-w-0 flex-1">
-          <div className="text-base font-bold text-rose-200">{headline}</div>
+          <div className="text-base font-bold text-rose-700 dark:text-rose-200">{headline}</div>
           {state.stage === 'finalise' && (
             <p className="mt-1 text-sm text-muted-foreground">
               The order itself is saved on the platform, as unpaid and without a receipt number.
@@ -159,9 +172,9 @@ export function SaleNotSavedNotice({ state }: { state: SaleWriteState }) {
   if (state.kind !== 'unwritten') return null;
   return (
     <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
-      <CloudOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+      <CloudOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
       <div className="min-w-0">
-        <div className="font-bold text-amber-200">Saved on this till only.</div>
+        <div className="font-bold text-amber-800 dark:text-amber-200">Saved on this till only.</div>
         <p className="mt-1 text-muted-foreground">
           {state.reason} The order below is real and the visitor has been served, but it is not in
           the platform&apos;s sales ledger and a refresh of this browser loses it.
@@ -189,7 +202,7 @@ export function PriceSourceNote({ quote, pending }: { quote: CartQuote; pending:
   if (quote.source === 'platform') {
     if (!quote.platformNotice) return null;
     return (
-      <div className="flex items-start gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-200">
+      <div className="flex items-start gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-700 dark:text-sky-200">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0">
           <span className="font-semibold">The platform priced this differently:</span>{' '}
@@ -199,7 +212,7 @@ export function PriceSourceNote({ quote, pending }: { quote: CartQuote; pending:
     );
   }
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+    <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0">
         <span className="font-semibold">Priced on this till.</span>{' '}

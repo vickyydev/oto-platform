@@ -19,6 +19,14 @@ import type { QuoteError } from '@/lib/cartQuote';
  * for instead of leaving them to guess. The caller decides: the station that
  * turns the button off passes it, one that only reports the refusal does not.
  *
+ * The ink is the light back office's (`text-rose-700`, the recipe SCRUM-346
+ * took for the same reason) with the prototype's `rose-200` kept behind
+ * `dark:`. The prototype rendered on a dark surface and this port renders
+ * light, so pale rose on a rose tint was pale-on-pale here — measured at 1.13:1
+ * against the panel, which is no contrast at all. Rose stays: it is the colour
+ * of an order that cannot be sold, and `QuoteFaultNote` beside it is neutral
+ * for the opposite reason (SCRUM-359).
+ *
  * SCRUM-351 gave the hook a typed error, and this note prints `.message` — the
  * platform's own words, the string this prop used to be — so its wording is
  * what it was before that ticket. It draws whatever it is handed and does not
@@ -38,12 +46,12 @@ export function QuoteRefusalNote({
   if (!error) return null;
   const message = error.message;
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+    <div className="flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-200">
       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0">
         <span className="font-semibold">The platform refused this order:</span> {message}
         {blocking && (
-          <span className="mt-1 block text-rose-200/80">
+          <span className="mt-1 block text-rose-700/80 dark:text-rose-200/80">
             Fix this to charge — the sale would be refused for the same reason.
           </span>
         )}
