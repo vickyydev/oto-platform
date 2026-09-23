@@ -4,6 +4,22 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:24 — `main` is `237ca54`; staging is `097b73b` (Render is deploying `803428b` → `237ca54`); CI green through `4ceb798`
+>
+> **Since 15:20:** landed **351** (`237ca54` — the quote hook carries the
+> error kind; a fault leaves Charge enabled with its own note). Raised:
+> 358 (the Console's Test print sends no printer → 400; found by the
+> evidence pass — building), 359 (the F&B refusal/source notes washed out
+> on the light theme — building). SCRUM-353's fix round runs with `app.ts`
+> in its owned set.
+>
+> **Running:** gates — 343/344 (`wf_bc7823ac`), 354 (`wf_5f8a746b`), 355
+> (`wf_93411d0f`); builds — 206-A (`wf_9a136b60`), 341 (`wf_d527428e`),
+> 349 (`wf_6e37179b`), 348 (`wf_f270a2cf`), 356 (`wf_bd56c962`), 353 fix
+> (`wf_4493be0c`), 359 (`wf_4aea465b`), 358 (`wf_69884d8d`); evidence —
+> the second half of the 097b73b batch (`wf_ea63e5b1`). Watchers wait for
+> Render at `803428b` and `237ca54`.
+
 > ## Status on 2026-09-23 15:20 — `main` is `4a1cc90`; staging is `097b73b` (Render is deploying `803428b`); CI green through `4ceb798`
 >
 > **Since 15:14:** **Deployed with staging evidence:** 328, 325, 333, 334
