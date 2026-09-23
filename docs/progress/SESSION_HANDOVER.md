@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 17:14 — `main` is `166bd79`; staging is `f212a5d` on the api and POS (Render follows CI on `bce63ad`, 364's Console); CI green through `f212a5d`
+> ## Status on 2026-09-23 17:20 — `main` is `e4408a0`; staging is `f212a5d` on the api and POS (Render follows CI on `bce63ad`, 364's Console); CI green through `f212a5d`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -185,9 +185,30 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > seeded STAFF10 applied there; the code archived afterwards. Left on
 > staging: the archived definition and its two audit rows; no sale.
 >
-> **Running:** builds — 377 (`wf_03dc00ee`), 206-B (`wf_d5e69115`),
-> 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`); evidence — 364
-> (`wf_362f0ec3`); investigation — 376 (`wf_78e9c6ef`). After wave 2:
+> **17:20 — 376 investigated; shape decided.** Measured
+> (`docs/qa/TRUST_PROXY_REWRITE_MEASUREMENT_2026-09-23.md`): through a
+> static site's rewrite the api sees the region's SHARED proxy fleet
+> (`74.220.48.0/24`, `74.220.56.0/24` — Render's API says
+> `"type":"shared"`; the POS and the launcher landed on one address and
+> one bucket within a minute); the till's forwarded address does not
+> survive the hop in any form a trust list could use; Render's own
+> request log resolves the caller the same way. Consequence today: five
+> mistyped passwords anywhere lock every till, the Console and the
+> launcher for five minutes. **Decision: shape (D)** — throttles key on
+> the credential a request carries (station/account for signed-in
+> traffic; the box and booth credential throttles on the identity the
+> request names), the address kept only for sign-in, `/public/*` and
+> booth pairing, and the sign-in throttle's address half raised to a
+> ceiling sized for a shared address (the phone half is the security).
+> (A) refused — useless or dangerous depending on an unmeasurable fact;
+> (C) direct calls to the api host is the complete answer only on a real
+> parent domain. Build launched (`wf_ae659bf6`; new env
+> `AUTH_MAX_FAILURES_PER_ADDRESS`, default 50, to set on the Render api
+> service when it lands — or leave the default).
+>
+> **Running:** builds — 377 (`wf_03dc00ee`), 376 (`wf_ae659bf6`), 206-B
+> (`wf_d5e69115`), 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`);
+> evidence — 364 (`wf_362f0ec3`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
