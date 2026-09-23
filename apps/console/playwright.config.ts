@@ -34,6 +34,23 @@ if (!databaseUrl || !apiPort || !consolePort) {
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
 
+/**
+ * WHICH BROWSER, without editing this file: `CONSOLE_E2E_BROWSER`.
+ *
+ *   msedge     (the default) Microsoft Edge, matching the POS's pin. It is the
+ *              Chromium already installed on every Windows machine here, so a
+ *              local run downloads nothing.
+ *   chromium   Playwright's own bundled Chromium — set no channel at all and
+ *              the bundled browser is what runs. This is what CI uses: the
+ *              runners are ubuntu-latest, where Edge would mean adding
+ *              Microsoft's package repository to the image, and Chromium is
+ *              the browser `playwright install --with-deps` ships for Linux.
+ *
+ * Any other value is passed through as a channel name (`chrome`, `msedge-beta`
+ * …) and Playwright resolves it to a browser installed on the machine.
+ */
+const browser = process.env.CONSOLE_E2E_BROWSER || 'msedge';
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 120_000,
@@ -50,12 +67,18 @@ export default defineConfig({
    * worker was making at the same moment, with the same account.
    */
   workers: 1,
-  reporter: [['list']],
+  /**
+   * `list` is what a person watching a run wants. On CI nobody is watching, and
+   * the log of a red run is the one thing left to read it by — so there the
+   * HTML report is written as well, with the failure screenshots and error
+   * context in it, and the workflow uploads it as an artifact.
+   */
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://127.0.0.1:${consolePort}`,
-    // The POS's channel, for the same reason: Edge is the Chromium on every
-    // Windows machine here, so a run needs no browser download.
-    channel: 'msedge',
+    // `chromium` means the bundled build, which is the absence of a channel
+    // rather than a channel named "chromium"; everything else names one.
+    ...(browser === 'chromium' ? {} : { channel: browser }),
     headless: true,
     viewport: { width: 1440, height: 1024 },
     actionTimeout: 15_000,

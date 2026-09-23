@@ -26,6 +26,7 @@ import { resolve } from 'node:path';
 // repository's flat config, which declares Node's globals for `scripts/**`
 // and nowhere else.
 import process from 'node:process';
+import { URL } from 'node:url';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..', '..');
 
@@ -45,7 +46,21 @@ const serverUrl =
 
 /** Time-stamped, so a crashed run's leftovers are obvious and never collide. */
 const databaseName = `oto_console_e2e_${Date.now()}`;
-const databaseUrl = serverUrl.replace(/\/[^/]*$/, `/${databaseName}`);
+
+/**
+ * The same server, with this run's database in place of whichever one the
+ * string above names.
+ *
+ * Through `URL` rather than by replacing the tail of the string: a connection
+ * string may carry a query — `?sslmode=require` is the usual one on a hosted
+ * Postgres, and CI could hand this one over any day — and a replace on the
+ * last `/…` segment would swallow it into the database name.
+ */
+const databaseUrl = (() => {
+  const url = new URL(serverUrl);
+  url.pathname = `/${databaseName}`;
+  return url.toString();
+})();
 
 const say = (...parts) => process.stdout.write(`[console-e2e] ${parts.join(' ')}\n`);
 

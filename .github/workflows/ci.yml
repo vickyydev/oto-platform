@@ -57,6 +57,41 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      # The Console's end-to-end set (SCRUM-365). It brings its own database:
+      # `e2e/run.mjs` creates one on the server `TEST_DATABASE_URL` names — the
+      # Postgres service above — migrates and seeds it, starts the api (with
+      # the `edge` role, so the virtual box is there to take a queued test
+      # print) and the Vite dev server against it on two free ports, drives
+      # them in a browser, and drops the database on the way out. Nothing here
+      # needs adding to the job's env: every api variable but DATABASE_URL is
+      # defaulted (apps/api/src/env.ts), and the harness supplies that one.
+      #
+      # ON CHROMIUM rather than the Edge the config defaults to. These runners
+      # are ubuntu-latest, where Edge would mean adding Microsoft's package
+      # repository to the image; Chromium is the browser Playwright ships for
+      # Linux, and `--with-deps` brings the system libraries it needs with it.
+      # Locally the set keeps Edge, which is the Chromium already on the
+      # machines here.
+      - name: Install Chromium for the Console end-to-end set
+        run: pnpm --filter @oto/console exec playwright install --with-deps chromium
+      - name: Console end-to-end
+        run: pnpm --filter @oto/console e2e
+        env:
+          CONSOLE_E2E_BROWSER: chromium
+      # A failed case leaves a screenshot and its error context in the HTML
+      # report, and the report is the only way to read a red run from here —
+      # the log says which case failed and not what the page looked like when
+      # it did.
+      - name: Console end-to-end report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: console-e2e-report
+          path: |
+            apps/console/playwright-report
+            apps/console/test-results
+          if-no-files-found: ignore
+          retention-days: 7
 
 
 # Staging deploys are not a job here, and deliberately so.
