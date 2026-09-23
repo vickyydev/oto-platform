@@ -4,7 +4,43 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 08:00 — `main` is `0a669f0`; staging is `0a669f0`; the tree is clean
+> ## Status on 2026-09-23 12:00 — `main` is `6f266d0`; staging is `0da5441` (CI was red for four pushes, fixed; deploy pending)
+>
+> **Owner decisions this morning:** every Bug/Task lives in the sprint
+> (88 moved into "Sprint 2 – Complete build", id 3); defects sit under the
+> red-ish epic **SCRUM-324** (`dark_orange` — Jira's palette has no red) with
+> `defect`/`gap`/`ci-check` + area labels; GitHub is linked to Jira and
+> **`scripts/jira-walk.mjs` links the shipping commits on the ticket when it
+> reaches Deployed** (`--link-only` backfilled 132 links on 68 tickets); parent
+> stories get a status paragraph whenever a child moves; the other session is
+> paused and `render.yaml`/Render are ours now (its deploy-bot block stays
+> uncommitted — a paid service is the owner's call).
+>
+> **Landed since 08:00:** the booth's Render service
+> **https://oto-booth-staging.onrender.com** (created through the API — no
+> blueprint is linked; `1a6ba2b` carries the yaml entry; the api's
+> `ALLOWED_ORIGINS` on Render now includes it); the television frame ported
+> from the prototype (rotate/scale, `#cw/#ccw/#off/#lite`) and **screen
+> pairing** closing SCRUM-244 (`451c7b3` — 199/244/278 Testing); handheld
+> History (`482912e`, 320); auth hardening 251/298 (`23edaf8`, `26bd73b`);
+> members fields 231/321/317/315 (`8bcbd0f`); walker + monitor scripts.
+> Raised: SCRUM-325 (timing side-channel), 326 (result card 36px over a
+> 16:9 stage), 327 (station pairing route's secretResponse).
+>
+> **Running:** the till slice (`wf_b8035d08`: SCRUM-316 + the refusal on the
+> till) and the re-run box gate (`wf_e9a9d2b3`: SCRUM-322/305/323 — its first
+> gate answered an unrelated question). Monitor with
+> `node scripts/workflows-status.mjs [--watch]` (`/workflows` is not in this
+> editor). **A Stop key or a declined permission prompt cuts every running
+> subagent at once** — five slices died that way at 10:15 and were relaunched
+> with a resume preamble.
+>
+> **Next:** CI green on `6f266d0` → Render → booth staging photographs
+> (rotation on the live URL, a real pairing) → 199/244/278 Deployed and the
+> S2-07 story with them; land the till and box slices; then Round B
+> (233, 257, 304/306, 309, 318/319), the carts (204), tenders (206).
+
+> ## Status on 2026-09-23 08:00 — `main` was `0a669f0`; staging was `0a669f0`; the tree was clean
 >
 > **Since 06:00:** SCRUM-268 Deployed with its Console Branches page on
 > staging; SCRUM-275's last two halves landed (`b673948` — `edge.box_cache`,
