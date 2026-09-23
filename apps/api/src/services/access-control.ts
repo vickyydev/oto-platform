@@ -72,6 +72,18 @@ export const accessErrors = {
       'LAST_OPERATOR_ADMIN',
       'This is the only active account that can hand out access for this operator. Give somebody else an operator-wide administrator role first, then try again.',
     ),
+  scopeArchived: (what: string) =>
+    new AppError(
+      409,
+      'SCOPE_ARCHIVED',
+      `That ${what} has been archived — access cannot be granted at it. Bring it back into service first.`,
+    ),
+  recordScopeUnsupported: () =>
+    new AppError(
+      400,
+      'SCOPE_NOT_SUPPORTED',
+      'Record scope cannot be granted: no route asks for a record target, so such a grant would be unchecked rather than narrow.',
+    ),
 };
 
 export interface AssignmentScope {
@@ -116,7 +128,21 @@ export async function loadTargetAccount(db: Db, operatorId: string, accountId: s
   return row;
 }
 
-/** Rule 2 — the scope is one the caller's operator owns and may use. */
+/**
+ * Rule 2 — the scope is one the caller's operator owns, may use, and has not
+ * retired.
+ *
+ * SCRUM-253 — AND IT IS STILL OPEN. Ownership was the only question asked, so
+ * a branch that had been archived — retired, gone from every picker — still
+ * took new grants, and the access went on existing after the thing it was
+ * access to had been closed. Archiving is refused here rather than left to be
+ * noticed later, because a grant at a retired branch is invisible: it shows up
+ * in nobody's branch list, and the day the branch is un-archived it is live
+ * again without anyone deciding so.
+ *
+ * `department` has no `archived_at` of its own; a department is retired by its
+ * branch closing, so that is what is read.
+ */
 export async function assertScopeOwned(
   db: Db,
   callerEffective: EffectivePermission[],
@@ -144,15 +170,43 @@ export async function assertScopeOwned(
   if (scope.scopeType === 'branch') {
     const [row] = await db.select().from(branch).where(eq(branch.id, scope.scopeId)).limit(1);
     if (!row || row.operatorId !== operatorId) throw accessErrors.scopeNotOwned();
+    if (row.archivedAt) throw accessErrors.scopeArchived('branch');
     return;
   }
   if (scope.scopeType === 'department') {
     const [row] = await db.select().from(department).where(eq(department.id, scope.scopeId)).limit(1);
     if (!row || row.operatorId !== operatorId) throw accessErrors.scopeNotOwned();
+    if (row.branchId) {
+      const [br] = await db
+        .select({ archivedAt: branch.archivedAt })
+        .from(branch)
+        .where(eq(branch.id, row.branchId))
+        .limit(1);
+      if (br?.archivedAt) throw accessErrors.scopeArchived('department’s branch');
+    }
     return;
   }
-  // 'record' — the record's own route validates it; the id is scoped by the
-  // permission check that follows.
+
+  /**
+   * SCRUM-255(a) — RECORD SCOPE IS REFUSED, NOT WAVED THROUGH.
+   *
+   * This branch used to `return` with a comment saying the record's own route
+   * validated the id. No route anywhere declares a `recordId` target, so there
+   * was no such route and nothing validated anything: `POST
+   * /accounts/:id/role-assignments` with `scopeType: 'record'` accepted any
+   * uuid at all — another operator's — and wrote it into `role_assignment`. It
+   * granted nothing today only because `grantCovers` never sees a record
+   * target, so the row sat there waiting for the first route that asked for
+   * one, at which point it would have been a cross-tenant grant already in the
+   * database and already audited as legitimate.
+   *
+   * A scope nobody checks is not a narrow scope. Until a route declares a
+   * `recordId` target — and with it the entity type whose ownership can then be
+   * verified here — the only honest answer is that this scope cannot be
+   * granted. The permission resolver keeps its record case (`permissions.ts`),
+   * so the day that route lands the refusal comes off and the check goes in.
+   */
+  throw accessErrors.recordScopeUnsupported();
 }
 
 /** Rule 3 — the caller holds every permission this role carries, at a covering scope. */

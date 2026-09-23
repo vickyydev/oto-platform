@@ -663,72 +663,99 @@ describe('writing a station (S2-04)', () => {
 // ---------------------------------------------------------------------------
 
 describe('one-time codes never enter the idempotency store (S2-04 review, F2)', () => {
-  /** Everything stored under a key, as the replay would serve it back. */
-  async function storedBody(key: string): Promise<string> {
+  /**
+   * SCRUM-255(c) / SCRUM-327 — WHAT KEEPS THE CODE OUT, AND WHY THAT CHANGED.
+   *
+   * These three routes used to keep their codes out of the store by
+   * construction: `createBox`, `reissueClaimCode` and `pairCredential` each
+   * return a code-free value from inside `withTx`, which stores THAT and marks
+   * the key stored, so the fuller body going out on the wire was never looked
+   * at. The plugin's `carriesSecret` net never fired on them — it cannot,
+   * because `onSend` returns as soon as the claim says stored — so the
+   * guarantee lived in three services and was asserted here as "the stored
+   * body has no code in it", which is true of a body that a later refactor
+   * could change without a single test noticing.
+   *
+   * All three now declare `secretResponse`, so the plugin refuses the key
+   * before the handler runs and there is no row at all. That is what these
+   * cases assert instead: not "the stored body has no code in it" but "there
+   * is nothing stored", which holds whatever the service returns. A retry is
+   * therefore a second piece of work rather than a replay — a real change, and
+   * each case below says what that second piece of work does.
+   */
+  /** The whole key row, or null when the plugin never claimed one. */
+  async function storedRow(key: string) {
     const [row] = await ctx.db
       .select()
       .from(idempotencyKey)
       .where(eq(idempotencyKey.key, key))
       .limit(1);
-    return JSON.stringify(row?.responseBody ?? null);
+    return row ?? null;
   }
 
-  it('returns a claim code once, stores a body without it, and replays without it', async () => {
+  it('claims no key at all, so a retried register is refused rather than replayed', async () => {
     const key = `box-${newId()}`;
+    const slot = uniqueSlot('slot');
     const res = await call('POST', `/branches/${branchId}/boxes`, {
       cookie: adminCookie,
       headers: { 'idempotency-key': key },
-      payload: { name: 'Coded box', slot: uniqueSlot('slot'), role: 'counter' },
+      payload: { name: 'Coded box', slot, role: 'counter' },
     });
     expect(res.statusCode).toBe(200);
     const claimCode = res.body.claimCode as string;
     expect(claimCode).toMatch(/^[0-9A-Z]{5}-[0-9A-Z]{5}$/);
 
-    /**
-     * The plugin stores the response body verbatim for the whole replay
-     * window, so a code in it is a credential sitting in the database for a
-     * day. `withTx` stores the value the callback returned — the one without
-     * the code — and claims the key, which is what stops `onSend` storing the
-     * fuller body that goes out on the wire.
-     */
-    expect(await storedBody(key)).not.toContain(claimCode);
-    expect(await storedBody(key)).toContain('"box"');
+    // The declared path: no row was claimed, so there is no body to replay
+    // and no window in which the code could be handed back.
+    expect(await storedRow(key)).toBeNull();
 
     /**
-     * The same request again — a till on a flaky mall connection retrying. It
-     * is answered from the stored body, which is the whole point: the box is
-     * there and the code is NOT, because a one-time code handed out twice is
-     * not one-time. An absent code here means "this was already answered and
-     * the code was shown then", and the page has to say so.
+     * The same request again — a till on a flaky mall connection retrying.
+     * There is nothing to replay, so it runs, and what stops a second box
+     * standing in the same slot is the database: `box_slot_unique`.
      */
-    const replay = await call('POST', `/branches/${branchId}/boxes`, {
+    const retry = await call('POST', `/branches/${branchId}/boxes`, {
       cookie: adminCookie,
       headers: { 'idempotency-key': key },
-      payload: { name: 'Coded box', slot: (res.body.box as { slot: string }).slot, role: 'counter' },
+      payload: { name: 'Coded box', slot, role: 'counter' },
     });
-    expect(replay.statusCode).toBe(200);
-    expect(replay.body.claimCode).toBeUndefined();
-    expect((replay.body.box as { id: string }).id).toBe((res.body.box as { id: string }).id);
+    expect(retry.statusCode).toBe(409);
+    expect(errorCode(retry)).toBe('BOX_SLOT_TAKEN');
+    expect(retry.replayed).toBe(false);
+    expect(await storedRow(key)).toBeNull();
 
-    // And the same key aimed at a different request is still refused.
-    const mismatch = await call('POST', `/branches/${branchId}/boxes`, {
-      cookie: adminCookie,
-      headers: { 'idempotency-key': key },
-      payload: { name: 'A different box', slot: uniqueSlot('mismatch'), role: 'counter' },
-    });
-    expect(mismatch.statusCode).toBe(409);
-    expect(errorCode(mismatch)).toBe('IDEMPOTENCY_MISMATCH');
+    // And exactly one box carries that slot.
+    const boxes = await ctx.db.select().from(box).where(eq(box.slot, slot));
+    expect(boxes).toHaveLength(1);
   });
 
-  it('does the same for a re-issued claim code and for a pairing code', async () => {
+  it('claims no key for a re-issued claim code, and the newest code is the live one', async () => {
     const reissueKey = `claim-${newId()}`;
     const reissue = await call('POST', `/boxes/${boxId}/claim-code`, {
       cookie: adminCookie,
       headers: { 'idempotency-key': reissueKey },
     });
     expect(reissue.statusCode).toBe(200);
-    expect(await storedBody(reissueKey)).not.toContain(reissue.body.claimCode as string);
+    expect(await storedRow(reissueKey)).toBeNull();
 
+    // Retried, it mints again: `issueClaimCode` overwrites the box's
+    // `claim_code_hash`, so the second code is the only one that opens
+    // anything and the first is dead the moment it is superseded.
+    const first = reissue.body.claimCode as string;
+    const again = await call('POST', `/boxes/${boxId}/claim-code`, {
+      cookie: adminCookie,
+      headers: { 'idempotency-key': reissueKey },
+    });
+    expect(again.statusCode).toBe(200);
+    const second = again.body.claimCode as string;
+    expect(second).not.toBe(first);
+    const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, boxId)).limit(1);
+    expect(boxRow!.claimCodeHash).not.toBe(first);
+    expect(boxRow!.claimCodeHash).not.toBe(second); // stored as a hash, never the code
+    expect(boxRow!.claimCodeHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('claims no key for a pairing code, and a retry is a second credential', async () => {
     const pairKey = `pair-${newId()}`;
     const paired = await call('POST', `/stations/${tillId}/credentials`, {
       cookie: adminCookie,
@@ -738,7 +765,7 @@ describe('one-time codes never enter the idempotency store (S2-04 review, F2)', 
     expect(paired.statusCode).toBe(200);
     const pairingCode = paired.body.pairingCode as string;
     expect(pairingCode).toMatch(/^[0-9A-Z]{5}-[0-9A-Z]{5}$/);
-    expect(await storedBody(pairKey)).not.toContain(pairingCode);
+    expect(await storedRow(pairKey)).toBeNull();
 
     // And the row keeps only the hash: nothing can fetch the code back.
     const [row] = await ctx.db
@@ -749,15 +776,25 @@ describe('one-time codes never enter the idempotency store (S2-04 review, F2)', 
     expect(row!.pairingCodeHash).not.toBe(pairingCode);
     expect(row!.pairingCodeHash).toMatch(/^[0-9a-f]{64}$/);
 
-    // A replay is answered from the stored body — the credential, no code.
-    const replay = await call('POST', `/stations/${tillId}/credentials`, {
+    /**
+     * The weakest of the three, asserted rather than glossed: `pairCredential`
+     * INSERTS, so a retry now leaves a second credential row outstanding with
+     * a live code of its own, where it used to be answered from the store with
+     * the credential and no code. Both rows are listed and revocable. Pinned
+     * here so that if it is ever made to supersede the way the claim code
+     * does, that is a deliberate change and not a silent one.
+     */
+    const retry = await call('POST', `/stations/${tillId}/credentials`, {
       cookie: adminCookie,
       headers: { 'idempotency-key': pairKey },
       payload: { kind: 'display', label: 'Customer display 1' },
     });
-    expect(replay.statusCode).toBe(200);
-    expect(replay.body.pairingCode).toBeUndefined();
-    expect(replay.body.credential).toBeTruthy();
+    expect(retry.statusCode).toBe(200);
+    expect(retry.replayed).toBe(false);
+    expect(retry.body.pairingCode).not.toBe(pairingCode);
+    expect((retry.body.credential as { id: string }).id).not.toBe(
+      (paired.body.credential as { id: string }).id,
+    );
   });
 
   it('never audits a code, only that one was issued and when it dies', async () => {
@@ -842,7 +879,7 @@ describe('one-time codes never enter the idempotency store (S2-04 review, F2)', 
       .where(eq(idempotencyKey.key, key))
       .limit(1);
     expect(row).toBeUndefined();
-    expect(await storedBody(key)).not.toContain(secret);
+    expect(await storedRow(key)).toBeNull();
 
     // And pressing again hands back no secret: the claim code was consumed, so
     // the box is refused rather than answered from a store that never took it.

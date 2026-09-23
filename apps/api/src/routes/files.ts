@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
-import { fileObject } from '@oto/db';
+import { and, eq } from 'drizzle-orm';
+import { account, child, fileObject, member, type Db } from '@oto/db';
 import { newId } from '@oto/shared';
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
@@ -71,6 +71,68 @@ async function checkOwnerAccess(
   }
 }
 
+/**
+ * SCRUM-255(b) — AND THE THING IT IS ATTACHED TO HAS TO BE OURS.
+ *
+ * `checkOwnerAccess` above asks whether the caller may attach photos to
+ * members. It does not ask WHOSE member this is, and the answer used to be
+ * nobody's business: `POST /files` took an `ownerEntityId` straight from the
+ * body, `pos:member:update` was enough to pass, and the row was then written
+ * with the CALLER's `operatorId` stamped on it. So a member id belonging to
+ * another operator produced a `file_object` in our tenant pointing at their
+ * record — a tenancy hole of exactly the shape SCRUM-280/281 closed
+ * everywhere else, surviving here because nothing reads `file_object` by owner
+ * entity yet. The day a member-photo-by-owner lookup lands, it is live.
+ *
+ * So the owner is RESOLVED, inside the caller's operator, before anything is
+ * written. Not found there — another tenant's, or simply gone — is 404 and not
+ * 403, for the reason `loadTargetAccount` gives: the existence of another
+ * operator's row is not ours to confirm.
+ *
+ * A child carries no `operator_id` of its own; its tenancy is its guardian's,
+ * so the join is the check.
+ */
+async function assertOwnerInOperator(
+  db: Db,
+  operatorId: string,
+  ownerEntityType: 'account' | 'member' | 'child',
+  ownerEntityId: string,
+): Promise<void> {
+  const notFound = (): never => {
+    throw errors.notFound(`No such ${ownerEntityType}`);
+  };
+  switch (ownerEntityType) {
+    case 'account': {
+      const [row] = await db
+        .select({ id: account.id })
+        .from(account)
+        .where(and(eq(account.id, ownerEntityId), eq(account.operatorId, operatorId)))
+        .limit(1);
+      if (!row) notFound();
+      return;
+    }
+    case 'member': {
+      const [row] = await db
+        .select({ id: member.id })
+        .from(member)
+        .where(and(eq(member.id, ownerEntityId), eq(member.operatorId, operatorId)))
+        .limit(1);
+      if (!row) notFound();
+      return;
+    }
+    case 'child': {
+      const [row] = await db
+        .select({ id: child.id })
+        .from(child)
+        .innerJoin(member, eq(child.memberId, member.id))
+        .where(and(eq(child.id, ownerEntityId), eq(member.operatorId, operatorId)))
+        .limit(1);
+      if (!row) notFound();
+      return;
+    }
+  }
+}
+
 export async function fileRoutes(app: App): Promise<void> {
   /**
    * One probe at boot, and nothing on the request path (S2-01d, finding B1).
@@ -124,6 +186,12 @@ export async function fileRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await checkOwnerAccess(req, auth, req.body.ownerEntityType, req.body.ownerEntityId, 'write');
+      await assertOwnerInOperator(
+        app.db,
+        auth.operatorId,
+        req.body.ownerEntityType,
+        req.body.ownerEntityId,
+      );
       const storage = app.fileStorage;
       if (!storage) throw notConfigured();
       const id = newId();

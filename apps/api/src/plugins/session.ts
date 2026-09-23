@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { account, session as sessionTable, type Db } from '@oto/db';
+import { account, branch, operator, session as sessionTable, type Db } from '@oto/db';
 import type { Permission } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { branchScopeRefusal } from '../services/access-control';
@@ -75,9 +75,18 @@ export function clearSessionCookie(reply: FastifyReply, secure: boolean): void {
 async function loadAuth(db: Db, token: string): Promise<AuthContext | null> {
   const now = new Date();
   const rows = await db
-    .select({ s: sessionTable, a: account })
+    .select({
+      s: sessionTable,
+      a: account,
+      operatorArchivedAt: operator.archivedAt,
+      // Left-joined: a session may legitimately sit at no branch at all, and
+      // null then means "no branch", which is not "an archived branch".
+      branchArchivedAt: branch.archivedAt,
+    })
     .from(sessionTable)
     .innerJoin(account, eq(sessionTable.accountId, account.id))
+    .innerJoin(operator, eq(account.operatorId, operator.id))
+    .leftJoin(branch, eq(sessionTable.branchId, branch.id))
     .where(
       and(
         eq(sessionTable.tokenHash, hashToken(token)),
@@ -89,6 +98,24 @@ async function loadAuth(db: Db, token: string): Promise<AuthContext | null> {
   const row = rows[0];
   if (!row) return null;
   if (row.a.status !== 'active') return null; // deactivated mid-session → rejected
+  /**
+   * SCRUM-253 — AND THE TENANT AND THE PARK ARE STILL OPEN.
+   *
+   * A deactivated account was already refused on the line above, at its next
+   * request, which is the behaviour archiving should have had and did not:
+   * sign-in was closed to an archived operator (`services/auth.ts`) while
+   * every session opened before the archiving went on trading, for as long as
+   * its cookie lasted. Retiring a park or an operator has to reach the people
+   * standing at the tills, not only the sign-in screen.
+   *
+   * The branch is the session's SEAT, so this refuses the session rather than
+   * the branch: a seat at a closed park is not somewhere to keep working from,
+   * and the seat is what every route that falls back to `auth.branchId` reads.
+   * Signing in again re-seats them, because `seatBranch` only ever considers
+   * live branches — so somebody who still holds a grant at a park that is open
+   * gets back in, and somebody who does not is told why.
+   */
+  if (row.operatorArchivedAt || row.branchArchivedAt) return null;
   // Sliding last-seen, throttled to one write a minute. A locked session is
   // not "seen": leaving a locked till open must not keep it alive for ever.
   if (!row.s.lockedAt && now.getTime() - row.s.lastSeenAt.getTime() > 60_000) {

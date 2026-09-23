@@ -73,6 +73,78 @@ const SECRET_FIELDS = new Set([
 ]);
 
 /**
+ * SCRUM-255(c) — AND THE SHAPE, for the credential nobody added above.
+ *
+ * Eight whole names is a list of the credentials that existed when the list
+ * was written. `boxSecret`, `shiftToken`, `sessionToken` — every one of which
+ * this codebase already mints under some other name — would have walked past
+ * it into the store and sat there for a day, replayable by anyone holding the
+ * key. A backstop that only catches what somebody remembered to enumerate is
+ * not a backstop.
+ *
+ * So the rule is now the SUFFIX: a field whose name ends in `secret`, `token`,
+ * `password`, `otp` or `key` holds a credential — unless it is named below.
+ * The exemption list is not a courtesy: a false positive here drops the
+ * response body, gives the key back and logs at ERROR, so every name that
+ * matches the shape without being a credential has to be written down or the
+ * widening costs a working route its retries. It was built by reading every
+ * field name this API puts in a response, and it is a list of what exists
+ * rather than of what might.
+ *
+ * `code` is deliberately NOT a suffix, and this is the interesting exclusion.
+ * Every error this API returns is `{ error: { code, message } }`, so matching
+ * `code` would make every 4xx look like a credential: the body dropped, the
+ * key released, and an ERROR line per refused request. `tierCode`,
+ * `branchCode`, `errorCode` and `statusCode` are facts on ordinary responses
+ * and would go the same way. The two `*Code` names that ARE credentials —
+ * `claimCode`, `pairingCode` — stay in the whole-name list above, and the
+ * three routes that mint them now declare `secretResponse` besides.
+ */
+const SECRET_SUFFIX = /(?:secret|token|password|otp|key)$/;
+
+/**
+ * The names in this API's responses that END like a credential and identify
+ * something instead. Each is here because it exists, not in case it might.
+ *
+ * Mostly `*key`: `publicKey`/`syncPublicKey` are published on purpose, and the
+ * rest are lookup handles — an alert's dedupe key, a button on the booth, a
+ * component of a health report, an object's path in the bucket, a throttle
+ * bucket, and the idempotency key itself, which the caller supplied.
+ *
+ * `previewToken` is the one that is not a key, and it is the reason this list
+ * has to be read against the API rather than guessed at. It is the menu
+ * import's CONTENT HASH — `v1.<file digest>.<menu digest>`, built in
+ * `services/menu-sheet.ts` — and the commit route makes the user hand it back
+ * so that "4 changed" is still true when they press the button. It unlocks
+ * nothing; it says what was looked at. Matching it would drop the body of
+ * `POST /branches/:branchId/menu/import/preview`, a route whose own
+ * description is "Writes nothing", and log an ERROR line accusing it of
+ * minting a credential — the exact noise SCRUM-327 exists to remove, on a
+ * different route. It is dormant only because no caller sends that route an
+ * `Idempotency-Key` today, and an import screen adding a retry is the obvious
+ * way for it to stop being dormant.
+ */
+const NAMES_THAT_UNLOCK_NOTHING = new Set([
+  'publickey',
+  'syncpublickey',
+  'alertkey',
+  'buttonkey',
+  'componentkey',
+  'objectkey',
+  'attemptkey',
+  'idempotencykey',
+  'previewtoken',
+]);
+
+/** Does this field name hold a credential? Exported so a test can pin it. */
+export function isSecretFieldName(name: string): boolean {
+  const lower = name.toLowerCase();
+  if (SECRET_FIELDS.has(lower)) return true;
+  if (NAMES_THAT_UNLOCK_NOTHING.has(lower)) return false;
+  return SECRET_SUFFIX.test(lower);
+}
+
+/**
  * Whether a response body carries something nobody should be able to read
  * twice. The declarations above are the rule; this is what catches the route
  * that did not declare one, and it fails closed — the body is dropped and the
@@ -82,7 +154,7 @@ export function carriesSecret(value: unknown, depth = 0): boolean {
   if (depth > 6 || value === null || typeof value !== 'object') return false;
   if (Array.isArray(value)) return value.some((v) => carriesSecret(v, depth + 1));
   for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
-    if (SECRET_FIELDS.has(key.toLowerCase()) && typeof v === 'string' && v.length > 0) return true;
+    if (isSecretFieldName(key) && typeof v === 'string' && v.length > 0) return true;
     if (carriesSecret(v, depth + 1)) return true;
   }
   return false;

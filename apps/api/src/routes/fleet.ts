@@ -531,7 +531,42 @@ export async function fleetRoutes(app: App): Promise<void> {
   app.post(
     '/branches/:branchId/boxes',
     {
-      config: { permission: 'admin:box:register', target: { branchId: 'params.branchId' } },
+      /**
+       * SCRUM-255(c) / SCRUM-327 — THE THREE ROUTES THAT MINT A CODE SAY SO.
+       *
+       * This one and the two below answer with a one-time code and declared
+       * nothing. What kept the code out of the replay store was a habit in the
+       * service layer: `createBox`, `reissueClaimCode` and `pairCredential`
+       * each return a code-FREE value from inside `withTx`, `withTx` stores
+       * that value and marks the key stored, and the fuller body that goes out
+       * on the wire is therefore never looked at again. Correct, and correct
+       * by convention — the next person minting a credential has to know the
+       * convention, and nothing would tell them.
+       *
+       * (Measured, because the ticket assumed otherwise: with all three
+       * declarations removed, the plugin's `carriesSecret` backstop logs
+       * NOTHING on this surface. It cannot — `withTx` has already stored and
+       * marked the claim, so `onSend` returns before the check. The backstop
+       * covers the route that returns its credential from INSIDE the
+       * transaction, which is the shape these three do not have.)
+       *
+       * Declaring it puts the guarantee where a reader and a test can see it:
+       * no key is claimed at all, so there is nothing to store whatever the
+       * service returns, and the pinned list in
+       * `test/route-write-conformance.test.ts` is where it is written down.
+       *
+       * THE COST, stated because it is real: this route was replay-idempotent
+       * and is no longer. A double press used to be answered from the store
+       * with the box and no code; it now runs again and is refused 409
+       * `BOX_SLOT_TAKEN` by `box_slot_unique`. A clear refusal rather than a
+       * second box — but it is a change, and it is the reason to keep this
+       * declaration and the slot constraint together.
+       */
+      config: {
+        permission: 'admin:box:register',
+        target: { branchId: 'params.branchId' },
+        secretResponse: true,
+      },
       schema: {
         description:
           'Register a box and mint its claim code. The code is returned once — only its hash is stored.',
@@ -583,7 +618,14 @@ export async function fleetRoutes(app: App): Promise<void> {
   app.post(
     '/boxes/:id/claim-code',
     {
-      config: { dynamicPermission: true },
+      /**
+       * `secretResponse` for the reason given on the register route above.
+       * What a retry does here: `issueClaimCode` overwrites this box's
+       * `claim_code_hash` and drops its live secret, so a second identical
+       * request leaves exactly one code usable — the newest — and the person
+       * retrying reads the one they were last given.
+       */
+      config: { dynamicPermission: true, secretResponse: true },
       schema: {
         description:
           'Re-issue a claim code. The box’s live secret is dropped with it, so a stolen box is cut off now.',
@@ -836,7 +878,26 @@ export async function fleetRoutes(app: App): Promise<void> {
   app.post(
     '/stations/:id/credentials',
     {
-      config: { dynamicPermission: true },
+      /**
+       * SCRUM-327 — the pairing code is a credential and this route says so.
+       *
+       * The booth's own `POST /booths/:id/pairing-codes` has always declared
+       * it; this one, which mints a one-time code for a display, a kiosk or a
+       * booth, did not — two routes minting the same kind of one-time code,
+       * two different answers to "may this be replayed", and only one of them
+       * written down anywhere.
+       *
+       * What a retry does here, stated plainly because it is the weakest of
+       * the three: `pairCredential` INSERTS a credential row, so a second
+       * identical request now leaves TWO rows outstanding, each with its own
+       * live code, until they expire or are revoked. It used to be answered
+       * from the store with the credential and no code. Both rows are visible
+       * in `GET /branches/:branchId/credentials` and either can be revoked,
+       * and a pairing code is spent by the device that redeems it — but this
+       * is the one of the three where the declaration costs something rather
+       * than only clarifying.
+       */
+      config: { dynamicPermission: true, secretResponse: true },
       schema: {
         description:
           'Mint a pairing code for a display, kiosk or booth. Returned once — only its hash is stored.',

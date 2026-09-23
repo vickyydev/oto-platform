@@ -356,6 +356,25 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /accounts/:id/temp-password [secretResponse]',
   'POST /auth/handoff [secretResponse]',
   /**
+   * SCRUM-255(c) / SCRUM-327 — the three fleet routes that mint a one-time
+   * code, which reached this list late.
+   *
+   * They were minting credentials all along and declaring nothing. What kept
+   * the code out of the store was that each service returns a code-free value
+   * from inside `withTx`, which stores THAT and marks the key stored — right,
+   * but right by a convention held in three services rather than by anything
+   * this list could see. The plugin's `carriesSecret` backstop never fired on
+   * them and could not: `onSend` returns before the check once the claim is
+   * marked stored.
+   *
+   * What makes a retry safe on each is different and is written at the route:
+   * the register is refused by `box_slot_unique`, the re-issue overwrites the
+   * box's claim-code hash, and the station pairing leaves a second credential
+   * row that is visible and revocable.
+   */
+  'POST /boxes/:id/claim-code [secretResponse]',
+  'POST /branches/:branchId/boxes [secretResponse]',
+  /**
    * SCRUM-244 — the booth's television surface and its pairing pair.
    *
    * The four `/booth/*` writes moved here from `OPEN_WITHOUT_A_KEY` the day
@@ -384,6 +403,7 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /box/v1/sync/key [credential:box]',
   'POST /box/v1/sync/push [credential:box]',
   'POST /me/staff-token [secretResponse]',
+  'POST /stations/:id/credentials [secretResponse]',
   'PUT /booths/:id/staff/:accountId/pin [secretResponse]',
   'PUT /me/session/station [secretResponse]',
 ];

@@ -7,6 +7,7 @@ import {
   authThrottle,
   branch,
   employee,
+  operator,
   session as sessionTable,
   verificationCode,
   type Db,
@@ -427,6 +428,23 @@ async function recordSignInFailure(
   }
 }
 
+/**
+ * Has this operator been retired (SCRUM-253)?
+ *
+ * `archived_at` on the operator was written by the platform admin who closed
+ * it and then read by nothing on the hot path: sign-in went on working, and
+ * so did every session already open. A tenant that has been retired has to
+ * stop being able to trade, and the first door is this one.
+ */
+async function operatorArchived(db: Db, operatorId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ archivedAt: operator.archivedAt })
+    .from(operator)
+    .where(eq(operator.id, operatorId))
+    .limit(1);
+  return Boolean(row?.archivedAt);
+}
+
 /** The operator an account belongs to — the audit row's tenancy. */
 async function operatorOfAccount(db: Db, accountId: string): Promise<string | null> {
   const [row] = await db
@@ -602,6 +620,23 @@ export async function signIn(
   };
 
   if (!acc) await fail('no_account');
+  /**
+   * SCRUM-253 — an account of a RETIRED operator is refused before its own
+   * status is even looked at.
+   *
+   * Archiving an operator is how a tenant is closed, and until now it closed
+   * nothing: every account of that operator went on signing in, and every one
+   * of those sessions went on trading. Refused through `fail` like every other
+   * class of refused sign-in (SCRUM-251), so the answer is the same 401 with
+   * the same sentence a wrong password gets and the attempt costs a guess —
+   * "this number belongs to a park that has been closed" is exactly the kind
+   * of thing the one-answer rule exists to stop this endpoint publishing.
+   * `operator_archived` goes on the log line and the audit denial row, which
+   * is where the person who cannot sign in gets diagnosed.
+   */
+  if (await operatorArchived(db, acc!.operatorId)) {
+    await fail('operator_archived');
+  }
   /**
    * Anything but `active` is refused exactly as a wrong password is — the same
    * answer, and the same guess spent. `!== 'active'` rather than the two
