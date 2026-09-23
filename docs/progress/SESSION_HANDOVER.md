@@ -4,6 +4,27 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:20 — `main` is `4a1cc90`; staging is `097b73b` (Render is deploying `803428b`); CI green through `4ceb798`
+>
+> **Since 15:14:** **Deployed with staging evidence:** 328, 325, 333, 334
+> (`4a1cc90`). **SCRUM-353's gate found the real defect:** Fastify 5.12
+> fails a numeric `trustProxy` closed, so `TRUST_PROXY` has been inert on
+> every deployment — `req.ip` is Render's front socket for everyone, all
+> callers share two rate-limit buckets, and the per-address sign-in and
+> booth/box credential throttles were degraded. Cloudflare IS in front of
+> the api (`server: cloudflare`). The value stays 1 (fail-closed); the fix
+> is `app.ts:112` handing the count over as a function. The slice's state
+> is on ref `wip/353`; the fix round (`wf_4493be0c`) owns `app.ts` for
+> that one line. After it deploys: one request through the POS `/api/*`
+> rewrite with a junk `X-Forwarded-For` and one without decide whether the
+> Cloudflare/Render hops must be trusted by address.
+>
+> **Running:** gates — 343/344 (`wf_bc7823ac`), 351 (`wf_b2308782`), 354
+> (`wf_5f8a746b`), 355 (`wf_93411d0f`); builds — 206-A (`wf_9a136b60`),
+> 341 (`wf_d527428e`), 349 (`wf_6e37179b`), 348 (`wf_f270a2cf`), 356
+> (`wf_bd56c962`), 353 fix round (`wf_4493be0c`); evidence — the second
+> half of the 097b73b batch (329/342/346/204 fixes, `wf_ea63e5b1`).
+
 > ## Status on 2026-09-23 15:14 — `main` is `803428b`; staging is `097b73b` (Render is deploying `10b1242` → `803428b`); CI green through `10b1242`
 >
 > **Since 15:08:** the resumed 337/338 gate came back MERGE and landed
