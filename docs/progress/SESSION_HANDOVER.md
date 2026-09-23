@@ -381,7 +381,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > box handler lands.
 >
 > **Running:** builds — D (`wf_987e09f1`), C2 (`wf_5922a49a`), G (`wf_fdfec96a`);
-> checkpoint part 1 — the plan and tooling into the repo (`wf_bd797f50`). After wave 3: F and G (G after C1 — now free — and
+> checkpoint part 1 landed: the tenders plan and its five reader findings in `docs/progress/plans/206-tenders/` (the void password redacted in its plain AND hex forms — the gate found the seventh, hex-encoded in a sample frame), the session helpers in `scripts/session/` with a README (the two mutating Render scripts now need `--apply`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
