@@ -125,7 +125,7 @@ export function BoothSettingsPanel({
 
         <Field
           label="Spins per day"
-          hint="Left empty there is no cap. Nothing reads this yet — whether one child spinning two hundred times is a problem or the point of a marketing booth is the owner’s call."
+          hint="Left empty there is no cap. With a number, the box stops the wheel for the rest of the day once that many spins have been played at this booth — counted on the box itself, shown on the tile above — and the cap reaches the box with the next published version."
         >
           <NumberInput
             value={settings.dailySpinCap}
