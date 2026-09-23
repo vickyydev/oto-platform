@@ -263,6 +263,19 @@ export const BOOTH_STAFF_MAX_BACKOFF_MS = 15 * 60_000;
 export const BOOTH_PRIZE_COUNTER_SCOPE = 'booth_prize';
 /** The `box_counter` scope holding "has this press already been recorded". */
 export const BOOTH_PRESS_COUNTER_SCOPE = 'booth_press';
+/**
+ * The `box_counter` scope holding "how many spins this booth has given today"
+ * — the whole booth, not one prize (SCRUM-257).
+ *
+ * A scope of its own rather than a reserved key inside `booth_prize`, because
+ * the two answer different questions and one of them is read as a whole:
+ * `readCounters(BOOTH_PRIZE_COUNTER_SCOPE, …)` is handed to the draw as the
+ * per-prize usage map, and a "total" entry sitting in it would be read as a
+ * prize nobody can find and would make `dailyCapsReached` name a prize that
+ * does not exist. Keyed by STATION id, so a box that ever hosts two booths
+ * counts each one's day separately rather than adding them together.
+ */
+export const BOOTH_SPIN_COUNTER_SCOPE = 'booth_spin';
 /** The `box_throttle` scope holding failed sign-ins, keyed by station. */
 export const BOOTH_STAFF_THROTTLE_SCOPE = 'booth_staff';
 
@@ -285,6 +298,21 @@ export const BOOTH_REFUSAL_CODES = [
   'not_configured',
   /** D5: every prize is inactive, capped, out of stock or weighted zero. */
   'booth_not_ready',
+  /**
+   * This booth has given away all the spins a manager allowed it for today
+   * (SCRUM-257), and the day has not rolled over yet.
+   *
+   * **The one refusal here that the television says something of its own
+   * about.** Every other code collapses to "Booth not ready — please call
+   * staff", which is right when something is wrong: a member of staff can act
+   * on it. Nothing is wrong with a booth that has run its day, nobody can fix
+   * it, and calling staff over would waste a family's time and a member of
+   * staff's — so the page answers this one with "That's all the spins for
+   * today — come back tomorrow" instead. The words live on the page
+   * (`apps/booth/src/copy.ts`), like every other word a guest reads; what
+   * travels from here is the code.
+   */
+  'daily_spin_cap_reached',
   /** The store cannot keep a daily counter, so a cap would silently not count. */
   'runtime_unavailable',
   /** No signing key yet, so nothing can be recorded — and D7 refuses the press. */
@@ -795,6 +823,45 @@ export function createBooth(options: BoothOptions): Booth {
     if (held) return held;
 
     const timing = await resolveClock(branch);
+
+    /**
+     * "Spins per day", as a manager set it on the Console (SCRUM-257).
+     *
+     * Checked BEFORE the draw, so a booth that has run its day mints nothing
+     * and draws nothing — and checked against the box's OWN count for the
+     * trading day, which is the only count a booth in a mall with no internet
+     * has. `dailySpinCap` rode in the published bundle from the first day and
+     * was read by nothing; this is the whole of it being enforced.
+     *
+     * Null is no limit, and it is the common case: most booths run all day.
+     *
+     * **A simulated press is refused too**, though it consumes nothing. The
+     * `#debug` distribution table asks "what would a press do now", and on a
+     * booth that has reached its cap the honest answer is that it would be
+     * refused — a table showing prizes still flowing would say the opposite of
+     * what the red button does. The table already counts refusals for exactly
+     * the same reason on a wheel whose every prize is capped.
+     */
+    const dailySpinCap = entry.bundle.settings.dailySpinCap;
+    if (dailySpinCap !== null) {
+      const given = await store.readCounter(boxId, {
+        scope: BOOTH_SPIN_COUNTER_SCOPE,
+        key: station.id,
+        businessDate: timing.businessDate,
+      });
+      if (given >= dailySpinCap) {
+        note('warn', 'a press was refused: this booth has reached its spins for the day', {
+          businessDate: timing.businessDate,
+          given,
+          dailySpinCap,
+        });
+        throw new BoothRefusal(
+          'daily_spin_cap_reached',
+          'This booth has given away all the spins it is allowed today',
+        );
+      }
+    }
+
     const counters = await store.readCounters(
       boxId,
       BOOTH_PRIZE_COUNTER_SCOPE,
@@ -969,6 +1036,39 @@ export function createBooth(options: BoothOptions): Booth {
           throw new BoothRefusal(
             'duplicate_press',
             'This press was already recorded; the box will not draw a second prize for it',
+          );
+        }
+        /**
+         * The day's spin, counted where it cannot be counted twice — and the
+         * cap tested again on the value the counter came back with.
+         *
+         * The read before the draw is what keeps the ordinary refusal cheap;
+         * THIS is what makes the cap exact. `bumpCounter` is one statement, so
+         * two presses arriving together cannot both read "one short of the
+         * cap" and both be allowed: one of them gets the number that is over
+         * it, throws, and the transaction takes its press row, its facts and
+         * this increment back out with it. A booth has one button and that
+         * race is unlikely; a cap that can be stepped over by pressing twice
+         * quickly is not a cap.
+         *
+         * The increment belongs to the SPIN, not to the press: a refusal above
+         * never reaches here, and a duplicate press is turned away by the
+         * guard a few lines up, so neither moves the day's count.
+         */
+        const given = await tx.bumpCounter(
+          boxId,
+          {
+            scope: BOOTH_SPIN_COUNTER_SCOPE,
+            key: station.id,
+            businessDate: timing.businessDate,
+          },
+          1,
+          timing.occurredAt,
+        );
+        if (dailySpinCap !== null && given > dailySpinCap) {
+          throw new BoothRefusal(
+            'daily_spin_cap_reached',
+            'This booth has given away all the spins it is allowed today',
           );
         }
         await tx.enqueueMany(

@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import {
   BOOTH_PRESS_COUNTER_SCOPE,
   BOOTH_PRIZE_COUNTER_SCOPE,
+  BOOTH_SPIN_COUNTER_SCOPE,
   BOOTH_STAFF_THROTTLE_SCOPE,
   BoothRefusal,
   createBooth,
@@ -20,7 +21,7 @@ import { generateSyncKeyPair, verifyCanonical } from '../src/signing';
 import { canonicalSyncBytes } from '../src/contract';
 import { SqlBoxStore } from '../src/store-sql';
 import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
-import type { BoxStore, PrintJobRecord } from '../src/store';
+import type { BoxStore, CounterKey, PrintJobRecord } from '../src/store';
 import type { BoothVoucherData, PrintJob as RenderPrintJob } from '@oto/print';
 import { BOX_ID, BRANCH_ID, OPERATOR_ID } from './_support';
 
@@ -523,6 +524,214 @@ test('a box with no signing key refuses the press rather than drawing unrecordab
   h.close();
 });
 
+// --- SCRUM-257: spins per day ----------------------------------------------
+
+/**
+ * The seeded wheel with a "spins per day" on it, and nothing else changed.
+ *
+ * The setting travels inside the published bundle, so a cap is not something a
+ * test can switch on at the booth: it is a wheel an administrator published,
+ * which is the only way a real booth ever gets one.
+ */
+function withSpinCap(dailySpinCap: number | null): BoothCacheEntry {
+  const base = entry();
+  return entry({
+    bundle: { ...base.bundle, settings: { ...base.bundle.settings, dailySpinCap } },
+  });
+}
+
+test('a booth refuses the press once it has given away its spins for the day', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h, [withSpinCap(2)]);
+
+  await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.spin({ idempotencyKey: 'press-2' });
+  await assert.rejects(
+    () => h.booth.spin({ idempotencyKey: 'press-3' }),
+    (err: unknown) => err instanceof BoothRefusal && err.code === 'daily_spin_cap_reached',
+  );
+
+  /**
+   * The refused press left NOTHING behind, which is the half of this that
+   * matters: a spin row the cloud accepts, or a voucher code on a slip, is
+   * something reception has to honour — a cap that stopped the television
+   * animating and still printed the paper would be worse than no cap at all.
+   */
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  assert.equal(batch.events.length, 4, 'two spins and their two vouchers, and nothing else');
+  assert.equal(h.submissions.length, 2, 'two slips, not three');
+  const spins = await h.store.readCounters(BOX_ID, BOOTH_SPIN_COUNTER_SCOPE, BUSINESS_DATE);
+  assert.deepEqual(spins, { [STATION_ID]: 2 }, 'the refused press did not count towards the day');
+  const presses = await h.store.readCounters(BOX_ID, BOOTH_PRESS_COUNTER_SCOPE, BUSINESS_DATE);
+  assert.deepEqual(
+    Object.keys(presses).sort(),
+    ['press-1', 'press-2'],
+    'and it is not remembered as a press, so nothing about it has to be unpicked',
+  );
+  h.close();
+});
+
+test('a booth with no cap plays on: null is no limit', async () => {
+  const h = openBooth({ rolls: [0] });
+  // The seeded entry carries `dailySpinCap: null`, which is what most booths
+  // run on — the cap is the exception, not the rule.
+  await seed(h, [withSpinCap(null)]);
+  for (let i = 1; i <= 5; i += 1) {
+    const response = await h.booth.spin({ idempotencyKey: `press-${i}` });
+    assert.equal(typeof response.voucherCode, 'string', `press ${i} drew a prize`);
+  }
+  const spins = await h.store.readCounters(BOX_ID, BOOTH_SPIN_COUNTER_SCOPE, BUSINESS_DATE);
+  assert.deepEqual(
+    spins,
+    { [STATION_ID]: 5 },
+    'counted even with no cap, so switching one on mid-afternoon counts the morning too',
+  );
+  h.close();
+});
+
+test('the day’s spins reset at the trading-day boundary, not at midnight', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h, [withSpinCap(1)]);
+
+  // 23:30 in Bangkok on the 21st: the booth's one spin for that trading day.
+  h.setNow('2026-09-21T16:30:00.000Z');
+  await h.booth.spin({ idempotencyKey: 'press-1' });
+
+  /**
+   * 04:30 the next morning. Midnight has passed and the date on a wall
+   * calendar has changed, and the booth is still inside the 21st's trading day
+   * — which is the whole of this test. A cap that reset at midnight would hand
+   * out a second day's prizes to whoever was still at the mall at one in the
+   * morning.
+   */
+  h.setNow('2026-09-21T21:30:00.000Z');
+  await assert.rejects(
+    () => h.booth.spin({ idempotencyKey: 'press-2' }),
+    (err: unknown) => err instanceof BoothRefusal && err.code === 'daily_spin_cap_reached',
+  );
+
+  // 05:30: a new trading day, and the booth plays again without anybody
+  // touching it.
+  h.setNow('2026-09-21T22:30:00.000Z');
+  const next = await h.booth.spin({ idempotencyKey: 'press-3' });
+  assert.equal(typeof next.voucherCode, 'string');
+
+  assert.deepEqual(await h.store.readCounters(BOX_ID, BOOTH_SPIN_COUNTER_SCOPE, '2026-09-21'), {
+    [STATION_ID]: 1,
+  });
+  assert.deepEqual(
+    await h.store.readCounters(BOX_ID, BOOTH_SPIN_COUNTER_SCOPE, '2026-09-22'),
+    { [STATION_ID]: 1 },
+    'the new day counts from zero, in a row of its own',
+  );
+  h.close();
+});
+
+test('a simulated press is refused by the cap as well, and spends none of it', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h, [withSpinCap(1)]);
+
+  // Below the cap: the table draws, and the booth's day is untouched by it.
+  const simulated = await h.booth.spin({ idempotencyKey: 'sim-1', simulate: true });
+  assert.equal(simulated.voucherCode, null);
+  assert.deepEqual(
+    await h.store.readCounters(BOX_ID, BOOTH_SPIN_COUNTER_SCOPE, BUSINESS_DATE),
+    {},
+    'a simulation does not spend the booth’s day',
+  );
+
+  /**
+   * At the cap, the simulation is refused too. The `#debug` distribution table
+   * asks what a press would do NOW, and on a booth that has run its day the
+   * answer is that it would be refused — a table still showing prizes flowing
+   * would say the opposite of what the red button does.
+   */
+  await h.booth.spin({ idempotencyKey: 'press-1' });
+  await assert.rejects(
+    () => h.booth.spin({ idempotencyKey: 'sim-2', simulate: true }),
+    (err: unknown) => err instanceof BoothRefusal && err.code === 'daily_spin_cap_reached',
+  );
+  h.close();
+});
+
+test('a retry of a press the box already answered is not turned away by the cap', async () => {
+  /**
+   * The order of the two guards, pinned. A press that filled the last of the
+   * day's spins and whose answer was lost to a slow mall connection is retried
+   * by the page with the same key: the box owes it the spin it already made,
+   * not "come back tomorrow" — the voucher is already on paper and in the
+   * outbox.
+   */
+  const h = openBooth({ rolls: [0] });
+  await seed(h, [withSpinCap(1)]);
+  const first = await h.booth.spin({ idempotencyKey: 'press-1' });
+  const retry = await h.booth.spin({ idempotencyKey: 'press-1' });
+  assert.deepEqual(retry, first, 'the same answer, not a refusal');
+  h.close();
+});
+
+test('a press that read the count a moment too early is still refused by the cap', async () => {
+  /**
+   * The second of the two guards, on its own.
+   *
+   * The read before the draw is what refuses the ordinary press cheaply, and
+   * it is a read: between it and the write, another press can land. `staleCount`
+   * below is that window held open — a store whose pre-draw read answers with
+   * a number that was true a moment ago — and what must happen then is that the
+   * counter's own increment, inside the transaction, comes back over the cap
+   * and takes the whole press out with it.
+   *
+   * A booth has one button and the race is unlikely. A cap that can be stepped
+   * over by pressing twice quickly is still not a cap, and this is the only
+   * way to make the crossing happen on purpose.
+   */
+  const h = openBooth({ rolls: [0] });
+  await seed(h, [withSpinCap(1)]);
+  await h.booth.spin({ idempotencyKey: 'press-1' });
+
+  const blind = openBooth({ rolls: [0], store: staleCount(h.store) });
+  await blind.booth.refresh();
+  await assert.rejects(
+    () => blind.booth.spin({ idempotencyKey: 'press-2' }),
+    (err: unknown) => err instanceof BoothRefusal && err.code === 'daily_spin_cap_reached',
+  );
+
+  // And the press it refused rolled back whole: one spin, one voucher, one
+  // slip, and the day's count still reading one.
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  assert.equal(batch.events.length, 2, 'the refused press queued nothing');
+  assert.deepEqual(await h.store.readCounters(BOX_ID, BOOTH_SPIN_COUNTER_SCOPE, BUSINESS_DATE), {
+    [STATION_ID]: 1,
+  });
+  assert.equal(blind.submissions.length, 0, 'and no paper came out of it');
+  blind.close();
+  h.close();
+});
+
+test('the cap’s refusal reaches the page as 409 with a code of its own', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h, [withSpinCap(1)]);
+  const handle = createBoothHttp({ booth: h.booth, online: () => true });
+
+  assert.equal((await handle({ method: 'POST', path: '/spin', body: {} })).status, 200);
+  const refused = await handle({ method: 'POST', path: '/spin', body: {} });
+  /**
+   * 409 rather than 503: a booth that has run the day a manager configured is
+   * the system working, and it must not be the thing that lights up an error
+   * rate. And a code of its own rather than `booth_not_ready`, because the
+   * television says something different about it — "come back tomorrow" rather
+   * than "please call staff", which is an errand nobody can complete today.
+   */
+  assert.equal(refused.status, 409);
+  const envelope = refused.body as { error: { code: string; message: string } };
+  assert.equal(envelope.error.code, 'daily_spin_cap_reached');
+  // The message is for a log (D15): no booth, no branch, no number a guest
+  // could read as a promise.
+  assert.doesNotMatch(envelope.error.message, new RegExp(STATION_ID));
+  assert.doesNotMatch(envelope.error.message, /HKT Central|Booth 1/);
+  h.close();
+});
+
 // --- D11: the clock ---------------------------------------------------------
 
 test('a clock behind a time the box has lived through is suspect, and the day does not go back', async () => {
@@ -902,6 +1111,31 @@ function voucherData(job: RenderPrintJob | undefined): BoothVoucherData {
   assert.equal(job.kind, 'booth_voucher');
   if (job.kind !== 'booth_voucher') throw new Error('unreachable');
   return job.data;
+}
+
+/**
+ * A store whose pre-draw read of the day's spins answers zero, while every
+ * write goes to the real counter.
+ *
+ * What it models is a moment, not a fault: two presses reaching the box
+ * together both read the count before either has written one. The transaction
+ * is deliberately NOT wrapped — the increment inside it has to be the real one,
+ * because the whole question is whether the number it comes back with is what
+ * refuses the press.
+ */
+function staleCount(store: BoxStore): BoxStore {
+  return new Proxy(store, {
+    get(target, prop) {
+      if (prop === 'readCounter') {
+        return async (boxId: string, key: CounterKey): Promise<number> =>
+          key.scope === BOOTH_SPIN_COUNTER_SCOPE ? 0 : target.readCounter(boxId, key);
+      }
+      const value = Reflect.get(target, prop, target) as unknown;
+      return typeof value === 'function'
+        ? (value as (...args: unknown[]) => unknown).bind(target)
+        : value;
+    },
+  });
 }
 
 /**

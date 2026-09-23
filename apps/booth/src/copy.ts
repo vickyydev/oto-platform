@@ -99,6 +99,21 @@ export const COPY = {
     en: 'Booth not ready — please call staff',
     th: 'ตู้ยังไม่พร้อม กรุณาเรียกพนักงาน',
   } satisfies BilingualLine,
+  /**
+   * The booth has given away every spin it was allowed today (SCRUM-257).
+   *
+   * Its own line rather than `notReady`, because the two ask for opposite
+   * things from the family reading them. "Booth not ready" means something is
+   * wrong and a member of staff can put it right; this means nothing is wrong,
+   * nobody can change it today, and the only useful instruction is to come
+   * back — so sending them to find staff would waste their evening and a
+   * member of staff's. It is the same reason the box gives this refusal a code
+   * of its own instead of collapsing it into D5's.
+   */
+  allSpinsGone: {
+    en: "That's all the spins for today — come back tomorrow",
+    th: 'วันนี้หมุนครบแล้ว พรุ่งนี้มาใหม่นะ',
+  } satisfies BilingualLine,
   /** Never synced: there is no wheel to show, so the game does not open. */
   notSetUp: {
     en: 'Booth not set up, connect to internet',

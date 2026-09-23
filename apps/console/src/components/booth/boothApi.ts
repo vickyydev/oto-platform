@@ -90,6 +90,12 @@ export interface BoothStatus {
     unattributed: number;
     /** `booth.booth_prize.id` of the prizes that have hit their cap today. */
     dailyCapsReached: string[];
+    /**
+     * The spins-per-day the PUBLISHED wheel allows, or null for no limit
+     * (SCRUM-257). A draft the manager has not published yet is not this
+     * number: the box enforces what it cached.
+     */
+    spinCap: number | null;
   };
   lastSpinAt: string | null;
 }

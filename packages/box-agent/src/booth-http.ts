@@ -80,11 +80,17 @@ function refuse(status: number, code: string, message: string): BoothHttpRespons
  * and a 500 would put it in the wrong column of every dashboard. The two that
  * mean the box cannot keep a record are 503: they are real faults, they are
  * temporary in principle, and they should show up as such.
+ *
+ * `daily_spin_cap_reached` joins the first group for the same reason and one
+ * more: a booth that has run the day a manager configured for it is the system
+ * working, so it must not be the thing that lights up an error rate. It is a
+ * state the request conflicts with, and tomorrow the same request succeeds.
  */
 function statusFor(code: BoothRefusalCode): number {
   switch (code) {
     case 'not_configured':
     case 'booth_not_ready':
+    case 'daily_spin_cap_reached':
     case 'duplicate_press':
       return 409;
     case 'runtime_unavailable':

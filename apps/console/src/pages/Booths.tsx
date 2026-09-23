@@ -632,7 +632,19 @@ function LiveStatus({
           )}
         </Fact>
         <Fact label={`Spins today (${s.today.businessDate})`}>
-          {s.today.spins}
+          {/*
+            Against the cap when there is one (SCRUM-257): "38 of 40" is the
+            reading a manager acts on, and a bare 38 is not. The booth refuses
+            the button once the two meet, so the number is highlighted as it is
+            reached rather than after — a booth that has stopped playing is
+            something somebody wants to know without doing the arithmetic.
+          */}
+          {s.today.spinCap === null
+            ? s.today.spins
+            : `${s.today.spins} of ${s.today.spinCap}`}
+          {s.today.spinCap !== null && s.today.spins >= s.today.spinCap && (
+            <span style={{ color: 'hsl(var(--status-warn))' }}> · no more spins today</span>
+          )}
           {s.today.unattributed > 0 && (
             <span style={{ color: 'hsl(var(--status-warn))' }}>
               {' '}

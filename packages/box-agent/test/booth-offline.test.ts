@@ -367,3 +367,61 @@ test('the press guard outlives the power cut, so a retried press is never a seco
   second.booth.stop();
   second.close();
 });
+
+test('the day’s spin cap holds with no line and across the power cut (SCRUM-257)', async () => {
+  /**
+   * "Spins per day" is a limit set in the Console, and the booth it limits is
+   * a Raspberry Pi in a mall that may not have spoken to the cloud since this
+   * morning. So the count is the BOX's own, kept in the same counter table as
+   * the per-prize caps and therefore on the same disk — nothing here asks
+   * anybody's permission to refuse, and there is nobody to ask.
+   *
+   * The restart is the point of testing it here rather than only in
+   * `booth.test.ts`: a cap kept in a process is a cap that resets whenever a
+   * cleaner unplugs the television, which is a booth that hands out a second
+   * day's prizes for the price of a power strip.
+   */
+  const file = tempFile('booth-spin-cap');
+  const capped: BoothCacheEntry = {
+    ...CACHED,
+    version: 4,
+    bundleHash: 'b'.repeat(64),
+    bundle: { ...CACHED.bundle, settings: { ...CACHED.bundle.settings, dailySpinCap: 2 } },
+  };
+
+  const first = bootBooth(file);
+  await first.store.init(BOX_ID);
+  await first.store.writeBundle(BOX_ID, {
+    scope: 'booth',
+    schemaVersion: 1,
+    cursorSeq: 1,
+    payload: { items: [capped] },
+    appliedAt: AT,
+  });
+  await first.booth.start();
+  await first.booth.spin({ idempotencyKey: 'press-1' });
+  first.booth.stop();
+  first.close();
+
+  const second = bootBooth(file);
+  await second.store.init(BOX_ID);
+  await second.booth.start();
+  // The second of the two, after the plug came out. The booth still owes one.
+  await second.booth.spin({ idempotencyKey: 'press-2' });
+  await assert.rejects(
+    () => second.booth.spin({ idempotencyKey: 'press-3' }),
+    /all the spins it is allowed today/,
+    'the count came off the disk, so the restart did not give the booth a fresh day',
+  );
+
+  const batch = await second.store.takeBatch(BOX_ID, { now: AT });
+  assert.equal(batch.events.length, 4, 'two spins and two vouchers — the third press minted none');
+  for (const event of batch.events) assert.equal(accepts(event), true);
+  assert.equal(
+    (await second.store.loadPendingPrintJobs(BOX_ID)).length,
+    2,
+    'and there are two slips to print, not three',
+  );
+  second.booth.stop();
+  second.close();
+});

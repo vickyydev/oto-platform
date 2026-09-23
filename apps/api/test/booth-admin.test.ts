@@ -662,6 +662,101 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
   });
 });
 
+describe('spins per day, from the Console to the red button (SCRUM-257)', () => {
+  /** Change the booth itself, as the settings panel does. */
+  async function setSpinCap(dailySpinCap: number | null): Promise<void> {
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/booths/${boothId}/settings`,
+      headers: asAdmin(),
+      payload: { dailySpinCap },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().settings.dailySpinCap).toBe(dailySpinCap);
+  }
+
+  const consoleStatus = async (): Promise<{
+    today: { spins: number; spinCap: number | null; businessDate: string };
+  }> => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/booths/${boothId}/status`,
+      headers: asAdmin(),
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    return res.json();
+  };
+
+  /**
+   * The whole of the ticket in one test, because the ticket is a seam: a
+   * manager sets a number in the Console, and the box under a television in a
+   * mall has to refuse the button when that number is reached.
+   *
+   * **The cap is set relative to what this booth has already given away
+   * today.** The tests above spin, the box counts its own spins per trading
+   * day, and a cap of 2 in a file whose earlier tests already pressed the
+   * button three times would be reached before this test began. So the day's
+   * count is read first and the cap set two above it, which is what makes the
+   * refusal below a statement about the cap rather than about test order.
+   */
+  it('a cap set in the Console refuses the press on the box once it is reached', async () => {
+    // Everything the box has drawn so far, filed. `today.spins` counts rows
+    // that have ARRIVED, and the box refuses on its own count — a flush is
+    // what makes the two the same number.
+    await agent.outbox()!.flush();
+    const start = (await consoleStatus()).today.spins;
+
+    await setSpinCap(start + 2);
+    const minted = await publish({ note: 'two spins a day' });
+    expect(minted.statusCode, JSON.stringify(minted.body)).toBe(200);
+    await agent.syncCache();
+    expect(booth.config()!.bundle.settings.dailySpinCap).toBe(start + 2);
+
+    // The two the booth is still owed.
+    const first = await booth.spin({ idempotencyKey: newId() });
+    expect(first.voucherCode, 'the first press drew nothing').toBeTruthy();
+    const second = await booth.spin({ idempotencyKey: newId() });
+    expect(second.voucherCode).toBeTruthy();
+
+    /**
+     * And the one after it is refused — with a code of its own, because the
+     * television says "come back tomorrow" to this and "please call staff" to
+     * everything else, and only one of those is worth a family's evening.
+     */
+    await expect(booth.spin({ idempotencyKey: newId() })).rejects.toMatchObject({
+      code: 'daily_spin_cap_reached',
+    });
+
+    // Nothing was minted by the refusal: two spins and two vouchers reach the
+    // cloud, not three.
+    await agent.outbox()!.flush();
+    const after = await consoleStatus();
+    expect(after.today.spins).toBe(start + 2);
+    // The Console reads the day against the cap rather than on its own, which
+    // is the difference between "38 spins" and "38 of 40, no more today".
+    expect(after.today.spinCap).toBe(start + 2);
+  });
+
+  /**
+   * And the cap taken off again, which is the state nearly every booth runs
+   * in. It also puts this file back: the published wheel keeps its cap until
+   * somebody publishes one without it, so the restore has to be a publish.
+   */
+  it('a null cap is no limit, and the booth plays on once it is published', async () => {
+    await setSpinCap(null);
+    const minted = await publish({ note: 'no daily limit' });
+    expect(minted.statusCode, JSON.stringify(minted.body)).toBe(200);
+    await agent.syncCache();
+    expect(booth.config()!.bundle.settings.dailySpinCap).toBeNull();
+
+    const spun = await booth.spin({ idempotencyKey: newId() });
+    expect(spun.voucherCode, 'the booth is still refusing after the cap was removed').toBeTruthy();
+
+    await agent.outbox()!.flush();
+    expect((await consoleStatus()).today.spinCap).toBeNull();
+  });
+});
+
 describe('the prize order is the wheel (S2-07b)', () => {
   it('takes the whole list and refuses a partial one', async () => {
     const prizes = await livePrizes();

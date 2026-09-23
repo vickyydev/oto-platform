@@ -335,11 +335,7 @@ export default function App() {
       // `noteError`; putting a notice under a wheel it is no longer showing
       // would leave "please call staff" sitting on the pairing prompt.
       if (error instanceof BoothCallError && error.code === 'unpaired') return;
-      setNotice(
-        error instanceof BoothCallError && error.code === 'not_configured'
-          ? COPY.notSetUp
-          : COPY.notReady,
-      );
+      setNotice(noticeFor(error));
       setPhase('ready');
     }
   }, [applyConfig, fetchConfig, noteError]);
@@ -662,6 +658,28 @@ export default function App() {
  * spin is recorded unattributed. A booth that stopped playing whenever
  * reception got busy is a booth nobody plays.
  */
+/**
+ * The line a refused press puts under the wheel.
+ *
+ * Three answers, and the third is the one worth stating. Every failure this
+ * page cannot name — a 500, an unknown code, a body that did not parse, the
+ * booth service not answering at all — ends on "Booth not ready, please call
+ * staff", because in all of those cases a member of staff is the thing the
+ * family needs. The two named codes are the cases where that instruction would
+ * be wrong: a booth nobody has published a wheel to needs an internet
+ * connection, and a booth that has run today's spins needs tomorrow (SCRUM-257).
+ * Neither is fixed by fetching somebody from reception.
+ *
+ * Nothing here reads the server's prose (D15); the code chooses a line written
+ * in this file's own deck.
+ */
+function noticeFor(error: unknown): BilingualLine {
+  if (!(error instanceof BoothCallError)) return COPY.notReady;
+  if (error.code === 'not_configured') return COPY.notSetUp;
+  if (error.code === 'daily_spin_cap_reached') return COPY.allSpinsGone;
+  return COPY.notReady;
+}
+
 function promptFor(phase: Phase, notice: BilingualLine | null, signedIn: boolean): BilingualLine {
   if (notice !== null) return notice;
   if (phase === 'boot' || phase === 'starting') return COPY.starting;

@@ -131,6 +131,16 @@ export interface BoothStatus {
 export const BOOTH_ERROR_CODES = [
   'booth_not_ready',
   'not_configured',
+  /**
+   * SCRUM-257 — this booth has given away every spin it was allowed today.
+   *
+   * Listed rather than left to fall through to the fixed line, and the list is
+   * what makes that possible: `client.ts` keeps only codes this page knows, so
+   * a code missing from here reaches the page as null and shows "Booth not
+   * ready — please call staff". That would send a family to find a member of
+   * staff who can do nothing about it until tomorrow.
+   */
+  'daily_spin_cap_reached',
   'unreachable',
   /**
    * SCRUM-244 — this screen is not paired, or its credential no longer works.

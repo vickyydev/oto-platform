@@ -388,6 +388,24 @@ export interface BoothConsoleStatus {
     unattributed: number;
     /** `booth.booth_prize.id` of the prizes that have hit their cap today. */
     dailyCapsReached: string[];
+    /**
+     * How many spins this booth is allowed today, or null for no limit
+     * (SCRUM-257) — the number `spins` above is read against.
+     *
+     * **Taken from the PUBLISHED wheel, not from the draft.** The box enforces
+     * the cap that is in the bundle it cached, so a manager who has typed a new
+     * number and not published it yet has changed nothing at the booth; showing
+     * the draft's number here would claim a limit that is not in force. The
+     * publish panel is where a draft that differs is reported.
+     *
+     * The caveat the whole of `today` carries applies to the comparison:
+     * `spins` is what has ARRIVED, and the count the box refuses on is its own,
+     * which includes spins still sitting in its outbox. For a booth that is
+     * online they are the same number; for one that has been offline since
+     * lunchtime, this side is behind — and the heartbeat's age beside it is how
+     * a reader tells.
+     */
+    spinCap: number | null;
   };
   lastSpinAt: string | null;
 }
@@ -454,7 +472,11 @@ export async function boothConsoleStatus(
     : undefined;
 
   const [published] = await db
-    .select({ version: boothConfigVersion.version, createdAt: boothConfigVersion.createdAt })
+    .select({
+      version: boothConfigVersion.version,
+      createdAt: boothConfigVersion.createdAt,
+      bundle: boothConfigVersion.bundle,
+    })
     .from(boothConfigVersion)
     .where(eq(boothConfigVersion.stationId, row.stationId))
     .orderBy(desc(boothConfigVersion.version))
@@ -539,6 +561,21 @@ export async function boothConsoleStatus(
   const runningVersion =
     typeof boothBlock?.configVersion === 'number' ? boothBlock.configVersion : null;
 
+  /**
+   * The spins-per-day the booth is actually running under (SCRUM-257).
+   *
+   * Read out of the stored bundle the same way the heartbeat's block is read
+   * above — narrowed rather than cast — because a published document is
+   * whatever was published, including by a build older or newer than this one.
+   * Anything that is not a number is reported as no cap, which is the reading
+   * that cannot invent a limit nobody set.
+   */
+  const publishedSettings = (
+    published?.bundle as { settings?: { dailySpinCap?: unknown } } | undefined
+  )?.settings;
+  const spinCap =
+    typeof publishedSettings?.dailySpinCap === 'number' ? publishedSettings.dailySpinCap : null;
+
   return {
     booth: {
       id: row.stationId,
@@ -574,6 +611,7 @@ export async function boothConsoleStatus(
       spins: counts?.spins ?? 0,
       unattributed: counts?.unattributed ?? 0,
       dailyCapsReached,
+      spinCap,
     },
     lastSpinAt: lastSpin?.occurredAt?.toISOString() ?? null,
   };

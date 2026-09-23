@@ -101,7 +101,16 @@ export const BoothConfigSettingsSchema = z.object({
     .refine((key) => key !== 'Enter', {
       message: 'Enter is the badge scanner’s key and cannot be the booth button',
     }),
-  /** Null is no cap. Nothing reads this yet — see the column's note. */
+  /**
+   * How many spins this booth may give away in one trading day. Null is no
+   * cap, and it is the common case.
+   *
+   * **The box is what enforces it** (SCRUM-257): it counts its own spins for
+   * the branch's trading day and refuses the press once the number is reached,
+   * offline included, which is the only place the count exists on a booth with
+   * no internet. Nothing else may enforce it — a second count in the cloud
+   * would disagree with the paper the booth has already printed.
+   */
   dailySpinCap: z.number().int().positive().nullable(),
 });
 export type BoothConfigSettings = z.infer<typeof BoothConfigSettingsSchema>;

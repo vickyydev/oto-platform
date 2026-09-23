@@ -39,6 +39,18 @@ export interface BoothFlags {
    * knows works.
    */
   drift: 'index' | 'prize' | null;
+  /**
+   * Fake only: run the wheel as a booth whose manager set "spins per day" to
+   * this number (SCRUM-257). `#spin-cap=2` gives two spins and refuses the
+   * third, which is how the refusal screen is photographed without waiting for
+   * a real booth to have a busy afternoon.
+   *
+   * Null is what a booth with no cap runs on, and it is the default. A value
+   * that is not a positive whole number is ignored rather than clamped: the
+   * published bundle's own schema refuses those, and a fake that accepted one
+   * would be modelling a booth that cannot exist.
+   */
+  spinCap: number | null;
 }
 
 const EMPTY: BoothFlags = {
@@ -49,6 +61,7 @@ const EMPTY: BoothFlags = {
   offline: false,
   printer: null,
   drift: null,
+  spinCap: null,
 };
 
 /**
@@ -93,9 +106,11 @@ export function parseHash(hash: string): BoothFlags {
 
   const printer = value('printer');
   const drift = value('drift');
+  const spinCap = Number(value('spin-cap'));
   return {
     ...EMPTY,
     drift: drift === 'index' || drift === 'prize' ? drift : null,
+    spinCap: Number.isInteger(spinCap) && spinCap > 0 ? spinCap : null,
     debug: has('debug'),
     fake: has('fake'),
     live: has('live'),

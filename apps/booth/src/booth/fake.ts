@@ -197,13 +197,22 @@ export class FakeBooth implements BoothTransport {
   private lastSpinAt: string | null = null;
   private capsUsed = new Map<string, number>();
   private capsDay = localDay(new Date());
+  /** Spins given away on `capsDay`, for the booth's own cap (SCRUM-257). */
+  private spinsToday = 0;
 
   constructor() {
     // The fixture goes through the frozen schema on the way in. A fixture that
     // is not a valid bundle would make every test of this page a test of a
     // document no booth could ever publish, and this is the cheapest place to
     // find that out.
-    this.bundle = BoothConfigBundleSchema.parse(FIXTURE_BUNDLE);
+    this.bundle = BoothConfigBundleSchema.parse(
+      flags.spinCap === null
+        ? FIXTURE_BUNDLE
+        : {
+            ...FIXTURE_BUNDLE,
+            settings: { ...FIXTURE_BUNDLE.settings, dailySpinCap: flags.spinCap },
+          },
+    );
     this.version = 1;
   }
 
@@ -233,6 +242,21 @@ export class FakeBooth implements BoothTransport {
   async spin(request: SpinRequest): Promise<SpinResponse> {
     if (flags.unsynced) throw new BoothCallError('not_configured', 409);
     this.rollDayOver();
+
+    /**
+     * The booth's own cap, before anything is drawn (SCRUM-257).
+     *
+     * Before the prize eligibility below, because it is a different question
+     * asked in a different order: "may this booth play at all today" comes
+     * before "what is left to win", and the box answers them that way round
+     * too. A SIMULATED press is refused as well and consumes nothing — the
+     * distribution table asks what a press would do now, and on a booth that
+     * has run its day it would be refused.
+     */
+    const dailySpinCap = this.bundle.settings.dailySpinCap;
+    if (dailySpinCap !== null && this.spinsToday >= dailySpinCap) {
+      throw new BoothCallError('daily_spin_cap_reached', 409);
+    }
 
     const eligible = this.bundle.prizes.filter((prize) => prize.active && !this.isCapped(prize));
     const total = eligible.reduce((sum, prize) => sum + prize.weightBp, 0);
@@ -269,6 +293,7 @@ export class FakeBooth implements BoothTransport {
     }
 
     this.consumeCap(prize);
+    this.spinsToday += 1;
     this.minted += 1;
     const now = new Date();
     this.lastSpinAt = now.toISOString();
@@ -358,6 +383,7 @@ export class FakeBooth implements BoothTransport {
     if (today !== this.capsDay) {
       this.capsDay = today;
       this.capsUsed = new Map();
+      this.spinsToday = 0;
     }
   }
 
