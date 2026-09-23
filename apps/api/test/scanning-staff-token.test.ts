@@ -660,11 +660,15 @@ describe('scanning reaches the box, and the code stops there (S2-06)', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.body.accepted).toBe(true);
-    // No handler is registered on this build: band, booking and voucher
-    // handlers arrive with the tickets that own them, and "that code means
-    // nothing here" is shown rather than swallowed.
+    // A band code is claimed by NO handler on this build: the band, booking
+    // and voucher handlers arrive with the tickets that own them, and "that
+    // code means nothing here" is shown rather than swallowed. The product
+    // barcode handler is registered (S2-09b) and does not claim this — a band
+    // code is a station-prefixed ULID and a barcode is digits — which is
+    // exactly the distinction `handlers` exists to make visible: unhandled
+    // because nothing matched, not unhandled because nothing was listening.
     expect(res.body.outcome).toBe('unhandled');
-    expect(res.body.handlers).toEqual([]);
+    expect(res.body.handlers).toEqual(['product-barcode']);
     expect(res.body.codeFingerprint).toMatch(/^[0-9a-f]{16}$/);
     expect(JSON.stringify(res.body)).not.toContain(code);
 

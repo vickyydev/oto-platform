@@ -3,7 +3,15 @@ import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 
-import { ScanRouter, scanFingerprint, scanPrefix, stationSourceForScan } from '../src/scan';
+import {
+  ScanRouter,
+  UNKNOWN_BARCODE,
+  isProductBarcode,
+  productBarcodeHandler,
+  scanFingerprint,
+  scanPrefix,
+  stationSourceForScan,
+} from '../src/scan';
 import { SqlBoxStore } from '../src/store-sql';
 import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
 import type { StationScanMessage } from '../src/contract';
@@ -204,4 +212,124 @@ test('the small helpers say what they claim', () => {
   assert.equal(stationSourceForScan('box_hid'), 'box');
   assert.equal(stationSourceForScan('simulator'), 'box');
   assert.equal(stationSourceForScan('camera', 'kiosk'), 'kiosk');
+});
+
+// --- The product barcode handler (S2-09b) -----------------------------------
+//
+// The box's half of "scan the socks". What is proved here is the SHAPE rule and
+// the seam: which strings are claimed as barcodes, and that a miss adds nothing
+// and says so. What a given barcode means is the api's half, and it is proved
+// in `apps/api/test/scanning-product.test.ts` against a real catalogue.
+
+test('a barcode is claimed by its shape, and nothing else is', () => {
+  // EAN-13 (885 is GS1 Thailand), UPC-A, EAN-8, ITF-14.
+  assert.equal(isProductBarcode('8850000000017'), true);
+  assert.equal(isProductBarcode('012345678905'), true);
+  assert.equal(isProductBarcode('96385074'), true);
+  assert.equal(isProductBarcode('10012345678902'), true);
+  // A band code, a booking QR header, a staff PIN, and a person leaning on a key.
+  assert.equal(isProductBarcode('T1-01J8ZQ4F7K'), false);
+  assert.equal(isProductBarcode('OTO-SOCK'), false);
+  assert.equal(isProductBarcode('1234'), false);
+  assert.equal(isProductBarcode('885000000001700000'), false);
+  assert.equal(isProductBarcode(''), false);
+});
+
+test('the seeded barcode resolves to the merch item, and the till is told what to add', async () => {
+  const t = open();
+  const published: StationScanMessage[] = [];
+  const router = new ScanRouter({
+    boxId: BOX_ID,
+    store: t.store,
+    publish: (_stationId, message) => published.push(message),
+  });
+  const asked: string[] = [];
+  router.register(
+    productBarcodeHandler((ctx) => {
+      asked.push(ctx.code);
+      return ctx.code === '8850000000017'
+        ? {
+            productId: 'p-socks-m',
+            name: 'Grip socks M',
+            sku: '8850000000017',
+            priceSatang: 12000,
+            variant: null,
+          }
+        : null;
+    }),
+  );
+
+  const result = await router.deliver(STATION_ID, {
+    code: '8850000000017',
+    source: 'simulator',
+  });
+  assert.equal(result.kind, 'product');
+  assert.equal(result.outcome, 'handled');
+  assert.equal(result.handler, 'product-barcode');
+  assert.deepEqual(asked, ['8850000000017']);
+  const add = (result.detail?.add ?? {}) as Record<string, unknown>;
+  assert.equal(add.productId, 'p-socks-m');
+  assert.equal(add.name, 'Grip socks M');
+  assert.equal(add.priceSatang, 12000);
+  assert.equal(add.quantity, 1);
+  assert.equal(add.variant, null);
+  // The screens get the line; the tape does not — it names a product and a price.
+  assert.equal(published[0]?.outcome, 'handled');
+  assert.equal(
+    (published[0]?.detail as Record<string, unknown> | null)?.add !== undefined,
+    true,
+  );
+  const [row] = events(t.db);
+  assert.equal(JSON.stringify(row).includes('Grip socks'), false);
+  assert.equal(JSON.stringify(row).includes('8850000000017'), false);
+  t.close();
+});
+
+test('a barcode this park does not sell answers "unknown barcode" and adds nothing', async () => {
+  const t = open();
+  const router = new ScanRouter({ boxId: BOX_ID, store: t.store });
+  router.register(productBarcodeHandler(() => null));
+
+  const result = await router.deliver(STATION_ID, { code: '0000000000000', source: 'simulator' });
+  assert.equal(result.kind, 'product');
+  assert.equal(result.outcome, 'refused');
+  assert.equal(result.errorCode, UNKNOWN_BARCODE);
+  assert.equal(result.detail?.message, 'Unknown barcode');
+  assert.equal(result.detail?.add, undefined, 'a miss adds no line');
+  t.close();
+});
+
+test('a malformed code is not a barcode at all, and no lookup is run', async () => {
+  const t = open();
+  const router = new ScanRouter({ boxId: BOX_ID, store: t.store });
+  let asked = 0;
+  router.register(
+    productBarcodeHandler(() => {
+      asked += 1;
+      return null;
+    }),
+  );
+
+  const result = await router.deliver(STATION_ID, { code: 'NOT-A-BARCODE', source: 'manual' });
+  assert.equal(result.kind, 'unknown');
+  assert.equal(result.outcome, 'unhandled');
+  assert.equal(result.handler, null);
+  assert.equal(result.detail, undefined);
+  assert.equal(asked, 0, 'the catalogue is not queried for something that is not a barcode');
+  t.close();
+});
+
+test('a lookup that throws is an error on that scan and not an exception at the counter', async () => {
+  const t = open();
+  const router = new ScanRouter({ boxId: BOX_ID, store: t.store });
+  router.register(
+    productBarcodeHandler(() => {
+      throw new Error('the database went away');
+    }),
+  );
+  const result = await router.deliver(STATION_ID, { code: '8850000000017', source: 'box_hid' });
+  assert.equal(result.accepted, true);
+  assert.equal(result.outcome, 'error');
+  assert.equal(result.errorCode, 'SCAN_HANDLER_FAILED');
+  t.close();
 });

@@ -7,7 +7,7 @@ import { getActiveBranch, hydrateFromApi } from '@/store/catalogStore';
 import { setBranchDayStart, setBranchRateMode, setBranchTimezone } from '@/lib/pricingMode';
 import { branchesApi, catalogApi, type ApiBranch } from './platform';
 import { isMissingRoute } from './client';
-import { mapMenu, menuApi } from './menu';
+import { reloadMenuInto } from './menu';
 import { apiBranchToBranch, apiPackageToTicketType, holidayToPricingOverride, ticketTypeToApiBody } from './mappers';
 
 let _apiBranches: ApiBranch[] = [];
@@ -17,12 +17,13 @@ export function apiBranchIdForSlug(slug: string): string | null {
 }
 
 /**
- * Pull the branch's menu off the platform (SCRUM-232).
+ * Pull the branch's catalogue off the platform (SCRUM-232, SCRUM-204).
  *
- * The SHOP and the ticket ADD-ONS ride in the same answer — one `product` table,
- * told apart by `kind` — but `mapMenu` keeps only `kind === 'menu'`, so those
- * two screens still render the ported mock. `MOCK_MUTATOR_TICKETS` names the
- * ticket for each.
+ * The SHOP and the ticket ADD-ONS ride in the same answer — one `product`
+ * table, told apart by `kind` — and since SCRUM-204 all three are mapped, so
+ * the F&B menu, the shop grid and the add-on list are read from the database.
+ * The discount codes are fetched beside them: they are operator-wide and have
+ * no branch, so they are not part of the menu answer.
  *
  * Non-fatal, and deliberately so: a deployment without the menu routes keeps the
  * ported catalogue the screens have always shown rather than an empty menu.
@@ -31,10 +32,10 @@ export function apiBranchIdForSlug(slug: string): string | null {
  * "that route is not here". A refusal WITH a code is a real answer and is left
  * to throw.
  *
- * Reading is one of the two halves that exist. The menu panel's Import writes
- * through this API as well, and calls this afterwards to pick up what it wrote;
- * editing one item in the admin form is the part that is still in-memory, which
- * is what that panel's notice says.
+ * Reading is one of the two halves. The menu panel's Import writes through this
+ * API, and so do the Merch, Add-ons, Modifiers and Discounts panels; the F&B
+ * item and category forms are the part still in-memory, which is what the
+ * notice on that one panel says.
  *
  * Returns whether the menu on screen came from the database.
  */
@@ -42,10 +43,13 @@ export async function loadMenuFromApi(branchSlug: string): Promise<boolean> {
   const branchId = apiBranchIdForSlug(branchSlug);
   if (!branchId) return false;
   try {
-    const { categories, menuItems, modifierGroups } = mapMenu(await menuApi.load(branchId));
-    hydrateFromApi({
-      perBranch: { [branchSlug]: { menuCategories: categories, menuItems, modifierGroups } },
-    });
+    // The whole catalogue in one place (SCRUM-204): categories, F&B items, the
+    // modifier library, the shop, the ticket add-ons and the discount codes.
+    // The shape lives in `api/menu.ts` beside the mappers, so the cold load and
+    // the read-back after an admin save cannot disagree about what a hydration
+    // contains — which is how the shop came to be READ from the mock while the
+    // menu beside it came from the database.
+    await reloadMenuInto(branchId, branchSlug);
     return true;
   } catch (err) {
     if (isMissingRoute(err)) return false;

@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { NotSavedNotice } from '../NotSavedNotice';
+import { AdminNoticeBanner } from '../NotSavedNotice';
 import { AddOnFormDialog } from './AddOnFormDialog';
 
 const formatPrice = formatWWPrice;
@@ -56,7 +56,15 @@ export function AddOnsPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <NotSavedNotice mutators={['upsertAddOn', 'deleteAddOn']} what="add-ons and their prices" />
+      {/* The add-on and its price persist (SCRUM-204); the Track stock switch
+          mints an inventory item, and that half is still in this tab. Written
+          out for the reason given on the Merch panel. */}
+      <AdminNoticeBanner>
+        <strong className="font-semibold">Stock counts are this tab only — SCRUM-204.</strong>{' '}
+        The add-on and its weekday and weekend prices save to the database and
+        survive a reload. The Track stock switch, and the counts behind it, stay
+        in this browser tab.
+      </AdminNoticeBanner>
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-foreground/50">

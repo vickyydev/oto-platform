@@ -16,6 +16,7 @@ import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { boxStoreFor } from '../lib/box-store';
 import { virtualBoxAgent } from '../services/box';
+import { registerProductBarcodeHandler } from '../services/scanning-product';
 import { loadStationRow, managerForStation } from '../services/station-session';
 
 /**
@@ -40,10 +41,11 @@ import { loadStationRow, managerForStation } from '../services/station-session';
  *
  * **What the box does with it** is in `packages/box-agent/src/scan.ts`:
  * classify, hand to whichever handler claimed the code, write a REDACTED line
- * on the station's tape, and tell every screen watching. No handler is
- * registered yet — they arrive with the tickets that own what a code means —
- * so a scan today resolves `unhandled`, which the till shows rather than
- * swallowing.
+ * on the station's tape, and tell every screen watching. One handler is
+ * registered — a retail barcode becomes a merch line (S2-09b,
+ * `services/scanning-product.ts`) — and the rest arrive with the tickets that
+ * own what their codes mean, so anything else still resolves `unhandled`, which
+ * the till shows rather than swallowing.
  */
 
 const IdParams = z.object({ id: z.string().uuid() });
@@ -110,13 +112,20 @@ export async function scanningRoutes(app: App): Promise<void> {
   function routerFor(boxId: string, manager: Manager): ScanRouter {
     const agent = virtualBoxAgent();
     const own = agent && agent.state.boxId === boxId ? agent.scanner() : null;
-    if (own) return own;
-    return new ScanRouter({
-      boxId,
-      store: boxStoreFor(app.db),
-      publish: (id, message) => manager.emitScan(id, message),
-      log: app.log,
-    });
+    const router =
+      own ??
+      new ScanRouter({
+        boxId,
+        store: boxStoreFor(app.db),
+        publish: (id, message) => manager.emitScan(id, message),
+        log: app.log,
+      });
+    // The product barcode handler (S2-09b). Registered here rather than at boot
+    // because both routers pass through this function and only one of them
+    // exists at boot; the call is idempotent, which is what makes that safe on
+    // the agent's router, which outlives the request.
+    registerProductBarcodeHandler(router, app.db);
+    return router;
   }
 
   async function station(req: FastifyRequest, stationId: string) {

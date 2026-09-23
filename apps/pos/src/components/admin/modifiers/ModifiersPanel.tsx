@@ -21,7 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { NotSavedNotice } from '../NotSavedNotice';
 import { ModifierGroupFormDialog } from './ModifierGroupFormDialog';
 
 // Short human label for a group's selection rule (mirrors the order-station hint).
@@ -38,8 +37,10 @@ const ruleLabel = (g: ModifierGroup): string => {
 /**
  * Admin editing screen for the SHARED modifier-group library. A group defined
  * here can be attached to many menu items (via the item editor), so a question
- * like “Spice level” lives in one place. Reads/writes the live shared store, so
- * edits flow to the POS order station in-session.
+ * like “Spice level” lives in one place. Groups and their options are
+ * `modifier_group` / `modifier_option` rows and save through the menu routes
+ * (SCRUM-204), so an edit reaches the till after the cache pull and survives a
+ * reload. A group is operator-wide: it is one question asked at every park.
  *
  * Distinct from the inline per-item groups configured inside a menu item — those
  * stay item-specific. Deletion is blocked while any item still links the group.
@@ -76,11 +77,6 @@ export function ModifiersPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <NotSavedNotice
-        mutators={['upsertModifierGroup', 'deleteModifierGroup']}
-        what="modifier groups, their options and their prices"
-      />
-
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">

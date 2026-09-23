@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { NotSavedNotice } from '../NotSavedNotice';
+import { AdminNoticeBanner } from '../NotSavedNotice';
 import { MerchItemForm } from './MerchItemForm';
 import { formatPrice } from '../menu/menuItem';
 import { formatWWPrice } from '@/lib/pricingMode';
@@ -81,10 +81,18 @@ export function MerchPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <NotSavedNotice
-        mutators={['upsertMerchItem', 'deleteMerchItem', 'adjustMerchStock']}
-        what="retail items, their prices, costs and stock counts"
-      />
+      {/* The item, its price and its barcode persist (SCRUM-204). What is on
+          the shelf does not: the stock tables have no routes yet, so the
+          banner is about that half and says which half it is. It is written
+          out rather than using `NotSavedNotice`, whose sentence ends "a page
+          reload discards them" — true of the counts, and the opposite of true
+          of the item beside them. */}
+      <AdminNoticeBanner>
+        <strong className="font-semibold">Stock counts are this tab only — SCRUM-204.</strong>{' '}
+        The item, its price, its category and its barcode save to the database and
+        survive a reload. What is on the shelf, and the Track stock switch that
+        starts counting it, stay in this browser tab.
+      </AdminNoticeBanner>
 
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-foreground/50">

@@ -58,6 +58,7 @@ import {
 // re-hydrate the store. Optimistic local write first so the UI never waits;
 // API errors surface as a toast and the reload restores server truth.
 import {
+  apiBranchIdForSlug,
   archiveTicketTypeInApi,
   deleteHolidayInApi,
   deleteTierInApi,
@@ -68,6 +69,16 @@ import {
   saveTicketTypeToApi,
   saveTierToApi,
 } from '@/api/catalogBridge';
+import {
+  archiveAddOnInApi,
+  archiveDiscountInApi,
+  archiveMerchItemInApi,
+  archiveModifierGroupInApi,
+  saveAddOnToApi,
+  saveDiscountToApi,
+  saveMerchItemToApi,
+  saveModifierGroupToApi,
+} from '@/api/menu';
 import { getActiveBranch, getCatalogSnapshot as snap, getTaxConfig } from '@/store/catalogStore';
 import { toast } from '@/hooks/use-toast';
 
@@ -118,6 +129,79 @@ const wiredUpsertBranch: typeof upsertBranch = (branch) => {
   void saveBranchToApi(branch).catch(apiFail('branch'));
 };
 
+/**
+ * The four catalogue panels (SCRUM-204).
+ *
+ * An item is BRANCH-owned and a modifier group and a discount code are
+ * operator-wide, but all four write-throughs take the branch: the menu is read
+ * back per branch afterwards, so an operator-wide edit still needs to know
+ * which park's screen to refresh.
+ *
+ * `branchNow()` resolves the platform id for the branch that is open. A branch
+ * the platform does not know is a mock-only branch — the demo's second park,
+ * before it is created — and there the edit stays in the tab, exactly as the
+ * ticket and holiday editors already behave.
+ */
+function branchNow(): { id: string; slug: string } | null {
+  const slug = getActiveBranch().id;
+  const id = apiBranchIdForSlug(slug);
+  return id ? { id, slug } : null;
+}
+
+const wiredUpsertMerchItem: typeof upsertMerchItem = (item) => {
+  const exists = snap().merchItems.some((x) => x.id === item.id);
+  upsertMerchItem(item);
+  const branch = branchNow();
+  if (!branch) return;
+  void saveMerchItemToApi(branch.id, branch.slug, item, exists).catch(apiFail('retail item'));
+};
+const wiredDeleteMerchItem: typeof deleteMerchItem = (id) => {
+  deleteMerchItem(id);
+  const branch = branchNow();
+  if (!branch) return;
+  void archiveMerchItemInApi(branch.id, branch.slug, id).catch(apiFail('retail item'));
+};
+const wiredUpsertAddOn: typeof upsertAddOn = (addOn) => {
+  const exists = snap().addOns.some((x) => x.id === addOn.id);
+  upsertAddOn(addOn);
+  const branch = branchNow();
+  if (!branch) return;
+  void saveAddOnToApi(branch.id, branch.slug, addOn, exists).catch(apiFail('add-on'));
+};
+const wiredDeleteAddOn: typeof deleteAddOn = (id) => {
+  deleteAddOn(id);
+  const branch = branchNow();
+  if (!branch) return;
+  void archiveAddOnInApi(branch.id, branch.slug, id).catch(apiFail('add-on'));
+};
+const wiredUpsertModifierGroup: typeof upsertModifierGroup = (group) => {
+  const exists = snap().modifierGroups.some((x) => x.id === group.id);
+  upsertModifierGroup(group);
+  const branch = branchNow();
+  if (!branch) return;
+  void saveModifierGroupToApi(branch.id, branch.slug, group, exists).catch(
+    apiFail('modifier group'),
+  );
+};
+const wiredDeleteModifierGroup: typeof deleteModifierGroup = (id) => {
+  deleteModifierGroup(id);
+  const branch = branchNow();
+  if (!branch) return;
+  void archiveModifierGroupInApi(branch.id, branch.slug, id).catch(apiFail('modifier group'));
+};
+const wiredUpsertDiscount: typeof upsertDiscount = (discount) => {
+  upsertDiscount(discount);
+  const branch = branchNow();
+  if (!branch) return;
+  void saveDiscountToApi(branch.id, branch.slug, discount).catch(apiFail('discount code'));
+};
+const wiredDeleteDiscount: typeof deleteDiscount = (code) => {
+  deleteDiscount(code);
+  const branch = branchNow();
+  if (!branch) return;
+  void archiveDiscountInApi(branch.id, branch.slug, code).catch(apiFail('discount code'));
+};
+
 // The mutators are stable module-level functions; bundled here so Admin screens
 // get the live snapshot + writers from a single hook. The bundle is assembled
 // from three named groups and nothing else, so a mutator cannot join it without
@@ -133,6 +217,14 @@ const wiredMutators = {
   upsertPricingOverride: wiredUpsertPricingOverride,
   deletePricingOverride: wiredDeletePricingOverride,
   upsertBranch: wiredUpsertBranch,
+  upsertMerchItem: wiredUpsertMerchItem,
+  deleteMerchItem: wiredDeleteMerchItem,
+  upsertAddOn: wiredUpsertAddOn,
+  deleteAddOn: wiredDeleteAddOn,
+  upsertModifierGroup: wiredUpsertModifierGroup,
+  deleteModifierGroup: wiredDeleteModifierGroup,
+  upsertDiscount: wiredUpsertDiscount,
+  deleteDiscount: wiredDeleteDiscount,
 };
 
 /** Reads in-memory catalogue state; writes nothing, so nothing to persist. */
@@ -151,33 +243,23 @@ const readOnlyHelpers = {
  * it. Adding a mutator to the bundle without choosing a group is a type error.
  */
 export const MOCK_MUTATOR_TICKETS = {
-  // Add-ons and discount/promo definitions have no table and no route.
-  upsertAddOn: 'SCRUM-230',
-  deleteAddOn: 'SCRUM-230',
-  upsertDiscount: 'SCRUM-230',
-  deleteDiscount: 'SCRUM-230',
+  // A discount REASON is the free-text list beside the codes and has no table:
+  // the codes themselves are `discount_definition` rows and now write through.
   setDiscountReasons: 'SCRUM-230',
   // The product schema reshape has landed, so these are no longer waiting on a
   // table: `product`, `product_category`, `modifier_group` and `modifier_option`
   // hold the weekday/weekend pair, cost, modifiers and translations, the menu on
   // screen is READ from them (`api/catalogBridge.ts:loadMenuFromApi`), and the
   // menu panel's Import WRITES to them. What is left of SCRUM-232 is the
-  // write-through for these editors — one form saving an item is still a change
-  // to this tab and nothing else.
+  // write-through for the F&B item and category forms — one form saving an item
+  // is still a change to this tab and nothing else.
   upsertMenuItem: 'SCRUM-232',
   deleteMenuItem: 'SCRUM-232',
   upsertMenuCategory: 'SCRUM-232',
   deleteMenuCategory: 'SCRUM-232',
-  upsertModifierGroup: 'SCRUM-232',
-  deleteModifierGroup: 'SCRUM-232',
-  // The shop is the same three tables with `kind = 'merch'`, and rows are
-  // seeded there — but nothing reads or writes them through the API yet:
-  // `mapMenu` keeps only `kind === 'menu'`, so every merch item on screen comes
-  // from the ported mock. That is the shop half of SCRUM-204.
-  upsertMerchItem: 'SCRUM-204',
-  deleteMerchItem: 'SCRUM-204',
+  // Stock is the half of the shop that has tables and no routes: a merch item
+  // and its barcode persist, and what is on the shelf does not.
   adjustMerchStock: 'SCRUM-204',
-  // Stock tables exist and nothing in the API reads or writes them yet.
   upsertInventoryItem: 'SCRUM-204',
   deleteInventoryItem: 'SCRUM-204',
   upsertStockLocation: 'SCRUM-204',
@@ -211,21 +293,13 @@ export const MOCK_MUTATOR_TICKETS = {
 export type MockMutatorName = keyof typeof MOCK_MUTATOR_TICKETS;
 
 const mockMutators = {
-  upsertAddOn,
-  deleteAddOn,
   upsertMenuItem,
   deleteMenuItem,
   upsertMenuCategory,
   deleteMenuCategory,
-  upsertMerchItem,
-  deleteMerchItem,
   adjustMerchStock,
   upsertInventoryItem,
   deleteInventoryItem,
-  upsertModifierGroup,
-  deleteModifierGroup,
-  upsertDiscount,
-  deleteDiscount,
   setDiscountReasons,
   upsertPaymentMethod,
   deletePaymentMethod,

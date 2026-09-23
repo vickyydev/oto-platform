@@ -13,8 +13,14 @@ import { silentLog, type AgentLog } from './transport';
  * string MEANS — a band admitted, a booking redeemed, a voucher spent, a
  * product added — belongs to the tickets that own those flows, so this file is
  * deliberately the seam and not the handlers. S2-11, S2-12 and S2-13 each
- * register their own; today nothing is registered and every scan resolves
- * `unhandled`, which is a real outcome and is shown as one.
+ * register their own; a code nothing claims resolves `unhandled`, which is a
+ * real outcome and is shown as one.
+ *
+ * The one handler that lives here is `productBarcodeHandler` (S2-09b), and it
+ * is here because the thing it decides — what a retail barcode LOOKS like — is
+ * a property of the scanner and the printed label rather than of any catalogue.
+ * The lookup it needs is handed in, so this package still knows nothing about
+ * products and carries no database dependency.
  *
  * **Where scans come from, and where they do not.** The Zebra DS2278 is on the
  * BOX, not on the iPad (DEVICE_INVENTORY D2): the box reads it over USB CDC or
@@ -179,6 +185,130 @@ export function stationSourceForScan(
     : screen;
 }
 
+// --- The product barcode handler (S2-09b) -----------------------------------
+
+/**
+ * The name this handler goes by on the tape and in the Box log drawer.
+ *
+ * Exported because registration has to be idempotent: the api's fallback router
+ * is built per request, but when this process runs the box's own agent the
+ * router is the agent's and lives as long as the process — registering on every
+ * scan would stack a hundred copies of the same handler behind each other.
+ */
+export const PRODUCT_BARCODE_HANDLER = 'product-barcode';
+
+/**
+ * What the handler asks of whoever owns the catalogue.
+ *
+ * The box does not know what a product is and must not: `packages/box-agent`
+ * has no database of its own on a Pi and no `@oto/db` dependency here, and the
+ * merch row lives in Postgres behind the api. So the SHAPE of a barcode is
+ * decided on this side — it is a property of the scanner and the label, not of
+ * the catalogue — and the LOOKUP is handed in.
+ *
+ * `null` means the shape was a barcode and nothing in this park sells it. That
+ * is a different answer from "no handler claimed the code", and the till says
+ * two different things about them.
+ */
+export type ProductBarcodeLookup = (
+  ctx: ScanHandlerContext,
+) => Promise<ProductBarcodeMatch | null> | ProductBarcodeMatch | null;
+
+/** The one sellable thing a barcode names. */
+export interface ProductBarcodeMatch {
+  productId: string;
+  name: string;
+  /** The code as the catalogue holds it — `product.sku`. */
+  sku: string;
+  priceSatang: number;
+  /** Null on the row means "the same as the weekday price". */
+  priceWeekendSatang?: number | null;
+  categoryId?: string | null;
+  branchId?: string | null;
+  /**
+   * The size, colour or pack the barcode picks out, when the catalogue models
+   * one. Null today and honestly so: a retail barcode identifies ONE sellable
+   * thing, so "Grip socks M" is its own `product` row with its own code, and
+   * there is no variant table under it to name.
+   */
+  variant?: { id: string; label: string } | null;
+}
+
+/** What the till is told a barcode meant. `SCAN_MAX_LENGTH` still applies. */
+export const UNKNOWN_BARCODE = 'UNKNOWN_BARCODE';
+
+/**
+ * Is this string shaped like a retail barcode?
+ *
+ * Digits only, and eight to fourteen of them: EAN-8 and UPC-E are 8, UPC-A is
+ * 12, EAN-13 is 13 — `8850000000017` is a Thai EAN-13, the 885 prefix being
+ * GS1 Thailand — and ITF-14 on a case is 14. The check digit is NOT verified:
+ * the scanner already did it in hardware and refuses to transmit a code whose
+ * check digit fails, so re-deriving it here could only ever reject a label a
+ * park had deliberately printed for itself.
+ *
+ * It is a shape test and nothing more. A band code is a station-prefixed ULID
+ * and a booking QR carries a header, so neither is digits-only; both would be
+ * claimed by their own handler first in any case, which is what the
+ * registration-order note on `register` is about — this matcher is the BROAD
+ * one and belongs last.
+ */
+export function isProductBarcode(code: string): boolean {
+  return /^[0-9]{8,14}$/.test(code);
+}
+
+/**
+ * The handler: a barcode off the counter scanner becomes one merch line.
+ *
+ * A miss is `refused`, not `error`: a code the shop does not sell is an
+ * ordinary event at a till — somebody scanned the wrong side of the box, or a
+ * bottle they brought in with them — and `error` is reserved for the handler
+ * itself failing. Either way NOTHING is added, and `detail` carries the
+ * sentence the screen shows.
+ */
+export function productBarcodeHandler(lookup: ProductBarcodeLookup): ScanHandler {
+  return {
+    name: PRODUCT_BARCODE_HANDLER,
+    kind: 'product',
+    matches: isProductBarcode,
+    async handle(ctx) {
+      const match = await lookup(ctx);
+      if (!match) {
+        return {
+          outcome: 'refused',
+          errorCode: UNKNOWN_BARCODE,
+          detail: { message: 'Unknown barcode', barcodeLength: ctx.code.length },
+        };
+      }
+      return {
+        outcome: 'handled',
+        /**
+         * The line the shop screen adds, as an INTENT rather than a rendered
+         * row: the cart owns quantity, merging and modifiers, and a scan is
+         * one guest putting one thing on the counter. It rides the station
+         * channel (`StationScanMessage.detail`) and never the tape — the tape
+         * is a thirty-day table behind a web page, and this names a product
+         * and a price.
+         */
+        detail: {
+          add: {
+            kind: 'product',
+            productId: match.productId,
+            name: match.name,
+            sku: match.sku,
+            priceSatang: match.priceSatang,
+            priceWeekendSatang: match.priceWeekendSatang ?? null,
+            categoryId: match.categoryId ?? null,
+            branchId: match.branchId ?? null,
+            variant: match.variant ?? null,
+            quantity: 1,
+          },
+        },
+      };
+    },
+  };
+}
+
 export class ScanRouter {
   private readonly options: ScanRouterOptions;
   private readonly handlers: ScanHandler[] = [];
@@ -211,10 +341,12 @@ export class ScanRouter {
   /**
    * What the box thinks a code is, before any handler runs.
    *
-   * Everything is `unknown` until a ticket registers a matcher for its own
-   * kind. That is the honest state today: band codes are minted by S2-11,
-   * booking QRs redeemed by S2-12, and inventing a shape for them here would
-   * be inventing a format the code that mints them would then have to match.
+   * A kind is `unknown` until a ticket registers a matcher for it. Band codes
+   * are minted by S2-11 and booking QRs redeemed by S2-12, and inventing a
+   * shape for those here would be inventing a format the code that mints them
+   * would then have to match. A retail barcode is the exception and is matched
+   * (`isProductBarcode`), because its shape was decided by GS1 long before
+   * this park existed.
    */
   classify(code: string): { kind: ScanCodeKind; handler: ScanHandler | null } {
     for (const handler of this.handlers) {
