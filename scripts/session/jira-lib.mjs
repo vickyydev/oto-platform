@@ -146,6 +146,6 @@ export const createInSprint = async ({ type = 'Bug', summary, description, prior
   const labels = [...new Set([type === 'Bug' ? 'defect' : 'gap', 'sprint-2', area, ...extra])];
   const parentKey = parent ?? (type === 'Bug' ? DEFECT_EPIC : 'SCRUM-181');
   const r = await jpost('/rest/api/2/issue', { fields: { project: { key: 'SCRUM' }, issuetype: { name: type }, parent: { key: parentKey }, summary, description, priority: { name: priority }, labels, customfield_10020: ACTIVE_SPRINT } });
-  let key = null; try { key = JSON.parse(r.body).key; } catch {}
+  let key = null; try { key = JSON.parse(r.body).key; } catch { /* not JSON: the key stays null and the status says why */ }
   return { key, status: r.status, body: r.body };
 };
