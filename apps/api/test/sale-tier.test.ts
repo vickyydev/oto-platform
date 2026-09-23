@@ -385,7 +385,7 @@ describe('one document check prices one sale (SCRUM-311)', () => {
     expect(body.totals.grossSatang).toBe(expected('tourist', body.pricingMode === 'weekend'));
   });
 
-  it('refuses the spent claim’s cart at the first sale’s money as a price mismatch, as today', async () => {
+  it('refuses the spent claim’s cart at the first sale’s money on the claim, not on the money', async () => {
     const actionId = await expatClaim();
     const cartLine = line(twoHoursId, 2, 1);
     const quoted = await quote({ branchId, tierClaimActionId: actionId, lines: [cartLine] });
@@ -396,15 +396,17 @@ describe('one document check prices one sale (SCRUM-311)', () => {
     });
     expect(first.statusCode, first.body).toBe(200);
 
-    // A till that never re-priced still holds the expat figures. It is told
-    // about the money, which is the more specific answer and the one it
-    // already knows how to recover from — re-price and show the guest.
+    // A till that never re-priced still holds the expat figures. It used to
+    // be told about the money, which buried the reason — in the real flow the
+    // till always sends its figures, so it never heard that the document check
+    // had been used. Now the claim answers first: reception can act on that.
     const again = await commit({
       tierClaimActionId: actionId,
       lines: [{ ...line(twoHoursId, 2, 1), lineTotalSatang: expatLineTotal }],
     });
     expect(again.statusCode).toBe(409);
-    expect(again.json().error.code).toBe('SALE_LINE_PRICE_MISMATCH');
+    expect(again.json().error.code).toBe('TIER_CLAIM_SPENT');
+    expect(again.json().error.details.saleId).toBe(first.json().sale.id);
   });
 
   it('leaves an unspent claim unspent, so one refusal does not burn the next visitor’s check', async () => {
@@ -575,5 +577,58 @@ describe('the day can still be cleared afterwards', () => {
     await resetDemoData(ctx.db);
     expect(await ctx.db.select().from(sale)).toHaveLength(0);
     expect(await ctx.db.select().from(saleTierClaim)).toHaveLength(0);
+  });
+});
+
+describe('a spent claim is answered as itself, not as the price mismatch it causes', () => {
+  /** Ring the cart up at whatever the platform says it costs. */
+  async function commit(payload: Record<string, unknown>) {
+    return ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie },
+      payload: { id: newId(), stationId, branchId, ...payload },
+    });
+  }
+
+  /**
+   * Found by the till slice (SCRUM-316's gate): the till always sends the
+   * line totals it showed, and a till holding the expat figure for a claim
+   * the platform has just refused necessarily disagrees with the tourist
+   * default it fell back to. The quote refused that as
+   * SALE_LINE_PRICE_MISMATCH before it ever returned tierClaimRefusal, so in
+   * the real flow the till never heard that the document check had been used.
+   */
+  it('the quote carries the refusal and the default prices when the till still holds the discounted figure', async () => {
+    const actionId = await expatClaim();
+    const cartLine = line(twoHoursId, 2, 1);
+    const first = await quote({ branchId, tierClaimActionId: actionId, lines: [cartLine] });
+    expect(first.statusCode, first.body).toBe(200);
+    const expatTotals = first.json().lineTotals as Record<string, number>;
+    const spent = await commit({ tierClaimActionId: actionId, lines: [{ ...cartLine, lineTotalSatang: expatTotals[cartLine.id] }] });
+    expect(spent.statusCode, spent.body).toBe(200);
+
+    // The next visitor, the same action id, the till still holding expat money.
+    const again = line(twoHoursId, 2, 1);
+    const res = await quote({
+      branchId,
+      tierClaimActionId: actionId,
+      lines: [{ ...again, lineTotalSatang: expatTotals[cartLine.id] }],
+    });
+    expect(res.statusCode, 'the spent claim was answered as a price mismatch, not as itself').toBe(200);
+    const body = res.json();
+    expect(body.tierSource).toBe('default');
+    expect(body.tierClaimRefusal.code).toBe('TIER_CLAIM_SPENT');
+    expect(body.totals.grossSatang).toBe(expected('tourist', body.pricingMode === 'weekend'));
+
+    // And a commit that still carries the expat money is refused on the claim,
+    // which is what reception can act on — not on the total.
+    const paid = await commit({
+      tierClaimActionId: actionId,
+      lines: [{ ...again, lineTotalSatang: expatTotals[cartLine.id] }],
+      expectedTotalSatang: first.json().totals.grossSatang,
+    });
+    expect(paid.statusCode).toBe(409);
+    expect(paid.json().error.code).toBe('TIER_CLAIM_SPENT');
   });
 });

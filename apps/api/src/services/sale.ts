@@ -679,7 +679,19 @@ export async function priceCart(
     // The till's own figure for the line, reconciled rather than trusted: a
     // disagreement means the till is holding a stale price and the guest was
     // quoted something the platform will not charge.
-    if (line.lineTotalSatang !== undefined && line.lineTotalSatang !== cartLine.lineTotal) {
+    //
+    // Except when the disagreement IS the answer: a till holding the discounted
+    // figure for a claim the platform has just refused (spent, aged out, not
+    // this session's) necessarily disagrees with the default it fell back to.
+    // Refusing that as a mismatch buried the reason — the till never heard
+    // that the document check had been used. The quote carries the refusal
+    // and the platform's prices instead; the commit refuses on the claim
+    // (SCRUM-311, found by the till slice).
+    if (
+      line.lineTotalSatang !== undefined &&
+      line.lineTotalSatang !== cartLine.lineTotal &&
+      claimed.refusal === null
+    ) {
       throw errors.conflict(
         'SALE_LINE_PRICE_MISMATCH',
         'The till and the platform priced a line differently — refresh the catalogue and re-price',
@@ -1281,9 +1293,13 @@ export async function commitSale(
   // The price charged is the price the platform quoted. A till that sends its
   // own total gets a refusal on a disagreement, never a silent acceptance of
   // either number.
+  //
+  // A refused claim explains the disagreement, and is the answer the till can
+  // act on; it is thrown below, after the replay check, so this yields to it.
   if (
     input.expectedTotalSatang !== undefined &&
-    input.expectedTotalSatang !== priced.money.grossSatang
+    input.expectedTotalSatang !== priced.money.grossSatang &&
+    !priced.tierClaimRefusal
   ) {
     throw errors.conflict(
       'SALE_TOTAL_MISMATCH',
