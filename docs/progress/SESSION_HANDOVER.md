@@ -420,7 +420,26 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > poll the attempt at ~3 s; created → sent_to_terminal → approved /
 > cancelled / awaiting_staff_confirmation; no push).
 >
-> **Running:** builds — G (`wf_fdfec96a`), D fix round (`wf_b6ffb273`); evidence — C2 (`wf_61eb87e3`);
+> **19:45 — G's gate: DO NOT MERGE, fix round launched** (the pre-fix
+> tree on `wip/206-G`). The slice: `services/payments/offline.ts` (the
+> replay through B's commit/finalise and attempt service), two sync
+> handlers `sale.finalised` / `payment.recorded` beside the six, the
+> box's `agent.sales()` queue with provisional receipts from the cached
+> high-water mark, and the drawer pulse (`pulseDrawer` through
+> `printing/**` — additive, nobody else was in it; ESC/POS `ESC p` with
+> no paper blocker, TSPL unsupported) with `case 'drawer_kick'`; 17 + 7
+> tests, box-agent 258 green, the full api suite green but D's
+> boot-guard. Two blockers: the offline price guard is OPT-IN —
+> `expectedTotalSatang` optional on the wire and nothing caps what a box
+> may bank (a stale-catalogue box could finalise a sale with more money
+> than its gross, no quarantine); and the `drawer_kick` case is reached
+> by no test while a test title claims it. Plan facts corrected: the
+> replay net never doubles money (A's unique refuses the second insert);
+> what the read-back buys is the ANSWER, else the delivery parks as
+> `Error`. Non-blocking: a ฿0 offline cart quarantines forever on
+> `sale_freeze`; a fully comped offline sale cannot be expressed (F).
+>
+> **Running:** D fix round (`wf_b6ffb273`), G fix round (see the launch line); evidence — C2 (`wf_61eb87e3`);
 > checkpoint part 1 landed: the tenders plan and its five reader findings in `docs/progress/plans/206-tenders/` (the void password redacted in its plain AND hex forms — the gate found the seventh, hex-encoded in a sample frame), the session helpers in `scripts/session/` with a README (the two mutating Render scripts now need `--apply`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
