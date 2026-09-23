@@ -4,7 +4,22 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 16:02 — `main` is `0e5e2c6`; staging is `ce8a9d9` (Render is deploying `4f4188a` → `7faf1d0`); CI green through `ce8a9d9`
+> ## Status on 2026-09-23 16:16 — `main` is `a0d8cab`; staging is `7faf1d0` (Render is deploying `a0d8cab`); CI green through `7faf1d0`
+>
+> **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
+> landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
+> and error text on the light recipes; the whole ticket is now in);
+> the booth's Render service grouped under OTO Platform → staging at the
+> owner's request (`e730697`). Launched the 7faf1d0 evidence pass — 352,
+> 358, 359, 363's form half (`wf_4cefb317`). The superseded deploy
+> watchers were stopped; one waits for Render at `a0d8cab`.
+>
+> **Running:** builds — 365 (`wf_243eed56`), 360+366 (`wf_24c97017`), 362
+> (`wf_a0a8fac3`), 367 (`wf_f27b330d`); the tenders Slice A fix round
+> (`wf_042f927c`); evidence — the beacb6d batch (`wf_300def37`), the
+> 7faf1d0 batch.
+
+> ## Status on 2026-09-23 16:02 — `main` was `0e5e2c6`; staging was `ce8a9d9`; CI green through `ce8a9d9`
 >
 > **Since 15:51:** landed **358** (`4f4188a` — the Console's Test print
 > names the printer), **363's menu item form** (`88749d7`), **352**
