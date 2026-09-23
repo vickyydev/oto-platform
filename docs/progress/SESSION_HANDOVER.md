@@ -4,6 +4,30 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 14:58 — `main` is `d6e1592`; staging is `097b73b`; CI green through `097b73b`
+>
+> **14:37–14:50: the session limit cut every running agent.** Three builds
+> had finished (337/338, 350, 347 — their reports are in the journals) and
+> their gates died; seven builds died mid-edit with partial edits in the
+> tree (349, 343/344, 351, 341, 354, 206-A, 353); the evidence pass died.
+> Relaunched at 14:52–14:58: gate-only resumes for the three finished
+> builds (`Workflow({scriptPath, resumeFromRunId})` replays the cached
+> build result and runs the gate live), the evidence pass, and the seven
+> builds from their scripts with a "RESUMING AN INTERRUPTED ATTEMPT"
+> preamble prepended to RULES (read git diff on the owned files first,
+> keep what is right, finish). Ten runs live again. Nothing was committed
+> from the interrupted work; the tree holds only their partial edits.
+>
+> **Running:** gates — 337/338 (`wf_438d7369`), 350 (`wf_a39c3940`), 347
+> (`wf_5543a1c8`); evidence — 328/325/333/334 and 329/342/346/204-fixes at
+> `097b73b` (`wf_ea63e5b1`); builds — 206-A (`wf_9a136b60`), 343/344
+> (`wf_bc7823ac`), 341 (`wf_d527428e`), 353 (`wf_41ee7069`), 351
+> (`wf_b2308782`), 349 (`wf_6e37179b`), 354 (`wf_5f8a746b`).
+>
+> **Next:** as before — land each on its gate; 352 after 351 and 349; 348
+> after 347; tenders wave 2 after A; set `TRUST_PROXY` on Render when 353
+> lands.
+
 > ## Status on 2026-09-23 14:36 — `main` is `097b73b`; staging is `7b746f1` (Render is deploying `604ef31` → `097b73b`); CI green through `3ba0840`
 >
 > **Since 14:14:** landed **333/334** (`bb8be9a` — the sale read names its
