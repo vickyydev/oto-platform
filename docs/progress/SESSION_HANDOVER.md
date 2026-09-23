@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 18:45 — `main` is `b0c4b52`; staging is `c61289d` on the api (POS at `9b86938`+); CI green through `c61289d`
+> ## Status on 2026-09-23 18:47 — `main` is `3d1c4ef`; staging is `c61289d` on the api (POS at `9b86938`+); CI green through `c61289d`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -367,8 +367,21 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > not walk, and I did with that said. Left on staging by the deploy: 12
 > rows on those four operators.
 >
-> **Running:** builds — D (`wf_987e09f1`), C2 (`wf_5922a49a`), G (`wf_fdfec96a`); evidence
-> — 206-B (`wf_81b0abc0`), 384 (`wf_dcbd81d4`). After wave 3: F and G (G after C1 — now free — and
+> **18:45 — B proven on staging at `b616191`:** a till cash sale
+> (T1-000010) → one approved attempt with every stamp and a `drawer_kick`
+> command the virtual box answers `UNKNOWN_COMMAND` (expected until G);
+> a part payment by API on a ฿1,930 sale → ฿500 recorded, sale open,
+> the same press replayed to the same attempt, ฿1,530 against ฿1,430
+> owing refused 400, ฿1,430 closed it as T1-000013; the Sale detail
+> lists both payments. Left on staging: T1-000010..13 and six attempts.
+> Two observations, folded into 387: the replayed answer carries the
+> internal `drawerKick` object the live answer strips; and EVERY cash
+> tender kicks the drawer, part payments included — deliberate (cash
+> goes in the drawer each time), stated so it is a decision when the
+> box handler lands.
+>
+> **Running:** builds — D (`wf_987e09f1`), C2 (`wf_5922a49a`), G (`wf_fdfec96a`);
+> checkpoint part 1 — the plan and tooling into the repo (`wf_bd797f50`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
