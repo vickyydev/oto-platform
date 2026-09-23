@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 18:30 — `main` is `c61289d`; staging is `9b86938` on the api and POS (Render follows CI on `51fd025`, `af1e41c`, `c61289d`); CI green through `9b86938`
+> ## Status on 2026-09-23 18:45 — `main` is `b0c4b52`; staging is `c61289d` on the api (POS at `9b86938`+); CI green through `c61289d`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -355,6 +355,17 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > second park gets its tenders on the following sync.
 >
 > **18:31 — G launched** (`wf_fdfec96a`): the offline sales replay, `box_seq`, the two sync handlers, the PAX-QR flag and the box side of the drawer kick — C1 is landed and nothing else is in `agent.ts`, so the plan's "never beside C1" holds; O-2 stays open with the owner (kept in the ticket, built on the evidence of the earlier slices).
+>
+> **18:47 — 384 Deployed** on the staging deploy of `c61289d`: the park's
+> three rows byte-identical across the deploy (ids and both stamps), the
+> archived evidence tender still archived, a fresh throwaway database
+> given its three once and silent on the rerun. The deploy log DID carry
+> "wrote the 3 default tenders for 4 park(s)": staging holds four other
+> operators (three archived test ones and the second demo park) with no
+> tenders, and the rule converges them too — by design (archived parks
+> included). My pass mark had assumed one park; the agent rightly did
+> not walk, and I did with that said. Left on staging by the deploy: 12
+> rows on those four operators.
 >
 > **Running:** builds — D (`wf_987e09f1`), C2 (`wf_5922a49a`), G (`wf_fdfec96a`); evidence
 > — 206-B (`wf_81b0abc0`), 384 (`wf_dcbd81d4`). After wave 3: F and G (G after C1 — now free — and
