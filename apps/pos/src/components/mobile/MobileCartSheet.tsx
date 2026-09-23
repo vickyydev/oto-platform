@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { OrderSummary } from '@/components/till/OrderSummary';
 import { computeTotals } from '@/lib/sale';
+import { unpricedCartLines } from '@/lib/pricing';
 import { ShoppingCart, ChevronUp } from 'lucide-react';
 
 interface MobileCartSheetProps {
@@ -25,6 +26,14 @@ interface MobileCartSheetProps {
   onPay: () => void;
   onCancel: () => void;
   canPay: boolean;
+  /**
+   * A DISCOUNT THE PLATFORM WOULD NOT HONOUR ON THIS CART (SCRUM-311/329).
+   *
+   * The same sentence the Review step's panel is given, handed on to the
+   * panel inside this sheet. Without it the phone's cart said nothing about
+   * why the discounted rate had gone while the Review step explained it.
+   */
+  tierClaimRefusal?: string | null;
 }
 
 /**
@@ -52,9 +61,19 @@ export function MobileCartSheet({
   onPay,
   onCancel,
   canPay,
+  tierClaimRefusal,
 }: MobileCartSheetProps) {
   const { total } = computeTotals(lines, discounts, manualDiscounts);
   const itemCount = lines.length;
+  /**
+   * WHAT THIS CART CANNOT BE PRICED AT (SCRUM-316/329).
+   *
+   * Read from the same `unpricedCartLines(lines)` the panel in the sheet
+   * reads, so the bar and the panel above it agree: a line at a tier nobody
+   * priced totals ฿0 through `computeTotals`, and the bar printed that ฿0 as
+   * the amount due while the panel printed dashes.
+   */
+  const unpriced = unpricedCartLines(lines).length > 0;
 
   return (
     <>
@@ -79,7 +98,7 @@ export function MobileCartSheet({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold tabular-nums">฿{total}</span>
+          <span className="text-lg font-bold tabular-nums">{unpriced ? '—' : `฿${total}`}</span>
           <ChevronUp className="w-4 h-4 text-muted-foreground" />
         </div>
       </button>
@@ -108,6 +127,7 @@ export function MobileCartSheet({
               onPay={() => { onOpenChange(false); onPay(); }}
               onCancel={() => { onOpenChange(false); onCancel(); }}
               canPay={canPay}
+              tierClaimRefusal={tierClaimRefusal}
             />
           </div>
         </SheetContent>

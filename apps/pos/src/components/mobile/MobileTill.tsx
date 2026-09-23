@@ -708,8 +708,8 @@ export default function MobileTill() {
    * The same caveat as the counter's, written out there in full: the
    * platform's line-price reconciliation refuses the quote before it answers
    * the refusal, so this fires only for a cart sent without the optional
-   * `lineTotalSatang`. The reason also reaches the REVIEW step's panel only —
-   * `MobileCartSheet` renders its own `OrderSummary` and is not passed it.
+   * `lineTotalSatang`. The reason is given to the REVIEW step's panel and to
+   * `MobileCartSheet`, which hands it to the panel it renders (SCRUM-329).
    */
   useEffect(() => {
     const refusal = cart.quote.tierClaimRefusal;
@@ -1847,6 +1847,7 @@ export default function MobileTill() {
             resetSale();
           }}
           canPay={canPay}
+          tierClaimRefusal={tierClaimRefusal}
         />
       )}
 
