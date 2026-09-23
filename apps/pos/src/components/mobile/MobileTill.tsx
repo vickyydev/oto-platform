@@ -59,6 +59,8 @@ import {
 import { useCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter } from '@/lib/saleWriter';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
+import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
+import { QuoteFaultNote } from '@/components/fnb/QuoteFaultNote';
 import { saleNumberLabel, type SaleNumber } from '@/components/till/StepConfirmation';
 import { toast } from '@/hooks/use-toast';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -1507,6 +1509,76 @@ export default function MobileTill() {
   const canPay =
     lines.some((l) => l.kids + l.adults > 0) && allLengthsChosen && allNanniesAssigned;
 
+  /**
+   * THE PLATFORM LOOKED AT THIS CART AND OBJECTED — SCRUM-366, the rule the
+   * F&B and shop stations have carried since SCRUM-342/351/352
+   * (`pages/OrderStation.tsx`, `pages/MerchStation.tsx`).
+   *
+   * `useCartQuote` has carried this all along and this screen never read it:
+   * driven with a refusal in the platform's own envelope the phone showed no
+   * refusal at all — only the amber "Priced on this till", which it shows for
+   * every cart the platform did not price, the ordinary ones included — and
+   * Pay ฿2,420 invited the press (SCRUM-352's evidence).
+   *
+   * While a refusal stands Pay is off. The rule that refused the quote is the
+   * rule the commit meets, so the press could only carry the family to the
+   * payment screen and fail there. It clears the moment a later quote answers
+   * — the moved price re-read, the line taken off — and Pay comes back with it.
+   *
+   * A FAULT IS NOT THAT: the api breaking, or a proxy answering in its place.
+   * Neither is a judgement on this cart, so Pay stays on and the phone sells
+   * through the outage on this till's own figures — `QuoteFaultNote` says the
+   * platform failed and `PriceSourceNote` beneath it says whose figures are on
+   * the screen.
+   *
+   * A cart the platform was never asked about is a third thing and reaches
+   * neither note: `quoteCart` answers that one with this till's figures and a
+   * reason rather than rejecting (`api/sales.ts`), so `cart.error` is null and
+   * only the source note is drawn.
+   */
+  const quoteError = cart.error;
+  const quoteRefusal = quoteError && quoteError.kind === 'refusal' ? quoteError : null;
+  const quoteFault = quoteError && quoteError.kind === 'fault' ? quoteError : null;
+
+  /**
+   * Whether Pay opens: a cart this till can complete, that the platform has not
+   * refused.
+   *
+   * The counter stations hang the platform's own words on the disabled button
+   * as its `title` (`chargeBlockedReason`, `components/fnb/FnbCart.tsx`). The
+   * panel this screen draws with takes one boolean and no reason
+   * (`components/till/OrderSummary.tsx`), so the refusal joins the drop-off
+   * checks inside it instead; the blocking note directly above the button
+   * carries the platform's sentence, which is the part a person at the counter
+   * reads — a `title` never appears on a phone held in a hand.
+   */
+  const payEnabled = canPay && !quoteRefusal;
+
+  /**
+   * The notes under the total: the same three, in the same order, that the
+   * counter's F&B and shop panels draw. One node given to both the Review step
+   * and the cart sheet, because they are one tap apart and a refusal that
+   * showed on one and not the other would read as two different carts
+   * (SCRUM-329 settled the same thing for the tier-claim refusal).
+   *
+   * The two quote notes are drawn only with a cart on the screen: the hook
+   * stops asking when the last line is removed and keeps the error it last had
+   * (`lib/cartQuote.ts`), so an emptied cart would otherwise still be carrying
+   * the refusal of a cart that no longer exists. `PriceSourceNote` is left
+   * exactly where it was, drawn for every state including the empty one.
+   */
+  const priceNotes = (
+    <div className="space-y-2">
+      {lines.length > 0 && (
+        <>
+          <QuoteRefusalNote error={quoteRefusal} blocking />
+          <QuoteFaultNote error={quoteFault} />
+        </>
+      )}
+      <PriceSourceNote quote={cart.quote} pending={cart.pending} />
+    </div>
+  );
+
   const liveSale: Sale =
     saleResult ?? {
       ...buildSale({
@@ -1668,9 +1740,9 @@ export default function MobileTill() {
               onRemoveManualDiscount={handleRemoveManualDiscount}
               onPay={() => setMStep('payment')}
               onCancel={resetSale}
-              canPay={canPay}
+              canPay={payEnabled}
               totals={cart.totals}
-              priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
+              priceNote={priceNotes}
               tierClaimRefusal={tierClaimRefusal}
             />
           </div>
@@ -1846,10 +1918,10 @@ export default function MobileTill() {
             setShowCartSheet(false);
             resetSale();
           }}
-          canPay={canPay}
+          canPay={payEnabled}
           tierClaimRefusal={tierClaimRefusal}
           totals={cart.totals}
-          priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
+          priceNote={priceNotes}
         />
       )}
 

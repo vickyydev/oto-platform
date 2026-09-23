@@ -27,6 +27,14 @@ interface MobileCartSheetProps {
   onRemoveManualDiscount: (id: string) => void;
   onPay: () => void;
   onCancel: () => void;
+  /**
+   * WHETHER PAY OPENS, decided by the caller and passed straight to the panel.
+   *
+   * The till's own completeness checks are in it — a cart with someone on it,
+   * every drop-off length chosen, every nanny assigned — and since SCRUM-366 so
+   * is the platform's verdict: a cart the platform refused to price cannot be
+   * charged, and the refusal note this sheet draws beneath the total says why.
+   */
   canPay: boolean;
   /**
    * A DISCOUNT THE PLATFORM WOULD NOT HONOUR ON THIS CART (SCRUM-311/329).
@@ -47,7 +55,13 @@ interface MobileCartSheetProps {
    * differently read as two different amounts due.
    */
   totals?: OrderTotals;
-  /** Shown under the total in the sheet, as on Review — whose figure this is. */
+  /**
+   * Shown under the total in the sheet, as on Review — whose figure this is,
+   * and since SCRUM-366 what the platform said about the cart when it was asked:
+   * the refusal that turns Pay off, or the fault that leaves it on. The caller
+   * composes the notes and hands the same node to both screens, so the sheet
+   * and the Review step a tap away cannot say different things about one cart.
+   */
   priceNote?: ReactNode;
 }
 
