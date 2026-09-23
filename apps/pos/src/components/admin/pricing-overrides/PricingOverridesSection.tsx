@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarRange, Plus, Trash2, Pencil, X, Check } from 'lucide-react';
 import type { PricingOverride } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { getActiveBranch } from '@/store/catalogStore';
+import { holidaySaleCounts } from '@/api/catalogBridge';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -34,6 +36,32 @@ export function PricingOverridesSection() {
   const { pricingOverrides, mutators } = useCatalogStore();
   const [draft, setDraft] = useState<DraftForm | null>(null);
   const [error, setError] = useState<string | undefined>();
+
+  /**
+   * Sales priced by each range (SCRUM-309). Once the park has traded on a
+   * range the platform freezes its DATES — the receipts have to keep saying
+   * which days it covered — while its NAME stays correctable, which is the
+   * whole point: before this, the panel's edit was a delete and a create, and
+   * the first ticket sold under a mistyped holiday made the typo permanent.
+   *
+   * Read beside the calendar so the form can say so instead of the manager
+   * finding out by being refused. If it cannot be read the form stays fully
+   * editable and the platform's own refusal reaches the screen as a toast —
+   * which is what happened before this existed.
+   */
+  const [pricedSales, setPricedSales] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let live = true;
+    void holidaySaleCounts(getActiveBranch().id)
+      .then((counts) => live && setPricedSales(counts))
+      .catch(() => live && setPricedSales({}));
+    return () => {
+      live = false;
+    };
+  }, [pricingOverrides]);
+
+  const editingSales = draft?.id ? (pricedSales[draft.id] ?? 0) : 0;
+  const datesFrozen = editingSales > 0;
 
   const sorted = [...pricingOverrides].sort((a, b) => a.startDate.localeCompare(b.startDate));
 
@@ -118,6 +146,7 @@ export function PricingOverridesSection() {
                 id="po-start"
                 type="date"
                 value={draft.startDate}
+                disabled={datesFrozen}
                 onChange={(e) => setDraft((d) => (d ? { ...d, startDate: e.target.value } : d))}
                 invalid={!!error && !draft.startDate}
               />
@@ -127,11 +156,19 @@ export function PricingOverridesSection() {
                 id="po-end"
                 type="date"
                 value={draft.endDate}
+                disabled={datesFrozen}
                 onChange={(e) => setDraft((d) => (d ? { ...d, endDate: e.target.value } : d))}
                 invalid={!!error && (!draft.endDate || draft.endDate < draft.startDate)}
               />
             </Field>
           </div>
+          {datesFrozen && (
+            <p className="mt-2 text-xs text-foreground/50">
+              {editingSales === 1 ? '1 sale was' : `${editingSales} sales were`} priced by this
+              range, so its dates are fixed — those receipts have to keep saying which days it
+              covered. The name can still be corrected.
+            </p>
+          )}
           {error && <p className="mt-2 text-xs font-medium text-rose-400">{error}</p>}
           <div className="mt-4 flex gap-2">
             <Button onClick={save}>

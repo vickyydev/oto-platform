@@ -1,5 +1,26 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { and, eq } from 'drizzle-orm';
+import {
+  auditLog,
+  branch,
+  branchHoliday,
+  member,
+  paymentAttempt,
+  sale,
+  saleDiscount,
+  saleLine,
+  station,
+  ticketPackage,
+} from '@oto/db';
+import { businessDate, newId, parseDayStart } from '@oto/shared';
+import {
+  ADMIN,
+  RECEPTION,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 
 let ctx: TestContext;
 let cookie: string;
@@ -452,5 +473,228 @@ describe('SCRUM-228 — customer tiers are data, not a screen-local list', () =>
       },
     });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+/**
+ * SCRUM-309 — correcting a holiday range after the park has traded on it.
+ *
+ * Found on staging. SCRUM-258 refuses to REMOVE a range once a sale points at
+ * it, which is right, and it was the only answer available to a manager who had
+ * mistyped the name: the panel's edit was a delete followed by a create, so the
+ * first ticket sold under the range froze the typo for good.
+ *
+ * The two halves of the row are not the same kind of fact. The name is copied
+ * onto the sale when it is priced (`pos.sale.holiday_name`), so correcting it
+ * rewrites nothing that has been printed. The dates are what the sale's weekend
+ * pricing rests on, and moving them would leave a receipt charged weekend
+ * prices for a holiday that no longer covers its trading day.
+ *
+ * Everything below goes in through the routes the panel calls, and the sale is
+ * a real one rung on the till, because the guard is a count of rows pointing at
+ * the range and a hand-inserted row would not prove the till ever writes one.
+ */
+describe('SCRUM-309 — correcting a holiday range', () => {
+  let receptionCookie: string;
+  let stationId: string;
+  let packageId: string;
+  let memberId: string;
+  /** The day a sale rung now is priced on — the branch's, not the browser's. */
+  let tradingDay: string;
+
+  beforeAll(async () => {
+    receptionCookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const [hkt] = await ctx.db.select().from(branch).where(eq(branch.id, branchId));
+    tradingDay = businessDate(new Date(), hkt!.timezone, parseDayStart(hkt!.businessDayStart));
+    const tills = await ctx.db
+      .select()
+      .from(station)
+      .where(and(eq(station.branchId, branchId), eq(station.kind, 'till')));
+    stationId = tills[0]!.id;
+    const packages = await ctx.db
+      .select()
+      .from(ticketPackage)
+      .where(eq(ticketPackage.branchId, branchId));
+    packageId = packages.find((p) => p.name === '2 Hours Play')!.id;
+    const members = await ctx.db.select().from(member).where(eq(member.operatorId, hkt!.operatorId));
+    memberId = members.find((m) => m.phone === '+66822222222')!.id;
+  });
+
+  const addHoliday = async (name: string, startsOn: string, endsOn: string): Promise<string> => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/branches/${branchId}/holidays`,
+      headers: { cookie },
+      payload: { name, startsOn, endsOn },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    return res.json().id as string;
+  };
+
+  const correct = (
+    id: string,
+    payload: Record<string, unknown>,
+    extraHeaders: Record<string, string> = {},
+  ) =>
+    ctx.app.inject({
+      method: 'PATCH',
+      url: `/branches/${branchId}/holidays/${id}`,
+      headers: { cookie, ...extraHeaders },
+      payload,
+    });
+
+  const holidayRow = async (id: string) =>
+    (await ctx.db.select().from(branchHoliday).where(eq(branchHoliday.id, id)))[0]!;
+
+  const updateTrail = async (id: string) =>
+    ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.entityId, id), eq(auditLog.action, 'branch_holiday.update')));
+
+  /** One ticket rung on the till, priced by whatever range covers today. */
+  const sellOnTheTill = async (): Promise<string> => {
+    const saleId = newId();
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie: receptionCookie },
+      payload: {
+        id: saleId,
+        stationId,
+        memberId,
+        lines: [{ id: newId(), packageId, kids: 1, adults: 0 }],
+      },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    return saleId;
+  };
+
+  /**
+   * Put the calendar back. A range covering today would leave every later test
+   * on weekend prices, and the API will not remove one that has traded — which
+   * is the whole point of the ticket — so the rows go directly.
+   */
+  const forget = async (saleId: string, holidayId: string): Promise<void> => {
+    await ctx.db.delete(saleLine).where(eq(saleLine.saleId, saleId));
+    await ctx.db.delete(saleDiscount).where(eq(saleDiscount.saleId, saleId));
+    await ctx.db.delete(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    await ctx.db.delete(sale).where(eq(sale.id, saleId));
+    await ctx.db.delete(branchHoliday).where(eq(branchHoliday.id, holidayId));
+  };
+
+  it('moves the dates of a range nothing has been sold under', async () => {
+    // Mon 2 Feb 2032 to Tue the 3rd, moved to Wed the 4th to Fri the 6th — all
+    // five are weekdays, so only the range decides how they price.
+    const id = await addHoliday('Refurbishment', '2032-02-02', '2032-02-03');
+    const res = await correct(id, {
+      name: 'Refurbishment week',
+      startsOn: '2032-02-04',
+      endsOn: '2032-02-06',
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(await holidayRow(id)).toMatchObject({
+      name: 'Refurbishment week',
+      startsOn: '2032-02-04',
+      endsOn: '2032-02-06',
+    });
+
+    const mode = (d: string) =>
+      ctx.app.inject({
+        method: 'GET',
+        url: `/branches/${branchId}/pricing-mode?date=${d}`,
+        headers: { cookie },
+      });
+    expect((await mode('2032-02-05')).json()).toMatchObject({
+      mode: 'weekend',
+      overrideName: 'Refurbishment week',
+    });
+    // And the days it no longer covers price as the plain weekdays they are.
+    expect((await mode('2032-02-02')).json().mode).toBe('weekday');
+
+    await ctx.db.delete(branchHoliday).where(eq(branchHoliday.id, id));
+  });
+
+  it('renames a range the park has traded on, leaving the receipt as it was printed', async () => {
+    const holidayId = await addHoliday('Kings Brithday', tradingDay, tradingDay);
+    const saleId = await sellOnTheTill();
+    try {
+      const [sold] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+      expect(sold!.holidayId, 'the sale was not priced by the range').toBe(holidayId);
+      expect(sold!.holidayName).toBe('Kings Brithday');
+
+      const renamed = await correct(holidayId, { name: "King's Birthday" });
+      expect(renamed.statusCode, renamed.body).toBe(200);
+      expect((await holidayRow(holidayId)).name).toBe("King's Birthday");
+
+      // The receipt keeps the words that were true on the day it was printed.
+      const [still] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+      expect(still!.holidayName).toBe('Kings Brithday');
+      expect(still!.holidayId).toBe(holidayId);
+
+      const trail = await updateTrail(holidayId);
+      expect(trail).toHaveLength(1);
+      expect((trail[0]!.before as { name: string }).name).toBe('Kings Brithday');
+      expect((trail[0]!.after as { name: string }).name).toBe("King's Birthday");
+    } finally {
+      await forget(saleId, holidayId);
+    }
+  });
+
+  it('refuses to move the dates once a sale was priced by it, and names the count', async () => {
+    const holidayId = await addHoliday('Traded Range', tradingDay, tradingDay);
+    const saleId = await sellOnTheTill();
+    try {
+      const res = await correct(holidayId, { startsOn: '2033-05-01', endsOn: '2033-05-02' });
+      expect(res.statusCode).toBe(409);
+      expect(res.json().error.code).toBe('HOLIDAY_HAS_SALES');
+      expect(res.json().error.details.saleCount).toBe(1);
+      expect(res.json().error.message).toContain('Traded Range');
+
+      // Refused, not half-applied: the range still covers the day it priced.
+      expect(await holidayRow(holidayId)).toMatchObject({
+        startsOn: tradingDay,
+        endsOn: tradingDay,
+      });
+      expect(await updateTrail(holidayId)).toHaveLength(0);
+
+      // A rename in the same state is still allowed — that is the ticket.
+      const renamed = await correct(holidayId, { name: 'Traded Range (corrected)' });
+      expect(renamed.statusCode, renamed.body).toBe(200);
+    } finally {
+      await forget(saleId, holidayId);
+    }
+  });
+
+  it('answers a replayed correction once', async () => {
+    const id = await addHoliday('Songkran typo', '2034-04-13', '2034-04-15');
+    const headers = { 'idempotency-key': `holiday-correct-${id}` };
+    const first = await correct(id, { name: 'Songkran' }, headers);
+    const second = await correct(id, { name: 'Songkran' }, headers);
+    expect(first.statusCode, first.body).toBe(200);
+    expect(second.statusCode, second.body).toBe(200);
+    expect(second.json()).toEqual(first.json());
+    expect(await updateTrail(id), 'the replay did the work a second time').toHaveLength(1);
+    await ctx.db.delete(branchHoliday).where(eq(branchHoliday.id, id));
+  });
+
+  it('shows the panel how many sales each range priced', async () => {
+    const holidayId = await addHoliday('Counted Range', tradingDay, tradingDay);
+    const saleId = await sellOnTheTill();
+    try {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `/branches/${branchId}/holidays`,
+        headers: { cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const rows = res.json().holidays as Array<{ id: string; pricedSales: number }>;
+      expect(rows.find((h) => h.id === holidayId)!.pricedSales).toBe(1);
+      // A range nothing has been sold under reads zero, not missing.
+      expect(rows.every((h) => typeof h.pricedSales === 'number')).toBe(true);
+      expect(rows.some((h) => h.pricedSales === 0)).toBe(true);
+    } finally {
+      await forget(saleId, holidayId);
+    }
   });
 });

@@ -242,12 +242,29 @@ export const catalogApi = {
     api.get<{ date: string; mode: 'weekday' | 'weekend'; reason: string; overrideName?: string }>(
       `/branches/${branchId}/pricing-mode${date ? `?date=${date}` : ''}`,
     ),
+  /**
+   * `pricedSales` is how many sales each range priced. Nonzero means the
+   * platform has frozen its dates (SCRUM-309), so the panel can say why rather
+   * than let a manager find out by being refused.
+   */
   holidays: (branchId: string) =>
-    api.get<{ holidays: Array<{ id: string; name: string; startsOn: string; endsOn: string }> }>(
-      `/branches/${branchId}/holidays`,
-    ),
+    api.get<{
+      holidays: Array<{
+        id: string;
+        name: string;
+        startsOn: string;
+        endsOn: string;
+        pricedSales: number;
+      }>;
+    }>(`/branches/${branchId}/holidays`),
   createHoliday: (branchId: string, body: { name: string; startsOn: string; endsOn: string }) =>
     api.post<{ id: string }>(`/branches/${branchId}/holidays`, body, { idempotencyKey: idemKey() }),
+  /** The name always; the dates only while nothing has been priced by the range. */
+  updateHoliday: (
+    branchId: string,
+    id: string,
+    body: { name?: string; startsOn?: string; endsOn?: string },
+  ) => api.patch<{ ok: true }>(`/branches/${branchId}/holidays/${id}`, body, { idempotencyKey: idemKey() }),
   deleteHoliday: (branchId: string, id: string) =>
     api.delete<{ ok: true }>(`/branches/${branchId}/holidays/${id}`),
   taxConfig: (branchId: string) => api.get<{ config: unknown | null }>(`/branches/${branchId}/tax-config`),

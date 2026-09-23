@@ -436,12 +436,28 @@ export async function catalogRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
+      /**
+       * `pricedSales` is how many sales were priced by each range, and it is on
+       * the LIST because that is where the panel has to know it: the two writes
+       * below refuse a range that has traded — DELETE outright, PATCH for its
+       * dates — and a screen that cannot see the count can only discover either
+       * refusal by attempting it. Counted here rather than per row so the panel
+       * asks once for the calendar it is already drawing.
+       */
       const rows = await app.db
-        .select()
+        .select({
+          id: branchHoliday.id,
+          name: branchHoliday.name,
+          startsOn: branchHoliday.startsOn,
+          endsOn: branchHoliday.endsOn,
+          pricedSales: count(sale.id),
+        })
         .from(branchHoliday)
+        .leftJoin(sale, eq(sale.holidayId, branchHoliday.id))
         .where(eq(branchHoliday.branchId, req.params.branchId))
+        .groupBy(branchHoliday.id)
         .orderBy(asc(branchHoliday.startsOn));
-      return { holidays: rows.map((h) => ({ id: h.id, name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })) };
+      return { holidays: rows };
     },
   );
 
@@ -482,6 +498,28 @@ export async function catalogRoutes(app: App): Promise<void> {
     },
   );
 
+  /** How many sales a range priced. The one count both refusals below rest on. */
+  const salesPricedBy = async (holidayId: string): Promise<number> => {
+    const [priced] = await app.db
+      .select({ sales: count() })
+      .from(sale)
+      .where(eq(sale.holidayId, holidayId));
+    return priced?.sales ?? 0;
+  };
+
+  /** Both refusals in the same words, differing only in what is being refused. */
+  const holidayHasSales = (
+    h: { name: string; startsOn: string; endsOn: string },
+    sales: number,
+    because: string,
+  ) =>
+    errors.conflict(
+      'HOLIDAY_HAS_SALES',
+      `"${h.name}" set the prices on ${sales} sale${sales === 1 ? '' : 's'} that have already ` +
+        `been taken, so ${because}`,
+      { saleCount: sales, startsOn: h.startsOn, endsOn: h.endsOn },
+    );
+
   /**
    * SCRUM-258 — removing a holiday range once the day has been traded.
    *
@@ -514,18 +552,12 @@ export async function catalogRoutes(app: App): Promise<void> {
         .where(and(eq(branchHoliday.id, req.params.id), eq(branchHoliday.branchId, req.params.branchId)))
         .limit(1);
       if (!before) throw errors.notFound('Holiday not found');
-      const [priced] = await app.db
-        .select({ sales: count() })
-        .from(sale)
-        .where(eq(sale.holidayId, req.params.id));
-      const sales = priced?.sales ?? 0;
+      const sales = await salesPricedBy(req.params.id);
       if (sales > 0) {
-        throw errors.conflict(
-          'HOLIDAY_HAS_SALES',
-          `"${before.name}" set the prices on ${sales} sale${sales === 1 ? '' : 's'} that have ` +
-            'already been taken, so it cannot be removed — those receipts have to keep saying ' +
-            'which holiday priced them.',
-          { saleCount: sales, startsOn: before.startsOn, endsOn: before.endsOn },
+        throw holidayHasSales(
+          before,
+          sales,
+          'it cannot be removed — those receipts have to keep saying which holiday priced them.',
         );
       }
       return withTx(app.db, opCtx(req), 'branch_holiday.delete', async (tx) => {
@@ -538,6 +570,98 @@ export async function catalogRoutes(app: App): Promise<void> {
           entityType: 'branch_holiday',
           entityId: req.params.id,
           before,
+          requestId: req.id,
+        });
+        return { ok: true };
+      });
+    },
+  );
+
+  /**
+   * SCRUM-309 — correcting a holiday's NAME after the park has traded on it.
+   *
+   * Found on staging: the refusal above is right, and it was the only answer a
+   * manager who had mistyped a holiday's name could get, because the panel's
+   * edit was a delete followed by a create. One ticket sold under the range and
+   * the typo was permanent — on the calendar, on the pricing-mode chip and in
+   * every later conversation about that week.
+   *
+   * The name and the dates are not the same kind of fact, which is why one of
+   * them can be corrected here and the other cannot:
+   *
+   *   - the NAME is COPIED onto the sale. `pos.sale.holiday_name` is written
+   *     when the basket is priced, so a receipt goes on saying the words that
+   *     were true that day whatever the calendar is called afterwards. Renaming
+   *     the range rewrites nothing that has been printed;
+   *   - the DATES are what the sale's own weekend pricing rests on. Moving them
+   *     out from under a sale would leave it pointing at a range that does not
+   *     cover its trading day — a receipt charged weekend prices for a holiday
+   *     that, on the evidence, was not on.
+   *
+   * So the dates may move only while nothing has been priced by the range,
+   * refused with the same count and in the same words as the removal.
+   */
+  app.patch(
+    '/branches/:branchId/holidays/:id',
+    {
+      config: { permission: 'catalog:holiday:manage', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          'Correct a holiday range: the name always, its dates only while no sale was priced by it',
+        params: BranchParams.extend({ id: z.string().uuid() }),
+        body: z
+          .object({
+            name: z.string().min(1).optional(),
+            startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+            endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          })
+          .refine((b) => b.name !== undefined || b.startsOn !== undefined || b.endsOn !== undefined, {
+            message: 'give a name, a start date or an end date to change',
+          }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      await loadBranch(app, req.params.branchId, auth.operatorId);
+      const [before] = await app.db
+        .select()
+        .from(branchHoliday)
+        .where(and(eq(branchHoliday.id, req.params.id), eq(branchHoliday.branchId, req.params.branchId)))
+        .limit(1);
+      if (!before) throw errors.notFound('Holiday not found');
+
+      // Either end may be sent on its own, so the range is judged as it would
+      // stand after the change, not as the body happens to describe it.
+      const startsOn = req.body.startsOn ?? before.startsOn;
+      const endsOn = req.body.endsOn ?? before.endsOn;
+      if (startsOn > endsOn) throw errors.badRequest('startsOn must be <= endsOn');
+      if (startsOn !== before.startsOn || endsOn !== before.endsOn) {
+        const sales = await salesPricedBy(req.params.id);
+        if (sales > 0) {
+          throw holidayHasSales(
+            before,
+            sales,
+            'its dates cannot be moved — those receipts have to keep saying which days it ' +
+              'priced. Its name can still be corrected.',
+          );
+        }
+      }
+
+      return withTx(app.db, opCtx(req), 'branch_holiday.update', async (tx) => {
+        const [after] = await tx
+          .update(branchHoliday)
+          .set({ name: req.body.name ?? before.name, startsOn, endsOn })
+          .where(eq(branchHoliday.id, req.params.id))
+          .returning();
+        await audit.record(tx, {
+          actorAccountId: auth.accountId,
+          operatorId: auth.operatorId,
+          branchId: req.params.branchId,
+          action: 'branch_holiday.update',
+          entityType: 'branch_holiday',
+          entityId: req.params.id,
+          before,
+          after,
           requestId: req.id,
         });
         return { ok: true };

@@ -165,11 +165,37 @@ export async function saveHolidayToApi(branchSlug: string, o: PricingOverride, e
   const branchId = apiBranchIdForSlug(branchSlug);
   if (!branchId) return;
   if (exists) {
-    // Holidays have no PATCH — replace (delete + create) keeps the API simple.
-    await catalogApi.deleteHoliday(branchId, o.id);
+    // SCRUM-309: an edit is a PATCH. It used to be a delete and a create, and
+    // the platform refuses to remove a range once a sale was priced by it — so
+    // the first ticket sold under a mistyped holiday froze the typo for good.
+    await catalogApi.updateHoliday(branchId, o.id, {
+      name: o.name,
+      startsOn: o.startDate,
+      endsOn: o.endDate,
+    });
+  } else {
+    await catalogApi.createHoliday(branchId, {
+      name: o.name,
+      startsOn: o.startDate,
+      endsOn: o.endDate,
+    });
   }
-  await catalogApi.createHoliday(branchId, { name: o.name, startsOn: o.startDate, endsOn: o.endDate });
   await loadCatalogFromApi(branchSlug);
+}
+
+/**
+ * How many sales each of the branch's holiday ranges priced, by range id.
+ *
+ * The panel asks for this itself rather than reading it off the store: a
+ * `PricingOverride` is the calendar entry, and how much was traded under it is
+ * not part of that shape. Empty for a branch the platform does not know, which
+ * is a mock-only branch where nothing has been sold at all.
+ */
+export async function holidaySaleCounts(branchSlug: string): Promise<Record<string, number>> {
+  const branchId = apiBranchIdForSlug(branchSlug);
+  if (!branchId) return {};
+  const { holidays } = await catalogApi.holidays(branchId);
+  return Object.fromEntries(holidays.map((h) => [h.id, h.pricedSales ?? 0]));
 }
 
 export async function deleteHolidayInApi(branchSlug: string, id: string): Promise<void> {

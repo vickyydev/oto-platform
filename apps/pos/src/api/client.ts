@@ -154,7 +154,8 @@ export const api = {
   postBlob: (path: string, body?: unknown, signal?: AbortSignal) =>
     requestBlob('POST', path, body, signal),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
+  patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
+    request<T>('PATCH', path, body, opts),
   /**
    * A DELETE may carry a body and an idempotency key, and one route needs
    * both: ending a member's verified tier (SCRUM-241) files the typed reason
