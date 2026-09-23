@@ -4,7 +4,29 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 15:51 — `main` is `bc05e47`; staging is `2731962` (Render is deploying `2845135` → `ce8a9d9`); CI green through `2731962`
+> ## Status on 2026-09-23 16:02 — `main` is `0e5e2c6`; staging is `ce8a9d9` (Render is deploying `4f4188a` → `7faf1d0`); CI green through `ce8a9d9`
+>
+> **Since 15:51:** landed **358** (`4f4188a` — the Console's Test print
+> names the printer), **363's menu item form** (`88749d7`), **352**
+> (`c3c0aa9` — the shop's Charge gate; the phone's F&B never quotes, so
+> nothing to gate there), **359** (`7faf1d0` — the refusal, source and
+> failure notes legible on the light theme). **353 Deployed** with its
+> post-deploy measurement (`0e5e2c6`): the forgery is ignored and the
+> POS rewrite adds no hop, but the buckets key on **Cloudflare's edge
+> addresses** — one trusted hop reaches the edge, the caller sits one
+> entry further left → **367** (trust the balancer and the edge by
+> address — building; the Render variable is set by the parent when it
+> lands). Raised: 364 (a Console test print writes no print-job row —
+> after A frees the Console's fleet client), 365 (Console harness —
+> building), 366 (the phone till hides a refusal — building with 360).
+>
+> **Running:** builds — 363 first pass (`wf_0834f8e9`), 365
+> (`wf_243eed56`), 360+366 (`wf_24c97017`), 362 (`wf_a0a8fac3`), 367
+> (`wf_f27b330d`); the tenders Slice A fix round (`wf_042f927c`);
+> evidence — the beacb6d batch (`wf_300def37`), 341 (`wf_bc39bddd`).
+> Watchers wait for Render at `4f4188a` and `7faf1d0`.
+
+> ## Status on 2026-09-23 15:51 — `main` was `bc05e47`; staging was `2731962`; CI green through `2731962`
 >
 > **Since 15:47:** staging reached `2731962` (341 included) — the 341
 > evidence pass launched (`wf_bc39bddd`); the beacb6d batch is capturing.
