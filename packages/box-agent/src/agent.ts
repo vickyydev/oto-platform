@@ -9,6 +9,7 @@ import { planCacheApply, type CacheFaultReason } from './cache-apply';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
 import { createOutbox, type Outbox } from './outbox';
+import { createRefusalBackOff } from './reregister';
 import { generateSyncKeyPair, publicKeyFor } from './signing';
 import { ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
@@ -779,20 +780,52 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     return { status, body: answer };
   }
 
+  /** The one-a-minute door on the refusal path below. The rule is in `reregister.ts`. */
+  const refusals = createRefusalBackOff();
+
   /**
    * A credential that stopped working is not a reason to give up: an
    * administrator rotating a box's claim code is exactly how a stolen box is
    * cut off and a replacement Pi is brought up in its slot, and the honest
    * response from this side is to drop what we hold and register again if we
    * can.
+   *
+   * **At most once a minute, since SCRUM-331.** That answer, given to every
+   * refusal, is also how two agents sharing one box row storm: each
+   * registration takes the other's secret away, so each refusal breeds the
+   * next at one cycle per tick, and every registration re-pulls the whole
+   * offline cache because it has no etag. `reregister.ts` holds the rule; the
+   * window bounds the damage while the cloud side (a lease over the virtual
+   * box) stops two agents existing at all.
+   *
+   * While the door is shut the credential is KEPT on purpose, refused though
+   * it is. Dropping it would silence the box — every caller below returns
+   * early without one, so nothing would produce the next refusal, and a
+   * refusal is the only thing that reopens the door.
    */
   async function reregisterAfterRefusal(where: string): Promise<boolean> {
+    const verdict = refusals.refused(clock());
+    if (!verdict.register) {
+      note(
+        'warn',
+        `credential refused on ${where} — ${verdict.swallowed} refusal${
+          verdict.swallowed === 1 ? '' : 's'
+        } inside the back-off window, not registering again for ${Math.ceil(
+          verdict.reopensInMs / 1000,
+        )}s`,
+      );
+      return false;
+    }
     note('warn', `credential refused on ${where} — dropping it and trying to register again`);
     credential = null;
     state.registered = false;
     await options.credentials.clear();
     try {
-      return await ensureRegistered();
+      const registered = await ensureRegistered();
+      // The count restarts from a box that is actually registered again; the
+      // window does not, for the reason `reregister.ts` sets out.
+      if (registered) refusals.registered();
+      return registered;
     } catch {
       return false;
     }

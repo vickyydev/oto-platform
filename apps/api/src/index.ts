@@ -1,9 +1,10 @@
 import { closeDb, getDb } from '@oto/db';
 import { buildApp } from './app';
 import { loadEnv } from './env';
+import { createVirtualBoxLease, type VirtualBoxLease } from './lib/virtual-box-lease';
 import { buildFileStorage } from './services/files';
-import { createJobRunner } from './services/jobs';
-import { startVirtualBox, stopVirtualBox } from './services/box';
+import { createJobRunner, processRoles } from './services/jobs';
+import { boxSettings, startVirtualBox, stopVirtualBox } from './services/box';
 import { publishStaffTokenKey } from './services/staff-token';
 
 /**
@@ -64,13 +65,19 @@ const port = Number(process.env.PORT ?? env.API_PORT);
  * between a deploy nobody notices and a till showing an error mid-sale.
  */
 let shuttingDown = false;
+/** Held only by an instance carrying the `edge` role; null everywhere else. */
+let virtualBoxLease: VirtualBoxLease | null = null;
 async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   app.log.info({ signal }, 'shutting down');
   try {
     await jobs.stop();
+    // The box first, the lease after: the next instance can take the lease the
+    // instant this connection closes, and two agents driving one `core.box`
+    // row is the storm SCRUM-331 was about.
     stopVirtualBox();
+    await virtualBoxLease?.stop();
     await app.close();
     await closeDb();
     process.exit(0);
@@ -111,5 +118,41 @@ try {
  * rather than a simulation of one, which is what makes pairing, config
  * bundles, commands and heartbeats provable on Render with no hardware. It is
  * a no-op unless PROCESS_ROLES names `edge`.
+ *
+ * **Behind a lease since SCRUM-331.** The box is one `core.box` row, and a
+ * Render rollover runs two instances of this service for a few seconds. Both
+ * used to start an agent against that row, take each other's credential away
+ * and re-register in a loop — 549 registrations of one box in a day on
+ * staging, each throwing its offline cache away. The lease is a Postgres
+ * advisory lock held on a connection of its own: the instance that takes it
+ * starts the box, the instance that does not starts nothing and stands by, and
+ * the lock goes away with the container that held it.
  */
-await startVirtualBox({ db, env, log: app.log, port });
+if (processRoles(env).includes('edge')) {
+  const boxes = boxSettings();
+  virtualBoxLease = createVirtualBoxLease({
+    // The box this deployment's agent stands for. Every instance of this
+    // service reads the same two variables, so every instance computes the
+    // same key — which is the whole point of it.
+    name: `virtual-box:${boxes.agentBranchCode}/${boxes.agentSlot}`,
+    databaseUrl: env.DATABASE_URL ?? process.env.DATABASE_URL,
+    log: app.log,
+    applicationName: `oto-api-edge-${env.DEPLOY_ENV}`,
+    onAcquire: async () => {
+      // `startVirtualBox` answers null rather than throwing when the agent
+      // does not start. Holding the lease with no box running would lock the
+      // standing-by instance out for good, so a failed start is thrown here
+      // and the lease gives the lock back for the next pass.
+      const started = await startVirtualBox({ db, env, log: app.log, port });
+      if (!started) throw new Error('the virtual box did not start');
+    },
+    onLoss: () => stopVirtualBox(),
+  });
+  // Standing by is not a reason to hold the boot: the api serves either way,
+  // and the lease starts the box on whichever pass wins it.
+  await virtualBoxLease.start();
+} else {
+  // Says why in one line and returns null — the role check and its message
+  // live in `services/box.ts` and are not repeated here.
+  await startVirtualBox({ db, env, log: app.log, port });
+}
