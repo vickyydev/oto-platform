@@ -4,6 +4,39 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 13:41 — `main` is `96523cd`; staging is `adff73c` (Render is deploying `b7d7b67` → `7b746f1`); CI green through `adff73c`
+>
+> **Since 13:12:** landed the branch clone R-03 (`2740291` + the two
+> `app.ts` lines), **331** (`adff73c` — advisory-lock lease, refusal
+> back-off; a failed box start gives the lease back, statement timeout on
+> the probe), **253/255/327** (`b7d7b67` — archived tenancy stops trading,
+> record scope and foreign file owners refused, the code-minting routes
+> declare secretResponse; 327's premise — an ERROR line per pairing — was
+> false and the comments now say what was true), **335** (`7b746f1` — the
+> rate-limit builder now raises an AppError, so a capped request answers
+> 429 not 500). **Deployed with staging evidence:** 233, 306; 204's three
+> landed halves are evidenced and commented (ticket stays In Progress).
+> Raised: 345 (codes unique per operator block cloning coded items — owner
+> decision), 346 (Discounts panel styled for a dark screen). Left on
+> staging by the passes: member +66800000233 with one child and a draft
+> visit, one unpaid `tendering` sale, booking OTO-734160-3268 redeemed,
+> product "Grip socks M" 8850000000017, sales T1-000006/7.
+>
+> **Running:** gates — 204 panel fixes (`wf_7d83497d`); builds — 337/338
+> (`wf_438d7369`), 328 (`wf_384ce931`), 333/334 (`wf_e70284a0`), 329
+> (`wf_3d5b8bf8`), 325 (`wf_27963949`), 342 (`wf_eb99843a`), 346
+> (`wf_d83140b5`); planning — SCRUM-206 tenders read-only fan-out
+> (`wf_66f5e63a` → `scratchpad/plan-206/PLAN.md`); evidence — 331/253/255/
+> 327 waiting for Render at `b7d7b67` (`wf_969f6625`). Watchers wait for
+> Render at `b7d7b67` and `7b746f1`.
+>
+> **Next:** land each on its gate; 341 after the 204 fixes free
+> `api/menu.ts`; 343/344 after 333/334 free `sale.ts`; then the tenders
+> slices from PLAN.md (206), 207, 208. Owner decisions outstanding: 254's
+> two calls, 306's read-only staff, 327's retried pairing minting a second
+> credential, 345, 326, the "HKT Central" app-only row (268), the
+> deploy-bot paid service.
+
 > ## Status on 2026-09-23 13:12 — `main` is `2a9dd25`; staging is `deaf34d` (Render is deploying `849bc17`); CI green through `fa3785a`
 >
 > **Since 12:30:** landed 252/254 (`6ea6220`), 330 (`deaf34d`), 233
