@@ -468,9 +468,9 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > service: provider simulator, prefix SBX, inquiry 10 s), the Console's
 > gateway simulator panel. Open for the sandbox session: the gateway
 > stamp's zone (paid_at is our receipt clock until 2C2P settles it);
-> O-1 the credentials. Staging pass queued (`wf_…de`).
+> O-1 the credentials. Staging pass queued (`wf_52e1356a`).
 >
-> **Running:** G fix round (`wf_1bc3a29f`); evidence — D (`wf_…de`).
+> **Running:** G fix round (`wf_1bc3a29f`); evidence — D (`wf_52e1356a`).
 > checkpoint part 1 landed: the tenders plan and its five reader findings in `docs/progress/plans/206-tenders/` (the void password redacted in its plain AND hex forms — the gate found the seventh, hex-encoded in a sample frame), the session helpers in `scripts/session/` with a README (the two mutating Render scripts now need `--apply`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
