@@ -24,7 +24,9 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > (`wf_243eed56`), 360+366 (`wf_24c97017`), 362 (`wf_a0a8fac3`), 367
 > (`wf_f27b330d`); the tenders Slice A fix round (`wf_042f927c`);
 > evidence — the beacb6d batch (`wf_300def37`), 341 (`wf_bc39bddd`).
-> Watchers wait for Render at `4f4188a` and `7faf1d0`.
+> Watchers wait for Render at `4f4188a` and `7faf1d0` (the superseded
+> watchers on earlier shas were stopped). **341 Deployed** with staging
+> evidence (`4698326`, 16:06).
 
 > ## Status on 2026-09-23 15:51 — `main` was `bc05e47`; staging was `2731962`; CI green through `2731962`
 >
