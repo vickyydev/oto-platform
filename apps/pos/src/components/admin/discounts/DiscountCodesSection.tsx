@@ -477,12 +477,13 @@ export function DiscountCodesSection() {
           const isInactive = d.active === false;
 
           return (
+            // The back office renders light, so the row surface is the
+            // `bg-foreground/[0.02]` the Merch and Add-ons panels beside it
+            // use — a black overlay reads as a grey block here (SCRUM-346).
             <div
               key={d.code}
-              className={`flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 ${
-                isInactive || isExpired
-                  ? 'border-foreground/10 bg-black/10 opacity-60'
-                  : 'border-foreground/10 bg-black/20'
+              className={`flex flex-wrap items-center gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3 ${
+                isInactive || isExpired ? 'opacity-60' : ''
               }`}
             >
               {/* QR preview */}
@@ -501,23 +502,23 @@ export function DiscountCodesSection() {
                   <span className="rounded-full bg-foreground/5 px-2 py-0.5 text-[11px] font-semibold text-foreground/60">
                     {fmtValue(d)}
                   </span>
-                  <span className="rounded-full bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-300">
+                  <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] font-semibold text-sky-600">
                     {d.type === 'free_item'
                       ? `Free: ${allFreeItems.find((m) => m.id === d.freeItemId)?.name ?? d.freeItemId ?? 'item'}`
                       : formatDiscountTargetLabel(d.target)}
                   </span>
                   {isInactive && (
-                    <span className="rounded-full bg-rose-400/10 px-2 py-0.5 text-[11px] font-semibold text-rose-300">
+                    <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[11px] font-semibold text-destructive">
                       Inactive
                     </span>
                   )}
                   {!isInactive && isExpired && (
-                    <span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
                       Expired
                     </span>
                   )}
                   {!isInactive && isNotYetValid && (
-                    <span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
                       Not yet valid
                     </span>
                   )}
@@ -585,9 +586,8 @@ export function DiscountCodesSection() {
                     size="sm"
                     onClick={() => setPendingDelete(d.code)}
                     aria-label={`Delete ${d.code}`}
-                    className="text-rose-300 hover:text-rose-200"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 text-destructive" />
                   </Button>
                 </div>
               )}
