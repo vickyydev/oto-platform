@@ -170,6 +170,27 @@ describe('permission bundles (S2-01b)', () => {
     }
   });
 
+  /**
+   * SCRUM-306 — the booking pair is carried by the roles that work a counter.
+   *
+   * `apps/api/src/routes/bookings.ts` asks for exactly these two. A route
+   * switched to a permission no bundle carries is a deployment where nobody
+   * can look an arrival up or let a family in, and the sync that grants them
+   * reads this file — so this is where that is said.
+   */
+  it('reception and branch_manager carry the booking pair', async () => {
+    const { ROLE_BUNDLES } = await import('../src/permissions');
+    for (const roleName of ['reception', 'branch_manager'] as const) {
+      expect(ROLE_BUNDLES[roleName]).toContain('pos:booking:read');
+      expect(ROLE_BUNDLES[roleName]).toContain('pos:booking:redeem');
+    }
+    // Read-only `staff` hold neither: the waiting list names and numbers every
+    // family arriving today, and it was on every counter session while the
+    // routes borrowed `pos:visit:read`.
+    expect(ROLE_BUNDLES.staff).not.toContain('pos:booking:read');
+    expect(ROLE_BUNDLES.staff).not.toContain('pos:booking:redeem');
+  });
+
   // The dominance rule (S2-01a) only lets an account grant a role whose every
   // permission it already holds: a manager who could not grant `reception`
   // could not staff their own branch.

@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { and, eq, sql } from 'drizzle-orm';
+import { hash } from '@node-rs/argon2';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   account,
@@ -11,10 +12,14 @@ import {
   box,
   branch,
   employee,
+  role,
+  roleAssignment,
+  rolePermission,
   station,
   syncChange,
 } from '@oto/db';
-import { newId } from '@oto/shared';
+import { platformSync } from '@oto/db/seed';
+import { newId, type Permission } from '@oto/shared';
 import {
   CENTRAL_BRANCH_CODE,
   CHALONG_BRANCH_CODE,
@@ -179,13 +184,15 @@ let planted = 0;
 async function plantBooking(opts: {
   status?: string;
   payloadRedemption?: Record<string, unknown> | null;
+  /** Central unless another park is named — both are the same operator's. */
+  branchId?: string;
 }): Promise<{ id: string; reference: string }> {
   const id = newId();
   const reference = `OTO-PLANT-${String(++planted).padStart(4, '0')}`;
   await ctx.db.insert(booking).values({
     id,
     operatorId: centralOperatorId,
-    branchId: centralId,
+    branchId: opts.branchId ?? centralId,
     reference,
     bookingDate: new Date().toISOString().slice(0, 10),
     status: opts.status ?? 'paid',
@@ -944,5 +951,194 @@ describe('SCRUM-234 — a booking belongs to the park it was booked at', () => {
     }
     const redeem = await call('POST', `/bookings/${made.id}/redeem`, { payload: {} });
     expect(redeem.statusCode).toBe(401);
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+/**
+ * SCRUM-306 — the booking routes ask for booking permissions.
+ *
+ * SCRUM-234 guarded reading with `pos:visit:read` and redeeming with
+ * `pos:voucher:redeem` and said why in the route file: a permission minted on
+ * the day its route is written is grantable to nobody until the roles are
+ * synced. The pair exists now, `reception` and `branch_manager` carry it, and
+ * these are the assertions that say the borrowing is actually over rather than
+ * renamed — an account holding EXACTLY what the routes used to ask for is
+ * refused by both of them.
+ *
+ * The bookings here are planted rather than booked: `POST /public/bookings` is
+ * rate-limited to twenty a minute from one address and this file has already
+ * spent them. Nothing in this section is about how the row was made.
+ */
+describe('SCRUM-306 — the booking pair is its own permission', () => {
+  /** What the two routes used to ask for, and nothing else. */
+  const BORROWED: Permission[] = ['pos:visit:read', 'pos:voucher:redeem'];
+  const PAIR: Permission[] = ['pos:booking:read', 'pos:booking:redeem'];
+
+  /** Signed in holding the borrowed pair at Central, through an operator role. */
+  const BORROWER = { phone: '+66899000306', password: 'borrowed1234' };
+  let borrower: string;
+  /** The seeded `reception` system role — the rows the sync owns. */
+  let receptionRoleId: string;
+
+  /** The permissions one role carries, as the database holds them. */
+  const bundleRows = async (roleId: string): Promise<string[]> => {
+    const rows = await ctx.db
+      .select({ permission: rolePermission.permission })
+      .from(rolePermission)
+      .where(eq(rolePermission.roleId, roleId));
+    return rows.map((r) => r.permission).sort();
+  };
+
+  beforeAll(async () => {
+    const roleId = newId();
+    await ctx.db
+      .insert(role)
+      .values({ id: roleId, operatorId: centralOperatorId, name: 'arrivals desk', isSystem: false });
+    for (const permission of BORROWED) {
+      await ctx.db.insert(rolePermission).values({ id: newId(), roleId, permission });
+    }
+
+    const accountId = newId();
+    await ctx.db.insert(account).values({
+      id: accountId,
+      operatorId: centralOperatorId,
+      phone: BORROWER.phone,
+      passwordHash: await hash(BORROWER.password),
+      phoneVerifiedAt: new Date(),
+      status: 'active',
+    });
+    await ctx.db.insert(roleAssignment).values({
+      id: newId(),
+      accountId,
+      roleId,
+      scopeType: 'branch',
+      scopeId: centralId,
+    });
+
+    borrower = await signInAs(ctx.app, BORROWER.phone, BORROWER.password);
+    const moved = await ctx.app.inject({
+      method: 'PUT',
+      url: '/me/session/branch',
+      headers: { cookie: borrower },
+      payload: { branchId: centralId },
+    });
+    expect(moved.statusCode).toBe(200);
+
+    const [rec] = await ctx.db
+      .select({ id: role.id })
+      .from(role)
+      .where(and(eq(role.name, 'reception'), isNull(role.operatorId)))
+      .limit(1);
+    receptionRoleId = rec!.id;
+    expect(await bundleRows(receptionRoleId)).toEqual(expect.arrayContaining(PAIR));
+  });
+
+  it('refuses the waiting list to an account holding only the old read permission', async () => {
+    const made = await plantBooking({});
+    const list = await call('GET', `/bookings?branchId=${centralId}`, { cookie: borrower });
+    expect(list.statusCode).toBe(403);
+    // A reference that really is at this branch, so the refusal is the guard's
+    // and not a 404 wearing its clothes.
+    const one = await call('GET', `/bookings/by-reference/${made.reference}?branchId=${centralId}`, {
+      cookie: borrower,
+    });
+    expect(one.statusCode).toBe(403);
+  });
+
+  it('refuses the claim to an account holding only pos:voucher:redeem, and writes nothing', async () => {
+    const made = await plantBooking({});
+    const res = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: borrower,
+      payload: { stationId: centralTillId },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(await storedRedemption(made.id)).toBeNull();
+    expect(await redeemAuditRows(made.id)).toHaveLength(0);
+    const [row] = await ctx.db.select().from(booking).where(eq(booking.id, made.id)).limit(1);
+    expect(row!.status).toBe('paid');
+
+    // And it is still there for somebody who holds the pair: reception, as the
+    // seed grants it, redeems the same booking.
+    const ok = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId },
+    });
+    expect(ok.statusCode, JSON.stringify(ok.body)).toBe(200);
+    expect((ok.body.booking as BookingView).status).toBe('redeemed');
+  });
+
+  it('reception holds both at its own branch, and the resolver says so', async () => {
+    const res = await call('GET', '/me/permissions', { cookie: som });
+    expect(res.statusCode).toBe(200);
+    const effective = res.body.permissions as Array<{
+      permission: string;
+      scopeType: string;
+      scopeId: string | null;
+    }>;
+    for (const permission of PAIR) {
+      expect(
+        effective.some(
+          (p) => p.permission === permission && p.scopeType === 'branch' && p.scopeId === centralId,
+        ),
+        `reception holds ${permission} at Central`,
+      ).toBe(true);
+    }
+  });
+
+  it('a branch manager lists and redeems at the park she manages', async () => {
+    const made = await plantBooking({ branchId: chalongId });
+    const list = await call('GET', `/bookings?branchId=${chalongId}`, { cookie: dao });
+    expect(list.statusCode).toBe(200);
+    expect(listed(list).map((b) => b.id)).toContain(made.id);
+
+    const res = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: dao,
+      payload: { stationId: chalongTillId },
+    });
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+    expect((res.body.booking as BookingView).status).toBe('redeemed');
+  });
+
+  /**
+   * The deployment hazard the ticket is about, driven rather than argued: the
+   * routes are only as good as the rows the sync writes. Staging runs
+   * `platformSync` as its pre-deploy step, so this is that step, against a real
+   * database, proving the reception role comes back holding exactly the two.
+   */
+  it('the sync is what grants them — removed, reception is refused; re-synced, it is not', async () => {
+    const made = await plantBooking({});
+    const before = await bundleRows(receptionRoleId);
+
+    await ctx.db
+      .delete(rolePermission)
+      .where(
+        and(eq(rolePermission.roleId, receptionRoleId), inArray(rolePermission.permission, PAIR)),
+      );
+    const without = await bundleRows(receptionRoleId);
+    expect(without).toHaveLength(before.length - 2);
+
+    const refusedList = await call('GET', `/bookings?branchId=${centralId}`, { cookie: som });
+    expect(refusedList.statusCode).toBe(403);
+    const refusedClaim = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId },
+    });
+    expect(refusedClaim.statusCode).toBe(403);
+    expect(await storedRedemption(made.id)).toBeNull();
+
+    await platformSync(ctx.db);
+
+    const after = await bundleRows(receptionRoleId);
+    expect(after).toHaveLength(without.length + 2);
+    // Exactly the two, and nothing else moved in the bundle.
+    expect(after).toEqual(before);
+
+    const ok = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId },
+    });
+    expect(ok.statusCode, JSON.stringify(ok.body)).toBe(200);
   });
 });

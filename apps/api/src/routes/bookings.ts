@@ -33,20 +33,21 @@ import { opCtx, withTx } from '../services/tx';
  * `apps/pos/src/dev/driveBookingRedemption.ts` drives the till against: the
  * waiting list, one booking by its reference, and the claim.
  *
- * **Guarded as the visit it is about to become.** These routes mint no new
- * permission. A booking is a branch's own record of people who are coming
- * today, so reading one is guarded by `pos:visit:read` — held by every counter
- * role — and redeeming it by `pos:voucher:redeem`, which reception and
- * managers hold and read-only `staff` do not. That split is the one the act
- * deserves: anybody at the counter may look an arrival up, and letting a
- * family through the gate on a payment taken elsewhere is a selling action.
+ * **Guarded by its own pair of permissions** (SCRUM-306). Reading a booking
+ * takes `pos:booking:read` and claiming one takes `pos:booking:redeem`. Until
+ * this ticket both were borrowed — reading as `pos:visit:read`, redeeming as
+ * `pos:voucher:redeem` — because a permission minted on the day its route is
+ * written is grantable to nobody until the roles are synced, and a counter
+ * refused at both parks is worse than a borrowed name. The pair is in
+ * `packages/shared/src/permissions.ts` and in the `reception` and
+ * `branch_manager` bundles, which staging's pre-deploy sync applies, so the
+ * borrowing is over: an operator can now say who may look an arrival up and
+ * who may let a family through the gate without that also deciding what they
+ * do with a voucher or a visit.
  *
- * A dedicated `pos:booking:*` pair would read better and is deliberately not
- * added here: `packages/shared/src/permissions.ts` declares the vocabulary
- * ahead of the routes precisely because a permission minted on the day its
- * route is written is grantable to nobody until the next seed, and reception
- * on staging would hold it at neither park. Worth its own ticket, with the
- * seeding that goes with it.
+ * Read-only `staff` hold neither, so the waiting list is no longer on every
+ * counter session the way `pos:visit:read` put it: it names and numbers every
+ * family arriving today.
  */
 export async function bookingRoutes(app: App): Promise<void> {
   /**
@@ -76,7 +77,7 @@ export async function bookingRoutes(app: App): Promise<void> {
     const branchId = named ?? auth.branchId;
     if (!branchId) throw errors.badRequest('No active branch on this session');
     const br = await loadBranchForOperator(auth.operatorId, branchId);
-    await req.requirePermission('pos:visit:read', { branchId: br.id });
+    await req.requirePermission('pos:booking:read', { branchId: br.id });
     return { auth, branch: br };
   };
 
@@ -93,7 +94,7 @@ export async function bookingRoutes(app: App): Promise<void> {
   app.get(
     '/',
     {
-      config: { permission: 'pos:visit:read', target: { branchId: 'query.branchId' } },
+      config: { permission: 'pos:booking:read', target: { branchId: 'query.branchId' } },
       schema: {
         description: "One branch's bookings — the redeem screen's waiting list",
         querystring: z.object({
@@ -149,7 +150,7 @@ export async function bookingRoutes(app: App): Promise<void> {
   app.get(
     '/by-reference/:reference',
     {
-      config: { permission: 'pos:visit:read', target: { branchId: 'query.branchId' } },
+      config: { permission: 'pos:booking:read', target: { branchId: 'query.branchId' } },
       schema: {
         description: 'One booking at this branch by its reference',
         params: z.object({ reference: z.string().min(1).max(64) }),
@@ -188,7 +189,7 @@ export async function bookingRoutes(app: App): Promise<void> {
   app.post(
     '/:id/redeem',
     {
-      config: { permission: 'pos:voucher:redeem' },
+      config: { permission: 'pos:booking:redeem' },
       schema: {
         description: 'Redeem an online booking at the counter — once',
         params: z.object({ id: z.string().uuid() }),
@@ -209,7 +210,7 @@ export async function bookingRoutes(app: App): Promise<void> {
       if (!found) throw errors.notFound('Booking not found');
       // A booking belongs to the park it was booked at. The other park's
       // counter is refused here, before the row is locked or anything written.
-      await req.requirePermission('pos:voucher:redeem', { branchId: found.branchId });
+      await req.requirePermission('pos:booking:redeem', { branchId: found.branchId });
 
       const claimed = req.body.stationId ?? auth.stationId;
       let stationId: string | null = null;

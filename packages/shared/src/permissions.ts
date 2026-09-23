@@ -98,6 +98,27 @@ export const PERMISSIONS = [
   'pos:visit:create',
   'pos:visit:read',
   'pos:visit:update',
+  // POS — bookings made online, claimed at a counter (SCRUM-306)
+  /**
+   * The redeem screen's waiting list: who paid on the booking site and is
+   * expected at this branch.
+   *
+   * Its own permission rather than the `pos:visit:read` the routes borrowed
+   * while no `pos:booking:*` existed to grant. A booking is not yet a visit,
+   * and the list is not the same thing to hold: it carries the name and phone
+   * of every family arriving, member or not, which is why it sits beside
+   * `pos:member:list` in what it exposes rather than beside a single lookup.
+   */
+  'pos:booking:read',
+  /**
+   * Claiming one at the counter — once, on a payment taken somewhere else.
+   *
+   * Borrowed `pos:voucher:redeem` until this ticket. A voucher handed over the
+   * counter and a family arriving on an online booking are different acts, and
+   * while the two shared a permission no role could carry one without the
+   * other.
+   */
+  'pos:booking:redeem',
   /**
    * Manager gate: taking a LIVE station away from the till holding it (S2-05).
    *
@@ -312,6 +333,11 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:child:update',
     'pos:visit:create',
     'pos:visit:update',
+    // The arrivals list and the claim (SCRUM-306). Both counter roles hold
+    // them; read-only `staff` hold neither, which is where `pos:visit:read`
+    // used to put the waiting list.
+    'pos:booking:read',
+    'pos:booking:redeem',
     // Deliberately not in `reception`: a till taking a live station from a
     // colleague is the moment somebody senior should be standing there.
     'pos:station:takeover',
@@ -357,6 +383,8 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:child:update',
     'pos:visit:create',
     'pos:visit:update',
+    'pos:booking:read',
+    'pos:booking:redeem',
     'pos:cash:session_open',
     'pos:cash:session_close',
     'pos:cash:movement',
