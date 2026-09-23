@@ -603,9 +603,14 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
                 {modifierGroups.map((g) => {
                   const checked = form.linkedGroupIds.includes(g.id);
                   return (
+                    // The back office renders light: a black overlay reads as a
+                    // grey block here. This row and the inline group block below
+                    // sit ON the card's `bg-foreground/[0.02]`, so they take the
+                    // inset weight (`bg-foreground/5`) rather than the row one,
+                    // which would vanish into the card (SCRUM-363, after 354).
                     <label
                       key={g.id}
-                      className="flex items-center justify-between gap-3 rounded-xl bg-black/20 px-3 py-2 text-sm"
+                      className="flex items-center justify-between gap-3 rounded-xl bg-foreground/5 px-3 py-2 text-sm"
                     >
                       <span className="min-w-0">
                         <span className="font-medium">{g.name}</span>
@@ -653,7 +658,7 @@ export function MenuItemForm({ open, item, onClose, onSave }: MenuItemFormProps)
                 return (
                   <div
                     key={g.id}
-                    className="flex flex-col gap-3 rounded-xl bg-black/20 p-3"
+                    className="flex flex-col gap-3 rounded-xl bg-foreground/5 p-3"
                   >
                     <div className="flex items-start gap-2">
                       <div className="flex flex-1 flex-col gap-1.5">
