@@ -151,6 +151,7 @@ export function BoxDrawer({
         <BoxControls
           box={box}
           stations={stations}
+          deviceList={deviceList}
           outboxDepth={vitals.outboxDepth}
           onSent={(actionId) => {
             if (actionId) setActionFilter(actionId);
@@ -742,8 +743,8 @@ function EditDeviceForm({
 // ---------------------------------------------------------------------------
 
 /** The commands worth a button, in the order somebody reaches for them. */
-const SAFE_COMMANDS: { kind: BoxCommandKind; needsStation?: boolean; detail: string }[] = [
-  { kind: 'test_print', needsStation: true, detail: 'Prints a test on the station’s receipt printer.' },
+const SAFE_COMMANDS: { kind: BoxCommandKind; needsPrinter?: boolean; detail: string }[] = [
+  { kind: 'test_print', needsPrinter: true, detail: 'Prints a test page on the printer chosen above.' },
   { kind: 'config_apply', detail: 'Pulls the station bundle again without waiting for the next poll.' },
   { kind: 'collect_logs', detail: 'Uploads the agent’s recent log for the drawer below.' },
   { kind: 'clear_cache', detail: 'Throws the cached catalogue and members away and pulls them whole.' },
@@ -752,18 +753,101 @@ const SAFE_COMMANDS: { kind: BoxCommandKind; needsStation?: boolean; detail: str
   { kind: 'go_online', detail: 'Lets it talk to the cloud again and drain its outbox.' },
 ];
 
+/** The same test the agent and the panels above apply: a kind that ends in `printer`. */
+const isPrinter = (kind: string): boolean => kind.endsWith('printer');
+
+/** One printer a station uses, and the job it does there. */
+interface StationPrinter {
+  deviceId: string;
+  /** The `station_device` role — `receipt`, `kids_band`, `kitchen`. */
+  role: string;
+  label: string;
+}
+
+/**
+ * The printers one station can print on, newest read of the box's devices
+ * deciding what is still there.
+ *
+ * WHY THE LIST IS THE STATION'S AND NOT THE BOX'S. A queued test print is
+ * routed ON THE BOX by the job a printer does at a station — `routeTo` in
+ * `packages/box-agent/src/printing/queue.ts` matches `role` against that
+ * station's assignments and never looks at a device id — so a printer this
+ * station does not use cannot be asked for: naming it would queue a command
+ * whose paper comes out of the station's receipt printer instead, which is
+ * exactly the kind of quiet wrong answer this control is being fixed for. The
+ * role therefore travels in the payload beside the device id.
+ *
+ * The device row is looked up rather than trusted from the assignment, because
+ * an archived device keeps its assignment until somebody re-points the station
+ * and must not be offered as somewhere to print.
+ */
+function stationPrinters(station: StationRow | undefined, boxDevices: DeviceRow[]): StationPrinter[] {
+  const live = new Map(boxDevices.filter((d) => !d.archived).map((d) => [d.id, d] as const));
+  const printers: StationPrinter[] = [];
+  for (const assignment of station?.devices ?? []) {
+    const device = live.get(assignment.deviceId);
+    if (!device || !isPrinter(device.kind)) continue;
+    printers.push({ deviceId: device.id, role: assignment.role, label: device.label });
+  }
+  return printers;
+}
+
+/**
+ * Why Test print cannot be pressed, in words, or null when it can.
+ *
+ * Deliberately says which of the four things is missing rather than one flat
+ * "unavailable": a box with no station, a device list that has not arrived, a
+ * read that failed, and a station with no printer on it are four different
+ * jobs for whoever is reading. And "this box has no printer" is a claim about
+ * the park's equipment, so it is only made from a list that was actually read
+ * — an unread or failed list says so instead.
+ */
+function testPrintBlockedReason(
+  deviceList: BoxDeviceList,
+  stations: StationRow[],
+  station: StationRow | undefined,
+  printers: StationPrinter[],
+): string | null {
+  if (stations.length === 0 || !station) return 'this box has no station to print from yet';
+  if (deviceList.state === 'unread') return "this box's devices have not been read yet";
+  if (deviceList.state === 'failed') return "this box's devices could not be read, so no printer can be named";
+  if (printers.length > 0) return null;
+  // A stale list is an earlier read's answer and the section above says so; it
+  // is still a read, and the printers it named are the last ones that were
+  // true — which beats refusing to say anything.
+  return deviceList.devices.some((d) => !d.archived && isPrinter(d.kind))
+    ? `${station.name} has no printer assigned`
+    : 'this box has no printer';
+}
+
 function BoxControls({
   box,
   stations,
+  deviceList,
   outboxDepth,
   onSent,
 }: {
   box: BoxRow;
   stations: StationRow[];
+  /**
+   * This box's devices and what that list is worth. The printer picker below
+   * is the fifth surface that states something about a box's equipment from
+   * it, and like the other four it reads `state` before it says it.
+   */
+  deviceList: BoxDeviceList;
   outboxDepth: number | null;
   onSent: (actionId?: string | null) => void;
 }) {
-  const [stationId, setStationId] = useState(stations[0]?.id ?? '');
+  /**
+   * What somebody CHOSE, in both pickers, with null meaning "still the
+   * default". Held as the choice rather than as the resolved id so that the
+   * printer follows the station when the station changes, and so neither field
+   * can be left pointing at something that is no longer on the box — the trap
+   * PrintPanel documents, where a value seeded at mount outlives the list it
+   * came from.
+   */
+  const [chosenStation, setChosenStation] = useState<string | null>(null);
+  const [chosenPrinter, setChosenPrinter] = useState<string | null>(null);
   const [busyKind, setBusyKind] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
@@ -784,6 +868,22 @@ function BoxControls({
     }
   };
 
+  const station = stations.find((s) => s.id === chosenStation) ?? stations[0];
+  const stationId = station?.id ?? '';
+  const printers = stationPrinters(station, deviceList.devices);
+  /**
+   * The station's receipt printer is the default, because it is the one whose
+   * paper path a person is standing in front of — the same choice
+   * `ROLE_FOR_KIND.test_page` makes on the box. A choice already made wins
+   * while that printer is still on the station.
+   */
+  const selected =
+    printers.find((p) => p.deviceId === chosenPrinter) ??
+    printers.find((p) => p.role === 'receipt') ??
+    printers[0] ??
+    null;
+  const blockedReason = testPrintBlockedReason(deviceList, stations, station, printers);
+
   return (
     <section>
       <h3 className="text-sm font-bold mb-2">Controls</h3>
@@ -793,29 +893,52 @@ function BoxControls({
       </p>
 
       {stations.length > 0 && (
-        <div className="mb-3">
+        <div className="mb-3 grid gap-3 sm:grid-cols-2">
           <Field label="Station a test print goes to">
             <Select
               value={stationId}
-              onChange={setStationId}
+              onChange={(next) => {
+                setChosenStation(next);
+                // The chosen printer belonged to the station being left, so the
+                // field goes back to following the new station's receipt printer
+                // rather than naming a device that station does not use.
+                setChosenPrinter(null);
+              }}
               options={stations.map((s) => ({ value: s.id, label: s.name }))}
             />
           </Field>
+          {printers.length > 0 && (
+            <Field
+              label="Printer it comes out of"
+              hint="The printers this station uses. The box routes a test page by the job a printer does here, so it is that job the command names."
+            >
+              <Select
+                value={selected?.deviceId ?? ''}
+                onChange={setChosenPrinter}
+                options={printers.map((p) => ({ value: p.deviceId, label: p.label }))}
+              />
+            </Field>
+          )}
         </div>
       )}
 
       <div className="flex flex-wrap gap-2">
         {SAFE_COMMANDS.map((command) => {
-          const blocked = command.needsStation && !stationId;
+          const blocked = command.needsPrinter === true && (blockedReason !== null || !selected);
           return (
             <Button
               key={command.kind}
               variant="outline"
               size="sm"
-              title={blocked ? 'This box has no station to print from yet' : command.detail}
+              title={blocked ? (blockedReason ?? 'There is no printer to print on') : command.detail}
               disabled={busyKind !== null || blocked}
               onClick={() =>
-                void send(command.kind, command.needsStation ? { stationId } : undefined)
+                void send(
+                  command.kind,
+                  command.needsPrinter && selected
+                    ? { deviceId: selected.deviceId, stationId, role: selected.role }
+                    : undefined,
+                )
               }
             >
               {busyKind === command.kind ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
@@ -824,6 +947,12 @@ function BoxControls({
           );
         })}
       </div>
+
+      {/* Why the button is off, on the page rather than only in its tooltip: a
+          disabled control with no reason beside it is read as a broken one. */}
+      {blockedReason && (
+        <p className="mt-2 text-xs text-muted-foreground">Test print is off — {blockedReason}.</p>
+      )}
 
       {note && <p className="mt-2 text-sm text-muted-foreground">{note}</p>}
       {failed && <p className="mt-2 text-sm text-destructive break-words">{failed}</p>}

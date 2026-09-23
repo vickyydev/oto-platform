@@ -11,13 +11,14 @@ import type { DeviceRow } from '@/api/fleet';
  * the strength of a request that never answered, and somebody walks to a
  * counter to look at a box that is fine.
  *
- * So the difference travels with the list, and the four places that state
+ * So the difference travels with the list, and the five places that state
  * something about a box's equipment from it — the device list, the Simulator
- * panel, the Printing panel, and step 1 of the station wizard, where a person
- * is about to assign work to equipment they are being shown — read `state`
- * before they say it.
+ * panel, the Printing panel, step 1 of the station wizard, where a person
+ * is about to assign work to equipment they are being shown, and the Test
+ * print printer picker in the box drawer's Controls (SCRUM-358) — read
+ * `state` before they say it.
  *
- * If a fifth surface is added, it belongs on this list. An enumeration that
+ * If a sixth surface is added, it belongs on this list. An enumeration that
  * has fallen behind the code is how a guarantee stops being one.
  */
 export interface BoxDeviceList {
