@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Download, Pencil, Trash2, Plus, SlidersHorizontal, Upload } from 'lucide-react';
 import { type MenuItem, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
-import { MOCK_MUTATOR_TICKETS, useCatalogStore } from '@/store/CatalogStoreContext';
+import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { getActiveBranch } from '@/store/catalogStore';
 import { apiBranchIdForSlug, loadMenuFromApi } from '@/api/catalogBridge';
 import { menuApi } from '@/api/menu';
@@ -29,11 +29,13 @@ const groupCount = (item: MenuItem) => item.modifierGroups?.length ?? 0;
  * Admin editing screen for the F&B menu.
  *
  * The list is the shared catalog store, which `loadMenuFromApi` fills from the
- * branch's `pos.product` rows. Two things write, and they write to different
- * places: Export and Import go to the platform, and an applied import is
- * re-read into the store here; Add item, edit and delete still go through the
- * store's mutators alone, so those reach the F&B order station on its next
- * mount and no further. The banner says as much, and says it in those terms.
+ * branch's `pos.product` rows, and everything on this screen writes back to
+ * them: Export and Import go through the platform, and since SCRUM-341 so do
+ * Add item, the pencil and the bin. Each save re-reads the branch's menu
+ * (`reloadMenuInto`), so what is on the list is what the database holds and a
+ * refused save leaves the refusal's own answer on screen rather than the edit.
+ *
+ * The one part that reaches no route is Track stock — see the banner.
  */
 export function MenuPanel() {
   const { menuItems, menuCategories, mutators } = useCatalogStore();
@@ -104,20 +106,19 @@ export function MenuPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* NOT the shared `NotSavedNotice`: on this panel that sentence would read
-          "the database never does" directly above an Import that writes to it.
-          Half of this screen is real and half is not, and the notice has to say
-          which half is which. The ticket is still read from the classification
-          in `CatalogStoreContext`, so a mutator that gets wired and leaves that
-          map stops this compiling. */}
+      {/* The item, its price, its category and its modifier groups persist
+          (SCRUM-341). Track stock does not: `product.stock_item_id` points at a
+          `stock_item` table with no routes, so the switch is dropped the moment
+          this screen re-reads the item it just saved. Written out rather than
+          using `NotSavedNotice`, whose sentence ends "a page reload discards
+          them" — true of the switch, and the opposite of true of the item
+          beside it. The Merch and Add-ons panels say the same thing. */}
       <AdminNoticeBanner>
-        <strong className="font-semibold">
-          Half saved — {MOCK_MUTATOR_TICKETS.upsertMenuItem}.
-        </strong>{' '}
-        The list below is read from the database. Export hands you that same data as a
-        spreadsheet and Import writes it back — an import you apply is stored and
-        survives a reload. Add item, the pencil and the bin are not wired yet: those
-        three stay in this browser tab, and a reload discards them.
+        <strong className="font-semibold">Stock counts are this tab only — SCRUM-204.</strong>{' '}
+        The item, its weekday and weekend prices, its category and its modifier groups
+        save to the database and survive a reload, whether you edit them here or through
+        Import. The Track stock switch reaches no route: it is dropped again as soon as
+        the saved item is read back.
       </AdminNoticeBanner>
 
       {!apiBranchId && (
@@ -254,6 +255,9 @@ export function MenuPanel() {
           // Reconcile the inventory link to match the "Track stock" toggle. Turning
           // it on links a single Default-variant inventory item (size variants are
           // added in the Inventory panel); turning it off removes the link.
+          // Both halves of this are the browser tab's: the item body carries no
+          // stock field (`api/menu.ts:menuItemToApiBody`), so the re-read after
+          // the save drops the link again. The banner above says so.
           let next = item;
           const hasLink = !!item.inventoryItemId;
           if (trackStock && !hasLink) {

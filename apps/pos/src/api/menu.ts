@@ -104,6 +104,22 @@ export interface ApiProduct {
   linkedModifierGroupIds: string[];
 }
 
+/**
+ * The body an item WRITE sends, which is not the row an item read answers.
+ *
+ * The links go up under a different name from the one they come back under:
+ * `MenuItemBodySchema` asks for `modifierGroupIds` and the read answers
+ * `linkedModifierGroupIds` (`services/menu.ts:presentMenu`). A body that sends
+ * the read's name has its links dropped by the route's schema without a word,
+ * which is how an item could be linked to a group on screen and to nothing in
+ * the database.
+ */
+export type ApiProductBody = Partial<ApiProduct> & {
+  name: string;
+  kind: ProductKind;
+  modifierGroupIds?: string[];
+};
+
 export interface ApiMenu {
   categories: ApiMenuCategory[];
   /** The shared library AND every item's inline groups; `productId` tells them apart. */
@@ -179,11 +195,11 @@ export const menuApi = {
     api.patch<{ ok: true }>(`/menu/categories/${id}`, body),
   archiveCategory: (id: string) => api.delete<{ ok: true }>(`/menu/categories/${id}`),
 
-  createProduct: (branchId: string, body: Partial<ApiProduct> & { name: string; kind: ProductKind }) =>
+  createProduct: (branchId: string, body: ApiProductBody) =>
     api.post<{ id: string }>(`/branches/${branchId}/menu/products`, body, {
       idempotencyKey: idemKey(),
     }),
-  updateProduct: (branchId: string, id: string, body: Partial<ApiProduct>) =>
+  updateProduct: (branchId: string, id: string, body: Partial<ApiProductBody>) =>
     api.patch<{ ok: true }>(`/branches/${branchId}/menu/products/${id}`, body),
   archiveProduct: (branchId: string, id: string) =>
     api.delete<{ ok: true }>(`/branches/${branchId}/menu/products/${id}`),
@@ -341,6 +357,17 @@ const categoryNamesByArea = new Map<TaxableCategory, string[]>();
 const categoryIdByTaxArea = new Map<string, string>();
 /** `discount_definition.code` is what the prototype uses as the id. */
 const discountIdByCode = new Map<string, string>();
+/**
+ * Each item's INLINE modifier groups as the platform last answered them.
+ *
+ * The item form edits inline groups and shared links in the same dialog, and
+ * they are written through different routes: a link is a field on the item, an
+ * inline group is a `modifier_group` row of its own with `productId` set. The
+ * save needs to know which of the groups in the form the platform already
+ * holds, which of them changed, and which it held and the form no longer has —
+ * see `saveInlineGroups`.
+ */
+const inlineGroupsByProduct = new Map<string, ApiModifierGroup[]>();
 
 const nameKey = (name: string): string => name.trim().toLowerCase();
 
@@ -452,7 +479,7 @@ export function apiProductToMenuItem(p: ApiProduct, inline: ApiModifierGroup[]):
 }
 
 /** The body a menu item edit sends. Fields the form cannot set are carried through. */
-export function menuItemToApiBody(item: MenuItem): Partial<ApiProduct> & { name: string; kind: ProductKind } {
+export function menuItemToApiBody(item: MenuItem): ApiProductBody {
   const held = serverFields.get(item.id);
   return {
     kind: 'menu',
@@ -470,10 +497,18 @@ export function menuItemToApiBody(item: MenuItem): Partial<ApiProduct> & { name:
     prepStationOverride: item.prepStationOverride ?? null,
     taxCategoryOverride: item.taxCategoryOverride ?? null,
     translations: item.translations ?? null,
-    stockItemId: item.inventoryItemId ?? null,
+    // `inventoryItemId` is deliberately NOT sent, for the reason written on
+    // `merchItemToApiBody` below: `MenuItemBodySchema` has no `stockItemId`
+    // field, so this one was stripped by the route's schema in silence — the
+    // Track stock switch looked linked and nothing was. `product.stock_item_id`
+    // is a foreign key into `stock_item`, and the prototype's switch mints a
+    // local id (`inv-<item>`) for a row that exists only in this tab.
     sortOrder: held?.sortOrder ?? 0,
     active: held?.active ?? true,
-    linkedModifierGroupIds: item.linkedModifierGroupIds ?? [],
+    // Under the write's name, not the read's — see `ApiProductBody`. An empty
+    // array is sent rather than left out: it is how the last shared group is
+    // unlinked, and the route reads an absent field as "leave the links alone".
+    modifierGroupIds: item.linkedModifierGroupIds ?? [],
   };
 }
 
@@ -595,9 +630,16 @@ export function addOnToApiBody(
   };
 }
 
-/** The body a shared modifier group sends. `options` replaces the whole list. */
+/**
+ * The body a modifier group sends. `options` replaces the whole list.
+ *
+ * `sortOrder` is a parameter because an item's INLINE groups are an ordered
+ * list — the order the kitchen's questions are asked in — where the shared
+ * library is a flat set the Modifiers panel shows alphabetically.
+ */
 export function modifierGroupToApiBody(
   group: ModifierGroup,
+  sortOrder = 0,
 ): Partial<ApiModifierGroup> & { name: string } {
   return {
     name: group.name,
@@ -607,7 +649,7 @@ export function modifierGroupToApiBody(
     // prototype leaves them undefined on a single-choice one.
     minSelect: group.selectionType === 'multi' ? (group.min ?? null) : null,
     maxSelect: group.selectionType === 'multi' ? (group.max ?? null) : null,
-    sortOrder: 0,
+    sortOrder,
     options: group.options.map((o, index) => ({
       id: o.id,
       name: o.name,
@@ -690,6 +732,7 @@ export interface MappedMenu {
 export function mapMenu(menu: ApiMenu): MappedMenu {
   serverFields.clear();
   categoryCodes.clear();
+  inlineGroupsByProduct.clear();
   categoryIdByArea.clear();
   categoryNameById.clear();
   categoryNamesByArea.clear();
@@ -744,6 +787,11 @@ export function mapMenu(menu: ApiMenu): MappedMenu {
       library.push(g);
     }
   }
+  // In the order the questions are asked, not the order the rows arrived: the
+  // item form writes each group's position back as its `sortOrder`, so the list
+  // it was seeded from has to be the sorted one.
+  for (const groups of inlineByProduct.values()) groups.sort((a, b) => a.sortOrder - b.sortOrder);
+  for (const [productId, groups] of inlineByProduct) inlineGroupsByProduct.set(productId, groups);
 
   return {
     categories: menu.categories
@@ -896,4 +944,128 @@ export async function archiveDiscountInApi(
   // dropped it and there is nothing to withdraw.
   if (held) await menuApi.archiveDiscount(held);
   await reloadMenuInto(branchId, branchSlug);
+}
+
+// --- The F&B item and category forms (SCRUM-341) ----------------------------
+// The same shape as the four above — optimistic store write, route, re-read —
+// with two things the shop and the add-on list do not have.
+//
+// One: an ITEM carries its own modifier groups, and they are not a field on it.
+// An inline group is a `modifier_group` row with `productId` set, so saving one
+// item is a product write and then a write per group it asks.
+//
+// Two: these writes have an ORDER that matters. Withdrawing a sub-category
+// re-homes its items onto the parent first and then withdraws the category, and
+// the platform refuses to withdraw a category while items still sit in it. Sent
+// together they race, and the loser is the category withdrawal — which comes
+// back as "still holds 3 items" about items that have just been moved. So menu
+// writes go one at a time, in the order the screen made them.
+
+let menuWrites: Promise<unknown> = Promise.resolve();
+
+/**
+ * Run after every menu write already queued has settled, failed ones included.
+ *
+ * The caller still sees its own rejection — that is what raises the toast and
+ * re-reads the branch — but one refused save does not stop the next from being
+ * attempted.
+ */
+function queued<T>(run: () => Promise<T>): Promise<T> {
+  const next = menuWrites.then(run, run);
+  menuWrites = next.catch(() => undefined);
+  return next;
+}
+
+/**
+ * The item's inline modifier groups, against what the platform last answered.
+ *
+ * A group the form has and the platform does not is created against this item;
+ * one both hold is updated only if something about it changed, because a PATCH
+ * is an audit row and opening an item to correct its price should not write one
+ * per question the kitchen asks; one the platform holds and the form no longer
+ * does is withdrawn.
+ */
+async function saveInlineGroups(productId: string, groups: ModifierGroup[]): Promise<void> {
+  const held = inlineGroupsByProduct.get(productId) ?? [];
+  const heldById = new Map(held.map((g) => [g.id, g]));
+  for (const [index, group] of groups.entries()) {
+    const body = modifierGroupToApiBody(group, index);
+    const before = heldById.get(group.id);
+    if (!before) {
+      await menuApi.createModifierGroup({ ...body, productId });
+      continue;
+    }
+    const unchanged =
+      JSON.stringify(modifierGroupToApiBody(apiGroupToGroup(before), before.sortOrder)) ===
+      JSON.stringify(body);
+    if (!unchanged) await menuApi.updateModifierGroup(group.id, body);
+  }
+  const kept = new Set(groups.map((g) => g.id));
+  for (const g of held) {
+    if (!kept.has(g.id)) await menuApi.archiveModifierGroup(g.id);
+  }
+}
+
+/**
+ * An F&B item from the menu panel's form.
+ *
+ * A new item's id is the platform's, not the form's: the prototype mints a slug
+ * from the name (`menuItem.ts:slugId`) and `product.id` is a uuid, so the
+ * created row's id is what the inline groups are hung off, and the re-read is
+ * what puts it on screen in place of the slug.
+ */
+export async function saveMenuItemToApi(
+  branchId: string,
+  branchSlug: string,
+  item: MenuItem,
+  exists: boolean,
+): Promise<void> {
+  return queued(async () => {
+    const body = menuItemToApiBody(item);
+    let id = item.id;
+    if (exists) await menuApi.updateProduct(branchId, item.id, body);
+    else id = (await menuApi.createProduct(branchId, body)).id;
+    await saveInlineGroups(id, item.modifierGroups ?? []);
+    await reloadMenuInto(branchId, branchSlug);
+  });
+}
+
+export async function archiveMenuItemInApi(
+  branchId: string,
+  branchSlug: string,
+  id: string,
+): Promise<void> {
+  return queued(async () => {
+    await menuApi.archiveProduct(branchId, id);
+    await reloadMenuInto(branchId, branchSlug);
+  });
+}
+
+/**
+ * A menu category. Operator-wide, so the branch is only where the menu is read
+ * back from afterwards — the same as a modifier group or a discount code.
+ */
+export async function saveMenuCategoryToApi(
+  branchId: string,
+  branchSlug: string,
+  category: MenuCategoryDef,
+  exists: boolean,
+): Promise<void> {
+  return queued(async () => {
+    const body = categoryToApiBody(category);
+    if (exists) await menuApi.updateCategory(category.id, body);
+    else await menuApi.createCategory(body);
+    await reloadMenuInto(branchId, branchSlug);
+  });
+}
+
+export async function archiveMenuCategoryInApi(
+  branchId: string,
+  branchSlug: string,
+  id: string,
+): Promise<void> {
+  return queued(async () => {
+    await menuApi.archiveCategory(id);
+    await reloadMenuInto(branchId, branchSlug);
+  });
 }

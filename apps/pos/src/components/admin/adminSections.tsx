@@ -53,8 +53,9 @@ export interface AdminPanel {
    * nothing here reads as protection. SCRUM-236 wires the rest of them up.
    *
    * Merch, Add-ons, Modifiers and Discounts are no longer among them: SCRUM-204
-   * gave the four of them the menu and discount routes, so each carries the
-   * permission those routes declare instead of this flag. A panel that writes
+   * gave the four of them the menu and discount routes, and SCRUM-341 gave the
+   * F&B Menu and F&B Categories forms theirs, so each carries the permission
+   * those routes declare instead of this flag. A panel that writes
    * through and still says `localOnly` offers itself to an account the server
    * will refuse, which is the thing the flag above exists to prevent.
    */
@@ -102,14 +103,16 @@ export const adminNav: AdminNavEntry[] = [
         label: 'F&B Menu',
         icon: UtensilsCrossed,
         description: 'Manage food, drinks, bar and snack items.',
-        localOnly: true,
+        // The item form saves through the menu product routes (SCRUM-341).
+        permission: 'catalog:menu:manage',
       },
       {
         id: 'categories',
         label: 'F&B Categories',
         icon: Tags,
         description: 'Manage menu categories and their default prep & tax.',
-        localOnly: true,
+        // The category form saves through the menu category routes (SCRUM-341).
+        permission: 'catalog:menu:manage',
       },
       {
         id: 'modifiers',

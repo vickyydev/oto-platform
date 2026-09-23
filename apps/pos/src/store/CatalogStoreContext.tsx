@@ -72,10 +72,14 @@ import {
 import {
   archiveAddOnInApi,
   archiveDiscountInApi,
+  archiveMenuCategoryInApi,
+  archiveMenuItemInApi,
   archiveMerchItemInApi,
   archiveModifierGroupInApi,
   saveAddOnToApi,
   saveDiscountToApi,
+  saveMenuCategoryToApi,
+  saveMenuItemToApi,
   saveMerchItemToApi,
   saveModifierGroupToApi,
 } from '@/api/menu';
@@ -130,10 +134,11 @@ const wiredUpsertBranch: typeof upsertBranch = (branch) => {
 };
 
 /**
- * The four catalogue panels (SCRUM-204).
+ * The catalogue panels (SCRUM-204, and the F&B item and category forms in
+ * SCRUM-341).
  *
- * An item is BRANCH-owned and a modifier group and a discount code are
- * operator-wide, but all four write-throughs take the branch: the menu is read
+ * An item is BRANCH-owned and a category, a modifier group and a discount code
+ * are operator-wide, but every write-through takes the branch: the menu is read
  * back per branch afterwards, so an operator-wide edit still needs to know
  * which park's screen to refresh.
  *
@@ -148,6 +153,32 @@ function branchNow(): { id: string; slug: string } | null {
   return id ? { id, slug } : null;
 }
 
+const wiredUpsertMenuItem: typeof upsertMenuItem = (item) => {
+  const exists = snap().menuItems.some((x) => x.id === item.id);
+  upsertMenuItem(item);
+  const branch = branchNow();
+  if (!branch) return;
+  void saveMenuItemToApi(branch.id, branch.slug, item, exists).catch(apiFail('menu item'));
+};
+const wiredDeleteMenuItem: typeof deleteMenuItem = (id) => {
+  deleteMenuItem(id);
+  const branch = branchNow();
+  if (!branch) return;
+  void archiveMenuItemInApi(branch.id, branch.slug, id).catch(apiFail('menu item'));
+};
+const wiredUpsertMenuCategory: typeof upsertMenuCategory = (category) => {
+  const exists = snap().menuCategories.some((x) => x.id === category.id);
+  upsertMenuCategory(category);
+  const branch = branchNow();
+  if (!branch) return;
+  void saveMenuCategoryToApi(branch.id, branch.slug, category, exists).catch(apiFail('category'));
+};
+const wiredDeleteMenuCategory: typeof deleteMenuCategory = (id) => {
+  deleteMenuCategory(id);
+  const branch = branchNow();
+  if (!branch) return;
+  void archiveMenuCategoryInApi(branch.id, branch.slug, id).catch(apiFail('category'));
+};
 const wiredUpsertMerchItem: typeof upsertMerchItem = (item) => {
   const exists = snap().merchItems.some((x) => x.id === item.id);
   upsertMerchItem(item);
@@ -217,6 +248,10 @@ const wiredMutators = {
   upsertPricingOverride: wiredUpsertPricingOverride,
   deletePricingOverride: wiredDeletePricingOverride,
   upsertBranch: wiredUpsertBranch,
+  upsertMenuItem: wiredUpsertMenuItem,
+  deleteMenuItem: wiredDeleteMenuItem,
+  upsertMenuCategory: wiredUpsertMenuCategory,
+  deleteMenuCategory: wiredDeleteMenuCategory,
   upsertMerchItem: wiredUpsertMerchItem,
   deleteMerchItem: wiredDeleteMerchItem,
   upsertAddOn: wiredUpsertAddOn,
@@ -246,19 +281,8 @@ export const MOCK_MUTATOR_TICKETS = {
   // A discount REASON is the free-text list beside the codes and has no table:
   // the codes themselves are `discount_definition` rows and now write through.
   setDiscountReasons: 'SCRUM-230',
-  // The product schema reshape has landed, so these are no longer waiting on a
-  // table: `product`, `product_category`, `modifier_group` and `modifier_option`
-  // hold the weekday/weekend pair, cost, modifiers and translations, the menu on
-  // screen is READ from them (`api/catalogBridge.ts:loadMenuFromApi`), and the
-  // menu panel's Import WRITES to them. What is left of SCRUM-232 is the
-  // write-through for the F&B item and category forms — one form saving an item
-  // is still a change to this tab and nothing else.
-  upsertMenuItem: 'SCRUM-232',
-  deleteMenuItem: 'SCRUM-232',
-  upsertMenuCategory: 'SCRUM-232',
-  deleteMenuCategory: 'SCRUM-232',
-  // Stock is the half of the shop that has tables and no routes: a merch item
-  // and its barcode persist, and what is on the shelf does not.
+  // Stock is the half of the catalogue that has tables and no routes: an item,
+  // its price and its barcode persist, and what is on the shelf does not.
   adjustMerchStock: 'SCRUM-204',
   upsertInventoryItem: 'SCRUM-204',
   deleteInventoryItem: 'SCRUM-204',
@@ -293,10 +317,6 @@ export const MOCK_MUTATOR_TICKETS = {
 export type MockMutatorName = keyof typeof MOCK_MUTATOR_TICKETS;
 
 const mockMutators = {
-  upsertMenuItem,
-  deleteMenuItem,
-  upsertMenuCategory,
-  deleteMenuCategory,
   adjustMerchStock,
   upsertInventoryItem,
   deleteInventoryItem,

@@ -27,7 +27,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { NotSavedNotice } from '../NotSavedNotice';
 import { CategoryFormDialog } from './CategoryFormDialog';
 import { PREP_STATION_LABELS, TAX_CATEGORY_LABELS } from './categoryLabels';
 
@@ -36,14 +35,17 @@ import { PREP_STATION_LABELS, TAX_CATEGORY_LABELS } from './categoryLabels';
  * (not a hardcoded union) and form a two-level tree: top-level categories with
  * optional sub-categories. Each carries a default prep-station and tax category
  * inherited by its menu items; a sub-category may inherit those from its parent.
- * Reads the live shared store and writes back through its mutators, so changes
- * flow to the POS order station in-session.
+ * Reads the live shared store and writes back through its mutators, which since
+ * SCRUM-341 save to `pos.product_category` and re-read the branch, so a change
+ * reaches the POS order station and survives a reload.
  *
  * Deletion guards:
  * - A top-level category that still has sub-categories, items, or scoped
  *   discounts is blocked (resolve those first so nothing is orphaned).
  * - A sub-category with items is allowed: its items fall back to the parent
- *   top-level category rather than being orphaned.
+ *   top-level category rather than being orphaned. The platform refuses to
+ *   withdraw a category that still holds items, so the re-homing has to land
+ *   first — `api/menu.ts` runs the menu writes one at a time, in this order.
  */
 export function CategoriesPanel() {
   const { menuCategories, menuItems, discounts, mutators } = useCatalogStore();
@@ -155,11 +157,9 @@ export function CategoriesPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <NotSavedNotice
-        mutators={['upsertMenuCategory', 'deleteMenuCategory']}
-        what="categories, their nesting, prep stations and tax categories"
-      />
-
+      {/* No notice: since SCRUM-341 everything on this screen — the category,
+          its nesting, its prep station and its tax area — is written to
+          `pos.product_category` and read back. */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
