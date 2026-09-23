@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 18:02 — `main` is `9b86938`; staging is `8ee9a5d` on the api and POS (Render follows CI on `9b86938`, 376's throttles); CI green through `8ee9a5d`
+> ## Status on 2026-09-23 18:12 — `main` is `b616191`; staging is `8ee9a5d` on the api and POS (Render follows CI on `9b86938`, 376's throttles); CI green through `8ee9a5d`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -303,9 +303,26 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > never swept and an invented box id opens a row (**385**, **386**).
 > Measurement pass launched (`wf_f1d12c3d`).
 >
-> **Running:** builds — B fix round (`wf_140102f5`), C1 fix round
-> (`wf_0d8bd0bd`), tenders sync (`wf_581116c6`); evidence — 376
-> measurement (`wf_f1d12c3d`). After wave 2:
+> **18:10 — landed tenders Slice B** (`a232059`, fix-round gate MERGE:
+> the full api suite 1,203 green, the header-path retry proven both ways;
+> `wip/206-B` dropped). The cash tender writes the attempt ledger through
+> `services/payments/attempt.ts`; part-paid sales live (O-5); the replay
+> net on `action_id` armed; the drawer kick a `drawer_kick` box command
+> under a context WITHOUT the request's idempotency claim; the Sale
+> detail lists payments. **Slip, fixed at once:** the commit's file list
+> filtered on "payments" and missed `routes/webhooks.ts`, which app.ts
+> registers — committed from the wip snapshot's blob one minute later
+> (`b616191`); CI on `a232059` alone would have been red.
+> Raised: the idempotency-claim class in `tx.ts` (print.ts still carries
+> it, dormant — **387**); 382 gets two small fold-ins.
+> **Slice D launched** (`wf_987e09f1` — 2C2P QR on B's service; the
+> simulator carries the acceptance; refinement: a missing merchant id
+> selects the simulator on local/staging only and refuses the boot on
+> production). C2 waits for C1's fix round.
+>
+> **Running:** builds — C1 fix round (`wf_0d8bd0bd`), tenders sync
+> (`wf_581116c6`), D (`wf_987e09f1`); evidence — 376 measurement
+> (`wf_f1d12c3d`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
