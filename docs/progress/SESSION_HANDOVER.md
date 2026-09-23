@@ -4,6 +4,28 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:32 — `main` is `beacb6d`; staging is `097b73b` (Render is deploying `803428b` → `beacb6d`; CI has seven pushes queued); CI green through `237ca54`
+>
+> **Since 15:28:** landed **343/344** (`6e5926d` — a sale records its lane,
+> checked against the station; promotion scopes reach F&B and shop
+> lines), **348** (`4155ab9` — the unlock refusal equalised), **354**
+> (`beacb6d` — seventeen back-office panels on the light recipes; the
+> CategoriesPanel hunk picked out from 341's in-flight edits). Raised: 362
+> (no promo code entry on the F&B/shop stations — after 352), 363 (second
+> sweep pass — building, MenuItemForm excluded until 341 lands).
+>
+> **Running:** builds — 206-A (`wf_9a136b60`), 341 (`wf_d527428e`), 353
+> fix (`wf_4493be0c`), 359 (`wf_4aea465b`), 358 (`wf_69884d8d`), 352
+> (`wf_efab2ab6`), 361 (`wf_6be21778`), 363 (`wf_0834f8e9`); evidence —
+> the second half of the 097b73b batch (`wf_ea63e5b1`). Watchers wait for
+> Render at `803428b`, `237ca54`, `6faf3fb`, `beacb6d`.
+>
+> **Note for Slice A's gate:** its uncommitted `payment_attempt` widening
+> (NOT NULL operator/branch/station/device/business_date, `$type<PaymentMethod>`)
+> reds eleven finalise-path tests and one tsc error in `sale.ts` while in
+> the tree — A must carry the `settleSale` insert with it or the landing
+> is red; 343/344's gate proved the reds are A's by reverting its slice.
+
 > ## Status on 2026-09-23 15:28 — `main` is `6faf3fb`; staging is `097b73b` (Render is deploying `803428b` → `6faf3fb`); CI green through `803428b`
 >
 > _(Times in this banner and in Jira comments are now taken from `date`
