@@ -1,5 +1,41 @@
 # Handover — where this is, and what to do next
 
+## 2026-09-24 — closing S2-09 (SCRUM-202): the last of SCRUM-204
+
+The owner's decision (morning): sizes are defined on the shop product now,
+not deferred to inventory. Two gated rounds on `claude-opus-5-5` (every
+workflow agent runs there from today — `CLAUDE_CODE_SUBAGENT_MODEL` in
+`~/.claude/settings.json`, and `model` on every `agent()` call).
+
+- **02:05 — the member half landed** (`f5e5572`, gate MERGE after one
+  comment blocker — two comments still claimed the booking site wrote to the
+  browser's copy; my CRLF-blind edit missed them and the commit went out
+  uncorrected, fixed in `3fff2d8`): the phone till, the booking site's
+  identify step, the party builder and the counter till's drop-off hand-off
+  read members from the platform; `scripts/check-no-mock-members.mjs` runs
+  in CI after Lint and fails on any fixture member reader or writer outside
+  `mockApi.ts`. Three files outside the round's list were needed for the
+  guard to pass (`Till.tsx`'s drop-off hand-off, `Book.tsx`,
+  `VerifyTierModal.tsx`) — accepted. Known gap in the guard: a destructured
+  `const { x } = mock` slips past it. The booking site saves nothing back to
+  a member — noted on 357.
+- **The sizes half is in its fix round** (`wf_ade3ffcd`; the pre-fix tree on
+  `wip/204-variants` = `6885bb3`): migration 0020 `product.variants`, the
+  API rules (ids, labels, barcode collisions across the operator, 409
+  `BARCODE_IN_USE`), the scan resolving a size's barcode, the sale line
+  carrying the size, the shop screen's picker on platform variants, the
+  Merch form's Sizes editor, and the first station-channel client in any
+  screen (`lib/scanChannel.ts` — a scan from the box lands on the shop
+  screen; the virtual box's scans are relayed onto the api's session
+  manager by `services/station-scans.ts`). The first gate refused on a
+  deleted uniqueness test, a wrong prototype citation, and a stale screen
+  dropping a scanned size; decided inside the round: the platform refuses a
+  sized item sold without a size, and the on-screen size text keeps the
+  prototype's "(M)" form. Before its staging pass: withdraw the old separate
+  "Grip socks M" on staging and add S/M/L to "Grip Socks" through the back
+  office (the deploy migrates, never seeds); the scan stream through
+  Render's `/api/*` rewrite is unproven until then.
+
 ## State at the end of 2026-09-23 — read this first
 
 _This block replaces the running notes that used to sit here. Everything below
