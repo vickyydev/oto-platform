@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 19:31 — `main` is `83ffc36`; staging is `c61289d` on the api (POS at `9b86938`+); CI green through `c61289d`
+> ## Status on 2026-09-23 19:56 — `main` is `0a91bd1`; staging is `83ffc36` on the api, POS and Console; CI green through `83ffc36`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -439,7 +439,23 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > `Error`. Non-blocking: a ฿0 offline cart quarantines forever on
 > `sale_freeze`; a fully comped offline sale cannot be expressed (F).
 >
-> **Running:** D fix round (`wf_b6ffb273`), G fix round (`wf_1bc3a29f`); evidence — C2 (`wf_61eb87e3`);
+> **19:55 — C2 proven on staging at `83ffc36`:** through the Console's
+> terminal panel and the payments routes as Som — approved in 4.4 s
+> (approval code, last4, TID/MID learned and written onto the device
+> row, a 12-char GHL reference) then finalise with no body → T1-000014;
+> declined with the vendor's words, nothing spent; a ฿689 partial
+> approval refused and voided on a FRESH reference within the second;
+> the PAX (routed qr_terminal on every seeded station, so driven as a QR
+> tender): silent for the 120 s budget → unknown → the platform's own
+> inquiry → silent → awaiting staff → asked by hand → not_found. No
+> masked PAN or name anywhere in attempts, commands, runs or audit. One
+> wrinkle for a demo: the first panel press seconds after the api went
+> live answered 409 (the in-process box not yet up); fine 40 s later.
+> Left on staging: T1-000014 paid by card; three ฿690 sales open with
+> nothing taken; EDC 1's next outcome left at Decline, EDC 3's at
+> Approve (in-process; reset on restart — set before a demo).
+>
+> **Running:** D fix round (`wf_b6ffb273`), G fix round (`wf_1bc3a29f`).
 > checkpoint part 1 landed: the tenders plan and its five reader findings in `docs/progress/plans/206-tenders/` (the void password redacted in its plain AND hex forms — the gate found the seventh, hex-encoded in a sample frame), the session helpers in `scripts/session/` with a README (the two mutating Render scripts now need `--apply`). After wave 3: F and G (G after C1 — now free — and
 > never beside a slice in `agent.ts`).
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
