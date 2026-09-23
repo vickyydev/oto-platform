@@ -4,7 +4,7 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
-> ## Status on 2026-09-23 16:57 — `main` is `f212a5d`; staging is `3317360` on the api (the POS and Console wait on the first CI run with the Console job); CI green through `3317360`
+> ## Status on 2026-09-23 16:59 — `main` is `816d30d`; staging is `3317360` on the api (Render is rolling `186316e`+ onto the POS and Console now that CI #128 is green); CI green through `186316e`
 >
 > **Since 16:02:** **341 Deployed** with staging evidence (`4698326`);
 > landed **363's first pass** (`a0d8cab` — nine panels' notices, accent
@@ -137,10 +137,18 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > the rewrite carries and proposes the shape — no code until it returns.
 > The measured card is on 367 (`staging-367-measured.png`).
 >
+> **16:58 — 365 Deployed.** The first GitHub run with the Console job
+> (CI #128 on `186316e`) is green: 10m 59s in all, the Chromium install
+> 23 s, the Console end-to-end 27 s — four cases passed on a throwaway
+> database the job made and dropped; the report step skipped as designed.
+> Card on the ticket (`ci-365-first-linux-run.png`). Two GitHub-side
+> deprecation notices on the run (Node 20 actions; the `ubuntu-latest`
+> label moving to 26 on 19 Oct) — not ours, worth a line when they bite.
+>
 > **Running:** builds — 364 (`wf_ac4191fc`), 206-B (`wf_d5e69115`),
 > 206-C1 (`wf_0685188f`), 206-E (`wf_8090465a`); evidence — 361+363
-> (`wf_00be1ca9`), 365's CI run watcher (`wf_51fc683a`), 366
-> (`wf_f64ff095`); investigation — 376 (`wf_78e9c6ef`). After wave 2:
+> (`wf_00be1ca9`), 366 (`wf_f64ff095`); investigation — 376
+> (`wf_78e9c6ef`). After wave 2:
 > C2 and D (D needs O-1 only for the real-QR half; the simulator carries
 > the acceptance), then F and G (G after C1, never beside it).
 
