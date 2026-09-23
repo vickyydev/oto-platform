@@ -325,18 +325,63 @@ const categoryCodes = new Map<string, string>();
  * and `product.category_id` is a uuid the route insists on, so a write has to
  * turn one into the other. The map is filled on hydration from the branch's own
  * categories, so the answer is always this operator's tree and never a guess.
+ *
+ * One map per taxable AREA, and that is the point of the shape: a name is only
+ * ever looked up among the categories of the screen asking. One operator's tree
+ * holds a Drinks tab on the menu and an Accessories tab in the shop, and a name
+ * matched across the whole tree filed a shop item typed as "Drinks" under the
+ * F&B category of that name — `taxableCategory: fnb`, on the menu, off the shop
+ * grid, and nothing said.
  */
-const categoryIdByName = new Map<string, string>();
+const categoryIdByArea = new Map<TaxableCategory, Map<string, string>>();
 const categoryNameById = new Map<string, string>();
+/** Each area's category names, in nav order — what a refusal lists. */
+const categoryNamesByArea = new Map<TaxableCategory, string[]>();
 /** The first category of a taxable area — where a row with no named one lands. */
 const categoryIdByTaxArea = new Map<string, string>();
 /** `discount_definition.code` is what the prototype uses as the id. */
 const discountIdByCode = new Map<string, string>();
 
-/** The category id for a name typed into the Merch form, or the area's default. */
-function categoryIdFor(name: string | undefined, fallbackArea: TaxableCategory): string | null {
-  const named = name ? categoryIdByName.get(name.trim().toLowerCase()) : undefined;
-  return named ?? categoryIdByTaxArea.get(fallbackArea) ?? null;
+const nameKey = (name: string): string => name.trim().toLowerCase();
+
+/** How a refusal names an area — the screen's word for it, not the column's. */
+const AREA_LABEL: Record<TaxableCategory, string> = {
+  tickets: 'ticket',
+  fnb: 'menu',
+  bar: 'bar',
+  drop_off: 'drop-off',
+  parties: 'party',
+  addons: 'add-on',
+  merch: 'shop',
+  stored_value: 'stored value',
+};
+
+/**
+ * The category id for a name typed into a catalogue form.
+ *
+ * Only the panel's OWN area is searched: the Merch form offers the shop's
+ * categories and nothing else, whatever the menu beside it happens to call its
+ * tabs. A name that matches nothing in that area is refused here — the save
+ * throws, the toast carries the message and `apiFail` re-reads the branch — so
+ * a typo cannot file an item on another screen. It used to land under the
+ * area's first category, or worse, under whatever the whole tree matched.
+ *
+ * Nothing typed is not a typo: an add-on names no category at all and a merch
+ * row may leave the field empty, and both land in the area's first category,
+ * because the route insists on one and an item in no category is on no tab.
+ */
+function categoryIdFor(name: string | undefined, area: TaxableCategory): string | null {
+  const typed = name?.trim();
+  if (!typed) return categoryIdByTaxArea.get(area) ?? null;
+  const named = categoryIdByArea.get(area)?.get(nameKey(typed));
+  if (named) return named;
+  const known = categoryNamesByArea.get(area) ?? [];
+  const label = AREA_LABEL[area];
+  throw new Error(
+    known.length > 0
+      ? `There is no ${label} category called “${typed}”. The ${label} categories are: ${known.join(', ')}.`
+      : `There is no ${label} category called “${typed}”, and this operator has no ${label} categories at all. Create one first.`,
+  );
 }
 
 export function serverFieldsFor(id: string): ServerFields | undefined {
@@ -481,17 +526,23 @@ export function merchItemToApiBody(
     name: item.name,
     code: held?.code ?? null,
     description: held?.description ?? null,
-    // A merch row whose category nobody typed lands in the retail area rather
-    // than being refused: the route insists on one, because an item in no
-    // category is on no tab.
+    // A merch row whose category nobody typed lands in the shop's first
+    // category rather than being refused: the route insists on one, because an
+    // item in no category is on no tab. A name typed that no SHOP category
+    // answers to throws instead — see `categoryIdFor`.
     categoryId: categoryIdFor(item.category, 'merch'),
     priceSatang: satang(item.price.weekday),
     priceWeekendSatang:
       item.price.weekend === item.price.weekday ? null : satang(item.price.weekend),
     costSatang: item.cost != null ? satang(item.cost) : null,
-    // The barcode. `product_sku_unique` is per operator over live rows, so the
-    // platform answers 409 naming the item already holding it rather than
-    // saving a second row the scanner could not tell apart.
+    // The barcode. `product_sku_unique` is per operator over live rows, so a
+    // second row with the same digits is refused rather than saved for the
+    // scanner to pick between. What comes back is a 409 `DUPLICATE` — "That
+    // value is already taken", with `details.constraint: 'product_sku_unique'`
+    // — and NOT the item already holding the code: the constraint name is safe
+    // to hand back and the value behind it is not
+    // (`packages/telemetry/src/scrub.ts`). Finding which item has it is a
+    // search of the catalogue.
     sku: item.sku?.trim() || null,
     taxCategoryOverride: item.taxCategoryOverride ?? null,
     // `inventoryItemId` is deliberately NOT sent. The prototype's Track stock
@@ -524,6 +575,10 @@ export function addOnToApiBody(
   addOn: AddOn,
 ): Partial<ApiProduct> & { name: string; kind: ProductKind } {
   const held = serverFields.get(addOn.id);
+  // `inventoryItemId` is deliberately NOT sent, for the reason written on
+  // `merchItemToApiBody` above: the Track stock switch mints a local id for a
+  // row that exists only in this tab, and `product.stock_item_id` is a foreign
+  // key into `stock_item`.
   return {
     kind: 'addon',
     name: addOn.name,
@@ -535,7 +590,6 @@ export function addOnToApiBody(
       addOn.price.weekend === addOn.price.weekday ? null : satang(addOn.price.weekend),
     taxCategoryOverride: addOn.taxCategoryOverride ?? null,
     translations: addOn.translations ?? null,
-    // Not sent, for the reason written on `merchItemToApiBody` above.
     sortOrder: held?.sortOrder ?? 0,
     active: held?.active ?? true,
   };
@@ -636,19 +690,36 @@ export interface MappedMenu {
 export function mapMenu(menu: ApiMenu): MappedMenu {
   serverFields.clear();
   categoryCodes.clear();
-  categoryIdByName.clear();
+  categoryIdByArea.clear();
   categoryNameById.clear();
+  categoryNamesByArea.clear();
   categoryIdByTaxArea.clear();
+  const categoryById = new Map(menu.categories.map((c) => [c.id, c]));
+  /**
+   * A sub-category leaves `taxableCategory` null and inherits its parent's —
+   * the same rule the platform's own resolver applies — and the tree is two
+   * levels deep, so one hop up answers it.
+   */
+  const areaOf = (c: ApiMenuCategory): TaxableCategory | null =>
+    c.taxableCategory ??
+    (c.parentId ? (categoryById.get(c.parentId)?.taxableCategory ?? null) : null);
   for (const c of menu.categories) {
     if (c.code) categoryCodes.set(c.id, c.code);
     if (c.archivedAt) continue;
-    categoryIdByName.set(c.name.trim().toLowerCase(), c.id);
     categoryNameById.set(c.id, c.name);
+    const area = areaOf(c);
+    if (!area) continue;
     // First wins, and the categories arrive in sort order, so "the retail
     // area's default" is the first retail tab rather than whichever row
-    // Postgres happened to return last.
-    if (c.taxableCategory && !categoryIdByTaxArea.has(c.taxableCategory)) {
-      categoryIdByTaxArea.set(c.taxableCategory, c.id);
+    // Postgres happened to return last. The same rule settles two tabs of one
+    // area sharing a name.
+    if (!categoryIdByTaxArea.has(area)) categoryIdByTaxArea.set(area, c.id);
+    const byName = categoryIdByArea.get(area) ?? new Map<string, string>();
+    categoryIdByArea.set(area, byName);
+    const key = nameKey(c.name);
+    if (!byName.has(key)) {
+      byName.set(key, c.id);
+      categoryNamesByArea.set(area, [...(categoryNamesByArea.get(area) ?? []), c.name]);
     }
   }
   for (const p of menu.products) {

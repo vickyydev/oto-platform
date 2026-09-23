@@ -602,3 +602,71 @@ describe('every change is on the record', () => {
     expect(rows).toHaveLength(1);
   });
 });
+
+/**
+ * The barcoded shop row the seed carries (S2-09b).
+ *
+ * The acceptance line reads "the seeded barcode 8850000000017 resolves to Grip
+ * socks M", and the resolver's own file proves the resolving. What is pinned
+ * here is the other half of that sentence: that a database nobody has typed
+ * into already has the row, so the scanner and the shop grid have something to
+ * find. It was a fixture inside the scanner's test file while the seed's socks
+ * carried `OTO-SOCK` and no size.
+ */
+describe('the seed carries the barcoded shop row', () => {
+  const BARCODE = '8850000000017';
+
+  interface MenuProduct {
+    id: string;
+    kind: string;
+    code: string | null;
+    name: string;
+    sku: string | null;
+    categoryId: string | null;
+    priceSatang: number;
+    archivedAt: string | null;
+  }
+
+  it('is one live merch row, in a shop category, beside the prototype’s own socks', async () => {
+    const res = await call('GET', `/branches/${branchId}/menu`, { cookie: admin });
+    expect(res.statusCode).toBe(200);
+    const products = res.body.products as unknown as MenuProduct[];
+
+    const scanned = products.filter((p) => p.sku === BARCODE);
+    expect(scanned).toHaveLength(1);
+    const socks = scanned[0]!;
+    expect(socks.name).toBe('Grip socks M');
+    expect(socks.code).toBe('MR-SOCKS-M');
+    expect(socks.kind).toBe('merch');
+    expect(socks.priceSatang).toBe(12000);
+    expect(socks.archivedAt).toBeNull();
+
+    // A size is its own sellable row, so the prototype's Grip Socks stays where
+    // it was with its stock-keeping code rather than being rewritten into this.
+    expect(products.find((p) => p.code === 'MR-SOCKS')?.sku).toBe('OTO-SOCK');
+
+    const categories = res.body.categories as unknown as Array<{
+      id: string;
+      taxableCategory: string | null;
+    }>;
+    expect(categories.find((c) => c.id === socks.categoryId)?.taxableCategory).toBe('merch');
+  });
+
+  it('refuses a second live row for the same barcode, and names the constraint', async () => {
+    const res = await makeItem({
+      code: 'T-SAME-BARCODE',
+      name: 'Someone else’s socks',
+      kind: 'merch',
+      priceSatang: 12000,
+      sku: BARCODE,
+    });
+    expect(res.statusCode).toBe(409);
+    // What the Merch panel's toast is made of: a code, a sentence about the
+    // value, and the constraint — never the item already holding it.
+    expect(res.body.error as unknown as Record<string, unknown>).toMatchObject({
+      code: 'DUPLICATE',
+      message: 'That value is already taken',
+      details: { constraint: 'product_sku_unique' },
+    });
+  });
+});

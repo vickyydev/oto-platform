@@ -50,8 +50,13 @@ export interface AdminPanel {
   /**
    * This panel reaches no server route: it edits a catalogue held in browser
    * memory, which is gone on reload and reaches nobody else. Recorded so that
-   * nothing here reads as protection. SCRUM-236 wires these panels up;
-   * SCRUM-204 (gated on SCRUM-232) is the catalogue behind them.
+   * nothing here reads as protection. SCRUM-236 wires the rest of them up.
+   *
+   * Merch, Add-ons, Modifiers and Discounts are no longer among them: SCRUM-204
+   * gave the four of them the menu and discount routes, so each carries the
+   * permission those routes declare instead of this flag. A panel that writes
+   * through and still says `localOnly` offers itself to an account the server
+   * will refuse, which is the thing the flag above exists to prevent.
    */
   localOnly?: true;
 }
@@ -88,7 +93,9 @@ export const adminNav: AdminNavEntry[] = [
         label: 'Add-ons',
         icon: PlusCircle,
         description: 'Manage socks, lockers, cups and other extras.',
-        localOnly: true,
+        // An add-on is a `product` row, so this is what
+        // `POST/PATCH/DELETE /branches/:branchId/menu/products` asks for.
+        permission: 'catalog:menu:manage',
       },
       {
         id: 'menu',
@@ -109,14 +116,18 @@ export const adminNav: AdminNavEntry[] = [
         label: 'Modifiers',
         icon: SlidersHorizontal,
         description: 'Manage modifier groups (ice, sauces, sizes…).',
-        localOnly: true,
+        // The shared library is operator-wide:
+        // `POST/PATCH/DELETE /menu/modifier-groups`.
+        permission: 'catalog:menu:manage',
       },
       {
         id: 'merch',
         label: 'Merch / Retail',
         icon: ShoppingBag,
         description: 'Manage shop item metadata (name, price, SKU, category).',
-        localOnly: true,
+        // The same product routes as Add-ons. The stock counts on this screen
+        // reach no route at all and say so on the panel.
+        permission: 'catalog:menu:manage',
       },
     ],
   },
@@ -149,7 +160,10 @@ export const adminNav: AdminNavEntry[] = [
         label: 'Discounts & Payments',
         icon: BadgePercent,
         description: 'Manage discount codes, reasons and payment methods.',
-        localOnly: true,
+        // The codes save through `POST/PATCH/DELETE /menu/discounts`, which is
+        // guarded as catalogue. The reasons and the payment methods beside them
+        // still reach no route, and the panel says so.
+        permission: 'catalog:menu:manage',
       },
       {
         id: 'tax',

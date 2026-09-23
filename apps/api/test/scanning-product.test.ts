@@ -80,20 +80,19 @@ beforeAll(async () => {
   tillId = stations.find((s) => s.name === 'Reception Till 1')!.id;
 
   /**
-   * The barcode is seeded HERE rather than in `packages/db/src/seed/menu.ts`,
-   * which is another slice's file this round: the seed's Grip Socks row carries
-   * the stock-keeping code `OTO-SOCK` and no size, and the acceptance criterion
-   * names `8850000000017` on "Grip socks M". The seed should carry it — the
-   * report says so — and until it does, the fixture is created through the same
-   * route the Merch panel writes with, which is the honest way to prove the
-   * column is reachable from the admin screen as well as from the scanner.
+   * The seed carries the barcode: `packages/db/src/seed/menu.ts` holds
+   * "Grip socks M" (`MR-SOCKS-M`) with `8850000000017` beside the prototype's
+   * own Grip Socks row, so the acceptance criterion's "seeded barcode" is read
+   * back here rather than minted. The second operator's twin below is still
+   * created through the Merch panel's route, which keeps that column proven
+   * reachable from the admin screen as well as from the scanner.
    */
-  socksId = await createMerch(adminCookie, otoOperatorId, centralBranchId, 'MERCH-APPAREL', {
-    name: 'Grip socks M',
-    code: 'MR-SOCKS-M',
-    sku: SEEDED_BARCODE,
-    priceSatang: 12000,
-  });
+  const [seeded] = await ctx.db
+    .select({ id: product.id })
+    .from(product)
+    .where(and(eq(product.operatorId, otoOperatorId), eq(product.sku, SEEDED_BARCODE)));
+  if (!seeded) throw new Error(`the seed no longer carries ${SEEDED_BARCODE}`);
+  socksId = seeded.id;
 });
 
 afterAll(async () => {

@@ -1,11 +1,13 @@
 /**
  * The menu, the shop and the discount codes (SCRUM-232, SCRUM-230).
  *
- * Every row here is the prototype's own demo catalogue, lifted from
+ * Almost every row here is the prototype's own demo catalogue, lifted from
  * `imports/oto-pos/artifacts/oto-till/src/store/catalogStore.ts:260-489`: seven
  * menu categories, twenty menu items with their modifier groups, eight retail
  * items, five ticket add-ons, the three shared modifier groups and the four
- * discount codes. Nothing here comes from the park's live catalogue.
+ * discount codes. Nothing here comes from the park's live catalogue. The one
+ * addition is `MR-SOCKS-M`, the barcoded shop row the scanner's acceptance line
+ * names — see the comment on it.
  *
  * Two things it demonstrates on purpose:
  *
@@ -207,6 +209,19 @@ const MENU: ItemSeed[] = [
   { code: 'MR-TSHIRT', name: 'Oto T-Shirt', category: 'MERCH-APPAREL', baht: 350, costBaht: 120, kind: 'merch', sku: 'OTO-TS' },
   { code: 'MR-CAP', name: 'Oto Cap', category: 'MERCH-APPAREL', baht: 250, costBaht: 90, kind: 'merch', sku: 'OTO-CAP' },
   { code: 'MR-SOCKS', name: 'Grip Socks', category: 'MERCH-APPAREL', baht: 120, costBaht: 35, kind: 'merch', sku: 'OTO-SOCK' },
+  /**
+   * The one row here the prototype does not have, and the only one carrying a
+   * real barcode: S2-09b's acceptance line is that a scan of `8850000000017`
+   * answers "Grip socks M", and until this row existed the seed's socks carried
+   * the stock-keeping code `OTO-SOCK` and no size.
+   *
+   * Added beside `MR-SOCKS` rather than folded into it. A retail barcode picks
+   * out ONE sellable thing and there is no variant table under `product`, so a
+   * size is its own row with its own code — and rewriting `MR-SOCKS` would take
+   * the prototype's own shop row away with it. No cost is set: the park has
+   * never quoted one for this size and a made-up margin is worse than none.
+   */
+  { code: 'MR-SOCKS-M', name: 'Grip socks M', category: 'MERCH-APPAREL', baht: 120, kind: 'merch', sku: '8850000000017' },
   { code: 'MR-BOTTLE', name: 'Water Bottle', category: 'MERCH-ACCESSORIES', baht: 180, costBaht: 60, kind: 'merch', sku: 'OTO-BTL' },
   { code: 'MR-PLUSH', name: 'Oto Mascot Plush', category: 'MERCH-TOYS', baht: 450, costBaht: 160, kind: 'merch', sku: 'OTO-PLUSH' },
   { code: 'MR-STICKERS', name: 'Sticker Pack', category: 'MERCH-TOYS', baht: 60, costBaht: 12, kind: 'merch', sku: 'OTO-STK' },
