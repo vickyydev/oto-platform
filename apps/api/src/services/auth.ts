@@ -1,7 +1,7 @@
 import { hash, verify } from '@node-rs/argon2';
-import { createHash, randomBytes, randomInt } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import type { FastifyBaseLogger } from 'fastify';
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
   authThrottle,
@@ -89,7 +89,82 @@ export async function _resetThrottle(db: Db): Promise<void> {
 
 const CODE_TTL_MS = 10 * 60_000;
 
-const hashCode = (code: string): string => createHash('sha256').update(code).digest('hex');
+/**
+ * HOW A SIX-DIGIT CODE IS STORED (SCRUM-347).
+ *
+ * It was `sha256(code)` — unsalted, unkeyed. A six-digit code is one of a
+ * million, and a million SHA-256s take under half a second on a laptop, so the
+ * stored hash WAS the code to anybody who could read `core.verification_code`:
+ * a database export, a nightly backup, a read-only reporting connection. The
+ * evidence pass for this ticket recovered a live setup code from its own hash
+ * on staging and signed the throwaway account in with it.
+ *
+ * Codes now go through the same `hash()` the passwords use — argon2id, called
+ * with no options, so the work factor is the one `setPassword`, the account
+ * routes and the seed already write, and the sign-in timing equalisation in
+ * `signIn` keeps describing the same parameters. The part that matters here is
+ * the per-code random salt argon2 puts in the encoded string: a million
+ * candidates at m=19456,t=2 is machine-weeks rather than half a second, and the
+ * salt means that work cannot be done once and reused against every row.
+ *
+ * A keyed HMAC would have closed it too, and more cheaply. It was not taken:
+ * the key is a new secret to provision on Render before the deploy, to keep out
+ * of the repo, and to have a rotation story for. Argon2 needs none of those
+ * because the salt travels in the row.
+ *
+ * WHAT IT COSTS: a salted hash is not a lookup key. `verifyCode` can no longer
+ * find the row with `where code_hash = <hash>` — it reads the account's own
+ * unconsumed codes and verifies the guess against each, which is why that list
+ * is bounded (`CODE_CANDIDATES`).
+ */
+
+/**
+ * The old storage — exactly 64 lowercase hex characters, which an argon2
+ * encoded hash (`$argon2id$v=19$…`) can never be mistaken for.
+ */
+const LEGACY_SHA256 = /^[0-9a-f]{64}$/;
+
+const legacySha256 = (code: string): Buffer => createHash('sha256').update(code).digest();
+
+/**
+ * Does this guess match what the row stored?
+ *
+ * Old rows are still checked the old way so that nobody's pending code breaks
+ * on the deploy: a code minted a minute before it went out is a 64-hex row and
+ * its owner is about to type it in. A code lives ten minutes (`CODE_TTL_MS`),
+ * so ten minutes after this reaches production no live row can be in the old
+ * format, and `LEGACY_SHA256`, `legacySha256` and this branch can be deleted —
+ * the expired rows they would still match are refused by the expiry check in
+ * `verifyCode` regardless.
+ */
+async function codeMatches(storedHash: string, code: string): Promise<boolean> {
+  if (LEGACY_SHA256.test(storedHash)) {
+    const stored = Buffer.from(storedHash, 'hex');
+    const offered = legacySha256(code);
+    return stored.length === offered.length && timingSafeEqual(stored, offered);
+  }
+  try {
+    return await verify(storedHash, code);
+  } catch {
+    // A row in neither format matches nothing. Throwing here would turn one
+    // unreadable row into a 500 on an endpoint anyone can reach.
+    return false;
+  }
+}
+
+/**
+ * How many of an account's unconsumed codes one guess is checked against.
+ *
+ * Each candidate costs an argon2 verification and this endpoint is public, so
+ * the list is bounded rather than "every row". Newest first, because the live
+ * ones always are: a phone can be sent at most `RATE_LIMIT_CODE_MAX` codes per
+ * window — five per fifteen minutes — and a code lives ten, so only a handful
+ * can be live at once, while unconsumed EXPIRED rows stay in the table for ever
+ * and would otherwise grow the work without bound. A code older than the ten
+ * most recent is answered "Invalid code" rather than "expired"; it is expired
+ * either way.
+ */
+const CODE_CANDIDATES = 10;
 
 export type CodePurpose = 'setup' | 'password_reset';
 
@@ -145,7 +220,9 @@ export async function mintCode(
     id: newId(),
     accountId,
     purpose,
-    codeHash: hashCode(code),
+    // Argon2id with a per-code salt (SCRUM-347). `code_hash` is `text`, so the
+    // ~97-character encoded hash needs no schema change.
+    codeHash: await hash(code),
     expiresAt: new Date(Date.now() + CODE_TTL_MS),
   });
   // A newly issued code gets a fresh guess budget.
@@ -258,19 +335,31 @@ export async function verifyCode(
   maxAttempts = 5,
 ): Promise<VerifiedCode> {
   const attemptKey = `code:${accountId}:${purpose}`;
-  const rows = await db
+  /**
+   * SCRUM-347 — the guess is verified against the rows, not looked up by its
+   * hash. A salted hash is not a key, so the account's own unconsumed codes are
+   * read and each is checked; newest first, so a live code is found before a
+   * stale one and the argon2 work stops at the match.
+   */
+  const candidates = await db
     .select()
     .from(verificationCode)
     .where(
       and(
         eq(verificationCode.accountId, accountId),
         eq(verificationCode.purpose, purpose),
-        eq(verificationCode.codeHash, hashCode(code)),
         isNull(verificationCode.consumedAt),
       ),
     )
-    .limit(1);
-  const row = rows[0];
+    .orderBy(desc(verificationCode.createdAt), desc(verificationCode.id))
+    .limit(CODE_CANDIDATES);
+  let row: (typeof candidates)[number] | undefined;
+  for (const candidate of candidates) {
+    if (await codeMatches(candidate.codeHash, code)) {
+      row = candidate;
+      break;
+    }
+  }
   if (!row) {
     // The window matches the code's own lifetime: a fresh code starts a
     // fresh budget of guesses, it does not inherit the old one's.
