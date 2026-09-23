@@ -24,10 +24,15 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 > to 251 and 192 with a plain addendum. Rule: compare every service's live
 > commit before calling a ticket Deployed (memory `oto-render-staging`).
 >
+> **16:24 — Deployed with staging evidence:** 350, 355, 349, 354, 351
+> (the beacb6d batch's POS half, `e7b913f`); its api half (347, 348, 356,
+> 343, 344, 337, 338) is still capturing.
+>
 > **Running:** builds — 365 (`wf_243eed56`), 360+366 (`wf_24c97017`), 362
-> (`wf_a0a8fac3`), 367 (`wf_f27b330d`); the tenders Slice A fix round
-> (`wf_042f927c`); evidence — the beacb6d batch (`wf_300def37`), the
-> 7faf1d0 batch (`wf_4cefb317`), the launcher (`wf_01b1b4bd`).
+> (`wf_a0a8fac3`), 367 (`wf_f27b330d`); the tenders Slice A fix round, in
+> its gate (`wf_042f927c`); evidence — the beacb6d api half
+> (`wf_300def37`), the 7faf1d0 batch (`wf_4cefb317`), the launcher
+> (`wf_01b1b4bd`).
 
 > ## Status on 2026-09-23 16:02 — `main` was `0e5e2c6`; staging was `ce8a9d9`; CI green through `ce8a9d9`
 >
