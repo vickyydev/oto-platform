@@ -87,6 +87,34 @@ function tenderKindOf(payment: FnbPaymentResult): 'cash' | 'card' | 'qr' | 'othe
   return 'other';
 }
 
+/**
+ * A FAULT AT THE PLATFORM, WHICH IS NOT A REFUSAL OF THIS ORDER — SCRUM-342.
+ *
+ * `useItemCartQuote` hands the message and nothing else: it keeps the string an
+ * `ApiError` carried and drops the status and the code (`lib/cartQuote.ts`).
+ * A request that reached no server never arrives there at all — `quoteItemCart`
+ * answers it with this till's own figures and `PriceSourceNote` says whose they
+ * are — so the messages below are the ones left that the platform produces
+ * while saying nothing about the order: the api's single 5xx envelope
+ * (`apps/api/src/app.ts`) and the status texts that come back when nothing of
+ * ours ran. They leave the charge button alone. The till's own arithmetic is
+ * the documented fallback for exactly this, and an outage upstream is not a
+ * reason to stop taking money at a counter.
+ */
+const PLATFORM_FAULT_MESSAGES = new Set([
+  'Internal server error',
+  'Internal Server Error',
+  'Bad Gateway',
+  'Service Unavailable',
+  'Gateway Timeout',
+]);
+
+/** What the platform objected to about THIS order, or null when it did not. */
+function quoteRefusalOf(error: string | null): string | null {
+  if (!error) return null;
+  return PLATFORM_FAULT_MESSAGES.has(error.trim()) ? null : error;
+}
+
 let orderCounter = 1;
 let lineCounter = 1;
 
@@ -268,6 +296,21 @@ export default function OrderStation() {
     enabled: stage !== 'confirmation',
   });
   const { subtotal, total, manualAmounts, taxBreakdown } = order.totals;
+
+  /**
+   * THE PLATFORM LOOKED AT THIS ORDER AND OBJECTED — SCRUM-342.
+   *
+   * While this stands the charge button is off. The rule that refused the quote
+   * is the rule the commit meets, so the press could only carry the guest to
+   * the payment screen and fail there; the refusal was advisory and the money
+   * never moved. It clears the moment a later quote answers — the question
+   * answered, the line taken off — and the button comes back with it.
+   *
+   * An order the platform was never asked about is NOT this: no station, no
+   * pricing route, nothing answering. Those leave the button alone and
+   * `PriceSourceNote` says the figure is this till's.
+   */
+  const quoteRefusal = quoteRefusalOf(order.error);
 
   /**
    * The rows as the panel draws them: the platform's figure against each line
@@ -943,11 +986,12 @@ export default function OrderStation() {
                 priceNote={
                   lines.length > 0 ? (
                     <div className="space-y-2">
-                      <QuoteRefusalNote error={order.error} />
+                      <QuoteRefusalNote error={quoteRefusal} blocking />
                       <PriceSourceNote quote={order.quote} pending={order.pending} />
                     </div>
                   ) : null
                 }
+                chargeBlockedReason={quoteRefusal}
                 manualDiscounts={effectiveManualDiscounts}
                 manualAmounts={manualAmounts}
                 taxBreakdown={taxBreakdown}

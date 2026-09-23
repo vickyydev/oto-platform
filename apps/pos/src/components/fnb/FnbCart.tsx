@@ -32,6 +32,21 @@ interface FnbCartProps {
    * layout is unchanged in ordinary use.
    */
   priceNote?: ReactNode;
+  /**
+   * WHY THE CHARGE BUTTON IS OFF, beyond an empty order — SCRUM-342.
+   *
+   * Set when the order as it stands cannot be sold: the platform refused to
+   * price it, so the press could only carry the guest to the payment screen and
+   * meet the same rule at commit. Null when there is no such reason, which
+   * includes an order this till priced on its own — that figure is the
+   * documented fallback and the panel says whose it is.
+   *
+   * Passed in rather than decided here, for the reason `priceNote` is: this
+   * component draws an order, and whether the platform will take it is the
+   * station's business. The reason is not drawn twice — `priceNote` above the
+   * button already names it — it rides the button as its title.
+   */
+  chargeBlockedReason?: string | null;
   onChangeQty: (lineId: string, qty: number) => void;
   onEditLine: (line: FnbOrderLine) => void;
   onClear: () => void;
@@ -91,6 +106,7 @@ export function FnbCart({
   taxBreakdown,
   benefitBreakdown,
   priceNote,
+  chargeBlockedReason,
   onChangeQty,
   onEditLine,
   onClear,
@@ -101,6 +117,7 @@ export function FnbCart({
   onScanStaffBenefit,
 }: FnbCartProps) {
   const isEmpty = lines.length === 0;
+  const chargeBlocked = Boolean(chargeBlockedReason);
   const [showLedger, setShowLedger] = useState(false);
   const ledger = wristband?.ledger;
 
@@ -396,7 +413,8 @@ export function FnbCart({
         <Button
           size="lg"
           className="w-full h-16 text-xl font-bold mt-3"
-          disabled={isEmpty}
+          disabled={isEmpty || chargeBlocked}
+          title={chargeBlockedReason ?? undefined}
           onClick={onCheckout}
         >
           Charge ฿{total}
