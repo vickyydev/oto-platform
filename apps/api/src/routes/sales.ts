@@ -178,6 +178,18 @@ const Promo = z.object({
 const Cart = z.object({
   branchId: z.string().uuid().optional(),
   stationId: z.string().uuid().optional(),
+  /**
+   * SCRUM-343 — WHICH LANE OF THE TILL THIS CART WAS RUNG UP ON. The three the
+   * POS has: the ticket counter, the F&B station and the shop. Only these three
+   * of `SALES_CHANNELS`, because the others are not a cart's to claim — a
+   * kiosk's and a booth's channel is their station's kind, and a booking's is
+   * written by the booking path.
+   *
+   * A CLAIM, NOT A FIELD THAT IS BELIEVED: `resolveSalesChannel` checks it
+   * against the station's kind and capabilities and refuses a mismatch, so a
+   * till that is not set up to sell food cannot file a sale under `fnb`.
+   */
+  channel: z.enum(['till', 'fnb', 'shop']).optional(),
   memberId: z.string().uuid().nullish(),
   /** Ignored for pricing; reported back when it differs from the platform's. */
   tier: z.string().max(40).optional(),

@@ -287,8 +287,12 @@ export function dropOrphanedDiscounts(
 
 /**
  * What a promo code applies to. Absent on a promo means the whole order.
- * F&B, merch and event-pass scopes are here because one vocabulary serves every
- * register; in a ticket cart they simply match nothing.
+ *
+ * One vocabulary serves every register. Since S2-09b a cart can hold food and
+ * shop lines beside admission, so `fnb`, `fnbCategory`, `menuItems` and `merch`
+ * match the item rows on it (SCRUM-344); on a cart of nothing but tickets they
+ * still match nothing, and `event_pass` matches nothing anywhere until a
+ * register sells one.
  */
 export type DiscountTarget =
   | { kind: 'everything' }
@@ -330,6 +334,29 @@ export type DiscountTarget =
  * reach here, and are right to: an order-wide code resolves against the sum of
  * LINE TOTALS (which includes a promo line and prepaid food, neither of which
  * is a breakdown row) and is attributed order-wide rather than per category.
+ *
+ * SCRUM-344 — IT NOW ANSWERS FOR AN F&B OR SHOP ITEM ROW TOO, and the two
+ * answers it used to give about one were both wrong:
+ *
+ *   - `fnb`, `fnbCategory`, `menuItems` and `merch` returned `false` for every
+ *     row, on the reasoning that food and merchandise are "sold at other
+ *     registers". Since S2-09b they are sold through this cart: an item line
+ *     reaches the engine as one catalogue item on its own line, carrying
+ *     `itemKind` and its category walk (`CartAddOn`). A code scoped to food
+ *     found no base to reduce and took nothing off the guest's bill.
+ *   - `addOns` returned `true` for it, because an item row borrows the `addon`
+ *     kind the way the drop-off service fee does. A code scoped to ticket
+ *     add-ons therefore discounted a latte.
+ *
+ * So the item rows are excluded from the add-on scopes by the same predicate
+ * that already excludes the service fee, and answered on the item scopes by the
+ * prototype's own rules for a menu item (`menuItemMatchesTarget`,
+ * `apps/pos/src/lib/discountTarget.ts:79-104`): `fnb` matches any menu item,
+ * `fnbCategory` matches the item's own category or its parent, `menuItems`
+ * matches by id. A merch row answers only to `merch`, which is the same split
+ * `unitMatchesTarget` already applies to a free-item promo's item in
+ * `cart-totals.ts` — `menuItems` and `fnb` are the menu's, `merch` is the
+ * shop's. `event_pass` still matches nothing: no register sells one yet.
  */
 export function rowMatchesTarget(
   row: LineBreakdownItem,
@@ -338,9 +365,16 @@ export function rowMatchesTarget(
   socksAddOnId: string,
 ): boolean {
   const isTicket = row.kind === 'kids' || row.kind === 'adults';
+  // An F&B or shop line rides in on the `addon` kind (see the note above), so
+  // every "is this a ticket add-on" question has to exclude it by name — the
+  // same way it excludes the drop-off service fee.
+  const isItem = row.itemKind !== undefined;
   // A real add-on row, or the socks row (socks are an add-on) — but never the
-  // drop-off service fee, which borrows the 'addon' kind.
-  const isAddOn = row.kind === 'socks' || (row.kind === 'addon' && row.key !== SERVICE_FEE_ROW_KEY);
+  // drop-off service fee, which borrows the 'addon' kind, and never a food or
+  // shop item, which borrows it too.
+  const isAddOn =
+    row.kind === 'socks' ||
+    (row.kind === 'addon' && row.key !== SERVICE_FEE_ROW_KEY && !isItem);
 
   switch (target.kind) {
     case 'tickets':
@@ -353,7 +387,7 @@ export function rowMatchesTarget(
       return isAddOn;
     case 'addOn':
       return (
-        (row.kind === 'addon' && row.key === target.addOnId) ||
+        (row.kind === 'addon' && !isItem && row.key === target.addOnId) ||
         (row.kind === 'socks' && target.addOnId === socksAddOnId)
       );
     case 'everything':
@@ -361,12 +395,20 @@ export function rowMatchesTarget(
       // never asks; see the note above on the divergence and on why both
       // callers in this package short-circuit the scope rather than walk rows.
       return true;
-    // F&B, merch and event-pass scopes never match a ticket-cart row — those
-    // items are sold at other registers. The code finds no base to reduce.
     case 'fnb':
+      return row.itemKind === 'menu';
     case 'fnbCategory':
+      // The walk the row carries: its own category, then its parent. A menu
+      // item filed under no category at all matches no category scope.
+      return row.itemKind === 'menu' && (row.categoryIds ?? []).includes(target.category);
     case 'menuItems':
+      // The row's key is the catalogue item's id, which is what a `menuItems`
+      // scope names (`computeLineBreakdown` keys an add-on row on `addOn.id`).
+      return row.itemKind === 'menu' && target.menuItemIds.includes(row.key);
     case 'merch':
+      return row.itemKind === 'merch';
+    // No register sells an event pass through this cart yet, so a code scoped
+    // to one still finds no base to reduce.
     case 'event_pass':
       return false;
   }

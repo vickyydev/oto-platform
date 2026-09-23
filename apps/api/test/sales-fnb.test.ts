@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   branch,
@@ -6,6 +6,7 @@ import {
   modifierGroup,
   modifierOption,
   product,
+  productCategory,
   sale,
   saleLine,
   station,
@@ -41,6 +42,10 @@ let operatorId: string;
 let branchId: string;
 let stationId: string;
 let jamesId: string;
+/** The seeded booth — a station kind that is not a till (SCRUM-343). */
+let boothStationId: string;
+/** A till configured to sell tickets and NOT food (SCRUM-343). */
+let ticketsOnlyStationId: string;
 
 /** Satang from baht, so the fixtures read like the price list. */
 const b = (baht: number): number => Math.round(baht * 100);
@@ -110,6 +115,28 @@ beforeAll(async () => {
     .from(station)
     .where(and(eq(station.branchId, branchId), eq(station.kind, 'till')));
   stationId = (stations.find((s) => s.codePrefix === 'T1') ?? stations[0]!).id;
+
+  // SCRUM-343's two counter-examples. The booth is seeded (a kind that is not a
+  // till at all); a till that sells tickets and NOT food is not, because the
+  // only seeded one belongs to the tenancy fixture's foreign operator and this
+  // session could never reach it.
+  const [booth] = await ctx.db
+    .select()
+    .from(station)
+    .where(and(eq(station.branchId, branchId), eq(station.kind, 'booth')));
+  boothStationId = booth!.id;
+
+  ticketsOnlyStationId = newId();
+  await ctx.db.insert(station).values({
+    id: ticketsOnlyStationId,
+    operatorId,
+    branchId,
+    name: 'Tickets Only Till',
+    kind: 'till',
+    codePrefix: 'TQ',
+    capabilities: ['tickets'],
+    accessScope: 'all_staff',
+  });
 
   const members = await ctx.db.select().from(member).where(eq(member.operatorId, operatorId));
   jamesId = members.find((m) => m.phone === '+66822222222')!.id;
@@ -391,5 +418,245 @@ describe('an order with food on it is not closed without a pick-up code', () => 
     const closed = await finalise(saleId, { method: 'cash' });
     expect(closed.statusCode).toBe(200);
     expect(closed.json().pickupCode).toBeNull();
+  });
+});
+
+/**
+ * SCRUM-343 — which lane of the till the sale is filed under.
+ *
+ * `pos.sale.sales_channel` is what reporting by station type (SCRUM-216) will
+ * group on. Until this ticket the cart declared no channel, so every F&B and
+ * shop order written since S2-09b landed as `till` and a day's food takings
+ * were filed under the ticket counter.
+ */
+describe('the cart names its lane and the platform checks it', () => {
+  const channelOf = async (saleId: string) => {
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    return row!.salesChannel;
+  };
+
+  it('files a food order under fnb', async () => {
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      channel: 'fnb',
+      items: [itemLine('FB-LATTE', 1, { modifiers: [choose('FB-LATTE', 'Ice', 'No ice')] })],
+    });
+    expect(res.statusCode).toBe(200);
+    expect(await channelOf(saleId)).toBe('fnb');
+    // And it is on the read, so the till and the reports see the same word.
+    expect(res.json().sale.salesChannel).toBe('fnb');
+  });
+
+  it('files a shop order under shop', async () => {
+    const saleId = newId();
+    const res = await commit({ id: saleId, channel: 'shop', items: [itemLine('MR-SOCKS', 1)] });
+    expect(res.statusCode).toBe(200);
+    expect(await channelOf(saleId)).toBe('shop');
+  });
+
+  it('files a cart that claims the ticket counter under till', async () => {
+    const saleId = newId();
+    const res = await commit({ id: saleId, channel: 'till', items: [itemLine('MR-SOCKS', 1)] });
+    expect(res.statusCode).toBe(200);
+    expect(await channelOf(saleId)).toBe('till');
+  });
+
+  it('leaves a cart that claims nothing exactly where it landed before — till', async () => {
+    // The pre-change behaviour, kept deliberately: an older till that has not
+    // been updated goes on writing what it always wrote rather than being
+    // refused, and there is no backfill of what it already wrote.
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      items: [itemLine('FB-SODA', 1, { modifiers: [choose('FB-SODA', 'Ice', 'Normal ice')] })],
+    });
+    expect(res.statusCode).toBe(200);
+    expect(await channelOf(saleId)).toBe('till');
+  });
+
+  it('refuses a claim the station KIND cannot make', async () => {
+    // A booth's channel is its kind; no screen on it is the F&B counter.
+    const res = await commit({
+      stationId: boothStationId,
+      channel: 'fnb',
+      items: [itemLine('MR-SOCKS', 1)],
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('SALE_CHANNEL_MISMATCH');
+    expect(res.json().error.details).toMatchObject({
+      stationKind: 'booth',
+      claimedChannel: 'fnb',
+      allowedChannels: ['booth'],
+    });
+  });
+
+  it('records a booth own channel when it claims nothing', async () => {
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      stationId: boothStationId,
+      items: [itemLine('MR-SOCKS', 1)],
+    });
+    expect(res.statusCode).toBe(200);
+    expect(await channelOf(saleId)).toBe('booth');
+  });
+
+  it('refuses a food claim from a till that is not set up to sell food', async () => {
+    // The one thing in the fleet model that bounds a till's claim: what it is
+    // configured to sell. A misconfigured or mis-built till is a thing to fix
+    // at the counter, not a line to file under the wrong heading.
+    const res = await commit({
+      stationId: ticketsOnlyStationId,
+      channel: 'fnb',
+      items: [itemLine('MR-SOCKS', 1)],
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('SALE_CHANNEL_MISMATCH');
+    expect(res.json().error.message).toContain('Tickets Only Till');
+    expect(res.json().error.details).toMatchObject({ capabilities: ['tickets'] });
+  });
+
+  it('refuses before it writes anything at all', async () => {
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      stationId: ticketsOnlyStationId,
+      channel: 'fnb',
+      items: [itemLine('FB-LATTE', 1, { modifiers: [choose('FB-LATTE', 'Ice', 'No ice')] })],
+    });
+    expect(res.statusCode).toBe(409);
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, saleId))).toHaveLength(0);
+  });
+
+  it('identifies the sales written before this change, which are NOT backfilled', async () => {
+    // The query the ticket comment carries, run here so it cannot rot: a sale
+    // filed under `till` whose lines are ALL food or merchandise was written by
+    // a station that had no channel to send. The line kinds are what tell them
+    // apart — nothing else on the row does.
+    const found = await ctx.db.execute(sql`
+      select s.id
+        from pos.sale s
+       where s.sales_channel = 'till'
+         and exists (select 1 from pos.sale_line l
+                      where l.sale_id = s.id and l.kind in ('fnb_item', 'merch_item'))
+         and not exists (select 1 from pos.sale_line l
+                          where l.sale_id = s.id and l.kind not in ('fnb_item', 'merch_item'))
+    `);
+    const ids = new Set((found.rows as { id: string }[]).map((r) => r.id));
+    // Every channel-less food order above is in it...
+    const legacy = await ctx.db
+      .select()
+      .from(sale)
+      .where(and(eq(sale.stationId, stationId), eq(sale.salesChannel, 'till')));
+    expect(legacy.length).toBeGreaterThan(0);
+    for (const row of legacy) expect(ids.has(row.id)).toBe(true);
+    // ...and nothing the new carts filed correctly is.
+    const filed = await ctx.db
+      .select()
+      .from(sale)
+      .where(inArray(sale.salesChannel, ['fnb', 'shop']));
+    expect(filed.length).toBeGreaterThan(0);
+    for (const row of filed) expect(ids.has(row.id)).toBe(false);
+  });
+});
+
+/**
+ * SCRUM-344 — a promo code scoped to food comes off the food.
+ *
+ * The cart carries the code's definition from the till (S2-09b owns the
+ * catalogue), so these send the same shape `buildItemCartPayload` does. What is
+ * being proved is the ENGINE'S reach through the real route: which lines the
+ * scope found, in satang, on rows the platform priced itself.
+ */
+describe('a promo scope reaches the right item lines', () => {
+  const lattePlusSocks = () => [
+    itemLine('FB-LATTE', 1, { modifiers: [choose('FB-LATTE', 'Ice', 'No ice')] }),
+    itemLine('MR-SOCKS', 1),
+  ];
+  const promo = (target: unknown) => ({
+    code: 'TENOFF',
+    label: '10% off',
+    type: 'percent' as const,
+    value: 10,
+    target,
+  });
+  /** The discount each line took, by the kind of line it is. */
+  const discountByKind = async (saleId: string) => {
+    const lines = await linesOf(saleId);
+    return Object.fromEntries(lines.map((l) => [l.kind, l.discountSatang]));
+  };
+
+  it('takes a food-scoped code off the latte and not off the socks', async () => {
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      channel: 'fnb',
+      items: lattePlusSocks(),
+      promos: [promo({ kind: 'fnb' })],
+    });
+    expect(res.statusCode).toBe(200);
+    // 10 % of the 95 baht latte, and nothing of the 120 baht socks.
+    expect(res.json().sale.totals.promoDiscountSatang).toBe(b(9.5));
+    expect(await discountByKind(saleId)).toEqual({ fnb_item: b(9.5), merch_item: 0 });
+  });
+
+  it('takes a shop-scoped code off the socks and not off the latte', async () => {
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      channel: 'shop',
+      items: lattePlusSocks(),
+      promos: [promo({ kind: 'merch' })],
+    });
+    expect(res.statusCode).toBe(200);
+    expect(await discountByKind(saleId)).toEqual({ fnb_item: 0, merch_item: b(12) });
+  });
+
+  it('reaches a latte through its category PARENT', async () => {
+    // Iced Latte is filed under Coffee, a sub-category of Drinks. A code scoped
+    // to Drinks has to reach it, which is the walk resolveItemLines loads.
+    const [drinks] = await ctx.db
+      .select()
+      .from(productCategory)
+      .where(and(eq(productCategory.operatorId, operatorId), eq(productCategory.name, 'Drinks')));
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      channel: 'fnb',
+      items: lattePlusSocks(),
+      promos: [promo({ kind: 'fnbCategory', category: drinks!.id })],
+    });
+    expect(res.statusCode).toBe(200);
+    expect(await discountByKind(saleId)).toEqual({ fnb_item: b(9.5), merch_item: 0 });
+  });
+
+  it('names one menu item by id and leaves the rest of the order alone', async () => {
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      channel: 'fnb',
+      items: lattePlusSocks(),
+      promos: [promo({ kind: 'menuItems', menuItemIds: [items.get('FB-LATTE')!.id] })],
+    });
+    expect(res.statusCode).toBe(200);
+    expect(await discountByKind(saleId)).toEqual({ fnb_item: b(9.5), merch_item: 0 });
+  });
+
+  it('lets an add-ons code reach NEITHER — a latte is not a ticket add-on', async () => {
+    // The other half of the old bug: an item line borrows the `addon` kind, so
+    // a code for ticket add-ons used to discount lunch.
+    const saleId = newId();
+    const res = await commit({
+      id: saleId,
+      channel: 'fnb',
+      items: lattePlusSocks(),
+      promos: [promo({ kind: 'addOns' })],
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().sale.totals.promoDiscountSatang).toBe(0);
+    expect(await discountByKind(saleId)).toEqual({ fnb_item: 0, merch_item: 0 });
+    // Nothing was taken off the bill either.
+    expect(res.json().sale.totals.grossSatang).toBe(b(95) + b(120));
   });
 });

@@ -101,6 +101,34 @@ export interface CartAddOn {
    * `types.ts:221`). Absent = the `addons` category.
    */
   taxCategoryOverride?: TaxableCategory;
+  /**
+   * SCRUM-344 — SET WHEN THIS ROW IS AN F&B OR SHOP ITEM, not a ticket add-on.
+   *
+   * An F&B or shop line reaches the engine as one priced quantity of one
+   * catalogue item on its own cart line, which is exactly what a `CartAddOn` is
+   * (`resolveItemLines` in `apps/api/src/services/sale.ts` says why). The shape
+   * fits; the MEANING does not, and the discount scopes are where that showed:
+   * every such row answered `true` to the `addOns` scope and `false` to `fnb`,
+   * `fnbCategory`, `menuItems` and `merch`, so a code scoped to food found no
+   * base and a code scoped to add-ons reached the food.
+   *
+   * These two fields are what tells the two apart. Absent = a ticket add-on,
+   * which is what every row carried before this ticket, so nothing about a
+   * ticket cart changes.
+   */
+  itemKind?: 'menu' | 'merch';
+  /**
+   * The item's own menu category AND its parent, in that order — the walk an
+   * `fnbCategory` scope matches on.
+   *
+   * Both levels, because scoping a code to a top-level category covers its
+   * sub-categories: the prototype's `menuItemMatchesTarget` answers `true` when
+   * the item's category IS the target or when its parent is
+   * (`apps/pos/src/lib/discountTarget.ts:88-92`), and the seeded Iced Latte is
+   * filed under Coffee, a sub-category of Drinks. Two levels is the whole tree
+   * (`types.ts:717-729`), so this is never longer than two ids.
+   */
+  categoryIds?: readonly string[];
 }
 
 /**
@@ -217,6 +245,13 @@ export interface LineBreakdownItem {
   unitPrice: Satang;
   quantity: number;
   subtotal: Satang;
+  /**
+   * SCRUM-344 — copied from the add-on this row was rendered from, and present
+   * only on an F&B or shop item row. See `CartAddOn.itemKind`; `rowMatchesTarget`
+   * is what reads them.
+   */
+  itemKind?: 'menu' | 'merch';
+  categoryIds?: readonly string[];
 }
 
 /** Compact size summary for a multi-variant add-on, e.g. "1×S, 2×M". */
@@ -303,6 +338,10 @@ export function computeLineBreakdown(
       unitPrice: addOn.price,
       quantity: addOn.quantity,
       subtotal: addOn.price * addOn.quantity,
+      // Carried through so the discount scopes can tell an F&B or shop item
+      // from a ticket add-on; absent on every ticket add-on (SCRUM-344).
+      ...(addOn.itemKind ? { itemKind: addOn.itemKind } : {}),
+      ...(addOn.categoryIds ? { categoryIds: addOn.categoryIds } : {}),
     });
   }
   // The service-fee row reuses the 'addon' kind so icon maps stay exhaustive,

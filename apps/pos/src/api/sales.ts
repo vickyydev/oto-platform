@@ -22,6 +22,7 @@ import {
 import {
   engineCart,
   engineManualDiscount,
+  enginePromo,
   itemCart,
   type ItemCartLine,
   localIdFor,
@@ -177,6 +178,19 @@ export type SaleCartItemPayload = ItemCartLine;
 export interface SaleCartPayload {
   branchId: string;
   stationId: string;
+  /**
+   * SCRUM-343 — WHICH LANE OF THIS TILL TOOK THE ORDER: the ticket counter, the
+   * F&B station or the shop.
+   *
+   * It is the one thing about a sale that only this side knows. `station.kind`
+   * is `till` for all three — they are three screens of one app on one station
+   * — so without this every F&B and shop order since S2-09b was recorded under
+   * `sales_channel = 'till'` and a day's food takings were filed under the
+   * ticket counter. The platform checks the claim against the station's
+   * capabilities and refuses one the station is not set up for, so this is a
+   * statement about which screen was open, not a choice of ledger.
+   */
+  channel: 'till' | 'fnb' | 'shop';
   tier: string;
   /**
    * SCRUM-307 — the action id of a document check recorded through
@@ -575,6 +589,9 @@ export function buildCartPayload(
   return {
     branchId: identity.branchId,
     stationId: identity.stationId,
+    // The ticket counter. This builder serves the Tickets tab and nothing else;
+    // the F&B and shop lanes go through `buildItemCartPayload` (SCRUM-343).
+    channel: 'till',
     tier: identity.tier,
     ...(identity.tierClaimActionId ? { tierClaimActionId: identity.tierClaimActionId } : {}),
     pricingMode: mode,
@@ -664,10 +681,11 @@ export function buildCartPayload(
  * from the catalogue row and nothing else, with no tier table behind it — and
  * is kept only so one identity type serves both carts.
  *
- * `channel` is this till's own fact and is NOT sent: the platform's cart body
- * declares no channel field, so `pos.sale.sales_channel` is whatever the sale
- * service decides. It is kept here because it is what tells the two stations
- * apart on this side — which totals engine answers when the platform cannot.
+ * `channel` does two jobs. On this side it is what tells the two stations apart
+ * — which totals engine answers when the platform cannot. And since SCRUM-343
+ * it is SENT: checked against the station, it becomes
+ * `pos.sale.sales_channel`, so the food and shop takings are no longer filed
+ * under the ticket counter. See `SaleCartPayload.channel`.
  */
 export interface ItemCartIdentity extends CartIdentity {
   channel: 'fnb' | 'shop';
@@ -684,13 +702,29 @@ export interface ItemCartIdentity extends CartIdentity {
  * the two agree by construction; when it could not be asked, the till's figures
  * go up and the platform refuses the commit if it prices the order differently.
  * Either way nothing is charged from a number that was never on a screen.
+ *
+ * THE PROMO CODES ARE THE STATION'S — SCRUM-344. `promos` was hard-coded to `[]`
+ * here, and it had to be: the discount engine's `rowMatchesTarget` answered
+ * `false` for the `fnb`, `fnbCategory`, `menuItems` and `merch` scopes on every
+ * row and `true` for `addOns` on an item row, so sending a food-scoped code
+ * would have taken nothing off and sending an add-on-scoped one would have
+ * discounted the food. Both are fixed in the engine, so the codes the station
+ * holds now travel with the order and the platform honours the scope.
+ *
+ * WHAT DOES NOT FOLLOW FROM THAT: the local fallback. `computeFnbTotals` and
+ * `computeMerchTotals` are the prototype's own arithmetic and take no promo
+ * codes at all, so an order with a code on it that the platform cannot be
+ * reached for would show an undiscounted figure on the screen and then be
+ * refused at the commit against it. Unreachable today — neither station screen
+ * has a code entry (the prototype never gave one to the F&B or shop lane) — and
+ * the screen that adds one is the one that has to answer it.
  */
 export function buildItemCartPayload(
   lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
   manualDiscounts: readonly ManualDiscount[],
   identity: ItemCartIdentity,
   shownTotal: number,
-  options: { mode?: RateMode; modeReason?: string } = {},
+  options: { mode?: RateMode; modeReason?: string; promos?: readonly Discount[] } = {},
 ): SaleCartPayload {
   const rate = todayRateMode();
   const mode = options.mode ?? rate.mode;
@@ -698,6 +732,8 @@ export function buildItemCartPayload(
   return {
     branchId: identity.branchId,
     stationId: identity.stationId,
+    // Which counter this is — the F&B station or the shop (SCRUM-343).
+    channel: identity.channel,
     tier: identity.tier,
     pricingMode: mode,
     pricingModeReason: options.modeReason ?? rate.reason,
@@ -711,7 +747,9 @@ export function buildItemCartPayload(
     // Omitted rather than sent as null: the route declares it optional, not
     // nullable, and a null would be refused by the schema before anything read it.
     ...(identity.pickupCode ? { pickupCode: identity.pickupCode } : {}),
-    promos: [],
+    // The codes this station holds, in the engine's terms. Empty when it holds
+    // none, which is every order today — see the note above.
+    promos: promoPayload((options.promos ?? []).map(enginePromo)),
     manualDiscounts: manualDiscounts.map((discount) => ({
       id: platformId(discount.id),
       scope: discount.scope,
@@ -803,6 +841,12 @@ export interface ItemQuoteArgs {
   lines: readonly FnbOrderLine[] | readonly MerchOrderLine[];
   manualDiscounts: readonly ManualDiscount[];
   identity: ItemCartIdentity | null;
+  /**
+   * SCRUM-344 — the promo codes this station holds. Sent with the order so the
+   * quote and the commit describe the same one; the local fallback cannot apply
+   * them (see `buildItemCartPayload`).
+   */
+  promos?: readonly Discount[];
   config?: TaxConfig;
 }
 
@@ -826,7 +870,9 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
   const offLedger = offLedgerOnly(lines);
   if (offLedger) return { ...local, reason: offLedger };
 
-  const payload = buildItemCartPayload(lines, manualDiscounts, identity, local.totals.total);
+  const payload = buildItemCartPayload(lines, manualDiscounts, identity, local.totals.total, {
+    ...(args.promos ? { promos: args.promos } : {}),
+  });
   try {
     const { quote } = await salesApi.quote(payload);
     const notice = platformNoticeOf(quote);

@@ -10,6 +10,7 @@ import {
   modifierOption,
   paymentAttempt,
   product,
+  productCategory,
   productModifierGroup,
   receiptSeries,
   sale,
@@ -22,7 +23,10 @@ import {
   visit,
   type SaleClockTrust,
   type SaleLineKind,
+  type SalesChannel,
   type SaleStatus,
+  type StationCapability,
+  type StationKind,
 } from '@oto/db';
 import {
   apportion,
@@ -232,6 +236,17 @@ export interface CartInput {
   promos?: PromoDiscountInput[];
   /** Codes with no definition attached: refused by name, and nothing is taken off. */
   promoCodes?: string[];
+  /**
+   * SCRUM-343 — WHICH LANE OF THE TILL RANG THIS UP: the ticket counter, the
+   * F&B counter or the shop.
+   *
+   * It is a claim, not an instruction. `resolveSalesChannel` checks it against
+   * the station before anything is written — see that function for what the
+   * station's own row can and cannot answer — and the checked value is what
+   * lands on `pos.sale.sales_channel`. A cart that names none is recorded under
+   * the station's own channel, which is what every sale before this ticket got.
+   */
+  channel?: SalesChannel;
   /** The rate mode the cart was priced under at the till. Compared, never used. */
   pricingMode?: 'weekday' | 'weekend';
   /** The tier the till believed. Compared, never used: see rule 2 at the top. */
@@ -689,6 +704,43 @@ function pickupCodeRequired(): never {
  */
 const ITEM_LINE_PACKAGE_KEY = 'item-line';
 
+/**
+ * SCRUM-344 — each item's own menu category and its parent, by product id.
+ *
+ * What an `fnbCategory`-scoped promo matches on: a code scoped to Drinks has to
+ * reach the Iced Latte, which is filed under Coffee, a SUB-category of Drinks.
+ * That is the prototype's rule — `menuItemMatchesTarget` answers true for the
+ * item's own category or its parent (`apps/pos/src/lib/discountTarget.ts:88-92`)
+ * — and two levels is the whole tree (`types.ts:717-729`), so this is two
+ * queries and never a loop, the same shape as `resolveItemTaxCategories` and
+ * `resolveItemPrepStations` in `services/menu.ts`.
+ *
+ * It is resolved here rather than read off a join for the reason `loadCatalogue`
+ * gives about the taxable area: the answer for an item under a sub-category is
+ * not on the item's own row.
+ */
+async function loadItemCategoryWalk(
+  db: Exec,
+  rows: readonly (typeof product.$inferSelect)[],
+): Promise<Map<string, string[]>> {
+  const walk = new Map<string, string[]>();
+  const categoryIds = [...new Set(rows.map((r) => r.categoryId).filter((id): id is string => !!id))];
+  if (categoryIds.length === 0) return walk;
+
+  const own = await db
+    .select({ id: productCategory.id, parentId: productCategory.parentId })
+    .from(productCategory)
+    .where(inArray(productCategory.id, categoryIds));
+  const byId = new Map(own.map((c) => [c.id, c]));
+  for (const row of rows) {
+    if (!row.categoryId) continue;
+    const category = byId.get(row.categoryId);
+    if (!category) continue;
+    walk.set(row.id, category.parentId ? [category.id, category.parentId] : [category.id]);
+  }
+  return walk;
+}
+
 /** One F&B or shop line, priced and ready to join the cart the engine totals. */
 interface ResolvedItemLine {
   cartLineId: string;
@@ -727,14 +779,15 @@ interface ResolvedItemLine {
  * living here. `lineKindOf` would call such a unit an `addon`; `buildPricedLines`
  * writes the kind this function resolved, `fnb_item` or `merch_item`.
  *
- * WHAT IT COSTS, recorded rather than discovered later: `rowMatchesTarget` in
- * `@oto/shared` answers `false` for the `fnb`, `fnbCategory`, `menuItems` and
- * `merch` promo scopes on every cart row, and `true` for `addOns` on any
- * add-on-kind row. So a promo code scoped to F&B finds no base on these lines
- * and one scoped to add-ons reaches them. Nothing wires those scopes to the
- * till's F&B lane yet — the promo catalogue is this ticket's admin panel and
- * the cart carries its definitions from the till — so no code in the park is
- * affected today; the slice that wires them has to widen that matcher.
+ * WHAT THE ROW SAYS IT IS, so a promo code can be scoped to it (SCRUM-344).
+ * Because an item line reaches the engine as an add-on-shaped row, the discount
+ * matcher could not tell a latte from a locker: `rowMatchesTarget` answered
+ * `false` for the `fnb`, `fnbCategory`, `menuItems` and `merch` scopes on every
+ * row and `true` for `addOns` on any add-on-kind row, so a code scoped to food
+ * found no base and a code scoped to add-ons reached the food. Each item row
+ * therefore carries `itemKind` — `menu` or `merch`, from `product.kind` — and
+ * `categoryIds`, the item's own menu category and its parent, which is the walk
+ * an `fnbCategory` scope matches on. The matcher reads both; nothing else does.
  *
  * MODIFIERS DO NOT GET THEIR OWN LEDGER ROWS. The ticket asks for a `modifier`
  * line kind and `pos.sale_line`'s vocabulary has none (`SALE_LINE_KINDS`), and
@@ -817,6 +870,7 @@ async function resolveItemLines(
         .orderBy(asc(modifierOption.sortOrder), asc(modifierOption.name))
     : [];
   const prepStations = await resolveItemPrepStations(db, rows);
+  const categoryWalk = await loadItemCategoryWalk(db, rows);
 
   const inlineGroups = groups.filter((g) => g.productId !== null);
   const libraryGroups = groups.filter((g) => g.productId === null);
@@ -896,6 +950,9 @@ async function resolveItemLines(
           price: unitSatang,
           quantity: line.quantity,
           taxCategoryOverride: taxCategory,
+          // What this row IS, for the promo scopes — see the header.
+          itemKind: kind === 'merch_item' ? ('merch' as const) : ('menu' as const),
+          categoryIds: categoryWalk.get(row.id) ?? [],
         },
       ],
       lineTotal: 0,
@@ -1435,6 +1492,8 @@ export interface SaleView {
   businessDate: string;
   occurredAt: string;
   status: SaleStatus;
+  /** SCRUM-343 — the lane that rang it up: the ticket counter, F&B or the shop. */
+  salesChannel: SalesChannel;
   pricingMode: string;
   pricingModeReason: string;
   customerTier: string;
@@ -1470,6 +1529,7 @@ function viewOf(row: typeof sale.$inferSelect): SaleView {
     businessDate: row.businessDate,
     occurredAt: row.occurredAt.toISOString(),
     status: row.status,
+    salesChannel: row.salesChannel,
     pricingMode: row.pricingMode,
     pricingModeReason: row.pricingModeReason,
     customerTier: row.customerTier,
@@ -1730,6 +1790,100 @@ function resolveOccurredAt(
   return { occurredAt: parsed, clockTrust: 'trusted' };
 }
 
+// --- The sales channel (SCRUM-343) ------------------------------------------
+
+/**
+ * WHICH CHANNELS A STATION OF EACH KIND MAY RECORD A SALE UNDER.
+ *
+ * `pos.sale.sales_channel` answers "where did the guest buy", and until this
+ * ticket every sale the api wrote answered `till` — including every F&B and
+ * shop order taken through S2-09b's carts, because the cart body declared no
+ * channel at all. Reporting by station type (SCRUM-216) reads this column, so a
+ * day's food takings would have been filed under the ticket counter.
+ *
+ * WHAT THE STATION ROW CAN AND CANNOT ANSWER, because this is the part worth
+ * knowing before trusting the column:
+ *
+ *   - `station.kind` is `till | kiosk | gate | display | booth` and has NO
+ *     `fnb` or `shop` member. It says what a station IS, and a kiosk's sale is
+ *     a kiosk sale and a booth's is a booth sale whatever a cart claims — so
+ *     for those kinds the kind is the answer and the claim is refused if it
+ *     disagrees. A gate and a display are not registers and may claim nothing.
+ *   - A TILL runs all three POS lanes — the Tickets tab, the F&B station and
+ *     the shop are three screens of one app on one station — so the KIND
+ *     cannot tell a food order from a ticket sale, and the cart is the only
+ *     thing that knows which screen took it. This is why the lane is claimed
+ *     rather than derived, and why "a till may not say fnb" would refuse every
+ *     food order in the park.
+ *   - What a till may SELL is `station.capabilities` (`tickets | fnb | dropoff
+ *     | parties`, empty = unrestricted), and that is the one thing in the model
+ *     that bounds the claim: a till configured for tickets only cannot record
+ *     an F&B sale, and is refused by name rather than filed under `fnb`.
+ *
+ * WHAT IS THEREFORE NOT VALIDATED, said plainly rather than left to be found:
+ * the `shop` lane has no capability of its own in `STATION_CAPABILITIES`, so
+ * any till may claim it. Adding one is a fleet-model change and belongs with
+ * whoever owns that vocabulary, not to a cart body.
+ */
+const CHANNELS_BY_STATION_KIND: Record<StationKind, readonly SalesChannel[]> = {
+  till: ['till', 'fnb', 'shop'],
+  kiosk: ['kiosk'],
+  booth: ['booth'],
+  gate: [],
+  display: [],
+};
+
+/** The capability a till must hold to record a sale under a lane, where one exists. */
+const CAPABILITY_FOR_CHANNEL: Partial<Record<SalesChannel, StationCapability>> = {
+  till: 'tickets',
+  fnb: 'fnb',
+};
+
+/**
+ * The channel this sale is recorded under: the cart's claim, checked against
+ * the station, or the station's own channel when the cart claims none.
+ *
+ * Refuses rather than records a mismatch. A channel that was written down and
+ * known to be wrong is worse than no channel at all: every report reading the
+ * column would have to carry the exception, and nobody reading a takings figure
+ * would know to. The claim is the till's own statement about which of its
+ * screens took the money, so a claim the station cannot support is a
+ * misconfigured or mis-built till, and that is a thing to fix at the counter
+ * rather than to file.
+ */
+export function resolveSalesChannel(
+  st: Pick<typeof station.$inferSelect, 'kind' | 'capabilities' | 'name'>,
+  claimed: SalesChannel | undefined,
+): SalesChannel {
+  const allowed = CHANNELS_BY_STATION_KIND[st.kind] ?? [];
+  // No claim: the station's own channel, and `till` for a kind that names none
+  // — which is exactly what every sale carried before this ticket.
+  if (!claimed) return allowed[0] ?? 'till';
+
+  if (!allowed.includes(claimed)) {
+    throw errors.conflict(
+      'SALE_CHANNEL_MISMATCH',
+      `A ${st.kind} station cannot record a sale as "${claimed}"`,
+      { stationKind: st.kind, claimedChannel: claimed, allowedChannels: [...allowed] },
+    );
+  }
+
+  // Within a till, what it is configured to sell. An empty list is the model's
+  // own "not restricted", so a station nobody has chosen capabilities for
+  // behaves exactly as it did.
+  const capabilities = st.capabilities ?? [];
+  const needed = CAPABILITY_FOR_CHANNEL[claimed];
+  if (needed && capabilities.length > 0 && !capabilities.includes(needed)) {
+    throw errors.conflict(
+      'SALE_CHANNEL_MISMATCH',
+      `"${st.name}" is not set up to sell ${claimed === 'fnb' ? 'food' : 'tickets'}, ` +
+        `so a ${claimed} sale cannot be recorded here`,
+      { stationKind: st.kind, claimedChannel: claimed, capabilities: [...capabilities] },
+    );
+  }
+  return claimed;
+}
+
 /** A unique-violation on a named index, whatever wrapper Drizzle put round it. */
 function violates(error: unknown, constraint: string): boolean {
   let err: unknown = error;
@@ -1816,6 +1970,10 @@ export async function commitSale(
   const [st] = await tx.select().from(station).where(eq(station.id, input.stationId)).limit(1);
   if (!st || st.operatorId !== actor.operatorId) throw errors.notFound('Station not found');
   if (st.archivedAt) throw errors.badRequest('That station has been taken off the floor');
+  // SCRUM-343 — before anything is priced or written: a till claiming a lane it
+  // is not set up for is a misconfigured till, and nothing about it is fixed by
+  // writing the sale first.
+  const salesChannel = resolveSalesChannel(st, input.channel);
 
   const clock = resolveOccurredAt(input.occurredAt, now);
   const priced = await priceCart(
@@ -1939,7 +2097,8 @@ export async function commitSale(
     // the sync ledger and sets its own origin.
     origin: 'cloud',
     clockTrust: clock.clockTrust,
-    salesChannel: 'till',
+    // SCRUM-343 — the lane the cart claimed, checked against the station.
+    salesChannel,
     actionId: input.actionId ?? null,
     createdByAccountId: actor.accountId,
     memberId: input.memberId ?? null,
