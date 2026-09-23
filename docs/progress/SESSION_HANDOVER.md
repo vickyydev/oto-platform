@@ -4,6 +4,27 @@ _Written 2026-09-21 at the end of a long session; updated 2026-09-22 and
 2026-09-23. Read this, then `SPRINT_2_PROGRESS.md` → Status, then
 `POS_GAP_REGISTER.md`, then `ARCHITECTURE_CONFORMANCE_REGISTER.md`._
 
+> ## Status on 2026-09-23 15:28 — `main` is `6faf3fb`; staging is `097b73b` (Render is deploying `803428b` → `6faf3fb`); CI green through `803428b`
+>
+> _(Times in this banner and in Jira comments are now taken from `date`
+> and `git log`; the two banners below ran a few minutes ahead.)_
+>
+> **Since the previous banner:** landed **349** (`9e7d7f9` — the phone
+> sheet and bar show the platform's quote), **356** (`2da33da` — a visit
+> refuses an archived child), **355** (`2ce3543` — the visitor's screen
+> titles a drop-off line "choose a play length"), and 349's stale comment
+> in OrderSummary (`6faf3fb`). Raised: 360 (the phone's hand-to-customer
+> overlay may reset the sale — to reproduce, after 352), 361 (the box's
+> replayed visit writes visit_child rows with no child check — building).
+> Launched 352 (shop and mobile Charge gate) now that 351 and 349 are in.
+>
+> **Running:** gates — 343/344 (`wf_bc7823ac`), 354 (`wf_5f8a746b`);
+> builds — 206-A (`wf_9a136b60`), 341 (`wf_d527428e`), 348 (`wf_f270a2cf`),
+> 353 fix (`wf_4493be0c`), 359 (`wf_4aea465b`), 358 (`wf_69884d8d`), 352
+> (`wf_efab2ab6`), 361 (`wf_6be21778`); evidence — the second half of the
+> 097b73b batch (`wf_ea63e5b1`). Watchers wait for Render at `803428b`,
+> `237ca54`, `6faf3fb`; CI has five pushes queued behind each other.
+
 > ## Status on 2026-09-23 15:24 — `main` is `237ca54`; staging is `097b73b` (Render is deploying `803428b` → `237ca54`); CI green through `4ceb798`
 >
 > **Since 15:20:** landed **351** (`237ca54` — the quote hook carries the
