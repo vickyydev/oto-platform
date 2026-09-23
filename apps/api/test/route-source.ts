@@ -333,6 +333,31 @@ const FUNCTION_FORMS = [
 ];
 
 /**
+ * Every `.ts` under a directory, its subdirectories included, as
+ * `<label>/<path>` pairs.
+ *
+ * SUBDIRECTORIES WERE NOT WALKED UNTIL S2-10a, and the consequence was
+ * invisible rather than loud: `services/payments/` — the attempt ledger, the
+ * cash drawer and the QR gateway, which between them are every write that
+ * moves money — was not in the index at all, so a route whose transaction sits
+ * in one of them read as a route with no transaction. The conformance check
+ * failed safe (it names a route rather than passing it), which is why nobody
+ * noticed; but a service directory that grows a subdirectory should not
+ * silently leave the walk.
+ */
+function tsFilesUnder(dir: string, label: string, prefix = ''): Array<{ path: string; file: string }> {
+  const out: Array<{ path: string; file: string }> = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      out.push(...tsFilesUnder(join(dir, entry.name), label, `${prefix}${entry.name}/`));
+    } else if (entry.name.endsWith('.ts')) {
+      out.push({ path: join(dir, entry.name), file: `${label}/${prefix}${entry.name}` });
+    }
+  }
+  return out;
+}
+
+/**
  * Every named function in the routes and services, by name, with its body.
  *
  * Names are global across both directories, so two functions sharing a name
@@ -343,9 +368,12 @@ const FUNCTION_FORMS = [
  */
 export function readFunctions(): Map<string, SourceFunction[]> {
   const index = new Map<string, SourceFunction[]>();
-  for (const dir of [ROUTES_DIR, SERVICES_DIR]) {
-    for (const file of readdirSync(dir).filter((f) => f.endsWith('.ts'))) {
-      const src = readFileSync(join(dir, file), 'utf8');
+  for (const [dir, label] of [
+    [ROUTES_DIR, 'routes'],
+    [SERVICES_DIR, 'services'],
+  ] as const) {
+    for (const { path, file } of tsFilesUnder(dir, label)) {
+      const src = readFileSync(path, 'utf8');
       for (const form of FUNCTION_FORMS) {
         form.lastIndex = 0;
         for (const m of src.matchAll(form)) {
@@ -358,13 +386,20 @@ export function readFunctions(): Map<string, SourceFunction[]> {
           } catch {
             continue;
           }
-          const entry = { file: `${dir === ROUTES_DIR ? 'routes' : 'services'}/${file}`, name, body };
-          index.set(name, [...(index.get(name) ?? []), entry]);
+          index.set(name, [...(index.get(name) ?? []), { file, name, body }]);
         }
       }
     }
   }
   return index;
+}
+
+/** The same walk, for the checks that read whole files rather than functions. */
+export function readSourceFiles(): Array<{ file: string; src: string }> {
+  return [
+    ...tsFilesUnder(ROUTES_DIR, 'routes'),
+    ...tsFilesUnder(SERVICES_DIR, 'services'),
+  ].map(({ path, file }) => ({ file, src: readFileSync(path, 'utf8') }));
 }
 
 /**

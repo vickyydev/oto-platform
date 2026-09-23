@@ -544,6 +544,106 @@ services:
         # that list before the walkthrough rather than during it.
         sync: false
 
+      # -- the payment gateway, 2C2P (S2-10a) ---------------------------------
+      #
+      # QR on the customer display at the till. API SERVER ONLY — none of these
+      # reaches a Pi box or a browser, because the display renders the QR from
+      # a payload stored on the payment attempt and never calls 2C2P itself.
+      # docs/architecture/PAYMENT_GATEWAY.md is the authority for every name.
+      #
+      # STAGING RUNS THE SIMULATOR UNTIL THE CREDENTIALS EXIST, deliberately
+      # and out loud. With PGW_MERCHANT_ID or PGW_SECRET_KEY unset the api
+      # selects its own gateway simulator, says so in its startup log and shows
+      # it on the Console's Integrations page, and the Console's panel can mark
+      # a QR paid, expire it, decline it, pay it late or suppress the callback.
+      # A demo therefore needs no sandbox account. Open decision 32 is what
+      # fills the two rows below in; nothing else has to change when it does.
+      #
+      # A PRODUCTION SERVICE WITH EITHER UNSET REFUSES TO START. That is the
+      # point: a live park showing a guest a code that cannot be paid, and then
+      # closing the sale on somebody pressing a button, is the worst failure
+      # this platform has. Staging may pretend; a park may not.
+      - key: PGW_PROVIDER
+        # Set to 2c2p once the merchant credentials are in place. It is safe to
+        # set early: with the credentials still unset the api falls back to the
+        # simulator here and announces it.
+        value: simulator
+      - key: PGW_ENV
+        value: sandbox
+      - key: PGW_MERCHANT_ID
+        # From the 2C2P merchant portal. Open decision 32.
+        sync: false
+      - key: PGW_SECRET_KEY
+        # The Secret Key. It signs what we send and VERIFIES WHAT 2C2P SENDS
+        # BACK, so it is the only thing that makes a payment notification proof
+        # of anything at all. Never in this file, never in a log, never on a
+        # page — not even masked.
+        sync: false
+      - key: PGW_CURRENCY_CODE
+        # ISO 4217 alphabetic. Not the numeric 764, which is the legacy 3.x
+        # spelling and is refused by 4.3.
+        value: THB
+      - key: PGW_BACKEND_RETURN_URL
+        # Where 2C2P posts a payment notification. This api's own webhook, plus
+        # the filter token below as ?t=… once one is set. Set it in the
+        # dashboard alongside the merchant, because it has to match what is
+        # registered in the portal.
+        sync: false
+      - key: PGW_WEBHOOK_SECRET
+        # A random token on that URL. A CHEAP FILTER FOR INTERNET NOISE, NOT
+        # AUTHENTICATION — the JWT signature is what authenticates. Secret all
+        # the same: a filter everyone knows is not a filter.
+        sync: false
+      - key: PGW_QR_CHANNEL_CODE
+        # PromptPay QR. `THQR` reads like the right answer and is not: it is a
+        # category code in the Payment Option response, not a Do Payment
+        # channel. Confirmed against the live merchant with one Payment Option
+        # call, which is why this is configuration rather than a constant.
+        value: PPQR
+      - key: PGW_QR_TYPE
+        # RAW, so the EMVCo payload comes back and the display draws the code
+        # itself. URL would make every sale depend on an image host in another
+        # country being reachable from a mall in Phuket.
+        value: RAW
+      - key: PGW_PAYMENT_EXPIRY_MIN
+        value: '20'
+      - key: PGW_INVOICE_PREFIX
+        # Up to five characters in front of every invoice number, so a sandbox
+        # invoice can never collide with a production one. Empty in production.
+        value: SBX
+      - key: PGW_INQUIRY_INTERVAL_S
+        # TEN HERE, THREE LOCALLY, and the difference is deliberate. This is
+        # also the poller job's tick, and a tick writes one operational-record
+        # row: three seconds is about 29,000 rows a day where ten is 3,000, on
+        # a table that already prunes itself at OPS_RUN_RETENTION_DAYS. What it
+        # costs is a few seconds on the one case where the webhook did not
+        # arrive — and the per-attempt back-off inside the poller is what
+        # actually decides how often a given QR is asked about.
+        value: '10'
+      - key: PGW_INQUIRY_MAX_MIN
+        # When asking 2C2P stops. NOT the same dial as PAYMENT_PENDING_MIN.
+        value: '30'
+      - key: PAYMENT_PENDING_MIN
+        # OURS, not 2C2P's: when a tender nobody has answered goes on the
+        # Failures page. Ten minutes is a guest who has left the counter; half
+        # an hour is a family who has left the mall.
+        value: '10'
+      - key: PGW_MAINT_BASE_URL
+        # Void and refund live on the Payment ACTION api, which is a DIFFERENT
+        # HOST from PGW_BASE_URL and a different crypto envelope (JWE RSA-OAEP
+        # + A256GCM around a JWS PS256). Empty uses the host PGW_ENV names.
+        sync: false
+      - key: PGW_MAINT_PRIVATE_KEY
+        # Our RSA private key, PEM. NOT PGW_SECRET_KEY — a merchant who put the
+        # HS256 secret here would be signing refunds with the key that verifies
+        # notifications. Empty means refunds through the gateway are not
+        # available yet and everything else still works (S2-11 needs it).
+        sync: false
+      - key: PGW_MAINT_2C2P_PUBLIC_KEY
+        # 2C2P's RSA public key, PEM. Where ours is uploaded and how theirs is
+        # obtained comes from 2C2P onboarding and is not on the public docs.
+        sync: false
+
       # -- error reporting -----------------------------------------------------
       - key: SENTRY_DSN
         # Optional. The error hook is a no-op while this is empty.

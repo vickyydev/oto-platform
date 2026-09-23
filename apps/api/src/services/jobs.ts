@@ -6,6 +6,7 @@ import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
 import { expireStaleCommands, markSilentBoxesOffline, purgeOldBoxHeartbeats } from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
+import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import {
   buildAlertChannels,
@@ -342,6 +343,18 @@ export async function runWatchdog(deps: JobDeps): Promise<WatchdogSummary> {
  * things registered here.
  */
 export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
+  /**
+   * RESOLVING THE GATEWAY IS WHAT ANNOUNCES IT, and this is where a boot first
+   * needs it: the poller below cannot be described without knowing which
+   * `QrPayment` is live. `gatewayFor` memoises, so this is also the only time
+   * the line is logged — "payment gateway: …", naming the provider and, when a
+   * credential is unset, naming the VARIABLE and never its value
+   * (`PAYMENT_GATEWAY.md:786-788`). A deployment quietly running a pretend
+   * gateway therefore says so in its first few log lines, and a PRODUCTION
+   * deployment never gets this far: `assertProductionSafe` refuses the boot.
+   */
+  gatewayFor(deps.env, deps.log);
+
   return [
     {
       name: WATCHDOG_JOB,
@@ -402,6 +415,64 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
           },
         };
       },
+    },
+    /**
+     * THE INQUIRY POLLER (S2-10a) — the safety net under the payment webhook.
+     *
+     * "The poller and the webhook write through the same idempotent 'mark
+     * paid' service, so whichever arrives first wins and the second is a
+     * no-op" (`PAYMENT_GATEWAY.md:674-684`). The webhook is the fast path;
+     * this is the one that has to work when the fast path does not — a
+     * notification that never arrived, a deploy that was restarting when it
+     * did, 2C2P answering `9999` to itself. The acceptance for this ticket
+     * proves it by suppressing the webhook entirely.
+     *
+     * ITS INTERVAL IS THE DOCUMENT'S DIAL, and a deployment should turn it.
+     * `PGW_INQUIRY_INTERVAL_S` defaults to three seconds, which is right for a
+     * QR on a display in front of a guest and expensive as a global tick: one
+     * `ops_run` row per tick is about 29,000 rows a day against roughly 8,600
+     * at ten seconds, on a table that already prunes itself at
+     * `OPS_RUN_RETENTION_DAYS`. The per-attempt back-off inside
+     * `pollPendingAttempts` is what actually decides how often a given QR is
+     * asked about, so raising this to ten costs at most seven seconds on the
+     * ONE case where the webhook failed — which is why staging sets it in
+     * `render.yaml` rather than running the local default.
+     */
+    {
+      name: 'job:payments.inquiry',
+      description: 'Asks the payment gateway about every QR still waiting, and settles the ones that were paid',
+      intervalSeconds: deps.env.PGW_INQUIRY_INTERVAL_S,
+      /**
+       * A minute, not one interval. Three seconds of grace on a three-second
+       * job would raise an alert on any busy tick, and what this expectation
+       * is really watching for is the poller having stopped altogether.
+       */
+      graceSeconds: 60,
+      run: async ({ db, env, log, now }) => ({
+        detail: await pollPendingAttempts(db, env, log, now),
+      }),
+    },
+    /**
+     * `job:payments.pending` — NO TENDER WITH AN UNKNOWN OUTCOME IS LEFT
+     * SILENT.
+     *
+     * A DIFFERENT DIAL FROM THE POLLER'S, and the plan is emphatic that the
+     * two are not the same thing: `PGW_INQUIRY_MAX_MIN` (thirty) is when this
+     * platform stops ASKING the gateway, and `PAYMENT_PENDING_MIN` (ten) is
+     * when it stops waiting quietly and puts the attempt on the Failures page.
+     * Ten minutes is a guest who has left the counter; half an hour is a
+     * family who has left the mall.
+     *
+     * It covers the card terminal's `unknown` as well as the gateway's
+     * pending states, deliberately: a tender that never came back from a
+     * terminal is the same failure as one that never came back from a gateway,
+     * and the rule is about the sale, not about the instrument.
+     */
+    {
+      name: 'job:payments.pending',
+      description: 'Flags payment attempts with no outcome on the Failures page, and clears the flag when they are answered',
+      intervalSeconds: 60,
+      run: async ({ db, env, now }) => ({ detail: await flagPendingPayments(db, env, now) }),
     },
   ];
 }

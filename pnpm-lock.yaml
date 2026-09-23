@@ -104,6 +104,9 @@ importers:
       '@oto/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@oto/payments-2c2p':
+        specifier: workspace:*
+        version: link:../../packages/payments-2c2p
       '@oto/print':
         specifier: workspace:*
         version: link:../../packages/print
@@ -568,6 +571,22 @@ importers:
       tsx:
         specifier: 'catalog:'
         version: 4.23.13
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@25.9.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.0)
+
+  packages/payments-2c2p:
+    dependencies:
+      '@oto/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.6
       typescript:
         specifier: ~5.9.3
         version: 5.9.3

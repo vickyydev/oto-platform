@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { EmptyState, ErrorNote, Loading, Panel, RouteUnavailable } from '@/components/Panel';
 import { Chip, StatusMark, StatusPill, type Tone } from '@/components/Status';
+import { GatewaySimulatorPanel } from '@/components/integrations/GatewaySimulatorPanel';
 import { useSession } from '@/auth/SessionContext';
 import { formatWhen, timeAgo } from '@/lib/time';
 
@@ -105,6 +106,20 @@ export function Integrations() {
           </div>
         )}
       </Panel>
+
+      {/**
+       * THE QR GATEWAY GETS A PANEL OF ITS OWN, above the variable list and
+       * below the service cards.
+       *
+       * The cards above answer "is it configured"; this one answers the two
+       * questions that only matter for money — WHICH gateway is actually live
+       * right now, and, when it is the simulator, a way to rehearse every case
+       * a QR can end in before one of them happens at a counter on a Saturday.
+       * A deployment quietly running a pretend gateway is the thing this page
+       * exists to make impossible to miss, so it says so here in its own words
+       * rather than as one card among a dozen.
+       */}
+      <GatewaySimulatorPanel timezone={timezone} />
 
       {!missing && snapshot && (
         <Panel

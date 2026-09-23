@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -8,6 +8,7 @@ import {
   matchDelimiter,
   readFunctions,
   readRoutes,
+  readSourceFiles,
   reachesText,
   splitArgs,
   type SourceRoute,
@@ -87,9 +88,16 @@ function expectKnownFailures(actual: string[], known: string[], label: string, t
  */
 function auditCallsInsideTransactions(): Array<{ where: string; exec: string }> {
   const found: Array<{ where: string; exec: string }> = [];
-  for (const dir of ['routes', 'services']) {
-    for (const file of readdirSync(join(API_SRC, dir)).filter((f) => f.endsWith('.ts'))) {
-      const src = readFileSync(join(API_SRC, dir, file), 'utf8');
+  {
+    /**
+     * `readSourceFiles` walks SUBDIRECTORIES, which this scan did not until
+     * S2-10a. `services/payments/` — the attempt ledger, the cash drawer and
+     * the QR gateway — was outside it, and between them those are every write
+     * that moves money. The walk failed safe in the other check (a route whose
+     * transaction it cannot see is NAMED, not passed), but this one would have
+     * read a pool-handle audit row in there as absent.
+     */
+    for (const { file, src } of readSourceFiles()) {
       let at = 0;
       while ((at = src.indexOf('withTx(', at)) >= 0) {
         const open = at + 'withTx'.length;
@@ -112,7 +120,7 @@ function auditCallsInsideTransactions(): Array<{ where: string; exec: string }> 
             continue;
           }
           const line = src.slice(0, open + inner).split('\n').length;
-          found.push({ where: `${dir}/${file}:${line}`, exec: (args[0] ?? '').trim() });
+          found.push({ where: `${file}:${line}`, exec: (args[0] ?? '').trim() });
           inner = auditOpen + 1;
         }
         at = end;
@@ -472,6 +480,19 @@ const OPEN_WITHOUT_A_KEY = [
   'POST /auth/sign-out',
   'POST /booth/pair',
   'POST /public/bookings',
+  /**
+   *   - **the delivery is its own unique key** — `POST /webhooks/2c2p/payment`
+   *     (S2-10a). The caller is 2C2P's server and has no account, so the
+   *     replay store cannot hold a key for it; what makes a redelivery safe is
+   *     `pos.payment_notification`, whose two partial unique indexes are
+   *     `(invoice_no, tran_ref)` and `(invoice_no, payment_id)` — the key the
+   *     gateway document names. A second delivery of one payment loses the
+   *     insert and answers 200 having done nothing, and a delivery carrying
+   *     neither reference is refused before the insert rather than written as
+   *     often as it arrives. Redelivery is expected here rather than
+   *     exceptional: 2C2P publishes no retry schedule.
+   */
+  'POST /webhooks/2c2p/payment',
 ];
 
 describe('the idempotency key (SCRUM-291)', () => {

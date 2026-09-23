@@ -34,8 +34,21 @@ const stagingEnv = (overrides: Partial<Env> = {}): Env =>
   });
 
 describe('production boot guard (S2-01b)', () => {
+  /**
+   * The gateway credentials are named HERE rather than on the fixture, and
+   * they are the only reason this env is fuller than the others. A production
+   * deployment with no `PGW_MERCHANT_ID` or `PGW_SECRET_KEY` falls back to the
+   * pretend gateway and is refused (S2-10a), so "properly configured" now
+   * includes having one. Every other env in this file stays PARTIAL — naming
+   * only what its own rule reads — which is what keeps the guard honest about
+   * fields that are simply not there.
+   */
   it('accepts a properly configured production environment', () => {
-    expect(() => assertProductionSafe(productionEnv())).not.toThrow();
+    expect(() =>
+      assertProductionSafe(
+        productionEnv({ PGW_PROVIDER: '2c2p', PGW_MERCHANT_ID: 'M1', PGW_SECRET_KEY: 'k'.repeat(32) }),
+      ),
+    ).not.toThrow();
   });
 
   it('refuses a database on localhost', () => {

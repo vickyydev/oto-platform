@@ -401,6 +401,89 @@ const EnvSchema = z.object({
   TWILIO_AUTH_TOKEN: z.string().optional().or(z.literal('')),
   TWILIO_FROM: z.string().optional().or(z.literal('')),
   SENTRY_DSN: z.string().optional().or(z.literal('')),
+
+  /**
+   * THE PAYMENT GATEWAY (S2-10a, SCRUM-206, Slice D).
+   *
+   * `docs/architecture/PAYMENT_GATEWAY.md` §4 is the authority for every name
+   * below (`DEVELOPMENT_PLAN.md:1208`) and none of them is to be re-derived
+   * from anywhere else. Three rules attach to the whole block:
+   *
+   *  - **API SERVER ONLY.** Not one of these reaches a box or a browser
+   *    (`PAYMENT_GATEWAY.md:762-763`). The customer display renders a QR from a
+   *    payload stored on the attempt and never holds a key.
+   *  - **`PGW_` replaces the `2C2P_` names earlier drafts used**, because a
+   *    leading digit is not shell-safe.
+   *  - **Declared even when optional**, so a deployment that sets one gets it
+   *    VALIDATED at boot rather than silently ignored — the reason `.env.example`
+   *    gives for listing everything (`:82-84`).
+   */
+
+  /** `2c2p` or `simulator` — which `QrPayment` is live. See `assertProductionSafe`. */
+  PGW_PROVIDER: z.enum(['2c2p', 'simulator']).default('simulator'),
+  /** `sandbox` or `production`: picks the hosts and marks every record. */
+  PGW_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+  /** Payment API host. Empty means the one `PGW_ENV` names. */
+  PGW_BASE_URL: z.string().default(''),
+  PGW_MERCHANT_ID: z.string().default(''),
+  /** The HS256 signing and verifying key. **Secret.** Never logged, never on a page. */
+  PGW_SECRET_KEY: z.string().default(''),
+  /** Alphabetic, per ISO 4217 — `THB`, never the numeric 764 the 3.x API used. */
+  PGW_CURRENCY_CODE: z.string().length(3).default('THB'),
+  /** The public HTTPS URL 2C2P posts notifications to — this api's own webhook. */
+  PGW_BACKEND_RETURN_URL: z.string().default(''),
+  /** Where a browser comes back to after the booking site's hosted page (S2-12). */
+  PGW_FRONTEND_RETURN_URL: z.string().default(''),
+  /**
+   * A token on the webhook URL. **A cheap filter for internet noise and NOT
+   * authentication** — said twice in the document, and the JWT signature is
+   * what authenticates. **Secret** all the same: a filter everyone knows is
+   * not a filter.
+   */
+  PGW_WEBHOOK_SECRET: z.string().default(''),
+  /** `PPQR`. `THQR` is a CATEGORY code in the Payment Option answer and is wrong. */
+  PGW_QR_CHANNEL_CODE: z.string().default('PPQR'),
+  /** `RAW`, so the display renders the payload itself and needs no outbound internet. */
+  PGW_QR_TYPE: z.enum(['ALL', 'RAW', 'BASE64', 'URL']).default('RAW'),
+  PGW_PAYMENT_EXPIRY_MIN: z.coerce.number().int().min(1).max(180).default(20),
+  /**
+   * Up to five characters on the front of every invoice number, so sandbox
+   * invoices can never collide with production ones. Empty in production.
+   * Refused here rather than at the counter: `buildInvoiceNo` throws on a bad
+   * prefix, and the first sale of the day is a poor place to discover it.
+   */
+  PGW_INVOICE_PREFIX: z
+    .string()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (value && !/^[A-Za-z0-9]{1,5}$/.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'PGW_INVOICE_PREFIX: up to five letters or digits, or empty',
+        });
+      }
+    }),
+  /**
+   * TWO DIALS THAT ARE NOT THE SAME THING, and conflating them is the mistake
+   * the plan names:
+   *
+   *   PGW_INQUIRY_INTERVAL_S  how often a QR still on a display is asked about.
+   *   PGW_INQUIRY_MAX_MIN     when asking STOPS.
+   *   PAYMENT_PENDING_MIN     ours, not 2C2P's — when an attempt nobody has
+   *                           resolved is put on the Failures page. It is much
+   *                           shorter than the polling window on purpose: the
+   *                           point is to tell somebody at the counter, not to
+   *                           wait for the gateway to give up.
+   */
+  PGW_INQUIRY_INTERVAL_S: z.coerce.number().int().min(1).max(600).default(3),
+  PGW_INQUIRY_MAX_MIN: z.coerce.number().int().min(1).max(1440).default(30),
+  PAYMENT_PENDING_MIN: z.coerce.number().int().min(1).max(1440).default(10),
+  /** The Payment ACTION host — a DIFFERENT host from `PGW_BASE_URL`, not a path on it. */
+  PGW_MAINT_BASE_URL: z.string().default(''),
+  /** Our RSA private key, PEM. **Secret.** Signs the JWS and decrypts their JWE. */
+  PGW_MAINT_PRIVATE_KEY: z.string().default(''),
+  /** 2C2P's RSA public key, PEM. Encrypts our JWE and verifies their JWS. */
+  PGW_MAINT_2C2P_PUBLIC_KEY: z.string().default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -410,6 +493,78 @@ const DEV_DEFAULTS = {
   minioAccessKey: 'oto',
   minioSecretKey: 'otosecret123',
 } as const;
+
+export interface GatewaySelection {
+  provider: '2c2p' | 'simulator';
+  /** One sentence for the startup log and the Console card. Never a value. */
+  reason: string;
+  /** The `PGW_*` names that are unset, by NAME. Never a partial value, never a mask. */
+  missingVars: string[];
+  /** True when the simulator was chosen by absence rather than by `PGW_PROVIDER`. */
+  fellBack: boolean;
+}
+
+/**
+ * WHICH `QrPayment` THIS DEPLOYMENT RUNS, decided in one place.
+ *
+ * `PAYMENT_GATEWAY.md:786-788` asks for a missing `PGW_MERCHANT_ID` or
+ * `PGW_SECRET_KEY` to **silently select the simulator** so that CI and a fresh
+ * checkout never need the sandbox, and says so in the startup log and on the
+ * Console's Integrations page.
+ *
+ * THAT RULE IS NARROWED HERE, deliberately, and the narrowing is the one
+ * deviation from the document in this slice. Silent fallback applies on
+ * `DEPLOY_ENV` `local` and `staging` only. On a **production** deployment a
+ * missing credential REFUSES THE BOOT (`assertProductionSafe` below), because
+ * the failure the silent version produces in front of a real branch is the
+ * worst one this platform can have: a till that shows a guest a QR code that
+ * is not a payment instruction, takes their word for it, and closes the sale.
+ * A park would find out at the bank. A service that will not start is a
+ * deployment somebody fixes in five minutes.
+ *
+ * "Silently" also never meant quietly: the fallback is announced at boot and
+ * on Integrations in both environments where it is allowed.
+ */
+export function resolveGatewayProvider(env: Env): GatewaySelection {
+  /**
+   * THE READS ARE GUARDED BECAUSE NOT EVERY CALLER HANDS THIS A PARSED ENV.
+   * `loadEnv` gives both fields a `''` default, so at runtime they are always
+   * strings; `assertProductionSafe` is also called directly, and its own tests
+   * build a partial `Env` naming only the fields each rule reads. An unguarded
+   * `.trim()` there throws a `TypeError` before any refusal is reached, which
+   * turns the whole boot guard into a test that cannot fail for the right
+   * reason. An absent credential and an empty one are the same fact — there is
+   * nothing to be 2C2P with — so both take the same path.
+   */
+  const missingVars: string[] = [];
+  if (!(env.PGW_MERCHANT_ID ?? '').trim()) missingVars.push('PGW_MERCHANT_ID');
+  if (!(env.PGW_SECRET_KEY ?? '').trim()) missingVars.push('PGW_SECRET_KEY');
+
+  if (env.PGW_PROVIDER === 'simulator') {
+    return {
+      provider: 'simulator',
+      reason: 'PGW_PROVIDER is simulator — QR payments are pretend, and the Console can drive them.',
+      missingVars,
+      fellBack: false,
+    };
+  }
+  if (missingVars.length > 0) {
+    return {
+      provider: 'simulator',
+      reason:
+        `PGW_PROVIDER is 2c2p but ${missingVars.join(' and ')} ${missingVars.length > 1 ? 'are' : 'is'} unset, ` +
+        'so the gateway simulator is running instead. No QR shown here is a real payment instruction.',
+      missingVars,
+      fellBack: true,
+    };
+  }
+  return {
+    provider: '2c2p',
+    reason: `2C2P, ${env.PGW_ENV}, channel ${env.PGW_QR_CHANNEL_CODE}.`,
+    missingVars,
+    fellBack: false,
+  };
+}
 
 /**
  * Refuse to boot on a configuration that does not belong to this deployment
@@ -465,6 +620,29 @@ export function assertProductionSafe(env: Env): void {
     }
     if (env.SEED_PROFILE === 'staging') {
       problems.push('SEED_PROFILE is staging — the demo tenant would be seeded into production');
+    }
+    /**
+     * A LIVE PARK MUST NEVER QUIETLY RUN A PRETEND GATEWAY (S2-10a).
+     *
+     * The gateway simulator mints a well-formed EMVCo payload that is
+     * deliberately unpayable and then lets the Console mark it paid. On a
+     * developer's machine and on staging that is exactly what is wanted. In
+     * front of a real counter it is a QR a family scans, a bank that says the
+     * merchant is unknown, and a sale the platform will happily close on
+     * somebody pressing a button — money not taken, recorded as taken.
+     *
+     * So production refuses BOTH shapes of it: choosing the simulator
+     * explicitly, and choosing 2C2P with nothing to be 2C2P with. The
+     * variables are named, never their values.
+     */
+    const gateway = resolveGatewayProvider(env);
+    if (gateway.provider === 'simulator') {
+      problems.push(
+        gateway.fellBack
+          ? `PGW_PROVIDER is 2c2p but ${gateway.missingVars.join(' and ')} ${gateway.missingVars.length > 1 ? 'are' : 'is'} unset — ` +
+            'the QR tender would fall back to the gateway simulator, which shows guests a code that cannot be paid'
+          : 'PGW_PROVIDER is simulator — the QR tender would be pretend on a live branch',
+      );
     }
   }
 

@@ -1773,6 +1773,80 @@ and were left alone. `main` stays at `14201bc` and the working tree was not
 disturbed, so neither of those workflows lost a step. Resume on the branch by
 taking the finalise decision above.
 
+## D-3 — the two payment status vocabularies, mapped once (S2-10a, SCRUM-206)
+
+`docs/architecture/PAYMENT_GATEWAY.md:594-613` describes a QR's life in one set
+of words and the ticket's `pos.payment_attempt.status` CHECK uses another.
+Neither document maps one onto the other, and the risk is not ambiguity but
+divergence: each slice inventing its own reading makes the Attempts list on a
+Sale detail unreadable, because "cancelled" would mean three different things
+depending on which writer produced the row. The mapping below is the only one.
+It lives in code at `packages/payments-2c2p/src/contract.ts`
+(`GATEWAY_STATE_TO_ATTEMPT_STATUS`), is used by
+`apps/api/src/services/payments/gateway.ts` and by nothing else, and
+`packages/payments-2c2p/test/wire.test.ts` checks that every gateway word is
+covered exactly once and that every answer is a word the column's CHECK allows.
+
+| Gateway word (§3.2) | `payment_attempt.status` | Why |
+|---|---|---|
+| `created` | `created` | The row exists; nothing has been asked of the gateway. |
+| `qr_shown` | `sent_to_terminal` | The QR is on the display and the till is waiting. The ledger's word is about instruments generally, and a display is this tender's terminal. |
+| `pending` (`0001`/`2001`) | `sent_to_terminal` | 2C2P has it and nobody has paid. A fact about their record, not about our screen, but the same state to a till. |
+| `paid` (`0000`) | `approved` | And only with the amount **and** the currency matching. |
+| `expired` (`5009`/`9020`) | `cancelled`, plus `payload.expired = true` | The ledger has no `expired`, and `declined` would be a lie: nobody refused this payment, the clock ran out on it. The flag is what tells the two apart on the row. |
+| `cancelled` (`0003`) | `cancelled` | Staff or the guest abandoned it. |
+| `late_paid` (`5017`) | `awaiting_staff_confirmation` | Money for a sale somebody has probably already settled another way. Never `approved` without a person: apply it or refund it is a judgement about a guest who is standing there or has gone home. |
+| `amount_mismatch` (`5015`/`5016`) | `awaiting_staff_confirmation` | `PAYMENT_GATEWAY.md:612-613` is explicit — these never mark a sale paid. |
+| `not_found` (`2002`) | `not_found` | Our invoice never reached 2C2P. A fault on our side of the wire, not a guest who declined. |
+| `duplicate_invoice` (`5005`/`9015`) | `declined` | We reused an invoice number. Our bug, and the attempt cannot be settled against a payment belonging to an earlier one. It also raises a critical alert, because a number generator is what has to be fixed. |
+| `refunded` (`4120`) | *not written* | S2-11's word. `refund()` reports it; this slice never writes it. |
+| `failed` (anything unread) | `unknown` | The honest word for a code nobody here has read. |
+
+Two codes are deliberately not payment states at all. `9999` means 2C2P could
+not reach **our** webhook, which is a fact about our availability and says
+nothing about the money. `1005` is a payment-*flow* code that arrives on Do
+Payment rather than on an inquiry, and it means the QR is up.
+
+### Slice D's fix round — what the gate found, and what changed
+
+**The blocker.** `resolveGatewayProvider` read `PGW_MERCHANT_ID` and
+`PGW_SECRET_KEY` unguarded, and `assertProductionSafe` now calls it. The boot
+guard's own tests build a **partial `Env`** naming only the fields each rule
+reads, so every production assertion in `apps/api/test/boot-guard.test.ts` threw
+a `TypeError` before reaching its own check: twelve tests about the database,
+the storage credentials, the cookie, the demo controls and the seed profile
+stopped testing what they are named after. Both reads are now
+`(x ?? '').trim()`, and the production gateway refusal is unchanged. Card
+`206-D-4-the-boot-guard-that-could-not-fail.png` plants it again: 12 failed of
+20, green on restore.
+
+The rest of the round, each with a test where behaviour changed:
+
+- **An absent `currencyCode` is a mismatch**, not a pass. It is mandatory on
+  both the notification and the inquiry (`PAYMENT_GATEWAY.md:296`), so a
+  delivery cannot release money by leaving the field out: the attempt goes to
+  `awaiting_staff_confirmation` and the sale stays open.
+- **The webhook's path token is validated loosely and refused inside.** A
+  `max()` on its schema made an over-long token a **400** from the validator,
+  before the handler ran, and a 400 is what makes 2C2P redeliver all evening.
+- **The poller reads oldest first.** A tick reads at most 200 waiting attempts;
+  newest-first meant that past 200 the oldest were never read at all — never
+  inquired about, never reaching the exhaustion rule. Asserted on the query's
+  own `order by` rather than on 201 planted rows.
+- **`paid_at` is our own clock, not the gateway's stamp.** `transactionDateTime`
+  arrives as `yyyyMMddHHmmss` with **no time zone stated anywhere** in
+  `PAYMENT_GATEWAY.md` (`:297`, `:349`); the only zones the document does state
+  are the acquirer cut-offs and the business date, both Asia/Bangkok. Since
+  `paid_at` feeds end of day (S2-15a), reading a Bangkok stamp as UTC would move
+  a payment across a business-day boundary. The stamp is kept unparsed on the
+  attempt's payload as `gatewayStamp`, for support and for whoever settles the
+  zone in the first sandbox session. **Open question for that session.**
+- **`isAboutTheMerchant` is now called** where a non-paid state closes an
+  attempt: `9999` says nothing about the payment, so it must never cancel one.
+  The status filter already dropped it; the call is what says why.
+- The poller job's comment said "roughly 3,000 at ten seconds"; 86400/10 is
+  about 8,600.
+
 ## Deviations recorded
 
 (None yet — the plan lists the ones it expects: booth order, Pi image, edge +

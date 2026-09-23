@@ -91,6 +91,19 @@ describe('route guards (S2-01b)', () => {
       // failure. Same shape as `POST /box/v1/register`.
       'POST /booth/pair',
       'POST /public/bookings',
+      /**
+       * S2-10a — what the payment gateway posts to us.
+       *
+       * Its caller is 2C2P's server, which has no session and never will: the
+       * HS256 signature on the body IS the authentication, verified before a
+       * single claim is read, and `PGW_WEBHOOK_SECRET` on the URL is a filter
+       * for internet noise that this file's readers should not mistake for a
+       * credential check. It is the one route on this list that must answer
+       * **200 even when it refuses** — a 4xx makes 2C2P redeliver all evening
+       * — so "open" here means open to being told something, never open to
+       * being believed.
+       */
+      'POST /webhooks/2c2p/payment',
     ]);
   });
 
