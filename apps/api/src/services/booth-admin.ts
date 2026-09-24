@@ -15,9 +15,6 @@ import {
   voucherDefinition,
   type BoothEligibilityMode,
   type Db,
-  type VoucherKind,
-  type VoucherOfflinePolicy,
-  type VoucherValueType,
 } from '@oto/db';
 import { BOOTH_BUNDLE_SCHEMA_VERSION, businessDate, newId, parseDayStart } from '@oto/shared';
 import { AppError } from '../lib/errors';
@@ -118,6 +115,8 @@ const SETTINGS_DEFAULTS = {
   buttonKey: 'Space',
   eligibility: 'none' as BoothEligibilityMode,
   dailySpinCap: null as number | null,
+  /** Null is the box's own twelve hours (`BOOTH_STAFF_SESSION_DEFAULT_MINUTES`). */
+  staffSessionMinutes: null as number | null,
 };
 
 export interface BoothDraft {
@@ -170,6 +169,8 @@ async function loadDraft(exec: Exec, row: BoothStationRow): Promise<BoothDraft> 
       buttonKey: settingsRow?.buttonKey ?? SETTINGS_DEFAULTS.buttonKey,
       eligibility: settingsRow?.eligibility ?? SETTINGS_DEFAULTS.eligibility,
       dailySpinCap: settingsRow?.dailySpinCap ?? SETTINGS_DEFAULTS.dailySpinCap,
+      staffSessionMinutes:
+        settingsRow?.staffSessionMinutes ?? SETTINGS_DEFAULTS.staffSessionMinutes,
       updatedAt: settingsRow?.updatedAt ?? null,
     },
     layout,
@@ -180,6 +181,47 @@ async function loadDraft(exec: Exec, row: BoothStationRow): Promise<BoothDraft> 
 
 function isNonNull<T>(value: T | null): value is T {
   return value !== null;
+}
+
+/**
+ * The park's words for the slips, for the definitions this draft's prizes
+ * point at (SCRUM-400) — only those that carry a title or an instruction, in
+ * id order so the document does not depend on the order prizes were edited.
+ *
+ * **A definition with neither contributes nothing, deliberately.** The bundle
+ * is hashed as stored: had every definition gone in, every booth published
+ * before this field existed would read as "changed" with nothing a manager
+ * could see to review, and would need a publish to say the same thing again.
+ *
+ * An entry carries the terms too, and the box prints an entry's terms rather
+ * than the cache's (`buildPrintJob` in `@oto/box-agent`), so a version
+ * records what its slips said. What a slip prints therefore follows the
+ * version a booth is running, not the definition as it is now: a definition
+ * with no entry in that version — never worded, or worded only since —
+ * prints the prize's own names, the generic redemption line and its terms
+ * from the `booth` cache scope, which change at the box's next pull; one with
+ * an entry prints the entry until the next publish, even once its title and
+ * instruction are cleared. The rule in full is the note at the top of
+ * `voucher-definitions.ts`. The expiry is not here: the box reads it when a
+ * voucher is won, from the prize's own days or, when the prize names none,
+ * from the definition on the cache scope, so a definition's changed expiry
+ * applies from the box's next pull.
+ */
+function slipWording(draft: BoothDraft): Array<Record<string, string | null>> {
+  const worded = [...draft.definitions.values()].filter((d) =>
+    [d.titleEn, d.titleTh, d.instructionEn, d.instructionTh].some((w) => w !== null && w !== ''),
+  );
+  return worded
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .map((d) => ({
+      id: d.id,
+      titleEn: d.titleEn,
+      titleTh: d.titleTh,
+      instructionEn: d.instructionEn,
+      instructionTh: d.instructionTh,
+      termsEn: d.termsEn,
+      termsTh: d.termsTh,
+    }));
 }
 
 /**
@@ -196,12 +238,21 @@ function isNonNull<T>(value: T | null): value is T {
 function bundleFrom(draft: BoothDraft): Record<string, unknown> | null {
   const layout = draft.layout;
   if (!layout) return null;
+  const wording = slipWording(draft);
   return {
     schemaVersion: BOOTH_BUNDLE_SCHEMA_VERSION,
     settings: {
       eligibility: draft.settings.eligibility,
       buttonKey: draft.settings.buttonKey,
       dailySpinCap: draft.settings.dailySpinCap,
+      /**
+       * Only when the administrator set one (SCRUM-400). Absent is the box's
+       * own twelve hours, and absent rather than null keeps the hash of every
+       * booth nobody has set — the reason `@oto/shared` made it optional.
+       */
+      ...(draft.settings.staffSessionMinutes !== null
+        ? { staffSessionMinutes: draft.settings.staffSessionMinutes }
+        : {}),
     },
     layout: {
       id: layout.id,
@@ -225,6 +276,7 @@ function bundleFrom(draft: BoothDraft): Record<string, unknown> | null {
       sortOrder: p.sortOrder,
       voucherDefinitionId: p.voucherDefinitionId,
     })),
+    ...(wording.length > 0 ? { voucherDefinitions: wording } : {}),
   };
 }
 
@@ -331,22 +383,12 @@ async function publishBlockers(
       });
     }
     /**
-     * A prize whose expiry nobody set.
-     *
-     * The definition's null means "never expires", which is a real and
-     * deliberate value for the legacy Radar codes the park still honours — but
-     * a booth prize printed today with no expiry is a liability with no end
-     * date, and the specification asks for an expiry per prize. So the prize
-     * resolves one from itself or from its definition, and publishing without
-     * one is refused rather than defaulted.
+     * No expiry is not a blocker (owner, 24 September: "expiry per prize, with
+     * never allowed"). A prize with no expiry of its own and a definition that
+     * never expires prints "No expiry" on the slip, the voucher carries a null
+     * `expires_at`, and the till honours it at any date (`vouchers.ts`). This
+     * used to refuse the publish; the decision to allow it is the owner's.
      */
-    if ((prize.expiryDays ?? definition.expiryDays) === null) {
-      blockers.push({
-        field: `prizes[${prize.nameEn}].expiryDays`,
-        code: 'BOOTH_PRIZE_NO_EXPIRY',
-        message: `"${prize.nameEn}" has no expiry, and neither does the voucher "${definition.code}". Set one before publishing.`,
-      });
-    }
   }
 
   /**
@@ -433,6 +475,8 @@ export interface BoothDraftView {
     buttonKey: string;
     eligibility: BoothEligibilityMode;
     dailySpinCap: number | null;
+    /** Minutes a staff sign-in lasts; null is the box's own twelve hours. */
+    staffSessionMinutes: number | null;
   };
   prizes: Array<{
     id: string;
@@ -487,10 +531,14 @@ export async function boothDraft(db: Db, row: BoothStationRow): Promise<BoothDra
   const published = publishedRow ? versionView(publishedRow) : null;
   const bundleHash = bundle ? hashBundle(bundle) : null;
 
+  // The worded definitions are part of the bundle now (SCRUM-400), so an edit
+  // to their words is an edit to the draft.
+  const worded = new Set(slipWording(draft).map((w) => w.id));
   const edits = [
     draft.settings.updatedAt,
     draft.layout?.updatedAt ?? null,
     ...draft.prizes.map((p) => p.updatedAt),
+    ...[...draft.definitions.values()].filter((d) => worded.has(d.id)).map((d) => d.updatedAt),
   ].filter(isNonNull);
   const lastEditedAt = edits.length
     ? new Date(Math.max(...edits.map((d) => d.getTime()))).toISOString()
@@ -504,6 +552,7 @@ export async function boothDraft(db: Db, row: BoothStationRow): Promise<BoothDra
       buttonKey: draft.settings.buttonKey,
       eligibility: draft.settings.eligibility,
       dailySpinCap: draft.settings.dailySpinCap,
+      staffSessionMinutes: draft.settings.staffSessionMinutes,
     },
     prizes: draft.prizes.map((p) => {
       const definition = p.voucherDefinitionId ? draft.definitions.get(p.voucherDefinitionId) : undefined;
@@ -812,6 +861,8 @@ export interface BoothSettingsPatch {
   buttonKey?: string;
   eligibility?: BoothEligibilityMode;
   dailySpinCap?: number | null;
+  /** Minutes, at most one trading day; null goes back to the box's twelve hours. */
+  staffSessionMinutes?: number | null;
 }
 
 /**
@@ -844,6 +895,10 @@ export async function updateBoothSettings(
       eligibility: patch.eligibility ?? before?.eligibility ?? SETTINGS_DEFAULTS.eligibility,
       dailySpinCap:
         patch.dailySpinCap !== undefined ? patch.dailySpinCap : (before?.dailySpinCap ?? null),
+      staffSessionMinutes:
+        patch.staffSessionMinutes !== undefined
+          ? patch.staffSessionMinutes
+          : (before?.staffSessionMinutes ?? null),
     };
 
     if (before) {
@@ -873,6 +928,7 @@ export async function updateBoothSettings(
             buttonKey: before.buttonKey,
             eligibility: before.eligibility,
             dailySpinCap: before.dailySpinCap,
+            staffSessionMinutes: before.staffSessionMinutes,
           }
         : null,
       after: next,
@@ -1167,175 +1223,12 @@ function prizeConflict(err: unknown): unknown {
 }
 
 // --- Voucher definitions ----------------------------------------------------
-
-export interface VoucherDefinitionInput {
-  code: string;
-  nameEn: string;
-  nameTh?: string | null;
-  kind: VoucherKind;
-  valueType?: VoucherValueType;
-  valueSatang?: number | null;
-  valueBp?: number | null;
-  expiryDays?: number | null;
-  offlinePolicy?: VoucherOfflinePolicy;
-  singleUse?: boolean;
-  costSatang?: number;
-  termsEn?: string | null;
-  termsTh?: string | null;
-  active?: boolean;
-}
+//
+// Created, edited, archived and listed in `services/voucher-definitions.ts`
+// since SCRUM-400, beside their own routes. What stays here is the one read a
+// prize needs: that the definition it names is this operator's.
 
 type DefinitionRow = typeof voucherDefinition.$inferSelect;
-
-/**
- * What a win is worth must actually be filled in.
- *
- * The column CHECKs allow a `percent` definition with no percentage in it —
- * they can only look at one column at a time — and a definition like that
- * prints a voucher whose value is blank. These are the cross-field rules the
- * database cannot state.
- */
-function checkDefinitionValue(kind: VoucherKind, input: Partial<VoucherDefinitionInput>, row?: DefinitionRow): void {
-  const valueType = input.valueType ?? row?.valueType ?? 'none';
-  const valueSatang = input.valueSatang !== undefined ? input.valueSatang : (row?.valueSatang ?? null);
-  const valueBp = input.valueBp !== undefined ? input.valueBp : (row?.valueBp ?? null);
-  if (valueType === 'amount' && valueSatang === null) {
-    throw new AppError(400, 'VOUCHER_VALUE_MISSING', 'A voucher worth an amount needs `valueSatang`');
-  }
-  if (valueType === 'percent' && valueBp === null) {
-    throw new AppError(400, 'VOUCHER_VALUE_MISSING', 'A percentage voucher needs `valueBp` in basis points');
-  }
-  if (kind === 'wallet_credit' && valueSatang === null) {
-    throw new AppError(400, 'VOUCHER_VALUE_MISSING', 'A wallet credit needs `valueSatang`');
-  }
-}
-
-export async function listVoucherDefinitions(
-  db: Db,
-  operatorId: string,
-  includeArchived: boolean,
-): Promise<{ definitions: DefinitionRow[] }> {
-  const definitions = await db
-    .select()
-    .from(voucherDefinition)
-    .where(
-      and(
-        eq(voucherDefinition.operatorId, operatorId),
-        includeArchived ? undefined : isNull(voucherDefinition.archivedAt),
-      ),
-    )
-    .orderBy(asc(voucherDefinition.code));
-  return { definitions };
-}
-
-export async function createVoucherDefinition(
-  db: Db,
-  ctx: OpContext,
-  actor: { accountId: string; operatorId: string },
-  input: VoucherDefinitionInput,
-): Promise<{ definition: DefinitionRow }> {
-  checkDefinitionValue(input.kind, input);
-  const id = newId();
-  try {
-    return await withTx(db, ctx, 'voucher_definition.create', async (tx) => {
-      await tx.insert(voucherDefinition).values({
-        id,
-        operatorId: actor.operatorId,
-        code: input.code,
-        nameEn: input.nameEn,
-        nameTh: input.nameTh ?? null,
-        kind: input.kind,
-        valueType: input.valueType ?? 'none',
-        valueSatang: input.valueSatang ?? null,
-        valueBp: input.valueBp ?? null,
-        expiryDays: input.expiryDays ?? null,
-        offlinePolicy: input.offlinePolicy ?? 'allow',
-        singleUse: input.singleUse ?? true,
-        costSatang: input.costSatang ?? 0,
-        termsEn: input.termsEn ?? null,
-        termsTh: input.termsTh ?? null,
-        active: input.active ?? true,
-      });
-      const [definition] = await tx
-        .select()
-        .from(voucherDefinition)
-        .where(eq(voucherDefinition.id, id))
-        .limit(1);
-      await audit.record(tx, {
-        actorAccountId: actor.accountId,
-        operatorId: actor.operatorId,
-        action: 'voucher_definition.create',
-        entityType: 'voucher_definition',
-        entityId: id,
-        after: definition,
-        requestId: ctx.requestId,
-      });
-      return { definition: definition! };
-    });
-  } catch (err) {
-    throw definitionConflict(err);
-  }
-}
-
-export async function updateVoucherDefinition(
-  db: Db,
-  ctx: OpContext,
-  actor: { accountId: string; operatorId: string },
-  before: DefinitionRow,
-  patch: Partial<VoucherDefinitionInput>,
-): Promise<{ definition: DefinitionRow }> {
-  checkDefinitionValue(patch.kind ?? before.kind, patch, before);
-  try {
-    return await withTx(db, ctx, 'voucher_definition.update', async (tx) => {
-      const set: Partial<typeof voucherDefinition.$inferInsert> = { updatedAt: new Date() };
-      if (patch.code !== undefined) set.code = patch.code;
-      if (patch.nameEn !== undefined) set.nameEn = patch.nameEn;
-      if (patch.nameTh !== undefined) set.nameTh = patch.nameTh;
-      if (patch.kind !== undefined) set.kind = patch.kind;
-      if (patch.valueType !== undefined) set.valueType = patch.valueType;
-      if (patch.valueSatang !== undefined) set.valueSatang = patch.valueSatang;
-      if (patch.valueBp !== undefined) set.valueBp = patch.valueBp;
-      if (patch.expiryDays !== undefined) set.expiryDays = patch.expiryDays;
-      if (patch.offlinePolicy !== undefined) set.offlinePolicy = patch.offlinePolicy;
-      if (patch.singleUse !== undefined) set.singleUse = patch.singleUse;
-      if (patch.costSatang !== undefined) set.costSatang = patch.costSatang;
-      if (patch.termsEn !== undefined) set.termsEn = patch.termsEn;
-      if (patch.termsTh !== undefined) set.termsTh = patch.termsTh;
-      if (patch.active !== undefined) set.active = patch.active;
-      await tx.update(voucherDefinition).set(set).where(eq(voucherDefinition.id, before.id));
-      const [definition] = await tx
-        .select()
-        .from(voucherDefinition)
-        .where(eq(voucherDefinition.id, before.id))
-        .limit(1);
-      await audit.record(tx, {
-        actorAccountId: actor.accountId,
-        operatorId: actor.operatorId,
-        action: 'voucher_definition.update',
-        entityType: 'voucher_definition',
-        entityId: before.id,
-        before,
-        after: definition,
-        requestId: ctx.requestId,
-      });
-      return { definition: definition! };
-    });
-  } catch (err) {
-    throw definitionConflict(err);
-  }
-}
-
-export async function loadVoucherDefinition(
-  db: Db,
-  operatorId: string,
-  id: string,
-): Promise<DefinitionRow> {
-  const [row] = await db.select().from(voucherDefinition).where(eq(voucherDefinition.id, id)).limit(1);
-  if (!row || row.operatorId !== operatorId) {
-    throw new AppError(404, 'VOUCHER_DEFINITION_NOT_FOUND', 'No voucher definition with that id');
-  }
-  return row;
-}
 
 async function requireDefinition(exec: Exec, operatorId: string, id: string): Promise<DefinitionRow> {
   const [row] = await exec.select().from(voucherDefinition).where(eq(voucherDefinition.id, id)).limit(1);
@@ -1343,17 +1236,6 @@ async function requireDefinition(exec: Exec, operatorId: string, id: string): Pr
     throw new AppError(404, 'VOUCHER_DEFINITION_NOT_FOUND', 'No voucher definition with that id');
   }
   return row;
-}
-
-function definitionConflict(err: unknown): unknown {
-  if (isUniqueViolation(err, 'voucher_definition_code_unique')) {
-    return new AppError(
-      409,
-      'VOUCHER_DEFINITION_CODE_TAKEN',
-      'That voucher code is already used by another definition — codes are how imports and reports name one',
-    );
-  }
-  return err;
 }
 
 // --- Layouts ----------------------------------------------------------------
@@ -1596,7 +1478,9 @@ export async function addBoothStaff(
  * **Their PIN is not revoked by this.** A PIN belongs to the ACCOUNT — one
  * live PIN per person, `credential_active_kind_unique` — and somebody taken
  * off Booth 1 may still work Booth 2. What stops them at this booth is
- * `allowedStaff` in the published bundle, which the box checks before it
+ * `allowedStaff`, which rides beside the published bundle on the `booth`
+ * cache scope (`sync-booth.ts`) rather than inside it — so it reaches the box
+ * at its next pull, with no publish — and which the box checks before it
  * verifies anything; revoking the PIN as well is the separate act below.
  */
 export async function removeBoothStaff(
@@ -1726,17 +1610,11 @@ export async function setBoothPin(
  *
  * **What it does NOT do is reach the booth.** A box holds the cached staff
  * list until its next pull, and the withdrawal takes effect at the booth only
- * then. Some of that window is the price of a booth that keeps working
- * without internet — an offline box cannot be told anything. The rest is a
- * defect, and it is measured: on this build nothing on a RUNNING box ever
- * pulls the cache again. `@oto/box-agent` calls `syncCache()` once, from
- * `start()`, and from no timer and no command — `config_apply` re-pulls the
- * config bundle and not the cache — so a withdrawn PIN keeps signing that
- * person in at the booth until the agent restarts. Driven on a live stack:
- * the four digits were still accepted after the withdrawal and after the
- * booth's own minute refresh, which re-reads a cache nothing refills.
- * Raised against `@oto/box-agent`; the deny-list has the same window, for the
- * same reason.
+ * then: about a minute on a running box, whose agent pulls its cache on a
+ * timer and on the Apply config command (SCRUM-275), and however long it
+ * stays offline otherwise — an offline box cannot be told anything, which is
+ * the price of a booth that keeps working without internet. The deny-list has
+ * the same window, for the same reason.
  */
 export async function clearBoothPin(
   db: Db,

@@ -75,6 +75,10 @@ export const api = {
     request<T>('POST', path, body, opts),
   patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
     request<T>('PATCH', path, body, opts),
+  // Booth staff are PUT onto a booth and a PIN is PUT onto a person (SCRUM-400):
+  // the api's verbs for "make this so", which a retry repeats harmlessly.
+  put: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
+    request<T>('PUT', path, body, opts),
   // A DELETE is a write like any other, and the platform's rule is that every
   // write carries a key: the api's idempotency plugin covers all four methods.
   delete: <T>(path: string, opts?: { idempotencyKey?: string }) =>

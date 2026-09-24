@@ -417,6 +417,106 @@ test('the print job is on disk before the printer is touched, so a restart still
   h.close();
 });
 
+/**
+ * SCRUM-400 — the park's own words for a prize, as the published wheel froze
+ * them (`bundle.voucherDefinitions`), and a prize that never expires.
+ *
+ * The title prints where the prize's name did, the English and Thai
+ * instructions print as two lines where the generic sentence did, and the
+ * terms are the PUBLISHED ones although the cache scope beside the bundle
+ * already holds newer ones: an edit nobody has published must not reach
+ * paper, or a version would not say what its slips said. The expiry row is
+ * left to say "No expiry" (the template's own words for null).
+ *
+ * A prize whose type nobody has worded prints exactly as before — that is the
+ * second press: its own name, the generic sentence, and the terms and the
+ * expiry the cache scope holds for its type at the moment it is won.
+ */
+test('the slip prints the words and terms as published, not as edited since; an unworded type prints the cached terms and expiry', async () => {
+  const worded = { ...prize(1, { weightBp: 100 }), expiryDays: null };
+  // No days of its own, so its type's decide, as the cache holds them.
+  const plain = { ...prize(2, { weightBp: 200 }), expiryDays: null };
+  const h = openBooth({ rolls: [0, 150] });
+  await seed(h, [
+    entry({
+      // The cache scope as the cloud serves it NOW: the worded type's terms
+      // were edited after the publish, and nobody has published since.
+      voucherDefinitions: [
+        {
+          id: worded.voucherDefinitionId!,
+          termsEn: 'Edited after the publish.',
+          termsTh: null,
+          expiryDays: null,
+        },
+        {
+          id: plain.voucherDefinitionId!,
+          termsEn: 'No cash value.\nOne per family.',
+          termsTh: 'ไม่สามารถแลกเป็นเงินสดได้',
+          expiryDays: 30,
+        },
+      ],
+      bundle: {
+        ...entry().bundle,
+        prizes: [worded, plain],
+        voucherDefinitions: [
+          {
+            id: worded.voucherDefinitionId!,
+            titleEn: 'FREE KIDS PIZZA',
+            titleTh: 'พิซซ่าเด็กฟรี',
+            instructionEn: 'Show this slip at the OTO restaurant for one free kids pizza.',
+            instructionTh: 'แสดงสลิปนี้ที่ร้านอาหาร OTO รับพิซซ่าเด็กฟรี 1 ถาด',
+            termsEn: 'One use only.',
+            termsTh: 'ใช้ได้ครั้งเดียว',
+          },
+        ],
+      },
+    }),
+  ]);
+  h.printOutcome = 'queued';
+
+  const won = await h.booth.spin({ idempotencyKey: 'press-worded' });
+  assert.equal(won.prizeId, worded.id);
+  assert.equal(won.expiresAt, null, 'no expiry on the prize or its type: it never expires');
+  const other = await h.booth.spin({ idempotencyKey: 'press-plain' });
+  assert.equal(other.prizeId, plain.id);
+  assert.equal(
+    other.expiresAt,
+    new Date(Date.parse(AT) + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    'no days on the prize: its type’s thirty, read from the cache when it was won',
+  );
+
+  const pending = await h.store.loadPendingPrintJobs(BOX_ID);
+  const slips = new Map(pending.map((job) => [voucherData(job.job).voucherCode, voucherData(job.job)]));
+
+  const first = slips.get(won.voucherCode!);
+  assert.ok(first, 'the worded prize queued no slip');
+  assert.equal(first.prizeLine, 'FREE KIDS PIZZA');
+  assert.equal(first.prizeLineThai, 'พิซซ่าเด็กฟรี');
+  assert.equal(
+    first.redemptionLine,
+    'Show this slip at the OTO restaurant for one free kids pizza.\nแสดงสลิปนี้ที่ร้านอาหาร OTO รับพิซซ่าเด็กฟรี 1 ถาด',
+    'English then Thai, a line each',
+  );
+  assert.equal(first.expiresAt, null, 'the template prints "No expiry" for null');
+  assert.deepEqual(
+    first.terms,
+    ['One use only.', 'ใช้ได้ครั้งเดียว'],
+    'the published terms, not the edit the cache already holds',
+  );
+
+  const second = slips.get(other.voucherCode!);
+  assert.ok(second, 'the plain prize queued no slip');
+  assert.equal(second.prizeLine, 'Prize 2', 'no wording: the prize’s own name, as before');
+  assert.equal(second.redemptionLine, 'Show this QR at OTO Reception to claim: Prize 2.');
+  assert.deepEqual(
+    second.terms,
+    ['No cash value.', 'One per family.', 'ไม่สามารถแลกเป็นเงินสดได้'],
+    'no published wording: the cache’s terms, a line each, as before',
+  );
+  assert.notEqual(second.expiresAt, null, 'thirty days, printed');
+  h.close();
+});
+
 test('a simulated press changes nothing at all (D16)', async () => {
   const h = openBooth({ rolls: [0] });
   await seed(h);

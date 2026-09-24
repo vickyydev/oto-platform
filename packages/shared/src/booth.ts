@@ -60,10 +60,14 @@ export type BoothEligibilityMode = (typeof BOOTH_ELIGIBILITY_MODES)[number];
  * a translation table between them.
  *
  * **What is NOT here is as deliberate as what is.** No voucher-definition
- * document, no terms text, no stock level: a bundle is what the wheel needs to
- * draw and to name a prize, and the box resolves the rest at print time. The
- * whole thing sits on a Raspberry Pi in a shopping mall that anybody can carry
- * out of a storeroom.
+ * document, no terms text, no stock level: a slice is what the wheel needs to
+ * draw and to name a prize. The words of a type that had a title or an
+ * instruction when the wheel was published — title, instruction and terms —
+ * ride beside the prizes in the bundle's `voucherDefinitions` (SCRUM-400),
+ * and the box resolves the rest when a voucher is won from its cache: the expiry,
+ * and the terms of any type the bundle carries no words for.
+ * The whole thing sits on a Raspberry Pi in a shopping mall that anybody can
+ * carry out of a storeroom.
  */
 export const BoothConfigPrizeSchema = z.object({
   id: z.string().uuid(),
@@ -121,8 +125,9 @@ export const BoothConfigSettingsSchema = z.object({
    * shift, and a sign-in that lapsed mid-afternoon would produce exactly the
    * unattributed vouchers staff sign in to avoid.
    *
-   * **Optional, and absent from every bundle published today.** The Console
-   * control and the column behind it come in a later slice; until then a box
+   * **Optional, and present only when an administrator has set one**
+   * (Console → Booths → Booth settings, stored in
+   * `booth.booth_settings.staff_session_minutes`, SCRUM-400). Absent, a box
    * uses `BOOTH_STAFF_SESSION_DEFAULT_MINUTES`. Optional rather than defaulted
    * here because a bundle is hashed AS STORED, and a schema that filled the
    * field in would hand the box a document nobody published.
@@ -207,6 +212,47 @@ export const BoothConfigBundleSchema = z.object({
    * `sort_order`. `SpinResponse.prizeIndex` indexes THIS array.
    */
   prizes: z.array(BoothConfigPrizeSchema),
+  /**
+   * The park's own words for the slips this wheel prints (SCRUM-400): per
+   * voucher definition a prize points at, the title and the instruction line
+   * in English and Thai, and the terms, exactly as the administrator typed
+   * them in Console → Voucher types.
+   *
+   * **Optional, and present only for definitions that carry a title or an
+   * instruction.** A bundle is hashed AS STORED, so a wheel whose definitions
+   * nobody has worded publishes the same document — and the same hash — it
+   * always did, and a box reading one without this field prints the prize's
+   * own names, the generic redemption line and the terms from its cache
+   * scope, as before; those terms change at the box's next pull.
+   *
+   * Frozen at publish like the rest of the bundle, terms included: for a
+   * definition with an entry here the box prints the entry's terms, never the
+   * cache's, so re-wording it — terms and all — changes the slip at that
+   * booth's next publish, and a version says what its slips said. The expiry
+   * is not here: the box reads it when a voucher is won — the prize's own
+   * days from the wheel, or else the type's from its cache scope — so a
+   * type's changed expiry applies from the box's next pull.
+   *
+   * The prizes themselves still carry no definition document; this sits
+   * beside them, keyed by `voucherDefinitionId`. Every field but the id is
+   * optional so a box parses a bundle from a cloud that words fewer of them.
+   * A title or an instruction left out falls back to the prize's names or
+   * the generic line; terms left out print none, not the cache's, because
+   * for a type with an entry the entry is the whole of its terms.
+   */
+  voucherDefinitions: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        titleEn: z.string().nullable().optional(),
+        titleTh: z.string().nullable().optional(),
+        instructionEn: z.string().nullable().optional(),
+        instructionTh: z.string().nullable().optional(),
+        termsEn: z.string().nullable().optional(),
+        termsTh: z.string().nullable().optional(),
+      }),
+    )
+    .optional(),
 });
 export type BoothConfigBundle = z.infer<typeof BoothConfigBundleSchema>;
 

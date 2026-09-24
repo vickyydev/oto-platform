@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'wouter';
 import { formatTHB } from '@oto/shared';
 import { Drawer } from '@/components/Drawer';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import {
   parsePercentToBp,
   weightVerdict,
 } from './odds';
+import { notSetUp, worthOf } from './voucherTypes';
 
 /**
  * One slice, open for editing.
@@ -223,16 +225,41 @@ export function PrizeEditor({
 
         <Field
           label="Voucher"
-          hint="What winning it produces at the park. A prize with none cannot be published."
+          hint={
+            <>
+              {chosenDefinition ? (
+                <>
+                  {worthOf(chosenDefinition)}.
+                  {notSetUp(chosenDefinition) && (
+                    <span style={{ color: 'hsl(var(--status-warn))' }}> {notSetUp(chosenDefinition)}</span>
+                  )}{' '}
+                </>
+              ) : (
+                'What winning it produces at the park. A prize with none cannot be published. '
+              )}
+              {/* Voucher types are the operator's, set up on their own page (SCRUM-400). */}
+              <Link href="/voucher-types" className="underline underline-offset-4">
+                Set up voucher types
+              </Link>
+            </>
+          }
         >
           <Select
             value={draft.voucherDefinitionId ?? ''}
             onChange={(v) => setDraft({ ...draft, voucherDefinitionId: v === '' ? null : v })}
             placeholder="— none chosen —"
-            options={voucherDefinitions.map((d) => ({
-              value: d.id,
-              label: d.active ? `${d.nameEn} (${d.code})` : `${d.nameEn} (${d.code}) — inactive`,
-            }))}
+            // Live types to choose from, and the one this prize points at even if
+            // it has since been archived, named as such rather than hidden.
+            options={voucherDefinitions
+              .filter((d) => !d.archivedAt || d.id === draft.voucherDefinitionId)
+              .map((d) => ({
+                value: d.id,
+                label: d.archivedAt
+                  ? `${d.nameEn} (${d.code}) — archived`
+                  : d.active
+                    ? `${d.nameEn} (${d.code})`
+                    : `${d.nameEn} (${d.code}) — switched off`,
+              }))}
           />
         </Field>
 
@@ -279,7 +306,7 @@ export function PrizeEditor({
             label="Expires after"
             hint={
               draft.expiryDays !== null ? (
-                'Days from the moment the voucher is printed.'
+                'Days from the moment the voucher is won.'
               ) : chosenDefinition?.expiryDays != null ? (
                 <>Left empty, it takes the voucher’s own {chosenDefinition.expiryDays} days.</>
               ) : chosenDefinition ? (
@@ -295,7 +322,9 @@ export function PrizeEditor({
               placeholder={
                 chosenDefinition?.expiryDays != null
                   ? `${chosenDefinition.expiryDays} from the voucher`
-                  : 'from the voucher'
+                  : chosenDefinition
+                    ? 'never, from the voucher'
+                    : 'from the voucher'
               }
               onChange={(expiryDays) => setDraft({ ...draft, expiryDays })}
             />

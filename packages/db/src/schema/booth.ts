@@ -185,6 +185,22 @@ export const boothSettings = booth.table(
       .$type<BoothEligibilityMode>()
       .notNull()
       .default('none'),
+    /**
+     * How long a member of staff stays signed in at this booth, in minutes
+     * (SCRUM-400, migration 0022). Set by the administrator in Console →
+     * Booths → Booth settings and published into the wheel as
+     * `settings.staffSessionMinutes`, which the box reads
+     * (`boothStaffSessionMinutes` in `@oto/shared`).
+     *
+     * **Null is the default, not "no limit"**: the box then grants its own
+     * twelve hours (`BOOTH_STAFF_SESSION_DEFAULT_MINUTES`), and the published
+     * wheel carries no value at all — so a booth nobody has set keeps the exact
+     * bundle, and the bundle hash, it was published with before the column
+     * existed. The CHECK is the box's own ceiling of one trading day
+     * (`BOOTH_STAFF_SESSION_MAX_MINUTES`): a longer session would carry
+     * yesterday's sign-in into tomorrow's first spins.
+     */
+    staffSessionMinutes: integer('staff_session_minutes'),
     ...timestamps,
   },
   (t) => [
@@ -200,6 +216,10 @@ export const boothSettings = booth.table(
       sql`${t.dailySpinCap} is null or ${t.dailySpinCap} > 0`,
     ),
     check('booth_settings_button_key_check', sql`${t.buttonKey} <> 'Enter'`),
+    check(
+      'booth_settings_staff_session_minutes_check',
+      sql`${t.staffSessionMinutes} is null or (${t.staffSessionMinutes} > 0 and ${t.staffSessionMinutes} <= 1440)`,
+    ),
   ],
 );
 

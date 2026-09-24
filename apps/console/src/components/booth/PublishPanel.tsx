@@ -149,6 +149,8 @@ export function PublishPanel({
                 <Row label="Cost">
                   {plan.summary.costPerSpin} a spin · {plan.summary.costPerHundred} per 100 spins
                 </Row>
+                <Row label="Staff sign-in">{sessionText(draft.settings.staffSessionMinutes ?? null)}</Row>
+                <Row label="Slip wording">{wordingText(draft)}</Row>
                 {draft.lastEditedAt && (
                   <Row label="Last edited">{formatWhen(draft.lastEditedAt, timezone)}</Row>
                 )}
@@ -209,6 +211,28 @@ export function PublishPanel({
       )}
     </Panel>
   );
+}
+
+/** How long a staff sign-in lasts at the booth, as the confirmation says it (SCRUM-400). */
+function sessionText(minutes: number | null): string {
+  if (minutes === null) return 'lasts 12 hours (the default)';
+  const hours = minutes / 60;
+  return `lasts ${Number.isInteger(hours) ? hours : hours.toFixed(1)} hour${hours === 1 ? '' : 's'}`;
+}
+
+/**
+ * Which voucher types this version carries the park's own words for — read
+ * off the bundle about to be published, which carries them only for types
+ * that have a title or an instruction (`slipWording` in `booth-admin.ts`).
+ */
+function wordingText(draft: BoothDraft): string {
+  const bundle = draft.bundle as { voucherDefinitions?: unknown[] } | null;
+  const worded = bundle?.voucherDefinitions?.length ?? 0;
+  const types = new Set(
+    draft.prizes.filter((p) => p.voucherDefinitionId).map((p) => p.voucherDefinitionId),
+  ).size;
+  if (worded === 0) return 'every slip prints the prize’s name and the standard line';
+  return `the park’s own words for ${worded} of the ${types} voucher type${types === 1 ? '' : 's'} this booth’s prizes use`;
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {

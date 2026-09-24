@@ -141,6 +141,23 @@ export const voucherDefinition = promo.table(
     /** The small print on the paper. Free text, length-capped by zod at the API. */
     termsEn: text('terms_en'),
     termsTh: text('terms_th'),
+    /**
+     * The park's own words for the slip (SCRUM-400, migration 0022): the
+     * prize's title and the line that tells the family what to do with it, in
+     * English and in Thai, printed exactly as typed.
+     *
+     * Null is "not written yet", and the slip then prints what it printed
+     * before this column existed — the prize's own names and the generic
+     * "Show this QR at OTO Reception to claim" line — so a definition nobody
+     * has worded yet still produces a complete voucher. The words reach a booth
+     * inside the published wheel (`voucherDefinitions` in the bundle,
+     * `@oto/shared` booth.ts), so a change here is on paper once the booth is
+     * published again, and a version records what its slips said.
+     */
+    titleEn: text('title_en'),
+    titleTh: text('title_th'),
+    instructionEn: text('instruction_en'),
+    instructionTh: text('instruction_th'),
     active: boolean('active').notNull().default(true),
     ...timestamps,
     ...archivedAt,

@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Keyboard } from 'lucide-react';
-import { BOOTH_ELIGIBILITY_MODES, type BoothEligibilityMode } from '@oto/shared';
+import {
+  BOOTH_ELIGIBILITY_MODES,
+  BOOTH_STAFF_SESSION_DEFAULT_MINUTES,
+  BOOTH_STAFF_SESSION_MAX_MINUTES,
+  type BoothEligibilityMode,
+} from '@oto/shared';
 import { Panel, ErrorNote, Fact, RouteUnavailable } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
 import { ChoiceRow, Field, NumberInput, Select } from '@/components/Form';
@@ -12,7 +17,8 @@ export type BoothSettingsEdit = Omit<BoothSettingsDraft, 'layoutName'>;
 
 /**
  * The booth's own settings: the design it draws, who may spin, the key the red
- * button sends, and how many spins a day it will allow.
+ * button sends, how many spins a day it will allow, and how long a staff
+ * sign-in lasts (SCRUM-400).
  *
  * **Its name, its branch and whether it is in service are not here.** A booth
  * is a station (`core.station`, kind `booth`) and those three belong to the
@@ -80,7 +86,20 @@ export function BoothSettingsPanel({
     settings.layoutId !== draft.settings.layoutId ||
     settings.eligibility !== draft.settings.eligibility ||
     settings.buttonKey !== draft.settings.buttonKey ||
-    settings.dailySpinCap !== draft.settings.dailySpinCap;
+    settings.dailySpinCap !== draft.settings.dailySpinCap ||
+    (settings.staffSessionMinutes ?? null) !== (draft.settings.staffSessionMinutes ?? null);
+
+  /**
+   * The session length is typed in hours and stored in minutes. Empty is the
+   * box's own twelve hours; anything else is more than nothing and at most the
+   * box's ceiling of a day, which the API refuses past as well.
+   */
+  const sessionMinutes = settings.staffSessionMinutes ?? null;
+  const sessionValid =
+    sessionMinutes === null ||
+    (Number.isInteger(sessionMinutes) &&
+      sessionMinutes >= 1 &&
+      sessionMinutes <= BOOTH_STAFF_SESSION_MAX_MINUTES);
 
   return (
     <Panel
@@ -133,6 +152,34 @@ export function BoothSettingsPanel({
             placeholder="no cap"
             onChange={(dailySpinCap) => setSettings({ ...settings, dailySpinCap })}
           />
+        </Field>
+
+        <Field
+          label="Staff session length"
+          hint={
+            sessionValid ? (
+              `How long a sign-in at the booth lasts before it ends by itself — never because nobody pressed anything. Hours; left empty it is ${BOOTH_STAFF_SESSION_DEFAULT_MINUTES / 60}, at most ${BOOTH_STAFF_SESSION_MAX_MINUTES / 60}. Reaches the booth with the next published version.`
+            ) : (
+              <span style={{ color: 'hsl(var(--status-down))' }}>
+                More than nothing and at most {BOOTH_STAFF_SESSION_MAX_MINUTES / 60} hours.
+              </span>
+            )
+          }
+        >
+          <div className="flex items-center gap-2">
+            <NumberInput
+              value={sessionMinutes === null ? null : sessionMinutes / 60}
+              min={1}
+              placeholder={`${BOOTH_STAFF_SESSION_DEFAULT_MINUTES / 60} (default)`}
+              onChange={(hours) =>
+                setSettings({
+                  ...settings,
+                  staffSessionMinutes: hours === null ? null : Math.round(hours * 60),
+                })
+              }
+            />
+            <span className="text-sm text-muted-foreground shrink-0">hours</span>
+          </div>
         </Field>
 
         <Field
@@ -190,7 +237,7 @@ export function BoothSettingsPanel({
       <div className="mt-4 flex flex-wrap gap-2 items-center">
         <Button
           onClick={() => onSave(settings)}
-          disabled={!dirty || saving || unavailable || readOnly}
+          disabled={!dirty || !sessionValid || saving || unavailable || readOnly}
         >
           {saving ? 'Saving…' : 'Save settings'}
         </Button>
@@ -218,5 +265,6 @@ function edit(settings: BoothSettingsDraft): BoothSettingsEdit {
     buttonKey: settings.buttonKey,
     eligibility: settings.eligibility,
     dailySpinCap: settings.dailySpinCap,
+    staffSessionMinutes: settings.staffSessionMinutes ?? null,
   };
 }

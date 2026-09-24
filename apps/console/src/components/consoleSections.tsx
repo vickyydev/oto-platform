@@ -5,6 +5,7 @@ import {
   HeartPulse,
   Plug,
   Router,
+  Ticket,
   TriangleAlert,
   type LucideIcon,
 } from 'lucide-react';
@@ -94,6 +95,17 @@ export const consoleNav: ConsoleNavGroup[] = [
         // and publishing it `admin:booth:publish`, both checked on the panels
         // themselves — so somebody who may look at the odds gets the page
         // rather than a locked door.
+        permission: 'admin:booth:read',
+      },
+      {
+        id: 'voucher-types',
+        label: 'Voucher types',
+        icon: Ticket,
+        description:
+          'What each Lucky Wheel prize is worth at the park and the words its slip prints — set up here before a booth gives one away.',
+        // Directly under Booths, whose prize editor picks from this list. The
+        // same split as there: reading is the page, and changing a type needs
+        // `admin:booth:manage`, checked on the buttons (SCRUM-400).
         permission: 'admin:booth:read',
       },
       {

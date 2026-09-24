@@ -8,7 +8,9 @@
  * **Every shape below is copied from the API, not guessed at.** The routes are
  * `apps/api/src/routes/booth.ts` and the types are `BoothDraftView`,
  * `BoothListItem`, `PublishBlocker` and friends in
- * `apps/api/src/services/booth-admin.ts`. They are restated rather than
+ * `apps/api/src/services/booth-admin.ts`; the voucher types are
+ * `apps/api/src/routes/voucher-definitions.ts` and `VoucherDefinitionView` in
+ * `apps/api/src/services/voucher-definitions.ts` (SCRUM-400). They are restated rather than
  * imported because the console does not depend on the api app and should not
  * start doing so for six interfaces — so when a field is added there, it is
  * added here, and a field that is quietly renamed shows up as a type error on
@@ -131,6 +133,12 @@ export interface BoothSettingsDraft {
   buttonKey: string;
   eligibility: BoothEligibilityMode;
   dailySpinCap: number | null;
+  /**
+   * How long a staff sign-in at this booth lasts, in minutes (SCRUM-400).
+   * Null is the box's own twelve hours. Optional on the read because a
+   * deployment older than the column does not send it.
+   */
+  staffSessionMinutes?: number | null;
 }
 
 /** What the API will refuse a publish for, with the field to put it against. */
@@ -164,12 +172,34 @@ export interface BoothDraft {
    */
   bundleHash: string | null;
   published: BoothVersionRow | null;
+  /**
+   * The document the booth is running now, as stored — null when nothing has
+   * been published. Left unparsed like `bundle`; `publishedSessionMinutes`
+   * reads the one field the page needs from it.
+   */
+  publishedBundle?: unknown;
   /** Whether the draft differs from the published wheel at all. */
   changed: boolean;
   /** The newest edit to anything in the bundle — a colleague's included. */
   lastEditedAt: string | null;
   /** Empty means this draft can be published as it stands. */
   blockers: PublishBlocker[];
+}
+
+/**
+ * How long a staff sign-in lasts at the booth NOW, in minutes: the published
+ * wheel's `settings.staffSessionMinutes`, or null — the box's own twelve
+ * hours — when nothing is published or the version names no length. A length
+ * saved under Booth settings is the draft's until it is published, and the
+ * box grants this one meanwhile (SCRUM-400).
+ */
+export function publishedSessionMinutes(draft: BoothDraft): number | null {
+  const published = draft.publishedBundle as
+    | { settings?: { staffSessionMinutes?: unknown } }
+    | null
+    | undefined;
+  const minutes = published?.settings?.staffSessionMinutes;
+  return typeof minutes === 'number' && Number.isInteger(minutes) && minutes > 0 ? minutes : null;
 }
 
 export interface BoothLayoutRow {
@@ -181,6 +211,39 @@ export interface BoothLayoutRow {
   archivedAt: string | null;
 }
 
+/** The product or ticket package a voucher type hands over, named. */
+export interface VoucherLink {
+  id: string;
+  name: string;
+  code: string | null;
+  branchId: string | null;
+  branchName: string | null;
+  /** On sale: active and not archived. The till refuses one that is not. */
+  live: boolean;
+}
+
+/** A booth prize pointing at a voucher type — what an edit to it reaches. */
+export interface VoucherUse {
+  boothId: string;
+  boothName: string;
+  branchId: string;
+  prizeId: string;
+  prizeName: string;
+  /**
+   * The prize's Thai name: what a slip prints under the title when the type
+   * has no Thai title. Optional so a deployment that does not send it yet
+   * still reads.
+   */
+  prizeNameTh?: string | null;
+  active: boolean;
+}
+
+/**
+ * `VoucherDefinitionView` in `apps/api/src/services/voucher-definitions.ts`.
+ *
+ * Everything past `active` arrived with SCRUM-400 and is optional here, so the
+ * prize picker still reads a deployment that serves only the older fields.
+ */
 export interface VoucherDefinitionRow {
   id: string;
   code: string;
@@ -193,6 +256,67 @@ export interface VoucherDefinitionRow {
   expiryDays: number | null;
   costSatang: number;
   active: boolean;
+  productId?: string | null;
+  ticketPackageId?: string | null;
+  offlinePolicy?: string;
+  singleUse?: boolean;
+  titleEn?: string | null;
+  titleTh?: string | null;
+  instructionEn?: string | null;
+  instructionTh?: string | null;
+  termsEn?: string | null;
+  termsTh?: string | null;
+  archivedAt?: string | null;
+  updatedAt?: string;
+  product?: VoucherLink | null;
+  ticketPackage?: VoucherLink | null;
+  usedBy?: VoucherUse[];
+}
+
+/** What a voucher type create or edit sends. The API checks the whole row. */
+export interface VoucherDefinitionInput {
+  code?: string;
+  nameEn: string;
+  nameTh: string | null;
+  kind: string;
+  valueType: string;
+  valueSatang: number | null;
+  valueBp: number | null;
+  productId: string | null;
+  ticketPackageId: string | null;
+  expiryDays: number | null;
+  titleEn: string | null;
+  titleTh: string | null;
+  instructionEn: string | null;
+  instructionTh: string | null;
+  termsEn: string | null;
+  termsTh: string | null;
+  active: boolean;
+}
+
+/** `GET /voucher-definitions/link-options`: what a voucher type can point at. */
+export interface VoucherLinkOptions {
+  products: Array<{
+    id: string;
+    name: string;
+    code: string | null;
+    kind: string;
+    branchId: string | null;
+    branchName: string | null;
+    priceSatang: number;
+  }>;
+  packages: Array<{ id: string; name: string; branchId: string; branchName: string }>;
+}
+
+/**
+ * Somebody who may sign in at a booth (`GET /booths/:id/staff`). Never a PIN
+ * and never its hash — whether they have one is the whole answer.
+ */
+export interface BoothStaffRow {
+  accountId: string;
+  addedAt: string;
+  addedBy: string;
+  hasPin: boolean;
 }
 
 /** What a prize create or edit sends. Every field but the name is optional. */
@@ -275,8 +399,43 @@ export const boothApi = {
 
   layouts: () => api.get<{ layouts: BoothLayoutRow[] }>('/booth-layouts'),
 
-  voucherDefinitions: () =>
-    api.get<{ definitions: VoucherDefinitionRow[] }>('/voucher-definitions'),
+  /**
+   * The operator's voucher types. `includeArchived` is what lets a prize that
+   * still points at an archived type name it, rather than showing an empty
+   * picker the manager would read as "no voucher".
+   */
+  voucherDefinitions: (includeArchived = false) =>
+    api.get<{ definitions: VoucherDefinitionRow[] }>(
+      `/voucher-definitions${includeArchived ? '?includeArchived=true' : ''}`,
+    ),
+
+  voucherLinkOptions: () => api.get<VoucherLinkOptions>('/voucher-definitions/link-options'),
+
+  createDefinition: (input: VoucherDefinitionInput) =>
+    api.post<{ definition: VoucherDefinitionRow }>('/voucher-definitions', input, {
+      idempotencyKey: idemKey(),
+    }),
+
+  saveDefinition: (id: string, input: Partial<VoucherDefinitionInput>) =>
+    api.patch<{ definition: VoucherDefinitionRow }>(
+      `/voucher-definitions/${encodeURIComponent(id)}`,
+      input,
+      { idempotencyKey: idemKey() },
+    ),
+
+  /** Archived, never deleted: vouchers already printed under it are still honoured. */
+  archiveDefinition: (id: string) =>
+    api.delete<{ definition: VoucherDefinitionRow }>(
+      `/voucher-definitions/${encodeURIComponent(id)}`,
+      { idempotencyKey: idemKey() },
+    ),
+
+  restoreDefinition: (id: string) =>
+    api.post<{ definition: VoucherDefinitionRow }>(
+      `/voucher-definitions/${encodeURIComponent(id)}/restore`,
+      undefined,
+      { idempotencyKey: idemKey() },
+    ),
 
   saveSettings: (id: string, settings: Partial<Omit<BoothSettingsDraft, 'layoutName'>>) =>
     api.patch<unknown>(`${at(id)}/settings`, settings, { idempotencyKey: idemKey() }),
@@ -332,6 +491,43 @@ export const boothApi = {
     api.post<{ screen: BoothScreenRow }>(
       `${at(id)}/screens/${encodeURIComponent(credentialId)}/revoke`,
       { reason: reason ?? null },
+      { idempotencyKey: idemKey() },
+    ),
+
+  // --- Who may sign in at the booth (SCRUM-400) ------------------------------
+
+  staff: (id: string) => api.get<{ staff: BoothStaffRow[] }>(`${at(id)}/staff`),
+
+  addStaff: (id: string, accountId: string) =>
+    api.put<{ staff: BoothStaffRow[] }>(`${at(id)}/staff/${encodeURIComponent(accountId)}`, undefined, {
+      idempotencyKey: idemKey(),
+    }),
+
+  /** Their PIN stays theirs — withdraw it separately when that is what is meant. */
+  removeStaff: (id: string, accountId: string) =>
+    api.delete<{ staff: BoothStaffRow[] }>(`${at(id)}/staff/${encodeURIComponent(accountId)}`, {
+      idempotencyKey: idemKey(),
+    }),
+
+  /**
+   * Set or replace somebody's booth PIN.
+   *
+   * **No idempotency key, by the API's rule.** The route declares
+   * `secretResponse` for its REQUEST: the replay store keeps a hash of the
+   * body for a day, and four digits behind a plain hash are ten thousand
+   * guesses, so no key is claimed. A retry sets the same PIN again. The digits
+   * go in this one request body and nowhere else — not in state after the
+   * form clears, not in a log, not on screen.
+   */
+  setPin: (id: string, accountId: string, pin: string) =>
+    api.put<{ accountId: string; hasPin: true }>(
+      `${at(id)}/staff/${encodeURIComponent(accountId)}/pin`,
+      { pin },
+    ),
+
+  clearPin: (id: string, accountId: string, reason: string) =>
+    api.delete<{ accountId: string; hasPin: false }>(
+      `${at(id)}/staff/${encodeURIComponent(accountId)}/pin?reason=${encodeURIComponent(reason)}`,
       { idempotencyKey: idemKey() },
     ),
 };

@@ -20,11 +20,13 @@ import { formatWhen, timeAgo } from '@/lib/time';
 import {
   boothApi,
   isMissingRoute,
+  publishedSessionMinutes,
   type BoothDraft,
   type BoothLayoutRow,
   type BoothListRow,
   type BoothPrizeDraft,
   type BoothScreenRow,
+  type BoothStaffRow,
   type BoothStatus,
   type BoothVersionRow,
   type MintedPairingCode,
@@ -33,6 +35,7 @@ import {
 } from '@/components/booth/boothApi';
 import { BoothScreensPanel } from '@/components/booth/BoothScreensPanel';
 import { BoothSettingsPanel, type BoothSettingsEdit } from '@/components/booth/BoothSettingsPanel';
+import { BoothStaffPanel } from '@/components/booth/BoothStaffPanel';
 import { PrizeEditor } from '@/components/booth/PrizeEditor';
 import { PrizeTable } from '@/components/booth/PrizeTable';
 import { PublishPanel } from '@/components/booth/PublishPanel';
@@ -86,12 +89,14 @@ import {
  * Which panel a write belongs to, so its refusal is drawn where the button was
  * pressed rather than in whichever panel happens to hold an error slot.
  */
-type WriteSite = 'prizes' | 'settings' | 'publish' | 'screens';
+type WriteSite = 'prizes' | 'settings' | 'publish' | 'screens' | 'staff';
 
 export function Booths() {
   const { me, has } = useSession();
   const canManage = has('admin:booth:manage');
   const canPublish = has('admin:booth:publish');
+  /** Who works the booth is a different decision from its odds (`@oto/shared`), and a different permission. */
+  const canAssignStaff = has('admin:booth:staff_assign');
   const timezone = me?.branch?.timezone;
 
   const [branches, setBranches] = useState<BranchRow[] | null>(null);
@@ -104,6 +109,7 @@ export function Booths() {
   const [layouts, setLayouts] = useState<BoothLayoutRow[]>([]);
   const [definitions, setDefinitions] = useState<VoucherDefinitionRow[]>([]);
   const [screens, setScreens] = useState<Read<BoothScreenRow[]>>(() => unread<BoothScreenRow[]>([]));
+  const [staff, setStaff] = useState<Read<BoothStaffRow[]>>(() => unread<BoothStaffRow[]>([]));
   /**
    * The pairing code just minted (SCRUM-244).
    *
@@ -170,6 +176,7 @@ export function Booths() {
     setDraft((held) => reading(held));
     setVersions((held) => reading(held));
     setStatus((held) => reading(held));
+    setStaff((held) => reading(held));
 
     // Each read is settled on its own, so one failing does not empty the page.
     await Promise.allSettled([
@@ -213,6 +220,16 @@ export function Booths() {
               : readFailed(held, readFailureMessage(reason), []),
           ),
         ),
+      boothApi
+        .staff(id)
+        .then((r) => setStaff(readOk(r.staff)))
+        .catch((reason: unknown) =>
+          setStaff((held) =>
+            isMissingRoute(reason)
+              ? readAbsent<BoothStaffRow[]>([])
+              : readFailed(held, readFailureMessage(reason), []),
+          ),
+        ),
     ]);
   }, []);
 
@@ -224,6 +241,9 @@ export function Booths() {
    * not the booth's, which is what makes a seasonal wheel a choice from a list
    * instead of a re-entry of six prizes. A failure here empties a dropdown and
    * nothing else, and the field says what an empty one means.
+   *
+   * The archived voucher types come too (SCRUM-400), so a prize still pointing
+   * at one names it in the editor — the picker offers only live ones.
    */
   useEffect(() => {
     void boothApi
@@ -231,7 +251,7 @@ export function Booths() {
       .then((r) => setLayouts(r.layouts))
       .catch(() => setLayouts([]));
     void boothApi
-      .voucherDefinitions()
+      .voucherDefinitions(true)
       .then((r) => setDefinitions(r.definitions))
       .catch(() => setDefinitions([]));
   }, []);
@@ -241,6 +261,9 @@ export function Booths() {
   }, [branchId, loadBooths]);
 
   useEffect(() => {
+    // Another booth's staff list is not this booth's while the read is out:
+    // who may sign in where is exactly the thing not to show under a wrong name.
+    setStaff(unread<BoothStaffRow[]>([]));
     if (selectedId) void loadBooth(selectedId);
     // A code is for one booth. Selecting another must not leave six digits on
     // screen under a different booth's name.
@@ -265,6 +288,31 @@ export function Booths() {
       if (isMissingRoute(reason)) setWriteUnavailable(true);
       else setWriteError({ where, message: readFailureMessage(reason) });
     } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * The staff panel's writes (SCRUM-400), apart from `run` on purpose.
+   *
+   * `run` reads any 404 as "this deployment has no such route" and closes
+   * every form on the page. A 404 from the staff routes is nearly always the
+   * other thing — a colleague took the person off the booth, or withdrew the
+   * PIN, a moment before this press — so it is said in the staff panel, and
+   * the list is read again either way so the panel shows what is now true.
+   */
+  const runStaff = async (write: () => Promise<unknown>): Promise<boolean> => {
+    if (!selectedId) return false;
+    setBusy(true);
+    setWriteError(null);
+    try {
+      await write();
+      return true;
+    } catch (reason) {
+      setWriteError({ where: 'staff', message: readFailureMessage(reason) });
+      return false;
+    } finally {
+      await loadBooth(selectedId);
       setBusy(false);
     }
   };
@@ -493,6 +541,35 @@ export function Booths() {
               )}
             </div>
           </div>
+
+          <BoothStaffPanel
+            // The PIN form holds digits for one booth; another booth is another panel.
+            key={selected.booth.id}
+            branchId={selected.booth.branchId}
+            staff={staff}
+            // What the box grants now is the PUBLISHED length; the draft's
+            // reaches it with the next publish, and the note says both.
+            session={{
+              running: publishedSessionMinutes(selected),
+              next: selected.settings.staffSessionMinutes ?? null,
+            }}
+            busy={busy}
+            readOnly={!canAssignStaff}
+            error={errorAt('staff')}
+            onAdd={(accountId) => void runStaff(() => boothApi.addStaff(selected.booth.id, accountId))}
+            onRemove={(accountId) =>
+              void runStaff(() => boothApi.removeStaff(selected.booth.id, accountId))
+            }
+            onSetPin={(accountId, pin) =>
+              runStaff(() => boothApi.setPin(selected.booth.id, accountId, pin))
+            }
+            onClearPin={(accountId) =>
+              void runStaff(() =>
+                boothApi.clearPin(selected.booth.id, accountId, 'withdrawn from the Console'),
+              )
+            }
+            onRetry={() => selectedId && void loadBooth(selectedId)}
+          />
 
           <BoothScreensPanel
             screens={screens}

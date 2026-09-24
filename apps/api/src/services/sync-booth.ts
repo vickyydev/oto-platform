@@ -826,7 +826,11 @@ export interface BoothCacheItem {
   version: number;
   /** SHA-256 over the canonical JSON of `bundle` AS STORED. */
   bundleHash: string;
-  /** `{ schemaVersion, settings, layout, prizes }`, exactly as published. */
+  /**
+   * `{ schemaVersion, settings, layout, prizes }`, plus `voucherDefinitions`
+   * when a type the prizes use had a title or an instruction at the publish
+   * (SCRUM-400), exactly as published.
+   */
   bundle: unknown;
   /**
    * Who may sign in AT THIS BOOTH — `booth.booth_staff_assignment`, not the
@@ -836,10 +840,20 @@ export interface BoothCacheItem {
    */
   allowedStaff: string[];
   /**
-   * The terms and the expiry that go ON THE PAPER, for the definitions this
-   * bundle's prizes point at. The bundle itself carries neither — it is what
-   * the wheel needs to draw — and a booth with no internet still has to print
-   * a slip that says what the prize is worth and when it runs out.
+   * The terms and the expiry for the paper, as they are now, for the
+   * definitions this bundle's prizes point at — beside the frozen bundle,
+   * because a booth with no internet still has to print a slip that says what
+   * the prize is worth and when it runs out.
+   *
+   * The bundle carries only a prize's own days, so when a prize names none
+   * the box reads its type's expiry from here, when a voucher is won. It
+   * carries terms only for a type that had a title or an instruction when it
+   * was published (SCRUM-400), and for those the box prints the bundle's, so
+   * an edit waits for a publish; every other type's terms are printed from
+   * here, a type worded since that publish included. A changed expiry, and
+   * the changed terms of a type the running bundle carries no words for,
+   * therefore reach paper at the box's next pull, with no publish — the rule
+   * in full is the note at the top of `voucher-definitions.ts`.
    */
   voucherDefinitions: Array<{
     id: string;

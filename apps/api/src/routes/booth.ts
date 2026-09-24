@@ -1,12 +1,8 @@
 import { z } from 'zod';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { BOOTH_ACTION_HEADER, BOOTH_IDEMPOTENCY_HEADER } from '@oto/box-agent';
-import {
-  BOOTH_ELIGIBILITY_MODES,
-  VOUCHER_KINDS,
-  VOUCHER_OFFLINE_POLICIES,
-  VOUCHER_VALUE_TYPES,
-} from '@oto/db';
+import { BOOTH_ELIGIBILITY_MODES } from '@oto/db';
+import { BOOTH_STAFF_SESSION_MAX_MINUTES } from '@oto/shared';
 import type { App } from '../app';
 import { boothDeviceOf } from '../plugins/credential';
 import { boothConsoleStatus, boothHeaders, callBooth, loadBoothStation } from '../services/booth';
@@ -26,16 +22,13 @@ import {
   clearBoothPin,
   createBoothLayout,
   createBoothPrize,
-  createVoucherDefinition,
   listBoothLayouts,
   listBoothStaff,
   listBoothVersions,
   listBooths,
-  listVoucherDefinitions,
   loadBoothLayout,
   loadBoothPrize,
   loadBoothPrizeIncludingArchived,
-  loadVoucherDefinition,
   publishBoothConfig,
   removeBoothStaff,
   reorderBoothPrizes,
@@ -43,7 +36,6 @@ import {
   updateBoothLayout,
   updateBoothPrize,
   updateBoothSettings,
-  updateVoucherDefinition,
 } from '../services/booth-admin';
 import { loadBranchForOperator } from '../services/fleet';
 import { opCtx } from '../services/tx';
@@ -385,10 +377,15 @@ export async function boothRoutes(app: App): Promise<void> {
   // and `admin:booth:staff_assign` and neither of the other two, so the person
   // who decides who works the booth is not the person who decides the odds.
   //
-  // **The layout and voucher-definition routes are operator-wide** and pass no
-  // branch target, so only an operator-scoped grant covers them: a design and
-  // a voucher are shared by every booth of the operator, and editing one from
-  // one branch changes what all of them would publish.
+  // **The layout routes are operator-wide** and name no branch: a design is
+  // shared by every booth of the operator, and editing one from one branch
+  // changes what all of them would publish. With no branch target the guard
+  // checks the permission against the caller's operator and SESSION branch
+  // (`requirePermission` in `plugins/session.ts`), so an operator-scoped grant
+  // covers them and so does a grant at the branch the caller is signed in to;
+  // the by-id route loads the design inside the caller's operator before it
+  // acts. The voucher definitions work the same way, for the same reason, and
+  // live in `routes/voucher-definitions.ts` (SCRUM-400).
   //
   // **No response schema on the routes that carry a row or a jsonb document.**
   // A zod object drops keys it does not name, and `design`, `assetManifest`
@@ -440,6 +437,19 @@ export async function boothRoutes(app: App): Promise<void> {
         .optional(),
       eligibility: z.enum(BOOTH_ELIGIBILITY_MODES).optional(),
       dailySpinCap: z.number().int().positive().nullable().optional(),
+      /**
+       * How long a sign-in at the booth lasts, in minutes (SCRUM-400). Null is
+       * the box's own twelve hours and publishes nothing; the ceiling is the
+       * box's, one trading day — refused here and by the column's CHECK rather
+       * than silently cut down on the box.
+       */
+      staffSessionMinutes: z
+        .number()
+        .int()
+        .positive()
+        .max(BOOTH_STAFF_SESSION_MAX_MINUTES, 'A booth sign-in lasts at most 24 hours')
+        .nullable()
+        .optional(),
     })
     .refine((body) => Object.keys(body).length > 0, { message: 'Nothing to change' });
 
@@ -496,7 +506,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Change the booth itself: its wheel design, the key the red button sends, spin eligibility and the daily spin cap. Saved to the draft — no booth sees any of it until a publish. Eligibility `band` and `phone` can be SAVED and cannot be published until there is a booth inside the park.',
+          'Change the booth itself: its wheel design, the key the red button sends, spin eligibility, the daily spin cap and how long a staff sign-in lasts (`staffSessionMinutes`, at most 1440; null is the box’s twelve hours). Saved to the draft — no booth sees any of it until a publish. Eligibility `band` and `phone` can be SAVED and cannot be published until there is a booth inside the park.',
         params: BoothIdParams,
         body: SettingsBody,
       },
@@ -667,7 +677,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          `Mint the next version of this booth's wheel from the draft, and hand it to the boxes. Validated inside the transaction that writes it: the active weights must add up to exactly ${BOOTH_TOTAL_WEIGHT_BP} basis points, every active prize needs a live voucher definition and an expiry, the booth needs a design, and a wheel that could not be played — every prize off, or every active prize capped out today — is refused rather than published. Eligibility \`band\` or \`phone\` is refused until there is a booth inside the park. A version is never edited: this makes N+1, and the box picks it up by version at its next pull. Pass \`expectedBundleHash\` from the draft to be refused rather than publish a colleague's edit you have not seen.`,
+          `Mint the next version of this booth's wheel from the draft, and hand it to the boxes. Validated inside the transaction that writes it: the active weights must add up to exactly ${BOOTH_TOTAL_WEIGHT_BP} basis points, every active prize needs a live voucher definition (one that never expires is allowed — owner, 24 September), the booth needs a design, and a wheel that could not be played — every prize off, or every active prize capped out today — is refused rather than published. Eligibility \`band\` or \`phone\` is refused until there is a booth inside the park. A version is never edited: this makes N+1, and the box picks it up by version at its next pull. Pass \`expectedBundleHash\` from the draft to be refused rather than publish a colleague's edit you have not seen.`,
         params: BoothIdParams,
         body: z.object({
           note: z.string().max(500).nullable().optional(),
@@ -741,7 +751,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Let this account sign in at this booth. Separate from the station picker’s `station_staff`: a booth is unattended hardware in a mall and the person at it identifies with a PIN, not a password at a till. The list reaches the booth in the published bundle, so a booth picks up an addition at its next pull.',
+          'Let this account sign in at this booth. Separate from the station picker’s `station_staff`: a booth is unattended hardware in a mall and the person at it identifies with a PIN, not a password at a till. The list is not in the published bundle: it rides beside it on the box’s `booth` cache scope, so a booth picks up an addition at the box’s next pull with no publish — the PIN works from then — while a phone-and-password sign-in is checked against this list by the platform itself, at once.',
         params: StaffParams,
         response: { 200: StaffResponse },
       },
@@ -978,7 +988,7 @@ export async function boothRoutes(app: App): Promise<void> {
     },
   );
 
-  // --- Designs and what a win is worth (operator-wide) ----------------------
+  // --- Designs (operator-wide) ----------------------------------------------
 
   const LayoutBody = z.object({
     name: z.string().min(1).max(80),
@@ -1044,98 +1054,6 @@ export async function boothRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const before = await loadBoothLayout(app.db, auth.operatorId, req.params.id);
       return updateBoothLayout(
-        app.db,
-        opCtx(req),
-        { accountId: auth.accountId, operatorId: auth.operatorId },
-        before,
-        req.body,
-      );
-    },
-  );
-
-  /**
-   * What a win is worth.
-   *
-   * **No product or ticket-package link on this surface yet.** The columns
-   * exist and a `free_item` will want one; validating that a product belongs
-   * to this operator is the catalogue admin's job and it is S2-09b's, so the
-   * field is left off rather than accepted unchecked.
-   *
-   * **No campaign or marketing channel either**: `promo.campaign` and
-   * `promo.marketing_channel` are S2-07b's own tables and are not built —
-   * they need a migration, and migrations are another workflow's file in this
-   * tree today. A definition therefore carries neither, and the day those
-   * tables land this body gains two required fields.
-   */
-  const DefinitionBody = z.object({
-    code: z
-      .string()
-      .regex(/^[a-z0-9][a-z0-9-]{1,60}$/, 'A code is lower-case letters, digits and hyphens'),
-    nameEn: z.string().min(1).max(120),
-    nameTh: z.string().max(120).nullable().optional(),
-    kind: z.enum(VOUCHER_KINDS),
-    valueType: z.enum(VOUCHER_VALUE_TYPES).optional(),
-    valueSatang: z.number().int().min(0).nullable().optional(),
-    valueBp: z.number().int().min(0).max(BOOTH_TOTAL_WEIGHT_BP).nullable().optional(),
-    /** Null never expires — which is true of the legacy codes and of nothing new. */
-    expiryDays: z.number().int().positive().nullable().optional(),
-    offlinePolicy: z.enum(VOUCHER_OFFLINE_POLICIES).optional(),
-    singleUse: z.boolean().optional(),
-    costSatang: z.number().int().min(0).optional(),
-    termsEn: z.string().max(2000).nullable().optional(),
-    termsTh: z.string().max(2000).nullable().optional(),
-    active: z.boolean().optional(),
-  });
-
-  app.get(
-    '/voucher-definitions',
-    {
-      config: { permission: 'admin:booth:read' },
-      schema: {
-        description:
-          'What the park gives away: the template behind every voucher — kind, value, expiry, offline policy, single use, cost and the terms printed on the slip. A voucher copies its cost and expiry at issue, so editing one of these never changes what a slip already in somebody’s hand is worth.',
-        querystring: z.object({ includeArchived: z.enum(['true', 'false']).default('false') }),
-      },
-    },
-    async (req) => {
-      const auth = req.requireAuth();
-      return listVoucherDefinitions(app.db, auth.operatorId, req.query.includeArchived === 'true');
-    },
-  );
-
-  app.post(
-    '/voucher-definitions',
-    {
-      config: { permission: 'admin:booth:manage' },
-      schema: { description: 'Create a voucher definition.', body: DefinitionBody },
-    },
-    async (req, reply) => {
-      const auth = req.requireAuth();
-      const created = await createVoucherDefinition(
-        app.db,
-        opCtx(req),
-        { accountId: auth.accountId, operatorId: auth.operatorId },
-        req.body,
-      );
-      return reply.code(201).send(created);
-    },
-  );
-
-  app.patch(
-    '/voucher-definitions/:id',
-    {
-      config: { permission: 'admin:booth:manage' },
-      schema: {
-        description:
-          'Edit a voucher definition. Switching one off is refused at publish for any active prize pointing at it, rather than producing a wheel whose prize means nothing.',
-        params: BoothIdParams,
-        body: DefinitionBody.partial(),
-      },
-    },
-    async (req) => {
-      const auth = req.requireAuth();
-      const before = await loadVoucherDefinition(app.db, auth.operatorId, req.params.id);
-      return updateVoucherDefinition(
         app.db,
         opCtx(req),
         { accountId: auth.accountId, operatorId: auth.operatorId },

@@ -19,6 +19,7 @@ import { Devices } from '@/pages/Devices';
 import { Failures } from '@/pages/Failures';
 import { Health } from '@/pages/Health';
 import { Integrations } from '@/pages/Integrations';
+import { VoucherTypes } from '@/pages/VoucherTypes';
 
 const LAUNCHER_URL = import.meta.env.VITE_LAUNCHER_URL?.trim();
 
@@ -151,6 +152,11 @@ function Routes() {
       <Route path="/booths">
         <Section id="booths">
           <Booths />
+        </Section>
+      </Route>
+      <Route path="/voucher-types">
+        <Section id="voucher-types">
+          <VoucherTypes />
         </Section>
       </Route>
       <Route path="/integrations">

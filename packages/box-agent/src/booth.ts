@@ -69,14 +69,14 @@ import { silentLog, type AgentLog } from './transport';
 /**
  * One booth's entry in the `booth` cache scope.
  *
- * **Nothing fills this scope yet.** The vocabulary has existed since the
- * migration that created `booth.booth_config_version`; the builder that fills
- * it is the cloud's half of this ticket. So this schema is the box's side of a
- * contract with one end written: it states what a booth box needs in order to
- * run a wheel, and whatever builds the scope has to produce exactly this. It
- * is declared here rather than in `@oto/shared` because only the box reads it
- * — `BoothConfigBundle` next door is the document three surfaces share, and it
- * is embedded whole below rather than restated.
+ * **The cloud fills this scope**: `boothCacheItems` in the api's
+ * `services/sync-booth.ts`, whose `BoothCacheItem` is the other half of this
+ * schema, and the api's `booth-sync.test.ts` applies a real bundle through
+ * the real agent to keep the two in step. This schema states what a booth
+ * box needs in order to run a wheel, and the cloud has to produce exactly
+ * this. It is declared here rather than in `@oto/shared` because only the
+ * box reads it — `BoothConfigBundle` next door is the document three
+ * surfaces share, and it is embedded whole below rather than restated.
  *
  * Four fields ride beside the bundle, and each is here because something the
  * box must do cannot be done without it:
@@ -89,9 +89,13 @@ import { silentLog, type AgentLog } from './transport';
  *  - `allowedStaff` — who may sign in at this booth
  *    (`booth.booth_staff_assignment`). The `staff` cache scope says who may
  *    work at the branch, which is a different and much wider question.
- *  - `voucherDefinitions` — the terms and the expiry that go ON THE PAPER.
- *    See the note on `resolveExpiry` for why the bundle alone cannot answer
- *    either, and what the box prints while this is empty.
+ *  - `voucherDefinitions` — the terms and the expiry of the types the
+ *    bundle's prizes point at, as they are now, refreshed at every pull. The
+ *    bundle carries no type's expiry, so `resolveExpiry` reads it here when a
+ *    prize names no days of its own. The bundle carries terms only for a type
+ *    that had a title or an instruction when it was published (SCRUM-400),
+ *    and `buildPrintJob` prints those; the terms here are what every other
+ *    type prints.
  */
 export const BoothVoucherDefinitionSchema = z.object({
   id: z.string().uuid(),
@@ -1660,23 +1664,27 @@ export function createBooth(options: BoothOptions): BoothModule {
   // --- The voucher on paper ------------------------------------------------
 
   /**
-   * When this voucher runs out, or null.
+   * When this voucher runs out, or null — counted from the moment it is won.
    *
    * **The published bundle cannot always answer this, and the box does not
    * guess.** `booth_prize.expiry_days` is an OVERRIDE — null means "take the
-   * definition's" — and the bundle deliberately carries no voucher
-   * definitions, because it is what the wheel needs to draw and to name a
-   * prize. So the definitions travel beside it in the cache entry, and when
-   * one is present its `expiryDays` is used. When neither the prize nor a
-   * cached definition names a number, this returns null and the slip prints
-   * "No expiry".
+   * definition's" — and the bundle carries no definition's expiry: its
+   * `voucherDefinitions` hold only the words of a type that had a title or
+   * an instruction when the wheel was published (SCRUM-400). So the
+   * expiries travel beside it in the cache entry, refreshed at every pull,
+   * and the prize's type's `expiryDays` is taken from there: a type's
+   * changed expiry applies to vouchers won after the box's next pull, with
+   * no publish.
    *
-   * That last case is a real gap rather than a designed behaviour: a voucher
-   * that expires in fourteen days would be printed as though it never did, and
-   * the paper in a visitor's hand is the authority (D9). Whatever fills the
-   * `booth` cache scope has to send `voucherDefinitions`; until it does, a
-   * booth whose prizes leave `expiryDays` null prints vouchers that claim more
-   * than the park means to give.
+   * Null is a designed answer: a type set to never expire, under a prize with
+   * no days of its own, prints "No expiry" (owner, 24 September; the publish
+   * no longer refuses such a prize). The cloud sends every type the running
+   * wheel's prizes point at, archived ones included (`boothCacheItems` in the
+   * api's `services/sync-booth.ts`). An entry with no `voucherDefinitions` at
+   * all — from a cloud older than that, or a test that caches none — has
+   * nothing to read: a prize with no days of its own comes out as null and
+   * prints "No expiry", and a type with no words in the bundle prints no
+   * terms (`buildPrintJob`).
    */
   function resolveExpiry(prize: BoothConfigPrize, stampMs: number): string | null {
     const definition = applied?.voucherDefinitions.find(
@@ -1713,23 +1721,45 @@ export function createBooth(options: BoothOptions): BoothModule {
       staffLabel: string | null;
     },
   ): PrintJobRecord {
-    const definition = applied?.voucherDefinitions.find(
-      (candidate) => candidate.id === detail.prize.voucherDefinitionId,
+    /**
+     * The park's own words for this prize's voucher type, as the published
+     * wheel froze them (SCRUM-400): the title, the instruction AND the terms,
+     * all from the version the box is running. So a version says what its
+     * slips said, and an edit to any of the three reaches paper at the
+     * booth's next publish, not at the box's next pull.
+     *
+     * Only a type somebody has worded (a title or an instruction) has an
+     * entry. Without one the slip is what it always was: the prize's own
+     * names, the generic line, and the terms from the cache scope beside the
+     * bundle, which every pull refreshes. A booth nobody has set up therefore
+     * prints exactly what it printed before.
+     */
+    const words = applied?.bundle.voucherDefinitions?.find(
+      (w) => w.id === detail.prize.voucherDefinitionId,
     );
+    const termsFrom =
+      words ??
+      applied?.voucherDefinitions.find(
+        (candidate) => candidate.id === detail.prize.voucherDefinitionId,
+      );
     const job: RenderPrintJob = {
       kind: 'booth_voucher',
       data: {
         venueLine: branch.name,
-        prizeLine: detail.prize.nameEn,
-        prizeLineThai: detail.prize.nameTh,
-        redemptionLine: `Show this QR at OTO Reception to claim: ${detail.prize.nameEn}.`,
+        prizeLine: words?.titleEn ?? detail.prize.nameEn,
+        prizeLineThai: words?.titleTh ?? detail.prize.nameTh,
+        redemptionLine:
+          [words?.instructionEn, words?.instructionTh].filter(Boolean).join('\n') ||
+          `Show this QR at OTO Reception to claim: ${detail.prize.nameEn}.`,
         /**
-         * The definition's terms, split a line each, printed at the foot of
-         * the slip (SCRUM-223). An empty array is a real value and prints no
-         * terms at all: that is a definition with no terms, and the place to
-         * fix it is the definition.
+         * The type's terms, split a line each, printed at the foot of the
+         * slip (SCRUM-223): the running version's for a type it carries
+         * words for, the cache's for any other (see `words` above). An
+         * empty array is a real value and prints no terms at all: that is a
+         * definition with no terms, and the place to fix it is the
+         * definition.
          */
-        terms: splitTerms(definition),
+        terms: splitTerms(termsFrom),
         voucherCode: detail.voucherCode,
         issuedAt: formatStamp(new Date(detail.issuedAtMs), branch.timezone),
         booth: `${branch.name} · ${station.name}`,
@@ -1773,9 +1803,12 @@ export function createBooth(options: BoothOptions): BoothModule {
     };
   }
 
-  function splitTerms(definition: BoothVoucherDefinition | undefined): string[] {
+  /** A published entry's terms or a cached definition's: the same two fields. */
+  function splitTerms(
+    source: { termsEn?: string | null; termsTh?: string | null } | undefined,
+  ): string[] {
     const lines: string[] = [];
-    for (const block of [definition?.termsEn, definition?.termsTh]) {
+    for (const block of [source?.termsEn, source?.termsTh]) {
       if (!block) continue;
       for (const line of block.split('\n')) {
         const trimmed = line.trim();
