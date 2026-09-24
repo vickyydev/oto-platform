@@ -13,6 +13,7 @@ import {
   getSaleDetail,
   listSales,
   quoteSale,
+  voidSale,
   type ActorContext,
   type CartInput,
   type CommitSaleInput,
@@ -28,7 +29,8 @@ import {
  * SEPARATELY, on any request carrying a manual discount or a promo code,
  * because "may take money" and "may decide how much less a guest pays" are
  * different questions and the park has no manager-approval step to catch the
- * difference later (R-08). `pos:sale:read` covers the two reads.
+ * difference later (R-08). `pos:sale:read` covers the two reads, and
+ * `pos:sale:void` the till's cancel of a sale that took no money.
  *
  * THE BODY SHAPE IS THE TILL'S. `apps/pos/src/api/sales.ts` sends the cart
  * either flat or nested under `cart`, with the action id in the body; both are
@@ -452,6 +454,39 @@ export async function saleRoutes(app: App): Promise<void> {
       }
       if (result.replay) reply.header('x-oto-replay', 'true');
       return answer;
+    },
+  );
+
+  /**
+   * S2-10b — THE TILL'S CANCEL: void a sale that was rung up and took no money
+   * (or only tenders that failed), so it can never be paid and a voucher it
+   * held is free again. The rules are `voidSale`'s; like finalise, the branch
+   * is the sale's own and is checked on the row once it is loaded.
+   */
+  app.post(
+    '/:id/void',
+    {
+      config: { permission: 'pos:sale:void' },
+      schema: {
+        description:
+          'Void a sale that was rung up and took no money — the till’s cancel. The sale is ' +
+          'closed as void and can never be paid; a voucher it held is released. Refused when ' +
+          'money was taken (that is a refund) or a tender is still in progress. Voiding a ' +
+          'void sale answers it unchanged.',
+        params: z.object({ id: z.string().uuid() }),
+        body: z.object({
+          /** Why — required: a void with no reason is what the voids report exists to stop. */
+          reason: z.string().trim().min(1).max(120),
+        }),
+      },
+    },
+    async (req, reply) => {
+      const actor = actorOf(req, 'pos:sale:void');
+      const result = await withTx(app.db, opCtx(req), 'sale.void', (tx) =>
+        voidSale(tx, actor, req.params.id, { reason: req.body.reason }),
+      );
+      if (result.replay) reply.header('x-oto-replay', 'true');
+      return result;
     },
   );
 

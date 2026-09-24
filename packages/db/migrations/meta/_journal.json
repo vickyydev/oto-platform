@@ -148,6 +148,13 @@
       "when": 1790185486283,
       "tag": "0020_product_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790242664186,
+      "tag": "0021_voucher_redemption",
+      "breakpoints": true
     }
   ]
 }

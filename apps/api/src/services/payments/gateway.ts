@@ -28,6 +28,7 @@ import { errors } from '../../lib/errors';
 import { audit } from '../audit';
 import { raiseAlert, recordRun, resolveAlert } from '../ops';
 import { finaliseSale, type ActorContext } from '../sale';
+import { assertSaleVouchersHeld } from '../vouchers';
 import {
   attemptView,
   failAttempt,
@@ -310,6 +311,48 @@ export async function openQrAttempt(
 
   // Act 1.
   const opened = await withTx(db, ctx, 'payment.qr.open', async (tx) => {
+    if (input.saleId) {
+      /**
+       * S2-10b — THE TENDER GUARD, before a QR the guest can pay exists: the
+       * sale is locked, it must still be open, and a voucher it was priced with
+       * must still be held for it (VOUCHER_NOT_HELD). A QR shown for a sale
+       * that can no longer close is money the gateway takes and nothing here
+       * can settle — the settlement and the close are one transaction, and the
+       * close would refuse. Locked first, as every other tender locks it, so a
+       * void or a close cannot slip in between this and the attempt.
+       */
+      const [saleRow] = await tx
+        .select({
+          id: sale.id,
+          operatorId: sale.operatorId,
+          branchId: sale.branchId,
+          stationId: sale.stationId,
+          status: sale.status,
+        })
+        .from(sale)
+        .where(eq(sale.id, input.saleId))
+        .for('update')
+        .limit(1);
+      if (!saleRow || saleRow.operatorId !== input.operatorId) {
+        throw errors.notFound('Sale not found');
+      }
+      if (saleRow.status !== 'tendering') {
+        throw errors.conflict(
+          'SALE_CLOSED',
+          `This sale is ${saleRow.status} and cannot take another tender`,
+        );
+      }
+      await assertSaleVouchersHeld(
+        tx,
+        {
+          saleId: saleRow.id,
+          operatorId: saleRow.operatorId,
+          branchId: saleRow.branchId,
+          stationId: saleRow.stationId,
+        },
+        new Date(),
+      );
+    }
     const invoiceNo = await mintInvoiceNo(tx, {
       stationId: input.stationId,
       stationCode: st.codePrefix!,

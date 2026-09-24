@@ -28,6 +28,7 @@ import { AppError, errors } from '../../lib/errors';
 import { audit } from '../audit';
 import { boxSettings } from '../box';
 import { recordRun } from '../ops';
+import { assertSaleVouchersHeld } from '../vouchers';
 import {
   attemptView,
   failAttempt,
@@ -500,6 +501,23 @@ export async function startTerminalTender(
       outstandingSatang: await outstandingAfter(tx, saleRow),
     };
   }
+
+  /**
+   * S2-10b — THE TENDER GUARD: no card or QR is asked for on a sale priced
+   * with a voucher that is no longer held for it (VOUCHER_NOT_HELD), before
+   * the attempt is written or the box is told anything. The sale is locked
+   * above; `assertSaleVouchersHeld` locks the voucher after it.
+   */
+  await assertSaleVouchersHeld(
+    tx,
+    {
+      saleId: saleRow.id,
+      operatorId: saleRow.operatorId,
+      branchId: saleRow.branchId,
+      stationId: saleRow.stationId,
+    },
+    new Date(),
+  );
 
   const owed = await outstandingAfter(tx, saleRow);
   const amountSatang = input.amountSatang ?? owed;
@@ -1313,6 +1331,22 @@ export async function recordManualTender(
       outstandingSatang: await outstandingAfter(tx, saleRow),
     };
   }
+
+  /**
+   * S2-10b — THE TENDER GUARD, as for a terminal tender: an approval code is
+   * not recorded against a sale priced with a voucher that is no longer held
+   * for it (VOUCHER_NOT_HELD).
+   */
+  await assertSaleVouchersHeld(
+    tx,
+    {
+      saleId: saleRow.id,
+      operatorId: saleRow.operatorId,
+      branchId: saleRow.branchId,
+      stationId: saleRow.stationId,
+    },
+    new Date(),
+  );
 
   const owed = await outstandingAfter(tx, saleRow);
   const amountSatang = input.amountSatang ?? owed;

@@ -8,6 +8,7 @@ import {
   member,
   modifierGroup,
   modifierOption,
+  paymentAttempt,
   product,
   productCategory,
   productModifierGroup,
@@ -36,11 +37,14 @@ import {
   getRateModeForDate,
   newId,
   parseDayStart,
+  PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   PRICING_ENGINE_VERSION,
   priceCartLine,
   resolveRate,
   SERVICE_FEE_ROW_KEY,
   type CartAddOn,
+  type CartPromo,
   type CartUnit,
   type DiscountComponentTarget,
   type ManualDiscount,
@@ -75,6 +79,18 @@ import {
 } from './menu';
 import { resolveTierClaim, spendTierClaim, type TierClaimRefusal } from './sale-tier';
 import type { Exec, Tx } from './tx';
+import {
+  assertSaleVouchersHeld,
+  auditVoidReleases,
+  consumeSaleVouchers,
+  lockVouchersHeldFor,
+  recordVoucherApplied,
+  resolveCartVoucher,
+  voucherConfiguredValue,
+  voucherPricing,
+  type CartVoucherClaim,
+  type VoucherEffect,
+} from './vouchers';
 
 /**
  * S2-09a (SCRUM-203) — the service that prices a cart and writes a sale.
@@ -250,8 +266,23 @@ export interface CartInput {
    * becomes the code alone.
    */
   promos?: PromoDiscountInput[];
-  /** Codes with no definition attached: refused by name, and nothing is taken off. */
+  /**
+   * Codes with no definition attached: refused by name, and nothing is taken off.
+   *
+   * S2-10b — EXCEPT A VOUCHER'S. A booth voucher (or any voucher held at this
+   * till) named here is resolved by `resolveCartVoucher` and priced from its
+   * definition: the till names the voucher, the platform says what it is
+   * worth. This is the list a scanner typing into the promo box already fills,
+   * and the one field on the cart body the route passes through for a code
+   * the till could not price itself.
+   */
   promoCodes?: string[];
+  /**
+   * S2-10b — the till the cart is being rung up at, as the cart body already
+   * carries it. A QUOTE finds a voucher only among those held at this till;
+   * a commit uses the station it is written against instead.
+   */
+  stationId?: string;
   /**
    * SCRUM-343 — WHICH LANE OF THE TILL RANG THIS UP: the ticket counter, the
    * F&B counter or the shop.
@@ -477,6 +508,11 @@ export interface SaleLinePayload {
   prepStation?: PrepStation;
   /** The order's pick-up code, on every F&B line so each prep ticket carries it. */
   pickupCode?: string;
+  /**
+   * S2-10b — on the free item a voucher put on the bill: which voucher, so the
+   * receipt, a refund and a report can say why this line cost nothing.
+   */
+  voucher?: { id: string; code: string };
 }
 
 /** A priced unit, ready to become a `pos.sale_line` row. */
@@ -571,7 +607,41 @@ export interface PricedCart {
   rejectedPromoCodes: { code: string; reason: string }[];
   /** The engine's own cart lines, kept so the committer prices nothing twice. */
   cartLines: TicketCartLine[];
+  /** S2-10b — the voucher this cart carries, as the platform priced it. Null when none. */
+  voucher: PricedVoucher | null;
 }
+
+/**
+ * S2-10b — a held voucher, priced on this cart by the platform.
+ *
+ * `amountSatang` is what it actually took off (the engine's own figure for its
+ * promo); `applicable` is false, with the reason, when the cart has nothing it
+ * can come off. A quote carries that answer to the till; a commit refuses it,
+ * so a voucher is never used up for nothing.
+ */
+export interface PricedVoucher {
+  voucherId: string;
+  code: string;
+  definitionCode: string;
+  label: string;
+  effect: VoucherEffect;
+  amountSatang: number;
+  applicable: boolean;
+  reason: string | null;
+  /**
+   * The engine input it became — kept for the discount row the commit writes.
+   * A free item's and a 1+1's are aimed at one line (`CartPromo.line`).
+   */
+  promo: CartPromo;
+}
+
+/**
+ * Where a cart is being priced, for the voucher it may carry — decided by the
+ * caller of `priceCart`, never by the body.
+ */
+export type CartVoucherScope =
+  | { mode: 'quote'; stationId: string | null }
+  | { mode: 'commit'; saleId: string; stationId: string };
 
 /** Catalogue rows a cart needs, loaded once for the whole cart. */
 interface CatalogueLookup {
@@ -1016,6 +1086,7 @@ export async function priceCart(
   actor: ActorContext,
   input: CartInput,
   now: Date = new Date(),
+  voucherScope: CartVoucherScope = { mode: 'quote', stationId: null },
 ): Promise<PricedCart> {
   const branchId = input.branchId ?? actor.branchId;
   if (!branchId) throw errors.badRequest('No active branch on this session');
@@ -1210,6 +1281,43 @@ export async function priceCart(
     cartLines.push(item.cartLine);
   }
 
+  /**
+   * S2-10b — THE VOUCHER, priced here from its definition and never from the
+   * till. The cart names it by code; `resolveCartVoucher` finds it only among
+   * the vouchers held for this cart (see `CartVoucherScope`), refuses a
+   * till-described discount under a voucher's code, a second voucher, and a
+   * voucher beside any promo code, and resolves what it is worth at this
+   * branch. `voucherPricing` turns that into what the engine takes: a promo,
+   * and for a free item the line that puts the item on the bill.
+   */
+  const voucherCart = await resolveCartVoucher(
+    db,
+    {
+      mode: voucherScope.mode,
+      operatorId: actor.operatorId,
+      branchId: scope.branchId,
+      stationId: voucherScope.stationId,
+      saleId: voucherScope.mode === 'commit' ? voucherScope.saleId : null,
+      now,
+    },
+    input.promoCodes ?? [],
+    input.promos ?? [],
+  );
+  const voucherClaim: CartVoucherClaim | null = voucherCart.claim;
+  const voucherInputs = voucherClaim
+    ? voucherPricing(voucherClaim, cartLines, ctx, resolvedTier.code)
+    : null;
+  /** The voucher's own line, by cart line id, so the ledger row can say what it is. */
+  const voucherLines = new Map<string, { id: string; code: string; productId: string }>();
+  if (voucherClaim && voucherInputs?.line?.promoItem) {
+    cartLines.push(voucherInputs.line);
+    voucherLines.set(voucherInputs.line.id, {
+      id: voucherClaim.voucherId,
+      code: voucherClaim.code,
+      productId: voucherInputs.line.promoItem.itemId,
+    });
+  }
+
   // The engine keys a line's amount, its component bases and every line-scoped
   // discount by the cart line id, so two lines sharing one would have the
   // second's money read off the first. Refused rather than mispriced.
@@ -1222,11 +1330,11 @@ export async function priceCart(
   // A code with no definition attached has nothing to validate it against
   // (S2-09b owns the catalogue), so it is refused by name and takes nothing
   // off the bill rather than being guessed at.
-  const rejectedPromoCodes = (input.promoCodes ?? []).map((code) => ({
+  const rejectedPromoCodes = voucherCart.otherCodes.map((code) => ({
     code,
     reason: `Code "${code}" isn't set up at this branch yet.`,
   }));
-  const promos: PromoDiscount[] = (input.promos ?? []).map((promo) => ({
+  const tillPromos: PromoDiscount[] = (input.promos ?? []).map((promo) => ({
     code: promo.code,
     label: promo.label,
     type: promo.type,
@@ -1235,6 +1343,9 @@ export async function priceCart(
     ...(promo.freeItemKind ? { freeItemKind: promo.freeItemKind } : {}),
     ...(promo.target ? { target: promo.target as PromoDiscount['target'] } : {}),
   }));
+  // A voucher never shares a cart with another promo (`resolveCartVoucher`),
+  // so this is one list or the other.
+  const promos: CartPromo[] = voucherInputs ? [voucherInputs.promo] : tillPromos;
 
   const manualDiscounts = input.manualDiscounts ?? [];
   const totals = computeTicketCartTotals(
@@ -1266,6 +1377,30 @@ export async function priceCart(
     );
   }
 
+  let pricedVoucher: PricedVoucher | null = null;
+  if (voucherClaim && voucherInputs) {
+    const amountSatang =
+      totals.appliedPromos.find((applied) => applied.code === voucherClaim.code)?.amount ?? 0;
+    const applicable = !(voucherInputs.notApplicable !== null && amountSatang === 0);
+    if (!applicable && voucherScope.mode === 'commit') {
+      throw errors.conflict('VOUCHER_NOT_APPLICABLE', voucherInputs.notApplicable!, {
+        voucherId: voucherClaim.voucherId,
+        code: voucherClaim.code,
+      });
+    }
+    pricedVoucher = {
+      voucherId: voucherClaim.voucherId,
+      code: voucherClaim.code,
+      definitionCode: voucherClaim.definitionCode,
+      label: voucherClaim.label,
+      effect: voucherClaim.effect,
+      amountSatang,
+      applicable,
+      reason: applicable ? null : voucherInputs.notApplicable,
+      promo: voucherInputs.promo,
+    };
+  }
+
   const pickupCode = normalisePickupCode(input.pickupCode);
   const lines = buildPricedLines(
     cartLines,
@@ -1276,6 +1411,7 @@ export async function priceCart(
     snapshotPriced,
     new Map(itemLines.map((item) => [item.cartLineId, item])),
     pickupCode,
+    voucherLines,
   );
 
   return {
@@ -1311,6 +1447,7 @@ export async function priceCart(
     manualDiscounts,
     rejectedPromoCodes,
     cartLines,
+    voucher: pricedVoucher,
   };
 }
 
@@ -1341,6 +1478,8 @@ function buildPricedLines(
   /** S2-09b — the F&B and shop lines, by cart line id. See `resolveItemLines`. */
   itemLines: ReadonlyMap<string, ResolvedItemLine>,
   pickupCode: string | null,
+  /** S2-10b — the free item a voucher put on the bill, by cart line id. */
+  voucherLines: ReadonlyMap<string, { id: string; code: string; productId: string }> = new Map(),
 ): PricedLine[] {
   const units = cartUnits(cartLines, ctx);
   const byCategory = new Map<TaxableCategory, number[]>();
@@ -1357,6 +1496,24 @@ function buildPricedLines(
   const taxIncl = new Array<number>(units.length).fill(0);
   const taxExcl = new Array<number>(units.length).fill(0);
 
+  /**
+   * S2-10b — WHAT A LINE-AIMED PROMO TOOK, ON THE UNIT IT TOOK IT FROM: a
+   * voucher's free item on the voucher's own line, a 1+1 on one line's kids.
+   * The engine reports it (`AppliedPromo.units`, indexed like `cartUnits` over
+   * these same lines and context). Spread by the category rule below instead, a
+   * free pizza beside a paid one would put ฿110 off on each — the right total,
+   * two wrong receipt lines, and a refund of the paid pizza returning ฿110.
+   */
+  const pinned = new Array<number>(units.length).fill(0);
+  for (const applied of totals.appliedPromos) {
+    for (const aimed of applied.units ?? []) {
+      if (aimed.index < 0 || aimed.index >= units.length) {
+        throw new Error('a line-aimed discount names a unit this cart does not have');
+      }
+      pinned[aimed.index] = (pinned[aimed.index] ?? 0) + aimed.amount;
+    }
+  }
+
   for (const [category, indexes] of byCategory) {
     const weights = indexes.map((i) => units[i]?.base ?? 0);
     const originalBase = weights.reduce((sum, w) => sum + w, 0);
@@ -1370,16 +1527,55 @@ function buildPricedLines(
       (row?.taxMode === 'exclusive' ? (row?.tax ?? 0) : 0) +
       (row?.secondaryTaxMode === 'exclusive' ? (row?.secondaryTax ?? 0) : 0);
 
+    const categoryDiscount = Math.max(0, originalBase - after);
+    const pins = indexes.map((i) => pinned[i] ?? 0);
+    const pinnedTotal = pins.reduce((sum, pin) => sum + pin, 0);
+
+    if (pinnedTotal === 0) {
+      // Nothing aimed at a line in this category: every figure spread across
+      // its units in proportion to their undiscounted bases, as it always was.
+      const shares = {
+        base: apportion(after, weights),
+        discount: apportion(categoryDiscount, weights),
+        service: apportion(row?.serviceCharge ?? 0, weights),
+        inclusive: apportion(inclusive, weights),
+        exclusive: apportion(exclusive, weights),
+      };
+      indexes.forEach((unitIndex, position) => {
+        baseAfter[unitIndex] = shares.base[position] ?? 0;
+        discount[unitIndex] = shares.discount[position] ?? 0;
+        service[unitIndex] = shares.service[position] ?? 0;
+        taxIncl[unitIndex] = shares.inclusive[position] ?? 0;
+        taxExcl[unitIndex] = shares.exclusive[position] ?? 0;
+      });
+      continue;
+    }
+
+    // The aimed markdown on its own units — never more than the category's own
+    // discount, which is none when discounts are placed after tax ...
+    const aimedShares = pinnedTotal <= categoryDiscount ? pins : apportion(categoryDiscount, pins);
+    const aimedTotal = aimedShares.reduce((sum, share) => sum + share, 0);
+    // ... and the rest of the category's discount over what each unit has left.
+    const room = indexes.map((i, position) =>
+      Math.max(0, (units[i]?.base ?? 0) - (aimedShares[position] ?? 0)),
+    );
+    const restShares = apportion(categoryDiscount - aimedTotal, room);
+    const discounts = indexes.map(
+      (_, position) =>
+        (aimedShares[position] ?? 0) + Math.min(restShares[position] ?? 0, room[position] ?? 0),
+    );
+    const bases = indexes.map((i, position) => (units[i]?.base ?? 0) - (discounts[position] ?? 0));
+    // Service charge and tax follow the base each unit is left with: an item
+    // handed over for nothing carries none of either.
+    const chargeWeights = bases.some((base) => base > 0) ? bases : weights;
     const shares = {
-      base: apportion(after, weights),
-      discount: apportion(Math.max(0, originalBase - after), weights),
-      service: apportion(row?.serviceCharge ?? 0, weights),
-      inclusive: apportion(inclusive, weights),
-      exclusive: apportion(exclusive, weights),
+      service: apportion(row?.serviceCharge ?? 0, chargeWeights),
+      inclusive: apportion(inclusive, chargeWeights),
+      exclusive: apportion(exclusive, chargeWeights),
     };
     indexes.forEach((unitIndex, position) => {
-      baseAfter[unitIndex] = shares.base[position] ?? 0;
-      discount[unitIndex] = shares.discount[position] ?? 0;
+      baseAfter[unitIndex] = bases[position] ?? 0;
+      discount[unitIndex] = discounts[position] ?? 0;
       service[unitIndex] = shares.service[position] ?? 0;
       taxIncl[unitIndex] = shares.inclusive[position] ?? 0;
       taxExcl[unitIndex] = shares.exclusive[position] ?? 0;
@@ -1402,13 +1598,16 @@ function buildPricedLines(
     // records is the one `resolveItemLines` resolved from `product.kind`.
     const item = itemLines.get(unit.lineId);
     const kind = item ? item.kind : lineKindOf(unit);
+    const voucherLine = unit.promoItem ? voucherLines.get(unit.lineId) : undefined;
     const productId = item
       ? item.productId
-      : kind === 'socks'
-        ? (catalogue.products.get(ctx.socks.addOnId)?.row.id ?? null)
-        : kind === 'addon' && row
-          ? (catalogue.products.get(row.key)?.row.id ?? null)
-          : null;
+      : voucherLine
+        ? voucherLine.productId
+        : kind === 'socks'
+          ? (catalogue.products.get(ctx.socks.addOnId)?.row.id ?? null)
+          : kind === 'addon' && row
+            ? (catalogue.products.get(row.key)?.row.id ?? null)
+            : null;
     const pkg = cartLine ? catalogue.packages.get(cartLine.packageId) : undefined;
     const freeAdults = row?.key === 'adults-free' ? row.quantity : 0;
 
@@ -1445,20 +1644,22 @@ function buildPricedLines(
       freeAdultCount: freeAdults,
       stayHours: pkg?.hours ?? null,
       stayDurationLabel: pkg?.durationLabel ?? null,
-      payload: item
-        ? {
-            ...item.payload,
-            // The pick-up code is the ORDER's, and it is stamped on every F&B
-            // line because each prep station's ticket is built from the lines
-            // that route to it and has to print the code the guest holds.
-            ...(item.kind === 'fnb_item' && pickupCode ? { pickupCode } : {}),
-          }
-        : (row && snapshotPriced.has(row.key)) ||
-            (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
-            ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
-              snapshotPriced.has(unit.lineId))
-          ? { priceSource: 'till_snapshot' as const }
-          : null,
+      payload: voucherLine
+        ? { voucher: { id: voucherLine.id, code: voucherLine.code } }
+        : item
+          ? {
+              ...item.payload,
+              // The pick-up code is the ORDER's, and it is stamped on every F&B
+              // line because each prep station's ticket is built from the lines
+              // that route to it and has to print the code the guest holds.
+              ...(item.kind === 'fnb_item' && pickupCode ? { pickupCode } : {}),
+            }
+          : (row && snapshotPriced.has(row.key)) ||
+              (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
+              ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
+                snapshotPriced.has(unit.lineId))
+            ? { priceSource: 'till_snapshot' as const }
+            : null,
     };
   });
 }
@@ -1476,7 +1677,11 @@ export async function quoteSale(
   input: CartInput,
   now: Date = new Date(),
 ): Promise<Record<string, unknown>> {
-  const priced = await priceCart(db, actor, input, now);
+  // A quote finds a voucher only among those held at the till the cart names.
+  const priced = await priceCart(db, actor, input, now, {
+    mode: 'quote',
+    stationId: input.stationId ?? null,
+  });
   const lineTotals: Record<string, number> = {};
   for (const cartLine of priced.cartLines) lineTotals[cartLine.id] = cartLine.lineTotal;
 
@@ -1510,6 +1715,12 @@ export async function quoteSale(
       ...(promo.exhaustedReason ? { exhaustedReason: promo.exhaustedReason } : {}),
     })),
     rejectedPromoCodes: priced.rejectedPromoCodes,
+    /**
+     * S2-10b — the voucher on this cart, as the platform priced it: what it
+     * is, what it took off, and — when the cart has nothing it can come off —
+     * why not. The till shows this; it never computes it.
+     */
+    voucher: voucherViewOf(priced.voucher),
     taxBreakdown: priced.totals.taxBreakdown,
     lines: priced.lines,
     disagreements: priced.disagreements,
@@ -1518,6 +1729,13 @@ export async function quoteSale(
   // what the OpenAPI page and a curl from a terminal read. One object, so the
   // two cannot drift.
   return { quote, ...quote };
+}
+
+/** A priced voucher as a till reads it — without the engine input behind it. */
+function voucherViewOf(priced: PricedVoucher | null): Omit<PricedVoucher, 'promo'> | null {
+  if (!priced) return null;
+  const { promo: _engineInput, ...view } = priced;
+  return view;
 }
 
 // --- Writing the sale -------------------------------------------------------
@@ -1932,6 +2150,8 @@ export interface CommitResult {
   sale: SaleView;
   lines: PricedLine[];
   rejectedPromoCodes: { code: string; reason: string }[];
+  /** S2-10b — the voucher this sale was priced with, when it carries one. */
+  voucher: Omit<PricedVoucher, 'promo'> | null;
 }
 
 /**
@@ -1989,6 +2209,7 @@ export async function commitSale(
       sale: viewOf(already),
       lines: [],
       rejectedPromoCodes: [],
+      voucher: null,
     };
   }
 
@@ -2001,11 +2222,17 @@ export async function commitSale(
   const salesChannel = resolveSalesChannel(st, input.channel);
 
   const clock = resolveOccurredAt(input.occurredAt, now);
+  /**
+   * S2-10b — a voucher on this cart must be held for THIS sale id at THIS
+   * till, and is locked from here to the commit: the hold cannot move between
+   * being priced and being recorded.
+   */
   const priced = await priceCart(
     tx,
     { ...actor, branchId: input.branchId ?? st.branchId },
     input,
     clock.occurredAt,
+    { mode: 'commit', saleId, stationId: st.id },
   );
   if (st.branchId !== priced.scope.branchId) {
     throw errors.badRequest('That station belongs to another branch');
@@ -2252,9 +2479,17 @@ export async function commitSale(
     });
   }
   // What each code was configured to be worth, by code, so the row can record
-  // the instrument as well as what it took.
+  // the instrument as well as what it took. A voucher's is the platform's own
+  // figure — the definition's amount, the free item's shelf price, one kid's
+  // price — never anything the till described.
+  const voucherPromo = priced.voucher?.promo ?? null;
+  /** The line a voucher's markdown was aimed at — the free item's own, or one line's kids. */
+  const aimedAt = (code: string) =>
+    voucherPromo && code === voucherPromo.code ? (voucherPromo.line ?? null) : null;
   const definitionOf = (code: string): number =>
-    (input.promos ?? []).find((promo) => promo.code === code)?.value ?? 0;
+    voucherPromo && code === voucherPromo.code
+      ? voucherPromo.value
+      : ((input.promos ?? []).find((promo) => promo.code === code)?.value ?? 0);
   for (const promo of priced.totals.appliedPromos) {
     sequence += 1;
     await tx.insert(saleDiscount).values({
@@ -2270,16 +2505,68 @@ export async function commitSale(
       // fixed or free-item code the satang it was worth. The code's own
       // configured value, not what it happened to take off this cart — that is
       // `amount_satang` below, and the two differ whenever the balance ran out.
-      percentBp: promo.type === 'percent' ? Math.round(definitionOf(promo.code) * 100) : null,
+      percentBp:
+        promo.type === 'percent'
+          ? voucherPromo && promo.code === voucherPromo.code
+            ? voucherConfiguredValue(voucherPromo)
+            : Math.round(definitionOf(promo.code) * 100)
+          : null,
       valueSatang: promo.type === 'percent' ? null : definitionOf(promo.code),
       amountSatang: promo.amount,
       allocations: null,
-      scope: 'order',
+      // A voucher's free item is aimed at the one line it put on the bill, and a
+      // 1+1 at the kids of one line: the row says which.
+      scope: aimedAt(promo.code)
+        ? aimedAt(promo.code)?.component
+          ? 'component'
+          : 'line'
+        : 'order',
+      targetLineId: aimedAt(promo.code)?.lineId ?? null,
+      targetComponent: aimedAt(promo.code)?.component
+        ? componentKey(aimedAt(promo.code)!.component!)
+        : null,
       code: promo.code,
       label: promo.label,
       exhaustedReason: promo.exhaustedReason ?? null,
       appliedAt: now,
     });
+  }
+
+  /**
+   * S2-10b — which voucher this sale was priced with, recorded with the sale:
+   * the discount row says how much, this says which voucher, and it is what
+   * the payment step reads to know what to use up. A ฿0 sale is closed right
+   * here, so its voucher is used up right here.
+   */
+  if (priced.voucher) {
+    const voucherScope = {
+      saleId,
+      operatorId: actor.operatorId,
+      branchId: priced.scope.branchId,
+      stationId: st.id,
+    };
+    await recordVoucherApplied(
+      tx,
+      voucherScope,
+      {
+        voucherId: priced.voucher.voucherId,
+        code: priced.voucher.code,
+        definitionCode: priced.voucher.definitionCode,
+        label: priced.voucher.label,
+        effect: priced.voucher.effect,
+      },
+      { accountId: actor.accountId, requestId: actor.requestId },
+      priced.voucher.amountSatang,
+      clock.occurredAt,
+    );
+    if (finalising) {
+      await consumeSaleVouchers(
+        tx,
+        voucherScope,
+        { accountId: actor.accountId, requestId: actor.requestId },
+        clock.occurredAt,
+      );
+    }
   }
 
   await audit.record(tx, {
@@ -2335,6 +2622,7 @@ export async function commitSale(
     sale: viewOf(written),
     lines: priced.lines,
     rejectedPromoCodes: priced.rejectedPromoCodes,
+    voucher: voucherViewOf(priced.voucher),
   };
 }
 
@@ -2404,6 +2692,8 @@ export interface FinaliseResult {
    * for a sale that rolls back is a drawer opened for money nobody took.
    */
   drawerKick: DrawerKick | null;
+  /** S2-10b — the vouchers this call used up, by id. Empty unless it closed a sale carrying one. */
+  redeemedVoucherIds: string[];
 }
 
 /**
@@ -2473,6 +2763,7 @@ export async function finaliseSale(
       // The drawer opened on the first answer. A retry down a dropped
       // connection must not open it again with a queue in front of it.
       drawerKick: null,
+      redeemedVoucherIds: [],
     };
   }
   if (row.status === 'voided' || row.status === 'refunded') {
@@ -2507,6 +2798,13 @@ export async function finaliseSale(
   const [st] = await tx.select().from(station).where(eq(station.id, row.stationId)).limit(1);
 
   let owed = await outstandingOf(tx, row);
+  /** S2-10b — the sale's vouchers, as the transaction that moves its money sees them. */
+  const voucherScope = {
+    saleId,
+    operatorId: row.operatorId,
+    branchId: row.branchId,
+    stationId: row.stationId,
+  };
   /** What this call took, for the audit row. Null when there was nothing to take. */
   let taken: { method: string; amountSatang: number; changeSatang: number | null } | null = null;
   /** The attempt this call wrote or found, as every read answers with it. */
@@ -2550,6 +2848,13 @@ export async function finaliseSale(
       attempt = attemptView(already);
       replayedTender = true;
     } else {
+      /**
+       * S2-10b — THE TENDER GUARD, before a satang is recorded: a sale priced
+       * with a voucher that is no longer held for it takes no money here (see
+       * `assertSaleVouchersHeld`). The card, QR and manual paths run the same
+       * check before they write an attempt.
+       */
+      await assertSaleVouchersHeld(tx, voucherScope, now);
       const amountSatang = tender.amountSatang ?? owed;
       if (amountSatang <= 0) throw errors.badRequest('A tender has to settle something');
       if (amountSatang > owed) {
@@ -2664,8 +2969,22 @@ export async function finaliseSale(
       pickupCode,
       sale: viewOf(row),
       drawerKick,
+      redeemedVoucherIds: [],
     };
   }
+
+  /**
+   * S2-10b — THE MONEY IS IN, SO THE VOUCHER IS USED UP: in this transaction,
+   * before the receipt is numbered, through the one guarded update that makes
+   * it single-use. If another sale got there first this throws, and the
+   * tender, the receipt number and the close all roll back with it.
+   */
+  const { consumed } = await consumeSaleVouchers(
+    tx,
+    voucherScope,
+    { accountId: actor.accountId, requestId: actor.requestId },
+    now,
+  );
 
   if (!st?.codePrefix) {
     throw errors.badRequest(
@@ -2725,6 +3044,165 @@ export async function finaliseSale(
     pickupCode,
     sale: viewOf(after),
     drawerKick,
+    redeemedVoucherIds: consumed,
+  };
+}
+
+// --- Voiding a sale that took no money --------------------------------------
+
+export interface VoidSaleInput {
+  /**
+   * Why. Required, as a manual discount's reason is: "cancelled" with no reason
+   * is what the voids report exists to stop, and `sale_void_check` refuses a
+   * void without one.
+   */
+  reason: string;
+}
+
+export interface VoidSaleResult {
+  /** True when the sale was already void and this call changed nothing. */
+  replay: boolean;
+  sale: SaleView;
+  void: { voidedAt: string | null; voidedByAccountId: string | null; reason: string | null };
+  /** The vouchers this call let go, by id — each free again for another cart. */
+  releasedVoucherIds: string[];
+}
+
+/**
+ * S2-10b — THE TILL'S CANCEL: void a sale that was rung up and took no money.
+ *
+ * WHAT IT IS FOR. A sale is rung up the moment Pay is pressed, and from then on
+ * its voucher is kept for it (`holdStateOf`) and its line cannot simply be
+ * taken off (`releaseVoucher`). When the guest walks away, or the card is
+ * declined and they leave, this is the way out: the sale is closed as void so
+ * it can never be paid, and a voucher it held is free again — released by the
+ * trigger in migration 0021 in the same statement, with its ledger row.
+ *
+ * WHAT IT REFUSES, because each is a different act:
+ *   - money taken on the sale (an attempt `approved` or `awaiting_settlement`)
+ *     — SALE_HAS_PAYMENT: that is a refund (S2-11), not a void;
+ *   - a tender still in flight (created, sent to a terminal, unknown,
+ *     inquiring, waiting for a person) — PAYMENT_IN_FLIGHT: it may yet take
+ *     the money, so it is finished or cancelled first. Declined, cancelled and
+ *     not-found attempts took nothing and do not stand in the way;
+ *   - a finalised sale — SALE_FINALISED: a closed sale is refunded;
+ *   - a refunded one — SALE_CLOSED.
+ *
+ * IDEMPOTENT: voiding a void sale answers it as it is (`replay`), and the
+ * route's idempotency key replays the first answer. LOCKS the sale first and
+ * its vouchers after, the order the payment path takes, so a tender starting
+ * at the same moment either finds the sale void or is seen here in flight.
+ */
+export async function voidSale(
+  tx: Tx,
+  actor: ActorContext,
+  saleId: string,
+  input: VoidSaleInput,
+  now: Date = new Date(),
+): Promise<VoidSaleResult> {
+  const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).for('update').limit(1);
+  if (!row || row.operatorId !== actor.operatorId) throw errors.notFound('Sale not found');
+  // The sale names the branch; the URL does not — checked on the row, as finalise does.
+  await actor.assertBranchAllowed?.(row.branchId);
+  const voidOf = (r: typeof sale.$inferSelect): VoidSaleResult['void'] => ({
+    voidedAt: r.voidedAt?.toISOString() ?? null,
+    voidedByAccountId: r.voidedByAccountId,
+    reason: r.voidReason,
+  });
+  if (row.status === 'voided') {
+    return { replay: true, sale: viewOf(row), void: voidOf(row), releasedVoucherIds: [] };
+  }
+  if (row.status === 'finalised') {
+    throw errors.conflict(
+      'SALE_FINALISED',
+      'This sale is finalised — a closed sale is refunded, not voided',
+    );
+  }
+  if (row.status === 'refunded') {
+    throw errors.conflict('SALE_CLOSED', 'This sale is refunded and cannot be voided');
+  }
+
+  const attempts = await tx
+    .select({
+      id: paymentAttempt.id,
+      status: paymentAttempt.status,
+      amountSatang: paymentAttempt.amountSatang,
+    })
+    .from(paymentAttempt)
+    .where(eq(paymentAttempt.saleId, saleId));
+  const taken = attempts.filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status));
+  if (taken.length > 0) {
+    throw errors.conflict(
+      'SALE_HAS_PAYMENT',
+      'Money has been taken on this sale — it is refunded, not voided',
+      {
+        attemptIds: taken.map((a) => a.id),
+        takenSatang: taken.reduce((sum, a) => sum + a.amountSatang, 0),
+      },
+    );
+  }
+  const inFlight = attempts.filter((a) => !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status));
+  if (inFlight.length > 0) {
+    throw errors.conflict(
+      'PAYMENT_IN_FLIGHT',
+      'A payment on this sale is still in progress — finish or cancel it before voiding the sale',
+      { attempts: inFlight.map((a) => ({ id: a.id, status: a.status })) },
+    );
+  }
+
+  const scope = {
+    saleId,
+    operatorId: row.operatorId,
+    branchId: row.branchId,
+    stationId: row.stationId,
+  };
+  const held = await lockVouchersHeldFor(tx, scope);
+  const reason = input.reason.trim();
+  const [after] = await tx
+    .update(sale)
+    .set({
+      status: 'voided',
+      voidedAt: now,
+      voidedByAccountId: actor.accountId,
+      voidReason: reason,
+    })
+    .where(eq(sale.id, saleId))
+    .returning();
+  if (!after) throw new Error('the sale was not voided');
+  // The trigger in 0021 has released `held` and written their ledger rows in
+  // the statement above; these are the audit rows that name who asked.
+  await auditVoidReleases(
+    tx,
+    scope,
+    held,
+    { accountId: actor.accountId, requestId: actor.requestId },
+    reason,
+  );
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: row.branchId,
+    action: 'sale.void',
+    entityType: 'sale',
+    entityId: saleId,
+    requestId: actor.requestId,
+    before: { status: row.status },
+    after: {
+      status: 'voided',
+      reason,
+      stationId: row.stationId,
+      grossSatang: row.grossSatang,
+      // The tenders that were tried and took nothing, so the void can be read
+      // beside them.
+      failedAttemptIds: attempts.map((a) => a.id),
+      releasedVoucherIds: held.map((v) => v.id),
+    },
+  });
+  return {
+    replay: false,
+    sale: viewOf(after),
+    void: voidOf(after),
+    releasedVoucherIds: held.map((v) => v.id),
   };
 }
 

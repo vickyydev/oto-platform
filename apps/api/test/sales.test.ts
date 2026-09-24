@@ -1457,9 +1457,15 @@ describe('the seam between this and the till', () => {
       '/sales/quote',
       '/sales/',
       '/sales/{id}/finalise',
+      // S2-10b — the till's cancel of a sale that took no money.
+      '/sales/{id}/void',
       '/sales/{id}',
       // SCRUM-307 — the document check that prices a walk-in's cart.
       '/sales/tier-claims',
+      // S2-10b — a voucher held on the cart the till is ringing up, and taken
+      // off it again (`routes/vouchers.ts`).
+      '/sales/{id}/vouchers',
+      '/sales/{id}/vouchers/{voucherId}',
     ]);
   });
 
@@ -1485,11 +1491,20 @@ describe('the seam between this and the till', () => {
     // verification against a member, because it is the same act one step
     // earlier — and it declares its branch for the same reason the cart routes
     // do, the handler re-checking the branch it settles on.
+    // S2-10b — the two voucher routes are dynamic for the finalise route's
+    // reason, sharpened: the branch is neither in the request nor on a sale row
+    // that may not exist yet, but on the TILL the session is standing at, which
+    // is loaded first and checked for `pos:voucher:redeem` there. The void
+    // (S2-10b) is the finalise route's twin: `pos:sale:void`, and the branch
+    // checked on the sale row once it is loaded.
     expect(guards).toEqual([
+      'DELETE /sales/:id/vouchers/:voucherId dynamic no-target',
       'GET /sales dynamic no-target',
       'GET /sales/:id pos:sale:read no-target',
       'POST /sales pos:sale:create body.branchId',
       'POST /sales/:id/finalise pos:sale:update no-target',
+      'POST /sales/:id/void pos:sale:void no-target',
+      'POST /sales/:id/vouchers dynamic no-target',
       'POST /sales/quote pos:sale:create body.branchId',
       'POST /sales/tier-claims pos:member:update body.branchId',
     ]);

@@ -1,6 +1,11 @@
 import type { Satang } from './money';
 import type { TaxConfigShape, TaxableCategory } from './catalog-shapes';
-import type { LineBreakdownItem, PricingContext, TicketCartLine } from './pricing';
+import type {
+  DiscountComponentTarget,
+  LineBreakdownItem,
+  PricingContext,
+  TicketCartLine,
+} from './pricing';
 import {
   breakdownComponentKey,
   componentKey,
@@ -334,10 +339,13 @@ interface LedgerEntry {
  * stored with a negative value is a surcharge nobody charges (EC-23), and it
  * must not put money BACK into a scope.
  */
-function spendScope(entries: readonly LedgerEntry[], amount: Satang): void {
-  if (amount <= 0) return;
+function spendScope(entries: readonly LedgerEntry[], amount: Satang): Satang[] {
+  // What was taken from each entry, index for index with `entries`: the caller
+  // of a line-aimed promo reports it (`AppliedPromo.units`); the others ignore it.
+  const taken = entries.map(() => 0);
+  if (amount <= 0) return taken;
   const live = entries.filter((entry) => entry.remaining > 0);
-  if (live.length === 0) return;
+  if (live.length === 0) return taken;
   const capacity = live.reduce((sum, entry) => sum + entry.remaining, 0);
   const spend = Math.min(amount, capacity);
   // Largest remainder, for the same reason as everywhere else: whole satang
@@ -350,8 +358,11 @@ function spendScope(entries: readonly LedgerEntry[], amount: Satang): void {
           live.map((entry) => entry.remaining),
         );
   live.forEach((entry, index) => {
-    entry.remaining -= Math.min(entry.remaining, shares[index] ?? 0);
+    const take = Math.min(entry.remaining, shares[index] ?? 0);
+    entry.remaining -= take;
+    taken[entries.indexOf(entry)] = take;
   });
+  return taken;
 }
 
 /**
@@ -399,6 +410,33 @@ function allocateAgainstRemaining(
   return allocations;
 }
 
+/**
+ * S2-10b — A PROMO AIMED AT ONE LINE of the cart, and — when `component` is set
+ * — at one component of that line (its kids row, say), rather than at a class
+ * of rows.
+ *
+ * WHY A SCOPE NEEDS THIS. Every other scope names a KIND of thing — tickets,
+ * a package's tickets, a menu item — and matches every row of that kind on
+ * the cart. That is right for a code ("10 % off food") and wrong for a thing
+ * that belongs to one line: a voucher's free pizza is the pizza the voucher put
+ * on the bill, not every pizza, and a 1+1's free ticket is one kid's ticket, not
+ * a share of every ticket of that package, adults included. Aimed at the line,
+ * the markdown is bounded by that line alone (ruling 2 still holds: it takes no
+ * more than the line has left), attributed to that line's category, and
+ * reported per unit so a ledger can book it on that line (`AppliedPromo.units`).
+ *
+ * The same shape a manual discount already uses to name its target
+ * (`ManualDiscount.targetLineId` / `targetComponent`), and resolved by the same
+ * rule (`lineScope` in `computeTicketCartTotals`).
+ */
+export interface PromoLineTarget {
+  lineId: string;
+  component?: DiscountComponentTarget;
+}
+
+/** A promo as the totals take it: any `PromoDiscount`, optionally aimed at one line. */
+export type CartPromo = PromoDiscount & { line?: PromoLineTarget };
+
 /** What one applied promo code took off the order. */
 export interface AppliedPromo {
   code: string;
@@ -417,6 +455,14 @@ export interface AppliedPromo {
    * empty, here it has been emptied by the discounts already on the cart.
    */
   exhaustedReason?: string;
+  /**
+   * S2-10b — set only on a promo aimed at one line (`CartPromo.line`): what it
+   * took from each unit it reached, by the unit's index in
+   * `cartUnits(lines, ctx)` for the same lines and context. A sale ledger that
+   * writes one row per unit books the markdown on those rows rather than
+   * spreading it across the category (`buildPricedLines` in the api).
+   */
+  units?: { index: number; amount: Satang }[];
 }
 
 export interface TicketCartTotals {
@@ -570,7 +616,7 @@ export function repriceCartLines(
  */
 export function computeTicketCartTotals(
   lines: readonly TicketCartLine[],
-  promos: readonly PromoDiscount[],
+  promos: readonly CartPromo[],
   manualDiscounts: readonly ManualDiscount[],
   config: TaxConfigShape,
   ctx: PricingContext,
@@ -620,15 +666,20 @@ export function computeTicketCartTotals(
   const entriesOfLine = (lineId: string): LedgerEntry[] =>
     ledger.filter((entry) => entry.unit.lineId === lineId);
 
-  /** The units one manual discount is aimed at: the order, a line, or one of its components. */
-  const scopeOfManual = (discount: ManualDiscount): LedgerEntry[] => {
-    if (discount.scope !== 'line' || !discount.targetLineId) return ledger;
-    const entries = entriesOfLine(discount.targetLineId);
-    if (!discount.targetComponent) return entries;
-    const wanted = componentKey(discount.targetComponent);
+  /** The units of one line, or of one component of it — a manual discount's target, or a line-aimed promo's. */
+  const lineScope = (lineId: string, component?: DiscountComponentTarget): LedgerEntry[] => {
+    const entries = entriesOfLine(lineId);
+    if (!component) return entries;
+    const wanted = componentKey(component);
     return entries.filter(
       (entry) => entry.unit.row !== null && breakdownComponentKey(entry.unit.row) === wanted,
     );
+  };
+
+  /** The units one manual discount is aimed at: the order, a line, or one of its components. */
+  const scopeOfManual = (discount: ManualDiscount): LedgerEntry[] => {
+    if (discount.scope !== 'line' || !discount.targetLineId) return ledger;
+    return lineScope(discount.targetLineId, discount.targetComponent);
   };
 
   // Each discount is placed in the tax cascade against the category it actually
@@ -693,6 +744,9 @@ export function computeTicketCartTotals(
   const appliedPromos: AppliedPromo[] = [];
   for (const promo of promos) {
     const target = promo.target ?? { kind: 'everything' as const };
+    // S2-10b — a promo aimed at one line takes its scope from that line and
+    // nothing else, whatever its type or target says (`PromoLineTarget`).
+    const aimed = promo.line ? lineScope(promo.line.lineId, promo.line.component) : null;
     // A FREE-ITEM CODE'S SCOPE IS THE LINE IT PUT THERE, always — the id is the
     // one the till mints (`freeItemLineId`), which is already how removing the
     // code removes the line. Ruling 1 is that the item goes on at ฿0 and the
@@ -702,13 +756,14 @@ export function computeTicketCartTotals(
     // or the wrong one would otherwise book the markdown against the tickets.
     // This is what replaced the old `type === 'free_item'` special case, which
     // resolved the code against the ORDER balance and attributed it order-wide.
-    const orderWide = promo.type !== 'free_item' && target.kind === 'everything';
+    const orderWide = !aimed && promo.type !== 'free_item' && target.kind === 'everything';
     const scope =
-      promo.type === 'free_item'
+      aimed ??
+      (promo.type === 'free_item'
         ? entriesOfLine(freeItemLineId(promo.code))
         : orderWide
           ? ledger
-          : ledger.filter((entry) => unitMatchesTarget(entry.unit, target, ctx.socks.addOnId));
+          : ledger.filter((entry) => unitMatchesTarget(entry.unit, target, ctx.socks.addOnId)));
     const scopeLeft = scope.reduce((sum, entry) => sum + entry.remaining, 0);
     // An order-wide code is resolved against the order balance, which is the
     // prototype's arithmetic and includes money no unit-scope reaches.
@@ -726,14 +781,21 @@ export function computeTicketCartTotals(
     amount = Math.min(amount, running);
     promoDiscountTotal += amount;
     running -= amount;
+    const taken = spendScope(scope, amount);
     appliedPromos.push({
       code: promo.code,
       label: promo.label,
       type: promo.type,
       amount,
       ...(base <= 0 ? { exhaustedReason: promoNotApplicableReason(promo.code) } : {}),
+      ...(aimed
+        ? {
+            units: aimed
+              .map((entry, index) => ({ index: ledger.indexOf(entry), amount: taken[index] ?? 0 }))
+              .filter((unit) => unit.amount > 0),
+          }
+        : {}),
     });
-    spendScope(scope, amount);
     if (orderWide) {
       if (amount > 0) allocations.push({ amount });
     } else {

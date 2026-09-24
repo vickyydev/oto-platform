@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { archivedAt, idPk, promo, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
+import { station } from './fleet';
 import { member } from './members';
 import { product, ticketPackage } from './catalog';
 import { sale } from './sales';
@@ -45,6 +46,12 @@ import { sale } from './sales';
 // **What exists as this file lands**: the two tables, the migration, and six
 // seeded definitions for the booth's launch prizes. Nothing issues a voucher
 // yet — that is the booth box role — and nothing redeems one, which is S2-10b.
+//
+// **S2-10b (migration 0021) is where they are redeemed.** It adds the hold on
+// `promo.voucher` (a till has it on a cart), the station it was redeemed at,
+// the append-only `voucher_redemption` ledger and the per-till
+// `redemption_throttle`; `apps/api/src/services/vouchers.ts` is the one
+// writer of all of it.
 
 /**
  * What the holder gets.
@@ -242,7 +249,7 @@ export const voucher = promo.table(
      * must still be answerable in a year.
      */
     printCount: integer('print_count').notNull().default(0),
-    // --- Redemption. Written by S2-10b; empty until then. --------------------
+    // --- Redemption. Written by S2-10b (`services/vouchers.ts`). -------------
     redeemedAt: timestamp('redeemed_at', { withTimezone: true, mode: 'date' }),
     redeemedByAccountId: uuid('redeemed_by_account_id').references(() => account.id, {
       onDelete: 'restrict',
@@ -251,6 +258,37 @@ export const voucher = promo.table(
       onDelete: 'restrict',
     }),
     saleId: uuid('sale_id').references(() => sale.id, { onDelete: 'restrict' }),
+    /**
+     * S2-10b — the till it was redeemed at. The three columns above say who,
+     * where and which sale; this says which counter, so "Already redeemed on …
+     * at Central Floresta / Reception Till 1 by …" is answerable from the row.
+     */
+    redeemedStationId: uuid('redeemed_station_id').references(() => station.id, {
+      onDelete: 'restrict',
+    }),
+    // --- The hold (S2-10b). Set while a till has it on a cart. ---------------
+    /**
+     * The sale a till has put this voucher on, while that sale is being rung
+     * up. A voucher is HELD when it is scanned and USED UP when the sale is
+     * paid; the hold is what makes a second scan at another till say "in use
+     * at …" instead of letting two carts price the same paper.
+     *
+     * **No foreign key, deliberately.** The id is the one the till minted for
+     * its cart, and the `pos.sale` row does not exist until Pay is pressed
+     * (`commitSale`), which is after the scan. The redemption service checks
+     * the row itself whenever there is one to check.
+     */
+    heldSaleId: uuid('held_sale_id'),
+    /** The till holding it: where "in use at …" points. */
+    heldStationId: uuid('held_station_id').references(() => station.id, {
+      onDelete: 'restrict',
+    }),
+    /** Who scanned it onto the cart. */
+    heldByAccountId: uuid('held_by_account_id').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
+    /** When — the clock a forgotten hold lapses on. */
+    heldAt: timestamp('held_at', { withTimezone: true, mode: 'date' }),
     ...timestamps,
   },
   (t) => [
@@ -269,6 +307,19 @@ export const voucher = promo.table(
     index('voucher_redeemed_by_idx').on(t.redeemedByAccountId),
     index('voucher_redeemed_branch_idx').on(t.redeemedBranchId),
     index('voucher_sale_idx').on(t.saleId),
+    index('voucher_redeemed_station_idx').on(t.redeemedStationId),
+    /**
+     * ONE VOUCHER PER SALE, as a constraint rather than a read (owner, 24
+     * Sept: not combinable with another voucher on the same sale). Two tills
+     * racing to put two vouchers on one cart cannot both win, whatever the
+     * service checked first. Partial, because most vouchers are held by
+     * nothing.
+     */
+    uniqueIndex('voucher_held_sale_unique')
+      .on(t.heldSaleId)
+      .where(sql`held_sale_id is not null`),
+    index('voucher_held_station_idx').on(t.heldStationId),
+    index('voucher_held_by_idx').on(t.heldByAccountId),
     /**
      * The expiry sweep, and only vouchers that can still expire: one that never
      * expires, or has already been used, is not what that job is looking for.
@@ -299,5 +350,158 @@ export const voucher = promo.table(
       'voucher_redeemed_check',
       sql`${t.status} <> 'redeemed' or ${t.redeemedAt} is not null`,
     ),
+    /**
+     * A hold is all of its parts or none of them, and only an unused voucher
+     * can be held: a redeemed, expired or void one on somebody's cart is a
+     * state the service must never be able to write.
+     */
+    check(
+      'voucher_hold_check',
+      sql`(${t.heldSaleId} is null and ${t.heldStationId} is null and ${t.heldAt} is null and ${t.heldByAccountId} is null)
+          or (${t.heldSaleId} is not null and ${t.heldStationId} is not null and ${t.heldAt} is not null and ${t.status} = 'issued')`,
+    ),
+  ],
+);
+
+// --- Redemption (S2-10b) -----------------------------------------------------
+
+/**
+ * What happened to a voucher at a till, one row per fact.
+ *
+ *   held      scanned onto a cart (`POST /sales/:id/vouchers`).
+ *   applied   priced into a sale when Pay was pressed. The sale's discount
+ *             row says how much; this says which voucher, so the payment step
+ *             can tell a voucher that is still the sale's from one that has
+ *             moved on.
+ *   consumed  used up, in the transaction that closed the sale. One per
+ *             use: the guarded update of `promo.voucher` in the service is
+ *             what refuses a second.
+ *   released  let go — the line was removed, the sale was voided, or a
+ *             forgotten hold lapsed — with the reason beside it.
+ */
+export const VOUCHER_REDEMPTION_KINDS = ['held', 'applied', 'consumed', 'released'] as const;
+export type VoucherRedemptionKind = (typeof VOUCHER_REDEMPTION_KINDS)[number];
+
+/**
+ * Why a hold ended without the voucher being used.
+ *
+ *   line_removed  the till took it off the cart.
+ *   sale_voided   the sale it was on was voided (the database trigger in
+ *                 migration 0021 writes this one, whatever voided the sale).
+ *   moved         the same till put it on a new cart; the old cart was
+ *                 abandoned before any money was taken.
+ *   lapsed        another till wanted it and the hold was older than the
+ *                 lapse window with no money taken against it.
+ *   sale_closed   the sale it named was closed without it.
+ */
+export const VOUCHER_RELEASE_REASONS = [
+  'line_removed',
+  'sale_voided',
+  'moved',
+  'lapsed',
+  'sale_closed',
+] as const;
+export type VoucherReleaseReason = (typeof VOUCHER_RELEASE_REASONS)[number];
+
+/**
+ * The redemption ledger. **Append-only**: migration 0021 installs a trigger
+ * that refuses every UPDATE and DELETE, so the history of a voucher cannot be
+ * edited into a different history. `promo.voucher`'s own columns mirror the
+ * latest of these facts; this table is how they got there.
+ *
+ * `sale_id` has no foreign key for the reason `held_sale_id` has none: a
+ * `held` row names the till's sale id before Pay has written the sale.
+ */
+export const voucherRedemption = promo.table(
+  'voucher_redemption',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    voucherId: uuid('voucher_id')
+      .notNull()
+      .references(() => voucher.id, { onDelete: 'restrict' }),
+    kind: text('kind').$type<VoucherRedemptionKind>().notNull(),
+    saleId: uuid('sale_id').notNull(),
+    /** Where it happened: the till's branch, which may not be where it was issued. */
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    stationId: uuid('station_id')
+      .notNull()
+      .references(() => station.id, { onDelete: 'restrict' }),
+    /** Who. Null only on a release the void trigger wrote for a sale voided by nobody named. */
+    accountId: uuid('account_id').references(() => account.id, { onDelete: 'restrict' }),
+    reason: text('reason').$type<VoucherReleaseReason>(),
+    /** The request that did it, when a request did. */
+    requestId: text('request_id'),
+    occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('voucher_redemption_voucher_idx').on(t.voucherId, t.occurredAt),
+    index('voucher_redemption_sale_idx').on(t.saleId),
+    index('voucher_redemption_operator_idx').on(t.operatorId),
+    index('voucher_redemption_branch_idx').on(t.branchId, t.occurredAt),
+    index('voucher_redemption_station_idx').on(t.stationId),
+    index('voucher_redemption_account_idx').on(t.accountId),
+    /**
+     * NOT unique on consumed rows, deliberately. "Used up once" is guarded in
+     * one place, the conditional update of `promo.voucher` that consumes it
+     * (`consumeSaleVouchers`), and a second guard here would only hide that
+     * one's absence from the test that exists to catch it. It would also
+     * refuse the legitimate second life a refund may give a voucher (S2-11).
+     */
+    check(
+      'voucher_redemption_kind_check',
+      sql`${t.kind} in ('held','applied','consumed','released')`,
+    ),
+    check(
+      'voucher_redemption_reason_check',
+      sql`(${t.kind} = 'released') = (${t.reason} is not null)
+          and (${t.reason} is null or ${t.reason} in ('line_removed','sale_voided','moved','lapsed','sale_closed'))`,
+    ),
+  ],
+);
+
+/**
+ * The guessing limit, per till (S2-10b): five wrong codes — invalid, or not
+ * found — inside a minute lock that station's voucher redemption for ten
+ * minutes and raise `redemption.probing`.
+ *
+ * In the database rather than in memory for the reason `core.auth_throttle`
+ * is: Render restarts the api on every deploy, and a counter that a restart
+ * clears is a counter an attacker resets by waiting for one. One row per
+ * station; `recent_misses` holds the misses inside the last minute and is
+ * cleared when the lock is set, so the budget after a lock is a fresh one.
+ */
+export const redemptionThrottle = promo.table(
+  'redemption_throttle',
+  {
+    stationId: uuid('station_id')
+      .primaryKey()
+      .references(() => station.id, { onDelete: 'restrict' }),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    recentMisses: timestamp('recent_misses', { withTimezone: true, mode: 'date' })
+      .array()
+      .notNull()
+      .default(sql`'{}'::timestamptz[]`),
+    lockedUntil: timestamp('locked_until', { withTimezone: true, mode: 'date' }),
+    /** How many times this till has been locked, for the alert and for a person reading it later. */
+    lockCount: integer('lock_count').notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    index('redemption_throttle_operator_idx').on(t.operatorId),
+    index('redemption_throttle_branch_idx').on(t.branchId),
+    check('redemption_throttle_lock_count_check', sql`${t.lockCount} >= 0`),
   ],
 );

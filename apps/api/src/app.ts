@@ -404,6 +404,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // `/booths/:id/status`. Declared in full like the fleet's, because the two
   // halves answer to different callers and share no prefix.
   await app.register(boothRoutes);
+  await app.register((await import('./routes/vouchers')).voucherRoutes);
   /**
    * The tender surface (S2-10a): card routing, the inquiry, the audited staff
    * confirmation. Under `/payments` and not `/sales` because `/sales` is the

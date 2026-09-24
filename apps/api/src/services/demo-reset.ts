@@ -1,4 +1,4 @@
-import { inArray, ne } from 'drizzle-orm';
+import { inArray, isNotNull, ne, or } from 'drizzle-orm';
 import {
   attendee,
   auditLog,
@@ -16,6 +16,7 @@ import {
   stockLevel,
   visit,
   visitChild,
+  voucher,
   wallet,
   walletEntry,
 } from '@oto/db';
@@ -141,6 +142,32 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
    * statement on a finalised sale — as it should.
    */
   await tx.update(saleTierClaim).set({ spentBySaleId: null, spentAt: null });
+  /**
+   * S2-10b: a redeemed voucher names the sale that used it
+   * (`promo.voucher.sale_id`, ON DELETE RESTRICT), so a day with one
+   * redemption on it would otherwise make the whole reset fail; and a held one
+   * names a cart whose sale is about to go. The VOUCHER stays: it is the
+   * booth's record, printed and still in a family's hands, and it stays
+   * redeemed. Only its links to the day's sales go, holds included.
+   *
+   * The redemption ledger (`promo.voucher_redemption`) is left exactly as it
+   * is. It is append-only and refuses a delete or an update from any caller,
+   * this one included, and its sale ids are history carried by no foreign key —
+   * a reset is not entitled to rewrite the record of who gave away what.
+   *
+   * Not in the counts: those are rows removed, and no voucher is.
+   */
+  await tx
+    .update(voucher)
+    .set({
+      saleId: null,
+      heldSaleId: null,
+      heldStationId: null,
+      heldByAccountId: null,
+      heldAt: null,
+      updatedAt: new Date(),
+    })
+    .where(or(isNotNull(voucher.saleId), isNotNull(voucher.heldSaleId)));
   counts.sale = (await tx.delete(sale).returning({ id: sale.id })).length;
   counts.sale_tier_claim = (
     await tx.delete(saleTierClaim).returning({ id: saleTierClaim.id })
