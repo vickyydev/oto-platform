@@ -238,7 +238,8 @@ describe('the check character', () => {
         expect(verifyBoothCode(body + last).ok, body + last).toBe(standardIsValid(body + last));
       }
     }
-  });
+    // Sixty thousand comparisons: the CI runner needs more than vitest's 5 s default.
+  }, 30_000);
 
   it('is only ever a character of the booth alphabet, or nothing', () => {
     for (let n = 0; n < 2000; n += 1) {
