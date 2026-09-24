@@ -37,6 +37,32 @@ different; the Pi runtime and the counter were not built at all).**
   printer and connects the Pi.
 - **The remaining Sprint 2 order (391, 388, 382, Slice F …) waits behind the
   booth**, by the owner's instruction.
+- **Round 1's first gates (evening): both refused on real points, both in fix
+  rounds.** P2 (redemption api): built and green (api 1,385, shared 24 for the
+  check character, db 14 for migration 0021), refused on a voucher taken back
+  off a rung-up sale that could then be paid by card or QR, discount codes of
+  booth shape refused, the demo reset failing after a redemption, a declined
+  tender stranding the voucher; plus a dropped character reading "not synced"
+  and a free item's markdown split across lines — fix round `wf_20885386`
+  (adds a void route for a rung-up sale with no money taken and guards every
+  tender start); wip ref `wip/207-redemption` (`8dd1d9b`). P1 (Pi runtime):
+  built and driven end to end on this machine as a real box (claim, picker,
+  account and PIN sign-in, print, reprint, printer down, offline, sync),
+  refused on a test harness broken by the check character, a box that waits
+  out a stalled cloud for minutes before serving the TV page, and guide gaps;
+  low findings on a Thai font offline, false comments, a throttle bucket
+  cleared too early, 401/404 shown as "offline" — fix round `wf_1fa9b7c2`;
+  wip ref `wip/223-pi-runtime` (`9f8f315`). **Carried to round 2:** the
+  staging voucher definitions' terms still name "HKT Central" and no route
+  edits terms (S2-07d, SCRUM-400, plus a data fix on staging); `app.ts`
+  carries one registration line from each round — pick the hunk into the
+  right commit; `packages/shared/test/cart-totals-line-target.test.ts` is
+  P2's. Both gates' full verdicts are the last result lines of their
+  workflow journals.
+- **Open with the owner: multi-staff attribution at one booth** (his
+  question of the evening). Today one session per booth; proposed a roster
+  with a claim per spin (a number-pad digit or a badge) and shared credit as
+  the fallback; six choices put to him; nothing started.
 
 ## 2026-09-24 — S2-09 (SCRUM-202) closed at 06:27: the last of SCRUM-204, and SCRUM-392 on the way
 
