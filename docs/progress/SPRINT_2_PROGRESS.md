@@ -2,7 +2,7 @@
 
 ## Status
 
-_Last updated 2026-09-24, 21:57._
+_Last updated 2026-09-25, 02:24._
 
 > **Resuming? Read `SESSION_HANDOVER.md` → "2026-09-24 — closing S2-09", then
 > "State at the end of 2026-09-23".** It carries the live commit on every staging service, what landed
@@ -17,7 +17,12 @@ _Last updated 2026-09-24, 21:57._
   and proven on staging). CP2's remaining line is
   SCRUM-206's own end-to-end evidence, which waits on Slice F.
 
-- **Last landed.** `main` is **`13a6e70`** — the booth's round 1: `1de320c` (the Pi
+- **Last landed.** `main` is **`9673e39`** — the booth's round 2: `c4f8b4e` (the
+  till redeems a voucher: scanned by the box, typed, or read by a USB scanner;
+  held, priced by the platform, used up at payment; the platform's own
+  refusals; a ฿0 sale closed only on confirmation; Cancel voids) and `9673e39`
+  (the Console: voucher types with the park's wording, booth staff and PINs,
+  the session length; migration 0022). Before them, round 1: `1de320c` (the Pi
   runs the booth box: claim, run, the page served on the box, sign-in by account
   or PIN with the admin-set session, reprint, the staff name on the slip,
   inactive prizes off the wheel, one press one slip, the Pi install kit) and

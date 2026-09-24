@@ -110,6 +110,34 @@ different; the Pi runtime and the counter were not built at all).**
   Landing order when both pass: P4 then P3 (P3 edits `vouchers.ts` viewOf;
   P4 edits `sync-booth.ts` comments only — disjoint); `app.ts` carries P4's
   line only (hunk-pick if anything else appears).
+- **Round 2 landed (25 Sept, 02:24), two commits:** `c4f8b4e` — the till
+  (P3: the box classifies a voucher code and answers with it, validating
+  nothing; both tills hear it over the channel, from a USB burst or typed;
+  the card with prize, booth, printed by whom, valid until, the platform's
+  amount; hold → pay → the platform's own refusals; a ฿0 sale rung up open
+  and closed only on confirmation; Cancel voids any rung-up sale that took
+  no money; a menu-item voucher refused at the ticket till and redeemed at
+  the restaurant till onto the kitchen ticket; a voucher never on an offline
+  sale; `issuedBy` on the api's voucher view; two gates — refused on a ฿0
+  sale closed when the payment screen opened, a menu-item voucher at the
+  ticket till, a refusal hidden behind the offline message; then MERGE on
+  93 + 28 browser checks). `9673e39` — the Console (P4: Voucher types with
+  wording TH/EN, links, expiry or never; Booth staff and PINs; the session
+  length; migration 0022; the wheel carries each worded type's words and
+  the box prints them from the version it runs; `docs/ops/BOOTH_SETUP.md`;
+  three gates — refused twice on the truthfulness of "when the words reach
+  paper", then MERGE). Jira: 207 and 400 in Testing with their cards; the
+  wip refs dropped. CI: `c4f8b4e` and `9673e39` — see `gh run list`.
+- **Now: P5, the end-to-end proof on staging** (`wf_48780591`; the closing
+  adversarial audit runs beside it as `wf_4cc5255f`): the set-up through the new Console screens as
+  the owner will do it, a real agent process on this machine claimed as a
+  box against staging with a fake network printer capturing the slip bytes,
+  a second booth on it, sign-in by account and by PIN, spins online and with
+  the internet cut, the vouchers synced, redeemed once at the staging till
+  by typed code and by the Console's scanner, refused the second time, the
+  demo mode on the virtual box still working. Then 398, 399, 400, 207 and
+  394–397 → Deployed by the walker, the closing adversarial audit, and
+  "ready" to the owner.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
