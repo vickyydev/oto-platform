@@ -35,7 +35,8 @@ import {
   type EngineCart,
 } from '@/lib/cartWire';
 import { todayRateMode, type RateMode } from '@/lib/pricingMode';
-import { api, ApiError, isMissingRoute } from './client';
+import { api, ApiError, idemKey, isMissingRoute } from './client';
+import type { VoucherEffect } from './vouchers';
 import type { TaxBreakdown as PosTaxBreakdown, CategoryTaxLine as PosCategoryTaxLine } from '@/lib/tax';
 
 /**
@@ -227,6 +228,15 @@ export interface SaleCartPayload {
    */
   pickupCode?: string | null;
   promos: SaleCartPromoPayload[];
+  /**
+   * S2-10b — THE VOUCHER ON THIS CART, BY ITS CODE, and nothing else rides
+   * here. A Lucky Wheel voucher held for this cart is named by its code and
+   * the platform prices it from the voucher's definition
+   * (`resolveCartVoucher`); the till never describes what it takes off, and a
+   * park discount code goes in `promos` with its definition as before.
+   * Omitted when the cart carries no voucher.
+   */
+  promoCodes?: string[];
   manualDiscounts: SaleCartManualDiscountPayload[];
   memberId?: string | null;
   customerPhone?: string | null;
@@ -267,6 +277,13 @@ export interface SaleCommitBody {
    * True only for a ฿0 sale — a full comp — which has nothing to tender and so
    * nothing to wait for. The platform honours it when the sale owes nothing and
    * records `tendering` when it does; it never takes the till's word for it.
+   *
+   * S2-10b — THE TICKET AND F&B TILLS SEND FALSE FOR EVERY SALE, ฿0 INCLUDED.
+   * Pay opens the payment screen, and a sale closed there is a sale its Cancel
+   * can no longer void — with a voucher on it, the family's voucher used up
+   * before anybody confirmed anything. Those tills close a ฿0 sale at their
+   * confirm press through `/sales/:id/finalise`, which records no tender when
+   * nothing is owed.
    */
   finalise: boolean;
 }
@@ -389,6 +406,30 @@ export interface ApiSaleQuote {
   };
   taxBreakdown: EngineTaxBreakdown;
   engineVersion: string;
+  /**
+   * S2-10b — the voucher on this cart as the platform priced it: what it took
+   * off, and — when the cart has nothing it can come off — why not. Null when
+   * the cart carries none.
+   */
+  voucher?: QuotedVoucher | null;
+}
+
+/**
+ * S2-10b — A HELD VOUCHER, PRICED ON THIS CART BY THE PLATFORM
+ * (`PricedVoucher` in apps/api/src/services/sale.ts, less its engine input).
+ * The till shows it; it never computes it.
+ */
+export interface QuotedVoucher {
+  voucherId: string;
+  code: string;
+  definitionCode: string;
+  label: string;
+  effect: VoucherEffect;
+  /** What it actually took off, in satang. */
+  amountSatang: number;
+  /** False, with the reason, when the cart has nothing it can come off. */
+  applicable: boolean;
+  reason: string | null;
 }
 
 export interface ApiSale {
@@ -411,12 +452,29 @@ export interface SaleCommitResult {
   sale: ApiSale;
   /** True when the platform answered from the idempotency store rather than writing. */
   replay: boolean;
+  /** S2-10b — the voucher this sale was priced with, when it carries one. */
+  voucher?: QuotedVoucher | null;
+}
+
+/**
+ * The till's Cancel of a sale it rang up (`POST /sales/:id/void`, S2-10b):
+ * closed as void so it can never be paid, and any voucher it held let go.
+ */
+export interface SaleVoidAnswer {
+  /** True when the sale was already void and this call changed nothing. */
+  replay: boolean;
+  sale: ApiSale;
+  void: { voidedAt: string | null; voidedByAccountId: string | null; reason: string | null };
+  /** The vouchers the void let go, by id — each free again for another cart. */
+  releasedVoucherIds: string[];
 }
 
 export interface SaleFinaliseResult {
   sale: ApiSale;
   /** True when the sale was already finalised — a retry takes no second number. */
   replay: boolean;
+  /** S2-10b — the vouchers this call used up, by id. Empty unless it closed a sale carrying one. */
+  redeemedVoucherIds?: string[];
 }
 
 // --- The client -------------------------------------------------------------
@@ -523,6 +581,19 @@ export const salesApi = {
       idempotencyKey: saleFinaliseIdempotencyKey(saleId, body.tender),
       headers: { 'x-oto-action-id': body.actionId },
     }),
+  /**
+   * S2-10b — the till's Cancel of a sale rung up that took no money. The reason
+   * is required: a void with none is what the voids report exists to stop. A
+   * fresh key per press, because the platform keeps a refusal under its key as
+   * firmly as an answer, and the tender that refused this void may since have
+   * failed.
+   */
+  voidSale: (saleId: string, reason: string) =>
+    api.post<SaleVoidAnswer>(
+      `/sales/${encodeURIComponent(saleId)}/void`,
+      { reason },
+      { idempotencyKey: idemKey() },
+    ),
   get: (id: string) => api.get<{ sale: ApiSale }>(`/sales/${encodeURIComponent(id)}`),
   list: (params: { branchId?: string; businessDate?: string; limit?: number } = {}) => {
     const query = new URLSearchParams();
@@ -576,7 +647,19 @@ export function buildCartPayload(
   manualDiscounts: readonly ManualDiscount[],
   identity: CartIdentity,
   totals: TicketCartTotals,
-  options: { mode?: RateMode; modeReason?: string; config?: TaxConfig } = {},
+  options: {
+    mode?: RateMode;
+    modeReason?: string;
+    config?: TaxConfig;
+    /** S2-10b — the voucher held for this cart, by its code. See `SaleCartPayload.promoCodes`. */
+    promoCodes?: readonly string[];
+    /**
+     * S2-10b — what the screen showed as the amount due, when that was the
+     * platform's figure rather than this till's: a voucher's value is known
+     * only to the platform, so a cart carrying one is charged the quoted total.
+     */
+    expectedTotalSatang?: number;
+  } = {},
 ): SaleCartPayload {
   const rate = todayRateMode();
   const mode = options.mode ?? rate.mode;
@@ -663,10 +746,13 @@ export function buildCartPayload(
         appliedAt: discount.appliedAt,
       };
     }),
+    ...(options.promoCodes && options.promoCodes.length > 0
+      ? { promoCodes: [...options.promoCodes] }
+      : {}),
     memberId: identity.memberId ?? null,
     customerPhone: identity.customerPhone ?? null,
     customerNickname: identity.customerNickname ?? null,
-    expectedTotalSatang: totals.total,
+    expectedTotalSatang: options.expectedTotalSatang ?? totals.total,
   };
 }
 
@@ -724,7 +810,13 @@ export function buildItemCartPayload(
   manualDiscounts: readonly ManualDiscount[],
   identity: ItemCartIdentity,
   shownTotal: number,
-  options: { mode?: RateMode; modeReason?: string; promos?: readonly Discount[] } = {},
+  options: {
+    mode?: RateMode;
+    modeReason?: string;
+    promos?: readonly Discount[];
+    /** S2-10b — the voucher held for this order, by its code. See `SaleCartPayload.promoCodes`. */
+    promoCodes?: readonly string[];
+  } = {},
 ): SaleCartPayload {
   const rate = todayRateMode();
   const mode = options.mode ?? rate.mode;
@@ -750,6 +842,9 @@ export function buildItemCartPayload(
     // The codes this station holds, in the engine's terms. Empty when it holds
     // none, which is every order today — see the note above.
     promos: promoPayload((options.promos ?? []).map(enginePromo)),
+    ...(options.promoCodes && options.promoCodes.length > 0
+      ? { promoCodes: [...options.promoCodes] }
+      : {}),
     manualDiscounts: manualDiscounts.map((discount) => ({
       id: platformId(discount.id),
       scope: discount.scope,
@@ -860,6 +955,8 @@ export interface ItemQuoteArgs {
    * figure whichever side priced it.
    */
   promos?: readonly Discount[];
+  /** S2-10b — the voucher held for this order, by its code. The platform prices it. */
+  promoCodes?: readonly string[];
   config?: TaxConfig;
 }
 
@@ -886,6 +983,7 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
 
   const payload = buildItemCartPayload(lines, manualDiscounts, identity, local.totals.total, {
     ...(args.promos ? { promos: args.promos } : {}),
+    ...(args.promoCodes ? { promoCodes: args.promoCodes } : {}),
   });
   try {
     const { quote } = await salesApi.quote(payload);
@@ -904,13 +1002,18 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
       engineVersion: quote.engineVersion,
       lineTotals,
       ...(notice ? { platformNotice: notice } : {}),
+      voucher: quote.voucher ?? null,
     };
   } catch (err) {
     if (isMissingRoute(err)) {
       return { ...local, reason: 'This deployment has no pricing route yet (SCRUM-203).' };
     }
     if (err instanceof ApiError) throw err;
-    return { ...local, reason: 'The platform did not answer; this till priced the order.' };
+    return {
+      ...local,
+      reason: 'The platform did not answer; this till priced the order.',
+      unanswered: true,
+    };
   }
 }
 
@@ -1081,6 +1184,14 @@ export interface CartQuote {
   /** Why the platform was not the source, when it was not. */
   reason?: string;
   /**
+   * S2-10b — the platform was asked and nothing answered: no connection. Told
+   * apart from a missing route or a device with no station, because it is the
+   * one case where a voucher's card says "Vouchers can only be redeemed
+   * online" — the platform's refusals are said in its own words
+   * (`voucherUnpricedReason` in lib/tillVoucher.ts).
+   */
+  unanswered?: boolean;
+  /**
    * Something the PLATFORM decided differently from the till, in one sentence
    * for the person at the counter: a tier it resolved differently, a rate mode
    * it placed the cart on, a promo code it would not honour. Absent when the
@@ -1099,6 +1210,11 @@ export interface CartQuote {
   tierClaimRefusal?: TierClaimRefusal | null;
   /** Where the platform took the tier it priced at, when the platform priced it. */
   tierSource?: 'member' | 'claim' | 'default';
+  /**
+   * S2-10b — the voucher on this cart as the platform priced it. Absent on a
+   * quote this till made itself: a voucher's value is the platform's alone.
+   */
+  voucher?: QuotedVoucher | null;
 }
 
 /**
@@ -1231,6 +1347,8 @@ export interface QuoteCartArgs {
   mode?: RateMode;
   modeReason?: string;
   config?: TaxConfig;
+  /** S2-10b — the voucher held for this cart, by its code. The platform prices it. */
+  promoCodes?: readonly string[];
 }
 
 /**
@@ -1294,6 +1412,7 @@ export async function quoteCart(args: QuoteCartArgs): Promise<CartQuote> {
     ...(args.mode ? { mode: args.mode } : {}),
     ...(args.modeReason ? { modeReason: args.modeReason } : {}),
     ...(args.config ? { config: args.config } : {}),
+    ...(args.promoCodes ? { promoCodes: args.promoCodes } : {}),
   });
 
   try {
@@ -1309,13 +1428,18 @@ export async function quoteCart(args: QuoteCartArgs): Promise<CartQuote> {
       ...(notice ? { platformNotice: notice } : {}),
       ...(quote.tierClaimRefusal ? { tierClaimRefusal: quote.tierClaimRefusal } : {}),
       ...(quote.tierSource ? { tierSource: quote.tierSource } : {}),
+      voucher: quote.voucher ?? null,
     };
   } catch (err) {
     if (isMissingRoute(err)) {
       return { ...local, reason: 'This deployment has no pricing route yet (SCRUM-203).' };
     }
     if (err instanceof ApiError) throw err;
-    return { ...local, reason: 'The platform did not answer; this till priced the cart.' };
+    return {
+      ...local,
+      reason: 'The platform did not answer; this till priced the cart.',
+      unanswered: true,
+    };
   }
 }
 
@@ -1333,12 +1457,12 @@ export interface CommitSaleArgs {
   cart: SaleCartPayload;
   occurredAt: string;
   note?: string | null;
-  /** True only for a ฿0 sale. See `SaleCommitBody.finalise`. */
+  /** Close it in the same call — a ฿0 sale, where the caller wants that. See `SaleCommitBody.finalise`. */
   finalise: boolean;
 }
 
 /**
- * Write the sale — unfinalised unless it owes nothing.
+ * Write the sale — unfinalised unless it owes nothing and the caller asked.
  *
  * Every attempt at one cart calls this with the same `saleId`, `actionId` and
  * `occurredAt`, so the platform answers the first attempt's result rather than

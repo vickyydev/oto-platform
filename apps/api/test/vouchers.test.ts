@@ -9,6 +9,7 @@ import {
   boxState,
   branch,
   discountDefinition,
+  employee,
   member,
   paymentAttempt,
   product,
@@ -22,7 +23,13 @@ import {
   voucherDefinition,
   voucherRedemption,
 } from '@oto/db';
-import { BOOTH_CODE_ALPHABET, boothCodeCheckCharacter, mintBoothCode, newId } from '@oto/shared';
+import {
+  BOOTH_CODE_ALPHABET,
+  boothCodeCheckCharacter,
+  boothStaffCode,
+  mintBoothCode,
+  newId,
+} from '@oto/shared';
 import {
   CHALONG_MANAGER,
   RECEPTION,
@@ -80,6 +87,7 @@ let twoHoursChalong: string;
 let eatPlayHkt: string;
 let juiceId: string;
 let pizzaId: string;
+let plushId: string;
 
 const defs: Record<string, string> = {};
 
@@ -120,6 +128,8 @@ async function issue(
     issuedAt?: Date;
     expiresAt?: Date | null;
     branchId?: string;
+    /** Who was signed in at the booth; left out, the spin was unattributed. */
+    issuedByAccountId?: string | null;
   } = {},
 ): Promise<{ id: string; code: string }> {
   const id = newId();
@@ -133,6 +143,7 @@ async function issue(
     code,
     source: opts.source ?? 'booth',
     status: 'issued',
+    issuedByAccountId: opts.issuedByAccountId ?? null,
     issuedAt,
     expiresAt:
       opts.expiresAt === undefined
@@ -344,6 +355,7 @@ beforeAll(async () => {
   const products = await ctx.db.select().from(product).where(eq(product.operatorId, operatorId));
   juiceId = products.find((p) => p.code === 'FB-JUICE')!.id;
   pizzaId = products.find((p) => p.code === 'FB-PIZZA')!.id;
+  plushId = products.find((p) => p.code === 'MR-PLUSH' && p.branchId === hktId)!.id;
 
   const [reception] = await ctx.db
     .select({ id: account.id })
@@ -458,6 +470,64 @@ describe('a scan says at once what the voucher is, and uses nothing up', () => {
     expect(await ledgerOf(v.id)).toEqual([]);
     const trail = await ctx.db.select().from(auditLog).where(eq(auditLog.entityId, v.id));
     expect(trail).toEqual([]);
+  });
+
+  it('says who printed it, as the slip’s Staff line does — and null when nobody was signed in', async () => {
+    // The name the slip prints is the employee's nickname, else their name.
+    const [who] = await ctx.db
+      .select({ name: employee.name, nickname: employee.nickname })
+      .from(account)
+      .innerJoin(employee, eq(employee.id, account.employeeId))
+      .where(eq(account.id, receptionAccountId));
+    const signedIn = await issue(defs['spin-voucher-150']!, {
+      issuedByAccountId: receptionAccountId,
+    });
+    const looked = await lookup(tillA, signedIn.code);
+    expect(looked.statusCode, looked.body).toBe(200);
+    expect(looked.json().voucher.issuedBy).toEqual({
+      name: who!.nickname ?? who!.name,
+      code: boothStaffCode(receptionAccountId),
+    });
+    expect(looked.json().voucher.issuedBy.code).toMatch(/^S-[2-9A-Z]{4}$/);
+    // The hold answers with the same view, so the card keeps the line.
+    const saleId = newId();
+    const held = await hold(tillA, saleId, signedIn.code);
+    expect(held.statusCode, held.body).toBe(200);
+    expect(held.json().voucher.issuedBy).toEqual(looked.json().voucher.issuedBy);
+    expect((await release(tillA, saleId, signedIn.id)).statusCode).toBe(200);
+
+    // An account with no employee behind it still has its code; no name is invented.
+    const bareId = newId();
+    await ctx.db.insert(account).values({
+      id: bareId,
+      operatorId,
+      phone: `+6689${String(randomInt(1_000_000, 9_999_999))}`,
+      status: 'active',
+    });
+    const bare = await issue(defs['spin-voucher-150']!, { issuedByAccountId: bareId });
+    expect((await lookup(tillA, bare.code)).json().voucher.issuedBy).toEqual({
+      name: null,
+      code: boothStaffCode(bareId),
+    });
+
+    // Unattributed: a spin with nobody signed in still printed, and says so.
+    const nobody = await issue(defs['spin-voucher-150']!);
+    expect((await lookup(tillA, nobody.code)).json().voucher.issuedBy).toBeNull();
+  });
+
+  it('says what kind of product a free item is — the menu’s or the shop’s — so a till knows whose it is', async () => {
+    const pizza = await issue(defs.pizza!);
+    expect((await lookup(tillA, pizza.code)).json().voucher.effect).toMatchObject({
+      type: 'free_item',
+      product: { name: 'Margherita Pizza', kind: 'menu' },
+    });
+    const plush = await issue(
+      await define({ nameEn: 'Mascot Plush', kind: 'free_item', valueType: 'item', productId: plushId }),
+    );
+    expect((await lookup(tillA, plush.code)).json().voucher.effect).toMatchObject({
+      type: 'free_item',
+      product: { id: plushId, name: 'Oto Mascot Plush', kind: 'merch' },
+    });
   });
 });
 

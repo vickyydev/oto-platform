@@ -48,13 +48,38 @@ import {
   buildCartPayload,
   claimVerifiedTier,
   quotedPricing,
+  toSatang,
   type ApiSale,
   type CartIdentity,
   type SaleCartPayload,
 } from '@/api/sales';
 import { paymentMethodKind } from '@/lib/payments';
 import { useCartQuote } from '@/lib/cartQuote';
-import { useSaleWriter } from '@/lib/saleWriter';
+import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
+import { readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
+import { useScannerBurst } from '@/lib/scannerBurst';
+import { vouchersApi } from '@/api/vouchers';
+import {
+  CANCELLED_AT_THE_TILL,
+  VOUCHER_AFTER_PAY,
+  VOUCHER_AFTER_SALE,
+  VOUCHER_AT_THE_RESTAURANT,
+  VOUCHER_BEING_PRICED,
+  VOUCHER_NOT_COMBINABLE,
+  isMenuItemVoucher,
+  looksLikeVoucherCode,
+  useTillVoucher,
+  voucherUnpricedReason,
+  type HeldVoucher,
+} from '@/lib/tillVoucher';
+import {
+  RedeemVoucherEntry,
+  TillRefusalNotice,
+  VoucherCard,
+  VoucherFreeItemLine,
+  VoucherRefusalCard,
+  VoucherUsedNote,
+} from '@/components/till/RedeemVoucher';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { apiChildToSavedChild, apiMemberToMember } from '@/api/mappers';
 import { VisitChildrenModal } from '@/components/till/VisitChildrenModal';
@@ -93,7 +118,7 @@ function lineDiscountComponents(line: CartLine): DiscountComponentOption[] {
 }
 
 export default function Till() {
-  const { operator } = useOperator();
+  const { operator, offlineUnlock } = useOperator();
   const { station } = useStation();
   const { branch } = useBranch();
   /**
@@ -102,6 +127,33 @@ export default function Till() {
    * reads one set of totals.
    */
   const saleWriter = useSaleWriter();
+  /**
+   * S2-10b (SCRUM-207) — the Lucky Wheel voucher on this cart: looked up and
+   * held by the platform, priced by the quote, used up when the sale is paid
+   * (`lib/tillVoucher.ts`). Online only: a till with no connection, or one its
+   * box unlocked while the cloud was away, says so before asking anything.
+   *
+   * A free item off the MENU is the restaurant's: the kitchen makes it and the
+   * F&B till's order is what sends the kitchen its ticket, which this counter
+   * never sends. So this till says where to take it once the lookup has said
+   * what it is, and holds nothing (`isMenuItemVoucher`). A shop product or a
+   * ticket extra is handed over here.
+   */
+  const tillOffline = (): boolean =>
+    (typeof navigator !== 'undefined' && navigator.onLine === false) || offlineUnlock !== null;
+  const voucher = useTillVoucher({
+    isOffline: tillOffline,
+    refuseHere: (view) => (isMenuItemVoucher(view) ? VOUCHER_AT_THE_RESTAURANT : null),
+  });
+  /** The platform's words when the till's Cancel could not void the sale on screen. */
+  const [cancelRefusal, setCancelRefusal] = useState<string | null>(null);
+  /** The voucher the last sale used up, for its confirmation screen. */
+  const [voucherUsed, setVoucherUsed] = useState<HeldVoucher | null>(null);
+  /** The voucher's code as the cart carries it, one stable list per voucher. */
+  const voucherCodes = useMemo(
+    () => (voucher.held ? [voucher.held.code] : []),
+    [voucher.held],
+  );
   const [, navigate] = useLocation();
   const [step, setStep] = useState<number>(1);
   const [tier, setTier] = useState<CustomerTier | null>(null);
@@ -162,7 +214,7 @@ export default function Till() {
    * over, both count. The cleanup clears the flag when this page unmounts,
    * which is what a lock does.
    */
-  const saleOnScreen = lines.length > 0 || saleResult !== null;
+  const saleOnScreen = lines.length > 0 || saleResult !== null || voucher.held !== null;
   useEffect(() => {
     setSaleOpen('till', saleOnScreen);
     return () => setSaleOpen('till', false);
@@ -442,11 +494,16 @@ export default function Till() {
     manualDiscounts,
     identity: cartIdentity,
     enabled: saleResult === null,
+    // S2-10b — the held voucher rides by its code; the platform prices it.
+    promoCodes: voucherCodes,
   });
 
   const resetSale = () => {
     saleEpochRef.current += 1;
     saleWriter.reset();
+    voucher.reset();
+    setVoucherUsed(null);
+    setCancelRefusal(null);
     setStep(1);
     setTier(null);
     setLines([]);
@@ -965,9 +1022,22 @@ export default function Till() {
    * inactive, or doesn't apply to anything in the current cart.
    */
   const handleApplyPromoCode = (code: string) => {
+    // S2-10b — no promo code beside a voucher: the platform's own rule, said
+    // here before the code is taken rather than at Pay.
+    if (voucher.held) {
+      setPromoError(VOUCHER_NOT_COMBINABLE);
+      return;
+    }
     const promo = getDiscountByCode(code);
     if (!promo) {
-      setPromoError(`Code "${code.toUpperCase()}" was not found.`);
+      // A Lucky Wheel voucher typed or scanned into the promo box is never
+      // taken as a discount code: its value is the platform's, and it goes on
+      // the sale through Redeem voucher.
+      setPromoError(
+        looksLikeVoucherCode(code)
+          ? `"${code.toUpperCase()}" is a Lucky Wheel voucher, not a promo code — use Redeem voucher`
+          : `Code "${code.toUpperCase()}" was not found.`,
+      );
       return;
     }
     const today = new Date().toISOString().slice(0, 10);
@@ -1011,6 +1081,103 @@ export default function Till() {
     setLines(prev => prev.filter(l => l.id !== `promo-${code}`));
     setPromoError('');
   };
+
+  /**
+   * S2-10b — A VOUCHER CODE, HOWEVER IT ARRIVED: the box's scanner through the
+   * station channel, a USB scanner typing into this page, or Redeem voucher.
+   * What the till knows before asking is said here, in one sentence; every
+   * other answer is the platform's (`lib/tillVoucher.ts`).
+   */
+  const redeemVoucher = (raw: string): Promise<boolean> => {
+    const typed = raw.trim().toUpperCase();
+    // One of the park's own discount codes — some have a booth code's shape
+    // (SONGKRAN25) — belongs in the promo box, and asking the platform about it
+    // as a voucher would count a wrong code against this till.
+    const blockedBy = getDiscountByCode(typed)
+      ? `"${typed}" is a promo code — enter it in the promo code box`
+      : step === 5
+        ? VOUCHER_AFTER_PAY
+        : discounts.length > 0
+          ? VOUCHER_NOT_COMBINABLE
+          : null;
+    return voucher.redeem(typed, blockedBy);
+  };
+
+  /** A scan — from the box, or from a USB scanner on this computer. */
+  const redeemScannedVoucher = (code: string) => {
+    if (step === 6) {
+      // The finished sale's screen has no cart to put it on.
+      toast({ title: VOUCHER_AFTER_SALE, description: code, variant: 'destructive' });
+      return;
+    }
+    void redeemVoucher(code).then((held) => {
+      // The order panel is not on screen during the supervision gate.
+      if (held && (step === 7 || step === 8)) {
+        toast({ title: 'Voucher added to this sale', description: code });
+      }
+    });
+  };
+  useStationScans(station?.stationId, (event: StationScanEvent) => {
+    const code = readVoucherScan(event);
+    if (code) redeemScannedVoucher(code);
+  });
+  useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode });
+
+  /**
+   * S2-10b — THE ORDER PANEL'S CANCEL.
+   *
+   * A SALE THIS TILL RANG UP THAT TOOK NO MONEY IS VOIDED, voucher or not and ฿0
+   * included, with the reason "Cancelled at the till" (`saleWriter.cancel`): it
+   * can never be paid, and a voucher it held is free again for the family's
+   * next sale. Pay only rings a sale up — nothing is closed or used up until
+   * Confirm Payment Received — so on the payment screen this is always a void,
+   * never a sale thrown away after it was finished.
+   *
+   * A void the platform refuses — money taken, which is refunded (later), not
+   * voided; a card still on the terminal — leaves the sale on screen with the
+   * platform's words: throwing the cart away would leave a sale, and perhaps a
+   * voucher, pinned to a screen that no longer mentions it. A sale that turns
+   * out to be closed already (its confirm's answer was lost on the way back)
+   * goes to its confirmation instead, the way Confirm would have taken it.
+   *
+   * A cart not rung up lets its voucher go (`DELETE`). Best effort: a hold this
+   * till cannot release lapses, and this till takes it over on its next cart.
+   * A void also leaves the sale's document check spent (sale-tier.ts), which
+   * the next cart's quote says in its own words.
+   */
+  const handleCancel = async () => {
+    // The money is being recorded: its answer decides what shows next.
+    if (saleWriter.state.kind === 'finalising') return;
+    const epoch = saleEpochRef.current;
+    setCancelRefusal(null);
+    const cancelled = await saleWriter.cancel(CANCELLED_AT_THE_TILL);
+    if (saleEpochRef.current !== epoch) return;
+    if (!cancelled.ok) {
+      if (cancelled.closed && pendingPaymentMethod) {
+        void completeSale(epoch);
+        return;
+      }
+      setCancelRefusal(cancelled.message);
+      return;
+    }
+    // A voucher still held for a cart that was never rung up is let go; one
+    // the void has just freed answers that it is no longer held for it.
+    if (voucher.current()) await voucher.release();
+    resetSale();
+  };
+
+  /**
+   * S2-10b — leaving the till with a voucher on a cart that was not rung up lets
+   * it go, so a family's voucher is not left "in use" at a screen nobody is
+   * looking at. A sale rung up with it keeps it until it is paid or voided.
+   */
+  const leaveTill = useRef<() => void>(() => undefined);
+  leaveTill.current = () => {
+    const held = voucher.current();
+    if (!held || saleWriter.committed?.id === held.saleId) return;
+    void vouchersApi.release(held.saleId, held.view.id).catch(() => undefined);
+  };
+  useEffect(() => () => leaveTill.current(), []);
 
   const handleSelectTicket = (ticket: TicketType) => {
     if (!tier) return;
@@ -1954,11 +2121,55 @@ export default function Till() {
    */
   const commitPayload = (): SaleCartPayload | null => {
     if (!cartIdentity || !cart.quote.satang) return null;
+    const held = voucher.held;
     return buildCartPayload(lines, discounts, manualDiscounts, cartIdentity, cart.quote.satang, {
       mode: cart.quote.pricingMode,
       modeReason: cart.quote.pricingModeReason,
+      // S2-10b — the voucher rides by its code, and the amount due is the
+      // platform's quote: only the platform knows what a voucher takes off, so
+      // the figure on screen with one on the cart is its figure, not this till's.
+      ...(held ? { promoCodes: [held.code], expectedTotalSatang: toSatang(cart.totals.total) } : {}),
     });
   };
+
+  /**
+   * S2-10b — the sale with the voucher on it, written only against the
+   * platform's own price, and only under the id the voucher is held for.
+   *
+   * The id is decided first (`saleWriter.prepare`): a new cart takes the one
+   * the voucher was held for, and one that cannot — its key spent on a refused
+   * attempt — takes a fresh one, and the voucher is moved to it before the
+   * commit goes out. False, with the reason on the voucher's card, when the
+   * sale must not be written.
+   */
+  const voucherReadyFor = async (input: SaleWriteInput): Promise<boolean> => {
+    if (!voucher.held) return true;
+    if (cart.quote.source !== 'platform') {
+      // Why, in the platform's words where it gave some — the card says the same.
+      voucher.refuse(
+        voucherUnpriced ?? VOUCHER_BEING_PRICED,
+        voucher.held.code,
+        cart.error?.code ?? 'VOUCHER_NOT_PRICED',
+      );
+      return false;
+    }
+    return voucher.moveTo(saleWriter.prepare(input));
+  };
+
+  /**
+   * The commit's input, with the voucher's sale id when one is held.
+   *
+   * NEVER CLOSED AT PAY, ฿0 INCLUDED (S2-10b). Pay rings the sale up and opens
+   * the payment screen; Confirm Payment Received closes it (`completeSale`),
+   * through the finalise that takes no tender when nothing is owed. A ฿0 sale
+   * closed at Pay was finished — its voucher used up — while the screen still
+   * offered Cancel, and Cancel then threw the finished sale away.
+   */
+  const writeInput = (payload: SaleCartPayload): SaleWriteInput => ({
+    cart: payload,
+    finalise: false,
+    ...(voucher.held ? { preferSaleId: voucher.held.saleId } : {}),
+  });
 
   /** Why this sale cannot be offered to the ledger at all. */
   const unwritableReason = (): string =>
@@ -1981,8 +2192,10 @@ export default function Till() {
    * receipt number, because no money has arrived yet. The screen then shows the
    * amount due for a sale the platform already holds.
    *
-   * A ฿0 sale is the exception, and only because it has nothing to tender: it
-   * is committed and finalised in the one call.
+   * A ฿0 sale is no exception (S2-10b): it has nothing to tender, but it is
+   * still only rung up here and closed by Confirm Payment Received, so the
+   * screen's Cancel can void it and a voucher on it stays the family's until
+   * then.
    *
    * Editing the order after this and paying commits the corrected cart as its
    * own sale; the one written here stays on the platform, unpaid and unnumbered
@@ -1993,10 +2206,10 @@ export default function Till() {
     if (!preflightSale()) return;
     const payload = commitPayload();
     if (!payload) return; // said on the confirmation screen, not in a toast at the visitor
-    const outcome = await saleWriter.commit({
-      cart: payload,
-      finalise: cart.quote.satang?.total === 0,
-    });
+    const input = writeInput(payload);
+    if (!(await voucherReadyFor(input))) return;
+    if (saleEpochRef.current !== epoch) return;
+    const outcome = await saleWriter.commit(input);
     if (saleEpochRef.current !== epoch) {
       if (outcome.ok && outcome.written) noteSaleLeftBehind(outcome.sale, outcome.saleId);
     }
@@ -2023,16 +2236,23 @@ export default function Till() {
 
     const payload = commitPayload();
     if (!payload) {
+      // A voucher is never honoured on a sale the platform does not write: it
+      // is used up only by the platform, in the transaction that closes it. Why
+      // this one cannot be written is said as it is — not as "offline".
+      if (voucher.held) {
+        voucher.refuse(unwritableReason(), voucher.held.code, 'SALE_NOT_WRITABLE');
+        return;
+      }
       // Nowhere to write it. Finish on the till and SAY SO, rather than show a
       // confirmation screen that looks like a saved sale.
       finalizeSale(saleWriter.declareUnwritten(unwritableReason()), quotedPricing(cart.quote));
       return;
     }
 
-    const committed = await saleWriter.commit({
-      cart: payload,
-      finalise: cart.quote.satang?.total === 0,
-    });
+    const input = writeInput(payload);
+    if (!(await voucherReadyFor(input))) return;
+    if (saleEpochRef.current !== epoch) return;
+    const committed = await saleWriter.commit(input);
     // The till has moved on — cancelled, or already serving the next visitor.
     // The sale itself is written and safe; what must not happen is this answer
     // printing a band for somebody else's child. It must not be silent either:
@@ -2066,6 +2286,19 @@ export default function Till() {
       }
       if (!closed.ok) return;
       if (closed.written) recorded = closed.sale;
+    }
+    /**
+     * S2-10b — THE VOUCHER IS USED UP. A sale closed under the id the voucher
+     * is held for, with its code on the cart, used it: the platform does that
+     * in the transaction that closes the sale — this press's finalise, with the
+     * tender, or with none for a sale the voucher took to ฿0 — and refuses the
+     * close when it cannot (`consumeSaleVouchers`). From here it is the
+     * confirmation's, and nothing may release it.
+     */
+    const held = voucher.current();
+    if (held && recorded.status === 'finalised' && recorded.id === held.saleId) {
+      setVoucherUsed(held);
+      voucher.reset();
     }
     finalizeSale(committed.saleId, quotedPricing(cart.quote, recorded));
   };
@@ -2278,8 +2511,41 @@ export default function Till() {
   const allLengthsChosen = dropOffCartLines.every((l) => l.dropOff!.lengthChosen);
   const nannyDropOffLines = lines.filter((l) => l.dropOff?.service === 'nanny');
   const allNanniesAssigned = nannyDropOffLines.every((l) => !!l.dropOff!.nannyId);
+  /**
+   * S2-10b — THE VOUCHER ON THIS CART, AS THE PLATFORM PRICED IT, and whether
+   * that holds Pay back. A voucher is charged only at the platform's own figure,
+   * so Pay waits for the platform's quote; and a voucher the quote says has
+   * nothing to come off — a THB voucher with no tickets, a 1+1 short of two kids
+   * of its package — is shown with the platform's reason rather than carried to
+   * a commit that would refuse it. A free-item voucher is a sale on its own: the
+   * item is the line, and the platform puts it on the bill.
+   */
+  const voucherQuote =
+    voucher.held && cart.quote.source === 'platform' ? (cart.quote.voucher ?? null) : null;
+  /**
+   * Why the platform's figure is missing, when it is: its refusal in its own
+   * words (a lost hold answers VOUCHER_NOT_HELD), and "online only" only when
+   * nothing answered (`voucherUnpricedReason`).
+   */
+  const voucherUnpriced = voucher.held
+    ? voucherUnpricedReason({
+        quote: cart.quote,
+        pending: cart.pending,
+        error: cart.error,
+        offline: tillOffline(),
+      })
+    : null;
+  const voucherHoldsPay =
+    voucher.held !== null && (voucher.busy || voucherQuote === null || !voucherQuote.applicable);
+  const voucherFreeItem = voucher.held?.view.effect.type === 'free_item';
+  /** Rung up with the voucher: it goes only with a void now, which Cancel does. */
+  const voucherRungUp =
+    voucher.held !== null && saleWriter.committed?.id === voucher.held.saleId;
   const canPay =
-    lines.some((l) => l.kids + l.adults > 0) && allLengthsChosen && allNanniesAssigned;
+    (lines.some((l) => l.kids + l.adults > 0) || voucherFreeItem) &&
+    allLengthsChosen &&
+    allNanniesAssigned &&
+    !voucherHoldsPay;
 
   // Build a live, Sale-shaped view model for the customer display. Once the sale
   // is finalized (step 6) we use the locked-in result so credit grants/ids stay stable.
@@ -2434,7 +2700,11 @@ export default function Till() {
             <div className="flex h-full min-h-0 flex-col">
               <SaleNotSavedNotice state={saleWriter.state} />
               <div className="min-h-0 flex-1">
-                <StepConfirmation sale={saleResult} onNewSale={resetSale} />
+                <StepConfirmation
+                  sale={saleResult}
+                  onNewSale={resetSale}
+                  note={voucherUsed ? <VoucherUsedNote held={voucherUsed} /> : undefined}
+                />
               </div>
             </div>
           )}
@@ -2460,11 +2730,53 @@ export default function Till() {
             onAddManualDiscount={() => setShowManualDiscountModal(true)}
             onRemoveManualDiscount={handleRemoveManualDiscount}
             onPay={handlePay}
-            onCancel={resetSale}
+            onCancel={() => void handleCancel()}
             canPay={canPay}
-            totals={cart.totals}
+            // The voucher's own row is its card below, not a promo badge with
+            // a promo's remove button.
+            totals={
+              voucher.held
+                ? {
+                    ...cart.totals,
+                    scannedDiscounts: cart.totals.scannedDiscounts.filter(
+                      (sd) => sd.code !== voucher.held?.code,
+                    ),
+                  }
+                : cart.totals
+            }
             priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
             tierClaimRefusal={tierClaimRefusal}
+            voucherLine={voucher.held ? <VoucherFreeItemLine held={voucher.held} /> : undefined}
+            voucher={
+              <div className="space-y-2">
+                {voucher.held && (
+                  <VoucherCard
+                    held={voucher.held}
+                    quoted={voucherQuote}
+                    busy={voucher.busy}
+                    // The platform has not priced this cart: a voucher's value is
+                    // only ever its, so the card says why, in its words.
+                    note={voucherUnpriced}
+                    {...(voucherRungUp ? {} : { onRemove: () => void voucher.release() })}
+                  />
+                )}
+                <RedeemVoucherEntry
+                  onRedeem={redeemVoucher}
+                  busy={voucher.busy}
+                  disabled={step === 5}
+                />
+                {voucher.refusal && (
+                  <VoucherRefusalCard refusal={voucher.refusal} onDismiss={voucher.dismiss} />
+                )}
+                {cancelRefusal && (
+                  <TillRefusalNotice
+                    message={cancelRefusal}
+                    onDismiss={() => setCancelRefusal(null)}
+                    testId="cancel-refusal"
+                  />
+                )}
+              </div>
+            }
           />
         </div>
       )}
@@ -2557,6 +2869,7 @@ export default function Till() {
               contactChannel={customerContactChannel}
               onContactChannelChange={handleCustomerContactChannelChange}
               totals={saleResult ? undefined : cart.totals}
+              voucherPrize={voucher.held?.view.prize ?? null}
             />
           </div>
         )}

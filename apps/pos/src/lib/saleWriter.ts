@@ -22,7 +22,9 @@ import {
  * TWO PRESSES, TWO CALLS. Pay COMMITS the sale — the row, its lines, its
  * discounts — in `tendering`, with no receipt number, because no money has
  * arrived yet. The tender completing FINALISES it, and that is what allocates
- * the number. A ฿0 sale has nothing to tender, so Pay does both at once.
+ * the number. A ฿0 sale has nothing to tender, so a caller may close it at Pay
+ * (`finalise`); the ticket and F&B tills do not — they close it at their
+ * confirm press like any other, so their Cancel can still void it (S2-10b).
  *
  * 1. PRESSING PAY TWICE PRODUCES ONE SALE. The till mints the sale's id — a
  *    UUIDv7 — an action id and the clock reading, once per CART, and every
@@ -89,15 +91,40 @@ export type SaleWriteState =
 
 export interface SaleWriteInput {
   cart: SaleCartPayload;
-  /** True only for a ฿0 sale: it has nothing to tender, so Pay closes it. */
+  /**
+   * Close a ฿0 sale in the commit itself: it has nothing to tender. False from
+   * the ticket and F&B tills for every sale — see `SaleCommitBody.finalise`.
+   */
   finalise: boolean;
   note?: string | null;
+  /**
+   * S2-10b — THE SALE ID A VOUCHER IS ALREADY HELD FOR. A voucher is held for
+   * a cart by the id the till minted for it, before Pay, and the commit that
+   * uses it up must carry the same one. So a NEW cart takes this id rather
+   * than minting its own — unless an earlier attempt has already been sent
+   * under it, in which case that id's key is spent and a fresh one is minted
+   * like any other (the caller then moves the voucher; see `prepare`). Not
+   * part of what makes two attempts the same sale.
+   */
+  preferSaleId?: string;
 }
 
 export type SaleWriteOutcome =
   | { ok: true; written: true; sale: ApiSale; replay: boolean; saleId: string }
   | { ok: true; written: false; saleId: string; reason: string }
   | { ok: false; saleId: string; message: string; retryable: boolean };
+
+/** What the till's Cancel did to the sale this cart was rung up as (`cancel`). */
+export type SaleCancelOutcome =
+  /** `voided` is false when nothing had been rung up: there was no sale to void. */
+  | { ok: true; voided: boolean }
+  /**
+   * The platform would not void it, and said why in its own words: money has
+   * been taken (a refund, which comes later), a tender is still in progress,
+   * or the sale is already closed — `closed`, and then the confirmation is what
+   * belongs on screen, not a cancel.
+   */
+  | { ok: false; code: string; message: string; closed: boolean };
 
 /**
  * Whether trying the same request again could end differently, and why.
@@ -168,8 +195,24 @@ export interface SaleWriter {
    * platform already holds is returned without asking it twice.
    */
   commit: (input: SaleWriteInput) => Promise<SaleWriteOutcome>;
+  /**
+   * S2-10b — the sale id `commit(input)` will write this cart under, decided
+   * now and kept, so the commit uses exactly it. A till holding a voucher asks
+   * this before Pay and moves the voucher to the answer when it is not the id
+   * the voucher is held for (`lib/tillVoucher.ts`).
+   */
+  prepare: (input: SaleWriteInput) => string;
   /** The tender completed — close the sale and take its receipt number. */
   finalise: (tender: SaleTenderPayload) => Promise<SaleWriteOutcome>;
+  /**
+   * S2-10b — THE TILL'S CANCEL of the sale this cart was rung up as: voided with
+   * `reason`, so it can never be paid and any voucher it held is free again
+   * (`POST /sales/:id/void`). Any rung-up sale that took no money, voucher or
+   * not. A Pay still being written is waited for first — the sale it writes is
+   * the one to void, and cancelling past it would leave it `tendering` with
+   * nothing on screen to say so.
+   */
+  cancel: (reason: string) => Promise<SaleCancelOutcome>;
   /**
    * Record that this sale was never offered to the platform, and why — no
    * station on the platform, no branch, nothing to send it to. It mints the id
@@ -195,6 +238,47 @@ export function useSaleWriter(): SaleWriter {
   /** Set when the platform says this sale's key was spent on another body. */
   const renewKeyRef = useRef(false);
   const inFlightRef = useRef<{ signature: string; promise: Promise<SaleWriteOutcome> } | null>(null);
+  /**
+   * S2-10b — every sale id an attempt has been sent under. Its idempotency key
+   * is spent on that attempt's body, so a new cart never takes one of these as
+   * its id, whatever voucher is held for it (`preferSaleId`).
+   */
+  const sentRef = useRef<Set<string>>(new Set());
+  /**
+   * S2-10b — sales this visitor's cart was rung up as and then left behind
+   * when the order changed after Pay: each is still `tendering` on the
+   * platform, unpaid, and the till's Cancel voids them with the one on screen
+   * (`cancel`), so throwing the order away leaves none of them behind.
+   */
+  const supersededRef = useRef<Map<string, ApiSale>>(new Map());
+
+  /**
+   * The ids the next attempt at a cart carries — the rule `commit` has always
+   * followed, in one place so `prepare` can answer it before the commit runs.
+   * The same cart keeps its ids (a new number under the same press when its
+   * key was spent); a different cart is a different sale and takes new ones,
+   * starting from the voucher's id when there is one it may take.
+   */
+  const decideIds = useCallback((signature: string, preferSaleId?: string): SaleAttempt => {
+    const previous = saleRef.current;
+    if (previous && previous.signature === signature) {
+      return renewKeyRef.current ? { ...previous, saleId: newId() } : previous;
+    }
+    // A different cart is a different sale. The previous one, if it was
+    // committed, stays on the platform in `tendering` with no receipt number —
+    // a record of an order that was rung up and not paid for. It is kept here
+    // so the till's Cancel voids it with the sale on screen (`cancel`); paying
+    // the corrected sale leaves it as it is.
+    const left = committedRef.current;
+    if (left && left.status !== 'finalised') supersededRef.current.set(left.id, left);
+    committedRef.current = null;
+    return {
+      saleId: preferSaleId && !sentRef.current.has(preferSaleId) ? preferSaleId : newId(),
+      actionId: newId(),
+      occurredAt: new Date().toISOString(),
+      signature,
+    };
+  }, []);
 
   const reset = useCallback(() => {
     epochRef.current += 1;
@@ -203,6 +287,8 @@ export function useSaleWriter(): SaleWriter {
     attemptsRef.current = 0;
     renewKeyRef.current = false;
     inFlightRef.current = null;
+    sentRef.current = new Set();
+    supersededRef.current = new Map();
     setState({ kind: 'idle' });
   }, []);
 
@@ -221,28 +307,14 @@ export function useSaleWriter(): SaleWriter {
     const inFlight = inFlightRef.current;
     if (inFlight && inFlight.signature === signature) return inFlight.promise;
 
-    const previous = saleRef.current;
-    let ids: SaleAttempt;
-    if (previous && previous.signature === signature) {
-      // The same cart: keep the number. A retry has to be the same sale, and a
-      // burnt key takes a new number while keeping the press, so
-      // `sale_action_unique` still refuses a second sale if the first landed.
-      ids = renewKeyRef.current ? { ...previous, saleId: newId() } : previous;
-    } else {
-      // A different cart is a different sale. The previous one, if it was
-      // committed, stays on the platform in `tendering` with no receipt number
-      // — a record of an order that was rung up and not paid for. Voiding it is
-      // S2-11.
-      ids = {
-        saleId: newId(),
-        actionId: newId(),
-        occurredAt: new Date().toISOString(),
-        signature,
-      };
-      committedRef.current = null;
-    }
+    // The same cart keeps its number — a retry has to be the same sale, and a
+    // burnt key takes a new number while keeping the press, so
+    // `sale_action_unique` still refuses a second sale if the first landed. A
+    // different cart is a different sale (`decideIds`).
+    const ids = decideIds(signature, input.preferSaleId);
     renewKeyRef.current = false;
     saleRef.current = ids;
+    sentRef.current.add(ids.saleId);
 
     const epoch = epochRef.current;
     const attempt = ++attemptsRef.current;
@@ -329,7 +401,26 @@ export function useSaleWriter(): SaleWriter {
       if (inFlightRef.current?.promise === promise) inFlightRef.current = null;
     });
     return promise;
-  }, []);
+  }, [decideIds]);
+
+  const prepare = useCallback(
+    (input: SaleWriteInput): string => {
+      const signature = signatureOf(input);
+      // Already on the platform, or already going out: that sale's id.
+      const held = committedRef.current;
+      if (held && saleRef.current?.signature === signature) return held.id;
+      const inFlight = inFlightRef.current;
+      if (inFlight && inFlight.signature === signature && saleRef.current) {
+        return saleRef.current.saleId;
+      }
+      // Decided now and kept: `commit` finds this cart's ids and uses them.
+      const ids = decideIds(signature, input.preferSaleId);
+      renewKeyRef.current = false;
+      saleRef.current = ids;
+      return ids.saleId;
+    },
+    [decideIds],
+  );
 
   const finalise = useCallback(async (tender: SaleTenderPayload): Promise<SaleWriteOutcome> => {
     const ids = saleRef.current;
@@ -393,6 +484,42 @@ export function useSaleWriter(): SaleWriter {
     }
   }, []);
 
+  const cancel = useCallback(async (reason: string): Promise<SaleCancelOutcome> => {
+    const inFlight = inFlightRef.current;
+    if (inFlight) await inFlight.promise;
+    const onScreen = committedRef.current;
+    if (onScreen?.status === 'finalised') {
+      // Known closed: said in the platform's words for it, without asking.
+      return {
+        ok: false,
+        code: 'SALE_FINALISED',
+        message: 'This sale is finalised — a closed sale is refunded, not voided',
+        closed: true,
+      };
+    }
+    // The sale on screen last, so a refusal about it is the one left showing.
+    const rungUp = [...supersededRef.current.values(), ...(onScreen ? [onScreen] : [])].filter(
+      (s) => s.status !== 'voided',
+    );
+    if (rungUp.length === 0) return { ok: true, voided: false };
+    for (const s of rungUp) {
+      try {
+        const answer = await salesApi.voidSale(s.id, reason);
+        if (committedRef.current?.id === s.id) committedRef.current = answer.sale;
+        supersededRef.current.delete(s.id);
+      } catch (err) {
+        const code = err instanceof ApiError ? err.code : 'CONNECTION';
+        return {
+          ok: false,
+          code,
+          message: messageOf(err),
+          closed: code === 'SALE_FINALISED' && s.id === onScreen?.id,
+        };
+      }
+    }
+    return { ok: true, voided: true };
+  }, []);
+
   const declareUnwritten = useCallback((reason: string): string => {
     const ids =
       saleRef.current ??
@@ -410,7 +537,9 @@ export function useSaleWriter(): SaleWriter {
   return {
     state,
     commit,
+    prepare,
     finalise,
+    cancel,
     declareUnwritten,
     reset,
     saleId: saleRef.current?.saleId ?? null,

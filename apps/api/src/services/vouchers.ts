@@ -20,6 +20,7 @@ import {
 import {
   BOOTH_CODE_ALPHABET,
   BOOTH_CODE_LENGTH,
+  boothStaffCode,
   isLegacyBoothCode,
   isoDateInTz,
   newId,
@@ -623,6 +624,28 @@ export interface VoucherView {
    * says: spec §8 — a printed slip is never trusted offline. See `refuseOffline`.
    */
   redeemableOffline: boolean;
+  /**
+   * Who was signed in at the booth when it printed — the Staff line of the
+   * slip, so the counter can match the paper in the guest's hand: the name the
+   * slip prints (the employee's nickname, else their name; null for an account
+   * with no employee) and the staff code beside it (`boothStaffCode`, derived
+   * from the account id exactly as the booth derived it). Null when the spin
+   * was unattributed — nobody signed in, which a booth allows so that a login
+   * problem never stops the wheel (`voucher.issued_by_account_id`).
+   */
+  issuedBy: { name: string | null; code: string } | null;
+}
+
+/** The Staff line of the slip, from the account the booth recorded. */
+async function issuedByOf(db: Exec, accountId: string | null): Promise<VoucherView['issuedBy']> {
+  if (!accountId) return null;
+  const [row] = await db
+    .select({ name: employee.name, nickname: employee.nickname })
+    .from(account)
+    .leftJoin(employee, eq(employee.id, account.employeeId))
+    .where(eq(account.id, accountId))
+    .limit(1);
+  return { name: row?.nickname ?? row?.name ?? null, code: boothStaffCode(accountId) };
 }
 
 async function viewOf(
@@ -676,6 +699,7 @@ async function viewOf(
     legacyFormat,
     hold,
     redeemableOffline: redeemableOffline(v, def),
+    issuedBy: await issuedByOf(db, v.issuedByAccountId),
   };
 }
 

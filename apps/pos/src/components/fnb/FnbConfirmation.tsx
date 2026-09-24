@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { FnbOrder } from '@/types';
 import { buildPrepTickets, describeModifiers } from '@/lib/fnb';
 import { getPrintTemplate } from '@/mockApi';
@@ -40,6 +41,11 @@ interface FnbConfirmationProps {
    * Defaults to the bounded iPad panel layout.
    */
   flowLayout?: boolean;
+  /**
+   * S2-10b — one line under the order's number, for what the payment also did:
+   * the Lucky Wheel voucher it used up (`components/till/RedeemVoucher`).
+   */
+  note?: ReactNode;
 }
 
 export function FnbConfirmation({
@@ -48,6 +54,7 @@ export function FnbConfirmation({
   onNewOrder,
   receiptNumber = null,
   flowLayout = false,
+  note,
 }: FnbConfirmationProps) {
   const { payment } = order;
   const bounded = !flowLayout;
@@ -88,6 +95,7 @@ export function FnbConfirmation({
               Receipt {receiptNumber}
             </p>
           )}
+          {note && <div className="mt-2">{note}</div>}
         </div>
 
         <Card className="p-4 mb-4 shrink-0 flex items-center justify-between bg-primary/5 border-primary/30">

@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { isLegacyBoothCode, normaliseBoothCode, verifyBoothCode } from '@oto/shared';
+
 import type { StationScanMessage } from './contract';
 import type { BoxStore, StationEventSource } from './store';
 import { silentLog, type AgentLog } from './transport';
@@ -316,10 +318,91 @@ export function productBarcodeHandler(lookup: ProductBarcodeLookup): ScanHandler
   };
 }
 
+// --- The Lucky Wheel voucher code (S2-10b, SCRUM-207) -----------------------
+
+/**
+ * The name the voucher handler goes by on the tape, in the Box log drawer and
+ * on the station channel. The tills read it to know a scan is a voucher
+ * (`apps/pos/src/lib/scanChannel.ts`).
+ */
+export const VOUCHER_CODE_HANDLER = 'voucher';
+
+/**
+ * Is this string a Lucky Wheel voucher code, by its shape?
+ *
+ * A booth has printed two kinds, and both are claimed:
+ *   - eleven characters whose check character is right (`verifyBoothCode`,
+ *     ISO/IEC 7064 MOD 37-2) — every code a box mints today;
+ *   - ten characters of the shape every booth printed before the check existed
+ *     (`isLegacyBoothCode`) — still in families' hands, and looked up as they
+ *     are.
+ * An eleven-character code with a WRONG check is not claimed: no booth printed
+ * it, so it is a misread, and it resolves `unknown` like any other string.
+ *
+ * Read the way the platform reads one (`normaliseBoothCode`): upper case, with
+ * spaces and dashes dropped, so a code typed by hand into the Console's
+ * simulator and the same code read off the slip's QR are one code.
+ *
+ * DIGITS ALONE ARE NOT A VOUCHER. A retail barcode is digits only, eight to
+ * fourteen of them (`isProductBarcode`), and a ten- or eleven-digit string can
+ * pass the booth shape as well — the booth alphabet keeps 2 to 9. Such a string
+ * is left to the shop rather than sent to a till as a voucher, where a
+ * bottle's barcode would be counted as a wrong code against the till's
+ * guessing limit. A printed voucher is never digits alone in practice — the
+ * park's booth prefixes carry a letter (`B1`) — and one that was would still
+ * go in through the till's Redeem voucher entry.
+ *
+ * A shape test and nothing more: the box validates nothing (spec §8).
+ */
+export function isBoothVoucherCode(code: string): boolean {
+  const normalised = normaliseBoothCode(code);
+  if (/^[0-9]+$/.test(normalised)) return false;
+  return verifyBoothCode(normalised).ok || isLegacyBoothCode(normalised);
+}
+
+/**
+ * The handler: a voucher code read at the counter goes to the till as it is.
+ *
+ * THE BOX DECIDES NOTHING ABOUT IT. Whether the voucher exists, has been used,
+ * has expired or is on another till's cart is answered by the platform alone,
+ * at the till's request (`GET /vouchers/lookup`) — spec §8, "server validation
+ * only", and the owner's rule that a printed slip is never trusted offline. So
+ * the answer is always `handled`, never `refused`: this says what the string
+ * IS, not whether it is any good.
+ *
+ * THE CODE TRAVELS, and has to: it is the one thing the till must ask the cloud
+ * about. A voucher code is not a credential the way a band code is — a band
+ * code opens a gate with no network, a voucher code opens nothing on its own:
+ * it is redeemed by a signed-in till, online, once, under a guessing limit. It
+ * rides the station channel to the staff screens (`StationScanMessage.detail`)
+ * and never the tape, which keeps the fingerprint as it does for every scan.
+ */
+export function voucherCodeHandler(): ScanHandler {
+  return {
+    name: VOUCHER_CODE_HANDLER,
+    kind: 'voucher',
+    matches: isBoothVoucherCode,
+    handle(ctx) {
+      return { outcome: 'handled', detail: { code: normaliseBoothCode(ctx.code) } };
+    },
+  };
+}
+
 export class ScanRouter {
   private readonly options: ScanRouterOptions;
   private readonly handlers: ScanHandler[] = [];
   private readonly log: AgentLog;
+  /**
+   * S2-10b — the voucher code is claimed by the router itself, ahead of every
+   * registered handler, in every router: the agent's on a box, and the one the
+   * api builds for a station whose box runs elsewhere.
+   *
+   * Its shape is the platform's own — a box mints these codes (`booth.ts`) —
+   * so no ticket registers a meaning for it and no broad matcher registered
+   * later may take one. `registered()` lists it first, because that is where
+   * it matches.
+   */
+  private readonly voucher = voucherCodeHandler();
 
   constructor(options: ScanRouterOptions) {
     this.options = options;
@@ -340,9 +423,15 @@ export class ScanRouter {
     };
   }
 
-  /** Registered handler names, in match order. What the Box log drawer lists. */
+  /**
+   * The handlers a code can reach, by name, in match order — what the Box log
+   * drawer and the `/scanning` answer list. The router's own voucher handler
+   * (`voucher` above) is first: it is always on and claims its shape before
+   * any registration, so a list without it would describe a router that does
+   * not exist. The tickets' registrations follow in the order they were made.
+   */
   registered(): string[] {
-    return this.handlers.map((h) => h.name);
+    return [this.voucher.name, ...this.handlers.map((h) => h.name)];
   }
 
   /**
@@ -353,9 +442,13 @@ export class ScanRouter {
    * shape for those here would be inventing a format the code that mints them
    * would then have to match. A retail barcode is the exception and is matched
    * (`isProductBarcode`), because its shape was decided by GS1 long before
-   * this park existed.
+   * this park existed — and so is a Lucky Wheel voucher code, whose shape the
+   * platform decided and every booth mints (`isBoothVoucherCode`, S2-10b).
    */
   classify(code: string): { kind: ScanCodeKind; handler: ScanHandler | null } {
+    // The router's own first: see `voucher`. A shape test on a string, total
+    // and synchronous, so it needs none of the guarding a ticket's matcher gets.
+    if (this.voucher.matches(code)) return { kind: this.voucher.kind, handler: this.voucher };
     for (const handler of this.handlers) {
       let claimed = false;
       try {

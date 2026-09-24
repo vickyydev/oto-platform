@@ -110,6 +110,13 @@ interface CustomerDisplayProps {
     ReturnType<typeof computeTotals>,
     'manualAmounts' | 'discountAmount' | 'total' | 'taxBreakdown'
   >;
+  /**
+   * S2-10b — the Lucky Wheel voucher on this cart, by the prize the family won.
+   * The code-discount row names it ("150 THB Voucher −฿150", in Thai where the
+   * prize has a Thai name) instead of a generic "Discount code": a voucher
+   * never rides beside a promo code, so with one on the cart that row is its.
+   */
+  voucherPrize?: { nameEn: string; nameTh: string | null } | null;
 }
 
 function ChargeBanner({ target }: { target: ChargeTarget }) {
@@ -176,6 +183,7 @@ export function CustomerDisplay({
   contactChannel,
   onContactChannelChange,
   totals,
+  voucherPrize,
 }: CustomerDisplayProps) {
   const { t, lang } = useLanguage();
   const displayName = nickname.trim() || member?.nickname || '';
@@ -480,7 +488,11 @@ export function CustomerDisplay({
               })}
               {discountAmount > 0 && (
                 <div className="flex items-center justify-between mb-2 text-(--cd-success)">
-                  <span className="text-lg">{t('till.order.discountCode')}</span>
+                  <span className="text-lg">
+                    {voucherPrize
+                      ? (lang === 'th' && voucherPrize.nameTh) || voucherPrize.nameEn
+                      : t('till.order.discountCode')}
+                  </span>
                   <span className="text-lg font-bold tabular-nums">−฿{discountAmount}</span>
                 </div>
               )}

@@ -24,7 +24,9 @@ import { useEffect, useRef } from 'react';
 // travels — the tape keeps a fingerprint of it. For a product the answer names
 // the item and the size when the code was on one, and carries the catalogue
 // SKU, which for a size's barcode is the code itself: a product barcode is
-// printed on the product and is no secret.
+// printed on the product and is no secret. A Lucky Wheel voucher's code
+// travels too (S2-10b): it is the one thing the till must ask the platform
+// about, and it opens nothing on its own — see `readVoucherScan`.
 
 /** One scan as the channel carries it — `StationScanMessage` in `@oto/box-agent`. */
 export interface StationScanEvent {
@@ -102,6 +104,25 @@ export function readProductScan(event: StationScanEvent): ProductScan {
       quantity: typeof add.quantity === 'number' && add.quantity > 0 ? add.quantity : 1,
     },
   };
+}
+
+/** The name the box's voucher handler goes by (`VOUCHER_CODE_HANDLER` in `@oto/box-agent`). */
+export const VOUCHER_CODE_HANDLER = 'voucher';
+
+/**
+ * Read a scan as the tills read it (S2-10b, SCRUM-207): the code of a Lucky
+ * Wheel voucher, or null when the scan is some other screen's.
+ *
+ * The box classes a code by its shape and validates nothing — whether the
+ * voucher exists, is used or has expired is the platform's answer, asked by
+ * the till (`lib/tillVoucher.ts`). So there is one outcome to read here:
+ * `handled` by the voucher handler, with the code in `detail.code`.
+ */
+export function readVoucherScan(event: StationScanEvent): string | null {
+  if (event.codeKind !== 'voucher') return null;
+  if (event.outcome !== 'handled' || event.handler !== VOUCHER_CODE_HANDLER) return null;
+  const code = event.detail?.code;
+  return typeof code === 'string' && code.length > 0 ? code : null;
 }
 
 /**

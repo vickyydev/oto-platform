@@ -79,6 +79,18 @@ interface OrderSummaryProps {
    * gone by the time staff look up.
    */
   tierClaimRefusal?: string | null;
+  /**
+   * S2-10b — THE LUCKY WHEEL VOUCHER, in two places the panel already has.
+   *
+   * `voucherLine` is the item a free-item voucher puts on the bill, drawn with
+   * the cart's lines (the prototype's free-item row); `voucher` is the Redeem
+   * voucher entry with the held voucher's card and any refusal, drawn under the
+   * promo code box. Both come from the till (`components/till/RedeemVoucher`),
+   * which owns what they say; absent on every screen that does not redeem
+   * vouchers, which is every caller but the ticket till.
+   */
+  voucherLine?: ReactNode;
+  voucher?: ReactNode;
 }
 
 function ManualDiscountRow({
@@ -200,7 +212,7 @@ function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: numb
   );
 }
 
-export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal }: OrderSummaryProps) {
+export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal, voucherLine, voucher }: OrderSummaryProps) {
   const [promoInput, setPromoInput] = useState('');
 
   const { subtotal, scannedDiscounts, manualAmounts, total, taxBreakdown } =
@@ -314,7 +326,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
       )}
 
       <ScrollArea className="flex-1 -mx-6 px-6">
-        {lines.length === 0 ? (
+        {lines.length === 0 && !voucherLine ? (
           <div className="h-full flex flex-col items-center justify-center text-muted-foreground pt-20">
             <Ticket className="w-16 h-16 mb-4 opacity-20" />
             <p>No items added yet</p>
@@ -539,6 +551,8 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
               </div>
             ))}
 
+            {voucherLine}
+
             {nannyGroups.length > 0 && (
               <div className="mt-2 pt-3 border-t space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -639,6 +653,8 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
             )}
           </div>
         )}
+
+        {voucher}
 
         {orderDiscounts.map((md) => {
           const amt = manualAmounts[md.id] ?? 0;

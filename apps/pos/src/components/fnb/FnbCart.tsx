@@ -67,6 +67,16 @@ interface FnbCartProps {
   onApplyPromoCode?: (code: string) => void;
   onRemovePromoCode?: (code: string) => void;
   onScanStaffBenefit?: () => void;
+  /**
+   * S2-10b — THE LUCKY WHEEL VOUCHER, in the till's own two places
+   * (`components/till/OrderSummary.tsx`): `voucherLine` is the item a free-item
+   * voucher puts on the bill, drawn with the order's rows, and `voucher` is the
+   * Redeem voucher entry with the held voucher's card, drawn under the promo
+   * code entry. An order holding only a voucher's Kids Pizza is not empty.
+   * Absent on every screen that does not redeem vouchers.
+   */
+  voucherLine?: ReactNode;
+  voucher?: ReactNode;
 }
 
 function ManualDiscountRow({
@@ -131,8 +141,10 @@ export function FnbCart({
   onApplyPromoCode,
   onRemovePromoCode,
   onScanStaffBenefit,
+  voucherLine,
+  voucher,
 }: FnbCartProps) {
-  const isEmpty = lines.length === 0;
+  const isEmpty = lines.length === 0 && !voucherLine;
   const chargeBlocked = Boolean(chargeBlockedReason);
   const [showLedger, setShowLedger] = useState(false);
   const ledger = wristband?.ledger;
@@ -251,7 +263,11 @@ export function FnbCart({
         <div className="flex items-center gap-2 font-bold">
           <ShoppingCart className="w-5 h-5" />
           Order
-          {!isEmpty && <span className="text-muted-foreground font-medium">({lines.length})</span>}
+          {!isEmpty && (
+            <span className="text-muted-foreground font-medium">
+              ({lines.length + (voucherLine ? 1 : 0)})
+            </span>
+          )}
         </div>
         {!isEmpty && (
           <button
@@ -361,6 +377,7 @@ export function FnbCart({
                 </div>
               );
             })}
+            {voucherLine}
           </div>
         </ScrollArea>
       )}
@@ -388,6 +405,8 @@ export function FnbCart({
             />
           </div>
         )}
+
+        {voucher && <div className="mb-3">{voucher}</div>}
 
         {orderDiscounts.map((md) => {
           const amt = manualAmounts[md.id] ?? 0;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Sale, CreditGrant } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -89,6 +89,11 @@ interface StepConfirmationProps {
    * Left out, this screen asks the platform for it once.
    */
   saleNumber?: SaleNumber;
+  /**
+   * S2-10b — one line under the amount, for what the payment also did: the
+   * Lucky Wheel voucher it used up (`components/till/RedeemVoucher`).
+   */
+  note?: ReactNode;
 }
 
 function CreditGrantRow({ voucher: grant, index }: { voucher: CreditGrant; index: number }) {
@@ -120,7 +125,7 @@ function CreditGrantRow({ voucher: grant, index }: { voucher: CreditGrant; index
   );
 }
 
-export function StepConfirmation({ sale, onNewSale, saleNumber }: StepConfirmationProps) {
+export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConfirmationProps) {
   const resolvedNumber = useSaleNumber(sale.id, saleNumber);
   const numberLabel = saleNumberLabel(resolvedNumber);
   // Drop-off / nanny children's bands are issued through the door check-in choice
@@ -173,6 +178,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber }: StepConfirmati
             {taxRows.map((r) => `${r.label} ฿${roundTHB(r.amount)}`).join(' · ')}
           </p>
         )}
+        {note && <div className="mt-2">{note}</div>}
         {receiptTpl?.footerText && (
           <p className="text-muted-foreground/70 mt-1 text-xs italic">
             {receiptTpl.footerText}

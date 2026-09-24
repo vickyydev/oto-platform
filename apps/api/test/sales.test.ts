@@ -1,6 +1,7 @@
 import { hash } from '@node-rs/argon2';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { randomInt } from 'node:crypto';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,8 +22,18 @@ import {
   saleLine,
   station,
   ticketPackage,
+  voucher,
+  voucherDefinition,
+  voucherRedemption,
 } from '@oto/db';
-import { businessDate, newId, normalizePhone, parseDayStart, PRICING_ENGINE_VERSION } from '@oto/shared';
+import {
+  businessDate,
+  mintBoothCode,
+  newId,
+  normalizePhone,
+  parseDayStart,
+  PRICING_ENGINE_VERSION,
+} from '@oto/shared';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
@@ -1327,6 +1338,208 @@ describe('promo codes', () => {
     expect(body.rejectedPromoCodes[0].code).toBe('KIDS23');
     expect(body.totals.promoDiscountSatang).toBe(0);
     expect(body.totals.grossSatang).toBe(body.totals.subtotalSatang);
+  });
+});
+
+/**
+ * S2-10b (SCRUM-207) — A CART OF ONE VOUCHER'S FREE ITEM.
+ *
+ * A guest who brings only the slip from the wheel — a Kids Pizza, a bracelet
+ * workshop — is a cart with no line on it: the till sends none, because the
+ * platform puts the free item on the bill from the voucher's definition. The
+ * route used to refuse that cart as empty before the service could read the
+ * code, so the one voucher that needs no ticket could not be redeemed alone.
+ *
+ * Such a sale owes ฿0, and the two tills that redeem vouchers no longer close
+ * it at Pay: it is rung up like any other sale and closed by the confirm press
+ * (`POST /sales/:id/finalise`, which records no tender when nothing is owed),
+ * so the payment screen's Cancel can still void it and give the voucher back.
+ */
+describe('a cart of one voucher’s free item', () => {
+  /** Reception, standing at Reception Till 1: the voucher routes act at the session's till. */
+  let till: string;
+  let pizzaId: string;
+  let definitionId: string;
+
+  beforeAll(async () => {
+    till = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const picked = await ctx.app.inject({
+      method: 'PUT',
+      url: '/me/session/station',
+      headers: { cookie: till },
+      payload: { stationId },
+    });
+    expect(picked.statusCode, picked.body).toBe(200);
+    const [pizza] = await ctx.db
+      .select()
+      .from(product)
+      .where(and(eq(product.operatorId, operatorId), eq(product.code, 'FB-PIZZA')));
+    pizzaId = pizza!.id;
+    definitionId = newId();
+    await ctx.db.insert(voucherDefinition).values({
+      id: definitionId,
+      operatorId,
+      code: `test-free-${definitionId}`,
+      nameEn: 'Kids Pizza',
+      kind: 'free_item',
+      valueType: 'item',
+      productId: pizzaId,
+    });
+  });
+
+  /** A Kids Pizza voucher as the booth sync files one, held for a fresh cart at the till. */
+  async function heldPizza(): Promise<{ voucherId: string; code: string; saleId: string }> {
+    const voucherId = newId();
+    const code = mintBoothCode('B1', (max) => randomInt(max));
+    await ctx.db.insert(voucher).values({
+      id: voucherId,
+      operatorId,
+      branchId,
+      voucherDefinitionId: definitionId,
+      code,
+      source: 'booth',
+      status: 'issued',
+      issuedAt: new Date(),
+      expiresAt: new Date(Date.now() + 14 * 86_400_000),
+    });
+    const saleId = newId();
+    const held = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/vouchers`,
+      headers: { cookie: till },
+      payload: { code },
+    });
+    expect(held.statusCode, held.body).toBe(200);
+    return { voucherId, code, saleId };
+  }
+
+  /** The code alone: no ticket line and no item line. */
+  const ringUp = (saleId: string, code: string, finalise: boolean) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie: till },
+      payload: { id: saleId, stationId, lines: [], items: [], promoCodes: [code], finalise },
+    });
+
+  /** The voucher's ledger, oldest first, as `kind` or `kind/reason`. */
+  const ledgerOf = async (voucherId: string): Promise<string[]> =>
+    (
+      await ctx.db
+        .select({ kind: voucherRedemption.kind, reason: voucherRedemption.reason })
+        .from(voucherRedemption)
+        .where(eq(voucherRedemption.voucherId, voucherId))
+        .orderBy(voucherRedemption.createdAt, voucherRedemption.id)
+    ).map((r) => (r.reason ? `${r.kind}/${r.reason}` : r.kind));
+
+  it('commits, closes at ฿0 and uses the voucher up; codes that add nothing are still an empty cart', async () => {
+    const { voucherId, code, saleId } = await heldPizza();
+
+    const rung = await ringUp(saleId, code, true);
+    expect(rung.statusCode, rung.body).toBe(200);
+    expect(rung.json().finalised).toBe(true);
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    expect(row).toMatchObject({ status: 'finalised', grossSatang: 0 });
+    const lines = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({
+      kind: 'promo_item',
+      productId: pizzaId,
+      cartLineId: voucherId,
+      grossSatang: 0,
+    });
+    const [used] = await ctx.db.select().from(voucher).where(eq(voucher.id, voucherId));
+    expect(used).toMatchObject({ status: 'redeemed', saleId });
+
+    // A code that puts nothing on the bill is still an empty cart — refused by
+    // the service now rather than the route, in the same words.
+    const noLine = await commit({ lines: [], items: [], promoCodes: ['KIDS23'] });
+    expect(noLine.statusCode).toBe(400);
+    expect(noLine.json().error.message).toBe('The cart is empty');
+    // And a cart of nothing at all is refused where it always was.
+    const nothing = await commit({ lines: [], items: [] });
+    expect(nothing.statusCode).toBe(400);
+    expect(nothing.json().error.message).toBe('The cart is empty');
+  });
+
+  it('rung up at ฿0 without closing, it keeps the voucher until the confirm press closes the sale', async () => {
+    const { voucherId, code, saleId } = await heldPizza();
+
+    // Pay: the payment screen opens on a sale the platform holds, unclosed.
+    const rung = await ringUp(saleId, code, false);
+    expect(rung.statusCode, rung.body).toBe(200);
+    expect(rung.json().finalised).toBe(false);
+    const [open] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    expect(open).toMatchObject({ status: 'tendering', grossSatang: 0, receiptNumber: null });
+    const [kept] = await ctx.db.select().from(voucher).where(eq(voucher.id, voucherId));
+    expect(kept).toMatchObject({ status: 'issued', heldSaleId: saleId, saleId: null });
+    expect(await ledgerOf(voucherId)).toEqual(['held', 'applied']);
+
+    // Confirm: the till's tender names ฿0. Nothing is owed, so no payment is
+    // recorded; the close numbers the receipt and uses the voucher up.
+    const tender = { method: 'cash', kind: 'cash', amountSatang: 0, tenderedSatang: 0, changeSatang: 0 };
+    const closed = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/finalise`,
+      headers: { cookie: till },
+      payload: { actionId: newId(), ...tender, tender },
+    });
+    expect(closed.statusCode, closed.body).toBe(200);
+    expect(closed.json()).toMatchObject({ finalised: true, redeemedVoucherIds: [voucherId] });
+    const [done] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    expect(done!.status).toBe('finalised');
+    expect(done!.receiptNumber).toBeTruthy();
+    const attempts = await ctx.db
+      .select()
+      .from(paymentAttempt)
+      .where(eq(paymentAttempt.saleId, saleId));
+    expect(attempts).toEqual([]);
+    const [used] = await ctx.db.select().from(voucher).where(eq(voucher.id, voucherId));
+    expect(used).toMatchObject({ status: 'redeemed', saleId, heldSaleId: null });
+    expect(await ledgerOf(voucherId)).toEqual(['held', 'applied', 'consumed']);
+  });
+
+  it('rung up at ฿0 without closing, it is voided by the till’s Cancel and the voucher is free again', async () => {
+    const { voucherId, code, saleId } = await heldPizza();
+    expect((await ringUp(saleId, code, false)).statusCode).toBe(200);
+
+    const voided = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/void`,
+      headers: { cookie: till },
+      payload: { reason: 'Cancelled at the till' },
+    });
+    expect(voided.statusCode, voided.body).toBe(200);
+    expect(voided.json().releasedVoucherIds).toEqual([voucherId]);
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    expect(row).toMatchObject({
+      status: 'voided',
+      voidReason: 'Cancelled at the till',
+      receiptNumber: null,
+    });
+    const [free] = await ctx.db.select().from(voucher).where(eq(voucher.id, voucherId));
+    expect(free).toMatchObject({ status: 'issued', heldSaleId: null, saleId: null });
+    expect(await ledgerOf(voucherId)).toEqual(['held', 'applied', 'released/sale_voided']);
+
+    // Free for the next cart: held again, rung up again, closed at the confirm.
+    const nextSale = newId();
+    const again = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${nextSale}/vouchers`,
+      headers: { cookie: till },
+      payload: { code },
+    });
+    expect(again.statusCode, again.body).toBe(200);
+    expect((await ringUp(nextSale, code, false)).statusCode).toBe(200);
+    const closed = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${nextSale}/finalise`,
+      headers: { cookie: till },
+      payload: {},
+    });
+    expect(closed.statusCode, closed.body).toBe(200);
+    const [used] = await ctx.db.select().from(voucher).where(eq(voucher.id, voucherId));
+    expect(used).toMatchObject({ status: 'redeemed', saleId: nextSale });
   });
 });
 

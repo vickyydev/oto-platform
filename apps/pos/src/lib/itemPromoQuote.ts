@@ -53,6 +53,7 @@ function signatureOf(
   promos: readonly Discount[],
   identity: ItemCartIdentity | null,
   mode: string,
+  promoCodes: readonly string[] = [],
 ): string {
   const linePart = lines
     .map((line) => {
@@ -70,8 +71,12 @@ function signatureOf(
   const manualPart = manualDiscounts.map((m) => `${m.id}:${m.type}:${m.value}:${m.scope}`).join('|');
   const promoPart = promos.map((p) => `${p.code}:${p.type}:${p.value}`).join('|');
   const who = identity ? `${identity.branchId}/${identity.stationId}/${identity.channel}` : 'none';
-  return `${mode}#${who}#${linePart}#${manualPart}#${promoPart}`;
+  // S2-10b — a voucher put on or taken off moves the price, so it re-asks.
+  return `${mode}#${who}#${linePart}#${manualPart}#${promoPart}#${promoCodes.join('|')}`;
 }
+
+/** One empty list, so an order with no voucher does not hand a new array to every render. */
+const NO_CODES: readonly string[] = [];
 
 /** How long the station waits after the last change before asking the platform. */
 const QUOTE_DEBOUNCE_MS = 200;
@@ -85,11 +90,18 @@ export function useItemCartQuoteWithPromos(args: {
   identity: ItemCartIdentity | null;
   /** Stop asking once the order is committed — the sale's own figures stand then. */
   enabled?: boolean;
+  /**
+   * S2-10b — the voucher held for this order, by its code. The platform prices
+   * it and puts a free item's line on the bill itself, so an order whose only
+   * line is the voucher's Kids Pizza is still asked about.
+   */
+  promoCodes?: readonly string[];
 }): CartQuoteState {
   const { kind, lines, manualDiscounts, promos, identity } = args;
+  const promoCodes = args.promoCodes ?? NO_CODES;
   const enabled = args.enabled ?? true;
   const rate = todayRateMode();
-  const signature = signatureOf(lines, manualDiscounts, promos, identity, rate.mode);
+  const signature = signatureOf(lines, manualDiscounts, promos, identity, rate.mode, promoCodes);
 
   const local = useMemo(
     (): CartQuote =>
@@ -110,7 +122,7 @@ export function useItemCartQuoteWithPromos(args: {
   const seqRef = useRef(0);
 
   useEffect(() => {
-    if (!enabled || !identity || lines.length === 0) {
+    if (!enabled || !identity || (lines.length === 0 && promoCodes.length === 0)) {
       setPending(false);
       return;
     }
@@ -122,6 +134,7 @@ export function useItemCartQuoteWithPromos(args: {
         lines: lines as readonly FnbOrderLine[] & readonly MerchOrderLine[],
         manualDiscounts,
         promos,
+        promoCodes,
         identity,
       })
         .then((quote) => {

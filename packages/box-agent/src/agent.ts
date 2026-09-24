@@ -55,7 +55,14 @@ import {
   type TerminalProgress,
   type TerminalResult,
 } from './terminal/index';
-import { BOOTH_STAFF_VERIFY_ERRORS, BOOTH_STAFF_VERIFY_PATH, PrintTemplateSchema } from '@oto/shared';
+import {
+  BOOTH_STAFF_VERIFY_ERRORS,
+  BOOTH_STAFF_VERIFY_PATH,
+  PrintTemplateSchema,
+  isLegacyBoothCode,
+  normaliseBoothCode,
+  verifyBoothCode,
+} from '@oto/shared';
 import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@oto/shared';
 
 /**
@@ -412,6 +419,63 @@ export interface SaleQueue {
   recordTender(request: OfflineTenderRequest): Promise<OfflineSaleAnswer>;
   /** Where this station's receipt numbering stands, as the box last heard. */
   receiptMark(stationId: string): Promise<ReceiptMark | null>;
+}
+
+/**
+ * S2-10b (SCRUM-207) — THE WORDS AN OFFLINE SALE CARRYING A VOUCHER IS REFUSED
+ * WITH, exactly as the till shows them.
+ */
+export const OFFLINE_VOUCHER_REFUSAL =
+  'Vouchers need the internet — take this one when the connection is back';
+
+/** A sale the box will not take offline, with a code the till can tell apart. */
+export class OfflineSaleRefused extends Error {
+  readonly code: 'VOUCHER_NEEDS_INTERNET';
+
+  constructor(message: string, code: 'VOUCHER_NEEDS_INTERNET') {
+    super(message);
+    this.name = 'OfflineSaleRefused';
+    this.code = code;
+  }
+}
+
+/**
+ * The Lucky Wheel voucher an offline sale's cart names, or null — the one
+ * question the box asks of a cart it otherwise never reads
+ * (`OfflineSaleFact.cart`).
+ *
+ * WHY THE BOX ASKS IT. A voucher is redeemed online only (spec §8; the owner,
+ * 24 September): it is held by the platform for one cart and used up in the
+ * transaction that closes that sale, and a sale taken offline reaches the
+ * platform later through the replay, which prices the cart WITHOUT its
+ * `promoCodes`. A voucher riding an offline sale would therefore be honoured
+ * at the counter on the strength of the slip alone, never used up, and the
+ * sale's price would disagree with the platform's when it arrived. So the box
+ * refuses the sale before it numbers or queues anything, whatever the till
+ * did or did not check first.
+ *
+ * WHERE A VOUCHER RIDES. A till names one by putting its code in the cart's
+ * `promoCodes` — flat, or under `cart` as the till nests it — and nowhere
+ * else: the platform refuses a voucher described in `promos`
+ * (VOUCHER_CLAIM_REFUSED). `promos` is not read here on purpose. The park's own
+ * discount codes ride there and some have a booth code's shape (SONGKRAN25,
+ * MEMBERDAY25), which only the platform's discount catalogue can tell apart.
+ *
+ * Any code of a booth code's shape counts — eleven characters with a right
+ * check, or the ten-character shape printed before the check — digits alone
+ * included: refusing a sale over a code that turns out to be nobody's voucher
+ * costs a retype, and a voucher taken offline costs the voucher.
+ */
+export function voucherOnOfflineCart(cart: Record<string, unknown>): string | null {
+  const codesOf = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter((code): code is string => typeof code === 'string') : [];
+  const nested =
+    cart.cart && typeof cart.cart === 'object' ? (cart.cart as Record<string, unknown>) : null;
+  for (const raw of [...codesOf(cart.promoCodes), ...codesOf(nested?.promoCodes)]) {
+    const code = normaliseBoothCode(raw);
+    if (verifyBoothCode(code).ok || isLegacyBoothCode(code)) return code;
+  }
+  return null;
 }
 
 export interface OfflineSaleRequest extends Omit<OfflineSaleFact, 'saleId' | 'receipt'> {
@@ -1823,6 +1887,18 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     if (!store || !queue || !boxId) return null;
     return {
       async record(request) {
+        /**
+         * S2-10b — A VOUCHER NEVER RIDES AN OFFLINE SALE (`voucherOnOfflineCart`).
+         * Refused first: before a receipt number is minted, so the refused
+         * sale spends no number in the station's series, and before anything
+         * is queued or the drawer opens. The code itself is not logged.
+         */
+        if (voucherOnOfflineCart(request.cart)) {
+          note('warn', 'an offline sale carrying a voucher was refused', {
+            stationId: request.stationId,
+          });
+          throw new OfflineSaleRefused(OFFLINE_VOUCHER_REFUSAL, 'VOUCHER_NEEDS_INTERNET');
+        }
         const saleId = request.saleId ?? uuidv7();
         const receipt = await mintReceipt(boxId, request.stationId);
         /**

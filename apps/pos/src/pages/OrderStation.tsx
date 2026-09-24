@@ -24,7 +24,29 @@ import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
 import { computeLineTotal, hasModifiers, modifierSignature } from '@/lib/fnb';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
-import { useSaleWriter } from '@/lib/saleWriter';
+import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
+import { readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
+import { useScannerBurst } from '@/lib/scannerBurst';
+import {
+  CANCELLED_AT_THE_TILL,
+  VOUCHER_AFTER_PAY,
+  VOUCHER_AFTER_SALE,
+  VOUCHER_BEING_PRICED,
+  VOUCHER_NOT_COMBINABLE,
+  looksLikeVoucherCode,
+  useTillVoucher,
+  voucherUnpricedReason,
+  type HeldVoucher,
+} from '@/lib/tillVoucher';
+import { vouchersApi } from '@/api/vouchers';
+import {
+  RedeemVoucherEntry,
+  TillRefusalNotice,
+  VoucherCard,
+  VoucherFreeItemLine,
+  VoucherRefusalCard,
+  VoucherUsedNote,
+} from '@/components/till/RedeemVoucher';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
@@ -94,7 +116,7 @@ let orderCounter = 1;
 let lineCounter = 1;
 
 export default function OrderStation() {
-  const { operator } = useOperator();
+  const { operator, offlineUnlock } = useOperator();
   const { station } = useStation();
   const { branch } = useBranch();
   const [, navigate] = useLocation();
@@ -139,6 +161,24 @@ export default function OrderStation() {
   /** The sale the platform holds for the order on the confirmation screen. */
   const [platformSale, setPlatformSale] = useState<ApiSale | null>(null);
   /**
+   * S2-10b (SCRUM-207) — a Lucky Wheel voucher on this order: the Kids Pizza
+   * the wheel gave away is redeemed here. The same hook and the same rules as
+   * the ticket till (`lib/tillVoucher.ts`): looked up and held by the platform,
+   * priced by the quote, used up when the order is paid, online only.
+   */
+  const stationOffline = (): boolean =>
+    (typeof navigator !== 'undefined' && navigator.onLine === false) || offlineUnlock !== null;
+  const voucher = useTillVoucher({ isOffline: stationOffline });
+  /** The platform's words when throwing the order away could not void the sale it was rung up as. */
+  const [cancelRefusal, setCancelRefusal] = useState<string | null>(null);
+  /** The voucher the last order used up, for its confirmation screen. */
+  const [voucherUsed, setVoucherUsed] = useState<HeldVoucher | null>(null);
+  /** The voucher's code as the order carries it, one stable list per voucher. */
+  const voucherCodes = useMemo(
+    () => (voucher.held ? [voucher.held.code] : []),
+    [voucher.held],
+  );
+  /**
    * Bumped whenever this station starts a new order, so an answer for the
    * previous guest cannot land on the one now at the counter — the same guard
    * `saleEpochRef` is in `pages/Till.tsx`.
@@ -147,7 +187,7 @@ export default function OrderStation() {
 
   // Same reason as the till's (S2-06): a new build must not be swapped in
   // under an order somebody is still taking.
-  const orderOnScreen = cart.length > 0 || completedOrder !== null;
+  const orderOnScreen = cart.length > 0 || completedOrder !== null || voucher.held !== null;
   useEffect(() => {
     setSaleOpen('order-station', orderOnScreen);
     return () => setSaleOpen('order-station', false);
@@ -279,6 +319,8 @@ export default function OrderStation() {
     promos: promoCodes,
     identity: orderIdentity,
     enabled: stage !== 'confirmation',
+    // S2-10b — the held voucher rides by its code; the platform prices it.
+    promoCodes: voucherCodes,
   });
   const { subtotal, total, manualAmounts, taxBreakdown } = order.totals;
 
@@ -307,6 +349,41 @@ export default function OrderStation() {
   const quoteError = order.error;
   const quoteRefusal = quoteError && quoteError.kind === 'refusal' ? quoteError : null;
   const quoteFault = quoteError && quoteError.kind === 'fault' ? quoteError : null;
+
+  /**
+   * S2-10b — the voucher on this order as the platform priced it, and whether
+   * that holds the charge back: an order carrying a voucher is charged only at
+   * the platform's own figure, and not while the platform says the voucher has
+   * nothing to come off here. The reason rides the charge button as its title,
+   * as a refusal's does, and the voucher's card says it in full.
+   */
+  const voucherQuote =
+    voucher.held && order.quote.source === 'platform' ? (order.quote.voucher ?? null) : null;
+  /** Rung up with the voucher: it goes only with a void now, which the X and Clear do. */
+  const voucherRungUp =
+    voucher.held !== null && saleWriter.committed?.id === voucher.held.saleId;
+  /**
+   * Why the platform's figure is missing, when it is: its refusal in its own
+   * words (a lost hold answers VOUCHER_NOT_HELD), and "online only" only when
+   * nothing answered (`voucherUnpricedReason`).
+   */
+  const voucherUnpriced = voucher.held
+    ? voucherUnpricedReason({
+        quote: order.quote,
+        pending: order.pending,
+        error: order.error,
+        offline: stationOffline(),
+      })
+    : null;
+  const voucherChargeBlock = !voucher.held
+    ? null
+    : voucher.busy
+      ? 'Checking the voucher…'
+      : voucherQuote === null
+        ? (voucherUnpriced ?? 'Pricing the voucher…')
+        : !voucherQuote.applicable
+          ? (voucherQuote.reason ?? 'This voucher has nothing to come off on this order')
+          : null;
 
   /**
    * The rows as the panel draws them: the platform's figure against each line
@@ -610,9 +687,21 @@ export default function OrderStation() {
    * same rows, that the platform will price the order with.
    */
   const handleApplyPromoCode = (code: string) => {
+    // S2-10b — no promo code beside a voucher: the platform's own rule, said
+    // here before the code is taken rather than at the charge.
+    if (voucher.held) {
+      setPromoError(VOUCHER_NOT_COMBINABLE);
+      return;
+    }
     const promo = getDiscountByCode(code);
     if (!promo) {
-      setPromoError(`Code "${code.toUpperCase()}" was not found.`);
+      // A Lucky Wheel voucher in the promo box is never taken as a discount
+      // code: its value is the platform's, and it goes on through Redeem voucher.
+      setPromoError(
+        looksLikeVoucherCode(code)
+          ? `"${code.toUpperCase()}" is a Lucky Wheel voucher, not a promo code — use Redeem voucher`
+          : `Code "${code.toUpperCase()}" was not found.`,
+      );
       return;
     }
     // No customer phone is passed: an order at this counter is against a band
@@ -631,6 +720,89 @@ export default function OrderStation() {
     setPromoCodes((prev) => prev.filter((promo) => promo.code !== code));
     setPromoError('');
   };
+
+  /**
+   * S2-10b — A VOUCHER CODE, HOWEVER IT ARRIVED: the box's scanner through the
+   * station channel, a USB scanner typing into this page, or Redeem voucher.
+   * What this counter knows before asking is said here; every other answer is
+   * the platform's (`lib/tillVoucher.ts`).
+   */
+  const redeemVoucher = (raw: string): Promise<boolean> => {
+    const typed = raw.trim().toUpperCase();
+    // One of the park's own discount codes belongs in the promo box: asked
+    // about as a voucher it would count a wrong code against this till.
+    const blockedBy = getDiscountByCode(typed)
+      ? `"${typed}" is a promo code — enter it in the promo code box`
+      : stage === 'payment'
+        ? VOUCHER_AFTER_PAY
+        : promoCodes.length > 0
+          ? VOUCHER_NOT_COMBINABLE
+          : null;
+    return voucher.redeem(typed, blockedBy);
+  };
+
+  /** A scan — from the box, or from a USB scanner on this computer. */
+  const redeemScannedVoucher = (code: string) => {
+    if (stage === 'confirmation') {
+      toast({ title: VOUCHER_AFTER_SALE, description: code, variant: 'destructive' });
+      return;
+    }
+    if (stage === 'payment') {
+      // The cart panel is not on the payment screen: say it where staff look.
+      toast({ title: VOUCHER_AFTER_PAY, description: code, variant: 'destructive' });
+      return;
+    }
+    // Scanned before a band is chosen, it starts a guest order — the guest at
+    // the counter is holding the slip (the shop screen's rule for a product).
+    if (stage === 'scan') loadBand(null);
+    void redeemVoucher(code);
+  };
+  useStationScans(station?.stationId, (event: StationScanEvent) => {
+    const code = readVoucherScan(event);
+    if (code) redeemScannedVoucher(code);
+  });
+  useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode });
+
+  /**
+   * S2-10b — THE ORDER THROWN AWAY: the order panel's X and Clear.
+   *
+   * AN ORDER THIS STATION RANG UP THAT TOOK NO MONEY IS VOIDED, voucher or not
+   * and ฿0 included, with the reason "Cancelled at the till"
+   * (`saleWriter.cancel`): it can never be paid, and a voucher it held is free
+   * again. The payment screen only rings an order up — nothing is closed or used
+   * up before its confirm — so Back and then X is always a void, never an order
+   * finished and then lost with no confirmation and no kitchen ticket.
+   *
+   * A void the platform refuses — money taken, which is refunded (later), not
+   * voided; a tender in progress; an order already closed — leaves the order on
+   * screen with the platform's words. An order not rung up lets its voucher go
+   * (`DELETE`; best effort — a hold this till cannot release lapses, and this
+   * till takes it over on its next order).
+   */
+  const letOrderGo = async (): Promise<boolean> => {
+    setCancelRefusal(null);
+    const cancelled = await saleWriter.cancel(CANCELLED_AT_THE_TILL);
+    if (!cancelled.ok) {
+      setCancelRefusal(cancelled.message);
+      return false;
+    }
+    // A voucher still held for an order that was never rung up is let go; one
+    // the void has just freed answers that it is no longer held for it.
+    if (voucher.current()) await voucher.release();
+    voucher.reset();
+    // A voided order's ids are spent: whatever is charged next is a new sale.
+    if (cancelled.voided) saleWriter.reset();
+    return true;
+  };
+
+  /** Leaving this station lets a voucher on an order not rung up go. */
+  const leaveStation = useRef<() => void>(() => undefined);
+  leaveStation.current = () => {
+    const held = voucher.current();
+    if (!held || saleWriter.committed?.id === held.saleId) return;
+    void vouchersApi.release(held.saleId, held.view.id).catch(() => undefined);
+  };
+  useEffect(() => () => leaveStation.current(), []);
 
   const handleClearCart = () => {
     setCart([]);
@@ -654,6 +826,9 @@ export default function OrderStation() {
     // previous one is ignored rather than drawn onto this guest.
     orderEpochRef.current += 1;
     saleWriter.reset();
+    voucher.reset();
+    setVoucherUsed(null);
+    setCancelRefusal(null);
     setPlatformSale(null);
     setStage('scan');
     setWristband(null);
@@ -677,6 +852,45 @@ export default function OrderStation() {
     closeSheet();
   };
 
+  /**
+   * S2-10b — THE FREE ITEM A VOUCHER PUT ON THE BILL, AS AN ORDER LINE.
+   *
+   * THE KITCHEN-TICKET DECISION: it sends one, like any F&B line. The platform
+   * puts the item on the sale (`voucherPricing`); the kitchen and bar tickets
+   * are built on this till from the order's lines (`lib/fnb.ts:buildPrepTickets`),
+   * so the line is added here or nobody is told to make the pizza. It is ฿0 on
+   * this till's record — the platform took its price off — routed by the menu
+   * item's own prep station, and its note says which voucher it came from, so
+   * the ticket answers "why is this free".
+   */
+  const voucherOrderLine = (held: HeldVoucher): FnbOrderLine | null => {
+    const effect = held.view.effect;
+    if (effect.type !== 'free_item') return null;
+    const menuItem: MenuItem = menuItems.find((item) => item.id === effect.product.id) ?? {
+      id: effect.product.id,
+      name: effect.product.name,
+      category: '',
+      price: { weekday: 0, weekend: 0 },
+      prepStationOverride: effect.product.kind === 'menu' ? 'kitchen' : 'none',
+    };
+    return {
+      id: `voucher-${held.view.id}`,
+      menuItem,
+      qty: 1,
+      selectedModifiers: [],
+      lineTotal: 0,
+      note: `Lucky Wheel voucher ${held.code}`,
+    };
+  };
+
+  /** The order panel's X and Clear, with what was rung up voided first (`letOrderGo`). */
+  const cancelOrder = async () => {
+    if (await letOrderGo()) resetOrder();
+  };
+  const clearOrder = async () => {
+    if (await letOrderGo()) handleClearCart();
+  };
+
   const handlePickupConfirm = (code: string) => {
     setPickupCode(code);
     setShowPickupModal(false);
@@ -696,14 +910,53 @@ export default function OrderStation() {
    */
   const commitPayload = (): SaleCartPayload | null => {
     if (!orderIdentity || offLedgerOnly(lines)) return null;
+    const held = voucher.held;
     return buildItemCartPayload(displayLines, effectiveManualDiscounts, orderIdentity, total, {
       mode: order.quote.pricingMode,
       modeReason: order.quote.pricingModeReason,
       // The codes the quote was answered for: the order the platform prices at
       // commit is the order it quoted, down to the code on it.
       promos: promoCodes,
+      // S2-10b — the voucher rides by its code; `total` above is then the
+      // platform's quoted figure, the only one that knows what it took off.
+      ...(held ? { promoCodes: [held.code] } : {}),
     });
   };
+
+  /**
+   * S2-10b — the order with a voucher on it is written only against the
+   * platform's own price, and only under the id the voucher is held for —
+   * decided first (`saleWriter.prepare`), and the voucher moved to it when a
+   * refused attempt spent the one it was held for. See `pages/Till.tsx`.
+   */
+  const voucherReadyFor = async (input: SaleWriteInput): Promise<boolean> => {
+    if (!voucher.held) return true;
+    if (order.quote.source !== 'platform') {
+      // Why, in the platform's words where it gave some — the card says the same.
+      voucher.refuse(
+        voucherUnpriced ?? VOUCHER_BEING_PRICED,
+        voucher.held.code,
+        order.error?.code ?? 'VOUCHER_NOT_PRICED',
+      );
+      return false;
+    }
+    return voucher.moveTo(saleWriter.prepare(input));
+  };
+
+  /**
+   * The commit's input, with the voucher's sale id when one is held.
+   *
+   * NEVER CLOSED WHEN THE PAYMENT SCREEN OPENS, ฿0 INCLUDED (S2-10b). Opening it
+   * rings the order up; "Complete Order" (or "Confirm Payment") closes it
+   * (`completeOrder`), through the finalise that takes no tender when nothing is
+   * owed. A ฿0 order closed on opening had its voucher used up before anybody
+   * confirmed it, and Back then X threw the finished order away.
+   */
+  const writeInput = (payload: SaleCartPayload): SaleWriteInput => ({
+    cart: payload,
+    finalise: false,
+    ...(voucher.held ? { preferSaleId: voucher.held.saleId } : {}),
+  });
 
   /** Why this order cannot be offered to the ledger at all. */
   const unwritableReason = (): string =>
@@ -717,12 +970,16 @@ export default function OrderStation() {
    * ENTERING THE PAYMENT SCREEN IS THE PAY PRESS — the same seam the till has
    * (S2-09a). The order is written in `tendering`, with no receipt number,
    * because no money has arrived yet; confirming the money finalises it and
-   * that is what allocates the number.
+   * that is what allocates the number. A ฿0 order is written the same way and
+   * closed by "Complete Order" (S2-10b), so until then it can still be voided.
    */
   const recordOrderOnPlatform = async (epoch: number): Promise<void> => {
     const payload = commitPayload();
     if (!payload) return; // said on the confirmation screen, not in a toast at the guest
-    const outcome = await saleWriter.commit({ cart: payload, finalise: total === 0 });
+    const input = writeInput(payload);
+    if (!(await voucherReadyFor(input))) return;
+    if (orderEpochRef.current !== epoch) return;
+    const outcome = await saleWriter.commit(input);
     if (orderEpochRef.current !== epoch && outcome.ok && outcome.written) {
       // This station moved on before the answer landed. The order IS on the
       // platform and nothing on this screen will ever mention it again, so it
@@ -765,10 +1022,20 @@ export default function OrderStation() {
     const epoch = orderEpochRef.current;
     const payload = commitPayload();
     let written: ApiSale | null = null;
+    if (!payload && voucher.held) {
+      // A voucher is never honoured on an order the platform does not write:
+      // it is used up only by the platform, in the transaction that closes it.
+      // Why this one cannot be written is said as it is — not as "offline".
+      voucher.refuse(unwritableReason(), voucher.held.code, 'SALE_NOT_WRITABLE');
+      return;
+    }
     if (!payload) {
       saleWriter.declareUnwritten(unwritableReason());
     } else {
-      const committed = await saleWriter.commit({ cart: payload, finalise: total === 0 });
+      const input = writeInput(payload);
+      if (!(await voucherReadyFor(input))) return;
+      if (orderEpochRef.current !== epoch) return;
+      const committed = await saleWriter.commit(input);
       if (orderEpochRef.current !== epoch) return;
       if (!committed.ok) return; // the failure panel is showing; nothing is finalised
       if (committed.written) {
@@ -796,6 +1063,24 @@ export default function OrderStation() {
       }
     }
     setPlatformSale(written);
+
+    /**
+     * S2-10b — THE VOUCHER IS USED UP: an order closed under the id the voucher
+     * is held for, with its code on the cart, used it — the platform does that
+     * in the transaction this confirm's finalise closes the sale in (with no
+     * tender, for an order the voucher took to ฿0) and refuses the close when
+     * it cannot (`consumeSaleVouchers`).
+     */
+    const heldVoucher = voucher.current();
+    const usedVoucher =
+      heldVoucher && written?.status === 'finalised' && written.id === heldVoucher.saleId
+        ? heldVoucher
+        : null;
+    const voucherLine = usedVoucher ? voucherOrderLine(usedVoucher) : null;
+    if (usedVoucher) {
+      setVoucherUsed(usedVoucher);
+      voucher.reset();
+    }
 
     let balanceAfter: number | null = null;
     if (wristband && payment.creditUsed > 0) {
@@ -846,7 +1131,9 @@ export default function OrderStation() {
       operatorId: operator.id,
       operatorName: operator.name,
       wristband: wristband ?? undefined,
-      lines: displayLines,
+      // The voucher's free item with the order's own lines: it goes to the
+      // kitchen, onto the receipt and into the stock count like any F&B line.
+      lines: voucherLine ? [...displayLines, voucherLine] : displayLines,
       manualDiscounts: committedDiscounts,
       total,
       pickupCode,
@@ -888,10 +1175,33 @@ export default function OrderStation() {
       {/* Body */}
       <div className="flex-1 min-h-0">
         {stage === 'scan' && (
-          <ScanWristband
-            onLoadTab={(wb) => loadBand(wb)}
-            onGuest={() => loadBand(null)}
-          />
+          /*
+           * S2-10b — THE BAND FIELD TAKES A VOUCHER TOO. The band field has the
+           * keyboard on this screen, so a USB scanner's voucher lands in it, and
+           * so does one typed off the slip. A value with a booth voucher's shape
+           * (`looksLikeVoucherCode` — a band code is digits and never has one) is
+           * taken off the form on its way down, before the band lookup sees it,
+           * and handled as the box's scan is: a guest order opens and the voucher
+           * is held. Every other value reaches the band lookup unchanged.
+           * `ScanWristband` is shared with the shop screen and the phone order
+           * station, so the claim is made here rather than in it.
+           */
+          <div
+            className="h-full"
+            onSubmitCapture={(event) => {
+              const typed =
+                (event.target as HTMLFormElement).querySelector('input')?.value.trim() ?? '';
+              if (!looksLikeVoucherCode(typed)) return;
+              event.preventDefault();
+              event.stopPropagation();
+              redeemScannedVoucher(typed);
+            }}
+          >
+            <ScanWristband
+              onLoadTab={(wb) => loadBand(wb)}
+              onGuest={() => loadBand(null)}
+            />
+          </div>
         )}
 
         {stage === 'order' && (
@@ -1019,7 +1329,7 @@ export default function OrderStation() {
                 lines={displayLines}
                 total={total}
                 priceNote={
-                  lines.length > 0 ? (
+                  lines.length > 0 || voucher.held ? (
                     <div className="space-y-2">
                       <QuoteRefusalNote error={quoteRefusal} blocking />
                       <QuoteFaultNote error={quoteFault} />
@@ -1027,7 +1337,7 @@ export default function OrderStation() {
                     </div>
                   ) : null
                 }
-                chargeBlockedReason={quoteRefusal?.message ?? null}
+                chargeBlockedReason={quoteRefusal?.message ?? voucherChargeBlock ?? null}
                 manualDiscounts={effectiveManualDiscounts}
                 manualAmounts={manualAmounts}
                 taxBreakdown={taxBreakdown}
@@ -1045,16 +1355,49 @@ export default function OrderStation() {
                 }
                 onChangeQty={handleChangeQty}
                 onEditLine={handleEditLine}
-                onClear={handleClearCart}
+                onClear={() => void clearOrder()}
                 onCheckout={() => setShowPickupModal(true)}
-                onSwitchTab={resetOrder}
+                onSwitchTab={() => void cancelOrder()}
                 onAddManualDiscount={() => setShowDiscountModal(true)}
                 onRemoveManualDiscount={handleRemoveManualDiscount}
-                promoCodes={order.totals.scannedDiscounts}
+                // The voucher's own row is its card below, not a promo row with a
+                // promo's remove button.
+                promoCodes={
+                  voucher.held
+                    ? order.totals.scannedDiscounts.filter((p) => p.code !== voucher.held?.code)
+                    : order.totals.scannedDiscounts
+                }
                 promoError={promoError}
                 onApplyPromoCode={handleApplyPromoCode}
                 onRemovePromoCode={handleRemovePromoCode}
                 onScanStaffBenefit={() => setShowBenefitScan(true)}
+                voucherLine={voucher.held ? <VoucherFreeItemLine held={voucher.held} /> : undefined}
+                voucher={
+                  <div className="space-y-2">
+                    {voucher.held && (
+                      <VoucherCard
+                        held={voucher.held}
+                        quoted={voucherQuote}
+                        busy={voucher.busy}
+                        // The platform has not priced this order: a voucher's value
+                        // is only ever its, so the card says why, in its words.
+                        note={voucherUnpriced}
+                        {...(voucherRungUp ? {} : { onRemove: () => void voucher.release() })}
+                      />
+                    )}
+                    <RedeemVoucherEntry onRedeem={redeemVoucher} busy={voucher.busy} />
+                    {voucher.refusal && (
+                      <VoucherRefusalCard refusal={voucher.refusal} onDismiss={voucher.dismiss} />
+                    )}
+                    {cancelRefusal && (
+                      <TillRefusalNotice
+                        message={cancelRefusal}
+                        onDismiss={() => setCancelRefusal(null)}
+                        testId="cancel-refusal"
+                      />
+                    )}
+                  </div>
+                }
               />
             </div>
           </div>
@@ -1099,6 +1442,7 @@ export default function OrderStation() {
               onNewOrder={resetOrder}
               receiptNumber={platformSale?.receiptNumber ?? null}
               flowLayout
+              note={voucherUsed ? <VoucherUsedNote held={voucherUsed} /> : undefined}
             />
           </div>
         )}

@@ -155,6 +155,7 @@ function cartSignature(
   manualDiscounts: readonly ManualDiscount[],
   identity: CartIdentity | null,
   mode: string,
+  promoCodes: readonly string[] = [],
 ): string {
   const linePart = lines
     .map(
@@ -168,11 +169,15 @@ function cartSignature(
   const promoPart = discounts.map((d) => `${d.code}:${d.type}:${d.value}`).join('|');
   const manualPart = manualDiscounts.map((m) => `${m.id}:${m.type}:${m.value}:${m.scope}`).join('|');
   const who = identity ? `${identity.branchId}/${identity.stationId}/${identity.tier}` : 'none';
-  return `${mode}#${who}#${linePart}#${promoPart}#${manualPart}`;
+  // S2-10b — a voucher put on or taken off moves the price, so it re-asks.
+  return `${mode}#${who}#${linePart}#${promoPart}#${manualPart}#${promoCodes.join('|')}`;
 }
 
 /** How long the till waits after the last cart change before asking the platform. */
 const QUOTE_DEBOUNCE_MS = 200;
+
+/** One empty list, so a cart with no voucher does not hand a new array to every render. */
+const NO_CODES: readonly string[] = [];
 
 export function useCartQuote(args: {
   lines: readonly CartLine[];
@@ -181,11 +186,18 @@ export function useCartQuote(args: {
   identity: CartIdentity | null;
   /** Stop asking once the sale is committed — the sale's own figures stand then. */
   enabled?: boolean;
+  /**
+   * S2-10b — the voucher held for this cart, by its code. The platform prices
+   * it; this till's own figure never includes it, so the platform is asked
+   * even for a cart whose only line is the voucher's free item.
+   */
+  promoCodes?: readonly string[];
 }): CartQuoteState {
   const { lines, discounts, manualDiscounts, identity } = args;
+  const promoCodes = args.promoCodes ?? NO_CODES;
   const enabled = args.enabled ?? true;
   const rate = todayRateMode();
-  const signature = cartSignature(lines, discounts, manualDiscounts, identity, rate.mode);
+  const signature = cartSignature(lines, discounts, manualDiscounts, identity, rate.mode, promoCodes);
 
   /**
    * The figure this device computes, recomputed synchronously on every cart
@@ -241,14 +253,19 @@ export function useCartQuote(args: {
   const seqRef = useRef(0);
 
   useEffect(() => {
-    if (!enabled || !identity || local.engineRefused !== null || lines.length === 0) {
+    if (
+      !enabled ||
+      !identity ||
+      local.engineRefused !== null ||
+      (lines.length === 0 && promoCodes.length === 0)
+    ) {
       setPending(false);
       return;
     }
     const seq = ++seqRef.current;
     setPending(true);
     const timer = window.setTimeout(() => {
-      void quoteCart({ lines, discounts, manualDiscounts, identity })
+      void quoteCart({ lines, discounts, manualDiscounts, identity, promoCodes })
         .then((quote) => {
           // The cart has moved on since this went out, or another request has
           // overtaken it. Either way this answer is about a cart that is no

@@ -353,7 +353,8 @@ export async function saleRoutes(app: App): Promise<void> {
         description:
           'Record a ticket sale. It is written unfinalised and with no receipt number; ' +
           'the tender at /sales/:id/finalise closes it. A ฿0 comp has nothing to tender, ' +
-          'so `finalise` closes it here.',
+          'so `finalise` may close it here; the ticket and F&B tills leave it open instead ' +
+          'and close it at their confirm press, so it can still be voided until then.',
         body: CommitBody,
       },
     },
@@ -361,8 +362,17 @@ export async function saleRoutes(app: App): Promise<void> {
       const actor = actorOf(req, 'pos:sale:create');
       const body = req.body;
       const cart = body.cart ?? (body as unknown as z.infer<typeof Cart>);
-      // Either kind of line makes a cart: admission, or food and merchandise.
-      if ((cart.lines?.length ?? 0) === 0 && (cart.items?.length ?? 0) === 0) {
+      // Either kind of line makes a cart: admission, or food and merchandise —
+      // or a voucher's code on its own (S2-10b). A free-item voucher's line is
+      // put on the bill by the platform, never sent by the till, so a guest
+      // claiming only their Kids Pizza is a cart of no lines and one code.
+      // Whether the code is such a voucher is the service's to decide: a cart
+      // whose codes add no line is still refused as empty, by `priceCart`.
+      if (
+        (cart.lines?.length ?? 0) === 0 &&
+        (cart.items?.length ?? 0) === 0 &&
+        (cart.promoCodes?.length ?? 0) === 0
+      ) {
         throw errors.badRequest('The cart is empty');
       }
       const stationId = body.stationId ?? cart.stationId;
@@ -406,7 +416,9 @@ export async function saleRoutes(app: App): Promise<void> {
       schema: {
         description:
           'Take the tender and close the sale: record the payment attempt, allocate the ' +
-          'receipt number, finalise. An empty body settles the balance in cash.',
+          'receipt number, finalise. An empty body settles the balance in cash. A sale ' +
+          'that owes nothing — a ฿0 comp, a voucher’s free item on its own — is closed ' +
+          'with no payment recorded, and its voucher is used up here.',
         params: z.object({ id: z.string().uuid() }),
         body: FinaliseBody,
       },
