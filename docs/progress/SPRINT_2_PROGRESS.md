@@ -2,7 +2,7 @@
 
 ## Status
 
-_Last updated 2026-09-24, 06:29._
+_Last updated 2026-09-24, 16:07._
 
 > **Resuming? Read `SESSION_HANDOVER.md` → "2026-09-24 — closing S2-09", then
 > "State at the end of 2026-09-23".** It carries the live commit on every staging service, what landed
@@ -30,8 +30,13 @@ _Last updated 2026-09-24, 06:29._
   landed 2026-09-23" in the ticket log below for the commit and gate outcome of
   each.
 
-- **Next.** The owner has said no new tickets are to be picked up and the next
-  order is the owner's to confirm. The recommendation: (1) the D↔C2 seam and
+- **Next — the booth, by the owner's instruction of the 24th (afternoon).** The
+  Pi as a real box beside the virtual box (SCRUM-398), sign-in by account or PIN
+  with an admin-set session, reprint, the slip (SCRUM-399, Bugs 394/395/396),
+  voucher redemption held at the scan and used up at payment (SCRUM-207, Bug
+  397), voucher types and booth staff in the Console (SCRUM-400), then the
+  closing audit and the owner's bench test; the plan is
+  `plans/booth/PLAN.md`. Behind it, the recommendation: (1) the D↔C2 seam and
   **SCRUM-391** — a `qr` tender never reaches the gateway — then drive D's QR
   path on staging; (2) **SCRUM-388 (High)**, reserve in-flight tenders, before F;
   (3) **SCRUM-382**, refuse a disabled or archived tender in the attempt service;

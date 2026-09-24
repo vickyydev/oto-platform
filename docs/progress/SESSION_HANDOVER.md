@@ -1,5 +1,43 @@
 # Handover — where this is, and what to do next
 
+## 2026-09-24, afternoon — the Lucky Wheel booth is the first priority
+
+The owner has his Raspberry Pi 5, the receipt printer, the vertical TV and the
+red button and will bench-test the booth against staging himself before the
+mall. He asked for a complete audit first, then commanded the build. **Read
+`docs/progress/plans/booth/PLAN.md` (his decisions, the rounds, the bench
+test) and `AUDIT-2026-09-24.md` beside it (58 requirements against the old
+game and the platform: 18 proven, 1 unproven, 16 partial, 18 not built, 5
+different; the Pi runtime and the counter were not built at all).**
+
+- **Decided by the owner, final:** the Pi is a real box beside the virtual
+  box; codes stay minted on the box (never raise it again); redemption is
+  held at the scan and used up at payment, priced on the server, online only;
+  switched-off prizes never on the wheel; staff sign-in stays — account or
+  PIN, only if assigned, a session of the admin-set length that never ends on
+  idle; the Pi plug-and-play; a closing audit before "ready".
+- **Tickets (16:07):** SCRUM-398 (S2-24a, the Pi runs the booth box, under
+  223), SCRUM-399 (S2-07c, sign-in by account or PIN, the booth picker, the
+  session length, reprint, the staff name on the slip, under 198), SCRUM-400
+  (S2-07d, voucher types, booth staff and PINs, the session length in the
+  Console, under 198), SCRUM-207 (S2-10b, redemption — reopened); Bugs
+  SCRUM-394 (a switched-off prize still on the wheel, High), 395 (reprint
+  404), 396 (the slip's staff row, venue and wording), 397 (voucher types
+  default offline-allow). 207, 223, 398, 399 and 400 are In Progress; 199
+  carries a correction (its comments claimed nobody can spin unsigned; the
+  code and the spec say otherwise).
+- **In flight — round 1, two gated workflows on `claude-opus-5-5`:** P1 the
+  Pi runtime, sign-in, reprint, slip, inactive filter (`wf_1c7d851c`) and P2
+  the redemption api with the check character and migration 0021
+  (`wf_eafdc0e2`). Disjoint file lists (the plan's table); both may add one
+  registration line to `apps/api/src/app.ts` — pick that hunk into the right
+  commit. Round 2 (P3 the till, P4 the Console) follows their landing; then
+  the end-to-end proof with a real agent process on this machine against
+  staging, the adversarial audit, and "ready" to the owner, who then names the
+  printer and connects the Pi.
+- **The remaining Sprint 2 order (391, 388, 382, Slice F …) waits behind the
+  booth**, by the owner's instruction.
+
 ## 2026-09-24 — S2-09 (SCRUM-202) closed at 06:27: the last of SCRUM-204, and SCRUM-392 on the way
 
 The owner's decision (morning): sizes are defined on the shop product now,

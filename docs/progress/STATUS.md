@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-24, 06:29 (`main` at `5ed7c5b` plus this checkpoint; staging at `003dac7`)_
+_Last updated: 2026-09-24, 16:07 (`main` at `43d3adb` plus this checkpoint; staging at `003dac7`)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
@@ -62,8 +62,14 @@ _Last updated: 2026-09-24, 06:29 (`main` at `5ed7c5b` plus this checkpoint; stag
 
 ## What is next
 
-**The owner has said no new tickets are to be picked up; the next order is the
-owner's to confirm.** The recommendation, with the reasoning in
+**The Lucky Wheel booth is the first priority (owner, 24 September, afternoon):**
+the Pi as a real box beside the virtual box, voucher redemption at the till,
+switched-off prizes off the wheel, staff sign-in by account or PIN with an
+admin-set session length, then a closing audit and the owner's bench test. The
+plan is `plans/booth/PLAN.md`; the audit behind it is `plans/booth/AUDIT-2026-09-24.md`.
+Round 1 (SCRUM-398/399 and SCRUM-207) is running. Everything below waits behind it.
+
+**Then the recommended order, still the owner's to confirm**, with the reasoning in
 `SESSION_HANDOVER.md`:
 
 1. The D↔C2 seam and **SCRUM-391** — a `qr` tender never reaches the gateway —
