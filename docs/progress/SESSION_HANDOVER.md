@@ -195,6 +195,31 @@ different; the Pi runtime and the counter were not built at all).**
   a skeptic per medium-or-worse finding, a ranked list with a fix plan). Its
   confirmed findings and the guide corrections go into one fix round, then
   "ready" to the owner with the printer question.
+- **The closing audit (`wf_4cc5255f`, 02:36–04:40; 39 agents): "not yet, but one
+  fix round away."** 79 findings, 33 attacked by a skeptic, 30 confirmed, 3
+  refuted, 46 low. Critical: C1 — a voucher on a sale rung up and then left
+  (the two-minute lock, a header tab, a reload) is refused everywhere with
+  "pay or void that sale first" and no screen can pay or void it; C2 (latent)
+  — a hand-over-prize slip on its own can never be used up. High: H1 — a
+  printer silent to status queries turns every press into "Booth not ready"
+  while the slip prints (depends on the owner's printer); H2 — a booth saved
+  with an empty code prefix publishes and is dead. Mediums M1–M18 (wrong
+  Console and TV words, expiry at the minute of the win, a branch manager
+  setting another park's PIN, shared PINs, a raceable PIN lock, a second
+  screen voiding a live cash sale, Google Fonts blocking the TV, a stalled
+  printer hanging the box, the clock, the store's growth and damage, promo
+  codes priced by the till). Full text committed as
+  `docs/progress/plans/booth/AUDIT-CLOSING-2026-09-25.md` (§5 the fix plan
+  with eight disjoint lanes, §5.6 the 29 tickets for later, §6 the owner's
+  questions Q1–Q13). **The fix round is launched** (`wf_` in the next
+  checkpoint): lanes A–H per §5.2, with the owner's questions answered by
+  the audit's recommendations until he says otherwise — Q1 A (expiry at the
+  end of the printed date), Q2 A (a hand-over prize at reception as a ฿0
+  sale), Q3 A (any cashier with the void permission), Q5 A (the release
+  file sent with its checksum), Q6 A (Kids Pizza is the pizza only); Q4 (the
+  printer) waits for the owner. After it: CI, a staging proof of C1, C2, H1,
+  H2, the release packed at the merged commit, the tickets of §5.6, then
+  "ready".
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
