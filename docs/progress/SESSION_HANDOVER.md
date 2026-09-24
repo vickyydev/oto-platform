@@ -138,6 +138,63 @@ different; the Pi runtime and the counter were not built at all).**
   demo mode on the virtual box still working. Then 398, 399, 400, 207 and
   394–397 → Deployed by the walker, the closing adversarial audit, and
   "ready" to the owner.
+- **P5 held on staging (02:37–03:37, `wf_48780591`): every step of the bench
+  test works except one that is not the booth's.** Through the Console as the
+  owner will: a Bracelet Workshop add-on created in the POS admin (staging had
+  none), Kids Pizza linked to Margherita Pizza and set to never expire, the
+  1+1 to 1 Hour Play, all six types worded TH/EN with new terms (the "HKT
+  Central" ones gone), som on Booth 1 with a minted PIN, the session 10 h,
+  Booth 1 published v3, "Proof box (25 Sept)" added and claimed by the runner
+  on this machine (online in 43 s), a fake ESC/POS printer on the loopback
+  (the override alone is not enough: the Console must hold the printer row),
+  Booth 2 (proof) on it with three prizes and the 200 THB switched off. The
+  TV: the picker, account sign-in in 0.2 s "Until 12:53", the spin and the
+  slip decoded from the printer bytes (the type's own words, the code, the
+  QR, "Staff: Som (Reception) (S-QWT6)", the expiry or "No expiry"), sign
+  out, PIN, reprint with the same code, the internet cut (account refused
+  with "No internet — sign in with your PIN", the PIN working, two offline
+  spins printed with the orange dot), the sync on restore (4 spins in the
+  Console within 100 s). The till: the typed code → the card with "Printed
+  by Som" → a free Bracelet line → cash T1-000019 → "Already redeemed on …
+  by Som (Reception)"; "Invalid code"; "not synced yet"; Kids Pizza refused
+  at the ticket till and redeemed at the restaurant till (T1-000020); the
+  offline-printed voucher redeemed after the sync (T1-000021); the Console's
+  scanner → the ticket till's card through the polling fallback in 3.4 s
+  (T1-000022); the till offline refusing in 20 ms with no request; six wrong
+  codes → the lock. Demo mode: Booth 1's paired page on the virtual box spins
+  on v3 with the new words. **BROKEN, not the booth's: the kitchen ticket
+  never reaches the simulated kitchen printer** — no F&B sale sends a print
+  job to the box today (the order station's banner says kitchen printing is
+  S2-11, **SCRUM-208**); the voucher's free pizza shows on the till's own
+  ticket only. Cards: `staging-398-pi-box.png`, `staging-399-signin.png`,
+  `staging-400-console.png`, `staging-207-till.png` (opened and checked).
+  **Deployed by the walker at 03:41: SCRUM-398, 399, 400, 207, 394, 395, 396,
+  397** (commits linked). Left on staging: the Proof box (offline, credential
+  deleted — archive it), its printer row, Booth 2 (proof), Booth 3 archived,
+  the six worded and linked types, the Bracelet Workshop add-on, Booth 1 on
+  v3 with 10 h, **som's PIN on Booth 1 and 2 (the owner resets it)**, sales
+  T1-000019–22, two unredeemed vouchers, a Health warning from the wrong
+  codes.
+- **The guides need twelve corrections before the owner follows them** (from
+  the pass; go into the audit's fix round): Add a box needs a Slot; a new booth
+  cannot publish until a Layout is chosen; the station's "Who may use it" step
+  ("All staff" puts the booth in every POS picker); §5.1 says "network", the
+  Console says "LAN" (Model and Protocol may stay empty); the printer override
+  does not replace adding the printer in the Console; the number beside the
+  offline dot counts records (about three per spin), not vouchers; the
+  Screens panel on a Pi booth says the TV shows "ask our staff" until a screen
+  is paired, contradicting PI_BOOTH; BOOTH_SETUP step 1 assumes a "kids pizza"
+  product and the POS admin F&B page shows a "'HKT Central' has no record"
+  banner; the link pickers list look-alike duplicates (two Ice Cream Cones,
+  two Grip Socks); step 6 should name Receipt Printer 2; the Console preview
+  still says a switched-off prize is drawn on the TV; after midnight "Spins
+  today" shows the trading day while slips print the calendar day. Also seen:
+  the order station's menu grid at Reception Till 1 showed only "Ice Cream
+  Cone ฿60" — not investigated.
+- **Running: the closing adversarial audit** (`wf_4cc5255f`: five finders,
+  a skeptic per medium-or-worse finding, a ranked list with a fix plan). Its
+  confirmed findings and the guide corrections go into one fix round, then
+  "ready" to the owner with the printer question.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
