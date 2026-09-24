@@ -1,6 +1,7 @@
 import {
   createBooth,
   type Booth,
+  type BoothAccountVerdict,
   type BoothBranchContext,
   type BoothStaffRecord,
   type BoothStationContext,
@@ -54,7 +55,7 @@ import {
   type TerminalProgress,
   type TerminalResult,
 } from './terminal/index';
-import { PrintTemplateSchema } from '@oto/shared';
+import { BOOTH_STAFF_VERIFY_ERRORS, BOOTH_STAFF_VERIFY_PATH, PrintTemplateSchema } from '@oto/shared';
 import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@oto/shared';
 
 /**
@@ -73,6 +74,24 @@ import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@o
  * agent — it IS the agent, pointed at `127.0.0.1` with an in-memory credential
  * store. What differs between the two is one URL and where the secret is kept.
  */
+
+/**
+ * Where a box keeps the last config bundle it was given (SCRUM-223).
+ *
+ * The bundle names the box's stations, its devices and its branch — which is
+ * to say, which booth it is, which printer the voucher goes to and what
+ * trading day a spin falls in. Held only in memory, a Pi that came back from
+ * a power cut before the mall's internet did knew none of that, and a booth
+ * that does not know its own station cannot draw. So a real box passes a
+ * cache and the agent writes every bundle it adopts to it and reads it back
+ * at start. The virtual box passes none: its cloud is the process it runs in.
+ *
+ * Nothing secret is in a bundle — signing keys ride it as PUBLIC halves only.
+ */
+export interface BoxConfigCache {
+  read(): Promise<BoxConfigBundle | null>;
+  write(bundle: BoxConfigBundle): Promise<void>;
+}
 
 export interface DeviceFault {
   reachability?: 'unknown' | 'reachable' | 'unreachable';
@@ -120,6 +139,16 @@ export interface BoxAgentOptions {
   operatorId?: string;
   /** How often the outbox tries to hand its queue over. */
   syncIntervalMs?: number;
+  /** See `BoxConfigCache`. A Raspberry Pi passes one; the virtual box does not. */
+  configCache?: BoxConfigCache;
+  /**
+   * The last word on a bundle before this box adopts it (SCRUM-223): the
+   * runner's bench override points the booth's receipt printer at an address
+   * typed on the box itself. Applied to every bundle adopted — pulled or
+   * restored — while the copy on disk stays exactly what the cloud sent, so
+   * taking the override away takes effect at the next start.
+   */
+  configTransform?: (bundle: BoxConfigBundle) => BoxConfigBundle;
   /**
    * How often the box asks the cloud whether its cache bundles have moved.
    *
@@ -144,6 +173,18 @@ export interface BoxAgentOptions {
     openReal?: ChannelFactory;
     /** How long a job waits before trying a printer that was out of paper. */
     retryDelayMs?: number;
+    /**
+     * Keep the print queue in the store, so a voucher waiting on a printer
+     * that is out of paper — or unplugged — still prints after a power cut
+     * (SCRUM-223).
+     *
+     * The print subsystem has taken a durable queue since S2-07a and nothing
+     * handed it one, so every box printed from memory. A Raspberry Pi booth
+     * turns it on: its store is a file on the card, and a queued slip there
+     * is the one that must not be lost. Off by default, which is the
+     * behaviour the virtual box and its tests are written against.
+     */
+    durable?: boolean;
   };
   /**
    * The card terminals (S2-10a).
@@ -201,6 +242,18 @@ export interface BoxAgentOptions {
     verifySecret?: (hash: string, secret: string) => Promise<boolean>;
     /** The draw's randomness (D3). `node:crypto`'s `randomInt` by default. */
     randomIndex?: (maxExclusive: number) => number;
+    /**
+     * Which booth station this box runs, when its bundle names more than one
+     * (SCRUM-223).
+     *
+     * The kiosk's booth picker answers this and the runner keeps the answer on
+     * disk. With one booth station the answer is that one whatever this says;
+     * with several and no answer, the box runs none — it does not guess, for
+     * the reason `resolveInProcessBooth` gives: the prefix on the paper says
+     * which booth issued it. Absent altogether (the virtual box), the first
+     * booth station is run, as before.
+     */
+    stationId?: () => string | null;
   };
 }
 
@@ -213,6 +266,16 @@ export interface BoxAgentState {
   epoch: number;
   offline: boolean;
   heartbeatsPaused: boolean;
+  /**
+   * Whether the last call to the cloud got an answer (SCRUM-223).
+   *
+   * `offline` is the Console's switch and says nothing about the wire: a Pi
+   * whose mall internet has dropped is not "offline" in that sense, and its
+   * television would go on showing a green dot. This is the wire — false
+   * after a request that could not be sent or that a 5xx answered, true
+   * after one that was answered — and the kiosk's dot reads both.
+   */
+  linkUp: boolean;
   clockSkewMs: number;
   lastHeartbeatAt: string | null;
   lastAckAt: string | null;
@@ -242,7 +305,19 @@ export interface BoxAgent {
   heartbeat(): Promise<BoxHeartbeatAck | null>;
   /** Poll, run what comes back, report each result. Returns how many ran. */
   runPendingCommands(): Promise<number>;
-  /** Register, sync, heartbeat, poll — then set the three timers going. */
+  /**
+   * Everything `start` does that needs no cloud (SCRUM-223): load the
+   * credential, open the store with the copy of the config it holds, and start
+   * the booth on the wheel it holds. False when this box has no credential.
+   * Idempotent, and `start` calls it first; a Raspberry Pi calls it on its own
+   * so its television is up before `start` asks the cloud for anything.
+   */
+  prepare(): Promise<boolean>;
+  /**
+   * `prepare`, then sync, heartbeat, poll — then set the three timers going.
+   * Every call to the cloud here may fail or time out without stopping the
+   * start; the box then runs on what it holds and the timers try again.
+   */
   start(): Promise<void>;
   stop(): void;
   /** The Console's "Stop heartbeats" test control. */
@@ -416,6 +491,17 @@ const RECEIPT_SERIES = 'receipt_series' satisfies CachedBundle['scope'];
  */
 const OFFLINE_COMMAND_KINDS: readonly BoxCommandKind[] = ['go_online'];
 
+/**
+ * How long an account sign-in at the booth waits for the cloud (SCRUM-223).
+ *
+ * Under the six seconds the television gives the box (`REQUEST_TIMEOUT_MS` in
+ * the booth page's client), so the page hears the box's own answer — "No
+ * internet — sign in with your PIN" — instead of giving up first, while a
+ * check still running behind it could sign the person in after the screen
+ * said it had not. A healthy answer takes a few hundred milliseconds.
+ */
+const BOOTH_ACCOUNT_VERIFY_TIMEOUT_MS = 5_000;
+
 export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   const base = options.apiBaseUrl.replace(/\/$/, '');
   const call = options.fetch ?? httpTransport();
@@ -476,6 +562,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let cacheRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  /** Whether `prepare` has started the booth since the last `stop`. */
+  let boothStarted = false;
   let heartbeatIntervalMs = options.heartbeatIntervalMs ?? 60_000;
   const pollIntervalMs = options.pollIntervalMs ?? 5_000;
   const cacheRefreshIntervalMs = options.cacheRefreshIntervalMs ?? 60_000;
@@ -508,6 +596,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     epoch: 1,
     offline: false,
     heartbeatsPaused: false,
+    linkUp: false,
     clockSkewMs: 0,
     lastHeartbeatAt: null,
     lastAckAt: null,
@@ -548,7 +637,14 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
 
   async function request<T>(
     path: string,
-    init: { method: string; body?: unknown; auth?: boolean; headers?: Record<string, string> } = {
+    init: {
+      method: string;
+      body?: unknown;
+      auth?: boolean;
+      headers?: Record<string, string>;
+      /** Less than the transport's allowance, for a person waiting on the answer. */
+      answerTimeoutMs?: number;
+    } = {
       method: 'GET',
     },
   ): Promise<{ status: number; body: T | null; etag: string | null }> {
@@ -558,11 +654,23 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       if (!credential) throw new Error('box agent has no credential yet');
       headers.authorization = `Bearer ${credential}`;
     }
-    const res = await call(`${base}${path}`, {
-      method: init.method,
-      headers,
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
-    });
+    let res: Awaited<ReturnType<AgentFetch>>;
+    try {
+      res = await call(`${base}${path}`, {
+        method: init.method,
+        headers,
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
+        ...(init.answerTimeoutMs === undefined ? {} : { answerTimeoutMs: init.answerTimeoutMs }),
+      });
+    } catch (err) {
+      // No answer at all: a dropped line, a DNS failure, a refused socket, or
+      // a cloud that took the connection and did not answer in time.
+      state.linkUp = false;
+      throw err;
+    }
+    // A 502 from the platform's edge is the cloud not serving, whatever the
+    // wire did; anything below that is the cloud answering.
+    state.linkUp = res.status < 500;
     const etag = res.header('etag');
     if (res.status === 204 || res.status === 304) return { status: res.status, body: null, etag };
     let body: T | null = null;
@@ -593,6 +701,18 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       report: (outcome) => reportPrintJob(outcome),
       openReal: options.printing?.openReal,
       retryDelayMs: options.printing?.retryDelayMs,
+      /**
+       * Asked on every write, because the box id is learned at registration
+       * and the store is opened then — see `PrintSubsystemOptions.durable`.
+       */
+      ...(options.printing?.durable
+        ? {
+            durable: () => {
+              const jobs = store?.printJobs() ?? null;
+              return jobs && state.boxId && state.registered ? { jobs, boxId: state.boxId } : null;
+            },
+          }
+        : {}),
     });
   }
 
@@ -668,9 +788,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      * in the right order whenever the link comes back.
      *
      * Asked of the booth rather than switched on the kind, because
-     * `PrintJobOutcome` does not carry one: the booth knows which ids are its
-     * own, including the ones a previous process left unprinted, which it
-     * adopts at start-up for exactly this reason.
+     * `PrintJobOutcome` does not carry one — and a Console test print of a
+     * sample voucher is a `booth_voucher` with a cloud row. The booth knows
+     * which ids are its own: the ones a previous process left unprinted or
+     * interrupted, which it adopts at start-up for exactly this reason, and
+     * the ones it has already reported, which it goes on answering for.
      */
     if (booth?.ownsPrintJob(outcome.id)) {
       await booth.reportPrint(outcome);
@@ -840,6 +962,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    */
   async function attachStore(boxId: string): Promise<void> {
     if (!store || outbox) return;
+    await restoreConfig(boxId);
     const persisted = await store.init(boxId);
     state.offline = persisted.offline;
     state.epoch = persisted.journalEpoch;
@@ -908,6 +1031,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         printerHealth: () => printing?.jobs.health() ?? {},
         staff: () => boothStaff,
         ...(options.booth?.verifySecret ? { verifySecret: options.booth.verifySecret } : {}),
+        verifyAccount: (request) => verifyBoothAccount(request),
         printTemplates: () => cachedTemplates,
         ...(options.booth?.randomIndex ? { randomIndex: options.booth.randomIndex } : {}),
         now: () => new Date(clock()),
@@ -922,11 +1046,132 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     });
   }
 
-  /** The booth station on this box, if its bundle names one. */
+  /**
+   * Bring back the last bundle this box adopted, before anything asks for it
+   * (SCRUM-223). A bundle for a different box — a card moved between Pis — is
+   * not used: the stations in it are somebody else's.
+   */
+  async function restoreConfig(boxId: string): Promise<void> {
+    if (bundle || !options.configCache) return;
+    try {
+      const held = await options.configCache.read();
+      if (!held) return;
+      if (held.box?.id && held.box.id !== boxId) {
+        note('warn', 'the config on disk belongs to another box and was not used', {
+          held: held.box.id,
+        });
+        return;
+      }
+      bundle = options.configTransform ? options.configTransform(held) : held;
+      adoptTemplates(bundle);
+      state.configVersion = held.configVersion;
+      note('info', 'config restored from the copy on disk', {
+        configVersion: held.configVersion,
+        stations: held.stations.length,
+      });
+    } catch (err) {
+      note('warn', 'the config on disk could not be read', { err: String(err) });
+    }
+  }
+
+  /** The booth station this box runs, if its bundle names one. See `booth.stationId`. */
   function boothStation(): BoothStationContext | null {
-    const station = bundle?.stations.find((s) => s.kind === 'booth');
-    if (!station) return null;
+    const booths = (bundle?.stations ?? []).filter((s) => s.kind === 'booth');
+    if (booths.length === 0) return null;
+    let station = booths[0]!;
+    if (options.booth?.stationId) {
+      const chosen = options.booth.stationId();
+      const found = chosen ? booths.find((s) => s.id === chosen) : undefined;
+      if (found) station = found;
+      else if (booths.length > 1) return null;
+    }
     return { id: station.id, name: station.name, codePrefix: station.codePrefix };
+  }
+
+  /**
+   * Ask the cloud whether a phone and password may sign in at this booth
+   * (SCRUM-223), under this box's own credential.
+   *
+   * Every way of not getting a verdict — the Console's offline switch, no
+   * credential yet, a dropped line, no answer within
+   * `BOOTH_ACCOUNT_VERIFY_TIMEOUT_MS`, the cloud not serving — is `offline`,
+   * and the television then says to use the PIN, which the box can check
+   * alone. The password is sent once in the body and kept nowhere.
+   *
+   * An answer that refuses the BOX is not `offline`, because the internet is
+   * fine and saying otherwise sends staff to check a cable: a 401 that is not
+   * a wrong password, or `BOX_DISABLED`, is this box's own credential refused
+   * (`box_refused`); `BOOTH_NOT_ON_THIS_BOX` is a booth moved or archived in
+   * the Console (`booth_not_on_box`). Neither drops the credential here: the
+   * box's own calls — the command poll, the heartbeat, the pulls — meet the
+   * same 401 within seconds and take the refusal path, which registers again
+   * at most once a minute (`reregister.ts`).
+   */
+  async function verifyBoothAccount(req: {
+    stationId: string;
+    phone: string;
+    password: string;
+  }): Promise<BoothAccountVerdict> {
+    if (!credential || state.offline) return { ok: false, reason: 'offline' };
+    let answer: { status: number; body: unknown };
+    try {
+      answer = await request<unknown>(BOOTH_STAFF_VERIFY_PATH, {
+        method: 'POST',
+        body: req,
+        answerTimeoutMs: BOOTH_ACCOUNT_VERIFY_TIMEOUT_MS,
+      });
+    } catch {
+      return { ok: false, reason: 'offline' };
+    }
+    const body =
+      typeof answer.body === 'object' && answer.body !== null
+        ? (answer.body as Record<string, unknown>)
+        : null;
+    if (answer.status === 200 && body && typeof body.accountId === 'string') {
+      return {
+        ok: true,
+        accountId: body.accountId,
+        displayName: typeof body.displayName === 'string' ? body.displayName : null,
+        staffCode: typeof body.staffCode === 'string' ? body.staffCode : null,
+      };
+    }
+    const error = (body?.error ?? null) as { code?: unknown; details?: unknown } | null;
+    const code = typeof error?.code === 'string' ? error.code : null;
+    switch (code) {
+      case BOOTH_STAFF_VERIFY_ERRORS.invalid:
+        return { ok: false, reason: 'wrong' };
+      case BOOTH_STAFF_VERIFY_ERRORS.notAllowed:
+        return { ok: false, reason: 'not_allowed' };
+      case BOOTH_STAFF_VERIFY_ERRORS.notAssigned:
+        return { ok: false, reason: 'not_assigned' };
+      case BOOTH_STAFF_VERIFY_ERRORS.mustChangePassword:
+        return { ok: false, reason: 'must_change_password' };
+      case BOOTH_STAFF_VERIFY_ERRORS.locked: {
+        const seconds = (error?.details as { retryAfterS?: unknown } | undefined)?.retryAfterS;
+        return typeof seconds === 'number'
+          ? { ok: false, reason: 'locked', retryAfterMs: seconds * 1000 }
+          : { ok: false, reason: 'locked' };
+      }
+      case BOOTH_STAFF_VERIFY_ERRORS.boothNotOnBox:
+        note('warn', 'the cloud says this booth is not on this box any more', {
+          stationId: req.stationId,
+        });
+        return { ok: false, reason: 'booth_not_on_box' };
+      case BOOTH_STAFF_VERIFY_ERRORS.boxDisabled:
+        note('warn', 'the cloud refused a booth sign-in: this box is taken out of service');
+        return { ok: false, reason: 'box_refused' };
+    }
+    if (answer.status === 401) {
+      // Not a wrong password — that is `INVALID_CREDENTIALS`, above — so the
+      // credential refused is this box's own.
+      note('warn', 'the cloud refused a booth sign-in: this box’s credential is not accepted', {
+        code,
+      });
+      return { ok: false, reason: 'box_refused' };
+    }
+    if (answer.status === 429) return { ok: false, reason: 'locked' };
+    note('warn', 'the cloud could not check a booth sign-in', { status: answer.status, code });
+    return { ok: false, reason: 'offline' };
   }
 
   /**
@@ -980,6 +1225,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           pinHash: typeof entry.pinHash === 'string' ? entry.pinHash : null,
           badgeHash: typeof entry.badgeHash === 'string' ? entry.badgeHash : null,
           staffCode: typeof entry.staffCode === 'string' ? entry.staffCode : null,
+          displayName: typeof entry.displayName === 'string' ? entry.displayName : null,
         });
       }
       boothStaff = records;
@@ -1150,8 +1396,13 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       return false;
     }
     const changed = body.configVersion !== state.configVersion;
-    bundle = body;
-    adoptTemplates(body);
+    bundle = options.configTransform ? options.configTransform(body) : body;
+    adoptTemplates(bundle);
+    if (options.configCache) {
+      await options.configCache.write(body).catch((err: unknown) => {
+        note('warn', 'the config could not be kept on disk', { err: String(err) });
+      });
+    }
     state.configVersion = body.configVersion;
     state.epoch = body.box.epoch;
     heartbeatIntervalMs = options.heartbeatIntervalMs ?? body.heartbeatIntervalS * 1000;
@@ -1352,7 +1603,12 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      * for a box whose pull happens while nobody is watching.
      */
     if (applied.includes('staff')) await refreshBoothStaff(boxId);
-    if (applied.includes('booth')) {
+    /**
+     * A staff pull reaches the booth too (SCRUM-223): its `refresh` is where a
+     * session whose holder has since been deactivated is ended, and that
+     * check reads the staff list refreshed on the line above.
+     */
+    if (applied.includes('booth') || applied.includes('staff')) {
       await booth?.refresh().catch((err) => {
         note('error', 'a newly pulled wheel could not be applied', { err: String(err) });
       });
@@ -2379,10 +2635,59 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     return state.offline;
   }
 
-  async function start(): Promise<void> {
+  async function prepare(): Promise<boolean> {
     await ensureRegistered();
-    if (!credential) return;
-    await syncConfig();
+    if (!credential) return false;
+    /**
+     * The booth runs from what this box holds before it asks the cloud for
+     * anything (SCRUM-223): the wheel in its store, and the copy of the config
+     * restored when the store was attached. `start` used to reach this line
+     * only after pulling config and cache — minutes, against a cloud that
+     * takes the connection and never answers — and a booth that has not
+     * started refuses every press as "not set up".
+     *
+     * It also adopts the vouchers a previous process left unprinted, so their
+     * outcomes go to the outbox rather than to the cloud's print route — which
+     * has to happen before anything can submit a job (D20), and here it
+     * happens before a television can even be served.
+     */
+    if (!boothStarted) {
+      boothStarted = true;
+      await booth?.start().catch((err) => {
+        note('error', 'the booth could not start', { err: String(err) });
+      });
+    }
+    return true;
+  }
+
+  async function start(): Promise<void> {
+    if (!(await prepare())) return;
+    /**
+     * Every step towards the cloud from here on may fail, and none of them is
+     * a reason not to start (SCRUM-223). A Raspberry Pi comes up in a mall
+     * before the router has its line, and a box that threw here never set its
+     * timers — so it never tried again, and the booth sat unconfigured until
+     * somebody power-cycled it.
+     *
+     * Nor may any of them take long to fail. A cloud that accepts the
+     * connection and never answers is bounded by the transport: a Pi's
+     * `httpTransport` gives up on a call with no answer after
+     * `AGENT_ANSWER_TIMEOUT_MS`, and every call costs at most one of those.
+     * Below that is four calls — config, cache, heartbeat, commands — plus,
+     * inside the heartbeat, one for each print job its retry tick settles and
+     * reports up the cloud's print-result route: a till's job that finishes,
+     * or one a power cut interrupted. Never a booth voucher's, whose outcome
+     * goes to the outbox. Meanwhile the booth is already playing (`prepare`)
+     * and the runner is already serving the television. The copy of the
+     * config on disk carries the booth until the first pull lands; the timers
+     * pull the rest.
+     */
+    await syncConfig().catch((err) => {
+      note('warn', 'config could not be pulled at start; running on the copy this box holds', {
+        err: String(err),
+      });
+      return false;
+    });
     // Before the first heartbeat, because the window that matters is the one
     // between a box coming up and the link dropping again: a box that has been
     // running for a minute with no cache can do less than one that has been
@@ -2396,19 +2701,28 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       return [];
     });
     /**
-     * Before the first heartbeat, because that heartbeat carries the booth
-     * block and a block measured before the wheel was adopted would report
-     * `configVersion: null` on a booth that is in fact running version 4.
-     *
-     * It also adopts the vouchers a previous process left unprinted, so their
-     * outcomes go to the outbox rather than to the cloud's print route — which
-     * has to happen before anything can submit a job (D20).
+     * What the pulls brought, adopted before the first heartbeat, because that
+     * heartbeat carries the booth block and a block measured before the wheel
+     * was adopted would report `configVersion: null` on a booth that is in
+     * fact running version 4. A new wheel is adopted by the pull itself; this
+     * is for a station the box learned only now — the virtual box, or a Pi's
+     * first boot, has no copy of the config until the pull above — while the
+     * cache pull failed and left last run's wheel in the store.
      */
-    await booth?.start().catch((err) => {
-      note('error', 'the booth could not start', { err: String(err) });
+    await booth?.refresh().catch((err) => {
+      note('error', 'the booth could not apply what the pulls brought', { err: String(err) });
+      return false;
     });
-    await heartbeat();
-    await runPendingCommands();
+    await heartbeat().catch((err) => {
+      note('warn', 'the first heartbeat did not reach the cloud; the timer tries again', {
+        err: String(err),
+      });
+      return null;
+    });
+    await runPendingCommands().catch((err) => {
+      note('warn', 'the first command poll did not reach the cloud', { err: String(err) });
+      return 0;
+    });
     outbox?.start();
     heartbeatTimer = setInterval(() => {
       void heartbeat().catch((err) => note('error', 'heartbeat tick failed', { err: String(err) }));
@@ -2452,6 +2766,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     cacheRefreshTimer = null;
     outbox?.stop();
     booth?.stop();
+    // A `restart` command is `stop` then `start`: the booth's own timer went
+    // with it, so the next `prepare` starts the booth again.
+    boothStarted = false;
   }
 
   return {
@@ -2462,6 +2779,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     syncCache,
     heartbeat,
     runPendingCommands,
+    prepare,
     start,
     stop,
     setOffline,

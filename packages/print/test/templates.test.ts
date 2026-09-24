@@ -229,14 +229,56 @@ describe('the booth voucher', () => {
     expect(Buffer.from(withTemplates.bytes).equals(Buffer.from(without.bytes))).toBe(true);
   });
 
-  it('prints "Not signed in" rather than dropping the row', () => {
+  it('prints "unattributed" rather than dropping the row', () => {
     // A sign-in problem never takes the booth down, so an unattributed voucher
     // is expected paper. A missing row and a row saying nobody look identical
-    // to reception, so the slip says which.
+    // to reception, so the slip says which — in the word the Console's alert
+    // uses for the same spins (SCRUM-223).
     const lines = textOf(build({ staff: null })).join('\n');
     expect(lines).toContain('Staff');
-    expect(lines).toContain('Not signed in');
+    expect(lines).toContain('unattributed');
+    expect(lines).not.toContain('Not signed in');
     expect(lines).not.toContain('Nok (S-014)');
+  });
+
+  it('prints the name and code of whoever was on duty', () => {
+    const lines = textOf(build({ staff: 'Nok (S-7KMQ)' }));
+    expect(lines).toContain('Nok (S-7KMQ)');
+  });
+
+  it('prints the definition’s terms at the foot, after the single-use line (SCRUM-223)', () => {
+    const lines = textOf(build());
+    const singleUse = lines.indexOf('Single use · ใช้ได้ 1 ครั้ง');
+    expect(singleUse).toBeGreaterThan(0);
+    for (const term of data.terms) {
+      const at = lines.indexOf(term);
+      expect(at, term).toBeGreaterThan(singleUse);
+    }
+    // And no longer between the redemption sentence and the code as well.
+    const code = lines.indexOf(data.voucherCode);
+    for (const term of data.terms) expect(lines.indexOf(term)).toBeGreaterThan(code);
+  });
+
+  it('prints nothing for an empty footer line', () => {
+    const withFooter = textOf(build());
+    const without = textOf(build({ footerLine: '' }));
+    expect(withFooter).toContain(data.footerLine);
+    expect(without.length).toBe(withFooter.length - 1);
+    expect(without).not.toContain('');
+  });
+
+  it('marks a reprint at the top, and a first print not at all (SCRUM-223)', () => {
+    const first = textOf(build());
+    expect(first.some((l) => l.startsWith('Reprint'))).toBe(false);
+
+    const copy = build({ reprintNote: 'Reprint · 24 Sep 2026 16:40' });
+    const lines = textOf(copy);
+    expect(lines).toContain('Reprint · 24 Sep 2026 16:40');
+    expect(lines.indexOf('Reprint · 24 Sep 2026 16:40')).toBeLessThan(lines.indexOf('★ YOU WON ★'));
+    // The code is the code: a reprint never carries a different one.
+    const qr = copy.document.blocks.find((b) => b.k === 'qr');
+    expect(qr && qr.k === 'qr' ? qr.value : undefined).toBe(data.voucherCode);
+    expect(copy.overflow).toEqual([]);
   });
 
   it('prints "No expiry" rather than dropping the row', () => {

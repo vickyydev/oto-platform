@@ -522,6 +522,9 @@ importers:
 
   packages/box-agent:
     dependencies:
+      '@node-rs/argon2':
+        specifier: ^2.2.1
+        version: 2.2.1
       '@oto/print':
         specifier: workspace:*
         version: link:../print
@@ -535,6 +538,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.6
+      esbuild:
+        specifier: ^0.25.12
+        version: 0.25.12
       typescript:
         specifier: ~5.9.3
         version: 5.9.3

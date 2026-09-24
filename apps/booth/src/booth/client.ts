@@ -15,13 +15,14 @@
  * `VITE_BOOTH_FAKE=0|1` overrides at build time.
  */
 
-import { BOOTH_DEVICE_HEADER } from '@oto/shared';
+import { BOOTH_DEVICE_HEADER, type BoothReprintRequest } from '@oto/shared';
 import { flags } from '../flags';
 import {
   BOOTH_ERROR_CODES,
   BoothCallError,
   type BoothConfigResponse,
   type BoothErrorCode,
+  type BoothReprintResponse,
   type BoothStatus,
   type BoothTransport,
   type SpinRequest,
@@ -30,6 +31,7 @@ import {
   type StaffSignInResponse,
 } from './contract';
 import { FakeBooth } from './fake';
+import { boothHost } from './host';
 
 /**
  * The paired screen's credential (SCRUM-244).
@@ -114,6 +116,13 @@ export const boothCredential = {
 const REQUEST_TIMEOUT_MS = 6000;
 
 function baseUrl(): string {
+  /**
+   * A page served by a booth box talks to that box, on the origin it came
+   * from, whatever the build was told (SCRUM-223): the address a build bakes
+   * in is the staging site's business, and a Pi under a television has no
+   * other address to reach.
+   */
+  if (boothHost === 'box') return '/booth';
   const configured = import.meta.env.VITE_BOOTH_API;
   const base = typeof configured === 'string' && configured !== '' ? configured : '/booth';
   return base.endsWith('/') ? base.slice(0, -1) : base;
@@ -224,9 +233,18 @@ class HttpBooth implements BoothTransport {
   async signOut(): Promise<void> {
     await call<void>('/staff/sign-out', { method: 'POST', body: '{}' });
   }
+
+  reprint(request: BoothReprintRequest): Promise<BoothReprintResponse> {
+    return call<BoothReprintResponse>('/reprint', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
 }
 
 function chooseTransport(): BoothTransport {
+  // A booth box is always the real thing: there is no demo mode on a Pi.
+  if (boothHost === 'box') return new HttpBooth();
   if (flags.live) return new HttpBooth();
   if (flags.fake) return new FakeBooth();
   const configured = import.meta.env.VITE_BOOTH_FAKE;

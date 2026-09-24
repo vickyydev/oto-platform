@@ -1351,6 +1351,33 @@ export class SqlBoxStore implements BoxStore {
     const value = rows[0]?.value;
     return value === undefined || value === null ? null : String(value);
   }
+
+  async readRuntimeValue(boxId: string, key: string): Promise<string | null> {
+    this.requireFeature('boothRuntime');
+    const rows = await this.driver.query(
+      `select value from ${this.table('box_runtime')} where box_id = ? and runtime_key = ?`,
+      [boxId, key],
+    );
+    const value = rows[0]?.value;
+    return value === undefined || value === null ? null : String(value);
+  }
+
+  async writeRuntimeValue(boxId: string, key: string, value: string, now?: string): Promise<void> {
+    this.requireFeature('boothRuntime');
+    if (key === LAST_GOOD_TIME_KEY) {
+      // `markTimeSeen` only ever moves this forward; an overwrite here would
+      // let a clock that jumped back rewrite the one time the box trusts.
+      throw new Error(`${LAST_GOOD_TIME_KEY} is written by markTimeSeen only`);
+    }
+    const at = now ?? this.nowIso();
+    await this.driver.query(
+      `insert into ${this.table('box_runtime')} (box_id, runtime_key, value, updated_at)
+       values (?, ?, ?, ?)
+       on conflict (box_id, runtime_key) do update set
+         value = excluded.value, updated_at = excluded.updated_at`,
+      [boxId, key, value, at],
+    );
+  }
 }
 
 /**

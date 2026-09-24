@@ -6,17 +6,23 @@
     <title>OTO Lucky Wheel</title>
     <meta name="robots" content="noindex, nofollow" />
     <meta name="referrer" content="same-origin" />
+    <!--
+      Who served this page (SCRUM-223): `paired` as built — the staging site,
+      where a screen is paired to a booth — and rewritten to `box` by a booth
+      box serving it to the television plugged into it. See src/booth/host.ts.
+    -->
+    <meta name="oto-booth-host" content="paired" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!--
       Thai on the television renders in Noto Sans Thai (D23): the park's brand
       faces have no Thai glyphs, and every prize on this wheel is named in both
       languages on the result card.
 
-      It is fetched, not bundled — the layout manifest says `source: 'bundled'`
-      and that is not yet true. A booth with no internet falls back to whatever
-      Thai face the device has, which on Windows, Android and macOS is a real
-      one; the card stays readable, it is simply not the brand's Thai face.
-      Whoever fills the asset slot should ship the woff2 and drop this link.
+      It is fetched from Google first. A page that cannot reach Google — a
+      booth box that boots before the mall's internet, or a network that
+      blocks it — falls back to 'Booth Thai' in src/kiosk.css: the same face,
+      built into the page from packages/print/fonts, so a Raspberry Pi with no
+      Thai font of its own still draws Thai (SCRUM-223).
     -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

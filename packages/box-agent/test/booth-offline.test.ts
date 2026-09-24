@@ -36,13 +36,12 @@ import { BOX_ID, BRANCH_ID, OPERATOR_ID } from './_support';
  * a fake would only prove the fake.
  *
  * **What this file does NOT build, stated plainly.** It does not build
- * `createBoxAgent`. That file reaches `printing/index.ts`, which imports
- * `@oto/print`, which this package's test runner cannot load at all — Node's
- * strip-only mode refuses `Bitmap1`'s parameter properties, measured as
- * `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`. So what restarts below is the BOOTH
- * MODULE and its store, which is where every durable thing in this ticket
- * lives: the outbox rows, their signatures, the daily counters, the press
- * guard and the unprinted vouchers. The agent adds wiring on top of that —
+ * `createBoxAgent` (it was written when this package's test runner could not
+ * load the agent; since SCRUM-223 it can, and `runner.test.ts` restarts the
+ * whole agent as a Pi runs it). What restarts below is the BOOTH MODULE and
+ * its store, which is where every durable thing in this ticket lives: the
+ * outbox rows, their signatures, the daily counters, the press guard and the
+ * unprinted vouchers. The agent adds wiring on top of that —
  * when to call `refresh`, where the heartbeat's booth block goes, which
  * outcomes route to the outbox — and none of it is state that survives a
  * power cut, because none of it is on disk.

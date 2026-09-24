@@ -414,6 +414,13 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /booth/staff/sign-in [credential:booth]',
   'POST /booth/staff/sign-out [credential:booth]',
   'POST /booths/:id/pairing-codes [secretResponse]',
+  /**
+   * SCRUM-223 — a booth box forwards a phone and password typed at its booth.
+   * `secretResponse` for the REQUEST: its body is a password, and nothing may
+   * keep a hash of it. A retry is a second attempt and counts as one, exactly
+   * as a second `POST /auth/sign-in` does.
+   */
+  'POST /box/v1/booth/staff/verify [secretResponse,credential:box]',
   'POST /box/v1/commands/:commandId/result [credential:box]',
   'POST /box/v1/commands/poll [credential:box]',
   'POST /box/v1/heartbeat [credential:box]',

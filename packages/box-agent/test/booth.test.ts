@@ -23,21 +23,19 @@ import { SqlBoxStore } from '../src/store-sql';
 import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
 import type { BoxStore, CounterKey, PrintJobRecord } from '../src/store';
 import type { BoothVoucherData, PrintJob as RenderPrintJob } from '@oto/print';
-import { BOX_ID, BRANCH_ID, OPERATOR_ID } from './_support';
+import { BOOTH_CODE_ALPHABET } from '@oto/shared';
+import { BOX_ID, BRANCH_ID, OPERATOR_ID, seededIndex } from './_support';
 
 /**
  * The Lucky Wheel on the box (S2-07a).
  *
- * **What this file can and cannot build.** It builds the booth module, a real
- * SQLite store and a print port, and drives a press end to end. It does NOT
- * build `createBoxAgent`: that file reaches `printing/index.ts`, which imports
- * `@oto/print`, which this package's test runner cannot load at all — Node's
- * strip-only mode refuses `Bitmap1`'s parameter properties, and the failure is
- * `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` rather than anything subtle. That is the
- * same wall `print-restart.test.ts` describes, and the booth is built against
- * an injected print PORT precisely so that this wall costs the tests nothing:
- * everything the agent adds on top is wiring, and the seam it wires to is
- * exercised here.
+ * **What this file builds.** The booth module, a real SQLite store and a print
+ * port, driving a press end to end. It does not build `createBoxAgent`: the
+ * booth is built against an injected print PORT, so a press is proved without
+ * a renderer or a printer, and everything the agent adds on top is wiring to
+ * the seam exercised here. (This file was written when the package's test
+ * runner could not load the agent at all; it can since SCRUM-223, and
+ * `runner.test.ts` drives the whole agent as a Pi runs it.)
  *
  * So nothing below claims to prove the agent. It proves the module the agent
  * constructs, which is where every rule in this ticket actually lives.
@@ -113,13 +111,19 @@ const keys = generateSyncKeyPair();
 interface HarnessOptions {
   entries?: BoothCacheEntry[];
   staff?: BoothStaffRecord[];
-  /** The draw's source. A counter by default, so every test is deterministic. */
+  /**
+   * The draw's rolls, in order; 0 when none are scripted, so every test is
+   * deterministic. They steer the DRAW only — see `randomIndex` below.
+   */
   rolls?: number[];
   print?: boolean;
   store?: BoxStore;
   file?: string;
   privateKey?: string | null;
 }
+
+/** Each booth opened here mints from its own seed, so a restarted one repeats no code. */
+let codeSeed = 0x5eed0b07;
 
 function openBooth(options: HarnessOptions = {}): Harness {
   const db = new DatabaseSync(options.file ?? ':memory:');
@@ -131,6 +135,7 @@ function openBooth(options: HarnessOptions = {}): Harness {
 
   const rolls = options.rolls ? [...options.rolls] : null;
   let rollIndex = 0;
+  const codeIndex = seededIndex(codeSeed++);
 
   const port: BoothPrintPort = {
     async submit(request) {
@@ -162,12 +167,19 @@ function openBooth(options: HarnessOptions = {}): Harness {
     print: options.print === false ? null : port,
     staff: () => options.staff ?? [],
     // A stand-in for argon2id: the SHAPE under test is "iterate the booth's
-    // allowed staff and verify against each hash" (D18), and a native
-    // dependency would prove nothing more about that while costing this
-    // package a lockfile change it is not allowed to make. The real verifier
-    // is `@node-rs/argon2`, injected by the api.
+    // allowed staff and verify against each hash" (D18), and a real hash would
+    // prove nothing more about that while making every sign-in test pay for
+    // argon2. The real verifier is `@node-rs/argon2`, injected by the runner
+    // and by the api; `runner.test.ts` checks it against a real hash.
     verifySecret: async (hash, secret) => hash === `argon2:${secret}`,
     randomIndex: (max) => {
+      // The voucher code's characters come from a seeded source, whatever the
+      // draw is scripted to do: `mintBoothCode` asks for them over the booth
+      // alphabet and needs a source that varies (`seededIndex` says why), and
+      // a test about the draw must not depend on how the prefix is spelled. No
+      // wheel in this file weighs thirty basis points in all, so a draw is
+      // never mistaken for a code character.
+      if (max === BOOTH_CODE_ALPHABET.length) return codeIndex(max);
       if (!rolls) return 0;
       const value = rolls[rollIndex % rolls.length] ?? 0;
       rollIndex += 1;
@@ -353,7 +365,10 @@ test('a press writes the spin, mints a code, queues the print and moves the coun
   await seed(h);
   const response = await h.booth.spin({ idempotencyKey: 'press-1', actionId: 'act-1' });
 
-  assert.match(response.voucherCode ?? '', /^B1[23456789ABCDEFGHJKMNPQRSTVWXYZ]{8}$/);
+  // The booth prefix, then eight or more characters from the alphabet — not a
+  // fixed ten: the code grows a check character (2 + 8 + 1), and this test is
+  // about the press, not about the code's length.
+  assert.match(response.voucherCode ?? '', /^B1[23456789ABCDEFGHJKMNPQRSTVWXYZ]{8,}$/);
   assert.equal(response.configVersion, 1);
   assert.equal(response.printState, 'printed');
   assert.equal(response.staffAccountId, null, 'nobody is signed in, and that is allowed');
@@ -775,7 +790,7 @@ test('a clock inside the ten-minute tolerance is not flagged', async () => {
 const staffRecord = (over: Partial<BoothStaffRecord> = {}): BoothStaffRecord => ({
   accountId: ACCOUNT_ID,
   status: 'active',
-  pinHash: 'argon2:2468',
+  pinHash: 'argon2:7391',
   badgeHash: null,
   staffCode: 'S-014',
   ...over,
@@ -786,7 +801,7 @@ test('a PIN is verified by iterating the booth’s own staff, and signs somebody
   await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
 
   assert.deepEqual(await h.booth.signIn({ pin: '1111' }), { ok: false });
-  const ok = await h.booth.signIn({ pin: '2468' });
+  const ok = await h.booth.signIn({ pin: '7391' });
   assert.equal(ok.ok, true);
   assert.equal(ok.accountId, ACCOUNT_ID);
 
@@ -802,7 +817,7 @@ test('somebody not on this booth’s list cannot sign in, however good their PIN
   // A wheel with an empty `allowedStaff` — which is every booth today, since
   // nothing fills the scope yet.
   await seed(h, [entry({ allowedStaff: [] })]);
-  assert.deepEqual(await h.booth.signIn({ pin: '2468' }), { ok: false });
+  assert.deepEqual(await h.booth.signIn({ pin: '7391' }), { ok: false });
   assert.equal(await h.booth.staffSession(), null);
   h.close();
 });
@@ -826,7 +841,7 @@ test('five wrong PINs are free; the sixth starts a wait that a restart does not 
    */
   const restarted = openBooth({ staff: [staffRecord()], store: h.store });
   await restarted.booth.refresh();
-  const afterRestart = await restarted.booth.signIn({ pin: '2468' });
+  const afterRestart = await restarted.booth.signIn({ pin: '7391' });
   assert.equal(afterRestart.ok, false, 'the correct PIN is refused while the lock stands');
   assert.equal(typeof afterRestart.retryAfterMs, 'number');
 
@@ -850,7 +865,7 @@ test('a sign-in problem never stops the wheel', async () => {
 test('a signed-in booth attributes the spin and prints the staff code', async () => {
   const h = openBooth({ rolls: [0], staff: [staffRecord()] });
   await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
-  await h.booth.signIn({ pin: '2468' });
+  await h.booth.signIn({ pin: '7391' });
 
   const response = await h.booth.spin({ idempotencyKey: 'press-1' });
   assert.equal(response.staffAccountId, ACCOUNT_ID);
@@ -954,9 +969,93 @@ test('a print outcome for a booth voucher becomes an outbox fact (D20)', async (
   assert.equal(printed?.payload.voucherCode, voucherFact?.payload.code);
   assert.equal(
     h.booth.ownsPrintJob(jobId),
-    false,
-    'and the booth lets the finished job go once the fact is on disk',
+    true,
+    'and the booth still answers for the finished job, so nothing about it can go to the cloud route',
   );
+  h.close();
+});
+
+/**
+ * A second outcome for a job the booth has already reported (SCRUM-223).
+ *
+ * It should not happen — the print queue holds one job once — and did: a queue
+ * that read back the row a spin had just written printed the voucher twice, and
+ * the second outcome arrived after the booth had let the job go, so the agent
+ * sent it to the cloud's print-result route, against a row the cloud does not
+ * have. The booth keeps answering for a finished job, so whatever comes late
+ * is still a fact in the outbox, where the cloud files one print per job.
+ */
+test('an outcome that arrives after the job was reported still goes to the outbox', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h);
+  h.printOutcome = 'queued';
+  const response = await h.booth.spin({ idempotencyKey: 'press-1' });
+  const jobId = h.submissions[0]!.id;
+  const outcome = {
+    id: jobId,
+    status: 'printed' as const,
+    attempts: 1,
+    deviceId: '018f1d2c-0000-7000-8000-00000000de01',
+    errorCode: null,
+    errorMessage: null,
+  };
+
+  await h.booth.reportPrint(outcome);
+  assert.equal(h.booth.ownsPrintJob(jobId), true);
+  await h.booth.reportPrint(outcome);
+  assert.equal(h.booth.ownsPrintJob(jobId), true, 'still the booth’s, never the cloud route’s');
+
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  const printed = batch.events.filter((e) => e.type === 'booth.voucher_printed');
+  assert.deepEqual(
+    printed.map((e) => [e.payload.printJobId, e.payload.status, e.payload.voucherCode]),
+    [
+      [jobId, 'printed', response.voucherCode],
+      [jobId, 'printed', response.voucherCode],
+    ],
+    'both reached the outbox, naming the same job and the voucher',
+  );
+  h.close();
+});
+
+test('a voucher a power cut caught on its way to the printer is the booth’s to report after the restart', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h);
+  h.printOutcome = 'queued';
+  const response = await h.booth.spin({ idempotencyKey: 'press-1' });
+  const jobId = h.submissions[0]!.id;
+  // Bytes were going to the head when the power went: the row says `sending`,
+  // and the next process's store marks it interrupted when it opens.
+  await h.store.updatePrintJob(jobId, { state: 'sending' });
+  await h.store.init(BOX_ID);
+  assert.deepEqual(
+    (await h.store.loadInterruptedPrintJobs(BOX_ID)).map((job) => job.id),
+    [jobId],
+  );
+
+  const restarted = openBooth({ store: h.store });
+  await restarted.booth.start();
+  assert.equal(
+    restarted.booth.ownsPrintJob(jobId),
+    true,
+    'adopted, so the queue’s report of it goes to the outbox and not to the cloud route',
+  );
+  // What the print queue reports for it: failed, never printed again (D12).
+  await restarted.booth.reportPrint({
+    id: jobId,
+    status: 'failed',
+    attempts: 1,
+    deviceId: null,
+    errorCode: 'PRINT_INTERRUPTED',
+    errorMessage: 'The box restarted while this job was going to the printer',
+  });
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  const printed = batch.events.find((e) => e.type === 'booth.voucher_printed');
+  assert.equal(printed?.payload.status, 'failed');
+  assert.equal(printed?.payload.errorCode, 'PRINT_INTERRUPTED');
+  assert.equal(printed?.payload.voucherCode, response.voucherCode, 'named by its code');
+  restarted.booth.stop();
+  restarted.close();
   h.close();
 });
 
@@ -994,7 +1093,9 @@ test('a booth adopts the vouchers a previous process left unprinted, and can sti
   const batch = await h.store.takeBatch(BOX_ID, { now: AT });
   const printed = batch.events.find((e) => e.type === 'booth.voucher_printed');
   assert.equal(printed?.payload.voucherCode, response.voucherCode);
-  assert.equal(printed?.payload.voucherId, null, 'honestly null rather than invented');
+  // Left out rather than invented — and rather than sent as null, which the
+  // cloud's schema refuses (SCRUM-223): the code alone finds the voucher.
+  assert.equal('voucherId' in (printed?.payload ?? {}), false, 'no id, not a null one');
   restarted.booth.stop();
   restarted.close();
   h.close();

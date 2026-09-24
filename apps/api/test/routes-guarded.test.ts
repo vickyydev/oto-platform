@@ -158,6 +158,10 @@ describe('route guards (S2-01b)', () => {
       'GET /box/v1/cache [box]',
       'GET /box/v1/config [box]',
       'GET /box/v1/sync/pull [box]',
+      // SCRUM-223: a booth box asks whether a phone and password typed at one
+      // of ITS booths may sign in there. The password is the body; the box is
+      // the caller.
+      'POST /box/v1/booth/staff/verify [box]',
       'POST /box/v1/commands/:commandId/result [box]',
       'POST /box/v1/commands/poll [box]',
       'POST /box/v1/heartbeat [box]',
@@ -194,7 +198,7 @@ describe('route guards (S2-01b)', () => {
     const boxUrls = ctx.app.routeRegistry.filter(
       (r) => r.url.startsWith('/box/') && r.method !== 'HEAD' && r.method !== 'OPTIONS',
     );
-    expect(boxUrls.length).toBe(10);
+    expect(boxUrls.length).toBe(11);
 
     const bodies: Record<string, unknown> = {
       'POST:/box/v1/register': { claimCode: undefined, agentVersion: '0.1.0' },

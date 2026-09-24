@@ -1,4 +1,5 @@
 import type { BoothConfigPrize, SpinResponse } from '@oto/shared';
+import { groupBoothCode } from '../booth/wheel-view';
 import { COPY } from '../copy';
 import { QrCode } from './QrCode';
 
@@ -18,7 +19,14 @@ interface Props {
   onClose?: () => void;
 }
 
-const QR_SIZE = 232;
+/**
+ * 200 logical pixels: 300 on a 720-wide portrait screen and 450 on a 1080 one,
+ * well above what a counter scanner needs, and small enough that the card
+ * with the code on it fits a 9:16 screen — the stage is 480 × 853 — with its
+ * title in view. At 232 the card stood 889 tall and lost its "You won!" band
+ * off the top of the television whenever the printer was down (SCRUM-223).
+ */
+const QR_SIZE = 200;
 
 /**
  * The win.
@@ -45,13 +53,16 @@ export function ResultModal({ spin, prize, open, promptText, onClose }: Props) {
   // same as a printer failure — see the note on `voucherCode` in the frozen
   // contract, which a reader that conflated the two would get backwards.
   const hasCode = spin.voucherCode !== null && spin.voucherCode !== '';
+  // The tallest card: the code and its QR are the voucher. It drops the
+  // decoration above the prize name to keep the whole card on the screen.
+  const showsCode = hasCode && !printed;
 
   return (
     <div className="k-modal">
       {/* The backdrop dismisses too — no dead taps for staff with a pointer. */}
       <div className="k-modal-backdrop" onClick={() => onClose?.()} role="presentation" />
 
-      <div className="k-card">
+      <div className={showsCode ? 'k-card k-card--code' : 'k-card'}>
         {/* A graphic X, never a <button>: a focusable control here would let
             the physical button double-trigger through it. */}
         <div className="k-close" role="presentation" onClick={() => onClose?.()}>
@@ -130,7 +141,7 @@ export function ResultModal({ spin, prize, open, promptText, onClose }: Props) {
                 stops being worth anything. */}
             <div className="k-scan-pill">{COPY.showThisCode.en}</div>
             <p className="k-code" data-voucher-code={spin.voucherCode}>
-              {groupCode(spin.voucherCode ?? '')}
+              {groupBoothCode(spin.voucherCode ?? '')}
             </p>
             <QrCode value={spin.voucherCode ?? ''} size={QR_SIZE} />
             <p className="k-scan">{COPY.scanToClaim.en}</p>
@@ -154,19 +165,6 @@ export function ResultModal({ spin, prize, open, promptText, onClose }: Props) {
       </div>
     </div>
   );
-}
-
-/**
- * `B1RT7KMQ4X` reads as `B1 RT7K MQ4X`.
- *
- * Grouping is presentation only — the canonical unspaced form is what the QR
- * carries and what `data-voucher-code` holds, because `parseBoothCode` strips
- * separators but nothing should have to. A code of an unexpected length is
- * shown exactly as it arrived rather than chopped at fixed offsets.
- */
-function groupCode(code: string): string {
-  if (code.length !== 10) return code;
-  return `${code.slice(0, 2)} ${code.slice(2, 6)} ${code.slice(6)}`;
 }
 
 /**

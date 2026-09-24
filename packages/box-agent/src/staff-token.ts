@@ -66,12 +66,12 @@ import { createPublicKey, sign, timingSafeEqual, verify } from 'node:crypto';
 
 // --- Mirrored from `@oto/shared/staff-token` --------------------------------
 //
-// The same mirror `contract.ts` keeps, for the same reason: this package's
-// tests run on Node's own runner with type stripping, which will not load a
-// `.ts` file out of `node_modules`, so `import … from '@oto/shared'` here would
-// compile and then fail at test time. `test/contract-drift.test.ts` imports
-// both copies by relative path and asserts they match item for item — a test
-// may reach across a package boundary where the shipped code may not.
+// A copy rather than an import, like `contract.ts`, and for a reason that no
+// longer holds: it was written before this package depended on `@oto/shared`.
+// It does now, and its tests load `@oto/shared` as the shipped code does
+// (`booth.ts` imports values from it), so this block could become a re-export.
+// Until it does, `test/contract-drift.test.ts` imports both copies by relative
+// path and asserts they match item for item.
 
 /** Bumped when a claim changes MEANING, not when one is added. */
 export const STAFF_TOKEN_SCHEMA_VERSION = 1;

@@ -1,0 +1,10 @@
+# A daily restart of the whole Pi at a quiet hour: Chromium and a week of
+# uptime are the likeliest things to go stale on an unattended booth, and a
+# reboot costs nothing when the mall is closed. Spins, vouchers waiting to
+# print, the staff session and the queue for the cloud all survive it.
+[Unit]
+Description=OTO booth box daily reboot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl reboot

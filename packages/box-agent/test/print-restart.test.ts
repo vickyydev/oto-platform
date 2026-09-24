@@ -23,16 +23,13 @@ import { BOX_ID, STATION_ID, plus } from './_support';
  * unchanged afterwards.
  *
  * **What this file does not do, and where that is done instead.** It does not
- * build the print subsystem. `printing/queue.ts` imports `@oto/print`, which
- * cannot be LOADED by this package's test runner at all: Node's strip-only
- * mode refuses `Bitmap1`'s parameter properties (measured — the error is
- * `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`), which is the same reason S2-06's
- * printing tests live in the api's suite. So the durable half is proved here,
- * against the store the subsystem writes to, and the seam between the two —
- * submit, paper out, drop the subsystem, rebuild it on the same file, print —
- * is proved in `apps/api/test/print-restart.test.ts`, where vitest transpiles
- * properly and the real `createPrintSubsystem` and a printer simulator are
- * importable.
+ * build the print subsystem. The durable half is proved here, against the
+ * store the subsystem writes to, and the seam between the two — submit, paper
+ * out, drop the subsystem, rebuild it on the same file, print — is proved in
+ * `apps/api/test/print-restart.test.ts`, with the real `createPrintSubsystem`
+ * and a printer simulator. (Written when this package's runner could not load
+ * `@oto/print`; since SCRUM-223 it can, and `runner.test.ts` prints through
+ * the real subsystem to a TCP printer across a restart.)
  */
 
 const AT = '2026-09-21T03:00:00.000Z';

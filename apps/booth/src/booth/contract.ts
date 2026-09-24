@@ -26,7 +26,15 @@
  * written for a log can never land on a television in a shopping centre.
  */
 
-import type { BoothConfigBundle, BoothPrintState, SpinResponse } from '@oto/shared';
+import type {
+  BoothConfigBundle,
+  BoothPrintState,
+  BoothReprintRequest,
+  BoothReprintResponse,
+  BoothSignInRefusal,
+  BoothStaffOnDuty,
+  SpinResponse,
+} from '@oto/shared';
 
 /** `GET /booth/config` */
 export interface BoothConfigResponse {
@@ -63,6 +71,11 @@ export interface SpinRequest {
 /** `POST /booth/staff/sign-in` */
 export interface StaffSignInRequest {
   /**
+   * `account` is a phone and password, which the box checks with the cloud
+   * (SCRUM-223); `pin` or nothing is the PIN, checked on the box.
+   */
+  mode?: 'pin' | 'account';
+  /**
    * The typed PIN, or the scanned badge — never both. **The page holds
    * neither afterwards** (D15): it posts, reads `ok`, and drops the value.
    * There is no hash in this browser and no account id beyond the opaque one
@@ -70,6 +83,9 @@ export interface StaffSignInRequest {
    */
   pin?: string;
   badge?: string;
+  /** Account sign-in only. Held by the page for as long as the post takes. */
+  phone?: string;
+  password?: string;
 }
 
 export interface StaffSignInResponse {
@@ -83,6 +99,15 @@ export interface StaffSignInResponse {
    * whatever verifies the PIN.
    */
   retryAfterMs?: number;
+  /**
+   * Why an account sign-in was refused, when the person can do something
+   * about it: `offline` (use the PIN), `not_assigned`, `not_allowed`,
+   * `must_change_password`, `locked`, and — when the cloud refused the box or
+   * the booth rather than the person — `box_refused` and `booth_not_on_box`,
+   * which a manager fixes in Console → Devices. A code, which the panel words
+   * (D15); `BOOTH_SIGN_IN_REFUSALS` in `@oto/shared` says what each one means.
+   */
+  reason?: BoothSignInRefusal;
 }
 
 /**
@@ -113,8 +138,15 @@ export interface BoothStatus {
   vouchersPending: number;
   /** ISO 8601, or null when this booth has not been played since it started. */
   lastSpinAt: string | null;
-  /** Whether anybody is attending the booth. Never who. */
+  /** Whether anybody is attending the booth. */
   staffSignedIn: boolean;
+  /**
+   * WHO is attending: name and staff code, and when the session ends by
+   * itself (SCRUM-223). A deliberate change to D15 on the owner's
+   * instruction — the corner of the screen shows the person on duty, as a
+   * name badge would. Never an account id, a phone or anything that signs in.
+   */
+  staff?: BoothStaffOnDuty | null;
   /** `booth.booth_prize.id` of the prizes that have hit today's cap. */
   dailyCapsReached: string[];
 }
@@ -154,6 +186,10 @@ export const BOOTH_ERROR_CODES = [
    * and ask for staff.
    */
   'unpaired',
+  /** SCRUM-223 — a reprint asked for with nobody signed in at the booth. */
+  'staff_required',
+  /** SCRUM-223 — a reprint with no voucher on the box to print again. */
+  'nothing_to_reprint',
 ] as const;
 export type BoothErrorCode = (typeof BOOTH_ERROR_CODES)[number];
 
@@ -194,6 +230,19 @@ export interface BoothTransport {
   spin(request: SpinRequest): Promise<SpinResponse>;
   signIn(request: StaffSignInRequest): Promise<StaffSignInResponse>;
   signOut(): Promise<void>;
+  /**
+   * `POST /booth/reprint` — the booth's last voucher again, same code,
+   * staff only (SCRUM-223). The box refuses with `staff_required` or
+   * `nothing_to_reprint`.
+   */
+  reprint(request: BoothReprintRequest): Promise<BoothReprintResponse>;
 }
 
-export type { BoothConfigBundle, BoothPrintState, SpinResponse };
+export type {
+  BoothConfigBundle,
+  BoothPrintState,
+  BoothReprintResponse,
+  BoothSignInRefusal,
+  BoothStaffOnDuty,
+  SpinResponse,
+};

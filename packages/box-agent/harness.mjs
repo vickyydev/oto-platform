@@ -3,17 +3,18 @@ import { registerHooks } from 'node:module';
 /**
  * The minimum test harness for this package.
  *
- * `@oto/box-agent` has no test runner of its own and cannot grow one: adding
- * `vitest` to its manifest is a `pnpm-lock.yaml` change, and this package was
- * asked not to make one. So the tests run on Node's own runner with its type
- * stripping, and the one thing that needs bridging is module specifiers —
- * Node's resolver wants `./store.ts` where TypeScript, the rest of this
- * repository and every editor want `./store`.
+ * `@oto/box-agent`'s tests run on Node's own runner, with no test framework
+ * of its own. The `test` script passes `--experimental-transform-types`, which
+ * — unlike the default strip-only mode — also compiles the TypeScript that
+ * needs more than erasing (the parameter properties in `@oto/print`), so every
+ * module in the package loads, the agent included. The one thing that needs
+ * bridging is module specifiers — Node's resolver wants `./store.ts` where
+ * TypeScript, the rest of this repository and every editor want `./store`.
  *
  * This appends the extension rather than rewriting the source, so the files a
  * Pi and the api import stay in the repository's ordinary style and nothing
  * about the shipped code exists only to make a test run. Replace the whole
- * file with `vitest` the day this package is allowed a devDependency.
+ * file if the package ever moves to `vitest`.
  */
 registerHooks({
   resolve(specifier, context, nextResolve) {

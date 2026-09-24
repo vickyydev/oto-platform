@@ -49,3 +49,25 @@ export function openTestStore(startAt = '2026-09-20T03:00:00.000Z'): TestStore {
 export function plus(iso: string, ms: number): string {
   return new Date(Date.parse(iso) + ms).toISOString();
 }
+
+/**
+ * A seeded source of indices in `[0, maxExclusive)`, for a booth under test.
+ *
+ * Deterministic, so a failing run replays, and VARYING, as the box's own
+ * source (`crypto.randomInt`) is. A constant source such as `() => 0` is not a
+ * booth: every code it mints is the same, so a test cannot tell one voucher
+ * from the next, and code minting that draws again when a draw will not do —
+ * a check character that cannot be printed, say — waits for an answer a
+ * constant source never gives, and gives up. mulberry32, as in
+ * `spin-distribution.test.ts`: uniform enough that a failure is the booth's,
+ * not the generator's.
+ */
+export function seededIndex(seed: number): (maxExclusive: number) => number {
+  let state = seed >>> 0;
+  return (maxExclusive) => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return Math.floor((((t ^ (t >>> 14)) >>> 0) / 4294967296) * maxExclusive);
+  };
+}

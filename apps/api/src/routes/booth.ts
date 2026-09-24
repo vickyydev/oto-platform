@@ -133,8 +133,18 @@ const SpinBodySchema = z.object({
  * rather than one worth hiding.
  */
 const StaffSignInBodySchema = z.object({
+  /**
+   * `account` signs in with a phone and password, which the box forwards to
+   * `POST /box/v1/booth/staff/verify` under its own credential (SCRUM-223);
+   * `pin`, or no mode at all, is the PIN on the box. Named here because a zod
+   * object drops what it does not name, and a dropped `mode` would send a
+   * phone-and-password sign-in to the box as an empty PIN.
+   */
+  mode: z.enum(['pin', 'account']).optional(),
   pin: z.string().min(1).max(64).optional(),
   badge: z.string().min(1).max(256).optional(),
+  phone: z.string().min(1).max(32).optional(),
+  password: z.string().min(1).max(256).optional(),
 });
 
 export async function boothRoutes(app: App): Promise<void> {
@@ -241,7 +251,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { credential: 'booth', ...limited },
       schema: {
         description:
-          'Sign a staff member in at this booth by PIN or badge. The value is verified on the box against the booth’s allowed staff and is held by nobody afterwards. A refusal is 200 with `ok: false` and how long to wait — not a 4xx, because a sign-in problem must never look like the booth being broken.',
+          'Sign a staff member in at this booth by PIN or badge, checked on the box against the booth’s allowed staff — or, with `mode: "account"`, by phone and password, which the box forwards to the cloud under its own credential. Nothing typed is held by anybody afterwards. A refusal is 200 with `ok: false`, how long to wait, and for an account sign-in a `reason` code (`offline`, `not_assigned`, `not_allowed`, `must_change_password`, or `box_refused` / `booth_not_on_box` when the cloud refused the box or no longer has this booth on it) — not a 4xx, because a sign-in problem must never look like the booth being broken.',
         body: StaffSignInBodySchema,
       },
     },
@@ -266,7 +276,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { credential: 'booth', ...limited },
       schema: {
         description:
-          'Print a voucher that has already been issued, again: the SAME code, never a new draw. Staff-only, and the box is what enforces that — the person at the booth proved who they are to the box with a PIN and there is no cloud session in this flow. NOTE: the box’s booth surface does not implement this path yet and answers 404 until it does.',
+          'Print a voucher that has already been issued, again: the SAME code, never a new draw — this booth’s last voucher, or `spinId`’s. Staff-only, and the box is what enforces that: 403 `staff_required` with nobody signed in at the booth, 404 `nothing_to_reprint` for a voucher the box no longer holds. The copy reaches the cloud as a `reprint` print of that voucher, with the person who asked for it.',
         body: z.object({ spinId: z.string().uuid().optional() }),
       },
     },
@@ -276,10 +286,8 @@ export async function boothRoutes(app: App): Promise<void> {
      * A reprint needs the voucher, the printer and the staff session, and all
      * three are on the box — an offline booth is the ordinary case, and a
      * cloud that printed from its own copy would be printing a code it might
-     * not even have yet. So the route exists to hold the contract in one
-     * place, with its guard and its rate limit, and it starts working the day
-     * `booth-http.ts` grows the path. Until then the box answers "no such
-     * booth route", which is the truth: nobody has built it.
+     * not even have yet. The box keeps its last vouchers for exactly this
+     * (SCRUM-223); this route holds the contract, its guard and its rate limit.
      */
     async (req, reply) => relay(req, reply, 'POST', '/reprint'),
   );

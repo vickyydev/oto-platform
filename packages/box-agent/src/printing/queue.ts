@@ -215,7 +215,13 @@ export interface DurablePrintQueue {
 }
 
 export interface PrintSubsystem {
-  /** Queue a job and attempt it now. Resolves with the outcome of that attempt. */
+  /**
+   * Queue a job and attempt it now. Resolves with the outcome of that attempt.
+   *
+   * A job already queued under the same id — the row its caller wrote, picked
+   * up by the resume — is that job, taken over rather than queued a second
+   * time, so one id never becomes two slips.
+   */
   submit(request: PrintRequest): Promise<PrintJobOutcome>;
   /**
    * Pulse a station's cash drawer, now or not at all (S2-10a).
@@ -283,6 +289,15 @@ interface PendingJob {
   queuedAt: string;
   /** The printer the last attempt used, so an interrupted job can name it. */
   deviceId: string | null;
+  /**
+   * The attempt in progress, while there is one.
+   *
+   * One job is one slip, so a job is never attempted twice at once: a second
+   * caller — the retry tick arriving while `submit` is printing, or `submit`
+   * arriving while the tick is — gets this promise and the outcome of the
+   * attempt already going, instead of starting another one on the printer.
+   */
+  running: Promise<PrintJobOutcome> | null;
 }
 
 /**
@@ -535,6 +550,7 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         queuedReported: true,
         queuedAt: record.queuedAt,
         deviceId: record.deviceId,
+        running: null,
       });
     }
     return reported;
@@ -716,7 +732,41 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
     }
   }
 
-  async function run(pending: PendingJob): Promise<PrintJobOutcome> {
+  /**
+   * Attempt a job once — unless it is on the printer already, in which case
+   * the caller gets the attempt that is going (see `PendingJob.running`).
+   *
+   * `record` writes the job down as `queued` before the attempt: `submit`'s
+   * write, made in here so that the job counts as running from the moment
+   * `submit` takes it. A tick that looks at the queue while that row is being
+   * written then leaves the job alone instead of printing it too, and the
+   * `queued` row cannot land on top of the `sending` its attempt has since
+   * recorded.
+   */
+  function run(pending: PendingJob, opts: { record?: boolean } = {}): Promise<PrintJobOutcome> {
+    if (pending.running) return pending.running;
+    const running = (async () => {
+      if (opts.record) {
+        // Written down BEFORE the first attempt. A box that dies between the
+        // press and the paper then comes back holding the voucher to print,
+        // which is the difference between a guest waiting and a guest leaving
+        // with nothing.
+        await remember(pending.request.id, 'record a new job', (jobs, box) =>
+          jobs.putPrintJob(recordFor(pending, 'queued', box)),
+        );
+      }
+      return settle(pending);
+    })();
+    pending.running = running;
+    const done = (): void => {
+      if (pending.running === running) pending.running = null;
+    };
+    running.then(done, done);
+    return running;
+  }
+
+  /** One attempt, and what it leaves behind: the job back on the queue, or gone. */
+  async function settle(pending: PendingJob): Promise<PrintJobOutcome> {
     const outcome = await attempt(pending);
     if (outcome.status === 'queued') {
       pending.nextAttemptAt = now().getTime() + retryDelayMs;
@@ -773,6 +823,33 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
   return {
     async submit(request) {
       await ensureResumed();
+      /**
+       * One id, one job, one slip — the job id is the fence (`putPrintJob`).
+       *
+       * A caller may write its job's row itself before handing the job over:
+       * a spin commits its voucher's print job in the same transaction as its
+       * facts. When that hand-over is the first thing to reach this queue
+       * after a boot — the first press while `start` is still waiting on a
+       * silent cloud, or on a box that booted with the Console's offline
+       * switch on, whose heartbeat never ticks the queue — the resume above
+       * reads that very row and queues it. Queueing the caller's copy beside
+       * it printed the voucher twice: once now, and again at the next tick,
+       * after the booth had let the job go, so that second outcome went to the
+       * cloud's print-result route instead of the outbox (SCRUM-223).
+       *
+       * So a job already queued under this id is taken over: attempted now
+       * with this caller's request, or — when an attempt of it is on the
+       * printer already — answered with that attempt's outcome.
+       */
+      const held = queue.find((p) => p.request.id === request.id);
+      if (held) {
+        // The resume assumed its first `queued` outcome was old news; to the
+        // caller asking now, it is not.
+        held.queuedReported = false;
+        if (held.running) return held.running;
+        held.request = request;
+        return run(held, { record: true });
+      }
       const pending: PendingJob = {
         request,
         attempts: 0,
@@ -781,16 +858,10 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         queuedReported: false,
         queuedAt: now().toISOString(),
         deviceId: null,
+        running: null,
       };
       queue.push(pending);
-      // Written down BEFORE the first attempt. A box that dies between the
-      // press and the paper then comes back holding the voucher to print,
-      // which is the difference between a guest waiting and a guest leaving
-      // with nothing.
-      await remember(request.id, 'record a new job', (jobs, box) =>
-        jobs.putPrintJob(recordFor(pending, 'queued', box)),
-      );
-      return run(pending);
+      return run(pending, { record: true });
     },
     async pulseDrawer(request) {
       const role = request.role ?? ROLE_FOR_KIND.receipt;
@@ -880,9 +951,17 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
     },
     async tick() {
       await ensureResumed();
-      const due = queue.filter((p) => p.nextAttemptAt <= now().getTime());
+      const isDue = (p: PendingJob): boolean =>
+        p.running === null && queue.includes(p) && p.nextAttemptAt <= now().getTime();
+      const due = queue.filter(isDue);
       const outcomes: PrintJobOutcome[] = [];
-      for (const pending of due) outcomes.push(await run(pending));
+      for (const pending of due) {
+        // Asked again at its turn: while an earlier job printed, `submit` may
+        // have taken this one up or finished it, and attempting it again then
+        // would be a second slip.
+        if (!isDue(pending)) continue;
+        outcomes.push(await run(pending));
+      }
       return outcomes;
     },
     resume: ensureResumed,

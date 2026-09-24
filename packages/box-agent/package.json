@@ -10,19 +10,27 @@
     "./protocol": "./src/protocol.ts",
     "./contract": "./src/contract.ts",
     "./printing": "./src/printing/index.ts",
-    "./sqlite": "./src/store-sqlite.ts"
+    "./sqlite": "./src/store-sqlite.ts",
+    "./runner": "./src/runner/runtime.ts"
+  },
+  "bin": {
+    "oto-box": "./bin/oto-box.mjs"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
-    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types --import ./harness.mjs --test"
+    "test": "node --disable-warning=ExperimentalWarning --experimental-transform-types --import ./harness.mjs --test",
+    "build:runner": "node scripts/build-runner.mjs",
+    "pack:pi": "node scripts/build-runner.mjs --pack"
   },
   "dependencies": {
     "zod": "catalog:",
+    "@node-rs/argon2": "^2.2.1",
     "@oto/print": "workspace:*",
     "@oto/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "esbuild": "^0.25.12",
     "typescript": "~5.9.3"
   }
 }

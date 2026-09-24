@@ -1704,14 +1704,18 @@ describe('the cache bundle', () => {
      *
      * A field added to this list is a field that lands on a Raspberry Pi in a
      * shopping mall, which is why the list is pinned and has to be edited on
-     * purpose.
+     * purpose. `displayName` and `staffCode` were added on purpose (SCRUM-223):
+     * a booth prints "Staff: Nok (S-7KMQ)" with no internet. Both are null for
+     * anybody not on a booth of the box being served.
      */
     expect(Object.keys(staff[0]!).sort()).toEqual([
       'accountId',
+      'displayName',
       'lastTokenAt',
       'mustChangePassword',
       'passwordHash',
       'pinHash',
+      'staffCode',
       'status',
     ]);
     // Null for everybody the seed gives no booth PIN, rather than absent.

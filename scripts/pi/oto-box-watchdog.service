@@ -1,0 +1,10 @@
+# Asks the booth box whether it is answering, and restarts it when it is not.
+# The runner does not ping systemd itself (Node has no sd_notify, and the
+# systemd-notify helper loses messages on Bookworm's systemd), so the watchdog
+# is this: the same question the television asks, from outside the process.
+[Unit]
+Description=OTO booth box watchdog (restarts the box when its page stops answering)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/oto-box/watchdog.sh

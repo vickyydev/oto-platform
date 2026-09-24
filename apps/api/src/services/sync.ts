@@ -4,6 +4,7 @@ import {
   account,
   employee,
   band,
+  boothStaffAssignment,
   booking,
   box,
   boxOutbox,
@@ -40,6 +41,7 @@ import {
 import {
   SYNC_EVENT_SCHEMA_VERSION,
   SyncEventEnvelopeSchema,
+  boothStaffCode,
   businessDate,
   canonicalSyncBytes,
   newId,
@@ -3508,6 +3510,25 @@ export async function cacheBundle(
            and st.archived_at is null
       )`;
 
+      /**
+       * Everybody an administrator has put on a booth of THIS box (SCRUM-223).
+       *
+       * A booth's staff list is `booth.booth_staff_assignment`, not
+       * `station_staff`, so a booth box whose only station is a booth used to
+       * cache whoever the station's access rule happened to cover — and a PIN
+       * set for somebody on the booth's list but outside that rule could never
+       * be checked. They may stand at this box, so they are in its scope.
+       */
+      const onABoothOfThisBox = sql`exists (
+        select 1
+          from booth.booth_staff_assignment bsa
+          join core.station st on st.id = bsa.station_id
+         where bsa.account_id = ${account.id}
+           and st.box_id = ${auth.boxId}
+           and st.kind = 'booth'
+           and st.archived_at is null
+      )`;
+
       const rows = await db
         .selectDistinct({
           id: account.id,
@@ -3525,7 +3546,9 @@ export async function cacheBundle(
             // "dropped from the bundle" is what a box does with somebody who
             // has left. `atBranch` says the same thing for its own half.
             sql`${account.status} <> 'inactive'`,
-            openStation ? or(atBranch(branchId), namedOnThisBox) : namedOnThisBox,
+            openStation
+              ? or(atBranch(branchId), namedOnThisBox, onABoothOfThisBox)
+              : or(namedOnThisBox, onABoothOfThisBox),
           ),
         )
         .limit(limit);
@@ -3556,19 +3579,58 @@ export async function cacheBundle(
        * today.
        */
       const pinHashes = await pinHashesByAccount(db, rows.map((a) => a.id));
+      /**
+       * The name and staff code a booth prints — "Staff: Nok (S-7KMQ)" — for
+       * the people on this box's booths, and for nobody else (SCRUM-223).
+       *
+       * A booth has to print them with no internet, so they have to be on the
+       * box; and they are the one thing in this scope that names a person, so
+       * a till's box, which never prints them, is not sent them. The name is
+       * the employee's nickname, or their name when they have none; the code
+       * is derived from the account id (`boothStaffCode`).
+       */
+      const boothPeople =
+        rows.length > 0
+          ? await db
+              .selectDistinct({
+                accountId: boothStaffAssignment.accountId,
+                name: employee.name,
+                nickname: employee.nickname,
+              })
+              .from(boothStaffAssignment)
+              .innerJoin(station, eq(station.id, boothStaffAssignment.stationId))
+              .innerJoin(account, eq(account.id, boothStaffAssignment.accountId))
+              .leftJoin(employee, eq(employee.id, account.employeeId))
+              .where(
+                and(
+                  eq(station.boxId, auth.boxId),
+                  eq(station.kind, 'booth'),
+                  isNull(station.archivedAt),
+                  inArray(
+                    boothStaffAssignment.accountId,
+                    rows.map((a) => a.id),
+                  ),
+                ),
+              )
+          : [];
+      const onBooth = new Map(
+        boothPeople.map((p) => [p.accountId, p.nickname ?? p.name ?? null] as const),
+      );
       put(
         'staff',
         rows.map((a) => ({
           accountId: a.id,
           // The argon2id hash, which is what an offline unlock verifies
-          // against. Never a password, and never anything that identifies the
-          // person to somebody holding the disk.
+          // against. Never a password.
           passwordHash: a.passwordHash,
           status: a.status,
           mustChangePassword: a.mustChangePassword,
           lastTokenAt: lastToken.get(a.id)?.toISOString() ?? null,
           /** argon2id over the booth PIN, or null. Never the PIN. */
           pinHash: pinHashes.get(a.id) ?? null,
+          /** Null for anybody not on a booth of this box. See above. */
+          displayName: onBooth.get(a.id) ?? null,
+          staffCode: onBooth.has(a.id) ? boothStaffCode(a.id) : null,
         })),
         // One row per person, so the rows read ARE the items — but the count
         // that decides "cut short" is the one the LIMIT applied to.

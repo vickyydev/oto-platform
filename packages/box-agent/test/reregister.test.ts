@@ -10,13 +10,8 @@ import { createRefusalBackOff, REREGISTER_WINDOW_MS } from '../src/reregister';
  * **What this file drives, and what it cannot.** It drives the rule, with the
  * cloud's answers faked by a counting `register()` and the clock supplied by
  * hand — the same two things `agent.ts` puts around it. It does NOT build
- * `createBoxAgent`: that file reaches `printing/index.ts`, which imports
- * `@oto/print`, which this package's runner cannot load at all (Node's
- * strip-only mode refuses `Bitmap1`'s parameter properties — measured, the
- * error is `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`). It is the same wall
- * `booth.test.ts` and `print-restart.test.ts` describe. The agent wired to a
- * fake transport, refusing three times and registering once, is proved in
- * `apps/api/test/virtual-box-lease.test.ts`, where vitest transpiles properly.
+ * `createBoxAgent`: the agent wired to a fake transport, refusing three times
+ * and registering once, is proved in `apps/api/test/virtual-box-lease.test.ts`.
  */
 
 /**

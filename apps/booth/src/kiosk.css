@@ -17,6 +17,32 @@
    explicitly everywhere a Thai line can appear.
    ------------------------------------------------------------ */
 
+/* Thai with no internet (SCRUM-223). 'Noto Sans Thai' comes from Google
+   Fonts (index.html), and a booth box that boots before the mall's line is up
+   — or a network that blocks Google — never gets it, and Thai falls through
+   to whatever the device has; a Raspberry Pi may have none. 'Booth Thai' is
+   the same face, unmodified, from the fonts the receipt printer already uses
+   (packages/print/fonts, OFL), built into the page, so it travels in the box's
+   release and is served by the box itself. It stands after 'Noto Sans Thai'
+   in every stack below, so it is used only when that did not load, and only
+   for Thai characters. There is no SemiBold file: 600 is drawn Bold. */
+@font-face {
+  font-family: 'Booth Thai';
+  src: url('../../../packages/print/fonts/NotoSansThai-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC;
+}
+@font-face {
+  font-family: 'Booth Thai';
+  src: url('../../../packages/print/fonts/NotoSansThai-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC;
+}
+
 .k-screen,
 .k-screen * {
   margin: 0;
@@ -30,7 +56,7 @@ body,
   height: 100%;
 }
 body {
-  font-family: 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   color: #111111;
   background: #fffae6;
   -webkit-font-smoothing: antialiased;
@@ -38,7 +64,7 @@ body {
 
 /* Thai lines sit under their English counterpart, a shade quieter. */
 .k-th {
-  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   opacity: 0.75;
 }
 
@@ -391,7 +417,7 @@ body {
   border-radius: 9999px;
   background: #ffe72e;
   padding: 4px 12px;
-  font-family: 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -409,7 +435,7 @@ body {
 }
 .k-title {
   margin-top: 12px;
-  font-family: 'Climate Crisis', 'Benzin', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Climate Crisis', 'Benzin', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 56px;
   font-weight: 800;
   line-height: 0.92;
@@ -425,7 +451,7 @@ body {
 .k-sub {
   max-width: 300px;
   margin: 6px auto 0;
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.6;
@@ -443,7 +469,7 @@ body {
 .k-terms {
   margin-top: 16px;
   text-align: center;
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 11px;
   font-weight: 500;
   line-height: 1.6;
@@ -461,7 +487,7 @@ body {
   box-shadow: 5px 5px 0 #111111;
 }
 .k-setup-line {
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 17px;
   font-weight: 700;
   line-height: 1.45;
@@ -479,7 +505,7 @@ body {
   background: #ff8a3d;
   padding: 18px 24px;
   text-align: center;
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 17px;
   font-weight: 600;
   text-transform: uppercase;
@@ -748,6 +774,11 @@ body {
   z-index: 50;
   display: flex;
   align-items: center;
+  /* A card taller than the stage keeps its top — the prize and the code —
+     and loses its bottom instead: plain `center` pushes the overflow off
+     both ends, and a television has nothing to scroll with. The line above
+     stays for a browser that does not know `safe`. */
+  align-items: safe center;
   justify-content: center;
   padding: 24px 16px;
   overflow-y: auto;
@@ -789,6 +820,12 @@ body {
   padding-top: 12px;
   cursor: pointer;
 }
+/* The card with the code and the QR on it is the tallest one; the burst is
+   decoration, and on a 9:16 screen it is the difference between the whole
+   card in view and a card with its title off the top (SCRUM-223). */
+.k-card--code .k-burst-wrap {
+  display: none;
+}
 .k-card-band {
   position: relative;
   margin: -32px -24px 12px;
@@ -798,7 +835,7 @@ body {
   overflow: hidden;
 }
 .k-won-title {
-  font-family: 'Climate Crisis', 'Benzin', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Climate Crisis', 'Benzin', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 34px;
   font-weight: 800;
   line-height: 1;
@@ -873,7 +910,7 @@ body {
   margin: -15px 0 0 -15px;
 }
 .k-eyebrow {
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -882,7 +919,7 @@ body {
 }
 .k-prize {
   margin-top: 8px;
-  font-family: 'Climate Crisis', 'Benzin', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Climate Crisis', 'Benzin', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 34px;
   font-weight: 800;
   line-height: 0.95;
@@ -892,7 +929,7 @@ body {
    named in both languages on the card. */
 .k-prize-th {
   margin-top: 6px;
-  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 20px;
   font-weight: 600;
   line-height: 1.3;
@@ -912,7 +949,7 @@ body {
   border-radius: 9999px;
   background: #ffe72e;
   padding: 6px 16px;
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
@@ -944,14 +981,14 @@ body {
 }
 .k-scan {
   margin-top: 8px;
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.7);
 }
 .k-expiry {
   margin-top: 10px;
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.7);
@@ -967,7 +1004,7 @@ body {
   border-radius: 9999px;
   background: #ffe72e;
   padding: 12px 20px;
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1001,7 +1038,7 @@ body {
   margin-bottom: 10px;
 }
 .k-booth-lead {
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.7);
@@ -1015,7 +1052,7 @@ body {
 }
 .k-booth-prize {
   margin-top: 12px;
-  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Benzin', 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1085,6 +1122,15 @@ body {
   box-shadow: 5px 5px 0 rgba(17, 17, 17, 0.85);
   font-family: 'Montserrat', system-ui, sans-serif;
   text-align: left;
+}
+/* The panel takes the focus so Tab starts inside it; the ring is for the
+   buttons a keypad user moves between, not for the panel itself. */
+.k-panel:focus {
+  outline: none;
+}
+.k-panel .k-panel-btn:focus-visible {
+  outline: 3px solid #111111;
+  outline-offset: 2px;
 }
 .k-panel-head {
   font-size: 13px;
@@ -1306,4 +1352,152 @@ body {
 .k-panel--center {
   position: static;
   margin: 18px auto 0;
+}
+
+/* ---------------- staff panel, SCRUM-223 ----------------
+   A phone-and-password form beside the PIN pad, the signed-in panel's
+   actions, and the booth box's own set-up screens. Same border, same shadow,
+   same yellow button as every other panel: working surfaces, nothing a guest
+   is invited to touch. */
+
+.k-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.k-tab {
+  flex: 1;
+  border: 2px solid #111111;
+  border-radius: 9999px;
+  background: #ffffff;
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: #111111;
+  cursor: pointer;
+}
+.k-tab--on {
+  background: #111111;
+  color: #ffffff;
+}
+.k-field {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(0, 0, 0, 0.65);
+}
+.k-field input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 4px;
+  height: 32px;
+  border: 2px solid #111111;
+  border-radius: 8px;
+  background: #fffae6;
+  padding: 0 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #111111;
+}
+.k-field input:focus {
+  outline: 3px solid #ff8a3d;
+  outline-offset: 1px;
+}
+.k-code-field {
+  text-align: center;
+  letter-spacing: 0.12em !important;
+  font-size: 16px !important;
+}
+.k-panel-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+.k-panel-btn--wide {
+  margin-left: 0;
+  width: 100%;
+  text-align: left;
+}
+.k-panel-btn--on {
+  background: #111111;
+  color: #ffffff;
+}
+.k-panel-note {
+  font-weight: 600;
+  color: #111111;
+}
+/* Who is on duty (SCRUM-223), in the top corner: the bottom one belongs to
+   the terms line and the offline dot, and a name there ran over the terms.
+   At most 196 wide from 10, so it ends before the logo starts at 217. */
+.k-onduty {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  max-width: 196px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid rgba(17, 17, 17, 0.25);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.75);
+  color: rgba(0, 0, 0, 0.75);
+  cursor: pointer;
+}
+.k-onduty-icon {
+  flex: none;
+  margin-right: 6px;
+  opacity: 0.7;
+}
+.k-onduty-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.75);
+}
+/* "Staff are signing in" (SCRUM-223): the red button was pressed while the
+   staff form had the keyboard, so nothing spun. Over the top of the wheel,
+   because the staff panel covers the pill at the bottom. */
+.k-hold {
+  position: absolute;
+  /* Centred by its margins, not a transform: `k-rise` animates the transform
+     and would put it back where it started. */
+  left: 0;
+  right: 0;
+  top: 30%;
+  z-index: 65;
+  width: 420px;
+  max-width: calc(100% - 40px);
+  margin: 0 auto;
+  border: 2px solid #111111;
+  border-radius: 18px;
+  background: #ffe72e;
+  padding: 12px 18px;
+  text-align: center;
+  box-shadow: 4px 4px 0 rgba(17, 17, 17, 0.85);
+  animation: k-rise 0.25s ease-out both;
+}
+.k-hold-line {
+  font-family: 'Montserrat', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #111111;
+}
+.k-hold-line.k-th {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
 }

@@ -1,14 +1,12 @@
 /**
  * The Lucky Wheel's draw (S2-07a, D5).
  *
- * Its own module, and it imports nothing but types, for the same reason
- * `cache-apply.ts` is its own module: this package's tests run on Node's type
- * stripping, which cannot load `@oto/print` at all, so anything worth testing
- * cheaply has to be reachable without it. The draw is the single piece of this
- * ticket whose wrongness would be invisible — a thumb on the scale does not
- * throw, does not log, and is only discovered by counting several hundred
- * spins — so it is the piece that most deserves a test that costs nothing to
- * run.
+ * Its own module, and it imports nothing but types, so the draw can be tested
+ * with nothing around it: no store, no clock, no printer — prizes and a source
+ * of numbers in, a slice out. The draw is the single piece of this ticket
+ * whose wrongness would be invisible — a thumb on the scale does not throw,
+ * does not log, and is only discovered by counting several hundred spins — so
+ * it is the piece that most deserves a test that costs nothing to run.
  *
  * **Three rules, and each is a defect this code is written against.**
  *

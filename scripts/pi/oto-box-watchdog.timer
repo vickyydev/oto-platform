@@ -1,0 +1,11 @@
+[Unit]
+Description=Ask the OTO booth box every minute whether it is answering
+
+[Timer]
+# Two minutes of grace after boot: Node, the store and the first sync.
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

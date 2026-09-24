@@ -3,6 +3,9 @@ import type { BoothConfigBundle, SpinResponse } from '@oto/shared';
 import { booth, boothCredential } from './booth/client';
 import { BoothCallError, type BoothStatus } from './booth/contract';
 import { readAssetManifest, readColor, readDesign, type WheelDesign } from './booth/design';
+import { boothHost } from './booth/host';
+import { kiosk, type KioskState } from './booth/kiosk';
+import { sliceIndexFor, visiblePrizes } from './booth/wheel-view';
 import { COPY, type BilingualLine } from './copy';
 import { flags, parseHash } from './flags';
 import {
@@ -14,6 +17,7 @@ import {
 import { configureSounds } from './sound';
 import { isPerfLite } from './stageState';
 import { DebugOverlay } from './components/DebugOverlay';
+import { BoothPicker, ClaimScreen, KioskStarting, NoBoothScreen } from './components/KioskScreens';
 import OtoWordmark from './components/OtoWordmark';
 import { PairScreen } from './components/PairScreen';
 import { ResultModal } from './components/ResultModal';
@@ -61,6 +65,30 @@ const REVEAL_DELAY_MS = 950;
 const NOTICE_MS = 6000;
 /** Key events kept for the `#debug` input line. */
 const INPUT_LOG_MAX = 8;
+/** How often a booth box is asked whether it is claimed and which booth it runs. */
+const KIOSK_POLL_MS = 5000;
+/** How long "staff are signing in" stays over the wheel after a press the form took. */
+const HOLD_NOTICE_MS = 4000;
+
+/**
+ * A page served by a booth box starts with the box's own questions: is it
+ * claimed, and which booth is it? Only once both are answered is there a
+ * wheel to show (SCRUM-223). A page on the staging site never asks — its
+ * first screen is "pair this screen", as before.
+ */
+const IN_BOX = boothHost === 'box';
+
+type KioskGate = 'starting' | 'claim' | 'nobooth' | 'pick' | null;
+
+function kioskGate(state: KioskState | null, choosing: boolean): KioskGate {
+  if (!IN_BOX) return null;
+  if (state === null) return 'starting';
+  if (!state.registered) return 'claim';
+  if (state.booths.length === 0) return 'nobooth';
+  if (choosing && state.booths.length > 1) return 'pick';
+  if (state.selectedStationId === null) return 'pick';
+  return null;
+}
 
 export default function App() {
   /**
@@ -74,8 +102,17 @@ export default function App() {
    * is never sent here, which is what keeps `pnpm dev` a playable wheel.
    */
   const [phase, setPhase] = useState<Phase>(() =>
-    booth.kind === 'http' && !boothCredential.has() ? 'unpaired' : 'boot',
+    !IN_BOX && booth.kind === 'http' && !boothCredential.has() ? 'unpaired' : 'boot',
   );
+  const [kioskState, setKioskState] = useState<KioskState | null>(null);
+  /** Staff pressed "Change booth": show the picker even though one is chosen. */
+  const [choosingBooth, setChoosingBooth] = useState(false);
+  const gate = kioskGate(kioskState, choosingBooth);
+  /** Which booth the wheel below belongs to; a change starts the wheel again. */
+  const boothKey = IN_BOX ? (kioskState?.selectedStationId ?? 'none') : 'paired';
+  const wheelLive = gate === null;
+  /** A digit typed with the panel shut opens it, and is the PIN's first digit. */
+  const [signInSeed, setSignInSeed] = useState<string | null>(null);
   const [config, setConfig] = useState<AppliedConfig | null>(null);
   const [status, setStatus] = useState<BoothStatus | null>(null);
   const [spin, setSpin] = useState<SpinResponse | null>(null);
@@ -89,6 +126,8 @@ export default function App() {
   const [lastErrorCode, setLastErrorCode] = useState<string | null>(null);
   const [inputLog, setInputLog] = useState<string[]>([]);
   const [idleKick, setIdleKick] = useState(0);
+  /** A press arrived while the staff form had the keyboard (see `onPressWhileTyping`). */
+  const [holdNotice, setHoldNotice] = useState(0);
 
   /**
    * A newer wheel, fetched but not yet shown.
@@ -112,6 +151,45 @@ export default function App() {
   }, [config]);
 
   const signedIn = status?.staffSignedIn ?? false;
+
+  // ---- The booth box's own questions (SCRUM-223) -------------------------
+
+  const refreshKiosk = useCallback(async () => {
+    if (!IN_BOX) return;
+    try {
+      setKioskState(await kiosk.state());
+    } catch {
+      // The box is starting, or restarting: keep the last answer and ask again.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!IN_BOX) return;
+    let cancelled = false;
+    let timer: number | undefined;
+    const tick = async () => {
+      await refreshKiosk();
+      if (!cancelled) timer = window.setTimeout(() => void tick(), KIOSK_POLL_MS);
+    };
+    void tick();
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [refreshKiosk]);
+
+  // Another booth is another wheel: nothing of the last one carries over.
+  const lastBoothKey = useRef(boothKey);
+  useEffect(() => {
+    if (lastBoothKey.current === boothKey) return;
+    lastBoothKey.current = boothKey;
+    setConfig(null);
+    setPendingConfig(null);
+    setSpin(null);
+    setTargetIndex(null);
+    setStatus(null);
+    setPhase('boot');
+  }, [boothKey]);
 
   const recordKey = useCallback((line: string) => {
     setInputLog((current) => [line, ...current].slice(0, INPUT_LOG_MAX));
@@ -163,6 +241,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // A box that is not claimed, or has not been told its booth, has no wheel
+    // to fetch yet; the gate screens ask the box instead.
+    if (!wheelLive) return;
     let cancelled = false;
     let timer: number | undefined;
 
@@ -196,7 +277,7 @@ export default function App() {
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [applyConfig, fetchConfig, noteError]);
+  }, [applyConfig, fetchConfig, noteError, wheelLive, boothKey]);
 
   // The parked bundle goes in the moment the wheel is at rest.
   useEffect(() => {
@@ -217,6 +298,7 @@ export default function App() {
   }, [noteError]);
 
   useEffect(() => {
+    if (!wheelLive) return;
     let cancelled = false;
     let timer: number | undefined;
     const tick = async () => {
@@ -228,20 +310,24 @@ export default function App() {
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [refreshStatus]);
+  }, [refreshStatus, wheelLive, boothKey]);
 
   // ---- The press -------------------------------------------------------
 
   const design = useMemo<WheelDesign>(() => readDesign(config?.bundle.layout.design), [config]);
 
   /**
-   * The slices, in the bundle's own order and including every prize it
-   * carries — `SpinResponse.prizeIndex` indexes this array, and dropping an
-   * inactive prize here would shift every index after it.
+   * The slices: the prizes switched ON, in the bundle's own order (SCRUM-223).
+   *
+   * A prize switched off in the Console is "not drawn and not shown". The box
+   * never drew one; the wheel used to show one anyway, as a slice nobody could
+   * win. It is left off here, which is why the slice to stop on is found by
+   * the prize the box names (`sliceIndexFor`) rather than by the bundle
+   * position `SpinResponse.prizeIndex` counts.
    */
   const slices = useMemo<WheelSlice[]>(() => {
     if (!config) return [];
-    return config.bundle.prizes.map((prize, index) => ({
+    return visiblePrizes(config.bundle).map(({ prize }, index) => ({
       id: prize.id,
       label: trimLabel(prize.wheelLabel ?? prize.nameEn, design.labelMaxLines),
       // A prize's own colours go through the same test as the design's
@@ -303,8 +389,7 @@ export default function App() {
       // Nothing throws and no test of either side alone can see it, so the
       // check is here, on the array actually on screen.
       let index = resolveIndex(configRef.current, response);
-      const stale =
-        index !== response.prizeIndex || response.configVersion !== configRef.current?.version;
+      const stale = !alignedWith(configRef.current, response);
       if (stale) {
         setMismatches((count) => count + 1);
         // Reload rather than animate. The wheel has not moved yet, so
@@ -397,6 +482,17 @@ export default function App() {
     return configured;
   }, [config]);
 
+  /**
+   * The red button while the staff form has the keyboard: the key is the
+   * form's, nothing is drawn, and the wheel says why for a few seconds
+   * (`isTypingTarget` in src/press.ts gives the reason it waits rather than
+   * spins). Only where a press would otherwise have started a spin.
+   */
+  const onPressWhileTyping = useCallback(() => {
+    if (phaseRef.current !== 'ready') return;
+    setHoldNotice((n) => n + 1);
+  }, []);
+
   useEffect(
     () =>
       installPressListener({
@@ -404,9 +500,10 @@ export default function App() {
         lockoutMs: () =>
           phaseRef.current === 'result' ? RESULT_PRESS_LOCKOUT_MS : PRESS_LOCKOUT_MS,
         onPress,
+        onPressWhileTyping,
         onKeyRecorded: recordKey,
       }),
-    [buttonKey, onPress, recordKey],
+    [buttonKey, onPress, onPressWhileTyping, recordKey],
   );
 
   // ---- Timers ----------------------------------------------------------
@@ -447,6 +544,17 @@ export default function App() {
     const timer = window.setTimeout(() => setNotice(null), NOTICE_MS);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  // Each press the form took restarts the notice's few seconds; the panel
+  // closing ends it at once, since the next press will spin.
+  useEffect(() => {
+    if (holdNotice === 0) return;
+    const timer = window.setTimeout(() => setHoldNotice(0), HOLD_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [holdNotice]);
+  useEffect(() => {
+    if (!signInOpen) setHoldNotice(0);
+  }, [signInOpen]);
 
   // ---- Staff panels ----------------------------------------------------
 
@@ -498,6 +606,49 @@ export default function App() {
     if (!signedIn) setDebugOpen(false);
   }, [signedIn]);
 
+  /**
+   * On a booth box, the sign-in panel is the first thing staff see once the
+   * wheel is up and nobody is signed in (SCRUM-223) — the Pi booted, the box
+   * started, and the person setting it up signs in. Once per wheel: closing
+   * it leaves the prompt under the wheel, and the wheel plays unattributed.
+   */
+  const offeredSignIn = useRef<string | null>(null);
+  useEffect(() => {
+    if (!IN_BOX || phase !== 'ready' || status === null) return;
+    if (offeredSignIn.current === boothKey) return;
+    offeredSignIn.current = boothKey;
+    if (!status.staffSignedIn) setSignInOpen(true);
+  }, [phase, status, boothKey]);
+
+  /**
+   * A digit typed with the panel shut opens it — a booth with a small number
+   * pad has no pointer to touch the corner with. Signed out, the digit is the
+   * first of the PIN; signed in, it only opens the panel, where Tab and Enter
+   * reach Reprint, Change booth and Sign out. Never the button's own key, and
+   * never while a card or a spin is on.
+   */
+  useEffect(() => {
+    if (signInOpen || gate !== null) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!/^[0-9]$/.test(event.key) || event.repeat) return;
+      if (event.key === buttonKey || event.code === buttonKey) return;
+      if (phaseRef.current !== 'ready' && phaseRef.current !== 'unsynced') return;
+      event.preventDefault();
+      setSignInSeed(signedIn ? null : event.key);
+      setSignInOpen(true);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [signInOpen, signedIn, gate, buttonKey]);
+
+  const closeSignIn = useCallback(() => {
+    setSignInOpen(false);
+    setSignInSeed(null);
+  }, []);
+
+  const changeBooth =
+    IN_BOX && (kioskState?.booths.length ?? 0) > 1 ? () => setChoosingBooth(true) : undefined;
+
   const simulateSpin = useCallback(() => booth.spin({ simulate: true }), []);
 
   // ---- Render ----------------------------------------------------------
@@ -516,6 +667,33 @@ export default function App() {
     if (!spin || !config) return null;
     return config.bundle.prizes.find((candidate) => candidate.id === spin.prizeId) ?? null;
   }, [spin, config]);
+
+  // ---- A booth box before it has a wheel (SCRUM-223) ---------------------
+  if (gate !== null) {
+    const screen =
+      gate === 'claim' ? (
+        <ClaimScreen onClaimed={() => void refreshKiosk()} />
+      ) : gate === 'pick' ? (
+        <BoothPicker
+          booths={kioskState?.booths ?? []}
+          current={kioskState?.selectedStationId ?? null}
+          onChosen={() => {
+            setChoosingBooth(false);
+            void refreshKiosk();
+          }}
+        />
+      ) : gate === 'nobooth' ? (
+        <NoBoothScreen />
+      ) : (
+        <KioskStarting />
+      );
+    return (
+      <div className={'k-screen' + liteClass} data-kiosk-surface="1" data-booth-gate={gate}>
+        <Ambient />
+        {screen}
+      </div>
+    );
+  }
 
   if (phase === 'unpaired') {
     /**
@@ -564,11 +742,16 @@ export default function App() {
           </div>
         </div>
         <StatusChip status={status} transport={booth.kind} onOpen={() => setSignInOpen(true)} />
+        <OnDutyBadge status={status} onOpen={() => setSignInOpen(true)} />
         <StaffSignIn
           open={signInOpen}
           signedIn={signedIn}
-          onClose={() => setSignInOpen(false)}
+          staff={status?.staff ?? null}
+          seed={signInSeed}
+          onClose={closeSignIn}
           onChanged={() => void refreshStatus()}
+          onChangeBooth={changeBooth}
+          buttonKey={buttonKey}
         />
       </div>
     );
@@ -616,6 +799,13 @@ export default function App() {
         </div>
       </div>
 
+      {holdNotice > 0 && phase === 'ready' && (
+        <div className="k-hold" role="status" aria-live="polite" data-booth-hold="1">
+          <p className="k-hold-line">{COPY.staffSigningIn.en}</p>
+          <p className="k-hold-line k-th">{COPY.staffSigningIn.th}</p>
+        </div>
+      )}
+
       <ResultModal
         spin={spin}
         prize={prize}
@@ -625,12 +815,18 @@ export default function App() {
       />
 
       <StatusChip status={status} transport={booth.kind} onOpen={() => setSignInOpen(true)} />
+      {/* Not over a prize card: that moment is the guest's. */}
+      {phase !== 'result' && <OnDutyBadge status={status} onOpen={() => setSignInOpen(true)} />}
 
       <StaffSignIn
         open={signInOpen}
         signedIn={signedIn}
-        onClose={() => setSignInOpen(false)}
+        staff={status?.staff ?? null}
+        seed={signInSeed}
+        onClose={closeSignIn}
         onChanged={() => void refreshStatus()}
+        onChangeBooth={changeBooth}
+        buttonKey={buttonKey}
       />
 
       <DebugOverlay
@@ -650,14 +846,6 @@ export default function App() {
   );
 }
 
-/**
- * What the pill under the wheel says.
- *
- * "Staff: sign in to start" is a prompt to whoever is looking after the booth,
- * not a lock on the game: the wheel still spins with nobody signed in and the
- * spin is recorded unattributed. A booth that stopped playing whenever
- * reception got busy is a booth nobody plays.
- */
 /**
  * The line a refused press puts under the wheel.
  *
@@ -680,6 +868,14 @@ function noticeFor(error: unknown): BilingualLine {
   return COPY.notReady;
 }
 
+/**
+ * What the pill under the wheel says.
+ *
+ * With nobody signed in it prompts whoever is looking after the booth to sign
+ * in — for their name on the slip — and is not a lock on the game: the wheel
+ * still spins and the spin is recorded unattributed. A booth that stopped
+ * playing whenever reception got busy is a booth nobody plays.
+ */
 function promptFor(phase: Phase, notice: BilingualLine | null, signedIn: boolean): BilingualLine {
   if (notice !== null) return notice;
   if (phase === 'boot' || phase === 'starting') return COPY.starting;
@@ -689,17 +885,23 @@ function promptFor(phase: Phase, notice: BilingualLine | null, signedIn: boolean
 }
 
 /**
- * The prize this page would draw for what the box says was won, or null when
- * it holds no such prize.
- *
- * The published index is trusted only when the id under it agrees; otherwise
- * the id is looked up, because the id is the identity and the index is a slot.
+ * The SLICE this page would stop on for what the box says was won, or null
+ * when it shows no such prize. Slices are the switched-on prizes only, so
+ * this is a position on the wheel and not in the bundle (`wheel-view.ts`).
  */
 function resolveIndex(config: AppliedConfig | null, response: SpinResponse): number | null {
-  const prizes = config?.bundle.prizes ?? [];
-  if (prizes[response.prizeIndex]?.id === response.prizeId) return response.prizeIndex;
-  const found = prizes.findIndex((prize) => prize.id === response.prizeId);
-  return found >= 0 ? found : null;
+  return sliceIndexFor(visiblePrizes(config?.bundle), response);
+}
+
+/**
+ * Whether this page and the box drew from the same wheel: the same published
+ * version, and the prize the box names at the position the box names. Either
+ * disagreeing means this page's bundle is stale and is reloaded before the
+ * wheel moves.
+ */
+function alignedWith(config: AppliedConfig | null, response: SpinResponse): boolean {
+  if (!config || response.configVersion !== config.version) return false;
+  return config.bundle.prizes[response.prizeIndex]?.id === response.prizeId;
 }
 
 /**
@@ -795,6 +997,29 @@ function StatusChip({
           what it gives away and one that records nothing, and nobody should
           have to read a URL to tell them apart. */}
       {transport === 'fake' && <span className="k-chip-demo">demo</span>}
+    </div>
+  );
+}
+
+/**
+ * Who is on duty, when somebody is (SCRUM-223): the name and staff code, as
+ * a name badge would say. The owner asked for the television to show who is
+ * signed in; nothing that signs anybody in is shown. The top corner, because
+ * the bottom one is the terms line's and the offline dot's, and a name there
+ * ran over the terms; narrow enough to stop short of the logo, with a long
+ * name cut rather than run into it. A touch opens the staff panel, like the dot.
+ */
+function OnDutyBadge({ status, onOpen }: { status: BoothStatus | null; onOpen: () => void }) {
+  const staff = status?.staffSignedIn ? status.staff : null;
+  const onDuty = staff ? [staff.name, staff.code].filter(Boolean).join(' · ') : '';
+  if (onDuty === '') return null;
+  return (
+    <div className="k-onduty" role="presentation" onClick={onOpen} data-booth-on-duty="1">
+      <svg className="k-onduty-icon" width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+        <circle cx="6" cy="3.5" r="2.5" fill="currentColor" />
+        <path d="M1 11.5c0-2.9 2.2-4.8 5-4.8s5 1.9 5 4.8z" fill="currentColor" />
+      </svg>
+      <span className="k-onduty-name">{onDuty}</span>
     </div>
   );
 }

@@ -25,11 +25,8 @@ import { BOX_ID, STATION_ID, openTestStore } from './_support';
  * the STORE and the OUTBOX: the sequence, the transaction, the signatures, the
  * shape of the two facts, and what a re-send does. The receipt number, the
  * drawer pulse and the cloud's own handlers live in `createBoxAgent` and in the
- * api, and neither can be loaded in this package's runner at all — Node's
- * strip-only mode refuses `Bitmap1`'s parameter properties, so `@oto/print`,
- * and therefore the printing controller and the agent, cannot be imported here
- * (`booth-offline.test.ts:38-50` records the same limit). Those cases are in
- * `apps/api/test/sync-sales.test.ts`, which drives the real agent.
+ * api, and those cases are in `apps/api/test/sync-sales.test.ts`, which drives
+ * the real agent against the real handlers.
  *
  * The signatures are checked with the CLOUD's check — `canonicalSyncBytes` over
  * the stored envelope plus the box id, then `verifyCanonical` against the public

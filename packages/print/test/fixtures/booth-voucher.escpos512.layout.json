@@ -81,34 +81,16 @@
       "text": "ticket order."
     },
     {
-      "k": "text",
-      "x": 93,
-      "baselineY": 217,
-      "w": 327,
-      "sizeDots": 18,
-      "weight": "regular",
-      "text": "Cannot be combined with other offers."
-    },
-    {
-      "k": "text",
-      "x": 165,
-      "baselineY": 240,
-      "w": 182,
-      "sizeDots": 18,
-      "weight": "regular",
-      "text": "ใช้ร่วมกับโปรโมชันอื่นไม่ได้"
-    },
-    {
       "k": "dashes",
       "x": 8,
-      "y": 244,
+      "y": 203,
       "w": 496,
       "t": 1
     },
     {
       "k": "qr",
       "x": 172,
-      "y": 248,
+      "y": 207,
       "moduleDots": 8,
       "modules": 21,
       "version": 1,
@@ -117,7 +99,7 @@
     {
       "k": "text",
       "x": 156,
-      "baselineY": 441,
+      "baselineY": 400,
       "w": 200,
       "sizeDots": 30,
       "weight": "bold",
@@ -126,14 +108,14 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 450,
+      "y": 409,
       "w": 496,
       "t": 1
     },
     {
       "k": "text",
       "x": 8,
-      "baselineY": 468,
+      "baselineY": 427,
       "w": 56,
       "sizeDots": 18,
       "weight": "regular",
@@ -142,7 +124,7 @@
     {
       "k": "text",
       "x": 106,
-      "baselineY": 468,
+      "baselineY": 427,
       "w": 154,
       "sizeDots": 18,
       "weight": "bold",
@@ -151,7 +133,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 490,
+      "baselineY": 449,
       "w": 51,
       "sizeDots": 18,
       "weight": "regular",
@@ -160,7 +142,7 @@
     {
       "k": "text",
       "x": 106,
-      "baselineY": 490,
+      "baselineY": 449,
       "w": 210,
       "sizeDots": 18,
       "weight": "bold",
@@ -169,7 +151,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 508,
+      "baselineY": 467,
       "w": 39,
       "sizeDots": 18,
       "weight": "regular",
@@ -178,7 +160,7 @@
     {
       "k": "text",
       "x": 106,
-      "baselineY": 508,
+      "baselineY": 467,
       "w": 101,
       "sizeDots": 18,
       "weight": "bold",
@@ -187,7 +169,7 @@
     {
       "k": "text",
       "x": 8,
-      "baselineY": 528,
+      "baselineY": 487,
       "w": 61,
       "sizeDots": 18,
       "weight": "regular",
@@ -196,7 +178,7 @@
     {
       "k": "text",
       "x": 106,
-      "baselineY": 528,
+      "baselineY": 487,
       "w": 92,
       "sizeDots": 18,
       "weight": "bold",
@@ -205,18 +187,36 @@
     {
       "k": "dashes",
       "x": 8,
-      "y": 536,
+      "y": 495,
       "w": 496,
       "t": 1
     },
     {
       "k": "text",
       "x": 161,
-      "baselineY": 559,
+      "baselineY": 518,
       "w": 190,
       "sizeDots": 18,
       "weight": "bold",
       "text": "Single use · ใช้ได้ 1 ครั้ง"
+    },
+    {
+      "k": "text",
+      "x": 93,
+      "baselineY": 540,
+      "w": 327,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "Cannot be combined with other offers."
+    },
+    {
+      "k": "text",
+      "x": 165,
+      "baselineY": 563,
+      "w": 182,
+      "sizeDots": 18,
+      "weight": "regular",
+      "text": "ใช้ร่วมกับโปรโมชันอื่นไม่ได้"
     },
     {
       "k": "text",

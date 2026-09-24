@@ -1,10 +1,8 @@
 /**
- * Type-only, and it has to stay that way: `@oto/print` cannot be LOADED in this
- * package's test runner at all — Node's strip-only mode refuses `Bitmap1`'s
- * parameter properties — and a runtime import here would take the store, the
- * outbox and the station session down with it. `import type` is erased before
- * Node sees the file, which `packages/box-agent/test/print-restart.test.ts`
- * demonstrates by importing this module and running.
+ * Type-only: the store keeps a print job as data and never renders one, so it
+ * has no reason to load the renderer, and the outbox and the station session
+ * that open it do not pay for one. `import type` is erased before Node sees
+ * the file.
  */
 import type { PrintJob as RenderPrintJob } from '@oto/print';
 import type {
@@ -621,6 +619,19 @@ export interface BoxStore extends PrintJobStore {
    */
   markTimeSeen(boxId: string, at: string): Promise<string>;
   lastGoodTime(boxId: string): Promise<string | null>;
+
+  /**
+   * A small value the box keeps for itself, by key (SCRUM-223).
+   *
+   * `box_runtime` already holds `last_good_time`; these two open it to the
+   * booth's other singletons — the last vouchers it printed, so a reprint
+   * after a power cut still has the slip to reprint, and the name of whoever
+   * is signed in. Text in, text out: the caller owns the encoding. The key
+   * `last_good_time` is `markTimeSeen`'s, whose forward-only rule a plain
+   * write would break, so it is refused here.
+   */
+  readRuntimeValue(boxId: string, key: string): Promise<string | null>;
+  writeRuntimeValue(boxId: string, key: string, value: string, now?: string): Promise<void>;
 }
 
 // --- Migrate on read --------------------------------------------------------

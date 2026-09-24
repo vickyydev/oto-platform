@@ -69,6 +69,22 @@ export const PERMISSIONS = [
   /** Publish a config version the booths then pull. */
   'admin:booth:publish',
   'admin:booth:staff_assign',
+  /**
+   * Sign in AT a booth as the person attending it (SCRUM-223).
+   *
+   * Not an `admin:booth:*` permission: those configure a booth from the
+   * Console, and this is the act of standing at one. It is the role half of a
+   * two-part rule — an account signs in at a booth only when its role carries
+   * this AND an administrator has put it on that booth's staff list
+   * (`booth.booth_staff_assignment`). Checked by the cloud when somebody signs
+   * in with their phone and password; a booth PIN was already confined to the
+   * booth's list.
+   *
+   * Carried by every counter role, `staff` included: `staff` already opens the
+   * booth app (`app:booth:access`), and which booth anybody may work is the
+   * assignment's decision, not the role's.
+   */
+  'booth:staff:sign_in',
   // Admin console — running the platform (S2-03)
   'admin:health:read',
   /** Retry a failed run, acknowledge an alert, resolve an expectation. */
@@ -373,6 +389,7 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'app:pos:access',
     'app:console:access',
     'app:booth:access',
+    'booth:staff:sign_in',
   ],
   reception: [
     ...READ_COUNTER,
@@ -397,6 +414,7 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:stock:count',
     'app:pos:access',
     'app:booth:access',
+    'booth:staff:sign_in',
   ],
-  staff: [...READ_COUNTER, 'app:pos:access', 'app:booth:access'],
+  staff: [...READ_COUNTER, 'app:pos:access', 'app:booth:access', 'booth:staff:sign_in'],
 };

@@ -38,6 +38,12 @@ export interface PressListenerOptions {
   lockoutMs: () => number;
   /** A press that got through the lockout. */
   onPress: () => void;
+  /**
+   * The button's key arrived while a staff field had the keyboard, so it was
+   * the field's and nothing spun (SCRUM-223). The page says so on screen,
+   * because a press that visibly does nothing reads as a broken booth.
+   */
+  onPressWhileTyping?: () => void;
   /** Every accepted and rejected key, for the `#debug` input line. */
   onKeyRecorded?: (line: string) => void;
 }
@@ -56,6 +62,41 @@ export function isForbiddenButtonKey(key: string): boolean {
 }
 
 /**
+ * Whether a key is the booth's button, by `code` or by `key` (see
+ * `PressListenerOptions.buttonKey`). The press listener and the staff panel's
+ * countdown (`panel-timer.ts`) ask the same question, so they cannot disagree
+ * about which key a guest's press is.
+ */
+export function isButtonKey(event: { key: string; code: string }, buttonKey: string): boolean {
+  if (isForbiddenButtonKey(event.key) || isForbiddenButtonKey(event.code)) return false;
+  return event.code === buttonKey || event.key === buttonKey;
+}
+
+/**
+ * A key typed into a field is the field's (SCRUM-223).
+ *
+ * The staff panel now has a phone and a password field, and a password may
+ * well contain the booth's button key — a space, a letter. Typed there, it is
+ * part of the password and must not spin the wheel behind the panel.
+ *
+ * **Why the wheel waits rather than spins** while such a field has the
+ * keyboard: the red button and the keyboard's space bar send the same key, and
+ * nothing in a browser tells them apart. Spinning on it would give a prize
+ * away — and print a voucher nobody pressed for — every time a member of staff
+ * typed a space in a password; taking the key away from the field would make
+ * such a password impossible to type at the booth. A guest's press in that
+ * moment is the cheaper mistake: nothing is drawn, the screen says staff are
+ * signing in, and the wheel is back once somebody signs in or the form
+ * closes — which it does by itself, however often the button is pressed
+ * (`panel-timer.ts`).
+ */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+}
+
+/**
  * Installs the listener and returns its remover.
  *
  * Bubble phase on `window`, not capture: an overlay that wants a key — the
@@ -65,14 +106,11 @@ export function isForbiddenButtonKey(key: string): boolean {
  * cannot spin the wheel by reaching the digit that happens to be the button.
  */
 export function installPressListener(options: PressListenerOptions): () => void {
-  const { buttonKey, lockoutMs, onPress, onKeyRecorded } = options;
+  const { buttonKey, lockoutMs, onPress, onPressWhileTyping, onKeyRecorded } = options;
   let sawKeyDown = false;
   let lastPressAt = 0;
 
-  const matches = (event: KeyboardEvent): boolean => {
-    if (isForbiddenButtonKey(event.key) || isForbiddenButtonKey(event.code)) return false;
-    return event.code === buttonKey || event.key === buttonKey;
-  };
+  const matches = (event: KeyboardEvent): boolean => isButtonKey(event, buttonKey);
 
   const accept = (): void => {
     const now = Date.now();
@@ -87,6 +125,15 @@ export function installPressListener(options: PressListenerOptions): () => void 
   const onKeyDown = (event: KeyboardEvent): void => {
     if (!matches(event)) return;
     sawKeyDown = true;
+    if (isTypingTarget(event.target)) {
+      // The field's key, typed into it as it is; never a press. Its release
+      // is expected like any other, so it cannot turn into one on the way up.
+      if (!event.repeat) {
+        onKeyRecorded?.('press ignored (a staff field has the keyboard)');
+        onPressWhileTyping?.();
+      }
+      return;
+    }
     event.preventDefault();
     if (event.repeat) {
       // A held button becomes key-repeat on some HID mappings. It never
@@ -101,11 +148,13 @@ export function installPressListener(options: PressListenerOptions): () => void 
 
   const onKeyUp = (event: KeyboardEvent): void => {
     if (!matches(event)) return;
-    event.preventDefault();
     if (sawKeyDown) {
       sawKeyDown = false;
+      if (!isTypingTarget(event.target)) event.preventDefault();
       return;
     }
+    if (isTypingTarget(event.target)) return;
+    event.preventDefault();
     onKeyRecorded?.('press (keyup, keydown was swallowed)');
     accept();
   };

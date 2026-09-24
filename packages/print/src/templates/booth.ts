@@ -98,11 +98,20 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
     logoBlock(),
     space(4),
     text(data.venueLine, { sizeDots: SIZE.body, weight: 'bold' }, 'center'),
+  ];
+
+  // A copy staff asked for says so at the top, where reception looks first:
+  // two slips with one code is only a puzzle if nothing says which is which.
+  if (data.reprintNote) {
+    blocks.push(text(data.reprintNote, smallBold, 'center'));
+  }
+
+  blocks.push(
     space(4),
     text('★ YOU WON ★', { sizeDots: SIZE.header, weight: 'bold', tracking: 2 }, 'center'),
     space(4),
     text(data.prizeLine, { sizeDots: SIZE.total, weight: 'bold' }, 'center'),
-  ];
+  );
 
   if (data.prizeLineThai) {
     blocks.push(text(data.prizeLineThai, { sizeDots: SIZE.body, weight: 'bold' }, 'center'));
@@ -110,9 +119,6 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
 
   blocks.push(divider());
   blocks.push(text(data.redemptionLine, small, 'center'));
-  for (const line of data.terms) {
-    blocks.push(text(line, small, 'center'));
-  }
   blocks.push(divider());
 
   // The payload and the readable text are the same string, taken from the same
@@ -132,12 +138,25 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
   blocks.push(fact('Booth', data.booth));
   // Both rows always print. An absent row and a row reading "nobody" are the
   // same slip to whoever is holding it, so the template says which.
-  blocks.push(fact('Staff', data.staff ?? 'Not signed in'));
+  blocks.push(fact('Staff', data.staff ?? 'unattributed'));
   blocks.push(fact('Expires', data.expiresAt ?? 'No expiry'));
 
   blocks.push(divider());
   blocks.push(text('Single use · ใช้ได้ 1 ครั้ง', smallBold, 'center'));
-  blocks.push(text(data.footerLine, small, 'center'));
+  /**
+   * The foot of the slip is the voucher definition's terms (SCRUM-223), a
+   * line each, English then Thai — "Cannot be combined with other offers." —
+   * so what the park promised about this prize is the last thing printed.
+   * They used to sit under the redemption sentence while the footer line
+   * stayed blank on every booth, because no template can set it.
+   */
+  for (const line of data.terms) {
+    blocks.push(text(line, small, 'center'));
+  }
+  // A footer a branch template may add one day; nothing prints for an empty one.
+  if (data.footerLine.trim() !== '') {
+    blocks.push(text(data.footerLine, small, 'center'));
+  }
 
   return {
     media: { kind: 'receipt', widthDots: device.widthDots, dpi: 203 },

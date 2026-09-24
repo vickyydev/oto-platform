@@ -31,6 +31,8 @@ import { backoffFor, FREE_ATTEMPTS } from '../staff-backoff';
 import {
   BoothCallError,
   type BoothConfigResponse,
+  type BoothReprintResponse,
+  type BoothStaffOnDuty,
   type BoothStatus,
   type BoothTransport,
   type SpinRequest,
@@ -191,6 +193,10 @@ export class FakeBooth implements BoothTransport {
   private readonly bundle: BoothConfigBundle;
   private readonly version: number;
   private signedIn = false;
+  /** Who the fake says is on duty — a made-up person, never a real one. */
+  private onDuty: BoothStaffOnDuty | null = null;
+  /** The last voucher this tab minted, for the fake's reprint. */
+  private lastVoucher: { spinId: string; printState: SpinResponse['printState'] } | null = null;
   private failures = 0;
   private lockedUntil = 0;
   private minted = 0;
@@ -235,6 +241,7 @@ export class FakeBooth implements BoothTransport {
       vouchersPending: flags.offline ? this.minted : 0,
       lastSpinAt: this.lastSpinAt,
       staffSignedIn: this.signedIn,
+      staff: this.signedIn ? this.onDuty : null,
       dailyCapsReached: this.cappedPrizeIds(),
     });
   }
@@ -301,17 +308,27 @@ export class FakeBooth implements BoothTransport {
     const days = prize.expiryDays ?? FIXTURE_EXPIRY_DAYS;
     const expiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
 
+    const spinId = fakeId();
+    const printState = flags.printer ?? 'no_printer';
+    this.lastVoucher = { spinId, printState };
     return after(FAKE_SPIN_LATENCY_MS, {
-      spinId: fakeId(),
+      spinId,
       prizeIndex: index,
       prizeId,
       configVersion: this.version,
       voucherCode: this.mintCode(),
       expiresAt,
-      printState: flags.printer ?? 'no_printer',
+      printState,
       staffAccountId: this.signedIn ? FAKE_STAFF_ACCOUNT_ID : null,
       clockSuspect: false,
     });
+  }
+
+  /** The same refusals a box gives: nobody signed in, or nothing to reprint. */
+  async reprint(): Promise<BoothReprintResponse> {
+    if (!this.signedIn) throw new BoothCallError('staff_required', 403);
+    if (!this.lastVoucher) throw new BoothCallError('nothing_to_reprint', 404);
+    return after(FAKE_SPIN_LATENCY_MS, { ...this.lastVoucher });
   }
 
   /**
@@ -334,20 +351,39 @@ export class FakeBooth implements BoothTransport {
       return { ok: false, retryAfterMs: this.lockedUntil - now };
     }
 
+    /**
+     * An account sign-in in the fake: any phone with a password of four or
+     * more characters, and `#offline` refuses it the way a box with no
+     * internet does. No real account is checked — there is none here.
+     */
+    if (request.mode === 'account') {
+      if (flags.offline) return { ok: false, reason: 'offline' };
+      const good = (request.phone ?? '').trim() !== '' && (request.password ?? '').length >= 4;
+      if (good) {
+        this.failures = 0;
+        this.signedIn = true;
+        this.onDuty = this.demoStaff('account');
+        return { ok: true };
+      }
+    }
+
     const expected = import.meta.env.VITE_BOOTH_FAKE_PIN;
     const pin = request.pin ?? '';
     const badge = request.badge ?? '';
     const ok =
-      badge !== ''
-        ? badge.trim().length >= 6
-        : typeof expected === 'string' && expected !== ''
-          ? pin === expected
-          : /^\d{4,}$/.test(pin);
+      request.mode === 'account'
+        ? false
+        : badge !== ''
+          ? badge.trim().length >= 6
+          : typeof expected === 'string' && expected !== ''
+            ? pin === expected
+            : /^\d{4,}$/.test(pin);
 
     if (ok) {
       this.failures = 0;
       this.lockedUntil = 0;
       this.signedIn = true;
+      this.onDuty = this.demoStaff(badge !== '' ? 'badge' : 'pin');
       return { ok: true };
     }
 
@@ -365,6 +401,18 @@ export class FakeBooth implements BoothTransport {
 
   async signOut(): Promise<void> {
     this.signedIn = false;
+    this.onDuty = null;
+  }
+
+  private demoStaff(method: BoothStaffOnDuty['method']): BoothStaffOnDuty {
+    const now = Date.now();
+    return {
+      name: 'Demo staff',
+      code: 'S-DEMO',
+      method,
+      signedInAt: new Date(now).toISOString(),
+      expiresAt: new Date(now + 12 * 60 * 60 * 1000).toISOString(),
+    };
   }
 
   private mintCode(): string {

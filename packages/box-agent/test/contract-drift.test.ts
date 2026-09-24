@@ -13,16 +13,16 @@ import * as sharedStaffToken from '../../shared/src/staff-token';
 /**
  * The duplication in `src/contract.ts` is made safe here.
  *
- * `@oto/box-agent` cannot depend on `@oto/shared` until this package is
- * allowed a manifest change, so the sync contract exists twice. Two copies of
- * a wire format left to discipline diverge, and the way this one would
- * diverge is the expensive way: the canonical bytes are what both ends hash,
- * so a single reordered field would turn every honest re-send into a conflict
- * and fill the Failures tab with events that are perfectly fine.
+ * The sync contract exists twice: `src/contract.ts` was written before
+ * `@oto/box-agent` depended on `@oto/shared`, and has not been turned into a
+ * re-export now that it does. Two copies of a wire format left to discipline
+ * diverge, and the way this one would diverge is the expensive way: the
+ * canonical bytes are what both ends hash, so a single reordered field would
+ * turn every honest re-send into a conflict and fill the Failures tab with
+ * events that are perfectly fine.
  *
- * These are relative imports across a package boundary on purpose. They are
- * legal here and nowhere else: a test may reach for the thing it is checking
- * against, where the shipped code may not.
+ * These are relative imports across a package boundary on purpose: a test may
+ * reach for the thing it is checking against, where the shipped code may not.
  */
 
 test('the sync vocabularies match @oto/shared item for item', () => {

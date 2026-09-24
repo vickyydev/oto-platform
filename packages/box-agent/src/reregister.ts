@@ -23,10 +23,9 @@
  * anchored on the last registration ATTEMPT, whatever came of it.
  *
  * It is a decision and no more — dropping the credential, clearing the store
- * and registering stay in `agent.ts` — because this package's test runner
- * cannot load `agent.ts` at all (`@oto/print`, via the printing subsystem,
- * uses TypeScript that Node's strip-only mode refuses), and a rule nothing can
- * test is a rule nobody can change safely.
+ * and registering stay in `agent.ts` — so the rule is tested with a clock held
+ * by hand and nothing else around it (`reregister.test.ts`), and a rule that
+ * cheap to test is one somebody can change safely.
  */
 
 /** One minute. A rotated claim code still brings a box back within one. */

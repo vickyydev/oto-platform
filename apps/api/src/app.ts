@@ -425,6 +425,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // its own schedule, so the one surface that has to stay compatible with a
   // machine nobody can reach says so in its path (S2-04).
   await app.register(boxRoutes, { prefix: '/box/v1' });
+  await app.register((await import('./routes/box-booth-staff')).boxBoothStaffRoutes);
   await app.register(publicRoutes);
 
   return app;

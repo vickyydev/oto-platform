@@ -112,8 +112,52 @@ export const BoothConfigSettingsSchema = z.object({
    * would disagree with the paper the booth has already printed.
    */
   dailySpinCap: z.number().int().positive().nullable(),
+  /**
+   * How long a member of staff stays signed in at this booth, in minutes
+   * (SCRUM-223).
+   *
+   * The session ends when this has passed or when somebody signs out — never
+   * because nobody pressed anything for a while: a booth is attended for a
+   * shift, and a sign-in that lapsed mid-afternoon would produce exactly the
+   * unattributed vouchers staff sign in to avoid.
+   *
+   * **Optional, and absent from every bundle published today.** The Console
+   * control and the column behind it come in a later slice; until then a box
+   * uses `BOOTH_STAFF_SESSION_DEFAULT_MINUTES`. Optional rather than defaulted
+   * here because a bundle is hashed AS STORED, and a schema that filled the
+   * field in would hand the box a document nobody published.
+   */
+  staffSessionMinutes: z.number().int().positive().nullable().optional(),
 });
 export type BoothConfigSettings = z.infer<typeof BoothConfigSettingsSchema>;
+
+/**
+ * The session length a box uses when the published wheel names none: twelve
+ * hours, which covers the longest shift the park runs at a mall booth.
+ */
+export const BOOTH_STAFF_SESSION_DEFAULT_MINUTES = 720;
+
+/**
+ * The longest session a box will grant, whatever a bundle says: one day.
+ *
+ * A session that outlived the trading day would carry yesterday's sign-in into
+ * tomorrow's first spins, and nobody would have proved who they were that
+ * morning. A larger number in a bundle is honoured up to this ceiling rather
+ * than refused, because refusing it would take the whole wheel off the air
+ * over a staff setting.
+ */
+export const BOOTH_STAFF_SESSION_MAX_MINUTES = 24 * 60;
+
+/** The session length, in minutes, a booth running these settings grants. */
+export function boothStaffSessionMinutes(settings: {
+  staffSessionMinutes?: number | null;
+}): number {
+  const configured = settings.staffSessionMinutes;
+  if (typeof configured !== 'number' || !Number.isInteger(configured) || configured <= 0) {
+    return BOOTH_STAFF_SESSION_DEFAULT_MINUTES;
+  }
+  return Math.min(configured, BOOTH_STAFF_SESSION_MAX_MINUTES);
+}
 
 export const BoothConfigLayoutSchema = z.object({
   id: z.string().uuid(),
@@ -312,6 +356,190 @@ export interface BoothStaffCacheFields {
    * builds PIN management owns where it lives and how it is allocated.
    */
   staffCode?: string | null;
+  /**
+   * What the slip and the television call this person: the employee's
+   * nickname, or their name when they have none (SCRUM-223).
+   *
+   * **Carried only for people on a booth of the box being served**, because
+   * it is the one field here that names somebody to whoever holds the disk. A
+   * booth needs it to print "Staff: Nok (S-7KMQ)" with no internet, and a till
+   * does not need it at all, so a till's box is not sent it.
+   */
+  displayName?: string | null;
+}
+
+/**
+ * The alphabet a staff code is written in: the thirty characters the booth
+ * code draws from (`BOOTH_CODE_ALPHABET`), restated rather than imported so a
+ * change to how vouchers are spelled cannot quietly re-spell every staff code
+ * already printed on a slip.
+ */
+const STAFF_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/**
+ * The short code printed beside a staff member's name on a booth voucher,
+ * e.g. `S-7KMQ` (SCRUM-223).
+ *
+ * **Derived, not stored.** No column holds a staff code yet, and one is needed
+ * now: two people called Nok at one park must not be the same line on a slip.
+ * So the code is computed from the account id — the same id always gives the
+ * same code, on the cloud and on every box, with nothing to allocate or keep
+ * in step. It is not a secret and not a lookup key for signing in; it only
+ * tells two people apart on paper.
+ *
+ * Four characters from thirty is 810,000 codes, so two of fifty booth staff
+ * sharing one is about a one-in-seven-hundred chance. The account id on the
+ * spin row stays the identity; this is what a person reads. A later slice that
+ * allocates codes in a column replaces this function and nothing else.
+ */
+export function boothStaffCode(accountId: string): string {
+  // A UUID's last twelve hex digits are its random tail (UUIDv7 puts the
+  // timestamp at the front), which is what spreads the codes out: accounts
+  // created in one seed run share their leading digits.
+  const hex = accountId.replace(/[^0-9a-fA-F]/g, '').slice(-12).padStart(12, '0');
+  let value = Number.parseInt(hex, 16);
+  let code = '';
+  for (let i = 0; i < 4; i += 1) {
+    code = STAFF_CODE_ALPHABET[value % STAFF_CODE_ALPHABET.length] + code;
+    value = Math.floor(value / STAFF_CODE_ALPHABET.length);
+  }
+  return `S-${code}`;
+}
+
+/** "Nok (S-7KMQ)", "S-7KMQ", "Nok" or null — the Staff row of a booth voucher. */
+export function boothStaffLabel(
+  name: string | null | undefined,
+  code: string | null | undefined,
+): string | null {
+  const n = typeof name === 'string' ? name.trim() : '';
+  const c = typeof code === 'string' ? code.trim() : '';
+  if (n !== '' && c !== '') return `${n} (${c})`;
+  if (n !== '') return n;
+  if (c !== '') return c;
+  return null;
+}
+
+// --- Signing in at the booth (SCRUM-223) ------------------------------------
+
+/**
+ * How the person at the booth proved who they are.
+ *
+ * `pin` is checked on the box against the argon2id hashes on its staff scope,
+ * with or without internet. `account` is a phone and password checked by the
+ * CLOUD — the box forwards them to `BOOTH_STAFF_VERIFY_PATH` under its own
+ * credential — so it needs the internet and is refused without it. `badge` is
+ * declared and still finds nobody (no badge hash is sent to a box yet).
+ */
+export const BOOTH_SIGN_IN_METHODS = ['pin', 'account', 'badge'] as const;
+export type BoothSignInMethod = (typeof BOOTH_SIGN_IN_METHODS)[number];
+
+/**
+ * Why a sign-in at the booth was refused, as a CODE the television turns into
+ * its own words (D15). None of these is an error: a refused sign-in is a 200
+ * with `ok: false`, and the wheel goes on playing unattributed.
+ *
+ *  - `wrong` — the PIN, or the phone and password, did not match.
+ *  - `locked` — too many wrong attempts; `retryAfterMs` says how long.
+ *  - `offline` — an account sign-in needs the internet and the box has none.
+ *    The television says "No internet — sign in with your PIN".
+ *  - `not_allowed` — the password was right, and this person's role does not
+ *    carry `booth:staff:sign_in`.
+ *  - `not_assigned` — the password was right, and an administrator has not
+ *    put this person on this booth.
+ *  - `must_change_password` — a temporary password: change it on the POS
+ *    first. A booth has no screen for choosing a new one.
+ *  - `unavailable` — the box could not check at all (no station, no store).
+ *  - `box_refused` — the cloud answered, and refused the BOX rather than the
+ *    person: its credential was revoked or replaced in the Console, or the box
+ *    was taken out of service. The internet is fine, so "No internet" would
+ *    be untrue; the television says the box is no longer allowed here.
+ *  - `booth_not_on_box` — the cloud answered that this booth station is not
+ *    on this box any more: moved to another box, archived, or no longer a
+ *    booth. This box's copy is out of date until its next pull.
+ */
+export const BOOTH_SIGN_IN_REFUSALS = [
+  'wrong',
+  'locked',
+  'offline',
+  'not_allowed',
+  'not_assigned',
+  'must_change_password',
+  'unavailable',
+  'box_refused',
+  'booth_not_on_box',
+] as const;
+export type BoothSignInRefusal = (typeof BOOTH_SIGN_IN_REFUSALS)[number];
+
+/**
+ * Who is signed in at the booth, as the television shows it.
+ *
+ * **A deliberate change to D15, on the owner's instruction of 24 September**:
+ * the corner of the screen names the person attending, the way a name badge
+ * would. It carries the display name and the staff code and nothing else — no
+ * account id, no phone, nothing that is a credential.
+ */
+export interface BoothStaffOnDuty {
+  name: string | null;
+  code: string | null;
+  method: BoothSignInMethod;
+  signedInAt: string;
+  /** When the session ends by itself: sign-in plus the booth's session length. */
+  expiresAt: string | null;
+}
+
+/**
+ * The box asks the cloud to check a phone and password for its booth.
+ *
+ * Under the BOX's credential, never a person's session: the box is the only
+ * caller, and it can only ask about a booth station that is its own.
+ */
+export const BOOTH_STAFF_VERIFY_PATH = '/box/v1/booth/staff/verify';
+
+export const BoothStaffVerifyRequestSchema = z.object({
+  stationId: z.string().uuid(),
+  /** As typed; the cloud normalises it the way sign-in does. */
+  phone: z.string().min(3).max(32),
+  password: z.string().min(1).max(256),
+});
+export type BoothStaffVerifyRequest = z.infer<typeof BoothStaffVerifyRequestSchema>;
+
+/** Who the cloud found, when it found somebody who may sign in here. */
+export interface BoothStaffVerifyResponse {
+  accountId: string;
+  displayName: string | null;
+  staffCode: string;
+}
+
+/**
+ * The error codes the verify route answers with, so the box can tell a wrong
+ * password from its own credential being refused — both are a 401.
+ */
+export const BOOTH_STAFF_VERIFY_ERRORS = {
+  invalid: 'INVALID_CREDENTIALS',
+  notAllowed: 'BOOTH_SIGN_IN_NOT_ALLOWED',
+  notAssigned: 'BOOTH_STAFF_NOT_ASSIGNED',
+  mustChangePassword: 'MUST_CHANGE_PASSWORD',
+  locked: 'BOOTH_STAFF_LOCKED',
+  /** 404: the station asked about is not a live booth on the asking box. */
+  boothNotOnBox: 'BOOTH_NOT_ON_THIS_BOX',
+  /**
+   * 403: the box has been taken out of service. Answered by the box
+   * credential check in front of every `/box/v1/*` route (`authenticateBox`),
+   * like the plain 401 for a credential that is no longer this box's; named
+   * here because the box has to tell both apart from a wrong password.
+   */
+  boxDisabled: 'BOX_DISABLED',
+} as const;
+
+/** `POST /booth/reprint` — the last voucher of this booth, or one spin's. */
+export interface BoothReprintRequest {
+  spinId?: string;
+}
+
+export interface BoothReprintResponse {
+  spinId: string;
+  /** What became of the new copy. The code on it is the one already issued. */
+  printState: BoothPrintState;
 }
 
 // --- The paired screen (SCRUM-244) ------------------------------------------

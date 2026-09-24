@@ -1,0 +1,18 @@
+# The booth television: Chromium in kiosk mode on http://127.0.0.1:8780/, as
+# the desktop user (@USER@), restarted whenever Chromium exits or dies.
+# Installed by scripts/pi/install.sh, which fills in @USER@ and @UID@.
+[Unit]
+Description=OTO booth television (Chromium kiosk on the booth box's page)
+Wants=oto-box.service
+After=oto-box.service graphical.target
+
+[Service]
+Type=simple
+User=@USER@
+Environment=XDG_RUNTIME_DIR=/run/user/@UID@
+ExecStart=/usr/local/lib/oto-box/kiosk.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target

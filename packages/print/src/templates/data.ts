@@ -160,15 +160,24 @@ export interface BoothVoucherData {
   /** Which booth printed it, e.g. "Central Phuket · G floor". */
   booth: string;
   /**
-   * Name and staff code, e.g. "Nok (S-014)".
+   * Name and staff code, e.g. "Nok (S-7KMQ)".
    *
    * **Null is expected, not exceptional.** A sign-in problem must never take
    * the booth down (`docs/features/booth.md`), so the wheel spins with nobody
-   * signed in and the spin is flagged unattributed. The template prints that
-   * on the slip rather than leaving the row off, because the row going missing
-   * and the row saying "nobody" look identical to reception otherwise.
+   * signed in and the spin is flagged unattributed. The template prints
+   * "unattributed" on the slip rather than leaving the row off, because the
+   * row going missing and the row saying "nobody" look identical to reception
+   * otherwise — and "unattributed" is the word the Console's alert uses for
+   * the same spins.
    */
   staff: string | null;
+  /**
+   * "Reprint · 24 Sep 2026 16:40" on a copy staff asked for, absent on the
+   * first slip (SCRUM-223). Optional because only a reprint has one: the
+   * first print of every voucher leaves it out, and a job stored before this
+   * field existed is a first print.
+   */
+  reprintNote?: string | null;
   /** Formatted by the caller. Null when the voucher never expires. */
   expiresAt: string | null;
   footerLine: string;

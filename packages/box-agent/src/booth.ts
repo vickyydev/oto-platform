@@ -18,12 +18,12 @@
  * box's own printer, and an outbox that the agent flushes when it can.
  *
  * **What it deliberately does not import.** `@oto/print` is type-only
- * throughout. It cannot be LOADED by this package's test runner — Node's
- * strip-only mode refuses `Bitmap1`'s parameter properties, measured as
- * `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` — and a runtime import here would take
- * the booth's tests down with it. The printer is reached through an injected
- * port instead, which is also what lets a test prove the press path without
- * standing up a renderer.
+ * throughout: the booth decides what goes on the paper and never renders it.
+ * The printer is reached through an injected port, so the press path runs —
+ * and is tested — with no renderer, no fonts and no printer behind it. (The
+ * package's tests could not load `@oto/print` at all until SCRUM-223 moved
+ * them to `--experimental-transform-types`; the port is the boundary either
+ * way.)
  *
  * **The order of a press, and why it is that order.** The spin row is written
  * BEFORE the wheel animates, because a spin recorded and not shown is a
@@ -42,12 +42,18 @@ import { z } from 'zod';
 import {
   BoothConfigBundleSchema,
   addDaysToIsoDate,
+  boothStaffLabel,
+  boothStaffSessionMinutes,
   mintBoothCode,
   businessDate as businessDateFor,
   parseDayStart,
   type BoothConfigBundle,
   type BoothConfigPrize,
   type BoothPrintState,
+  type BoothReprintResponse,
+  type BoothSignInMethod,
+  type BoothSignInRefusal,
+  type BoothStaffOnDuty,
   type SpinResponse,
 } from '@oto/shared';
 import type { PrintJob as RenderPrintJob } from '@oto/print';
@@ -139,9 +145,10 @@ export interface BoothBranchContext {
  * How a voucher reaches paper.
  *
  * A port rather than the print subsystem itself, for the reason at the top of
- * this file: `@oto/print` cannot be loaded where these tests run. The agent
- * passes `printing.submit`; a test passes a function that records what it was
- * asked to print.
+ * this file: the booth decides what goes on the paper and never renders it, so
+ * the press path runs — and is tested — with no renderer, no fonts and no
+ * printer behind it. The agent passes `printing.submit`; a test passes a
+ * function that records what it was asked to print.
  */
 export interface BoothPrintPort {
   submit(request: {
@@ -180,7 +187,26 @@ export interface BoothStaffRecord {
   badgeHash?: string | null;
   /** The short code a person types before their PIN. Not a secret. */
   staffCode?: string | null;
+  /**
+   * The nickname or name the slip prints beside the code (SCRUM-223). Sent
+   * only for people on a booth of this box; null for everybody else.
+   */
+  displayName?: string | null;
 }
+
+/**
+ * What the cloud said about a phone and password typed at this booth
+ * (SCRUM-223).
+ *
+ * The box never checks a password itself: it holds no password hashes it is
+ * allowed to use for this, and "is this person on this booth, with a role
+ * that may sign in here" is the cloud's to answer. So account sign-in is a
+ * question the agent forwards, and every way it can fail comes back as one of
+ * these refusals — `offline` whenever the question could not be asked at all.
+ */
+export type BoothAccountVerdict =
+  | { ok: true; accountId: string; displayName: string | null; staffCode: string | null }
+  | { ok: false; reason: BoothSignInRefusal; retryAfterMs?: number };
 
 export interface BoothOptions {
   boxId: string;
@@ -209,6 +235,20 @@ export interface BoothOptions {
    * dependency, exactly as `OfflineAuthOptions.verifyPassword` is.
    */
   verifySecret?: (hash: string, secret: string) => Promise<boolean>;
+  /**
+   * Check a phone and password with the cloud (SCRUM-223).
+   *
+   * Injected, like `verifySecret` and for the same reason D2 gives: this
+   * module has no way to reach the cloud and must not grow one. The agent
+   * supplies it, forwarding to `BOOTH_STAFF_VERIFY_PATH` under the box's own
+   * credential. Without it — or with the box offline — an account sign-in is
+   * refused `offline` and the television says to use the PIN.
+   */
+  verifyAccount?: (request: {
+    stationId: string;
+    phone: string;
+    password: string;
+  }) => Promise<BoothAccountVerdict>;
   /** The branch's print templates, for the voucher's footer line. */
   printTemplates?: () => readonly { type: string; footerText?: string | null }[];
   /**
@@ -319,6 +359,14 @@ export const BOOTH_REFUSAL_CODES = [
   'cannot_record',
   /** This exact press was already recorded and its answer is no longer held. */
   'duplicate_press',
+  /**
+   * A reprint asked for with nobody signed in (SCRUM-223). A reprint puts a
+   * second copy of a live code on paper, so it is staff-only, and the person
+   * who asked is written on the record of it.
+   */
+  'staff_required',
+  /** A reprint with nothing to reprint: no voucher yet, or not that spin's. */
+  'nothing_to_reprint',
 ] as const;
 export type BoothRefusalCode = (typeof BOOTH_REFUSAL_CODES)[number];
 
@@ -366,6 +414,13 @@ export interface BoothStatusReport {
   lastSpinAt: string | null;
   staffSignedIn: boolean;
   dailyCapsReached: string[];
+  /**
+   * Who is attending, for the corner of the television (SCRUM-223). Null when
+   * nobody is. Name and staff code only — see `BoothStaffOnDuty`. Optional in
+   * the type because a booth older than this field does not send it; the
+   * booth here always does.
+   */
+  staff?: BoothStaffOnDuty | null;
 }
 
 /** The heartbeat's booth block. Same fields, measured rather than defaulted. */
@@ -382,6 +437,11 @@ export interface BoothHeartbeatReport {
 export interface BoothSignInRequest {
   pin?: string;
   badge?: string;
+  /**
+   * A phone and password, checked by the cloud (SCRUM-223). Never held after
+   * the call: forwarded once, and the answer is who it was.
+   */
+  account?: { phone: string; password: string };
 }
 
 export interface BoothSignInResult {
@@ -390,6 +450,19 @@ export interface BoothSignInResult {
   retryAfterMs?: number;
   /** The account that signed in. Never sent to the television. */
   accountId?: string;
+  /**
+   * Why an ACCOUNT sign-in was refused, when the reason is something the
+   * person can act on (SCRUM-223): no internet, not on this booth, a role that
+   * may not sign in here. Absent for a wrong PIN or password, which is the
+   * shape every PIN refusal has always had.
+   */
+  reason?: BoothSignInRefusal;
+}
+
+export interface BoothReprintRequest {
+  /** The spin whose voucher to print again. Absent: this booth's last one. */
+  spinId?: string;
+  actionId?: string | null;
 }
 
 export interface Booth {
@@ -403,7 +476,19 @@ export interface Booth {
   spin(request: BoothSpinRequest): Promise<SpinResponse>;
   signIn(request: BoothSignInRequest): Promise<BoothSignInResult>;
   signOut(): Promise<void>;
+  /** The live session, or null — an expired one is ended here, not honoured. */
   staffSession(): Promise<BoxStaffSession | null>;
+  /**
+   * Print the last voucher of this booth again, or a given spin's (SCRUM-223).
+   *
+   * The SAME code on new paper: no draw, no counter, no second voucher. Staff
+   * only — it refuses with `staff_required` when nobody is signed in — and the
+   * copy is reported to the cloud as a `reprint` print of that voucher, with
+   * the person who asked for it. Optional in the type so a stand-in booth in a
+   * test need not grow one; `createBooth` always has it, and the http contract
+   * answers 404 for a booth without it.
+   */
+  reprint?(request: BoothReprintRequest): Promise<BoothReprintResponse>;
   status(opts: { online: boolean }): Promise<BoothStatusReport>;
   heartbeat(): Promise<BoothHeartbeatReport | null>;
   /**
@@ -427,7 +512,65 @@ export interface Booth {
   noteCloudTime(at: string): Promise<void>;
 }
 
-export function createBooth(options: BoothOptions): Booth {
+/**
+ * A voucher's paper this booth is responsible for reporting (D20), and why
+ * it was printed: the first copy after a spin, or a copy staff asked for.
+ */
+interface OwnedPrintJob {
+  voucherId: string | null;
+  voucherCode: string;
+  reason: 'initial' | 'reprint';
+  /** Who asked for a reprint. Null for the automatic first print. */
+  requestedByAccountId: string | null;
+  /**
+   * The booth the voucher was won at, which is the station its outcome is
+   * filed under (SCRUM-223). Not "the booth this box serves now": on a box
+   * with several booths that can be a different one by the time the paper
+   * comes out, or none at all — a restarted box prints its left-over slips
+   * before anybody has chosen a booth on the television.
+   */
+  stationId: string | null;
+}
+
+/**
+ * One voucher this booth issued, kept so it can be printed again (SCRUM-223).
+ *
+ * The print queue deletes a job once its paper is out, and the outbox is sent
+ * and forgotten, so without this a reprint would have nothing to reprint. It
+ * carries the renderer's input exactly as the first copy had it — the code,
+ * the prize, the staff row — so a reprint cannot say anything the first slip
+ * did not. Nothing personal about a guest is in it: a booth voucher names a
+ * prize, a code and the member of staff on duty.
+ */
+interface RecentVoucher {
+  spinId: string;
+  voucherId: string;
+  voucherCode: string;
+  issuedAt: string;
+  job: RenderPrintJob;
+}
+
+/** How many of the booth's last vouchers stay reprintable. */
+const RECENT_VOUCHERS_KEPT = 10;
+
+/** How many reported print jobs the booth still answers for (see `finishedPrintJobs`). */
+const FINISHED_PRINT_JOBS_KEPT = 200;
+
+/** `box_runtime` keys, per booth station. */
+const recentVouchersKey = (stationId: string): string => `booth.recent_vouchers:${stationId}`;
+const staffNameKey = (stationId: string): string => `booth.staff_name:${stationId}`;
+
+/** The session's credential kind as the store spells it, to the method the screen shows. */
+function methodOf(credentialKind: string): BoothSignInMethod {
+  if (credentialKind === 'password') return 'account';
+  if (credentialKind === 'badge') return 'badge';
+  return 'pin';
+}
+
+/** What `createBooth` builds: a `Booth` whose reprint is always there. */
+export type BoothModule = Booth & Required<Pick<Booth, 'reprint'>>;
+
+export function createBooth(options: BoothOptions): BoothModule {
   const { boxId, store } = options;
   const clock = options.now ?? (() => new Date());
   const log = options.log ?? silentLog;
@@ -467,7 +610,25 @@ export function createBooth(options: BoothOptions): Booth {
    * which voucher a recovered job belongs to — see `adoptPendingPrintJobs`,
    * where the id is gone and the code is not.
    */
-  const ownedPrintJobs = new Map<string, { voucherId: string | null; voucherCode: string }>();
+  const ownedPrintJobs = new Map<string, OwnedPrintJob>();
+  /**
+   * The jobs whose paper this booth has already reported, newest last, so it
+   * still answers for them (SCRUM-223).
+   *
+   * A job ends once, and the print queue makes sure of that. But the agent
+   * decides where an outcome goes by asking `ownsPrintJob`, and a booth that
+   * forgot a job the moment its fact was queued would send any later outcome
+   * for it — a second slip, as a queue that held one job twice once printed —
+   * to the cloud's print-result route, against a row the cloud does not have,
+   * while the spin itself may still be in the outbox (D20). Remembered here,
+   * such an outcome is still a fact in the outbox, where the cloud files one
+   * print per job however often a box reports it.
+   *
+   * The last `FINISHED_PRINT_JOBS_KEPT`, in memory: this is a guard, not a
+   * record — the outbox is the record — and a restarted box's queue holds no
+   * job that was finished before the restart, so there is nothing to guard.
+   */
+  const finishedPrintJobs = new Map<string, OwnedPrintJob>();
   /**
    * The answer to a press, kept so that a retry of the SAME press gets the
    * same answer rather than a second prize.
@@ -509,6 +670,30 @@ export function createBooth(options: BoothOptions): Booth {
    * restore odds an administrator has already replaced.
    */
   async function refresh(): Promise<boolean> {
+    const stationId = options.station()?.id ?? null;
+    /**
+     * The wheel belongs to ONE station, and the station can change under it
+     * (SCRUM-223): a box with two booth stations runs whichever the kiosk's
+     * picker chose. The old station's wheel is dropped the moment it is no
+     * longer the one being served — otherwise a lower version for the new
+     * station would be refused as "older than the wheel already running", and
+     * the television would go on drawing the other booth's prizes under this
+     * booth's prefix.
+     */
+    if (applied && applied.stationId !== stationId) {
+      note('info', 'the booth station changed; the previous wheel is set aside', {
+        from: applied.stationId,
+        to: stationId,
+      });
+      applied = null;
+      replay.clear();
+    }
+    /**
+     * No station, no wheel. This used to adopt whichever entry came last in
+     * the scope, which on a box with two booths and no choice made yet is a
+     * wheel belonging to neither.
+     */
+    if (stationId === null) return false;
     const held = await store.readBundle(boxId, 'booth');
     if (!held) return false;
     const payload = BoothCachePayloadSchema.safeParse(held.payload);
@@ -516,7 +701,6 @@ export function createBooth(options: BoothOptions): Booth {
       note('warn', 'the booth cache scope did not carry an item list and was ignored');
       return false;
     }
-    const stationId = options.station()?.id ?? null;
     let adopted = false;
     for (const raw of payload.data.items) {
       const parsed = BoothCacheEntrySchema.safeParse(raw);
@@ -530,10 +714,10 @@ export function createBooth(options: BoothOptions): Booth {
         continue;
       }
       const entry = parsed.data;
-      // A box hosts one booth (see `BoothHeartbeatSchema`), but the scope is
-      // free to carry more than one entry, so the box takes the one that is
-      // its own rather than the first that arrives.
-      if (stationId !== null && entry.stationId !== stationId) continue;
+      // A box runs one booth at a time (see `BoothHeartbeatSchema`), but the
+      // scope is free to carry an entry per booth station on the box, so the
+      // box takes the one for the station it is serving.
+      if (entry.stationId !== stationId) continue;
       if (applied && entry.version < applied.version) {
         note('warn', 'a booth cache entry was older than the wheel already running', {
           held: applied.version,
@@ -542,6 +726,23 @@ export function createBooth(options: BoothOptions): Booth {
         continue;
       }
       if (applied && entry.version === applied.version && entry.bundleHash === applied.bundleHash) {
+        /**
+         * The same wheel — and possibly a different staff list or different
+         * voucher terms beside it (SCRUM-223).
+         *
+         * Neither is part of the published bundle, so neither moves the
+         * version: somebody added to a booth in the Console used to be unable
+         * to sign in there until the next publish, because an entry with an
+         * unchanged hash was skipped whole. The wheel is still not touched;
+         * only what rides beside it is taken.
+         */
+        if (!sameSideData(applied, entry)) {
+          applied = entry;
+          note('info', 'the booth staff list or voucher terms were refreshed', {
+            version: entry.version,
+            allowedStaff: entry.allowedStaff.length,
+          });
+        }
         continue;
       }
       applied = entry;
@@ -552,7 +753,72 @@ export function createBooth(options: BoothOptions): Booth {
         bundleHash: entry.bundleHash.slice(0, 12),
       });
     }
+    await endRevokedSession(stationId, held.appliedAt);
     return adopted;
+  }
+
+  /** The staff list and the voucher terms, compared as the box holds them. */
+  function sameSideData(a: BoothCacheEntry, b: BoothCacheEntry): boolean {
+    return (
+      JSON.stringify([...a.allowedStaff].sort()) === JSON.stringify([...b.allowedStaff].sort()) &&
+      JSON.stringify(a.voucherDefinitions) === JSON.stringify(b.voucherDefinitions)
+    );
+  }
+
+  /**
+   * End a session whose holder lost the right to it AFTER signing in
+   * (SCRUM-223).
+   *
+   * A sign-in lasts the booth's session length and does not lapse on idle,
+   * so without this somebody taken off the booth — or deactivated — at ten in
+   * the morning would go on attributing spins until the evening. Two tests,
+   * each against a list that arrived after the sign-in:
+   *
+   *  - the booth's own staff list, when a pull newer than the sign-in no
+   *    longer names them;
+   *  - the branch staff scope, when a pull newer than the sign-in no longer
+   *    carries them as active.
+   *
+   * "Newer than the sign-in" is the guard that matters. An account sign-in is
+   * checked live by the cloud and can be seconds ahead of this box's last
+   * pull; judging it against the older list would sign out somebody the
+   * cloud has just let in.
+   */
+  async function endRevokedSession(stationId: string, boothAppliedAt: string | null): Promise<void> {
+    let session: BoxStaffSession | null;
+    try {
+      session = await store.readStaffSession(stationId);
+    } catch {
+      return;
+    }
+    if (!session) return;
+    const holder = session.accountId;
+    const signedInMs = Date.parse(session.signedInAt);
+    const newer = (at: string | null | undefined): boolean => {
+      if (typeof at !== 'string') return false;
+      const ms = Date.parse(at);
+      return Number.isFinite(ms) && Number.isFinite(signedInMs) && ms > signedInMs;
+    };
+    let reason: string | null = null;
+    if (applied && newer(boothAppliedAt) && !applied.allowedStaff.includes(holder)) {
+      reason = 'no longer on the staff list of this booth';
+    }
+    if (reason === null) {
+      const list = options.staff?.() ?? [];
+      const staffHeld = await store.readBundle(boxId, 'staff').catch(() => null);
+      if (list.length > 0 && newer(staffHeld?.appliedAt)) {
+        const record = list.find((r) => r.accountId === holder);
+        if (!record || record.status !== 'active') reason = 'no longer an active member of staff';
+      }
+    }
+    if (reason === null) return;
+    try {
+      await store.clearStaffSession(stationId);
+    } catch (err) {
+      note('error', 'a revoked staff session could not be ended', { err: String(err) });
+      return;
+    }
+    note('warn', `a staff session was ended: ${reason}`, { accountId: holder });
   }
 
   function readStationId(raw: unknown): string | null {
@@ -641,16 +907,180 @@ export function createBooth(options: BoothOptions): Booth {
    * cap that silently does not count is the defect those tables exist to
    * prevent, and `spin` refuses before it reaches here.
    */
-  async function staffAccountQuietly(stationId: string): Promise<string | null> {
+  async function staffOnDutyQuietly(
+    stationId: string,
+  ): Promise<{ accountId: string; label: string | null } | null> {
     try {
-      const session = await store.readStaffSession(stationId);
-      return session?.accountId ?? null;
+      const held = await onDuty(stationId);
+      if (!held) return null;
+      return {
+        accountId: held.session.accountId,
+        label: boothStaffLabel(held.duty.name, held.duty.code),
+      };
     } catch (err) {
       note('warn', 'the booth could not read its staff session; the spin is unattributed', {
         err: String(err),
       });
       return null;
     }
+  }
+
+  /**
+   * The session at this station, if it is still running (SCRUM-223).
+   *
+   * A session ends when the booth's session length has passed — never on
+   * idle — and an ended one is closed here, on the read, rather than by a
+   * timer: a box that was switched off through the end of a shift comes back
+   * with nobody signed in, which is the truth. Throws only what the store
+   * throws; the callers that must never fail the wheel catch it.
+   */
+  async function liveSession(stationId: string): Promise<BoxStaffSession | null> {
+    const session = await store.readStaffSession(stationId);
+    if (!session) return null;
+    if (session.expiresAt !== null) {
+      const ends = Date.parse(session.expiresAt);
+      if (Number.isFinite(ends) && ends <= clock().getTime()) {
+        try {
+          await store.clearStaffSession(stationId);
+        } catch (err) {
+          note('warn', 'an ended staff session could not be cleared', { err: String(err) });
+        }
+        note('info', 'a staff session reached the end of its time and was closed', {
+          accountId: session.accountId,
+        });
+        return null;
+      }
+    }
+    return session;
+  }
+
+  /**
+   * Who is attending, as the television and the slip name them.
+   *
+   * The name comes from the staff scope when the box holds a record for the
+   * person — the freshest copy — and otherwise from what the cloud said at
+   * sign-in, kept beside the session. The code is the one the sign-in
+   * resolved, which is the same derivation either way.
+   */
+  async function onDuty(
+    stationId: string,
+  ): Promise<{ session: BoxStaffSession; duty: BoothStaffOnDuty } | null> {
+    const session = await liveSession(stationId);
+    if (!session) return null;
+    const record = (options.staff?.() ?? []).find((r) => r.accountId === session.accountId);
+    let name = record?.displayName ?? null;
+    if (name === null) {
+      try {
+        const raw = await store.readRuntimeValue(boxId, staffNameKey(stationId));
+        const held = raw ? (JSON.parse(raw) as { accountId?: unknown; name?: unknown }) : null;
+        if (held?.accountId === session.accountId && typeof held.name === 'string') name = held.name;
+      } catch {
+        // A name that cannot be read is a slip that prints the code alone.
+      }
+    }
+    return {
+      session,
+      duty: {
+        name,
+        code: session.staffCode ?? record?.staffCode ?? null,
+        method: methodOf(session.credentialKind),
+        signedInAt: session.signedInAt,
+        expiresAt: session.expiresAt,
+      },
+    };
+  }
+
+  /**
+   * Put somebody on duty: the session, the name to show, and a clean slate
+   * on the throttle, in one transaction.
+   *
+   * The session runs for the booth's session length from NOW
+   * (`staffSessionMinutes` in the published wheel, twelve hours when it names
+   * none). It is not extended by activity and not ended by its absence.
+   */
+  async function openSession(
+    station: BoothStationContext,
+    who: { accountId: string; staffCode: string | null; displayName: string | null },
+    kind: 'pin' | 'badge' | 'password',
+    at: { nowIso: string; nowMs: number },
+  ): Promise<void> {
+    const minutes = boothStaffSessionMinutes(applied?.bundle.settings ?? {});
+    await store.atomically(async (tx) => {
+      await tx.writeStaffSession({
+        stationId: station.id,
+        boxId,
+        accountId: who.accountId,
+        credentialKind: kind,
+        staffCode: who.staffCode,
+        signedInAt: at.nowIso,
+        lastSeenAt: at.nowIso,
+        expiresAt: new Date(at.nowMs + minutes * 60_000).toISOString(),
+      });
+      await tx.writeRuntimeValue(
+        boxId,
+        staffNameKey(station.id),
+        JSON.stringify({ accountId: who.accountId, name: who.displayName }),
+        at.nowIso,
+      );
+      await tx.clearThrottle(boxId, BOOTH_STAFF_THROTTLE_SCOPE, station.id);
+    });
+  }
+
+  /**
+   * A phone and password, checked by the cloud (SCRUM-223).
+   *
+   * Forwarded once through `verifyAccount` and never kept. A wrong password
+   * counts against this booth's throttle exactly as a wrong PIN does — the
+   * cloud keeps its own count per phone as well — and every other refusal is
+   * handed back with its reason, because each asks for something different
+   * of the person at the booth: find the internet, find a manager, or use
+   * the POS to change a temporary password.
+   */
+  async function signInWithAccount(
+    station: BoothStationContext,
+    account: { phone: string; password: string },
+    at: { nowIso: string; nowMs: number; failures: number },
+  ): Promise<BoothSignInResult> {
+    const phone = typeof account.phone === 'string' ? account.phone.trim() : '';
+    const password = typeof account.password === 'string' ? account.password : '';
+    if (phone === '' || password === '') return { ok: false };
+    const verify = options.verifyAccount;
+    if (!verify) return { ok: false, reason: 'offline' };
+    let verdict: BoothAccountVerdict;
+    try {
+      verdict = await verify({ stationId: station.id, phone, password });
+    } catch (err) {
+      note('warn', 'an account sign-in could not be checked with the cloud', { err: String(err) });
+      return { ok: false, reason: 'offline' };
+    }
+    if (verdict.ok) {
+      await openSession(
+        station,
+        {
+          accountId: verdict.accountId,
+          staffCode: verdict.staffCode,
+          displayName: verdict.displayName,
+        },
+        'password',
+        at,
+      );
+      note('info', 'somebody signed in at the booth', { kind: 'account' });
+      return { ok: true, accountId: verdict.accountId };
+    }
+    if (verdict.reason === 'wrong') {
+      const failures = at.failures + 1;
+      const wait = backoffFor(failures);
+      const record = await store.recordThrottleFailure(boxId, BOOTH_STAFF_THROTTLE_SCOPE, station.id, {
+        now: at.nowIso,
+        lockedUntil: wait > 0 ? new Date(at.nowMs + wait).toISOString() : undefined,
+      });
+      note('warn', 'a booth sign-in was refused', { kind: 'account', failures: record.failures });
+      return wait > 0 ? { ok: false, retryAfterMs: wait } : { ok: false };
+    }
+    note('info', 'an account sign-in was refused', { reason: verdict.reason });
+    return verdict.retryAfterMs === undefined
+      ? { ok: false, reason: verdict.reason }
+      : { ok: false, reason: verdict.reason, retryAfterMs: verdict.retryAfterMs };
   }
 
   function backoffFor(failures: number): number {
@@ -709,6 +1139,14 @@ export function createBooth(options: BoothOptions): Booth {
       return { ok: false, retryAfterMs: lockedUntilMs - nowMs };
     }
 
+    if (request.account) {
+      return signInWithAccount(station, request.account, {
+        nowIso,
+        nowMs,
+        failures: held?.failures ?? 0,
+      });
+    }
+
     const secret = request.badge ?? request.pin ?? '';
     const kind: 'badge' | 'pin' = request.badge !== undefined ? 'badge' : 'pin';
     const verify = options.verifySecret;
@@ -748,20 +1186,21 @@ export function createBooth(options: BoothOptions): Booth {
       return wait > 0 ? { ok: false, retryAfterMs: wait } : { ok: false };
     }
 
-    await store.writeStaffSession({
-      stationId: station.id,
-      boxId,
-      accountId: matched.accountId,
-      credentialKind: kind,
-      staffCode: matched.staffCode ?? null,
-      signedInAt: nowIso,
-      lastSeenAt: nowIso,
-      // Null: the session ends when somebody signs out or the booth is reset.
-      // A booth is attended for a shift, and an expiry that cut in mid-shift
-      // would produce exactly the unattributed vouchers this is here to avoid.
-      expiresAt: null,
-    });
-    await store.clearThrottle(boxId, BOOTH_STAFF_THROTTLE_SCOPE, station.id);
+    /**
+     * The session runs for the booth's session length (SCRUM-223). It used to
+     * be open-ended; it now ends by itself at the end of a shift, and still
+     * never on idle — see `openSession`.
+     */
+    await openSession(
+      station,
+      {
+        accountId: matched.accountId,
+        staffCode: matched.staffCode ?? null,
+        displayName: matched.displayName ?? null,
+      },
+      kind,
+      { nowIso, nowMs },
+    );
     note('info', 'somebody signed in at the booth', { kind });
     return { ok: true, accountId: matched.accountId };
   }
@@ -790,7 +1229,7 @@ export function createBooth(options: BoothOptions): Booth {
     const station = options.station();
     if (!station) return null;
     try {
-      return await store.readStaffSession(station.id);
+      return await liveSession(station.id);
     } catch (err) {
       if (err instanceof BoxStoreFeatureMissingError) return null;
       throw err;
@@ -881,7 +1320,8 @@ export function createBooth(options: BoothOptions): Booth {
       );
     }
 
-    const staffAccountId = await staffAccountQuietly(station.id);
+    const onDutyNow = await staffOnDutyQuietly(station.id);
+    const staffAccountId = onDutyNow?.accountId ?? null;
 
     if (request.simulate) {
       /**
@@ -977,13 +1417,19 @@ export function createBooth(options: BoothOptions): Booth {
       },
     };
 
-    const printJob = options.print ? buildPrintJob(printJobId, station, branch, {
+    /**
+     * The slip is built whether or not there is a printer, because it is also
+     * what a reprint prints (SCRUM-223): the voucher is remembered with the
+     * exact renderer input of its first copy, inside the spin's transaction.
+     */
+    const slip = buildPrintJob(printJobId, station, branch, {
       prize: outcome.prize,
       voucherCode,
       expiresAt,
       issuedAtMs: timing.stampMs,
-      staffAccountId,
-    }) : null;
+      staffLabel: onDutyNow?.label ?? null,
+    });
+    const printJob = options.print ? slip : null;
 
     /**
      * One transaction: the facts, the print job and the counters commit
@@ -1088,6 +1534,13 @@ export function createBooth(options: BoothOptions): Booth {
           timing.occurredAt,
         );
         if (printJob) await tx.putPrintJob(printJob);
+        await rememberVoucher(tx, station.id, {
+          spinId,
+          voucherId,
+          voucherCode,
+          issuedAt: timing.occurredAt,
+          job: slip.job,
+        });
       });
     } catch (err) {
       if (err instanceof BoothRefusal) throw err;
@@ -1105,7 +1558,13 @@ export function createBooth(options: BoothOptions): Booth {
     let printState: BoothPrintState = 'no_printer';
     const port = options.print;
     if (printJob && port) {
-      ownedPrintJobs.set(printJobId, { voucherId, voucherCode });
+      ownedPrintJobs.set(printJobId, {
+        voucherId,
+        voucherCode,
+        reason: 'initial',
+        requestedByAccountId: null,
+        stationId: station.id,
+      });
       printState = await attemptPrint(
         port,
         printJobId,
@@ -1250,7 +1709,8 @@ export function createBooth(options: BoothOptions): Booth {
       voucherCode: string;
       expiresAt: string | null;
       issuedAtMs: number;
-      staffAccountId: string | null;
+      /** "Nok (S-7KMQ)", or null for an unattributed spin. */
+      staffLabel: string | null;
     },
   ): PrintJobRecord {
     const definition = applied?.voucherDefinitions.find(
@@ -1264,26 +1724,24 @@ export function createBooth(options: BoothOptions): Booth {
         prizeLineThai: detail.prize.nameTh,
         redemptionLine: `Show this QR at OTO Reception to claim: ${detail.prize.nameEn}.`,
         /**
-         * The definition's terms, split a line each. An empty array is a real
-         * value and prints no terms at all — which today is every voucher,
-         * because nothing fills `voucherDefinitions` yet. See `resolveExpiry`.
+         * The definition's terms, split a line each, printed at the foot of
+         * the slip (SCRUM-223). An empty array is a real value and prints no
+         * terms at all: that is a definition with no terms, and the place to
+         * fix it is the definition.
          */
         terms: splitTerms(definition),
         voucherCode: detail.voucherCode,
         issuedAt: formatStamp(new Date(detail.issuedAtMs), branch.timezone),
         booth: `${branch.name} · ${station.name}`,
         /**
-         * **The account id is NOT printed here, and null is expected.**
-         * `BoothVoucherData.staff` wants a name and a staff code — "Nok
-         * (S-014)" — and the box holds neither: the `staff` cache scope
-         * carries a hash, a status and an id, and deliberately nothing that
-         * identifies a person to whoever holds the disk. So an attended spin
-         * prints the staff CODE where the booth knows one and nothing where it
-         * does not, and the slip says "Not signed in" for an unattributed
-         * voucher, which is the state the specification requires to keep
-         * working.
+         * Name and staff code — "Nok (S-7KMQ)" — of whoever was on duty
+         * (SCRUM-223), or null, which the template prints as "unattributed":
+         * the wheel plays with nobody signed in and the slip says so. The
+         * account id is never printed; the staff scope now carries the name
+         * and the code for the people on this box's booths, and an account
+         * sign-in brings both from the cloud.
          */
-        staff: staffLabel(detail.staffAccountId),
+        staff: detail.staffLabel,
         expiresAt:
           detail.expiresAt === null
             ? null
@@ -1327,11 +1785,126 @@ export function createBooth(options: BoothOptions): Booth {
     return lines;
   }
 
-  /** The staff code this booth knows for an account, or null. See `buildPrintJob`. */
-  function staffLabel(accountId: string | null): string | null {
-    if (!accountId) return null;
-    const record = (options.staff?.() ?? []).find((s) => s.accountId === accountId);
-    return record?.staffCode ?? null;
+  /**
+   * Keep this voucher reprintable: newest first, the last few only.
+   *
+   * Written inside the spin's own transaction, so a voucher that exists is a
+   * voucher that can be printed again — and one that was rolled back is not
+   * on the list. A list that no longer parses is started again rather than
+   * failing the spin: losing the chance to reprint an old slip is a far
+   * smaller thing than refusing a child's press.
+   */
+  async function rememberVoucher(tx: BoxStore, stationId: string, voucher: RecentVoucher): Promise<void> {
+    const held = await readRecentVouchers(stationId, tx);
+    const next = [voucher, ...held.filter((v) => v.spinId !== voucher.spinId)].slice(
+      0,
+      RECENT_VOUCHERS_KEPT,
+    );
+    await tx.writeRuntimeValue(boxId, recentVouchersKey(stationId), JSON.stringify(next), voucher.issuedAt);
+  }
+
+  async function readRecentVouchers(stationId: string, from: BoxStore = store): Promise<RecentVoucher[]> {
+    const raw = await from.readRuntimeValue(boxId, recentVouchersKey(stationId));
+    if (!raw) return [];
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(
+        (v): v is RecentVoucher =>
+          typeof v === 'object' &&
+          v !== null &&
+          typeof (v as RecentVoucher).spinId === 'string' &&
+          typeof (v as RecentVoucher).voucherCode === 'string' &&
+          typeof (v as RecentVoucher).job === 'object',
+      );
+    } catch {
+      note('warn', 'the list of reprintable vouchers could not be read and was started again');
+      return [];
+    }
+  }
+
+  /**
+   * The same slip, marked as a copy.
+   *
+   * Everything the first copy said is kept — the code above all, and the
+   * member of staff who was on duty when it was WON — and one line is added
+   * saying when this copy was made. Reception holding two slips with one code
+   * can then see which is the reprint; the code is single-use whichever is
+   * scanned first.
+   */
+  function reprintedJob(job: RenderPrintJob, timeZone: string, at: Date): RenderPrintJob {
+    if (job.kind !== 'booth_voucher') return job;
+    return {
+      ...job,
+      data: { ...job.data, reprintNote: `Reprint · ${formatStamp(at, timeZone)}` },
+    };
+  }
+
+  async function reprint(request: BoothReprintRequest): Promise<BoothReprintResponse> {
+    const station = options.station();
+    if (!station) {
+      throw new BoothRefusal('not_configured', 'This box is not serving a booth station');
+    }
+    let session: BoxStaffSession | null = null;
+    try {
+      session = await liveSession(station.id);
+    } catch (err) {
+      if (!(err instanceof BoxStoreFeatureMissingError)) throw err;
+    }
+    if (!session) {
+      throw new BoothRefusal('staff_required', 'A reprint needs a member of staff signed in');
+    }
+    let recent: RecentVoucher[] = [];
+    try {
+      recent = await readRecentVouchers(station.id);
+    } catch (err) {
+      if (!(err instanceof BoxStoreFeatureMissingError)) throw err;
+    }
+    const target = request.spinId
+      ? recent.find((v) => v.spinId === request.spinId)
+      : recent[0];
+    if (!target) {
+      throw new BoothRefusal('nothing_to_reprint', 'There is no voucher to print again');
+    }
+
+    const now = clock();
+    const jobId = uuidv7(now.getTime());
+    const job = reprintedJob(target.job, options.branch()?.timezone ?? 'UTC', now);
+    /**
+     * Owned before it is submitted, so the outcome — whenever it comes — is
+     * reported as a REPRINT of this voucher, with the person who asked, and
+     * never through the cloud's print route (D20). No counter moves and no
+     * fact about a spin or a voucher is queued: the only record a reprint
+     * makes is the print itself, which is what the cloud counts copies from.
+     */
+    ownedPrintJobs.set(jobId, {
+      voucherId: target.voucherId,
+      voucherCode: target.voucherCode,
+      reason: 'reprint',
+      requestedByAccountId: session.accountId,
+      stationId: station.id,
+    });
+    const port = options.print;
+    let printState: BoothPrintState = 'no_printer';
+    if (port) {
+      printState = await attemptPrint(port, jobId, job, station.id, request.actionId ?? null);
+    } else {
+      // No printer to put it on. The attempt is still recorded, as a skipped
+      // print, so the cloud knows staff asked for a copy.
+      await reportPrint({
+        id: jobId,
+        status: 'skipped',
+        attempts: 0,
+        deviceId: null,
+        errorCode: 'NO_PRINTER',
+        errorMessage: null,
+      });
+    }
+    note('info', 'a voucher was printed again at the booth', {
+      spinId: target.spinId,
+      printState,
+    });
+    return { spinId: target.spinId, printState };
   }
 
   /** The `booth_voucher` template's footer, or an empty line when none is set. */
@@ -1364,7 +1937,7 @@ export function createBooth(options: BoothOptions): Booth {
   // --- Print outcomes, as facts (D20) --------------------------------------
 
   function ownsPrintJob(jobId: string): boolean {
-    return ownedPrintJobs.has(jobId);
+    return ownedPrintJobs.has(jobId) || finishedPrintJobs.has(jobId);
   }
 
   /**
@@ -1377,11 +1950,29 @@ export function createBooth(options: BoothOptions): Booth {
    * the right order whenever the link comes back.
    */
   async function reportPrint(outcome: BoothPrintSubmitOutcome): Promise<void> {
-    const printed = ownedPrintJobs.get(outcome.id);
+    const finished = finishedPrintJobs.get(outcome.id);
+    const printed = ownedPrintJobs.get(outcome.id) ?? finished;
     if (!printed) return;
+    if (finished && !ownedPrintJobs.has(outcome.id)) {
+      // Not supposed to happen: a job ends once. Queued all the same, because
+      // the one wrong place for it is the cloud's print route (see
+      // `finishedPrintJobs`), and said, because it means a slip came out twice.
+      note('warn', 'a booth print job was reported again after it had ended', {
+        jobId: outcome.id,
+        status: outcome.status,
+      });
+    }
     const key = options.privateKey();
-    const station = options.station();
-    if (!key || !station) return;
+    // The voucher's own booth; the one served now only for a job raised
+    // before jobs remembered theirs.
+    const stationId = printed.stationId ?? options.station()?.id ?? null;
+    if (!key || !stationId) {
+      note('warn', 'a booth print outcome has no booth to be filed under and was not sent', {
+        jobId: outcome.id,
+        status: outcome.status,
+      });
+      return;
+    }
     const nowIso = clock().toISOString();
     try {
       await store.enqueue(
@@ -1389,7 +1980,7 @@ export function createBooth(options: BoothOptions): Booth {
         {
           type: 'booth.voucher_printed',
           occurredAt: nowIso,
-          stationId: station.id,
+          stationId,
           actorKind: 'box',
           payload: {
             /**
@@ -1403,7 +1994,11 @@ export function createBooth(options: BoothOptions): Booth {
              * CODE is present either way, because it is on the stored job and
              * so survives the restart that loses the id.
              */
-            voucherId: printed.voucherId,
+            // Left out, never sent as null, when a restart has lost it: the
+            // cloud takes the id OR the code, and refuses a null id as a
+            // malformed fact — which put every slip a restarted box printed
+            // in quarantine (SCRUM-223 bench run), once a box kept its queue.
+            ...(printed.voucherId ? { voucherId: printed.voucherId } : {}),
             voucherCode: printed.voucherCode,
             printJobId: outcome.id,
             status: outcome.status,
@@ -1411,7 +2006,16 @@ export function createBooth(options: BoothOptions): Booth {
             deviceId: outcome.deviceId,
             errorCode: outcome.errorCode,
             errorMessage: outcome.errorMessage,
-            reason: 'initial',
+            /**
+             * `reprint` with the person who asked, or `initial` (SCRUM-223).
+             * The cloud files a `booth.voucher_print` row per job and counts
+             * the copies of the code, so two slips with one code at reception
+             * is answerable: which one is the reprint, and who asked for it.
+             */
+            reason: printed.reason,
+            ...(printed.requestedByAccountId
+              ? { requestedByAccountId: printed.requestedByAccountId }
+              : {}),
           },
         },
         (draft) => sealEnvelope(draft, boxId, key),
@@ -1424,10 +2028,20 @@ export function createBooth(options: BoothOptions): Booth {
       });
       return;
     }
-    // Only once the fact is on disk. A job dropped from this set before its
-    // outcome was queued would have its result reported to the cloud's print
-    // route by the agent instead, which is the thing D20 forbids.
-    if (outcome.status !== 'queued') ownedPrintJobs.delete(outcome.id);
+    // Only once the fact is on disk, and into the finished set rather than out
+    // of the booth's hands: a job this booth stopped answering for would have
+    // any later result reported to the cloud's print route by the agent,
+    // which is the thing D20 forbids.
+    if (outcome.status !== 'queued') {
+      ownedPrintJobs.delete(outcome.id);
+      finishedPrintJobs.delete(outcome.id);
+      finishedPrintJobs.set(outcome.id, printed);
+      while (finishedPrintJobs.size > FINISHED_PRINT_JOBS_KEPT) {
+        const oldest = finishedPrintJobs.keys().next();
+        if (oldest.done) break;
+        finishedPrintJobs.delete(oldest.value);
+      }
+    }
   }
 
   // --- Reporting ------------------------------------------------------------
@@ -1446,7 +2060,7 @@ export function createBooth(options: BoothOptions): Booth {
     const health = healthForBooth();
     let staffSignedIn = false;
     try {
-      staffSignedIn = station ? (await store.readStaffSession(station.id)) !== null : false;
+      staffSignedIn = station ? (await liveSession(station.id)) !== null : false;
     } catch {
       // A store that cannot answer is reported as nobody signed in, which is
       // the same thing the spin path does with the same failure.
@@ -1521,8 +2135,16 @@ export function createBooth(options: BoothOptions): Booth {
 
   async function status(opts: { online: boolean }): Promise<BoothStatusReport> {
     const measured = await measure();
+    const station = options.station();
+    let staff: BoothStaffOnDuty | null = null;
+    try {
+      staff = station ? ((await onDuty(station.id))?.duty ?? null) : null;
+    } catch {
+      staff = null;
+    }
     return {
       online: opts.online,
+      staff,
       /**
        * "Never synced" is a different screen from "offline", and the
        * difference is whether a wheel has ever been applied — not whether the
@@ -1565,12 +2187,25 @@ export function createBooth(options: BoothOptions): Booth {
    * a fresh module remembers nothing. That is D20's failure exactly: a report
    * against a row the cloud may not have, for a spin still sitting in the
    * outbox.
+   *
+   * The ones a power cut caught on their way to the printer are adopted too.
+   * The print queue never prints those again (D12) but it does report them,
+   * as failed — and that report is an outcome like any other, owed to the
+   * outbox and not to the cloud's print route.
    */
   async function adoptPendingPrintJobs(): Promise<void> {
     if (!store.features().printJobs) return;
     try {
-      for (const job of await store.loadPendingPrintJobs(boxId)) {
+      const leftBehind = [
+        ...(await store.loadPendingPrintJobs(boxId)),
+        ...(await store.loadInterruptedPrintJobs(boxId)),
+      ];
+      for (const job of leftBehind) {
         if (job.job.kind !== 'booth_voucher') continue;
+        // A job this process raised itself keeps what it knows — the voucher
+        // id and who asked — when the booth is started again (a `restart`
+        // command stops and starts it while slips are still waiting).
+        if (ownedPrintJobs.has(job.id)) continue;
         /**
          * The voucher id is gone with the process that minted it — nothing on
          * the stored job carries it, because the RENDERER has no use for it
@@ -1581,6 +2216,13 @@ export function createBooth(options: BoothOptions): Booth {
         ownedPrintJobs.set(job.id, {
           voucherId: null,
           voucherCode: job.job.data.voucherCode,
+          // A copy made on request carries its note on the job itself, which
+          // is what lets a restart still report it as a reprint. Who asked is
+          // not on the paper and is not recovered.
+          reason: job.job.data.reprintNote ? 'reprint' : 'initial',
+          requestedByAccountId: null,
+          // On the stored job, so a restart keeps it.
+          stationId: job.stationId,
         });
       }
     } catch (err) {
@@ -1602,6 +2244,7 @@ export function createBooth(options: BoothOptions): Booth {
     signIn,
     signOut,
     staffSession,
+    reprint,
     status,
     heartbeat,
     ownsPrintJob,

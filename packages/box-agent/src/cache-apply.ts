@@ -2,12 +2,10 @@
  * Which scopes of a cache pull may land on this box, and in which order
  * (S2-06).
  *
- * Its own module, away from `agent.ts`, for a reason that is not tidiness:
- * this package's tests run on Node's own runner with type stripping, which
- * cannot load `agent.ts` at all — it reaches the printing code, and a
- * TypeScript parameter property is not strippable. A security rule that can
- * only be exercised through a cloud, a store and a transport is a rule with no
- * cheap test, and this one deserves one.
+ * Its own module, away from `agent.ts`, for a reason that is not tidiness: a
+ * security rule that can only be exercised through a cloud, a store and a
+ * transport is a rule with no cheap test, and this one deserves one. Here it
+ * is a function of two lists (`cache-apply.test.ts`).
  */
 
 /** Why a scope in a cache pull did not end up on the box. */

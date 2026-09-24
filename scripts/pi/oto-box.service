@@ -1,0 +1,44 @@
+# The OTO booth box: the agent, its printing and sync, and the booth page on
+# http://127.0.0.1:8780/ for the television (SCRUM-223). Installed by
+# scripts/pi/install.sh, which fills in @NODE@.
+[Unit]
+Description=OTO booth box (agent, printing, sync, booth page on 127.0.0.1:8780)
+# Wanted, not required: a booth in a mall boots before the router has its
+# line, and it must play (and print) from its own copy in the meantime.
+Wants=network-online.target time-sync.target
+After=network-online.target time-sync.target
+# Never let a crash loop hammer the card or the api: at most 10 starts a
+# minute. These are [Unit] settings; systemd ignores them under [Service].
+# A box that hits the limit is not left dead: the watchdog timer starts it
+# again a minute later.
+StartLimitIntervalSec=60
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=oto-box
+Group=oto-box
+EnvironmentFile=/etc/oto-box/config
+ExecStart=@NODE@ --disable-warning=ExperimentalWarning /opt/oto-box/current/oto-box.mjs run
+# 75 is the runner asking for a fresh process after a claim gave it a new identity.
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+# What the box may touch: its own home, nothing else.
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/oto-box
+PrivateTmp=yes
+# No devices: printing is over the network. A USB printer, or the booth button
+# read on the box itself (both later), will need this relaxed.
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

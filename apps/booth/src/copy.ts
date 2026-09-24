@@ -35,11 +35,24 @@ export const COPY = {
    * Shown instead of "press the button" when nobody is attending the booth.
    * It is a prompt to staff, NOT a lock: the wheel still spins, and the spin
    * is recorded unattributed. A booth that refused to play while reception was
-   * busy would be a booth nobody plays.
+   * busy would be a booth nobody plays — which is why it no longer says
+   * "sign in to start" (SCRUM-223): that read as "you cannot play yet", and
+   * the wheel plays. What signing in changes is whose name is on the slip.
    */
   staffSignInPrompt: {
-    en: 'Staff: sign in to start',
-    th: 'พนักงาน: เข้าสู่ระบบเพื่อเริ่ม',
+    en: 'Staff: sign in for your name on the slip',
+    th: 'พนักงาน: เข้าสู่ระบบเพื่อให้ชื่อของคุณอยู่บนคูปอง',
+  } satisfies BilingualLine,
+  /**
+   * The red button was pressed while the staff sign-in form had the keyboard
+   * (SCRUM-223). The key went to the form and nothing was drawn — see
+   * `isTypingTarget` in src/press.ts for why the wheel waits rather than
+   * spins — so the screen says why the press did nothing, over the wheel,
+   * where the staff panel does not cover it.
+   */
+  staffSigningIn: {
+    en: 'Staff are signing in — the wheel is back in a moment',
+    th: 'พนักงานกำลังเข้าสู่ระบบ วงล้อจะกลับมาในอีกสักครู่',
   } satisfies BilingualLine,
 
   resultPrefix: { en: 'You won', th: 'คุณได้รับ' } satisfies BilingualLine,
@@ -169,4 +182,57 @@ export const STAFF_COPY = {
   debugTitle: 'Booth diagnostics',
   debugNeedsStaff: 'Sign in to open diagnostics',
   debugSimulated: 'Simulated draws: nothing is written, printed or capped',
+  // --- SCRUM-223: signing in with an account, and what a signed-in panel does
+  usePin: 'PIN',
+  useAccount: 'Phone & password',
+  accountHint: 'Your phone number and the password you use on the POS',
+  phoneLabel: 'Phone',
+  passwordLabel: 'Password',
+  signInButton: 'Sign in',
+  working: 'Checking…',
+  /** The exact words the owner asked for when the box has no internet. */
+  offline: 'No internet — sign in with your PIN',
+  notAssigned: 'You are not on this booth’s staff list — ask a manager',
+  notAllowed: 'Your role cannot sign in at a booth — ask a manager',
+  mustChange: 'Change your temporary password on the POS first',
+  /** The cloud answered, and refused this box itself: revoked, replaced or out of service. */
+  boxRefused: 'This box is no longer allowed here — ask a manager to check it in Console → Devices',
+  /** The cloud answered that this booth has moved to another box, or was archived. */
+  boothNotOnBox: 'This booth is not on this box any more — ask a manager to check Console → Devices',
+  signedInAs: (who: string) => `Signed in: ${who}`,
+  until: (time: string) => `Until ${time}`,
+  reprint: 'Reprint last voucher',
+  reprinting: 'Printing it again…',
+  reprinted: 'The last voucher is printing again — same code',
+  reprintQueued: 'Sent again — the printer has not printed it yet',
+  reprintNoPrinter: 'No printer on this booth — nothing to print on',
+  nothingToReprint: 'There is no voucher to reprint yet',
+  reprintNeedsStaff: 'Sign in to reprint',
+  reprintFailed: 'The reprint did not go through',
+  changeBooth: 'Change booth',
+} as const;
+
+/**
+ * The screens a booth BOX shows before there is a wheel (SCRUM-223): the
+ * claim code on first boot, and the choice of booth on a box with several.
+ * Staff-facing, English, like the rest of the panels; the line a guest might
+ * read is bilingual.
+ */
+export const KIOSK_COPY = {
+  guest: {
+    en: 'This booth is being set up — please ask our staff',
+    th: 'บูธนี้กำลังตั้งค่า กรุณาสอบถามพนักงาน',
+  } satisfies BilingualLine,
+  claimTitle: 'Set up this box',
+  claimHint: 'Enter the claim code from Console → Devices → Add a box',
+  claimButton: 'Claim',
+  claimWorking: 'Registering this box…',
+  claimRefused: 'That code was not accepted — it may be used or out of date. Make a new one in the Console.',
+  claimUnreachable: 'The box could not reach the internet — check the network and try again',
+  claimInvalid: 'That does not look like a claim code',
+  pickTitle: 'Which booth is this?',
+  pickHint: 'This box runs more than one booth. Choose the one at this television.',
+  noBoothTitle: 'No booth on this box yet',
+  noBoothHint: 'In the Console, create a booth station on this box (Devices → New station, kind Booth), then publish its wheel.',
+  starting: 'Starting the box…',
 } as const;

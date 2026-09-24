@@ -2,14 +2,13 @@
  * The sync and station-session contract, as the box holds it (S2-05).
  *
  * This is a MIRROR of `packages/shared/src/sync.ts` and
- * `packages/shared/src/station-session.ts`, and it exists for one reason:
- * `@oto/box-agent` has no dependency on `@oto/shared` yet, and adding one
- * means a `pnpm-lock.yaml` change that this package cannot make on its own.
- * The moment `"@oto/shared": "workspace:*"` lands in this package's manifest,
- * every export below collapses into a re-export and this file is three lines
- * long.
+ * `packages/shared/src/station-session.ts`, written when `@oto/box-agent` had
+ * no dependency on `@oto/shared`. It has one now (`"@oto/shared":
+ * "workspace:*"` in this package's manifest, and `booth.ts` imports values
+ * from it), so every export below could collapse into a re-export and this
+ * file be three lines long; that has not been done yet.
  *
- * Until then the duplication is made safe rather than left to discipline:
+ * Until it is, the duplication is made safe rather than left to discipline:
  * `test/contract-drift.test.ts` imports both copies and asserts that every
  * vocabulary matches item for item and that `canonicalSyncBytes` produces
  * identical bytes for the same envelope. Two ends disagreeing about the bytes

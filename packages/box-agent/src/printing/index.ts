@@ -26,6 +26,7 @@ import {
   type DrawerPulseRequest,
   type PrintRequest,
   type PrintSubsystem,
+  type PrintSubsystemOptions,
 } from './queue';
 
 export * from './channel';
@@ -42,6 +43,11 @@ export interface PrintingOptions {
   retryDelayMs?: number;
   /** Open a socket to a real printer. Swapped in tests; never for a simulator. */
   openReal?: ChannelFactory;
+  /**
+   * Where the queue outlives the process — see `PrintSubsystemOptions.durable`.
+   * Passed through; the agent decides whether there is one.
+   */
+  durable?: PrintSubsystemOptions['durable'];
 }
 
 export interface PrintingController {
@@ -145,6 +151,7 @@ export function createPrinting(options: PrintingOptions): PrintingController {
     log: options.log,
     report: options.report,
     retryDelayMs: options.retryDelayMs,
+    ...(options.durable ? { durable: options.durable } : {}),
   });
 
   function find(deviceId: string): PrinterSimulator | undefined {

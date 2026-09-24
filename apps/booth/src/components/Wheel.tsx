@@ -365,7 +365,7 @@ function buildWheelSvg(slices: WheelSlice[]): string {
             transform="rotate(${labelAngle} ${lx} ${ly})"
             text-anchor="middle"
             dominant-baseline="middle"
-            font-family="'Climate Crisis', 'Benzin', 'Noto Sans Thai', system-ui, sans-serif"
+            font-family="'Climate Crisis', 'Benzin', 'Noto Sans Thai', 'Booth Thai', system-ui, sans-serif"
             font-weight="500"
             font-size="${fontSize}"
             fill="${entry.textColor}"

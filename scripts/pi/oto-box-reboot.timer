@@ -1,0 +1,10 @@
+[Unit]
+Description=Reboot the OTO booth box daily at @TIME@ (local time)
+
+[Timer]
+OnCalendar=*-*-* @TIME@:00
+# Not on the next boot if the Pi was off at that time.
+Persistent=false
+
+[Install]
+WantedBy=timers.target

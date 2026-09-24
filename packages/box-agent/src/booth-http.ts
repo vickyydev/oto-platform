@@ -96,6 +96,16 @@ function statusFor(code: BoothRefusalCode): number {
     case 'runtime_unavailable':
     case 'cannot_record':
       return 503;
+    /**
+     * A reprint with nobody signed in is a request the box understood and
+     * will not do for this caller (SCRUM-223) — 403, and the panel says to
+     * sign in first. One with nothing to reprint names a voucher that is not
+     * here — 404.
+     */
+    case 'staff_required':
+      return 403;
+    case 'nothing_to_reprint':
+      return 404;
   }
 }
 
@@ -195,7 +205,18 @@ export function createBoothHttp(options: BoothHttpOptions): (
         const signIn: BoothSignInRequest = {};
         const badge = readString(body.badge);
         const pin = readString(body.pin);
-        if (badge !== undefined) signIn.badge = badge;
+        /**
+         * `{ mode: 'account', phone, password }` (SCRUM-223): checked by the
+         * cloud through the box, never here. The password is handed to the
+         * booth module and goes out of scope with this call, like a PIN; it is
+         * not logged, and a request without both fields signs nobody in.
+         */
+        if (body.mode === 'account') {
+          signIn.account = {
+            phone: readString(body.phone) ?? '',
+            password: typeof body.password === 'string' ? body.password : '',
+          };
+        } else if (badge !== undefined) signIn.badge = badge;
         else if (pin !== undefined) signIn.pin = pin;
         const result = await booth.signIn(signIn);
         /**
@@ -208,10 +229,12 @@ export function createBoothHttp(options: BoothHttpOptions): (
          */
         return {
           status: 200,
-          body:
-            result.retryAfterMs === undefined
-              ? { ok: result.ok }
-              : { ok: result.ok, retryAfterMs: result.retryAfterMs },
+          body: {
+            ok: result.ok,
+            ...(result.retryAfterMs === undefined ? {} : { retryAfterMs: result.retryAfterMs }),
+            // A code, never prose: the television words it (D15).
+            ...(result.reason === undefined ? {} : { reason: result.reason }),
+          },
         };
       }
 
@@ -219,6 +242,25 @@ export function createBoothHttp(options: BoothHttpOptions): (
         if (method !== 'POST') return refuse(405, 'method_not_allowed', 'Use POST');
         await booth.signOut();
         return { status: 204 };
+      }
+
+      if (path === '/reprint') {
+        if (method !== 'POST') return refuse(405, 'method_not_allowed', 'Use POST');
+        if (!booth.reprint) return refuse(404, 'not_found', 'No such booth route');
+        const body = asRecord(request.body);
+        const spinId = readString(body.spinId);
+        const headers = request.headers ?? {};
+        /**
+         * The same code on new paper, staff only (SCRUM-223). The booth
+         * decides both halves — whether somebody is signed in and which
+         * voucher is meant — and a refusal comes back as the platform's
+         * envelope with a code the panel knows.
+         */
+        const reprinted = await booth.reprint({
+          ...(spinId === undefined ? {} : { spinId }),
+          actionId: readString(headers[BOOTH_ACTION_HEADER]) ?? null,
+        });
+        return { status: 200, body: reprinted };
       }
 
       return refuse(404, 'not_found', 'No such booth route');
