@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-24, 16:07 (`main` at `43d3adb` plus this checkpoint; staging at `003dac7`)_
+_Last updated: 2026-09-24, 21:57 (`main` at `13a6e70` plus this checkpoint; staging at `003dac7`, `13a6e70` deploying)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
@@ -67,7 +67,9 @@ the Pi as a real box beside the virtual box, voucher redemption at the till,
 switched-off prizes off the wheel, staff sign-in by account or PIN with an
 admin-set session length, then a closing audit and the owner's bench test. The
 plan is `plans/booth/PLAN.md`; the audit behind it is `plans/booth/AUDIT-2026-09-24.md`.
-Round 1 (SCRUM-398/399 and SCRUM-207) is running. Everything below waits behind it.
+Round 1 landed (`1de320c` the Pi runtime, `13a6e70` the redemption api; 398, 399, 207
+and the four Bugs in Testing); round 2 (P3 the till, P4 the Console) is running.
+Everything below waits behind it.
 
 **Then the recommended order, still the owner's to confirm**, with the reasoning in
 `SESSION_HANDOVER.md`:

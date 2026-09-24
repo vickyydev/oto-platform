@@ -59,6 +59,31 @@ different; the Pi runtime and the counter were not built at all).**
   right commit; `packages/shared/test/cart-totals-line-target.test.ts` is
   P2's. Both gates' full verdicts are the last result lines of their
   workflow journals.
+- **Round 1 landed (21:57), one push, two commits:** `1de320c` — the Pi runs the
+  booth box (P1: claim/run, the loopback server serving the page and the
+  `/booth/*` contract, the page before the cloud with a 15 s transport
+  timeout, the booth picker, sign-in by account under the box credential or by
+  PIN with the published session length, reprint, the staff name on the slip,
+  inactive prizes off the wheel, one press one slip, `scripts/pi` and
+  `docs/ops/PI_BOOTH.md`; three gates — refused on a harness broken by the
+  check character and a box waiting out a stalled cloud, then on a double
+  slip on a stalled boot, then MERGE); `13a6e70` — the redemption api (P2:
+  lookup/hold/consume/release, server pricing aimed at one line, the void
+  route and tender guards, the persisted guess throttle, migration 0021, the
+  MOD 37-2 check character; three gates — refused on a voucher taken off a
+  rung-up sale and three more, then on the line-removal race against Pay,
+  then MERGE). `app.ts` carried one line from each: hunk-picked. Jira:
+  398, 399, 207, 394, 395, 396, 397 in **Testing** with the cards; the wip refs
+  dropped. CI on `13a6e70`: see `gh run list`. **Round 2 launched at once:**
+  P3 the till (`wf_b50b366a`: the box classifies a voucher code, the ticket
+  and F&B tills hear it over the channel, from a USB scanner burst or typed,
+  hold → pay → refusals, the void with a reason, a voucher never on an
+  offline sale, a cart of one free item allowed) and P4 the Console
+  (`wf_a685de68`: voucher types with wording TH/EN, links, expiry or never;
+  booth staff and PINs; the session length; migration 0022; a set-up guide
+  for the owner). Their app.ts lines are hunk-picked again at landing.
+  Then: the end-to-end proof with a real agent process against staging, the
+  closing adversarial audit, "ready".
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
