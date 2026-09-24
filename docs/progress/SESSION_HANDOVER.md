@@ -84,6 +84,32 @@ different; the Pi runtime and the counter were not built at all).**
   for the owner). Their app.ts lines are hunk-picked again at landing.
   Then: the end-to-end proof with a real agent process against staging, the
   closing adversarial audit, "ready".
+- **CI after the landing:** `13a6e70` went red on one test only — the check
+  character's conformance test (60,000 comparisons) ran 0.4 s past vitest's
+  5 s default on the runner; `d630749` gives it 30 s; green; staging live on
+  it at 22:2x (api healthy, migration 0021 applied, the voucher route answers
+  401 unsigned, the booth and POS sites serve).
+- **Round 2's first gates (night): both refused, both in fix rounds.** P4
+  (Console: voucher types with wording TH/EN, links, expiry or never; booth
+  staff and PINs; the session length; migration 0022; `docs/ops/BOOTH_SETUP.md`)
+  — built and green (api 1,427, db 75, Console e2e 9/9), refused on text only:
+  the slip's terms reached paper at the box's next pull, not at publish, while
+  the guide and five comments said otherwise — the fix round (`wf_d1fe8608`)
+  freezes title, instruction and terms at publish and corrects every statement
+  (including three lines of `PI_BOOTH.md`); wip ref `wip/400-console`
+  (`2b3bfc2`). P3 (the till: the box classifies a voucher code, both tills hear
+  it over the channel, from a USB burst or typed, hold → pay → refusals, the
+  void with a reason, a voucher never on an offline sale) — 35/35 browser
+  checks, refused on: a voucher-only ฿0 sale finalised the moment the payment
+  screen opened (and Cancel threw it away), a menu-item voucher redeemable at
+  the ticket till with no kitchen ticket, the platform's quote refusal hidden
+  behind the offline message; decisions taken in the fix round
+  (`wf_8ee96f72`): `issuedBy` on the api's voucher view and the card, the F&B
+  band field accepting a typed voucher, Cancel voiding any rung-up sale that
+  took no money, the handler listed; wip ref `wip/207-till` (`fce502c`).
+  Landing order when both pass: P4 then P3 (P3 edits `vouchers.ts` viewOf;
+  P4 edits `sync-booth.ts` comments only — disjoint); `app.ts` carries P4's
+  line only (hunk-pick if anything else appears).
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
