@@ -17,6 +17,16 @@
  * The Postgres SERVER is the one already on the machine (Docker, :5433) or
  * whatever `TEST_DATABASE_URL` names, the same variable CI hands the api
  * tests; only the database on it is new.
+ *
+ * WHICH CONSOLE THE FLOWS READ (SCRUM-422). By default the dev server, which
+ * transforms the app on request. With `CONSOLE_E2E_BUILT=1` in the
+ * environment (`$env:CONSOLE_E2E_BUILT='1'` in PowerShell, `CONSOLE_E2E_BUILT=1
+ * pnpm …` in a POSIX shell) this builds the Console once — the same
+ * `pnpm --filter @oto/console build` Render runs — and `playwright.config.ts`
+ * serves `dist/public` through `vite preview` on the run's port instead, so
+ * the set proves the bundle that ships and not only the sources it is built
+ * from. The build comes before the database is made: one that fails leaves
+ * nothing to drop.
  */
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -118,8 +128,18 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => playwright?.kill());
 }
 
+/** See "WHICH CONSOLE THE FLOWS READ" above; `playwright.config.ts` reads the same variable. */
+const built = process.env.CONSOLE_E2E_BUILT === '1';
+
 let created = false;
 try {
+  if (built) {
+    say(
+      'building the Console (CONSOLE_E2E_BUILT=1): the run serves dist/public through vite preview',
+    );
+    await run('pnpm', ['--filter', '@oto/console', 'build']);
+  }
+
   say(`making ${databaseName} on ${serverUrl.replace(/:[^:@/]*@/, ':***@')}`);
   await onServer(`CREATE DATABASE ${databaseName}`);
   created = true;

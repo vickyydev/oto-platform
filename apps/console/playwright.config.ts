@@ -51,6 +51,21 @@ const repoRoot = resolve(import.meta.dirname, '..', '..');
  */
 const browser = process.env.CONSOLE_E2E_BROWSER || 'msedge';
 
+/**
+ * WHICH CONSOLE: `CONSOLE_E2E_BUILT`.
+ *
+ * Unset, the second server below is the dev server `pnpm dev` runs, and the
+ * flows read the app as Vite transforms it on request. Set to `1`, it is
+ * `vite preview` serving `dist/public` — the bundle `vite build` writes and
+ * Render publishes (SCRUM-422, audit L52: what CI proves should be what
+ * ships). The harness, `e2e/run.mjs`, builds it before Playwright starts, so
+ * the preview has something to serve. The port, the `/api` proxy and the
+ * readiness URL are the same either way (`vite.config.ts` gives `preview` the
+ * dev server's proxy), and a run without the variable is the run there was
+ * before it.
+ */
+const built = process.env.CONSOLE_E2E_BUILT === '1';
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 120_000,
@@ -111,9 +126,12 @@ export default defineConfig({
       },
     },
     {
-      // The same dev server `pnpm dev` runs, on a port of this run's own, with
-      // its `/api` proxy pointed at the api above.
-      command: 'pnpm --filter @oto/console exec vite --config vite.config.ts',
+      // The same dev server `pnpm dev` runs — or, with `CONSOLE_E2E_BUILT=1`,
+      // `vite preview` over the bundle the harness has just built — on a port
+      // of this run's own, with its `/api` proxy pointed at the api above.
+      command: built
+        ? 'pnpm --filter @oto/console exec vite preview --config vite.config.ts'
+        : 'pnpm --filter @oto/console exec vite --config vite.config.ts',
       cwd: repoRoot,
       url: `http://127.0.0.1:${consolePort}/`,
       reuseExistingServer: false,

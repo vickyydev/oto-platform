@@ -144,6 +144,7 @@ jobs:
         run: pnpm --filter @oto/console e2e
         env:
           CONSOLE_E2E_BROWSER: chromium
+          CONSOLE_E2E_BUILT: '1'  # the browser tests run against the built bundle, what ships (SCRUM-422)
       # A failed case leaves a screenshot and its error context in the HTML
       # report, and the report is the only way to read a red run from here —
       # the log says which case failed and not what the page looked like when

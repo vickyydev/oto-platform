@@ -11,6 +11,21 @@ const port = Number(process.env.CONSOLE_PORT ?? 25743);
 const apiPort = Number(process.env.API_PORT ?? 3001);
 const basePath = process.env.BASE_PATH ?? '/';
 
+/**
+ * The `/api` proxy, one definition for the dev server and for `vite preview`.
+ * The preview server serves what `vite build` wrote, which is how the Console's
+ * end-to-end set runs against the built bundle (`CONSOLE_E2E_BUILT=1`,
+ * SCRUM-422); without the same proxy there, every `/api` call the built app
+ * makes would land on the static server as a 404 instead of reaching the api.
+ */
+const apiProxy = {
+  '/api': {
+    target: `http://localhost:${apiPort}`,
+    changeOrigin: false,
+    rewrite: (p: string) => p.replace(/^\/api/, ''),
+  },
+};
+
 export default defineConfig({
   base: basePath,
   plugins: [react(), tailwindcss()],
@@ -49,14 +64,11 @@ export default defineConfig({
     strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
-    proxy: {
-      '/api': {
-        target: `http://localhost:${apiPort}`,
-        changeOrigin: false,
-        rewrite: (p) => p.replace(/^\/api/, ''),
-      },
-    },
+    proxy: apiProxy,
     fs: { strict: true },
   },
-  preview: { port, host: '0.0.0.0', allowedHosts: true },
+  // `strictPort` as on the dev server: the e2e harness hands this a port it
+  // has just probed free, and a preview that slid to the next one would leave
+  // Playwright waiting on the wrong port until its timeout instead of failing.
+  preview: { port, strictPort: true, host: '0.0.0.0', allowedHosts: true, proxy: apiProxy },
 });
