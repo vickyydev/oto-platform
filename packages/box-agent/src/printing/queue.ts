@@ -5,7 +5,7 @@
  * printer the job goes to, what happens when that printer is out of paper, and
  * what a person is told when it is not there at all.
  *
- * Four things were decided here rather than left to be discovered at a counter,
+ * Five things were decided here rather than left to be discovered at a counter,
  * because a printer is a socket that can be unplugged mid-job:
  *
  *  1. **The connection dies after the header and before the cut.** The job is
@@ -34,7 +34,8 @@
  *     which is a worse failure than printing without being able to see
  *     inside the machine. A printer that answered before the job and is
  *     silent only after it is not this case: it stopped with the job inside
- *     it, which is case 1.
+ *     it, which is case 1. Nor is one that has answered earlier in this
+ *     process and is silent before the job: it has stopped, which is case 5.
  *  3. **Two jobs race for one printer.** Neither vendor document says whether a
  *     second TCP session is refused or stalled (§9.1, §9.6 — both list it as
  *     "confirm on site"), so the queue never opens two: jobs for one device are
@@ -45,13 +46,32 @@
  *     a printer that was archived or unassigned while the job waited ends it as
  *     `skipped` with `DEVICE_GONE` — not failed. Nobody can fix it by waiting,
  *     and an alert about a printer somebody deliberately removed is noise.
+ *  5. **A printer that has answered goes silent before a job** (SCRUM-431).
+ *     The job is NOT sent. It stays `queued` with `PRINTER_SILENT_BEFORE_JOB`,
+ *     the device is reported `statusUnknown` with that code, and the retry
+ *     timer tries it again as it tries a job waiting on paper, up to the same
+ *     limit, after which it is `failed` as any retried job is. By case 2
+ *     alone the box cannot tell this printer from a unit whose firmware never
+ *     answers, and it used to send the slip blind: a printer still stopped
+ *     after case 1's silent ending — a jam, the roll out, its input buffer
+ *     full — answered the next job's read with nothing too, and that job was
+ *     recorded printed with no paper out of the machine. So the box
+ *     remembers, for each printer, that it has answered a status query in
+ *     this process — a job's read before or after the job, or the
+ *     heartbeat's probe — and silence from one it remembers is a printer
+ *     that has stopped, not firmware that never answers. Nothing has reached
+ *     the paper, so waiting costs no second slip: the booth's press answers
+ *     `queued`, the television shows the code and its QR, and the slip comes
+ *     out once the printer answers again. The memory is this process's
+ *     alone. A restart forgets it, and until the unit answers again it is
+ *     printed to as case 2 says; that is accepted.
  *
- * A fifth, not a failure: **a job for a role no station on this box has a
+ * A sixth, not a failure: **a job for a role no station on this box has a
  * printer for is `skipped`**, and the till says "not printed" without blocking
  * the sale. That is the acceptance criterion, and it is a configuration a
  * person chose rather than a fault, so nothing raises an alert.
  *
- * **The queue is on disk (S2-07a).** It was not, and that was the sixth case,
+ * **The queue is on disk (S2-07a).** It was not, and that was the seventh case,
  * found after the fact: a job waiting on paper lived in this module's memory,
  * so a box restarted with three unprinted vouchers came back with none while
  * the cloud went on showing them as queued. Every job is now written to the
@@ -426,6 +446,13 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
 
   const queue: PendingJob[] = [];
   const health: Record<string, PrinterHealth> = {};
+  /**
+   * The printers that have answered a status query in this process, by device
+   * id: case 5 in the header (SCRUM-431). The adapters put a printer here when
+   * it answers a job's read before or after the job, or the heartbeat's probe
+   * (`StatusMemory` in `adapter.ts`), and nothing takes one out but a restart.
+   */
+  const answered = new Set<string>();
   /** One promise per device id: the tail of the chain of jobs for that printer. */
   const locks = new Map<string, Promise<unknown>>();
   /**
@@ -618,7 +645,19 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         `${device.label} has no address, so there is nothing to open`,
       );
     }
-    const deps = { deviceId: device.id, label: device.label, target, open, now };
+    const deps = {
+      deviceId: device.id,
+      label: device.label,
+      target,
+      open,
+      now,
+      memory: {
+        answered: () => answered.has(device.id),
+        heard: () => {
+          answered.add(device.id);
+        },
+      },
+    };
     return device.protocol === 'tspl2' || device.kind === 'band_printer'
       ? tsplAdapter(deps)
       : escposAdapter(deps);
@@ -763,12 +802,12 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         lastError: error.code,
         checkedAt: now().toISOString(),
       };
-      if (error.code === 'PRINTER_SILENT_AFTER_JOB') {
+      if (error.code === 'PRINTER_SILENT_AFTER_JOB' || error.code === 'PRINTER_SILENT_BEFORE_JOB') {
         /**
-         * Case 1's silent ending (SCRUM-429): the printer answered before the
-         * job and nothing since, so nothing it said before is known to hold
-         * any more. It took the connection and the job, and cannot be seen
-         * into.
+         * Case 1's silent ending (SCRUM-429), and case 5 (SCRUM-431): the
+         * printer has answered, and now says nothing, so nothing it said
+         * before is known to hold any more. It is there — it took the
+         * connection, and in case 1 the job — and cannot be seen into.
          */
         health[routed.device.id] = unansweredHealth(now().toISOString(), error.code);
       }

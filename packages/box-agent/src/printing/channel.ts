@@ -74,6 +74,15 @@ export type PrinterErrorCode =
   /** A status query went unanswered. Not fatal on its own — see `escpos.ts`. */
   | 'PRINTER_NO_STATUS'
   /**
+   * The printer answered nothing to the status read before the job, and it
+   * is a printer that has answered one in this process — so it has stopped,
+   * rather than being a unit whose firmware never answers (case 5 in
+   * `queue.ts`'s header; SCRUM-431). Nothing was written, so it is
+   * `retryable` and never `partial`: the job stays queued, and the queue's
+   * retry sends it once the printer answers again.
+   */
+  | 'PRINTER_SILENT_BEFORE_JOB'
+  /**
    * The printer took the job but did not confirm it: it answered the status
    * read before the job and nothing after it, however often it was asked
    * (case (c) in `readAfterJob`, `adapter.ts`; SCRUM-429). Always `partial`,

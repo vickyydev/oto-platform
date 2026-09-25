@@ -10,8 +10,15 @@ import {
   SILENT_AFTER_JOB_PAUSE_MS,
   SILENT_AFTER_JOB_WAIT_MS,
   escposAdapter,
+  tsplAdapter,
+  type StatusMemory,
 } from '../src/printing/adapter';
-import { PrinterError, tcpChannel, type ChannelFactory } from '../src/printing/channel';
+import {
+  CHANNEL_TIMEOUTS,
+  PrinterError,
+  tcpChannel,
+  type ChannelFactory,
+} from '../src/printing/channel';
 import {
   createPrintSubsystem,
   profileFor,
@@ -57,6 +64,9 @@ const SLIP_BYTES = 43_041;
 
 const AT = '2026-09-25T03:00:00.000Z';
 const DEVICE_ID = '018f1d2c-0000-7000-8000-0000000de0c1';
+/** A second printer on the booth station, under a role of its own. */
+const OTHER_DEVICE_ID = '018f1d2c-0000-7000-8000-0000000de0c2';
+const OTHER_ROLE = 'kitchen';
 
 /** One status query as the printer read it: which one, and whether it answered. */
 type Asked = [n: number, answered: boolean];
@@ -76,7 +86,9 @@ interface FakePrinterOptions {
   /**
    * Stop reading once this many job bytes are in, as a printer does that
    * jams or runs out of paper. What it has not read stays in the buffers, and
-   * so do the queries behind the job.
+   * so do the queries behind the job. It stays stopped: a session opened
+   * after it has stopped acts on nothing it is sent, not even its first
+   * query, until `set` clears this.
    */
   stopAfter?: number;
   /** With `stopAfter`, read again this long after stopping, as once somebody has cleared it. */
@@ -91,6 +103,12 @@ interface FakePrinter {
   taken(): number;
   /** The queries read before any job bytes on their session, and after. */
   asked(): { before: Asked[]; after: Asked[] };
+  /**
+   * Change how it behaves from here on, as a printer does that goes silent or
+   * is cleared. The options are read as each session goes, `stopAfter` as it
+   * opens.
+   */
+  set(next: FakePrinterOptions): void;
   close(): Promise<void>;
 }
 
@@ -152,6 +170,8 @@ function escposReader(): (data: Buffer) => { queries: number[]; jobBytes: number
 }
 
 async function fakePrinter(opts: FakePrinterOptions = {}): Promise<FakePrinter> {
+  /** What it does now: `set` changes it. */
+  const live: FakePrinterOptions = { ...opts };
   const sockets = new Set<Socket>();
   const before: Asked[] = [];
   const after: Asked[] = [];
@@ -164,16 +184,16 @@ async function fakePrinter(opts: FakePrinterOptions = {}): Promise<FakePrinter> 
     const read = escposReader();
     let jobSeen = false;
     let dropped = 0;
-    let stopAt = opts.stopAfter;
+    let stopAt = live.stopAfter;
     socket.on('error', () => {});
     socket.on('close', () => sockets.delete(socket));
 
     const answer = (n: number): void => {
       let answered: boolean;
       if (!jobSeen) {
-        answered = opts.answersBefore ?? true;
+        answered = live.answersBefore ?? true;
       } else {
-        const policy = opts.afterJob ?? 'answers';
+        const policy = live.afterJob ?? 'answers';
         if (policy === 'answers') answered = true;
         else if (policy === 'silent') answered = false;
         else {
@@ -198,11 +218,11 @@ async function fakePrinter(opts: FakePrinterOptions = {}): Promise<FakePrinter> 
         socket.pause();
         // Queries that came in with the end of the job are held with it: a
         // printer that has stopped acts on nothing behind the job.
-        if (opts.resumeAfterMs !== undefined) {
+        if (live.resumeAfterMs !== undefined) {
           const timer = setTimeout(() => {
             for (const n of queries) answer(n);
             socket.resume();
-          }, opts.resumeAfterMs);
+          }, live.resumeAfterMs);
           timer.unref();
         }
         return;
@@ -217,6 +237,9 @@ async function fakePrinter(opts: FakePrinterOptions = {}): Promise<FakePrinter> 
     connections: () => connections,
     taken: () => taken,
     asked: () => ({ before: [...before], after: [...after] }),
+    set: (next) => {
+      Object.assign(live, next);
+    },
     close: () =>
       new Promise<void>((resolve) => {
         for (const s of sockets) s.destroy();
@@ -271,15 +294,24 @@ interface Rig {
   advance(ms: number): void;
 }
 
-/** The queue as the box builds it, with its store on the card, printing to `printer`. */
-async function rig(printer: FakePrinter, open: ChannelFactory = tcpChannel): Promise<Rig> {
+/**
+ * The queue as the box builds it, with its store on the card, printing to
+ * `printer`. `maxAttempts` is the queue's own attempt limit, lowered where a
+ * test would otherwise wait out a read for every one of its default attempts.
+ * `bundle` replaces the booth station's one printer, where a test needs two.
+ */
+async function rig(
+  printer: FakePrinter,
+  open: ChannelFactory = tcpChannel,
+  { maxAttempts, bundle: given }: { maxAttempts?: number; bundle?: BoxConfigBundle } = {},
+): Promise<Rig> {
   const box = openTestStore(AT);
   await box.store.init(BOX_ID);
   let clock = Date.parse(AT);
   const reported: PrintJobOutcome[] = [];
   const logged: Rig['logged'] = [];
   const printing = createPrintSubsystem({
-    bundle: () => bundleFor(printer.port),
+    bundle: () => given ?? bundleFor(printer.port),
     templates: () => [],
     open,
     now: () => new Date(clock),
@@ -290,6 +322,7 @@ async function rig(printer: FakePrinter, open: ChannelFactory = tcpChannel): Pro
       reported.push(outcome);
     },
     durable: () => ({ jobs: box.store, boxId: BOX_ID }),
+    maxAttempts,
   });
   return {
     printing,
@@ -336,6 +369,76 @@ async function timedFailure(work: Promise<unknown>): Promise<{ error: unknown; m
     return { error, ms: Date.now() - startedAt };
   }
   assert.fail('the job was expected to fail');
+}
+
+/** The bytes of one seeded booth slip as the queue renders it for this printer. */
+function oneSlip(): number {
+  return renderJob(VOUCHER, { device: profileFor(deviceRow(0)), templates: [] }).bytes.length;
+}
+
+/** The printer's health as far as a person is shown it. */
+function shown(printing: PrintSubsystem) {
+  const health = printing.health()[DEVICE_ID];
+  return (
+    health && {
+      reachability: health.reachability,
+      paperStatus: health.paperStatus,
+      statusUnknown: health.statusUnknown,
+      lastError: health.lastError,
+    }
+  );
+}
+
+/** "Ready": the idle reply to `ESC ! ?` (§9.1). */
+const LABEL_READY = 0x00;
+
+interface FakeBandPrinter {
+  port: number;
+  /** Band bytes read: everything but the status queries. */
+  taken(): number;
+  /** Whether it answers `ESC ! ?` from here on. */
+  answering(on: boolean): void;
+  close(): Promise<void>;
+}
+
+/**
+ * A band printer on loopback, as far as the read before a band needs one: it
+ * answers `ESC ! ?` with "ready" while it is answering, and counts every other
+ * byte it reads as the band's. The bands sent to it are filler, with no
+ * `ESC ! ?` inside them to find.
+ */
+async function fakeBandPrinter(): Promise<FakeBandPrinter> {
+  const sockets = new Set<Socket>();
+  let answers = true;
+  let taken = 0;
+  const server: Server = createServer((socket) => {
+    sockets.add(socket);
+    socket.on('error', () => {});
+    socket.on('close', () => sockets.delete(socket));
+    socket.on('data', (data: Buffer) => {
+      let queries = 0;
+      for (let i = 0; i + 2 < data.length; i += 1) {
+        if (data[i] === 0x1b && data[i + 1] === 0x21 && data[i + 2] === 0x3f) queries += 1;
+      }
+      taken += data.length - 3 * queries;
+      if (!answers) return;
+      for (let q = 0; q < queries; q += 1) socket.write(Buffer.from([LABEL_READY]));
+    });
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = (server.address() as { port: number }).port;
+  return {
+    port,
+    taken: () => taken,
+    answering: (on) => {
+      answers = on;
+    },
+    close: () =>
+      new Promise<void>((resolve) => {
+        for (const s of sockets) s.destroy();
+        server.close(() => resolve());
+      }),
+  };
 }
 
 describe('the read after a job (SCRUM-429)', { concurrency: true }, () => {
@@ -529,6 +632,384 @@ describe('the read after a job (SCRUM-429)', { concurrency: true }, () => {
       await printer.close();
     }
   });
+
+  /**
+   * The read before the next job (SCRUM-431).
+   *
+   * A printer that stopped with a slip inside it, case (c), is still stopped
+   * when the next job comes, and the read before that job goes unanswered
+   * too. Case (b) cannot tell that from a unit that never answers, so the
+   * slip was sent blind and recorded printed. The box now remembers, for each
+   * printer and in this process, that it has answered a status query — a
+   * job's read before or after the job, or the heartbeat's probe — and a job
+   * that meets silence from a printer it remembers is not sent: it stays
+   * queued with `PRINTER_SILENT_BEFORE_JOB`, and the queue's retry sends it
+   * once the printer answers again, until the queue's attempt limit ends it
+   * failed. A unit never heard from still prints blind.
+   *
+   * Inside the suite above so that it runs beside it, being timers too. That
+   * a job was not sent is proved by its bytes, counted at the channel and at
+   * the printer; for the retries the queue's clock is moved on, as the
+   * heartbeat's ticks find it, rather than waited out.
+   */
+  describe('the read before the next job (SCRUM-431)', { concurrency: true }, () => {
+    /** The heartbeat that ticks the queue: a minute, past the retry delay. */
+    const HEARTBEAT_MS = 60_000;
+    /** A held job costs the one read before it and a close. Only a hang guard. */
+    const HELD_WITHIN_MS = 5 * CHANNEL_TIMEOUTS.statusMs;
+
+    test('(1) a printer that has answered, silent before the next job: not sent, queued, printed once it answers again', async () => {
+      const printer = await fakePrinter();
+      const counted = countingChannel();
+      const { printing, reported, box, advance } = await rig(printer, counted.open);
+      try {
+        assert.equal((await printing.submit(voucher('job-heard'))).status, 'printed');
+        const slip = printer.taken();
+
+        // The same printer, answering nothing now, and still reading what it is sent.
+        printer.set({ answersBefore: false });
+        const { value: held, ms } = await timed(printing.submit(voucher('job-held')));
+        assert.equal(held.status, 'queued', 'neither printed nor failed');
+        assert.equal(held.errorCode, 'PRINTER_SILENT_BEFORE_JOB');
+        assert.equal(counted.writes(), 1, 'nothing of it was written');
+        assert.equal(printer.taken(), slip, 'and not a byte of it reached the printer');
+        assert.deepEqual(printer.asked().before, [...ANSWERED_READ, ...unanswered(1)]);
+        // It waited out the read before the job; the upper bound only guards against a hang.
+        assert.ok(ms >= CHANNEL_TIMEOUTS.statusMs - 50, `held after ${ms} ms`);
+        assert.ok(ms < HELD_WITHIN_MS, `held after ${ms} ms`);
+
+        assert.deepEqual(shown(printing), {
+          reachability: 'reachable',
+          paperStatus: 'unknown',
+          statusUnknown: true,
+          lastError: 'PRINTER_SILENT_BEFORE_JOB',
+        });
+        assert.deepEqual(printing.pending(), [
+          {
+            id: 'job-held',
+            kind: 'booth_voucher',
+            attempts: 1,
+            lastError: 'PRINTER_SILENT_BEFORE_JOB',
+          },
+        ]);
+        assert.deepEqual(
+          (await box.store.loadPendingPrintJobs(BOX_ID)).map((job) => [
+            job.id,
+            job.state,
+            job.attempts,
+            job.lastErrorCode,
+          ]),
+          [['job-held', 'queued', 1, 'PRINTER_SILENT_BEFORE_JOB']],
+          'on the card, as a job waiting on paper is, so a restart does not lose it',
+        );
+        assert.deepEqual(await printing.tick(), [], 'and it waits for the retry timer');
+
+        printer.set({ answersBefore: true });
+        advance(HEARTBEAT_MS);
+        assert.deepEqual(
+          (await printing.tick()).map((o) => [o.id, o.status, o.attempts]),
+          [['job-held', 'printed', 2]],
+        );
+        assert.equal(counted.writes(), 2);
+        assert.equal(printer.taken(), 2 * slip, 'the slip came out, once');
+        assert.deepEqual(
+          reported.map((o) => [o.id, o.status, o.errorCode]),
+          [
+            ['job-heard', 'printed', null],
+            ['job-held', 'queued', 'PRINTER_SILENT_BEFORE_JOB'],
+            ['job-held', 'printed', null],
+          ],
+        );
+        assert.equal(shown(printing)?.lastError, null);
+        assert.deepEqual(printing.pending(), []);
+        assert.deepEqual(await box.store.loadPendingPrintJobs(BOX_ID), []);
+      } finally {
+        box.close();
+        await printer.close();
+      }
+    });
+
+    test('(2) a unit never heard to answer still prints blind, job after job: case (b) unchanged', async () => {
+      const printer = await fakePrinter({ answersBefore: false, afterJob: 'silent' });
+      const { printing, reported, box } = await rig(printer);
+      try {
+        // Silence to the heartbeat is not an answer, so nothing is remembered.
+        assert.equal((await printing.probeAll())[DEVICE_ID]?.statusUnknown, true);
+        const first = await printing.submit(voucher('job-blind-1'));
+        const second = await printing.submit(voucher('job-blind-2'));
+        assert.deepEqual(
+          [first.status, second.status],
+          ['printed', 'printed'],
+          'a unit that answers no status query still prints',
+        );
+        assert.equal(printer.taken(), 2 * oneSlip(), 'both slips reached it');
+        // One unanswered query to the probe and before each job, one after each job.
+        assert.deepEqual(printer.asked(), { before: unanswered(3), after: unanswered(2) });
+        assert.deepEqual(shown(printing), {
+          reachability: 'reachable',
+          paperStatus: 'unknown',
+          statusUnknown: true,
+          lastError: null,
+        });
+        assert.deepEqual(
+          reported.map((o) => [o.id, o.status]),
+          [
+            ['job-blind-1', 'printed'],
+            ['job-blind-2', 'printed'],
+          ],
+        );
+      } finally {
+        box.close();
+        await printer.close();
+      }
+    });
+
+    test('(3) after a job fails silent after it, the next job to the still-stopped printer is held, not printed', async () => {
+      const slip = oneSlip();
+      // It takes the first slip whole, stops reading, and stays stopped.
+      const printer = await fakePrinter({ stopAfter: slip });
+      const counted = countingChannel();
+      const { printing, reported, box, advance } = await rig(printer, counted.open);
+      try {
+        const stopped = await printing.submit(voucher('job-stopped'));
+        assert.equal(stopped.status, 'failed');
+        assert.equal(stopped.errorCode, 'PRINTER_SILENT_AFTER_JOB');
+
+        const { value: next, ms } = await timed(printing.submit(voucher('job-next')));
+        assert.equal(next.status, 'queued', 'held, and not recorded printed');
+        assert.equal(next.errorCode, 'PRINTER_SILENT_BEFORE_JOB');
+        assert.equal(counted.writes(), 1, 'the first slip is the only one ever written');
+        assert.equal(printer.taken(), slip);
+        // Four queries before the first job, then the read after it and its
+        // asks, then the one query before the next job: none of those
+        // answered by a printer that has stopped reading.
+        assert.deepEqual(counted.asked(), [
+          1,
+          2,
+          3,
+          4,
+          ...Array.from({ length: 1 + SILENT_AFTER_JOB_ASKS }, () => 1),
+          1,
+        ]);
+        assert.ok(ms >= CHANNEL_TIMEOUTS.statusMs - 50, `held after ${ms} ms`);
+        assert.ok(ms < HELD_WITHIN_MS, `held after ${ms} ms`);
+        assert.deepEqual(shown(printing), {
+          reachability: 'reachable',
+          paperStatus: 'unknown',
+          statusUnknown: true,
+          lastError: 'PRINTER_SILENT_BEFORE_JOB',
+        });
+
+        // Somebody clears the jam, and the retry prints the slip that waited.
+        printer.set({ stopAfter: undefined });
+        advance(HEARTBEAT_MS);
+        assert.deepEqual(
+          (await printing.tick()).map((o) => [o.id, o.status]),
+          [['job-next', 'printed']],
+        );
+        assert.equal(counted.writes(), 2);
+        assert.equal(printer.taken(), 2 * slip);
+        assert.deepEqual(
+          reported.map((o) => [o.id, o.status, o.errorCode]),
+          [
+            ['job-stopped', 'failed', 'PRINTER_SILENT_AFTER_JOB'],
+            ['job-next', 'queued', 'PRINTER_SILENT_BEFORE_JOB'],
+            ['job-next', 'printed', null],
+          ],
+        );
+      } finally {
+        box.close();
+        await printer.close();
+      }
+    });
+
+    test("(4) an answer to the heartbeat's probe counts: a job silent before it afterwards is held", async () => {
+      const printer = await fakePrinter();
+      const counted = countingChannel();
+      const { printing, reported, box, advance } = await rig(printer, counted.open);
+      try {
+        // All the box has heard from this printer is its answer to the probe.
+        assert.equal((await printing.probeAll())[DEVICE_ID]?.statusUnknown, false);
+        assert.deepEqual(printer.asked(), { before: ANSWERED_READ, after: [] });
+
+        printer.set({ answersBefore: false });
+        const held = await printing.submit(voucher('job-after-probe'));
+        assert.equal(held.status, 'queued');
+        assert.equal(held.errorCode, 'PRINTER_SILENT_BEFORE_JOB');
+        assert.equal(counted.writes(), 0, 'nothing of it was written');
+        assert.equal(printer.taken(), 0);
+
+        printer.set({ answersBefore: true });
+        advance(HEARTBEAT_MS);
+        assert.deepEqual(
+          (await printing.tick()).map((o) => [o.id, o.status]),
+          [['job-after-probe', 'printed']],
+        );
+        assert.equal(counted.writes(), 1);
+        assert.equal(printer.taken(), oneSlip());
+        assert.deepEqual(
+          reported.map((o) => [o.id, o.status]),
+          [
+            ['job-after-probe', 'queued'],
+            ['job-after-probe', 'printed'],
+          ],
+        );
+      } finally {
+        box.close();
+        await printer.close();
+      }
+    });
+
+    test('(5) a printer that never answers again: failed at the attempt limit, and no byte of the job ever sent', async () => {
+      const limit = 3;
+      const printer = await fakePrinter();
+      const counted = countingChannel();
+      const { printing, reported, box, advance } = await rig(printer, counted.open, {
+        maxAttempts: limit,
+      });
+      try {
+        await printing.probeAll();
+        printer.set({ answersBefore: false });
+
+        const outcomes = [await printing.submit(voucher('job-never'))];
+        // A retry each heartbeat until the queue gives up. The bound on the
+        // loop only guards against one that never ends.
+        while (outcomes.at(-1)?.status === 'queued' && outcomes.length <= limit) {
+          advance(HEARTBEAT_MS);
+          outcomes.push(...(await printing.tick()));
+        }
+        assert.deepEqual(
+          outcomes.map((o) => [o.status, o.attempts, o.errorCode]),
+          Array.from({ length: limit }, (_, i) => [
+            i + 1 < limit ? 'queued' : 'failed',
+            i + 1,
+            'PRINTER_SILENT_BEFORE_JOB',
+          ]),
+          'waiting at every attempt before the last, and failed at the last',
+        );
+        assert.equal(counted.writes(), 0, 'no byte of the job was ever written');
+        assert.equal(printer.taken(), 0);
+        assert.equal(printer.connections(), 1 + limit, 'the probe, and one session an attempt');
+        assert.deepEqual(
+          reported.map((o) => [o.id, o.status, o.errorCode]),
+          [
+            ['job-never', 'queued', 'PRINTER_SILENT_BEFORE_JOB'],
+            ['job-never', 'failed', 'PRINTER_SILENT_BEFORE_JOB'],
+          ],
+          'the wait reported once, then the failure',
+        );
+        assert.deepEqual(printing.pending(), []);
+        assert.deepEqual(await box.store.loadPendingPrintJobs(BOX_ID), []);
+        assert.deepEqual(await box.store.loadInterruptedPrintJobs(BOX_ID), []);
+
+        advance(10 * 60_000);
+        assert.deepEqual(await printing.tick(), [], 'and nothing sends it again');
+        assert.equal(printer.connections(), 1 + limit);
+      } finally {
+        box.close();
+        await printer.close();
+      }
+    });
+
+    test('(6) the band printers keep the same rule', async () => {
+      const printer = await fakeBandPrinter();
+      const bandBytes = 2_000;
+      let heard = false;
+      const remembered: StatusMemory = {
+        answered: () => heard,
+        heard: () => {
+          heard = true;
+        },
+      };
+      const band = (memory: StatusMemory) =>
+        tsplAdapter({
+          deviceId: DEVICE_ID,
+          label: 'Band printer',
+          target: { host: '127.0.0.1', port: printer.port },
+          open: tcpChannel,
+          now: () => new Date(),
+          memory,
+        });
+      try {
+        assert.equal((await band(remembered).probe()).statusUnknown, false);
+        assert.equal(heard, true, 'its answer to the probe is remembered');
+
+        printer.answering(false);
+        const { error, ms } = await timedFailure(
+          band(remembered).print({ bytes: filler(bandBytes) }),
+        );
+        assert.ok(error instanceof PrinterError, `the band ended ${String(error)}`);
+        assert.equal(error.code, 'PRINTER_SILENT_BEFORE_JOB');
+        assert.equal(error.retryable, true, 'nothing was sent, so the queue may send it later');
+        assert.equal(error.partial, false);
+        assert.equal(printer.taken(), 0, 'not a byte of the band was sent');
+        assert.ok(ms < HELD_WITHIN_MS, `held after ${ms} ms`);
+
+        // A band printer never heard from is printed to blind, as before.
+        const blind = await band({ answered: () => false, heard: () => {} }).print({
+          bytes: filler(bandBytes),
+        });
+        assert.equal(blind.written, 1);
+        assert.equal(blind.health.statusUnknown, true);
+        assert.equal(printer.taken(), bandBytes);
+      } finally {
+        await printer.close();
+      }
+    });
+
+    test('(7) an answer to the read after a job counts: a unit silent only before it is held at the next job', async () => {
+      // Silent to every read before a job, and answering the read after one.
+      // The first slip goes blind, as case (b) says, and its read after the
+      // job is what the box remembers.
+      const printer = await fakePrinter({ answersBefore: false });
+      const counted = countingChannel();
+      const { printing, box } = await rig(printer, counted.open);
+      try {
+        const first = await printing.submit(voucher('job-blind'));
+        assert.equal(first.status, 'printed', 'never heard from before it, so sent blind');
+        assert.deepEqual(printer.asked(), { before: unanswered(1), after: ANSWERED_READ });
+
+        const next = await printing.submit(voucher('job-after-answer'));
+        assert.equal(next.status, 'queued');
+        assert.equal(next.errorCode, 'PRINTER_SILENT_BEFORE_JOB');
+        assert.equal(counted.writes(), 1, 'nothing of it was written');
+        assert.equal(printer.taken(), oneSlip(), 'and not a byte of it reached the printer');
+      } finally {
+        box.close();
+        await printer.close();
+      }
+    });
+
+    test('(8) the memory is kept per printer: one never heard from prints blind beside one that is remembered', async () => {
+      const remembered = await fakePrinter();
+      const never = await fakePrinter({ answersBefore: false, afterJob: 'silent' });
+      const { printing, box } = await rig(remembered, tcpChannel, {
+        bundle: twoPrintersBundle(remembered.port, never.port),
+      });
+      try {
+        // The heartbeat's probe hears the one and not the other.
+        const probed = await printing.probeAll();
+        assert.equal(probed[DEVICE_ID]?.statusUnknown, false);
+        assert.equal(probed[OTHER_DEVICE_ID]?.statusUnknown, true);
+
+        const blind = await printing.submit({ ...voucher('job-never-heard'), role: OTHER_ROLE });
+        assert.equal(blind.deviceId, OTHER_DEVICE_ID);
+        assert.equal(blind.status, 'printed', 'another printer answering is not this one answering');
+        assert.equal(never.taken(), oneSlip());
+
+        remembered.set({ answersBefore: false });
+        const held = await printing.submit(voucher('job-remembered'));
+        assert.equal(held.deviceId, DEVICE_ID);
+        assert.equal(held.status, 'queued');
+        assert.equal(held.errorCode, 'PRINTER_SILENT_BEFORE_JOB');
+        assert.equal(remembered.taken(), 0, 'not a byte of it reached the printer');
+      } finally {
+        box.close();
+        await remembered.close();
+        await never.close();
+      }
+    });
+  });
 });
 
 const VOUCHER: PrintJob = {
@@ -573,6 +1054,21 @@ function bundleFor(port: number): BoxConfigBundle {
         kind: 'booth',
         codePrefix: 'B1',
         devices: [deviceRow(port)],
+      },
+    ],
+  } as unknown as BoxConfigBundle;
+}
+
+/** The booth station with a second printer beside the first, under a role of its own. */
+function twoPrintersBundle(port: number, otherPort: number): BoxConfigBundle {
+  return {
+    stations: [
+      {
+        id: STATION_ID,
+        name: 'Booth 1',
+        kind: 'booth',
+        codePrefix: 'B1',
+        devices: [deviceRow(port), { ...deviceRow(otherPort), id: OTHER_DEVICE_ID, role: OTHER_ROLE }],
       },
     ],
   } as unknown as BoxConfigBundle;

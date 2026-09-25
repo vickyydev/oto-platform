@@ -161,12 +161,36 @@ export interface DrawerPulseResult {
   elapsedMs: number;
 }
 
+/**
+ * Whether one printer has answered a status query in this process: what tells
+ * a printer that has stopped from a unit that never answers, when either is
+ * silent before a job (case 5 in `queue.ts`'s header; SCRUM-431).
+ *
+ * The queue keeps it for each device, beside its health map, and hands it to
+ * every adapter it builds. An answer to a job's read before or after the job,
+ * or to the heartbeat's probe, is remembered, and nothing forgets one but a
+ * restart. That is accepted: after a restart the unit is one never heard from
+ * until it answers again, and a job that meets its silence is printed blind,
+ * as case (b) in `readAfterJob` says.
+ */
+export interface StatusMemory {
+  /** True once the unit has answered a status query in this process. */
+  answered(): boolean;
+  /** The unit has just answered one. */
+  heard(): void;
+}
+
 export interface AdapterDeps {
   deviceId: string;
   label: string;
   target: ChannelTarget;
   open: ChannelFactory;
   now: () => Date;
+  /**
+   * What the box remembers of this unit's answers. Absent — an adapter built
+   * on its own, as a bench test builds one — is a unit never heard from.
+   */
+  memory?: StatusMemory;
 }
 
 /** A pause that does not hold the process open by itself: the socket does that. */
@@ -175,6 +199,23 @@ function sleep(ms: number): Promise<void> {
     const timer = setTimeout(ok, ms);
     timer.unref?.();
   });
+}
+
+/**
+ * A printer the box has heard answer status is silent before a job: case 5 in
+ * `queue.ts`'s header (SCRUM-431).
+ *
+ * Thrown before a byte of the job is written, which is what makes it
+ * `retryable` and never `partial`: nothing can have reached the paper, so the
+ * queue's retry sending the job later cannot put a second slip beside a
+ * first.
+ */
+function silentBeforeJob(label: string): PrinterError {
+  return new PrinterError(
+    'PRINTER_SILENT_BEFORE_JOB',
+    `${label} stopped answering status, so the job was not sent`,
+    { retryable: true },
+  );
 }
 
 // --- ESC/POS ----------------------------------------------------------------
@@ -188,6 +229,14 @@ function sleep(ms: number): Promise<void> {
  * promises is answered "even when the printer is off-line, the receive buffer
  * is full, or there is an error status" is this one. If even this goes
  * unanswered the honest report is "I cannot see inside this printer".
+ *
+ * What a null before a job means depends on the unit (SCRUM-431). A unit the
+ * box has heard answer before, in this process, has stopped — a jam, the roll
+ * out, its input buffer full — and the job is not sent into it: it waits,
+ * `PRINTER_SILENT_BEFORE_JOB` (case 5 in `queue.ts`'s header). A unit never
+ * heard from may be one whose LAN board passes no `DLE EOT` back, and the job
+ * is sent anyway (case (b) in `readAfterJob`). What counts as heard is an
+ * answer to a job's read or to the heartbeat's probe (`StatusMemory`).
  *
  * **It stops at the first query that goes unanswered** (H1, closing audit
  * 2026-09-25). It used to ask all four whatever happened, waiting a second on
@@ -295,7 +344,11 @@ export const SILENT_AFTER_JOB_WAIT_MS =
  *      passes no `DLE EOT` back (case 2 in `queue.ts`'s header). The read is
  *      made once, and silence comes back as null: the job is printed with
  *      its status unknown, because refusing it would mean such a unit never
- *      prints at all.
+ *      prints at all. Only a unit the box has never heard answer gets this
+ *      far: a silent read before the job, from one it has heard, stops the
+ *      job before a byte of it is sent (`PRINTER_SILENT_BEFORE_JOB`, case 5
+ *      in `queue.ts`'s header; SCRUM-431). So the next job to a printer
+ *      still stopped after (c) waits, rather than being sent blind.
  *  (c) **It answered before the job and says nothing after it.** It stopped
  *      with the job inside it: a jam, or the roll run out, while the kernel's
  *      buffers held the whole slip (see `write` in `tcpChannel`). The query
@@ -376,7 +429,7 @@ function escposBlocker(health: PrinterHealth): PrinterError | null {
 }
 
 export function escposAdapter(deps: AdapterDeps): PrinterAdapter {
-  const { deviceId, label, target, open, now } = deps;
+  const { deviceId, label, target, open, now, memory } = deps;
 
   async function withChannel<T>(fn: (channel: PrinterChannel) => Promise<T>): Promise<T> {
     const channel = await open(target);
@@ -397,9 +450,12 @@ export function escposAdapter(deps: AdapterDeps): PrinterAdapter {
     async probe() {
       const at = now().toISOString();
       try {
-        return await withChannel(async (channel) =>
-          healthFromEscpos(await readEscposStatus(channel), at),
-        );
+        return await withChannel(async (channel) => {
+          const status = await readEscposStatus(channel);
+          // The heartbeat's answer is remembered as a job's is (SCRUM-431).
+          if (status !== null) memory?.heard();
+          return healthFromEscpos(status, at);
+        });
       } catch (err) {
         return {
           ...unknownHealth(at),
@@ -413,6 +469,18 @@ export function escposAdapter(deps: AdapterDeps): PrinterAdapter {
       const copies = Math.max(1, attempt.copies ?? 1);
       return withChannel(async (channel) => {
         const beforeStatus = await readEscposStatus(channel);
+        if (beforeStatus !== null) {
+          memory?.heard();
+        } else if (memory?.answered()) {
+          /**
+           * Silent, from a unit that has answered before: it has stopped, and
+           * the slip is not sent into it. It waits, and the queue's retry
+           * sends it once the printer answers again (case 5 in `queue.ts`'s
+           * header; SCRUM-431). A unit never heard from goes on, and is
+           * printed to blind (case (b) in `readAfterJob`).
+           */
+          throw silentBeforeJob(label);
+        }
         const before = healthFromEscpos(beforeStatus, now().toISOString());
         const blocked = escposBlocker(before);
         if (blocked) throw blocked;
@@ -451,10 +519,9 @@ export function escposAdapter(deps: AdapterDeps): PrinterAdapter {
          * to say: printed from a unit that never answers, failed from one
          * that answered before the job.
          */
-        const after = healthFromEscpos(
-          await readAfterJob(channel, label, beforeStatus !== null),
-          now().toISOString(),
-        );
+        const afterStatus = await readAfterJob(channel, label, beforeStatus !== null);
+        if (afterStatus !== null) memory?.heard();
+        const after = healthFromEscpos(afterStatus, now().toISOString());
         if (after.paperStatus === 'out') {
           throw new PrinterError('PRINTER_PAPER_OUT', `${label} ran out of paper during the job`, {
             partial: true,
@@ -509,6 +576,11 @@ const LABEL_POLL_MS = 100;
  * `ESC ! ?` — one byte, "immediately returned ... even in the event of printer
  * error" (§9.1). `ESC ! S` and `SET RESPONSE` are both unconfirmed on this
  * firmware, so this is the baseline and the only thing polled.
+ *
+ * A null before a band job means what it means before a slip
+ * (`readEscposStatus`): from a unit the box has heard answer, the job is not
+ * sent and waits, `PRINTER_SILENT_BEFORE_JOB` (case 5 in `queue.ts`'s header;
+ * SCRUM-431); from one never heard, it is sent anyway.
  */
 async function readLabelStatus(channel: PrinterChannel): Promise<LabelStatus | null> {
   const reply = await channel.query(TSPL.statusQuery, 1, CHANNEL_TIMEOUTS.statusMs);
@@ -539,7 +611,7 @@ function healthFromLabel(
 }
 
 export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
-  const { deviceId, label, target, open, now } = deps;
+  const { deviceId, label, target, open, now, memory } = deps;
 
   async function withChannel<T>(fn: (channel: PrinterChannel) => Promise<T>): Promise<T> {
     const channel = await open(target);
@@ -550,6 +622,13 @@ export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
     }
   }
 
+  /** `readLabelStatus`, with an answer remembered (`StatusMemory`; SCRUM-431). */
+  async function readStatus(channel: PrinterChannel): Promise<LabelStatus | null> {
+    const status = await readLabelStatus(channel);
+    if (status !== null) memory?.heard();
+    return status;
+  }
+
   return {
     deviceId,
     language: 'tspl2',
@@ -557,7 +636,7 @@ export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
     async probe() {
       const at = now().toISOString();
       try {
-        return await withChannel(async (channel) => healthFromLabel(await readLabelStatus(channel), at));
+        return await withChannel(async (channel) => healthFromLabel(await readStatus(channel), at));
       } catch (err) {
         return {
           ...unknownHealth(at),
@@ -569,7 +648,11 @@ export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
     async print(attempt) {
       const startedAt = Date.now();
       return withChannel(async (channel) => {
-        const before = healthFromLabel(await readLabelStatus(channel), now().toISOString());
+        const beforeStatus = await readStatus(channel);
+        // Silent, from a unit that has answered before: stopped, so the band
+        // is not sent into it, as a slip is not (`escposAdapter`; SCRUM-431).
+        if (beforeStatus === null && memory?.answered()) throw silentBeforeJob(label);
+        const before = healthFromLabel(beforeStatus, now().toISOString());
         if (before.paperStatus === 'out') {
           throw new PrinterError('PRINTER_PAPER_OUT', `${label} has no bands loaded`, {
             retryable: true,
@@ -605,10 +688,10 @@ export function tsplAdapter(deps: AdapterDeps): PrinterAdapter {
          * exactly what the next queued band needs to know.
          */
         const deadline = Date.now() + CHANNEL_TIMEOUTS.jobCompleteMs;
-        let status = await readLabelStatus(channel);
+        let status = await readStatus(channel);
         while (status?.printing === true && Date.now() < deadline) {
           await sleep(LABEL_POLL_MS);
-          status = await readLabelStatus(channel);
+          status = await readStatus(channel);
         }
         const health = healthFromLabel(status, now().toISOString());
         if (health.paperStatus === 'out') {
