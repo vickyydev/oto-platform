@@ -50,6 +50,10 @@ const BLOCKING_ERRORS: Record<string, string> = {
   PRINTER_PAPER_OUT: 'out of paper',
   PRINTER_OFFLINE: 'switched off-line',
   PRINTER_UNREACHABLE: 'not answering',
+  // The box's two silences (SCRUM-429, SCRUM-431): a slip taken but never
+  // confirmed, and a printer that answered once and has stopped answering.
+  PRINTER_SILENT_AFTER_JOB: 'did not confirm the last print',
+  PRINTER_SILENT_BEFORE_JOB: 'stopped answering',
 };
 
 /**
