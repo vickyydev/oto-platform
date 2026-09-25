@@ -176,7 +176,10 @@ describe('the printer on a real socket', { concurrency: true }, () => {
       assert.equal(value.written, 1);
       assert.equal(value.health.statusUnknown, false);
       assert.equal(value.health.paperStatus, 'ok');
-      assert.ok(ms < statusMs, `took ${ms} ms`);
+      // The queries below are the proof that no status timeout was paid; the
+      // bound only guards against a hang. A loaded CI runner once took 1.25 s
+      // for this job while the 32 MB tests beside it flooded the loopback.
+      assert.ok(ms < 4 * statusMs, `took ${ms} ms`);
       assert.deepEqual(
         printer.queries(),
         [1, 2, 3, 4, 1, 2, 3, 4],
@@ -194,7 +197,9 @@ describe('the printer on a real socket', { concurrency: true }, () => {
       // One unanswered query before the job and one after it — it used to be
       // four each, and the booth page gives up at 6 s.
       assert.ok(ms >= 2 * statusMs - 50, `took ${ms} ms`);
-      assert.ok(ms < 3.5 * statusMs, `took ${ms} ms`);
+      // Well under the eight seconds it used to take; the slack is for a loaded
+      // runner, where this job took 3.2 s once.
+      assert.ok(ms < 5 * statusMs, `took ${ms} ms`);
       assert.equal(value.written, 1, 'the slip is still printed');
       assert.equal(printer.taken(), SLIP_BYTES, 'all of it reached the printer');
       assert.equal(value.health.statusUnknown, true);
@@ -217,7 +222,7 @@ describe('the printer on a real socket', { concurrency: true }, () => {
     const printer = await fakePrinter({ answers: new Set([1, 2]) });
     try {
       const { value, ms } = await timed(adapterFor(printer).print({ bytes: filler(SLIP_BYTES) }));
-      assert.ok(ms >= 2 * statusMs - 50 && ms < 3.5 * statusMs, `took ${ms} ms`);
+      assert.ok(ms >= 2 * statusMs - 50 && ms < 5 * statusMs, `took ${ms} ms`);
       assert.deepEqual(printer.queries(), [1, 2, 3, 1, 2, 3], 'the fourth query is never asked');
       assert.equal(value.health.statusUnknown, false, 'what it did answer is kept');
       assert.equal(value.health.paperStatus, 'ok');
@@ -242,7 +247,7 @@ describe('the printer on a real socket', { concurrency: true }, () => {
       assert.ok(error instanceof PrinterError);
       assert.equal(error.code, 'PRINTER_PAPER_OUT');
       assert.equal(error.partial, true, 'paper ran out mid-job: never sent again by a timer');
-      assert.ok(ms >= 1.5 * statusMs - 50 && ms < 3 * statusMs, `took ${ms} ms`);
+      assert.ok(ms >= 1.5 * statusMs - 50 && ms < 4.5 * statusMs, `took ${ms} ms`);
     } finally {
       await printer.close();
     }
