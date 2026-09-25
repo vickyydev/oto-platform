@@ -35,7 +35,6 @@ import { MobileReprintFlow } from './MobileReprintFlow';
 import {
   ArrowLeft,
   GlassWater,
-  ShoppingBag,
   Undo2,
   Wallet,
   Banknote,
@@ -81,6 +80,7 @@ export function MobileTransactionDetail({ txn, onBack, onChanged }: MobileTransa
 
   const record = useMemo<Sale | FnbOrder | MerchOrder | null>(
     () => getRecordByKind(txn.kind, txn.id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- localVersion re-reads the record from the store after a reprint, refund or added time here
     [txn.id, txn.kind, localVersion],
   );
 

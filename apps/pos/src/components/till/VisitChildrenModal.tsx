@@ -68,7 +68,7 @@ export function VisitChildrenModal({ open, member, onClose, onConfirmed }: Visit
       setExpanded({});
       setBusy(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the member's id: children is re-derived from the member every render (a new empty list when there are none), so listing it would reset the selections and drafts on every render
   }, [open, member?.id]);
 
   const memberId = member?.id;

@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore } from 'react';
 import {
-  ShoppingCart, Package, ChevronDown, ChevronUp, Check, Clock, Truck,
+  ShoppingCart, ChevronDown, ChevronUp, Check, Clock, Truck,
   Edit2, Trash2, AlertTriangle, Plus, ArrowRight,
 } from 'lucide-react';
 import { InventoryItem, PurchaseOrder, PurchaseOrderLine } from '@/types';

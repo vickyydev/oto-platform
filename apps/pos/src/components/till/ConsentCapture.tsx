@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { SupervisionPolicy, ChildFoodProvision, ContactChannel } from '@/types';
 import { getDropOffPricing } from '@/mockApi';
 import { resolveDropOffPricing } from '@/lib/dropoff';
-import { resolveGroupRequirements, effectiveRequirement, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
+import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { Textarea } from '@/components/ui/textarea';

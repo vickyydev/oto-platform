@@ -125,6 +125,7 @@ export function MobileDropOffBoard() {
     return () => window.clearInterval(id);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- version is the refresh bump: getCheckIns() reads the in-memory store, which changes outside React
   const all = useMemo(() => getCheckIns(), [version]);
 
   /** All check-ins grouped by registrationId. */
@@ -151,6 +152,7 @@ export function MobileDropOffBoard() {
 
   const freeNannies = useMemo(
     () => getNannyRoster().filter((n) => n.available),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-reads the nanny roster from the store whenever the check-ins are re-read
     [all, version],
   );
 
@@ -206,6 +208,7 @@ export function MobileDropOffBoard() {
     }
 
     return families;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- now is the 10-second tick: remainingMinutes() reads the clock itself, so this re-filters and re-sorts as children fall due
   }, [allByReg, tab, serviceFilter, query, dueOnly, waFlagged, now]);
 
   /** Count of families with an unconfirmed WA connection. */
@@ -251,7 +254,7 @@ export function MobileDropOffBoard() {
 
   const todaysEvents = useMemo(
     () => getEventsForDate(today, branch.id).filter((e) => (e.attendees?.length ?? 0) > 0),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- eventsVersion is the refresh bump: getEventsForDate() reads the in-memory events store, which changes outside React
     [eventsVersion, today, branch.id],
   );
   const selectedEvent = useMemo(

@@ -14,7 +14,6 @@ import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { MobileFnbCartSheet } from '@/components/mobile/order-station/MobileFnbCartSheet';
-import { Button } from '@/components/ui/button';
 import { ArrowLeft, PartyPopper } from 'lucide-react';
 
 let partyMobileLineCounter = 1;
@@ -28,7 +27,6 @@ interface MobilePartyFnbProps {
 
 export function MobilePartyFnb({
   party,
-  operatorName,
   onCharge,
   onBack,
 }: MobilePartyFnbProps) {
@@ -36,7 +34,7 @@ export function MobilePartyFnb({
   const menuItems = useMemo(() => getMenuItems(), []);
 
   const [cart, setCart] = useState<FnbOrderLine[]>([]);
-  const [orderNote, setOrderNote] = useState('');
+  const [, setOrderNote] = useState('');
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [showCartSheet, setShowCartSheet] = useState(false);
@@ -47,7 +45,7 @@ export function MobilePartyFnb({
 
   const lines = cart;
 
-  const { subtotal, total, manualAmounts, taxBreakdown } = useMemo(
+  const { subtotal, total, manualAmounts } = useMemo(
     () => computeFnbTotals(lines, manualDiscounts),
     [lines, manualDiscounts],
   );

@@ -645,7 +645,7 @@ function fmt(n: number) {
   return `฿${roundTHB(n).toFixed(2)}`;
 }
 
-function ExampleBreakdown({ category, base, cat, bd, rates }: ExampleBreakdownProps) {
+function ExampleBreakdown({ category, base, cat }: ExampleBreakdownProps) {
   const label = CATEGORY_LABELS[category] ?? category;
   const rateLabel =
     cat.taxMode === 'none'

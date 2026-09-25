@@ -15,7 +15,6 @@ export function BookConfirmation({ booking, name, onStartOver }: BookConfirmatio
   const { childBracelets, adultBracelets, creditTotalTHB } = booking.willIssue;
   const dropOffChildren = booking.lines.filter((l) => l.dropOff).map((l) => l.dropOff!);
   const hasNanny = dropOffChildren.some((d) => d.service === 'nanny');
-  const hasService = dropOffChildren.some((d) => d.service !== 'none');
   const eventPasses = booking.eventPasses ?? [];
 
   return (

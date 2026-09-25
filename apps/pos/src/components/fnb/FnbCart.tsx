@@ -8,7 +8,7 @@ import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { StaffBenefitBreakdown, type StaffBenefitBreakdownData } from '@/components/fnb/StaffBenefitBreakdown';
 import { PromoCodeEntry, type PromoCodeRow } from '@/components/fnb/PromoCodeEntry';
-import { Wallet, UserRound, ShoppingCart, Trash2, X, Pencil, BadgePercent, StickyNote, Gift, ChevronDown, ChevronUp, History, QrCode as QrCodeIcon } from 'lucide-react';
+import { Wallet, UserRound, ShoppingCart, Trash2, X, Pencil, BadgePercent, StickyNote, Gift, ChevronUp, History, QrCode as QrCodeIcon } from 'lucide-react';
 
 /** The synthetic order-scope ManualDiscount id the staff-benefit preview is folded into (see pages/OrderStation.tsx). */
 const STAFF_BENEFIT_DISCOUNT_ID = 'staff-benefit';

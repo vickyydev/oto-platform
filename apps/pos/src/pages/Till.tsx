@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, AddOn, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
+import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
 import { useStation } from '@/station/StationContext';
 import { braceletPrintJobs, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
@@ -11,14 +11,14 @@ import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
-import { resolveGroupRequirements, effectiveRequirement, resolveSupervisionOutcome, buildAcknowledgedConfirmations } from '@/lib/supervision';
-import { buildSale, computeTotals } from '@/lib/sale';
+import { resolveGroupRequirements, resolveSupervisionOutcome, buildAcknowledgedConfirmations } from '@/lib/supervision';
+import { buildSale } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getInventoryItem, getAddOns } from '@/store/catalogStore';
-import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, pushWristband, markCheckInsBooked, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, markCheckInsBooked, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
@@ -240,6 +240,7 @@ export default function Till() {
   const [eventPassesTick, setEventPassesTick] = useState(0);
   const activeEventPasses = useMemo<OtoEvent[]>(
     () => getActiveEventPasses(new Date().toISOString().slice(0, 10), branch.id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- eventPassesTick re-reads the active passes from the store after a sale closes (see above)
     [eventPassesTick, branch.id],
   );
 
@@ -367,7 +368,6 @@ export default function Till() {
     if (correction.customerPhone) setCustomerPhone(correction.customerPhone);
     if (correction.customerNickname) setCustomerNickname(correction.customerNickname);
     setStep(3);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Shared helper: load a drop-off registration into the till as drop-off lines.
@@ -2277,7 +2277,7 @@ export default function Till() {
   useEffect(() => {
     if (step !== 5) return;
     void recordSaleOnPlatform(saleEpochRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on entering the payment screen: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
   }, [step]);
 
   /**

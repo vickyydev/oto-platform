@@ -1,5 +1,6 @@
 import otoTelemetry from './packages/telemetry/eslint/index.mjs';
 import js from '@eslint/js';
+import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -8,8 +9,6 @@ export default tseslint.config(
       '**/dist/**',
       '**/node_modules/**',
       '**/.turbo/**',
-      // The ported prototype UI keeps its original style; linted separately later.
-      'apps/pos/**',
       // The lifted OTO App (S2-17a) keeps its own toolchain, its own lockfile
       // and its own style — it is outside the pnpm workspace for the same
       // reason. Holding 184 tables' worth of inherited code to rules it was
@@ -46,6 +45,23 @@ export default tseslint.config(
     },
   },
   {
+    // The till's service worker is plain JavaScript that runs in a worker's
+    // global, not a page's. `__PRECACHE__` is the placeholder the
+    // `otoServiceWorker` plugin in apps/pos/vite.config.ts replaces with the
+    // shell's file list at build time.
+    files: ['apps/pos/pwa/**/*.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        fetch: 'readonly',
+        Request: 'readonly',
+        URL: 'readonly',
+        __PRECACHE__: 'readonly',
+      },
+    },
+  },
+  {
     rules: {
       // `any` requires a justifying comment per engineering standards — surfaced
       // as a warning so the comment + suppression are deliberate.
@@ -55,6 +71,30 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
     },
+  },
+  {
+    // The till is linted by the same rules as everything above, plus the two
+    // rules of hooks. A hook called conditionally breaks React's call order at
+    // run time, so rules-of-hooks is an error. exhaustive-deps is a warning:
+    // the till's effects were written before the rule ran, and adding a
+    // dependency changes when an effect runs, so each warning is judged by
+    // hand - fixed where the new dependency is provably stable or the effect
+    // should re-run on it, otherwise kept with a disable comment saying why.
+    // Only these two: the plugin's recommended set also turns on its React
+    // Compiler checks, which this code was never written against.
+    files: ['apps/pos/**/*.{ts,tsx}'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+  {
+    // The till's hook tests render against a stand-in for React's own hooks.
+    // Its useCallback hands the caller's dependency list straight to its
+    // useMemo, which exhaustive-deps reads as a component missing a dependency.
+    files: ['apps/pos/test/support/hooks.ts'],
+    rules: { 'react-hooks/exhaustive-deps': 'off' },
   },
   {
     // A log line is written once and read when something has already gone

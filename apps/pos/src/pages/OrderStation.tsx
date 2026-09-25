@@ -242,7 +242,6 @@ export default function OrderStation() {
     setWristband(correction.wristband ?? null);
     setCart(correction.lines.map((l) => ({ ...l, id: `line-${lineCounter++}` })));
     setStage('order');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Live preview of the scanned staff benefit against the current cart — a
@@ -303,7 +302,6 @@ export default function OrderStation() {
       accountId: operator.id,
       accountName: operator.name,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branch.id, station?.stationId, operator, pickupCode]);
 
   /**
@@ -1052,7 +1050,7 @@ export default function OrderStation() {
   useEffect(() => {
     if (stage !== 'payment') return;
     void recordOrderOnPlatform(orderEpochRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on reaching the payment stage: recordOrderOnPlatform is a new function every render, so listing it would call it again on every render
   }, [stage]);
 
   const handleConfirmPayment = (payment: FnbPaymentResult) => {

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { computeTotals } from '@/lib/sale';
-import { resolveFreeItem } from '@/lib/promoVoucher';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { computeNannyGroups, resolveDropOffPricing } from '@/lib/dropoff';
 import { unpricedDropOffLines } from '@/lib/cartWire';

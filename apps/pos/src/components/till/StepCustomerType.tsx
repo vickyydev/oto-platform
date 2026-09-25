@@ -1,6 +1,5 @@
 import { CustomerTier, Member, OtoEvent } from '@/types';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   tierLabel,

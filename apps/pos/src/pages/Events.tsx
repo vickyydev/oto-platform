@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useSearch } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
-import { OtoEvent, EventType, PartyBooking } from '@/types';
+import { EventType, PartyBooking } from '@/types';
 import { getEventsForDate } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { computePartyOutstanding, PARTY_STATUS_LABELS } from '@/lib/party';
@@ -76,6 +76,7 @@ export default function Events() {
 
   const allEvents = useMemo(
     () => getEventsForDate(date, branch.id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- version is bumped by onChanged to re-read the events store after a change
     [date, branch.id, version],
   );
   const events = useMemo(

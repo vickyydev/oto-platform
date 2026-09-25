@@ -7,7 +7,6 @@ import {
   SaleQuotedPricing,
   TaxConfig,
   TaxableCategory,
-  TicketType,
   TicketCreditRule,
   CreditGrant,
 } from '@/types';

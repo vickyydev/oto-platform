@@ -7,7 +7,6 @@ import {
   TaxableCategory,
   Wristband,
   WalletEntry,
-  OtoEvent,
 } from '@/types';
 import {
   getAllSalesForReporting,
@@ -20,14 +19,12 @@ import {
 import {
   getBranches,
   getTaxConfig,
-  getMenuItems,
   getMerchItems,
   getDiscounts,
-  getTicketTypes,
 } from '@/store/catalogStore';
-import { computeTotals, tillTaxInputs, ScannedDiscountLine } from '@/lib/sale';
-import { computeFnbTotals, fnbTaxInputs } from '@/lib/fnb';
-import { computeMerchTotals, merchTaxInputs } from '@/lib/merch';
+import { computeTotals } from '@/lib/sale';
+import { computeFnbTotals } from '@/lib/fnb';
+import { computeMerchTotals } from '@/lib/merch';
 import { TaxBreakdown, summarizeTax } from '@/lib/tax';
 import { getRateModeForDate, resolveRate, RateMode } from '@/lib/pricingMode';
 

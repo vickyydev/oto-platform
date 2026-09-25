@@ -184,7 +184,7 @@ export function LoginUsersPanel() {
       .me()
       .then((r) => setMe({ operatorId: r.account.operatorId, isPlatformAdmin: r.isPlatformAdmin }))
       .catch(apiFail("Couldn't read this session"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the first load, once on mount: refresh closes over the search query and is a new function every render, so listing it would re-fetch on every render
   }, []);
 
   const serverBranches = branches.filter((b) => b.apiId);

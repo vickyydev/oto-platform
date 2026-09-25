@@ -170,7 +170,7 @@ export function AccountAppsDialog({
       .accountPermissions(account.id)
       .then((r) => setGrants(readGrants(r.effective)))
       .catch(apiFail("Couldn't load permissions"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the account's id, the only part it reads: a new object for the same account must not reset the dialog and re-read both lists
   }, [account?.id]);
 
   /** Both halves again: linking and unlinking each move the permission too. */

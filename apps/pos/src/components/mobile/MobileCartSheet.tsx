@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { CartLine, CustomerTier, Discount, ManualDiscount } from '@/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
 import { OrderSummary } from '@/components/till/OrderSummary';
 import { computeTotals } from '@/lib/sale';
 import { unpricedCartLines } from '@/lib/pricing';

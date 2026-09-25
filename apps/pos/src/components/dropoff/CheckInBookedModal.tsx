@@ -72,6 +72,7 @@ export function CheckInBookedModal({
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [consentAck, setConsentAck] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- open is the trigger: the roster and each nanny's load are re-read from the in-memory store each time the modal opens
   const nannies = useMemo(() => getNannyRoster(), [open]);
   const softMax = useMemo(() => getDropOffPricing().nannyRatioSoftMax, []);
 
@@ -81,7 +82,7 @@ export function CheckInBookedModal({
       setPhotos({});
       setConsentAck(false);
     }
-  }, [open, family]);
+  }, [open, family, nannyChildren]);
 
   // Children whose consent / photo isn't on file → must be captured before check-in.
   const childrenMissingConsent = family.filter((c) => !c.confirmationsAccepted);

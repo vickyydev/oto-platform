@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { OtoEvent, EventType, PartyBooking } from '@/types';
+import { EventType, PartyBooking } from '@/types';
 import { getEventsForDate } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { computePartyOutstanding, PARTY_STATUS_LABELS } from '@/lib/party';
@@ -71,7 +71,7 @@ export function MobileEventsList({ version, onSelectEvent }: MobileEventsListPro
 
   const allEvents = useMemo(
     () => getEventsForDate(date, branch.id),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- version is the host's refresh bump: getEventsForDate() reads the in-memory events store, which changes outside React
     [date, branch.id, version],
   );
   const events = useMemo(

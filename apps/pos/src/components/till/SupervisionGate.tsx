@@ -2,7 +2,6 @@ import { TicketType, SupervisionPolicy, ChildFoodProvision } from '@/types';
 import {
   resolveGroupRequirements,
   resolveSupervisionOutcome,
-  effectiveRequirement,
   confirmationsSatisfied,
 } from '@/lib/supervision';
 import { Button } from '@/components/ui/button';

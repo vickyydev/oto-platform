@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckIn, AuthorizedPickup, AuthorizedPickupSource } from '@/types';
 import { CameraCapture } from '@/components/shared/CameraCapture';
 import { Button } from '@/components/ui/button';

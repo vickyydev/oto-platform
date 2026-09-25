@@ -284,7 +284,6 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fleet, branchApiId]);
 
   /**
@@ -315,7 +314,6 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fleet, editingId]);
 
   useEffect(() => {
@@ -337,7 +335,6 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fleet, boxId]);
 
   // The staff list is only worth fetching once somebody decides to name people.
@@ -386,7 +383,6 @@ function StationEditor({ wizard }: { wizard: boolean }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fleet, branchApiId, accessScope, staff]);
 
   const boxName = boxes?.find((b) => b.id === boxId)?.name ?? seedStation?.boxName ?? 'the box';

@@ -271,6 +271,7 @@ export function InventoryItemFormDialog({
       setReorderQty('');
     }
     setErrors({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset on open or a new item only: resetReorderQtyFields is a new function every render, so listing it would wipe the form as staff type
   }, [open, item]);
 
   const handlePhotoFile = (file: File | undefined) => {

@@ -37,6 +37,7 @@ export function OverstayBanner({ onReview, className = '', refreshKey = 0 }: Ove
       else if (state === 'due_soon') dueSoon += 1;
     }
     return { overdue, dueSoon, any: overdue + dueSoon > 0 };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey is the host's bump to re-read getCheckIns() at once after a mutation (see the prop)
   }, [now, refreshKey]);
 
   if (!any) return null;

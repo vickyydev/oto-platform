@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { PARTY_STATUS_LABELS } from '@/lib/party';
 import {
   ROSTER_FILTERS,
-  bucketAttendee,
   groupAttendees,
   computeRosterStats,
   type RosterFilter,
@@ -123,7 +122,6 @@ function AttendeeCheckinBadge({ record }: { record: EventAttendeeCheckin }) {
 function AttendeeCard({
   attendee,
   isCamp,
-  isParty,
   checkInDate,
   onCheckIn,
   onCheckOut,
@@ -505,7 +503,7 @@ export function EventAttendeeList({
 }: EventAttendeeListProps) {
   const [query, setQuery] = useState('');
   const [rosterFilter, setRosterFilter] = useState<RosterFilter>('all');
-  const attendees = event.attendees ?? [];
+  const attendees = useMemo(() => event.attendees ?? [], [event.attendees]);
   const isCamp = event.type === 'camp';
   const isParty = event.type === 'party';
   const TypeIcon = isCamp ? Tent : Sparkles;
@@ -519,7 +517,7 @@ export function EventAttendeeList({
       checkInDate
         ? computeRosterStats(attendees, checkInDate, isCamp)
         : { arrived: 0, expected: 0, currentlyIn: 0, outstanding: 0, all: 0 },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- _refreshKey is the host's bump: a check-in is written onto the attendee in place, so the roster is recounted when it changes
     [attendees, checkInDate, isCamp, _refreshKey],
   );
 
@@ -537,7 +535,7 @@ export function EventAttendeeList({
       checkInDate
         ? groupAttendees(filteredAttendees, checkInDate, isCamp)
         : { inList: [], outList: [], outstandingList: [], notTodayList: [] },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- _refreshKey is the host's bump: a check-in is written onto the attendee in place, so the lists are regrouped when it changes
     [filteredAttendees, checkInDate, isCamp, _refreshKey],
   );
 

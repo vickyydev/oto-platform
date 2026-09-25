@@ -71,7 +71,6 @@ function SharedStatusFooter({ family }: { family: CheckIn[] }) {
   const rep = family[0];
   const elapsed = useElapsed(rep.status === 'in_park' ? rep.checkedInAt : undefined);
   const remaining = rep.status === 'in_park' ? remainingMinutes(rep) : null;
-  const due = dueState(remaining);
 
   const worstDue = family.reduce<'overdue' | 'due_soon' | 'ok'>((acc, c) => {
     const d = dueState(remainingMinutes(c));

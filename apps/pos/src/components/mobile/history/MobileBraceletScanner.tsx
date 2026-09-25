@@ -3,7 +3,6 @@ import { Wristband } from '@/types';
 import { getWristbandByCode, getMockWristbands } from '@/mockApi';
 import { Card } from '@/components/ui/card';
 import {
-  ScanLine,
   Camera,
   CameraOff,
   Loader2,

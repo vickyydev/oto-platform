@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AddOn, CartLine, CustomerTier, TicketType } from '@/types';
-import { getTicketTypes, getAddOns, getDropOffPricing, checkNannyAvailability } from '@/mockApi';
+import { getTicketTypes, getAddOns, checkNannyAvailability } from '@/mockApi';
 import { tierLabel, isDefaultTier } from '@/lib/membership';
 import { computeLineTotal, computeLineBreakdown, priceForTier, type LineBreakdownKind } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';

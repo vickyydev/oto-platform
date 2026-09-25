@@ -39,7 +39,6 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { MobileFnbCartSheet } from './MobileFnbCartSheet';
 
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import {
   AlertTriangle,
   Ban,
@@ -47,7 +46,6 @@ import {
   Wallet,
   QrCode as QrCodeIcon,
   StickyNote,
-  ArrowLeft,
   CheckCircle2,
   Gift,
 } from 'lucide-react';

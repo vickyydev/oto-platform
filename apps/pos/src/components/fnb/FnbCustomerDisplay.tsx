@@ -113,7 +113,7 @@ function OrderLines({
   manualDiscounts: ManualDiscount[];
   manualAmounts: Record<string, number>;
 }) {
-  const { t, lang } = useLanguage();
+  const { lang } = useLanguage();
   return (
     <div className="space-y-3">
       {lines.map((line) => {

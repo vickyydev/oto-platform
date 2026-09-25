@@ -186,7 +186,7 @@ export function AddAttendeeModal({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the Escape listener is attached once per open: close is a new function every render and only calls onOpenChange(false)
   }, [open]);
 
   const set: SetAttendeeField = (key, value) => setForm((f) => ({ ...f, [key]: value }));

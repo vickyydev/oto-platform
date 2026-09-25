@@ -77,7 +77,7 @@ export function AuthorizedPickupSheet({
       setMode('list');
       setForm(EMPTY_FORM);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reload is a new function every render; it reads only registrationId, which is listed
   }, [open, registrationId]);
 
   const openAdd = () => {

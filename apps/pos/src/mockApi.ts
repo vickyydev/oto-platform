@@ -13,7 +13,6 @@ import {
   FnbOrder,
   FnbOrderLine,
   MerchOrder,
-  MerchOrderLine,
   MerchItem,
   MerchStockAdjustment,
   RestockLogEntry,
@@ -3848,7 +3847,7 @@ export const checkOutEventAttendee = (
   eventId: string,
   attendeeId: string,
   date: string,
-  operator: { operatorName: string; operatorId: string },
+  _operator: { operatorName: string; operatorId: string },
 ): EventAttendee | null => {
   const att = findMutableAttendee(eventId, attendeeId);
   if (!att) return null;
@@ -4676,7 +4675,7 @@ export const addPickupFromChatPhoto = (
 export const addChildToRegistration = (
   registrationId: string,
   input: { name: string; age: number; dateOfBirth?: string; details?: string },
-  by?: { operatorName: string },
+  _by?: { operatorName: string },
 ): CheckIn | null => {
   const name = input.name.trim();
   if (!registrationId || !name) return null;

@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-  BarChart2,
   AlertTriangle,
   Package,
   ShoppingCart,
@@ -377,10 +376,6 @@ function PurchasesReport({ inventory }: { inventory: InventoryItem[] }) {
   const totalReceived = orders
     .filter((o) => o.state === 'received')
     .reduce((s, o) => s + o.lines.reduce((ls, l) => ls + l.receivedQty, 0), 0);
-
-  const totalPending = orders
-    .filter((o) => o.state === 'ordered')
-    .reduce((s, o) => s + o.lines.reduce((ls, l) => ls + (l.orderedQty - l.receivedQty), 0), 0);
 
   // Total cost of all received units (only lines with known cost)
   const totalReceivedCost = orders.reduce((s, o) => {

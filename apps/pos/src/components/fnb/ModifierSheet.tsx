@@ -62,7 +62,7 @@ export function ModifierSheet({
     setSelections(seed);
     setQty(Math.max(1, initialQty));
     setNote(initialNote ?? '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seeded when the sheet opens for an item: the initial* props are only its starting values, not something to follow while staff choose
   }, [open, item?.id]);
 
   // Inline groups + groups resolved from the shared library (see lib/menu).

@@ -56,6 +56,7 @@ export function AddDropOffModal({
   const [bump, setBump] = useState(0);
   const groups = useMemo<RegistrationGroup[]>(
     () => (open ? getRegistrationsAwaitingCheckIn() : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump re-reads the in-memory registration list after a sibling is added (see above)
     [open, bump],
   );
 

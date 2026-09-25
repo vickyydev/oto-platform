@@ -34,7 +34,6 @@ import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { FamilyCheckInCard } from '@/components/dropoff/FamilyCheckInCard';
 import {
@@ -54,7 +53,6 @@ import {
   Baby,
   X,
   WifiOff,
-  CalendarDays,
   MapPin,
   Users,
   Tent,
@@ -109,13 +107,6 @@ function familyTab(family: CheckIn[]): Tab {
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-const fmtDate = (iso: string) =>
-  new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-  });
-
 export default function DropOff() {
   const { operator } = useOperator();
   const { station } = useStation();
@@ -140,6 +131,7 @@ export default function DropOff() {
       getEventsForDate(today, branchId).filter(
         (e) => (e.attendees?.length ?? 0) > 0,
       ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- kept as written: eventsVersion and boardTab re-read the events store; adding today would also re-read it on its own when the date turns
     [eventsVersion, boardTab, branchId],
   );
 
@@ -309,6 +301,7 @@ export default function DropOff() {
     return () => window.clearInterval(id);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- version is the refresh bump: getCheckIns() reads the in-memory store, which changes outside React
   const all = useMemo(() => getCheckIns(), [version]);
 
   const allByReg = useMemo(() => {
@@ -333,6 +326,7 @@ export default function DropOff() {
 
   const freeNannies = useMemo(
     () => getNannyRoster().filter((n) => n.available),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-reads the nanny roster from the store whenever the check-ins are re-read
     [all, version],
   );
 
@@ -379,6 +373,7 @@ export default function DropOff() {
     }
 
     return families;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- now is the 10-second tick: remainingMinutes() reads the clock itself, so this re-filters and re-sorts as children fall due
   }, [allByReg, tab, serviceFilter, query, dueOnly, waFlagged, now]);
 
   const waFlaggedCount = useMemo(() => {
@@ -618,6 +613,7 @@ export default function DropOff() {
       }
     }
     return count;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- kept as written: recounts when todaysEvents is re-read; adding today would also recount on its own when the date turns
   }, [todaysEvents, eventsVersion]);
 
   return (
@@ -905,7 +901,6 @@ export default function DropOff() {
 function EventsBoardList({
   events,
   today,
-  eventsVersion,
   onSelect,
 }: {
   events: OtoEvent[];

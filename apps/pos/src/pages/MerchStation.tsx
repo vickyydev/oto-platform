@@ -518,7 +518,7 @@ export default function MerchStation() {
   useEffect(() => {
     if (stage !== 'payment') return;
     void recordSaleOnPlatform(saleEpochRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on reaching the payment stage: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
   }, [stage]);
 
   const handleConfirmPayment = (payment: FnbPaymentResult) => {

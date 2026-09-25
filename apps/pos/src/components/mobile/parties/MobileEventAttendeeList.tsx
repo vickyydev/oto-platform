@@ -334,7 +334,7 @@ export function MobileEventAttendeeList({
 }: MobileEventAttendeeListProps) {
   const [query, setQuery] = useState('');
   const [rosterFilter, setRosterFilter] = useState<RosterFilter>('all');
-  const attendees = event.attendees ?? [];
+  const attendees = useMemo(() => event.attendees ?? [], [event.attendees]);
   const isCamp = event.type === 'camp';
   const isCheckInMode = !!checkInDate;
 
@@ -343,7 +343,7 @@ export function MobileEventAttendeeList({
       checkInDate
         ? computeRosterStats(attendees, checkInDate, isCamp)
         : { arrived: 0, expected: 0, currentlyIn: 0, outstanding: 0, all: 0 },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- _refreshKey is the host's bump: a check-in is written onto the attendee in place, so the roster is recounted when it changes
     [attendees, checkInDate, isCamp, _refreshKey],
   );
 
@@ -360,7 +360,7 @@ export function MobileEventAttendeeList({
       checkInDate
         ? groupAttendees(filteredAttendees, checkInDate, isCamp)
         : { inList: [], outList: [], outstandingList: [], notTodayList: [] },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- _refreshKey is the host's bump: a check-in is written onto the attendee in place, so the lists are regrouped when it changes
     [filteredAttendees, checkInDate, isCamp, _refreshKey],
   );
 

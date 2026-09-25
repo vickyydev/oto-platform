@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ArrowRight, Check, Search, X } from 'lucide-react';
 import { InventoryItem, InventoryVariant, StockLocation, StockTransfer } from '@/types';
 import { UnitQuantityInput } from './UnitQuantityInput';
-import { parseUnitCombo } from '@/lib/stockUnits';
 import { transferStockBetweenLocations } from '@/store/catalogStore';
 import { useOperator } from '@/auth/OperatorContext';
 import { useBranch } from '@/branch/BranchContext';

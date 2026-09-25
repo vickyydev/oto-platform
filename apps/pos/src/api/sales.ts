@@ -1314,7 +1314,6 @@ function warnOnDivergence(
   if (manualDiscounts.some((m) => m.type === 'percent')) return;
   const expected = toSatang(prototypeTotalBaht);
   if (expected === engineTotalSatang) return;
-  // eslint-disable-next-line no-console
   console.warn(
     '[S2-09a] The platform engine and the prototype disagree on this cart. ' +
       `Engine ${engineTotalSatang} satang, prototype ${expected} satang. ` +

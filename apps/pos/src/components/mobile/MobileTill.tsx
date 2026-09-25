@@ -20,7 +20,7 @@ import {
   unpricedReason,
 } from '@/lib/pricing';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
-import { resolveGroupRequirements, effectiveRequirement, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
+import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
 import { buildSale, computeTotals } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
@@ -30,7 +30,7 @@ import {
   recordSale, getTicketTypes, getDropOffPricing,
   getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier,
   getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver,
-  getPrintTemplate, pushWristband, initWalletLedger, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, getDiscountByCode, incrementPromoUsage,
+  getPrintTemplate, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, getDiscountByCode, incrementPromoUsage,
   type CheckInPaymentInput,
 } from '@/mockApi';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
@@ -390,7 +390,6 @@ export default function MobileTill() {
     if (correction.customerPhone) setCustomerPhone(correction.customerPhone);
     if (correction.customerNickname) setCustomerNickname(correction.customerNickname);
     setMStep('tickets');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Shared helper: load a drop-off registration into the till as drop-off lines.
@@ -455,7 +454,7 @@ export default function MobileTill() {
     const registrationId = takeDropOffHandoff();
     if (!registrationId) return;
     void loadDropOffRegistration(registrationId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on mount: a drop-off handoff is taken when the till opens, and loadDropOffRegistration is a new function every render
   }, []);
 
   // ── Handlers (same logic as Till.tsx, mobile-specific step transitions) ───
@@ -1405,7 +1404,7 @@ export default function MobileTill() {
   useEffect(() => {
     if (mStep !== 'payment') return;
     void recordSaleOnPlatform(saleEpochRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on reaching the payment step: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
   }, [mStep]);
 
   /** The money arrived: close the sale, then finish it on this device. */
