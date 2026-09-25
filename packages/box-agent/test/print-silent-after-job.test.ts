@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { createServer, type Server, type Socket } from 'node:net';
-import { describe, test } from 'node:test';
+import { after, describe, test } from 'node:test';
+import { Worker } from 'node:worker_threads';
 
 import { renderJob, type PrintJob } from '@oto/print';
 import type { BoxConfigBundle, BoxConfigDevice } from '../src/protocol';
@@ -53,7 +53,22 @@ import { BOX_ID, STATION_ID, openTestStore, type TestStore } from './_support';
  * they are made of, which never fire early, and from above as a hang guard;
  * never as tight wall-clock numbers: the proof that the asks happened is the
  * queries counted, on the wire or at the channel. The case (c) tests take
- * five to nine seconds each, all of it timers, so they run side by side.
+ * five to nine seconds each, nearly all of it timers, so they run side by
+ * side.
+ *
+ * Nearly: a test that prints through the queue renders its slip on the box's
+ * one thread, and side by side the renders meet. On a slow CI runner
+ * (2026-09-25) seven of them held the thread for over two seconds just after
+ * the adapter and probe tests had opened their sockets, and those
+ * connections, made by the kernel meanwhile, were failed as unreachable. Two
+ * things make a held thread harmless here. The channel gives a deadline's
+ * verdict only once the sockets have been read (`afterSocketsRead` in
+ * `channel.ts`, proved in `print-channel.test.ts`). And the fake printers are
+ * served from a thread of their own (`printerThread`), as a printer is a
+ * machine of its own, so they read and answer while the box's thread
+ * renders. Served from the box's thread, they answered nothing until it was
+ * free, and at 1.7 times the runner's slowness that still cost a test its
+ * answers.
  */
 
 /** An idle "all clear" reply to any `DLE EOT n`: bits 1 and 4 set (§9.3). */
@@ -113,18 +128,64 @@ interface FakePrinter {
 }
 
 /**
- * Read the stream as the printer does. A `GS v 0` image is stepped over by
- * the length its header declares, so the dots of a rendered slip are never
- * taken for a `DLE EOT` (the simulator's `countedPayload` says why that
- * matters), and a command split between two reads is put back together.
+ * Where a fake printer keeps its state: 32-bit slots of memory that the
+ * printers' thread shares with the tests. The tests write the options and the
+ * printer reads them as it goes; the printer alone writes the counts and the
+ * query logs, each entry before the count that shows it.
  */
-function escposReader(): (data: Buffer) => { queries: number[]; jobBytes: number } {
+const SLOT = {
+  // `FakePrinterOptions`, as numbers.
+  answersBefore: 0,
+  afterJob: 1,
+  stopAfter: 2,
+  resumeAfterMs: 3,
+  // What it has done: `connections`, `taken` and `asked` in `FakePrinter`.
+  connections: 4,
+  taken: 5,
+  beforeCount: 6,
+  afterCount: 7,
+  /** Each query read, as n × 2, plus 1 when it was answered. */
+  beforeLog: 8,
+  afterLog: 8 + 64,
+  logSize: 64,
+} as const;
+/** `afterJob` as a number: answer every query, or none. A count is itself. */
+const AFTER_JOB_ANSWERS = -1;
+const AFTER_JOB_SILENT = -2;
+/** `stopAfter` or `resumeAfterMs` not set. */
+const UNSET = -1;
+
+/** A band printer's state: whether it answers `ESC ! ?`, and the band bytes it has read. */
+const BAND_SLOT = { answering: 0, taken: 1 } as const;
+
+/**
+ * The fake printers, as the thread that serves them runs them.
+ *
+ * Plain JavaScript, as a worker made from a string is, and built when the
+ * thread is started, once every constant it names is defined. What each
+ * option does is in `FakePrinterOptions`, and the band printer is
+ * `fakeBandPrinter`'s.
+ */
+function printerThreadSource(): string {
+  return `
+const { parentPort } = require('node:worker_threads');
+const net = require('node:net');
+
+const SLOT = ${JSON.stringify(SLOT)};
+const BAND_SLOT = ${JSON.stringify(BAND_SLOT)};
+const printers = new Map();
+
+// Read the stream as the printer does. A GS v 0 image is stepped over by the
+// length its header declares, so the dots of a rendered slip are never taken
+// for a DLE EOT (the simulator's countedPayload says why that matters), and a
+// command split between two reads is put back together.
+function escposReader() {
   let image = 0;
   let carry = Buffer.alloc(0);
   return (data) => {
     const bytes = carry.length > 0 ? Buffer.concat([carry, data]) : data;
     carry = Buffer.alloc(0);
-    const queries: number[] = [];
+    const queries = [];
     let jobBytes = 0;
     let i = 0;
     while (i < bytes.length) {
@@ -139,25 +200,23 @@ function escposReader(): (data: Buffer) => { queries: number[]; jobBytes: number
       const b0 = bytes[i];
       const b1 = left > 1 ? bytes[i + 1] : undefined;
       const b2 = left > 2 ? bytes[i + 2] : undefined;
-      // `DLE EOT n`: three bytes.
+      // DLE EOT n: three bytes.
       if (b0 === 0x10 && (b1 === undefined || b1 === 0x04)) {
         if (left < 3) {
           carry = Buffer.from(bytes.subarray(i));
           break;
         }
-        queries.push(b2 ?? 0);
+        queries.push(b2);
         i += 3;
         continue;
       }
-      // `GS v 0 m xL xH yL yH`, then (xL + xH × 256) bytes a row for (yL + yH × 256) rows.
+      // GS v 0 m xL xH yL yH, then (xL + xH * 256) bytes a row for (yL + yH * 256) rows.
       if (b0 === 0x1d && (b1 === undefined || b1 === 0x76) && (b2 === undefined || b2 === 0x30)) {
         if (left < 8) {
           carry = Buffer.from(bytes.subarray(i));
           break;
         }
-        const widthBytes = (bytes[i + 4] ?? 0) | ((bytes[i + 5] ?? 0) << 8);
-        const rows = (bytes[i + 6] ?? 0) | ((bytes[i + 7] ?? 0) << 8);
-        image = widthBytes * rows;
+        image = (bytes[i + 4] | (bytes[i + 5] << 8)) * (bytes[i + 6] | (bytes[i + 7] << 8));
         jobBytes += 8;
         i += 8;
         continue;
@@ -169,82 +228,218 @@ function escposReader(): (data: Buffer) => { queries: number[]; jobBytes: number
   };
 }
 
-async function fakePrinter(opts: FakePrinterOptions = {}): Promise<FakePrinter> {
-  /** What it does now: `set` changes it. */
-  const live: FakePrinterOptions = { ...opts };
-  const sockets = new Set<Socket>();
-  const before: Asked[] = [];
-  const after: Asked[] = [];
-  let connections = 0;
-  let taken = 0;
-
-  const server: Server = createServer((socket) => {
-    connections += 1;
-    sockets.add(socket);
+function escposPrinter(state) {
+  const log = (afterJob, n, answered) => {
+    const countSlot = afterJob ? SLOT.afterCount : SLOT.beforeCount;
+    const count = Atomics.load(state, countSlot);
+    if (count < SLOT.logSize) {
+      const logSlot = afterJob ? SLOT.afterLog : SLOT.beforeLog;
+      Atomics.store(state, logSlot + count, n * 2 + (answered ? 1 : 0));
+    }
+    Atomics.store(state, countSlot, count + 1);
+  };
+  return (socket) => {
+    Atomics.add(state, SLOT.connections, 1);
     const read = escposReader();
     let jobSeen = false;
     let dropped = 0;
-    let stopAt = live.stopAfter;
-    socket.on('error', () => {});
-    socket.on('close', () => sockets.delete(socket));
-
-    const answer = (n: number): void => {
-      let answered: boolean;
+    let stopAt = Atomics.load(state, SLOT.stopAfter);
+    const answer = (n) => {
+      let answered;
       if (!jobSeen) {
-        answered = live.answersBefore ?? true;
+        answered = Atomics.load(state, SLOT.answersBefore) === 1;
       } else {
-        const policy = live.afterJob ?? 'answers';
-        if (policy === 'answers') answered = true;
-        else if (policy === 'silent') answered = false;
+        const policy = Atomics.load(state, SLOT.afterJob);
+        if (policy === ${AFTER_JOB_ANSWERS}) answered = true;
+        else if (policy === ${AFTER_JOB_SILENT}) answered = false;
         else {
           answered = dropped >= policy;
           if (!answered) dropped += 1;
         }
       }
-      (jobSeen ? after : before).push([n, answered]);
-      if (answered) socket.write(Buffer.from([ALL_CLEAR]));
+      log(jobSeen, n, answered);
+      if (answered) socket.write(Buffer.from([${ALL_CLEAR}]));
     };
-
-    socket.on('data', (data: Buffer) => {
+    socket.on('data', (data) => {
       const { queries, jobBytes } = read(data);
       // A query can share a read with the end of a job, never with its start:
       // the job is only sent once the read before it is over.
       if (jobBytes > 0) {
         jobSeen = true;
-        taken += jobBytes;
+        Atomics.add(state, SLOT.taken, jobBytes);
       }
-      if (stopAt !== undefined && taken >= stopAt) {
-        stopAt = undefined;
+      if (stopAt !== ${UNSET} && Atomics.load(state, SLOT.taken) >= stopAt) {
+        stopAt = ${UNSET};
         socket.pause();
         // Queries that came in with the end of the job are held with it: a
         // printer that has stopped acts on nothing behind the job.
-        if (live.resumeAfterMs !== undefined) {
-          const timer = setTimeout(() => {
+        const resumeAfterMs = Atomics.load(state, SLOT.resumeAfterMs);
+        if (resumeAfterMs !== ${UNSET}) {
+          setTimeout(() => {
             for (const n of queries) answer(n);
             socket.resume();
-          }, live.resumeAfterMs);
-          timer.unref();
+          }, resumeAfterMs);
         }
         return;
       }
       for (const n of queries) answer(n);
     });
+  };
+}
+
+function bandPrinter(state) {
+  return (socket) => {
+    socket.on('data', (data) => {
+      let queries = 0;
+      for (let i = 0; i + 2 < data.length; i += 1) {
+        if (data[i] === 0x1b && data[i + 1] === 0x21 && data[i + 2] === 0x3f) queries += 1;
+      }
+      Atomics.add(state, BAND_SLOT.taken, data.length - 3 * queries);
+      if (Atomics.load(state, BAND_SLOT.answering) !== 1) return;
+      for (let q = 0; q < queries; q += 1) socket.write(Buffer.from([${LABEL_READY}]));
+    });
+  };
+}
+
+parentPort.on('message', (message) => {
+  if (message.open) {
+    const state = new Int32Array(message.state);
+    const serve = message.open === 'band' ? bandPrinter(state) : escposPrinter(state);
+    const sockets = new Set();
+    const server = net.createServer((socket) => {
+      sockets.add(socket);
+      socket.on('error', () => {});
+      socket.on('close', () => sockets.delete(socket));
+      serve(socket);
+    });
+    printers.set(message.id, { server, sockets });
+    server.listen(0, '127.0.0.1', () => {
+      parentPort.postMessage({ id: message.id, port: server.address().port });
+    });
+    return;
+  }
+  const printer = printers.get(message.id);
+  printers.delete(message.id);
+  if (!printer) {
+    parentPort.postMessage({ id: message.id, port: 0 });
+    return;
+  }
+  for (const socket of printer.sockets) socket.destroy();
+  printer.server.close(() => parentPort.postMessage({ id: message.id, port: 0 }));
+});
+`;
+}
+
+interface PrinterThread {
+  worker: Worker;
+  /** Serve a printer of this kind with this state. Resolves with its id and port. */
+  open(kind: 'escpos' | 'band', state: SharedArrayBuffer): Promise<{ id: number; port: number }>;
+  /** Close its sockets and stop listening, as `close` on a server does. */
+  close(id: number): Promise<void>;
+}
+
+let started: PrinterThread | null = null;
+
+/**
+ * The thread every fake printer here is served from, started with the first.
+ *
+ * A printer is a machine of its own: it reads what it is sent and answers
+ * while the box is busy rendering the next slip. Served from the box's
+ * thread, the fakes could not, and on a slow runner the slips rendered by
+ * the tests beside them kept them silent for a second and more (see the top
+ * of the file). Stopped once the file is done. A thread that has stopped
+ * fails what is asked of it rather than leaving a test waiting for ever.
+ */
+function printerThread(): PrinterThread {
+  if (started) return started;
+  const worker = new Worker(printerThreadSource(), { eval: true, execArgv: [] });
+  const waiting = new Map<number, { ok: (port: number) => void; no: (err: unknown) => void }>();
+  let stopped: Error | null = null;
+  const failAll = (err: unknown): void => {
+    for (const wait of waiting.values()) wait.no(err);
+    waiting.clear();
+  };
+  worker.on('message', ({ id, port }: { id: number; port: number }) => {
+    waiting.get(id)?.ok(port);
+    waiting.delete(id);
   });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const port = (server.address() as { port: number }).port;
+  worker.on('error', failAll);
+  worker.on('exit', () => {
+    stopped = new Error('the printers’ thread stopped');
+    failAll(stopped);
+  });
+  const ask = (message: { id: number; open?: string; state?: SharedArrayBuffer }) =>
+    new Promise<number>((ok, no) => {
+      if (stopped) {
+        no(stopped);
+        return;
+      }
+      waiting.set(message.id, { ok, no });
+      worker.postMessage(message);
+    });
+  let next = 0;
+  started = {
+    worker,
+    open: async (kind, state) => {
+      const id = next;
+      next += 1;
+      return { id, port: await ask({ id, open: kind, state }) };
+    },
+    close: async (id) => {
+      await ask({ id });
+    },
+  };
+  return started;
+}
+
+after(async () => {
+  await started?.worker.terminate();
+});
+
+/** A receipt printer on loopback that reads the stream as a printer does, on its own thread. */
+async function fakePrinter(opts: FakePrinterOptions = {}): Promise<FakePrinter> {
+  const shared = new SharedArrayBuffer(
+    (SLOT.afterLog + SLOT.logSize) * Int32Array.BYTES_PER_ELEMENT,
+  );
+  const state = new Int32Array(shared);
+  const set = (next: FakePrinterOptions): void => {
+    if ('answersBefore' in next) {
+      Atomics.store(state, SLOT.answersBefore, next.answersBefore === false ? 0 : 1);
+    }
+    if ('afterJob' in next) {
+      const policy = next.afterJob ?? 'answers';
+      Atomics.store(
+        state,
+        SLOT.afterJob,
+        policy === 'answers' ? AFTER_JOB_ANSWERS : policy === 'silent' ? AFTER_JOB_SILENT : policy,
+      );
+    }
+    if ('stopAfter' in next) Atomics.store(state, SLOT.stopAfter, next.stopAfter ?? UNSET);
+    if ('resumeAfterMs' in next) {
+      Atomics.store(state, SLOT.resumeAfterMs, next.resumeAfterMs ?? UNSET);
+    }
+  };
+  set({ answersBefore: true, afterJob: 'answers', stopAfter: undefined, resumeAfterMs: undefined });
+  set(opts);
+  const { id, port } = await printerThread().open('escpos', shared);
+  const logged = (countSlot: number, logSlot: number): Asked[] => {
+    const count = Atomics.load(state, countSlot);
+    assert.ok(count <= SLOT.logSize, `the fake printer read ${count} queries, more than it keeps`);
+    return Array.from({ length: count }, (_, i): Asked => {
+      const entry = Atomics.load(state, logSlot + i);
+      return [entry >> 1, (entry & 1) === 1];
+    });
+  };
   return {
     port,
-    connections: () => connections,
-    taken: () => taken,
-    asked: () => ({ before: [...before], after: [...after] }),
-    set: (next) => {
-      Object.assign(live, next);
-    },
-    close: () =>
-      new Promise<void>((resolve) => {
-        for (const s of sockets) s.destroy();
-        server.close(() => resolve());
-      }),
+    connections: () => Atomics.load(state, SLOT.connections),
+    taken: () => Atomics.load(state, SLOT.taken),
+    asked: () => ({
+      before: logged(SLOT.beforeCount, SLOT.beforeLog),
+      after: logged(SLOT.afterCount, SLOT.afterLog),
+    }),
+    set,
+    close: () => printerThread().close(id),
   };
 }
 
@@ -405,39 +600,21 @@ interface FakeBandPrinter {
  * A band printer on loopback, as far as the read before a band needs one: it
  * answers `ESC ! ?` with "ready" while it is answering, and counts every other
  * byte it reads as the band's. The bands sent to it are filler, with no
- * `ESC ! ?` inside them to find.
+ * `ESC ! ?` inside them to find. Served from the printers' thread
+ * (`printerThread`), as the receipt printers are.
  */
 async function fakeBandPrinter(): Promise<FakeBandPrinter> {
-  const sockets = new Set<Socket>();
-  let answers = true;
-  let taken = 0;
-  const server: Server = createServer((socket) => {
-    sockets.add(socket);
-    socket.on('error', () => {});
-    socket.on('close', () => sockets.delete(socket));
-    socket.on('data', (data: Buffer) => {
-      let queries = 0;
-      for (let i = 0; i + 2 < data.length; i += 1) {
-        if (data[i] === 0x1b && data[i + 1] === 0x21 && data[i + 2] === 0x3f) queries += 1;
-      }
-      taken += data.length - 3 * queries;
-      if (!answers) return;
-      for (let q = 0; q < queries; q += 1) socket.write(Buffer.from([LABEL_READY]));
-    });
-  });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const port = (server.address() as { port: number }).port;
+  const shared = new SharedArrayBuffer(2 * Int32Array.BYTES_PER_ELEMENT);
+  const state = new Int32Array(shared);
+  Atomics.store(state, BAND_SLOT.answering, 1);
+  const { id, port } = await printerThread().open('band', shared);
   return {
     port,
-    taken: () => taken,
+    taken: () => Atomics.load(state, BAND_SLOT.taken),
     answering: (on) => {
-      answers = on;
+      Atomics.store(state, BAND_SLOT.answering, on ? 1 : 0);
     },
-    close: () =>
-      new Promise<void>((resolve) => {
-        for (const s of sockets) s.destroy();
-        server.close(() => resolve());
-      }),
+    close: () => printerThread().close(id),
   };
 }
 
@@ -577,7 +754,10 @@ describe('the read after a job (SCRUM-429)', { concurrency: true }, () => {
       assert.equal(result.written, 1);
       assert.equal(result.health.statusUnknown, false, 'what it said is kept');
       assert.equal(result.health.paperStatus, 'ok');
-      assert.deepEqual(printer.asked().after, [...unanswered(SILENT_AFTER_JOB_ASKS), ...ANSWERED_READ]);
+      assert.deepEqual(printer.asked().after, [
+        ...unanswered(SILENT_AFTER_JOB_ASKS),
+        ...ANSWERED_READ,
+      ]);
     } finally {
       await printer.close();
     }
@@ -994,7 +1174,11 @@ describe('the read after a job (SCRUM-429)', { concurrency: true }, () => {
 
         const blind = await printing.submit({ ...voucher('job-never-heard'), role: OTHER_ROLE });
         assert.equal(blind.deviceId, OTHER_DEVICE_ID);
-        assert.equal(blind.status, 'printed', 'another printer answering is not this one answering');
+        assert.equal(
+          blind.status,
+          'printed',
+          'another printer answering is not this one answering',
+        );
         assert.equal(never.taken(), oneSlip());
 
         remembered.set({ answersBefore: false });
@@ -1068,7 +1252,10 @@ function twoPrintersBundle(port: number, otherPort: number): BoxConfigBundle {
         name: 'Booth 1',
         kind: 'booth',
         codePrefix: 'B1',
-        devices: [deviceRow(port), { ...deviceRow(otherPort), id: OTHER_DEVICE_ID, role: OTHER_ROLE }],
+        devices: [
+          deviceRow(port),
+          { ...deviceRow(otherPort), id: OTHER_DEVICE_ID, role: OTHER_ROLE },
+        ],
       },
     ],
   } as unknown as BoxConfigBundle;

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer, type Server, type Socket } from 'node:net';
 import { describe, test } from 'node:test';
+import { Worker } from 'node:worker_threads';
 
 import type { PrintJob } from '@oto/print';
 import type { BoxConfigBundle } from '../src/protocol';
@@ -386,6 +387,109 @@ describe('the printer on a real socket', { concurrency: true }, () => {
     }
   });
 });
+
+/**
+ * A printer that answered while the box was busy.
+ *
+ * Node runs the timers that fell due while the box's thread was busy before
+ * it reads the sockets, and the channel used to give its deadlines' verdicts
+ * in their timers. On a slow CI runner seven slips rendered side by side in
+ * `print-silent-after-job.test.ts` held the thread for over two seconds, and
+ * connections the kernel had made in that time were failed as unreachable.
+ * The verdicts are now given once the sockets have been read
+ * (`afterSocketsRead` in `channel.ts`).
+ *
+ * The printer here runs on a thread of its own, as a printer is a machine of
+ * its own, so it answers while the box's thread is held. The thread is held
+ * with `Atomics.wait`, which stops the loop as a render does, without using
+ * the processor. These tests run after the suite above, not beside it, since
+ * a held thread would upset its timings.
+ */
+describe('a printer that answered while the box was busy', () => {
+  test('a connection made while the box was busy is taken, not failed as unreachable', async () => {
+    const printer = await printerOnItsOwnThread();
+    try {
+      const channel = await startThenHold(
+        () => tcpChannel({ host: '127.0.0.1', port: printer.port }),
+        CHANNEL_TIMEOUTS.connectMs + statusMs / 2,
+      );
+      await channel.close();
+    } finally {
+      await printer.close();
+    }
+  });
+
+  test('a status reply that came while the box was busy is read, not taken for silence', async () => {
+    const printer = await printerOnItsOwnThread();
+    const channel = await tcpChannel({ host: '127.0.0.1', port: printer.port });
+    try {
+      const reply = await startThenHold(
+        () => channel.query(Uint8Array.from([0x10, 0x04, 1]), 1, statusMs),
+        statusMs + statusMs / 2,
+      );
+      assert.deepEqual([...reply], [ALL_CLEAR], 'it answered inside its second');
+    } finally {
+      await channel.close();
+      await printer.close();
+    }
+  });
+});
+
+/**
+ * Start something on a socket, then hold the box's thread for `ms`, as
+ * rendering slips holds it.
+ *
+ * Both are done from a `setImmediate`, the phase after which the loop runs
+ * its timers, so a deadline that fell due while the thread was held is met
+ * before the loop next reads the sockets, whatever phase the test was in: the
+ * order that failed the connections on CI. A connection to an address goes
+ * out on the next tick, so the thread is held from the tick after it.
+ */
+function startThenHold<T>(start: () => Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve) => {
+    setImmediate(() => {
+      const started = start();
+      process.nextTick(() => {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+        resolve(started);
+      });
+    });
+  });
+}
+
+/**
+ * A printer on a thread of its own: it takes connections and answers every
+ * `DLE EOT n` all clear, on its own loop. Plain JavaScript, as a worker made
+ * from a string is.
+ */
+async function printerOnItsOwnThread(): Promise<{ port: number; close(): Promise<void> }> {
+  const worker = new Worker(
+    `
+    const { parentPort } = require('node:worker_threads');
+    const net = require('node:net');
+    const server = net.createServer((socket) => {
+      socket.on('error', () => {});
+      socket.on('data', (data) => {
+        for (let i = 0; i + 2 < data.length; i += 1) {
+          if (data[i] === 0x10 && data[i + 1] === 0x04) socket.write(Buffer.from([${ALL_CLEAR}]));
+        }
+      });
+    });
+    server.listen(0, '127.0.0.1', () => parentPort.postMessage(server.address().port));
+    `,
+    { eval: true, execArgv: [] },
+  );
+  const port = await new Promise<number>((resolve, reject) => {
+    worker.once('message', resolve);
+    worker.once('error', reject);
+  });
+  return {
+    port,
+    close: async () => {
+      await worker.terminate();
+    },
+  };
+}
 
 const STATION_ID = '018f1d2c-0000-7000-8000-0000000057d1';
 const DEVICE_ID = '018f1d2c-0000-7000-8000-0000000de0d1';

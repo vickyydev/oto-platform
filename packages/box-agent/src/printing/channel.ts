@@ -195,6 +195,33 @@ export function asBytes(chunk: Buffer | string): Uint8Array {
 }
 
 /**
+ * Give a deadline's verdict once the sockets have been read, not in its timer.
+ *
+ * Node runs the timers that fell due while the box was busy — slips being
+ * rendered, the store writing — before it reads the sockets for what arrived
+ * in the meantime. A verdict given in the timer then took a printer that had
+ * answered in time for one that had not: a connection the kernel had made
+ * was "did not answer", and a status reply already in the socket was silence,
+ * which the read before a job takes for a printer that has stopped
+ * (`PRINTER_SILENT_BEFORE_JOB`, SCRUM-431) and the read after one for a
+ * printer that has not confirmed the slip (`readAfterJob` in `adapter.ts`,
+ * SCRUM-429). Found on CI, 2026-09-25: seven slips rendered side by side in
+ * `print-silent-after-job.test.ts` held the loop for over two seconds, and
+ * seven connections the kernel had made in that time were failed as
+ * unreachable.
+ *
+ * `setImmediate` runs after the loop has read the sockets, so the verdict is
+ * given only if nothing that arrived by then has settled the wait. The rule is
+ * unchanged, and so is the time: with the box idle this is the same moment,
+ * and after a stall a printer is not blamed for the box's own delay. The
+ * write deadline (M15) is left as it was: five seconds a piece, it waits only
+ * on a job that has filled the socket's buffers.
+ */
+function afterSocketsRead(verdict: () => void): void {
+  setImmediate(verdict);
+}
+
+/**
  * The real thing: a TCP socket, as both families want it.
  *
  * No keep-alive and no pooling. §9.1 and §9.6 both say one session at a time
@@ -219,7 +246,12 @@ export function tcpChannel(target: ChannelTarget): Promise<PrinterChannel> {
     };
 
     socket.setTimeout(CHANNEL_TIMEOUTS.connectMs);
-    socket.once('timeout', () => fail('PRINTER_UNREACHABLE', `${target.host}:${target.port} did not answer`));
+    // A connection made while the box was busy is taken, not failed (`afterSocketsRead`).
+    socket.once('timeout', () =>
+      afterSocketsRead(() =>
+        fail('PRINTER_UNREACHABLE', `${target.host}:${target.port} did not answer`),
+      ),
+    );
     socket.once('error', (err) =>
       fail('PRINTER_UNREACHABLE', `${target.host}:${target.port} refused the connection`, err),
     );
@@ -377,6 +409,8 @@ export function tcpChannel(target: ChannelTarget): Promise<PrinterChannel> {
          *
          * The reply is listened for from the start, so one that arrives before
          * the write's callback is not left in `pending` for the next query.
+         * And a reply that reached the socket while the box was busy is read
+         * before the query counts as unanswered (`afterSocketsRead`).
          */
         async query(bytes, expect, timeoutMs) {
           if (pending.length >= expect) {
@@ -393,8 +427,10 @@ export function tcpChannel(target: ChannelTarget): Promise<PrinterChannel> {
               ok(chunk);
             };
             const timer = setTimeout(() => {
-              if (waiter === take) waiter = null;
-              take(new Uint8Array(0));
+              afterSocketsRead(() => {
+                if (waiter === take) waiter = null;
+                take(new Uint8Array(0));
+              });
             }, timeoutMs);
             timer.unref?.();
             waiter = take;
