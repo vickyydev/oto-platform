@@ -274,6 +274,36 @@ export const KIOSK_COPY = {
 } as const;
 
 /**
+ * The box's store cannot be used (SCRUM-403): the memory card lost what it
+ * said it had saved, or it is failing. The box stays up and says so here,
+ * full screen, instead of Chromium's error page.
+ *
+ * `guest` is bilingual and sits under the wordmark, like every guest line; the
+ * panel is for staff and English, like every panel. The panel names the way
+ * back — a new claim code, and `sudo oto-box claim --force` typed on the Pi —
+ * and never a code, a box, a path or anything the box holds (D15): the steps
+ * are the same on every box, and the guide has them in full.
+ */
+export const SERVICE_COPY = {
+  guest: {
+    en: 'This booth needs service — please ask our staff',
+    // Not reviewed by a Thai speaker, like every Thai line in this file (see the top).
+    th: 'บูธนี้ต้องได้รับการซ่อมบำรุง กรุณาสอบถามพนักงาน',
+  } satisfies BilingualLine,
+  title: 'This box needs service',
+  unreadable: 'The store on its memory card could not be read, so no spin can be recorded.',
+  damaged: 'The store on its memory card is damaged, so no spin can be recorded.',
+  steps: [
+    'In Console → Devices → Add a box, make a new box for this Pi, role Booth, and copy its claim code.',
+    'On the Pi, run sudo oto-box claim --force and type the new code at its prompt.',
+    'In the Console, move the booth and its printer to the new box.',
+  ],
+  keep: 'Keep the files the claim sets aside: vouchers not yet sent are in them.',
+  retry: 'The box tries the card again every minute, and comes back by itself if it recovers.',
+  guide: 'The steps in full: PI_BOOTH.md, section 7, “A damaged store”.',
+} as const;
+
+/**
  * The staff panel on the no-wheel screen while the booth is online. English,
  * like every other staff word here; the guest's line beside it is bilingual.
  *
@@ -332,6 +362,8 @@ export function noWheelScreen(online: boolean | null): NoWheelScreen {
  *  - `not_configured` — the box has no wheel. Offline, that needs the
  *    internet; online, it needs a publish, and the guest is asked to fetch
  *    staff rather than told to connect something that is connected.
+ *  - `needs_service` — the box's store cannot be used (SCRUM-403): the
+ *    notice's own line, which the full-screen notice replaces moments later.
  *
  * Nothing here reads the server's prose (D15): the code chooses a line from
  * this file's own deck.
@@ -344,6 +376,8 @@ export function refusalLine(code: string | null, online: boolean | null): Biling
       return COPY.allSpinsGone;
     case 'not_configured':
       return noWheelScreen(online).guest;
+    case 'needs_service':
+      return SERVICE_COPY.guest;
     default:
       return COPY.notReady;
   }

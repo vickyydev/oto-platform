@@ -31,7 +31,14 @@ import { BOX_AGENT_VERSION } from '../protocol';
 import type { AgentLog } from '../transport';
 import { readJsonFile, readOverrides, readRunnerState, runnerPaths } from './home';
 import { KIOSK_DEFAULT_PORT } from './kiosk-server';
-import { RunnerError, claimBox, openNodeSqlite, startRunner } from './runtime';
+import {
+  RunnerError,
+  claimBox,
+  inspectStoreFile,
+  latestSalvage,
+  openNodeSqlite,
+  startRunner,
+} from './runtime';
 
 /** Exit codes: 0 done; 1 failed; 2 used wrongly; 75 restart me (systemd does). */
 const EXIT_RESTART = 75;
@@ -175,8 +182,10 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
           log: jsonLog(),
         });
         out(`Registered: this is box ${boxId}. The credential is in ${runnerPaths(home).credential} (owner-only).`);
+        // A box that needs service (SCRUM-403) picks the credential up when it
+        // next tries its store, which it does once a minute.
         out(
-          'Next: a running oto-box service picks this up by itself within a few seconds; otherwise start it (sudo systemctl start oto-box) or run "oto-box run".',
+          'Next: a running oto-box service picks this up by itself — within a few seconds, or within about a minute on a box whose television says it needs service; otherwise start it (sudo systemctl start oto-box) or run "oto-box run".',
         );
         return 0;
       } catch (error) {
@@ -245,16 +254,46 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
       out(`booths      ${booths.length === 0 ? 'none on this box' : booths.map((b) => `${b.name} (${b.codePrefix ?? '—'})${b.id === state.stationId || booths.length === 1 ? ' ← running' : ''}`).join(', ')}`);
       out(`printer     ${overrides.printer ? `override ${overrides.printer.host}:${overrides.printer.port}, ${overrides.printer.widthDots} dots` : 'from the Console'}${problem ? ` (config.json ignored: ${problem})` : ''}`);
       if (existsSync(paths.database)) {
+        // The same look the running box takes before it opens its store
+        // (SCRUM-403): read-only, and with the integrity check, because a
+        // damaged store can still answer a count.
+        const verdict = await inspectStoreFile(paths.database);
+        out(
+          `store       ${
+            verdict.ok
+              ? 'ok'
+              : `${verdict.problem === 'damaged' ? 'damaged' : 'could not be read'} — the booth needs service (PI_BOOTH.md section 7, "A damaged store")`
+          }`,
+        );
+        let db: Awaited<ReturnType<typeof openNodeSqlite>> | null = null;
         try {
-          const db = await openNodeSqlite(paths.database);
+          db = await openNodeSqlite(paths.database, { readOnly: true });
+          // Counted in the table, not in the send index, as the salvage reads
+          // it (`UNSENT_OUTBOX_SQL` in store-sqlite.ts): a damaged index page
+          // would say the store could not be read, and a stale one, none.
           const rows = db
-            .prepare("select count(*) as n from box_outbox where state in ('queued','sending')")
+            .prepare("select count(*) as n from box_outbox not indexed where state in ('queued','sending')")
             .all() as Array<{ n: number }>;
           out(`outbox      ${rows[0]?.n ?? 0} fact(s) waiting to reach the cloud`);
-          db.close();
         } catch {
           out('outbox      (the store could not be read)');
+        } finally {
+          try {
+            db?.close();
+          } catch {
+            /* nothing opened */
+          }
         }
+      }
+      // What the box copied out of a store it could not use: the vouchers the
+      // cloud has not had, which the set-aside files still hold.
+      const salvage = await latestSalvage(paths);
+      if (salvage) {
+        out(
+          `salvage     ${salvage.document.rows} unsent record(s) copied out of the store to ${salvage.file}${
+            salvage.document.complete ? '' : ' (the read stopped at damage; the store may hold more)'
+          }`,
+        );
       }
       return 0;
     }

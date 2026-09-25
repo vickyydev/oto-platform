@@ -27,6 +27,13 @@
  * the page needs before there is a booth to talk to (registered? which booths?),
  * the claim code a person types on first boot, and the booth the picker chose.
  * Plus `/kiosk/health`, which the systemd watchdog timer asks.
+ *
+ * **It listens before the box has a store (SCRUM-403).** The runner starts
+ * this server first, so the television has a page whatever the card holds,
+ * and tells it how the box stands (`KioskCondition`): starting, running, or
+ * needing service because its store cannot be used. Until the box runs, the
+ * routes that need it answer 503 with a code, and the page's own state says
+ * which screen to show.
  */
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
@@ -63,6 +70,12 @@ export interface KioskBoothSummary {
   codePrefix: string | null;
 }
 
+/**
+ * Why the box cannot use its store (SCRUM-403): it could not be read at all,
+ * or it opened and its integrity check found damage.
+ */
+export type KioskStoreProblem = 'unreadable' | 'damaged';
+
 /** `GET /kiosk/state` — what the page needs before it can show a wheel. */
 export interface KioskState {
   /** Whether this box holds a credential. False: the page asks for a claim code. */
@@ -74,7 +87,46 @@ export interface KioskState {
   /** The one this box runs: the picker's choice, or the only one there is. */
   selectedStationId: string | null;
   agentVersion: string;
+  /**
+   * Set while the box needs service (SCRUM-403): the page shows the full-screen
+   * notice instead of anything else. Only the kind of problem — the rest is
+   * for `/kiosk/health` and the box log, not for a screen in a shopping centre.
+   */
+  service?: { store: KioskStoreProblem } | null;
 }
+
+/**
+ * How the box stands, for `/kiosk/health` and for every route that needs a
+ * running box (SCRUM-403).
+ *
+ *  - `starting` — the server is up and the box is still opening its store
+ *    and its credential: a second, usually much less.
+ *  - `running` — the box has a store; what the booth answers is the booth's.
+ *  - `needs_service` — the store could not be opened, or its integrity check
+ *    found damage. The process stays up, says so, tries the store again, and
+ *    reports how many unsent records it copied out of the file.
+ */
+export type KioskCondition =
+  | { state: 'starting' }
+  | { state: 'running' }
+  | {
+      state: 'needs_service';
+      store: KioskStoreProblem;
+      /** Unsent outbox rows copied out of the store at start. */
+      salvaged: number;
+      /** Where they were copied, beside the store; null when none could be read. */
+      salvageFile: string | null;
+      /** Why none, or not all, could be read. */
+      salvageError: string | null;
+    };
+
+/**
+ * The codes a route that needs a running box answers with while there is
+ * none: its store cannot be used, or it is still starting. The page knows the
+ * first (`needs_service` in apps/booth/src/booth/contract.ts).
+ */
+export const KIOSK_NEEDS_SERVICE = 'needs_service';
+export const KIOSK_STARTING = 'starting';
 
 export type KioskClaimOutcome =
   | { ok: true }
@@ -93,6 +145,8 @@ export interface KioskServerOptions {
   state: () => Promise<KioskState>;
   claim: (code: string) => Promise<KioskClaimOutcome>;
   selectBooth: (stationId: string) => Promise<boolean>;
+  /** How the box stands (SCRUM-403). Absent: always running, as before. */
+  condition?: () => KioskCondition;
   log?: AgentLog;
 }
 
@@ -191,6 +245,49 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
     send(res, status, { error: { code, message } });
   }
 
+  function condition(): KioskCondition {
+    return options.condition?.() ?? { state: 'running' };
+  }
+
+  /**
+   * Refuse a route that needs a running box while there is none, and say
+   * whether it did (SCRUM-403). 503 in both cases, with a code: the process is
+   * up and answering, and what it cannot do yet is temporary in principle —
+   * the store is tried again, and a start takes a moment.
+   */
+  function refusedUntilRunning(res: ServerResponse): boolean {
+    const now = condition();
+    if (now.state === 'running') return false;
+    if (now.state === 'starting') refuse(res, 503, KIOSK_STARTING, 'The box is starting');
+    else refuse(res, 503, KIOSK_NEEDS_SERVICE, 'This box needs service: its store cannot be used');
+    return true;
+  }
+
+  /**
+   * `/kiosk/health`, which the watchdog asks: 200 while the box runs, 503
+   * with the reason while it does not — `starting`, or the store's problem
+   * and how many unsent records were copied out of it (SCRUM-403).
+   *
+   * A 503 that names `store` is a box that is up and needs service, which a
+   * restart cannot mend: `scripts/pi/oto-box-watchdog.sh` counts it, as it
+   * counts a 200, as an answer, and anything else — no answer, a start that
+   * lasts — as a miss. The television's start-up wait
+   * (`scripts/pi/oto-kiosk.sh`) opens the page on any answer at all, so the
+   * notice is on the screen as soon as the box is.
+   */
+  function health(res: ServerResponse): void {
+    const now = condition();
+    if (now.state === 'running') return send(res, 200, { ok: true });
+    if (now.state === 'starting') return send(res, 503, { ok: false, starting: true });
+    return send(res, 503, {
+      ok: false,
+      store: now.store,
+      salvaged: now.salvaged,
+      salvageFile: now.salvageFile,
+      salvageError: now.salvageError,
+    });
+  }
+
   async function readJson(req: IncomingMessage): Promise<unknown> {
     const type = String(req.headers['content-type'] ?? '');
     if (!/^application\/json\b/i.test(type)) {
@@ -252,14 +349,19 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
   ): Promise<void> {
     if (route === '/kiosk/health') {
       if (method !== 'GET' && method !== 'HEAD') return refuse(res, 405, 'method_not_allowed', 'Use GET');
-      return send(res, 200, { ok: true });
+      return health(res);
     }
     if (route === '/kiosk/state') {
       if (method !== 'GET') return refuse(res, 405, 'method_not_allowed', 'Use GET');
+      // Nothing to say yet: the page keeps "Starting the box…" until there is.
+      if (condition().state === 'starting') {
+        return refuse(res, 503, KIOSK_STARTING, 'The box is starting');
+      }
       return send(res, 200, await options.state());
     }
     if (route === '/kiosk/claim') {
       if (method !== 'POST') return refuse(res, 405, 'method_not_allowed', 'Use POST');
+      if (refusedUntilRunning(res)) return;
       const body = (await readJson(req)) as { code?: unknown } | null;
       const code = typeof body?.code === 'string' ? body.code.trim() : '';
       // Shaped like the Console's claim codes; the cloud is what decides.
@@ -268,6 +370,7 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
     }
     if (route === '/kiosk/booth') {
       if (method !== 'POST') return refuse(res, 405, 'method_not_allowed', 'Use POST');
+      if (refusedUntilRunning(res)) return;
       const body = (await readJson(req)) as { stationId?: unknown } | null;
       const stationId = typeof body?.stationId === 'string' ? body.stationId : '';
       if (!(await options.selectBooth(stationId))) {
@@ -353,6 +456,9 @@ export function createKioskServer(options: KioskServerOptions): KioskServer {
         }
       }
       if (route === '/booth' || route.startsWith('/booth/')) {
+        // A press while the store needs service is refused by name, never
+        // tried against a store it would fail in (SCRUM-403).
+        if (refusedUntilRunning(res)) return;
         return await serveBooth(req, res, route.slice('/booth'.length), method);
       }
       if (route.startsWith('/kiosk/')) return await serveKiosk(req, res, route, method);

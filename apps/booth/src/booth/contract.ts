@@ -212,6 +212,14 @@ export const BOOTH_ERROR_CODES = [
   'staff_required',
   /** SCRUM-223 — a reprint with no voucher on the box to print again. */
   'nothing_to_reprint',
+  /**
+   * SCRUM-403 — the box's store cannot be used, so no press can be recorded.
+   * The page shows its full-screen "needs service" notice from the box's own
+   * state (`/kiosk/state`); this is the answer a press meets in the seconds
+   * before that poll, and it gets the notice's words rather than the fixed
+   * line (`refusalLine` in src/copy.ts).
+   */
+  'needs_service',
 ] as const;
 export type BoothErrorCode = (typeof BOOTH_ERROR_CODES)[number];
 

@@ -25,6 +25,11 @@ import { normaliseParam, type BoxSqlDriver, type SqlRow } from './store-sql';
 export interface SqliteStatementLike {
   all(...params: unknown[]): unknown[];
   run(...params: unknown[]): unknown;
+  /**
+   * Rows one at a time (`node:sqlite` from 22.13). Optional: only the salvage
+   * of a damaged store uses it, to keep the rows read before the damage.
+   */
+  iterate?(...params: unknown[]): Iterable<unknown>;
 }
 
 export interface SqliteDatabaseLike {
@@ -260,6 +265,139 @@ create table if not exists box_runtime (
 export function prepareSqliteBoxStore(db: SqliteDatabaseLike): void {
   for (const pragma of SQLITE_PRAGMAS) db.exec(pragma);
   db.exec(SQLITE_BOX_SCHEMA);
+}
+
+// --- A store the box cannot use (SCRUM-403) ----------------------------------
+
+/**
+ * What is wrong with a store file.
+ *
+ * `unreadable`: SQLite cannot read it as a database at all — a card that lost
+ * the writes it said were saved, a file overwritten, a read that fails.
+ * `damaged`: it opens, and its integrity check finds pages that contradict
+ * each other. Both leave the booth unable to record a spin, and both are
+ * mended the same way (PI_BOOTH.md §7, "A damaged store").
+ */
+export type SqliteStoreProblem = 'unreadable' | 'damaged';
+
+export type SqliteStoreCheck =
+  | { ok: true }
+  | {
+      ok: false;
+      problem: SqliteStoreProblem;
+      /** SQLite's own words, for the box log: page numbers, never contents. */
+      detail: string;
+    };
+
+/** SQLite's primary result code for a file whose pages contradict each other. */
+const SQLITE_CORRUPT = 11;
+
+/**
+ * Is this store fit to run a booth on?
+ *
+ * `pragma quick_check` rather than `integrity_check`: it reads every page and
+ * checks every b-tree, which is what a card that lost writes breaks, and skips
+ * matching each index against its table, which is what makes the full check
+ * slow. Run BEFORE `prepareSqliteBoxStore`, because preparing writes — the WAL
+ * switch, a missing table — and nothing should be written into a file that is
+ * about to be read for what it still holds. A damaged file is found here and
+ * not at the first press: `prepareSqliteBoxStore` succeeds on a file whose
+ * outbox page is gone, and every press then failed while the kiosk's health
+ * said all was well (closing audit M16, "nearby").
+ */
+export function checkSqliteStore(db: SqliteDatabaseLike): SqliteStoreCheck {
+  let rows: unknown[];
+  try {
+    rows = db.prepare('pragma quick_check(10)').all();
+  } catch (err) {
+    return { ok: false, problem: sqliteProblemOf(err), detail: sqliteMessage(err) };
+  }
+  const lines = rows
+    .map((row) => (row && typeof row === 'object' ? Object.values(row)[0] : row))
+    .map((value) => String(value ?? '').trim())
+    .filter((line) => line !== '');
+  if (lines.length === 1 && lines[0] === 'ok') return { ok: true };
+  return {
+    ok: false,
+    problem: 'damaged',
+    detail: (lines.join(' | ') || 'the integrity check gave no answer').slice(0, 500),
+  };
+}
+
+/**
+ * The unsent outbox, read out of a store that cannot be run on.
+ *
+ * Every column of every row still `queued` or `sending`, exactly as the file
+ * holds it: the envelope is signed, and a copy that re-encoded it would be a
+ * copy nothing can verify. Read row by row where the binding can, so the
+ * rows before a damaged page are kept when the read stops at it.
+ *
+ * Read from the table itself, never through an index (`UNSENT_OUTBOX_SQL`).
+ */
+export interface OutboxSalvage {
+  rows: Array<Record<string, unknown>>;
+  /** False when the read stopped part-way, or never started. */
+  complete: boolean;
+  /** Why nothing, or not everything, could be read. */
+  error: string | null;
+}
+
+/**
+ * Which rows are unsent, read from the outbox table and from nothing else.
+ *
+ * `not indexed` because the condition is exactly the one the partial index
+ * `box_outbox_send_idx` is built on, so without it SQLite reads the unsent
+ * rows THROUGH that index (`SCAN box_outbox USING INDEX box_outbox_send_idx`)
+ * — and an index is a copy of the table on pages of its own, which a card
+ * damages or leaves stale like any other. A damaged index page stopped the
+ * read before its first row, with every row intact in the table; a stale one
+ * that still reads well answered "none", complete, while the table held
+ * vouchers the cloud never had — and none is what the heartbeat then told
+ * the Console, which allows Reset the store only for a box with nothing
+ * unsent. No ORDER BY either, for the same reason: the table is walked in its
+ * own order, and the rows are put in journal order after. `oto-box status`
+ * counts the outbox with the same condition (`runner/cli.ts`).
+ */
+export const UNSENT_OUTBOX_SQL = `select * from box_outbox not indexed where state in ('queued', 'sending')`;
+
+export function salvageSqliteOutbox(db: SqliteDatabaseLike): OutboxSalvage {
+  const rows: Array<Record<string, unknown>> = [];
+  try {
+    const statement = db.prepare(UNSENT_OUTBOX_SQL);
+    const source = statement.iterate ? statement.iterate() : statement.all();
+    for (const row of source) {
+      if (row && typeof row === 'object') rows.push({ ...(row as Record<string, unknown>) });
+    }
+    return { rows: inJournalOrder(rows), complete: true, error: null };
+  } catch (err) {
+    return { rows: inJournalOrder(rows), complete: false, error: sqliteMessage(err) };
+  }
+}
+
+function inJournalOrder(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  const n = (value: unknown): number => (typeof value === 'number' ? value : Number(value ?? 0));
+  return [...rows].sort(
+    (a, b) => n(a.journal_epoch) - n(b.journal_epoch) || n(a.box_seq) - n(b.box_seq),
+  );
+}
+
+/**
+ * What an error SQLite threw says about the store: `damaged` for its
+ * "database disk image is malformed" (SQLITE_CORRUPT), `unreadable` for
+ * anything else — not a database, a read or a write the card refused, a file
+ * that cannot be opened. One rule for every place a store is looked at, opened
+ * or prepared, so the same fault is never named two ways.
+ */
+export function sqliteProblemOf(err: unknown): SqliteStoreProblem {
+  const code = (err as { errcode?: unknown } | null)?.errcode;
+  // Extended codes carry the primary one in their low byte.
+  return typeof code === 'number' && (code & 0xff) === SQLITE_CORRUPT ? 'damaged' : 'unreadable';
+}
+
+/** The error's own words, one line: `file is not a database`, `database disk image is malformed`. */
+export function sqliteMessage(err: unknown): string {
+  const text = err instanceof Error ? err.message : String(err);
+  return text.split('\n')[0]!.slice(0, 300);
 }
 
 export function sqliteBoxDriver(db: SqliteDatabaseLike): BoxSqlDriver {

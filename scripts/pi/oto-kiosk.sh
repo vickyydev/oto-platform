@@ -39,10 +39,11 @@ done
 export XDG_RUNTIME_DIR="$RUNTIME"
 
 # Wait (a minute at most) for the box to answer, so the first screen is the
-# booth and not "this site can't be reached". It opens anyway after that: the
-# page keeps asking on its own.
+# booth and not "this site can't be reached". Any answer will do, a 503 too:
+# a box that is still starting, or that needs service, serves the page that
+# says so. It opens anyway after that: the page keeps asking on its own.
 for _ in $(seq 1 60); do
-  curl -fsS --max-time 2 -o /dev/null "${BASE}kiosk/health" && break
+  curl -sS --max-time 2 -o /dev/null "${BASE}kiosk/health" && break
   sleep 1
 done
 

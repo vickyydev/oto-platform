@@ -62,6 +62,10 @@ test('a booth code in promoCodes is a voucher on the cart, flat or nested; nothi
 
 test('the box refuses an offline sale carrying a voucher, spends no receipt number, queues nothing', async () => {
   const t = openTestStore();
+  // A till that has been running: its store already keeps this box's journal.
+  // A store new under a credential the box already held seals nothing until
+  // the platform gives it a new epoch (SCRUM-403, `store-recovery.test.ts`).
+  await t.store.init(BOX_ID);
   const agent = createBoxAgent({
     apiBaseUrl: 'http://cloud.test',
     credentials: memoryCredentialStore({

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { kiosk, type KioskBooth } from '../booth/kiosk';
-import { COPY, KIOSK_COPY } from '../copy';
+import { kiosk, type KioskBooth, type KioskStoreProblem } from '../booth/kiosk';
+import { COPY, KIOSK_COPY, SERVICE_COPY, type BilingualLine } from '../copy';
 import OtoWordmark from './OtoWordmark';
 
 /**
@@ -13,17 +13,48 @@ import OtoWordmark from './OtoWordmark';
  * the booth names on the picker are what staff chose in the Console.
  */
 
-function Frame({ children }: { children: ReactNode }) {
+function Frame({ children, guest = KIOSK_COPY.guest }: { children: ReactNode; guest?: BilingualLine }) {
   return (
     <div className="k-body k-body--center">
       <OtoWordmark height={56} />
       <div className="k-setup">
-        <p className="k-setup-line">{KIOSK_COPY.guest.en}</p>
-        <p className="k-setup-line k-th">{KIOSK_COPY.guest.th}</p>
+        <p className="k-setup-line">{guest.en}</p>
+        <p className="k-setup-line k-th">{guest.th}</p>
       </div>
       {children}
       <p className="k-terms">{COPY.terms.en}</p>
     </div>
+  );
+}
+
+/**
+ * "This box needs service" — its store on the memory card cannot be used
+ * (SCRUM-403).
+ *
+ * Shown full screen, instead of everything else, for as long as the box says
+ * so. It used to be Chromium's own error page, turned sideways, because the
+ * box exited before it served anything. The guest is asked to fetch staff, in
+ * both languages; the panel gives staff the way back from the guide, and
+ * nothing that identifies the box — no code, no box, no path (D15).
+ */
+export function NeedsServiceScreen({ store }: { store: KioskStoreProblem }) {
+  return (
+    <Frame guest={SERVICE_COPY.guest}>
+      <div className="k-panel k-panel--center" data-booth-panel="service" data-store={store}>
+        <div className="k-panel-head">{SERVICE_COPY.title}</div>
+        <p className="k-panel-line">
+          {store === 'damaged' ? SERVICE_COPY.damaged : SERVICE_COPY.unreadable}
+        </p>
+        {SERVICE_COPY.steps.map((step, index) => (
+          <p key={step} className="k-panel-line k-panel-note">
+            {index + 1}. {step}
+          </p>
+        ))}
+        <p className="k-panel-line">{SERVICE_COPY.keep}</p>
+        <p className="k-panel-line">{SERVICE_COPY.retry}</p>
+        <p className="k-panel-line">{SERVICE_COPY.guide}</p>
+      </div>
+    </Frame>
   );
 }
 

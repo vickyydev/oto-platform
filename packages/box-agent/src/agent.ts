@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import {
+  BoothRefusal,
   createBooth,
   type Booth,
   type BoothAccountVerdict,
@@ -178,6 +179,15 @@ export interface BoxAgentOptions {
    */
   store?: BoxStore;
   /**
+   * The identity a claim is registering again onto a NEW store, or null
+   * (SCRUM-403). A registration that names this box, onto a store with no row
+   * for it, makes the row waiting for a new journal epoch — in the same
+   * transaction as the row — rather than taking the epoch the answer names,
+   * which is the one the set-aside store sealed under. `claimBox` passes the
+   * credential it set aside. See NO NEW FACT BEFORE A FRESH EPOCH.
+   */
+  journalHoldFor?: string | null;
+  /**
    * The operator this box belongs to. Learned at registration; pass it for a
    * box that comes back from its credential file and never registers again.
    */
@@ -309,6 +319,12 @@ export interface BoxAgentState {
   /** What the agent has actually applied, which is what the cloud compares. */
   configVersion: string | null;
   epoch: number;
+  /**
+   * The store's journal waits for a new epoch from the platform, and nothing
+   * is sealed until it has one (SCRUM-403): a new store under an identity
+   * this box already had. See `JOURNAL_EPOCH_KEY`.
+   */
+  journalAwaitingEpoch: boolean;
   offline: boolean;
   heartbeatsPaused: boolean;
   /**
@@ -779,6 +795,99 @@ function heartbeatStaleRefusal(status: number, body: unknown): StaleRefusal | nu
   };
 }
 
+// --- The journal's epoch comes from the platform (SCRUM-403) ----------------
+
+/**
+ * NO NEW FACT BEFORE A FRESH EPOCH.
+ *
+ * Every fact is sealed at `(box_id, journal_epoch, box_seq)`, and the cloud
+ * holds a unique index on that address. A new store starts its journal at the
+ * column's default — epoch 1, sequence 1 — and under a box the cloud already
+ * knows, those are addresses the cloud already holds: it quarantines the new
+ * facts or files them as replays of old ones (`apps/api/src/services/sync.ts`),
+ * and the vouchers sealed there never reach a till (closing audit M16,
+ * section 3). So a new store may seal only under an epoch the platform named
+ * for it:
+ *
+ *  - REGISTRATION. A store created by the registration that gave the box its
+ *    identity takes the epoch the registration answer names. A new box in the
+ *    Console has never sealed anything, so its journal is clean.
+ *  - A NEW STORE UNDER AN IDENTITY THE BOX ALREADY HAD — the file moved aside
+ *    or lost from the card while the credential stayed, or a claim that
+ *    registered the same box again (`claimBox`, through `journalHoldFor`).
+ *    The platform's current epoch is the one the old store sealed under, so
+ *    it waits for a NEW one: the Console's Reset the store mints it
+ *    (`reset_store`), and the command's acknowledgement brings it. Until then
+ *    every fact is refused, and a press at the booth is refused as "not
+ *    ready" rather than sealed at an address the cloud already holds. The
+ *    wait rides the heartbeat's `errors`.
+ *
+ * The state is kept in `box_runtime` under this key, so a restart in the
+ * middle keeps waiting. A store with no note is one from before this rule and
+ * keeps sealing as it did: its journal is already the platform's. Which is
+ * why a note is never written apart from what it describes: the row and its
+ * note, the named epoch and its note, a minted epoch and its note each land
+ * in one transaction. A row made without its note — a power cut between two
+ * writes, or a note the card refused — would read at the next start as a
+ * store from before this rule, and seal at the default epoch.
+ */
+export const JOURNAL_EPOCH_KEY = 'journal_epoch';
+
+interface JournalEpochNote {
+  state: 'awaiting' | 'taken';
+  /** The epoch the platform named, once it has. */
+  epoch: number | null;
+  /** Which answer named it. */
+  from: 'register' | 'reset_store' | null;
+  at: string;
+}
+
+function journalEpochNote(note: JournalEpochNote): string {
+  return JSON.stringify(note);
+}
+
+/**
+ * Whether the journal waits, by its note. No note does not wait: a store from
+ * before this rule. A note that says `taken` does not wait. Every other note
+ * waits — `awaiting`, and one that is there and cannot be read as either, a
+ * card's garbling of what was written: it cannot say that the platform ever
+ * named an epoch, and a store may seal only under one it named.
+ */
+function journalEpochAwaited(raw: string | null): boolean {
+  if (raw === null) return false;
+  let held: unknown;
+  try {
+    held = JSON.parse(raw);
+  } catch {
+    return true;
+  }
+  return !(
+    typeof held === 'object' &&
+    held !== null &&
+    (held as { state?: unknown }).state === 'taken'
+  );
+}
+
+/**
+ * A fact refused because the store's journal has no epoch from the platform
+ * yet. A `BoothRefusal` with the booth's own "not ready" code, so a press
+ * comes back as the television's "Booth not ready — please call staff" — and
+ * the spin's transaction, which it is thrown inside, takes the press, the
+ * counters and the sequence back out with it.
+ */
+export class JournalEpochAwaitedError extends BoothRefusal {
+  constructor() {
+    super(
+      'booth_not_ready',
+      "This box's store is new and the platform has not given it a journal epoch, so nothing can be recorded; reset the store in Console → Devices → the box",
+    );
+    this.name = 'JournalEpochAwaitedError';
+  }
+}
+
+/** What `readState` answers for a box the store keeps no row for (`store-sql.ts`). */
+const NO_STATE_ROW = /No box_state row for /;
+
 export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   const base = options.apiBaseUrl.replace(/\/$/, '');
   const call = options.fetch ?? httpTransport();
@@ -885,6 +994,13 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    * being able to see that it does.
    */
   const cacheFaults = new Map<string, { code: string; count: number }>();
+  /**
+   * Facts refused while the journal waited for its epoch (SCRUM-403): the
+   * count on the heartbeat's `journal:awaiting_epoch`, and when the wait was
+   * last written to the log, so a busy booth writes it once a minute.
+   */
+  let journalRefusals = 0;
+  let journalRefusalNotedAt: number | null = null;
   const ring: string[] = [];
   const state: BoxAgentState = {
     boxId: null,
@@ -892,6 +1008,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     registered: false,
     configVersion: null,
     epoch: 1,
+    journalAwaitingEpoch: false,
     offline: false,
     heartbeatsPaused: false,
     linkUp: false,
@@ -1031,6 +1148,165 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     const held = heldMeasurement();
     if (!held) return { clockTrust: 'untrusted' };
     return { clockTrust: 'trusted', clockOffsetMs: Math.round(clockResidualMs(held)) };
+  }
+
+  /**
+   * The stamp this agent installs on its store: the clock's, once the journal
+   * has an epoch from the platform (NO NEW FACT BEFORE A FRESH EPOCH, above
+   * `JOURNAL_EPOCH_KEY`).
+   *
+   * The store reads it once for every run of facts it seals, inside the
+   * transaction and after it has claimed their sequences — for every caller:
+   * the booth's spin, the outbox, a till's sale. So a refusal thrown here
+   * refuses them all, and rolls the sequences back rather than leaving a gap.
+   */
+  function sealStamp(): ClockStamp {
+    if (state.journalAwaitingEpoch) {
+      journalRefusals += 1;
+      const at = rawClock();
+      if (journalRefusalNotedAt === null || at - journalRefusalNotedAt >= 60_000) {
+        journalRefusalNotedAt = at;
+        note('warn', 'a fact was refused: this store waits for a new journal epoch from the platform', {
+          refused: journalRefusals,
+        });
+      }
+      throw new JournalEpochAwaitedError();
+    }
+    return clockStamp();
+  }
+
+  /**
+   * The journal's note in `box_runtime`: null where there is none, or where
+   * the store keeps no `box_runtime` to hold one (a platform database short of
+   * migration 0013). A read that fails is not "no note" — that would release
+   * a journal that waits, for the life of the process — so its error goes up:
+   * the store cannot say whether it may seal, and on a Pi the runner takes
+   * that for what it is, a store it cannot use (NEEDS SERVICE).
+   */
+  async function readJournalEpochNote(boxId: string): Promise<string | null> {
+    if (!store) return null;
+    try {
+      return await store.readRuntimeValue(boxId, JOURNAL_EPOCH_KEY);
+    } catch (err) {
+      if (err instanceof BoxStoreFeatureMissingError) return null;
+      note('error', 'the store could not say whether its journal waits for a new epoch', {
+        err: String(err),
+      });
+      throw err;
+    }
+  }
+
+  /**
+   * Write the journal's note inside the transaction `tx` belongs to, beside
+   * what it describes (NO NEW FACT BEFORE A FRESH EPOCH): a note the card
+   * refuses takes the rest of the transaction back with it.
+   *
+   * A store that keeps no `box_runtime` has nowhere to put one. A `taken`
+   * note it can do without — a row with no note seals at the epoch it holds,
+   * which is the one just named — but a wait it cannot keep is refused
+   * loudly (`writeRuntimeValue` throws), because without the note a restart
+   * would seal at an address the cloud already holds.
+   */
+  async function keepJournalEpochNote(
+    tx: BoxStore,
+    boxId: string,
+    entry: JournalEpochNote,
+  ): Promise<void> {
+    if (entry.state === 'taken' && !tx.features().boothRuntime) {
+      note('warn', 'this store keeps no box_runtime, so where its journal epoch came from is not kept', {
+        epoch: entry.epoch,
+      });
+      return;
+    }
+    await tx.writeRuntimeValue(boxId, JOURNAL_EPOCH_KEY, journalEpochNote(entry), entry.at);
+  }
+
+  /**
+   * Whether the store keeps a row for this box. A missing row is the only
+   * "no". A store that cannot answer is not a new store, and taking it for one
+   * would hold a journal that is running for a reset nobody needs; its error
+   * goes up, and on a Pi a card that fails here is a store it cannot use.
+   */
+  async function stateRowHeld(boxId: string): Promise<boolean> {
+    if (!store) return false;
+    try {
+      await store.readState(boxId);
+      return true;
+    } catch (err) {
+      if (err instanceof Error && NO_STATE_ROW.test(err.message)) return false;
+      throw err;
+    }
+  }
+
+  /**
+   * REGISTRATION: a store that holds nothing for the box just registered
+   * starts its journal at the epoch the answer names — or, when the claim
+   * says this is the same box again onto a new store (`journalHoldFor`),
+   * waits for a new one. The row, its epoch and its note land in one
+   * transaction. A store that already keeps this box's journal is left as it
+   * is — registering again does not restart a journal, and one that waits
+   * for a new epoch goes on waiting.
+   */
+  async function takeRegisteredEpoch(boxId: string, epoch: number): Promise<void> {
+    if (!store) return;
+    if (await stateRowHeld(boxId)) return;
+    const hold = options.journalHoldFor === boxId;
+    const at = new Date(clock()).toISOString();
+    const named = await store.atomically(async (tx) => {
+      const persisted = await tx.init(boxId);
+      const value = Number.isInteger(epoch) && epoch > 0 ? epoch : persisted.journalEpoch;
+      if (persisted.journalEpoch !== value) await tx.setEpoch(boxId, value, at);
+      await keepJournalEpochNote(
+        tx,
+        boxId,
+        hold
+          ? { state: 'awaiting', epoch: null, from: null, at }
+          : { state: 'taken', epoch: value, from: 'register', at },
+      );
+      return value;
+    });
+    // A held row says so as it is attached, a moment from now.
+    if (!hold) {
+      note('info', 'the store took its journal epoch from the registration', { boxId, epoch: named });
+    }
+  }
+
+  /**
+   * A `reset_store` acknowledged: the platform minted `epoch`, and it is the
+   * new store's to seal under. The one way out of the wait. The epoch — and
+   * with it the sequence back at 1 — and the note that says where it came
+   * from land together.
+   */
+  async function takeMintedEpoch(epoch: number): Promise<void> {
+    if (!store || !state.boxId || !Number.isInteger(epoch) || epoch < 1) return;
+    const boxId = state.boxId;
+    const at = new Date(clock()).toISOString();
+    await store.atomically(async (tx) => {
+      const persisted = await tx.readState(boxId);
+      if (persisted.journalEpoch !== epoch) await tx.setEpoch(boxId, epoch, at);
+      await keepJournalEpochNote(tx, boxId, { state: 'taken', epoch, from: 'reset_store', at });
+    });
+    if (state.journalAwaitingEpoch) {
+      note('info', 'the platform minted a new journal epoch for this store; the box records again', {
+        epoch,
+        refused: journalRefusals,
+      });
+    }
+    state.journalAwaitingEpoch = false;
+    journalRefusals = 0;
+    journalRefusalNotedAt = null;
+  }
+
+  /** The wait, on the heartbeat, as a fingerprint and a count like every other fault. */
+  function journalFaultReports(): BoxHeartbeatRequest['errors'] {
+    if (!state.journalAwaitingEpoch) return [];
+    return [
+      {
+        fingerprint: 'journal:awaiting_epoch',
+        code: 'box.journal_awaiting_epoch',
+        count: Math.max(1, journalRefusals),
+      },
+    ];
   }
 
   /** What the booth reads to flag a spin and to decide which times are worth remembering. */
@@ -1521,6 +1797,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     state.epoch = body.epoch;
     heartbeatIntervalMs = options.heartbeatIntervalMs ?? body.heartbeatIntervalS * 1000;
     note('info', 'box registered', { boxId: body.boxId, slot: body.slot, epoch: body.epoch });
+    // Before the store is attached, so a store made by this registration
+    // seals under the epoch the platform just named, and never the default.
+    await takeRegisteredEpoch(body.boxId, body.epoch);
     await attachStore(body.boxId);
     return true;
   }
@@ -1535,10 +1814,36 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   async function attachStore(boxId: string): Promise<void> {
     if (!store || outbox) return;
     await restoreConfig(boxId);
+    /**
+     * NO NEW FACT BEFORE A FRESH EPOCH (above `JOURNAL_EPOCH_KEY`). A
+     * registration in this process has already made the row and named its
+     * epoch, so a row made HERE belongs to a store that is new under an
+     * identity the box already had, and it waits for the platform to mint a
+     * new epoch. Decided before anything can queue a fact — and the row is
+     * made with its note, in one transaction, or not at all.
+     */
+    const held = await stateRowHeld(boxId);
+    if (!held) {
+      const at = new Date(clock()).toISOString();
+      await store.atomically(async (tx) => {
+        await tx.init(boxId);
+        await keepJournalEpochNote(tx, boxId, { state: 'awaiting', epoch: null, from: null, at });
+      });
+    }
     const persisted = await store.init(boxId);
     state.offline = persisted.offline;
     state.epoch = persisted.journalEpoch;
     state.clockSkewMs = persisted.clockSkewMs;
+    state.journalAwaitingEpoch = held
+      ? journalEpochAwaited(await readJournalEpochNote(boxId))
+      : true;
+    if (state.journalAwaitingEpoch) {
+      note(
+        'error',
+        'this store is new under an identity this box already had: it records nothing until the platform gives it a new journal epoch — Console → Devices → the box → Reset the store',
+        { boxId, epochNow: persisted.journalEpoch },
+      );
+    }
     /**
      * The clock, before anything can queue a fact (SCRUM-402): the measurement
      * made earlier in this boot, if a previous process made one — read after
@@ -1547,7 +1852,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      */
     measurementKeptFor = boxId;
     await restoreClockMeasurement(boxId);
-    store.stampClockWith(boxId, clockStamp);
+    store.stampClockWith(boxId, sealStamp);
 
     outbox = createOutbox({
       store,
@@ -2537,9 +2842,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
        * that is the cache pull: a scope that did not land leaves this box
        * running on an incomplete copy, and the one that matters is the
        * deny-list, because without it the till cannot check whether a shift
-       * has been ended and refuses to unlock offline at all.
+       * has been ended and refuses to unlock offline at all. And a store
+       * whose journal waits for a new epoch (SCRUM-403): somebody has to
+       * press Reset the store for it, and this is how they learn so.
        */
-      errors: cacheFaultReports(),
+      errors: [...cacheFaultReports(), ...journalFaultReports()].slice(0, 32),
     };
     /**
      * What this box is holding offline (SCRUM-323).
@@ -2811,7 +3118,12 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         // box has to stamp its events with it from here on. Taking it from
         // the acknowledgement rather than computing it is what keeps the two
         // ends from disagreeing about which epoch a batch belongs to.
-        if (store && state.boxId && ack.epoch !== state.epoch) {
+        if (command.kind === 'reset_store' && outcome.state === 'succeeded') {
+          // With the note that says where it came from, in one transaction:
+          // it is what a store waiting for a new epoch waits for (NO NEW FACT
+          // BEFORE A FRESH EPOCH, above `JOURNAL_EPOCH_KEY`).
+          await takeMintedEpoch(ack.epoch);
+        } else if (store && state.boxId && ack.epoch !== state.epoch) {
           // Written to the store, not just to memory: the epoch and the
           // sequence generator are one thing, and a box that adopted a new
           // epoch in memory and then lost power would come back stamping the

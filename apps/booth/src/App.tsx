@@ -4,7 +4,7 @@ import { booth, boothCredential } from './booth/client';
 import { BoothCallError, type BoothStatus } from './booth/contract';
 import { readAssetManifest, readColor, readDesign, type WheelDesign } from './booth/design';
 import { boothHost } from './booth/host';
-import { kiosk, type KioskState } from './booth/kiosk';
+import { kiosk, kioskServiceNeed, type KioskState } from './booth/kiosk';
 import { sliceIndexFor, visiblePrizes } from './booth/wheel-view';
 import { COPY, noWheelScreen, refusalLine, type BilingualLine } from './copy';
 import { flags, parseHash } from './flags';
@@ -17,7 +17,13 @@ import {
 import { configureSounds } from './sound';
 import { isPerfLite } from './stageState';
 import { DebugOverlay } from './components/DebugOverlay';
-import { BoothPicker, ClaimScreen, KioskStarting, NoBoothScreen } from './components/KioskScreens';
+import {
+  BoothPicker,
+  ClaimScreen,
+  KioskStarting,
+  NeedsServiceScreen,
+  NoBoothScreen,
+} from './components/KioskScreens';
 import OtoWordmark from './components/OtoWordmark';
 import { PairScreen } from './components/PairScreen';
 import { ResultModal } from './components/ResultModal';
@@ -109,11 +115,14 @@ function requestGoogleFont(): void {
  */
 const IN_BOX = boothHost === 'box';
 
-type KioskGate = 'starting' | 'claim' | 'nobooth' | 'pick' | null;
+type KioskGate = 'starting' | 'service' | 'claim' | 'nobooth' | 'pick' | null;
 
 function kioskGate(state: KioskState | null, choosing: boolean): KioskGate {
   if (!IN_BOX) return null;
   if (state === null) return 'starting';
+  // Before everything else: a box whose store cannot be used can neither be
+  // claimed nor run a booth, and says so full screen (SCRUM-403).
+  if (kioskServiceNeed(state) !== null) return 'service';
   if (!state.registered) return 'claim';
   if (state.booths.length === 0) return 'nobooth';
   if (choosing && state.booths.length > 1) return 'pick';
@@ -266,10 +275,16 @@ export default function App() {
    * service keeps showing the wheel it has, and the corner dot says the link
    * is down.
    */
-  const noteError = useCallback((error: unknown): void => {
-    setLastErrorCode(errorCode(error));
-    if (error instanceof BoothCallError && error.code === 'unpaired') setPhase('unpaired');
-  }, []);
+  const noteError = useCallback(
+    (error: unknown): void => {
+      setLastErrorCode(errorCode(error));
+      if (error instanceof BoothCallError && error.code === 'unpaired') setPhase('unpaired');
+      // The box's store cannot be used (SCRUM-403): ask the box now, so the
+      // full-screen notice replaces the wheel without waiting for the poll.
+      if (error instanceof BoothCallError && error.code === 'needs_service') void refreshKiosk();
+    },
+    [refreshKiosk],
+  );
 
   // ---- Configuration ---------------------------------------------------
 
@@ -738,7 +753,9 @@ export default function App() {
   // ---- A booth box before it has a wheel (SCRUM-223) ---------------------
   if (gate !== null) {
     const screen =
-      gate === 'claim' ? (
+      gate === 'service' ? (
+        <NeedsServiceScreen store={kioskServiceNeed(kioskState)?.store ?? 'unreadable'} />
+      ) : gate === 'claim' ? (
         <ClaimScreen onClaimed={() => void refreshKiosk()} />
       ) : gate === 'pick' ? (
         <BoothPicker

@@ -14,12 +14,34 @@ export interface KioskBooth {
   codePrefix: string | null;
 }
 
+/**
+ * Why the box cannot use its store (SCRUM-403): it could not be read at all,
+ * or it opened and its integrity check found damage.
+ */
+export type KioskStoreProblem = 'unreadable' | 'damaged';
+
 export interface KioskState {
   registered: boolean;
   online: boolean;
   booths: KioskBooth[];
   selectedStationId: string | null;
   agentVersion: string;
+  /**
+   * Set while the box needs service (SCRUM-403). Absent from a box older than
+   * that, which never says so — it exits instead, and this page never loads.
+   */
+  service?: { store: KioskStoreProblem } | null;
+}
+
+/**
+ * The box needs service, and why — or null (SCRUM-403). Read defensively:
+ * an unknown kind is still a box that needs service, and says the store could
+ * not be read, which is the more general of the two.
+ */
+export function kioskServiceNeed(state: KioskState | null): { store: KioskStoreProblem } | null {
+  const service = state?.service;
+  if (!service || typeof service !== 'object') return null;
+  return { store: service.store === 'damaged' ? 'damaged' : 'unreadable' };
 }
 
 export type KioskClaimOutcome =
