@@ -64,7 +64,9 @@
  *     `queued`, the television shows the code and its QR, and the slip comes
  *     out once the printer answers again. The memory is this process's
  *     alone. A restart forgets it, and until the unit answers again it is
- *     printed to as case 2 says; that is accepted.
+ *     printed to as case 2 says; that is accepted. Several jobs held on one
+ *     stopped printer cost a tick one attempt between them, not one each
+ *     (`tick`; SCRUM-440).
  *
  * A sixth, not a failure: **a job for a role no station on this box has a
  * printer for is `skipped`**, and the till says "not printed" without blocking
@@ -96,7 +98,13 @@ import { PRINT_KINDS } from '@oto/shared';
 import type { DeviceSettings, PrintKind, PrintTemplate } from '@oto/shared';
 import type { BoxConfigBundle, BoxConfigDevice, BoxConfigStation } from '../protocol';
 import type { PrintJobRecord, PrintJobStore } from '../store';
-import { PrinterError, parseAddress, tcpChannel, type ChannelFactory } from './channel';
+import {
+  PrinterError,
+  parseAddress,
+  tcpChannel,
+  type ChannelFactory,
+  type PrinterErrorCode,
+} from './channel';
 import {
   escposAdapter,
   tsplAdapter,
@@ -281,7 +289,26 @@ export interface PrintSubsystem {
    * arrive.
    */
   pulseDrawer(request: DrawerPulseRequest): Promise<DrawerPulseOutcome>;
-  /** Retry everything that is due. Called from the agent's poll tick. */
+  /**
+   * Retry everything that is due. Called from the agent's poll tick — the
+   * heartbeat, which awaits this before it is sent.
+   *
+   * One attempt a tick on a printer that does not answer (SCRUM-440). An
+   * attempt that ends silent before the job (case 5 in the header) or
+   * unreachable has waited out a status read or a connect, a second or two,
+   * and every other job due on that printer would wait out the same. So once
+   * an attempt in a tick ends that way, the printer's other due jobs are left
+   * for the next tick: untouched, still queued and still due, with nothing
+   * recorded against them. N jobs held on one stopped printer used to make
+   * every heartbeat N × 1–2 s late, and at about ninety the Console called
+   * the box offline (180 s) when it was the printer that had stopped. A
+   * printer that answers — printed, out of paper, its cover up — has every
+   * due job tried, as before; so does every other printer in the same tick;
+   * and a printer that answers again drains all that waited on it in the one
+   * tick, each job then costing what its slip takes rather than a timeout. A
+   * drawer pulse or a press arriving during a tick still waits behind at most
+   * one attempt: the tick takes a printer's lock for one job at a time.
+   */
   tick(): Promise<PrintJobOutcome[]>;
   /**
    * Pick the durable queue back up after a restart (S2-07a).
@@ -332,6 +359,16 @@ export interface PrintSubsystem {
 
 const RETRY_DELAY_MS = 30_000;
 const MAX_ATTEMPTS = 20;
+
+/**
+ * How an attempt ends when the printer answered nothing to it: a status read
+ * waited out, or a connect. Within one tick, the first such ending on a
+ * printer leaves its other due jobs for the next tick (`tick`; SCRUM-440).
+ */
+const PRINTER_NOT_ANSWERING: readonly PrinterErrorCode[] = [
+  'PRINTER_SILENT_BEFORE_JOB',
+  'PRINTER_UNREACHABLE',
+];
 
 interface PendingJob {
   request: PrintRequest;
@@ -687,6 +724,17 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
     const left = (busy.get(deviceId) ?? 1) - 1;
     if (left > 0) busy.set(deviceId, left);
     else busy.delete(deviceId);
+  }
+
+  /**
+   * The printer a job would go to now: the walk `attempt` makes, made ahead
+   * of it so the tick can tell which jobs wait on one printer (SCRUM-440).
+   * Null when nothing on this box prints the role.
+   */
+  function deviceFor(pending: PendingJob): string | null {
+    const { request } = pending;
+    const role = request.role ?? ROLE_FOR_KIND[request.kind];
+    return routeTo(options.bundle(), role, request.stationId)?.device.id ?? null;
   }
 
   async function attempt(pending: PendingJob): Promise<PrintJobOutcome> {
@@ -1073,12 +1121,42 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         p.running === null && queue.includes(p) && retryDue(p, now().getTime());
       const due = queue.filter(isDue);
       const outcomes: PrintJobOutcome[] = [];
+      /**
+       * The printers an attempt in this tick found not answering, by device
+       * id, with what the attempt ended as and how many due jobs have been
+       * left on each (SCRUM-440; see the interface). A job left is not
+       * touched: its attempt count, its retry time and its row on the card
+       * stay as they were, so the next tick finds it due as this one did.
+       */
+      const notAnswering = new Map<string, { errorCode: string; left: number }>();
       for (const pending of due) {
         // Asked again at its turn: while an earlier job printed, `submit` may
         // have taken this one up or finished it, and attempting it again then
         // would be a second slip.
         if (!isDue(pending)) continue;
-        outcomes.push(await run(pending));
+        const deviceId = deviceFor(pending);
+        const stopped = deviceId === null ? undefined : notAnswering.get(deviceId);
+        if (stopped) {
+          stopped.left += 1;
+          continue;
+        }
+        const outcome = await run(pending);
+        outcomes.push(outcome);
+        if (
+          outcome.deviceId !== null &&
+          outcome.errorCode !== null &&
+          (PRINTER_NOT_ANSWERING as readonly string[]).includes(outcome.errorCode)
+        ) {
+          notAnswering.set(outcome.deviceId, { errorCode: outcome.errorCode, left: 0 });
+        }
+      }
+      for (const [deviceId, { errorCode, left }] of notAnswering) {
+        if (left === 0) continue;
+        log('info', 'print jobs left for the next tick: their printer did not answer', {
+          deviceId,
+          errorCode,
+          left,
+        });
       }
       return outcomes;
     },

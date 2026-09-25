@@ -4,6 +4,7 @@ import { Worker } from 'node:worker_threads';
 
 import { renderJob, type PrintJob } from '@oto/print';
 import type { BoxConfigBundle, BoxConfigDevice } from '../src/protocol';
+import type { PrintJobRecord } from '../src/store';
 import {
   AFTER_JOB_FIRST_REPLY_MS,
   SILENT_AFTER_JOB_ASKS,
@@ -444,15 +445,18 @@ async function fakePrinter(opts: FakePrinterOptions = {}): Promise<FakePrinter> 
 }
 
 /**
- * `tcpChannel`, counting what the adapter does with it: every status query it
- * asks, answered or not, including the ones a printer that has stopped
- * reading never sees, and every write.
+ * `tcpChannel`, counting what the adapter does with it: every session it
+ * opens, taken by the printer or refused, every status query it asks,
+ * answered or not, including the ones a printer that has stopped reading
+ * never sees, and every write.
  */
 function countingChannel() {
   const asked: number[] = [];
+  let opens = 0;
   let writes = 0;
   let written = 0;
   const open: ChannelFactory = async (target) => {
+    opens += 1;
     const channel = await tcpChannel(target);
     return {
       write(bytes) {
@@ -467,7 +471,13 @@ function countingChannel() {
       close: () => channel.close(),
     };
   };
-  return { open, asked: () => [...asked], writes: () => writes, written: () => written };
+  return {
+    open,
+    opens: () => opens,
+    asked: () => [...asked],
+    writes: () => writes,
+    written: () => written,
+  };
 }
 
 function adapterFor(printer: FakePrinter, open: ChannelFactory = tcpChannel) {
@@ -1192,6 +1202,196 @@ describe('the read after a job (SCRUM-429)', { concurrency: true }, () => {
         await remembered.close();
         await never.close();
       }
+    });
+
+    /**
+     * Several jobs held on one printer that does not answer (SCRUM-440).
+     *
+     * A held attempt waits out the read before the job, a second, and the
+     * tick used to make one for every job it held: five vouchers waiting on
+     * a stopped booth printer put five seconds on every heartbeat, which
+     * awaits the tick before it is sent, and at about ninety the Console
+     * called the box offline. Now a tick makes one attempt on a printer that
+     * does not answer — silent before the job, or unreachable — and leaves
+     * its other due jobs, untouched, for the next tick. A printer that
+     * answers is tried for every job due on it, in the same tick as the
+     * stopped one. And once the stopped one answers again, everything held on
+     * it comes out in that one tick, rather than one voucher a heartbeat, a
+     * minute apart: a job on a printer that answers costs what its slip
+     * takes, not a timeout, and the guests whose slips waited are the ones
+     * standing at the booth.
+     *
+     * Here beside the tests above, being the same timers: each held press
+     * waits out one read, so five held vouchers are five seconds to stage.
+     * Which jobs a tick attempted is proved by the counts — sessions opened,
+     * bytes taken, attempts on each job — and a tick's wall time is bounded
+     * only from below by the read it waited out and from above as a hang
+     * guard, never as a tight number.
+     */
+    describe('one attempt a tick on a printer that does not answer (SCRUM-440)', { concurrency: true }, () => {
+      /** A press while the printer is silent: answered `queued`, and nothing of it sent. */
+      async function pressHeld(printing: PrintSubsystem, request: PrintRequest): Promise<void> {
+        const outcome = await printing.submit(request);
+        assert.equal(outcome.status, 'queued', `${request.id} was ${outcome.status}`);
+        assert.equal(outcome.errorCode, 'PRINTER_SILENT_BEFORE_JOB');
+      }
+
+      const FIVE = ['job-held-1', 'job-held-2', 'job-held-3', 'job-held-4', 'job-held-5'];
+
+      test('(1) five held on a stopped printer and one due on a printer that answers: one attempt on the first, the second’s printed, four left as they were', async () => {
+        const printer = await fakePrinter();
+        const other = await fakePrinter();
+        const counted = countingChannel();
+        const { printing, reported, box, advance } = await rig(printer, counted.open, {
+          bundle: twoPrintersBundle(printer.port, other.port),
+        });
+        try {
+          // Both heard by the heartbeat's probe, and then both silent: five
+          // presses for the one, a press for the other, all held.
+          const probed = await printing.probeAll();
+          assert.equal(probed[DEVICE_ID]?.statusUnknown, false);
+          assert.equal(probed[OTHER_DEVICE_ID]?.statusUnknown, false);
+          printer.set({ answersBefore: false });
+          other.set({ answersBefore: false });
+          for (const id of FIVE) await pressHeld(printing, voucher(id));
+          await pressHeld(printing, { ...voucher('job-other'), role: OTHER_ROLE });
+          assert.equal(counted.writes(), 0, 'nothing of any of them was written');
+          // The other printer answers again; the first stays stopped.
+          other.set({ answersBefore: true });
+          const sessions = printer.connections();
+          const staged = await box.store.loadPendingPrintJobs(BOX_ID);
+          assert.equal(staged.length, 6, 'six on the card');
+          const row = (rows: PrintJobRecord[], id: string) => rows.find((r) => r.id === id);
+
+          advance(HEARTBEAT_MS);
+          const { value: outcomes, ms } = await timed(printing.tick());
+          assert.deepEqual(
+            outcomes.map((o) => [o.id, o.status, o.attempts, o.errorCode]),
+            [
+              ['job-held-1', 'queued', 2, 'PRINTER_SILENT_BEFORE_JOB'],
+              ['job-other', 'printed', 2, null],
+            ],
+            'one attempt on the stopped printer, and the other printer’s job printed',
+          );
+          assert.equal(printer.connections(), sessions + 1, 'one session to the stopped printer');
+          assert.deepEqual(printer.asked().before.slice(-1), unanswered(1), 'one read, unanswered');
+          assert.equal(printer.taken(), 0, 'not a byte reached it');
+          assert.equal(other.taken(), oneSlip(), 'the other printer’s slip came out');
+          assert.equal(counted.writes(), 1);
+          // The tick waited out the one read before a job; the upper bound is
+          // the one-attempt hang guard, under which five attempts do not fit.
+          assert.ok(ms >= CHANNEL_TIMEOUTS.statusMs - 50, `the tick took ${ms} ms`);
+          assert.ok(ms < HELD_WITHIN_MS, `the tick took ${ms} ms`);
+
+          assert.deepEqual(
+            printing.pending().map((p) => [p.id, p.attempts, p.lastError]),
+            FIVE.map((id, i) => [id, i === 0 ? 2 : 1, 'PRINTER_SILENT_BEFORE_JOB']),
+            'the four left were not attempted',
+          );
+          // Untouched: on the card as the presses left them, retry time and all.
+          const after = await box.store.loadPendingPrintJobs(BOX_ID);
+          for (const id of FIVE.slice(1)) {
+            assert.deepEqual(row(after, id), row(staged, id), `${id} is as it was`);
+          }
+          assert.notDeepEqual(row(after, 'job-held-1'), row(staged, 'job-held-1'), 'the attempted one moved on');
+          assert.equal(row(after, 'job-other'), undefined, 'printed, so off the card');
+
+          // And still due: the next tick, on the same clock, is the second job's turn.
+          const { value: next, ms: nextMs } = await timed(printing.tick());
+          assert.deepEqual(
+            next.map((o) => [o.id, o.status, o.attempts, o.errorCode]),
+            [['job-held-2', 'queued', 2, 'PRINTER_SILENT_BEFORE_JOB']],
+          );
+          assert.equal(printer.connections(), sessions + 2);
+          assert.ok(nextMs < HELD_WITHIN_MS, `the tick took ${nextMs} ms`);
+          assert.deepEqual(
+            printing.pending().map((p) => [p.id, p.attempts]),
+            FIVE.map((id, i) => [id, i < 2 ? 2 : 1]),
+          );
+          assert.deepEqual(
+            reported.map((o) => [o.id, o.status]),
+            [...FIVE.map((id) => [id, 'queued']), ['job-other', 'queued'], ['job-other', 'printed']],
+            'a held job’s wait is reported once, and a job left for the next tick reports nothing',
+          );
+        } finally {
+          box.close();
+          await printer.close();
+          await other.close();
+        }
+      });
+
+      test('(2) once the stopped printer answers again, the one tick prints everything held on it', async () => {
+        const printer = await fakePrinter();
+        const counted = countingChannel();
+        const { printing, reported, box, advance } = await rig(printer, counted.open);
+        try {
+          assert.equal((await printing.submit(voucher('job-heard'))).status, 'printed');
+          printer.set({ answersBefore: false });
+          for (const id of FIVE) await pressHeld(printing, voucher(id));
+          assert.equal(printer.taken(), oneSlip(), 'only the first slip has reached it');
+          assert.equal(printing.pending().length, 5);
+
+          // Somebody clears it, and it answers again: all five, oldest first,
+          // in the tick that finds it answering — not one a heartbeat.
+          printer.set({ answersBefore: true });
+          advance(HEARTBEAT_MS);
+          const outcomes = await printing.tick();
+          assert.deepEqual(
+            outcomes.map((o) => [o.id, o.status, o.attempts]),
+            FIVE.map((id) => [id, 'printed', 2]),
+            'all five, in the order they were pressed, in the one tick',
+          );
+          assert.equal(counted.writes(), 6);
+          assert.equal(printer.taken(), 6 * oneSlip(), 'each slip came out, once');
+          assert.deepEqual(printing.pending(), []);
+          assert.deepEqual(await box.store.loadPendingPrintJobs(BOX_ID), [], 'and the card is clear');
+          assert.deepEqual(
+            reported.map((o) => [o.id, o.status]),
+            [
+              ['job-heard', 'printed'],
+              ...FIVE.map((id) => [id, 'queued']),
+              ...FIVE.map((id) => [id, 'printed']),
+            ],
+          );
+          assert.deepEqual(await printing.tick(), [], 'nothing left for the next');
+        } finally {
+          box.close();
+          await printer.close();
+        }
+      });
+
+      test('(3) the same for a printer that cannot be reached: one connect a tick, the rest left', async () => {
+        // A port nobody listens on: every session to it is refused.
+        const dead = await fakePrinter();
+        await dead.close();
+        const counted = countingChannel();
+        const { printing, box, advance } = await rig(dead, counted.open);
+        try {
+          const ids = ['job-dead-1', 'job-dead-2', 'job-dead-3', 'job-dead-4', 'job-dead-5'];
+          for (const id of ids) {
+            const outcome = await printing.submit(voucher(id));
+            assert.equal(outcome.status, 'queued', `${id} was ${outcome.status}`);
+            assert.equal(outcome.errorCode, 'PRINTER_UNREACHABLE');
+          }
+          const connects = counted.opens();
+          assert.equal(connects, 5, 'a press is one connect');
+
+          advance(HEARTBEAT_MS);
+          const outcomes = await printing.tick();
+          assert.deepEqual(
+            outcomes.map((o) => [o.id, o.status, o.attempts, o.errorCode]),
+            [['job-dead-1', 'queued', 2, 'PRINTER_UNREACHABLE']],
+          );
+          assert.equal(counted.opens(), connects + 1, 'one connect for the five');
+          assert.deepEqual(
+            printing.pending().map((p) => [p.id, p.attempts, p.lastError]),
+            ids.map((id, i) => [id, i === 0 ? 2 : 1, 'PRINTER_UNREACHABLE']),
+          );
+          assert.equal(shown(printing)?.reachability, 'unreachable');
+        } finally {
+          box.close();
+        }
+      });
     });
   });
 });
