@@ -13,7 +13,16 @@
  *     Bytes that reached the head have already come out of the machine, so an
  *     unattended retry puts a second, complete receipt beside a torn-off first
  *     one and afterwards nobody can say which is the real one. A person
- *     pressing reprint is a different act and mints its own job (S2-11).
+ *     pressing reprint is a different act and mints its own job (S2-11). A
+ *     printer that keeps the connection but stops taking a job ends it the
+ *     same way once the channel's write deadline passes (`tcpChannel`) — but
+ *     only a job bigger than the socket buffers between the box and the
+ *     printer can meet that deadline (80–110 KB on Linux over a
+ *     1500-byte-MTU link, measured in the audit). A smaller one, a booth
+ *     slip among them, is taken whole by the buffers, and the status read
+ *     after it decides: from a printer that answers nothing, it is recorded
+ *     printed (case 2). Either way the printer's lock is not held for as
+ *     long as the printer stays stopped.
  *  2. **The printer answers a status query with nothing.** The job is printed
  *     anyway and the device is reported `statusUnknown`. §9.3 leaves open
  *     whether every firmware in this family answers `DLE EOT` over the LAN
@@ -271,7 +280,16 @@ export interface PrintSubsystem {
   pending(): { id: string; kind: PrintKind; attempts: number; lastError: string | null }[];
   /** What the box currently believes about each printer it can reach. */
   health(): Record<string, PrinterHealth>;
-  /** Ask every assigned printer how it is, and remember the answers. */
+  /**
+   * Ask every assigned printer how it is, and remember the answers.
+   *
+   * A printer busy with a job or a drawer pulse is not asked: its entry keeps
+   * what it last said (M15, closing audit 2026-09-25). The heartbeat awaits
+   * this before it is sent, and asking a busy printer meant queueing behind
+   * the job — so a job the printer had stopped taking stopped the heartbeat
+   * too, and the Console called the box offline when it was the printer that
+   * had stopped.
+   */
   probeAll(): Promise<Record<string, PrinterHealth>>;
 }
 
@@ -397,6 +415,12 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
   const health: Record<string, PrinterHealth> = {};
   /** One promise per device id: the tail of the chain of jobs for that printer. */
   const locks = new Map<string, Promise<unknown>>();
+  /**
+   * How many calls are waiting for, or holding, each printer's lock. Absent
+   * means none. `locks` cannot say this: its tail stays in the map after the
+   * chain has finished.
+   */
+  const busy = new Map<string, number>();
 
   /** Asked again on every write: see `PrintSubsystemOptions.durable`. */
   const resolveDurable = options.durable ?? (() => null);
@@ -589,17 +613,24 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
 
   /** Run `fn` when this printer is free, and keep it free for the next caller. */
   function serialise<T>(deviceId: string, fn: () => Promise<T>): Promise<T> {
+    busy.set(deviceId, (busy.get(deviceId) ?? 0) + 1);
     const previous = locks.get(deviceId) ?? Promise.resolve();
     const next = previous.then(fn, fn);
     // Swallowed here only: the caller still gets the rejection through `next`.
     locks.set(
       deviceId,
       next.then(
-        () => undefined,
-        () => undefined,
+        () => released(deviceId),
+        () => released(deviceId),
       ),
     );
     return next;
+  }
+
+  function released(deviceId: string): void {
+    const left = (busy.get(deviceId) ?? 1) - 1;
+    if (left > 0) busy.set(deviceId, left);
+    else busy.delete(deviceId);
   }
 
   async function attempt(pending: PendingJob): Promise<PrintJobOutcome> {
@@ -990,6 +1021,19 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
               ...unknownHealth(now().toISOString()),
               lastError: adapter.code,
             };
+            continue;
+          }
+          if (busy.has(device.id)) {
+            /**
+             * Busy: left as it last was, and not queued for (see the
+             * interface). The job on it reports for itself — it sets this
+             * entry when it ends, printed or failed; case 1 in the header
+             * says how a job ends on a printer that stops — and the next
+             * heartbeat asks again.
+             */
+            log('info', 'a printer was busy, so the heartbeat reports what it last said', {
+              deviceId: device.id,
+            });
             continue;
           }
           health[device.id] = await serialise(device.id, () => adapter.probe());

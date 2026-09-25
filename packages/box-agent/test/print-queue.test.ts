@@ -106,6 +106,7 @@ function writtenBySpin(id: string): PrintJobRecord {
 /** A printer that answers "all clear", counts its jobs, and can be held mid-job. */
 function countingPrinter() {
   let slips = 0;
+  let queries = 0;
   let held: Promise<void> | null = null;
   let release: () => void = () => {};
   let onWrite: (() => void) | null = null;
@@ -116,6 +117,7 @@ function countingPrinter() {
       slips += 1;
     },
     async query() {
+      queries += 1;
       return new Uint8Array([0x12]);
     },
     async close() {},
@@ -123,6 +125,8 @@ function countingPrinter() {
   return {
     open,
     slips: () => slips,
+    /** Status queries asked of it, by jobs and probes alike. */
+    queries: () => queries,
     /** The next job stops on the printer until `release`. */
     hold() {
       held = new Promise<void>((resolve) => {
@@ -220,5 +224,43 @@ test('a hand-over while the tick is printing the same job answers with that atte
   );
   assert.equal(reported.length, 1);
   assert.deepEqual(printing.pending(), []);
+  box.close();
+});
+
+/**
+ * The heartbeat asks every printer how it is before it is sent, through the
+ * same per-printer lock the jobs take (M15, closing audit 2026-09-25). A
+ * printer busy with a slip is left out and reported as it last was, so a job
+ * the printer is not finishing cannot hold the heartbeat's printer check. The
+ * same over a real socket, with a printer that stops taking the job, is in
+ * `print-channel.test.ts`.
+ */
+test('the heartbeat printer check does not queue behind a slip on the printer', async () => {
+  const { printing, printer, box } = await rig();
+  await printing.resume();
+  const idle = await printing.probeAll();
+  assert.equal(idle[DEVICE_ID]?.paperStatus, 'ok');
+  assert.equal(printer.queries(), 4, 'a free printer is asked');
+
+  printer.hold();
+  const reached = printer.writing();
+  const submitted = printing.submit(request('job-4'));
+  await reached;
+  const asked = printer.queries();
+
+  const during = await Promise.race([
+    printing.probeAll(),
+    new Promise<'waited'>((resolve) => setTimeout(() => resolve('waited'), 100)),
+  ]);
+  if (during === 'waited') assert.fail('probeAll waited for the slip on the printer');
+  assert.equal(printer.queries(), asked, 'the busy printer is asked nothing');
+  assert.deepEqual(during[DEVICE_ID], idle[DEVICE_ID], 'and reported as it last was');
+
+  printer.release();
+  assert.equal((await submitted).status, 'printed');
+  const afterJob = printer.queries();
+  await printing.probeAll();
+  assert.equal(printer.queries(), afterJob + 4, 'once it is free, it is asked again');
+  assert.equal(printer.slips(), 1);
   box.close();
 });

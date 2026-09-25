@@ -161,13 +161,37 @@ export interface AdapterDeps {
  * promises is answered "even when the printer is off-line, the receive buffer
  * is full, or there is an error status" is this one. If even this goes
  * unanswered the honest report is "I cannot see inside this printer".
+ *
+ * **It stops at the first query that goes unanswered** (H1, closing audit
+ * 2026-09-25). It used to ask all four whatever happened, waiting a second on
+ * each that went unanswered, so a unit whose LAN board passes no `DLE EOT`
+ * back cost 4 s before a job and 4 s after it: 8 s a slip, past the booth
+ * page's 6 s, and every press read "Booth not ready" while the slip printed.
+ * Now a silent unit costs one timeout per read.
+ *
+ * What stopping gives up is a later answer from a unit that ignored an earlier
+ * query, and nothing in §9.3 or §9.4 describes one. A unit that answers only
+ * the first few (n = 1–2, say) loses nothing: the read stops at the query it
+ * would not have answered anyway. A reply byte that is not a status byte
+ * does not stop the read, though it is not counted as an answer (see the
+ * `catch` below).
+ *
+ * `firstReplyMs` is how long the first query waits; `print` gives it longer
+ * after a job, to a printer that answered before it.
  */
-async function readEscposStatus(channel: PrinterChannel): Promise<PrinterStatus | null> {
+async function readEscposStatus(
+  channel: PrinterChannel,
+  firstReplyMs: number = CHANNEL_TIMEOUTS.statusMs,
+): Promise<PrinterStatus | null> {
   const merged: PrinterStatus = {};
   let answered = 0;
   for (const n of [1, 2, 3, 4] as const) {
-    const reply = await channel.query(statusQuery(n), 1, CHANNEL_TIMEOUTS.statusMs);
-    if (reply.length === 0) continue;
+    const reply = await channel.query(
+      statusQuery(n),
+      1,
+      n === 1 ? firstReplyMs : CHANNEL_TIMEOUTS.statusMs,
+    );
+    if (reply.length === 0) break;
     try {
       Object.assign(merged, decodeStatus(n, reply[0] ?? 0));
       answered += 1;
@@ -180,6 +204,21 @@ async function readEscposStatus(channel: PrinterChannel): Promise<PrinterStatus 
   }
   return answered === 0 ? null : merged;
 }
+
+/**
+ * How long the read after a job waits for its first reply, from a printer that
+ * answered the read before it.
+ *
+ * Over TCP the printer reads the query only after every byte of the job in
+ * front of it on the connection, so its reply comes once the job has gone
+ * into its input buffer — on a job bigger than that buffer, only once enough
+ * of it has been printed. Four seconds is what the four queries' waits used
+ * to add up to, and it is counted from when the first query is sent, because
+ * the sending can stall too (see `query` in `tcpChannel`). A printer that did
+ * not answer before the job gets the ordinary second: that is the silent
+ * case, and the one this read is made shorter for.
+ */
+const AFTER_JOB_FIRST_REPLY_MS = 4 * CHANNEL_TIMEOUTS.statusMs;
 
 function healthFromEscpos(
   status: PrinterStatus | null,
@@ -269,7 +308,8 @@ export function escposAdapter(deps: AdapterDeps): PrinterAdapter {
       const startedAt = Date.now();
       const copies = Math.max(1, attempt.copies ?? 1);
       return withChannel(async (channel) => {
-        const before = healthFromEscpos(await readEscposStatus(channel), now().toISOString());
+        const beforeStatus = await readEscposStatus(channel);
+        const before = healthFromEscpos(beforeStatus, now().toISOString());
         const blocked = escposBlocker(before);
         if (blocked) throw blocked;
 
@@ -305,7 +345,13 @@ export function escposAdapter(deps: AdapterDeps): PrinterAdapter {
          * common one: a receipt is a metre of paper and nobody changes the
          * roll until it stops.
          */
-        const after = healthFromEscpos(await readEscposStatus(channel), now().toISOString());
+        const after = healthFromEscpos(
+          await readEscposStatus(
+            channel,
+            beforeStatus === null ? CHANNEL_TIMEOUTS.statusMs : AFTER_JOB_FIRST_REPLY_MS,
+          ),
+          now().toISOString(),
+        );
         if (after.paperStatus === 'out') {
           throw new PrinterError('PRINTER_PAPER_OUT', `${label} ran out of paper during the job`, {
             partial: true,

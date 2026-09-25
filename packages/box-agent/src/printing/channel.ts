@@ -29,18 +29,47 @@ export interface ChannelTarget {
  */
 export const CHANNEL_TIMEOUTS = {
   connectMs: 2000,
+  /**
+   * How long the socket may take to accept one piece of a job
+   * (`WRITE_PIECE_BYTES`) — see `write` in `tcpChannel` for why a job is sent
+   * in pieces, and for what this does and does not measure.
+   */
   writeMs: 5000,
-  /** One status byte. 800 ms on ESC/POS, 1000 on the label printer. */
+  /**
+   * One status query, from sending it to its one-byte reply. 800 ms on ESC/POS
+   * and 1000 on the label printer in the inventory; 1000 is used for both.
+   */
   statusMs: 1000,
   /** How long a label job may take to come off the machine. */
   jobCompleteMs: 15_000,
 } as const;
 
+/**
+ * The piece a job is written in, and what `CHANNEL_TIMEOUTS.writeMs` is
+ * measured against.
+ *
+ * 16 KB is 227 raster lines of an 80 mm slip, about 28 mm of paper: a
+ * receipt printer in this family printing at its rated 200–260 mm/s (§9.3,
+ * §9.4) reads that much in about a tenth of a second, and the band printer
+ * at the `SPEED 4` the renderer sets by default (4 in/s, 50-byte lines) in
+ * under half a second. Linux may want more than one piece read before it
+ * takes the next (see `write` in `tcpChannel`), but never more than its
+ * buffers hold, which is 80–110 KB over a 1500-byte-MTU link (measured in
+ * the audit) — about a second of printing for the receipt printer at those
+ * speeds, and under three for the band printer. So five seconds is a stopped
+ * printer, not a slow one.
+ */
+const WRITE_PIECE_BYTES = 16 * 1024;
+
 /** Why a print attempt ended. Short, non-leaking: these reach a Console page. */
 export type PrinterErrorCode =
   /** Nothing answered on the address. Cable, power, or the wrong IP. */
   | 'PRINTER_UNREACHABLE'
-  /** The socket died while the job was going out. */
+  /**
+   * The socket died while the job was going out, or it took no piece of the
+   * job for `CHANNEL_TIMEOUTS.writeMs` because the printer was not reading
+   * enough of what went before (see `write` in `tcpChannel`).
+   */
   | 'PRINTER_WRITE_FAILED'
   /** A status query went unanswered. Not fatal on its own — see `escpos.ts`. */
   | 'PRINTER_NO_STATUS'
@@ -95,7 +124,11 @@ export class PrinterError extends Error {
 }
 
 export interface PrinterChannel {
-  /** Hand bytes to the machine. Rejects with a `PrinterError` on a dead socket. */
+  /**
+   * Hand bytes to the machine. Rejects with a `PrinterError` on a dead socket,
+   * and on a printer that stops taking them (`tcpChannel` says how long it is
+   * given).
+   */
   write(bytes: Uint8Array): Promise<void>;
   /**
    * Write a command and read the reply.
@@ -196,44 +229,167 @@ export function tcpChannel(target: ChannelTarget): Promise<PrinterChannel> {
       // The connect timeout must not go on firing for the life of the job.
       socket.setTimeout(0);
       resolve({
+        /**
+         * Send the job in `WRITE_PIECE_BYTES` pieces, and fail it once the
+         * socket has taken no piece for `CHANNEL_TIMEOUTS.writeMs` (M15,
+         * closing audit 2026-09-25).
+         *
+         * One `socket.write` of the whole job settled only when the socket
+         * callback came, and on the Pi (Linux) a printer that keeps the
+         * connection open but has stopped reading — a jam or the roll run out
+         * mid-job, or any fault at all on a board that does not answer status,
+         * which the check before the job cannot see — never lets it come once
+         * the job is bigger than what the two ends buffer (80–110 KB over a
+         * 1500-byte-MTU link, measured in the audit). The job then held the
+         * printer's lock in `queue.ts` for as long as the printer stayed
+         * stopped: every later slip waited behind it, and so did the
+         * heartbeat's printer check.
+         *
+         * What the deadline measures is whether the socket took the next
+         * piece in time, not whether the printer read anything. The kernel
+         * takes pieces while its buffers have room, and only the printer
+         * reading makes room again. So:
+         *  - A printer that stops reading does not stop the socket at once:
+         *    the kernel goes on taking pieces until its buffers are full. A
+         *    job that ends before then — all of a small one, or the tail of a
+         *    big one — completes its write and never meets the deadline. The
+         *    status read after it decides, and from a printer that answers
+         *    nothing then, the job is recorded printed with its status
+         *    unknown (`adapter.ts`). How much the buffers take differs by
+         *    system and link: 80–110 KB on the link above, so a booth slip
+         *    (about 40 KB) is such a job on the Pi; on loopback 0.3–0.5 MB on
+         *    Windows and 2.5–9.5 MB on Linux (`print-channel.test.ts`).
+         *  - A bigger job fails `writeMs` after the socket last took a piece:
+         *    about `writeMs` after a printer stopped. A printer still reading,
+         *    but not enough, can be cut off too: the socket takes the next
+         *    piece only once the printer has made room, and Linux wants well
+         *    over a piece read first (hundreds of KB on loopback). On the Pi's
+         *    link that is never more than the 80–110 KB the buffers hold,
+         *    which a printer printing at its rated speed reads inside
+         *    `writeMs` (see `WRITE_PIECE_BYTES`).
+         *
+         * Counting pieces scales the deadline to the job's size without
+         * guessing a speed: a job of N bytes is given at most
+         * ⌈N / 16 KB⌉ × `writeMs`. Pieces are also what lets a stall show on
+         * Windows: there one large write can settle at once, even to a
+         * printer reading nothing (64 MB in a few tens of milliseconds on
+         * loopback), and leave the stall to whatever is written next.
+         *
+         * A stall is `PRINTER_WRITE_FAILED`, `partial`: some of the job may
+         * already be on paper, so nothing sends it again by itself (see
+         * `PrinterError.partial`). The socket is destroyed at the deadline,
+         * but what the kernel had already taken still goes out, up to a send
+         * buffer's worth, to a printer that starts reading again: part of a
+         * job reported failed — whole copies, on a job of several — can still
+         * come out of it.
+         */
         write(bytes) {
           return new Promise<void>((ok, no) => {
-            socket.write(bytes, (err) =>
-              err
-                ? no(
+            let offset = 0;
+            let done = false;
+            let timer: ReturnType<typeof setTimeout> | undefined;
+            const finish = (err: PrinterError | null): void => {
+              if (done) return;
+              done = true;
+              if (timer !== undefined) clearTimeout(timer);
+              if (err) no(err);
+              else ok();
+            };
+            const next = (): void => {
+              if (offset >= bytes.length) {
+                finish(null);
+                return;
+              }
+              if (socket.destroyed) {
+                finish(
+                  new PrinterError(
+                    'PRINTER_WRITE_FAILED',
+                    `${target.host}:${target.port} closed while the job was going out`,
+                    { partial: true },
+                  ),
+                );
+                return;
+              }
+              const piece = bytes.subarray(offset, offset + WRITE_PIECE_BYTES);
+              timer = setTimeout(() => {
+                socket.destroy();
+                finish(
+                  new PrinterError(
+                    'PRINTER_WRITE_FAILED',
+                    `${target.host}:${target.port} held up the job: no more of it could be sent for ${
+                      CHANNEL_TIMEOUTS.writeMs / 1000
+                    } s`,
+                    { partial: true },
+                  ),
+                );
+              }, CHANNEL_TIMEOUTS.writeMs);
+              timer.unref?.();
+              socket.write(piece, (err) => {
+                if (timer !== undefined) clearTimeout(timer);
+                if (done) return;
+                if (err) {
+                  finish(
                     new PrinterError(
                       'PRINTER_WRITE_FAILED',
                       `${target.host}:${target.port} closed while the job was going out`,
                       { partial: true, cause: err },
                     ),
-                  )
-                : ok(),
-            );
+                  );
+                  return;
+                }
+                offset += piece.length;
+                next();
+              });
+            };
+            next();
           });
         },
+        /**
+         * Send a query and wait for its reply, `timeoutMs` for the two
+         * together.
+         *
+         * The clock starts before the query is sent, not after, because the
+         * sending can stall too: when a printer stops reading just as the end
+         * of a job fills the socket's buffer, the job's write completes and it
+         * is the query's three bytes that cannot be handed over. Waiting for
+         * that write before starting the clock made the status read after
+         * such a job a wait with no end. A query that could not be sent in
+         * time is an unanswered one.
+         *
+         * The reply is listened for from the start, so one that arrives before
+         * the write's callback is not left in `pending` for the next query.
+         */
         async query(bytes, expect, timeoutMs) {
           if (pending.length >= expect) {
             const out = pending.subarray(0, expect);
             pending = pending.subarray(expect);
             return out;
           }
-          await new Promise<void>((ok, no) => {
-            socket.write(bytes, (err) =>
-              err
-                ? no(new PrinterError('PRINTER_NO_STATUS', 'the status query could not be sent', { cause: err }))
-                : ok(),
-            );
-          });
-          return new Promise<Uint8Array>((ok) => {
-            const timer = setTimeout(() => {
-              waiter = null;
-              ok(new Uint8Array(0));
-            }, timeoutMs);
-            timer.unref?.();
-            waiter = (chunk) => {
+          return new Promise<Uint8Array>((ok, no) => {
+            let done = false;
+            const take = (chunk: Uint8Array): void => {
+              if (done) return;
+              done = true;
               clearTimeout(timer);
               ok(chunk);
             };
+            const timer = setTimeout(() => {
+              if (waiter === take) waiter = null;
+              take(new Uint8Array(0));
+            }, timeoutMs);
+            timer.unref?.();
+            waiter = take;
+            socket.write(bytes, (err) => {
+              if (!err || done) return;
+              done = true;
+              clearTimeout(timer);
+              if (waiter === take) waiter = null;
+              no(
+                new PrinterError('PRINTER_NO_STATUS', 'the status query could not be sent', {
+                  cause: err,
+                }),
+              );
+            });
           });
         },
         /**
