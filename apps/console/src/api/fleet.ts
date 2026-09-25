@@ -624,7 +624,17 @@ export interface BoxVitals {
   uptimeSeconds: number | null;
   outboxDepth: number | null;
   tempC: number | null;
+  /**
+   * How far the box's clock is from the platform's, positive when it is
+   * ahead: the box's own measurement where it declared one (SCRUM-402), the
+   * api's computation from its heartbeat otherwise.
+   */
   clockOffsetMs: number | null;
+  /**
+   * How long ago that was measured, in seconds — reckoned from the heartbeat
+   * age the api counted, for the reason `heartbeatAgeSeconds` is.
+   */
+  clockMeasuredAgeSeconds: number | null;
   heartbeatAgeSeconds: number | null;
 }
 
@@ -658,7 +668,102 @@ export function boxVitals(box: BoxRow): BoxVitals {
     outboxDepth: box.outboxDepth ?? num('outboxDepth'),
     tempC: box.tempC ?? num('tempC'),
     clockOffsetMs: box.clockOffsetMs ?? num('clockOffsetMs'),
+    clockMeasuredAgeSeconds: secondsBeforeNow(
+      // A heartbeat from before the box measured itself carries no time of its
+      // own: the api computed that offset as it took the heartbeat.
+      typeof status.clockMeasuredAt === 'string'
+        ? status.clockMeasuredAt
+        : typeof status.receivedAt === 'string'
+          ? status.receivedAt
+          : (box.lastHeartbeatAt ?? null),
+      box.lastHeartbeatAt ?? null,
+      heartbeatAge,
+    ),
     heartbeatAgeSeconds: heartbeatAge,
+  };
+}
+
+/**
+ * How long before now an instant on the platform's clock was: the heartbeat's
+ * age as the api counted it, plus how much earlier than that heartbeat the
+ * instant is. A back-office laptop with a wrong clock reads the same answer as
+ * every other desk; only with no heartbeat age to go on is this machine's
+ * clock used.
+ */
+function secondsBeforeNow(
+  iso: string | null,
+  lastHeartbeatAt: string | null,
+  heartbeatAgeSeconds: number | null,
+): number | null {
+  const at = iso ? Date.parse(iso) : Number.NaN;
+  if (!Number.isFinite(at)) return null;
+  const beat = lastHeartbeatAt ? Date.parse(lastHeartbeatAt) : Number.NaN;
+  const seconds =
+    heartbeatAgeSeconds !== null && Number.isFinite(beat)
+      ? heartbeatAgeSeconds + (beat - at) / 1000
+      : (Date.now() - at) / 1000;
+  return Math.max(0, Math.round(seconds));
+}
+
+/**
+ * Within this a box's clock is in step with the platform: the same minute the
+ * sync ledger allows before it overrules a box's clock, and the Health page's
+ * `box.clock` rule allows before it raises one.
+ */
+export const CLOCK_IN_STEP_MS = 60_000;
+
+/**
+ * Past this the clock line wears the warning colour: ten minutes is where the
+ * booth flags every spin it takes as `clockSuspect` (SCRUM-402).
+ */
+export const CLOCK_WARN_AFTER_MS = 10 * 60_000;
+
+/** A span as a person says it: "45 s", "3 min", "12 h", "3 days". */
+function spokenSpan(ms: number): string {
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) return `${seconds} s`;
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.round(ms / 3_600_000);
+  if (hours < 48) return `${hours} h`;
+  return `${Math.round(ms / 86_400_000)} days`;
+}
+
+/** One heartbeat's clock, for its row: "in step", "12 h behind", "3 min ahead". */
+export function clockOffsetWords(offsetMs: number): string {
+  if (Math.abs(offsetMs) <= CLOCK_IN_STEP_MS) return 'in step';
+  return `${spokenSpan(Math.abs(offsetMs))} ${offsetMs > 0 ? 'ahead' : 'behind'}`;
+}
+
+/**
+ * The box drawer's clock line, as a person would say it (SCRUM-402).
+ *
+ * "Clock in step with the platform", "Clock 12 h behind the platform (measured
+ * 3 min ago)", or "Clock not measured yet". A box that corrects its clock
+ * stamps and prints the platform's time either way, so this is not a fault on
+ * its paper. It is the machine's own clock — wrong after a power cut when the
+ * Pi has no clock battery and the network blocks time sync — and it is what
+ * the box falls back on after its next reboot, until the platform answers it.
+ * `warn` is past ten minutes.
+ */
+export function clockLine(
+  vitals: Pick<BoxVitals, 'clockOffsetMs' | 'clockMeasuredAgeSeconds'>,
+): { words: string; warn: boolean } {
+  const offset = vitals.clockOffsetMs;
+  if (offset === null) return { words: 'Clock not measured yet', warn: false };
+  if (Math.abs(offset) <= CLOCK_IN_STEP_MS) {
+    return { words: 'Clock in step with the platform', warn: false };
+  }
+  const ago = vitals.clockMeasuredAgeSeconds;
+  const measured =
+    ago === null
+      ? ''
+      : ago < 10
+        ? ' (measured just now)'
+        : ` (measured ${spokenSpan(ago * 1000)} ago)`;
+  return {
+    words: `Clock ${spokenSpan(Math.abs(offset))} ${offset > 0 ? 'ahead of' : 'behind'} the platform${measured}`,
+    warn: Math.abs(offset) > CLOCK_WARN_AFTER_MS,
   };
 }
 

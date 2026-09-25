@@ -160,10 +160,14 @@ export type BoothHeartbeat = z.infer<typeof BoothHeartbeatSchema>;
 
 export const BoxHeartbeatRequestSchema = z.object({
   /**
-   * The box's own clock. `received_at` is what the cloud trusts; the
-   * difference between the two is the offset the watchdog alerts on, and the
-   * monotonic ordering of this field is what stops a captured heartbeat being
-   * replayed to make a dead box look alive.
+   * The box's clock as the box corrects it (SCRUM-402): once it has measured
+   * itself against the platform in this boot, this is the platform's time as
+   * the box reckons it, and until then it is the machine's own. `received_at`
+   * is what the cloud trusts; a heartbeat further from it than
+   * `BOX_MAX_CLOCK_SKEW_S` is refused (`BOX_CLOCK_SKEW_ERROR`), and the
+   * monotonic ordering of this field (`BOX_HEARTBEAT_STALE_ERROR`) is what
+   * stops a captured heartbeat being replayed to make a dead box look alive.
+   * How far out the machine's clock itself is travels in `clock`, below.
    */
   reportedAt: z.string().datetime(),
   agentVersion: z.string().min(1).max(32),
@@ -234,6 +238,32 @@ export const BoxHeartbeatRequestSchema = z.object({
     })
     .optional(),
   /**
+   * The box's own measurement of its clock against the platform's (SCRUM-402).
+   *
+   * A Pi with no clock battery comes back from a power cut with the time it
+   * last saved, and a mall network that lets HTTPS out but not NTP never puts
+   * it right. So the box measures on every heartbeat — its time just before
+   * sending and just after the answer, against the answer's `serverTime` —
+   * and stamps and prints the platform's time from then on. That makes
+   * `reportedAt` a corrected time, and the offset the cloud computes from it
+   * says next to nothing about the machine; this block is what does.
+   *
+   * `offsetMs` is box minus platform, positive when the box is ahead — the
+   * sign `BoxHeartbeatAck.clockOffsetMs` uses. `measuredAt` is the platform's
+   * time when it was taken. Both null: nothing measured since this box booted.
+   * A measurement is never carried across a reboot, because the clock it
+   * described is not the clock the machine came back with.
+   *
+   * Optional, so an agent older than this still reports; the cloud then keeps
+   * its own computation, as it always did.
+   */
+  clock: z
+    .object({
+      offsetMs: z.number().int().nullable(),
+      measuredAt: z.string().datetime().nullable(),
+    })
+    .optional(),
+  /**
    * What has been going wrong, as fingerprints and counts. The message itself
    * stays on the box: a printer error can quote the line it failed to print.
    */
@@ -252,8 +282,18 @@ export type BoxHeartbeatRequest = z.infer<typeof BoxHeartbeatRequestSchema>;
 
 export interface BoxHeartbeatAck {
   receivedAt: string;
+  /**
+   * The cloud's clock as it took the heartbeat. The box measures its own
+   * clock against this on every answer (SCRUM-402), and a heartbeat refused
+   * for its clock carries it too, in `BoxClockSkewDetails`.
+   */
   serverTime: string;
-  /** Positive means the box is ahead of the cloud. */
+  /**
+   * `reportedAt` minus `receivedAt`: positive means the box is ahead of the
+   * cloud. For a box that corrects its clock (SCRUM-402) this is what is left
+   * after the correction, plus the time on the wire; the machine's own offset
+   * is the one the box declares in the heartbeat's `clock` block.
+   */
   clockOffsetMs: number;
   /** What the box's configuration SHOULD be; pull the bundle when it differs. */
   configVersion: string;
@@ -265,6 +305,63 @@ export interface BoxHeartbeatAck {
   /** Reports matched to a device row of this box, and reports that matched nothing. */
   devicesMatched: number;
   devicesUnknown: number;
+}
+
+/**
+ * The code a heartbeat is refused with when its `reportedAt` is further from
+ * the cloud's clock than `BOX_MAX_CLOCK_SKEW_S` (fifteen minutes by default).
+ */
+export const BOX_CLOCK_SKEW_ERROR = 'BOX_CLOCK_SKEW';
+
+/**
+ * What that refusal carries in `error.details` (SCRUM-402).
+ *
+ * The refusal is the one answer a box with a badly wrong clock is sure to
+ * get, so it has to be enough to measure by: the cloud's time, taken as it
+ * handled the request, which the box adopts exactly as it adopts an accepted
+ * answer's `serverTime`. Its next heartbeat then reports the platform's time
+ * and is accepted. Without this a Pi that came back from a power cut hours
+ * behind was refused on every heartbeat and shown offline, and nothing on the
+ * Console named the clock.
+ */
+export interface BoxClockSkewDetails {
+  serverTime: string;
+  /** `reportedAt` minus the cloud's time: positive when the box is ahead. */
+  clockOffsetMs: number;
+  /** The bound it was refused against. */
+  maxClockSkewS: number;
+}
+
+/**
+ * The code a heartbeat is refused with when its `reportedAt` is at or before
+ * the last one the cloud accepted from this box: the replay defence.
+ */
+export const BOX_HEARTBEAT_STALE_ERROR = 'BOX_HEARTBEAT_STALE';
+
+/**
+ * What that refusal carries in `error.details` (SCRUM-402).
+ *
+ * A box that corrects its clock leaves the cloud's watermark on the
+ * platform's time, and a new process forgets where it stood: its floor under
+ * `reportedAt` starts at nothing, and after a reboot the measurement is set
+ * aside and it reports its raw clock again. A Pi whose raw clock is a few
+ * minutes behind after a reboot, or a box that restarted while its floor was
+ * holding its reports after one it had sent ahead, then reports inside
+ * `BOX_MAX_CLOCK_SKEW_S` and at or before the watermark. Refused as stale
+ * with nothing said, it was refused on every heartbeat until real time passed
+ * the watermark: shown offline, and unable to measure itself. So the refusal
+ * says what time it is and where the watermark stands. The box measures
+ * itself against `serverTime` exactly as against a skew refusal's, and raises
+ * its floor to `lastAcceptedReportedAt`, so its next heartbeat is after it
+ * and accepted.
+ *
+ * Nothing in it is secret: `serverTime` is any answer's, and the watermark is
+ * a time this box itself sent.
+ */
+export interface BoxHeartbeatStaleDetails {
+  serverTime: string;
+  /** The last `reportedAt` the cloud accepted from this box. */
+  lastAcceptedReportedAt: string;
 }
 
 // --- Config bundle ----------------------------------------------------------

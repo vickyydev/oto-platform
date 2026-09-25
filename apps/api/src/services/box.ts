@@ -15,9 +15,13 @@ import {
 } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
+  BOX_CLOCK_SKEW_ERROR,
+  BOX_HEARTBEAT_STALE_ERROR,
   createBoxAgent,
   memoryCredentialStore,
   type BoxAgent,
+  type BoxClockSkewDetails,
+  type BoxHeartbeatStaleDetails,
   type BoxCommandHandout,
   type BoxCommandKind,
   type BoxCommandResultRequest,
@@ -629,25 +633,53 @@ export async function recordHeartbeat(
    * timestamp stands. Fifteen minutes is generous for a machine that is
    * supposed to run NTP, and short enough that a box that got it wrong
    * recovers on its own.
+   *
+   * The refusal carries this side's time in its details (SCRUM-402), because
+   * it is the one answer a box whose clock is hours out is sure to get: the
+   * box measures itself against it exactly as it would against an accepted
+   * heartbeat's `serverTime`, and its next heartbeat reports the platform's
+   * time and is accepted. A Pi that came back from a power cut with no clock
+   * battery and no NTP used to be refused here for good, and showed offline.
    */
   if (Math.abs(clockOffsetMs) > settings.maxClockSkewS * 1000) {
+    const details: BoxClockSkewDetails = {
+      serverTime: receivedAt.toISOString(),
+      clockOffsetMs,
+      maxClockSkewS: settings.maxClockSkewS,
+    };
     throw new AppError(
       400,
-      'BOX_CLOCK_SKEW',
-      `This box's clock is ${Math.round(clockOffsetMs / 1000)}s from the server's — fix the clock before reporting`,
+      BOX_CLOCK_SKEW_ERROR,
+      `This box's clock is ${Math.round(clockOffsetMs / 1000)}s from the server's — measure it against serverTime in the details and report again`,
+      details,
     );
   }
   /**
    * And the monotonic rule is the replay defence: a heartbeat captured off the
    * wire and sent again would otherwise keep a box that has been unplugged
    * looking alive, which is the one lie this whole table exists to catch.
+   *
+   * This refusal says what time it is and where the watermark stands
+   * (SCRUM-402), because a box that corrects its clock meets it after every
+   * restart: it left the watermark on the platform's time, and a new process
+   * reports from a floor of nothing — its raw clock, after a reboot, a few
+   * minutes behind. Told nothing, it was refused on every heartbeat until
+   * real time passed the watermark, and shown offline. Told this, it measures
+   * itself against `serverTime`, reports after the watermark, and is accepted
+   * on its next heartbeat. The defence loses nothing: a replayed heartbeat is
+   * refused as before, and learns only a time its own box sent.
    */
   const watermark = readWatermark(auth.lastStatus);
   if (watermark !== null && reportedAt.getTime() <= watermark) {
+    const details: BoxHeartbeatStaleDetails = {
+      serverTime: receivedAt.toISOString(),
+      lastAcceptedReportedAt: new Date(watermark).toISOString(),
+    };
     throw new AppError(
       409,
-      'BOX_HEARTBEAT_STALE',
-      'A heartbeat at or before the last one accepted from this box',
+      BOX_HEARTBEAT_STALE_ERROR,
+      'A heartbeat at or before the last one accepted from this box — report after lastAcceptedReportedAt in the details',
+      details,
     );
   }
 
@@ -746,10 +778,33 @@ export async function recordHeartbeat(
     }
   }
 
+  /**
+   * The box's clock as the BOX measured it, where it says (SCRUM-402).
+   *
+   * An agent that corrects its clock sends a `reportedAt` that is already the
+   * platform's time, so the difference computed above is what the correction
+   * left over plus the time on the wire — near zero for a Pi whose own clock
+   * is twelve hours out. What that Pi measured is what Health and the
+   * Console's drawer have to show, so a declared measurement is the
+   * `clockOffsetMs` recorded, with when the box took it. Where the box
+   * declares none — nothing measured since it booted, when its `reportedAt` IS
+   * its raw clock — or is an agent too old to say, this side's computation
+   * stands, as it always did, taken now.
+   */
+  const declaredOffsetMs = input.clock?.offsetMs ?? null;
+  const recordedOffsetMs = declaredOffsetMs ?? clockOffsetMs;
+  const clockMeasuredAt =
+    declaredOffsetMs !== null && input.clock?.measuredAt
+      ? input.clock.measuredAt
+      : receivedAt.toISOString();
+
   const lastStatus = scrubDetail({
     reportedAt: reportedAt.toISOString(),
     receivedAt: receivedAt.toISOString(),
-    clockOffsetMs,
+    clockOffsetMs: recordedOffsetMs,
+    /** `box` when the box declared it, `platform` when it is this side's computation. */
+    clockMeasuredBy: declaredOffsetMs !== null ? 'box' : 'platform',
+    clockMeasuredAt,
     agentVersion: input.agentVersion,
     uptimeS: input.uptimeS ?? null,
     tempC: input.tempC ?? null,
@@ -803,7 +858,7 @@ export async function recordHeartbeat(
       boxId: auth.boxId,
       receivedAt,
       reportedAt,
-      clockOffsetMs,
+      clockOffsetMs: asPgInteger(recordedOffsetMs),
       agentVersion: input.agentVersion,
       uptimeS: input.uptimeS ?? null,
       tempC: input.tempC ?? null,
@@ -881,6 +936,19 @@ export async function recordHeartbeat(
     devicesMatched: matched.length,
     devicesUnknown: discovered.length,
   };
+}
+
+/**
+ * `box_heartbeat.clock_offset_ms` is a Postgres `integer`: about ±24 days in
+ * milliseconds. A box booted from a card that never synced can measure itself
+ * months out (SCRUM-402), and a heartbeat must not fail for saying so: the
+ * number stays whole on `box.last_status` and in the row's payload, and the
+ * column takes null.
+ */
+const PG_INTEGER_MAX = 2_147_483_647;
+
+function asPgInteger(ms: number): number | null {
+  return Number.isInteger(ms) && Math.abs(ms) <= PG_INTEGER_MAX ? ms : null;
 }
 
 function readWatermark(lastStatus: Record<string, unknown> | null): number | null {

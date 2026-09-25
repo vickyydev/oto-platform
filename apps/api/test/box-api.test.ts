@@ -3,8 +3,21 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, desc, eq } from 'drizzle-orm';
 import { auditLog, box, boxCommand, boxHeartbeat, device, opsRun, station } from '@oto/db';
 import { newId } from '@oto/shared';
-import { boxCredential, type BoxConfigBundle, type BoxHeartbeatAck } from '@oto/box-agent';
-import { boxBySlot, createTestContext, teardownAll, type TestContext } from './helpers';
+import {
+  boxCredential,
+  type BoxClockSkewDetails,
+  type BoxConfigBundle,
+  type BoxHeartbeatAck,
+  type BoxHeartbeatStaleDetails,
+} from '@oto/box-agent';
+import {
+  ADMIN,
+  boxBySlot,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 import {
   issueClaimCode,
   markSilentBoxesOffline,
@@ -225,14 +238,26 @@ describe('box heartbeat (S2-04)', () => {
     expect(first.statusCode).toBe(200);
 
     // Exactly what a captured heartbeat sent again looks like.
+    const before = Date.now();
     const replay = await ctx.app.inject({
       method: 'POST',
       url: '/box/v1/heartbeat',
       headers: auth(credential),
       payload: { reportedAt, agentVersion: '0.1.0' },
     });
+    const after = Date.now();
     expect(replay.statusCode).toBe(409);
     expect(replay.json().error.code).toBe('BOX_HEARTBEAT_STALE');
+    /**
+     * SCRUM-402: the refusal says what time it is and which report it stands
+     * on, so a box that restarted behind the watermark — its floor forgotten,
+     * its clock corrected or not — measures itself and reports after it on
+     * its next heartbeat. The report it names is one this box sent.
+     */
+    const details = replay.json().error.details as BoxHeartbeatStaleDetails;
+    expect(Date.parse(details.serverTime)).toBeGreaterThanOrEqual(before);
+    expect(Date.parse(details.serverTime)).toBeLessThanOrEqual(after);
+    expect(details.lastAcceptedReportedAt).toBe(reportedAt);
 
     const older = await ctx.app.inject({
       method: 'POST',
@@ -243,16 +268,29 @@ describe('box heartbeat (S2-04)', () => {
     expect(older.statusCode).toBe(409);
   });
 
-  it('refuses a clock too far out to trust', async () => {
+  it('refuses a clock too far out to trust, and says what time it is', async () => {
     const { credential } = await registerSeededBox();
+    const before = Date.now();
     const res = await ctx.app.inject({
       method: 'POST',
       url: '/box/v1/heartbeat',
       headers: auth(credential),
       payload: { reportedAt: new Date(Date.now() + 3 * 3600_000).toISOString(), agentVersion: '0.1.0' },
     });
+    const after = Date.now();
     expect(res.statusCode).toBe(400);
     expect(res.json().error.code).toBe('BOX_CLOCK_SKEW');
+    /**
+     * SCRUM-402: the refusal is the one answer a box whose clock is hours out
+     * is sure to get, so it carries this side's time for the box to measure
+     * by — the same instant an accepted heartbeat's `serverTime` would be.
+     */
+    const details = res.json().error.details as BoxClockSkewDetails;
+    const serverTime = Date.parse(details.serverTime);
+    expect(serverTime).toBeGreaterThanOrEqual(before);
+    expect(serverTime).toBeLessThanOrEqual(after);
+    expect(Math.abs(details.clockOffsetMs - 3 * 3600_000)).toBeLessThan(5_000);
+    expect(details.maxClockSkewS).toBe(900);
   });
 
   it('refuses a wrong secret, an unknown box and a missing credential alike', async () => {
@@ -323,6 +361,132 @@ describe('box heartbeat (S2-04)', () => {
     expect(untouched!.reachability).toBe('unknown');
     expect(untouched!.lastError).toBeNull();
     expect(untouched!.lastSeenAt).toBeNull();
+  });
+});
+
+describe('the box’s own clock (SCRUM-402)', () => {
+  /**
+   * A box that corrects its clock reports the platform's time, so the
+   * difference this side computes says nothing about the machine. What the box
+   * measured is declared in `clock`, and that is what Health and the Console's
+   * drawer show. Read here through the routes both of them call.
+   */
+  let adminCookie: string;
+  beforeAll(async () => {
+    adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+  });
+
+  const healthOf = async (boxId: string) => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/ops/health',
+      headers: { cookie: adminCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const boxes = res.json().boxes as Array<{
+      id: string;
+      clockOffsetMs: number | null;
+      conditions: string[];
+    }>;
+    const found = boxes.find((b) => b.id === boxId);
+    expect(found, 'Health did not list the box').toBeTruthy();
+    return found!;
+  };
+
+  const drawerRowsOf = async (boxId: string) => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/boxes/${boxId}/heartbeats`,
+      headers: { cookie: adminCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    return res.json().heartbeats as Array<{ clockOffsetMs: number | null }>;
+  };
+
+  it('records the measurement the box declares, and Health and the drawer show it', async () => {
+    const { boxId, credential } = await registerSeededBox();
+    const measuredAt = new Date(Date.now() - 60_000).toISOString();
+    const { statusCode, body } = await heartbeat(credential, {
+      clock: { offsetMs: -12 * 3600_000, measuredAt },
+    });
+    expect(statusCode).toBe(200);
+    // The answer still says what this side computed: the box's corrected
+    // `reportedAt` is within the wire's time of ours.
+    expect(Math.abs(body.clockOffsetMs)).toBeLessThan(5_000);
+
+    const [row] = await ctx.db.select().from(box).where(eq(box.id, boxId)).limit(1);
+    expect(row!.status).toBe('online');
+    expect(row!.lastStatus).toMatchObject({
+      clockOffsetMs: -12 * 3600_000,
+      clockMeasuredBy: 'box',
+      clockMeasuredAt: measuredAt,
+    });
+
+    const seen = await healthOf(boxId);
+    expect(seen.clockOffsetMs).toBe(-12 * 3600_000);
+    expect(seen.conditions, 'Health did not name the clock').toContain(`box.clock:${boxId}`);
+
+    const [newest] = await drawerRowsOf(boxId);
+    expect(newest!.clockOffsetMs).toBe(-12 * 3600_000);
+  });
+
+  it('keeps its own computation for a heartbeat that declares nothing, as before', async () => {
+    const { boxId, credential } = await registerSeededBox();
+
+    /**
+     * An agent from before the measurement: no `clock` at all. What is kept is
+     * `reportedAt` minus `receivedAt`, which for this file's heartbeats is a few
+     * seconds at most — `nextReportedAt` steps a second past the last one it
+     * sent — and nowhere near the twelve hours declared above.
+     */
+    expect((await heartbeat(credential)).statusCode).toBe(200);
+    let [row] = await ctx.db.select().from(box).where(eq(box.id, boxId)).limit(1);
+    let status = row!.lastStatus as {
+      clockOffsetMs: number;
+      clockMeasuredBy: string;
+      receivedAt: string;
+      reportedAt: string;
+      clockMeasuredAt: string;
+    };
+    expect(status.clockOffsetMs).toBe(Date.parse(status.reportedAt) - Date.parse(status.receivedAt));
+    expect(Math.abs(status.clockOffsetMs)).toBeLessThan(60_000);
+    expect(status.clockMeasuredBy).toBe('platform');
+    expect(status.clockMeasuredAt).toBe(status.receivedAt);
+
+    // A box that has measured nothing since it booted: the same.
+    expect((await heartbeat(credential, { clock: { offsetMs: null, measuredAt: null } })).statusCode).toBe(
+      200,
+    );
+    [row] = await ctx.db.select().from(box).where(eq(box.id, boxId)).limit(1);
+    status = row!.lastStatus as typeof status;
+    expect(status.clockOffsetMs).toBe(Date.parse(status.reportedAt) - Date.parse(status.receivedAt));
+    expect(status.clockMeasuredBy).toBe('platform');
+
+    const seen = await healthOf(boxId);
+    expect(seen.clockOffsetMs).toBe(status.clockOffsetMs);
+    expect(seen.conditions).not.toContain(`box.clock:${boxId}`);
+  });
+
+  it('takes a measurement too large for the column and keeps it whole', async () => {
+    const { boxId, credential } = await registerSeededBox();
+    // A card that never synced boots at its image's date: months behind.
+    const offsetMs = -90 * 24 * 3600_000;
+    const { statusCode } = await heartbeat(credential, {
+      clock: { offsetMs, measuredAt: new Date().toISOString() },
+    });
+    expect(statusCode, 'a heartbeat failed for the size of its clock').toBe(200);
+
+    const [beat] = await ctx.db
+      .select()
+      .from(boxHeartbeat)
+      .where(eq(boxHeartbeat.boxId, boxId))
+      .orderBy(desc(boxHeartbeat.receivedAt))
+      .limit(1);
+    // The integer column cannot hold it; the payload does, and the drawer reads it from there.
+    expect(beat!.clockOffsetMs).toBeNull();
+    const [newest] = await drawerRowsOf(boxId);
+    expect(newest!.clockOffsetMs).toBe(offsetMs);
+    expect((await healthOf(boxId)).clockOffsetMs).toBe(offsetMs);
   });
 });
 

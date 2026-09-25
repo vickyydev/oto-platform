@@ -1612,6 +1612,22 @@ export async function listCommands(
   }));
 }
 
+/**
+ * A heartbeat's clock offset: the box's own measurement where it declared one
+ * (SCRUM-402), this side's computation otherwise. The column is a Postgres
+ * `integer`, which a box measured months out does not fit — `recordHeartbeat`
+ * writes null there and keeps the number whole in the payload, which is read
+ * back here.
+ */
+function heartbeatClockOffset(column: number | null, payload: unknown): number | null {
+  if (column !== null) return column;
+  const held =
+    payload && typeof payload === 'object'
+      ? (payload as { clockOffsetMs?: unknown }).clockOffsetMs
+      : undefined;
+  return typeof held === 'number' && Number.isInteger(held) ? held : null;
+}
+
 export async function listHeartbeats(
   db: Db,
   boxId: string,
@@ -1627,7 +1643,7 @@ export async function listHeartbeats(
     id: r.id,
     receivedAt: r.receivedAt.toISOString(),
     reportedAt: r.reportedAt?.toISOString() ?? null,
-    clockOffsetMs: r.clockOffsetMs,
+    clockOffsetMs: heartbeatClockOffset(r.clockOffsetMs, r.payload),
     agentVersion: r.agentVersion,
     uptimeS: r.uptimeS,
     tempC: r.tempC,

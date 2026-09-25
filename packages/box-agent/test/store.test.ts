@@ -8,9 +8,12 @@ import { BOX_ID, openTestStore, plus, STATION_ID } from './_support';
 import { BOX_LOCAL_TABLES, clockTrustFor, SqlBoxStore } from '../src/store-sql';
 import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
 import {
+  backoffMs,
   BoxStoreFeatureMissingError,
   migrateSessionDocument,
+  OUTBOX_BACKOFF_CAP_MS,
   StoreSchemaTooNewError,
+  type ClockStamp,
   type PrintJobRecord,
 } from '../src/store';
 
@@ -331,6 +334,61 @@ test('a refusal below the cloud cursor is retried, not swept away', async () => 
   harness.close();
 });
 
+/**
+ * A retry time further off than any backoff (SCRUM-402, round 2).
+ *
+ * Every retry time is the box's clock plus a backoff that never passes
+ * `OUTBOX_BACKOFF_CAP_MS`, so one further off than that was counted from a
+ * clock that has since gone back: a box that booted hours ahead, deferred a
+ * push, and then measured itself against the platform. It is due now. One
+ * inside the cap is an ordinary backoff and still waits its turn.
+ */
+test('a retry time further off than any backoff is due now; one inside it waits', async () => {
+  for (let attempts = 1; attempts <= 40; attempts += 1) {
+    assert.ok(backoffMs(attempts) <= OUTBOX_BACKOFF_CAP_MS, `a backoff past the cap at ${attempts}`);
+  }
+
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+  const stretched = await harness.store.enqueue(
+    BOX_ID,
+    { type: 'member.created', payload: { n: 1 } },
+    harness.seal,
+  );
+  const waiting = await harness.store.enqueue(
+    BOX_ID,
+    { type: 'member.created', payload: { n: 2 } },
+    harness.seal,
+  );
+  await harness.store.takeBatch(BOX_ID, { now: AT });
+  // Deferred on a clock twelve hours ahead of the one the store now reads.
+  await harness.store.releaseBatch(BOX_ID, [stretched.envelope.eventId], {
+    errorCode: 'PUSH_503',
+    errorMessage: 'The cloud answered 503',
+    retryAt: plus(AT, 12 * 3_600_000),
+  });
+  // Deferred by the longest backoff there is, on the clock the store reads.
+  await harness.store.releaseBatch(BOX_ID, [waiting.envelope.eventId], {
+    errorCode: 'PUSH_503',
+    errorMessage: 'The cloud answered 503',
+    retryAt: plus(AT, OUTBOX_BACKOFF_CAP_MS),
+  });
+
+  const now = await harness.store.takeBatch(BOX_ID, { now: AT });
+  assert.deepEqual(
+    now.events.map((event) => event.eventId),
+    [stretched.envelope.eventId],
+    'the stretched retry was held, or the ordinary one was not',
+  );
+  assert.equal((await harness.store.takeBatch(BOX_ID, { now: plus(AT, 1_000) })).events.length, 0);
+  const due = await harness.store.takeBatch(BOX_ID, { now: plus(AT, OUTBOX_BACKOFF_CAP_MS) });
+  assert.deepEqual(
+    due.events.map((event) => event.eventId),
+    [waiting.envelope.eventId],
+  );
+  harness.close();
+});
+
 test('a quarantined event is never picked up again, whatever the clock says', async () => {
   const harness = openTestStore(AT);
   await harness.store.init(BOX_ID);
@@ -414,7 +472,13 @@ test('"Replay last batch" puts accepted events back and the cloud sees duplicate
   harness.close();
 });
 
-test('a clock the box knows is wrong is stamped on the event, not hidden', async () => {
+/**
+ * The test control's skew decides an event's trust only in a store no agent
+ * has stamped (SCRUM-402). A running box stamps from its measurement against
+ * the platform — see the case after this one — and the skew moves its raw
+ * clock for that measurement to find.
+ */
+test('a store no agent has stamped reads the test control’s skew onto the event', async () => {
   const harness = openTestStore(AT);
   await harness.store.init(BOX_ID);
 
@@ -441,6 +505,64 @@ test('a clock the box knows is wrong is stamped on the event, not hidden', async
     harness.seal,
   );
   assert.equal(lost.envelope.clockTrust, 'untrusted');
+  harness.close();
+});
+
+test('the agent’s stamp decides an event’s trust, inside a transaction too, and the skew does not', async () => {
+  const harness = openTestStore(AT);
+  await harness.store.init(BOX_ID);
+  // Three days of test-control skew, which on its own would read `untrusted`
+  // with a three-day offset: under a stamp it decides nothing.
+  await harness.store.setClockSkew(BOX_ID, 3 * 24 * 60 * 60_000);
+  let stamp: ClockStamp = { clockTrust: 'untrusted' };
+  harness.store.stampClockWith(BOX_ID, () => stamp);
+
+  const unmeasured = await harness.store.enqueue(
+    BOX_ID,
+    { type: 'member.created', payload: {} },
+    harness.seal,
+  );
+  assert.equal(unmeasured.envelope.clockTrust, 'untrusted');
+  assert.equal(unmeasured.envelope.clockOffsetMs, undefined, 'no offset where the box has none');
+
+  // Measured: trusted, with what the correction left over. A spin's two facts
+  // are queued on the store a transaction hands out, and carry it as well.
+  stamp = { clockTrust: 'trusted', clockOffsetMs: 0 };
+  const pair = await harness.store.atomically((tx) =>
+    tx.enqueueMany(
+      BOX_ID,
+      [
+        { type: 'booth.spin_recorded', payload: {} },
+        { type: 'promo.voucher_issued', payload: {} },
+      ],
+      harness.seal,
+    ),
+  );
+  for (const record of pair) {
+    assert.equal(record.envelope.clockTrust, 'trusted');
+    assert.equal(record.envelope.clockOffsetMs, 0);
+  }
+
+  // What was written is what goes up.
+  const batch = await harness.store.takeBatch(BOX_ID);
+  assert.deepEqual(
+    batch.events.map((event) => [event.clockTrust, event.clockOffsetMs]),
+    [
+      ['untrusted', undefined],
+      ['trusted', 0],
+      ['trusted', 0],
+    ],
+  );
+
+  // Taken away, the store falls back on the skew.
+  harness.store.stampClockWith(BOX_ID, null);
+  const fallback = await harness.store.enqueue(
+    BOX_ID,
+    { type: 'member.created', payload: {} },
+    harness.seal,
+  );
+  assert.equal(fallback.envelope.clockTrust, 'untrusted');
+  assert.equal(fallback.envelope.clockOffsetMs, 3 * 24 * 60 * 60_000);
   harness.close();
 });
 

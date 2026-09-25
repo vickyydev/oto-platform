@@ -1,8 +1,10 @@
+import { readFileSync } from 'node:fs';
 import {
   createBooth,
   type Booth,
   type BoothAccountVerdict,
   type BoothBranchContext,
+  type BoothClockStanding,
   type BoothStaffRecord,
   type BoothStationContext,
 } from './booth';
@@ -23,10 +25,19 @@ import { generateSyncKeyPair, publicKeyFor, uuidv7 } from './signing';
 import { ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
 import { StationSessionManager } from './station-session';
-import type { BoxStore, CachedBundle, StationIdentity } from './store';
+import {
+  BoxStoreFeatureMissingError,
+  type BoxStore,
+  type CachedBundle,
+  type ClockStamp,
+  type StationIdentity,
+} from './store';
 import {
   BOX_AGENT_VERSION,
+  BOX_CLOCK_SKEW_ERROR,
+  BOX_HEARTBEAT_STALE_ERROR,
   boxCredential,
+  type BoxClockSkewDetails,
   type BoxCommandHandout,
   type BoxCommandKind,
   type BoxCommandPollResponse,
@@ -36,6 +47,7 @@ import {
   type BoxConfigDevice,
   type BoxHeartbeatAck,
   type BoxHeartbeatRequest,
+  type BoxHeartbeatStaleDetails,
   type BoxRegisterResponse,
   type DeviceReport,
 } from './protocol';
@@ -127,8 +139,34 @@ export interface BoxAgentOptions {
    * anybody walking to Phuket.
    */
   faults?: Record<string, DeviceFault>;
-  /** Injected so a test — and the Console's "Advance box clock" — can move it. */
+  /**
+   * The machine's own clock, injected so a test can set it wherever it likes.
+   * The Console's "Advance box clock" adds to it (`clockSkewMs`). Neither is
+   * what the box stamps with once it has measured itself against the
+   * platform — see THE BOX'S CLOCK in `createBoxAgent` (SCRUM-402).
+   */
   now?: () => number;
+  /**
+   * Which boot of the machine this agent runs in (SCRUM-402).
+   *
+   * A clock measurement is good only for the clock it measured, and a Pi with
+   * no clock battery comes back from every reboot with a different one. So a
+   * measurement is kept with this and set aside when it differs. Linux's own
+   * `/proc/sys/kernel/random/boot_id` by default; where there is none, the
+   * process's start stands in, so a development box keeps a measurement for
+   * one run and no longer. A test passes one to restart a box on the same
+   * store as though it had rebooted — or had not.
+   */
+  bootId?: string;
+  /**
+   * The machine's monotonic clock, in milliseconds (SCRUM-402): a clock
+   * nothing can step, against which a step of the wall clock is noticed.
+   * `process.hrtime` by default, which on Linux is the kernel's monotonic
+   * clock and runs on across a restart of the service. Where `now` is
+   * injected it defaults to `now` itself, so a test's clock never steps
+   * unless the test gives the two different clocks.
+   */
+  monotonic?: () => number;
   /**
    * Where this box remembers things (S2-05).
    *
@@ -283,7 +321,22 @@ export interface BoxAgentState {
    * after one that was answered — and the kiosk's dot reads both.
    */
   linkUp: boolean;
+  /**
+   * The Console's "Advance box clock": how far a test control has moved this
+   * box's RAW clock, in milliseconds. Persisted, so a restart comes back to the
+   * same clock. The next heartbeat measures it like any other error in the
+   * clock (SCRUM-402).
+   */
   clockSkewMs: number;
+  /**
+   * How far the machine's clock is from the platform's, in milliseconds,
+   * positive when the box is ahead: the measurement made in this boot, moved
+   * by whatever the test control has done since. Null until the platform has
+   * answered a heartbeat in this boot. This is what the heartbeat declares.
+   */
+  clockOffsetMs: number | null;
+  /** The platform's time when that measurement was taken. */
+  clockMeasuredAt: string | null;
   lastHeartbeatAt: string | null;
   lastAckAt: string | null;
   commandsRun: number;
@@ -329,7 +382,11 @@ export interface BoxAgent {
   stop(): void;
   /** The Console's "Stop heartbeats" test control. */
   pauseHeartbeats(paused: boolean): void;
-  /** The Console's "Advance box clock": a deliberate skew, in milliseconds. */
+  /**
+   * The Console's "Advance box clock": moves the RAW clock by `ms`. The next
+   * heartbeat declares the new offset and measures it, and the box's stamps
+   * are corrected from that answer on (SCRUM-402).
+   */
   advanceClock(ms: number): Promise<void>;
   /** Recent agent log lines, which is what `collect_logs` hands back. */
   recentLogs(limit?: number): string[];
@@ -566,6 +623,162 @@ const OFFLINE_COMMAND_KINDS: readonly BoxCommandKind[] = ['go_online'];
  */
 const BOOTH_ACCOUNT_VERIFY_TIMEOUT_MS = 5_000;
 
+/**
+ * One measurement of the box's clock against the platform's (SCRUM-402), as
+ * it is kept in `box_runtime` under `CLOCK_MEASUREMENT_KEY`.
+ */
+interface ClockMeasurement {
+  /** Raw clock minus platform, in ms, at the moment of measuring. Positive: ahead. */
+  offsetMs: number;
+  /** The platform's time when it was taken (its `serverTime`). */
+  measuredAt: string;
+  /** The boot it was made in. A measurement from another boot is set aside. */
+  bootId: string;
+  /** `clockSkewMs` when it was taken, so a later move of the test control is known exactly. */
+  skewMs: number;
+  /**
+   * The machine's wall clock (without the test control's skew) and its
+   * monotonic clock, read together as the answer it was taken from came back.
+   * Their difference only changes when the wall clock is stepped, which is
+   * how a step is noticed.
+   */
+  wallAtMs: number;
+  monoAtMs: number;
+}
+
+/**
+ * The box's clocks, read together (SCRUM-402): the machine's wall clock and
+ * the test control's skew on top of it, which together are the raw clock the
+ * box measures, and the monotonic clock, which nothing can step and against
+ * which a step of the wall clock is noticed.
+ */
+interface ClockReading {
+  wallMs: number;
+  skewMs: number;
+  /** `wallMs + skewMs`. */
+  rawMs: number;
+  monoMs: number;
+}
+
+/** The `box_runtime` key the last measurement is kept under. */
+const CLOCK_MEASUREMENT_KEY = 'box.clock_measurement';
+
+/**
+ * Past this the platform stops trusting an offset (its `CLOCK_TOLERANCE_MS`),
+ * and a measurement this far out is worth a warning in the box's log.
+ */
+const CLOCK_IN_STEP_MS = 60_000;
+
+/** A new measurement further than this from the last one is a step, and is logged. */
+const CLOCK_STEP_NOTED_MS = 1_000;
+
+/**
+ * How far the wall clock may move against the monotonic clock before the
+ * measurement is dropped as describing a clock that has since been stepped.
+ * On Linux the two are slewed together by NTP and part only on a step, so
+ * two seconds is far above anything but a step.
+ */
+const CLOCK_STEP_DROPPED_MS = 2_000;
+
+/**
+ * The process's own start, standing in for a boot where the machine names
+ * none (see `BoxAgentOptions.bootId`).
+ */
+const PROCESS_BOOT = `process:${process.pid}:${Math.round(performance.timeOrigin)}`;
+
+/**
+ * Which boot of the machine this is. Linux names every boot with a fresh
+ * random id, readable by anyone; that is what a Pi and the api on Render
+ * both have.
+ */
+function currentBootId(): string {
+  try {
+    const id = readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim();
+    if (id) return `linux:${id}`;
+  } catch {
+    // Not Linux, or no /proc here: the process stands in.
+  }
+  return PROCESS_BOOT;
+}
+
+/** A measurement read back from the store, or null when it cannot be read as one. */
+function parseClockMeasurement(raw: string): ClockMeasurement | null {
+  try {
+    const held = JSON.parse(raw) as Partial<ClockMeasurement> | null;
+    if (!held || typeof held !== 'object') return null;
+    if (typeof held.offsetMs !== 'number' || !Number.isFinite(held.offsetMs)) return null;
+    if (typeof held.measuredAt !== 'string' || !Number.isFinite(Date.parse(held.measuredAt))) {
+      return null;
+    }
+    if (typeof held.bootId !== 'string' || held.bootId === '') return null;
+    if (typeof held.wallAtMs !== 'number' || !Number.isFinite(held.wallAtMs)) return null;
+    if (typeof held.monoAtMs !== 'number' || !Number.isFinite(held.monoAtMs)) return null;
+    const skewMs = typeof held.skewMs === 'number' && Number.isFinite(held.skewMs) ? held.skewMs : 0;
+    return {
+      offsetMs: held.offsetMs,
+      measuredAt: held.measuredAt,
+      bootId: held.bootId,
+      skewMs,
+      wallAtMs: held.wallAtMs,
+      monoAtMs: held.monoAtMs,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** What a heartbeat refused for its clock carried (`BoxClockSkewDetails`), as far as it can be read. */
+interface ClockSkewRefusal {
+  /** The cloud's time as it refused, or null when the refusal did not say. */
+  serverTime: string | null;
+  /** The bound it refused against, in ms, or null when the refusal did not say. */
+  maxSkewMs: number | null;
+}
+
+/**
+ * A heartbeat the cloud refused for its clock, and what the refusal said
+ * (`BoxClockSkewDetails`). Null for any other answer.
+ */
+function clockSkewRefusal(status: number, body: unknown): ClockSkewRefusal | null {
+  if (status !== 400 || typeof body !== 'object' || body === null) return null;
+  const error = (body as { error?: { code?: unknown; details?: unknown } }).error;
+  if (!error || error.code !== BOX_CLOCK_SKEW_ERROR) return null;
+  const details = (error.details ?? null) as Partial<BoxClockSkewDetails> | null;
+  const maxS = details?.maxClockSkewS;
+  return {
+    serverTime: typeof details?.serverTime === 'string' ? details.serverTime : null,
+    maxSkewMs: typeof maxS === 'number' && Number.isFinite(maxS) && maxS >= 0 ? maxS * 1000 : null,
+  };
+}
+
+/** What a heartbeat refused as stale carried (`BoxHeartbeatStaleDetails`), as far as it can be read. */
+interface StaleRefusal {
+  /** The cloud's time as it refused, or null when the refusal did not say. */
+  serverTime: string | null;
+  /** The last `reportedAt` the cloud accepted from this box, in ms, or null when the refusal did not say. */
+  lastAcceptedMs: number | null;
+}
+
+/**
+ * A heartbeat the cloud refused as stale — at or before the last one it
+ * accepted from this box — and what the refusal said
+ * (`BoxHeartbeatStaleDetails`). Null for any other answer.
+ */
+function heartbeatStaleRefusal(status: number, body: unknown): StaleRefusal | null {
+  if (status !== 409 || typeof body !== 'object' || body === null) return null;
+  const error = (body as { error?: { code?: unknown; details?: unknown } }).error;
+  if (!error || error.code !== BOX_HEARTBEAT_STALE_ERROR) return null;
+  const details = (error.details ?? null) as Partial<BoxHeartbeatStaleDetails> | null;
+  const acceptedMs =
+    typeof details?.lastAcceptedReportedAt === 'string'
+      ? Date.parse(details.lastAcceptedReportedAt)
+      : Number.NaN;
+  return {
+    serverTime: typeof details?.serverTime === 'string' ? details.serverTime : null,
+    lastAcceptedMs: Number.isFinite(acceptedMs) ? acceptedMs : null,
+  };
+}
+
 export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   const base = options.apiBaseUrl.replace(/\/$/, '');
   const call = options.fetch ?? httpTransport();
@@ -634,10 +847,31 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   /**
    * Strictly increasing, because the cloud refuses a heartbeat whose reported
    * time is not after the last one it accepted — that refusal is its replay
-   * defence, and a box whose clock steps backwards under NTP would otherwise
-   * silence itself until the clock caught up.
+   * defence, and a box whose clock steps backwards, under NTP or under a new
+   * measurement against the platform (SCRUM-402), would otherwise silence
+   * itself until the clock caught up. Every heartbeat sent raises it,
+   * answered or not, because one whose answer was lost may still have been
+   * accepted. One refused for its clock was not, and puts it back (see
+   * `floorAfterClockRefusal`).
+   *
+   * It starts at nothing in every process, and a box that corrected its
+   * clock left the cloud's watermark on the platform's time — or ahead of
+   * it, while the floor was holding its reports after one it sent ahead. So
+   * a new process can report at or before the watermark: after a reboot,
+   * from a raw clock that is behind; after a restart in the same boot, from
+   * the corrected clock without the floor. The cloud refuses that as stale
+   * and names its watermark, and the floor goes up to it there (see
+   * `heartbeat`): one heartbeat, not the minutes until real time passes the
+   * watermark.
    */
   let lastReportedAt = 0;
+  /**
+   * The highest `reportedAt` the cloud is known to have accepted (SCRUM-402):
+   * one it answered 200 to, or the watermark a stale refusal named. The one
+   * floor known to be the cloud's own, and where a refusal for the clock puts
+   * `lastReportedAt` back when nothing sent since can have been accepted.
+   */
+  let lastAcceptedReportedAt = 0;
 
   let printing: PrintingController | null = null;
   let terminals: TerminalController | null = null;
@@ -662,6 +896,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     heartbeatsPaused: false,
     linkUp: false,
     clockSkewMs: 0,
+    clockOffsetMs: null,
+    clockMeasuredAt: null,
     lastHeartbeatAt: null,
     lastAckAt: null,
     commandsRun: 0,
@@ -669,7 +905,279 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     oldestUnackedS: null,
   };
 
-  const clock = (): number => (options.now ? options.now() : Date.now()) + state.clockSkewMs;
+  /**
+   * THE BOX'S CLOCK (SCRUM-402).
+   *
+   * A Pi has no clock battery unless somebody fitted one. After a power cut it
+   * comes back with the time Raspberry Pi OS last saved — at most a minute
+   * before the cut, so BEHIND by about the length of it — and a mall network
+   * that lets HTTPS out but blocks NTP never puts it right. The box used to
+   * believe that clock: its heartbeats were refused as skewed and it showed
+   * offline without the Console ever naming the clock, spins were filed on the
+   * wrong trading day once the lag crossed 05:00, slips printed a stale issue
+   * time with the expiry counted from it, and every event said `trusted`.
+   *
+   * So the box measures itself against the platform on every heartbeat:
+   *
+   *  - MEASUREMENT. `rawClock` is the machine's clock, plus the Console's
+   *    "Advance box clock", which moves it on purpose. The box reads it just
+   *    before a heartbeat goes and just after the answer comes back, and takes
+   *    the answer's `serverTime` against the midpoint: offset = midpoint −
+   *    server time, positive when the box is ahead, the sign the api's
+   *    `clockOffsetMs` has always had. A heartbeat refused as `BOX_CLOCK_SKEW`
+   *    carries the server's time in its details and is measured in exactly the
+   *    same way, because that refusal is the one answer a badly wrong clock is
+   *    sure to get.
+   *  - CORRECTION. With a measurement made in THIS boot, `clock` is the raw
+   *    clock minus the measured offset — the platform's time — and everything
+   *    the box stamps or prints reads `clock`: the heartbeat's `reportedAt` (so
+   *    the next heartbeat is accepted and the box shows online), every event's
+   *    `occurredAt`, the slip's issue time and expiry, the booth's trading day
+   *    and daily cap, and its "earlier than a moment already lived through"
+   *    check. Without one, `clock` is the raw clock.
+   *  - TRUST. With a measurement made in this boot an event is stamped
+   *    `trusted`, and its `clockOffsetMs` is what the correction left over —
+   *    zero, unless the test control has moved the raw clock since the
+   *    measurement — never the raw offset, because `occurredAt` is already
+   *    corrected. Without one it is `untrusted` with no offset, and the
+   *    platform files it under the time it received it. A spin is flagged
+   *    `clockSuspect` while the measured offset is past ten minutes, though its
+   *    time is corrected.
+   *  - BOOTS. A measurement is kept in the store with the boot it was made in,
+   *    so a restart of the service keeps it and a reboot sets it aside: the
+   *    clock it described is not the clock the machine came back with.
+   *  - STEPS. For the same reason a measurement is dropped the moment the
+   *    machine's clock is stepped — NTP getting through at last, somebody
+   *    setting the date — which the box notices against its monotonic clock.
+   *    The raw clock is used and events are `untrusted` until the next
+   *    heartbeat measures again. Without this, a Pi measured twelve hours
+   *    behind whose NTP then got through would stamp everything twelve hours
+   *    AHEAD, as trusted, until that heartbeat. A step while a heartbeat is
+   *    on the wire is caught the same way, between the exchange's two
+   *    readings, and that exchange measures nothing: its midpoint would be
+   *    off by half the step.
+   *
+   * What the box measured rides every heartbeat (`clock`), and that is the
+   * box's clock on Health and in the Console's drawer — not the difference the
+   * platform computes from `reportedAt`, which after the correction is little
+   * more than the time on the wire.
+   *
+   * WAITS. One interval is timed on the raw clock: the re-registration
+   * back-off, so a correction arriving mid-way cannot stretch or cut it.
+   * Every other time the box waits for is a time on this clock, so a
+   * correction moves whatever was set before it by the whole offset: later
+   * when it moves the clock BACK (a box that booted ahead, measured), sooner
+   * when it moves it forward. The outbox is held to its backoff: a retry time
+   * further off than any backoff can set was set by a clock that has since
+   * gone back, and the store sends it at once (`takeBatch`,
+   * `OUTBOX_BACKOFF_CAP_MS`). Not yet the others: a slip waiting on paper is
+   * retried that much later (`printing/queue.ts`), and a station lease
+   * (`station-session.ts`), a booth staff session or a PIN lockout set before
+   * the correction ends that much later, or sooner.
+   */
+  /** The machine's wall clock, before the test control's skew. */
+  const wallClock = (): number => (options.now ? options.now() : Date.now());
+  /** See `BoxAgentOptions.monotonic`. */
+  const monotonic =
+    options.monotonic ?? options.now ?? ((): number => Number(process.hrtime.bigint()) / 1e6);
+  const rawClock = (): number => wallClock() + state.clockSkewMs;
+  /** See `BoxAgentOptions.bootId`. Read once: a process does not change boots. */
+  const bootId = options.bootId ?? currentBootId();
+  /**
+   * The measurement made in this boot, or null. Never one from another boot,
+   * and read through `heldMeasurement`, which drops it once the wall clock has
+   * been stepped since.
+   */
+  let measurement: ClockMeasurement | null = null;
+  /** The box whose store the measurement is written to, once that store is open. */
+  let measurementKeptFor: string | null = null;
+
+  /** The measurement, while it still describes the machine's clock (see STEPS). */
+  function heldMeasurement(): ClockMeasurement | null {
+    const held = measurement;
+    if (!held) return null;
+    const steppedByMs = wallClock() - held.wallAtMs - (monotonic() - held.monoAtMs);
+    if (Math.abs(steppedByMs) <= CLOCK_STEP_DROPPED_MS) return held;
+    measurement = null;
+    publishClockState();
+    note(
+      'warn',
+      'the machine’s clock was stepped since the box measured it; events are untrusted until the next heartbeat measures again',
+      { steppedByMs: Math.round(steppedByMs), measuredAt: held.measuredAt },
+    );
+    return null;
+  }
+
+  /** The box's clocks, read together; see `ClockReading`. */
+  function readClocks(): ClockReading {
+    const wallMs = wallClock();
+    const skewMs = state.clockSkewMs;
+    return { wallMs, skewMs, rawMs: wallMs + skewMs, monoMs: monotonic() };
+  }
+
+  /** The platform's time as this box reckons it, or its raw clock until it has measured. */
+  const clock = (): number => {
+    const held = heldMeasurement();
+    return held ? rawClock() - held.offsetMs : rawClock();
+  };
+
+  /** What the correction leaves over: the test control's moves since the measurement. */
+  function clockResidualMs(held: ClockMeasurement): number {
+    return state.clockSkewMs - held.skewMs;
+  }
+
+  /** What every event queued from here is stamped with; see `BoxStore.stampClockWith`. */
+  function clockStamp(): ClockStamp {
+    const held = heldMeasurement();
+    if (!held) return { clockTrust: 'untrusted' };
+    return { clockTrust: 'trusted', clockOffsetMs: Math.round(clockResidualMs(held)) };
+  }
+
+  /** What the booth reads to flag a spin and to decide which times are worth remembering. */
+  function boothClockStanding(): BoothClockStanding | null {
+    const held = heldMeasurement();
+    if (!held) return null;
+    const residualMs = clockResidualMs(held);
+    return { rawOffsetMs: held.offsetMs + residualMs, residualMs };
+  }
+
+  /**
+   * `state.clockOffsetMs` and `clockMeasuredAt`, from the measurement as it
+   * stands. Reads `measurement` itself rather than `heldMeasurement`, because
+   * the drop calls this.
+   */
+  function publishClockState(): void {
+    const held = measurement;
+    state.clockOffsetMs = held ? Math.round(held.offsetMs + clockResidualMs(held)) : null;
+    state.clockMeasuredAt = held?.measuredAt ?? null;
+  }
+
+  /**
+   * Measure the clock off one exchange whose answer carried the platform's
+   * time, `platformMs`: `sent` and `answered` are the box's clocks read
+   * either side of it. Answers whether it measured. When it did not, the box
+   * keeps what it had — unless the machine's clock was stepped meanwhile,
+   * which leaves nothing worth keeping.
+   */
+  async function measureClock(
+    platformMs: number,
+    sent: ClockReading,
+    answered: ClockReading,
+  ): Promise<boolean> {
+    /**
+     * The machine's clock was stepped while the heartbeat was on the wire
+     * (see STEPS). The two readings straddle the step, so their midpoint is
+     * off by half of it — a twelve-hour step measured as six, and every press
+     * after it stamped `trusted` six hours out — and a measurement anchored
+     * after the step would never be noticed as wrong. What the box held
+     * describes the clock from before the step, so it goes too: the raw
+     * clock, and `untrusted`, until the next heartbeat measures again.
+     */
+    const steppedByMs = answered.wallMs - sent.wallMs - (answered.monoMs - sent.monoMs);
+    if (Math.abs(steppedByMs) > CLOCK_STEP_DROPPED_MS) {
+      const dropped = measurement;
+      measurement = null;
+      publishClockState();
+      note(
+        'warn',
+        'the machine’s clock was stepped while a heartbeat was on the wire; nothing is measured off it, and events are untrusted until the next heartbeat measures again',
+        {
+          steppedByMs: Math.round(steppedByMs),
+          ...(dropped ? { droppedMeasuredAt: dropped.measuredAt } : {}),
+        },
+      );
+      return false;
+    }
+    /**
+     * The test control moved the raw clock while the heartbeat was on the
+     * wire, so the midpoint would mix two clocks. What the box holds still
+     * describes the machine, with the move as what the correction leaves
+     * over, and the next heartbeat measures the moved clock.
+     */
+    if (answered.skewMs !== sent.skewMs) return false;
+    const offsetMs = Math.round((sent.rawMs + answered.rawMs) / 2 - platformMs);
+    const previous = measurement;
+    const taken: ClockMeasurement = {
+      offsetMs,
+      measuredAt: new Date(platformMs).toISOString(),
+      bootId,
+      skewMs: answered.skewMs,
+      // Anchored on the answer's own reading, so any step after it is one
+      // `heldMeasurement` sees.
+      wallAtMs: answered.wallMs,
+      monoAtMs: answered.monoMs,
+    };
+    measurement = taken;
+    publishClockState();
+    if (!previous || Math.abs(previous.offsetMs - offsetMs) > CLOCK_STEP_NOTED_MS) {
+      note(
+        Math.abs(offsetMs) > CLOCK_IN_STEP_MS ? 'warn' : 'info',
+        previous
+          ? 'the box’s clock moved against the platform; stamping by the new measurement'
+          : 'the box measured its clock against the platform; stamping by the platform’s time',
+        { clockOffsetMs: offsetMs, measuredAt: taken.measuredAt },
+      );
+    }
+    await keepClockMeasurement();
+    return true;
+  }
+
+  /**
+   * Write the measurement down, so a restart of the service in this boot
+   * stamps `trusted` from its first second rather than from its first
+   * heartbeat. A store without `box_runtime` — a platform database short of
+   * migration 0013 — keeps it for this process only.
+   */
+  async function keepClockMeasurement(): Promise<void> {
+    if (!store || !measurementKeptFor || !measurement) return;
+    try {
+      await store.writeRuntimeValue(
+        measurementKeptFor,
+        CLOCK_MEASUREMENT_KEY,
+        JSON.stringify(measurement),
+        new Date(clock()).toISOString(),
+      );
+    } catch (err) {
+      if (err instanceof BoxStoreFeatureMissingError) return;
+      note('warn', 'the clock measurement could not be written down; it holds for this process only', {
+        err: String(err),
+      });
+    }
+  }
+
+  /** Bring back the measurement a previous process made — in this boot only. */
+  async function restoreClockMeasurement(boxId: string): Promise<void> {
+    if (!store || measurement) return;
+    let raw: string | null;
+    try {
+      raw = await store.readRuntimeValue(boxId, CLOCK_MEASUREMENT_KEY);
+    } catch (err) {
+      if (!(err instanceof BoxStoreFeatureMissingError)) {
+        note('warn', 'the clock measurement in the store could not be read', { err: String(err) });
+      }
+      return;
+    }
+    if (raw === null) return;
+    const held = parseClockMeasurement(raw);
+    if (!held) {
+      note('warn', 'the clock measurement in the store is unreadable; the next heartbeat measures again');
+      return;
+    }
+    if (held.bootId !== bootId) {
+      note(
+        'info',
+        'the clock measurement in the store is from an earlier boot and is set aside; events are untrusted until the platform answers',
+        { measuredAt: held.measuredAt, clockOffsetMs: held.offsetMs },
+      );
+      return;
+    }
+    measurement = held;
+    publishClockState();
+    note('info', 'the clock measurement made earlier in this boot is in use', {
+      clockOffsetMs: held.offsetMs,
+      measuredAt: held.measuredAt,
+    });
+  }
 
   function note(
     level: 'info' | 'warn' | 'error',
@@ -1031,6 +1539,15 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     state.offline = persisted.offline;
     state.epoch = persisted.journalEpoch;
     state.clockSkewMs = persisted.clockSkewMs;
+    /**
+     * The clock, before anything can queue a fact (SCRUM-402): the measurement
+     * made earlier in this boot, if a previous process made one — read after
+     * the skew, because it is a measurement of the raw clock the skew is part
+     * of — and the stamp every event is sealed with from here on.
+     */
+    measurementKeptFor = boxId;
+    await restoreClockMeasurement(boxId);
+    store.stampClockWith(boxId, clockStamp);
 
     outbox = createOutbox({
       store,
@@ -1099,6 +1616,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         printTemplates: () => cachedTemplates,
         ...(options.booth?.randomIndex ? { randomIndex: options.booth.randomIndex } : {}),
         now: () => new Date(clock()),
+        clockStanding: boothClockStanding,
         log,
       });
     }
@@ -1353,7 +1871,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    * refusal is the only thing that reopens the door.
    */
   async function reregisterAfterRefusal(where: string): Promise<boolean> {
-    const verdict = refusals.refused(clock());
+    // The raw clock: this is a window of time, not a stamp (see THE BOX'S CLOCK).
+    const verdict = refusals.refused(rawClock());
     if (!verdict.register) {
       note(
         'warn',
@@ -1984,10 +2503,24 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       note('error', 'the print retry tick failed', { err: String(err) });
       return [];
     });
+    const previousReportedAt = lastReportedAt;
     const reportedMs = Math.max(clock(), lastReportedAt + 1);
     lastReportedAt = reportedMs;
+    const declared = heldMeasurement();
     const payload: BoxHeartbeatRequest = {
       reportedAt: new Date(reportedMs).toISOString(),
+      /**
+       * What this box knows of its own clock (SCRUM-402): the measurement made
+       * in this boot, moved by whatever the test control has done since, and
+       * when it was taken. `reportedAt` above is already corrected, so this is
+       * the only place the machine's clock is described at all.
+       */
+      clock: declared
+        ? {
+            offsetMs: Math.round(declared.offsetMs + clockResidualMs(declared)),
+            measuredAt: declared.measuredAt,
+          }
+        : { offsetMs: null, measuredAt: null },
       agentVersion: BOX_AGENT_VERSION,
       syncPublicKey: syncPrivateKeyPem ? publicKeyFor(syncPrivateKeyPem) : undefined,
       uptimeS: Math.floor((Date.now() - startedAt) / 1000),
@@ -2046,41 +2579,150 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       return null;
     });
     if (boothBlock) payload.booth = boothBlock;
-    const { status, body } = await request<BoxHeartbeatAck>('/box/v1/heartbeat', {
+    /**
+     * The measurement's two readings of the box's clocks, either side of the
+     * exchange (see THE BOX'S CLOCK): the raw clock for the midpoint, and the
+     * monotonic clock beside it, against which a step of the machine's clock
+     * during the exchange is noticed. As near the wire as this file gets: the
+     * printer probes and the booth's block are done before the first, and
+     * nothing but the request lies between the two.
+     */
+    const sent = readClocks();
+    const { status, body } = await request<unknown>('/box/v1/heartbeat', {
       method: 'POST',
       body: payload,
     });
+    const answered = readClocks();
+    if (status === 200) lastAcceptedReportedAt = Math.max(lastAcceptedReportedAt, reportedMs);
     if (status === 401) {
       await reregisterAfterRefusal('heartbeat');
       return null;
     }
-    if (status !== 200 || !body) {
+    const skewRefusal = clockSkewRefusal(status, body);
+    if (skewRefusal) {
+      /**
+       * Refused for its clock, and still worth measuring by (SCRUM-402).
+       *
+       * The cloud tests the skew before it reads its watermark, so it never
+       * accepted this `reportedAt`, and the floor goes back — only if no later
+       * heartbeat has moved it since.
+       */
+      if (lastReportedAt === reportedMs) {
+        lastReportedAt = floorAfterClockRefusal(previousReportedAt, skewRefusal);
+      }
+      const measured = await adoptServerTime(skewRefusal.serverTime, sent, answered);
+      note(
+        'warn',
+        measured
+          ? 'heartbeat refused: this box’s clock is out; measured against the platform, the next heartbeat carries the platform’s time'
+          : 'heartbeat refused: this box’s clock is out, and nothing was measured off the refusal; the next heartbeat tries again',
+        { status, clockOffsetMs: state.clockOffsetMs },
+      );
+      return null;
+    }
+    const staleRefusal = heartbeatStaleRefusal(status, body);
+    if (staleRefusal) {
+      /**
+       * Refused as stale (SCRUM-402): the cloud holds a later `reportedAt`
+       * from this box than this one. After a restart that is the ordinary
+       * case (see `lastReportedAt`): this process's floor started at nothing,
+       * and the watermark stands on the platform's time. The refusal names
+       * the watermark, and the floor goes up to it, so the next report is
+       * after it; and it says what time it is, which the box measures itself
+       * against exactly as against a refusal for its clock. After a reboot
+       * that is the box's first measurement, which it used to wait for about
+       * as long as its clock was out. A refusal that names neither, from a
+       * platform older than this, moves nothing, as before.
+       */
+      if (staleRefusal.lastAcceptedMs !== null) {
+        lastAcceptedReportedAt = Math.max(lastAcceptedReportedAt, staleRefusal.lastAcceptedMs);
+        lastReportedAt = Math.max(lastReportedAt, staleRefusal.lastAcceptedMs);
+      }
+      const measured = await adoptServerTime(staleRefusal.serverTime, sent, answered);
+      note(
+        'warn',
+        staleRefusal.lastAcceptedMs !== null
+          ? 'heartbeat refused as stale: the platform holds a later report from this box; the next heartbeat reports after it'
+          : 'heartbeat refused as stale, and the refusal did not say where the platform stands; the next heartbeat tries again',
+        {
+          status,
+          lastAcceptedReportedAt:
+            staleRefusal.lastAcceptedMs === null
+              ? null
+              : new Date(staleRefusal.lastAcceptedMs).toISOString(),
+          measured,
+          clockOffsetMs: state.clockOffsetMs,
+        },
+      );
+      return null;
+    }
+    const ack = body as BoxHeartbeatAck | null;
+    if (status !== 200 || !ack) {
       note('warn', 'heartbeat refused', { status });
       return null;
     }
     state.lastHeartbeatAt = payload.reportedAt;
-    state.lastAckAt = body.receivedAt;
-    state.epoch = body.epoch;
-    /**
-     * The last time this box has good reason to believe in (D11).
-     *
-     * The cloud's own clock, taken from the acknowledgement, is the only
-     * trustworthy time a Pi with no clock battery ever sees. Remembering the
-     * highest one is what lets a booth that came up after a mall power cut
-     * notice that its clock is now EARLIER than a moment it has already lived
-     * through — which is what flags a spin `clock_suspect` and stops the
-     * trading day moving backwards.
-     */
-    await booth?.noteCloudTime(body.serverTime).catch((err) => {
-      note('warn', 'the booth could not record the cloud time', { err: String(err) });
-    });
-    if (body.configVersion !== state.configVersion) {
+    state.lastAckAt = ack.receivedAt;
+    state.epoch = ack.epoch;
+    await adoptServerTime(ack.serverTime, sent, answered);
+    if (ack.configVersion !== state.configVersion) {
       await syncConfig();
     }
-    if (body.commandsPending > 0) {
+    if (ack.commandsPending > 0) {
       await runPendingCommands();
     }
-    return body;
+    return ack;
+  }
+
+  /**
+   * Everything the box takes from the platform's clock off one answer: the
+   * measurement (THE BOX'S CLOCK), and the last time this box has good reason
+   * to believe in (D11).
+   *
+   * The cloud's own clock is the only trustworthy time a Pi with no clock
+   * battery ever sees. Remembering the highest one is what lets a booth notice
+   * that its clock is EARLIER than a moment it has already lived through —
+   * which flags a spin `clock_suspect` and stops the trading day moving
+   * backwards. It is remembered off an exchange that measured nothing too:
+   * it is the platform's time, whatever the box's clock did meanwhile.
+   * Answers whether the box measured its clock off this answer.
+   */
+  async function adoptServerTime(
+    serverTime: unknown,
+    sent: ClockReading,
+    answered: ClockReading,
+  ): Promise<boolean> {
+    const platformMs = typeof serverTime === 'string' ? Date.parse(serverTime) : Number.NaN;
+    if (!Number.isFinite(platformMs)) return false;
+    const measured = await measureClock(platformMs, sent, answered);
+    await booth?.noteCloudTime(new Date(platformMs).toISOString()).catch((err) => {
+      note('warn', 'the booth could not record the cloud time', { err: String(err) });
+    });
+    return measured;
+  }
+
+  /**
+   * Where the floor under `reportedAt` goes after a heartbeat refused for its
+   * clock (SCRUM-402), from `beforeMs`, where it stood before that heartbeat.
+   *
+   * The floor stands for the cloud's watermark, the last `reportedAt` it
+   * accepted, and what raised it since the last 200 may never have reached
+   * acceptance: a heartbeat with no answer (the router has no line yet after
+   * a power cut), or a 502 or 503 from the edge during a deploy. Every
+   * heartbeat the cloud accepted was within its bound of its own clock, so
+   * none is later than this refusal's `serverTime` plus that bound. A floor
+   * within it may be the watermark of a heartbeat whose answer was lost, and
+   * stays. A floor past it was refused or never arrived, and goes back to
+   * the last `reportedAt` answered 200: kept, it would hold a box that booted
+   * hours AHEAD, and whose first heartbeat got no answer, at that future time
+   * after it had measured itself — refused, and shown offline, for as long
+   * as it had been ahead.
+   */
+  function floorAfterClockRefusal(beforeMs: number, refusal: ClockSkewRefusal): number {
+    const serverMs = refusal.serverTime === null ? Number.NaN : Date.parse(refusal.serverTime);
+    const latestAcceptedMs = refusal.maxSkewMs === null ? Number.NaN : serverMs + refusal.maxSkewMs;
+    const mayBeTheWatermark = Number.isFinite(latestAcceptedMs) && beforeMs <= latestAcceptedMs;
+    return Math.max(lastAcceptedReportedAt, mayBeTheWatermark ? beforeMs : 0);
   }
 
   async function refreshOutboxDepth(): Promise<void> {
@@ -2872,10 +3514,18 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       note('info', paused ? 'heartbeats stopped by a test control' : 'heartbeats resumed');
     },
     async advanceClock(ms) {
+      /**
+       * The RAW clock moves, as a machine's clock steps (SCRUM-402). Until the
+       * next heartbeat the box knows its clock moved but has not measured it:
+       * it declares the new offset at once and stamps what the correction
+       * leaves over on every event, which the platform overrules past its
+       * minute. That heartbeat's answer is the measurement, and the box
+       * stamps by the platform's time again from then on. Persisted, so a
+       * restart comes back to the same raw clock — the clock a measurement
+       * kept for this boot describes.
+       */
       state.clockSkewMs += ms;
-      // Persisted, because the skew decides `clock_trust` on every event the
-      // box mints from here on, and an event stamped `trusted` by a box whose
-      // clock is a day out is how a day's takings land on the wrong date.
+      publishClockState();
       if (store && state.boxId) await store.setClockSkew(state.boxId, state.clockSkewMs);
       note('warn', 'box clock moved by a test control', { clockSkewMs: state.clockSkewMs });
     },

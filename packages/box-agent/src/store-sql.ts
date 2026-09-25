@@ -11,12 +11,14 @@ import {
   migrateCachedBundle,
   migrateOutboxRecord,
   migrateSessionDocument,
+  OUTBOX_BACKOFF_CAP_MS,
   type BoxPrintJobState,
   type BoxStateRecord,
   type BoxStaffSession,
   type BoxStore,
   type BoxStoreFeatures,
   type CachedBundle,
+  type ClockStamp,
   type CounterKey,
   type EnvelopeSealer,
   type LeaseWrite,
@@ -234,6 +236,12 @@ export class SqlBoxStore implements BoxStore {
    * answer that fails loudly rather than the one that loses a lockout.
    */
   private present = new Set<string>();
+  /**
+   * The agent's clock stamp per box (SCRUM-402); see `stampClockWith`. Shared
+   * by reference with every store `scopedTo` makes, so a spin's facts are
+   * stamped inside its transaction exactly as they would be outside it.
+   */
+  private clockStamps = new Map<string, () => ClockStamp>();
 
   constructor(options: SqlBoxStoreOptions) {
     this.driver = options.driver;
@@ -251,7 +259,13 @@ export class SqlBoxStore implements BoxStore {
   private scopedTo(driver: BoxSqlDriver): SqlBoxStore {
     const child = new SqlBoxStore({ driver, now: this.clock });
     child.present = this.present;
+    child.clockStamps = this.clockStamps;
     return child;
+  }
+
+  stampClockWith(boxId: string, stamp: (() => ClockStamp) | null): void {
+    if (stamp) this.clockStamps.set(boxId, stamp);
+    else this.clockStamps.delete(boxId);
   }
 
   features(): BoxStoreFeatures {
@@ -479,7 +493,14 @@ export class SqlBoxStore implements BoxStore {
       if (!stateRow) throw new Error(`No box_state row for ${boxId}; call init() first`);
       const journalEpoch = toNum(stateRow.journal_epoch);
       const firstSeq = toNum(stateRow.next_box_seq) - facts.length;
-      const clockSkewMs = toNum(stateRow.clock_skew_ms);
+      /**
+       * How far these facts' times may be believed: the agent's stamp when one
+       * is installed (SCRUM-402), read once so every fact in the run carries
+       * the same answer, and the test control's skew only in a store no agent
+       * has stamped.
+       */
+      const stamped = this.clockStamps.get(boxId)?.();
+      const stamp: ClockStamp = stamped ?? legacyClockStamp(toNum(stateRow.clock_skew_ms));
 
       const records: OutboxRecord[] = [];
       for (const [index, fact] of facts.entries()) {
@@ -490,8 +511,8 @@ export class SqlBoxStore implements BoxStore {
           type: fact.type,
           schemaVersion: BOX_STORE_SCHEMA_VERSION,
           occurredAt: fact.occurredAt ?? at,
-          clockTrust: clockTrustFor(clockSkewMs),
-          clockOffsetMs: clockSkewMs,
+          clockTrust: stamp.clockTrust,
+          ...(stamp.clockOffsetMs === undefined ? {} : { clockOffsetMs: stamp.clockOffsetMs }),
           stationId: fact.stationId ?? null,
           actorKind: fact.actorKind ?? 'account',
           actorAccountId: fact.actorAccountId ?? null,
@@ -552,14 +573,27 @@ export class SqlBoxStore implements BoxStore {
     const maxEvents = opts?.maxEvents ?? 200;
     const maxBytes = opts?.maxBytes ?? 1_000_000;
     const now = opts?.now ?? this.nowIso();
+    /**
+     * Due, too: a retry time further off than any backoff can put one
+     * (SCRUM-402). It was set from a clock that has since gone back — a box
+     * that booted hours ahead and deferred a push before it measured itself
+     * against the platform — and waiting for it would hold those facts for
+     * as long as the clock had been out: filed late, by the time the platform
+     * received them, and overtaken by everything queued after them.
+     */
+    const nowMs = Date.parse(now);
+    // A `now` that is not a time leaves the rule as it was: nothing is that far off.
+    const pastAnyBackoff = Number.isFinite(nowMs)
+      ? new Date(nowMs + OUTBOX_BACKOFF_CAP_MS).toISOString()
+      : '9999-12-31T23:59:59.999Z';
     const rows = await this.driver.query(
       `select * from ${this.table('box_outbox')}
         where box_id = ?
           and state in ('queued', 'failed')
-          and (next_attempt_at is null or next_attempt_at <= ?)
+          and (next_attempt_at is null or next_attempt_at <= ? or next_attempt_at > ?)
         order by journal_epoch asc, box_seq asc
         limit ?`,
-      [boxId, now, maxEvents],
+      [boxId, now, pastAnyBackoff, maxEvents],
     );
 
     const events: SyncEventEnvelope[] = [];
@@ -1385,12 +1419,21 @@ export class SqlBoxStore implements BoxStore {
  * is reports `untrusted` and lets the cloud resolve the trading day from its
  * own clock. Five minutes is the tolerance: longer than NTP's worst ordinary
  * correction, shorter than anything that could move a sale to the wrong day.
+ *
+ * The rule of a store no agent has stamped (see `stampClockWith`). A running
+ * box stamps from its measurement against the platform instead (SCRUM-402):
+ * the test control's skew moves its raw clock, and the measurement is what
+ * notices.
  */
 export function clockTrustFor(clockSkewMs: number): 'trusted' | 'skewed' | 'untrusted' {
   const skew = Math.abs(clockSkewMs);
   if (skew <= 5 * 60_000) return 'trusted';
   if (skew <= 24 * 60 * 60_000) return 'skewed';
   return 'untrusted';
+}
+
+function legacyClockStamp(clockSkewMs: number): ClockStamp {
+  return { clockTrust: clockTrustFor(clockSkewMs), clockOffsetMs: clockSkewMs };
 }
 
 // --- Row decoding -----------------------------------------------------------

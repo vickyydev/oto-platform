@@ -142,7 +142,7 @@ export async function boxRoutes(app: App): Promise<void> {
       config: { credential: 'box', ...limited },
       schema: {
         description:
-          'Say this box is alive: clock, uptime, temperature, outbox depth and age, device reachability, paper, lease holders and error fingerprints. A box that registered before the sync core hands over its signing key here.',
+          'Say this box is alive: clock, uptime, temperature, outbox depth and age, device reachability, paper, lease holders and error fingerprints. A box that registered before the sync core hands over its signing key here. The box declares its own measurement of its clock in `clock`; a heartbeat whose `reportedAt` is further out than BOX_MAX_CLOCK_SKEW_S is refused as BOX_CLOCK_SKEW with the server’s time in `error.details.serverTime`, so the box can measure itself against it and report again. One at or before the last `reportedAt` accepted is refused as BOX_HEARTBEAT_STALE, with the server’s time and that last one in `error.details` (`serverTime`, `lastAcceptedReportedAt`), so a box that restarted behind it measures itself and reports after it.',
         body: BoxHeartbeatRequestSchema,
       },
     },

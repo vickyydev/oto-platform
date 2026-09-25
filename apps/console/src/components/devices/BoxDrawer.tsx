@@ -3,6 +3,8 @@ import { Loader2, Plus, RefreshCw } from 'lucide-react';
 import { SETTINGS_SECTION_FOR_KIND, type EscposDotsPerLine } from '@oto/shared';
 import {
   boxVitals,
+  clockLine,
+  clockOffsetWords,
   fleetApi,
   isMissingRoute,
   DEVICE_KINDS,
@@ -40,7 +42,7 @@ import {
   toneForReachability,
   transportWord,
 } from '@/lib/fleetWords';
-import { elapsed, formatExact, formatWhen, millis, timeAgo } from '@/lib/time';
+import { elapsed, formatExact, formatWhen, timeAgo } from '@/lib/time';
 
 /**
  * One box, everything about it, and the buttons that make it do something.
@@ -85,6 +87,7 @@ export function BoxDrawer({
   onChanged: () => void;
 }) {
   const vitals = boxVitals(box);
+  const clock = clockLine(vitals);
   const [actionFilter, setActionFilter] = useState('');
   const [commandsAt, setCommandsAt] = useState(0);
 
@@ -121,8 +124,10 @@ export function BoxDrawer({
               ? '—'
               : `${vitals.outboxDepth} event${vitals.outboxDepth === 1 ? '' : 's'} unsynced`}
           </Fact>
-          <Fact label="Clock offset">
-            {vitals.clockOffsetMs === null ? '—' : millis(Math.abs(vitals.clockOffsetMs))}
+          <Fact label="Clock">
+            <span style={clock.warn ? { color: 'hsl(var(--status-warn))' } : undefined}>
+              {clock.words}
+            </span>
           </Fact>
           <Fact label="Temperature">
             {vitals.tempC === null ? 'not reported' : `${vitals.tempC.toFixed(1)} °C`}
@@ -1429,10 +1434,7 @@ function Heartbeats({ boxId, timezone }: { boxId: string; timezone?: string | nu
               )}
               {row.tempC !== null && row.tempC !== undefined && <span>{row.tempC.toFixed(1)} °C</span>}
               {row.clockOffsetMs !== null && row.clockOffsetMs !== undefined && (
-                <span className="ml-auto tabular-nums">
-                  clock {row.clockOffsetMs > 0 ? '+' : ''}
-                  {row.clockOffsetMs} ms
-                </span>
+                <span className="ml-auto tabular-nums">clock {clockOffsetWords(row.clockOffsetMs)}</span>
               )}
             </li>
           ))}

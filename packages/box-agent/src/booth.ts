@@ -276,8 +276,35 @@ export interface BoothOptions {
    * `queued`. `BOOTH_PRINT_WAIT_MS` unless a test needs a shorter wait.
    */
   printWaitMs?: number;
+  /**
+   * The box's clock, as the agent corrects it (SCRUM-402): the platform's
+   * time once the box has measured itself in this boot, its own raw clock
+   * until then. Every time the booth stamps, counts a day by or prints is
+   * read from here.
+   */
   now?: () => Date;
+  /**
+   * How the box's clock stands against the platform's, as the agent measured
+   * it in this boot (SCRUM-402), or null when nothing has been measured since
+   * the box booted.
+   *
+   * Absent is a booth run without an agent — this module's own tests — and
+   * keeps the rule it had before: suspect only when the clock is behind a
+   * time already lived through, and every press's time remembered.
+   */
+  clockStanding?: () => BoothClockStanding | null;
   log?: AgentLog;
+}
+
+/** See `BoothOptions.clockStanding`. */
+export interface BoothClockStanding {
+  /** The machine's clock minus the platform's, in ms; positive when it is ahead. */
+  rawOffsetMs: number;
+  /**
+   * What is left after the correction `now` already applies: zero, unless the
+   * test control has moved the raw clock since the last measurement.
+   */
+  residualMs: number;
 }
 
 // --- Policy numbers ---------------------------------------------------------
@@ -286,13 +313,20 @@ export interface BoothOptions {
 export const BOOTH_CONFIG_REFRESH_MS = 60_000;
 
 /**
- * How far the box's clock may sit behind a time it has already lived through
- * before a spin is flagged (D11).
+ * How far the box's clock may be from the truth before a spin is flagged
+ * (D11, SCRUM-402): behind a time the box has already lived through, or — as
+ * the agent measured it against the platform in this boot — out in either
+ * direction.
  *
- * A Pi has no clock battery. Unplugged for a week it comes back believing it
- * is the moment it was switched off, or 1970, and it will happily stamp a
- * morning's spins with it. Ten minutes is wide enough that ordinary NTP
- * correction does not trip it and narrow enough that a mall power cut does.
+ * A Pi with no clock battery does not come back from a power cut at the
+ * moment it was switched off, or in 1970: Raspberry Pi OS Bookworm saves the
+ * clock every minute, so the Pi comes back BEHIND by about the length of the
+ * cut. That is not earlier than anything it lived through before the cut, so
+ * the lived-through rule does not see it; the measurement on the next
+ * heartbeat does. The booth's time is corrected from then on, and the spin is
+ * still flagged, because the machine's own clock was that far out when it was
+ * pressed. Ten minutes is wide enough that ordinary NTP correction does not
+ * trip it.
  */
 export const BOOTH_CLOCK_SUSPECT_MS = 10 * 60_000;
 
@@ -599,10 +633,11 @@ export interface Booth {
   /**
    * Remember a time the box has good reason to believe in (D11).
    *
-   * The agent calls it with the cloud's `serverTime` off every heartbeat ack.
-   * That is what makes "the highest time this box has already lived through" a
-   * statement about real time rather than about this box's own drift — without
-   * it, a Pi whose clock is a day fast would simply believe itself.
+   * The agent calls it with the cloud's `serverTime` off every heartbeat ack,
+   * and off a heartbeat refused for its clock or as stale (SCRUM-402). That
+   * is what makes "the highest time this box has already lived through" a
+   * statement about real time rather than about this box's own drift —
+   * without it, a Pi whose clock is a day fast would simply believe itself.
    */
   noteCloudTime(at: string): Promise<void>;
 }
@@ -973,16 +1008,24 @@ export function createBooth(options: BoothOptions): BoothModule {
    * Three separate answers, and conflating them is how a night's takings land
    * on the wrong date:
    *
-   *  - `occurredAt` is the box's own clock, reported as it reads. The envelope
-   *    keeps it as sent even when the cloud disbelieves it, which is the only
-   *    honest thing to store.
-   *  - `businessDate` is resolved from the LATER of the clock and the highest
-   *    time this box has already lived through, so a booth that came up after
-   *    a power cut believing it is 1970 does not file today's spins on a
-   *    trading day thirty years before the park existed, and the day never
-   *    moves backwards.
-   *  - `clockSuspect` says the two disagree by more than ten minutes, so a
+   *  - `occurredAt` is the box's clock as the agent corrects it: the
+   *    platform's time once the box has measured itself in this boot
+   *    (SCRUM-402), the machine's own until then. The envelope keeps it as
+   *    sent even when the cloud disbelieves it, which is the only honest thing
+   *    to store.
+   *  - `businessDate` is resolved from the LATER of that clock and the highest
+   *    time this box has already lived through, so a booth that came up with
+   *    a clock from before a power cut does not file today's spins on an
+   *    earlier trading day, and the day never moves backwards.
+   *  - `clockSuspect` says the two disagree by more than ten minutes, or that
+   *    the machine's own clock was measured more than ten minutes out, so a
    *    day's figures that look wrong can be explained from the row itself.
+   *  - `believable` says whether this time is worth remembering as lived
+   *    through: only a time corrected by a measurement made in this boot, and
+   *    not one the test control has since moved. A time read from a clock
+   *    nobody has measured is exactly what the lived-through rule exists to
+   *    doubt, and remembering it would let a clock that is AHEAD hold the
+   *    trading day in the future after the correction arrives.
    *
    * **`business_date` is NOT NULL with no default**, so this fails loudly when
    * the branch is unknown rather than filing a late-night spin on whatever a
@@ -993,6 +1036,7 @@ export function createBooth(options: BoothOptions): BoothModule {
     stampMs: number;
     businessDate: string;
     clockSuspect: boolean;
+    believable: boolean;
   }> {
     const nowMs = clock().getTime();
     const seenIso = await store.lastGoodTime(boxId);
@@ -1001,11 +1045,17 @@ export function createBooth(options: BoothOptions): BoothModule {
     const behindMs = lived === null ? 0 : lived - nowMs;
     const stampMs = lived !== null && lived > nowMs ? lived : nowMs;
     const dayStart = parseDayStart(branch.businessDayStart);
+    // Undefined: a booth with no agent behind it. Null: an agent that has not
+    // measured the clock in this boot.
+    const standing = options.clockStanding ? options.clockStanding() : undefined;
+    const measuredOut = !!standing && Math.abs(standing.rawOffsetMs) > BOOTH_CLOCK_SUSPECT_MS;
     return {
       occurredAt: new Date(nowMs).toISOString(),
       stampMs,
       businessDate: businessDateFor(new Date(stampMs), branch.timezone, dayStart),
-      clockSuspect: behindMs > BOOTH_CLOCK_SUSPECT_MS,
+      clockSuspect: behindMs > BOOTH_CLOCK_SUSPECT_MS || measuredOut,
+      // Nothing has moved the raw clock since the measurement, to the second.
+      believable: standing === undefined || (!!standing && Math.abs(standing.residualMs) < 1_000),
     };
   }
 
@@ -1013,8 +1063,11 @@ export function createBooth(options: BoothOptions): BoothModule {
    * Remember a time this box has good reason to believe in.
    *
    * The agent calls it with the cloud's `serverTime` off every heartbeat ack,
-   * which is what makes "the highest time already lived through" a statement
-   * about real time rather than about this box's own drift. `markTimeSeen`
+   * and off a heartbeat refused for its clock or as stale (SCRUM-402), which
+   * is what makes "the highest time already lived through" a statement about
+   * real time rather than about this box's own drift. A press adds its own
+   * time only when a measurement made in this boot corrected it
+   * (`believable`). `markTimeSeen`
    * only ever moves forward, so a backwards value is a no-op rather than a
    * correction.
    */
@@ -1857,7 +1910,7 @@ export function createBooth(options: BoothOptions): BoothModule {
 
     // The spin is on disk from here. Everything below is about paper.
     lastSpinAt = timing.occurredAt;
-    await noteTime(timing.occurredAt);
+    if (timing.believable) await noteTime(timing.occurredAt);
 
     let printState: BoothPrintState = 'no_printer';
     const port = options.print;

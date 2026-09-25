@@ -12,6 +12,7 @@ import type {
   StationSessionStage,
   SyncActorKind,
   SyncChangeScope,
+  SyncClockTrust,
   SyncEventEnvelope,
   SyncEventOutcome,
 } from './contract';
@@ -67,7 +68,14 @@ export interface BoxStateRecord {
   /** The next sequence this box will hand out. Never reused within an epoch. */
   nextBoxSeq: number;
   storeSchemaVersion: number;
-  /** Positive when the box is ahead of the cloud, as last measured. */
+  /**
+   * The Console's "Advance box clock": a deliberate move of this box's RAW
+   * clock, in milliseconds, kept so a restart comes back to the same clock.
+   * Zero on any box nobody is testing. It is not a measurement — the box
+   * measures its clock against the platform on every heartbeat and keeps that
+   * in `box_runtime` (SCRUM-402) — and it decides an event's `clockTrust` only
+   * in a store no agent has stamped (see `stampClockWith`).
+   */
   clockSkewMs: number;
   appliedConfigVersion: string | null;
   lastCacheAppliedAt: string | null;
@@ -109,6 +117,24 @@ export interface QueuedFact {
   actorCredentialId?: string | null;
   /** `x-oto-action-id`, minted where the person tapped. */
   actionId?: string | null;
+}
+
+/**
+ * How far an event's time may be believed, stamped on it as it is queued
+ * (SCRUM-402).
+ *
+ * The agent decides it, because only the agent has measured the clock: with a
+ * measurement made in this boot the event's `occurredAt` is already the
+ * platform's time and the stamp is `trusted`, with `clockOffsetMs` whatever
+ * the correction left over (zero, unless the test control has moved the clock
+ * since); with none, it is `untrusted` with no offset, and the cloud files the
+ * event under its own received time. Neither field is signed — see
+ * `SYNC_CANONICAL_FIELDS` in `@oto/shared` for why that is acceptable.
+ */
+export interface ClockStamp {
+  clockTrust: SyncClockTrust;
+  /** Box minus platform in ms, positive when ahead. Absent: nothing to offer. */
+  clockOffsetMs?: number;
 }
 
 /**
@@ -450,6 +476,21 @@ export interface BoxStore extends PrintJobStore {
     opts?: { reason?: string | null; accountId?: string | null; now?: string },
   ): Promise<BoxStateRecord>;
   setClockSkew(boxId: string, clockSkewMs: number): Promise<BoxStateRecord>;
+  /**
+   * Stamp every event queued for this box with what `stamp` answers at that
+   * moment (SCRUM-402), in place of the reading of `clockSkewMs` a store falls
+   * back on.
+   *
+   * The agent installs it when it opens the store, because it is the agent
+   * that measures the clock, and everything that queues a fact — the outbox,
+   * the booth, the station sessions, the api's own routes for the virtual box
+   * — goes through the store and gets the same stamp without having to ask.
+   * In memory, per box, and shared by the store a transaction is handed. A
+   * store no agent has stamped (the store's own tests, a tool that queues by
+   * hand) keeps the older rule: `clockTrustFor(clockSkewMs)`. `null` removes
+   * the stamp.
+   */
+  stampClockWith(boxId: string, stamp: (() => ClockStamp) | null): void;
   /** A `reset_store` lands here: the new epoch, and the sequence back to 1. */
   setEpoch(boxId: string, journalEpoch: number, now?: string): Promise<BoxStateRecord>;
   setAppliedConfigVersion(boxId: string, configVersion: string | null): Promise<BoxStateRecord>;
@@ -479,6 +520,12 @@ export interface BoxStore extends PrintJobStore {
     seal: EnvelopeSealer,
     now?: string,
   ): Promise<OutboxRecord[]>;
+  /**
+   * The next events to send, oldest first, marked `sending`: queued or failed,
+   * and due — never deferred, deferred to a time at or before `now`, or
+   * deferred to a time further after `now` than `OUTBOX_BACKOFF_CAP_MS`, which
+   * only a clock that has since gone back can have set (SCRUM-402).
+   */
   takeBatch(
     boxId: string,
     opts?: { maxEvents?: number; maxBytes?: number; now?: string },
@@ -608,12 +655,15 @@ export interface BoxStore extends PrintJobStore {
   /**
    * Remember the latest time this box has good reason to believe in.
    *
-   * A Pi has no battery-backed clock: unplugged for a week it comes back
-   * believing it is the moment it was switched off, or 1970, and it will
-   * happily stamp a spin with it. Keeping the highest time already seen turns
-   * that into something detectable — a clock now EARLIER than a time this box
-   * has already lived through is wrong, whatever it says — which is what
-   * `SpinResponse.clockSuspect` reports to the television.
+   * A Pi with no clock battery comes back from a power cut with whatever time
+   * it last saved — Raspberry Pi OS saves it every minute, so that is behind
+   * by about the length of the cut — and a fresh card that never synced comes
+   * back at the image's own date. Keeping the highest time already seen
+   * catches the case where the clock is EARLIER than a time this box has
+   * already lived through, which is wrong whatever it says and is part of what
+   * `SpinResponse.clockSuspect` reports to the television. A clock behind by
+   * the length of a cut is not earlier than anything lived through; what
+   * catches that is the agent's measurement against the platform (SCRUM-402).
    *
    * Only ever moves forward. Returns the stored value after the write.
    */
@@ -627,8 +677,9 @@ export interface BoxStore extends PrintJobStore {
    * booth's other singletons — the last vouchers it printed, so a reprint
    * after a power cut still has the slip to reprint, and the name of whoever
    * is signed in — and, one key per code, to every voucher code the booth
-   * has minted, so a repeat is drawn again (SCRUM-414). Text in, text out:
-   * the caller owns the encoding. The key
+   * has minted, so a repeat is drawn again (SCRUM-414) — and to the agent's
+   * last measurement of its clock, with the boot it was made in (SCRUM-402).
+   * Text in, text out: the caller owns the encoding. The key
    * `last_good_time` is `markTimeSeen`'s, whose forward-only rule a plain
    * write would break, so it is refused here.
    */
@@ -704,6 +755,18 @@ export function migrateCachedBundle(raw: CachedBundle, supported: number): Cache
 }
 
 /**
+ * The longest the outbox ever defers an event: five minutes, `backoffMs`'s
+ * cap. Every retry time is the box's clock plus at most this, so one further
+ * off than this from the clock now was set by a clock that has since gone
+ * back — a box that booted hours ahead, deferred a push before it heard the
+ * platform, and then measured itself against it (SCRUM-402). `takeBatch`
+ * treats such a time as due: waiting for it would hold those facts back for
+ * as long as the clock had been out. A caller that deferred for longer on
+ * purpose would be sent early by that rule; none does.
+ */
+export const OUTBOX_BACKOFF_CAP_MS = 300_000;
+
+/**
  * Exponential backoff with jitter.
  *
  * The jitter is not decoration. Every box in a branch loses the link at the
@@ -714,7 +777,7 @@ export function migrateCachedBundle(raw: CachedBundle, supported: number): Cache
  */
 export function backoffMs(attempts: number, opts?: { baseMs?: number; capMs?: number }): number {
   const base = opts?.baseMs ?? 1_000;
-  const cap = opts?.capMs ?? 300_000;
+  const cap = opts?.capMs ?? OUTBOX_BACKOFF_CAP_MS;
   const bounded = Math.min(cap, base * 2 ** Math.max(0, attempts - 1));
   return Math.round(bounded / 2 + Math.random() * (bounded / 2));
 }

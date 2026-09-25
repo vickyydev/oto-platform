@@ -242,9 +242,11 @@ create table if not exists box_throttle (
 
 -- Small values the box owns, by key: the latest time this box has reason to
 -- believe in (how a Pi with no clock battery can tell that the time it booted
--- with is behind a moment it has already lived through), the booth's last
--- vouchers and who is signed in — and, one key per code, every voucher code
--- the booth has minted, so a repeat is drawn again (SCRUM-414).
+-- with is behind a moment it has already lived through), the last measurement
+-- of its clock against the platform and the boot it was made in (SCRUM-402),
+-- the booth's last vouchers and who is signed in — and, one key per code,
+-- every voucher code the booth has minted, so a repeat is drawn again
+-- (SCRUM-414).
 create table if not exists box_runtime (
   box_id text not null,
   runtime_key text not null,
