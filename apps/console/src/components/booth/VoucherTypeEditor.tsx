@@ -20,7 +20,9 @@ import {
   formProblems,
   inputFrom,
   notSetUp,
+  worthChange,
   type VoucherForm,
+  type Worth,
 } from './voucherTypes';
 
 /**
@@ -33,7 +35,11 @@ import {
  *   - **What it is worth** (the choice, the amount, the product or package).
  *     The till reads it when the voucher is scanned, so a change applies to
  *     every voucher of this type not yet redeemed — slips already printed
- *     included.
+ *     included. So a change to a worth the type already had is asked about
+ *     before it is sent, from and to in the till's words, naming a new
+ *     voucher type as the safer choice (`worthChange`, SCRUM-409). Completing
+ *     a type — its first product link — is not asked about: the slips printed
+ *     before the link are the ones that must pick it up.
  *   - **What the slip says** (title, instruction, terms, in English and Thai).
  *     Printed exactly as typed; when it reaches paper follows the wheel
  *     version each booth is running, not this form: a type that version
@@ -92,24 +98,61 @@ export function VoucherTypeEditor({
   const archived = Boolean(definition?.archivedAt);
   const [form, setForm] = useState<VoucherForm>(() => (definition ? formFrom(definition) : blankForm()));
   const [confirmArchive, setConfirmArchive] = useState(false);
+  /**
+   * Save was pressed on a change to what the type is worth, and the drawer is
+   * asking before it sends. Any edit withdraws the question; Save asks it
+   * again if the worth still changes.
+   */
+  const [askingWorth, setAskingWorth] = useState(false);
   const locked = readOnly || archived;
 
   const problems = formProblems(form, isNew);
   const canSave = !saving && !locked && Object.keys(problems).length === 0;
-  const set = (patch: Partial<VoucherForm>) => setForm((f) => ({ ...f, ...patch }));
+  const set = (patch: Partial<VoucherForm>) => {
+    setAskingWorth(false);
+    setForm((f) => ({ ...f, ...patch }));
+  };
 
   /**
    * The name drives the reference code until somebody types a code of their
    * own — the code is how imports and reports name a type, and a manager
    * should not have to invent a slug to add a prize.
    */
-  const setNameEn = (nameEn: string) =>
+  const setNameEn = (nameEn: string) => {
+    setAskingWorth(false);
     setForm((f) => ({ ...f, nameEn, ...(f.codeTouched ? {} : { code: nameEn.trim() ? codeFor(nameEn) : '' }) }));
+  };
 
   const products = useMemo(() => groupByBranch(linkOptions?.products ?? []), [linkOptions]);
   const packages = useMemo(() => groupByBranch(linkOptions?.packages ?? []), [linkOptions]);
   const uses = definition?.usedBy ?? [];
   const stillRefused = definition ? notSetUp(definition) : null;
+
+  const input = inputFrom(form, definition, isNew);
+  const change =
+    definition && !locked ? worthChange(definition, worthNamed(input, definition, linkOptions)) : null;
+  const asking = askingWorth && change !== null;
+
+  const save = () => {
+    if (change) {
+      setAskingWorth(true);
+      return;
+    }
+    onSave(input);
+  };
+
+  /** Put the worth back as it is stored; every other edit in the form stays. */
+  const keepWorth = () => {
+    if (!definition) return;
+    const stored = formFrom(definition);
+    set({
+      choice: stored.choice,
+      amountText: stored.amountText,
+      percentText: stored.percentText,
+      productId: stored.productId,
+      ticketPackageId: stored.ticketPackageId,
+    });
+  };
 
   return (
     <Drawer
@@ -123,39 +166,73 @@ export function VoucherTypeEditor({
       }
       onClose={onClose}
       footer={
-        <div className="flex flex-wrap items-center gap-2 justify-between">
-          {!isNew && !readOnly ? (
-            archived ? (
-              <Button variant="outline" size="sm" onClick={() => onRestore(definition)} disabled={saving}>
-                Restore
-              </Button>
-            ) : confirmArchive ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm">Archive this voucher type?</span>
-                <Button variant="destructive" size="sm" onClick={() => onArchive(definition)} disabled={saving}>
-                  Archive
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setConfirmArchive(false)}>
-                  Keep
-                </Button>
-              </div>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={() => setConfirmArchive(true)} disabled={saving}>
-                Archive voucher type
-              </Button>
-            )
-          ) : (
-            <span />
+        <div className="flex flex-col gap-3">
+          {asking && change && (
+            <div
+              className="rounded-xl border px-3.5 py-3 text-sm flex flex-col gap-1"
+              style={{
+                borderColor: 'hsl(var(--status-warn) / 0.45)',
+                backgroundColor: 'hsl(var(--status-warn) / 0.07)',
+              }}
+            >
+              <p className="font-semibold">
+                Change what it is worth, from {change.from} to {change.to}?
+              </p>
+              <p className="text-xs text-muted-foreground">
+                That applies at once to every voucher of this type not yet redeemed, the slips already
+                printed included
+                {uses.length > 0
+                  ? ` — it is on the wheel at ${uses.map((u) => `${u.boothName} (${u.prizeName})`).join(', ')}`
+                  : ''}
+                . Safer: keep this type as it is for those slips, create the new worth with “New voucher
+                type”, and point the prize at it.
+              </p>
+            </div>
           )}
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              {locked ? 'Close' : 'Cancel'}
-            </Button>
-            {!locked && (
-              <Button onClick={() => onSave(inputFrom(form, definition, isNew))} disabled={!canSave}>
-                {saving ? 'Saving…' : isNew ? 'Create voucher type' : 'Save'}
-              </Button>
+          <div className="flex flex-wrap items-center gap-2 justify-between">
+            {!isNew && !readOnly ? (
+              archived ? (
+                <Button variant="outline" size="sm" onClick={() => onRestore(definition)} disabled={saving}>
+                  Restore
+                </Button>
+              ) : confirmArchive ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Archive this voucher type?</span>
+                  <Button variant="destructive" size="sm" onClick={() => onArchive(definition)} disabled={saving}>
+                    Archive
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setConfirmArchive(false)}>
+                    Keep
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => setConfirmArchive(true)} disabled={saving}>
+                  Archive voucher type
+                </Button>
+              )
+            ) : (
+              <span />
             )}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                {locked ? 'Close' : 'Cancel'}
+              </Button>
+              {!locked && !asking && (
+                <Button onClick={save} disabled={!canSave}>
+                  {saving ? 'Saving…' : isNew ? 'Create voucher type' : 'Save'}
+                </Button>
+              )}
+              {!locked && asking && (
+                <>
+                  <Button variant="outline" onClick={keepWorth} disabled={saving}>
+                    Keep as it is
+                  </Button>
+                  <Button variant="destructive" onClick={() => onSave(input)} disabled={!canSave}>
+                    {saving ? 'Saving…' : 'Change it anyway'}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       }
@@ -444,6 +521,41 @@ export function VoucherTypeEditor({
       </div>
     </Drawer>
   );
+}
+
+/**
+ * The worth the form is about to send, with its product or package named the
+ * way the stored row's is — from the pickers, or from the row itself when the
+ * link is unchanged — so `worthChange` says "Free: Margherita Pizza" on both
+ * sides rather than an id on one.
+ */
+function worthNamed(
+  input: VoucherDefinitionInput,
+  stored: VoucherDefinitionRow,
+  links: VoucherLinkOptions | null,
+): Worth {
+  const product =
+    input.productId === null
+      ? null
+      : stored.product && stored.product.id === input.productId
+        ? stored.product
+        : (links?.products.find((p) => p.id === input.productId) ?? null);
+  const ticketPackage =
+    input.ticketPackageId === null
+      ? null
+      : stored.ticketPackage && stored.ticketPackage.id === input.ticketPackageId
+        ? stored.ticketPackage
+        : (links?.packages.find((p) => p.id === input.ticketPackageId) ?? null);
+  return {
+    kind: input.kind,
+    valueType: input.valueType,
+    valueSatang: input.valueSatang,
+    valueBp: input.valueBp,
+    productId: input.productId,
+    ticketPackageId: input.ticketPackageId,
+    product,
+    ticketPackage,
+  };
 }
 
 /** A field's hint, or what is wrong with it in the colour the other editors use for that. */

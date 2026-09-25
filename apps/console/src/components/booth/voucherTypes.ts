@@ -79,8 +79,21 @@ export function choiceOf(row: Pick<VoucherDefinitionRow, 'kind' | 'valueType'>):
   return null;
 }
 
+/**
+ * The columns that decide what a voucher is worth, with the product or package
+ * named where it is known. A stored row is one; so is what the editor is about
+ * to send, once its links are named from the pickers (`worthChange`).
+ */
+export type Worth = Pick<
+  VoucherDefinitionRow,
+  'kind' | 'valueType' | 'valueSatang' | 'valueBp' | 'productId' | 'ticketPackageId'
+> & {
+  product?: { name: string } | null;
+  ticketPackage?: { name: string } | null;
+};
+
 /** What a voucher type is worth, in the words the till's card uses. */
-export function worthOf(row: VoucherDefinitionRow): string {
+export function worthOf(row: Worth): string {
   switch (row.kind) {
     case 'discount':
       return row.valueType === 'percent'
@@ -109,6 +122,58 @@ export function worthOf(row: VoucherDefinitionRow): string {
     default:
       return row.kind;
   }
+}
+
+/**
+ * Whether the type already has a worth the till would honour: an amount or a
+ * percentage above zero, a product or a package linked. A hand-over prize is
+ * worth what it is by its kind alone.
+ *
+ * The line between completing a type and changing it. A free product whose
+ * product is linked for the first time is being completed — the slips printed
+ * before the link must pick it up, which is step 2 of `docs/ops/BOOTH_SETUP.md`
+ * — so that is not asked about. A type that already had a worth is a different
+ * matter: see `worthChange`.
+ */
+export function worthSettled(row: Worth): boolean {
+  switch (row.kind) {
+    case 'discount':
+      return row.valueType === 'percent' ? Boolean(row.valueBp) : Boolean(row.valueSatang);
+    case 'free_item':
+      return Boolean(row.productId);
+    case 'free_ticket':
+      return Boolean(row.ticketPackageId);
+    default:
+      return true;
+  }
+}
+
+/** Whether two worths differ in any column the till reads. */
+export function worthDiffers(a: Worth, b: Worth): boolean {
+  return (
+    a.kind !== b.kind ||
+    a.valueType !== b.valueType ||
+    (a.valueSatang ?? null) !== (b.valueSatang ?? null) ||
+    (a.valueBp ?? null) !== (b.valueBp ?? null) ||
+    (a.productId ?? null) !== (b.productId ?? null) ||
+    (a.ticketPackageId ?? null) !== (b.ticketPackageId ?? null)
+  );
+}
+
+/**
+ * What a save would change a stored type's worth from and to, in the till's
+ * words — or null when it would not, or when the type had no worth yet.
+ *
+ * Why this is asked about at all (SCRUM-409, the closing audit's L10): the
+ * till reads the worth from the type when a voucher is scanned, so the change
+ * applies at once to every voucher of the type not yet redeemed, the slips
+ * already printed included. The editor shows this and asks before sending;
+ * the safer choice for a new worth is a new voucher type, which leaves the
+ * slips out there worth what they were printed for.
+ */
+export function worthChange(stored: Worth, next: Worth): { from: string; to: string } | null {
+  if (!worthSettled(stored) || !worthDiffers(stored, next)) return null;
+  return { from: worthOf(stored), to: worthOf(next) };
 }
 
 /**

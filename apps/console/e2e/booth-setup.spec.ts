@@ -104,6 +104,60 @@ test('Voucher types: a 50 THB off type is created, Kids Pizza is linked and word
   await expect(fifty).toContainText('archived');
 });
 
+/**
+ * SCRUM-409 (the closing audit's L10): the till reads what a voucher is worth
+ * from its type when the slip is scanned, so changing the 100 THB Voucher to
+ * 80 reprices every slip already printed under it. The editor asks first,
+ * names both worths and the wheel the type is on, points at "New voucher
+ * type" as the safer choice, and sends nothing until the change is confirmed.
+ * A change to the words alone asks nothing — the Kids Pizza case above already
+ * shows the first product link is not asked about either.
+ */
+test('Voucher types: changing what the 100 THB Voucher is worth asks first, “Keep as it is” puts the amount back, and confirming reprices it', async ({
+  page,
+}) => {
+  await signInAndWait(page);
+  await openSection(page, 'Voucher types');
+
+  const hundred = page.getByRole('button', { name: /100 THB Voucher/ });
+  await expect(hundred).toBeVisible({ timeout: 30_000 });
+  await expect(hundred).toContainText('฿100 off the ticket order');
+  await hundred.click();
+  const edit = page.getByRole('dialog', { name: '100 THB Voucher' });
+  await expect(edit).toBeVisible();
+
+  await edit.getByLabel('Amount off').fill('80');
+  await edit.getByRole('button', { name: 'Save', exact: true }).click();
+  // Nothing was sent: the drawer stays, asking in the till's words.
+  await expect(edit).toContainText(
+    'Change what it is worth, from ฿100 off the ticket order to ฿80 off the ticket order?',
+  );
+  await expect(edit).toContainText('it is on the wheel at Booth 1 (100 THB Voucher)');
+  await expect(edit).toContainText('create the new worth with “New voucher type”');
+  await expect(edit.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
+
+  // The safer press puts the stored amount back, and the question goes with it.
+  await edit.getByRole('button', { name: 'Keep as it is', exact: true }).click();
+  await expect(edit.getByLabel('Amount off')).toHaveValue('100');
+  await expect(edit).not.toContainText('Change what it is worth');
+  await expect(edit.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+
+  // Asked again and confirmed, the list reads the new worth.
+  await edit.getByLabel('Amount off').fill('80');
+  await edit.getByRole('button', { name: 'Save', exact: true }).click();
+  await edit.getByRole('button', { name: 'Change it anyway', exact: true }).click();
+  await expect(edit).toHaveCount(0, { timeout: 30_000 });
+  await expect(hundred).toContainText('฿80 off the ticket order');
+
+  // The words alone are saved without a question.
+  await hundred.click();
+  const words = page.getByRole('dialog', { name: '100 THB Voucher' });
+  await words.getByLabel('Title (English)').fill('100 THB OFF YOUR TICKETS');
+  await words.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(words).toHaveCount(0, { timeout: 30_000 });
+  await expect(hundred).toContainText('Slip: the park’s own words, once a booth using it is published');
+});
+
 test('Booths: somebody is added to Booth 1, given a PIN that is never shown again, and taken off', async ({
   page,
 }) => {
