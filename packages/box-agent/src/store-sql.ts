@@ -1,5 +1,6 @@
 import {
   canonicalSyncBytes,
+  STATION_LEASE_TTL_S,
   type StationSessionDocument,
   type SyncChangeScope,
   type SyncEventEnvelope,
@@ -911,8 +912,22 @@ export class SqlBoxStore implements BoxStore {
       predicate += ' and lease_id is null';
     }
     if (expect.expiredBefore) {
-      predicate += ' and (lease_id is null or lease_expires_at <= ?)';
-      tail.push(expect.expiredBefore);
+      /**
+       * Run out by that instant — or further from running out than one lease
+       * length can put it (SCRUM-439): an expiry written on a clock that has
+       * since been corrected back, which the claim judged dead on its read
+       * (`stationLeaseLive` in `@oto/shared`) and which is re-tested here for
+       * the same reason the ordinary expiry is. A renewal landing between the
+       * read and this write is written on the clock the box reads now, so it
+       * is inside the length and still wins.
+       */
+      const beforeMs = Date.parse(expect.expiredBefore);
+      // An instant that is not a time leaves the rule as it was: nothing is that far off.
+      const pastAnyLease = Number.isFinite(beforeMs)
+        ? new Date(beforeMs + STATION_LEASE_TTL_S * 1000).toISOString()
+        : '9999-12-31T23:59:59.999Z';
+      predicate += ' and (lease_id is null or lease_expires_at <= ? or lease_expires_at > ?)';
+      tail.push(expect.expiredBefore, pastAnyLease);
     }
 
     const rows = await this.driver.query(

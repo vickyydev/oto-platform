@@ -47,6 +47,38 @@ export const STATION_LEASE_HEARTBEAT_S = 15;
 export const STATION_LEASE_TTL_S = 60;
 
 /**
+ * Whether a lease is still somebody's at `nowMs`, on the clock as the box
+ * reads it now (SCRUM-439).
+ *
+ * Live means it expires after now — and no further after now than one lease
+ * length can put it. Every expiry is written as the box's clock plus
+ * `STATION_LEASE_TTL_S`, and since SCRUM-402 that clock is the box's
+ * CORRECTED one, so a correction that moves it back — a Pi that booted hours
+ * ahead after a power cut and then measured itself against the platform —
+ * leaves a lease taken before it that many hours from expiring. A holder that
+ * is still there renews it onto the corrected clock within a heartbeat; one
+ * that is gone (the tab closed in the power cut) would otherwise hold the
+ * station against every other till for as long as the clock had been out,
+ * with a manager's takeover the only way in. So a lease further from
+ * expiring than its full length is treated as run out, the way the box's
+ * outbox treats a retry further off than its backoff cap. The lease length
+ * itself does not change.
+ *
+ * A lease written on the clock now read is never further off than its
+ * length, so a live till is never judged gone by this. The box re-tests the
+ * same rule inside its compare-and-set (`applyLease`), where the decision is
+ * made for real.
+ */
+export function stationLeaseLive(
+  lease: Pick<StationLease, 'expiresAt'> | null | undefined,
+  nowMs: number,
+): boolean {
+  if (!lease) return false;
+  const expiresAtMs = Date.parse(lease.expiresAt);
+  return expiresAtMs > nowMs && expiresAtMs <= nowMs + STATION_LEASE_TTL_S * 1000;
+}
+
+/**
  * Who may see what.
  *
  * `staff` is the till's view — the whole document. `customer` is what the box

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { STATION_LEASE_TTL_S, type StationChannelMessage } from '../src/contract';
+import {
+  STATION_LEASE_TTL_S,
+  type StationChannelMessage,
+  type StationLease,
+} from '../src/contract';
 import { StationSessionManager } from '../src/station-session';
 import type { QueuedFact } from '../src/store';
 import { BOX_ID, BRANCH_ID, OPERATOR_ID, openTestStore, plus, STATION_ID } from './_support';
@@ -741,4 +745,132 @@ test('a station that is not on this box is refused rather than invented', async 
     /not on this box's config bundle/,
   );
   h.close();
+});
+
+/**
+ * A lease taken before the clock was corrected back (SCRUM-439).
+ *
+ * The expiry is the box's clock plus the TTL, and since SCRUM-402 that clock
+ * is the corrected one: a Pi that booted three hours ahead after a power cut
+ * and then measured itself against the platform leaves a lease taken before
+ * the measurement three hours from expiring. A holder that is gone — the tab
+ * closed in the power cut — would hold the station that long, with a
+ * manager's takeover the only way in. So a lease further from expiring than
+ * its full length is treated as run out: claimable, with no manager, and
+ * nothing audited, as an expired one is. The lease length itself does not
+ * change.
+ */
+test('a lease left further from expiring than its length by a clock correction is claimable, with no manager', async () => {
+  const h = await openManager();
+  const HOUR = 3_600_000;
+  // Booted three hours ahead; the till claims on that clock.
+  h.setNow(plus(AT, 3 * HOUR));
+  const first = await h.manager.claim({ stationId: STATION_ID, holder: 'tab-1', holderKind: 'till' });
+  assert.equal(first.ok, true);
+  if (!first.ok) return;
+  assert.equal(first.lease.expiresAt, plus(AT, 3 * HOUR + STATION_LEASE_TTL_S * 1000));
+
+  // The box measures itself against the platform: three hours back. The
+  // lease it holds now expires three hours and a minute from now.
+  h.setNow(AT);
+  const second = await h.manager.claim({ stationId: STATION_ID, holder: 'tab-2', holderKind: 'till' });
+  assert.equal(second.ok, true, 'the station was held for as long as the clock had been out');
+  if (!second.ok) return;
+  assert.equal(second.takenOver, false, 'claimed as an expired lease is, not taken over');
+  assert.equal(second.document.takeoverCount, 0);
+  assert.equal(
+    second.lease.expiresAt,
+    plus(AT, STATION_LEASE_TTL_S * 1000),
+    'the lease length itself is unchanged',
+  );
+  assert.equal(h.facts.length, 0, 'nobody was displaced, so nothing is audited');
+  h.close();
+});
+
+/**
+ * And the same rule inside the write, where the decision is made for real.
+ *
+ * A holder that IS still there renews onto the corrected clock within a
+ * heartbeat, so its lease is inside the length again — and a claim that read
+ * the stretched expiry and decided on it must lose to that renewal, exactly
+ * as it loses to one landing on an ordinary expired lease (`a renewal
+ * landing mid-claim` above). Two stations, one for each half.
+ */
+test('the compare-and-set claims a stretched lease and refuses one renewed onto the corrected clock', async () => {
+  const box = openTestStore(AT);
+  await box.store.init(BOX_ID);
+  const HOUR = 3_600_000;
+  const aheadAt = plus(AT, 3 * HOUR);
+  const stations = {
+    abandoned: '018f0000-0000-7000-8000-0000000057a2',
+    renewed: '018f0000-0000-7000-8000-0000000057a3',
+  };
+  const stretched = (stationId: string, leaseId: string): StationLease => ({
+    leaseId,
+    holder: `till-${stationId.slice(-1)}`,
+    holderKind: 'till',
+    accountId: null,
+    startedAt: aheadAt,
+    heartbeatAt: aheadAt,
+    expiresAt: plus(aheadAt, STATION_LEASE_TTL_S * 1000),
+  });
+  const claimant = (stationId: string, leaseId: string): StationLease => ({
+    leaseId,
+    holder: `till-B-${stationId.slice(-1)}`,
+    holderKind: 'till',
+    accountId: null,
+    startedAt: AT,
+    heartbeatAt: AT,
+    expiresAt: plus(AT, STATION_LEASE_TTL_S * 1000),
+  });
+  for (const stationId of Object.values(stations)) {
+    await box.store.ensureSession(
+      { stationId, boxId: BOX_ID, operatorId: OPERATOR_ID, branchId: BRANCH_ID },
+      aheadAt,
+    );
+  }
+
+  // Both leases were taken on the clock three hours ahead.
+  const abandonedLease = stretched(stations.abandoned, '018f0000-0000-7000-8000-0000000a0001');
+  const renewedLease = stretched(stations.renewed, '018f0000-0000-7000-8000-0000000a0002');
+  assert.ok(
+    await box.store.applyLease(stations.abandoned, { leaseId: null }, { lease: abandonedLease }, aheadAt),
+  );
+  assert.ok(
+    await box.store.applyLease(stations.renewed, { leaseId: null }, { lease: renewedLease }, aheadAt),
+  );
+
+  // The box measures itself: three hours back. A claimant reads both rows,
+  // judges both leases run out, and quotes the instant it decided.
+  box.setNow(AT);
+  const decidedAt = AT;
+
+  // On one station the holder is gone: the claimant's write wins.
+  const claimed = await box.store.applyLease(
+    stations.abandoned,
+    { leaseId: abandonedLease.leaseId, expiredBefore: decidedAt },
+    { lease: claimant(stations.abandoned, '018f0000-0000-7000-8000-0000000a0003') },
+    decidedAt,
+  );
+  assert.ok(claimed, 'a lease three hours from expiring on the corrected clock is claimable');
+  assert.equal(claimed.lease?.holder, 'till-B-2');
+  assert.equal(claimed.takeoverCount, 0);
+
+  // On the other, the holder's heartbeat lands first, on the corrected clock.
+  const renewed = await box.store.applyLease(
+    stations.renewed,
+    { leaseId: renewedLease.leaseId },
+    { lease: { ...renewedLease, heartbeatAt: AT, expiresAt: plus(AT, STATION_LEASE_TTL_S * 1000) } },
+    AT,
+  );
+  assert.ok(renewed);
+  const lost = await box.store.applyLease(
+    stations.renewed,
+    { leaseId: renewedLease.leaseId, expiredBefore: decidedAt },
+    { lease: claimant(stations.renewed, '018f0000-0000-7000-8000-0000000a0004') },
+    decidedAt,
+  );
+  assert.equal(lost, null, 'the claimant must not take a station from a till that renewed');
+  assert.equal((await box.store.readSession(stations.renewed))?.lease?.holder, 'till-3');
+  box.close();
 });

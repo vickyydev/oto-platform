@@ -896,8 +896,17 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
     expect(row!.resolvedReason).not.toBe('recovered');
   });
 
-  it('a clock more than a minute out raises, and clears when it comes back', async () => {
-    await callingHome({ clockOffsetMs: 121_000 });
+  /**
+   * The box corrects its clock (SCRUM-402), so the alert says what is true
+   * now: how far out the machine's clock is, that the box has measured it and
+   * corrects for it, and that the measurement is what to weigh (SCRUM-439).
+   */
+  it('a clock more than a minute out raises, says the box corrects for it, and clears when it comes back', async () => {
+    await callingHome({
+      clockOffsetMs: 121_000,
+      clockMeasuredBy: 'box',
+      clockMeasuredAt: new Date(Date.now() - 40_000).toISOString(),
+    });
     const key = `box.clock:${(await theBox()).id}`;
 
     await watchdog();
@@ -905,12 +914,33 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
     expect(drifted!.status).toBe('open');
     expect(drifted!.severity).toBe('warning');
     expect(drifted!.summary).toContain('121s ahead');
-    expect(drifted!.summary).toContain('business date');
+    expect(drifted!.summary).toMatch(/the box measured that 4\ds ago and corrects what it stamps/);
+    expect(drifted!.summary).toContain('measurement going stale');
+    expect(drifted!.summary).not.toContain('wrong business date');
+    const detail = drifted!.detail as { clockMeasuredBy: string; clockMeasuredAgeSeconds: number };
+    expect(detail.clockMeasuredBy).toBe('box');
+    expect(detail.clockMeasuredAgeSeconds).toBeGreaterThanOrEqual(40);
+    expect(detail.clockMeasuredAgeSeconds).toBeLessThan(50);
     expect((await boxesOn())[0]!.state).toBe('warn');
 
     await callingHome({ clockOffsetMs: -30_000 });
     await watchdog();
     expect((await alertsOf(key))[0]!.status).toBe('resolved');
+  });
+
+  it('a box that has not measured its clock is said to be stamping on its own clock until it does', async () => {
+    // This side's computation from `reportedAt`, not a measurement the box declared.
+    await callingHome({ clockOffsetMs: -7_200_000, clockMeasuredBy: 'platform' });
+    const key = `box.clock:${(await theBox()).id}`;
+
+    await watchdog();
+    const [unmeasured] = await alertsOf(key);
+    expect(unmeasured!.status).toBe('open');
+    expect(unmeasured!.summary).toContain('7200s behind');
+    expect(unmeasured!.summary).toContain('has not measured that yet');
+    expect(unmeasured!.summary).toContain('dated by its own clock');
+    expect(unmeasured!.summary).not.toContain('corrects what it stamps');
+    expect((unmeasured!.detail as { clockMeasuredBy: string }).clockMeasuredBy).toBe('platform');
   });
 
   it('paper out and a device that did not answer raise per device, and stop when the box does', async () => {

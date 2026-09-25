@@ -1472,8 +1472,39 @@ export function evaluateBox(
     clear: offlineClear(),
   });
 
-  // --- Its clock has drifted far enough to date things wrongly.
+  /**
+   * --- Its clock is out, and the box corrects for it.
+   *
+   * Since SCRUM-402 the box measures its clock against the platform's on
+   * every heartbeat and stamps, prints and dates its trading day on the
+   * corrected time, so a clock hours out no longer files a sale on the wrong
+   * business date by itself. What this raises is still the machine's clock —
+   * a Pi with no clock battery after a power cut — and what the reader has to
+   * weigh is the MEASUREMENT (SCRUM-439): whether the box has taken one, and
+   * how old it is. A box that has not measured yet stamps on its own clock
+   * until it does, and a reboot sets the measurement aside (SCRUM-402), so
+   * the box is back on its own clock until the next heartbeat is answered.
+   *
+   * `clockMeasuredBy` and `clockMeasuredAt` are what `recordHeartbeat`
+   * (`box.ts`) wrote down: `box` when the box declared its own measurement,
+   * `platform` when it declared none and this side computed the offset from
+   * its `reportedAt`. An agent too old to say either reads as unmeasured,
+   * which is also the truth about what it stamps.
+   */
   const offsetSeconds = clockOffsetMs === null ? 0 : Math.round(clockOffsetMs / 1000);
+  const clockMeasuredBy = statusText(last, 'clockMeasuredBy');
+  const clockMeasuredAt = statusText(last, 'clockMeasuredAt');
+  const clockMeasuredAtMs = clockMeasuredAt === null ? NaN : Date.parse(clockMeasuredAt);
+  const clockMeasuredAgeSeconds = Number.isFinite(clockMeasuredAtMs)
+    ? secondsSince(new Date(clockMeasuredAtMs), now)
+    : null;
+  const clockWords = `${subject}'s clock is ${Math.abs(offsetSeconds)}s ${offsetSeconds >= 0 ? 'ahead of' : 'behind'} ours`;
+  const measuredWords =
+    clockMeasuredAgeSeconds === null
+      ? 'the box measured that itself'
+      : clockMeasuredAgeSeconds < 5
+        ? 'the box measured that just now'
+        : `the box measured that ${elapsedWords(clockMeasuredAgeSeconds)} ago`;
   conditions.push({
     key: `box.clock:${row.id}`,
     category: 'box.clock',
@@ -1481,8 +1512,18 @@ export function evaluateBox(
     subject,
     ...scope,
     active: reporting && clockOffsetMs !== null && Math.abs(clockOffsetMs) > CLOCK_TOLERANCE_MS,
-    summary: `${subject}'s clock is ${Math.abs(offsetSeconds)}s ${offsetSeconds >= 0 ? 'ahead of' : 'behind'} ours — everything it stamps while offline lands on the wrong business date`,
-    detail: { slot: row.slot, clockOffsetMs, toleranceMs: CLOCK_TOLERANCE_MS },
+    summary:
+      clockMeasuredBy === 'box'
+        ? `${clockWords} — ${measuredWords} and corrects what it stamps; only that measurement going stale, or a reboot before it measures again, would date things wrongly`
+        : `${clockWords} and the box has not measured that yet — until it does, what it stamps is dated by its own clock`,
+    detail: {
+      slot: row.slot,
+      clockOffsetMs,
+      toleranceMs: CLOCK_TOLERANCE_MS,
+      clockMeasuredBy,
+      clockMeasuredAt: Number.isFinite(clockMeasuredAtMs) ? clockMeasuredAt : null,
+      clockMeasuredAgeSeconds,
+    },
     clear: {
       category: 'box.clock',
       reason: 'recovered',

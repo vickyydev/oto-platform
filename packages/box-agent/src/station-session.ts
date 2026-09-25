@@ -22,6 +22,7 @@ import type {
   StationIdentity,
 } from './store';
 import { silentLog, type AgentLog } from './transport';
+import { stationLeaseLive } from '@oto/shared';
 
 /**
  * The station session: one document, one writer, full snapshots (S2-05).
@@ -317,7 +318,13 @@ export class StationSessionManager {
     const nowIso = now.toISOString();
     const current = await this.open(request.stationId);
     const held = current.lease;
-    const live = held !== null && Date.parse(held.expiresAt) > now.getTime();
+    /**
+     * Live on the clock the box reads now, and no further from expiring than
+     * one lease length: an expiry past that was written on a clock that has
+     * since been corrected back (SCRUM-439), and its holder is either gone or
+     * about to renew onto the corrected clock — `stationLeaseLive` says why.
+     */
+    const live = held !== null && stationLeaseLive(held, now.getTime());
 
     /** One place to refuse from: the tape gets the line, the caller gets the row. */
     const refuse = async (
@@ -424,7 +431,7 @@ export class StationSessionManager {
     if (!document) {
       const fresh = await this.open(request.stationId);
       const stillHeld = fresh.lease;
-      const stillLive = stillHeld !== null && Date.parse(stillHeld.expiresAt) > now.getTime();
+      const stillLive = stillHeld !== null && stationLeaseLive(stillHeld, now.getTime());
       // The ordinary way this happens is the race the expiry check above
       // exists for: this claim judged the lease abandoned, its holder's
       // heartbeat landed, and the write found a lease that is alive after all.
