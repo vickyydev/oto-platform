@@ -1127,7 +1127,9 @@ describe('reading a sale back', () => {
    * own answer. History shows "Voided … — <reason>" off the read, and a sale
    * voided at the till — the payment screen's Cancel, a voucher refusal's
    * offer — has no void answer on the History page to take the reason from,
-   * so before this it showed "Voided" and nothing else.
+   * so before this it showed "Voided" and nothing else. And it says by WHOM
+   * by name: the page shows "by Som", and had only the account id to show it
+   * with.
    */
   it('carries the void — when, by whom and why — on the detail and on the list', async () => {
     const saleId = newId();
@@ -1151,6 +1153,8 @@ describe('reading a sale back', () => {
       status: 'voided',
       voidedAt: voided.json().void.voidedAt as string,
       voidedByAccountId: reception!.id,
+      // The seeded reception person, named the way a list row names its seller.
+      voidedByName: 'Som (Reception)',
       voidReason: 'Guest walked away before paying',
     };
     expect(Date.parse(recorded.voidedAt)).not.toBeNaN();
@@ -1170,12 +1174,12 @@ describe('reading a sale back', () => {
     expect(row).toMatchObject(recorded);
   });
 
-  it('answers null for all three on a sale that was never voided', async () => {
+  it('answers null for all four on a sale that was never voided', async () => {
     const saleId = newId();
     const committed = await commit({ id: saleId, lines: [line(twoHoursId, 1, 0)] });
     expect(committed.statusCode, committed.body).toBe(200);
     // Present and null — not missing: `toMatchObject` fails on an absent key.
-    const never = { voidedAt: null, voidedByAccountId: null, voidReason: null };
+    const never = { voidedAt: null, voidedByAccountId: null, voidedByName: null, voidReason: null };
 
     const detail = await ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie } });
     expect(detail.statusCode).toBe(200);
@@ -1718,7 +1722,7 @@ describe('a cart of one hand-over prize', () => {
     expect(discounts[0]).toMatchObject({
       kind: 'promo',
       code,
-      label: `Mystery Gift (voucher ${code})`,
+      label: `Mystery Gift (voucher …${code.slice(-4)})`,
       amountSatang: 0,
       exhaustedReason: null,
     });

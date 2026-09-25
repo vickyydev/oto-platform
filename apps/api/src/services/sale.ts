@@ -1870,6 +1870,12 @@ export interface SaleView {
    */
   voidedAt: string | null;
   voidedByAccountId: string | null;
+  /**
+   * Who voided it, by name — History shows "by Som", not an account id — the
+   * same name a list row gives its seller (`accountLabel`). Null on a sale
+   * never voided, and null beside the account id when nothing names the account.
+   */
+  voidedByName: string | null;
   voidReason: string | null;
   totals: {
     subtotalSatang: number;
@@ -1886,7 +1892,13 @@ export interface SaleView {
   };
 }
 
-function viewOf(row: typeof sale.$inferSelect): SaleView {
+/**
+ * The sale row as every read answers it. `voidedByName` is not on the row:
+ * the caller looks it up — `voidedByNameOf` for one sale, `accountNamesOf`
+ * for a page of them — so a list resolves its voiders in one query rather
+ * than one per row.
+ */
+function viewOf(row: typeof sale.$inferSelect, voidedByName: string | null): SaleView {
   return {
     id: row.id,
     branchId: row.branchId,
@@ -1909,6 +1921,7 @@ function viewOf(row: typeof sale.$inferSelect): SaleView {
     note: row.note,
     voidedAt: row.voidedAt?.toISOString() ?? null,
     voidedByAccountId: row.voidedByAccountId,
+    voidedByName: row.voidedByAccountId ? voidedByName : null,
     voidReason: row.voidReason,
     totals: {
       subtotalSatang: row.subtotalSatang,
@@ -2038,6 +2051,50 @@ async function displayNameOf(db: Exec, accountId: string): Promise<string | null
     .where(eq(account.id, accountId))
     .limit(1);
   return row?.nickname ?? row?.name ?? null;
+}
+
+/**
+ * HOW A SALE NAMES AN ACCOUNT — the seller on a History row, the voider on a
+ * voided sale: the employee's nickname (what the park calls them, and what the
+ * prototype's card shows), then their name, then the phone the account signs
+ * in by — the last resort for an account with no employee record behind it.
+ */
+function accountLabel(row: {
+  nickname: string | null;
+  name: string | null;
+  phone: string | null;
+}): string | null {
+  return row.nickname ?? row.name ?? row.phone ?? null;
+}
+
+/**
+ * The names of a set of accounts, by id, in one query — the voiders of a page
+ * of sales as much as the one account a read or a void answers with. A null
+ * in the input is a sale never voided; it asks nothing.
+ */
+async function accountNamesOf(
+  db: Exec,
+  accountIds: readonly (string | null)[],
+): Promise<(accountId: string | null) => string | null> {
+  const ids = [...new Set(accountIds.filter((id): id is string => id !== null))];
+  if (ids.length === 0) return () => null;
+  const rows = await db
+    .select({
+      id: account.id,
+      name: employee.name,
+      nickname: employee.nickname,
+      phone: account.phone,
+    })
+    .from(account)
+    .leftJoin(employee, eq(account.employeeId, employee.id))
+    .where(inArray(account.id, ids));
+  const names = new Map(rows.map((row) => [row.id, accountLabel(row)]));
+  return (accountId) => (accountId ? (names.get(accountId) ?? null) : null);
+}
+
+/** `SaleView.voidedByName` for one sale: null, and no query, on a sale never voided. */
+async function voidedByNameOf(db: Exec, row: typeof sale.$inferSelect): Promise<string | null> {
+  return (await accountNamesOf(db, [row.voidedByAccountId]))(row.voidedByAccountId);
 }
 
 /**
@@ -2331,7 +2388,7 @@ export async function commitSale(
           .from(saleLine)
           .where(and(eq(saleLine.saleId, already.id), eq(saleLine.kind, 'fnb_item'))),
       ),
-      sale: viewOf(already),
+      sale: viewOf(already, await voidedByNameOf(tx, already)),
       lines: [],
       rejectedPromoCodes: [],
       voucher: null,
@@ -2743,7 +2800,7 @@ export async function commitSale(
     finalised: finalising,
     outstandingSatang: finalising ? 0 : owedAtCommit,
     pickupCode: recordedPickupCode(priced.lines.filter((l) => l.kind === 'fnb_item')),
-    sale: viewOf(written),
+    sale: viewOf(written, await voidedByNameOf(tx, written)),
     lines: priced.lines,
     rejectedPromoCodes: priced.rejectedPromoCodes,
     voucher: voucherViewOf(priced.voucher),
@@ -2884,7 +2941,7 @@ export async function finaliseSale(
         ? await attemptOfAction(tx, row.operatorId, saleId, input.actionId)
         : null,
       pickupCode,
-      sale: viewOf(row),
+      sale: viewOf(row, await voidedByNameOf(tx, row)),
       // The drawer opened on the first answer. A retry down a dropped
       // connection must not open it again with a queue in front of it.
       drawerKick: null,
@@ -3092,7 +3149,7 @@ export async function finaliseSale(
       outstandingSatang: owed,
       attempt,
       pickupCode,
-      sale: viewOf(row),
+      sale: viewOf(row, await voidedByNameOf(tx, row)),
       drawerKick,
       redeemedVoucherIds: [],
     };
@@ -3167,7 +3224,7 @@ export async function finaliseSale(
     outstandingSatang: 0,
     attempt,
     pickupCode,
-    sale: viewOf(after),
+    sale: viewOf(after, await voidedByNameOf(tx, after)),
     drawerKick,
     redeemedVoucherIds: consumed,
   };
@@ -3238,7 +3295,12 @@ export async function voidSale(
     reason: r.voidReason,
   });
   if (row.status === 'voided') {
-    return { replay: true, sale: viewOf(row), void: voidOf(row), releasedVoucherIds: [] };
+    return {
+      replay: true,
+      sale: viewOf(row, await voidedByNameOf(tx, row)),
+      void: voidOf(row),
+      releasedVoucherIds: [],
+    };
   }
   if (row.status === 'finalised') {
     throw errors.conflict(
@@ -3341,7 +3403,7 @@ export async function voidSale(
   });
   return {
     replay: false,
-    sale: viewOf(after),
+    sale: viewOf(after, await voidedByNameOf(tx, after)),
     void: voidOf(after),
     releasedVoucherIds: held.map((v) => v.id),
   };
@@ -3480,18 +3542,24 @@ export async function listSales(
     db,
     rows.map((row) => row.sale),
   );
+  // SCRUM-430 — who voided each voided sale on the page, by name, in one query.
+  const voiderNameOf = await accountNamesOf(
+    db,
+    rows.map((row) => row.sale.voidedByAccountId),
+  );
 
   return {
     sales: rows.map((row) => ({
-      ...viewOf(row.sale),
+      ...viewOf(row.sale, voiderNameOf(row.sale.voidedByAccountId)),
       tierClaim: claims.get(row.sale.id) ?? null,
       soldBy: row.sale.createdByAccountId
         ? {
             accountId: row.sale.createdByAccountId,
-            // The nickname is what the park calls them and what the prototype's
-            // card shows; the phone is the last resort for an account with no
-            // employee record behind it.
-            name: row.sellerNickname ?? row.sellerName ?? row.sellerPhone ?? null,
+            name: accountLabel({
+              nickname: row.sellerNickname,
+              name: row.sellerName,
+              phone: row.sellerPhone,
+            }),
           }
         : null,
       stationName: row.stationName,
@@ -3537,9 +3605,13 @@ export async function getSaleDetail(
    * `PaymentAttemptView` — no payload, no QR payload, no tenancy columns.
    */
   const attempts = await attemptsForSale(db, saleId);
+  const voidedByName = await voidedByNameOf(db, row);
 
   return {
-    sale: { ...viewOf(row), tierClaim: claims.get(row.id) ?? null } satisfies SaleReadView,
+    sale: {
+      ...viewOf(row, voidedByName),
+      tierClaim: claims.get(row.id) ?? null,
+    } satisfies SaleReadView,
     /** S2-09b — the code the guest holds, from the F&B lines that carry it. */
     pickupCode: recordedPickupCode(lines.filter((line) => line.kind === 'fnb_item')),
     attempts,

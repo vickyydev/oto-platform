@@ -1423,8 +1423,24 @@ export interface CartVoucherClaim {
   voucherId: string;
   code: string;
   definitionCode: string;
+  /** What the sale's discount line says — `voucherLineLabel`, never the whole code. */
   label: string;
   effect: VoucherEffect;
+}
+
+/**
+ * SCRUM-433 — HOW A SALE'S DISCOUNT LINE NAMES THE VOUCHER: the type's name
+ * and the LAST FOUR characters of the code, "150 THB Voucher (voucher …47WP)".
+ *
+ * The line is what History and `GET /sales/:id` read back, and a voided
+ * sale's voucher is free again — so a line that carried the whole code handed
+ * a live code to anyone who could open History. Four characters are enough to
+ * match the line to the slip in the guest's hand and not enough to redeem it.
+ * The voucher row and its ledger keep the full code; a search by code goes
+ * there.
+ */
+function voucherLineLabel(nameEn: string, code: string): string {
+  return `${nameEn} (voucher …${code.slice(-4)})`;
 }
 
 /**
@@ -1587,7 +1603,7 @@ export async function resolveCartVoucher(
       voucherId: v.id,
       code: v.code,
       definitionCode: def.code,
-      label: `${def.nameEn} (voucher ${v.code})`,
+      label: voucherLineLabel(def.nameEn, v.code),
       effect,
     },
     otherCodes,

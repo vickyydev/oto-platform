@@ -1219,7 +1219,8 @@ describe('what each kind of voucher does to the bill', () => {
     const saleId = await holdAndCommit(tillA, v.code, kids(1));
     const [written] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
     expect(written).toMatchObject({ grossSatang: KID, promoDiscountSatang: 0 });
-    // Beside a ticket: the ticket's line only, and the voucher's ฿0 row naming it.
+    // Beside a ticket: the ticket's line only, and the voucher's ฿0 row naming it
+    // — by its type and the last four of its code, never the whole code (SCRUM-433).
     const lines = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
     expect(lines.map((l) => l.kind)).toEqual(['kids']);
     const discounts = await ctx.db
@@ -1230,7 +1231,7 @@ describe('what each kind of voucher does to the bill', () => {
     expect(discounts[0]).toMatchObject({
       kind: 'promo',
       code: v.code,
-      label: `Mystery Gift (voucher ${v.code})`,
+      label: `Mystery Gift (voucher …${v.code.slice(-4)})`,
       discountType: 'fixed',
       valueSatang: 0,
       amountSatang: 0,
@@ -1264,7 +1265,12 @@ describe('what each kind of voucher does to the bill', () => {
     });
     expect(priced.json().totals).toMatchObject({ subtotalSatang: 0, grossSatang: 0 });
     expect(priced.json().appliedPromos).toEqual([
-      { code: v.code, label: `Mystery Gift (voucher ${v.code})`, type: 'fixed', amountSatang: 0 },
+      {
+        code: v.code,
+        label: `Mystery Gift (voucher …${v.code.slice(-4)})`,
+        type: 'fixed',
+        amountSatang: 0,
+      },
     ]);
 
     // Pay: rung up at ฿0 and left open, as the ticket and F&B tills leave every sale.
@@ -1286,7 +1292,7 @@ describe('what each kind of voucher does to the bill', () => {
     expect(discounts[0]).toMatchObject({
       kind: 'promo',
       code: v.code,
-      label: `Mystery Gift (voucher ${v.code})`,
+      label: `Mystery Gift (voucher …${v.code.slice(-4)})`,
       discountType: 'fixed',
       valueSatang: 0,
       amountSatang: 0,
