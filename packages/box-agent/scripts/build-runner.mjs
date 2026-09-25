@@ -148,9 +148,30 @@ writeFileSync(
 let commit = 'unknown';
 try {
   commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT }).toString().trim();
-  const dirty = execFileSync('git', ['status', '--porcelain', '--', 'packages', 'apps/booth', 'scripts/pi'], {
-    cwd: ROOT,
-  })
+  /**
+   * `+local` means the sources this was built from are not the commit's: an
+   * edited file, or one git does not know. Mode bits are set aside on purpose
+   * (`core.fileMode=false`): pnpm marks `bin/oto-box.mjs` executable when it
+   * links the bin, on every OS but Windows, and a checkout holding the file as
+   * 100644 then reports it modified with not a byte of it changed — which is
+   * how the first release CI packed was named `+local` (SCRUM-422). Nothing
+   * packed here depends on a mode: esbuild reads the sources, and `bin/` is
+   * not in the tarball.
+   */
+  const dirty = execFileSync(
+    'git',
+    [
+      '-c',
+      'core.fileMode=false',
+      'status',
+      '--porcelain',
+      '--',
+      'packages',
+      'apps/booth',
+      'scripts/pi',
+    ],
+    { cwd: ROOT },
+  )
     .toString()
     .trim();
   if (dirty) commit += '+local';

@@ -85,6 +85,21 @@ jobs:
           else
             echo "shellcheck is not on this runner; bash -n only"
           fi
+      # What the packer is about to read. `build-runner.mjs` names the tarball
+      # `+local` when git shows a change under packages/, apps/booth or
+      # scripts/pi, and the first release this job packed was named that way:
+      # `pnpm install` had marked packages/box-agent/bin/oto-box.mjs executable
+      # — pnpm does that to every bin it links, on every OS but Windows — and a
+      # mode flip is a modification to git on this runner, though never on the
+      # Windows machines the package is developed on. The packer now sets mode
+      # bits aside; this prints what git sees, with `git diff --summary` naming
+      # a mode flip as one, so whatever dirties the tree next time is read in
+      # the log rather than off the tarball's name.
+      - name: Working tree before the pack
+        run: |
+          git status --porcelain
+          git diff --summary
+          if [ -z "$(git status --porcelain)" ]; then echo "clean"; fi
       - name: Pack the Pi release
         id: pack
         run: |
@@ -92,6 +107,11 @@ jobs:
           cd packages/box-agent/dist
           set -- oto-box-*-"$(git rev-parse --short HEAD)"*.tgz
           [ "$#" -eq 1 ] && [ -f "$1" ] || { echo "expected one tarball for HEAD in dist/, found: $*"; exit 1; }
+          # A release packed here is the commit's, and its name says so. A
+          # `+local` name is a slip; the step above shows what caused it.
+          case "$1" in
+            *+local*) echo "::warning title=Pi release packed from a dirty tree::$1 — see the step 'Working tree before the pack'" ;;
+          esac
           sha256sum "$1" | tee "$1.sha256"
           echo "tarball=packages/box-agent/dist/$1" >> "$GITHUB_OUTPUT"
       - name: Upload the Pi release
