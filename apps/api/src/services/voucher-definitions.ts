@@ -72,11 +72,14 @@ import { withTx, type Exec, type OpContext } from './tx';
  * another voucher or a promo code, which branch may redeem it and whether a
  * till may take it offline are platform rules for every booth voucher (owner,
  * 24 September; spec §8): one voucher per sale and no promo code beside it,
- * any branch of the operator, online only. `vouchers.ts` enforces all three
- * whatever a definition says, so offering them as switches here would be a
- * screen promising behaviour the till does not have. `offline_policy` is still
- * accepted for the voucher sources it does govern (the legacy import, manual
- * issue); a booth voucher ignores it.
+ * any branch of the operator (but a free product only at a park selling its
+ * linked product, or one of its own with the same code once the linked one is
+ * archived; a 1+1 only at a park with a live ticket package of the same name
+ * — see `voucherDefinitionLinkOptions`), online only. `vouchers.ts` enforces all three whatever a definition says,
+ * so offering them as switches here would be a screen promising behaviour the
+ * till does not have. `offline_policy` is still accepted for the voucher
+ * sources it does govern (the legacy import, manual issue); a booth voucher
+ * ignores it.
  */
 
 type DefinitionRow = typeof voucherDefinition.$inferSelect;
@@ -125,7 +128,14 @@ export interface VoucherDefinitionUse {
 export interface VoucherLinkView {
   id: string;
   name: string;
-  /** The product's stable code — how another branch's till finds its own copy. Null for a package. */
+  /**
+   * The product's code. Where this product is not on sale, the platform looks
+   * for a live product of the redeeming park's own with this code
+   * (`freeItemAtBranch` in vouchers.ts) — one that can exist only once this
+   * one is archived, codes being unique among the operator's unarchived
+   * products (`product_code_unique`). Null for a package, and for a product
+   * that has no code.
+   */
   code: string | null;
   branchId: string | null;
   branchName: string | null;
@@ -516,12 +526,17 @@ export interface VoucherLinkOptions {
  * What a definition can point at: the operator's products that are on sale
  * and its ticket packages, each with the branch it belongs to.
  *
- * Every branch, because a definition is the operator's and ANY branch redeems
- * it (owner, 24 September): the till takes the linked row where it is on sale
- * and otherwise the same product at its own branch by `code`, or the same
- * package by name (`freeItemAtBranch`, `packageAtBranch` in `vouchers.ts`) —
- * so the branch shown here is where the link was made, not the only park
- * that honours it.
+ * Every branch, because a definition is the operator's. What the branch shown
+ * beside a link means depends on the kind (`freeItemAtBranch` and
+ * `packageAtBranch` in `vouchers.ts`):
+ *   - a 1+1's package is honoured at every park that sells a package of the
+ *     same name, so its branch is only where the link was made;
+ *   - a free product is honoured at the park that sells the linked product,
+ *     and at every park only when that product belongs to no branch. The
+ *     till's fallback to a product of its own branch with the same `code`
+ *     cannot reach another park while the linked row is live: a code belongs
+ *     to one live row in the whole operator (`product_code_unique`). So for a
+ *     free product the branch shown is the park that honours it.
  */
 export async function voucherDefinitionLinkOptions(
   db: Db,

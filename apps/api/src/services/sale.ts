@@ -1325,7 +1325,23 @@ export async function priceCart(
   if (new Set(lineIds).size !== lineIds.length) {
     throw errors.badRequest('Two lines on this cart carry the same id, so it cannot be priced');
   }
-  if (cartLines.length === 0) throw errors.badRequest('The cart is empty');
+  /**
+   * S2-10b — A HAND-OVER PRIZE'S SLIP ON ITS OWN IS A CART. The family buys
+   * nothing and the prize has no price, but a voucher is used up only when a
+   * sale carrying it closes (`consumeSaleVouchers`), so without a sale the slip
+   * could be shown again and again. It is rung up as a ฿0 sale with no line,
+   * which the ledger holds as it is: the sale, the voucher's ฿0 discount row
+   * naming its code, and its `applied` and `consumed` rows in
+   * `promo.voucher_redemption`. No `sale_line` is made up for it, because a
+   * line needs a taxable category and the prize has no product to take one
+   * from. A claim here is always a voucher this till holds
+   * (`resolveCartVoucher` refuses any other), and every other cart with
+   * nothing on it — a voucher of another kind, or a code that adds no line —
+   * is still empty.
+   */
+  if (cartLines.length === 0 && voucherClaim?.effect.type !== 'hand_over') {
+    throw errors.badRequest('The cart is empty');
+  }
 
   // A code with no definition attached has nothing to validate it against
   // (S2-09b owns the catalogue), so it is refused by name and takes nothing
@@ -1355,6 +1371,19 @@ export async function priceCart(
     scope.taxConfig,
     ctx,
   );
+  /**
+   * S2-10b — a hand-over prize's promo is worth nothing by design
+   * (`voucherPricing`). The engine marks a code that found nothing left to take
+   * off with "doesn't apply to any items in this order", and on a cart with
+   * nothing else on it — the slip on its own, above — it always finds nothing,
+   * so that sentence would be written on the sale's discount row. It is not
+   * true of a prize that was handed over, so it is dropped, and the row reads
+   * as it does beside a ticket: the code, its label, ฿0.
+   */
+  if (voucherClaim?.effect.type === 'hand_over') {
+    const applied = totals.appliedPromos.find((promo) => promo.code === voucherClaim.code);
+    if (applied) delete applied.exhaustedReason;
+  }
 
   const tb = totals.taxBreakdown;
   const grossSatang = tb.grandTotal;

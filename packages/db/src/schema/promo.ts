@@ -23,13 +23,23 @@ import { sale } from './sales';
 // and shared by every voucher of that kind; a VOUCHER is one piece of paper in
 // one family's hand, with a code, an issue time and a life of its own.
 //
-// Everything that decides value is copied onto the voucher at issue —
-// `cost_satang`, `expires_at` — rather than read back through the definition.
-// That is not denormalisation for speed. A voucher printed in October under a
-// definition an administrator re-costs in November is still worth what the
-// paper says: the park handed over a thing at a cost it knew at the time, and
-// a report of October's give-away must not move because somebody edited a form
-// later. The definition is the template; the voucher is the fact.
+// Two things are copied onto the voucher at issue rather than read back
+// through the definition: what the park pays for it (`cost_satang`) and when
+// it lapses (`expires_at`). That is not denormalisation for speed. A voucher
+// printed in October under a definition an administrator re-costs in November
+// still cost what it cost then: the park handed over a thing at a cost it knew
+// at the time, and a report of October's give-away must not move because
+// somebody edited a form later.
+//
+// What a voucher is WORTH at the till is not copied. Its kind, amount,
+// percentage, product or package are read from the definition when it is
+// redeemed (`resolveVoucherEffect` in `apps/api/src/services/vouchers.ts`), so
+// an edit to them applies to every voucher of that type not yet redeemed,
+// slips already printed included. That is the owner's decision 3 ("the value
+// comes from the voucher type on the server",
+// `docs/progress/plans/booth/PLAN.md`), and it is what lets a slip printed
+// before its free product or 1+1 package was linked be honoured once the link
+// is set.
 //
 // **Redemption columns are here and empty.** `redeemed_at`,
 // `redeemed_by_account_id`, `redeemed_branch_id` and `sale_id` are written by
@@ -56,10 +66,14 @@ import { sale } from './sales';
 /**
  * What the holder gets.
  *
- * `manual` is the booth prize handed over at the stand with nothing to ring up
- * — the prototype's third prize kind, "neither a campaign nor a barcode"
- * (`imports/oto-wheel-fortune/artifacts/spin-win/src/config.ts`). It still
- * needs a voucher, because the park still wants to know it was given away.
+ * `manual` is the hand-over prize: a thing given as it is, with no price on
+ * the bill — the prototype's third prize kind, "neither a campaign nor a
+ * barcode" (`imports/oto-wheel-fortune/artifacts/spin-win/src/config.ts`). It
+ * still needs a voucher, because the park still wants to know it was given
+ * away. The family brings the slip to reception, where it is rung up as a ฿0
+ * sale carrying the voucher, and the prize is handed over once that sale
+ * closes, which is what uses the voucher up (Q2, answer A, of the booth's
+ * closing audit: `docs/progress/plans/booth/AUDIT-CLOSING-2026-09-25.md`).
  *
  * Text + CHECK rather than a pg enum (S2-01b), so S2-10b and S2-21 widen the
  * list in one statement instead of taking a DDL lock.

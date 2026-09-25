@@ -1152,7 +1152,8 @@ describe('what each kind of voucher does to the bill', () => {
         type: 'free_item',
         product: { id: pizzaId, name: 'Margherita Pizza', kind: 'menu' },
       },
-      summary: 'Hand over, no charge: Margherita Pizza',
+      // Nothing is used up at the scan, so the card says to ring it up first.
+      summary: 'Ring up to use it, then hand over: Margherita Pizza',
     });
     const saleId = await holdAndCommit(tillA, v.code, kids(1));
     const lines = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
@@ -1209,11 +1210,136 @@ describe('what each kind of voucher does to the bill', () => {
 
   it('a hand-over prize puts nothing on the bill and is still used up with the sale', async () => {
     const v = await issue(defs.mystery!);
+    const looked = await lookup(tillA, v.code);
+    expect(looked.json().voucher).toMatchObject({
+      effect: { type: 'hand_over' },
+      // Nothing is used up at the scan, so the card says to ring it up first.
+      summary: 'Ring up to use it, then hand over: Mystery Gift',
+    });
     const saleId = await holdAndCommit(tillA, v.code, kids(1));
     const [written] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
     expect(written).toMatchObject({ grossSatang: KID, promoDiscountSatang: 0 });
+    // Beside a ticket: the ticket's line only, and the voucher's ฿0 row naming it.
+    const lines = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
+    expect(lines.map((l) => l.kind)).toEqual(['kids']);
+    const discounts = await ctx.db
+      .select()
+      .from(saleDiscount)
+      .where(eq(saleDiscount.saleId, saleId));
+    expect(discounts).toHaveLength(1);
+    expect(discounts[0]).toMatchObject({
+      kind: 'promo',
+      code: v.code,
+      label: `Mystery Gift (voucher ${v.code})`,
+      discountType: 'fixed',
+      valueSatang: 0,
+      amountSatang: 0,
+      scope: 'order',
+      exhaustedReason: null,
+    });
     expect((await finalise(tillA, saleId)).json().redeemedVoucherIds).toEqual([v.id]);
     expect((await voucherRow(v.id)).status).toBe('redeemed');
+  });
+
+  /**
+   * C2 of the booth's closing audit: a family brings only the slip. Before,
+   * the quote and the commit answered "The cart is empty", Cancel let the hold
+   * go, and the same slip was good for a second prize at any till.
+   */
+  it('a hand-over prize on its own is a ฿0 sale: rung up, closed at the confirm press, used once', async () => {
+    const v = await issue(defs.mystery!);
+    const saleId = newId();
+    expect((await hold(tillA, saleId, v.code)).statusCode).toBe(200);
+    // The slip is the whole cart: no ticket line and no item line.
+    const cart = { stationId: t1.id, lines: [], items: [], promoCodes: [v.code] };
+
+    const priced = await quote(tillA, cart);
+    expect(priced.statusCode, priced.body).toBe(200);
+    expect(priced.json().voucher).toMatchObject({
+      voucherId: v.id,
+      effect: { type: 'hand_over' },
+      amountSatang: 0,
+      applicable: true,
+      reason: null,
+    });
+    expect(priced.json().totals).toMatchObject({ subtotalSatang: 0, grossSatang: 0 });
+    expect(priced.json().appliedPromos).toEqual([
+      { code: v.code, label: `Mystery Gift (voucher ${v.code})`, type: 'fixed', amountSatang: 0 },
+    ]);
+
+    // Pay: rung up at ฿0 and left open, as the ticket and F&B tills leave every sale.
+    const rung = await commit(tillA, { id: saleId, ...cart, expectedTotalSatang: 0 });
+    expect(rung.statusCode, rung.body).toBe(200);
+    expect(rung.json()).toMatchObject({ finalised: false, outstandingSatang: 0 });
+    expect(await saleRow(saleId)).toMatchObject({
+      status: 'tendering',
+      grossSatang: 0,
+      receiptNumber: null,
+    });
+    // No line is made up for the prize; the discount row names the voucher at ฿0.
+    expect(await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId))).toEqual([]);
+    const discounts = await ctx.db
+      .select()
+      .from(saleDiscount)
+      .where(eq(saleDiscount.saleId, saleId));
+    expect(discounts).toHaveLength(1);
+    expect(discounts[0]).toMatchObject({
+      kind: 'promo',
+      code: v.code,
+      label: `Mystery Gift (voucher ${v.code})`,
+      discountType: 'fixed',
+      valueSatang: 0,
+      amountSatang: 0,
+      scope: 'order',
+      exhaustedReason: null,
+    });
+    expect(await voucherRow(v.id)).toMatchObject({ status: 'issued', heldSaleId: saleId });
+
+    // Confirm: nothing is owed, so no payment is recorded, and the close uses it up.
+    const closed = await finalise(tillA, saleId);
+    expect(closed.statusCode, closed.body).toBe(200);
+    expect(closed.json()).toMatchObject({
+      finalised: true,
+      outstandingSatang: 0,
+      redeemedVoucherIds: [v.id],
+    });
+    expect((await saleRow(saleId)).receiptNumber).toBeTruthy();
+    expect(await attemptsOf(saleId)).toEqual([]);
+    expect(await voucherRow(v.id)).toMatchObject({
+      status: 'redeemed',
+      saleId,
+      heldSaleId: null,
+      redeemedStationId: t1.id,
+    });
+    expect((await ledgerOf(v.id)).map((r) => r.kind)).toEqual(['held', 'applied', 'consumed']);
+
+    // Used once: the same slip at the next till is refused, at the scan and at the hold.
+    const again = await lookup(tillB, v.code);
+    expect(again.statusCode).toBe(409);
+    expect(again.json().error.code).toBe('ALREADY_REDEEMED');
+    expect(again.json().error.message).toMatch(
+      /^Already redeemed on \d{1,2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2} at Oto Play Park, Central Floresta \/ Reception Till 1 by Som \(Reception\)$/,
+    );
+    const reheld = await hold(tillB, newId(), v.code);
+    expect(reheld.statusCode).toBe(409);
+    expect(reheld.json().error.code).toBe('ALREADY_REDEEMED');
+  });
+
+  it('only a hand-over prize is a cart on its own: any other voucher with nothing to come off is still an empty cart', async () => {
+    for (const definition of [defs['spin-voucher-150']!, defs.oneplusone!]) {
+      const v = await issue(definition);
+      const saleId = newId();
+      expect((await hold(tillA, saleId, v.code)).statusCode).toBe(200);
+      const cart = { stationId: t1.id, lines: [], items: [], promoCodes: [v.code] };
+      const priced = await quote(tillA, cart);
+      expect(priced.statusCode).toBe(400);
+      expect(priced.json().error.message).toBe('The cart is empty');
+      const rung = await commit(tillA, { id: saleId, ...cart });
+      expect(rung.statusCode).toBe(400);
+      expect(rung.json().error.message).toBe('The cart is empty');
+      expect(await ctx.db.select().from(sale).where(eq(sale.id, saleId))).toEqual([]);
+      expect((await release(tillA, saleId, v.id)).json().released).toBe(true);
+    }
   });
 });
 

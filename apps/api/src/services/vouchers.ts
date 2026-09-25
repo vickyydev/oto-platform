@@ -61,7 +61,14 @@ import type { Exec, Tx } from './tx';
  *     refuses a lost voucher and sends that sale to Failures).
  *   - The value comes from the voucher's definition, on this side, never from
  *     the till (`resolveCartVoucher` and `voucherPricing`).
- *   - A voucher may be redeemed at any branch, and the branch is recorded.
+ *   - A voucher may be redeemed at any branch, and the branch is recorded —
+ *     except where its item is not sold. A free product is honoured only at a
+ *     park selling the linked product (every park, for a product that belongs
+ *     to no branch), or selling a product of its own with the same code, which
+ *     can exist only once the linked one is archived (`freeItemAtBranch`). A
+ *     1+1 is honoured only at a park with a live ticket package of the same
+ *     name (`packageAtBranch`). Anywhere else the answer is
+ *     VOUCHER_ITEM_UNAVAILABLE.
  *   - Booth vouchers are redeemed online only, whatever the definition's
  *     offline policy says (spec §8) — see `refuseOffline`.
  *   - Expiry is enforced when set; null means it never expires.
@@ -452,12 +459,18 @@ export type VoucherEffect =
 /**
  * A free item from its product link, at the branch doing the redeeming.
  *
- * ANY BRANCH (owner, 24 Sept) meets a catalogue that is partly per branch: a
- * product may be operator-wide or belong to one park. The linked row is used
- * when it is on sale here; otherwise the same product at this branch, matched
- * on its stable `code` — the key the menu import and the branch clone already
- * match on. A product nobody has given a code, or one this park does not
- * stock, is refused by name rather than guessed at.
+ * HONOURED AT THE PARK THAT SELLS THE LINKED PRODUCT, not at every park. The
+ * owner's "any branch" (24 Sept) meets a catalogue that is partly per branch,
+ * and for a free item the catalogue decides. The linked row is used when it is
+ * on sale here: an operator-wide product (no branch) is on sale at every park,
+ * a park's own product only at that park. Otherwise a product of this branch
+ * with the same `code` is looked for — but `product_code_unique` gives a code
+ * to one live row in the whole operator, so while the linked row is live no
+ * other park can hold its code, and this finds a row only once the linked one
+ * has been archived. A product with no code, or one this park does not stock,
+ * is refused by name (VOUCHER_ITEM_UNAVAILABLE) rather than guessed at. How
+ * the other parks should honour it is the owner's open choice
+ * (`docs/progress/plans/booth/AUDIT-CLOSING-2026-09-25.md`, M7 and Q7).
  */
 async function freeItemAtBranch(
   db: Exec,
@@ -584,7 +597,17 @@ export async function resolveVoucherEffect(
   }
 }
 
-/** The line the till's card shows under the prize name. */
+/**
+ * The line the till's card shows under the prize name.
+ *
+ * A free item and a hand-over prize are something staff give the family, and
+ * the card says to ring the voucher up FIRST. A scan and a hold use nothing
+ * up: the voucher is used up only when a sale carrying it closes
+ * (`consumeSaleVouchers`). Staff who handed the prize over at the scan and
+ * then pressed Cancel would leave the voucher free for a second prize. Every
+ * answer that carries this line — the look-up and the hold — comes before that
+ * sale closes; once it has, a look-up answers ALREADY_REDEEMED instead.
+ */
 export function describeEffect(effect: VoucherEffect, prizeName: string): string {
   switch (effect.type) {
     case 'amount_off':
@@ -592,11 +615,11 @@ export function describeEffect(effect: VoucherEffect, prizeName: string): string
     case 'percent_off':
       return `${effect.valueBp / 100}% off the ticket order`;
     case 'free_item':
-      return `Hand over, no charge: ${effect.product.name}`;
+      return `Ring up to use it, then hand over: ${effect.product.name}`;
     case 'free_kids_ticket':
       return `Second kids ticket free — ${effect.package.name}`;
     case 'hand_over':
-      return `Hand over: ${prizeName}`;
+      return `Ring up to use it, then hand over: ${prizeName}`;
   }
 }
 
@@ -1633,7 +1656,10 @@ export const VOUCHER_LINE_PACKAGE_KEY = 'voucher-line';
  *                is how "not valid for Eat & Play" holds: that package is never
  *                the one linked.
  *   hand over    a promo worth nothing, so the sale still records which voucher
- *                it carried.
+ *                it carried, and no line: the prize has no product and no
+ *                price. On its own it is still a sale — a ฿0 one, which
+ *                `priceCart` lets past its empty-cart check — because a sale
+ *                closing is the only thing that uses a voucher up.
  *
  * `applicable: false` with a reason when the cart has nothing the voucher can
  * come off — a quote shows it, a commit refuses it, so a voucher is never used
