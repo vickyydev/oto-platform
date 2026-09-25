@@ -7,7 +7,8 @@
     "dev": "vite --config vite.config.ts",
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -72,6 +73,7 @@
     "typescript": "~5.9.3",
     "vaul": "^1.1.2",
     "vite": "catalog:",
+    "vitest": "^3.2.7",
     "wouter": "catalog:",
     "zod": "catalog:"
   }

@@ -1,0 +1,12 @@
+{
+  // The unit tests and their runner config (SCRUM-408). `tsconfig.json` covers
+  // `src/` and leaves every `*.test.ts` out, and vitest strips types without
+  // checking them — so without this a test could assert on a shape the till
+  // no longer has and still pass. `pnpm typecheck` runs both.
+  "extends": "./tsconfig.json",
+  "include": ["test/**/*.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "tsBuildInfoFile": ".test.tsbuildinfo"
+  }
+}
