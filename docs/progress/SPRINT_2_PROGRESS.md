@@ -2,7 +2,7 @@
 
 ## Status
 
-_Last updated 2026-09-25, 16:28._
+_Last updated 2026-09-25, 19:46._
 
 > **Resuming? Read `SESSION_HANDOVER.md` → "2026-09-24 — closing S2-09", then
 > "State at the end of 2026-09-23".** It carries the live commit on every staging service, what landed
@@ -20,7 +20,8 @@ _Last updated 2026-09-25, 16:28._
   and proven on staging). CP2's remaining line is
   SCRUM-206's own end-to-end evidence, which waits on Slice F.
 
-- **Last landed.** `main` is **`e7c3c80`** — the audit's follow-ups as quick rounds on
+- **Last landed.** `main` is **`a63d0b5`** — SCRUM-402 (the Pi's clock, `7b360cd`) and
+  SCRUM-401 (promo codes priced by the platform, `4dfcb34`), then the audit's follow-ups as quick rounds on
   25 Sept (SCRUM-409, 411, 413/427, 417, 418, 414, 430/424, 420, 429; `494b6d6`…`f851037`,
   proof images `e7c3c80`; eight of them Deployed on staging proof), after
   the CI pack step (`cf9b9df`) and the printer guide (`a34acb0`). Before them, the

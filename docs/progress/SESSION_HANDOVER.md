@@ -359,6 +359,41 @@ different; the Pi runtime and the counter were not built at all).**
   **Next:** land 432, 401, 402; then quick rounds for 430's remainder + 437 + 436 +
   433 (apps/pos and vouchers.ts, after 401) and 435 (Console, after 402); Deployed
   for 420 and 430 after those; then the rest of the audit's tickets by priority.
+- **The two High fixes landed (25 Sept, 19:46).** **SCRUM-402** `7b360cd`: the box
+  measures its clock against the platform on every heartbeat — also off a refused
+  one, which now carries the platform's time (400 BOX_CLOCK_SKEW and 409
+  BOX_HEARTBEAT_STALE both) — and from then on stamps events, the slip's time and
+  expiry, the trading day and the daily cap on the corrected clock; the
+  measurement is kept with the boot identity and set aside after a reboot or a
+  step of the clock; before the first measurement events are untrusted with no
+  offset; the outbox's retries are held to their backoff cap; Health says the
+  clock as a person would. Three gates; the third added the one missing test
+  (the `believable` guard). Residuals: SCRUM-438 (sync.ts files a clock anomaly
+  even when the days agree), SCRUM-439 (an alert summary, print retries and
+  station leases that move with a correction, a stale comment). **SCRUM-401**
+  `4dfcb34` (+ `a63d0b5`, the sync test's claim helper scoped to the operator —
+  the seed deliberately gives the second operator a box in `virtual-1`): promo
+  codes are priced by the platform from `pos.discount_definition` (new
+  `services/promo-codes.ts`), judged by window on the trading day, branch,
+  stacking and limits counted on paid sales; unknown/archived/inactive refused
+  by name; quote and commit agree; the tills and the F&B and shop stations drop a
+  refused code with its reason; an offline replay is filed as recorded, counted,
+  and raised as `sale.offline_promo` alert when it differs. Four gates (the third
+  found the stations' stuck code, the offline lower-case count and four sales-fnb
+  tests; the fourth passed with a real drive of both stations on a local stack).
+  SCRUM-374's platform half is covered. **Three owner questions on the ticket:**
+  a one-use code rung up twice before either sale is paid (suggested: re-check at
+  payment); a free item and its paid extras; refunded sales and limits. Also
+  landed: `b1fd08c` SCRUM-432 (the worth question names the words that still say
+  the old worth), `31ced64` SCRUM-435 (the Paper width field and the Devices
+  branch select get a full row). The Pi release of `f851037` was handed over
+  (SHA-256 `27fcb3df…d349`); CI packs one per commit (artifact
+  `oto-box-<fullsha>`; take that rather than packing a dirty tree). **In flight:** SCRUM-431 on Opus (`wf_39d4c199`: the box remembers per printer that the unit answers status, so a stopped printer's next job is held, not printed blind); quick rounds r11 (`wf_afc4bd15`: SCRUM-433's masked code in the discount line, `voidedByName` on the sale view) and r12 (`wf_07b16c5e`: 430's remainder on History, 437, 436, the stale itemPromo comment); CI, the Pi artifact and staging watched at `a63d0b5`.
+  **Next:** land 431, r11, r12; a staging pass with a screenshot each for 429,
+  432, 435, 402, 401, 431 → Deployed, and 420/430 → Deployed; a fresh Pi release
+  at that head; then 438/439, the remaining audit tickets by priority (403, 404,
+  406, 407, 408, 412, 415, 419, 421, 422, 423, 425, 428; 405, 410, 426 wait on
+  the owner), SCRUM-434's answer, and behind the booth the Sprint 2 order.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
