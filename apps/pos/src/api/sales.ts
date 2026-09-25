@@ -483,7 +483,11 @@ export interface SaleCommitResult {
   sale: ApiSale;
   /** True when the platform answered from the idempotency store rather than writing. */
   replay: boolean;
-  /** S2-10b — the voucher this sale was priced with, when it carries one. */
+  /**
+   * S2-10b — the voucher this sale was priced with, when it carries one. Its
+   * `code` is masked to the last four characters in a commit answer
+   * (SCRUM-433); the whole code lives only in the hold answer the till keeps.
+   */
   voucher?: QuotedVoucher | null;
 }
 

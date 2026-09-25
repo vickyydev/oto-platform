@@ -91,7 +91,10 @@ export async function createTestDatabase(
   opts: { otoapp?: boolean } = {},
 ): Promise<{ url: string; drop: () => Promise<void> }> {
   const server = await ensureServer();
-  const name = `oto_test_${Date.now()}_${dbCounter++}`;
+  // The process id and a random tail keep parallel workers apart: each worker's
+  // counter starts at zero, and two of them starting in the same millisecond
+  // once collided on the database name.
+  const name = `oto_test_${Date.now()}_${process.pid}_${Math.random().toString(36).slice(2, 6)}_${dbCounter++}`;
   const admin = new pg.Client({ connectionString: server });
   await admin.connect();
   await admin.query(`CREATE DATABASE ${name}`);
