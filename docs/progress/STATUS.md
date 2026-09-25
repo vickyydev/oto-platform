@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-25, 03:43 (`main` at `eaf0d48` plus this checkpoint; staging at `9673e39`)_
+_Last updated: 2026-09-25, 08:59 (`main` at `4d0e24e` plus this checkpoint; staging deploying it)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
@@ -71,9 +71,10 @@ Rounds 1 and 2 landed (`1de320c` the Pi runtime, `13a6e70` the redemption api,
 `c4f8b4e` the till, `9673e39` the Console; 398, 399, 400, 207 and the four Bugs in
 Testing). The end-to-end proof on staging held at 9673e39 (a real box process on this
 machine, the slip decoded from the printer bytes, the voucher redeemed once at the
-staging till) and the eight booth tickets are Deployed (03:41). Running: the closing
-adversarial audit, then its fix round and the guides' corrections, then "ready".
-Everything below waits behind it.
+staging till) and the eight booth tickets are Deployed (03:41). The closing audit's fix
+round landed as `79a1c0e`…`4d0e24e` (the eight lanes); its 29 follow-ups are
+SCRUM-401…429; the Pi release is packed at `4d0e24e`. Running: the staging proof of
+the four big fixes, then "ready". Everything below waits behind it.
 
 **Then the recommended order, still the owner's to confirm**, with the reasoning in
 `SESSION_HANDOVER.md`:

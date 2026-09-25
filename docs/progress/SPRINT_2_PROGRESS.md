@@ -2,7 +2,7 @@
 
 ## Status
 
-_Last updated 2026-09-25, 03:43._
+_Last updated 2026-09-25, 08:59._
 
 > **Resuming? Read `SESSION_HANDOVER.md` → "2026-09-24 — closing S2-09", then
 > "State at the end of 2026-09-23".** It carries the live commit on every staging service, what landed
@@ -17,7 +17,12 @@ _Last updated 2026-09-25, 03:43._
   and proven on staging). CP2's remaining line is
   SCRUM-206's own end-to-end evidence, which waits on Slice F.
 
-- **Last landed.** `main` is **`9673e39`** — the booth's round 2: `c4f8b4e` (the
+- **Last landed.** `main` is **`4d0e24e`** — the closing audit's fix round, eight
+  commits by lane (`79a1c0e`…`4d0e24e`: the void offer and History's Void, the
+  hand-over prize at ฿0, the booth prefix rule, the bounded press and the
+  silent-printer give-up, the expiry at the end of the printed day, the PIN lock
+  under a burst, the Console's prefix field and honest hints, the guides and the
+  counter guide). Before it, the booth's round 2: `c4f8b4e` (the
   till redeems a voucher: scanned by the box, typed, or read by a USB scanner;
   held, priced by the platform, used up at payment; the platform's own
   refusals; a ฿0 sale closed only on confirmation; Cancel voids) and `9673e39`
