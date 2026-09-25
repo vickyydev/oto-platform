@@ -8,13 +8,15 @@ import OtoWordmark from './OtoWordmark';
  * The screen a booth shows before anybody has paired it (SCRUM-244).
  *
  * **It is the booth's existing "not set up" screen with a way out.** The
- * unsynced state already says "Booth not set up, connect to internet" in the
- * same centred wordmark-and-line layout; this is that screen, plus the six
- * digits a member of staff reads off the Console. Nothing is restyled: the
- * panel, the entry field, the number pad and the button are the classes the
- * staff sign-in panel already uses (`k-panel`, `k-pin`, `k-keypad`, `k-key`,
- * `k-panel-btn`), because a booth with two visual languages is a booth
- * somebody has to be taught twice.
+ * unsynced state already puts a line under the wordmark in the same centred
+ * layout — "This booth is being set up — please ask our staff", or "Booth not
+ * set up, connect to internet" while the box is offline (`noWheelScreen` in
+ * src/copy.ts); this is that screen, with a line of its own
+ * (`PAIR_COPY.guest`), plus the six digits a member of staff reads off the
+ * Console. Nothing is restyled: the panel, the entry field, the number pad
+ * and the button are the classes the staff sign-in panel already uses
+ * (`k-panel`, `k-pin`, `k-keypad`, `k-key`, `k-panel-btn`), because a booth
+ * with two visual languages is a booth somebody has to be taught twice.
  *
  * **What a guest can see, and what they can do with it** (D15). The line is
  * bilingual and says a member of staff is needed — the same shape as every

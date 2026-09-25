@@ -243,7 +243,10 @@ export function VoucherTypes() {
           <li>Redeemed online only: a till working offline refuses a booth voucher.</li>
           <li>Used once. A second scan says when, where and by whom it was redeemed.</li>
           <li>One voucher per sale, and never beside a promo code.</li>
-          <li>Any branch of the park redeems it.</li>
+          <li>
+            Any branch of the park redeems it — but a free product only where its product is on
+            sale, and a 1+1 only where a ticket package of the same name is sold.
+          </li>
         </ul>
       </Panel>
 

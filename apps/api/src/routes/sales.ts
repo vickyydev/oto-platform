@@ -214,8 +214,11 @@ const Cart = z.object({
     })
     .optional(),
   /**
-   * The ticket lines. No longer `.min(1)`: an F&B or shop order has none, and
-   * the service refuses a cart carrying neither kind of line.
+   * The ticket lines. No longer `.min(1)`: an F&B or shop order has none. A
+   * cart carrying neither kind of line is refused by the service (`priceCart`)
+   * unless a voucher's code on it gives it one — a free item's line, which the
+   * platform puts on the bill — or it is a held hand-over prize's code alone,
+   * a ฿0 sale of its own (S2-10b).
    */
   lines: z.array(CartLine).max(50).default([]),
   /** S2-09b — the F&B and shop lines. */
@@ -366,8 +369,9 @@ export async function saleRoutes(app: App): Promise<void> {
       // or a voucher's code on its own (S2-10b). A free-item voucher's line is
       // put on the bill by the platform, never sent by the till, so a guest
       // claiming only their Kids Pizza is a cart of no lines and one code.
-      // Whether the code is such a voucher is the service's to decide: a cart
-      // whose codes add no line is still refused as empty, by `priceCart`.
+      // What the code is, is the service's to decide: `priceCart` refuses a cart
+      // whose codes add no line as empty, unless its one code is a held
+      // hand-over prize, which is a ฿0 sale of its own (C2).
       if (
         (cart.lines?.length ?? 0) === 0 &&
         (cart.items?.length ?? 0) === 0 &&

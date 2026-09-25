@@ -119,8 +119,10 @@ export const BoothHeartbeatSchema = z.object({
   /**
    * `booth.booth_config_version.version` — the published wheel the box is
    * actually running. **Null means it has never synced one**, which is a
-   * distinct state from version 1: the television shows "Booth not set up,
-   * connect to internet" and the button does nothing.
+   * distinct state from version 1: the television shows its no-wheel screen —
+   * "This booth is being set up — please ask our staff" while the box is
+   * online, "Booth not set up, connect to internet" while it is not — and the
+   * button does nothing.
    *
    * A number rather than the box-wide `configVersion` above, which is a hash
    * of the whole box's configuration. They answer different questions and a

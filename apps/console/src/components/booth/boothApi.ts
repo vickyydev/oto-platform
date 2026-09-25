@@ -45,8 +45,10 @@ export interface BoothListRow {
   layoutName: string | null;
   /**
    * The newest version anybody has published here. Null means nobody has —
-   * a television showing "Booth not set up, connect to internet" — which the
-   * page names rather than drawing as a zero.
+   * a television on its no-wheel screen, "This booth is being set up — please
+   * ask our staff" while its box is online and "Booth not set up, connect to
+   * internet" while it is not — which the page names rather than drawing as a
+   * zero.
    */
   publishedVersion: number | null;
   publishedAt: string | null;

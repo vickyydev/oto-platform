@@ -18,10 +18,12 @@
    ------------------------------------------------------------ */
 
 /* Thai with no internet (SCRUM-223). 'Noto Sans Thai' comes from Google
-   Fonts (index.html), and a booth box that boots before the mall's line is up
-   — or a network that blocks Google — never gets it, and Thai falls through
-   to whatever the device has; a Raspberry Pi may have none. 'Booth Thai' is
-   the same face, unmodified, from the fonts the receipt printer already uses
+   Fonts, asked for by the page's script once the page has loaded
+   (GOOGLE_FONT_STYLESHEET in src/App.tsx; nothing in index.html fetches it),
+   and a booth box that boots before the mall's line is up — or a network
+   that blocks Google — never gets it, and Thai falls through to whatever the
+   device has; a Raspberry Pi may have none. 'Booth Thai' is the same face,
+   unmodified, from the fonts the receipt printer already uses
    (packages/print/fonts, OFL), built into the page, so it travels in the box's
    release and is served by the box itself. It stands after 'Noto Sans Thai'
    in every stack below, so it is used only when that did not load, and only

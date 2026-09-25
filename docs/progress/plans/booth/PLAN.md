@@ -55,18 +55,41 @@ audit, this time with paper.
 
 ## The bench test the owner runs at the end
 
-1. Console → Booths: prizes, chances, caps, expiry; Review and publish.
-2. Console → Devices → Add a box (the Pi); claim on the TV or by `oto-box claim`.
-3. Console → Devices → the Pi's box → add the receipt printer at its address.
-4. Console → Booths: create the booth on the Pi's box; assign the staff; set the
-   PIN and the session length.
-5. The TV: pick the booth, sign in (account or PIN), press the red button — a
-   slip comes out of the printer.
-6. The staging POS on a laptop: type the code — the till shows the prize or the
-   discount and puts it on the sale; pay; type it again — "Already redeemed on
-   … at … by …".
-7. Pull the Pi's internet, spin, plug it back: the voucher arrives, and the
-   counter redeems it.
+In the order the booth needs them: the Pi's booth is created before its wheel
+is published, and published before the TV can show a wheel. The guides are
+`docs/ops/PI_BOOTH.md`, `docs/ops/BOOTH_SETUP.md` and, for the till,
+`docs/ops/COUNTER_VOUCHERS.md`.
+
+Before the bench: the release file and its SHA-256 from us, checked with
+`sha256sum` and installed on the Pi (PI_BOOTH §2–3); the voucher types worded
+and linked (BOOTH_SETUP §1–2).
+
+1. Console → Devices → Add a box (the Pi): a name, a Slot and the role Booth;
+   claim on the TV or by `sudo oto-box claim <CODE>`.
+2. Console → Devices → the Pi's box → Add a device: the receipt printer, LAN,
+   at its address.
+3. Console → Devices → New station on the Pi's box: kind Booth, a code prefix
+   of two letters or digits (e.g. B2), the receipt printer, and "Who may use
+   it" → Only the people I name, with nobody named.
+4. Console → Booths → the new booth: Booth settings (a Layout, the session
+   length); the prizes, chances, caps and expiry; Booth staff and PINs;
+   Review and publish. Until this first publish the TV has no wheel: it says
+   "This booth is being set up — please ask our staff", with "No wheel
+   published for this booth yet" for staff.
+5. The TV: pick the booth (asked only on a box with more than one), sign in
+   (account or PIN), press the red button — a slip comes out of the printer.
+6. The staging POS on a laptop, at the ticket till: type the code of a THB,
+   1+1 or Bracelet slip — the till shows the card and puts it on the sale;
+   pay; type it again — "Already redeemed on … at … by …". A Kids Pizza slip
+   is redeemed on the F&B tab, the restaurant till; the ticket till answers
+   "Redeem this voucher at the restaurant till".
+7. Cut the internet at the router — the router's own internet line, not the
+   Pi's cable, which would also cut the Pi off from the printer — spin, then
+   reconnect: the voucher reaches the cloud within about a minute, and the
+   counter redeems it. Type the offline slip at the till once; if it answers
+   "Code not found — the booth may not have synced yet", wait for the TV's dot
+   to turn green before trying again: five tries inside a minute lock that
+   till's vouchers for 10 minutes.
 
 ## What stays open after this plan
 

@@ -164,7 +164,7 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
       config: { permission: 'admin:booth:read' },
       schema: {
         description:
-          'What a voucher type can point at: the operator’s products on sale and its live ticket packages, each with its branch. Any branch redeems a voucher — the till finds its own copy of a product by code and of a package by name — so the branch is where the link is made, not the only park that honours it.',
+          'What a voucher type can point at: the operator’s products on sale and its live ticket packages, each with its branch. A 1+1’s package is honoured at any park with a live ticket package of the same name, so its branch is only where the link was made. A free product is honoured only where it is on sale — its own park, or every park when it belongs to no branch — and, once it is archived, at a park with a live product of its own with the same code.',
         response: {
           200: z.object({
             products: z.array(
