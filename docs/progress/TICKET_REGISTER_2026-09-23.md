@@ -382,4 +382,12 @@ closed"). Raised today beyond that set:
 | SCRUM-434 | Task | A new booth station is asked how money reaches it | To Do | Low | a question for the owner | yes |
 | SCRUM-435 | Bug | Two clipped controls in the Console (branch select, Paper width labels) | To Do | Low | layout fix after SCRUM-402 lands; gates 420's Deployed | yes |
 | SCRUM-436 | Bug | The till's Membership Check column clips at 1600 wide with the second screen open | To Do | Low | layout fix after SCRUM-401 lands | yes |
-| SCRUM-437 | Bug | An empty cart shows the amber "Priced on this till" note | To Do | Low | after SCRUM-401 lands | yes |
+| SCRUM-437 | Bug | An empty cart shows the amber "Priced on this till" note | Deployed | Low | fixed `08c3162`; staging proof attached | yes |
+| SCRUM-438 | Task | A clock anomaly filed even when the two days agree | Deployed | Low | fixed `fae4b71`; test card | yes |
+| SCRUM-439 | Task | Carried from the clock work: alert wording, retries and leases held to a cap, a comment | Testing | Low | `d5cafd1` + `2160f3a`; the booth comment lands with 403 | yes |
+| SCRUM-440 | Task | Held print jobs delay the heartbeat, one attempt each per tick | To Do | Low | raised by SCRUM-431's gate — not started | yes |
+| SCRUM-441 | Bug | The platform refuses an unknown promo code in different words from the till | In Progress | Low | in the SCRUM-433 round | yes |
+| SCRUM-442 | Bug | The ticket till leaves the typed promo code in its box after Apply | Testing | Low | fixed `d4f3fc5` | yes |
+| SCRUM-443 | Bug | The till header's branch chip clips the branch name at 1600 wide | To Do | Low | owner's choice: prefix off, wider chip, or a short name per branch | yes |
+| SCRUM-444 | Bug | The watchdog restarts a needs-service box every minute; blank TV after reboot | To Do | Medium | raised by SCRUM-403's gate; the scripts are in 403's third round | yes |
+| SCRUM-445 | Bug | Health files a needs-service box under "could not apply part of its offline copy" | To Do | Low | raised by SCRUM-403's gate — not started | yes |

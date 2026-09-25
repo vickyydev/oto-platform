@@ -447,6 +447,28 @@ different; the Pi runtime and the counter were not built at all).**
   clips at 1600). **Building:** SCRUM-403 on Opus (`wf_27c27ae1`, the damaged store), SCRUM-433's remainder with 441 on Opus (`wf_ae8cd82b`), and a quick till round r16 (`wf_2538ca76`: 442, 443, the stale runner comments). CI, the Pi artifact and staging watched at `2160f3a`; the next Pi release goes to the owner when that run is green.
   **Owner questions open:** SCRUM-401's three, SCRUM-434, the Epson's first
   status answer time (SCRUM-431), SCRUM-433's code field.
+- **After the batch (25 Sept, 22:55).** CI green on `2160f3a`; staging live on it;
+  the release `oto-box-0.1.0-2160f3a.tgz` (SHA-256 `84993a59…83ca`, clean name)
+  handed to the owner — the one to install. **Proof pass 3** (`wf_bfff49f6`,
+  images `357fc3e`): 406 driven on staging (the same made-up code six times,
+  every answer "not found" with the offline-booth sentence, no lock), cards for
+  431 (387/387 on CI's Linux runner, the seven once-failing cases included),
+  408 (the till's 137 tests in CI's test step), 438 and 439 → **Deployed 406,
+  431, 408, 438**; 439 waits for its booth-page comment (with 403). `d4f3fc5`
+  SCRUM-442 (the ticket till's promo box clears once the code is applied or
+  refused; four stale runner comments corrected) → Testing. **SCRUM-443 not
+  landed, on purpose:** widening the branch chip to fit the seeded name takes
+  the pixels from the tab band (at 1600 "Today" is cut and the Messages badge
+  hides until the band scrolls), so the owner chooses — (a) the chip without
+  the park prefix, (b) the wider chip, (c) a short name per branch in the
+  Console. SCRUM-403's second gate refused with three defects (the salvage
+  reads through the partial index; the epoch-note read fails open; a claim
+  window race) and, via the Atlassian MCP, filed SCRUM-444 (the watchdog
+  restarts a needs-service box; a blank TV after reboot) and SCRUM-445 (Health
+  files a needs-service box under the wrong heading); round 3 also takes the
+  watchdog and kiosk scripts. Local housekeeping: 31 idle leftover test
+  databases dropped from the Docker Postgres (10 remain, held open by old
+  processes). **Building:** SCRUM-403's third round on Opus (`wf_58e9db7e`), SCRUM-433's remainder with 441 on Opus (`wf_ae8cd82b`, migration 0025).
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
