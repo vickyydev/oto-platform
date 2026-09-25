@@ -197,7 +197,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { credential: 'booth', ...limited },
       schema: {
         description:
-          'The published wheel this booth is running, and the version number that names it — the number travels beside the bundle because the document does not carry it. A booth nobody has published to answers both as null, which is a screen ("Booth not set up, connect to internet") rather than an error.',
+          'The published wheel this booth is running, and the version number that names it — the number travels beside the bundle because the document does not carry it. A booth nobody has published to answers both as null, which the television shows as a screen rather than an error: "This booth is being set up — please ask our staff" while the booth is online, and "Booth not set up, connect to internet" while it is not.',
         /**
          * **No response schema on any booth route, deliberately.** The bodies
          * are the box's documents, and a zod object drops keys it does not
@@ -268,7 +268,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { credential: 'booth', ...limited },
       schema: {
         description:
-          'Print a voucher that has already been issued, again: the SAME code, never a new draw — this booth’s last voucher, or `spinId`’s. Staff-only, and the box is what enforces that: 403 `staff_required` with nobody signed in at the booth, 404 `nothing_to_reprint` for a voucher the box no longer holds. The copy reaches the cloud as a `reprint` print of that voucher, with the person who asked for it.',
+          'Print a voucher that has already been issued, again: the SAME code, never a new draw — this booth’s last voucher, or `spinId`’s. Staff-only, and the box is what enforces that: 403 `staff_required` with nobody signed in at the booth, 404 `nothing_to_reprint` for a voucher the box no longer holds. The copy reaches the cloud as a `reprint` print of that voucher, recorded against the account signed in at the booth when it was made: the booth cannot tell who pressed Reprint, only whose session was open.',
         body: z.object({ spinId: z.string().uuid().optional() }),
       },
     },
@@ -677,7 +677,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          `Mint the next version of this booth's wheel from the draft, and hand it to the boxes. Validated inside the transaction that writes it: the active weights must add up to exactly ${BOOTH_TOTAL_WEIGHT_BP} basis points, every active prize needs a live voucher definition (one that never expires is allowed — owner, 24 September), the booth needs a design, and a wheel that could not be played — every prize off, or every active prize capped out today — is refused rather than published. Eligibility \`band\` or \`phone\` is refused until there is a booth inside the park. A version is never edited: this makes N+1, and the box picks it up by version at its next pull. Pass \`expectedBundleHash\` from the draft to be refused rather than publish a colleague's edit you have not seen.`,
+          `Mint the next version of this booth's wheel from the draft, and hand it to the boxes. Validated inside the transaction that writes it: the active weights must add up to exactly ${BOOTH_TOTAL_WEIGHT_BP} basis points, every active prize needs a live voucher definition (one that never expires is allowed — owner, 24 September), the booth needs a design, its station needs a code prefix of exactly two capital letters or digits (\`BOOTH_CODE_PREFIX_INVALID\`: without two letters or digits its box cannot mint a voucher code; a lower-case one would mint, and is refused because \`b1\` and \`B1\` would pass the branch uniqueness check as two prefixes minting one set of codes), and a wheel that could not be played — every prize off, or every active prize capped out today — is refused rather than published. Eligibility \`band\` or \`phone\` is refused until there is a booth inside the park. A version is never edited: this makes N+1, and the box picks it up by version at its next pull. Pass \`expectedBundleHash\` from the draft to be refused rather than publish a colleague's edit you have not seen.`,
         params: BoothIdParams,
         body: z.object({
           note: z.string().max(500).nullable().optional(),
@@ -751,7 +751,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Let this account sign in at this booth. Separate from the station picker’s `station_staff`: a booth is unattended hardware in a mall and the person at it identifies with a PIN, not a password at a till. The list is not in the published bundle: it rides beside it on the box’s `booth` cache scope, so a booth picks up an addition at the box’s next pull with no publish — the PIN works from then — while a phone-and-password sign-in is checked against this list by the platform itself, at once.',
+          'Let this account sign in at this booth. Separate from the station picker’s `station_staff`: a booth is unattended hardware in a mall and the person at it identifies with a PIN, not a password at a till. Only the staff of the booth’s branch can be added — an employee there, somebody holding a role scoped to that branch, or an operator-wide administrator — as on a till’s staff list; anybody else is refused with 400 `STAFF_NOT_AT_BRANCH`. The list is not in the published bundle: it rides beside it on the box’s `booth` cache scope, so a booth picks up an addition at the box’s next pull with no publish — the PIN works from then — while a phone-and-password sign-in is checked against this list by the platform itself, at once.',
         params: StaffParams,
         response: { 200: StaffResponse },
       },
@@ -776,7 +776,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Take an account off this booth. Their PIN is NOT withdrawn by this — a PIN belongs to the person and may open another booth — so withdraw it separately when that is what is meant.',
+          'Take an account off this booth. Their PIN is NOT withdrawn by this — a PIN belongs to the person and may open another booth — so when that is what is meant, withdraw it FIRST: a PIN can be withdrawn only through a booth whose list still names the person.',
         params: StaffParams,
         response: { 200: StaffResponse },
       },
@@ -811,7 +811,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true, secretResponse: true },
       schema: {
         description:
-          'Set this person’s booth PIN. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one — and it reaches a booth only as that hash, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log.',
+          'Set this person’s booth PIN. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one, at every booth they work — and it reaches a booth only as that hash, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log. Because the PIN is the person’s, the person must be yours: somebody who does not work at this booth’s branch is refused with 403 `OUT_OF_BRANCH_SCOPE`, and somebody holding a role you do not hold in full — an operator administrator, to a branch manager — with 403 `ROLE_NOT_DOMINATED`, as a temporary password is. They must also be on this booth (400 `BOOTH_STAFF_NOT_FOUND`).',
         params: StaffParams,
         body: z.object({
           /** Digits, because a booth overlay on a television is a number pad. */
@@ -827,7 +827,13 @@ export async function boothRoutes(app: App): Promise<void> {
       return setBoothPin(
         app.db,
         opCtx(req),
-        { accountId: auth.accountId, operatorId: auth.operatorId },
+        {
+          accountId: auth.accountId,
+          operatorId: auth.operatorId,
+          // Every grant the caller holds, for the rule that the caller must
+          // hold whatever the person holds (M9). Only the request has them.
+          effective: await req.effectivePermissions(),
+        },
         row,
         req.params.accountId,
         req.body.pin,
@@ -841,7 +847,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Withdraw this person’s booth PIN. Marked revoked with a reason rather than deleted, so "whose PIN was withdrawn, and when" stays answerable. It stops working at the booth when the box next pulls — minutes online, and however long it stays offline otherwise, which is the same window the deny-list has.',
+          'Withdraw this person’s booth PIN, at every booth at once. Marked revoked with a reason rather than deleted, so "whose PIN was withdrawn, and when" stays answerable. It stops working at a booth when its box next pulls — minutes online, and however long it stays offline otherwise, which is the same window the deny-list has. Refused as setting one is — 403 `OUT_OF_BRANCH_SCOPE` for somebody who does not work at this booth’s branch, 403 `ROLE_NOT_DOMINATED` for somebody holding a role you do not hold in full — and with 400 `BOOTH_STAFF_NOT_FOUND` for somebody not on this booth.',
         params: StaffParams,
         querystring: z.object({ reason: z.string().max(200).optional() }),
         response: { 200: z.object({ accountId: z.string().uuid(), hasPin: z.literal(false) }) },
@@ -854,7 +860,12 @@ export async function boothRoutes(app: App): Promise<void> {
       return clearBoothPin(
         app.db,
         opCtx(req),
-        { accountId: auth.accountId, operatorId: auth.operatorId },
+        {
+          accountId: auth.accountId,
+          operatorId: auth.operatorId,
+          // As for setting a PIN: the dominance rule reads the caller's grants.
+          effective: await req.effectivePermissions(),
+        },
         row,
         req.params.accountId,
         req.query.reason ?? null,

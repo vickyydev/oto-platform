@@ -32,6 +32,7 @@ import { pgErrorOf } from '../lib/scrub';
 import { holdsGrantAt } from './access-control';
 import { resolveEffectivePermissions } from './permissions';
 import { audit } from './audit';
+import { BOOTH_CODE_PREFIX_RULE, isBoothCodePrefix } from './booth-admin';
 import { boxSettings, issueClaimCode, mintClaimCode, normaliseClaimCode, sha256Hex } from './box';
 import { atBranch } from '../lib/staff-scope';
 import { mintStaffToken, staffTokenSettings, type MintedStaffToken } from './staff-token';
@@ -300,6 +301,31 @@ function rethrowFleetConflict(err: unknown): never {
     if (known) throw new AppError(409, known.code, known.message, { constraint: pg.constraint });
   }
   throw err;
+}
+
+/**
+ * A booth's code prefix, checked on the station AS IT WILL STAND (H2).
+ *
+ * A booth's box mints every voucher code from this prefix and cannot mint
+ * one from a prefix that is not two letters or digits, so such a booth
+ * refuses every press. Lower case is refused too, although the box would
+ * upper-case it and print: the reason is the "Capitals only" note beside
+ * `BOOTH_CODE_PREFIX_RULE` in `services/booth-admin.ts`, the rule this
+ * checks. The caller passes the kind and prefix the row will have
+ * after the write, not only the fields in the request: a till saved with `T10`
+ * and then switched to kind `booth` by a PATCH naming only the kind is as
+ * dead a booth as a new one with the field left empty.
+ *
+ * Every other kind keeps the looser rule the route declares, one to eight
+ * characters or none: a till's prefix is the series its receipt numbers are
+ * issued under (`services/sale.ts`), and nothing prints it as a booth code.
+ */
+function assertStationCodePrefix(kind: StationKind, codePrefix: string | null): void {
+  if (kind === 'booth' && !isBoothCodePrefix(codePrefix)) {
+    throw new AppError(400, 'BOOTH_CODE_PREFIX_INVALID', BOOTH_CODE_PREFIX_RULE, {
+      field: 'codePrefix',
+    });
+  }
 }
 
 // --- Loading a row, scoped, before anybody is allowed to touch it -----------
@@ -1005,6 +1031,7 @@ export async function createStation(
       'A new station names the box it sits on — a Raspberry Pi already standing on site',
     );
   }
+  assertStationCodePrefix(input.kind, input.codePrefix ?? null);
   await validateStationWrite(db, {
     operatorId: actor.operatorId,
     branchId,
@@ -1070,6 +1097,14 @@ export async function updateStation(
       'A station cannot be taken off its box — move it to another box instead',
     );
   }
+
+  // The kind and prefix the row will have once this lands, whichever of the
+  // two the request names — so an edit that leaves a booth without a valid
+  // prefix is refused even when it names neither.
+  assertStationCodePrefix(
+    patch.kind ?? before.kind,
+    patch.codePrefix === undefined ? before.codePrefix : patch.codePrefix,
+  );
 
   const [beforeView] = await stationViews(db, [before], { withStaff: true });
   const devices = patch.devices ?? beforeView!.devices.map((d) => ({ role: d.role, deviceId: d.deviceId }));

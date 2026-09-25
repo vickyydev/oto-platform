@@ -662,6 +662,176 @@ describe('writing a station (S2-04)', () => {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * H2 (closing audit of 25 September 2026) — a booth station needs a code
+ * prefix its box can mint voucher codes from.
+ *
+ * `mintBoothCode` upper-cases a prefix and throws unless it is then two of
+ * `[0-9A-Z]`, so a booth saved with the Console form's default, an empty
+ * field, or with `PI1` was stored and published, and then every press failed
+ * on the television. A lower-case prefix (`b1`) would mint, and is refused
+ * all the same, for the reason in the note on `BOOTH_CODE_PREFIX` in
+ * services/booth-admin.ts. The rule applies to the station AS IT WILL STAND
+ * after the write: a till may have `T10`, and switching that till to kind
+ * booth with a PATCH that names only the kind must not pass a check that
+ * reads only the fields in the body.
+ */
+describe('a booth station needs a two-character code prefix (H2)', () => {
+  /** The part of the refusal that states the rule, which the Console shows as it stands. */
+  const RULE = 'must be exactly 2 capital letters or digits';
+
+  let made = 0;
+  const boothBody = (over: Record<string, unknown> = {}) => ({
+    name: `Prefix Booth ${(made += 1)}`,
+    kind: 'booth',
+    boxId,
+    capabilities: [],
+    accessScope: 'selected_staff',
+    staffAccountIds: [],
+    devices: [],
+    ...over,
+  });
+
+  const messageOf = (res: Injected): string =>
+    (res.body as { error?: { message?: string } }).error?.message ?? '';
+
+  async function stored(id: string): Promise<{ kind: string; codePrefix: string | null }> {
+    const [row] = await ctx.db
+      .select({ kind: station.kind, codePrefix: station.codePrefix })
+      .from(station)
+      .where(eq(station.id, id))
+      .limit(1);
+    return row!;
+  }
+
+  it('refuses a new booth with no prefix, PI1, b, B-1 or b1, naming the rule, and creates nothing', async () => {
+    for (const codePrefix of [null, undefined, 'PI1', 'b', 'B-1', 'b1']) {
+      const name = `Refused Booth ${String(codePrefix)}`;
+      const res = await call('POST', `/branches/${branchId}/stations`, {
+        cookie: adminCookie,
+        payload: boothBody({ name, ...(codePrefix === undefined ? {} : { codePrefix }) }),
+      });
+      expect(res.statusCode, `${String(codePrefix)}: ${JSON.stringify(res.body)}`).toBe(400);
+      expect(errorCode(res)).toBe('BOOTH_CODE_PREFIX_INVALID');
+      expect(messageOf(res)).toContain(RULE);
+      const [row] = await ctx.db
+        .select({ id: station.id })
+        .from(station)
+        .where(eq(station.name, name))
+        .limit(1);
+      expect(row, `a booth with prefix ${String(codePrefix)} was created`).toBeUndefined();
+    }
+  });
+
+  it('creates a booth with two capital letters or digits, and refuses an edit that would break them', async () => {
+    const created = await call('POST', `/branches/${branchId}/stations`, {
+      cookie: adminCookie,
+      payload: boothBody({ codePrefix: 'B7' }),
+    });
+    expect(created.statusCode, JSON.stringify(created.body)).toBe(200);
+    const id = (created.body.station as { id: string }).id;
+    expect(await stored(id)).toEqual({ kind: 'booth', codePrefix: 'B7' });
+
+    for (const codePrefix of [null, 'PI1', 'b', 'B-1', 'b7']) {
+      const res = await call('PATCH', `/stations/${id}`, {
+        cookie: adminCookie,
+        payload: { codePrefix },
+      });
+      expect(res.statusCode, `${String(codePrefix)}: ${JSON.stringify(res.body)}`).toBe(400);
+      expect(errorCode(res)).toBe('BOOTH_CODE_PREFIX_INVALID');
+      expect(messageOf(res)).toContain(RULE);
+    }
+    expect((await stored(id)).codePrefix, 'a refused edit changed the prefix').toBe('B7');
+
+    // Digits count as well as letters, and a valid change is saved.
+    const changed = await call('PATCH', `/stations/${id}`, {
+      cookie: adminCookie,
+      payload: { codePrefix: '7B' },
+    });
+    expect(changed.statusCode, JSON.stringify(changed.body)).toBe(200);
+    expect((await stored(id)).codePrefix).toBe('7B');
+  });
+
+  it('refuses switching a till with prefix T10, or with none, to kind booth by the kind alone', async () => {
+    // A till keeps the looser rule: one to eight characters, or none.
+    const till = await call('POST', `/branches/${branchId}/stations`, {
+      cookie: adminCookie,
+      payload: boothBody({
+        name: 'Till Turned Booth',
+        kind: 'till',
+        capabilities: ['tickets'],
+        accessScope: 'all_staff',
+        codePrefix: 'T10',
+      }),
+    });
+    expect(till.statusCode, JSON.stringify(till.body)).toBe(200);
+    const tillWithPrefix = (till.body.station as { id: string }).id;
+
+    const switched = await call('PATCH', `/stations/${tillWithPrefix}`, {
+      cookie: adminCookie,
+      payload: { kind: 'booth' },
+    });
+    expect(switched.statusCode, JSON.stringify(switched.body)).toBe(400);
+    expect(errorCode(switched)).toBe('BOOTH_CODE_PREFIX_INVALID');
+    expect(messageOf(switched)).toContain(RULE);
+    expect(await stored(tillWithPrefix)).toEqual({ kind: 'till', codePrefix: 'T10' });
+
+    const bare = await call('POST', `/branches/${branchId}/stations`, {
+      cookie: adminCookie,
+      payload: boothBody({ name: 'Till With No Prefix', kind: 'till', accessScope: 'all_staff' }),
+    });
+    expect(bare.statusCode, JSON.stringify(bare.body)).toBe(200);
+    const tillWithout = (bare.body.station as { id: string }).id;
+    const bareSwitch = await call('PATCH', `/stations/${tillWithout}`, {
+      cookie: adminCookie,
+      payload: { kind: 'booth' },
+    });
+    expect(bareSwitch.statusCode).toBe(400);
+    expect(errorCode(bareSwitch)).toBe('BOOTH_CODE_PREFIX_INVALID');
+    expect(await stored(tillWithout)).toEqual({ kind: 'till', codePrefix: null });
+
+    // The same switch with a prefix a booth can print is allowed.
+    const both = await call('PATCH', `/stations/${tillWithPrefix}`, {
+      cookie: adminCookie,
+      payload: { kind: 'booth', codePrefix: 'B8' },
+    });
+    expect(both.statusCode, JSON.stringify(both.body)).toBe(200);
+    expect(await stored(tillWithPrefix)).toEqual({ kind: 'booth', codePrefix: 'B8' });
+  });
+
+  it('refuses any edit to a booth saved before the rule until it is given a valid prefix', async () => {
+    // Written straight to the table, as a booth saved before this rule was:
+    // no route can create this row any more.
+    const [booth1] = await ctx.db.select().from(station).where(eq(station.id, boothId)).limit(1);
+    const legacy = newId();
+    await ctx.db.insert(station).values({
+      id: legacy,
+      operatorId: booth1!.operatorId,
+      branchId,
+      boxId,
+      name: 'Legacy Booth',
+      kind: 'booth',
+      accessScope: 'selected_staff',
+    });
+
+    const renamed = await call('PATCH', `/stations/${legacy}`, {
+      cookie: adminCookie,
+      payload: { name: 'Legacy Booth renamed' },
+    });
+    expect(renamed.statusCode, JSON.stringify(renamed.body)).toBe(400);
+    expect(errorCode(renamed)).toBe('BOOTH_CODE_PREFIX_INVALID');
+
+    const fixed = await call('PATCH', `/stations/${legacy}`, {
+      cookie: adminCookie,
+      payload: { name: 'Legacy Booth renamed', codePrefix: 'B9' },
+    });
+    expect(fixed.statusCode, JSON.stringify(fixed.body)).toBe(200);
+    expect(await stored(legacy)).toEqual({ kind: 'booth', codePrefix: 'B9' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+
 describe('one-time codes never enter the idempotency store (S2-04 review, F2)', () => {
   /**
    * SCRUM-255(c) / SCRUM-327 — WHAT KEEPS THE CODE OUT, AND WHY THAT CHANGED.
@@ -1031,6 +1201,8 @@ describe('a change to who may use a station is audited (S2-04 review)', () => {
         name: 'Audited Booth',
         kind: 'booth',
         boxId,
+        // A booth is refused without two capital letters or digits here (H2).
+        codePrefix: 'A1',
         capabilities: [],
         accessScope: 'selected_staff',
         staffAccountIds: [],

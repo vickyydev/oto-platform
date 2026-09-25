@@ -168,6 +168,13 @@ const StationWriteSchema = z.object({
   name: z.string().min(1),
   kind: z.enum(STATION_KINDS),
   boxId: z.string().uuid().nullable(),
+  /**
+   * One to eight characters, or none, for any kind. A booth's is narrower
+   * (H2): exactly two capital letters or digits. That half is checked in
+   * `createStation` and `updateStation` rather than here, because it depends
+   * on the kind the station will have, and a PATCH naming only `kind` carries
+   * no prefix for a schema to look at.
+   */
   codePrefix: z.string().min(1).max(8).nullable().optional(),
   capabilities: z.array(z.enum(STATION_CAPABILITIES)).default([]),
   accessScope: z.enum(STATION_ACCESS_SCOPES).default('all_staff'),
@@ -408,7 +415,8 @@ export async function fleetRoutes(app: App): Promise<void> {
     {
       config: { permission: 'admin:station:create', target: { branchId: 'params.branchId' } },
       schema: {
-        description: 'Create a station on a box, with its devices and its access list',
+        description:
+          'Create a station on a box, with its devices and its access list. A booth (`kind: booth`) needs a code prefix of exactly two capital letters or digits, such as B1, because its box starts every voucher code with it; without one the station is refused with 400 `BOOTH_CODE_PREFIX_INVALID`, whose message states the rule.',
         params: BranchParams,
         body: StationWriteSchema,
         response: { 200: z.object({ station: StationSchema }) },
@@ -447,7 +455,8 @@ export async function fleetRoutes(app: App): Promise<void> {
     {
       config: { dynamicPermission: true },
       schema: {
-        description: 'Edit a station. Devices and the staff list are whole sets, not deltas.',
+        description:
+          'Edit a station. Devices and the staff list are whole sets, not deltas. The booth code-prefix rule (exactly two capital letters or digits) is checked against the station as it will stand after the edit: switching a till whose prefix breaks it (`T10`, or none) to kind `booth`, clearing a booth’s prefix, or any edit that would leave a booth with an invalid one is refused with 400 `BOOTH_CODE_PREFIX_INVALID`.',
         params: IdParams,
         body: StationWriteSchema.partial(),
         response: { 200: z.object({ station: StationSchema }) },

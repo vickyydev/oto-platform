@@ -10,16 +10,26 @@ import {
   boothStaffAssignment,
   branch,
   credential,
+  employee,
   spin,
   station,
   voucherDefinition,
   type BoothEligibilityMode,
   type Db,
 } from '@oto/db';
-import { BOOTH_BUNDLE_SCHEMA_VERSION, businessDate, newId, parseDayStart } from '@oto/shared';
+import {
+  BOOTH_BUNDLE_SCHEMA_VERSION,
+  BOOTH_CODE_PREFIX_LENGTH,
+  businessDate,
+  newId,
+  parseDayStart,
+} from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
+import { atBranch } from '../lib/staff-scope';
+import { assertDominatesAccount, outOfBranchScope } from './access-control';
 import { audit } from './audit';
+import type { EffectivePermission } from './permissions';
 import { withTx, type Exec, type OpContext } from './tx';
 import type { BoothStationRow } from './booth';
 
@@ -125,6 +135,12 @@ export interface BoothDraft {
   prizes: PrizeRow[];
   /** Keyed by `voucher_definition.id`, for the prizes this draft points at. */
   definitions: Map<string, typeof voucherDefinition.$inferSelect>;
+  /**
+   * The booth station's code prefix, as stored. Read for the publish check
+   * only (`publishBlockers`) and never put in the bundle: the box takes the
+   * prefix from its station config, not from the published wheel.
+   */
+  codePrefix: string | null;
 }
 
 /** Everything a publish reads, in one place, so validation and minting agree. */
@@ -133,6 +149,15 @@ async function loadDraft(exec: Exec, row: BoothStationRow): Promise<BoothDraft> 
     .select()
     .from(boothSettings)
     .where(eq(boothSettings.stationId, row.stationId))
+    .limit(1);
+
+  // `BoothStationRow` does not carry the prefix, so it is read here, with the
+  // same executor as the rest of the draft: a publish checks it inside the
+  // transaction that mints the version.
+  const [stationRow] = await exec
+    .select({ codePrefix: station.codePrefix })
+    .from(station)
+    .where(eq(station.id, row.stationId))
     .limit(1);
 
   const layout = settingsRow?.layoutId
@@ -176,6 +201,7 @@ async function loadDraft(exec: Exec, row: BoothStationRow): Promise<BoothDraft> 
     layout,
     prizes,
     definitions: new Map(definitions.map((d) => [d.id, d])),
+    codePrefix: stationRow?.codePrefix ?? null,
   };
 }
 
@@ -280,6 +306,38 @@ function bundleFrom(draft: BoothDraft): Record<string, unknown> | null {
   };
 }
 
+// --- The code prefix a booth prints -----------------------------------------
+
+/**
+ * A booth's code prefix: exactly two capital letters or digits (H2, closing
+ * audit of 25 September 2026).
+ *
+ * The box mints every voucher code itself — the prefix, eight drawn
+ * characters and a check character (`mintBoothCode` in `@oto/shared`) — and
+ * `mintBoothCode` upper-cases the prefix and throws unless it is then two of
+ * `[0-9A-Z]`. Nothing before the box asked: a booth station saved with the
+ * field empty, which is the Console form's default, or with `PI1`, was stored
+ * and published, and then every press failed on the television with "Booth
+ * not ready — please call staff" and no screen said why. So the rule is
+ * checked where a station is written (`createStation` and `updateStation` in
+ * `services/fleet.ts`) and again before a publish (`publishBlockers` below),
+ * and this is the one statement of it that both read.
+ *
+ * **Capitals only**, although `mintBoothCode` would capitalise `b1` itself:
+ * `station_code_prefix_unique` compares the stored text, so `b1` and `B1`
+ * would pass it as two prefixes at one branch and mint codes from one code
+ * space. The Console capitalises what it sends.
+ */
+const BOOTH_CODE_PREFIX = new RegExp(`^[0-9A-Z]{${BOOTH_CODE_PREFIX_LENGTH}}$`);
+
+/** The rule in the words a refusal carries; the Console shows the message as it stands. */
+export const BOOTH_CODE_PREFIX_RULE = `A booth’s code prefix must be exactly ${BOOTH_CODE_PREFIX_LENGTH} capital letters or digits (A–Z, 0–9), for example B1: it starts every voucher code the booth prints.`;
+
+/** Whether a booth station could mint voucher codes with this prefix. */
+export function isBoothCodePrefix(prefix: string | null | undefined): prefix is string {
+  return typeof prefix === 'string' && BOOTH_CODE_PREFIX.test(prefix);
+}
+
 // --- What stops a publish ---------------------------------------------------
 
 /** One reason this wheel cannot go on a television, with the field to fix. */
@@ -313,6 +371,26 @@ async function publishBlockers(
   draft: BoothDraft,
 ): Promise<PublishBlocker[]> {
   const blockers: PublishBlocker[] = [];
+
+  /**
+   * A booth whose station prefix breaks the rule above (H2).
+   *
+   * The prefix is not in the bundle — the box reads it from its station
+   * config, so a corrected prefix reaches a running booth at the box's next
+   * config pull, with no publish — and it is checked here anyway: a publish is
+   * the moment a manager takes the booth to be ready, and a booth whose prefix
+   * is empty or not two letters or digits refuses every press. A lower-case
+   * one would print, and is refused for the reason in the note on
+   * `BOOTH_CODE_PREFIX`. The station write refuses a bad prefix too; this
+   * catches a booth saved before that rule existed.
+   */
+  if (!isBoothCodePrefix(draft.codePrefix)) {
+    blockers.push({
+      field: 'codePrefix',
+      code: 'BOOTH_CODE_PREFIX_INVALID',
+      message: `${BOOTH_CODE_PREFIX_RULE} Set it on this booth’s station under Devices, then publish.`,
+    });
+  }
 
   if (!draft.settings.layoutId || !draft.layout) {
     blockers.push({
@@ -1437,6 +1515,105 @@ async function requireStaffAccount(exec: Exec, operatorId: string, accountId: st
   }
 }
 
+/**
+ * Whether this account is one of the staff of the branch the booth stands in
+ * (M9, closing audit of 25 September 2026).
+ *
+ * The same definition a till's staff list and the Console's person picker use
+ * (`atBranch` in `lib/staff-scope.ts`): an employee record at the branch, a
+ * role scoped to it, or an operator-wide administrator, and never a
+ * deactivated account. The join to `employee` is required: the predicate
+ * reads the employee's branch.
+ */
+async function isBranchStaff(
+  exec: Exec,
+  operatorId: string,
+  branchId: string,
+  accountId: string,
+): Promise<boolean> {
+  const [row] = await exec
+    .select({ id: account.id })
+    .from(account)
+    .leftJoin(employee, eq(account.employeeId, employee.id))
+    .where(and(eq(account.id, accountId), eq(account.operatorId, operatorId), atBranch(branchId)))
+    .limit(1);
+  return row !== undefined;
+}
+
+/** Whether this account is on this booth's staff list. */
+async function isOnBooth(exec: Exec, stationId: string, accountId: string): Promise<boolean> {
+  const [assigned] = await exec
+    .select({ id: boothStaffAssignment.id })
+    .from(boothStaffAssignment)
+    .where(
+      and(eq(boothStaffAssignment.stationId, stationId), eq(boothStaffAssignment.accountId, accountId)),
+    )
+    .limit(1);
+  return assigned !== undefined;
+}
+
+/**
+ * The caller of a PIN write: who they are, and every grant they hold.
+ *
+ * The grants are here because the dominance rule reads them
+ * (`assertDominatesAccount`), and only the route has resolved them
+ * (`req.effectivePermissions()`).
+ */
+export interface BoothPinActor {
+  accountId: string;
+  operatorId: string;
+  effective: EffectivePermission[];
+}
+
+/**
+ * Whose booth PIN this caller may set or withdraw (M9).
+ *
+ * A PIN signs somebody in at a booth, where the spins, the reprints and the
+ * "Printed by" line then carry their name, and it is the PERSON's — one live
+ * PIN per account, so a change here changes it at every booth they work. So
+ * setting or withdrawing one is an act on that person, and it is fenced the
+ * way a temporary password is (`routes/accounts.ts`), in the same order:
+ *
+ *   1. **The person works at this booth's branch**, or 403
+ *      `OUT_OF_BRANCH_SCOPE`. The route has already checked that the caller
+ *      holds `admin:booth:staff_assign` at that branch, so this is "is the
+ *      person yours". It is the check that holds for somebody with no role
+ *      at all, for whom rule 2 has nothing to walk.
+ *   2. **The caller holds every permission of every role the person holds**,
+ *      at a scope that covers it, or 403 `ROLE_NOT_DOMINATED`. An
+ *      operator-wide administrator counts as staff of every branch, so rule 1
+ *      alone would let a branch manager give the owner a PIN the manager
+ *      chose and then sign in at the booth as the owner.
+ *
+ * Before these, a branch manager could set or withdraw the PIN of anybody in
+ * the operator, at any park, from his own booth.
+ */
+async function requirePinTarget(
+  db: Db,
+  actor: BoothPinActor,
+  row: BoothStationRow,
+  accountId: string,
+): Promise<void> {
+  if (!(await isBranchStaff(db, actor.operatorId, row.branchId, accountId))) {
+    throw outOfBranchScope(
+      'That account does not work at this booth’s branch, so its booth PIN cannot be set or withdrawn here',
+    );
+  }
+  await assertDominatesAccount(db, actor.effective, actor.operatorId, accountId);
+}
+
+/**
+ * Put somebody on this booth's staff list.
+ *
+ * **Only the staff of the booth's branch** (M9): the same rule a till's staff
+ * list keeps, with the same refusal, 400 `STAFF_NOT_AT_BRANCH`
+ * (`validateStationWrite` in `services/fleet.ts`). An operator administrator
+ * is staff of every branch and can still be added. Before this, a branch
+ * manager could put anybody in the operator on his booth by a hand-made call,
+ * and so put their password hash on his booth's box: the box's `staff` cache
+ * scope carries it for everybody on the list of one of its booths
+ * (`services/sync.ts`).
+ */
 export async function addBoothStaff(
   db: Db,
   ctx: OpContext,
@@ -1445,6 +1622,14 @@ export async function addBoothStaff(
   accountId: string,
 ): Promise<{ staff: BoothStaffView[] }> {
   await requireStaffAccount(db, actor.operatorId, accountId);
+  if (!(await isBranchStaff(db, actor.operatorId, row.branchId, accountId))) {
+    throw new AppError(
+      400,
+      'STAFF_NOT_AT_BRANCH',
+      'That account is not among this branch’s staff, so it cannot be put on this booth',
+      { accountId },
+    );
+  }
   await withTx(db, ctx, 'booth_staff.add', async (tx) => {
     const added = await tx
       .insert(boothStaffAssignment)
@@ -1481,7 +1666,9 @@ export async function addBoothStaff(
  * `allowedStaff`, which rides beside the published bundle on the `booth`
  * cache scope (`sync-booth.ts`) rather than inside it — so it reaches the box
  * at its next pull, with no publish — and which the box checks before it
- * verifies anything; revoking the PIN as well is the separate act below.
+ * verifies anything; revoking the PIN as well is the separate act below, and
+ * it comes FIRST: a PIN is withdrawn only through a booth whose list still
+ * names the person (`clearBoothPin`).
  */
 export async function removeBoothStaff(
   db: Db,
@@ -1537,28 +1724,21 @@ export async function removeBoothStaff(
  * The PIN is the ACCOUNT's, not this booth's: `credential_active_kind_unique`
  * allows one live `pin` per person, so setting a new one revokes the old in
  * the same transaction and the person types the same digits at every booth
- * they are allowed to work.
+ * they are allowed to work. That is why who may set it is decided about the
+ * person, not the booth (`requirePinTarget`, M9): they must work at this
+ * booth's branch, and the caller must hold every role they hold.
  */
 export async function setBoothPin(
   db: Db,
   ctx: OpContext,
-  actor: { accountId: string; operatorId: string },
+  actor: BoothPinActor,
   row: BoothStationRow,
   accountId: string,
   pin: string,
 ): Promise<{ accountId: string; hasPin: true }> {
   await requireStaffAccount(db, actor.operatorId, accountId);
-  const [assigned] = await db
-    .select({ id: boothStaffAssignment.id })
-    .from(boothStaffAssignment)
-    .where(
-      and(
-        eq(boothStaffAssignment.stationId, row.stationId),
-        eq(boothStaffAssignment.accountId, accountId),
-      ),
-    )
-    .limit(1);
-  if (!assigned) {
+  await requirePinTarget(db, actor, row, accountId);
+  if (!(await isOnBooth(db, row.stationId, accountId))) {
     throw new AppError(
       400,
       'BOOTH_STAFF_NOT_FOUND',
@@ -1615,16 +1795,34 @@ export async function setBoothPin(
  * stays offline otherwise — an offline box cannot be told anything, which is
  * the price of a booth that keeps working without internet. The deny-list has
  * the same window, for the same reason.
+ *
+ * **Who may withdraw it (M9)** is decided as for setting one
+ * (`requirePinTarget`), and the person must also be on THIS booth's list:
+ * the PIN is withdrawn at every booth at once, and before this a branch
+ * manager could withdraw a colleague's PIN at another park through his own
+ * booth without that colleague being on it. Withdraw before taking somebody
+ * off a booth. The PIN of somebody already off every booth's list cannot be
+ * withdrawn here, and it opens no booth: a box tries a PIN only against its
+ * own booth's list, so once each box has pulled that list the PIN does
+ * nothing until the person is put on a booth again, when it can be withdrawn.
  */
 export async function clearBoothPin(
   db: Db,
   ctx: OpContext,
-  actor: { accountId: string; operatorId: string },
+  actor: BoothPinActor,
   row: BoothStationRow,
   accountId: string,
   reason: string | null,
 ): Promise<{ accountId: string; hasPin: false }> {
   await requireStaffAccount(db, actor.operatorId, accountId);
+  await requirePinTarget(db, actor, row, accountId);
+  if (!(await isOnBooth(db, row.stationId, accountId))) {
+    throw new AppError(
+      400,
+      'BOOTH_STAFF_NOT_FOUND',
+      'That account is not on this booth, so its booth PIN cannot be withdrawn here. Withdraw it from a booth they are on.',
+    );
+  }
   await withTx(db, ctx, 'booth_pin.revoke', async (tx) => {
     const now = new Date();
     const revoked = await tx

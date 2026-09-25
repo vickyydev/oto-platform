@@ -8,6 +8,7 @@ import {
   boothConfigVersion,
   boothPrize,
   boothSettings,
+  boothStaffAssignment,
   boxCommand,
   branch,
   credential,
@@ -27,7 +28,18 @@ import {
   type BoxAgent,
   type PgPoolLike,
 } from '@oto/box-agent';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  BRANCH_MANAGER,
+  CHALONG_BRANCH_CODE,
+  CHALONG_MANAGER,
+  RECEPTION,
+  branchIdByCode,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 import { listBooths } from '../src/services/booth-admin';
 import { provisionVirtualBox } from '../src/services/box';
 
@@ -391,6 +403,60 @@ describe('a wheel that would be wrong is refused before it is published (S2-07b)
       payload: { buttonKey: 'Enter' },
     });
     expect(res.statusCode).toBe(400);
+  });
+
+  /**
+   * H2 (closing audit of 25 September 2026) — the booth's own station rather
+   * than its wheel. A booth whose prefix is empty or not two letters or digits
+   * (`null`, `PI1`) cannot mint a voucher code, so its box refuses every
+   * press; a lower-case one (`b1`) would print, but is refused too, for the
+   * reason in the note on `BOOTH_CODE_PREFIX` in services/booth-admin.ts.
+   * Neither may publish as though the booth were ready.
+   *
+   * The prefix is written straight to the row, as on a booth saved before the
+   * station write refused such a prefix (`fleet-api.test.ts` covers that
+   * refusal), and put back whatever happens.
+   */
+  it('refuses a booth whose station has no valid code prefix, and names the field', async () => {
+    try {
+      for (const codePrefix of [null, 'PI1', 'b1']) {
+        await db.update(station).set({ codePrefix }).where(eq(station.id, boothId));
+
+        const res = await ctx.app.inject({
+          method: 'GET',
+          url: `/booths/${boothId}/draft`,
+          headers: asAdmin(),
+        });
+        expect(res.statusCode, res.body).toBe(200);
+        const blockers = res.json().blockers as Array<{ field: string; code: string; message: string }>;
+        // The seeded wheel has nothing else to fix, so this is the only blocker.
+        expect(blockers.map((b) => b.code), String(codePrefix)).toEqual(['BOOTH_CODE_PREFIX_INVALID']);
+        expect(blockers[0]!.field).toBe('codePrefix');
+        expect(blockers[0]!.message).toContain('must be exactly 2 capital letters or digits');
+
+        const { statusCode, body } = await publish();
+        expect(statusCode, String(codePrefix)).toBe(400);
+        expect(body.error!.code).toBe('BOOTH_PUBLISH_INVALID');
+        expect(body.error!.details!.blockers!.map((b) => b.code)).toEqual(['BOOTH_CODE_PREFIX_INVALID']);
+      }
+    } finally {
+      await db.update(station).set({ codePrefix: 'B1' }).where(eq(station.id, boothId));
+    }
+
+    // Nothing was minted, and with the prefix back the draft has nothing to fix.
+    const [top] = await db
+      .select({ version: boothConfigVersion.version })
+      .from(boothConfigVersion)
+      .where(eq(boothConfigVersion.stationId, boothId))
+      .orderBy(desc(boothConfigVersion.version))
+      .limit(1);
+    expect(top!.version).toBe(1);
+    const restored = await ctx.app.inject({
+      method: 'GET',
+      url: `/booths/${boothId}/draft`,
+      headers: asAdmin(),
+    });
+    expect(restored.json().blockers).toEqual([]);
   });
 });
 
@@ -1112,5 +1178,217 @@ describe('the booth list stops at the operator (SCRUM-267)', () => {
 
     const theirs = await listBooths(db, ownOperator!.operatorId, rivalBranchId);
     expect(theirs.booths).toEqual([]);
+  });
+});
+
+/**
+ * M9 (closing audit of 25 September 2026) — who a branch manager may put on
+ * his booth, and whose booth PIN he may set or withdraw.
+ *
+ * A PIN is the person's and signs them in at every booth they are on, so each
+ * check is about the PERSON: they work at the booth's branch, the caller holds
+ * every role they hold, and a PIN is withdrawn only through a booth whose list
+ * names them. Driven as Central Floresta's manager, who holds
+ * `admin:booth:staff_assign` there and nowhere else: the operator
+ * administrator holds every permission, so only a manager can meet the
+ * ROLE_NOT_DOMINATED refusal. The person's branch and the booth's list
+ * refuse the administrator too — the first test has the branch rule refuse
+ * both callers.
+ *
+ * Last in the file on purpose. It changes who is on Booth 1 and reception's
+ * PIN, and nothing after it reads either. It never signs in at the box.
+ */
+describe('booth staff and PINs stop at the person’s branch and role (M9)', () => {
+  let managerCookie: string;
+  let chalongCookie: string;
+  let adminId: string;
+  let managerId: string;
+  let chalongManagerId: string;
+  let chalongBoothId: string;
+  /** The PIN Chalong's manager gives himself at his own booth, drawn for this run. */
+  let chalongPin: string;
+
+  /** Four digits drawn at run time, so no PIN is written into this file. */
+  const freshPin = (): string => String(randomInt(1_000, 10_000));
+
+  const accountIdOf = async (phone: string): Promise<string> => {
+    const [row] = await db.select({ id: account.id }).from(account).where(eq(account.phone, phone)).limit(1);
+    return row!.id;
+  };
+
+  const put = (url: string, cookie: string, payload?: Record<string, unknown>) =>
+    ctx.app.inject({ method: 'PUT', url, headers: { cookie }, ...(payload ? { payload } : {}) });
+  const del = (url: string, cookie: string) => ctx.app.inject({ method: 'DELETE', url, headers: { cookie } });
+
+  /** The person's live PIN credential, or undefined. */
+  async function livePin(accountId: string): Promise<typeof credential.$inferSelect | undefined> {
+    const [row] = await db
+      .select()
+      .from(credential)
+      .where(and(eq(credential.accountId, accountId), eq(credential.kind, 'pin'), eq(credential.active, true)))
+      .limit(1);
+    return row;
+  }
+
+  async function onBooth(stationId: string, accountId: string): Promise<boolean> {
+    const [row] = await db
+      .select({ id: boothStaffAssignment.id })
+      .from(boothStaffAssignment)
+      .where(and(eq(boothStaffAssignment.stationId, stationId), eq(boothStaffAssignment.accountId, accountId)))
+      .limit(1);
+    return row !== undefined;
+  }
+
+  beforeAll(async () => {
+    managerCookie = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
+    chalongCookie = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
+    adminId = await accountIdOf(ADMIN.phone);
+    managerId = await accountIdOf(BRANCH_MANAGER.phone);
+    chalongManagerId = await accountIdOf(CHALONG_MANAGER.phone);
+
+    /**
+     * A booth at Robinson Chalong, with no box. Like `booth-pairing.test.ts`'s
+     * second booth, it is passed over by the in-process booth this file runs.
+     */
+    const [booth1] = await db.select().from(station).where(eq(station.id, boothId)).limit(1);
+    chalongBoothId = newId();
+    await db.insert(station).values({
+      id: chalongBoothId,
+      operatorId: booth1!.operatorId,
+      branchId: await branchIdByCode(db, CHALONG_BRANCH_CODE),
+      name: 'Chalong Booth',
+      kind: 'booth',
+      codePrefix: 'C1',
+      accessScope: 'selected_staff',
+    });
+
+    // Chalong's manager puts himself on his own booth, with a PIN of his own.
+    const added = await put(`/booths/${chalongBoothId}/staff/${chalongManagerId}`, chalongCookie);
+    expect(added.statusCode, added.body).toBe(200);
+    chalongPin = freshPin();
+    const pinned = await put(`/booths/${chalongBoothId}/staff/${chalongManagerId}/pin`, chalongCookie, {
+      pin: chalongPin,
+    });
+    expect(pinned.statusCode, pinned.body).toBe(200);
+  });
+
+  it('refuses to add somebody from another park with STAFF_NOT_AT_BRANCH, and still adds the operator administrator', async () => {
+    for (const cookie of [managerCookie, adminCookie]) {
+      const res = await put(`/booths/${boothId}/staff/${chalongManagerId}`, cookie);
+      // The rule is the person's branch, so the administrator is refused too.
+      expect(res.statusCode, res.body).toBe(400);
+      expect(res.json().error.code).toBe('STAFF_NOT_AT_BRANCH');
+    }
+    expect(await onBooth(boothId, chalongManagerId), 'somebody from another park is on Booth 1').toBe(false);
+    const added = await db
+      .select({ after: auditLog.after })
+      .from(auditLog)
+      .where(eq(auditLog.action, 'booth_staff.add'));
+    expect(
+      added
+        .map((r) => r.after as { stationId: string; accountId: string })
+        .filter((a) => a.stationId === boothId && a.accountId === chalongManagerId),
+      'a refused addition left an audit row',
+    ).toEqual([]);
+
+    // An operator-wide administrator is staff of every branch (the owner's
+    // ruling in `lib/staff-scope.ts`), so the manager may still add them.
+    const admin = await put(`/booths/${boothId}/staff/${adminId}`, managerCookie);
+    expect(admin.statusCode, admin.body).toBe(200);
+    expect(await onBooth(boothId, adminId)).toBe(true);
+  });
+
+  it('refuses to set or withdraw the PIN of somebody above the caller with 403 ROLE_NOT_DOMINATED', async () => {
+    const set = await put(`/booths/${boothId}/staff/${adminId}/pin`, managerCookie, { pin: freshPin() });
+    expect(set.statusCode, set.body).toBe(403);
+    expect(set.json().error.code).toBe('ROLE_NOT_DOMINATED');
+    expect(await livePin(adminId), 'the manager gave the administrator a PIN').toBeUndefined();
+
+    // Refused before the "no PIN to withdraw" answer, so it says nothing about
+    // whether the administrator has one.
+    const withdrawn = await del(`/booths/${boothId}/staff/${adminId}/pin`, managerCookie);
+    expect(withdrawn.statusCode, withdrawn.body).toBe(403);
+    expect(withdrawn.json().error.code).toBe('ROLE_NOT_DOMINATED');
+
+    const removed = await del(`/booths/${boothId}/staff/${adminId}`, managerCookie);
+    expect(removed.statusCode, removed.body).toBe(200);
+  });
+
+  it('refuses to set or withdraw the PIN of somebody at another park with 403, and leaves their PIN alone', async () => {
+    const before = await livePin(chalongManagerId);
+    expect(before, 'the Chalong manager set no PIN of his own').toBeTruthy();
+
+    /**
+     * On Booth 1's list by a row written before the rule, so the booth-list
+     * check is met and only the person's branch can refuse. Without that row
+     * the withdrawal must be refused as well: the audit's probe withdrew the
+     * PIN of a colleague who was on no booth of the caller's.
+     */
+    const planted = newId();
+    await db.insert(boothStaffAssignment).values({
+      id: planted,
+      stationId: boothId,
+      accountId: chalongManagerId,
+      addedBy: adminId,
+    });
+    try {
+      const set = await put(`/booths/${boothId}/staff/${chalongManagerId}/pin`, managerCookie, {
+        pin: freshPin(),
+      });
+      expect(set.statusCode, set.body).toBe(403);
+      expect(set.json().error.code).toBe('OUT_OF_BRANCH_SCOPE');
+
+      const withdrawn = await del(`/booths/${boothId}/staff/${chalongManagerId}/pin`, managerCookie);
+      expect(withdrawn.statusCode, withdrawn.body).toBe(403);
+      expect(withdrawn.json().error.code).toBe('OUT_OF_BRANCH_SCOPE');
+    } finally {
+      await db.delete(boothStaffAssignment).where(eq(boothStaffAssignment.id, planted));
+    }
+
+    const offList = await del(`/booths/${boothId}/staff/${chalongManagerId}/pin`, managerCookie);
+    expect(offList.statusCode, offList.body).toBe(403);
+    expect(offList.json().error.code).toBe('OUT_OF_BRANCH_SCOPE');
+
+    // The same credential, still live, still the digits he chose.
+    const after = await livePin(chalongManagerId);
+    expect(after?.id).toBe(before!.id);
+    expect(await verifyArgon2(after!.secretHash, chalongPin)).toBe(true);
+    const byManager = await db
+      .select({ action: auditLog.action, after: auditLog.after })
+      .from(auditLog)
+      .where(eq(auditLog.actorAccountId, managerId));
+    expect(
+      byManager.filter(
+        (r) =>
+          r.action.startsWith('booth_pin.') &&
+          (r.after as { accountId?: string } | null)?.accountId === chalongManagerId,
+      ),
+      'a refused PIN write left an audit row',
+    ).toEqual([]);
+  });
+
+  it('refuses to withdraw the PIN of somebody not on this booth, and withdraws it once they are back on', async () => {
+    // The ordinary case still works: the manager sets his own reception's PIN.
+    const set = await put(`/booths/${boothId}/staff/${receptionAccountId}/pin`, managerCookie, {
+      pin: freshPin(),
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    const pin = await livePin(receptionAccountId);
+    expect(pin, 'no PIN was set').toBeTruthy();
+
+    const off = await del(`/booths/${boothId}/staff/${receptionAccountId}`, managerCookie);
+    expect(off.statusCode, off.body).toBe(200);
+
+    const refused = await del(`/booths/${boothId}/staff/${receptionAccountId}/pin`, managerCookie);
+    expect(refused.statusCode, refused.body).toBe(400);
+    expect(refused.json().error.code).toBe('BOOTH_STAFF_NOT_FOUND');
+    expect((await livePin(receptionAccountId))?.id, 'a refused withdrawal revoked the PIN').toBe(pin!.id);
+
+    // Back on the booth, the same withdrawal goes through.
+    const back = await put(`/booths/${boothId}/staff/${receptionAccountId}`, managerCookie);
+    expect(back.statusCode, back.body).toBe(200);
+    const withdrawn = await del(`/booths/${boothId}/staff/${receptionAccountId}/pin`, managerCookie);
+    expect(withdrawn.statusCode, withdrawn.body).toBe(200);
+    expect(await livePin(receptionAccountId)).toBeUndefined();
   });
 });
