@@ -122,8 +122,10 @@ async function freshBox(): Promise<TestBox> {
 }
 
 async function claim(slot: string): Promise<TestBox> {
-  const [row] = await ctx.db.select().from(box).where(eq(box.slot, slot)).limit(1);
-  if (!row) throw new Error(`no box in slot ${slot}`);
+  // Within the park's own operator: the seed deliberately gives the second
+  // operator a box in `virtual-1` too (`box_slot_unique` is keyed on branch and
+  // slot), so a lookup by slot alone can claim the wrong park's box.
+  const row = await boxBySlot(ctx.db, slot);
   const { code: claimCode } = await issueClaimCode(ctx.db, row.id);
   const res = await ctx.app.inject({
     method: 'POST',
