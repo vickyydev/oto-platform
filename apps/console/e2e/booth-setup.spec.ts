@@ -139,6 +139,12 @@ test('Voucher types: changing what the 100 THB Voucher is worth asks first, “K
     'No voucher of this type is unredeemed, so no printed slip changes with it — it is on the wheel at Booth 1 (100 THB Voucher)',
   );
   await expect(edit).toContainText('create the new worth with “New voucher type”');
+  // The type's own words are printed from it too, and the seeded name says
+  // 100 in both languages: the question names the words that still say the
+  // old worth (SCRUM-432) rather than letting the slips contradict it.
+  await expect(edit).toContainText(
+    'Its name still says 100 — change it too, or the slips will contradict their worth.',
+  );
   await expect(edit.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
 
   // The safer press puts the stored amount back, and the question goes with it.
@@ -147,9 +153,15 @@ test('Voucher types: changing what the 100 THB Voucher is worth asks first, “K
   await expect(edit).not.toContainText('Change what it is worth');
   await expect(edit.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
 
-  // Asked again and confirmed, the list reads the new worth.
+  // Asked again and confirmed, the list reads the new worth. The Thai name
+  // retyped to the new worth in the same edit, the sentence narrows to the
+  // English one — the search reads the words about to be saved.
+  await edit.getByLabel('Name (Thai)').fill('บัตรกำนัล 80 บาท');
   await edit.getByLabel('Amount off').fill('80');
   await edit.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(edit).toContainText(
+    'Its English name still says 100 — change it too, or the slips will contradict their worth.',
+  );
   await edit.getByRole('button', { name: 'Change it anyway', exact: true }).click();
   await expect(edit).toHaveCount(0, { timeout: 30_000 });
   await expect(hundred).toContainText('฿80 off the ticket order');

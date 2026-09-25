@@ -20,6 +20,7 @@ import {
   formProblems,
   inputFrom,
   notSetUp,
+  staleWordsSentence,
   unredeemedSentence,
   worthChange,
   type VoucherForm,
@@ -38,8 +39,10 @@ import {
  *     every voucher of this type not yet redeemed — slips already printed
  *     included. So a change to a worth the type already had is asked about
  *     before it is sent, from and to in the till's words, with how many
- *     vouchers it reaches (`unredeemedSentence`) and naming a new voucher
- *     type as the safer choice (`worthChange`, SCRUM-409). Completing
+ *     vouchers it reaches (`unredeemedSentence`), naming a new voucher
+ *     type as the safer choice (`worthChange`, SCRUM-409), and naming the
+ *     type's own words that still say the old worth, since those print as
+ *     they are (`staleWordsSentence`, SCRUM-432). Completing
  *     a type — its first product link — is not asked about: the slips printed
  *     before the link are the ones that must pick it up.
  *   - **What the slip says** (title, instruction, terms, in English and Thai).
@@ -131,8 +134,10 @@ export function VoucherTypeEditor({
   const stillRefused = definition ? notSetUp(definition) : null;
 
   const input = inputFrom(form, definition, isNew);
-  const change =
-    definition && !locked ? worthChange(definition, worthNamed(input, definition, linkOptions)) : null;
+  const next = definition && !locked ? worthNamed(input, definition, linkOptions) : null;
+  const change = definition && next ? worthChange(definition, next) : null;
+  /** The words about to be saved that still say the worth being left behind (SCRUM-432). */
+  const staleWords = definition && next && change ? staleWordsSentence(definition, next, input) : null;
   const asking = askingWorth && change !== null;
 
   const save = () => {
@@ -185,8 +190,8 @@ export function VoucherTypeEditor({
                 {uses.length > 0
                   ? ` — it is on the wheel at ${uses.map((u) => `${u.boothName} (${u.prizeName})`).join(', ')}`
                   : ''}
-                . Safer: keep this type as it is, create the new worth with “New voucher type”, and point
-                the prize at it.
+                .{staleWords ? ` ${staleWords}` : ''} Safer: keep this type as it is, create the new worth with
+                “New voucher type”, and point the prize at it.
               </p>
             </div>
           )}

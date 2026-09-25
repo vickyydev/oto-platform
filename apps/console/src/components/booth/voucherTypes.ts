@@ -195,6 +195,139 @@ export function unredeemedSentence(unredeemed: number | undefined): string {
   return `${unredeemed} unredeemed vouchers, printed slips included, change with it at once`;
 }
 
+/** The words a save would print, as the editor is about to send them. */
+export type SlipWords = Pick<
+  VoucherDefinitionInput,
+  'nameEn' | 'nameTh' | 'titleEn' | 'titleTh' | 'instructionEn' | 'instructionTh' | 'termsEn' | 'termsTh'
+>;
+
+/** A way a worth is written in a name or on a slip, and what the sentence calls it when found. */
+interface WorthWord {
+  text: string;
+  shows: string;
+}
+
+/**
+ * The ways a number is written down: as typed (`100`, `150.5`), with two
+ * places (`150.50`), and grouped once it reaches a thousand (`1,000`). Every
+ * form is shown as the number as typed, with `suffix` after it.
+ */
+function numberWords(hundredths: number, suffix = ''): WorthWord[] {
+  const plain = hundredthsToText(hundredths);
+  const whole = Math.trunc(hundredths / 100);
+  const fraction = Math.abs(hundredths % 100);
+  const wholes = whole >= 1000 ? [String(whole), whole.toLocaleString('en-US')] : [String(whole)];
+  const fractions =
+    fraction === 0 ? [''] : [...new Set([`.${plain.split('.')[1]}`, `.${String(fraction).padStart(2, '0')}`])];
+  return wholes.flatMap((w) => fractions.map((f) => ({ text: `${w}${f}`, shows: `${plain}${suffix}` })));
+}
+
+/**
+ * The plain words for a worth, the ones a manager writes into the type's name
+ * and slip: the number of baht, the percentage, the product's name, `1+1` and
+ * the package's name. A hand-over prize has none — "prize" is on every slip.
+ */
+function worthWords(row: Worth): WorthWord[] {
+  switch (row.kind) {
+    case 'discount':
+      if (row.valueType === 'percent') return row.valueBp ? numberWords(row.valueBp, '%') : [];
+      return row.valueSatang ? numberWords(row.valueSatang) : [];
+    case 'free_item':
+      return row.product ? [{ text: row.product.name, shows: row.product.name }] : [];
+    case 'free_ticket':
+      return [
+        ...['1+1', '1 + 1', '1 แถม 1'].map((text) => ({ text, shows: '1+1' })),
+        ...(row.ticketPackage ? [{ text: row.ticketPackage.name, shows: row.ticketPackage.name }] : []),
+      ];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Whether the text says the word, in any case. A number counts only as a
+ * whole number — `100` is in `฿100`, `100 THB` and `100.00`, not in `1000`
+ * or `2100` — so a name is not accused of a number it does not say.
+ */
+function says(text: string | null, word: string): boolean {
+  if (!text) return false;
+  const hay = text.toLowerCase();
+  const needle = word.toLowerCase();
+  if (!/^[\d.,]+$/.test(needle)) return hay.includes(needle);
+  for (let at = hay.indexOf(needle); at !== -1; at = hay.indexOf(needle, at + 1)) {
+    if (!/\d/.test(hay.charAt(at - 1)) && !/\d/.test(hay.charAt(at + needle.length))) return true;
+  }
+  return false;
+}
+
+/** The fields the sentence names, each an English and a Thai column of the same words. */
+const WORD_FIELDS: ReadonlyArray<{ label: string; en: keyof SlipWords; th: keyof SlipWords }> = [
+  { label: 'name', en: 'nameEn', th: 'nameTh' },
+  { label: 'slip title', en: 'titleEn', th: 'titleTh' },
+  { label: 'instruction', en: 'instructionEn', th: 'instructionTh' },
+  { label: 'terms', en: 'termsEn', th: 'termsTh' },
+];
+
+/** `a`, `a and b`, `a, b and c`. */
+function listed(items: string[]): string {
+  if (items.length <= 1) return items.join('');
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+/**
+ * Which of the type's words still say the worth a save is leaving behind, as
+ * one more sentence for the question `worthChange` raises — or null when none
+ * do.
+ *
+ * Why (SCRUM-432): the worth is read from the type, but the words are printed
+ * from it too, and confirming ฿100 → ฿150 leaves "100 THB Voucher", "100 THB
+ * OFF" and "…for 100 THB off your admission" as they were, so every slip
+ * printed afterwards contradicts its worth. The question already says what
+ * happens to the vouchers; this says what is still wrong with the words, by
+ * name, so the manager changes them in the same edit or knows what they left.
+ *
+ * A plain text search, nothing more: the old worth's words (`worthWords`) are
+ * looked for in the words about to be saved, so a name already retyped to
+ * "150 THB Voucher" is not named. When the worth keeps its kind — one amount
+ * for another, one package for another — the words the new worth shares with
+ * the old are not looked for: "1+1" is still right on a 1+1 whose package
+ * changed. The sentence names the field, and its language only when the
+ * other language's words are there and do not say it. It does not rewrite
+ * anything — the words are the park's, not this form's.
+ */
+export function staleWordsSentence(stored: Worth, next: Worth, words: SlipWords): string | null {
+  const sameKind = stored.kind === next.kind && stored.valueType === next.valueType;
+  const kept = new Set(worthWords(next).map((w) => w.text.toLowerCase()));
+  const old = worthWords(stored).filter((w) => !sameKind || !kept.has(w.text.toLowerCase()));
+  if (old.length === 0) return null;
+  const found = (text: string | null) => old.find((w) => says(text, w.text));
+  const fields: string[] = [];
+  const shown: string[] = [];
+  for (const field of WORD_FIELDS) {
+    const en = found(words[field.en]);
+    const th = found(words[field.th]);
+    if (!en && !th) continue;
+    const enBlank = !words[field.en]?.trim();
+    const thBlank = !words[field.th]?.trim();
+    fields.push(
+      en && th
+        ? field.label
+        : en
+          ? thBlank
+            ? field.label
+            : `English ${field.label}`
+          : enBlank
+            ? field.label
+            : `Thai ${field.label}`,
+    );
+    for (const w of [en, th]) if (w && !shown.includes(w.shows)) shown.push(w.shows);
+  }
+  if (fields.length === 0) return null;
+  // "terms" is plural on its own, so a lone terms field still takes "say" and "them".
+  const one = fields.length === 1 && !fields[0]!.endsWith('terms');
+  return `Its ${listed(fields)} still ${one ? 'says' : 'say'} ${listed(shown)} — change ${one ? 'it' : 'them'} too, or the slips will contradict their worth.`;
+}
+
 /**
  * Why the till would refuse this voucher type today, or null when it would
  * honour it. The words are the counter's own reasons ("not set up yet"), so
