@@ -95,8 +95,11 @@ import {
   auditVoidReleases,
   consumeSaleVouchers,
   lockVouchersHeldFor,
+  maskVoucherCode,
+  maskedVoucherLineLabel,
   recordVoucherApplied,
   resolveCartVoucher,
+  saleVoucherCodes,
   voucherConfiguredValue,
   voucherPricing,
   type CartVoucherClaim,
@@ -1836,6 +1839,42 @@ function voucherViewOf(priced: PricedVoucher | null): Omit<PricedVoucher, 'promo
   return view;
 }
 
+/**
+ * SCRUM-433 — THE VOUCHER AS A SALE ANSWER CARRIES IT: its code as
+ * `maskVoucherCode` shows it, "…47WP". The commit's answer is kept under the
+ * till's idempotency key and replayed from there, and a sale answer is not
+ * where a live code belongs.
+ *
+ * NOTHING ON THE TILL READS THE CODE BACK. The till keeps the whole code on the
+ * voucher it holds (`HeldVoucher.code` in apps/pos/src/lib/tillVoucher.ts, from
+ * the scan and the hold), and every path that sends it again — the next Pay, a
+ * corrected order after Pay (`moveTo`), the offer to void a sale the voucher
+ * was left on (`voidRungUp`) — sends that. The quote is not a sale answer: it
+ * prices the cart the till is holding, with the code the till has just sent,
+ * and is answered as it was (`quoteSale`).
+ */
+function soldVoucherViewOf(priced: PricedVoucher | null): Omit<PricedVoucher, 'promo'> | null {
+  const view = voucherViewOf(priced);
+  return view ? { ...view, code: maskVoucherCode(view.code) } : null;
+}
+
+/**
+ * The priced lines as a sale answer carries them: a voucher's free item keeps
+ * the voucher's id on its payload and answers the code as `maskVoucherCode`
+ * shows it. The row written to `pos.sale_line` keeps the whole code.
+ */
+function soldLinesOf(lines: readonly PricedLine[]): PricedLine[] {
+  return lines.map((line) => {
+    const held = line.payload?.voucher;
+    return held
+      ? {
+          ...line,
+          payload: { ...line.payload, voucher: { ...held, code: maskVoucherCode(held.code) } },
+        }
+      : line;
+  });
+}
+
 // --- Writing the sale -------------------------------------------------------
 
 /** The sale as every read of it answers. */
@@ -2317,9 +2356,13 @@ export interface CommitResult {
   /** S2-09b — the pick-up code recorded on this sale's F&B lines, if it has any. */
   pickupCode: string | null;
   sale: SaleView;
+  /** A voucher's free item among them names the voucher's code by its last four (SCRUM-433). */
   lines: PricedLine[];
   rejectedPromoCodes: { code: string; reason: string }[];
-  /** S2-10b — the voucher this sale was priced with, when it carries one. */
+  /**
+   * S2-10b — the voucher this sale was priced with, when it carries one. Its
+   * `code` is the last four characters, "…47WP" (SCRUM-433, `soldVoucherViewOf`).
+   */
   voucher: Omit<PricedVoucher, 'promo'> | null;
   /**
    * SCRUM-401 — set only when the codes were priced as recorded (the offline
@@ -2801,9 +2844,10 @@ export async function commitSale(
     outstandingSatang: finalising ? 0 : owedAtCommit,
     pickupCode: recordedPickupCode(priced.lines.filter((l) => l.kind === 'fnb_item')),
     sale: viewOf(written, await voidedByNameOf(tx, written)),
-    lines: priced.lines,
+    // SCRUM-433 — the rows above keep the whole code; the answer carries its last four.
+    lines: soldLinesOf(priced.lines),
     rejectedPromoCodes: priced.rejectedPromoCodes,
-    voucher: voucherViewOf(priced.voucher),
+    voucher: soldVoucherViewOf(priced.voucher),
     ...(promoPricing === 'as_recorded' ? { promoDifferences: priced.promoDifferences } : {}),
   };
 }
@@ -3606,6 +3650,12 @@ export async function getSaleDetail(
    */
   const attempts = await attemptsForSale(db, saleId);
   const voidedByName = await voidedByNameOf(db, row);
+  /**
+   * SCRUM-433 — which of the discount rows are a voucher's: their code is
+   * answered as its last four characters, and so is the label. History reads
+   * this answer, and a voided sale's voucher is free again.
+   */
+  const voucherCodes = await saleVoucherCodes(db, operatorId, saleId);
 
   return {
     sale: {
@@ -3656,26 +3706,32 @@ export async function getSaleDetail(
       variant: (line.payload as SaleLinePayload | null)?.variant ?? null,
       prepStation: (line.payload as SaleLinePayload | null)?.prepStation ?? null,
     })),
-    discounts: discounts.map((d) => ({
-      id: d.id,
-      sequence: d.sequence,
-      kind: d.kind,
-      discountType: d.discountType,
-      percentBp: d.percentBp,
-      valueSatang: d.valueSatang,
-      amountSatang: d.amountSatang,
-      scope: d.scope,
-      targetLineId: d.targetLineId,
-      targetComponent: d.targetComponent,
-      targetLabel: d.targetLabel,
-      code: d.code,
-      label: d.label,
-      exhaustedReason: d.exhaustedReason,
-      reason: d.reason,
-      note: d.note,
-      appliedByAccountId: d.appliedByAccountId,
-      appliedByName: d.appliedByName,
-      appliedAt: d.appliedAt?.toISOString() ?? null,
-    })),
+    discounts: discounts.map((d) => {
+      /** The whole code of a voucher's row, which this answer does not give. */
+      const voucherCode =
+        d.kind === 'promo' && d.code !== null && voucherCodes.has(d.code) ? d.code : null;
+      return {
+        id: d.id,
+        sequence: d.sequence,
+        kind: d.kind,
+        discountType: d.discountType,
+        percentBp: d.percentBp,
+        valueSatang: d.valueSatang,
+        amountSatang: d.amountSatang,
+        scope: d.scope,
+        targetLineId: d.targetLineId,
+        targetComponent: d.targetComponent,
+        targetLabel: d.targetLabel,
+        code: voucherCode ? maskVoucherCode(voucherCode) : d.code,
+        label:
+          voucherCode && d.label !== null ? maskedVoucherLineLabel(d.label, voucherCode) : d.label,
+        exhaustedReason: d.exhaustedReason,
+        reason: d.reason,
+        note: d.note,
+        appliedByAccountId: d.appliedByAccountId,
+        appliedByName: d.appliedByName,
+        appliedAt: d.appliedAt?.toISOString() ?? null,
+      };
+    }),
   };
 }

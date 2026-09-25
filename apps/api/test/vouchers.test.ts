@@ -11,6 +11,7 @@ import {
   branch,
   discountDefinition,
   employee,
+  idempotencyKey,
   member,
   paymentAttempt,
   product,
@@ -1352,6 +1353,189 @@ describe('what each kind of voucher does to the bill', () => {
   });
 });
 
+/**
+ * SCRUM-433 — A SALE ANSWERS ITS VOUCHER BY THE LAST FOUR CHARACTERS OF THE
+ * CODE.
+ *
+ * History reads a sale back, and a voided sale's voucher is free again, so a
+ * sale answer carrying the whole code handed a live code to anyone who could
+ * open History. The line's label said the last four from 2246aef; the code
+ * field beside it, the commit's voucher and its free item's line still said all
+ * of it. Every sale answer is read here for the whole code — the commit and its
+ * replay from the idempotency store, the detail, the list, the void and the
+ * close — and the rows are read for it too, because the ledger keeps it.
+ */
+describe('a sale answers its voucher by the last four characters of the code (SCRUM-433)', () => {
+  const read = (saleId: string) =>
+    ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie: tillA } });
+
+  it('says …XXXX on the commit, the detail, the list, the void and the close; the rows keep the whole code', async () => {
+    const v = await issue(defs.pizza!);
+    const tail = `…${v.code.slice(-4)}`;
+    const label = `Kids Pizza (voucher ${tail})`;
+    const saleId = newId();
+    expect((await hold(tillA, saleId, v.code)).statusCode).toBe(200);
+
+    // Pay, under the till's own key: the answer names the voucher and its free
+    // item by the last four, and so does the answer the store replays for the
+    // same press.
+    const press = { id: saleId, ...kids(1), promoCodes: [v.code] };
+    const pay = () =>
+      ctx.app.inject({
+        method: 'POST',
+        url: '/sales',
+        headers: { cookie: tillA, 'idempotency-key': `sale:${saleId}` },
+        payload: press,
+      });
+    const rung = await pay();
+    expect(rung.statusCode, rung.body).toBe(200);
+    expect(rung.body).not.toContain(v.code);
+    expect(rung.json().voucher).toMatchObject({ voucherId: v.id, code: tail, label });
+    const freeLine = (rung.json().lines as { kind: string; payload: unknown }[]).find(
+      (l) => l.kind === 'promo_item',
+    );
+    expect(freeLine?.payload).toEqual({ voucher: { id: v.id, code: tail } });
+    const replayed = await pay();
+    expect(replayed.statusCode).toBe(200);
+    expect(replayed.headers['x-oto-replay']).toBe('true');
+    expect(replayed.json()).toEqual(rung.json());
+    const [stored] = await ctx.db
+      .select({ body: idempotencyKey.responseBody })
+      .from(idempotencyKey)
+      .where(eq(idempotencyKey.key, `sale:${saleId}`));
+    expect(JSON.stringify(stored!.body)).not.toContain(v.code);
+
+    // The detail: the voucher's line by the last four, in its code and its label.
+    const detail = await read(saleId);
+    expect(detail.statusCode, detail.body).toBe(200);
+    expect(detail.body).not.toContain(v.code);
+    expect(detail.json().discounts).toEqual([
+      expect.objectContaining({ kind: 'promo', code: tail, label, amountSatang: b(220) }),
+    ]);
+
+    // The list History opens.
+    const list = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales?branchId=${hktId}&limit=200`,
+      headers: { cookie: tillA },
+    });
+    expect(list.statusCode, list.body).toBe(200);
+    expect((list.json().sales as { id: string }[]).map((s) => s.id)).toContain(saleId);
+    expect(list.body).not.toContain(v.code);
+
+    // The void, which frees the voucher: the answer and the sale read back
+    // still name it by the last four only.
+    const voided = await voidSale(tillA, saleId, 'Cancelled at the till');
+    expect(voided.statusCode, voided.body).toBe(200);
+    expect(voided.json().releasedVoucherIds).toEqual([v.id]);
+    expect(voided.body).not.toContain(v.code);
+    const afterVoid = await read(saleId);
+    expect(afterVoid.body).not.toContain(v.code);
+    expect(afterVoid.json().discounts).toEqual([expect.objectContaining({ code: tail, label })]);
+
+    // The rows keep the whole code: the discount row, and the free item's line.
+    const [row] = await ctx.db.select().from(saleDiscount).where(eq(saleDiscount.saleId, saleId));
+    expect(row).toMatchObject({ kind: 'promo', code: v.code, label });
+    const [free] = await ctx.db
+      .select()
+      .from(saleLine)
+      .where(and(eq(saleLine.saleId, saleId), eq(saleLine.kind, 'promo_item')));
+    expect(free!.payload).toEqual({ voucher: { id: v.id, code: v.code } });
+
+    // Free again, on a sale that is paid: the close's answer, and that sale read back.
+    const next = await holdAndCommit(tillA, v.code, kids(1));
+    const closed = await finalise(tillA, next);
+    expect(closed.statusCode, closed.body).toBe(200);
+    expect(closed.json()).toMatchObject({ finalised: true, redeemedVoucherIds: [v.id] });
+    expect(closed.body).not.toContain(v.code);
+    const paid = await read(next);
+    expect(paid.body).not.toContain(v.code);
+    expect(paid.json().discounts).toEqual([expect.objectContaining({ code: tail, label })]);
+  });
+
+  it('answers a park code whole: only a voucher’s line is masked', async () => {
+    const saleId = newId();
+    const rung = await commit(tillA, {
+      id: saleId,
+      ...kids(1),
+      promos: [{ code: 'STAFF10', label: 'Staff', type: 'percent', value: 10 }],
+    });
+    expect(rung.statusCode, rung.body).toBe(200);
+    const detail = await read(saleId);
+    expect(detail.json().discounts).toEqual([
+      expect.objectContaining({ kind: 'promo', code: 'STAFF10', label: 'Staff Discount' }),
+    ]);
+  });
+
+  it('answers a line still labelled with the whole code by the last four as well', async () => {
+    const v = await issue(defs['spin-voucher-150']!);
+    const tail = `…${v.code.slice(-4)}`;
+    const saleId = await holdAndCommit(tillA, v.code, kids(1));
+    // As an api older than 2246aef wrote it, after migration 0025 had run. The
+    // sale is still open, so its rows are not frozen yet.
+    await ctx.db
+      .update(saleDiscount)
+      .set({ label: `150 THB Voucher (voucher ${v.code})` })
+      .where(eq(saleDiscount.saleId, saleId));
+    const detail = await read(saleId);
+    expect(detail.body).not.toContain(v.code);
+    expect(detail.json().discounts).toEqual([
+      expect.objectContaining({ code: tail, label: `150 THB Voucher (voucher ${tail})` }),
+    ]);
+  });
+
+  /**
+   * The corrected order after Pay, as the till makes it (`moveTo` in
+   * apps/pos/src/lib/tillVoucher.ts): the voucher is still on the sale the order
+   * was rung up as, so the till voids that sale and holds the voucher for the
+   * corrected cart — by the code it kept from the scan. Nothing it needs is read
+   * back from a sale, which now answers only the last four.
+   */
+  it('a corrected order after Pay takes the voucher by the code the till holds', async () => {
+    const v = await issue(defs['spin-voucher-150']!);
+    const tail = `…${v.code.slice(-4)}`;
+    const first = newId();
+    expect((await hold(tillA, first, v.code)).statusCode).toBe(200);
+    const rung = await commit(tillA, { id: first, ...kids(1), promoCodes: [v.code] });
+    expect(rung.statusCode, rung.body).toBe(200);
+    expect(rung.json().voucher).toMatchObject({ voucherId: v.id, code: tail });
+
+    // The order changes on the payment screen: a new cart, under a new sale id.
+    const corrected = newId();
+    const refused = await hold(tillA, corrected, v.code);
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error).toMatchObject({
+      code: 'HELD_ELSEWHERE',
+      details: { rungUp: true, saleId: first },
+    });
+    const left = await voidSale(tillA, first, 'Order changed at the till after Pay');
+    expect(left.statusCode, left.body).toBe(200);
+    expect(left.json().releasedVoucherIds).toEqual([v.id]);
+    const moved = await hold(tillA, corrected, v.code);
+    expect(moved.statusCode, moved.body).toBe(200);
+
+    const again = await commit(tillA, { id: corrected, ...kids(2), promoCodes: [v.code] });
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.json().voucher).toMatchObject({
+      voucherId: v.id,
+      code: tail,
+      amountSatang: b(150),
+    });
+    expect((await saleRow(corrected)).grossSatang).toBe(2 * KID - b(150));
+    const paid = await finalise(tillA, corrected);
+    expect(paid.json()).toMatchObject({ finalised: true, redeemedVoucherIds: [v.id] });
+
+    // Both sales name it by the last four; both rows keep the whole code.
+    for (const saleId of [first, corrected]) {
+      const detail = await read(saleId);
+      expect(detail.body).not.toContain(v.code);
+      expect(detail.json().discounts).toEqual([expect.objectContaining({ code: tail })]);
+      const [row] = await ctx.db.select().from(saleDiscount).where(eq(saleDiscount.saleId, saleId));
+      expect(row!.code).toBe(v.code);
+    }
+  });
+});
+
 describe('one voucher per sale, and not beside any other code', () => {
   it('refuses a second voucher on a cart that holds one', async () => {
     const saleId = newId();
@@ -2394,9 +2578,7 @@ describe('the park’s own discount codes are never voucher claims, whatever the
     const retired = new Set(['BIRTHDAY25', 'MEMBERDAY25']);
     for (const code of DEFINED) {
       const off = retired.has(code) ? 0 : b(89);
-      const refused = retired.has(code)
-        ? [{ code, reason: `Code "${code}" isn't set up at this branch yet.` }]
-        : [];
+      const refused = retired.has(code) ? [{ code, reason: `Code "${code}" was not found.` }] : [];
       const priced = await quote(tillA, { ...kids(1), promos: [halfOff(code)] });
       expect(priced.statusCode, `${code}: ${priced.body}`).toBe(200);
       expect(priced.json().totals.promoDiscountSatang, code).toBe(off);
@@ -2421,7 +2603,7 @@ describe('the park’s own discount codes are never voucher claims, whatever the
       const priced = await quote(tillA, kids(1, { codes: [code] }));
       expect(priced.statusCode, `${code}: ${priced.body}`).toBe(200);
       expect(priced.json().rejectedPromoCodes).toEqual([
-        { code, reason: `Code "${code}" isn't set up at this branch yet.` },
+        { code, reason: `Code "${code}" was not found.` },
       ]);
     }
   });
@@ -2440,7 +2622,7 @@ describe('the park’s own discount codes are never voucher claims, whatever the
     const res = await quote(tillA, { ...kids(1), promos: [tenPercent('MEMBERDAY26')] });
     expect(res.statusCode, res.body).toBe(200);
     expect(res.json().rejectedPromoCodes).toEqual([
-      { code: 'MEMBERDAY26', reason: 'Code "MEMBERDAY26" isn\'t set up at this branch yet.' },
+      { code: 'MEMBERDAY26', reason: 'Code "MEMBERDAY26" was not found.' },
     ]);
     expect(res.json().totals.promoDiscountSatang).toBe(0);
   });

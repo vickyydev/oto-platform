@@ -1413,8 +1413,8 @@ describe('promo codes', () => {
     });
     const body = res.json();
     expect(body.rejectedPromoCodes).toEqual([
-      { code: 'KIDS23', reason: 'Code "KIDS23" isn\'t set up at this branch yet.' },
-      { code: 'KIDS24', reason: 'Code "KIDS24" isn\'t set up at this branch yet.' },
+      { code: 'KIDS23', reason: 'Code "KIDS23" was not found.' },
+      { code: 'KIDS24', reason: 'Code "KIDS24" was not found.' },
     ]);
     expect(body.appliedPromos).toEqual([]);
     expect(body.totals.promoDiscountSatang).toBe(0);
@@ -1809,6 +1809,21 @@ describe('a cart of one hand-over prize', () => {
     const [free] = await ctx.db.select().from(voucher).where(eq(voucher.id, voucherId));
     expect(free).toMatchObject({ status: 'issued', heldSaleId: null, saleId: null });
     expect(await ledgerOf(voucherId)).toEqual(['held', 'applied', 'released/sale_voided']);
+
+    // SCRUM-433 — the slip is live again, so the voided sale names it by the
+    // last four only: in the void's answer and in the sale read back.
+    const tail = `…${code.slice(-4)}`;
+    expect(voided.body).not.toContain(code);
+    const readBack = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales/${saleId}`,
+      headers: { cookie: till },
+    });
+    expect(readBack.statusCode, readBack.body).toBe(200);
+    expect(readBack.body).not.toContain(code);
+    expect(readBack.json().discounts).toEqual([
+      expect.objectContaining({ code: tail, label: `Mystery Gift (voucher ${tail})` }),
+    ]);
 
     // Free for the next cart: held again, rung up again, closed at the confirm.
     const nextSale = newId();

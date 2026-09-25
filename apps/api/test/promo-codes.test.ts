@@ -100,7 +100,14 @@ let maliId: string;
 const b = (baht: number): number => Math.round(baht * 100);
 const KID = b(890);
 
-const unknown = (code: string): string => `Code "${code}" isn't set up at this branch yet.`;
+/**
+ * A code set up nowhere — unknown, archived or switched off alike — in the
+ * till's own words for a code its copy does not hold (SCRUM-441).
+ */
+const unknown = (code: string): string => `Code "${code}" was not found.`;
+/** A live code set up for another branch: not here, and where it is (SCRUM-441). */
+const elsewhere = (code: string, branchName: string): string =>
+  `Code "${code}" isn't set up at this branch yet — it is only valid at ${branchName}.`;
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** "26 Sep 2026", the way a refusal names a date. */
@@ -561,12 +568,12 @@ describe('a code set up for one branch', () => {
 
     const wrongPark = await atHkt('CHALONGONLY');
     expect(wrongPark.quote.rejectedPromoCodes).toEqual([
-      { code: 'CHALONGONLY', reason: `Code "CHALONGONLY" is only valid at ${chalongName}.` },
+      { code: 'CHALONGONLY', reason: elsewhere('CHALONGONLY', chalongName) },
     ]);
     expect(wrongPark.rows).toEqual([]);
     const otherWay = await atChalong('HKTONLY');
     expect(otherWay.quote.rejectedPromoCodes).toEqual([
-      { code: 'HKTONLY', reason: `Code "HKTONLY" is only valid at ${hktName}.` },
+      { code: 'HKTONLY', reason: elsewhere('HKTONLY', hktName) },
     ]);
     expect(otherWay.rows).toEqual([]);
 
@@ -582,6 +589,55 @@ describe('a code set up for one branch', () => {
         expect.objectContaining({ code: 'ANYPARK', amountSatang: b(50) }),
       ]);
     }
+  });
+});
+
+/**
+ * SCRUM-441 — A CODE REFUSED AS UNKNOWN READS AS THE TILL'S OWN REFUSAL.
+ *
+ * The till's copy of the codes says "Code X was not found." for a code it does
+ * not hold (`handleApplyPromoCode`, apps/pos/src/pages/Till.tsx). The platform,
+ * refusing the same code for a till whose copy is stale or on a quote made
+ * directly, said "isn't set up at this branch yet", which tells a guest the code
+ * works at another park when it works at none. That sentence is kept for the
+ * code it is true of — a live code set up for another branch — and names it.
+ */
+describe('a refused code, in the till’s words (SCRUM-441)', () => {
+  it('reads "was not found" for a code set up at no branch, on the quote and on the commit', async () => {
+    const run = await quoteAndCommit(tillA, { ...kids(), promos: [described('NOWHERE441')] });
+    expect(run.quote.rejectedPromoCodes).toEqual([
+      { code: 'NOWHERE441', reason: 'Code "NOWHERE441" was not found.' },
+    ]);
+    expect(run.commit.rejectedPromoCodes).toEqual(run.quote.rejectedPromoCodes);
+    expect(run.rows).toEqual([]);
+    expect(run.sale.grossSatang).toBe(KID);
+  });
+
+  it('keeps the branch sentence for a code set up at another branch, and names that branch', async () => {
+    await define('CHALONG441', { branchId: chalongId });
+    const here = await quoteAndCommit(tillA, { ...kids(), promos: [described('CHALONG441')] });
+    expect(here.quote.rejectedPromoCodes).toEqual([
+      {
+        code: 'CHALONG441',
+        reason: `Code "CHALONG441" isn't set up at this branch yet — it is only valid at ${chalongName}.`,
+      },
+    ]);
+    expect(here.rows).toEqual([]);
+    // At the branch it is set up for, it is simply applied.
+    const there = await quoteAndCommit(chalongTill, {
+      ...kids({ stationId: t3.id, packageId: twoHoursChalong }),
+      promos: [described('CHALONG441')],
+    });
+    expect(there.quote.rejectedPromoCodes).toEqual([]);
+    expect(there.quote.appliedPromos.map((p) => p.code)).toEqual(['CHALONG441']);
+  });
+
+  it('reads "was not found" for a code switched off at another branch: it is set up nowhere', async () => {
+    await define('PAUSED441', { branchId: chalongId, active: false });
+    const run = await quoteAndCommit(tillA, { ...kids(), promos: [described('PAUSED441')] });
+    expect(run.quote.rejectedPromoCodes).toEqual([
+      { code: 'PAUSED441', reason: 'Code "PAUSED441" was not found.' },
+    ]);
   });
 });
 

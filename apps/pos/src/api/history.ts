@@ -162,7 +162,18 @@ export interface ApiSaleDiscount {
   percentBp: number | null;
   amountSatang: number;
   targetLabel: string | null;
+  /**
+   * The code the discount was given under: a park code whole, a Lucky Wheel
+   * voucher's by its last four characters, "…47WP" — no sale answer carries a
+   * voucher's whole code (SCRUM-433). Nothing on the till reads it back to use
+   * the voucher again: the whole code is kept on the voucher the till holds.
+   */
   code: string | null;
+  /**
+   * What the line says. A voucher's: the type's name and the code's last four,
+   * "150 THB Voucher (voucher …47WP)", shown by `DiscountLabel` in
+   * components/history/SaleDetail.tsx so the name is what gets cut.
+   */
   label: string | null;
   reason: string | null;
   note: string | null;

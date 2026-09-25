@@ -1517,18 +1517,47 @@ export interface CartVoucherClaim {
 }
 
 /**
- * SCRUM-433 — HOW A SALE'S DISCOUNT LINE NAMES THE VOUCHER: the type's name
- * and the LAST FOUR characters of the code, "150 THB Voucher (voucher …47WP)".
+ * SCRUM-433 — A VOUCHER'S CODE WHERE A SALE SHOWS IT: an ellipsis and the
+ * LAST FOUR characters, "…47WP".
  *
- * The line is what History and `GET /sales/:id` read back, and a voided
- * sale's voucher is free again — so a line that carried the whole code handed
- * a live code to anyone who could open History. Four characters are enough to
- * match the line to the slip in the guest's hand and not enough to redeem it.
- * The voucher row and its ledger keep the full code; a search by code goes
- * there.
+ * A sale is read back by anyone who can open History, and a voided sale's
+ * voucher is free again, so a sale that showed the whole code handed a live
+ * code to all of them. Four characters are enough to match a line to the slip
+ * in the guest's hand and not enough to redeem it. So the discount line's
+ * label (`voucherLineLabel`) and every sale answer's code field — the
+ * `discounts[].code` of `GET /sales/:id`, the commit's `voucher.code` and its
+ * free item's `payload.voucher.code` — carry this form. The whole code stays
+ * where it is needed: the voucher row, its redemption ledger, and the sale's
+ * own `pos.sale_discount` and `pos.sale_line` rows. A search by code goes there.
+ */
+export function maskVoucherCode(code: string): string {
+  return `…${code.slice(-4)}`;
+}
+
+/**
+ * SCRUM-433 — HOW A SALE'S DISCOUNT LINE NAMES THE VOUCHER: the type's name
+ * and the code as `maskVoucherCode` shows it, "150 THB Voucher (voucher …47WP)".
+ * Frozen on the row when the sale is written, like every label on a sale.
  */
 function voucherLineLabel(nameEn: string, code: string): string {
-  return `${nameEn} (voucher …${code.slice(-4)})`;
+  return `${nameEn} (voucher ${maskVoucherCode(code)})`;
+}
+
+/**
+ * A voucher line's label as a sale answer gives it. Before 2246aef the line
+ * was labelled with the whole code, "<type name> (voucher <code>)", and
+ * migration 0025 rewrote those rows once into `voucherLineLabel`'s form, by the
+ * same test as here: the label ends with " (voucher " and the row's own code.
+ * This rewrites such a label on the way out as well, so no answer carries the
+ * whole code whatever a row says: a row an older api wrote after the migration
+ * had run, or a database restored from before it. Any other label is answered
+ * as it is.
+ */
+export function maskedVoucherLineLabel(label: string, code: string): string {
+  const whole = ` (voucher ${code})`;
+  return label.endsWith(whole)
+    ? voucherLineLabel(label.slice(0, label.length - whole.length), code)
+    : label;
 }
 
 /**
@@ -1979,6 +2008,36 @@ async function appliedVoucherIds(db: Exec, scope: SaleVoucherScope): Promise<str
     )
     .orderBy(asc(voucherRedemption.occurredAt));
   return [...new Set(rows.map((r) => r.voucherId))];
+}
+
+/**
+ * SCRUM-433 — the codes of the vouchers a sale was priced with, read from its
+ * `applied` rows in the redemption ledger. That row is the one record tying a
+ * sale to its voucher for good: a void lets the voucher go, and another sale
+ * may have used it since. A voucher's discount row carries the voucher's code
+ * (`recordVoucherApplied` and the row are written from the same claim), so
+ * this is how `GET /sales/:id` knows which of a sale's `promo` rows are a
+ * voucher's, and answers their code as `maskVoucherCode` shows it. A voucher
+ * never shares a sale with a park's code (`resolveCartVoucher`), so every other
+ * row is answered as it was written.
+ */
+export async function saleVoucherCodes(
+  db: Exec,
+  operatorId: string,
+  saleId: string,
+): Promise<Set<string>> {
+  const rows = await db
+    .selectDistinct({ code: voucher.code })
+    .from(voucherRedemption)
+    .innerJoin(voucher, eq(voucher.id, voucherRedemption.voucherId))
+    .where(
+      and(
+        eq(voucherRedemption.saleId, saleId),
+        eq(voucherRedemption.operatorId, operatorId),
+        eq(voucherRedemption.kind, 'applied'),
+      ),
+    );
+  return new Set(rows.map((row) => row.code));
 }
 
 /**

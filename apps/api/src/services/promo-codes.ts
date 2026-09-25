@@ -24,9 +24,11 @@ import type { Exec, OpContext } from './tx';
  * THE RULE NOW. The till names a code. What it is worth is read here, from the
  * operator's live definition of that code, and from nothing the till sent:
  *
- *   - no live definition, or one switched off: refused by name, in the words an
- *     unknown code has always had (`unknownPromoCode`), and nothing comes off;
- *   - a definition for one branch, rung up at another: refused, naming it;
+ *   - no live definition, or one switched off: refused by name, in the till's
+ *     own words for a code it does not hold, "was not found"
+ *     (`unknownPromoCode`, SCRUM-441), and nothing comes off;
+ *   - a definition for one branch, rung up at another: refused as not set up at
+ *     this branch, naming the branch it is for (`notAtThisBranch`);
  *   - outside `valid_from` .. `valid_until` (inclusive) on the SALE'S TRADING
  *     DAY at its branch (`resolvePricingScope`, the date that already chose the
  *     price — never the UTC day): refused, naming the date;
@@ -137,11 +139,26 @@ export interface ResolvedCartPromos {
 /**
  * The words for a code with no live, switched-on definition behind it —
  * unknown, archived and switched off alike, so a quote cannot be used to learn
- * which of the three a guessed code is. Unchanged from before the definitions
- * were read, because it is what reception already tells a guest.
+ * which of the three a guessed code is.
+ *
+ * SCRUM-441 — THE TILL'S OWN WORDS, "Code X was not found.", which its copy of
+ * the codes says first for a code it does not hold (`handleApplyPromoCode` in
+ * apps/pos/src/pages/Till.tsx). The platform said "isn't set up at this branch
+ * yet" here, which told a guest the code worked somewhere else when it worked
+ * nowhere; that sentence is kept for the one code it is true of, a live code
+ * set up for another branch (`notAtThisBranch`).
  */
 export function unknownPromoCode(code: string): string {
-  return `Code "${code}" isn't set up at this branch yet.`;
+  return `Code "${code}" was not found.`;
+}
+
+/**
+ * SCRUM-441 — the words for a live code set up for another branch than the
+ * sale's: that it is not set up here, and where it is. `branchName` is null
+ * when the branch has no row to name it by.
+ */
+function notAtThisBranch(code: string, branchName: string | null): string {
+  return `Code "${code}" isn't set up at this branch yet — it is only valid at ${branchName ?? 'another branch'}.`;
 }
 
 /**
@@ -358,9 +375,7 @@ async function judge(
       continue;
     }
     if (definition.branchId && definition.branchId !== scope.branchId) {
-      refuse(
-        `Code "${code}" is only valid at ${branchNames.get(definition.branchId) ?? 'another branch'}.`,
-      );
+      refuse(notAtThisBranch(code, branchNames.get(definition.branchId) ?? null));
       continue;
     }
     if (definition.validFrom && scope.businessDate < definition.validFrom) {

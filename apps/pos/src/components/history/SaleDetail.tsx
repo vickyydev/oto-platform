@@ -5,6 +5,7 @@ import {
   baht,
   isVoucherDiscount,
   type ApiSaleDetail,
+  type ApiSaleDiscount,
   type BadgeStatus,
   type HistoryTxn,
   type PaymentAttemptView,
@@ -109,6 +110,60 @@ function voidSentence(
   const why = record.reason ? ` — ${record.reason}` : '';
   const voucher = voucherHeld ? ', and a voucher it held is free again' : '';
   return `Voided${who}${when}${why}. It can never be paid${voucher}.`;
+}
+
+/** Where a voucher line's label turns from the type's name to the code. */
+const VOUCHER_PART = ' (voucher ';
+
+/**
+ * SCRUM-433 — A VOUCHER LINE KEEPS ITS LAST FOUR IN VIEW.
+ *
+ * The platform labels a voucher's discount line with the type's name and the
+ * last four characters of the code, "Free Bracelet Workshop (voucher …WXYZ)"
+ * (`voucherLineLabel` in apps/api/src/services/vouchers.ts), and the four are
+ * what match the line to the slip in the guest's hand. The label is one row
+ * beside its amount, cut with an ellipsis when it does not fit; at 1600 wide a
+ * name that long already fills the row, and a longer one pushed the four off
+ * its end. So the label is split where its voucher part starts: the name is
+ * what gets cut, and "(voucher …WXYZ)" never is. Null for a label with no
+ * voucher part, which keeps the one run it always was.
+ */
+export function voucherLabelParts(label: string | null): { name: string; tail: string } | null {
+  if (!label || !label.endsWith(')')) return null;
+  const at = label.lastIndexOf(VOUCHER_PART);
+  return at > 0 ? { name: label.slice(0, at), tail: label.slice(at) } : null;
+}
+
+/**
+ * One discount's words on the money card: its label and, on a discount aimed
+ * at a line, what it was aimed at. A voucher's line is split by
+ * `voucherLabelParts` — the name truncates, the voucher part after it does not
+ * — and reads as one run whenever it fits. Every other line is the single
+ * truncating run it always was.
+ */
+export function DiscountLabel({
+  discount: d,
+}: {
+  discount: Pick<ApiSaleDiscount, 'kind' | 'label' | 'targetLabel'>;
+}) {
+  const parts = isVoucherDiscount(d) ? voucherLabelParts(d.label) : null;
+  if (!parts) {
+    return (
+      <span className="block truncate">
+        {d.label ?? (d.kind === 'promo' ? 'Promo' : 'Discount')}
+        {d.targetLabel ? ` · ${d.targetLabel}` : ''}
+      </span>
+    );
+  }
+  // `whitespace-pre` keeps the space that opens the voucher part, which a flex
+  // item would otherwise drop at its start; a no-break space opens the target.
+  return (
+    <span className="flex min-w-0">
+      <span className="min-w-0 truncate">{parts.name}</span>
+      <span className="shrink-0 whitespace-pre">{parts.tail}</span>
+      {d.targetLabel ? <span className="min-w-0 truncate">&nbsp;· {d.targetLabel}</span> : null}
+    </span>
+  );
 }
 
 /** "less than a minute", "1 minute", "12 minutes". */
@@ -624,10 +679,7 @@ export function SaleDetail({
               {(detail?.discounts ?? []).map((d) => (
                 <div key={d.id} className="flex items-start justify-between text-emerald-400">
                   <span className="min-w-0">
-                    <span className="block truncate">
-                      {d.label ?? (d.kind === 'promo' ? 'Promo' : 'Discount')}
-                      {d.targetLabel ? ` · ${d.targetLabel}` : ''}
-                    </span>
+                    <DiscountLabel discount={d} />
                     {(d.reason || d.appliedByName) && (
                       <span className="block text-xs text-muted-foreground">
                         {d.reason ?? ''}
