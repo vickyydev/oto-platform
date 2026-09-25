@@ -6,6 +6,7 @@ import {
   calendarDateIn,
   listSales,
   saleCountLabel,
+  toTxn,
   type HistoryTxn,
 } from '@/api/history';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
@@ -78,6 +79,8 @@ export default function History() {
   const [date, setDate] = useState('');
   const [txns, setTxns] = useState<HistoryTxn[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Bumped to read the day again without changing the day — after a void (SCRUM-430). */
+  const [reread, setReread] = useState(0);
 
   const [phoneInput, setPhoneInput] = useState('');
   const [memberActivity, setMemberActivity] = useState<MemberActivityData | null>(null);
@@ -119,7 +122,36 @@ export default function History() {
     return () => {
       cancelled = true;
     };
-  }, [branchApiId, date]);
+  }, [branchApiId, date, reread]);
+
+  /**
+   * A sale voided on its page (SCRUM-430): the day's list is read again from
+   * the ledger, so its row stops saying "Unpaid" without a reload of the page;
+   * a member's orders on screen mark that sale voided in place — the platform
+   * has just confirmed the void, and reading them again would mean typing the
+   * phone again.
+   */
+  const onVoided = useCallback(
+    (saleId: string) => {
+      setReread((n) => n + 1);
+      setMemberActivity((current) =>
+        current
+          ? {
+              ...current,
+              transactions: current.transactions.map((t) =>
+                t.id === saleId
+                  ? toTxn(
+                      { ...(t as HistoryTxn).ledger, status: 'voided' },
+                      { id: branch.id, name: branch.name },
+                    )
+                  : t,
+              ),
+            }
+          : current,
+      );
+    },
+    [branch.id, branch.name],
+  );
 
   const backToList = () => {
     setPhoneInput('');
@@ -223,7 +255,12 @@ export default function History() {
       <div className="flex-1 min-h-0 p-6">
         <div className="mx-auto h-full max-w-5xl flex flex-col min-h-0">
           {selected ? (
-            <SaleDetail txn={selected} timeZone={timeZone} onBack={() => setSelected(null)} />
+            <SaleDetail
+              txn={selected}
+              timeZone={timeZone}
+              onBack={() => setSelected(null)}
+              onVoided={onVoided}
+            />
           ) : view === 'phone' ? (
             <div className="flex-1 min-h-0 flex flex-col">
               {back}

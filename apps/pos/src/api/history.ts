@@ -94,6 +94,17 @@ export interface ApiSale {
   receiptSeq: number | null;
   finalisedAt: string | null;
   note: string | null;
+  /**
+   * THE VOID, AS THE LEDGER RECORDED IT — SCRUM-430: when, by which account,
+   * and the reason the platform requires with every void. Optional on the
+   * wire because a sale read that does not carry them — none did before
+   * SCRUM-430; the void's own answer (`SaleVoidAnswer`) was the one place the
+   * reason came back — still has to open in History, where a sale it shows as
+   * voided then has no reason to show beside the badge.
+   */
+  voidedAt?: string | null;
+  voidedByAccountId?: string | null;
+  voidReason?: string | null;
   totals: ApiSaleTotals;
 }
 

@@ -138,14 +138,13 @@ const STREAM_OPEN_TIMEOUT_MS = 4_000;
 const POLL_INTERVAL_MS = 1_500;
 
 /**
- * A screen whose last answered poll is older than this was away — asleep,
- * frozen in a background tab, or off the network — and it does not act on the
- * scans it missed meanwhile. That is what the stream does: a screen that
- * reconnects hears the scans from then on and none from before, and an iPad
- * woken with a tag already in the guest's hand must not put last minute's
- * scan on the cart next to the one it is about to hear.
+ * How long one poll may take before it is given up (SCRUM-424, audit L39). A
+ * poll that hangs — under load, or while the api redeploys — used to hang the
+ * screen's listening with it, since the next poll goes out only after an
+ * answer. It is aborted instead, and the next poll goes out with the same
+ * cursor, so whatever was scanned meanwhile rides that one.
  */
-const AWAY_AFTER_MS = 10_000;
+const POLL_TIMEOUT_MS = 10_000;
 
 /**
  * The answers that end the polling rather than being tried again: the channel
@@ -184,7 +183,19 @@ const POLL_REFUSALS = new Set([400, 401, 403, 404, 409]);
  * rule there is, and the stream has just shown it cannot open from here; a
  * screen that went back to it would have to hand over between the two without
  * losing a scan or hearing one twice. A refusal ends the polling as it ends a
- * stream; a failure that passes keeps the interval.
+ * stream; a failure that passes, or a poll that runs past `POLL_TIMEOUT_MS`,
+ * keeps the interval and the cursor.
+ *
+ * **A hidden screen does not act on scans (SCRUM-424).** Asleep, frozen in a
+ * background tab or with another app in front — `document.visibilityState` is
+ * `hidden` — the screen stops polling, and when it is shown again it takes the
+ * tape's number afresh: it hears the scans from then on and none from before,
+ * which is what the stream does for a screen that reconnects, and what an
+ * iPad woken with a tag already in the guest's hand needs — last minute's
+ * scan must not land on the cart beside the one it is about to hear. Whether
+ * the screen was away is read from its visibility alone: a poll that failed
+ * or timed out says nothing about it, and the scans of that gap are delivered
+ * by the next poll that answers.
  *
  * `onScan` is read through a ref, so a screen can hand in a fresh closure on
  * every render (its stage, its grid) without reopening anything.
@@ -212,20 +223,28 @@ export function useStationScans(
     let polling = false;
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
     let inFlight: AbortController | null = null;
-    /** The `next` of the last answer; null until the first poll has taken it. */
+    /**
+     * The `next` of the last answer; null until the first poll has taken it,
+     * and set back to null when the screen is shown again after being hidden,
+     * so the next answer takes the number afresh and delivers nothing.
+     */
     let cursor: number | null = null;
-    let answeredAt = 0;
+
+    /** Asleep, a background tab, another app in front: nothing heard now is this screen's. */
+    const hidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
 
     const schedule = () => {
-      if (!stopped) pollTimer = setTimeout(pollOnce, POLL_INTERVAL_MS);
+      if (!stopped && !hidden()) pollTimer = setTimeout(pollOnce, POLL_INTERVAL_MS);
     };
 
     const pollOnce = async () => {
       pollTimer = null;
-      const sentAt = Date.now();
+      if (stopped || hidden()) return; // resumed by `onVisibility`
       const query = cursor === null ? 'view=staff' : `view=staff&after=${cursor}`;
       const abort = new AbortController();
       inFlight = abort;
+      // The one controller serves the timeout and the unmount alike.
+      const deadline = setTimeout(() => abort.abort(), POLL_TIMEOUT_MS);
       let res: Response;
       let page: { next?: unknown; scans?: unknown };
       try {
@@ -243,22 +262,39 @@ export function useStationScans(
         }
         page = (await res.json()) as { next?: unknown; scans?: unknown };
       } catch {
-        // No answer, or not one that reads: the next poll goes out on time.
+        // No answer in time, or not one that reads: the next poll goes out on
+        // time, with the same cursor, and hears what this one would have.
         schedule();
         return;
       } finally {
+        clearTimeout(deadline);
         if (inFlight === abort) inFlight = null;
       }
       if (stopped) return;
       if (typeof page.next === 'number') {
-        const away = cursor !== null && sentAt - answeredAt > AWAY_AFTER_MS;
-        if (cursor !== null && !away && Array.isArray(page.scans)) {
+        // The first poll, and the first after the screen was hidden, only take
+        // the tape's number: nothing from before the screen was listening lands.
+        if (cursor !== null && Array.isArray(page.scans)) {
           for (const scan of page.scans as StationScanEvent[]) deliver(scan);
         }
         cursor = page.next;
-        answeredAt = Date.now();
       }
       schedule();
+    };
+
+    const onVisibility = () => {
+      if (stopped || !polling) return;
+      if (hidden()) {
+        // Paused. A poll still in flight is left to answer — `schedule` sends
+        // no next one while hidden — and one due is not sent.
+        if (pollTimer) clearTimeout(pollTimer);
+        pollTimer = null;
+        return;
+      }
+      // Shown again: the number is taken afresh, so the scans of meanwhile are
+      // not delivered — by the poll in flight, if there is one, else by a new one.
+      cursor = null;
+      if (!pollTimer && !inFlight) void pollOnce();
     };
 
     // --- The stream -----------------------------------------------------------
@@ -311,9 +347,15 @@ export function useStationScans(
       source.addEventListener('error', onError);
       openTimer = setTimeout(startPolling, STREAM_OPEN_TIMEOUT_MS);
     }
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+    }
 
     return () => {
       stopped = true;
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility);
+      }
       closeStream();
       if (pollTimer) clearTimeout(pollTimer);
       pollTimer = null;

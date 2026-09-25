@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { boothStaffLabel } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Gift, ShieldX, Ticket, Trash2, X } from 'lucide-react';
@@ -64,13 +64,23 @@ const baht = (satang: number): string => `฿${Math.round(satang) / 100}`;
 interface RedeemVoucherEntryProps {
   /** Resolves true when the voucher went on the cart — the field is then cleared. */
   onRedeem: (code: string) => Promise<boolean>;
+  /**
+   * The code of the voucher on the cart, when one is (SCRUM-430). The field
+   * clears when a voucher lands by any road: the offer on a refusal voids the
+   * unpaid sale and then holds the voucher without passing through
+   * `onRedeem`, and the code it was typed with was staying in the box.
+   */
+  heldCode?: string | null;
   busy?: boolean;
   disabled?: boolean;
 }
 
 /** The typed entry, under the promo code box and built like it. */
-export function RedeemVoucherEntry({ onRedeem, busy, disabled }: RedeemVoucherEntryProps) {
+export function RedeemVoucherEntry({ onRedeem, heldCode, busy, disabled }: RedeemVoucherEntryProps) {
   const [input, setInput] = useState('');
+  useEffect(() => {
+    if (heldCode) setInput('');
+  }, [heldCode]);
   const redeem = () => {
     const code = input.trim();
     if (!code || busy || disabled) return;

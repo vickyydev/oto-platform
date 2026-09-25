@@ -2823,6 +2823,7 @@ export default function Till() {
                 )}
                 <RedeemVoucherEntry
                   onRedeem={redeemVoucher}
+                  heldCode={voucher.held?.code ?? null}
                   busy={voucher.busy}
                   disabled={step === 5}
                 />

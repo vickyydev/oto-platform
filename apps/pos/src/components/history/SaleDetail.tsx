@@ -75,6 +75,14 @@ import {
  * refund and a void is what undoes it. A sale rung up and then left — the till
  * locked or reloaded mid-payment — otherwise stays `tendering` for ever and
  * keeps any Lucky Wheel voucher on it from being used.
+ *
+ * A VOIDED SALE SAYS WHY (SCRUM-430), whichever screen voided it: this one,
+ * with the reason just given; a till's Cancel; the offer on a voucher refusal.
+ * The reason is read off the sale where the ledger's read carries it
+ * (`voidReason`, `voidedAt` in api/history.ts). Such a sale has nothing to
+ * refund, so it shows no Refund button — not even a greyed one — and the void
+ * made here is reported to the page (`onVoided`) so its list is read again
+ * and stops saying "Unpaid".
  */
 /** "less than a minute", "1 minute", "12 minutes". */
 function minutesAgo(ms: number): string {
@@ -304,11 +312,14 @@ export function SaleDetail({
   txn,
   timeZone,
   onBack,
+  onVoided,
   layout = 'columns',
 }: {
   txn: HistoryTxn;
   timeZone?: string;
   onBack: () => void;
+  /** A void made on this screen went through: the page's list is stale (SCRUM-430). */
+  onVoided?: (saleId: string) => void;
   /**
    * `columns` is the counter: contents on the left, money on the right, each
    * scrolling in its own pane inside a fixed-height page.
@@ -413,6 +424,21 @@ export function SaleDetail({
     !attempts.some((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status)) &&
     attempts.every((a) => PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status));
   const mayVoid = can('pos:sale:void');
+  /**
+   * THE VOID ON THIS SALE, from whichever side knows it (SCRUM-430): the one
+   * this screen just made, by this account and with the reason it was given;
+   * else the one the ledger's read carries, when it does — a sale voided at
+   * its till, from a voucher refusal's offer, or on another screen.
+   */
+  const voidRecord = voided
+    ? { reason: voided.reason, at: null, byName: operator?.name ?? 'you' }
+    : status === 'voided'
+      ? {
+          reason: detail?.sale.voidReason ?? sale.voidReason ?? null,
+          at: detail?.sale.voidedAt ?? sale.voidedAt ?? null,
+          byName: null,
+        }
+      : null;
   const tierClaim = detail?.sale.tierClaim ?? sale.tierClaim ?? null;
   const totals = sale.totals;
   const taxTotal = totals.taxInclusiveSatang + totals.taxExclusiveSatang;
@@ -623,7 +649,8 @@ export function SaleDetail({
 
           {/* Actions — every one of these changes a recorded sale. Reprint, Add
               time and Refund cannot yet, so they say so instead of pretending;
-              an unpaid sale that took no money can be voided, in Refund's place. */}
+              an unpaid sale that took no money can be voided, in Refund's place;
+              a voided sale has nothing to refund and shows neither (SCRUM-430). */}
           <div className="shrink-0 space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" className="h-14 text-base gap-2" disabled>
@@ -652,7 +679,7 @@ export function SaleDetail({
                   </p>
                 )}
               </>
-            ) : (
+            ) : status === 'voided' ? null : (
               <Button
                 className="w-full h-14 text-lg gap-2 bg-rose-500 hover:bg-rose-600 text-white"
                 disabled
@@ -661,14 +688,16 @@ export function SaleDetail({
                 Refund
               </Button>
             )}
-            {voided && (
+            {voidRecord && (
               <div
                 className="rounded-lg border p-3 text-sm text-muted-foreground flex items-start gap-2"
                 data-testid="sale-voided"
               >
                 <Ban className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
-                  Voided by {operator?.name ?? 'you'} — {voided.reason}. It can never be paid, and a
+                  Voided
+                  {voidRecord.byName ? ` by ${voidRecord.byName}` : voidRecord.at ? ` ${fmt(voidRecord.at)}` : ''}
+                  {voidRecord.reason ? ` — ${voidRecord.reason}` : ''}. It can never be paid, and a
                   voucher it held is free again.
                 </span>
               </div>
@@ -688,7 +717,10 @@ export function SaleDetail({
         stationName={sale.stationName}
         operatorName={operator?.name ?? 'this account'}
         fmt={fmt}
-        onVoided={setVoided}
+        onVoided={(v) => {
+          setVoided(v);
+          onVoided?.(sale.id);
+        }}
       />
     </div>
   );

@@ -1417,7 +1417,11 @@ export default function OrderStation() {
                         {...(voucherRungUp ? {} : { onRemove: () => void voucher.release() })}
                       />
                     )}
-                    <RedeemVoucherEntry onRedeem={redeemVoucher} busy={voucher.busy} />
+                    <RedeemVoucherEntry
+                      onRedeem={redeemVoucher}
+                      heldCode={voucher.held?.code ?? null}
+                      busy={voucher.busy}
+                    />
                     {voucher.refusal && (
                       <VoucherRefusalCard
                         refusal={voucher.refusal}
