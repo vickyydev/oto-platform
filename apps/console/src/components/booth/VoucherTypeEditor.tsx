@@ -20,6 +20,7 @@ import {
   formProblems,
   inputFrom,
   notSetUp,
+  unredeemedSentence,
   worthChange,
   type VoucherForm,
   type Worth,
@@ -36,8 +37,9 @@ import {
  *     The till reads it when the voucher is scanned, so a change applies to
  *     every voucher of this type not yet redeemed — slips already printed
  *     included. So a change to a worth the type already had is asked about
- *     before it is sent, from and to in the till's words, naming a new
- *     voucher type as the safer choice (`worthChange`, SCRUM-409). Completing
+ *     before it is sent, from and to in the till's words, with how many
+ *     vouchers it reaches (`unredeemedSentence`) and naming a new voucher
+ *     type as the safer choice (`worthChange`, SCRUM-409). Completing
  *     a type — its first product link — is not asked about: the slips printed
  *     before the link are the ones that must pick it up.
  *   - **What the slip says** (title, instruction, terms, in English and Thai).
@@ -179,13 +181,12 @@ export function VoucherTypeEditor({
                 Change what it is worth, from {change.from} to {change.to}?
               </p>
               <p className="text-xs text-muted-foreground">
-                That applies at once to every voucher of this type not yet redeemed, the slips already
-                printed included
+                {unredeemedSentence(definition?.unredeemedVouchers)}
                 {uses.length > 0
                   ? ` — it is on the wheel at ${uses.map((u) => `${u.boothName} (${u.prizeName})`).join(', ')}`
                   : ''}
-                . Safer: keep this type as it is for those slips, create the new worth with “New voucher
-                type”, and point the prize at it.
+                . Safer: keep this type as it is, create the new worth with “New voucher type”, and point
+                the prize at it.
               </p>
             </div>
           )}

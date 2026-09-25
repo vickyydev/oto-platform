@@ -177,6 +177,25 @@ export function worthChange(stored: Worth, next: Worth): { from: string; to: str
 }
 
 /**
+ * How many vouchers that change reaches, as the question says it: the type's
+ * vouchers still unredeemed — issued, not used, not void, not past their date
+ * — as the api counted them when the type was read (`unredeemedVouchers`).
+ * Right for none and for one. Undefined is an api that does not send the
+ * count yet, and the sentence then says "every", the question's word before
+ * the count.
+ */
+export function unredeemedSentence(unredeemed: number | undefined): string {
+  if (unredeemed === undefined) {
+    return 'Every voucher of this type not yet redeemed, the slips already printed included, changes with it at once';
+  }
+  if (unredeemed === 0) {
+    return 'No voucher of this type is unredeemed, so no printed slip changes with it';
+  }
+  if (unredeemed === 1) return '1 unredeemed voucher, its printed slip included, changes with it at once';
+  return `${unredeemed} unredeemed vouchers, printed slips included, change with it at once`;
+}
+
+/**
  * Why the till would refuse this voucher type today, or null when it would
  * honour it. The words are the counter's own reasons ("not set up yet"), so
  * the list says what a family at reception would hear.

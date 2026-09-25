@@ -108,7 +108,8 @@ test('Voucher types: a 50 THB off type is created, Kids Pizza is linked and word
  * SCRUM-409 (the closing audit's L10): the till reads what a voucher is worth
  * from its type when the slip is scanned, so changing the 100 THB Voucher to
  * 80 reprices every slip already printed under it. The editor asks first,
- * names both worths and the wheel the type is on, points at "New voucher
+ * names both worths, how many of its vouchers are still unredeemed (none, on
+ * a park this fresh) and the wheel the type is on, points at "New voucher
  * type" as the safer choice, and sends nothing until the change is confirmed.
  * A change to the words alone asks nothing — the Kids Pizza case above already
  * shows the first product link is not asked about either.
@@ -132,7 +133,11 @@ test('Voucher types: changing what the 100 THB Voucher is worth asks first, “K
   await expect(edit).toContainText(
     'Change what it is worth, from ฿100 off the ticket order to ฿80 off the ticket order?',
   );
-  await expect(edit).toContainText('it is on the wheel at Booth 1 (100 THB Voucher)');
+  // Nothing has been won on this park yet, and the question says so rather
+  // than promising to reprice slips that do not exist.
+  await expect(edit).toContainText(
+    'No voucher of this type is unredeemed, so no printed slip changes with it — it is on the wheel at Booth 1 (100 THB Voucher)',
+  );
   await expect(edit).toContainText('create the new worth with “New voucher type”');
   await expect(edit.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
 

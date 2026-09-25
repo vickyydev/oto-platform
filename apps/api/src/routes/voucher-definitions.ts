@@ -135,6 +135,8 @@ const DefinitionSchema = z.object({
       active: z.boolean(),
     }),
   ),
+  /** Its vouchers still unredeemed — issued, not used, not void, not past their date — when it was read. */
+  unredeemedVouchers: z.number().int().min(0),
 });
 
 const OneDefinition = z.object({ definition: DefinitionSchema });
@@ -147,7 +149,7 @@ export async function voucherDefinitionRoutes(app: App): Promise<void> {
       config: { permission: 'admin:booth:read' },
       schema: {
         description:
-          'What the park gives away: the template behind every voucher — kind and value, the product or ticket package it hands over, the slip’s title, instruction and terms in English and Thai, and its expiry (null never expires) — each with the product or package named and the booth prizes that point at it. What a voucher is worth is read from here when it is redeemed, so editing the value changes vouchers already printed. What a slip says follows the wheel version its booth is running, not this row as it is now: a type that version carries words for (it had a title or an instruction when the version was published) prints that version’s title, instruction and terms until the booth’s next publish, whatever is edited meanwhile; any other type — one given its first title or instruction since included — prints the prize’s names, the standard line and these terms as of the box’s last pull. The expiry is read from here when a voucher is won — by the box, from its last pull, when the prize names no days of its own — counted from that moment and copied onto the voucher, so a change applies to vouchers won after the box’s next pull.',
+          'What the park gives away: the template behind every voucher — kind and value, the product or ticket package it hands over, the slip’s title, instruction and terms in English and Thai, and its expiry (null never expires) — each with the product or package named, the booth prizes that point at it, and how many of its vouchers are still unredeemed (issued, not used, not void, not past their date) as of this read. What a voucher is worth is read from here when it is redeemed, so editing the value changes vouchers already printed — that count of them. What a slip says follows the wheel version its booth is running, not this row as it is now: a type that version carries words for (it had a title or an instruction when the version was published) prints that version’s title, instruction and terms until the booth’s next publish, whatever is edited meanwhile; any other type — one given its first title or instruction since included — prints the prize’s names, the standard line and these terms as of the box’s last pull. The expiry is read from here when a voucher is won — by the box, from its last pull, when the prize names no days of its own — counted from that moment and copied onto the voucher, so a change applies to vouchers won after the box’s next pull.',
         querystring: z.object({ includeArchived: z.enum(['true', 'false']).default('false') }),
         response: { 200: z.object({ definitions: z.array(DefinitionSchema) }) },
       },

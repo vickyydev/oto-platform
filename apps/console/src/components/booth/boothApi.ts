@@ -273,6 +273,13 @@ export interface VoucherDefinitionRow {
   product?: VoucherLink | null;
   ticketPackage?: VoucherLink | null;
   usedBy?: VoucherUse[];
+  /**
+   * Its vouchers still in families' hands — issued, not used, not void, not
+   * past their date — counted when the row was read: what an edit to the
+   * worth reprices (SCRUM-409). Optional so a deployment that does not send
+   * it yet still reads.
+   */
+  unredeemedVouchers?: number;
 }
 
 /** What a voucher type create or edit sends. The API checks the whole row. */

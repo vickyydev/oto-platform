@@ -1,10 +1,11 @@
-import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, asc, count, eq, gt, inArray, isNull, or } from 'drizzle-orm';
 import {
   boothPrize,
   branch,
   product,
   station,
   ticketPackage,
+  voucher,
   voucherDefinition,
   type Db,
   type VoucherKind,
@@ -175,6 +176,16 @@ export interface VoucherDefinitionView {
   product: VoucherLinkView | null;
   ticketPackage: VoucherLinkView | null;
   usedBy: VoucherDefinitionUse[];
+  /**
+   * Vouchers of this type still in families' hands — issued, not yet used,
+   * not voided and not past their date — counted when the type was read. It
+   * is what an edit to the worth reprices (SCRUM-409), so the Console's
+   * question says the number. Expiry is judged from `expires_at` against the
+   * clock, as the till judges it (`vouchers.ts`), not from the status column:
+   * nothing marks a lapsed row `expired` today (the schema allows the status
+   * and the till refuses it), and a row carrying it is not counted either.
+   */
+  unredeemedVouchers: number;
 }
 
 // --- The value, whole --------------------------------------------------------
@@ -338,6 +349,7 @@ async function viewsOf(
 ): Promise<VoucherDefinitionView[]> {
   if (rows.length === 0) return [];
 
+  const ids = rows.map((r) => r.id);
   const productIds = [...new Set(rows.map((r) => r.productId).filter(isNonNull))];
   const packageIds = [...new Set(rows.map((r) => r.ticketPackageId).filter(isNonNull))];
 
@@ -395,16 +407,35 @@ async function viewsOf(
         eq(boothPrize.operatorId, operatorId),
         isNull(boothPrize.archivedAt),
         isNull(station.archivedAt),
-        inArray(
-          boothPrize.voucherDefinitionId,
-          rows.map((r) => r.id),
-        ),
+        inArray(boothPrize.voucherDefinitionId, ids),
       ),
     )
     .orderBy(asc(station.name), asc(boothPrize.sortOrder), asc(boothPrize.nameEn));
 
+  /**
+   * How many vouchers of each definition are still unredeemed: issued, not
+   * used, not void, and not past their date by the api's clock — the reading
+   * the till makes of `expires_at` (`vouchers.ts`), so a lapsed voucher still
+   * marked `issued` (no job marks one `expired` yet) is not counted as out.
+   * One grouped query for the whole list; a definition with none has no row
+   * here.
+   */
+  const unredeemed = await exec
+    .select({ definitionId: voucher.voucherDefinitionId, vouchers: count() })
+    .from(voucher)
+    .where(
+      and(
+        eq(voucher.operatorId, operatorId),
+        inArray(voucher.voucherDefinitionId, ids),
+        eq(voucher.status, 'issued'),
+        or(isNull(voucher.expiresAt), gt(voucher.expiresAt, new Date())),
+      ),
+    )
+    .groupBy(voucher.voucherDefinitionId);
+
   const productById = new Map(products.map((p) => [p.id, p]));
   const packageById = new Map(packages.map((p) => [p.id, p]));
+  const unredeemedById = new Map(unredeemed.map((u) => [u.definitionId, u.vouchers]));
 
   return rows.map((row) => {
     const p = row.productId ? productById.get(row.productId) : undefined;
@@ -465,6 +496,7 @@ async function viewsOf(
           prizeNameTh: u.prizeNameTh,
           active: u.active,
         })),
+      unredeemedVouchers: unredeemedById.get(row.id) ?? 0,
     };
   });
 }

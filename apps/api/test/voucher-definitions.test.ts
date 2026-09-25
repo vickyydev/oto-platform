@@ -1,10 +1,11 @@
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { account, auditLog, branch, product, ticketPackage, voucherDefinition } from '@oto/db';
+import { account, auditLog, branch, product, ticketPackage, voucher, voucherDefinition } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
   ADMIN,
   BRANCH_MANAGER,
+  OTO_OPERATOR_NAME,
   RECEPTION,
   SECOND_OPERATOR_ADMIN,
   SECOND_OPERATOR_NAME,
@@ -37,6 +38,9 @@ let pizzaId: string;
 let packageId: string;
 /** A product of the SECOND operator — never linkable from OTO. */
 let foreignProductId: string;
+/** The park's operator and its Central Floresta branch, for vouchers written as the booth sync writes them. */
+let operatorId: string;
+let florestaId: string;
 
 beforeAll(async () => {
   ctx = await createTestContext();
@@ -57,6 +61,8 @@ beforeAll(async () => {
     .from(branch)
     .where(eq(branch.name, 'Oto Play Park, Central Floresta'))
     .limit(1);
+  florestaId = floresta!.id;
+  operatorId = await operatorIdByName(ctx.db, OTO_OPERATOR_NAME);
   const [pizza] = await ctx.db
     .select({ id: product.id })
     .from(product)
@@ -321,6 +327,52 @@ describe('editing a voucher type (SCRUM-400)', () => {
       product: null,
       titleEn: null,
     });
+  });
+});
+
+describe('how many vouchers a type still has out (SCRUM-409)', () => {
+  it('counts the issued vouchers that are neither used, void nor past their date, on the list and on a single answer', async () => {
+    const created = await post(admin, { code: 'test-still-out', nameEn: 'Still out', kind: 'manual' });
+    expect(created.statusCode, created.body).toBe(201);
+    const id = created.json().definition.id;
+    // A type nobody has won yet has nothing out.
+    expect(created.json().definition.unredeemedVouchers).toBe(0);
+
+    const now = Date.now();
+    const day = 86_400_000;
+    /** A voucher of the type, issued yesterday for 14 days, as the booth sync files one. */
+    const issue = (code: string, values: Partial<typeof voucher.$inferInsert>) =>
+      ctx.db.insert(voucher).values({
+        id: newId(),
+        operatorId,
+        branchId: florestaId,
+        voucherDefinitionId: id,
+        code,
+        source: 'booth',
+        status: 'issued',
+        issuedAt: new Date(now - day),
+        expiresAt: new Date(now + 13 * day),
+        ...values,
+      });
+    await issue('TEST-OUT-DATED', {});
+    await issue('TEST-OUT-NEVER', { expiresAt: null });
+    // Past its date a minute ago, still marked issued: no job marks a lapsed voucher expired yet.
+    await issue('TEST-LAPSED', { expiresAt: new Date(now - 60_000) });
+    // Marked expired outright: a status the schema allows and the till refuses.
+    await issue('TEST-MARKED', { status: 'expired', expiresAt: new Date(now - 60_000) });
+    await issue('TEST-USED', { status: 'redeemed', redeemedAt: new Date(now - 3_600_000) });
+    await issue('TEST-VOID', { status: 'void' });
+
+    const list = await ctx.app.inject({ method: 'GET', url: '/voucher-definitions', headers: { cookie: admin } });
+    expect(list.statusCode, list.body).toBe(200);
+    const definitions: Array<{ id: string; code: string; unredeemedVouchers: number }> = list.json().definitions;
+    expect(definitions.find((d) => d.id === id)?.unredeemedVouchers).toBe(2);
+    // The vouchers above are this type's alone: the seeded 100 THB Voucher still has none out.
+    expect(definitions.find((d) => d.code === 'spin-voucher-100')?.unredeemedVouchers).toBe(0);
+
+    const edited = await patch(admin, id, { nameEn: 'Still out, renamed' });
+    expect(edited.statusCode, edited.body).toBe(200);
+    expect(edited.json().definition.unredeemedVouchers).toBe(2);
   });
 });
 
