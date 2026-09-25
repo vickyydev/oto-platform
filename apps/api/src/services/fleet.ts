@@ -25,7 +25,12 @@ import {
   type StationDeviceRole,
   type StationKind,
 } from '@oto/db';
-import { SIMULATOR_ACTIONS_WITH_SECRETS, SimulatorActionSchema, newId } from '@oto/shared';
+import {
+  SIMULATOR_ACTIONS_WITH_SECRETS,
+  SimulatorActionSchema,
+  newId,
+  type DeviceSettings,
+} from '@oto/shared';
 import { TerminalCommandPayloadSchema } from '@oto/box-agent';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
@@ -168,6 +173,11 @@ export interface DeviceView {
   serialNumber: string | null;
   terminalId: string | null;
   merchantId: string | null;
+  /**
+   * The unit's own facts (S2-06) — an ESC/POS printer's 576 or 512 dots per
+   * line as its self-test page says. Null means the model's profile stands.
+   */
+  settings: DeviceSettings | null;
   lastError: string | null;
   lastSeenAt: string | null;
   archived: boolean;
@@ -1828,6 +1838,9 @@ function deviceView(row: typeof device.$inferSelect): DeviceView {
     serialNumber: row.serialNumber,
     terminalId: row.terminalId,
     merchantId: row.merchantId,
+    // Validated by `DeviceSettingsSchema` on every write; the column itself is
+    // untyped jsonb.
+    settings: (row.settings as DeviceSettings | null) ?? null,
     lastError: row.lastError,
     lastSeenAt: row.lastSeenAt?.toISOString() ?? null,
     archived: row.archivedAt !== null,
@@ -1862,6 +1875,7 @@ export async function createDevice(
     serialNumber?: string | null;
     terminalId?: string | null;
     merchantId?: string | null;
+    settings?: DeviceSettings | null;
   },
 ): Promise<{ device: DeviceView }> {
   const id = newId();
@@ -1881,6 +1895,7 @@ export async function createDevice(
         serialNumber: input.serialNumber ?? null,
         terminalId: input.terminalId ?? null,
         merchantId: input.merchantId ?? null,
+        settings: input.settings ?? null,
       });
       const [row] = await tx.select().from(device).where(eq(device.id, id)).limit(1);
       await audit.record(tx, {
@@ -1913,6 +1928,13 @@ export async function updateDevice(
     serialNumber?: string | null;
     terminalId?: string | null;
     merchantId?: string | null;
+    /**
+     * Left out keeps what the row has — Drizzle drops an undefined key from
+     * `set` — and null clears it. The box needs no nudge either way: the
+     * bundle's version is a hash over the document, settings included
+     * (`configBundle` in `services/box.ts`), so the next heartbeat pulls.
+     */
+    settings?: DeviceSettings | null;
   },
 ): Promise<{ device: DeviceView }> {
   try {

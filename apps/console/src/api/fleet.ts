@@ -25,6 +25,7 @@
  * packages/db/src/schema/fleet.ts and edge.ts, so the two cannot drift apart
  * silently.
  */
+import type { DeviceSettings } from '@oto/shared';
 import { api, ApiError, idemKey, isMissingRoute, qs } from './client';
 
 export { isMissingRoute };
@@ -152,6 +153,12 @@ export interface DeviceRow {
   serialNumber?: string | null;
   terminalId?: string | null;
   merchantId?: string | null;
+  /**
+   * The unit's own facts, `DeviceSettingsSchema` in `@oto/shared`: an ESC/POS
+   * printer's 576 or 512 dots per line as its self-test page says. Null, or
+   * absent from an older api, means the model's profile stands.
+   */
+  settings?: DeviceSettings | null;
   lastError?: string | null;
   lastSeenAt?: string | null;
   archived?: boolean;
@@ -441,6 +448,7 @@ export const fleetApi = {
       serialNumber?: string;
       terminalId?: string;
       merchantId?: string;
+      settings?: DeviceSettings;
     },
   ) =>
     api.post<{ device: DeviceRow }>(`/boxes/${encodeURIComponent(boxId)}/devices`, body, {
@@ -457,6 +465,8 @@ export const fleetApi = {
       serialNumber?: string | null;
       terminalId?: string | null;
       merchantId?: string | null;
+      /** Left out keeps what the row has; null clears it. */
+      settings?: DeviceSettings | null;
     },
   ) => api.patch<{ device: DeviceRow }>(`/devices/${encodeURIComponent(id)}`, body),
 

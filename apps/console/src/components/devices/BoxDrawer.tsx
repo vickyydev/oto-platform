@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, RefreshCw } from 'lucide-react';
+import { SETTINGS_SECTION_FOR_KIND, type EscposDotsPerLine } from '@oto/shared';
 import {
   boxVitals,
   fleetApi,
@@ -510,6 +511,43 @@ function DeviceRowItem({
   );
 }
 
+/**
+ * The kinds whose settings the box reads as ESC/POS — the receipt, kitchen and
+ * bar printers. A band printer's are label settings, and a scanner, a terminal
+ * or a gate has no paper width at all.
+ */
+const printsEscpos = (kind: string): boolean => SETTINGS_SECTION_FOR_KIND[kind] === 'escpos';
+
+const PAPER_WIDTHS: { value: EscposDotsPerLine; label: string }[] = [
+  { value: 576, label: '576 dots (most 80 mm printers)' },
+  { value: 512, label: '512 dots (some units — see the self-test page)' },
+];
+
+/**
+ * `settings.escpos.dotsPerLine`, which the XP-80 family leaves open per unit
+ * and only its self-test page answers (hold FEED while switching it on). The
+ * box lays every slip out to this width and the printer discards anything
+ * wider without an error, so the wrong answer loses the right-hand 8 mm — the
+ * price column — in silence.
+ */
+function PaperWidthField({
+  value,
+  onChange,
+}: {
+  value: EscposDotsPerLine;
+  onChange: (next: EscposDotsPerLine) => void;
+}) {
+  return (
+    <Field label="Paper width" hint="A 512-dot unit cuts the right edge of every slip otherwise.">
+      <Select
+        value={String(value)}
+        onChange={(v) => onChange(v === '512' ? 512 : 576)}
+        options={PAPER_WIDTHS.map((w) => ({ value: String(w.value), label: w.label }))}
+      />
+    </Field>
+  );
+}
+
 function AddDeviceForm({
   boxId,
   onClose,
@@ -525,6 +563,7 @@ function AddDeviceForm({
   const [address, setAddress] = useState('');
   const [model, setModel] = useState('');
   const [protocol, setProtocol] = useState('');
+  const [dotsPerLine, setDotsPerLine] = useState<EscposDotsPerLine>(576);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -539,6 +578,7 @@ function AddDeviceForm({
         address: address.trim() || undefined,
         model: model.trim() || undefined,
         protocol: protocol.trim() || undefined,
+        settings: printsEscpos(kind) ? { escpos: { dotsPerLine } } : undefined,
       });
       onAdded();
       onClose();
@@ -578,6 +618,7 @@ function AddDeviceForm({
         <Field label="Protocol" hint="escpos, tspl2, ghl_linkpos, digio_tlv, hid.">
           <TextInput value={protocol} onChange={setProtocol} placeholder="escpos" />
         </Field>
+        {printsEscpos(kind) && <PaperWidthField value={dotsPerLine} onChange={setDotsPerLine} />}
       </div>
       {failed && <p className="text-sm text-destructive break-words">{failed}</p>}
       <div className="flex gap-2 justify-end">
@@ -608,6 +649,9 @@ function EditDeviceForm({
   const [protocol, setProtocol] = useState(device.protocol ?? '');
   const [terminalId, setTerminalId] = useState(device.terminalId ?? '');
   const [merchantId, setMerchantId] = useState(device.merchantId ?? '');
+  const [dotsPerLine, setDotsPerLine] = useState<EscposDotsPerLine>(
+    device.settings?.escpos?.dotsPerLine ?? 576,
+  );
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [orphaned, setOrphaned] = useState<StationAssignmentRef[] | null>(null);
@@ -623,6 +667,17 @@ function EditDeviceForm({
         protocol: protocol.trim() || null,
         terminalId: terminalId.trim() || null,
         merchantId: merchantId.trim() || null,
+        // Sent whole like every field above, and only for a printer the box
+        // reads as ESC/POS. Whatever else the row holds — a cutter, a drawer
+        // kick, a band printer's label stock — rides along untouched.
+        ...(printsEscpos(device.kind)
+          ? {
+              settings: {
+                ...(device.settings ?? {}),
+                escpos: { ...(device.settings?.escpos ?? {}), dotsPerLine },
+              },
+            }
+          : {}),
       });
       onSaved();
       onClose();
@@ -700,6 +755,9 @@ function EditDeviceForm({
         <Field label="Protocol">
           <TextInput value={protocol} onChange={setProtocol} />
         </Field>
+        {printsEscpos(device.kind) && (
+          <PaperWidthField value={dotsPerLine} onChange={setDotsPerLine} />
+        )}
         {isTerminal && (
           <>
             <Field label="Terminal id (TID)">

@@ -11,7 +11,7 @@ import {
   STATION_DEVICE_ROLES,
   STATION_KINDS,
 } from '@oto/db';
-import { newId, PaymentRoutingSchema } from '@oto/shared';
+import { DeviceSettingsSchema, newId, PaymentRoutingSchema } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { holdsGrantAt } from '../services/access-control';
@@ -224,6 +224,16 @@ const DeviceSchema = z.object({
   serialNumber: z.string().nullable(),
   terminalId: z.string().nullable(),
   merchantId: z.string().nullable(),
+  /**
+   * What is true of this unit rather than of its model — an ESC/POS printer's
+   * 576 or 512 dots per line as its self-test page says. Null is "use the
+   * model's profile". The shape is `DeviceSettingsSchema` in `@oto/shared`,
+   * the one document the box reads through its config bundle. The default is
+   * for a replay only: an idempotency key stores a device answer for
+   * `IDEMPOTENCY_TTL_HOURS`, and one stored before this field existed must
+   * still pass this schema on its way back out rather than fail as a 500.
+   */
+  settings: DeviceSettingsSchema.nullable().default(null),
   lastError: z.string().nullable(),
   lastSeenAt: z.string().nullable(),
   archived: z.boolean(),
@@ -416,7 +426,7 @@ export async function fleetRoutes(app: App): Promise<void> {
       config: { permission: 'admin:station:create', target: { branchId: 'params.branchId' } },
       schema: {
         description:
-          'Create a station on a box, with its devices and its access list. A booth (`kind: booth`) needs a code prefix of exactly two capital letters or digits, such as B1, because its box starts every voucher code with it; without one the station is refused with 400 `BOOTH_CODE_PREFIX_INVALID`, whose message states the rule.',
+          'Create a station on a box, with its devices and its access list. A booth (`kind: booth`) needs a code prefix of exactly two capital letters or digits, such as B1, because its box starts every voucher code with it; without one the station is refused with 400 `BOOTH_CODE_PREFIX_INVALID`, whose message states the rule. A prefix another live booth of the operator already carries, at any branch, is refused with 409 `BOOTH_CODE_PREFIX_TAKEN`, whose message names that booth.',
         params: BranchParams,
         body: StationWriteSchema,
         response: { 200: z.object({ station: StationSchema }) },
@@ -456,7 +466,7 @@ export async function fleetRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Edit a station. Devices and the staff list are whole sets, not deltas. The booth code-prefix rule (exactly two capital letters or digits) is checked against the station as it will stand after the edit: switching a till whose prefix breaks it (`T10`, or none) to kind `booth`, clearing a booth’s prefix, or any edit that would leave a booth with an invalid one is refused with 400 `BOOTH_CODE_PREFIX_INVALID`.',
+          'Edit a station. Devices and the staff list are whole sets, not deltas. The booth code-prefix rule (exactly two capital letters or digits) is checked against the station as it will stand after the edit: switching a till whose prefix breaks it (`T10`, or none) to kind `booth`, clearing a booth’s prefix, or any edit that would leave a booth with an invalid one is refused with 400 `BOOTH_CODE_PREFIX_INVALID`. A prefix another live booth of the operator carries, at any branch, is refused with 409 `BOOTH_CODE_PREFIX_TAKEN`; the station being edited does not count against itself.',
         params: IdParams,
         body: StationWriteSchema.partial(),
         response: { 200: z.object({ station: StationSchema }) },
@@ -784,7 +794,7 @@ export async function fleetRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket',
+          'Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile.',
         params: BoxIdParams,
         body: z.object({
           kind: z.enum(DEVICE_KINDS),
@@ -796,6 +806,7 @@ export async function fleetRoutes(app: App): Promise<void> {
           serialNumber: z.string().nullable().optional(),
           terminalId: z.string().nullable().optional(),
           merchantId: z.string().nullable().optional(),
+          settings: DeviceSettingsSchema.nullable().optional(),
         }),
         response: { 200: z.object({ device: DeviceSchema }) },
       },
@@ -813,7 +824,8 @@ export async function fleetRoutes(app: App): Promise<void> {
     {
       config: { dynamicPermission: true },
       schema: {
-        description: 'Edit a device. Its kind, its transport and its box do not move.',
+        description:
+          'Edit a device. Its kind, its transport and its box do not move. `settings` left out keeps what the row has; `settings: null` clears it, and the box goes back to the model’s profile on its next poll.',
         params: IdParams,
         body: z
           .object({
@@ -824,6 +836,7 @@ export async function fleetRoutes(app: App): Promise<void> {
             serialNumber: z.string().nullable().optional(),
             terminalId: z.string().nullable().optional(),
             merchantId: z.string().nullable().optional(),
+            settings: DeviceSettingsSchema.nullable().optional(),
           })
           .strict(),
         response: { 200: z.object({ device: DeviceSchema }) },

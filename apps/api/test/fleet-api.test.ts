@@ -1820,3 +1820,138 @@ describe('a booth code prefix is unique across the operator (SCRUM-414)', () => 
     expect(till.statusCode, JSON.stringify(till.body)).toBe(200);
   });
 });
+
+// ---------------------------------------------------------------------------
+
+/**
+ * SCRUM-420 — the paper width lives on the printer's row.
+ *
+ * The XP-80 family is 576 dots per line on most units and 512 on some, and
+ * only the self-test page says which. The box has read
+ * `settings.escpos.dotsPerLine` since S2-06; until now nothing could write it
+ * but a hand-edited config.json on the Pi, and a 512-dot unit lost the
+ * right-hand 8 mm of every slip — the price column — in silence.
+ */
+describe('a receipt printer’s paper width (SCRUM-420)', () => {
+  let printerId: string;
+
+  const settingsOf = (res: Injected): unknown =>
+    (res.body.device as { settings: unknown }).settings;
+
+  it('is declared with the printer and read back, on the answer and on the box’s list', async () => {
+    const made = await call('POST', `/boxes/${boxId}/devices`, {
+      cookie: adminCookie,
+      payload: {
+        kind: 'receipt_printer',
+        label: 'Narrow printer',
+        transport: 'lan',
+        address: '192.168.88.251:9100',
+        settings: { escpos: { dotsPerLine: 512 } },
+      },
+    });
+    expect(made.statusCode, JSON.stringify(made.body)).toBe(200);
+    expect(settingsOf(made)).toEqual({ escpos: { dotsPerLine: 512 } });
+    printerId = (made.body.device as { id: string }).id;
+
+    const listed = await call('GET', `/boxes/${boxId}/devices`, { cookie: adminCookie });
+    expect(listed.statusCode).toBe(200);
+    const row = (listed.body.devices as Array<{ id: string; settings: unknown }>).find(
+      (d) => d.id === printerId,
+    );
+    expect(row?.settings).toEqual({ escpos: { dotsPerLine: 512 } });
+    // A printer declared without saying is null, not an empty document.
+    const seeded = (listed.body.devices as Array<{ label: string; settings: unknown }>).find(
+      (d) => d.label === 'Receipt Printer 1',
+    );
+    expect(seeded?.settings).toBeNull();
+  });
+
+  it('is changed to 576, kept by an edit that leaves settings out, and cleared by null', async () => {
+    const wider = await call('PATCH', `/devices/${printerId}`, {
+      cookie: adminCookie,
+      payload: { settings: { escpos: { dotsPerLine: 576 } } },
+    });
+    expect(wider.statusCode, JSON.stringify(wider.body)).toBe(200);
+    expect(settingsOf(wider)).toEqual({ escpos: { dotsPerLine: 576 } });
+    // Audited with the width on both sides, like every other field.
+    const [recorded] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'device.update'), eq(auditLog.entityId, printerId)))
+      .orderBy(desc(auditLog.createdAt))
+      .limit(1);
+    expect((recorded?.before as { settings?: unknown } | null)?.settings).toEqual({
+      escpos: { dotsPerLine: 512 },
+    });
+    expect((recorded?.after as { settings?: unknown } | null)?.settings).toEqual({
+      escpos: { dotsPerLine: 576 },
+    });
+
+    const renamed = await call('PATCH', `/devices/${printerId}`, {
+      cookie: adminCookie,
+      payload: { label: 'Narrow printer, renamed' },
+    });
+    expect(renamed.statusCode).toBe(200);
+    expect(settingsOf(renamed)).toEqual({ escpos: { dotsPerLine: 576 } });
+
+    const cleared = await call('PATCH', `/devices/${printerId}`, {
+      cookie: adminCookie,
+      payload: { settings: null },
+    });
+    expect(cleared.statusCode).toBe(200);
+    expect(settingsOf(cleared)).toBeNull();
+    const [row] = await ctx.db
+      .select({ settings: device.settings })
+      .from(device)
+      .where(eq(device.id, printerId))
+      .limit(1);
+    expect(row?.settings).toBeNull();
+  });
+
+  it('refuses a width the family does not ship, and a key the box would not read, with 400 and no change', async () => {
+    const set = await call('PATCH', `/devices/${printerId}`, {
+      cookie: adminCookie,
+      payload: { settings: { escpos: { dotsPerLine: 512 } } },
+    });
+    expect(set.statusCode).toBe(200);
+
+    for (const settings of [
+      { escpos: { dotsPerLine: 500 } },
+      { escpos: { dotsPerLine: '512' } },
+      // `.strict()`: a typo is refused at the edit, not discovered at a counter.
+      { escpos: { dotsPerLin: 512 } },
+    ]) {
+      const res = await call('PATCH', `/devices/${printerId}`, {
+        cookie: adminCookie,
+        payload: { settings },
+      });
+      expect(res.statusCode, JSON.stringify(settings)).toBe(400);
+      expect(errorCode(res)).toBe('VALIDATION');
+    }
+    const onCreate = await call('POST', `/boxes/${boxId}/devices`, {
+      cookie: adminCookie,
+      payload: {
+        kind: 'receipt_printer',
+        label: 'Impossible printer',
+        transport: 'lan',
+        address: '192.168.88.252:9100',
+        settings: { escpos: { dotsPerLine: 500 } },
+      },
+    });
+    expect(onCreate.statusCode).toBe(400);
+    expect(errorCode(onCreate)).toBe('VALIDATION');
+
+    const [row] = await ctx.db
+      .select({ settings: device.settings })
+      .from(device)
+      .where(eq(device.id, printerId))
+      .limit(1);
+    expect(row?.settings).toEqual({ escpos: { dotsPerLine: 512 } });
+    const [never] = await ctx.db
+      .select({ id: device.id })
+      .from(device)
+      .where(eq(device.label, 'Impossible printer'))
+      .limit(1);
+    expect(never).toBeUndefined();
+  });
+});
