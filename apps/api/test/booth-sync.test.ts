@@ -1,19 +1,22 @@
-import { randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import {
+  account,
   alert,
   auditLog,
   boothConfigVersion,
+  boothStaffAssignment,
   boxPrintJob,
   spin,
   station,
   syncQuarantine,
   voucher,
+  voucherDefinition,
   voucherPrint,
   type Db,
 } from '@oto/db';
-import { newId, type RandomIndex } from '@oto/shared';
+import { mintBoothCode, newId, type RandomIndex } from '@oto/shared';
 import { renderJob } from '@oto/print';
 import { PROFILES } from '@oto/print/fixtures';
 import {
@@ -26,7 +29,15 @@ import {
   type BoxAgent,
   type PgPoolLike,
 } from '@oto/box-agent';
-import { createTestContext, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  CHALONG_BRANCH_CODE,
+  RECEPTION,
+  branchIdByCode,
+  createTestContext,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 import { provisionVirtualBox } from '../src/services/box';
 
 /**
@@ -450,5 +461,270 @@ describe('the booth cache scope (S2-07a)', () => {
     expect(running!.bundle.prizes.map((p) => p.id)).toEqual(bundle.prizes.map((p) => p.id));
     expect(running!.bundle.prizes.reduce((sum, p) => sum + p.weightBp, 0)).toBe(10_000);
     expect(running!.bundle.settings.buttonKey).toBe(bundle.settings.buttonKey);
+  });
+});
+
+/**
+ * SCRUM-413 (audit L8) and SCRUM-427 (audit T27) — a booth fact is checked
+ * against the booth it names before it is filed.
+ *
+ * The facts below are queued by hand on the real outbox and pushed through
+ * the real route, because what is under test is a fact no honest booth
+ * produces: the box prints only what it drew, and lets only its own staff
+ * ask for a copy. The envelope is still sealed and signed by the agent, so
+ * what reaches the handler is exactly what a box holding this credential
+ * could send — the audit's probe forged its facts the same way.
+ *
+ * Last in the file on purpose: the wheel test publishes a second version of
+ * Booth 1, which the agent would adopt at its next cache pull.
+ */
+describe('a booth fact is checked against the booth it names', () => {
+  async function quarantinedIds(type: string): Promise<Set<string>> {
+    const rows = await ctx.db
+      .select({ id: syncQuarantine.id })
+      .from(syncQuarantine)
+      .where(eq(syncQuarantine.type, type));
+    return new Set(rows.map((r) => r.id));
+  }
+
+  /** The refusals of one type filed since `before`, as their codes. */
+  async function refusedSince(type: string, before: Set<string>): Promise<string[]> {
+    const rows = await ctx.db
+      .select({ id: syncQuarantine.id, code: syncQuarantine.errorCode })
+      .from(syncQuarantine)
+      .where(eq(syncQuarantine.type, type));
+    return rows.filter((r) => !before.has(r.id)).map((r) => r.code ?? '');
+  }
+
+  async function accountByPhone(phone: string): Promise<string> {
+    const [row] = await ctx.db
+      .select({ id: account.id })
+      .from(account)
+      .where(and(eq(account.operatorId, operatorId), eq(account.phone, phone)))
+      .limit(1);
+    if (!row) throw new Error(`no seeded account with phone ${phone}`);
+    return row.id;
+  }
+
+  /** Everything the booth has queued so far, sent — so the next flush carries only the forged facts. */
+  async function drained(): Promise<void> {
+    const flushed = await agent.outbox()!.flush();
+    expect(['pushed', 'empty']).toContain(flushed.state);
+  }
+
+  /** A voucher won at this booth: its spin, its issue and its first print all filed. */
+  async function wonHere(): Promise<{ id: string; code: string; printCount: number }> {
+    // The box's own randomness, whatever an earlier test left the draw fixed at.
+    drawWith = null;
+    const drawn = await booth.spin({ idempotencyKey: newId() });
+    expect(drawn.voucherCode).toBeTruthy();
+    await drained();
+    const [row] = await ctx.db
+      .select({ id: voucher.id, printCount: voucher.printCount })
+      .from(voucher)
+      .where(and(eq(voucher.operatorId, operatorId), eq(voucher.code, drawn.voucherCode!)))
+      .limit(1);
+    expect(row, 'the press did not reach the cloud as a voucher').toBeTruthy();
+    return { id: row!.id, code: drawn.voucherCode!, printCount: row!.printCount };
+  }
+
+  const printFact = (payload: Record<string, unknown>) =>
+    agent.outbox()!.queue({
+      type: 'booth.voucher_printed',
+      stationId: boothStationId,
+      actorKind: 'box',
+      payload: { printJobId: newId(), status: 'printed', ...payload },
+    });
+
+  const printsOf = (voucherId: string, printJobId: string) =>
+    ctx.db
+      .select()
+      .from(voucherPrint)
+      .where(and(eq(voucherPrint.voucherId, voucherId), eq(voucherPrint.printJobId, printJobId)));
+
+  it('SCRUM-413: a print of a voucher this booth never won is quarantined, and no paper is counted', async () => {
+    // Another branch's voucher, as the audit's probe filed one: this box
+    // "reprinting" a slip from the other park.
+    const chalongId = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
+    const [definition] = await ctx.db
+      .select({ id: voucherDefinition.id })
+      .from(voucherDefinition)
+      .where(eq(voucherDefinition.operatorId, operatorId))
+      .limit(1);
+    const elsewhere = newId();
+    await ctx.db.insert(voucher).values({
+      id: elsewhere,
+      operatorId,
+      branchId: chalongId,
+      voucherDefinitionId: definition!.id,
+      code: mintBoothCode('CH', (max) => randomInt(max)),
+      source: 'booth',
+      status: 'issued',
+      expiresAt: new Date(Date.now() + 14 * 86_400_000),
+    });
+
+    await drained();
+    const before = await quarantinedIds('booth.voucher_printed');
+    const job = newId();
+    await printFact({
+      voucherId: elsewhere,
+      printJobId: job,
+      reason: 'reprint',
+      requestedByAccountId: await accountByPhone(RECEPTION.phone),
+    });
+    const flushed = await agent.outbox()!.flush();
+    expect(flushed.state).toBe('pushed');
+    if (flushed.state !== 'pushed') throw new Error('unreachable');
+    expect(flushed.quarantined).toBe(1);
+    expect(await refusedSince('booth.voucher_printed', before)).toEqual([
+      'BOOTH_VOUCHER_NOT_THIS_BOOTHS',
+    ]);
+    expect(await printsOf(elsewhere, job)).toHaveLength(0);
+    const [untouched] = await ctx.db
+      .select({ printCount: voucher.printCount })
+      .from(voucher)
+      .where(eq(voucher.id, elsewhere));
+    expect(untouched!.printCount).toBe(0);
+  });
+
+  it('SCRUM-413: a reprint asked for by somebody off this booth’s staff list is quarantined; by somebody on it, filed', async () => {
+    const won = await wonHere();
+    const admin = await accountByPhone(ADMIN.phone);
+    const reception = await accountByPhone(RECEPTION.phone);
+    // The seed puts reception on Booth 1's list; the administrator is not on it.
+    const staff = (
+      await ctx.db
+        .select({ accountId: boothStaffAssignment.accountId })
+        .from(boothStaffAssignment)
+        .where(eq(boothStaffAssignment.stationId, boothStationId))
+    ).map((s) => s.accountId);
+    expect(staff).toContain(reception);
+    expect(staff).not.toContain(admin);
+
+    const job = newId();
+    const before = await quarantinedIds('booth.voucher_printed');
+    await printFact({
+      voucherId: won.id,
+      voucherCode: won.code,
+      printJobId: job,
+      reason: 'reprint',
+      requestedByAccountId: admin,
+    });
+    const refused = await agent.outbox()!.flush();
+    expect(refused.state).toBe('pushed');
+    expect(await refusedSince('booth.voucher_printed', before)).toEqual([
+      'BOOTH_PRINT_REQUESTER_NOT_STAFF',
+    ]);
+    expect(await printsOf(won.id, job)).toHaveLength(0);
+
+    // The same copy, asked for by the person the booth would have signed in.
+    await printFact({
+      voucherId: won.id,
+      voucherCode: won.code,
+      printJobId: job,
+      reason: 'reprint',
+      requestedByAccountId: reception,
+    });
+    const filed = await agent.outbox()!.flush();
+    expect(filed.state).toBe('pushed');
+    if (filed.state !== 'pushed') throw new Error('unreachable');
+    expect(filed.quarantined).toBe(0);
+    const prints = await printsOf(won.id, job);
+    expect(prints).toHaveLength(1);
+    expect(prints[0]).toMatchObject({
+      reason: 'reprint',
+      requestedByAccountId: reception,
+      stationId: boothStationId,
+    });
+    const [counted] = await ctx.db
+      .select({ printCount: voucher.printCount })
+      .from(voucher)
+      .where(eq(voucher.id, won.id));
+    expect(counted!.printCount).toBe(won.printCount + 1);
+  });
+
+  it('SCRUM-427: a voucher of a type no wheel of this booth ever carried is quarantined; one from an earlier wheel is filed', async () => {
+    /**
+     * Version 2 of Booth 1's wheel, with one prize taken off. Its type was on
+     * version 1, and a slip printed under that wheel is still paper in a
+     * visitor's hand — so it is honoured, while a type this operator has but
+     * no wheel of this booth has ever shown is not.
+     */
+    const [current] = await ctx.db
+      .select({
+        version: boothConfigVersion.version,
+        layoutId: boothConfigVersion.layoutId,
+        bundle: boothConfigVersion.bundle,
+      })
+      .from(boothConfigVersion)
+      .where(eq(boothConfigVersion.stationId, boothStationId))
+      .orderBy(desc(boothConfigVersion.version))
+      .limit(1);
+    const bundle = current!.bundle as { prizes: { voucherDefinitionId: string | null }[] };
+    const dropped = bundle.prizes.find((p) => p.voucherDefinitionId)!.voucherDefinitionId!;
+    const next = {
+      ...bundle,
+      prizes: bundle.prizes.filter((p) => p.voucherDefinitionId !== dropped),
+    };
+    await ctx.db.insert(boothConfigVersion).values({
+      id: newId(),
+      operatorId,
+      branchId,
+      stationId: boothStationId,
+      version: current!.version + 1,
+      layoutId: current!.layoutId,
+      bundle: next,
+      bundleHash: createHash('sha256').update(JSON.stringify(next)).digest('hex'),
+      publishedByAccountId: null,
+      note: 'SCRUM-427 test: one prize taken off the wheel',
+    });
+    const never = newId();
+    await ctx.db.insert(voucherDefinition).values({
+      id: never,
+      operatorId,
+      code: `never-${never}`,
+      nameEn: 'Never on this wheel',
+      kind: 'discount',
+      valueType: 'amount',
+      valueSatang: 5000,
+    });
+
+    const issued = async (voucherDefinitionId: string): Promise<string> => {
+      const voucherId = newId();
+      await agent.outbox()!.queue({
+        type: 'promo.voucher_issued',
+        stationId: boothStationId,
+        actorKind: 'device',
+        payload: {
+          voucherId,
+          voucherDefinitionId,
+          code: mintBoothCode('B1', (max) => randomInt(max)),
+          source: 'booth',
+          costSatang: 0,
+          expiresAt: null,
+        },
+      });
+      return voucherId;
+    };
+    await drained();
+    const before = await quarantinedIds('promo.voucher_issued');
+    const fromEarlierWheel = await issued(dropped);
+    const fromNoWheel = await issued(never);
+    const flushed = await agent.outbox()!.flush();
+    expect(flushed.state).toBe('pushed');
+    if (flushed.state !== 'pushed') throw new Error('unreachable');
+    expect(flushed.quarantined).toBe(1);
+    expect(await refusedSince('promo.voucher_issued', before)).toEqual([
+      'BOOTH_VOUCHER_TYPE_NOT_ON_WHEEL',
+    ]);
+    expect(
+      await ctx.db.select({ id: voucher.id }).from(voucher).where(eq(voucher.id, fromNoWheel)),
+    ).toHaveLength(0);
+    expect(
+      await ctx.db
+        .select({ id: voucher.id })
+        .from(voucher)
+        .where(eq(voucher.id, fromEarlierWheel)),
+    ).toHaveLength(1);
   });
 });

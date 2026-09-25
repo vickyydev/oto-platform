@@ -589,6 +589,47 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
       }
 
       /**
+       * SCRUM-427 (audit T27) — the type must have been on a wheel this booth
+       * has published, at some point.
+       *
+       * A real booth issues only what the published prize points at
+       * (`packages/box-agent/src/booth.ts`), so a type no version of this
+       * booth ever carried is a fact no booth could have produced. Any
+       * version, not the current one, deliberately: a prize archived or
+       * re-pointed since the publish is still on the wheel the box is
+       * running, and a slip it printed last week under the old wheel is still
+       * paper in somebody's hand. What the audit's stricter checks would have
+       * quarantined — an expiry edit, a prefix change, an archived running
+       * type — all pass here, because none of them takes a type off a
+       * published bundle.
+       *
+       * Read from the frozen bundles rather than from the live `booth_prize`
+       * rows, for the same reason `boothCacheItems` does: the bundle is what
+       * the box drew from. `@>` is jsonb containment, so a prize carrying
+       * fields this build has never heard of still matches on the one key
+       * that matters.
+       */
+      const [onWheel] = await tx
+        .select({ id: boothConfigVersion.id })
+        .from(boothConfigVersion)
+        .where(
+          and(
+            eq(boothConfigVersion.stationId, stationId),
+            sql`${boothConfigVersion.bundle} @> ${JSON.stringify({
+              prizes: [{ voucherDefinitionId: definition.id }],
+            })}::jsonb`,
+          ),
+        )
+        .limit(1);
+      if (!onWheel) {
+        throw new AppError(
+          422,
+          'BOOTH_VOUCHER_TYPE_NOT_ON_WHEEL',
+          'That voucher type has never been on a published wheel of this booth',
+        );
+      }
+
+      /**
        * From the envelope: the box mints this fact with `actorAccountId` set
        * to whoever its own overlay had signed in, and null when nobody was.
        * See the note on the schema for why the payload does not repeat it.
@@ -702,6 +743,33 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
       }
 
       /**
+       * SCRUM-413 (audit L8) — the voucher has to be THIS booth's.
+       *
+       * The lookup above finds a code anywhere in the operator, so without
+       * this one box could file a "reprint" against another branch's voucher
+       * and corrupt the booth report's print funnel. A voucher's booth is the
+       * press that won it: `promo.voucher` records the branch, and the spin
+       * records the station and is pointed at its voucher by
+       * `linkVoucherIfPresent` once both halves are here — which they are by
+       * the time a print outcome arrives, because the box queues the press
+       * and the voucher together, before the paper, and the cloud files a
+       * batch in order. A print whose spin was itself refused is refused with
+       * it, and can be replayed from Quarantine once the spin has been.
+       */
+      const [won] = await tx
+        .select({ id: spin.id })
+        .from(spin)
+        .where(and(eq(spin.voucherId, held.id), eq(spin.stationId, stationId)))
+        .limit(1);
+      if (!won) {
+        throw new AppError(
+          422,
+          'BOOTH_VOUCHER_NOT_THIS_BOOTHS',
+          'That voucher was not won at this booth — no press here is linked to it — so its paper cannot be filed under it',
+        );
+      }
+
+      /**
        * `queued` is a state, not an outcome.
        *
        * The box reports one while the paper is still owed and reports again
@@ -743,6 +811,37 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
         payload.requestedByAccountId,
         'the staff member who asked for the print',
       );
+      /**
+       * SCRUM-413 (audit L8) — a reprint is asked for by somebody on this
+       * booth's staff list, or it is not one this booth made.
+       *
+       * The box lets nobody else sign in at the booth (`allowedStaff` on the
+       * cache scope is `booth_staff_assignment`, served whole), so a fact
+       * naming anyone else was not produced by the booth's own reprint. The
+       * list is read as it is now: a member of staff taken off the booth
+       * between asking for a copy and the box syncing it is quarantined for a
+       * person to look at, which is the cheaper mistake. Null is the
+       * automatic first print, and names nobody.
+       */
+      if (requestedByAccountId) {
+        const [onStaff] = await tx
+          .select({ id: boothStaffAssignment.id })
+          .from(boothStaffAssignment)
+          .where(
+            and(
+              eq(boothStaffAssignment.stationId, stationId),
+              eq(boothStaffAssignment.accountId, requestedByAccountId),
+            ),
+          )
+          .limit(1);
+        if (!onStaff) {
+          throw new AppError(
+            422,
+            'BOOTH_PRINT_REQUESTER_NOT_STAFF',
+            'The account this print names as its requester is not on this booth’s staff list',
+          );
+        }
+      }
 
       const printId = payload.printId ?? newId();
       await tx.insert(voucherPrint).values({
