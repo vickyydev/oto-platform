@@ -222,7 +222,11 @@ export interface PrintSubsystemOptions {
   log?: (level: 'info' | 'warn' | 'error', msg: string, detail?: Record<string, unknown>) => void;
   /** Called on every terminal outcome, and on the first queued one. */
   report?: (outcome: PrintJobOutcome) => Promise<void> | void;
-  /** How long to wait before retrying a job that is waiting on paper. */
+  /**
+   * How long to wait before retrying a job that is waiting on paper. Also the
+   * queue's cap: a retry time further off than this was set on a clock that
+   * has since gone back, and is due (`retryDue`, SCRUM-439).
+   */
   retryDelayMs?: number;
   /** After this many attempts a retryable job is given up as failed. */
   maxAttempts?: number;
@@ -857,6 +861,28 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
     return running;
   }
 
+  /**
+   * Whether a waiting job's turn has come, on the clock as the box reads it
+   * now: at or past its retry time — or further from it than one retry delay
+   * can put it (SCRUM-439).
+   *
+   * Every retry time is `now` plus `retryDelayMs`, and `now` is the box's
+   * CORRECTED clock (`clock()` in `agent.ts`, SCRUM-402). A correction that
+   * moves the clock back — a Pi that booted hours ahead after a power cut,
+   * took a voucher while the printer was out of paper, and then measured
+   * itself against the platform — leaves every retry time set before it that
+   * many hours ahead, and the voucher would wait out the whole offset before
+   * the printer was tried again. So the queue holds its retries to its own
+   * cap, as the outbox holds its to `OUTBOX_BACKOFF_CAP_MS` (`takeBatch` in
+   * `store-sql.ts`): a retry further off than one delay was set by a clock
+   * that has since gone back, and the job is due now. A retry set on the
+   * clock the box reads now is never further off than the delay, so an
+   * ordinary wait is not cut short.
+   */
+  function retryDue(pending: PendingJob, nowMs: number): boolean {
+    return pending.nextAttemptAt <= nowMs || pending.nextAttemptAt > nowMs + retryDelayMs;
+  }
+
   /** One attempt, and what it leaves behind: the job back on the queue, or gone. */
   async function settle(pending: PendingJob): Promise<PrintJobOutcome> {
     const outcome = await attempt(pending);
@@ -1044,7 +1070,7 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
     async tick() {
       await ensureResumed();
       const isDue = (p: PendingJob): boolean =>
-        p.running === null && queue.includes(p) && p.nextAttemptAt <= now().getTime();
+        p.running === null && queue.includes(p) && retryDue(p, now().getTime());
       const due = queue.filter(isDue);
       const outcomes: PrintJobOutcome[] = [];
       for (const pending of due) {

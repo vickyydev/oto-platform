@@ -11,7 +11,7 @@ import {
   type PrintRequest,
   type PrintSubsystem,
 } from '../src/printing/queue';
-import { BOX_ID, STATION_ID, openTestStore, type TestStore } from './_support';
+import { BOX_ID, STATION_ID, openTestStore, plus, type TestStore } from './_support';
 
 /**
  * One job id is one slip (SCRUM-223).
@@ -103,10 +103,11 @@ function writtenBySpin(id: string): PrintJobRecord {
   };
 }
 
-/** A printer that answers "all clear", counts its jobs, and can be held mid-job. */
+/** A printer that answers "all clear", counts its jobs, can be held mid-job, and can run out of paper. */
 function countingPrinter() {
   let slips = 0;
   let queries = 0;
+  let paper = true;
   let held: Promise<void> | null = null;
   let release: () => void = () => {};
   let onWrite: (() => void) | null = null;
@@ -116,8 +117,12 @@ function countingPrinter() {
       if (held) await held;
       slips += 1;
     },
-    async query() {
+    async query(bytes: Uint8Array) {
       queries += 1;
+      // `DLE EOT n`: paper end is bit 5 of reply 2 and bits 5 and 6 of reply 4.
+      const n = bytes[2];
+      if (!paper && n === 2) return new Uint8Array([0x32]);
+      if (!paper && n === 4) return new Uint8Array([0x72]);
       return new Uint8Array([0x12]);
     },
     async close() {},
@@ -127,6 +132,10 @@ function countingPrinter() {
     slips: () => slips,
     /** Status queries asked of it, by jobs and probes alike. */
     queries: () => queries,
+    /** Take the paper out (`false`), or put a roll in. */
+    paper(loaded: boolean) {
+      paper = loaded;
+    },
     /** The next job stops on the printer until `release`. */
     hold() {
       held = new Promise<void>((resolve) => {
@@ -149,7 +158,8 @@ interface Rig {
   reported: PrintJobOutcome[];
 }
 
-async function rig(): Promise<Rig> {
+/** `now` is the box's clock as the queue reads it; fixed at `AT` unless a test moves it. */
+async function rig(opts: { now?: () => Date } = {}): Promise<Rig> {
   const box = openTestStore(AT);
   await box.store.init(BOX_ID);
   const printer = countingPrinter();
@@ -158,7 +168,7 @@ async function rig(): Promise<Rig> {
     bundle: () => BUNDLE,
     templates: () => [],
     open: printer.open,
-    now: () => new Date(AT),
+    now: opts.now ?? (() => new Date(AT)),
     report: (outcome) => {
       reported.push(outcome);
     },
@@ -262,5 +272,49 @@ test('the heartbeat printer check does not queue behind a slip on the printer', 
   await printing.probeAll();
   assert.equal(printer.queries(), afterJob + 4, 'once it is free, it is asked again');
   assert.equal(printer.slips(), 1);
+  box.close();
+});
+
+/**
+ * A retry time set on a clock that has since been corrected back (SCRUM-439).
+ *
+ * The box corrects its clock, not the retry times it wrote before the
+ * correction: a Pi that booted three hours ahead after a power cut, took a
+ * voucher while the printer was out of paper, and then measured itself
+ * against the platform (SCRUM-402) is left with a retry due three hours from
+ * now on the corrected clock. The queue holds it to its own cap the way the
+ * outbox holds its retries to `OUTBOX_BACKOFF_CAP_MS`: a retry further off
+ * than one delay is due now. One inside the delay still waits its turn.
+ */
+test('a retry set before the clock was corrected back is due now; one inside the delay waits', async () => {
+  const HOUR = 3_600_000;
+  // Booted three hours ahead; nothing has measured the clock yet.
+  let clock = plus(AT, 3 * HOUR);
+  const { printing, printer, box } = await rig({ now: () => new Date(clock) });
+  await printing.resume();
+
+  printer.paper(false);
+  const queued = await printing.submit(request('job-5'));
+  assert.equal(queued.status, 'queued');
+  assert.equal(queued.errorCode, 'PRINTER_PAPER_OUT');
+  assert.equal(printer.slips(), 0);
+
+  // A roll goes in ten seconds on: the retry is twenty seconds away, and stays so.
+  printer.paper(true);
+  clock = plus(AT, 3 * HOUR + 10_000);
+  assert.deepEqual(await printing.tick(), [], 'an ordinary wait is not cut short');
+  assert.equal(printing.pending().length, 1);
+
+  // The heartbeat is answered and the box measures itself: three hours back.
+  clock = plus(AT, 10_000);
+  const outcomes = await printing.tick();
+  assert.deepEqual(
+    outcomes.map((o) => [o.id, o.status]),
+    [['job-5', 'printed']],
+    'the voucher waited out the whole offset',
+  );
+  assert.equal(printer.slips(), 1);
+  assert.deepEqual(printing.pending(), []);
+  assert.deepEqual(await box.store.loadPendingPrintJobs(BOX_ID), [], 'and nothing is left on the card');
   box.close();
 });
