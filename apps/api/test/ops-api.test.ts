@@ -1051,6 +1051,151 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
     }
   });
 
+  /**
+   * SCRUM-445 — what a box reports in its heartbeat's `errors` is not one
+   * kind of thing. A booth whose memory card failed used to be filed under
+   * "could not apply part of its offline copy", with a sentence about its
+   * till refusing to unlock offline, because the offline-copy rule read the
+   * whole list. The three cases below pin the split: the store fault and the
+   * wait for Reset the store each under their own heading, raised and cleared
+   * by the heartbeat like every other box rule, and the offline-copy heading
+   * left exactly as it was for the fault it was written for.
+   */
+  it('a store the box cannot use files it as needing service at the booth, and a healthy heartbeat clears it', async () => {
+    // What `reportingStoreFault` (runner/runtime.ts) puts first in the list,
+    // with the unsent records it copied out of the damaged file.
+    await callingHome({
+      errors: [{ fingerprint: 'store:damaged', code: 'box.store_damaged', count: 3 }],
+      outboxDepth: 1,
+    });
+    const id = (await theBox()).id;
+    const key = `box.needs_service:${id}`;
+
+    // The page knows before the watchdog has run, under the new heading and
+    // not the old one.
+    const ailing = (await boxesOn()).find((b) => b.id === id)!;
+    expect(ailing.state).toBe('warn');
+    expect(ailing.conditions).toContain(key);
+    expect(ailing.conditions).not.toContain(`box.cache_incomplete:${id}`);
+    expect(ailing.detail).toBe(
+      'Virtual box 1 (virtual-1) needs service at the booth: its store is damaged — it stays up and records nothing, and tries its memory card again every minute',
+    );
+
+    await watchdog();
+    const [raised] = await alertsOf(key);
+    expect(raised!.status).toBe('open');
+    expect(raised!.category).toBe('box.needs_service');
+    expect(raised!.severity).toBe('warning');
+    expect(raised!.summary).toContain('needs service at the booth: its store is damaged');
+    expect(raised!.detail).toMatchObject({ store: 'damaged', code: 'box.store_damaged', checks: 3 });
+    expect(raised!.branchId).not.toBeNull();
+    expect(await alertsOf(`box.cache_incomplete:${id}`)).toHaveLength(0);
+    expect(delivered.filter((d) => d.key === key && d.event === 'opened')).toHaveLength(1);
+
+    // And the Health page's alert list carries the same heading, with nothing
+    // about an offline copy anywhere on it.
+    const page = (await get('/ops/health')).json<HealthBody>();
+    expect(page.alerts.find((a) => a.key === key)!.title).toContain('needs service at the booth');
+    expect(page.alerts.map((a) => a.title).join('\n')).not.toContain('could not apply');
+
+    // A store that could not be read is the same condition in the box's other
+    // words — the row is bumped, not doubled.
+    await callingHome({
+      errors: [{ fingerprint: 'store:unreadable', code: 'box.store_unreadable', count: 7 }],
+    });
+    await watchdog();
+    expect(await alertsOf(key)).toHaveLength(1);
+    const [reread] = await alertsOf(key);
+    expect(reread!.summary).toContain('needs service at the booth: its store could not be read');
+    expect(reread!.detail).toMatchObject({ store: 'unreadable', checks: 7 });
+
+    // The card recovered, or the Pi was claimed as a new box: the next
+    // heartbeat carries no store fault, and the alert closes as recovered.
+    await callingHome();
+    await watchdog();
+    const [closed] = await alertsOf(key);
+    expect(closed!.status).toBe('resolved');
+    expect(closed!.resolvedReason).toBe('recovered');
+    const closing = delivered.filter((d) => d.key === key && d.event === 'resolved');
+    expect(closing).toHaveLength(1);
+    expect(closing[0]!.summary).toContain('is running on its store again');
+    expect((await boxesOn()).find((b) => b.id === id)!.state).toBe('ok');
+  });
+
+  it('a box waiting for Reset the store says so under its own heading, and the reset clears it', async () => {
+    // What `journalFaultReports` (agent.ts) sends for a box claimed again onto a new store.
+    await callingHome({
+      errors: [{ fingerprint: 'journal:awaiting_epoch', code: 'box.journal_awaiting_epoch', count: 5 }],
+    });
+    const id = (await theBox()).id;
+    const key = `box.awaiting_reset:${id}`;
+
+    const waiting = (await boxesOn()).find((b) => b.id === id)!;
+    expect(waiting.state).toBe('warn');
+    expect(waiting.conditions).toContain(key);
+    expect(waiting.conditions).not.toContain(`box.cache_incomplete:${id}`);
+    expect(waiting.conditions).not.toContain(`box.needs_service:${id}`);
+    expect(waiting.detail).toBe(
+      'Virtual box 1 (virtual-1) is waiting for Reset the store — it was claimed again onto a new store and records nothing until the reset gives it a new journal epoch',
+    );
+
+    await watchdog();
+    const [raised] = await alertsOf(key);
+    expect(raised!.status).toBe('open');
+    expect(raised!.category).toBe('box.awaiting_reset');
+    expect(raised!.severity).toBe('warning');
+    expect(raised!.summary).toContain('is waiting for Reset the store');
+    expect(raised!.detail).toMatchObject({ refused: 5 });
+    expect(await alertsOf(`box.cache_incomplete:${id}`)).toHaveLength(0);
+
+    // The reset landed: the box has its epoch and stops reporting the wait.
+    await callingHome();
+    await watchdog();
+    const [closed] = await alertsOf(key);
+    expect(closed!.status).toBe('resolved');
+    expect(closed!.resolvedReason).toBe('reset');
+    expect(
+      delivered.filter((d) => d.key === key && d.event === 'resolved')[0]!.summary,
+    ).toContain('has its new journal epoch and is recording again');
+  });
+
+  it('a scope of the offline copy that did not land still reads as an incomplete offline copy, even beside a store fault', async () => {
+    // What `recordCacheFault` (agent.ts) sends: `<reason>:<scope>`, coded `box.cache_<reason>`.
+    const staffScope = { fingerprint: 'unreadable:staff', code: 'box.cache_unreadable', count: 2 };
+    await callingHome({ errors: [staffScope] });
+    const id = (await theBox()).id;
+    const cacheKey = `box.cache_incomplete:${id}`;
+
+    const incomplete = (await boxesOn()).find((b) => b.id === id)!;
+    expect(incomplete.conditions).toContain(cacheKey);
+    expect(incomplete.conditions).not.toContain(`box.needs_service:${id}`);
+    expect(incomplete.conditions).not.toContain(`box.awaiting_reset:${id}`);
+    expect(incomplete.detail).toBe(
+      'Virtual box 1 (virtual-1) could not apply part of its offline copy (box.cache_unreadable) — until it pulls a complete one, its till refuses to unlock offline',
+    );
+
+    await watchdog();
+    const [raised] = await alertsOf(cacheKey);
+    expect(raised!.status).toBe('open');
+    expect(raised!.category).toBe('box.cache_incomplete');
+    expect(raised!.detail).toMatchObject({ faults: [staffScope], occurrences: 2 });
+    expect(await alertsOf(`box.needs_service:${id}`)).toHaveLength(0);
+
+    // Both at once — a damaged store on a box that had also missed a scope:
+    // two headings, and the offline-copy line names only its own code.
+    await callingHome({
+      errors: [{ fingerprint: 'store:damaged', code: 'box.store_damaged', count: 1 }, staffScope],
+    });
+    const both = (await boxesOn()).find((b) => b.id === id)!;
+    expect(both.conditions).toContain(`box.needs_service:${id}`);
+    expect(both.conditions).toContain(cacheKey);
+    await watchdog();
+    const [bumped] = await alertsOf(cacheKey);
+    expect(bumped!.summary).toContain('(box.cache_unreadable)');
+    expect(bumped!.summary).not.toContain('box.store_damaged');
+    expect((await alertsOf(`box.needs_service:${id}`))[0]!.status).toBe('open');
+  });
+
   it('a box nobody has registered, and one taken out of service, raise nothing', async () => {
     // What the seed leaves behind: a row with a slot, waiting for its Pi.
     await setBox({ registeredAt: null, status: 'unclaimed', lastHeartbeatAt: null, lastStatus: null });

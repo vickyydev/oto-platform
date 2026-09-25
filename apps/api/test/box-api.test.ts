@@ -490,6 +490,69 @@ describe('the box’s own clock (SCRUM-402)', () => {
   });
 });
 
+describe('a box whose store cannot be used (SCRUM-445)', () => {
+  /**
+   * The agent that stands in for a box with a damaged or unreadable store
+   * (SCRUM-403) keeps heartbeating, with the fault first in `errors` and the
+   * unsent records it copied out of the file as its outbox. Sent here through
+   * the real route, so what Health reads is what `recordHeartbeat` actually
+   * kept — and Health files it under its own heading, not the offline-copy one.
+   */
+  let adminCookie: string;
+  beforeAll(async () => {
+    adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+  });
+
+  const healthOf = async (boxId: string) => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/ops/health',
+      headers: { cookie: adminCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const boxes = res.json().boxes as Array<{
+      id: string;
+      state: string;
+      conditions: string[];
+      detail: string | null;
+    }>;
+    const found = boxes.find((b) => b.id === boxId);
+    expect(found, 'Health did not list the box').toBeTruthy();
+    return found!;
+  };
+
+  it('keeps the heartbeat’s store fault whole, and Health files the box as needing service until a heartbeat without it', async () => {
+    const { boxId, credential } = await registerSeededBox();
+    const fault = { fingerprint: 'store:damaged', code: 'box.store_damaged', count: 3 };
+
+    // Exactly what `reportingStoreFault` sends: the fault, and at least one
+    // unsent record whose age it cannot vouch for.
+    const { statusCode } = await heartbeat(credential, {
+      errors: [fault],
+      outboxDepth: 1,
+      oldestUnackedS: null,
+    });
+    expect(statusCode).toBe(200);
+    const [row] = await ctx.db.select().from(box).where(eq(box.id, boxId)).limit(1);
+    expect(row!.status).toBe('online');
+    expect((row!.lastStatus as { errors: unknown }).errors).toEqual([fault]);
+
+    const ailing = await healthOf(boxId);
+    expect(ailing.state).toBe('warn');
+    expect(ailing.conditions).toContain(`box.needs_service:${boxId}`);
+    expect(ailing.conditions).not.toContain(`box.cache_incomplete:${boxId}`);
+    expect(ailing.detail).toContain('needs service at the booth: its store is damaged');
+    expect(ailing.detail).not.toContain('could not apply');
+
+    // The card recovered: the agent on the store reports no fault, and the
+    // page reads the box as well again on that heartbeat alone.
+    expect((await heartbeat(credential)).statusCode).toBe(200);
+    const recovered = await healthOf(boxId);
+    expect(recovered.conditions).not.toContain(`box.needs_service:${boxId}`);
+    expect(recovered.detail ?? '').not.toContain('needs service');
+  });
+});
+
 describe('box config bundle (S2-04)', () => {
   it('carries this box’s stations and devices, and nobody else’s', async () => {
     const { boxId, credential } = await registerSeededBox();

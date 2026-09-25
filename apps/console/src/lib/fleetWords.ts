@@ -150,6 +150,28 @@ const COMMAND_WORDS: Record<string, string> = {
 export const commandWord = (value: string): string => COMMAND_WORDS[value] ?? tidy(value);
 
 /**
+ * The line Health puts under an alert about a box that cannot use its store
+ * (SCRUM-445): what the heading means for the booth, and where the way back
+ * is written up — the Pi guide, section 7, "A damaged store".
+ *
+ * Keyed on the alert's category, which is the part of its key before the
+ * colon (`box.needs_service:<box id>`), the same shape `BoothSummary` reads
+ * the id out of. Null for every other alert, which keeps its one line.
+ */
+export function boxStoreAlertNote(alertKey: string): string | null {
+  const colon = alertKey.indexOf(':');
+  const category = colon === -1 ? alertKey : alertKey.slice(0, colon);
+  switch (category) {
+    case 'box.needs_service':
+      return 'The booth is not running: the store on its memory card cannot be used, and the television says "This booth needs service". The box tries the card again every minute; if it does not come back, the Pi guide (PI_BOOTH.md), section 7, "A damaged store", has the way back — a new box under Devices, then sudo oto-box claim --force on the Pi.';
+    case 'box.awaiting_reset':
+      return 'The box was claimed again onto a new store, which would reuse numbers the platform already holds, so it records nothing until Reset the store — this box, under Devices — gives it a new journal epoch. Pi guide (PI_BOOTH.md), section 7, "A damaged store".';
+    default:
+      return null;
+  }
+}
+
+/**
  * A command's state as a tone. `running` is amber rather than green: a command
  * the box took and has not reported on is not yet a success, and the gap
  * between the two is exactly what somebody watching a test print wants to see.

@@ -1190,18 +1190,23 @@ function statusText(status: Record<string, unknown> | null, key: string): string
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+/** One entry of a heartbeat's `errors`: what went wrong, as an identity and a count, never a message. */
+interface ReportedFault {
+  fingerprint: string;
+  code: string;
+  count: number;
+}
+
 /**
  * The faults a box reported in its last heartbeat — fingerprint, code and
  * count, never a message. Read defensively because it comes off a jsonb column
  * written by whatever agent version the box is running, and a box on an older
  * build simply reports none.
  */
-function statusErrors(
-  status: Record<string, unknown> | null,
-): Array<{ fingerprint: string; code: string; count: number }> {
+function statusErrors(status: Record<string, unknown> | null): ReportedFault[] {
   const value = status?.errors;
   if (!Array.isArray(value)) return [];
-  const out: Array<{ fingerprint: string; code: string; count: number }> = [];
+  const out: ReportedFault[] = [];
   for (const entry of value) {
     if (!entry || typeof entry !== 'object') continue;
     const e = entry as Record<string, unknown>;
@@ -1213,6 +1218,33 @@ function statusErrors(
     });
   }
   return out;
+}
+
+/**
+ * The box's store cannot be used (SCRUM-403): `store:damaged` or
+ * `store:unreadable`, the one entry the agent that stands in for such a box
+ * puts first in its heartbeat's `errors` (`reportingStoreFault`,
+ * runner/runtime.ts), coded `box.store_damaged` / `box.store_unreadable`.
+ * Either half names it, so an agent that renames one still files here.
+ */
+function isStoreFault(fault: ReportedFault): boolean {
+  return fault.fingerprint.startsWith('store:') || fault.code.startsWith('box.store_');
+}
+
+/** Which problem the store has — `damaged` or `unreadable` — read off the fault's identity. */
+function storeProblemOf(fault: ReportedFault): string {
+  if (fault.fingerprint.startsWith('store:')) return fault.fingerprint.slice('store:'.length);
+  return fault.code.replace(/^box\.store_/, '');
+}
+
+/**
+ * A box claimed again onto a new store, refusing every fact until Reset the
+ * store gives it a journal epoch (`journalFaultReports`, agent.ts).
+ */
+function isJournalWait(fault: ReportedFault): boolean {
+  return (
+    fault.fingerprint === 'journal:awaiting_epoch' || fault.code === 'box.journal_awaiting_epoch'
+  );
 }
 
 /**
@@ -1473,6 +1505,117 @@ export function evaluateBox(
   });
 
   /**
+   * What the box said was going wrong, in its last heartbeat's `errors`,
+   * split three ways before any rule reads it (SCRUM-445). Every entry there
+   * has one shape — a fingerprint, a code and a count — and not one meaning,
+   * and a single rule reading the whole list filed a booth whose memory card
+   * had failed under the heading for a config bundle that did not apply,
+   * with a sentence about its till refusing to unlock offline.
+   *
+   *  - `store:damaged` / `store:unreadable` is the store itself, reported by
+   *    the agent that stands in for a box whose store cannot be used
+   *    (SCRUM-403): the booth is not running, and a person has to go to it.
+   *  - `journal:awaiting_epoch` is a box claimed again onto a new store,
+   *    refusing every fact until Reset the store gives it a journal epoch.
+   *  - Everything else is a scope of the offline copy that did not land
+   *    (S2-06), which is what the `box.cache_incomplete` rule below was
+   *    written for and all it reads now.
+   */
+  const reportedFaults = statusErrors(last);
+  const storeFault = reportedFaults.find(isStoreFault) ?? null;
+  const journalWait = reportedFaults.find(isJournalWait) ?? null;
+  const cacheFaults = reportedFaults.filter((e) => !isStoreFault(e) && !isJournalWait(e));
+
+  /**
+   * --- Its store cannot be used, and the booth needs service.
+   *
+   * The box stays up and keeps calling home — it is the only way anybody in
+   * a back office hears of this — but it records nothing, and the television
+   * at the booth says so. Restarting does not cure it and the watchdog on the
+   * Pi leaves it running; the store is tried again every minute and comes
+   * back by itself if the card recovers, and otherwise the way back is a new
+   * box claimed on the Pi (PI_BOOTH.md, section 7, "A damaged store"). The
+   * Console adds that pointer under this heading.
+   *
+   * Read off `last_status`, so it holds while the box is silent and closes on
+   * the first heartbeat that carries no store fault — or when an administrator
+   * takes the box out of service, which is what happens to the damaged box
+   * once its Pi has been claimed as a new one, and is said as such.
+   */
+  const storeProblem = storeFault ? storeProblemOf(storeFault) : null;
+  const storeWords =
+    storeProblem === 'damaged'
+      ? 'its store is damaged'
+      : storeProblem === 'unreadable'
+        ? 'its store could not be read'
+        : storeProblem
+          ? `its store is ${storeProblem}`
+          : 'its store cannot be used';
+  conditions.push({
+    key: `box.needs_service:${row.id}`,
+    category: 'box.needs_service',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: expectedAlive && storeFault !== null,
+    summary: `${subject} needs service at the booth: ${storeWords} — it stays up and records nothing, and tries its memory card again every minute`,
+    detail: {
+      slot: row.slot,
+      store: storeProblem,
+      code: storeFault?.code ?? null,
+      /** Failed looks at the store since the agent started, as the box counts them. */
+      checks: storeFault?.count ?? 0,
+    },
+    clear: expectedAlive
+      ? {
+          category: 'box.needs_service',
+          reason: 'recovered',
+          summary: `${subject} is running on its store again`,
+        }
+      : {
+          category: 'box.needs_service',
+          reason: 'taken out of service',
+          summary: `${subject} needed service, and it has been taken out of service`,
+        },
+  });
+
+  /**
+   * --- It is waiting for Reset the store.
+   *
+   * A claim that registered the same box again onto a new store: that store
+   * would reuse journal numbers the platform already holds, so the box refuses
+   * to record anything until Console → Devices → the box → Reset the store
+   * mints it a new epoch (`box.ts`, `reset_store`). Not a fault in the store
+   * and not an incomplete offline copy — a press somebody has to make.
+   */
+  conditions.push({
+    key: `box.awaiting_reset:${row.id}`,
+    category: 'box.awaiting_reset',
+    severity: 'warning',
+    subject,
+    ...scope,
+    active: expectedAlive && journalWait !== null,
+    summary: `${subject} is waiting for Reset the store — it was claimed again onto a new store and records nothing until the reset gives it a new journal epoch`,
+    detail: {
+      slot: row.slot,
+      /** Facts the box refused while waiting, as it counts them — at least one. */
+      refused: journalWait?.count ?? 0,
+      currentEpoch: row.currentEpoch,
+    },
+    clear: expectedAlive
+      ? {
+          category: 'box.awaiting_reset',
+          reason: 'reset',
+          summary: `${subject} has its new journal epoch and is recording again`,
+        }
+      : {
+          category: 'box.awaiting_reset',
+          reason: 'taken out of service',
+          summary: `${subject} was waiting for Reset the store, and it has been taken out of service`,
+        },
+  });
+
+  /**
    * --- Its clock is out, and the box corrects for it.
    *
    * Since SCRUM-402 the box measures its clock against the platform's on
@@ -1621,8 +1764,12 @@ export function evaluateBox(
    * the counter, and it closes on the next pull in which every scope lands.
    * The till, meanwhile, refuses an offline unlock it cannot check, so the
    * visible symptom and this alert have the same cause.
+   *
+   * `cacheFaults` is the heartbeat's `errors` with the store fault and the
+   * journal wait taken out (SCRUM-445, above): those two have their own
+   * headings, and this sentence about a till refusing to unlock was never
+   * true of them.
    */
-  const cacheFaults = statusErrors(last);
   const cacheFaultCount = cacheFaults.reduce((n, e) => n + e.count, 0);
   conditions.push({
     key: `box.cache_incomplete:${row.id}`,

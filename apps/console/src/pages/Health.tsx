@@ -23,6 +23,7 @@ import {
   type Tone,
 } from '@/components/Status';
 import { useSession } from '@/auth/SessionContext';
+import { boxStoreAlertNote } from '@/lib/fleetWords';
 import { usePlatformStatus } from '@/lib/platformStatus';
 import { isEstateWide, readReach, reachLabel } from '@/lib/reach';
 import { elapsed, formatWhen, millis, timeAgo } from '@/lib/time';
@@ -361,6 +362,13 @@ function AlertItem({
 }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  /**
+   * A box that cannot use its store gets one more line (SCRUM-445): the
+   * heading above is the platform's sentence about the box, and this is what
+   * it means at the booth and where the way back is written up. Null for
+   * every other alert.
+   */
+  const note = boxStoreAlertNote(alert.key);
 
   const acknowledge = async () => {
     setBusy(true);
@@ -401,6 +409,7 @@ function AlertItem({
         </div>
       </div>
       {alert.detail && <p className="mt-1 text-sm text-muted-foreground break-words">{alert.detail}</p>}
+      {note && <p className="mt-1 text-sm text-muted-foreground break-words">{note}</p>}
       {failed && <p className="mt-1 text-sm text-destructive">{failed}</p>}
     </li>
   );
