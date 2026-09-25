@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-25, 22:55 (`main` at `357fc3e` plus this checkpoint; staging at `2160f3a`)_
+_Last updated: 2026-09-25, 23:34 (`main` at `3cc8963` plus this checkpoint; staging follows CI)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
@@ -84,9 +84,9 @@ While he benches, the audit's small follow-ups land as quick rounds (the handove
 remainders → SCRUM-435 and the next quick round); the proof pass raised SCRUM-432–437.
 SCRUM-401 (`4dfcb34`) and 402 (`7b360cd`), the two Highs, landed on Opus with gates
 and are Deployed with 409–437's screen-facing set on the second proof pass; 406, 408, 431 and
-438 are Deployed on the third proof pass (CI fixed at the root in `64d856e`); 439 and 442 are
-in Testing; 433 is back in In Progress with its round running; 403's third round is building;
-443 waits on the owner's choice for the branch chip. The owner's rule since 25 Sept: small
+438 are Deployed on the third proof pass (CI fixed at the root in `64d856e`); 439 is Deployed; 403,
+444, 440, 442 and 423 are in Testing; 433 is in In Progress with its round running (migration
+0025); 443 waits on the owner's choice for the branch chip; 446 and 447 are new from 403's gate. The owner's rule since 25 Sept: small
 defects on Fable quick rounds, stories on Opus with full gates.
 
 **Then the recommended order, still the owner's to confirm**, with the reasoning in

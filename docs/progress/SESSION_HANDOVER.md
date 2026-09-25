@@ -469,6 +469,26 @@ different; the Pi runtime and the counter were not built at all).**
   watchdog and kiosk scripts. Local housekeeping: 31 idle leftover test
   databases dropped from the Docker Postgres (10 remain, held open by old
   processes). **Building:** SCRUM-403's third round on Opus (`wf_58e9db7e`), SCRUM-433's remainder with 441 on Opus (`wf_ae8cd82b`, migration 0025).
+- **Late landings (25 Sept, 23:34).** `6a6af44` SCRUM-440 (a printer that does not
+  answer gets one attempt a tick; a printer that answers again drains its slips
+  in that tick); `9505189` SCRUM-423's second case (the sign-in refusal test
+  asserts the work done for six classes, no stopwatch; 4.3 s → 0.15 s);
+  `d4f3fc5` SCRUM-442 (the ticket till's promo box clears; four stale runner
+  comments); `9ccc893` SCRUM-422's e2e-against-the-built-bundle switch, set in
+  CI (its first run watched); **`e33bf12` SCRUM-403** after three gates — the
+  kiosk listens before the store opens, a damaged or unreadable store keeps the
+  process up with a needs-service notice (EN/TH) and a 503 naming the reason,
+  retrying once a minute; the unsent outbox is salvaged from the table (never
+  through an index); no fact is sealed before a fresh journal epoch, a refused
+  read of the note counts as waiting, the claim window race is closed; the
+  watchdog treats a needs-service box as alive and the kiosk opens on any
+  answer (SCRUM-444 with it); `3cc8963` the Pi guide's retry sentence (406).
+  **Deployed:** 439 (its fourth item went with 403). **Testing:** 403, 444, 440,
+  442, 423 (two cases; left: undo SQL for 0021/0022 and — running — honest
+  names plus the booth fake). New from 403's gate: SCRUM-446 (a stale send
+  index passes quick_check) and SCRUM-447 (a re-registered box gets no fresh
+  journal number from the platform — an api fix). SCRUM-443 waits on the
+  owner's choice. **Running:** SCRUM-433's remainder with 441 on Opus (`wf_ae8cd82b`, migration 0025), r20 (`wf_8b932364`: 423's honest names and the booth fake). Watchers: the first CI run with the Console tests against the built bundle (`9ccc893`), and CI, the Pi artifact and staging at `e33bf12`; the next Pi release goes to the owner when that run is green.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
