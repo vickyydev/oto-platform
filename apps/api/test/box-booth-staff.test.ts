@@ -423,8 +423,27 @@ describe('the whole relay, as the staging demo runs it', () => {
   });
 });
 
-// The branch row is read so the seed's shape is asserted, not assumed.
+// The rows the rest of this file relies on, read back rather than assumed:
+// the bench booth and its box sit at the seeded branch under the seeded
+// operator, which is what lets the branch check above admit reception and
+// refuse somebody from another park.
 it('the bench booth sits at the seeded branch', async () => {
-  const [row] = await db.select({ id: branch.id }).from(branch).where(eq(branch.id, branchId)).limit(1);
-  expect(row?.id).toBe(branchId);
+  const [seeded] = await db
+    .select({ id: branch.id })
+    .from(branch)
+    .where(and(eq(branch.operatorId, operatorId), eq(branch.code, CENTRAL_BRANCH_CODE)))
+    .limit(1);
+  expect(seeded?.id).toBe(branchId);
+  const [booth] = await db
+    .select({ branchId: station.branchId, operatorId: station.operatorId, boxId: station.boxId })
+    .from(station)
+    .where(eq(station.id, benchBooth))
+    .limit(1);
+  expect(booth).toEqual({ branchId, operatorId, boxId: benchBox });
+  const [bench] = await db
+    .select({ branchId: box.branchId, operatorId: box.operatorId })
+    .from(box)
+    .where(eq(box.id, benchBox))
+    .limit(1);
+  expect(bench).toEqual({ branchId, operatorId });
 });

@@ -8,15 +8,11 @@ import {
   createBoothHttp,
   type Booth,
   type BoothConfigBundle,
-  type BoothSignInRequest,
-  type BoothSpinRequest,
-  type BoothStatusReport,
   type BoxAgent,
-  type BoxStaffSession,
 } from '@oto/box-agent';
-import { BOOTH_DEVICE_HEADER, type SpinResponse } from '@oto/shared';
+import { BOOTH_DEVICE_HEADER } from '@oto/shared';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
-import { attachInProcessBox, detachInProcessBox } from '../src/services/box';
+import { BUNDLE, REPRINT, SPIN, attachStubBox, detachStubBoxes, newCalls, stubBooth } from './stub-booth';
 
 /**
  * S2-07a — the cloud's booth surface.
@@ -97,120 +93,21 @@ afterAll(async () => {
 });
 
 /** Nothing stays attached between tests: the map is process-wide. */
-const attached: BoxAgent[] = [];
-afterEach(() => {
-  while (attached.length > 0) detachInProcessBox(attached.pop()!);
-});
-
-const SPIN: SpinResponse = {
-  spinId: '0199a0f0-0000-7000-8000-00000000f001',
-  prizeIndex: 2,
-  prizeId: '0199a0f0-0000-7000-8000-00000000e002',
-  configVersion: 1,
-  voucherCode: 'B1H7K2M9PQ',
-  expiresAt: '2026-10-05T00:00:00.000Z',
-  printState: 'printed',
-  staffAccountId: null,
-  clockSuspect: false,
-};
-
-const BUNDLE = {
-  schemaVersion: 1,
-  settings: { eligibility: 'none', buttonKey: 'Space', dailySpinCap: null },
-  layout: { id: 'l1', name: 'Classic wheel', version: 1, design: {}, assetManifest: {} },
-  prizes: [],
-} as unknown as BoothConfigBundle;
-
-const STATUS: BoothStatusReport = {
-  online: true,
-  neverSynced: false,
-  configVersion: 1,
-  printerReachable: 'reachable',
-  paperStatus: 'ok',
-  vouchersPending: 0,
-  lastSpinAt: null,
-  staffSignedIn: false,
-  dailyCapsReached: [],
-};
-
-interface Calls {
-  spin: BoothSpinRequest[];
-  signIn: BoothSignInRequest[];
-  signOut: number;
-  /** What `status()` was told about the box's link — the api's own contribution. */
-  statusOnline: boolean[];
-}
-
-function newCalls(): Calls {
-  return { spin: [], signIn: [], signOut: 0, statusOnline: [] };
-}
+afterEach(() => detachStubBoxes());
 
 /**
- * A booth module, stubbed at the interface the box publishes.
- *
- * Written out in full rather than cast, so that a change to `Booth` in
- * `@oto/box-agent` fails this file rather than passing it: what these tests
- * are about is the api handing a request to THAT interface, and a stub that
- * had drifted from it would be proving nothing.
+ * The stub booth is `./stub-booth`, shared with `booth-pairing.test.ts`: one
+ * `Booth` written out in full against the box's interface, whose every default
+ * answer is one the real booth gives for a booth with nobody signed in. A test
+ * that needs another answer overrides that one member and says why.
  */
-function stubBooth(calls: Calls, overrides: Partial<Booth> = {}): Booth {
-  const base: Booth = {
-    start: async () => {},
-    stop: () => {},
-    config: () => ({ version: 1, bundle: BUNDLE }),
-    refresh: async () => false,
-    spin: async (request) => {
-      calls.spin.push(request);
-      return SPIN;
-    },
-    signIn: async (request) => {
-      calls.signIn.push(request);
-      return { ok: true };
-    },
-    signOut: async () => {
-      calls.signOut += 1;
-    },
-    staffSession: async (): Promise<BoxStaffSession | null> => null,
-    status: async ({ online }) => {
-      calls.statusOnline.push(online);
-      return { ...STATUS, online };
-    },
-    heartbeat: async () => null,
-    ownsPrintJob: () => false,
-    reportPrint: async () => {},
-    noteCloudTime: async () => {},
-  };
-  return { ...base, ...overrides };
-}
 
-/**
- * That booth, on a box said to be running in this process.
- *
- * The cast is to `BoxAgent`, of which these routes use two things: the box id
- * `attachInProcessBox` files it under, and the booth module. `print-api.test.ts`
- * attaches a real agent for the same reason — a test driving an agent against
- * this api is the same kind of process making the same claim.
- */
-function attachBooth(booth: Booth, opts: { offline?: boolean } = {}): BoxAgent {
-  const agent = {
-    state: { boxId: boothBoxId, offline: opts.offline ?? false },
-    booth: () => booth,
-  } as unknown as BoxAgent;
-  attachInProcessBox(agent);
-  attached.push(agent);
-  return agent;
-}
+/** That booth, on a box said to be running in this process. */
+const attachBooth = (booth: Booth, opts: { offline?: boolean } = {}): BoxAgent =>
+  attachStubBox(boothBoxId, booth, opts);
 
 /** A box that is here but has no booth module at all — an agent with no store. */
-function attachBoxWithoutBooth(): BoxAgent {
-  const agent = {
-    state: { boxId: boothBoxId, offline: false },
-    booth: () => null,
-  } as unknown as BoxAgent;
-  attachInProcessBox(agent);
-  attached.push(agent);
-  return agent;
-}
+const attachBoxWithoutBooth = (): BoxAgent => attachStubBox(boothBoxId, null);
 
 const press = (payload: Record<string, unknown> = {}, headers: Record<string, string> = {}) =>
   ctx.app.inject({
@@ -490,26 +387,51 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     expect(calls.signOut).toBe(1);
   });
 
-  it('a reprint never draws', async () => {
+  it('a reprint never draws — the box’s copy is relayed whole, and its refusal with nobody signed in is the box’s 403', async () => {
+    // A box with somebody signed in: the same code goes onto new paper and the
+    // box says what became of it (SCRUM-223). Every real booth has this path.
     const calls = newCalls();
-    attachBooth(stubBooth(calls));
+    attachBooth(
+      stubBooth(calls, {
+        reprint: async (request) => {
+          calls.reprint.push(request);
+          return REPRINT;
+        },
+      }),
+    );
 
     const res = await ctx.app.inject({
       method: 'POST',
       url: '/booth/reprint',
-      headers: deviceHeader,
+      headers: { ...deviceHeader, [BOOTH_ACTION_HEADER]: 'act-reprint-0199a0f0' },
       payload: { spinId: SPIN.spinId },
     });
 
-    // The box's surface has no reprint path yet, so it says so — and the api
-    // did not invent one, which is the point: a reprint needs the voucher, the
-    // printer and the staff session, and all three are on the box. When
-    // `booth-http.ts` grows the path this expectation is the line to change,
-    // and the one below it is the line that must not.
-    expect(res.statusCode).toBe(404);
-    expect(res.json().error.code).toBe('not_found');
-    // Nothing was drawn, printed or minted on the way to finding that out.
+    // A reprint needs the voucher, the printer and the staff session, and all
+    // three are on the box: the api hands the request over as it came — the
+    // spin asked for and the action id — and hands the answer back unchanged.
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual(REPRINT);
+    expect(calls.reprint).toEqual([{ spinId: SPIN.spinId, actionId: 'act-reprint-0199a0f0' }]);
+    // Nothing was drawn, printed anew or minted on the way: a copy, not a draw.
     expect(calls.spin).toEqual([]);
+
+    // A box with nobody signed in — the stub's own state — refuses it with its
+    // code, and the api carries that as the 403 the panel knows: "sign in
+    // first", which is not a broken booth.
+    const nobody = newCalls();
+    detachStubBoxes();
+    attachBooth(stubBooth(nobody));
+    const refused = await ctx.app.inject({
+      method: 'POST',
+      url: '/booth/reprint',
+      headers: deviceHeader,
+      payload: {},
+    });
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json().error.code).toBe('staff_required');
+    expect(nobody.reprint).toEqual([{ actionId: null }]);
+    expect(nobody.spin).toEqual([]);
   });
 
   it('nothing on the booth surface names a station, a box or a person (D15)', async () => {
@@ -526,7 +448,8 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
     // The document is the box's; what this pins is that the api adds nothing
     // to it on the way past — no station, no box, no branch, no account. The
     // shape's own rule, that `staffSignedIn` is a boolean rather than a
-    // person, is kept where the shape is.
+    // person and `staff` a name and a staff code for the corner of the
+    // television (null, as here, when nobody is), is kept where the shape is.
     expect(Object.keys(status.json()).sort()).toEqual([
       'configVersion',
       'dailyCapsReached',
@@ -535,9 +458,27 @@ describe('the booth surface is a pass-through (S2-07a)', () => {
       'online',
       'paperStatus',
       'printerReachable',
+      'staff',
       'staffSignedIn',
       'vouchersPending',
     ]);
+    expect(status.json().staff).toBeNull();
+
+    // A sign-in the box accepts tells the box WHO it was, and the surface
+    // tells the television only that it worked: the account id stops at the
+    // box (`BoothSignInResult.accountId`, "never sent to the television").
+    const signedIn = '0199a0f0-0000-7000-8000-00000000a001';
+    detachStubBoxes();
+    attachBooth(stubBooth(newCalls(), { signIn: async () => ({ ok: true, accountId: signedIn }) }));
+    const ok = await ctx.app.inject({
+      method: 'POST',
+      url: '/booth/staff/sign-in',
+      headers: deviceHeader,
+      payload: { pin: '2468' },
+    });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json()).toEqual({ ok: true });
+    expect(ok.body).not.toContain(signedIn);
   });
 });
 

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { FIXTURES, PROFILES } from '@oto/print/fixtures';
 import { parseEscpos } from '@oto/print/reader';
-import { renderJob } from '@oto/print';
+import { renderJob, statusQuery } from '@oto/print';
 import {
+  CHANNEL_TIMEOUTS,
   PrinterError,
   ROLE_FOR_KIND,
   createPrinterSimulator,
@@ -15,8 +16,10 @@ import {
   type BoxConfigBundle,
   type BoxConfigDevice,
   type BoxConfigStation,
+  type ChannelFactory,
   type PrintJobOutcome,
   type PrinterChannel,
+  type PrinterSimulator,
 } from '@oto/box-agent';
 
 /**
@@ -89,10 +92,12 @@ function bundleOf(devices: BoxConfigDevice[]): BoxConfigBundle {
   };
 }
 
-function printing(devices: BoxConfigDevice[]) {
+function printing(devices: BoxConfigDevice[], opts: { openReal?: ChannelFactory } = {}) {
   let current = bundleOf(devices);
   const reported: PrintJobOutcome[] = [];
   const controller = createPrinting({
+    // How a socket to a LAN printer is opened; a simulated device never uses it.
+    ...(opts.openReal ? { openReal: opts.openReal } : {}),
     bundle: () => current,
     /**
      * The bundle's templates are `PrintTemplateWire` — `type: string`, because
@@ -321,6 +326,28 @@ describe('what a printer does when it is unwell (S2-06)', () => {
  * written down in `packages/box-agent/src/printing/queue.ts`; these are the
  * cases that hold the decisions to their word.
  */
+/**
+ * A channel that takes the first half of a job and then dies, as an unplugged
+ * cable does: the bytes before the cut are on the paper, the rest never leave
+ * the box.
+ */
+function dyingChannel(sim: PrinterSimulator): ChannelFactory {
+  return async () => {
+    const inner = sim.connect();
+    let first = true;
+    return {
+      async write(bytes) {
+        if (!first) throw new PrinterError('PRINTER_WRITE_FAILED', 'cable pulled', { partial: true });
+        first = false;
+        await inner.write(bytes.subarray(0, Math.floor(bytes.length / 2)));
+        throw new PrinterError('PRINTER_WRITE_FAILED', 'cable pulled', { partial: true });
+      },
+      query: (bytes, expect_, ms) => inner.query(bytes, expect_, ms),
+      close: () => inner.close(),
+    };
+  };
+}
+
 describe('a printer is a socket that can be unplugged (S2-06)', () => {
   it('fails a job cut mid-print and never retries it unattended', async () => {
     const sim = createPrinterSimulator({
@@ -331,27 +358,11 @@ describe('a printer is a socket that can be unplugged (S2-06)', () => {
       widthDots: 576,
     });
 
-    /** Takes the first half of the job and then dies, as an unplugged cable does. */
-    const dying = async (): Promise<PrinterChannel> => {
-      const inner = sim.connect();
-      let first = true;
-      return {
-        async write(bytes) {
-          if (!first) throw new PrinterError('PRINTER_WRITE_FAILED', 'cable pulled', { partial: true });
-          first = false;
-          await inner.write(bytes.subarray(0, Math.floor(bytes.length / 2)));
-          throw new PrinterError('PRINTER_WRITE_FAILED', 'cable pulled', { partial: true });
-        },
-        query: (bytes, expect_, ms) => inner.query(bytes, expect_, ms),
-        close: () => inner.close(),
-      };
-    };
-
     const adapter = escposAdapter({
       deviceId: 'dev-receipt',
       label: 'Receipt Printer 1',
       target: { host: '192.168.88.202', port: 9100 },
-      open: dying,
+      open: dyingChannel(sim),
       now: () => new Date(),
     });
 
@@ -371,9 +382,42 @@ describe('a printer is a socket that can be unplugged (S2-06)', () => {
     const printed = sim.printouts();
     expect(dropped.length + printed.length).toBeGreaterThan(0);
     for (const out of printed) expect(out.truncated).toBe(true);
+
+    /**
+     * The same cable pulled under the queue, which is where "never retries"
+     * is decided (case 1 in `queue.ts`'s header): the flags above are what
+     * the adapter says, and this is what the box then does with them. A real
+     * printer is a LAN device, so the queue opens the socket it is given for
+     * one — here, the cable that dies.
+     */
+    const cut = createPrinterSimulator({
+      deviceId: 'dev-lan',
+      label: 'Receipt Printer 1',
+      model: 'Welltech G4',
+      language: 'escpos',
+      widthDots: 576,
+    });
+    const kit = printing(
+      [device({ id: 'dev-lan', role: 'receipt', transport: 'lan', address: '192.168.88.202:9100' })],
+      { openReal: dyingChannel(cut) },
+    );
+    const outcome = await kit.controller.submit({ id: 'job-cut', kind: 'receipt', job: RECEIPT });
+    expect(outcome).toMatchObject({ status: 'failed', errorCode: 'PRINTER_WRITE_FAILED', attempts: 1 });
+    // Failed, not queued: nothing waits for a retry timer, a tick finds
+    // nothing to send, and the paper stays as it was at the cut — one
+    // attempt's worth, and never a second copy beside it.
+    expect(kit.controller.jobs.pending()).toHaveLength(0);
+    await cut.connect().close();
+    const onPaper = (): number =>
+      cut.printouts().length + cut.events().filter((e) => e.kind === 'job.dropped').length;
+    const afterCut = onPaper();
+    expect(afterCut).toBeGreaterThan(0);
+    expect(await kit.controller.jobs.tick()).toEqual([]);
+    expect(onPaper()).toBe(afterCut);
+    expect(kit.reported.map((r) => r.status)).toEqual(['failed']);
   });
 
-  it('prints to a printer that answers no status query, and says the status is unknown', async () => {
+  it('prints to a printer that answers no status query, says the status is unknown, and asks it once before the job and once after', async () => {
     const sim = createPrinterSimulator({
       deviceId: 'dev-silent',
       label: 'Silent XP-80',
@@ -386,12 +430,22 @@ describe('a printer is a socket that can be unplugged (S2-06)', () => {
      * §9.3 leaves open whether every firmware in this family answers
      * `DLE EOT` over the LAN board. A unit that does not must still print, or
      * a park with one silent printer has a till that cannot sell.
+     *
+     * What this channel hands back is what `tcpChannel` hands back once a
+     * query's deadline has passed with nothing on the wire: an empty reply.
+     * It comes at once rather than after the deadline — waiting would prove
+     * nothing more and cost the run two seconds — and the deadline it was
+     * given is recorded instead, because for a silent unit the deadlines ARE
+     * the cost: it used to be asked all four queries before the job and all
+     * four after it, a second each, 8 s a slip (closing audit 2026-09-25, H1).
      */
+    const asked: Array<{ query: number[]; deadlineMs: number }> = [];
     const silent = async (): Promise<PrinterChannel> => {
       const inner = sim.connect();
       return {
         write: (bytes) => inner.write(bytes),
-        async query(bytes) {
+        async query(bytes, _expect, deadlineMs) {
+          asked.push({ query: [...bytes], deadlineMs });
           await inner.write(bytes);
           return new Uint8Array(0);
         },
@@ -417,6 +471,15 @@ describe('a printer is a socket that can be unplugged (S2-06)', () => {
       reachability: 'reachable',
     });
     expect(sim.printouts()).toHaveLength(1);
+
+    // Asked twice in all — the first query before the job and the first
+    // after it — and not again once one went unanswered: a silent unit costs
+    // two status deadlines a slip, not eight.
+    expect(asked.map((a) => a.query)).toEqual([[...statusQuery(1)], [...statusQuery(1)]]);
+    expect(asked.map((a) => a.deadlineMs)).toEqual([
+      CHANNEL_TIMEOUTS.statusMs,
+      CHANNEL_TIMEOUTS.statusMs,
+    ]);
   });
 
   it('serialises two jobs racing one printer instead of interleaving them', async () => {

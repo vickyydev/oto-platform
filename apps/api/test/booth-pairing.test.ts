@@ -2,14 +2,8 @@ import { createHash } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { auditLog, deviceCredential, spin, station } from '@oto/db';
-import {
-  type Booth,
-  type BoothConfigBundle,
-  type BoothStatusReport,
-  type BoxAgent,
-  type BoxStaffSession,
-} from '@oto/box-agent';
-import { BOOTH_DEVICE_HEADER, newId, type SpinResponse } from '@oto/shared';
+import type { BoxAgent } from '@oto/box-agent';
+import { BOOTH_DEVICE_HEADER, newId } from '@oto/shared';
 import {
   ADMIN,
   RECEPTION,
@@ -19,7 +13,7 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
-import { attachInProcessBox, detachInProcessBox } from '../src/services/box';
+import { SPIN, attachStubBox, detachStubBoxes, newCalls, stubBooth, type BoothCalls } from './stub-booth';
 
 /**
  * SCRUM-244 — the booth television is a PAIRED screen.
@@ -91,82 +85,29 @@ afterAll(async () => {
   await teardownAll();
 });
 
-const attached: BoxAgent[] = [];
-afterEach(() => {
-  while (attached.length > 0) detachInProcessBox(attached.pop()!);
-});
+afterEach(() => detachStubBoxes());
 
 // --- A booth on a box in this process ---------------------------------------
 
-const SPIN: SpinResponse = {
-  spinId: '0199a0f0-0000-7000-8000-00000000f001',
-  prizeIndex: 2,
-  prizeId: '0199a0f0-0000-7000-8000-00000000e002',
-  configVersion: 1,
-  voucherCode: 'B1H7K2M9PQ',
-  expiresAt: '2026-10-05T00:00:00.000Z',
-  printState: 'printed',
-  staffAccountId: null,
-  clockSuspect: false,
-};
-
-const BUNDLE = {
-  schemaVersion: 1,
-  settings: { eligibility: 'none', buttonKey: 'Space', dailySpinCap: null },
-  layout: { id: 'l1', name: 'Classic wheel', version: 1, design: {}, assetManifest: {} },
-  prizes: [],
-} as unknown as BoothConfigBundle;
-
-const STATUS: BoothStatusReport = {
-  online: true,
-  neverSynced: false,
-  configVersion: 1,
-  printerReachable: 'reachable',
-  paperStatus: 'ok',
-  vouchersPending: 0,
-  lastSpinAt: null,
-  staffSignedIn: false,
-  dailyCapsReached: [],
-};
-
 /**
- * The draws this stub was asked for.
+ * The draws this stub was asked for, read off what it recorded.
  *
  * It is the sharpest assertion in the file. "No spin row was written" is true
  * of a refusal and also true of a box that was never asked, and only one of
  * those is the guarantee: the box is what records a spin and puts paper in
  * somebody's hand, so what has to be shown is that **the refusal happened
  * before the box heard about it.**
+ *
+ * The stub is `./stub-booth`, the same one `booth-api.test.ts` drives: a
+ * `Booth` written out in full against the box's interface, answering every
+ * press with `SPIN` and everything else as a booth with nobody signed in does.
  */
-let drawsAsked: number;
+let calls: BoothCalls;
+const drawsAsked = (): number => calls.spin.length;
 
 function attachStubBooth(): BoxAgent {
-  drawsAsked = 0;
-  const booth: Booth = {
-    start: async () => {},
-    stop: () => {},
-    config: () => ({ version: 1, bundle: BUNDLE }),
-    refresh: async () => false,
-    spin: async () => {
-      drawsAsked += 1;
-      return SPIN;
-    },
-    signIn: async () => ({ ok: true }),
-    signOut: async () => {},
-    staffSession: async (): Promise<BoxStaffSession | null> => null,
-    status: async ({ online }) => ({ ...STATUS, online }),
-    heartbeat: async () => null,
-    ownsPrintJob: () => false,
-    reportPrint: async () => {},
-    noteCloudTime: async () => {},
-  };
-  const agent = {
-    state: { boxId: boothBoxId, offline: false },
-    booth: () => booth,
-  } as unknown as BoxAgent;
-  attachInProcessBox(agent);
-  attached.push(agent);
-  return agent;
+  calls = newCalls();
+  return attachStubBox(boothBoxId, stubBooth(calls));
 }
 
 // --- Pairing, as the Console and the booth do it ----------------------------
@@ -221,7 +162,7 @@ describe('an unpaired screen cannot press the button (SCRUM-244)', () => {
     // The box was never asked to draw. This is the assertion the ticket is
     // about: before it, this same request returned a prize index, a voucher
     // code and an expiry to whoever sent it.
-    expect(drawsAsked).toBe(0);
+    expect(drawsAsked()).toBe(0);
     expect(await spinRows()).toBe(before);
     // And nothing a television could animate to came back either.
     expect(res.body).not.toContain('prizeIndex');
@@ -247,7 +188,7 @@ describe('an unpaired screen cannot press the button (SCRUM-244)', () => {
       expect(res.statusCode, `${method} ${url}`).toBe(401);
       expect(res.json().error.code, `${method} ${url}`).toBe('BOOTH_UNPAIRED');
     }
-    expect(drawsAsked).toBe(0);
+    expect(drawsAsked()).toBe(0);
   });
 
   it('a made-up credential is refused, and so is a well-formed one nobody minted', async () => {
@@ -257,7 +198,7 @@ describe('an unpaired screen cannot press the button (SCRUM-244)', () => {
       expect(res.statusCode, secret.slice(0, 8)).toBe(401);
       expect(res.json().error.code).toBe('BOOTH_UNPAIRED');
     }
-    expect(drawsAsked).toBe(0);
+    expect(drawsAsked()).toBe(0);
   });
 
   it('the refusal names no booth, no box and no station (D15)', async () => {
@@ -277,7 +218,7 @@ describe('a paired screen presses the button (SCRUM-244)', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual(SPIN);
-    expect(drawsAsked).toBe(1);
+    expect(drawsAsked()).toBe(1);
   });
 
   it('the credential is the screen’s own, and is never handed back a second time', async () => {
@@ -384,14 +325,25 @@ describe('a code that should not work (SCRUM-244)', () => {
     expect(rows.length).toBe(1);
   });
 
-  it('a malformed code never reaches a lookup, and is refused the same way', async () => {
-    for (const code of ['', '12', 'abcdef', '1234567']) {
+  it('a malformed code is refused like a wrong one — the same 401 BOOTH_UNPAIRED with no hint of the shape — and only an empty one is the schema’s 400', async () => {
+    // A code that is not six digits fails the shape check inside the service,
+    // and what comes back is the refusal a wrong code gets: no details, and
+    // nothing in it about what a real code looks like. Whether that check ran
+    // before or instead of a lookup is not observable from here, and is not
+    // claimed.
+    for (const code of ['12', 'abcdef', '1234567']) {
       const res = await pair(code);
-      // A one-character code fails the body schema, everything else fails the
-      // shape check inside the service. Both are refusals and neither is a
-      // hint about what a real code looks like.
-      expect([400, 401], code).toContain(res.statusCode);
+      expect(res.statusCode, code).toBe(401);
+      expect(res.json().error.code, code).toBe('BOOTH_UNPAIRED');
+      expect(res.json().error, code).not.toHaveProperty('details');
+      expect(res.body, code).not.toMatch(/digit|six|\b6\b/i);
     }
+    // An empty code never reaches the service: the body schema refuses it,
+    // which is the platform's 400 — `min(1)` says only that something has to
+    // be typed, which is no hint either.
+    const empty = await pair('');
+    expect(empty.statusCode).toBe(400);
+    expect(empty.json().error.code).toBe('VALIDATION');
   });
 
   it('minting again replaces the booth’s outstanding code rather than adding one', async () => {
@@ -446,7 +398,7 @@ describe('unpairing a screen (SCRUM-244)', () => {
     expect(after.statusCode).toBe(401);
     expect(after.json().error.code).toBe('BOOTH_UNPAIRED');
     // One draw for the press before the revoke, and none after it.
-    expect(drawsAsked).toBe(1);
+    expect(drawsAsked()).toBe(1);
   });
 });
 
@@ -461,7 +413,7 @@ describe('a screen belongs to one booth (SCRUM-244)', () => {
 
     expect(res.statusCode).toBe(401);
     expect(res.json().error.code).toBe('BOOTH_UNPAIRED');
-    expect(drawsAsked).toBe(0);
+    expect(drawsAsked()).toBe(0);
     // The refusal does not say which booth it IS paired to, or which one is
     // here: a caller holding a lifted credential learns nothing from it.
     expect(res.body).not.toContain(otherBoothId);

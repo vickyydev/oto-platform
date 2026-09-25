@@ -274,7 +274,7 @@ describe('a booth reaches the Health page (S2-07a)', () => {
     expect(raised!.summary).toContain('nobody signed in');
   });
 
-  it('counts vouchers, not presses: sixty unattributed ones are one row', async () => {
+  it('counts vouchers, not presses: three more unattributed ones move the count on the one row', async () => {
     // Hand over anything an earlier case left queued, so what is counted below
     // is this case's three presses and not a carry-over.
     await agent.outbox()!.flush();
