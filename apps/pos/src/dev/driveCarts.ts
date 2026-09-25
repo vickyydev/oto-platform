@@ -34,9 +34,11 @@
  *   cd apps/pos && node_modules/.bin/tsx src/dev/driveCarts.ts
  *   # OTO_API=http://127.0.0.1:3021 to point it elsewhere
  *
- * IT IS NOT IN CI, for the same reason `driveSaleLedger.ts` is not: `apps/pos`
- * has no test runner. It is what can be run in one command by anyone who
- * touches the path between an F&B order and a row in the ledger.
+ * IT IS NOT IN CI, for the same reason `driveSaleLedger.ts` is not: it needs a
+ * running api on a seeded database, which the till's unit runner (vitest,
+ * `apps/pos/test`, SCRUM-408) does not start. It is what can be run in one
+ * command by anyone who touches the path between an F&B order and a row in
+ * the ledger.
  */
 
 // --- The browser's fetch, as node can run it --------------------------------

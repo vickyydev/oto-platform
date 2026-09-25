@@ -31,9 +31,11 @@
  *   cd apps/pos && node_modules/.bin/tsx src/dev/driveSaleLedger.ts
  *   # OTO_API=http://127.0.0.1:3021 to point it elsewhere
  *
- * IT IS NOT IN CI. `apps/pos` has no test runner — giving it one is its own
- * ticket — so this is what can be run in one command by anyone who touches the
- * path between Pay and a row in the ledger.
+ * IT IS NOT IN CI. `apps/pos` has a unit runner now (vitest, `apps/pos/test`,
+ * SCRUM-408), and `test/sale-writer.test.ts` pins the writer's rules with the
+ * platform's answers given by the test; this drive needs a running api on a
+ * seeded database, so it stays what can be run in one command by anyone who
+ * touches the path between Pay and a row in the ledger.
  */
 
 // --- The browser's fetch, as node can run it --------------------------------

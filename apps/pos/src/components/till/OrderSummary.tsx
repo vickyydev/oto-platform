@@ -217,6 +217,19 @@ function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: numb
 export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal, voucherLine, voucher }: OrderSummaryProps) {
   const [promoInput, setPromoInput] = useState('');
 
+  /**
+   * SCRUM-442 — hand the typed code to the till and empty the box, whether the
+   * till takes the code or refuses it, as the F&B station's box does
+   * (`components/fnb/PromoCodeEntry`): an applied code has its badge above and
+   * a refusal has its line beneath, so the box has nothing left to say.
+   */
+  const applyPromoInput = () => {
+    const code = promoInput.trim();
+    if (!code || !onApplyPromoCode) return;
+    onApplyPromoCode(code);
+    setPromoInput('');
+  };
+
   const { subtotal, scannedDiscounts, manualAmounts, total, taxBreakdown } =
     totals ?? computeTotals(lines, discounts, manualDiscounts);
   const taxRows = summarizeTax(taxBreakdown);
@@ -628,9 +641,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                 value={promoInput}
                 onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && promoInput.trim()) {
-                    onApplyPromoCode(promoInput.trim());
-                  }
+                  if (e.key === 'Enter') applyPromoInput();
                 }}
                 placeholder="Promo code…"
                 className="flex-1 h-9 rounded-xl border border-foreground/10 bg-black/20 px-3 text-sm font-mono uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
@@ -641,11 +652,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
                 variant="outline"
                 className="h-9 px-3 shrink-0"
                 disabled={!promoInput.trim() || lines.length === 0}
-                onClick={() => {
-                  if (promoInput.trim()) {
-                    onApplyPromoCode(promoInput.trim());
-                  }
-                }}
+                onClick={applyPromoInput}
               >
                 Apply
               </Button>

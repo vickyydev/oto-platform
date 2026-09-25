@@ -38,9 +38,11 @@
  *   cd apps/pos && node_modules/.bin/tsx src/dev/driveTierClaim.ts
  *   # OTO_API=http://127.0.0.1:3047 to point it elsewhere
  *
- * IT IS NOT IN CI. `apps/pos` has no test runner — giving it one is its own
- * ticket — so this is what can be run in one command by anyone who touches the
- * path between a checked passport and the price a visitor pays.
+ * IT IS NOT IN CI. `apps/pos` has a unit runner now (vitest, `apps/pos/test`,
+ * SCRUM-408), but it runs in node with the platform's answers given by the
+ * tests; this drive needs a running api on a seeded database, so it stays what
+ * can be run in one command by anyone who touches the path between a checked
+ * passport and the price a visitor pays.
  */
 
 // --- The browser's fetch, as node can run it --------------------------------

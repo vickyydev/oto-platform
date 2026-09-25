@@ -1270,10 +1270,13 @@ export interface CartQuote {
 }
 
 /**
- * A SELF-CHECK, BECAUSE `apps/pos` HAS NO TEST RUNNER.
+ * A SELF-CHECK ON EVERY QUOTE, IN DEVELOPMENT.
  *
- * The engine is tested to 1,694 lines; the translation from this cart to it
- * (`lib/cartWire.ts`) is checked by the compiler and by somebody driving the
+ * The engine is tested to 1,694 lines. The till has a unit runner of its own
+ * now (vitest, `apps/pos/test`, SCRUM-408), but nothing in it drives the
+ * translation from this cart to the engine (`lib/cartWire.ts`): the cart-quote
+ * tests replace `quoteCart`, where that translation happens, with answers of
+ * their own. So it is checked by the compiler and by somebody driving the
  * till. A wrong conversion there — a price left in baht, an adult rule's nested
  * price missed — would not fail to compile and would not look wrong on screen.
  * It would simply charge the visitor a hundredth or a hundred times the money.
