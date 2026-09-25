@@ -1799,6 +1799,17 @@ export interface SaleView {
   receiptSeq: number | null;
   finalisedAt: string | null;
   note: string | null;
+  /**
+   * THE VOID, AS THE LEDGER RECORDED IT — SCRUM-430: when, by which account,
+   * and the reason every void carries (`voidSale` requires one). Null on a
+   * sale that was never voided. Before this only the void's own answer
+   * (`VoidSaleResult.void`) carried them, so a sale voided at the till — the
+   * payment screen's Cancel, a voucher refusal's offer — read back as
+   * "voided" with no reason beside it on the History page.
+   */
+  voidedAt: string | null;
+  voidedByAccountId: string | null;
+  voidReason: string | null;
   totals: {
     subtotalSatang: number;
     manualDiscountSatang: number;
@@ -1835,6 +1846,9 @@ function viewOf(row: typeof sale.$inferSelect): SaleView {
     receiptSeq: row.receiptSeq,
     finalisedAt: row.finalisedAt?.toISOString() ?? null,
     note: row.note,
+    voidedAt: row.voidedAt?.toISOString() ?? null,
+    voidedByAccountId: row.voidedByAccountId,
+    voidReason: row.voidReason,
     totals: {
       subtotalSatang: row.subtotalSatang,
       manualDiscountSatang: row.manualDiscountSatang,

@@ -1122,6 +1122,75 @@ describe('reading a sale back', () => {
     expect(row.member).toBeNull();
   });
 
+  /**
+   * SCRUM-430 — a voided sale says WHY when it is READ, not only in the void's
+   * own answer. History shows "Voided … — <reason>" off the read, and a sale
+   * voided at the till — the payment screen's Cancel, a voucher refusal's
+   * offer — has no void answer on the History page to take the reason from,
+   * so before this it showed "Voided" and nothing else.
+   */
+  it('carries the void — when, by whom and why — on the detail and on the list', async () => {
+    const saleId = newId();
+    const committed = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] });
+    expect(committed.statusCode, committed.body).toBe(200);
+    const voided = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/void`,
+      headers: { cookie },
+      payload: { reason: 'Guest walked away before paying' },
+    });
+    expect(voided.statusCode, voided.body).toBe(200);
+    // By the account that is signed in, not whatever the void's answer echoed.
+    const [reception] = await ctx.db
+      .select({ id: account.id })
+      .from(account)
+      .where(
+        and(eq(account.operatorId, operatorId), eq(account.phone, normalizePhone(RECEPTION.phone)!)),
+      );
+    const recorded = {
+      status: 'voided',
+      voidedAt: voided.json().void.voidedAt as string,
+      voidedByAccountId: reception!.id,
+      voidReason: 'Guest walked away before paying',
+    };
+    expect(Date.parse(recorded.voidedAt)).not.toBeNaN();
+
+    const detail = await ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie } });
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json().sale).toMatchObject(recorded);
+
+    // The History drawer opens a sale out of the LIST row, so the list says it too.
+    const list = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales?businessDate=${today()}&status=voided&limit=200`,
+      headers: { cookie },
+    });
+    expect(list.statusCode).toBe(200);
+    const row = (list.json().sales as { id: string }[]).find((s) => s.id === saleId);
+    expect(row).toMatchObject(recorded);
+  });
+
+  it('answers null for all three on a sale that was never voided', async () => {
+    const saleId = newId();
+    const committed = await commit({ id: saleId, lines: [line(twoHoursId, 1, 0)] });
+    expect(committed.statusCode, committed.body).toBe(200);
+    // Present and null — not missing: `toMatchObject` fails on an absent key.
+    const never = { voidedAt: null, voidedByAccountId: null, voidReason: null };
+
+    const detail = await ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie } });
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json().sale).toMatchObject(never);
+
+    const list = await ctx.app.inject({
+      method: 'GET',
+      url: `/sales?businessDate=${today()}&limit=200`,
+      headers: { cookie },
+    });
+    expect(list.statusCode).toBe(200);
+    const row = (list.json().sales as { id: string }[]).find((s) => s.id === saleId);
+    expect(row).toMatchObject(never);
+  });
+
   it('answers with nothing for a sale belonging to another operator', async () => {
     const res = await ctx.app.inject({
       method: 'GET',
