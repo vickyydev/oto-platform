@@ -81,10 +81,20 @@ function refuse(status: number, code: string, message: string): BoothHttpRespons
  * mean the box cannot keep a record are 503: they are real faults, they are
  * temporary in principle, and they should show up as such.
  *
+ * A booth station without a two-character code prefix is `booth_not_ready`
+ * too, and so a 409 (closing audit H2): the box refuses it before the draw,
+ * by name, where it used to fail inside the code minting and come back as a
+ * 500 `internal` that said nothing about why.
+ *
  * `daily_spin_cap_reached` joins the first group for the same reason and one
  * more: a booth that has run the day a manager configured for it is the system
  * working, so it must not be the thing that lights up an error rate. It is a
  * state the request conflicts with, and tomorrow the same request succeeds.
+ *
+ * `duplicate_press` is a 409 the page meets only when the box holds no record
+ * of the press at all — after a restart, typically. A retry that reaches the
+ * box while the press is still being answered joins it and gets its answer
+ * (closing audit H1), so a slow printer no longer turns a retry into this.
  */
 function statusFor(code: BoothRefusalCode): number {
   switch (code) {
@@ -147,9 +157,11 @@ export function createBoothHttp(options: BoothHttpOptions): (
          * whole point of that field is catching a page and a box that have
          * drifted onto different wheels.
          *
-         * Nulls are not an error: a booth nobody has published to shows
-         * "Booth not set up, connect to internet", which is a screen rather
-         * than a failure.
+         * Nulls are not an error: a booth nobody has published to shows its
+         * no-wheel screen — "This booth is being set up — please ask our
+         * staff" while the box is online, "Booth not set up, connect to
+         * internet" while it is not (`noWheelScreen` in apps/booth/src/copy.ts)
+         * — which is a screen rather than a failure.
          */
         return { status: 200, body: { version: held?.version ?? null, bundle: held?.bundle ?? null } };
       }
@@ -167,13 +179,15 @@ export function createBoothHttp(options: BoothHttpOptions): (
          * A press with no idempotency key gets one minted here, and is
          * therefore not protected by it.
          *
-         * D7 says every press carries a client-minted key, and the page in
-         * this repository does not send one yet — its `SpinRequest` is
-         * `{ simulate? }`. Refusing those presses would mean a booth that
-         * cannot be played by the page built for it, which is the wrong
-         * failure by a distance; drawing without one is a press whose retry
-         * would be a second spin, which is a real gap and is logged as one
-         * rather than being papered over. The fix belongs on the page.
+         * D7 says every press carries a client-minted key, and the page's
+         * red button sends one, minted when the button goes down and sent
+         * again with its retry. What still arrives without one is the
+         * `#debug` table's simulated press, which records nothing and so has
+         * nothing to protect, and a page from before the key. Refusing those
+         * presses would mean a booth that cannot be played by an older page,
+         * which is the wrong failure by a distance; drawing without one is a
+         * press whose retry would be a second spin, which is a real gap and
+         * is logged as one rather than being papered over.
          */
         const supplied =
           readString(body.idempotencyKey) ?? readString(headers[BOOTH_IDEMPOTENCY_HEADER]);

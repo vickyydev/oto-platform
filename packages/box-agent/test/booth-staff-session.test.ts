@@ -116,6 +116,11 @@ interface Harness {
   submitted: Array<{ id: string; job: RenderPrintJob }>;
   setNow(iso: string): void;
   setStation(id: string | null): void;
+  /**
+   * Hold every print handed to the port from now on until the returned
+   * function is called: a printer that has the job and has not answered.
+   */
+  holdPrints(): () => void;
   verdicts: BoothAccountVerdict[];
   asked: Array<{ stationId: string; phone: string }>;
   close(): void;
@@ -127,6 +132,8 @@ function open(options: {
   verify?: 'none' | 'queue';
   station?: string | null;
   print?: boolean;
+  /** How long a press or a reprint waits on the printer. The booth's default unless set. */
+  printWaitMs?: number;
 } = {}): Harness {
   const db = new DatabaseSync(options.file ?? ':memory:');
   prepareSqliteBoxStore(db);
@@ -136,9 +143,11 @@ function open(options: {
   const submitted: Harness['submitted'] = [];
   const verdicts: BoothAccountVerdict[] = [];
   const asked: Harness['asked'] = [];
+  let held: Promise<void> | null = null;
   const port: BoothPrintPort = {
     async submit(request) {
       submitted.push({ id: request.id, job: request.job });
+      if (held) await held;
       return { id: request.id, status: 'printed', attempts: 1, deviceId: null, errorCode: null, errorMessage: null };
     },
   };
@@ -174,6 +183,7 @@ function open(options: {
     // one will not do). The draw itself does not care — one prize carries all
     // the weight.
     randomIndex: seededIndex(nextSeed++),
+    ...(options.printWaitMs === undefined ? {} : { printWaitMs: options.printWaitMs }),
     now: () => now,
   });
   return {
@@ -188,8 +198,26 @@ function open(options: {
     setStation(id) {
       station = id;
     },
+    holdPrints() {
+      let release: () => void = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      held = gate;
+      return () => {
+        if (held === gate) held = null;
+        release();
+      };
+    },
     close: () => db.close(),
   };
+}
+
+/** Give everything already under way five turns of the event loop to run. */
+async function settle(): Promise<void> {
+  for (let turn = 0; turn < 5; turn += 1) {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
 }
 
 async function publish(h: Harness, entries: BoothCacheEntry[], appliedAt = AT): Promise<void> {
@@ -306,6 +334,34 @@ test('a wrong password counts against the booth like a wrong PIN, and the sixth 
   const pin = await h.booth.signIn({ pin: '7391' });
   assert.equal(pin.ok, false);
   assert.ok((pin.retryAfterMs ?? 0) > 0);
+  h.close();
+});
+
+test('overlapping wrong passwords are taken one at a time, and those the lock refuses never reach the cloud', async () => {
+  /**
+   * Closing audit M11, for the account path: a wrong password is counted on
+   * the same throttle as a wrong PIN, so an account sign-in waits its turn
+   * too. Fired together, the attempts used to read the same count, all went
+   * to the cloud, and none of them locked the booth.
+   */
+  const h = open();
+  await publish(h, [entry()]);
+  for (let i = 0; i < 8; i += 1) h.verdicts.push({ ok: false, reason: 'wrong' });
+  const account = { phone: '0812345678', password: 'nope' };
+
+  const results = await Promise.all(Array.from({ length: 8 }, () => h.booth.signIn({ account })));
+  for (let i = 0; i < 5; i += 1)
+    assert.deepEqual(results[i], { ok: false }, `attempt ${i + 1} is free`);
+  assert.equal(results[5]?.retryAfterMs, 30_000, 'the sixth starts the wait');
+  for (const late of results.slice(6)) {
+    assert.equal(late.ok, false);
+    assert.ok((late.retryAfterMs ?? 0) > 0, 'refused by the lock');
+  }
+  assert.equal(h.asked.length, 6, 'the two refused by the lock were never forwarded');
+  assert.equal(
+    (await h.store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, STATION_A))?.failures,
+    6,
+  );
   h.close();
 });
 
@@ -454,7 +510,9 @@ test('a reprint is staff-only, prints the same code, and never draws a second pr
     { 'press-1': 1 },
   );
 
-  // The copy is recorded as a reprint of that voucher, by the person who asked.
+  // The copy is recorded as a reprint of that voucher, with the account that
+  // was signed in when it was asked for — the session's, which is all the box
+  // can know about who pressed the button.
   await h.booth.reportPrint({
     id: h.submitted[1]!.id,
     status: 'printed',
@@ -518,6 +576,41 @@ test('with no printer a reprint is still recorded, as a skipped print', async ()
   const print = batch.events.find((e) => e.type === 'booth.voucher_printed');
   assert.equal(print?.payload.status, 'skipped');
   assert.equal(print?.payload.reason, 'reprint');
+  h.close();
+});
+
+test('a reprint answers "queued" in time when the printer is slow, and asking again joins the copy on its way', async () => {
+  /**
+   * Closing audit H1, for the reprint. The panel gives up on a call after six
+   * seconds; a reprint used to wait for the printer however long it took, so
+   * a slow one made the panel say "The reprint did not go through" while the
+   * copy came out, and asking again while it was still printing put a second
+   * copy of the same live code on paper.
+   */
+  const h = open({ printWaitMs: 40 });
+  await publish(h, [entry()]);
+  const won = await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.signIn({ pin: '7391' });
+  const release = h.holdPrints();
+
+  const first = await h.booth.reprint({});
+  assert.deepEqual(
+    first,
+    { spinId: won.spinId, printState: 'queued' },
+    'answered before the printer did',
+  );
+  assert.equal(h.submitted.length, 2, 'the copy is with the printer');
+
+  const again = await h.booth.reprint({});
+  assert.deepEqual(again, first, 'the same copy');
+  assert.equal(h.submitted.length, 2, 'and not a second one');
+
+  // The printer finishes the copy. Asking after that is a new copy, as always.
+  release();
+  await settle();
+  const later = await h.booth.reprint({});
+  assert.deepEqual(later, { spinId: won.spinId, printState: 'printed' });
+  assert.equal(h.submitted.length, 3);
   h.close();
 });
 

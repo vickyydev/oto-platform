@@ -4,6 +4,7 @@ import { test } from 'node:test';
 
 import {
   BOOTH_PRESS_COUNTER_SCOPE,
+  BOOTH_PRINT_WAIT_MS,
   BOOTH_PRIZE_COUNTER_SCOPE,
   BOOTH_SPIN_COUNTER_SCOPE,
   BOOTH_STAFF_THROTTLE_SCOPE,
@@ -22,6 +23,7 @@ import { canonicalSyncBytes } from '../src/contract';
 import { SqlBoxStore } from '../src/store-sql';
 import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
 import type { BoxStore, CounterKey, PrintJobRecord } from '../src/store';
+import type { AgentLog } from '../src/transport';
 import type { BoothVoucherData, PrintJob as RenderPrintJob } from '@oto/print';
 import { BOOTH_CODE_ALPHABET } from '@oto/shared';
 import { BOX_ID, BRANCH_ID, OPERATOR_ID, seededIndex } from './_support';
@@ -103,6 +105,13 @@ interface Harness {
   /** What the port answers. Changed per test to model a printer that is out. */
   printOutcome: BoothPrintSubmitOutcome['status'];
   setNow(iso: string): void;
+  /** What the booth station's code prefix reads from now on. */
+  setCodePrefix(prefix: string | null): void;
+  /**
+   * Hold every print handed to the port from now on until the returned
+   * function is called: a printer that has the job and has not answered.
+   */
+  holdPrints(): () => void;
   close(): void;
 }
 
@@ -120,6 +129,15 @@ interface HarnessOptions {
   store?: BoxStore;
   file?: string;
   privateKey?: string | null;
+  /** The booth station's code prefix. `B1` unless a test says otherwise. */
+  codePrefix?: string | null;
+  /** The branch's time zone. Bangkok unless a test says otherwise. */
+  timezone?: string;
+  /** How long a press waits on the printer. The booth's own default unless set. */
+  printWaitMs?: number;
+  /** Replaces the stand-in argon2 check, to count or slow the verifications. */
+  verifySecret?: (hash: string, secret: string) => Promise<boolean>;
+  log?: AgentLog;
 }
 
 /** Each booth opened here mints from its own seed, so a restarted one repeats no code. */
@@ -136,10 +154,13 @@ function openBooth(options: HarnessOptions = {}): Harness {
   const rolls = options.rolls ? [...options.rolls] : null;
   let rollIndex = 0;
   const codeIndex = seededIndex(codeSeed++);
+  let codePrefix = options.codePrefix === undefined ? 'B1' : options.codePrefix;
+  let held: Promise<void> | null = null;
 
   const port: BoothPrintPort = {
     async submit(request) {
       submissions.push({ id: request.id });
+      if (held) await held;
       return {
         id: request.id,
         status: harness.printOutcome ?? 'printed',
@@ -154,12 +175,12 @@ function openBooth(options: HarnessOptions = {}): Harness {
   const booth = createBooth({
     boxId: BOX_ID,
     store: store as BoxStore,
-    station: () => ({ id: STATION_ID, name: 'Booth 1', codePrefix: 'B1' }),
+    station: () => ({ id: STATION_ID, name: 'Booth 1', codePrefix }),
     branch: () => ({
       id: BRANCH_ID,
       operatorId: OPERATOR_ID,
       name: 'HKT Central',
-      timezone: 'Asia/Bangkok',
+      timezone: options.timezone ?? 'Asia/Bangkok',
       businessDayStart: '05:00',
     }),
     privateKey: () =>
@@ -171,7 +192,9 @@ function openBooth(options: HarnessOptions = {}): Harness {
     // prove nothing more about that while making every sign-in test pay for
     // argon2. The real verifier is `@node-rs/argon2`, injected by the runner
     // and by the api; `runner.test.ts` checks it against a real hash.
-    verifySecret: async (hash, secret) => hash === `argon2:${secret}`,
+    verifySecret: options.verifySecret ?? (async (hash, secret) => hash === `argon2:${secret}`),
+    ...(options.printWaitMs === undefined ? {} : { printWaitMs: options.printWaitMs }),
+    ...(options.log ? { log: options.log } : {}),
     randomIndex: (max) => {
       // The voucher code's characters come from a seeded source, whatever the
       // draw is scripted to do: `mintBoothCode` asks for them over the booth
@@ -199,8 +222,49 @@ function openBooth(options: HarnessOptions = {}): Harness {
     setNow(iso: string) {
       now = new Date(iso);
     },
+    setCodePrefix(prefix: string | null) {
+      codePrefix = prefix;
+    },
+    holdPrints() {
+      let release: () => void = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      held = gate;
+      return () => {
+        if (held === gate) held = null;
+        release();
+      };
+    },
     close: () => db.close(),
   }) as Harness;
+}
+
+/**
+ * Check `done` up to fifty times, letting everything already under way run in
+ * between; fail, naming `what`, if it never comes true.
+ */
+async function until(done: () => boolean, what: string): Promise<void> {
+  for (let turn = 0; turn < 50; turn += 1) {
+    if (done()) return;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+  assert.fail(`never happened: ${what}`);
+}
+
+/** Give everything already under way five turns of the event loop to run. */
+async function settle(): Promise<void> {
+  for (let turn = 0; turn < 5; turn += 1) {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+}
+
+/** A log that keeps every line it is given, detail first, as the box's log writes it. */
+function keptLog(lines: string[]): AgentLog {
+  const keep = (detail: Record<string, unknown>, msg: string): void => {
+    lines.push(`${JSON.stringify(detail)} ${msg}`);
+  };
+  return { info: keep, warn: keep, error: keep };
 }
 
 async function seed(h: Harness, entries: BoothCacheEntry[] = [entry()]): Promise<void> {
@@ -481,7 +545,9 @@ test('the slip prints the words and terms as published, not as edited since; an 
   assert.equal(other.prizeId, plain.id);
   assert.equal(
     other.expiresAt,
-    new Date(Date.parse(AT) + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    // Won 13:00 on 21 Sep in Bangkok; thirty days on is 21 Oct, and the
+    // voucher runs to the last millisecond of that date there (M6).
+    '2026-10-21T16:59:59.999Z',
     'no days on the prize: its type’s thirty, read from the cache when it was won',
   );
 
@@ -535,6 +601,132 @@ test('a simulated press changes nothing at all (D16)', async () => {
   h.close();
 });
 
+/**
+ * Closing audit H2 — a booth station saved without a two-character code
+ * prefix, which the Console's empty field used to allow.
+ *
+ * Every press used to fail inside the mint and come back a 500. It is now
+ * refused by name, with the code the page already shows for a booth staff
+ * must fix, before anything is drawn, read or written.
+ */
+test('a station with no usable code prefix refuses the press by name, before anything is written', async () => {
+  for (const codePrefix of [null, '', 'PI1', 'BOOTH', 'b', 'B-1']) {
+    const h = openBooth({ rolls: [0], codePrefix });
+    await seed(h);
+    const byName = (err: unknown): boolean =>
+      err instanceof BoothRefusal &&
+      err.code === 'booth_not_ready' &&
+      /code prefix/i.test(err.message);
+
+    await assert.rejects(
+      () => h.booth.spin({ idempotencyKey: 'press-1' }),
+      byName,
+      String(codePrefix),
+    );
+    // The `#debug` table asks what a press would do now; it would be refused.
+    await assert.rejects(() => h.booth.spin({ idempotencyKey: 'sim-1', simulate: true }), byName);
+
+    const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+    assert.equal(batch.events.length, 0, 'no spin, no voucher');
+    for (const scope of [
+      BOOTH_PRESS_COUNTER_SCOPE,
+      BOOTH_SPIN_COUNTER_SCOPE,
+      BOOTH_PRIZE_COUNTER_SCOPE,
+    ]) {
+      assert.deepEqual(await h.store.readCounters(BOX_ID, scope, BUSINESS_DATE), {}, scope);
+    }
+    assert.equal((await h.store.loadPendingPrintJobs(BOX_ID)).length, 0, 'nothing to print');
+    assert.equal(h.submissions.length, 0);
+
+    // Through the page's own surface: 409, never a 500, and a message a log
+    // can use that still names no booth and no branch (D15).
+    const handle = createBoothHttp({ booth: h.booth, online: () => true });
+    const refused = await handle({
+      method: 'POST',
+      path: '/spin',
+      body: { idempotencyKey: 'press-2' },
+    });
+    assert.equal(refused.status, 409);
+    const envelope = refused.body as { error: { code: string; message: string } };
+    assert.equal(envelope.error.code, 'booth_not_ready');
+    assert.match(envelope.error.message, /code prefix/i);
+    assert.doesNotMatch(envelope.error.message, new RegExp(STATION_ID));
+    assert.doesNotMatch(envelope.error.message, /HKT Central|Booth 1/);
+    h.close();
+  }
+});
+
+test('a prefix set on the station is taken at the next press, with no publish', async () => {
+  const h = openBooth({ rolls: [0], codePrefix: null });
+  await seed(h);
+  await assert.rejects(
+    () => h.booth.spin({ idempotencyKey: 'press-1' }),
+    (err: unknown) => err instanceof BoothRefusal && err.code === 'booth_not_ready',
+  );
+  // What the box's next config pull brings when somebody fixes the station.
+  h.setCodePrefix('B2');
+  const response = await h.booth.spin({ idempotencyKey: 'press-1' });
+  assert.match(response.voucherCode ?? '', /^B2/);
+  h.close();
+});
+
+/**
+ * Closing audit M6 — the owner's answer (Q1 A): a voucher runs to the END of
+ * the date printed on it, in the branch's time zone. It used to run out at
+ * the minute it was won, N × 24 hours on, so a slip was refused on the very
+ * day it names, later in the day than it was won.
+ */
+test('a voucher runs to the end of the date its slip prints, in the branch’s time zone', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h);
+  h.printOutcome = 'queued';
+
+  // The seeded prizes run fourteen days. Three wins on the 21st in Bangkok:
+  // the morning, just before midnight, and — a trading day earlier than its
+  // calendar date — half past midnight on the 22nd.
+  h.setNow('2026-09-21T02:00:00.000Z'); // 09:00 on the 21st in Bangkok
+  const morning = await h.booth.spin({ idempotencyKey: 'press-morning' });
+  h.setNow('2026-09-21T16:30:00.000Z'); // 23:30 on the 21st
+  const lateEvening = await h.booth.spin({ idempotencyKey: 'press-late' });
+  h.setNow('2026-09-21T17:30:00.000Z'); // 00:30 on the 22nd; the 21st's trading day
+  const afterMidnight = await h.booth.spin({ idempotencyKey: 'press-night' });
+
+  // 5 Oct 23:59:59.999 in Bangkok, whatever the time of day it was won.
+  assert.equal(morning.expiresAt, '2026-10-05T16:59:59.999Z');
+  assert.equal(lateEvening.expiresAt, morning.expiresAt, 'one printed date, one expiry');
+  // The calendar date of the win, as the slip prints it — not the trading day.
+  assert.equal(afterMidnight.expiresAt, '2026-10-06T16:59:59.999Z');
+
+  // And what the slip prints is that date.
+  const pending = await h.store.loadPendingPrintJobs(BOX_ID);
+  const printed = new Map(
+    pending.map((job) => [voucherData(job.job).voucherCode, voucherData(job.job)]),
+  );
+  assert.equal(printed.get(morning.voucherCode!)?.expiresAt, '05 Oct 2026');
+  assert.equal(printed.get(lateEvening.voucherCode!)?.expiresAt, '05 Oct 2026');
+  assert.equal(printed.get(afterMidnight.voucherCode!)?.expiresAt, '06 Oct 2026');
+  h.close();
+});
+
+test('the end of the date follows the branch’s own clock, across a daylight-saving change', async () => {
+  /**
+   * Bangkok keeps one offset all year, so it cannot show that the end of the
+   * date is found on the branch's clock rather than by adding hours. London
+   * leaves summer time on 25 October 2026: a voucher won on the 20th at noon,
+   * fourteen days, runs to the end of 3 November on GMT — one hour later, in
+   * UTC terms, than it would under summer time.
+   */
+  const h = openBooth({ rolls: [0], timezone: 'Europe/London' });
+  await seed(h);
+  h.printOutcome = 'queued';
+  h.setNow('2026-10-20T11:00:00.000Z'); // noon in London, summer time
+  const won = await h.booth.spin({ idempotencyKey: 'press-1' });
+  assert.equal(won.expiresAt, '2026-11-03T23:59:59.999Z');
+  const pending = await h.store.loadPendingPrintJobs(BOX_ID);
+  assert.equal(voucherData(pending[0]?.job).expiresAt, '03 Nov 2026');
+  h.close();
+});
+
 // --- D7: one press, one spin ------------------------------------------------
 
 test('a retry carrying the same key is one spin; a second press is two', async () => {
@@ -550,6 +742,94 @@ test('a retry carrying the same key is one spin; a second press is two', async (
   const batch = await h.store.takeBatch(BOX_ID, { now: AT });
   assert.equal(batch.events.length, 4, 'two presses, two facts each');
   assert.equal(h.submissions.length, 2);
+  h.close();
+});
+
+/**
+ * Closing audit H1 — the retry the page sends when a slow printer has kept the
+ * first attempt past its six seconds.
+ *
+ * The answer used to be remembered only once the slip had printed, so the
+ * retry found nothing in memory, met the durable guard and was refused
+ * `duplicate_press`: "Booth not ready" on the television while the slip came
+ * out. The press is now remembered from the moment it starts.
+ */
+test('a retry of a press still waiting on its slip joins that press: one answer, one spin, one slip', async () => {
+  // The wait is long here on purpose: this test is about the join, and the
+  // print answers only when the test lets it.
+  const h = openBooth({ rolls: [0], printWaitMs: 60_000 });
+  await seed(h);
+  const release = h.holdPrints();
+
+  const first = h.booth.spin({ idempotencyKey: 'press-1' });
+  await until(() => h.submissions.length === 1, 'the press reached the printer');
+  const retry = h.booth.spin({ idempotencyKey: 'press-1' });
+  release();
+
+  const [answered, retried] = await Promise.all([first, retry]);
+  assert.deepEqual(retried, answered, 'the same answer, not a refusal and not a second draw');
+  assert.equal(answered.printState, 'printed');
+  assert.equal(h.submissions.length, 1, 'one slip');
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  assert.equal(batch.events.length, 2, 'one spin and its voucher');
+  assert.deepEqual(
+    await h.store.readCounters(BOX_ID, BOOTH_PRESS_COUNTER_SCOPE, BUSINESS_DATE),
+    { 'press-1': 1 },
+    'the durable guard was never asked a second time',
+  );
+  h.close();
+});
+
+test('a retry that arrives while the press is still being written joins it too', async () => {
+  const h = openBooth({ rolls: [0] });
+  await seed(h);
+  // Both before either has been written: the retry must not reach the durable
+  // guard, which would refuse it, nor draw.
+  const [a, b] = await Promise.all([
+    h.booth.spin({ idempotencyKey: 'press-1' }),
+    h.booth.spin({ idempotencyKey: 'press-1' }),
+  ]);
+  assert.deepEqual(b, a);
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  assert.equal(batch.events.length, 2, 'one spin and its voucher');
+  assert.equal(h.submissions.length, 1);
+  h.close();
+});
+
+test('a press whose printer has not answered in time answers "queued", and the slip still prints', async () => {
+  /**
+   * The page gives up on a call after six seconds (`REQUEST_TIMEOUT_MS` in
+   * `apps/booth/src/booth/client.ts`). The booth's own wait must leave room
+   * inside that for the press's writes and the network — half of it at most.
+   */
+  assert.ok(
+    BOOTH_PRINT_WAIT_MS * 2 <= 6_000,
+    'the print wait is well inside the page’s six seconds',
+  );
+
+  const h = openBooth({ rolls: [0], printWaitMs: 40 });
+  await seed(h);
+  const release = h.holdPrints();
+
+  const started = performance.now();
+  const response = await h.booth.spin({ idempotencyKey: 'press-1' });
+  const took = performance.now() - started;
+  assert.equal(response.printState, 'queued', 'the television shows the code and its QR');
+  assert.notEqual(response.voucherCode, null);
+  assert.ok(took < 2_000, `answered after ${Math.round(took)} ms, not after the printer`);
+  assert.equal(h.submissions.length, 1, 'the slip is with the printer, still on its way');
+
+  // The page's retry, while the printer is still busy: the same press.
+  assert.deepEqual(await h.booth.spin({ idempotencyKey: 'press-1' }), response);
+
+  // The printer answers. Nothing else goes to it, and the job is still the
+  // booth's, so its outcome goes to the outbox and not to the cloud route.
+  release();
+  await settle();
+  assert.equal(h.submissions.length, 1);
+  assert.equal(h.booth.ownsPrintJob(h.submissions[0]!.id), true);
+  const batch = await h.store.takeBatch(BOX_ID, { now: AT });
+  assert.equal(batch.events.length, 2, 'still one spin and its voucher');
   h.close();
 });
 
@@ -951,6 +1231,140 @@ test('five wrong PINs are free; the sixth starts a wait that a restart does not 
   h.close();
 });
 
+/**
+ * Closing audit M11 — attempts that overlap.
+ *
+ * The throttle is read before the argon2 check and counted after it, and a
+ * real argon2 check takes a while. Attempts fired together all read the same
+ * count: sixty of them were all checked, a right PIN among them signed in,
+ * and the lock never came on. The stand-in check below waits a few
+ * milliseconds so that the attempts really do overlap.
+ */
+const slowCheck =
+  (counted: { checks: number }) =>
+  async (hash: string, secret: string): Promise<boolean> => {
+    counted.checks += 1;
+    await new Promise<void>((resolve) => setTimeout(resolve, 5));
+    return hash === `argon2:${secret}`;
+  };
+
+test('overlapping wrong PINs are taken one at a time, and the lock holds after the allowance', async () => {
+  const counted = { checks: 0 };
+  const h = openBooth({ staff: [staffRecord()], verifySecret: slowCheck(counted) });
+  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
+
+  const results = await Promise.all(
+    Array.from({ length: 12 }, () => h.booth.signIn({ pin: '0000' })),
+  );
+  for (let i = 0; i < 5; i += 1)
+    assert.deepEqual(results[i], { ok: false }, `attempt ${i + 1} is free`);
+  assert.equal(results[5]?.retryAfterMs, 30_000, 'the sixth starts the wait');
+  for (const late of results.slice(6)) {
+    assert.equal(late.ok, false);
+    assert.ok((late.retryAfterMs ?? 0) > 0, 'refused by the lock');
+  }
+  assert.equal(counted.checks, 6, 'the six within the allowance were checked; the rest never were');
+  const held = await h.store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, STATION_ID);
+  assert.equal(
+    held?.failures,
+    6,
+    'an attempt refused by the lock is not a guess and is not counted',
+  );
+  h.close();
+});
+
+test('a right PIN inside a burst, after the lock has come on, is refused', async () => {
+  const h = openBooth({ staff: [staffRecord()], verifySecret: slowCheck({ checks: 0 }) });
+  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
+  const burst = ['0000', '0000', '0000', '0000', '0000', '0000', '7391'];
+  const results = await Promise.all(burst.map((pin) => h.booth.signIn({ pin })));
+  const right = results[6];
+  assert.equal(
+    right?.ok,
+    false,
+    'the right PIN arrived after the sixth wrong one and waited behind it',
+  );
+  assert.ok((right?.retryAfterMs ?? 0) > 0);
+  assert.equal(await h.booth.staffSession(), null, 'nobody signed in');
+  h.close();
+});
+
+test('the lock follows the count the store returns, not the count read before the check', async () => {
+  /**
+   * Another writer counts a failure between this booth's read of the throttle
+   * and its own count — what a second process on the same store would do. The
+   * booth read four failures and expected its own to be the fifth, which is
+   * still free; the store comes back with six, which is not.
+   */
+  const base = openBooth({ staff: [staffRecord()] });
+  await seed(base, [entry({ allowedStaff: [ACCOUNT_ID] })]);
+  for (let i = 0; i < 4; i += 1) await base.booth.signIn({ pin: '0000' });
+
+  const racing = openBooth({ staff: [staffRecord()], store: countsAnotherFailureOnce(base.store) });
+  await racing.booth.refresh();
+  const fifth = await racing.booth.signIn({ pin: '0000' });
+  assert.equal(fifth.ok, false);
+  assert.equal(fifth.retryAfterMs, 30_000, 'six failures stored: the wait the sixth earns');
+
+  // And the next attempt, the right PIN, is refused by that lock.
+  const right = await racing.booth.signIn({ pin: '7391' });
+  assert.equal(right.ok, false);
+  assert.ok((right.retryAfterMs ?? 0) > 0);
+  assert.equal(await racing.booth.staffSession(), null);
+  racing.close();
+  base.close();
+});
+
+/**
+ * Closing audit M10 — two people holding the same digits. The booth used to
+ * sign in whichever of them the cloud's list happened to name first.
+ */
+test('a PIN two people hold signs nobody in, is not counted, and the log names neither', async () => {
+  const OTHER_ACCOUNT_ID = '018f1d2c-0000-7000-8000-00000000fb02';
+  const THIRD_ACCOUNT_ID = '018f1d2c-0000-7000-8000-00000000fb03';
+  const lines: string[] = [];
+  const counted = { checks: 0 };
+  const h = openBooth({
+    staff: [
+      staffRecord(),
+      staffRecord({ accountId: OTHER_ACCOUNT_ID, staffCode: 'S-015' }),
+      staffRecord({ accountId: THIRD_ACCOUNT_ID, staffCode: 'S-016', pinHash: 'argon2:2580' }),
+    ],
+    verifySecret: slowCheck(counted),
+    log: keptLog(lines),
+  });
+  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID, OTHER_ACCOUNT_ID, THIRD_ACCOUNT_ID] })]);
+
+  assert.deepEqual(await h.booth.signIn({ pin: '7391' }), { ok: false }, 'the ordinary refusal');
+  assert.equal(await h.booth.staffSession(), null);
+  assert.equal(
+    counted.checks,
+    3,
+    'every person on the booth was checked, not the first match only',
+  );
+  assert.equal(
+    await h.store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, STATION_ID),
+    null,
+    'a PIN two people hold is not a guess, and is not counted',
+  );
+  // So trying it again and again never locks the booth against everybody else.
+  for (let i = 0; i < 6; i += 1) {
+    assert.deepEqual(await h.booth.signIn({ pin: '7391' }), { ok: false });
+  }
+
+  const said = lines.join('\n');
+  assert.match(said, /more than one person/);
+  for (const secret of [ACCOUNT_ID, OTHER_ACCOUNT_ID, 'S-014', 'S-015', '7391']) {
+    assert.equal(said.includes(secret), false, 'the log names nobody and repeats no PIN');
+  }
+
+  // A PIN only one person holds still signs that person in.
+  const third = await h.booth.signIn({ pin: '2580' });
+  assert.equal(third.ok, true);
+  assert.equal(third.accountId, THIRD_ACCOUNT_ID);
+  h.close();
+});
+
 test('a sign-in problem never stops the wheel', async () => {
   const h = openBooth({ rolls: [0], staff: [staffRecord()] });
   await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
@@ -1330,6 +1744,39 @@ function staleCount(store: BoxStore): BoxStore {
       if (prop === 'readCounter') {
         return async (boxId: string, key: CounterKey): Promise<number> =>
           key.scope === BOOTH_SPIN_COUNTER_SCOPE ? 0 : target.readCounter(boxId, key);
+      }
+      const value = Reflect.get(target, prop, target) as unknown;
+      return typeof value === 'function'
+        ? (value as (...args: unknown[]) => unknown).bind(target)
+        : value;
+    },
+  });
+}
+
+/**
+ * A store on which somebody else counts one failure just before this booth
+ * counts its own, the first time it does.
+ *
+ * What it models is a second writer landing between a booth's read of the
+ * throttle and its write: the other failure is counted with no lock, as a
+ * writer following the free allowance would, and then the booth's own count
+ * runs as it was asked to. Everything else is the real store.
+ */
+function countsAnotherFailureOnce(store: BoxStore): BoxStore {
+  let done = false;
+  return new Proxy(store, {
+    get(target, prop) {
+      if (prop === 'recordThrottleFailure') {
+        return async (
+          ...args: Parameters<BoxStore['recordThrottleFailure']>
+        ): ReturnType<BoxStore['recordThrottleFailure']> => {
+          if (!done) {
+            done = true;
+            const [boxId, scope, subject, opts] = args;
+            await target.recordThrottleFailure(boxId, scope, subject, { now: opts?.now });
+          }
+          return target.recordThrottleFailure(...args);
+        };
       }
       const value = Reflect.get(target, prop, target) as unknown;
       return typeof value === 'function'

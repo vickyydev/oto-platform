@@ -40,10 +40,12 @@ import { randomInt } from 'node:crypto';
 import { z } from 'zod';
 
 import {
+  BOOTH_CODE_PREFIX_LENGTH,
   BoothConfigBundleSchema,
   addDaysToIsoDate,
   boothStaffLabel,
   boothStaffSessionMinutes,
+  isoDateInTz,
   mintBoothCode,
   businessDate as businessDateFor,
   parseDayStart,
@@ -59,7 +61,13 @@ import {
 import type { PrintJob as RenderPrintJob } from '@oto/print';
 
 import { cappedPrizeIds, drawPrize, judgePrizes, type RandomIndex } from './booth-draw';
-import type { BoxStaffSession, BoxStore, PrintJobRecord, QueuedFact } from './store';
+import type {
+  BoxStaffSession,
+  BoxStore,
+  PrintJobRecord,
+  QueuedFact,
+  ThrottleRecord,
+} from './store';
 import { BoxStoreFeatureMissingError } from './store';
 import { sealEnvelope, uuidv7 } from './signing';
 import { silentLog, type AgentLog } from './transport';
@@ -262,6 +270,11 @@ export interface BoothOptions {
    * generator; nothing passes `Math.random`.
    */
   randomIndex?: RandomIndex;
+  /**
+   * How long a press or a reprint waits on the printer before it answers
+   * `queued`. `BOOTH_PRINT_WAIT_MS` unless a test needs a shorter wait.
+   */
+  printWaitMs?: number;
   now?: () => Date;
   log?: AgentLog;
 }
@@ -326,33 +339,102 @@ export const BOOTH_STAFF_THROTTLE_SCOPE = 'booth_staff';
 /** How many press replies are kept in memory for a retry. See `spin`. */
 const REPLAY_LIMIT = 64;
 
+/**
+ * How long a press, or a reprint, waits for its slip before it answers
+ * (closing audit H1).
+ *
+ * The page gives up on a call after six seconds (`REQUEST_TIMEOUT_MS` in
+ * `apps/booth/src/booth/client.ts`) and retries a press once. A press used to
+ * wait for the printer however long it took, and a printer slow to answer —
+ * one that does not reply to the status questions the box asks before and
+ * after every job — made that wait longer than the page's: the television
+ * said "Booth not ready" while the slip came out. Three seconds is half the
+ * page's patience, which leaves the other half for the press's own writes and
+ * the network, and it is far longer than a press takes with a printer that
+ * answers (92 to 159 ms, measured in the closing audit). Past it the answer
+ * is `queued`, the television shows the code and its QR, and the print goes
+ * on as it would have — see `answerWithin`.
+ */
+export const BOOTH_PRINT_WAIT_MS = 3_000;
+
+/**
+ * Two letters or digits: the prefix `mintBoothCode` can print, after it has
+ * upper-cased what it was given — the same rule, checked here BEFORE the draw
+ * (closing audit H2) so that a station without one is refused by name rather
+ * than failing inside the mint.
+ */
+const PRINTABLE_CODE_PREFIX = new RegExp(`^[0-9A-Z]{${BOOTH_CODE_PREFIX_LENGTH}}$`);
+
+const HOUR_MS = 60 * 60_000;
+
+/**
+ * The last millisecond of a calendar date on a time zone's clock, as epoch
+ * milliseconds — what a voucher's expiry is (closing audit M6; see
+ * `resolveExpiry`).
+ *
+ * Found by halving rather than by adding an offset, because an offset is the
+ * thing that changes on the days that would make one wrong: a zone that moves
+ * its clocks has a day of 23 or 25 hours. The window is one every zone's end
+ * of the date falls in — UTC offsets in use run from −12 to +14 hours, so the
+ * start of the next date lies between 14 hours before and 12 hours after its
+ * midnight in UTC — and each step asks one question of an instant: is it past
+ * `isoDate` on this zone's calendar? At the window's start the answer is no
+ * and at its end yes, and the halving keeps that true, so it ends on an
+ * instant not past `isoDate` whose next millisecond is: a midnight ending the
+ * date. (On a clock that goes back an hour across midnight the date ends
+ * twice, and this finds one of the two.) About 27 halvings of the 28-hour
+ * window; each is one formatting call on a cached formatter.
+ */
+function lastMomentOfDate(isoDate: string, timeZone: string): number {
+  const nextMidnightUtc = Date.parse(`${addDaysToIsoDate(isoDate, 1)}T00:00:00.000Z`);
+  let onTheDate = nextMidnightUtc - 15 * HOUR_MS;
+  let pastIt = nextMidnightUtc + 13 * HOUR_MS;
+  while (pastIt - onTheDate > 1) {
+    const middle = Math.floor((onTheDate + pastIt) / 2);
+    if (isoDateInTz(new Date(middle), timeZone) > isoDate) pastIt = middle;
+    else onTheDate = middle;
+  }
+  return onTheDate;
+}
+
 // --- Refusals ---------------------------------------------------------------
 
 /**
  * Why a press was refused.
  *
  * These are CODES, and the television maps each to its own copy — no message
- * written here reaches a screen in a shopping centre (D15). `booth_not_ready`
- * and `not_configured` are the two the page already knows; the rest collapse
- * to its fixed line and are distinguishable only in `#debug` and in the box
- * log, which is where the difference belongs.
+ * written here reaches a screen in a shopping centre (D15). The page knows six
+ * of them (`BOOTH_ERROR_CODES` in apps/booth/src/booth/contract.ts):
+ * `not_configured`, `daily_spin_cap_reached` and `duplicate_press` have lines
+ * of their own under the wheel, `staff_required` and `nothing_to_reprint` on
+ * the staff panel's Reprint, and `booth_not_ready` is said with the page's
+ * fixed line, "Booth not ready — please call staff". `runtime_unavailable`
+ * and `cannot_record` are not on its list and end on that same fixed line:
+ * `#debug` shows only their status, and the box log says which it was, which
+ * is where the difference belongs.
  */
 export const BOOTH_REFUSAL_CODES = [
   /** No wheel has ever been published to this booth, or the cache holds none. */
   'not_configured',
-  /** D5: every prize is inactive, capped, out of stock or weighted zero. */
+  /**
+   * D5: every prize is inactive, capped, out of stock or weighted zero. Also
+   * a booth station whose code prefix is not two letters or digits, so no
+   * voucher code can be made (closing audit H2): somebody has to fix the
+   * station in the Console, which is what "please call staff" asks for. The
+   * message says which of the two it is; the television reads only the code.
+   */
   'booth_not_ready',
   /**
    * This booth has given away all the spins a manager allowed it for today
    * (SCRUM-257), and the day has not rolled over yet.
    *
-   * **The one refusal here that the television says something of its own
-   * about.** Every other code collapses to "Booth not ready — please call
-   * staff", which is right when something is wrong: a member of staff can act
-   * on it. Nothing is wrong with a booth that has run its day, nobody can fix
-   * it, and calling staff over would waste a family's time and a member of
-   * staff's — so the page answers this one with "That's all the spins for
-   * today — come back tomorrow" instead. The words live on the page
+   * **The television says something of its own about it**, rather than the
+   * fixed "Booth not ready — please call staff", which is right when
+   * something is wrong: a member of staff can act on it. Nothing is wrong
+   * with a booth that has run its day, nobody can fix it, and calling staff
+   * over would waste a family's time and a member of staff's — so the page
+   * answers this one with "That's all the spins for today — come back
+   * tomorrow" instead. The words live on the page
    * (`apps/booth/src/copy.ts`), like every other word a guest reads; what
    * travels from here is the code.
    */
@@ -361,12 +443,19 @@ export const BOOTH_REFUSAL_CODES = [
   'runtime_unavailable',
   /** No signing key yet, so nothing can be recorded — and D7 refuses the press. */
   'cannot_record',
-  /** This exact press was already recorded and its answer is no longer held. */
+  /**
+   * This exact press was already recorded, and this process holds no record
+   * of it to answer from: the box restarted since, or 64 newer presses have
+   * pushed its answer out of memory. A retry that arrives while the press is
+   * still being answered — still writing, or still waiting on the printer —
+   * is not refused: it joins that press and gets its answer (closing audit
+   * H1; see `spin`).
+   */
   'duplicate_press',
   /**
    * A reprint asked for with nobody signed in (SCRUM-223). A reprint puts a
-   * second copy of a live code on paper, so it is staff-only, and the person
-   * who asked is written on the record of it.
+   * second copy of a live code on paper, so it is staff-only, and the account
+   * signed in when it was asked for is written on the record of it.
    */
   'staff_required',
   /** A reprint with nothing to reprint: no voucher yet, or not that spin's. */
@@ -488,9 +577,10 @@ export interface Booth {
    * The SAME code on new paper: no draw, no counter, no second voucher. Staff
    * only — it refuses with `staff_required` when nobody is signed in — and the
    * copy is reported to the cloud as a `reprint` print of that voucher, with
-   * the person who asked for it. Optional in the type so a stand-in booth in a
-   * test need not grow one; `createBooth` always has it, and the http contract
-   * answers 404 for a booth without it.
+   * the account signed in at the booth when it was asked for: the session's,
+   * not a check of who pressed the button. Optional in the type so a stand-in
+   * booth in a test need not grow one; `createBooth` always has it, and the
+   * http contract answers 404 for a booth without it.
    */
   reprint?(request: BoothReprintRequest): Promise<BoothReprintResponse>;
   status(opts: { online: boolean }): Promise<BoothStatusReport>;
@@ -518,13 +608,18 @@ export interface Booth {
 
 /**
  * A voucher's paper this booth is responsible for reporting (D20), and why
- * it was printed: the first copy after a spin, or a copy staff asked for.
+ * it was printed: the first copy after a spin, or a copy asked for while
+ * somebody was signed in.
  */
 interface OwnedPrintJob {
   voucherId: string | null;
   voucherCode: string;
   reason: 'initial' | 'reprint';
-  /** Who asked for a reprint. Null for the automatic first print. */
+  /**
+   * For a reprint, the account signed in at the booth when the copy was asked
+   * for — the session's account, which is all the box knows; it cannot tell
+   * who pressed the button. Null for the automatic first print.
+   */
   requestedByAccountId: string | null;
   /**
    * The booth the voucher was won at, which is the station its outcome is
@@ -579,6 +674,7 @@ export function createBooth(options: BoothOptions): BoothModule {
   const clock = options.now ?? (() => new Date());
   const log = options.log ?? silentLog;
   const randomIndex: RandomIndex = options.randomIndex ?? ((max) => randomInt(max));
+  const printWaitMs = options.printWaitMs ?? BOOTH_PRINT_WAIT_MS;
 
   let applied: BoothCacheEntry | null = null;
   let refreshTimer: ReturnType<typeof setInterval> | null = null;
@@ -637,6 +733,15 @@ export function createBooth(options: BoothOptions): BoothModule {
    * The answer to a press, kept so that a retry of the SAME press gets the
    * same answer rather than a second prize.
    *
+   * **A promise, and it goes in when the press STARTS** (closing audit H1).
+   * A retry therefore gets the answer whether it arrives after the press was
+   * answered or while it is still being written or waiting on the printer —
+   * it waits for the same promise. The answer used to go in only once the
+   * slip had printed, so a page that gave up on a slow printer and retried
+   * met the durable guard below and was refused `duplicate_press`, while the
+   * slip came out anyway. A press that is refused is taken back out, so a
+   * press refused for a write that failed can still be made by a retry.
+   *
    * **In memory, and a restart forgets it.** That is not the whole of D7's
    * protection and is not claimed to be: the durable half is a counter row
    * written inside the spin's own transaction (`BOOTH_PRESS_COUNTER_SCOPE`),
@@ -645,7 +750,24 @@ export function createBooth(options: BoothOptions): BoothModule {
    * is replayed when the box has been up throughout, and refused when the box
    * restarted in between — never drawn again.
    */
-  const replay = new Map<string, SpinResponse>();
+  const replay = new Map<string, Promise<SpinResponse>>();
+  /**
+   * The reprint of each voucher still on its way to the printer, keyed by
+   * station and spin (closing audit H1).
+   *
+   * A reprint asked for again while its copy is still printing joins that
+   * copy rather than putting a second one on paper: nothing about the first
+   * has failed yet, and another slip carrying the same live code is one more
+   * for reception to tell apart. Taken out once the copy is out of the
+   * printer's hands, so asking after that is a new copy, as it always was.
+   */
+  const reprintsInFlight = new Map<string, Promise<BoothReprintResponse>>();
+  /**
+   * The sign-in attempt each station is working through; the next one waits
+   * for it (closing audit M11). Holds a promise that never rejects, so one
+   * attempt that throws does not stop the attempts behind it. See `signIn`.
+   */
+  const signInQueue = new Map<string, Promise<void>>();
 
   function note(
     level: 'info' | 'warn' | 'error',
@@ -1043,7 +1165,7 @@ export function createBooth(options: BoothOptions): BoothModule {
   async function signInWithAccount(
     station: BoothStationContext,
     account: { phone: string; password: string },
-    at: { nowIso: string; nowMs: number; failures: number },
+    at: { nowIso: string; nowMs: number; held: ThrottleRecord | null },
   ): Promise<BoothSignInResult> {
     const phone = typeof account.phone === 'string' ? account.phone.trim() : '';
     const password = typeof account.password === 'string' ? account.password : '';
@@ -1072,14 +1194,9 @@ export function createBooth(options: BoothOptions): BoothModule {
       return { ok: true, accountId: verdict.accountId };
     }
     if (verdict.reason === 'wrong') {
-      const failures = at.failures + 1;
-      const wait = backoffFor(failures);
-      const record = await store.recordThrottleFailure(boxId, BOOTH_STAFF_THROTTLE_SCOPE, station.id, {
-        now: at.nowIso,
-        lockedUntil: wait > 0 ? new Date(at.nowMs + wait).toISOString() : undefined,
-      });
+      const { record, retryAfterMs } = await countFailure(station.id, at.held, at);
       note('warn', 'a booth sign-in was refused', { kind: 'account', failures: record.failures });
-      return wait > 0 ? { ok: false, retryAfterMs: wait } : { ok: false };
+      return retryAfterMs > 0 ? { ok: false, retryAfterMs } : { ok: false };
     }
     note('info', 'an account sign-in was refused', { reason: verdict.reason });
     return verdict.retryAfterMs === undefined
@@ -1091,6 +1208,63 @@ export function createBooth(options: BoothOptions): BoothModule {
     if (failures <= BOOTH_STAFF_FREE_ATTEMPTS) return 0;
     const doublings = failures - BOOTH_STAFF_FREE_ATTEMPTS - 1;
     return Math.min(BOOTH_STAFF_FIRST_BACKOFF_MS * 2 ** doublings, BOOTH_STAFF_MAX_BACKOFF_MS);
+  }
+
+  /**
+   * How long a station refuses sign-in, read from its throttle record: the
+   * later of the lock written on the row and the one its COUNT calls for,
+   * counted from its last failure (closing audit M11).
+   *
+   * The count decides. `lockedUntil` is written in the same statement that
+   * counts a failure, from the count this module expected; the count itself
+   * moves inside that statement. A second process counting failures on the
+   * same store between this one's read and its write would leave a count that
+   * calls for a lock beside a `lockedUntil` that does not carry it — so the
+   * lock is also worked out from the count, and the later of the two holds.
+   * In this process the two agree: sign-ins at a station run one at a time.
+   */
+  function lockRemaining(record: ThrottleRecord | null, nowMs: number): number {
+    if (!record) return 0;
+    const written = record.lockedUntil ? Date.parse(record.lockedUntil) : Number.NaN;
+    const owed = backoffFor(record.failures);
+    const last = Date.parse(record.lastFailureAt);
+    const counted = owed > 0 && Number.isFinite(last) ? last + owed : Number.NaN;
+    const until = Math.max(
+      Number.isFinite(written) ? written : Number.NEGATIVE_INFINITY,
+      Number.isFinite(counted) ? counted : Number.NEGATIVE_INFINITY,
+    );
+    return until > nowMs ? until - nowMs : 0;
+  }
+
+  /**
+   * Count one wrong attempt at a station, and say how long it is now locked.
+   *
+   * The answer comes from the record the STORE returns, whose count moved
+   * inside the statement, not from the count read before the argon2 checks
+   * (closing audit M11): that read is the one two overlapping attempts could
+   * both have made. The lock written on the row is the one this attempt
+   * expects to have earned; `lockRemaining` makes the stored count win if the
+   * two ever differ.
+   */
+  async function countFailure(
+    stationId: string,
+    held: ThrottleRecord | null,
+    at: { nowIso: string; nowMs: number },
+  ): Promise<{ record: ThrottleRecord; retryAfterMs: number }> {
+    const expected = (held?.failures ?? 0) + 1;
+    const wait = backoffFor(expected);
+    const record = await store.recordThrottleFailure(boxId, BOOTH_STAFF_THROTTLE_SCOPE, stationId, {
+      now: at.nowIso,
+      lockedUntil: wait > 0 ? new Date(at.nowMs + wait).toISOString() : undefined,
+    });
+    if (record.failures !== expected) {
+      note(
+        'warn',
+        'the sign-in count moved while an attempt was being checked; the stored count decides the lock',
+        { expected, stored: record.failures },
+      );
+    }
+    return { record, retryAfterMs: lockRemaining(record, at.nowMs) };
   }
 
   /**
@@ -1115,14 +1289,49 @@ export function createBooth(options: BoothOptions): BoothModule {
    * against an empty set of hashes and refused. That is the honest behaviour
    * until PIN and badge management lands, and it is not a silent one — the
    * refusal is logged with the reason.
+   *
+   * **One attempt at a time per station** (closing audit M11). The throttle
+   * is read before the argon2 checks and counted after them, and argon2 is
+   * slow on purpose, so attempts that overlapped all read the same count: a
+   * script firing sixty at once had every one checked — a right PIN among
+   * them signed in — and the lock never came on. Each attempt now waits for
+   * the one before it at the same station, so it reads the count the last
+   * one left. The queue lives here, not in the Pi's page server, because this
+   * module is what both the Pi and staging's in-process box run. The booth's
+   * own PIN pad sends one attempt at a time anyway; what this closes is a
+   * script on the Pi's loopback, or at staging's relay with a paired screen's
+   * credential. An account sign-in waits its turn too: a wrong password is
+   * counted on the same throttle.
    */
   async function signIn(request: BoothSignInRequest): Promise<BoothSignInResult> {
     const station = options.station();
     if (!station) return { ok: false };
-    const nowIso = clock().toISOString();
-    const nowMs = clock().getTime();
+    const previous = signInQueue.get(station.id) ?? Promise.resolve();
+    const attempt = previous.then(() => signInInTurn(station, request));
+    const done = attempt.then(
+      () => undefined,
+      () => undefined,
+    );
+    signInQueue.set(station.id, done);
+    void done.then(() => {
+      // The last attempt in the queue takes the queue away with it.
+      if (signInQueue.get(station.id) === done) signInQueue.delete(station.id);
+    });
+    return attempt;
+  }
 
-    let held;
+  /** One sign-in attempt, run when the station's attempts before it are done. */
+  async function signInInTurn(
+    station: BoothStationContext,
+    request: BoothSignInRequest,
+  ): Promise<BoothSignInResult> {
+    // The clock is read when the attempt's turn comes, not when it arrived:
+    // an attempt that waited behind another is judged by the lock as it
+    // stands now.
+    const nowMs = clock().getTime();
+    const at = { nowIso: new Date(nowMs).toISOString(), nowMs };
+
+    let held: ThrottleRecord | null;
     try {
       held = await store.readThrottle(boxId, BOOTH_STAFF_THROTTLE_SCOPE, station.id);
     } catch (err) {
@@ -1138,24 +1347,35 @@ export function createBooth(options: BoothOptions): BoothModule {
       }
       throw err;
     }
-    const lockedUntilMs = held?.lockedUntil ? Date.parse(held.lockedUntil) : null;
-    if (lockedUntilMs !== null && Number.isFinite(lockedUntilMs) && lockedUntilMs > nowMs) {
-      return { ok: false, retryAfterMs: lockedUntilMs - nowMs };
-    }
+    const lockedForMs = lockRemaining(held, nowMs);
+    if (lockedForMs > 0) return { ok: false, retryAfterMs: lockedForMs };
 
     if (request.account) {
-      return signInWithAccount(station, request.account, {
-        nowIso,
-        nowMs,
-        failures: held?.failures ?? 0,
-      });
+      return signInWithAccount(station, request.account, { ...at, held });
     }
 
     const secret = request.badge ?? request.pin ?? '';
     const kind: 'badge' | 'pin' = request.badge !== undefined ? 'badge' : 'pin';
     const verify = options.verifySecret;
     const candidates = eligibleStaff();
-    let matched: BoothStaffRecord | null = null;
+    /**
+     * Every candidate is checked, not the first that matches (closing audit
+     * M10).
+     *
+     * Two people can hold the same digits: a PIN belongs to the person at
+     * every booth they work, adding somebody to a booth brings their PIN
+     * along, and nothing compares one person's with another's when it is set
+     * — a check there would tell whoever sets PINs which digits a colleague
+     * already uses. Stopping at the first match signed in whoever came first
+     * in the list the cloud sent, in no set order, and every slip, spin and
+     * reprint then carried that person's name. So a PIN that matches two
+     * people signs nobody in. It is refused like a wrong one, and it is NOT
+     * counted towards the lock: it can never sign anybody in, so there is
+     * nothing to slow down, and counting it would lock the booth against
+     * everybody else each time one of the two tried it. It is logged with how
+     * many it matched and never whom.
+     */
+    const matched: BoothStaffRecord[] = [];
     if (verify && secret !== '') {
       for (const candidate of candidates) {
         const hash = kind === 'badge' ? candidate.badgeHash : candidate.pinHash;
@@ -1163,31 +1383,31 @@ export function createBooth(options: BoothOptions): BoothModule {
         // Awaited in sequence rather than raced, so a booth cannot be made to
         // run fifty argon2 verifications in parallel by somebody holding the
         // button down. argon2 is deliberately slow; that is the point of it.
-        // One at a time rather than `Promise.all`, so a single attempt costs at
-        // most one argon2 verification at a time instead of fifty at once.
-        // That bounds ONE request; what bounds a stream of them is the
-        // throttle above, since nothing here serialises concurrent attempts.
-        if (await verify(hash, secret)) {
-          matched = candidate;
-          break;
-        }
+        // That bounds ONE attempt; what bounds a stream of them is the
+        // throttle, and the queue in `signIn` that runs them one at a time.
+        if (await verify(hash, secret)) matched.push(candidate);
       }
     }
 
-    if (!matched) {
-      const failures = (held?.failures ?? 0) + 1;
-      const wait = backoffFor(failures);
-      const record = await store.recordThrottleFailure(boxId, BOOTH_STAFF_THROTTLE_SCOPE, station.id, {
-        now: nowIso,
-        lockedUntil: wait > 0 ? new Date(nowMs + wait).toISOString() : undefined,
-      });
+    if (matched.length > 1) {
+      note(
+        'warn',
+        'a sign-in matched more than one person on this booth, so nobody was signed in',
+        { kind, matches: matched.length },
+      );
+      return { ok: false };
+    }
+
+    const person = matched[0];
+    if (!person) {
+      const { record, retryAfterMs } = await countFailure(station.id, held, at);
       note('warn', 'a booth sign-in was refused', {
         kind,
         failures: record.failures,
         candidates: candidates.length,
         hashesHeld: candidates.filter((c) => (kind === 'badge' ? c.badgeHash : c.pinHash)).length,
       });
-      return wait > 0 ? { ok: false, retryAfterMs: wait } : { ok: false };
+      return retryAfterMs > 0 ? { ok: false, retryAfterMs } : { ok: false };
     }
 
     /**
@@ -1198,15 +1418,15 @@ export function createBooth(options: BoothOptions): BoothModule {
     await openSession(
       station,
       {
-        accountId: matched.accountId,
-        staffCode: matched.staffCode ?? null,
-        displayName: matched.displayName ?? null,
+        accountId: person.accountId,
+        staffCode: person.staffCode ?? null,
+        displayName: person.displayName ?? null,
       },
       kind,
-      { nowIso, nowMs },
+      at,
     );
     note('info', 'somebody signed in at the booth', { kind });
-    return { ok: true, accountId: matched.accountId };
+    return { ok: true, accountId: person.accountId };
   }
 
   /** The branch's staff, narrowed to this booth's list and to active accounts. */
@@ -1242,6 +1462,24 @@ export function createBooth(options: BoothOptions): BoothModule {
 
   // --- The press ----------------------------------------------------------
 
+  /**
+   * One press of the red button, answered once however often it arrives (D7).
+   *
+   * **A retry joins the press it repeats** (closing audit H1). The page mints
+   * one key per press and sends it again when its first attempt goes
+   * unanswered for six seconds. The press's own promise goes into `replay`
+   * here, before anything is awaited, so the second arrival of a key — while
+   * the first is still writing, or still waiting on the printer, or after it
+   * has answered — waits for that same promise and gets that same answer.
+   * Nothing between the lookup and the insertion awaits (`press` runs to its
+   * own first `await` and hands back its promise), so two arrivals of one key
+   * cannot both miss it. `duplicate_press` is left for a key this process
+   * holds no record of: after a restart, or once newer presses have pushed it
+   * out.
+   *
+   * A simulated press is never remembered: it records nothing, so there is
+   * nothing a retry could be owed.
+   */
   async function spin(request: BoothSpinRequest): Promise<SpinResponse> {
     const entry = applied;
     const station = options.station();
@@ -1264,6 +1502,48 @@ export function createBooth(options: BoothOptions): BoothModule {
 
     const held = replay.get(request.idempotencyKey);
     if (held) return held;
+    if (request.simulate) return press(request, entry, station, branch);
+    const pending = press(request, entry, station, branch);
+    remember(request.idempotencyKey, pending);
+    // A refused press is not an answer to keep: a retry of it is judged again.
+    pending.catch(() => {
+      if (replay.get(request.idempotencyKey) === pending) replay.delete(request.idempotencyKey);
+    });
+    return pending;
+  }
+
+  /** The press itself, once `spin` has made sure it is the only one running for its key. */
+  async function press(
+    request: BoothSpinRequest,
+    entry: BoothCacheEntry,
+    station: BoothStationContext,
+    branch: BoothBranchContext,
+  ): Promise<SpinResponse> {
+    /**
+     * A station whose code prefix is not two letters or digits cannot mint a
+     * code (closing audit H2). A booth station saved with the field empty —
+     * the Console's default before that audit — or with `PI1` in it reaches
+     * the box as it was saved, and every press used to fail inside the mint
+     * and come back a 500: "Booth not ready" on the television, with nothing
+     * on the television, in the answer or in the Console saying why — only
+     * the box log had the mint's error. So it is refused here, BEFORE the
+     * draw and before the store is read or written, with the code the page
+     * already shows for a booth staff must fix and a message that names the
+     * prefix. What the station holds goes to the box log; the message itself
+     * is a fixed line (D15). A simulated press is refused too: the `#debug`
+     * table asks what a press would do now, and the honest answer is this
+     * refusal.
+     */
+    const prefix = (station.codePrefix ?? '').toUpperCase();
+    if (!PRINTABLE_CODE_PREFIX.test(prefix)) {
+      note('warn', 'a press was refused: the booth station has no usable code prefix', {
+        codePrefix: station.codePrefix,
+      });
+      throw new BoothRefusal(
+        'booth_not_ready',
+        "This booth station's code prefix is not two letters or digits, so no voucher code can be made; set the station's Code prefix in the Console (for example B1)",
+      );
+    }
 
     const timing = await resolveClock(branch);
 
@@ -1363,9 +1643,9 @@ export function createBooth(options: BoothOptions): BoothModule {
     const spinId = uuidv7(timing.stampMs);
     const voucherId = uuidv7(timing.stampMs);
     const printJobId = uuidv7(timing.stampMs);
-    const prefix = station.codePrefix ?? '';
     /**
-     * Minted once, with no retry loop, and that is correct here.
+     * Minted once, with no retry loop, and that is correct here. The prefix
+     * is the one checked at the top of the press.
      *
      * `mintBoothCode`'s note asks the CALLER to own the retry because only a
      * caller can see the unique-index violation that makes one necessary. A
@@ -1377,7 +1657,7 @@ export function createBooth(options: BoothOptions): BoothModule {
      * anything.
      */
     const voucherCode = mintBoothCode(prefix, randomIndex);
-    const expiresAt = resolveExpiry(outcome.prize, timing.stampMs);
+    const expiresAt = resolveExpiry(outcome.prize, timing.stampMs, branch.timezone);
 
     const spinFact: QueuedFact = {
       type: 'booth.spin_recorded',
@@ -1569,16 +1849,17 @@ export function createBooth(options: BoothOptions): BoothModule {
         requestedByAccountId: null,
         stationId: station.id,
       });
-      printState = await attemptPrint(
-        port,
-        printJobId,
-        printJob.job,
-        station.id,
-        request.actionId ?? null,
+      // Waited on for `printWaitMs` at most; the print goes on after the
+      // answer if the printer is slower than that (closing audit H1).
+      printState = await answerWithin(
+        attemptPrint(port, printJobId, printJob.job, station.id, request.actionId ?? null),
+        { spinId, jobId: printJobId },
       );
     }
 
-    const response: SpinResponse = {
+    // `spin` put this press's promise in `replay` when it started; the answer
+    // is kept by that, not by anything here.
+    return {
       spinId,
       prizeIndex: outcome.index,
       prizeId: outcome.prize.id,
@@ -1589,11 +1870,9 @@ export function createBooth(options: BoothOptions): BoothModule {
       staffAccountId,
       clockSuspect: timing.clockSuspect,
     };
-    remember(request.idempotencyKey, response);
-    return response;
   }
 
-  function remember(key: string, response: SpinResponse): void {
+  function remember(key: string, response: Promise<SpinResponse>): void {
     replay.set(key, response);
     // Oldest out first. A Map iterates in insertion order, so this is the
     // press before last rather than an arbitrary one.
@@ -1610,7 +1889,8 @@ export function createBooth(options: BoothOptions): BoothModule {
    * A throw here is NOT a failed spin. The job row is on disk, committed with
    * the spin, and the print queue's own retry tick will pick it up — so the
    * honest answer to the television is `queued`, which is what it says when a
-   * printer is out of paper too.
+   * printer is out of paper too. It therefore never rejects, which is what
+   * lets `answerWithin` answer before it has finished and leave it running.
    */
   async function attemptPrint(
     port: BoothPrintPort,
@@ -1640,6 +1920,40 @@ export function createBooth(options: BoothOptions): BoothModule {
   }
 
   /**
+   * What became of the paper, waiting no longer than `printWaitMs` to find
+   * out (closing audit H1; see `BOOTH_PRINT_WAIT_MS`).
+   *
+   * Past the wait the answer is `queued` — the state of a slip a printer has
+   * not produced yet, on which the television shows the code and its QR, as
+   * it does for a printer that is out of paper. The print is NOT abandoned:
+   * `printing` goes on exactly as it would have, and its outcome reaches the
+   * outbox through the print queue, as every outcome does (`reportPrint`).
+   * `printing` never rejects (`attemptPrint`), so nothing is left unhandled
+   * behind the answer.
+   */
+  async function answerWithin(
+    printing: Promise<BoothPrintState>,
+    detail: Record<string, unknown>,
+  ): Promise<BoothPrintState> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const waited = new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), printWaitMs);
+    });
+    try {
+      const state = await Promise.race([printing, waited]);
+      if (state !== null) return state;
+      note(
+        'warn',
+        'the printer had not finished in time, so the answer is "queued"; the print goes on',
+        { ...detail, waitedMs: printWaitMs },
+      );
+      return 'queued';
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
    * `skipped` becomes `no_printer`, which is the one mapping worth stating.
    *
    * The print subsystem skips a job when no station on this box has a printer
@@ -1664,10 +1978,28 @@ export function createBooth(options: BoothOptions): BoothModule {
   // --- The voucher on paper ------------------------------------------------
 
   /**
-   * When this voucher runs out, or null — counted from the moment it is won.
+   * When this voucher runs out, or null: the END of the date its slip prints,
+   * on the branch's clock (closing audit M6; the owner's answer, 25
+   * September).
    *
-   * **The published bundle cannot always answer this, and the box does not
-   * guess.** `booth_prize.expiry_days` is an OVERRIDE — null means "take the
+   * The slip, the television and the till show the expiry as a date and
+   * nothing else — "Expires 09 Oct 2026" — which reads as "through the 9th".
+   * It used to be the moment of the win plus N × 24 hours, so a voucher won at
+   * 15:00 was refused at 16:00 on the day it names, and two slips carrying
+   * the same date got different answers at 11:00 that day. It is now the last
+   * millisecond of that date in the branch's time zone: the calendar date of
+   * the win there, plus N days. In a zone that keeps one offset all year, as
+   * Bangkok does, the date printed is the one it always was — only the moment
+   * within it moves, to its end. The branch's time zone is on the box, so
+   * this needs no internet. The calendar date and not the
+   * trading day, because the slip prints the calendar date: a voucher won at
+   * 00:30 belongs to the previous trading day, and it still runs to the end
+   * of the date printed on it. Slips already printed keep the moment they
+   * were issued with, because the cloud compares against whatever moment the
+   * box sent.
+   *
+   * **The published bundle cannot always answer the days, and the box does
+   * not guess.** `booth_prize.expiry_days` is an OVERRIDE — null means "take the
    * definition's" — and the bundle carries no definition's expiry: its
    * `voucherDefinitions` hold only the words of a type that had a title or
    * an instruction when the wheel was published (SCRUM-400). So the
@@ -1686,13 +2018,18 @@ export function createBooth(options: BoothOptions): BoothModule {
    * prints "No expiry", and a type with no words in the bundle prints no
    * terms (`buildPrintJob`).
    */
-  function resolveExpiry(prize: BoothConfigPrize, stampMs: number): string | null {
+  function resolveExpiry(
+    prize: BoothConfigPrize,
+    stampMs: number,
+    timeZone: string,
+  ): string | null {
     const definition = applied?.voucherDefinitions.find(
       (candidate) => candidate.id === prize.voucherDefinitionId,
     );
     const days = prize.expiryDays ?? definition?.expiryDays ?? null;
     if (days === null) return null;
-    return new Date(stampMs + days * 24 * 60 * 60 * 1000).toISOString();
+    const wonOn = isoDateInTz(new Date(stampMs), timeZone);
+    return new Date(lastMomentOfDate(addDaysToIsoDate(wonOn, days), timeZone)).toISOString();
   }
 
   /**
@@ -1900,15 +2237,33 @@ export function createBooth(options: BoothOptions): BoothModule {
       throw new BoothRefusal('nothing_to_reprint', 'There is no voucher to print again');
     }
 
+    /**
+     * A copy of this voucher still on its way to the printer: this request
+     * joins it rather than putting another on paper (closing audit H1). The
+     * lookup and the `set` below have no `await` between them, so two
+     * requests that got this far together cannot both miss it.
+     */
+    const inFlightKey = `${station.id}:${target.spinId}`;
+    const copyOnItsWay = reprintsInFlight.get(inFlightKey);
+    if (copyOnItsWay) {
+      note(
+        'info',
+        'a reprint was asked for while a copy of that voucher was still printing; it joins that copy',
+        { spinId: target.spinId },
+      );
+      return copyOnItsWay;
+    }
+
     const now = clock();
     const jobId = uuidv7(now.getTime());
     const job = reprintedJob(target.job, options.branch()?.timezone ?? 'UTC', now);
     /**
      * Owned before it is submitted, so the outcome — whenever it comes — is
-     * reported as a REPRINT of this voucher, with the person who asked, and
-     * never through the cloud's print route (D20). No counter moves and no
-     * fact about a spin or a voucher is queued: the only record a reprint
-     * makes is the print itself, which is what the cloud counts copies from.
+     * reported as a REPRINT of this voucher, with the account signed in when
+     * it was asked for, and never through the cloud's print route (D20). No
+     * counter moves and no fact about a spin or a voucher is queued: the only
+     * record a reprint makes is the print itself, which is what the cloud
+     * counts copies from.
      */
     ownedPrintJobs.set(jobId, {
       voucherId: target.voucherId,
@@ -1918,12 +2273,9 @@ export function createBooth(options: BoothOptions): BoothModule {
       stationId: station.id,
     });
     const port = options.print;
-    let printState: BoothPrintState = 'no_printer';
-    if (port) {
-      printState = await attemptPrint(port, jobId, job, station.id, request.actionId ?? null);
-    } else {
+    if (!port) {
       // No printer to put it on. The attempt is still recorded, as a skipped
-      // print, so the cloud knows staff asked for a copy.
+      // print, so the cloud knows a copy was asked for.
       await reportPrint({
         id: jobId,
         status: 'skipped',
@@ -1932,12 +2284,35 @@ export function createBooth(options: BoothOptions): BoothModule {
         errorCode: 'NO_PRINTER',
         errorMessage: null,
       });
+      note('info', 'a voucher was printed again at the booth', {
+        spinId: target.spinId,
+        printState: 'no_printer',
+      });
+      return { spinId: target.spinId, printState: 'no_printer' };
     }
-    note('info', 'a voucher was printed again at the booth', {
-      spinId: target.spinId,
-      printState,
+
+    /**
+     * The answer waits `printWaitMs` at most, like a press's: the panel gives
+     * up on a call after six seconds, and a reprint that outlasted it read
+     * "The reprint did not go through" while the copy came out (closing
+     * audit H1). The copy stays in `reprintsInFlight` until the printer is
+     * done with it, not merely until the answer.
+     */
+    const copy = attemptPrint(port, jobId, job, station.id, request.actionId ?? null);
+    const answer = answerWithin(copy, { spinId: target.spinId, jobId }).then(
+      (printState): BoothReprintResponse => {
+        note('info', 'a voucher was printed again at the booth', {
+          spinId: target.spinId,
+          printState,
+        });
+        return { spinId: target.spinId, printState };
+      },
+    );
+    reprintsInFlight.set(inFlightKey, answer);
+    void copy.then(() => {
+      if (reprintsInFlight.get(inFlightKey) === answer) reprintsInFlight.delete(inFlightKey);
     });
-    return { spinId: target.spinId, printState };
+    return answer;
   }
 
   /** The `booth_voucher` template's footer, or an empty line when none is set. */
@@ -2040,10 +2415,13 @@ export function createBooth(options: BoothOptions): BoothModule {
             errorCode: outcome.errorCode,
             errorMessage: outcome.errorMessage,
             /**
-             * `reprint` with the person who asked, or `initial` (SCRUM-223).
-             * The cloud files a `booth.voucher_print` row per job and counts
-             * the copies of the code, so two slips with one code at reception
-             * is answerable: which one is the reprint, and who asked for it.
+             * `reprint` with the account signed in at the booth when the copy
+             * was asked for, or `initial` (SCRUM-223). The cloud files a
+             * `booth.voucher_print` row per job and counts the copies of the
+             * code, so two slips with one code at reception is answerable:
+             * which one is the reprint, and who was signed in when it was
+             * made. The box cannot say who pressed the button — only whose
+             * session was open.
              */
             reason: printed.reason,
             ...(printed.requestedByAccountId
@@ -2236,8 +2614,9 @@ export function createBooth(options: BoothOptions): BoothModule {
       for (const job of leftBehind) {
         if (job.job.kind !== 'booth_voucher') continue;
         // A job this process raised itself keeps what it knows — the voucher
-        // id and who asked — when the booth is started again (a `restart`
-        // command stops and starts it while slips are still waiting).
+        // id and, for a reprint, who was signed in — when the booth is started
+        // again (a `restart` command stops and starts it while slips are still
+        // waiting).
         if (ownedPrintJobs.has(job.id)) continue;
         /**
          * The voucher id is gone with the process that minted it — nothing on
@@ -2250,8 +2629,9 @@ export function createBooth(options: BoothOptions): BoothModule {
           voucherId: null,
           voucherCode: job.job.data.voucherCode,
           // A copy made on request carries its note on the job itself, which
-          // is what lets a restart still report it as a reprint. Who asked is
-          // not on the paper and is not recovered.
+          // is what lets a restart still report it as a reprint. Who was
+          // signed in when it was asked for is not on the paper and is not
+          // recovered.
           reason: job.job.data.reprintNote ? 'reprint' : 'initial',
           requestedByAccountId: null,
           // On the stored job, so a restart keeps it.
