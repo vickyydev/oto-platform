@@ -51,10 +51,16 @@ import {
  *     and a slip already printed keeps its date.
  *
  * **What is not a choice is shown as a fact, not a switch.** A booth voucher
- * is redeemed online only, once, at any branch, and never beside another
- * voucher or a promo code: the till enforces all four whatever a definition
- * says (`vouchers.ts`), so a toggle here would promise something it does not
- * do.
+ * is redeemed online only, once, and never beside another voucher or a promo
+ * code, at any branch that can honour it: the till enforces all of that
+ * whatever a definition says (`vouchers.ts`), so a toggle here would promise
+ * something it does not do. "Can honour it" is the one fact that depends on
+ * the type (`freeItemAtBranch` and `packageAtBranch` in
+ * `apps/api/src/services/vouchers.ts`): a free product only at a park where
+ * its linked product is on sale — which is every park for a product under no
+ * branch — or, once that product is archived, where one with the same code
+ * is; a 1+1 at its package's own park, or where a live package of the same
+ * name is on sale.
  */
 export function VoucherTypeEditor({
   definition,
@@ -252,7 +258,7 @@ export function VoucherTypeEditor({
               label="Product"
               hint={warn(
                 problems.productId,
-                'Any branch honours it: a till at another park hands over its own product with the same code.',
+                'Honoured at the park that sells this product, or at every park for a product under “Every branch”. A till at another park refuses it.',
               )}
             >
               <GroupedSelect
@@ -335,7 +341,7 @@ export function VoucherTypeEditor({
                 onChange={(termsEn) => set({ termsEn })}
                 maxLength={2000}
                 rows={3}
-                placeholder="Valid at any Oto Play Park. One use only. No cash value."
+                placeholder="One use only. No cash value."
                 disabled={locked}
               />
             </Field>
@@ -354,7 +360,7 @@ export function VoucherTypeEditor({
 
         <Section
           title="How long it lasts"
-          detail="Counted from the moment a voucher is won. A change applies to vouchers won after the box’s next pull; slips already printed keep their date."
+          detail="Counted in days from the day a voucher is won: the slip prints the last day, and the voucher is good to the end of that day in the park’s time zone. A change applies to vouchers won after the box’s next pull; slips already printed keep their date."
         >
           <ChoiceRow
             value={form.expiry}
@@ -385,12 +391,21 @@ export function VoucherTypeEditor({
           )}
         </Section>
 
-        <Section title="At the till" detail="The same for every booth voucher, whatever the type — the till enforces them.">
+        <Section
+          title="At the till"
+          detail="Not settings: the till enforces them, whatever this form says."
+        >
           <dl className="grid gap-3 sm:grid-cols-2">
             <Fact label="Redeemed">Online only — a till working offline refuses it</Fact>
             <Fact label="Use">Once</Fact>
             <Fact label="Combinable">No — one voucher per sale, never beside a promo code</Fact>
-            <Fact label="Redeemable at">Any branch of the park</Fact>
+            <Fact label="Redeemable at">
+              {form.choice === 'product'
+                ? 'The park that sells its product — every park for a product under “Every branch”'
+                : form.choice === 'ticket'
+                  ? 'Its package’s park, and any park with a package of the same name'
+                  : 'Any branch of the park'}
+            </Fact>
           </dl>
         </Section>
 
@@ -645,7 +660,7 @@ function SlipPreview({ form, uses }: { form: VoucherForm; uses: VoucherUse[] }) 
           <span className="font-bold">
             {form.expiry === 'never'
               ? 'No expiry'
-              : `${form.expiryDays ?? '—'} day${form.expiryDays === 1 ? '' : 's'} after winning`}
+              : `the date ${form.expiryDays ?? '—'} day${form.expiryDays === 1 ? '' : 's'} after the win`}
           </span>
         </p>
         <hr className="my-2 border-black/30" />

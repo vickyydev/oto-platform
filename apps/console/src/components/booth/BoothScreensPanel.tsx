@@ -4,8 +4,43 @@ import { EmptyState, ErrorNote, Panel, RouteUnavailable, Unreadable } from '@/co
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/Status';
 import { formatWhen, timeAgo } from '@/lib/time';
-import type { BoothScreenRow, MintedPairingCode } from './boothApi';
+import type { BoothScreenRow, BoothStatus, MintedPairingCode } from './boothApi';
 import type { Read } from './readState';
+
+/**
+ * Where a booth's box runs, as its live status reports it — which decides
+ * whether its television is paired here at all.
+ *
+ *   - `here`: the box is the platform's virtual box, running inside the api
+ *     that answered (`box.inProcess`). Its television is the booth page the
+ *     platform serves, and that page presses only with a credential it was
+ *     paired with on this panel.
+ *   - `own_box`: the box runs somewhere else — a Raspberry Pi at the booth.
+ *     The Pi serves its own television from the same machine and checks no
+ *     credential (`packages/box-agent/src/runner/kiosk-server.ts`), so there
+ *     is nothing to pair, and a screen paired here cannot press this booth
+ *     while it runs on that box: the api's booth relay reaches only a booth
+ *     whose box runs inside that api (`resolveInProcessBooth` in
+ *     `apps/api/src/services/booth.ts`).
+ *   - `no_box`: the booth has no box, so nothing can play it yet.
+ *   - `unknown`: the status has not been read, or what is held belongs to the
+ *     booth selected before this one.
+ */
+export type BoothBoxPlace = 'here' | 'own_box' | 'no_box' | 'unknown';
+
+/**
+ * The place for THIS booth. The page keeps the last booth's status on screen
+ * while the next one's is read, so a reading is used only when it names the
+ * booth being shown; a stale one still does, because a booth rarely changes
+ * box and an older true answer beats none.
+ */
+export function boothBoxPlace(status: Read<BoothStatus | null>, boothId: string): BoothBoxPlace {
+  const s = status.value;
+  if (!s || s.booth.id !== boothId) return 'unknown';
+  if (status.state !== 'read' && status.state !== 'stale') return 'unknown';
+  if (s.box.id === null) return 'no_box';
+  return s.box.inProcess ? 'here' : 'own_box';
+}
 
 /**
  * Console > Booths > "Screens" (SCRUM-244).
@@ -16,6 +51,13 @@ import type { Read } from './readState';
  * running the virtual box, and pressing it minted a voucher the park would
  * honour. A screen now holds a credential it was PAIRED with, and this is
  * where a member of staff mints one and takes one away.
+ *
+ * **Only a booth on the platform's virtual box is paired.** A booth on its own
+ * box — the Raspberry Pi — has its television on that box and needs no
+ * pairing, so for it the panel says so and offers no "Pair a screen"; a screen
+ * paired to it before stays listed, so it can still be unpaired
+ * (`BoothBoxPlace` above). Until the status has been read the panel cannot tell
+ * the two apart, and it says what each needs.
  *
  * **The code is shown once and this panel does not keep it.** The API returns
  * it outside anything it stores — only a hash is kept — so there is nothing to
@@ -29,6 +71,7 @@ import type { Read } from './readState';
  * mall, and a list that quietly dropped them could not answer it.
  */
 export function BoothScreensPanel({
+  place,
   screens,
   minted,
   busy,
@@ -40,6 +83,8 @@ export function BoothScreensPanel({
   onRetry,
   onDismissCode,
 }: {
+  /** Where this booth's box runs (`boothBoxPlace`): whether pairing applies to it. */
+  place: BoothBoxPlace;
   screens: Read<BoothScreenRow[]>;
   /** The code just minted, held by the PAGE for as long as it is on screen. */
   minted: MintedPairingCode | null;
@@ -53,12 +98,21 @@ export function BoothScreensPanel({
   onRetry: () => void;
   onDismissCode: () => void;
 }) {
+  /** Pairing is offered unless the status says this booth cannot use it. */
+  const pairable = place === 'here' || place === 'unknown';
+  const listed = screens.state === 'read' || screens.state === 'stale' ? screens.value : [];
   return (
     <Panel
       title="Screens"
-      description="The televisions allowed to press this booth’s button. A screen is paired once, by somebody standing at it with a code."
+      description={
+        place === 'own_box'
+          ? 'This booth runs on its own box; its television needs no pairing.'
+          : place === 'no_box'
+            ? 'This booth has no box yet, so no television can play it.'
+            : 'The televisions allowed to press this booth’s button. A screen is paired once, by somebody standing at it with a code.'
+      }
       actions={
-        readOnly ? undefined : (
+        readOnly || !pairable ? undefined : (
           <Button variant="outline" size="sm" onClick={onMint} disabled={busy}>
             <MonitorSmartphone className="w-4 h-4" />
             {busy ? 'Minting…' : 'Pair a screen'}
@@ -70,10 +124,18 @@ export function BoothScreensPanel({
 
       {minted && <PairingCode minted={minted} timezone={timezone} onDismiss={onDismissCode} />}
 
-      {readOnly && (
+      {readOnly && (pairable || listed.length > 0) && (
         <p className="mb-3 text-xs text-muted-foreground">
           Pairing and unpairing screens needs{' '}
           <code className="font-mono text-xs">admin:booth:manage</code>.
+        </p>
+      )}
+
+      {!pairable && listed.some((screen) => screen.revokedAt === null) && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          {place === 'own_box'
+            ? 'A screen paired to this booth here is not used while the booth runs on its own box. Unpair any still listed as paired.'
+            : 'A screen paired to this booth here does nothing while the booth has no box. Unpair any that are not wanted.'}
         </p>
       )}
 
@@ -85,10 +147,27 @@ export function BoothScreensPanel({
       ) : screens.state === 'failed' ? (
         <Unreadable what="This booth’s screens" message={screens.error} onRetry={onRetry} />
       ) : screens.value.length === 0 ? (
-        <EmptyState
-          title="No screen is paired to this booth"
-          detail="Until one is, the television shows “ask our staff” and the booth surface refuses every press — which is the point: an unpaired screen cannot mint a voucher."
-        />
+        place === 'own_box' ? (
+          <EmptyState
+            title="Nothing to pair"
+            detail="The box serves the booth’s television itself, so there is no code to type there."
+          />
+        ) : place === 'no_box' ? (
+          <EmptyState
+            title="Nothing to pair yet"
+            detail="Give the booth a box on Devices. A booth on its own box, such as a Raspberry Pi, needs no pairing; one on the platform’s virtual box has its screen paired here."
+          />
+        ) : place === 'here' ? (
+          <EmptyState
+            title="No screen is paired to this booth"
+            detail="Until one is, the television shows “ask our staff” and the booth surface refuses every press — which is the point: an unpaired screen cannot mint a voucher."
+          />
+        ) : (
+          <EmptyState
+            title="No screen is paired to this booth"
+            detail="A booth on the platform’s virtual box needs one: until then its television asks for staff and refuses every press. A booth on its own box, such as a Raspberry Pi, needs none."
+          />
+        )
       ) : (
         <ul className="flex flex-col divide-y">
           {screens.value.map((screen) => (

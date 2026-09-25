@@ -33,7 +33,7 @@ import {
   type PrizeInput,
   type VoucherDefinitionRow,
 } from '@/components/booth/boothApi';
-import { BoothScreensPanel } from '@/components/booth/BoothScreensPanel';
+import { BoothScreensPanel, boothBoxPlace } from '@/components/booth/BoothScreensPanel';
 import { BoothSettingsPanel, type BoothSettingsEdit } from '@/components/booth/BoothSettingsPanel';
 import { BoothStaffPanel } from '@/components/booth/BoothStaffPanel';
 import { PrizeEditor } from '@/components/booth/PrizeEditor';
@@ -572,6 +572,9 @@ export function Booths() {
           />
 
           <BoothScreensPanel
+            // Whether this booth is paired at all: only one on the platform's
+            // virtual box is. A booth on its own box, the Pi, needs no pairing.
+            place={boothBoxPlace(status, selected.booth.id)}
             screens={screens}
             minted={mintedCode}
             busy={busy}
@@ -730,8 +733,20 @@ function LiveStatus({
           )}
         </Fact>
       </dl>
+      {/*
+        The label above stays "Spins today", and this says which day that is.
+        The count is filed by TRADING day, which starts at the branch's day
+        start rather than at midnight, while a slip prints the calendar date it
+        was won on — so between midnight and the day start the two disagree,
+        and a manager reading one against the other needs to know why.
+      */}
+      <p className="mt-3 text-xs text-muted-foreground">
+        Today means the trading day ({s.today.businessDate}), which starts at the branch’s day
+        start, not at midnight: after midnight the count and the date stay on the day before until
+        then, while a slip is dated with the calendar day it was won.
+      </p>
       {s.lastSpinAt && (
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-1.5 text-xs text-muted-foreground">
           Last spin {formatWhen(s.lastSpinAt, timezone)}.
         </p>
       )}

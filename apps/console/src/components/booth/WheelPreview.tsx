@@ -23,17 +23,17 @@ import { chanceBpOf, formatBp, weightVerdict } from './odds';
  * radially; the same font-size steps for long and multi-line labels. If the
  * booth's wheel changes shape, this is the other half of that change.
  *
- * **A switched-off prize is still a wedge, because it is still a wedge on the
- * television.** This panel used to drop them, on the belief that the booth
- * did too. It does not, and cannot: `apps/booth/src/App.tsx` builds its
- * slices from `bundle.prizes` whole because `SpinResponse.prizeIndex` indexes
- * that array, so dropping an inactive prize would shift every index after it
- * and the wheel would stop on the wrong slice. Measured on a live booth: a
- * version with one active prize of six drew all six wedges on the screen, the
- * five unwinnable ones included. So they are drawn here too, dimmed, and named
- * "off the wheel" where their chance would be — a manager switching a prize
- * off should see what the television will actually show, which is a wedge
- * nobody can land on rather than a slice that has gone away.
+ * **Only a switched-on prize is a wedge, because only those are wedges on the
+ * television.** The booth page builds its slices from the published prizes
+ * with the switched-off ones left out (`visiblePrizes` in
+ * `apps/booth/src/booth/wheel-view.ts`, SCRUM-223) and finds the slice to stop
+ * on by the prize the box names, not by its position in the bundle. So this
+ * preview draws the same set: a switched-off prize has no wedge, the prizes
+ * left on share the circle between them, and a slice with no colour of its own
+ * takes its placeholder by its position among the switched-on prizes, which is
+ * the position the television's palette is counted along. The list under the
+ * wheel keeps every prize, a switched-off one named "off the wheel", so a
+ * prize that is off stays in view.
  */
 export function WheelPreview({
   prizes,
@@ -43,13 +43,12 @@ export function WheelPreview({
   prizes: readonly BoothPrizeDraft[];
   className?: string;
 }) {
-  // Every prize, in slice order — the array the television draws from and the
-  // one `prizeIndex` counts along. See the note above.
-  const slices = prizes;
+  // The wedges: the prizes switched on, in slice order — the set the
+  // television draws. See the note above.
+  const slices = prizes.filter((p) => p.active);
   const verdict = weightVerdict(prizes);
-  const noneActive = !prizes.some((p) => p.active);
 
-  if (slices.length === 0) {
+  if (prizes.length === 0) {
     return (
       <div className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
         This booth has no prizes, so there is no wheel to draw.
@@ -60,101 +59,125 @@ export function WheelPreview({
   const size = 400;
   const c = size / 2;
   const r = size / 2 - 1;
-  const step = 360 / slices.length;
+  const step = 360 / Math.max(slices.length, 1);
   const toRad = (deg: number) => ((deg - 90) * Math.PI) / 180;
+  /** Where each switched-on prize sits on the wheel, by id: its slice index. */
+  const sliceIndex = new Map(slices.map((prize, i) => [prize.id, i]));
 
   return (
     <div className={className}>
-      <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[22rem] mx-auto block" role="img"
-        aria-label={`Wheel preview: ${slices.length} slices in order — ${slices.map((s) => `${labelOf(s)}${s.active ? '' : ' (off the wheel)'}`).join(', ')}`}
-      >
-        {slices.map((prize, i) => {
-          const start = i * step;
-          const end = (i + 1) * step;
-          const x1 = c + r * Math.cos(toRad(start));
-          const y1 = c + r * Math.sin(toRad(start));
-          const x2 = c + r * Math.cos(toRad(end));
-          const y2 = c + r * Math.sin(toRad(end));
-          const largeArc = step > 180 ? 1 : 0;
-          const d = `M ${c} ${c} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+      {slices.length === 0 ? (
+        <div className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+          Every prize is switched off, so the wheel has no wedge to draw.
+        </div>
+      ) : (
+        <svg
+          viewBox={`0 0 ${size} ${size}`}
+          className="w-full max-w-[22rem] mx-auto block"
+          role="img"
+          aria-label={`Wheel preview: ${slices.length} slice${slices.length === 1 ? '' : 's'} in order — ${slices.map(labelOf).join(', ')}`}
+        >
+          {slices.map((prize, i) => {
+            const start = i * step;
+            const end = (i + 1) * step;
+            const x1 = c + r * Math.cos(toRad(start));
+            const y1 = c + r * Math.sin(toRad(start));
+            const x2 = c + r * Math.cos(toRad(end));
+            const y2 = c + r * Math.sin(toRad(end));
+            const largeArc = step > 180 ? 1 : 0;
+            const d = `M ${c} ${c} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
 
-          const labelAngle = start + step / 2;
-          const labelR = r * 0.62;
-          const lx = c + labelR * Math.cos(toRad(labelAngle));
-          const ly = c + labelR * Math.sin(toRad(labelAngle));
-          const lines = labelOf(prize).split('\n');
-          const longest = lines.reduce((m, l) => Math.max(m, l.length), 0);
-          const fontSize =
-            lines.length > 1 ? (longest <= 5 ? 19 : 16) : longest <= 5 ? 24 : longest <= 7 ? 19 : 16;
-          const lineHeight = fontSize + 2;
-          const firstY = ly - ((lines.length - 1) * lineHeight) / 2;
+            const labelAngle = start + step / 2;
+            const labelR = r * 0.62;
+            const lx = c + labelR * Math.cos(toRad(labelAngle));
+            const ly = c + labelR * Math.sin(toRad(labelAngle));
+            const lines = labelOf(prize).split('\n');
+            const longest = lines.reduce((m, l) => Math.max(m, l.length), 0);
+            const fontSize =
+              lines.length > 1
+                ? longest <= 5
+                  ? 19
+                  : 16
+                : longest <= 5
+                  ? 24
+                  : longest <= 7
+                    ? 19
+                    : 16;
+            const lineHeight = fontSize + 2;
+            const firstY = ly - ((lines.length - 1) * lineHeight) / 2;
 
-          return (
-            <g key={prize.id} opacity={prize.active ? 1 : 0.28}>
-              <path
-                d={d}
-                fill={prize.sliceColor ?? placeholderInk(i, slices.length)}
-                stroke="#111111"
-                strokeWidth={2}
-              />
-              <text
-                transform={`rotate(${labelAngle} ${lx} ${ly})`}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontSize={fontSize}
-                fontWeight={600}
-                fill={prize.textColor ?? '#111111'}
-              >
-                {lines.map((line, idx) => (
-                  <tspan key={idx} x={lx} y={firstY + idx * lineHeight}>
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+            return (
+              <g key={prize.id}>
+                <path
+                  d={d}
+                  fill={prize.sliceColor ?? placeholderInk(i, slices.length)}
+                  stroke="#111111"
+                  strokeWidth={2}
+                />
+                <text
+                  transform={`rotate(${labelAngle} ${lx} ${ly})`}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={fontSize}
+                  fontWeight={600}
+                  fill={prize.textColor ?? '#111111'}
+                >
+                  {lines.map((line, idx) => (
+                    <tspan key={idx} x={lx} y={firstY + idx * lineHeight}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      )}
 
       <ol className="mt-4 flex flex-col gap-1.5">
-        {slices.map((prize, i) => (
-          <li
-            key={prize.id}
-            className={`flex items-center gap-2.5 text-sm ${prize.active ? '' : 'text-muted-foreground'}`}
-          >
-            <span
-              className="h-3.5 w-3.5 rounded-sm border shrink-0"
-              style={{
-                backgroundColor: prize.sliceColor ?? placeholderInk(i, slices.length),
-                opacity: prize.active ? 1 : 0.28,
-              }}
-              aria-hidden
-            />
-            <span className="min-w-0 flex-1 break-words">{prize.nameEn}</span>
-            <span className="tabular-nums font-semibold shrink-0">
-              {prize.active ? formatBp(chanceBpOf(prize, verdict)) : 'off the wheel'}
-            </span>
-          </li>
-        ))}
+        {prizes.map((prize) => {
+          const at = sliceIndex.get(prize.id);
+          // A switched-off prize has no wedge and so no wedge colour: its own
+          // colour, faded, if it has one, and otherwise an empty swatch.
+          const ink =
+            prize.sliceColor ?? (at === undefined ? undefined : placeholderInk(at, slices.length));
+          return (
+            <li
+              key={prize.id}
+              className={`flex items-center gap-2.5 text-sm ${prize.active ? '' : 'text-muted-foreground'}`}
+            >
+              <span
+                className="h-3.5 w-3.5 rounded-sm border shrink-0"
+                style={{
+                  backgroundColor: ink ?? 'transparent',
+                  opacity: prize.active ? 1 : 0.28,
+                }}
+                aria-hidden
+              />
+              <span className="min-w-0 flex-1 break-words">{prize.nameEn}</span>
+              <span className="tabular-nums font-semibold shrink-0">
+                {prize.active ? formatBp(chanceBpOf(prize, verdict)) : 'off the wheel'}
+              </span>
+            </li>
+          );
+        })}
       </ol>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        Every wedge is the same width on the television — the odds decide which slice the box
-        lands on, not how big it looks. The percentage beside each prize is its real chance. A
-        prize switched off is dimmed here and still drawn on the television, where it is a wedge
-        the wheel never stops on.
+        Every wedge is the same width on the television — the odds decide which slice the box lands
+        on, not how big it looks. The percentage beside each prize is its real chance.
       </p>
-      {noneActive && (
+      {slices.length === 0 && (
         <p className="mt-1.5 text-xs" style={{ color: 'hsl(var(--status-down))' }}>
-          Every prize is switched off. This cannot be published, and a booth running it would draw
-          the wheel and refuse every press.
+          With no prize switched on the television would have nothing to draw and nothing to give,
+          so publishing refuses this. Switch at least one prize on.
         </p>
       )}
       {slices.some((p) => p.sliceColor === null) && (
         <p className="mt-1.5 text-xs text-muted-foreground">
           Slices with no colour of their own take the layout’s palette. This preview draws those in
-          a placeholder ramp: the layout’s own colours live in its design document, which this
-          page does not read yet.
+          a placeholder ramp: the layout’s own colours live in its design document, which this page
+          does not read yet.
         </p>
       )}
     </div>

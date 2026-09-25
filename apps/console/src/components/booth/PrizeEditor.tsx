@@ -220,7 +220,7 @@ export function PrizeEditor({
           checked={draft.active}
           onChange={(active) => setDraft({ ...draft, active })}
           label="On the wheel"
-          detail="Switched off, it is not drawn and not shown — and every other prize's chance rises to fill the gap."
+          detail="Switched off, it is not drawn and not shown. Re-balance the others to 100% before publishing: a wheel is published only when the prizes switched on add up to exactly 100%."
         />
 
         <Field
@@ -306,7 +306,7 @@ export function PrizeEditor({
             label="Expires after"
             hint={
               draft.expiryDays !== null ? (
-                'Days from the moment the voucher is won.'
+                'Days after the day it is won. The slip prints the last day, and the voucher is good to the end of that day in the park’s time zone.'
               ) : chosenDefinition?.expiryDays != null ? (
                 <>Left empty, it takes the voucher’s own {chosenDefinition.expiryDays} days.</>
               ) : chosenDefinition ? (

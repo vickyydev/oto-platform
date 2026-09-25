@@ -35,6 +35,13 @@ import type { Read } from './readState';
  * comes back and then empties them: there is nothing to read back, and the
  * list says only whether a PIN is set. A PIN is the person's, not the
  * booth's, so setting it here replaces the one they type at every booth.
+ *
+ * **Two people must not share a PIN, and nothing here checks.** Refusing a PIN
+ * because somebody already uses those digits would tell whoever sets PINs what
+ * a colleague's PIN is. So the check is the box's: a PIN that matches two
+ * people on its list signs nobody in and is refused like a wrong one — and the
+ * form says, while it is open, to choose digits nobody else at this person's
+ * booths uses.
  */
 export function BoothStaffPanel({
   branchId,
@@ -323,6 +330,11 @@ export function BoothStaffPanel({
                         Cancel
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground sm:col-span-3">
+                      Choose digits nobody else at this person’s booths uses. Two people must not
+                      share a PIN: a booth refuses one that two of its people share, as if it were
+                      wrong.
+                    </p>
                   </form>
                 )}
               </li>

@@ -188,3 +188,147 @@ test('Booths: the staff session length is saved as 10 hours, is in the review be
   await expect(publish).toContainText(/Version \d+ published/, { timeout: 30_000 });
   await expect(staffPanel).toContainText('lasts 10 hours — set under Booth settings', { timeout: 30_000 });
 });
+
+/**
+ * The booth's closing audit, H2, M1 and M2: the Pi's booth, set up the way the
+ * bench test sets it up. A box added on Devices with the role Booth is a
+ * Raspberry Pi not yet claimed, so its booth runs on that box and not inside
+ * this api — the booth whose Console pages were wrong. The code prefix could
+ * be left empty, which made a booth that refused every press; the Screens
+ * panel asked for a pairing the Pi does not use; and the wheel preview drew a
+ * switched-off prize the television leaves out.
+ *
+ * Serial, because the second and third cases open the booth the first one
+ * creates.
+ */
+test.describe.serial('The Pi booth, set up in the Console', () => {
+  const BOX = 'Bench Pi box';
+  const SLOT = 'booth-pi';
+  const BOOTH = 'Pi Booth';
+
+  test('Devices: a booth station is refused without a two-character code prefix, and the api’s own refusal is shown', async ({
+    page,
+  }) => {
+    await signInAndWait(page);
+    await openSection(page, 'Devices');
+    await chooseBranch(page, CENTRAL_FLORESTA);
+
+    // The box, as the Pi guide adds it: a name, a slot, the role Booth.
+    const boxes = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Boxes', exact: true }) });
+    await boxes.getByRole('button', { name: 'Add a box', exact: true }).click();
+    const addBox = page.getByRole('dialog', { name: 'Add a box' });
+    await addBox.getByLabel(/^Name/).fill(BOX);
+    await addBox.getByLabel(/^Slot/).fill(SLOT);
+    await addBox.getByLabel(/^Role/).selectOption({ label: 'Booth' });
+    await addBox.getByRole('button', { name: 'Add the box', exact: true }).click();
+    await addBox.getByRole('button', { name: 'Done', exact: true }).click();
+    await expect(boxes.getByRole('button', { name: BOX, exact: true })).toBeVisible({
+      timeout: 30_000,
+    });
+
+    // The booth's station on it.
+    await page.getByRole('button', { name: 'New station', exact: true }).click();
+    const drawer = page.getByRole('dialog', { name: 'New station' });
+    await drawer.getByLabel(/^Box/).selectOption({ label: `${BOX} — ${SLOT}` });
+    await drawer.getByLabel(/^Name/).fill(BOOTH);
+    await drawer.getByLabel(/^Kind/).selectOption({ label: 'Booth' });
+
+    const prefix = drawer.getByLabel(/^Code prefix/);
+    const create = drawer.getByRole('button', { name: 'Create the station', exact: true });
+    // Empty — the form's own starting value, and what made a dead booth — is
+    // refused before anything is sent, and so is one character.
+    await expect(prefix).toHaveValue('');
+    await expect(drawer).toContainText(
+      'Required for a booth: the first two characters of every voucher code.',
+    );
+    await expect(create).toBeDisabled();
+    await prefix.fill('B');
+    await expect(create).toBeDisabled();
+
+    // Two characters no box can print: the api refuses, and the drawer shows
+    // its words, which name the rule.
+    await prefix.fill('B-');
+    await expect(create).toBeEnabled();
+    await create.click();
+    await expect(drawer.getByRole('alert')).toContainText(/code prefix/i, { timeout: 30_000 });
+
+    await prefix.fill('B7');
+    await expect(drawer).toContainText('The first two characters of every voucher code.');
+    await create.click();
+    await expect(drawer).toHaveCount(0, { timeout: 30_000 });
+    await expect(page.getByRole('button', { name: BOOTH, exact: true })).toBeVisible({
+      timeout: 30_000,
+    });
+  });
+
+  test('Booths: the Pi booth’s Screens panel asks for no pairing, while Booth 1 on the virtual box still offers it', async ({
+    page,
+  }) => {
+    await signInAndWait(page);
+    await openSection(page, 'Booths');
+    await chooseBranch(page, CENTRAL_FLORESTA);
+    const screens = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Screens', exact: true }) });
+
+    await page.getByRole('button', { name: new RegExp(BOOTH) }).click();
+    await expect(screens).toContainText(
+      'This booth runs on its own box; its television needs no pairing.',
+      { timeout: 30_000 },
+    );
+    await expect(screens.getByRole('button', { name: 'Pair a screen' })).toHaveCount(0);
+    await expect(screens).not.toContainText('refuses every press');
+
+    // The control: Booth 1's box is the virtual box inside this api, whose
+    // television is paired — so there the panel still offers it.
+    await page.getByRole('button', { name: /Booth 1/ }).click();
+    await expect(screens).toContainText('Until one is, the television shows', { timeout: 30_000 });
+    await expect(screens.getByRole('button', { name: 'Pair a screen', exact: true })).toBeVisible();
+    await expect(screens).not.toContainText('needs no pairing');
+  });
+
+  test('Booths: a switched-off prize draws no wedge in the preview, and stays in its list as off the wheel', async ({
+    page,
+  }) => {
+    await signInAndWait(page);
+    await openSection(page, 'Booths');
+    await chooseBranch(page, CENTRAL_FLORESTA);
+    await page.getByRole('button', { name: new RegExp(BOOTH) }).click();
+
+    const prizes = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Prizes and odds', exact: true }) });
+    await expect(prizes).toBeVisible({ timeout: 30_000 });
+    const addPrize = async (name: string, chance: string, onTheWheel: boolean) => {
+      await prizes.getByRole('button', { name: 'Add prize', exact: true }).click();
+      const editor = page.getByRole('dialog', { name: 'New prize' });
+      await editor.getByLabel(/^Name \(English\)/).fill(name);
+      await editor.getByLabel(/^Chance/).fill(chance);
+      if (!onTheWheel) await editor.getByLabel(/^On the wheel/).uncheck();
+      await editor.getByRole('button', { name: 'Add prize', exact: true }).click();
+      await expect(editor).toHaveCount(0, { timeout: 30_000 });
+    };
+    // In wheel order, with the switched-off prize between the two that are on.
+    await addPrize('Sticker', '60', true);
+    await addPrize('Mystery Box', '0', false);
+    await addPrize('Balloon', '40', true);
+
+    const preview = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Wheel preview', exact: true }) });
+    const wheel = preview.getByRole('img', { name: /^Wheel preview/ });
+    await expect(wheel).toHaveAttribute(
+      'aria-label',
+      'Wheel preview: 2 slices in order — Sticker, Balloon',
+      { timeout: 30_000 },
+    );
+    await expect(wheel.locator('path')).toHaveCount(2);
+    // The list under the wheel keeps it, named for what it is.
+    await expect(preview.getByRole('listitem').filter({ hasText: 'Mystery Box' })).toContainText(
+      'off the wheel',
+    );
+    await expect(preview).not.toContainText('still drawn on the television');
+  });
+});

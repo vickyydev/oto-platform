@@ -5,10 +5,13 @@
  * **The five choices are the five things the till can do with a voucher**
  * (`resolveVoucherEffect` in `apps/api/src/services/vouchers.ts`): take an
  * amount or a percentage off the ticket order, hand over one product for
- * nothing, give the second kids ticket of a package for nothing, or record a
- * prize that was handed over at the booth itself. A wallet credit is in the
- * schema and nothing redeems one yet, so it is not offered; an existing one is
- * shown for what it is and can still be edited.
+ * nothing, give the second kids ticket of a package for nothing, or ring up a
+ * prize that reception hands over as it is — a sale at ฿0 that uses the
+ * voucher (Q2 of the booth's closing audit,
+ * `docs/progress/plans/booth/AUDIT-CLOSING-2026-09-25.md`, answered A: a
+ * hand-over prize is given out at reception, not at the booth). A wallet
+ * credit is in the schema and nothing redeems one yet, so it is not offered;
+ * an existing one is shown for what it is and can still be edited.
  *
  * The API is the authority on every rule here and checks the whole row on
  * save. What this file adds is saying so while somebody types, so the Save
@@ -62,7 +65,8 @@ export const VOUCHER_CHOICES: ReadonlyArray<{
     label: 'Hand-over prize',
     kind: 'manual',
     valueType: 'none',
-    detail: 'A prize handed over as it is, with nothing to ring up; the sale records which voucher it carried.',
+    detail:
+      'A prize given out at reception: the family brings the slip, reception rings it up as a ฿0 sale, which uses the voucher, and hands the prize over.',
   },
 ];
 
@@ -99,7 +103,7 @@ export function worthOf(row: VoucherDefinitionRow): string {
           ? 'Free ticket 1+1'
           : 'Free ticket 1+1 — no package linked';
     case 'manual':
-      return 'Handed over at the booth';
+      return 'A prize handed over at reception';
     case 'wallet_credit':
       return 'Wallet credit — no till redeems one yet';
     default:
@@ -111,6 +115,14 @@ export function worthOf(row: VoucherDefinitionRow): string {
  * Why the till would refuse this voucher type today, or null when it would
  * honour it. The words are the counter's own reasons ("not set up yet"), so
  * the list says what a family at reception would hear.
+ *
+ * **One note here is not a refusal: the hand-over prize's.** Its slip is
+ * honoured by ringing it up at a till as a ฿0 sale, which uses the voucher
+ * before the prize changes hands, and the park does that at reception — so
+ * whoever puts one on a wheel has to know the prize is kept at reception, not
+ * at the booth. It is said in this note's places (the voucher types list, the
+ * editor's "Today at the till", the prize editor's voucher line) for that
+ * reason, and in the same amber.
  */
 export function notSetUp(row: VoucherDefinitionRow): string | null {
   if (row.kind === 'free_item' && !row.productId) {
@@ -131,6 +143,9 @@ export function notSetUp(row: VoucherDefinitionRow): string | null {
   }
   if (row.ticketPackage && !row.ticketPackage.live) {
     return `${row.ticketPackage.name} is not on sale any more — the till refuses it.`;
+  }
+  if (row.kind === 'manual') {
+    return 'The family brings the slip to reception, which rings it up at ฿0 and hands the prize over.';
   }
   return null;
 }

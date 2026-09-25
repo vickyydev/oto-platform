@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { BOOTH_CODE_PREFIX_LENGTH } from '@oto/shared';
 import {
   fleetApi,
   mergeRouting,
@@ -93,6 +94,14 @@ export function StationDrawer({
 
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  const failedRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // A refusal is drawn at the top of the drawer, and the button that earned
+    // it sits at the foot, below the whole form — so it is brought into view,
+    // or the api's reason would be on the page and out of sight.
+    if (failed) failedRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [failed]);
 
   const boxList = deviceList(boxId);
   const boxDevices = useMemo(
@@ -150,7 +159,21 @@ export function StationDrawer({
     }
   };
 
-  const ready = name.trim().length > 0 && boxId.length > 0;
+  /**
+   * A booth's code prefix is not optional (H2). The box mints every voucher
+   * code with it and will not print one with anything but two letters or
+   * digits there, so a booth saved without one refuses every press. The api
+   * holds the whole rule and names it when it refuses; this form asks only
+   * what it can say plainly — that there is one, two characters long — and
+   * shows the api's own words for anything else.
+   */
+  const isBooth = kind === 'booth';
+  const prefixMissing =
+    isBooth && codePrefix.trim().length !== BOOTH_CODE_PREFIX_LENGTH
+      ? 'Required for a booth: the first two characters of every voucher code.'
+      : null;
+
+  const ready = name.trim().length > 0 && boxId.length > 0 && prefixMissing === null;
 
   return (
     <Drawer
@@ -193,7 +216,12 @@ export function StationDrawer({
         )
       }
     >
-      {failed && <ErrorNote message={failed} />}
+      {failed && (
+        // An alert, so a screen reader says the refusal the moment it lands.
+        <div ref={failedRef} role="alert">
+          <ErrorNote message={failed} />
+        </div>
+      )}
 
       {station && (
         <p className="text-xs text-muted-foreground">
@@ -263,13 +291,21 @@ export function StationDrawer({
           </Field>
           <Field
             label="Code prefix"
-            hint="Leads every band code and receipt number this station mints. Two live stations cannot share one."
+            hint={
+              !isBooth ? (
+                'Leads every band code and receipt number this station mints. Two live stations cannot share one.'
+              ) : prefixMissing ? (
+                <span style={{ color: 'hsl(var(--status-down))' }}>{prefixMissing}</span>
+              ) : (
+                'The first two characters of every voucher code.'
+              )
+            }
           >
             <TextInput
               value={codePrefix}
               onChange={(v) => setCodePrefix(v.toUpperCase())}
-              placeholder="T1"
-              maxLength={6}
+              placeholder={isBooth ? 'B2' : 'T1'}
+              maxLength={isBooth ? BOOTH_CODE_PREFIX_LENGTH : 6}
               disabled={!canEdit}
             />
           </Field>
