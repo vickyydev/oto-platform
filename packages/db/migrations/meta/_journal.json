@@ -162,6 +162,13 @@
       "when": 1790262862671,
       "tag": "0022_booth_staff_session_and_voucher_wording",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790262863671,
+      "tag": "0023_voucher_redemption_no_truncate",
+      "breakpoints": true
     }
   ]
 }
