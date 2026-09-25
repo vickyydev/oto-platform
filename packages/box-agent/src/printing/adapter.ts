@@ -74,6 +74,25 @@ export function unknownHealth(now: string): PrinterHealth {
   };
 }
 
+/**
+ * A printer that took the connection and answered no status query: there,
+ * and nothing known about inside it. Not `unknownHealth`, which is a printer
+ * nobody has reached.
+ */
+export function unansweredHealth(now: string, lastError: string | null = null): PrinterHealth {
+  return {
+    reachability: 'reachable',
+    paperStatus: 'unknown',
+    coverOpen: false,
+    cutterError: false,
+    offline: false,
+    drawerOpen: false,
+    statusUnknown: true,
+    lastError,
+    checkedAt: now,
+  };
+}
+
 export interface PrintAttempt {
   /** Bytes as `@oto/print` emitted them, complete and ready for one write. */
   bytes: Uint8Array;
@@ -150,6 +169,14 @@ export interface AdapterDeps {
   now: () => Date;
 }
 
+/** A pause that does not hold the process open by itself: the socket does that. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((ok) => {
+    const timer = setTimeout(ok, ms);
+    timer.unref?.();
+  });
+}
+
 // --- ESC/POS ----------------------------------------------------------------
 
 /**
@@ -176,8 +203,8 @@ export interface AdapterDeps {
  * does not stop the read, though it is not counted as an answer (see the
  * `catch` below).
  *
- * `firstReplyMs` is how long the first query waits; `print` gives it longer
- * after a job, to a printer that answered before it.
+ * `firstReplyMs` is how long the first query waits; `readAfterJob` gives it
+ * longer after a job, to a printer that answered before it.
  */
 async function readEscposStatus(
   channel: PrinterChannel,
@@ -216,28 +243,105 @@ async function readEscposStatus(
  * to add up to, and it is counted from when the first query is sent, because
  * the sending can stall too (see `query` in `tcpChannel`). A printer that did
  * not answer before the job gets the ordinary second: that is the silent
- * case, and the one this read is made shorter for.
+ * case, and the one this read is made shorter for. One that did answer and
+ * is silent even so is asked again (`SILENT_AFTER_JOB_ASKS`).
  */
-const AFTER_JOB_FIRST_REPLY_MS = 4 * CHANNEL_TIMEOUTS.statusMs;
+export const AFTER_JOB_FIRST_REPLY_MS = 4 * CHANNEL_TIMEOUTS.statusMs;
+
+/**
+ * How many more times the read after a job is made, and how far apart, when
+ * the printer answered the read before the job and not the one after it:
+ * case (c) in `readAfterJob` (SCRUM-429).
+ *
+ * Twice, a second apart, each a whole read whose first query is given the
+ * ordinary second (`CHANNEL_TIMEOUTS.statusMs`). After the first read's
+ * `AFTER_JOB_FIRST_REPLY_MS`, that gives the printer 4 + 2 × (1 + 1) = 8 s from
+ * the end of the job to answer (`SILENT_AFTER_JOB_WAIT_MS`). Closing the
+ * socket then takes up to one second more, because a printer that is not
+ * reading does not take the close either (`close` in `tcpChannel`).
+ *
+ * **Why not longer.** The printer's lock is held for all of it (`serialise` in
+ * `queue.ts`), and the next job and a cash-drawer pulse wait behind it: when
+ * this is a till's receipt printer, the drawer of a cash sale there waits out
+ * those nine seconds at most. And a printer that stopped mid-job — the roll
+ * out, a jam, the cover up — is waiting for a person to walk over, which no
+ * wait the lock can bear would see the end of.
+ *
+ * **Why not shorter.** The booth loses nothing to it: a press answers
+ * `queued` once its three seconds are up (`BOOTH_PRINT_WAIT_MS` in
+ * `booth.ts`), which the first read alone is past, and the television then
+ * shows the code and its QR. The asks are for a printer that is late rather
+ * than stopped — one that let a query go by while it cut, say, or reached it
+ * only behind the tail of a job that took longer than
+ * `AFTER_JOB_FIRST_REPLY_MS` allows. A second apart is so that a busy
+ * printer is asked again once it has had a moment to finish, not in the same
+ * moment; a reply that comes during the pause is not lost (see
+ * `readAfterJob`).
+ */
+export const SILENT_AFTER_JOB_ASKS = 2;
+export const SILENT_AFTER_JOB_PAUSE_MS = CHANNEL_TIMEOUTS.statusMs;
+/** From the end of the job to `PRINTER_SILENT_AFTER_JOB`: 8 s. */
+export const SILENT_AFTER_JOB_WAIT_MS =
+  AFTER_JOB_FIRST_REPLY_MS +
+  SILENT_AFTER_JOB_ASKS * (SILENT_AFTER_JOB_PAUSE_MS + CHANNEL_TIMEOUTS.statusMs);
+
+/**
+ * The read after a job, and what its silence means (SCRUM-429).
+ *
+ *  (a) **The printer answers.** The job is printed and the answer is its
+ *      health, as it always was: `print` still fails it when the answer is
+ *      the roll run out.
+ *  (b) **It answered nothing before the job either.** A unit whose LAN board
+ *      passes no `DLE EOT` back (case 2 in `queue.ts`'s header). The read is
+ *      made once, and silence comes back as null: the job is printed with
+ *      its status unknown, because refusing it would mean such a unit never
+ *      prints at all.
+ *  (c) **It answered before the job and says nothing after it.** It stopped
+ *      with the job inside it: a jam, or the roll run out, while the kernel's
+ *      buffers held the whole slip (see `write` in `tcpChannel`). The query
+ *      waits unread behind the slip, or, with the buffers full, cannot even
+ *      be handed over. Nothing on the wire can say how much of the slip
+ *      reached the paper. It is asked again `SILENT_AFTER_JOB_ASKS` times,
+ *      `SILENT_AFTER_JOB_PAUSE_MS` apart, and if it is still silent the job is
+ *      `PRINTER_SILENT_AFTER_JOB`: failed rather than printed, and `partial`,
+ *      so no timer sends it again. That is case 1 in `queue.ts`'s header, for
+ *      its reason: the slip may be on the paper, and a person pressing reprint
+ *      is a different act.
+ *
+ * A reply that comes after its query's time is not lost: the channel keeps it
+ * for the next query (`query` in `tcpChannel`), so one that arrives during a
+ * pause is read by the next ask at once. `DLE EOT` replies carry no query
+ * number, so when more than one is late a query can be handed an earlier
+ * one's reply. They share one frame, so the worst of that is a status bit
+ * read under the wrong query.
+ */
+async function readAfterJob(
+  channel: PrinterChannel,
+  label: string,
+  answeredBefore: boolean,
+): Promise<PrinterStatus | null> {
+  if (!answeredBefore) return readEscposStatus(channel);
+  let status = await readEscposStatus(channel, AFTER_JOB_FIRST_REPLY_MS);
+  for (let ask = 0; status === null && ask < SILENT_AFTER_JOB_ASKS; ask += 1) {
+    await sleep(SILENT_AFTER_JOB_PAUSE_MS);
+    status = await readEscposStatus(channel);
+  }
+  if (status !== null) return status;
+  throw new PrinterError(
+    'PRINTER_SILENT_AFTER_JOB',
+    `${label} took the slip but did not confirm it: no status for ${
+      SILENT_AFTER_JOB_WAIT_MS / 1000
+    } s after it`,
+    { partial: true },
+  );
+}
 
 function healthFromEscpos(
   status: PrinterStatus | null,
   now: string,
   lastError: string | null = null,
 ): PrinterHealth {
-  if (!status) {
-    return {
-      reachability: 'reachable',
-      paperStatus: 'unknown',
-      coverOpen: false,
-      cutterError: false,
-      offline: false,
-      drawerOpen: false,
-      statusUnknown: true,
-      lastError,
-      checkedAt: now,
-    };
-  }
+  if (!status) return unansweredHealth(now, lastError);
   return {
     reachability: 'reachable',
     paperStatus: status.paperEnd ? 'out' : status.paperNearEnd ? 'low' : 'ok',
@@ -343,13 +447,12 @@ export function escposAdapter(deps: AdapterDeps): PrinterAdapter {
          * Ask again afterwards. A roll that ran out halfway through is the one
          * failure a status query before the job cannot catch, and it is the
          * common one: a receipt is a metre of paper and nobody changes the
-         * roll until it stops.
+         * roll until it stops. What silence here means is `readAfterJob`'s
+         * to say: printed from a unit that never answers, failed from one
+         * that answered before the job.
          */
         const after = healthFromEscpos(
-          await readEscposStatus(
-            channel,
-            beforeStatus === null ? CHANNEL_TIMEOUTS.statusMs : AFTER_JOB_FIRST_REPLY_MS,
-          ),
+          await readAfterJob(channel, label, beforeStatus !== null),
           now().toISOString(),
         );
         if (after.paperStatus === 'out') {
@@ -402,13 +505,6 @@ export function escposAdapter(deps: AdapterDeps): PrinterAdapter {
  */
 const LABEL_POLL_MS = 100;
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((ok) => {
-    const timer = setTimeout(ok, ms);
-    timer.unref?.();
-  });
-}
-
 /**
  * `ESC ! ?` — one byte, "immediately returned ... even in the event of printer
  * error" (§9.1). `ESC ! S` and `SET RESPONSE` are both unconfirmed on this
@@ -425,19 +521,7 @@ function healthFromLabel(
   now: string,
   lastError: string | null = null,
 ): PrinterHealth {
-  if (!status) {
-    return {
-      reachability: 'reachable',
-      paperStatus: 'unknown',
-      coverOpen: false,
-      cutterError: false,
-      offline: false,
-      drawerOpen: false,
-      statusUnknown: true,
-      lastError,
-      checkedAt: now,
-    };
-  }
+  if (!status) return unansweredHealth(now, lastError);
   return {
     reachability: 'reachable',
     // A band printer has no near-end sensor in this family's status byte, so

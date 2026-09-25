@@ -20,15 +20,21 @@
  *     printer can meet that deadline (80–110 KB on Linux over a
  *     1500-byte-MTU link, measured in the audit). A smaller one, a booth
  *     slip among them, is taken whole by the buffers, and the status read
- *     after it decides: from a printer that answers nothing, it is recorded
- *     printed (case 2). Either way the printer's lock is not held for as
- *     long as the printer stays stopped.
- *  2. **The printer answers a status query with nothing.** The job is printed
- *     anyway and the device is reported `statusUnknown`. §9.3 leaves open
- *     whether every firmware in this family answers `DLE EOT` over the LAN
- *     board; refusing to print on an unanswered query would mean a unit whose
- *     firmware is silent never prints at all, which is a worse failure than
- *     printing without being able to see inside the machine.
+ *     after it decides (`readAfterJob` in `adapter.ts`, SCRUM-429): a printer
+ *     that answered the read before the job and answers nothing after it,
+ *     asked again, ends the job the same way — `failed` with
+ *     `PRINTER_SILENT_AFTER_JOB`, and not retried by any timer. Either way
+ *     the printer's lock is not held for as long as the printer stays
+ *     stopped.
+ *  2. **The printer answers a status query with nothing** — before the job as
+ *     well as after it. The job is printed anyway and the device is reported
+ *     `statusUnknown`. §9.3 leaves open whether every firmware in this family
+ *     answers `DLE EOT` over the LAN board; refusing to print on an unanswered
+ *     query would mean a unit whose firmware is silent never prints at all,
+ *     which is a worse failure than printing without being able to see
+ *     inside the machine. A printer that answered before the job and is
+ *     silent only after it is not this case: it stopped with the job inside
+ *     it, which is case 1.
  *  3. **Two jobs race for one printer.** Neither vendor document says whether a
  *     second TCP session is refused or stalled (§9.1, §9.6 — both list it as
  *     "confirm on site"), so the queue never opens two: jobs for one device are
@@ -71,7 +77,14 @@ import type { DeviceSettings, PrintKind, PrintTemplate } from '@oto/shared';
 import type { BoxConfigBundle, BoxConfigDevice, BoxConfigStation } from '../protocol';
 import type { PrintJobRecord, PrintJobStore } from '../store';
 import { PrinterError, parseAddress, tcpChannel, type ChannelFactory } from './channel';
-import { escposAdapter, tsplAdapter, unknownHealth, type PrinterAdapter, type PrinterHealth } from './adapter';
+import {
+  escposAdapter,
+  tsplAdapter,
+  unansweredHealth,
+  unknownHealth,
+  type PrinterAdapter,
+  type PrinterHealth,
+} from './adapter';
 
 /**
  * Which `station_device` role prints which kind.
@@ -750,6 +763,15 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         lastError: error.code,
         checkedAt: now().toISOString(),
       };
+      if (error.code === 'PRINTER_SILENT_AFTER_JOB') {
+        /**
+         * Case 1's silent ending (SCRUM-429): the printer answered before the
+         * job and nothing since, so nothing it said before is known to hold
+         * any more. It took the connection and the job, and cannot be seen
+         * into.
+         */
+        health[routed.device.id] = unansweredHealth(now().toISOString(), error.code);
+      }
       pending.lastError = error.code;
       const giveUp = !error.retryable || error.partial || pending.attempts >= maxAttempts;
       return {

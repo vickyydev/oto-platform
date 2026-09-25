@@ -73,6 +73,13 @@ export type PrinterErrorCode =
   | 'PRINTER_WRITE_FAILED'
   /** A status query went unanswered. Not fatal on its own — see `escpos.ts`. */
   | 'PRINTER_NO_STATUS'
+  /**
+   * The printer took the job but did not confirm it: it answered the status
+   * read before the job and nothing after it, however often it was asked
+   * (case (c) in `readAfterJob`, `adapter.ts`; SCRUM-429). Always `partial`,
+   * because the slip may be on the paper, so nothing sends it again.
+   */
+  | 'PRINTER_SILENT_AFTER_JOB'
   | 'PRINTER_PAPER_OUT'
   | 'PRINTER_COVER_OPEN'
   | 'PRINTER_CUTTER_ERROR'
@@ -253,12 +260,15 @@ export function tcpChannel(target: ChannelTarget): Promise<PrinterChannel> {
          *    the kernel goes on taking pieces until its buffers are full. A
          *    job that ends before then — all of a small one, or the tail of a
          *    big one — completes its write and never meets the deadline. The
-         *    status read after it decides, and from a printer that answers
-         *    nothing then, the job is recorded printed with its status
-         *    unknown (`adapter.ts`). How much the buffers take differs by
-         *    system and link: 80–110 KB on the link above, so a booth slip
-         *    (about 40 KB) is such a job on the Pi; on loopback 0.3–0.5 MB on
-         *    Windows and 2.5–9.5 MB on Linux (`print-channel.test.ts`).
+         *    status read after it decides (`readAfterJob` in `adapter.ts`): a
+         *    printer that answered before the job and answers nothing after
+         *    it, asked again, fails it as `PRINTER_SILENT_AFTER_JOB`,
+         *    `partial`; only one that answers status to nothing at all has it
+         *    recorded printed with its status unknown. How much the buffers
+         *    take differs by system and link: 80–110 KB on the link above, so
+         *    a booth slip (about 40 KB) is such a job on the Pi; on loopback
+         *    0.3–0.5 MB on Windows and 2.5–9.5 MB on Linux
+         *    (`print-channel.test.ts`).
          *  - A bigger job fails `writeMs` after the socket last took a piece:
          *    about `writeMs` after a printer stopped. A printer still reading,
          *    but not enough, can be cut off too: the socket takes the next
