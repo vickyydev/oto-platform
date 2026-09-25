@@ -1,4 +1,5 @@
-import { randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import pg from 'pg';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -29,6 +30,7 @@ import {
   boothStaffCode,
   mintBoothCode,
   newId,
+  normaliseBoothCode,
 } from '@oto/shared';
 import {
   CHALONG_MANAGER,
@@ -94,6 +96,10 @@ const defs: Record<string, string> = {};
 /** Satang from baht, so the fixtures read like the price list. */
 const b = (baht: number): number => Math.round(baht * 100);
 const KID = b(890);
+
+/** What the counter shows for a well-formed code the platform has not heard of. */
+const NOT_FOUND_WORDS =
+  'Code not found — the booth may not have synced yet. A slip printed while the booth was offline works once the booth is back online';
 
 async function pick(cookie: string, stationId: string): Promise<void> {
   const res = await ctx.app.inject({
@@ -560,10 +566,7 @@ describe('the exact words for every refusal', () => {
     const unsynced = mintBoothCode('B1', (max) => randomInt(max));
     const res = await lookup(tillA, unsynced);
     expect(res.statusCode).toBe(404);
-    expect(res.json().error).toEqual({
-      code: 'NOT_FOUND',
-      message: 'Code not found — the booth may not have synced yet',
-    });
+    expect(res.json().error).toEqual({ code: 'NOT_FOUND', message: NOT_FOUND_WORDS });
   });
 
   it('Voucher expired on <date>', async () => {
@@ -1584,10 +1587,11 @@ describe('an eleven-character code with a bad check is refused without asking th
 describe('guessing is limited: five misses in a minute lock the till for ten minutes', () => {
   it('locks on the fifth miss, answers LOCKED to the sixth — even for a real code — and raises an alert', async () => {
     const real = await issue(defs['spin-voucher-150']!);
+    // Five DIFFERENT wrong codes: one code tried again is one miss (SCRUM-406).
     for (let i = 0; i < 5; i += 1) {
       const miss =
         i % 2 === 0
-          ? await lookup(tillA, 'ZZZZ9')
+          ? await lookup(tillA, `ZZZZ${i}`)
           : await lookup(
               tillA,
               mintBoothCode('B1', (m) => randomInt(m)),
@@ -1631,12 +1635,13 @@ describe('guessing is limited: five misses in a minute lock the till for ten min
   });
 
   it('in a burst, every wrong code after the fifth answers LOCKED, not its own refusal', async () => {
-    // Eight wrong codes at once, as a script would send them. They may all pass
-    // the lock check before the fifth locks the till; the four counted after
-    // that must still say LOCKED, or the burst learns more than the limit allows.
+    // Eight different wrong codes at once, as a script would send them. They may
+    // all pass the lock check before the fifth locks the till; the three counted
+    // after that must still say LOCKED, or the burst learns more than the limit
+    // allows.
     const burst = await Promise.all(
       Array.from({ length: 8 }, (_, i) =>
-        lookup(tillB, i % 2 ? 'ZZZZ9' : mintBoothCode('B1', (m) => randomInt(m))),
+        lookup(tillB, i % 2 ? `ZZZZ${i}` : mintBoothCode('B1', (m) => randomInt(m))),
       ),
     );
     const own = burst.filter((r) => r.statusCode === 422 || r.statusCode === 404);
@@ -1652,7 +1657,7 @@ describe('guessing is limited: five misses in a minute lock the till for ten min
   });
 
   it('counts misses inside a minute only', async () => {
-    for (let i = 0; i < 4; i += 1) expect((await lookup(tillA, 'ZZZZ9')).statusCode).toBe(422);
+    for (let i = 1; i <= 4; i += 1) expect((await lookup(tillA, `ZZZZ${i}`)).statusCode).toBe(422);
     // The four fall out of the window …
     await ctx.db
       .update(redemptionThrottle)
@@ -1660,8 +1665,8 @@ describe('guessing is limited: five misses in a minute lock the till for ten min
         recentMisses: [1, 2, 3, 4].map((n) => new Date(Date.now() - 61_000 - n * 1000)),
       })
       .where(eq(redemptionThrottle.stationId, t1.id));
-    // … so a fifth is the first of a new minute, not the one that locks.
-    expect((await lookup(tillA, 'ZZZZ9')).statusCode).toBe(422);
+    // … so a fifth different code is the first of a new minute, not the one that locks.
+    expect((await lookup(tillA, 'ZZZZ5')).statusCode).toBe(422);
     const v = await issue(defs['spin-voucher-150']!);
     expect((await lookup(tillA, v.code)).statusCode).toBe(200);
   });
@@ -1678,6 +1683,252 @@ describe('guessing is limited: five misses in a minute lock the till for ten min
       .from(redemptionThrottle)
       .where(eq(redemptionThrottle.stationId, t1.id));
     expect(row).toBeUndefined();
+  });
+});
+
+/**
+ * SCRUM-406 (the booth's closing audit, M8) — the limit counts CODES, not tries.
+ *
+ * A slip printed while its booth was offline answers "not found" until the
+ * booth has sent it, and the counter tries it again. Five tries of that one
+ * slip used to lock the till for every family for ten minutes and tell the
+ * managers somebody was guessing. Each miss now carries the SHA-256 of its code
+ * beside its time (`promo.redemption_throttle.recent_miss_code_hashes`,
+ * migration 0024), and the limit counts the different codes inside the minute.
+ * Five different wrong codes lock the till exactly as before.
+ */
+describe('a code tried again is one miss: the limit counts different codes (SCRUM-406)', () => {
+  /** What the row remembers a code by: SHA-256 of the code as the table stores it, in hex. */
+  const hashOf = (code: string): string =>
+    createHash('sha256').update(normaliseBoothCode(code)).digest('hex');
+
+  /** A well-formed code nobody has — a slip its booth has not sent yet. */
+  const unsynced = (): string => mintBoothCode('B1', (max) => randomInt(max));
+
+  async function throttleOf(stationId: string) {
+    const [row] = await ctx.db
+      .select()
+      .from(redemptionThrottle)
+      .where(eq(redemptionThrottle.stationId, stationId));
+    return row;
+  }
+
+  async function locksAt(stationId: string) {
+    return ctx.db
+      .select()
+      .from(auditLog)
+      .where(
+        and(eq(auditLog.action, 'voucher.redemption_locked'), eq(auditLog.entityId, stationId)),
+      );
+  }
+
+  /**
+   * How many times the guessing alert has been raised for a till. It is one
+   * open row per till whose count goes up at each raise, and tests above lock
+   * this till too, so every test here compares against its own start.
+   */
+  async function probingRaised(stationId: string): Promise<number> {
+    const rows = await ctx.db
+      .select({ occurrences: alert.occurrences })
+      .from(alert)
+      .where(eq(alert.key, `redemption.probing:${stationId}`));
+    return rows.reduce((sum, r) => sum + r.occurrences, 0);
+  }
+
+  /** The row as migration 0024 finds it, or as a test needs it: written straight in. */
+  async function throttleRowAt(
+    stationId: string,
+    misses: { recentMisses: Date[]; recentMissCodeHashes: (string | null)[] | null },
+  ): Promise<void> {
+    await ctx.db
+      .insert(redemptionThrottle)
+      .values({ stationId, operatorId, branchId: hktId, ...misses });
+  }
+
+  it('the same wrong code five times in a minute is one miss: no lock, and the fifth still says not found', async () => {
+    const raisedBefore = await probingRaised(t1.id);
+    const locksBefore = (await locksAt(t1.id)).length;
+    const slip = unsynced();
+    // Scanned, typed with a dash, a space and small letters, and put on a cart: one code.
+    const tries = [
+      () => lookup(tillA, slip),
+      () => lookup(tillA, `${slip.slice(0, 2).toLowerCase()}-${slip.slice(2, 6)} ${slip.slice(6)}`),
+      () => hold(tillA, newId(), slip),
+      () => lookup(tillA, `${slip}\r\n`),
+      () => lookup(tillA, slip),
+    ];
+    for (const [i, attempt] of tries.entries()) {
+      const res = await attempt();
+      expect(res.statusCode, `try ${i + 1}`).toBe(404);
+      expect(res.json().error).toEqual({ code: 'NOT_FOUND', message: NOT_FOUND_WORDS });
+    }
+
+    const row = await throttleOf(t1.id);
+    expect(row!.recentMisses).toHaveLength(1);
+    expect(row!.recentMissCodeHashes).toEqual([hashOf(slip)]);
+    // A SHA-256 in hex: the code itself is never stored.
+    expect(row!.recentMissCodeHashes![0]).toMatch(/^[0-9a-f]{64}$/);
+    expect(row!.lockedUntil).toBeNull();
+    expect(row!.lockCount).toBe(0);
+    expect(await locksAt(t1.id)).toHaveLength(locksBefore);
+    expect(await probingRaised(t1.id)).toBe(raisedBefore);
+
+    // Nothing is locked: the next family's voucher goes through.
+    const v = await issue(defs['spin-voucher-150']!);
+    expect((await lookup(tillA, v.code)).statusCode).toBe(200);
+  });
+
+  it('five different wrong codes still lock the till for ten minutes and raise the alert, as before', async () => {
+    const raisedBefore = await probingRaised(t1.id);
+    const locksBefore = (await locksAt(t1.id)).length;
+    const codes = Array.from({ length: 5 }, unsynced);
+    for (const [i, code] of codes.entries()) {
+      const res = await lookup(tillA, code);
+      // The fifth sets the lock and still answers with its own refusal.
+      expect(res.statusCode, `code ${i + 1}`).toBe(404);
+      expect(res.json().error.message).toBe(NOT_FOUND_WORDS);
+    }
+    const sixth = await lookup(tillA, codes[0]!);
+    expect(sixth.statusCode).toBe(429);
+    expect(sixth.json().error).toMatchObject({
+      code: 'LOCKED',
+      message: 'Too many wrong codes — try again in 10 minutes',
+    });
+
+    const row = await throttleOf(t1.id);
+    expect(row!.lockedUntil!.getTime() - row!.updatedAt.getTime()).toBe(10 * 60_000);
+    expect(row!.lockCount).toBe(1);
+    // A fresh budget after the lock, times and hashes alike.
+    expect(row!.recentMisses).toEqual([]);
+    expect(row!.recentMissCodeHashes).toEqual([]);
+
+    const locks = await locksAt(t1.id);
+    expect(locks).toHaveLength(locksBefore + 1);
+    const thisLock = locks.find(
+      (a) => (a.after as { lockedUntil?: string }).lockedUntil === row!.lockedUntil!.toISOString(),
+    );
+    expect(thisLock!.after).toEqual({
+      lockedUntil: row!.lockedUntil!.toISOString(),
+      misses: 5,
+      windowSeconds: 60,
+    });
+
+    expect(await probingRaised(t1.id)).toBe(raisedBefore + 1);
+    const [open] = await ctx.db
+      .select()
+      .from(alert)
+      .where(and(eq(alert.key, `redemption.probing:${t1.id}`), eq(alert.status, 'open')));
+    expect(open!.summary).toMatch(
+      /^5 wrong voucher codes inside a minute at Reception Till 1 — voucher redemption there is locked until .+\. Somebody may be guessing codes\.$/,
+    );
+  });
+
+  it('four different codes, one of them tried twice more, are four misses — the fifth different code locks', async () => {
+    const codes = [unsynced(), 'ZZZZ1', unsynced(), 'ZZZZ2'];
+    for (const code of codes) expect([404, 422]).toContain((await lookup(tillA, code)).statusCode);
+    for (let i = 0; i < 2; i += 1) {
+      const again = await lookup(tillA, codes[0]!);
+      expect(again.statusCode, `again ${i + 1}`).toBe(404);
+      expect(again.json().error.message).toBe(NOT_FOUND_WORDS);
+    }
+    let row = await throttleOf(t1.id);
+    expect(row!.lockedUntil).toBeNull();
+    // One entry per code, and the code tried again is the newest: it counts
+    // from its last try.
+    expect(row!.recentMisses).toHaveLength(4);
+    expect(row!.recentMissCodeHashes).toEqual([1, 2, 3, 0].map((i) => hashOf(codes[i]!)));
+
+    expect((await lookup(tillA, unsynced())).statusCode).toBe(404);
+    row = await throttleOf(t1.id);
+    expect(row!.lockedUntil).not.toBeNull();
+    expect((await lookup(tillA, codes[0]!)).json().error.code).toBe('LOCKED');
+  });
+
+  it('misses recorded before the hash existed count one each', async () => {
+    // A till's row as migration 0024 leaves it: two misses from before it, no hashes.
+    const now = Date.now();
+    await throttleRowAt(t1.id, {
+      recentMisses: [new Date(now - 20_000), new Date(now - 10_000)],
+      recentMissCodeHashes: null,
+    });
+    const codes = [unsynced(), unsynced(), unsynced()];
+
+    expect((await lookup(tillA, codes[0]!)).statusCode).toBe(404);
+    // The two are carried forward beside the new miss, still without a hash.
+    let row = await throttleOf(t1.id);
+    expect(row!.recentMisses).toHaveLength(3);
+    expect(row!.recentMissCodeHashes).toEqual([null, null, hashOf(codes[0]!)]);
+
+    // The first code again is no new miss, and neither old one is taken for it.
+    expect((await lookup(tillA, codes[0]!)).statusCode).toBe(404);
+    expect((await lookup(tillA, codes[1]!)).statusCode).toBe(404);
+    row = await throttleOf(t1.id);
+    expect(row!.recentMissCodeHashes).toEqual([null, null, hashOf(codes[0]!), hashOf(codes[1]!)]);
+    expect(row!.lockedUntil).toBeNull();
+
+    // Two old misses and three different codes make five.
+    expect((await lookup(tillA, codes[2]!)).statusCode).toBe(404);
+    row = await throttleOf(t1.id);
+    expect(row!.lockedUntil).not.toBeNull();
+    expect((await lookup(tillA, codes[0]!)).json().error.code).toBe('LOCKED');
+  });
+
+  it('a list of hashes that does not line up with the times is not trusted: each of those misses counts one', async () => {
+    // What the api from before 0024 leaves behind while a deploy overlaps it:
+    // two more times written, and the one hash the new api had written left as it was.
+    const now = Date.now();
+    const first = unsynced();
+    await throttleRowAt(t1.id, {
+      recentMisses: [now - 30_000, now - 20_000, now - 10_000].map((t) => new Date(t)),
+      recentMissCodeHashes: [hashOf(first)],
+    });
+    // Three misses of codes nobody can name any more, and this one: four.
+    expect((await lookup(tillA, first)).statusCode).toBe(404);
+    let row = await throttleOf(t1.id);
+    expect(row!.recentMissCodeHashes).toEqual([null, null, null, hashOf(first)]);
+    expect(row!.lockedUntil).toBeNull();
+    expect((await lookup(tillA, unsynced())).statusCode).toBe(404);
+    row = await throttleOf(t1.id);
+    expect(row!.lockedUntil).not.toBeNull();
+  });
+
+  it('misses older than the minute do not count, and a code tried again after it is a miss again', async () => {
+    const codes = Array.from({ length: 4 }, unsynced);
+    for (const code of codes) expect((await lookup(tillA, code)).statusCode).toBe(404);
+    // The four fall out of the window: their times move back past a minute,
+    // their hashes stay beside them.
+    await ctx.db
+      .update(redemptionThrottle)
+      .set({ recentMisses: [4, 3, 2, 1].map((n) => new Date(Date.now() - 61_000 - n * 1000)) })
+      .where(eq(redemptionThrottle.stationId, t1.id));
+
+    const fresh = unsynced();
+    expect((await lookup(tillA, fresh)).statusCode).toBe(404);
+    let row = await throttleOf(t1.id);
+    // Only the new one is left: the four were dropped as they fell out.
+    expect(row!.recentMisses).toHaveLength(1);
+    expect(row!.recentMissCodeHashes).toEqual([hashOf(fresh)]);
+
+    // The four codes tried again are misses of this minute, one each: after the
+    // new one, the last of them is the fifth different code, and locks.
+    for (const code of codes.slice(0, 3)) expect((await lookup(tillA, code)).statusCode).toBe(404);
+    row = await throttleOf(t1.id);
+    expect(row!.lockedUntil).toBeNull();
+    expect((await lookup(tillA, codes[3]!)).statusCode).toBe(404);
+    expect((await lookup(tillA, codes[3]!)).json().error.code).toBe('LOCKED');
+  });
+
+  it('the counter guide says a slip tried again is one wrong code, not that every try counts', () => {
+    const guide = readFileSync(
+      new URL('../../../docs/ops/COUNTER_VOUCHERS.md', import.meta.url),
+      'utf8',
+    );
+    expect(guide).not.toContain('every try counts as a wrong code');
+    expect(guide).toContain(
+      'If that is the answer, trying the same slip again does no harm — one code counts as one wrong code, however often it is tried — but it works only after the booth has sent it.',
+    );
+    // The guide's table still opens with the words the till's answer opens with.
+    expect(guide).toContain(`| ${NOT_FOUND_WORDS.split('. ')[0]} |`);
   });
 });
 

@@ -508,6 +508,16 @@ export const voucherRedemption = promo.table(
  * clears is a counter an attacker resets by waiting for one. One row per
  * station; `recent_misses` holds the misses inside the last minute and is
  * cleared when the lock is set, so the budget after a lock is a fresh one.
+ *
+ * FIVE DIFFERENT CODES (SCRUM-406, migration 0024). `recent_miss_code_hashes`
+ * runs beside `recent_misses`, element for element: the SHA-256, in hex, of
+ * the normalised code each miss was for — never the code. The limit counts
+ * the distinct codes in the window, so a slip printed while its booth was
+ * offline, tried again and again before the booth has sent it, is one miss
+ * rather than a lock; five different wrong codes still lock the till. A row
+ * written before 0024 has null here, and a miss with no hash — each of that
+ * row's, carried forward as a null element — counts one on its own
+ * (`recordVoucherMiss` in `apps/api/src/services/vouchers.ts`).
  */
 export const redemptionThrottle = promo.table(
   'redemption_throttle',
@@ -525,6 +535,8 @@ export const redemptionThrottle = promo.table(
       .array()
       .notNull()
       .default(sql`'{}'::timestamptz[]`),
+    /** Beside `recent_misses`: each miss's code, hashed; null for a miss counted before 0024. */
+    recentMissCodeHashes: text('recent_miss_code_hashes').array().$type<(string | null)[]>(),
     lockedUntil: timestamp('locked_until', { withTimezone: true, mode: 'date' }),
     /** How many times this till has been locked, for the alert and for a person reading it later. */
     lockCount: integer('lock_count').notNull().default(0),

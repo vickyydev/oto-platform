@@ -1,0 +1,15 @@
+-- SCRUM-406 (booth closing audit M8) — the guessing limit counts different
+-- codes, not tries.
+--
+-- promo.redemption_throttle kept only WHEN each wrong code at a till was
+-- scanned. A slip printed while its booth was offline, tried five times before
+-- the booth had sent it, locked that till's vouchers for ten minutes and raised
+-- "Somebody may be guessing codes". recent_miss_code_hashes runs beside
+-- recent_misses, element for element: the SHA-256, in hex, of the normalised
+-- code each miss was for — never the code — and the api counts the distinct
+-- codes inside the window. Five different wrong codes still lock the till.
+--
+-- Nullable, with no default: every row already there keeps null, which the api
+-- reads as "no hash for any of these misses", so each of them still counts one.
+-- Adds one column; no rewrite, safe to apply on a live database.
+ALTER TABLE "promo"."redemption_throttle" ADD COLUMN "recent_miss_code_hashes" text[];

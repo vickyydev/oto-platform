@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
@@ -79,9 +80,11 @@ import type { Exec, Tx } from './tx';
  *     no database; a ten-character code nobody has is a character dropped),
  *     an unsynced one "Code not found — the booth may not have synced yet", a
  *     used one says who, when and where.
- *   - Five wrong codes inside a minute lock that till's redemption for ten
- *     minutes and raise `redemption.probing` (`recordVoucherMiss`); every
- *     wrong code after the fifth answers the lock.
+ *   - Five different wrong codes inside a minute lock that till's redemption
+ *     for ten minutes and raise `redemption.probing` (`recordVoucherMiss`);
+ *     every wrong code after the fifth answers the lock. The same code tried
+ *     again is the same miss (SCRUM-406), so a slip its booth has not sent yet
+ *     can be tried again without locking the till.
  *
  * WHERE THE TILL IS. Every act here happens at the station the SESSION is
  * standing at (`PUT /me/session/station`), never at one a request names: the
@@ -91,7 +94,7 @@ import type { Exec, Tx } from './tx';
 
 // --- Limits ------------------------------------------------------------------
 
-/** Five misses — an invalid code or one nobody has — inside a minute ... */
+/** Five different codes that missed — invalid, or nobody's — inside a minute ... */
 export const VOUCHER_MISS_LIMIT = 5;
 export const VOUCHER_MISS_WINDOW_MS = 60_000;
 /** ... lock that till's voucher redemption for ten minutes. */
@@ -116,7 +119,9 @@ export const VOUCHER_HOLD_LAPSE_MS = 15 * 60_000;
 
 export const VOUCHER_MESSAGES = {
   invalid: 'Invalid code',
-  notFound: 'Code not found — the booth may not have synced yet',
+  /** The plan's words, and one sentence more (SCRUM-406): a slip printed offline is not lost. */
+  notFound:
+    'Code not found — the booth may not have synced yet. A slip printed while the booth was offline works once the booth is back online',
   notSetUp: "This voucher's item is not set up yet — ask a manager",
   itemUnavailable: "This voucher's item is not sold at this branch — ask a manager",
   offline: 'Vouchers can only be redeemed online — this till is working offline',
@@ -321,15 +326,93 @@ export async function assertRedemptionUnlocked(
   }
 }
 
+/** One wrong code at a till: when, and the code's hash — null for a miss counted before 0024. */
+interface VoucherMiss {
+  at: Date;
+  codeHash: string | null;
+}
+
 /**
- * Count one wrong code at a till, and lock the till on the fifth inside a
- * minute.
+ * What a miss is remembered by: the SHA-256, in hex, of the code in the one
+ * form the table stores (`normaliseBoothCode`) — never the code itself. The
+ * code typed with a dash and the same code scanned hash alike, so they are one
+ * miss (SCRUM-406).
+ */
+function voucherMissCodeHash(rawCode: string): string {
+  return createHash('sha256').update(normaliseBoothCode(rawCode)).digest('hex');
+}
+
+/**
+ * The misses a till's row holds: `recent_misses`, with the hash of each one's
+ * code beside it in `recent_miss_code_hashes`.
+ *
+ * A list of hashes that does not line up with the times is not trusted, and
+ * every miss in the row then counts one, as all of them did before 0024: a row
+ * written before the column existed has none (null), and the api from before
+ * 0024 — still answering for the moments a deploy overlaps it — writes the
+ * times and leaves the hashes as they were.
+ *
+ * Only the length can show that. When that api drops exactly as many aged
+ * times as it adds, the hashes still line up and sit beside the wrong times
+ * until those misses age out, and a code tried again can take the place of a
+ * miss that was not its own. That forgets one miss, only in exchange for a
+ * retry, which tells a guesser nothing new, and only while a deploy overlaps.
+ */
+function recordedMisses(row: {
+  recentMisses: Date[];
+  recentMissCodeHashes: (string | null)[] | null;
+}): VoucherMiss[] {
+  const hashes = row.recentMissCodeHashes;
+  const aligned = hashes !== null && hashes.length === row.recentMisses.length;
+  return row.recentMisses.map((at, i) => ({ at, codeHash: aligned ? (hashes[i] ?? null) : null }));
+}
+
+/**
+ * The misses still inside the window once `miss` is counted, oldest first.
+ *
+ * A code tried again replaces its own earlier entry rather than adding one, so
+ * the row keeps one entry per code, and a code is in the window for as long as
+ * its LATEST try is — the same answer as keeping every try and counting the
+ * codes. A miss with no hash is never taken for another.
+ */
+function missesInWindow(
+  recorded: readonly VoucherMiss[],
+  miss: { at: Date; codeHash: string },
+  now: Date,
+): VoucherMiss[] {
+  const inside = recorded.filter((m) => now.getTime() - m.at.getTime() < VOUCHER_MISS_WINDOW_MS);
+  return [...inside.filter((m) => m.codeHash !== miss.codeHash), miss];
+}
+
+/** What counts towards the limit: each different code once, and each miss with no hash on its own. */
+function distinctMisses(misses: readonly VoucherMiss[]): number {
+  const codes = new Set<string>();
+  let unhashed = 0;
+  for (const m of misses) {
+    if (m.codeHash === null) unhashed += 1;
+    else codes.add(m.codeHash);
+  }
+  return unhashed + codes.size;
+}
+
+/**
+ * Count a wrong code at a till, and lock the till on the fifth DIFFERENT one
+ * inside a minute.
+ *
+ * WHAT COUNTS IS THE CODE, NOT THE TRY (SCRUM-406). A family's slip printed
+ * while its booth was offline answers "not found" until the booth has sent it,
+ * and the counter tries it again; five tries of that one code locked the till
+ * for every family and raised a guessing alert. Each miss now carries the hash
+ * of its code (`voucherMissCodeHash`), and the limit counts the different
+ * codes in the window (`distinctMisses`): the same code tried five times is one
+ * miss, and five different wrong codes lock the till as they always did. A
+ * miss recorded before migration 0024 has no hash and counts one on its own.
  *
  * ON ITS OWN TRANSACTION, on the pool, committed before the refusal it goes
  * with is thrown: a miss recorded inside the request's transaction would be
  * rolled back by the very refusal that reports it, and the limit would count
- * nothing. The row is locked while it is read, so two wrong codes arriving
- * together are counted as two.
+ * nothing. The row is locked while it is read, so two different wrong codes
+ * arriving together are counted as two.
  *
  * The alert is raised once the lock is committed, on the pool as well — the
  * same rule `raiseBoothAlert` in `sync-booth.ts` follows.
@@ -345,8 +428,10 @@ export async function recordVoucherMiss(
   db: Db,
   at: RedemptionStation,
   actor: { accountId: string; requestId?: string },
+  rawCode: string,
   now: Date,
 ): Promise<{ lockedUntil: Date | null; alreadyLocked: boolean }> {
+  const codeHash = voucherMissCodeHash(rawCode);
   const outcome = await db.transaction(async (tx) => {
     await tx
       .insert(redemptionThrottle)
@@ -367,16 +452,18 @@ export async function recordVoucherMiss(
         misses: row.recentMisses.length,
       };
     }
-    const recent = [
-      ...row.recentMisses.filter((t) => now.getTime() - t.getTime() < VOUCHER_MISS_WINDOW_MS),
-      now,
-    ];
-    if (recent.length < VOUCHER_MISS_LIMIT) {
+    const recent = missesInWindow(recordedMisses(row), { at: now, codeHash }, now);
+    const misses = distinctMisses(recent);
+    if (misses < VOUCHER_MISS_LIMIT) {
       await tx
         .update(redemptionThrottle)
-        .set({ recentMisses: recent, updatedAt: now })
+        .set({
+          recentMisses: recent.map((m) => m.at),
+          recentMissCodeHashes: recent.map((m) => m.codeHash),
+          updatedAt: now,
+        })
         .where(eq(redemptionThrottle.stationId, at.id));
-      return { lockedUntil: null, lockedNow: false, alreadyLocked: false, misses: recent.length };
+      return { lockedUntil: null, lockedNow: false, alreadyLocked: false, misses };
     }
     const lockedUntil = new Date(now.getTime() + VOUCHER_LOCK_MS);
     // The budget after a lock is a fresh one: the misses that caused it are
@@ -385,6 +472,7 @@ export async function recordVoucherMiss(
       .update(redemptionThrottle)
       .set({
         recentMisses: [],
+        recentMissCodeHashes: [],
         lockedUntil,
         lockCount: sql`${redemptionThrottle.lockCount} + 1`,
         updatedAt: now,
@@ -400,11 +488,11 @@ export async function recordVoucherMiss(
       requestId: actor.requestId ?? null,
       after: {
         lockedUntil: lockedUntil.toISOString(),
-        misses: recent.length,
+        misses,
         windowSeconds: VOUCHER_MISS_WINDOW_MS / 1000,
       },
     });
-    return { lockedUntil, lockedNow: true, alreadyLocked: false, misses: recent.length };
+    return { lockedUntil, lockedNow: true, alreadyLocked: false, misses };
   });
 
   if (outcome.lockedNow && outcome.lockedUntil) {
@@ -1037,7 +1125,7 @@ async function findForRedemption(
    * the fifth locks it. Those answer the lock (`recordVoucherMiss`).
    */
   const miss = async (refusal: AppError): Promise<never> => {
-    const { lockedUntil, alreadyLocked } = await recordVoucherMiss(db, at, actor, now);
+    const { lockedUntil, alreadyLocked } = await recordVoucherMiss(db, at, actor, rawCode, now);
     if (alreadyLocked && lockedUntil) throw voucherErrors.locked(lockedUntil, now);
     throw refusal;
   };

@@ -169,6 +169,13 @@
       "when": 1790262863671,
       "tag": "0023_voucher_redemption_no_truncate",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790262864671,
+      "tag": "0024_redemption_throttle_code_hashes",
+      "breakpoints": true
     }
   ]
 }
