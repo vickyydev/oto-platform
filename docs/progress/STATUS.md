@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-25, 20:39 (`main` at `2ae20a8` plus this checkpoint; staging at `08c3162`)_
+_Last updated: 2026-09-25, 22:19 (`main` at `2160f3a` plus this checkpoint; staging at `08c3162`, CI running on the batch)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
@@ -83,8 +83,9 @@ While he benches, the audit's small follow-ups land as quick rounds (the handove
 **Deployed** on staging proof; 420, 429 and 430 are on `main` in Testing (small
 remainders → SCRUM-435 and the next quick round); the proof pass raised SCRUM-432–437.
 SCRUM-401 (`4dfcb34`) and 402 (`7b360cd`), the two Highs, landed on Opus with gates
-and are in Testing, as are 431, 433, 436, 437 and the rest of the evening's landings; the
-second staging proof pass runs; 403, 406, 408 and two quick rounds (438/423, 439) are building. The owner's rule since 25 Sept: small
+and are Deployed with 409–437's screen-facing set on the second proof pass; 406, 408, 431,
+438, 439 are in Testing on the night batch (CI fixed at the root in `64d856e`); 433 is back in
+In Progress with its round running; 403 and two small till rounds are building. The owner's rule since 25 Sept: small
 defects on Fable quick rounds, stories on Opus with full gates.
 
 **Then the recommended order, still the owner's to confirm**, with the reasoning in

@@ -419,6 +419,34 @@ different; the Pi runtime and the counter were not built at all).**
   item and paid extras; refunded sales and limits), SCRUM-434 (a new booth asked
   how money reaches it), the bench measurement for SCRUM-431 (how long the Epson
   takes to answer the first status question), SCRUM-433's code field.
+- **The night batch (25 Sept, pushed 22:19 as `2160f3a`).** CI had gone red on
+  `2ae20a8` for seven printer tests on Linux only; the cause was not Linux but
+  the slow runner: seven slips rendering at once held the box's thread past the
+  channel's timeouts, and Node ran the expired timers before reading the
+  sockets, so a made connection read as unreachable and a reply already in the
+  socket as silence. Fixed at the root in `64d856e` (the connect and status
+  timeouts let the sockets be read first; the fake printers run on a worker
+  thread; two new tests fail on the old code on both systems; 401/401 three
+  times under a runner-like throttle in a container). Landed with it:
+  `fae4b71` SCRUM-438 (the clock anomaly only across a day boundary), `970ce02`
+  SCRUM-423's unlock case (proven by work done, no stopwatch), `d5cafd1` +
+  `2160f3a` SCRUM-439 (the alert wording; leases and print retries held to a
+  cap), `cb0f65a` SCRUM-406 (a code hash beside each miss, distinct codes
+  counted; migration 0024), `7ea7d95` SCRUM-408 (a vitest runner for the till,
+  137 tests pinning the scan poll, the voucher on the cart, the promo helpers,
+  the cart quote and the sale writer; 43 mutants caught; the browser tests in
+  CI and the booth smoke are left), `4fdc63f` the second proof pass's images.
+  **The second staging proof (`wf_228ca0fb`, staging at `08c3162`):** Deployed
+  402, 401, 432, 435, 420, 430, 436, 437, 429; 431 stays Testing (its commits
+  were not yet on staging); **433 back to In Progress** — old sales keep the
+  whole code in their label and the sale answer's code field is still full
+  (a round runs: mask the field, relabel old rows by migration 0025, keep the
+  last four visible; with SCRUM-441's wording). New tickets from the pass:
+  441 (the platform's unknown-code sentence differs from the till's), 442 (the
+  till keeps a typed code in its promo box), 443 (the header's branch chip
+  clips at 1600). **Building:** SCRUM-403 on Opus (`wf_27c27ae1`, the damaged store), SCRUM-433's remainder with 441 on Opus (`wf_ae8cd82b`), and a quick till round r16 (`wf_2538ca76`: 442, 443, the stale runner comments). CI, the Pi artifact and staging watched at `2160f3a`; the next Pi release goes to the owner when that run is green.
+  **Owner questions open:** SCRUM-401's three, SCRUM-434, the Epson's first
+  status answer time (SCRUM-431), SCRUM-433's code field.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
