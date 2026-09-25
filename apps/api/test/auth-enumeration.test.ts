@@ -1,6 +1,6 @@
 import { hash, verify } from '@node-rs/argon2';
 import { eq } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { account, auditLog, operator, role, roleAssignment } from '@oto/db';
 import { newId, normalizePhone } from '@oto/shared';
 import { _resetThrottle } from '../src/services/auth';
@@ -14,6 +14,20 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
+
+/**
+ * SCRUM-423 — argon2's `verify`, wrapped so the unlock case can watch it.
+ *
+ * The real function runs underneath (`vi.fn(actual.verify)`): every other case
+ * in this file still does the real work, and the sign-in stopwatch still times
+ * it. `vi.mock` is hoisted above the imports, which is what puts the wrapper in
+ * front of `services/auth.ts` as well as this file — a spy on the service's
+ * private dummy verification would otherwise need a seam cut into it.
+ */
+vi.mock('@node-rs/argon2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@node-rs/argon2')>();
+  return { ...actual, verify: vi.fn(actual.verify) };
+});
 
 /**
  * SCRUM-251 — the sign-in screen is not a staff directory.
@@ -42,9 +56,11 @@ import {
  * SCRUM-325 adds the channel the bytes do not cover: the CLOCK. Identical
  * answers still sorted the same list of numbers if one class of refusal came
  * back measurably sooner, and one did — argon2 ran only for an active account,
- * so every other class was answered without it. The last two describes below
- * measure the paths against each other and pin the difference to noise —
- * SCRUM-348 adds the unlock screen, which had the same shape.
+ * so every other class was answered without it. The sign-in describe below
+ * measures the paths against each other and pins the difference to noise.
+ * SCRUM-348 adds the unlock screen, which had the same shape; its case at the
+ * end of the file proves the work directly rather than timing it (SCRUM-423),
+ * which is what the wrapped `verify` just below the imports is for.
  */
 
 const MAX_FAILURES = 5;
@@ -381,11 +397,11 @@ type RefusedCall = () => Promise<{ statusCode: number }>;
  * Measure a set of refusal classes against each other and hold the spread to
  * noise.
  *
- * Shared by the sign-in classes (SCRUM-325) and the unlock ones (SCRUM-348)
- * rather than copied: the leak is the same leak on both screens, measured in
- * the same unit, and two copies of the rounds, the warm-up and the two
- * assertions would drift apart at the first machine that needed one of them
- * loosened.
+ * Written for the sign-in classes (SCRUM-325); the unlock case (SCRUM-348)
+ * measured through it too until SCRUM-423, when a shared CI runner failed
+ * that two-class race with nothing changed in the code (12.1 ms against
+ * 18.0 ms, of a 7.6 ms verify) and it moved to counting the work instead —
+ * see the end of the file. The sign-in race is unchanged by that.
  */
 async function refusalsCostTheSame(opts: {
   /** What the printed line calls this measurement. */
@@ -521,6 +537,22 @@ describe('a refusal costs the same work whatever it refuses (SCRUM-325)', () => 
  * the code nulls a hash either, which is why the fixture signs in for real and
  * then takes the hash away: an imported account, a restored dump or a hand-run
  * UPDATE is where that row comes from, and the guard already anticipates it.
+ *
+ * HOW IT IS PROVED — by the work, not by the clock (SCRUM-423). This case
+ * used to race the two refusals under the sign-in measurement's bounds, and
+ * on 25 September it went red on CI at 12.1 ms against 18.0 ms: a 6.0 ms gap
+ * on a runner whose whole verification cost 7.6 ms, with nothing changed in
+ * the code. Fifty medians of a two-class race on a shared runner measure the
+ * runner. The property is about work — the refusal with no hash to check must
+ * spend the argon2 verification the ordinary refusal spends — and work can be
+ * watched directly: `verify` is wrapped for this file (see the top), so the
+ * case reads what each path asked argon2 to do and asserts it is the same
+ * job. One verification, of the typed password, against a hash carrying the
+ * same algorithm and cost parameters, finished before the answer went out;
+ * and on the hashless path against a hash that is nobody's and is the same
+ * one every time, because a dummy minted per refusal would cost a hash on top
+ * of the verify and be slower than what it imitates. A quiet runner cannot
+ * make that pass and a loud one cannot make it fail.
  */
 describe('an unlock refusal costs the same work whatever it refuses (SCRUM-348)', () => {
   /** Two locked tills: one whose account has a password, one whose has none. */
@@ -555,22 +587,99 @@ describe('an unlock refusal costs the same work whatever it refuses (SCRUM-348)'
       payload: { password: WRONG_PASSWORD },
     });
 
-  it('a session whose account has no password is refused no sooner than a wrong one', async () => {
+  /** One thing a refusal asked argon2 to do. */
+  interface Verification {
+    /** The encoded hash the typed password was checked against. */
+    hashed: string;
+    password: string;
+    /** Whether the check had finished before the refusal was answered. */
+    finishedFirst: boolean;
+  }
+
+  interface Refusal {
+    body: string;
+    verifications: Verification[];
+  }
+
+  /**
+   * One refused unlock, and every verification it ran. A verification the
+   * refusal did not wait for would still be counted as work, and would still
+   * leave the early answer for a stopwatch to read — which is why each one
+   * also records whether it had settled before the response came back.
+   */
+  async function refused(cookie: string): Promise<Refusal> {
+    await _resetThrottle(ctx.db);
+    const verifySpy = vi.mocked(verify);
+    const real = verifySpy.getMockImplementation()!;
+    const verifications: Verification[] = [];
+    let answered = false;
+    verifySpy.mockImplementation(async (hashed, password, options, abortSignal) => {
+      const entry: Verification = {
+        hashed: String(hashed),
+        password: String(password),
+        finishedFirst: false,
+      };
+      verifications.push(entry);
+      try {
+        return await real(hashed, password, options, abortSignal);
+      } finally {
+        entry.finishedFirst = !answered;
+      }
+    });
+    try {
+      const res = await unlock(cookie);
+      answered = true;
+      expect(res.statusCode).toBe(401);
+      return { body: res.body, verifications };
+    } finally {
+      verifySpy.mockImplementation(real);
+    }
+  }
+
+  it('an account with no password is refused by the same argon2 work as a wrong one', async () => {
+    const live = await refused(liveCookie);
+    const hashless = await refused(hashlessCookie);
     // Not vacuous: both are 401 INVALID_CREDENTIALS with the same body, which
-    // is what leaves the clock as the only thing left to read.
-    const [live, hashless] = await Promise.all([unlock(liveCookie), unlock(hashlessCookie)]);
-    expect(live.statusCode).toBe(401);
+    // is what leaves the work as the only thing left to read.
     expect(hashless.body).toBe(live.body);
 
-    /** The baseline: a wrong password on a till whose account has one. */
-    const BASELINE = 'locked till, wrong password';
-    await refusalsCostTheSame({
-      heading: 'SCRUM-348 — median unlock refusal',
-      baseline: BASELINE,
-      classes: [
-        [BASELINE, () => unlock(liveCookie)],
-        ['account with no hash', () => unlock(hashlessCookie)],
-      ],
-    });
-  }, 240_000);
+    // One verification each, of the password that was typed, and the answer
+    // waited for it on both paths.
+    expect(live.verifications).toHaveLength(1);
+    expect(hashless.verifications).toHaveLength(1);
+    for (const v of [live.verifications[0]!, hashless.verifications[0]!]) {
+      expect(v.password).toBe(WRONG_PASSWORD);
+      expect(v.finishedFirst).toBe(true);
+    }
+
+    // The ordinary till checked it against its account's own stored hash.
+    const [liveAccount] = await ctx.db
+      .select({ passwordHash: account.passwordHash })
+      .from(account)
+      .where(eq(account.phone, normalizePhone(UNLOCK_LIVE)!))
+      .limit(1);
+    const liveHash = liveAccount!.passwordHash!;
+    expect(live.verifications[0]!.hashed).toBe(liveHash);
+
+    // The hashless one checked it against the dummy: the same algorithm and
+    // the same cost parameters as the real hash — the PHC prefix names both,
+    // and the parameters are what decide what a verification costs —
+    const dummy = hashless.verifications[0]!.hashed;
+    expect(dummy).not.toBe(liveHash);
+    const parameters = (encoded: string) => encoded.split('$').slice(1, 4).join('$');
+    expect(parameters(dummy)).toMatch(/^argon2id\$v=19\$m=\d+,t=\d+,p=\d+$/);
+    expect(parameters(dummy)).toBe(parameters(liveHash));
+
+    // — a hash that is nobody's —
+    const holders = await ctx.db
+      .select({ id: account.id })
+      .from(account)
+      .where(eq(account.passwordHash, dummy));
+    expect(holders).toEqual([]);
+
+    // — and the same one on the next refusal, because it is minted once.
+    const again = await refused(hashlessCookie);
+    expect(again.verifications).toHaveLength(1);
+    expect(again.verifications[0]!.hashed).toBe(dummy);
+  });
 });
