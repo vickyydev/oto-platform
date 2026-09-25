@@ -1619,23 +1619,23 @@ export default function MobileTill() {
    * showed on one and not the other would read as two different carts
    * (SCRUM-329 settled the same thing for the tier-claim refusal).
    *
-   * The two quote notes are drawn only with a cart on the screen: the hook
-   * stops asking when the last line is removed and keeps the error it last had
+   * All three are drawn only with a cart on the screen. The hook stops asking
+   * when the last line is removed and keeps the error it last had
    * (`lib/cartQuote.ts`), so an emptied cart would otherwise still be carrying
-   * the refusal of a cart that no longer exists. `PriceSourceNote` is left
-   * exactly where it was, drawn for every state including the empty one.
+   * the refusal of a cart that no longer exists; and an empty cart is never
+   * sent for pricing at all, so `PriceSourceNote` on it called the platform's
+   * silence a refusal — "did not price this cart" under a ฿0 total (SCRUM-437,
+   * the counter's `pages/Till.tsx` draws the same rule). Nothing at all, rather
+   * than an empty wrapper, so the panel's spacing has nothing to space.
    */
-  const priceNotes = (
-    <div className="space-y-2">
-      {lines.length > 0 && (
-        <>
-          <QuoteRefusalNote error={quoteRefusal} blocking />
-          <QuoteFaultNote error={quoteFault} />
-        </>
-      )}
-      <PriceSourceNote quote={cart.quote} pending={cart.pending} />
-    </div>
-  );
+  const priceNotes =
+    lines.length > 0 ? (
+      <div className="space-y-2">
+        <QuoteRefusalNote error={quoteRefusal} blocking />
+        <QuoteFaultNote error={quoteFault} />
+        <PriceSourceNote quote={cart.quote} pending={cart.pending} />
+      </div>
+    ) : undefined;
 
   const liveSale: Sale =
     saleResult ?? {

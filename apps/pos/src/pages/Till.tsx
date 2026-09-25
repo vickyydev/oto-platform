@@ -2835,7 +2835,17 @@ export default function Till() {
                   }
                 : cart.totals
             }
-            priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
+            // SCRUM-437 — no note while the cart is empty. An empty cart is
+            // never sent for pricing (`useCartQuote` asks only for a line or a
+            // held voucher's code), so this till's figure for it is the only
+            // one there is, and "the platform did not price this cart" would
+            // report a refusal that never happened. The moment a line or a
+            // voucher goes on, the note is drawn as before.
+            priceNote={
+              lines.length > 0 || voucherCodes.length > 0 ? (
+                <PriceSourceNote quote={cart.quote} pending={cart.pending} />
+              ) : undefined
+            }
             tierClaimRefusal={tierClaimRefusal}
             // The voucher is a line of the order only when it is what the sale
             // hands over; one that takes money off is its card below.

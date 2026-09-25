@@ -104,6 +104,14 @@ export interface ApiSale {
    */
   voidedAt?: string | null;
   voidedByAccountId?: string | null;
+  /**
+   * Who voided it, by name — "Voided by Som, 25 Sept, 14:02", not an account
+   * id. Optional for the same reason as the three above: a deployment that
+   * answers the void's time and reason but not yet the name still opens in
+   * History, and the note there says the time without a name rather than
+   * "by undefined". Null beside an account id when nothing names the account.
+   */
+  voidedByName?: string | null;
   voidReason?: string | null;
   totals: ApiSaleTotals;
 }
@@ -159,6 +167,23 @@ export interface ApiSaleDiscount {
   reason: string | null;
   note: string | null;
   appliedByName: string | null;
+}
+
+/**
+ * WHETHER A DISCOUNT ROW IS A VOUCHER'S — SCRUM-430.
+ *
+ * The ledger files a voucher under the same `promo` kind as a park's promo
+ * code, and no field on the row says which it was. What does is the label the
+ * platform writes on a voucher's row and on nothing else: the voucher type's
+ * name and the last four characters of the code, "150 THB Voucher (voucher
+ * …47WP)" (`voucherLineLabel`, apps/api/src/services/vouchers.ts; before
+ * SCRUM-433 the whole code, "(voucher 7K2…)"). Both forms open the same way,
+ * and that opening is what is read. A `voucherId` on the row would make this a
+ * field read instead of a label read; until the ledger carries one, this is
+ * the one signal on the wire.
+ */
+export function isVoucherDiscount(d: Pick<ApiSaleDiscount, 'kind' | 'label'>): boolean {
+  return d.kind === 'promo' && /\(voucher\b/i.test(d.label ?? '');
 }
 
 export interface ApiSaleDetail {

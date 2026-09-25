@@ -216,10 +216,16 @@ export interface ValidateItemPromoOptions extends ItemPromoOptions {
  * Whether a code can go on this F&B or shop order, and why not when it cannot.
  *
  * The rules are the engine's `validatePromoCode` — the same active flag, date
- * window, usage limits, stacking rules and scope check the ticket till applies,
- * against the same rows the platform will price — so a code accepted here is a
- * code the platform will honour, and the refusal wording is the one reception
- * already reads at the till.
+ * window, usage limits, stacking rules and scope check the ticket till applies
+ * — run over this station's copy of the park's discount definitions, so the
+ * refusal wording is the one reception already reads at the till. It is a
+ * first reading, not the verdict: since SCRUM-401 the platform prices every
+ * code itself, from the definitions as they stand when it quotes and commits
+ * the order, and it may refuse a code this copy accepted — one archived or
+ * switched off since the copy was taken, a usage limit reached at another
+ * station, a code the platform never had. The station then drops that code
+ * and shows the platform's reason (`pages/OrderStation.tsx`,
+ * `pages/MerchStation.tsx`); a code refused here simply never goes out.
  *
  * A FREE-ITEM CODE IS REFUSED HERE, and that is this station's own rule rather
  * than the engine's. The engine resolves a free-item code against the cart line

@@ -3,6 +3,7 @@ import { PAYMENT_ATTEMPT_TAKEN_STATUSES, PAYMENT_ATTEMPT_TERMINAL_STATUSES } fro
 import {
   getSale,
   baht,
+  isVoucherDiscount,
   type ApiSaleDetail,
   type BadgeStatus,
   type HistoryTxn,
@@ -76,14 +77,40 @@ import {
  * locked or reloaded mid-payment — otherwise stays `tendering` for ever and
  * keeps any Lucky Wheel voucher on it from being used.
  *
- * A VOIDED SALE SAYS WHY (SCRUM-430), whichever screen voided it: this one,
- * with the reason just given; a till's Cancel; the offer on a voucher refusal.
- * The reason is read off the sale where the ledger's read carries it
- * (`voidReason`, `voidedAt` in api/history.ts). Such a sale has nothing to
- * refund, so it shows no Refund button — not even a greyed one — and the void
- * made here is reported to the page (`onVoided`) so its list is read again
- * and stops saying "Unpaid".
+ * A VOIDED SALE SAYS WHO, WHEN AND WHY (SCRUM-430), whichever screen voided
+ * it: this one, with the reason just given; a till's Cancel; the offer on a
+ * voucher refusal. They are read off the sale where the ledger's read carries
+ * them (`voidedByName`, `voidedAt`, `voidReason` in api/history.ts), and the
+ * note says as much of them as the read gave — `voidSentence` below has the
+ * three forms. Its last clause, that a voucher the sale held is free again, is
+ * said only of a sale that held one. Such a sale has nothing to refund, so it
+ * shows no Refund button — not even a greyed one — and the void made here is
+ * reported to the page (`onVoided`) so its list is read again and stops
+ * saying "Unpaid".
  */
+/**
+ * THE VOID NOTE'S SENTENCE — SCRUM-430, in its three forms:
+ *
+ *   Voided by Som — wrong tier. It can never be paid.                      (voided on this screen)
+ *   Voided by Som, 25 Sept, 14:02 — wrong tier. It can never be paid.      (read back, voider named)
+ *   Voided 25 Sept, 14:02 — wrong tier. It can never be paid.              (read back, no name)
+ *
+ * The voucher clause — ", and a voucher it held is free again" — is said only
+ * of a sale that held one. Said of every void, it sent reception looking for
+ * a slip that was never on the sale.
+ */
+function voidSentence(
+  record: { reason: string | null; at: string | null; byName: string | null },
+  voucherHeld: boolean,
+  fmt: (iso: string) => string,
+): string {
+  const who = record.byName ? ` by ${record.byName}` : '';
+  const when = record.at ? `${who ? ',' : ''} ${fmt(record.at)}` : '';
+  const why = record.reason ? ` — ${record.reason}` : '';
+  const voucher = voucherHeld ? ', and a voucher it held is free again' : '';
+  return `Voided${who}${when}${why}. It can never be paid${voucher}.`;
+}
+
 /** "less than a minute", "1 minute", "12 minutes". */
 function minutesAgo(ms: number): string {
   const minutes = Math.floor(ms / 60_000);
@@ -113,7 +140,8 @@ function VoidSaleDialog({
   stationName: string | null;
   operatorName: string;
   fmt: (iso: string) => string;
-  onVoided: (voided: { reason: string }) => void;
+  /** The reason the void was given, and the vouchers it let go (none, for most sales). */
+  onVoided: (voided: { reason: string; releasedVoucherIds: string[] }) => void;
 }) {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -139,7 +167,10 @@ function VoidSaleDialog({
     setError(null);
     try {
       const answer = await salesApi.voidSale(sale.id, trimmed);
-      onVoided({ reason: answer.void.reason ?? trimmed });
+      onVoided({
+        reason: answer.void.reason ?? trimmed,
+        releasedVoucherIds: answer.releasedVoucherIds,
+      });
       onOpenChange(false);
     } catch (err) {
       setError(
@@ -336,8 +367,10 @@ export function SaleDetail({
   const { operator, can } = useOperator();
   const [detail, setDetail] = useState<ApiSaleDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** The void this screen just made, with the reason it was given. */
-  const [voided, setVoided] = useState<{ reason: string } | null>(null);
+  /** The void this screen just made: the reason it was given, and the vouchers it let go. */
+  const [voided, setVoided] = useState<{ reason: string; releasedVoucherIds: string[] } | null>(
+    null,
+  );
   const [showVoid, setShowVoid] = useState(false);
 
   useEffect(() => {
@@ -428,7 +461,8 @@ export function SaleDetail({
    * THE VOID ON THIS SALE, from whichever side knows it (SCRUM-430): the one
    * this screen just made, by this account and with the reason it was given;
    * else the one the ledger's read carries, when it does — a sale voided at
-   * its till, from a voucher refusal's offer, or on another screen.
+   * its till, from a voucher refusal's offer, or on another screen — with the
+   * voider's name where the read gives one.
    */
   const voidRecord = voided
     ? { reason: voided.reason, at: null, byName: operator?.name ?? 'you' }
@@ -436,9 +470,20 @@ export function SaleDetail({
       ? {
           reason: detail?.sale.voidReason ?? sale.voidReason ?? null,
           at: detail?.sale.voidedAt ?? sale.voidedAt ?? null,
-          byName: null,
+          byName: detail?.sale.voidedByName ?? sale.voidedByName ?? null,
         }
       : null;
+  /**
+   * WHETHER THE SALE HELD A VOUCHER, for the one clause of the void note that
+   * is about it. The ledger does not flag a voucher's discount row — it is a
+   * `promo` row like a park code's — and what tells them apart is the label
+   * the platform writes on it (`isVoucherDiscount`, api/history.ts). A void
+   * made here also answers with the vouchers it let go, and that is read too,
+   * so the clause is right on a deployment whose labels predate the rule.
+   */
+  const voucherHeld =
+    (detail?.discounts ?? []).some(isVoucherDiscount) ||
+    (voided !== null && voided.releasedVoucherIds.length > 0);
   const tierClaim = detail?.sale.tierClaim ?? sale.tierClaim ?? null;
   const totals = sale.totals;
   const taxTotal = totals.taxInclusiveSatang + totals.taxExclusiveSatang;
@@ -694,12 +739,7 @@ export function SaleDetail({
                 data-testid="sale-voided"
               >
                 <Ban className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  Voided
-                  {voidRecord.byName ? ` by ${voidRecord.byName}` : voidRecord.at ? ` ${fmt(voidRecord.at)}` : ''}
-                  {voidRecord.reason ? ` — ${voidRecord.reason}` : ''}. It can never be paid, and a
-                  voucher it held is free again.
-                </span>
+                <span>{voidSentence(voidRecord, voucherHeld, fmt)}</span>
               </div>
             )}
             <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground flex items-start gap-2">

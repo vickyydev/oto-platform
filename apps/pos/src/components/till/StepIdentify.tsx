@@ -127,9 +127,13 @@ export function StepIdentify({
           </div>
         )}
 
-        {/* Event passes — flat-priced camp/event entry, no membership needed. */}
+        {/* Event passes — flat-priced camp/event entry, no membership needed.
+            The heading row and the action row below wrap rather than clip when
+            the column is narrow — the test harness's customer display open
+            beside the till at 1600 px (SCRUM-436); with room, as there always
+            is with the display closed, they lay out exactly as before. */}
         <div className="mt-2">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             <Ticket className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
               Event Passes
@@ -157,7 +161,7 @@ export function StepIdentify({
         </div>
       </ScrollArea>
 
-      <div className="mt-auto pt-5 shrink-0 flex items-center gap-3">
+      <div className="mt-auto pt-5 shrink-0 flex flex-wrap items-center gap-3">
         {onRedeemBooking && (
           <Button
             variant="outline"
