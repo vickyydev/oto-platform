@@ -65,6 +65,44 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
+      # installs `oto-box-<version>-<commit>.tgz`, and the guide says the file
+      # comes from us with its SHA-256 — but nothing packed it except a
+      # developer's machine, where the only packed file was stale. Every run of
+      # this job now packs it at the commit it just tested and keeps it three
+      # weeks as the artifact named for that commit, the checksum beside it in
+      # `sha256sum -c` form. The install and service scripts are parsed first:
+      # a script bash cannot read was otherwise found on the Pi, at install time.
+      - name: Pi scripts parse
+        run: |
+          for f in scripts/pi/*.sh; do bash -n "$f"; done
+          # ubuntu-latest carries shellcheck. An error fails the job; warnings
+          # and notes print for the eye and do not — three stand today, kept
+          # with SCRUM-422's lint part. A runner without it parses only.
+          if command -v shellcheck >/dev/null; then
+            shellcheck --severity=error scripts/pi/*.sh
+            shellcheck scripts/pi/*.sh || true
+          else
+            echo "shellcheck is not on this runner; bash -n only"
+          fi
+      - name: Pack the Pi release
+        id: pack
+        run: |
+          pnpm --filter @oto/box-agent pack:pi
+          cd packages/box-agent/dist
+          set -- oto-box-*-"$(git rev-parse --short HEAD)"*.tgz
+          [ "$#" -eq 1 ] && [ -f "$1" ] || { echo "expected one tarball for HEAD in dist/, found: $*"; exit 1; }
+          sha256sum "$1" | tee "$1.sha256"
+          echo "tarball=packages/box-agent/dist/$1" >> "$GITHUB_OUTPUT"
+      - name: Upload the Pi release
+        uses: actions/upload-artifact@v4
+        with:
+          name: oto-box-${{ github.sha }}
+          path: |
+            ${{ steps.pack.outputs.tarball }}
+            ${{ steps.pack.outputs.tarball }}.sha256
+          if-no-files-found: error
+          retention-days: 21
       # The Console's end-to-end set (SCRUM-365). It brings its own database:
       # `e2e/run.mjs` creates one on the server `TEST_DATABASE_URL` names — the
       # Postgres service above — migrates and seeds it, starts the api (with
