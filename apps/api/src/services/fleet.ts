@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import {
   account,
   box,
@@ -325,6 +325,66 @@ function assertStationCodePrefix(kind: StationKind, codePrefix: string | null): 
     throw new AppError(400, 'BOOTH_CODE_PREFIX_INVALID', BOOTH_CODE_PREFIX_RULE, {
       field: 'codePrefix',
     });
+  }
+}
+
+/**
+ * A booth's code prefix is unique across the OPERATOR, not only its branch
+ * (closing audit L15, SCRUM-414).
+ *
+ * The prefix is the code space a booth's box mints from, so two live booths
+ * with one prefix — "B1" at each park — mint from one space and clash about
+ * three times a decade, with the second family's slip redeeming as the first
+ * voucher. The database's `station_code_prefix_unique` is per branch; this is
+ * the operator-wide rule, checked on the station as it will stand after the
+ * write, and it names the booth holding the prefix so an administrator can
+ * pick another without a search. Booths only: a till's prefix is the series
+ * its receipt numbers are issued under and never reaches a voucher.
+ *
+ * Pre-checked rather than read from a constraint — the opposite of
+ * `FLEET_CONFLICTS` — because the other booth's name is the point of the
+ * message, and a constraint cannot carry it. Two administrators creating two
+ * booths with one prefix at two branches in the same instant would both pass;
+ * the cloud's collision quarantine (`services/sync-booth.ts`) still stands
+ * behind that.
+ */
+async function assertBoothCodePrefixFree(
+  db: Db,
+  input: {
+    operatorId: string;
+    kind: StationKind;
+    codePrefix: string | null;
+    /** The station being edited, which does not count against itself. */
+    exceptStationId?: string;
+  },
+): Promise<void> {
+  if (input.kind !== 'booth' || !input.codePrefix) return;
+  const [other] = await db
+    .select({ id: station.id, name: station.name, branchName: branch.name })
+    .from(station)
+    .innerJoin(branch, eq(branch.id, station.branchId))
+    .where(
+      and(
+        eq(station.operatorId, input.operatorId),
+        eq(station.kind, 'booth'),
+        eq(station.codePrefix, input.codePrefix),
+        isNull(station.archivedAt),
+        ...(input.exceptStationId ? [ne(station.id, input.exceptStationId)] : []),
+      ),
+    )
+    .limit(1);
+  if (other) {
+    throw new AppError(
+      409,
+      'BOOTH_CODE_PREFIX_TAKEN',
+      `Code prefix ${input.codePrefix} is already used by ${other.name} at ${other.branchName}. Every booth needs a prefix of its own, because it starts every voucher code the booth prints.`,
+      {
+        field: 'codePrefix',
+        stationId: other.id,
+        stationName: other.name,
+        branchName: other.branchName,
+      },
+    );
   }
 }
 
@@ -1032,6 +1092,11 @@ export async function createStation(
     );
   }
   assertStationCodePrefix(input.kind, input.codePrefix ?? null);
+  await assertBoothCodePrefixFree(db, {
+    operatorId: actor.operatorId,
+    kind: input.kind,
+    codePrefix: input.codePrefix ?? null,
+  });
   await validateStationWrite(db, {
     operatorId: actor.operatorId,
     branchId,
@@ -1105,6 +1170,12 @@ export async function updateStation(
     patch.kind ?? before.kind,
     patch.codePrefix === undefined ? before.codePrefix : patch.codePrefix,
   );
+  await assertBoothCodePrefixFree(db, {
+    operatorId: actor.operatorId,
+    kind: patch.kind ?? before.kind,
+    codePrefix: patch.codePrefix === undefined ? before.codePrefix : patch.codePrefix,
+    exceptStationId: before.id,
+  });
 
   const [beforeView] = await stationViews(db, [before], { withStaff: true });
   const devices = patch.devices ?? beforeView!.devices.map((d) => ({ role: d.role, deviceId: d.deviceId }));

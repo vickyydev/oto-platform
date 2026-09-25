@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 
@@ -9,6 +12,7 @@ import {
   BOOTH_SPIN_COUNTER_SCOPE,
   BOOTH_STAFF_THROTTLE_SCOPE,
   BoothRefusal,
+  boothMintedCodeKey,
   createBooth,
   type Booth,
   type BoothCacheEntry,
@@ -25,7 +29,7 @@ import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
 import type { BoxStore, CounterKey, PrintJobRecord } from '../src/store';
 import type { AgentLog } from '../src/transport';
 import type { BoothVoucherData, PrintJob as RenderPrintJob } from '@oto/print';
-import { BOOTH_CODE_ALPHABET } from '@oto/shared';
+import { BOOTH_CODE_ALPHABET, BOOTH_CODE_RANDOM_LENGTH, boothCodeCheckCharacter } from '@oto/shared';
 import { BOX_ID, BRANCH_ID, OPERATOR_ID, seededIndex } from './_support';
 
 /**
@@ -131,6 +135,8 @@ interface HarnessOptions {
   privateKey?: string | null;
   /** The booth station's code prefix. `B1` unless a test says otherwise. */
   codePrefix?: string | null;
+  /** Where the voucher code's characters come from. Seeded, and fresh per booth, unless a test says. */
+  codeIndex?: (max: number) => number;
   /** The branch's time zone. Bangkok unless a test says otherwise. */
   timezone?: string;
   /** How long a press waits on the printer. The booth's own default unless set. */
@@ -153,7 +159,7 @@ function openBooth(options: HarnessOptions = {}): Harness {
 
   const rolls = options.rolls ? [...options.rolls] : null;
   let rollIndex = 0;
-  const codeIndex = seededIndex(codeSeed++);
+  const codeIndex = options.codeIndex ?? seededIndex(codeSeed++);
   let codePrefix = options.codePrefix === undefined ? 'B1' : options.codePrefix;
   let held: Promise<void> | null = null;
 
@@ -917,6 +923,78 @@ test('a box with no signing key refuses the press rather than drawing unrecordab
     (err: unknown) => err instanceof BoothRefusal && err.code === 'cannot_record',
   );
   h.close();
+});
+
+// --- Codes this box has minted before (SCRUM-414, closing audit L15) ---------
+
+/**
+ * Indices that spell each of `bodies` over the booth alphabet, in turn, then
+ * whatever `after` draws: a random source scripted to repeat itself.
+ */
+function scriptedCodes(bodies: string[], after: (max: number) => number): (max: number) => number {
+  const queue = bodies.flatMap((body) => [...body].map((ch) => BOOTH_CODE_ALPHABET.indexOf(ch)));
+  return (max) => (queue.length > 0 ? queue.shift()! : after(max));
+}
+
+/** Eight alphabet characters whose check character `B1` can print, so one scripted draw is one draw. */
+function printableBody(seed: number): string {
+  const draw = seededIndex(seed);
+  for (;;) {
+    let body = '';
+    for (let i = 0; i < BOOTH_CODE_RANDOM_LENGTH; i += 1) {
+      body += BOOTH_CODE_ALPHABET[draw(BOOTH_CODE_ALPHABET.length)];
+    }
+    if (boothCodeCheckCharacter(`B1${body}`) !== null) return body;
+  }
+}
+
+test('a code this box has minted before is drawn again — and the memory survives a restart', async () => {
+  const first = printableBody(11);
+  const second = printableBody(12);
+  const third = printableBody(13);
+  assert.equal(new Set([first, second, third]).size, 3);
+  const file = join(mkdtempSync(join(tmpdir(), 'oto-box-codes-')), 'box.sqlite');
+  const lines: string[] = [];
+  const redraws = () => lines.filter((l) => /drawing again/.test(l));
+
+  // The source draws `first`, then `first` again, then `second`.
+  const h = openBooth({
+    file,
+    log: keptLog(lines),
+    codeIndex: scriptedCodes([first, first, second], seededIndex(0x0c0de)),
+  });
+  await seed(h);
+  const one = await h.booth.spin({ idempotencyKey: 'press-1' });
+  assert.equal(one.voucherCode!.slice(2, 10), first);
+  const two = await h.booth.spin({ idempotencyKey: 'press-2' });
+  assert.equal(two.voucherCode!.slice(2, 10), second, 'the repeat of the first code was drawn again');
+  assert.equal(redraws().length, 1, 'said once');
+  assert.ok(
+    redraws().every((l) => !l.includes(first)),
+    'a code on a slip in somebody’s hand is not written to the log',
+  );
+  // Both are remembered, against the spin that minted them.
+  assert.equal(
+    await h.store.readRuntimeValue(BOX_ID, boothMintedCodeKey(one.voucherCode!)),
+    one.spinId,
+  );
+  assert.equal(
+    await h.store.readRuntimeValue(BOX_ID, boothMintedCodeKey(two.voucherCode!)),
+    two.spinId,
+  );
+  h.close();
+
+  // A new process on the same card: `first` comes up again, and is refused again.
+  const again = openBooth({
+    file,
+    log: keptLog(lines),
+    codeIndex: scriptedCodes([first, third], seededIndex(0x0c0df)),
+  });
+  await seed(again);
+  const three = await again.booth.spin({ idempotencyKey: 'press-3' });
+  assert.equal(three.voucherCode!.slice(2, 10), third);
+  assert.equal(redraws().length, 2);
+  again.close();
 });
 
 // --- SCRUM-257: spins per day ----------------------------------------------

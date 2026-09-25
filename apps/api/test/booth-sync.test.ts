@@ -302,37 +302,65 @@ describe('a spin crosses the seam (S2-07a)', () => {
 
   it('quarantines a duplicate code and names both booths, rather than reassigning it', async () => {
     /**
-     * A box whose random source repeated itself.
+     * Two boxes whose random sources met on one code.
      *
-     * The collision is staged where it actually comes from rather than by
-     * editing a queued envelope, which could not work anyway: the payload is
-     * hashed and signed as it is sealed, so a tampered one is refused for the
-     * hash long before a handler sees the code. Fixing the draw makes the box
-     * mint the same ten characters twice, which is what `booth-code.ts`'s own
-     * arithmetic says to expect two or three times a decade — and what the
-     * cloud sees is exactly what it would see from two booths: one code, two
-     * vouchers, both printed.
+     * One box can no longer stage this alone: it remembers the codes it has
+     * minted and draws again on a repeat (SCRUM-414), so a fixed draw is
+     * refused before it reaches paper rather than printed twice. The
+     * collision is staged as the cloud meets it from a second booth: a real
+     * press here, filed, then a second `promo.voucher_issued` carrying the
+     * same code and a fresh voucher, queued through the outbox so it is
+     * sealed and signed like any other fact — a tampered envelope would be
+     * refused for its hash long before a handler saw the code. What the cloud
+     * sees is one code, two vouchers, both on paper somewhere.
      */
-    drawWith = () => 0;
-    const first = await booth.spin({ idempotencyKey: newId() });
-    const second = await booth.spin({ idempotencyKey: newId() });
     drawWith = null;
-    expect(second.voucherCode, 'the fixed draw did not repeat a code').toBe(first.voucherCode);
+    const first = await booth.spin({ idempotencyKey: newId() });
     const code = first.voucherCode!;
+    expect(code, 'the press produced no voucher').toBeTruthy();
+    const filedFirst = await agent.outbox()!.flush();
+    expect(filedFirst.state, 'the first press did not reach the cloud').toBe('pushed');
+    const [held] = await ctx.db
+      .select({
+        id: voucher.id,
+        definitionId: voucher.voucherDefinitionId,
+        costSatang: voucher.costSatang,
+        expiresAt: voucher.expiresAt,
+      })
+      .from(voucher)
+      .where(and(eq(voucher.operatorId, operatorId), eq(voucher.code, code)))
+      .limit(1);
+    expect(held, 'the first press did not reach the cloud as a voucher').toBeTruthy();
 
+    const refusedId = newId();
+    await agent.outbox()!.queue({
+      type: 'promo.voucher_issued',
+      stationId: boothStationId,
+      actorKind: 'box',
+      payload: {
+        voucherId: refusedId,
+        voucherDefinitionId: held!.definitionId,
+        code,
+        spinId: null,
+        costSatang: held!.costSatang,
+        expiresAt: held!.expiresAt?.toISOString() ?? null,
+        source: 'booth',
+      },
+    });
     const flushed = await agent.outbox()!.flush();
     expect(flushed.state).toBe('pushed');
     if (flushed.state !== 'pushed') throw new Error('unreachable');
     expect(flushed.quarantined).toBeGreaterThanOrEqual(1);
 
     // The code still belongs to the voucher that reached the cloud first.
-    const held = await ctx.db
+    const holders = await ctx.db
       .select({ id: voucher.id })
       .from(voucher)
       .where(and(eq(voucher.operatorId, operatorId), eq(voucher.code, code)));
-    expect(held, 'one code, one voucher — the second was reassigned or filed anyway').toHaveLength(
+    expect(holders, 'one code, one voucher — the second was reassigned or filed anyway').toHaveLength(
       1,
     );
+    expect(holders[0]!.id).toBe(held!.id);
 
     const filed = await ctx.db
       .select({ message: syncQuarantine.errorMessage })
@@ -348,14 +376,12 @@ describe('a spin crosses the seam (S2-07a)', () => {
       .limit(1);
     expect(raised, 'a collision was filed with nobody told about it').toBeTruthy();
     expect(raised!.summary).toContain(code);
-    // Both booths named — which for one box drawing twice is this booth twice,
-    // and a person reading the line can see that is what happened.
+    // Both booths named — which for a second fact from this booth is this
+    // booth twice, and a person reading the line can see that is what happened.
     expect(raised!.summary).toContain('Booth 1');
-
-    // The press whose voucher was refused is still recorded: it happened.
-    const [orphan] = await ctx.db.select().from(spin).where(eq(spin.id, second.spinId)).limit(1);
-    expect(orphan, 'a press whose voucher was refused vanished from the record').toBeTruthy();
-    expect(orphan!.voucherId).toBeNull();
+    // A refused voucher's press, when there is one, was filed on its own
+    // before the voucher fact and is untouched by the refusal. A forged fact
+    // has no press behind it, so that is not asserted here.
   });
 
   it('carries the print outcome as a fact, not up the cloud print route (D20)', async () => {

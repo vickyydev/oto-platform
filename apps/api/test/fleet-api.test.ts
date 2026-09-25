@@ -1715,3 +1715,108 @@ describe('who may reach the admin fleet surface (S2-04)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+
+/**
+ * SCRUM-414 (closing audit L15) — a booth's code prefix is unique across the
+ * operator, not only its branch.
+ *
+ * The prefix is the code space a booth's box mints from: two live booths with
+ * "B1" at two parks mint from one space, and a clash — about three times a
+ * decade per booth — leaves the second family's slip redeeming as the first
+ * voucher. The database's unique index is per branch; the service refuses the
+ * second booth by name, on create and on edit, and a booth's own prefix never
+ * counts against itself. A till may carry the same letters: its prefix is a
+ * receipt series, and never reaches a voucher.
+ */
+describe('a booth code prefix is unique across the operator (SCRUM-414)', () => {
+  let otherBranchId: string;
+  let otherBoxId: string;
+  const messageOf = (res: Injected): string =>
+    (res.body as { error?: { message?: string } }).error?.message ?? '';
+  const stationAt = (over: Record<string, unknown>) => ({
+    kind: 'booth',
+    boxId: otherBoxId,
+    capabilities: [],
+    accessScope: 'selected_staff',
+    staffAccountIds: [],
+    devices: [],
+    ...over,
+  });
+
+  it('sets up a second branch with a booth box of its own', async () => {
+    const created = await call('POST', '/branches', {
+      cookie: adminCookie,
+      payload: { name: 'Prefix Branch', code: 'prefix-branch', timezone: 'Asia/Bangkok' },
+    });
+    expect(created.statusCode).toBe(200);
+    otherBranchId = created.body.id as string;
+    const madeBox = await call('POST', `/branches/${otherBranchId}/boxes`, {
+      cookie: adminCookie,
+      payload: { name: 'Prefix box', slot: 'booth-1', role: 'booth' },
+    });
+    expect(madeBox.statusCode).toBe(200);
+    otherBoxId = (madeBox.body.box as { id: string }).id;
+  });
+
+  it('refuses a new booth at the other branch with the prefix Booth 1 holds, naming Booth 1, and creates nothing', async () => {
+    const res = await call('POST', `/branches/${otherBranchId}/stations`, {
+      cookie: adminCookie,
+      payload: stationAt({ name: 'Twin Booth', codePrefix: 'B1' }),
+    });
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(409);
+    expect(errorCode(res)).toBe('BOOTH_CODE_PREFIX_TAKEN');
+    expect(messageOf(res)).toContain('B1');
+    expect(messageOf(res)).toContain('Booth 1');
+    const [row] = await ctx.db
+      .select({ id: station.id })
+      .from(station)
+      .where(eq(station.name, 'Twin Booth'))
+      .limit(1);
+    expect(row).toBeUndefined();
+  });
+
+  it('takes a free prefix; refuses an edit onto Booth 1’s; lets the booth keep its own; lets a till carry the letters', async () => {
+    const made = await call('POST', `/branches/${otherBranchId}/stations`, {
+      cookie: adminCookie,
+      payload: stationAt({ name: 'Own Booth', codePrefix: 'Z9' }),
+    });
+    expect(made.statusCode, JSON.stringify(made.body)).toBe(200);
+    const id = (made.body.station as { id: string }).id;
+
+    const onto = await call('PATCH', `/stations/${id}`, {
+      cookie: adminCookie,
+      payload: { codePrefix: 'B1' },
+    });
+    expect(onto.statusCode).toBe(409);
+    expect(errorCode(onto)).toBe('BOOTH_CODE_PREFIX_TAKEN');
+    expect(messageOf(onto)).toContain('Booth 1');
+
+    // Its own prefix is not another booth's: an edit that leaves it alone passes.
+    const renamed = await call('PATCH', `/stations/${id}`, {
+      cookie: adminCookie,
+      payload: { name: 'Own Booth, renamed' },
+    });
+    expect(renamed.statusCode, JSON.stringify(renamed.body)).toBe(200);
+    const [row] = await ctx.db
+      .select({ codePrefix: station.codePrefix })
+      .from(station)
+      .where(eq(station.id, id))
+      .limit(1);
+    expect(row?.codePrefix).toBe('Z9');
+
+    // A till's prefix is a receipt series, not a code space.
+    const till = await call('POST', `/branches/${otherBranchId}/stations`, {
+      cookie: adminCookie,
+      payload: stationAt({
+        name: 'Prefix Till',
+        kind: 'till',
+        codePrefix: 'B1',
+        capabilities: ['tickets'],
+        accessScope: 'all_staff',
+      }),
+    });
+    expect(till.statusCode, JSON.stringify(till.body)).toBe(200);
+  });
+});

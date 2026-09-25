@@ -626,7 +626,9 @@ export interface BoxStore extends PrintJobStore {
    * `box_runtime` already holds `last_good_time`; these two open it to the
    * booth's other singletons — the last vouchers it printed, so a reprint
    * after a power cut still has the slip to reprint, and the name of whoever
-   * is signed in. Text in, text out: the caller owns the encoding. The key
+   * is signed in — and, one key per code, to every voucher code the booth
+   * has minted, so a repeat is drawn again (SCRUM-414). Text in, text out:
+   * the caller owns the encoding. The key
    * `last_good_time` is `markTimeSeen`'s, whose forward-only rule a plain
    * write would break, so it is refused here.
    */

@@ -40,6 +40,7 @@ import { randomInt } from 'node:crypto';
 import { z } from 'zod';
 
 import {
+  BOOTH_CODE_MINT_ATTEMPTS,
   BOOTH_CODE_PREFIX_LENGTH,
   BoothConfigBundleSchema,
   addDaysToIsoDate,
@@ -658,6 +659,12 @@ const FINISHED_PRINT_JOBS_KEPT = 200;
 /** `box_runtime` keys, per booth station. */
 const recentVouchersKey = (stationId: string): string => `booth.recent_vouchers:${stationId}`;
 const staffNameKey = (stationId: string): string => `booth.staff_name:${stationId}`;
+/**
+ * The `box_runtime` key under which one voucher code this box has minted is
+ * remembered — one row per code, for as long as the card lasts (SCRUM-414).
+ * Exported for the test that proves a repeat is drawn again.
+ */
+export const boothMintedCodeKey = (code: string): string => `booth.minted_code:${code}`;
 
 /** The session's credential kind as the store spells it, to the method the screen shows. */
 function methodOf(credentialKind: string): BoothSignInMethod {
@@ -1644,19 +1651,24 @@ export function createBooth(options: BoothOptions): BoothModule {
     const voucherId = uuidv7(timing.stampMs);
     const printJobId = uuidv7(timing.stampMs);
     /**
-     * Minted once, with no retry loop, and that is correct here. The prefix
-     * is the one checked at the top of the press.
+     * Minted here, and drawn again when this box has minted the code before
+     * (closing audit L15, SCRUM-414). The prefix is the one checked at the
+     * top of the press.
      *
      * `mintBoothCode`'s note asks the CALLER to own the retry because only a
-     * caller can see the unique-index violation that makes one necessary. A
-     * box has no voucher table and therefore no index to violate: uniqueness
-     * is `promo.voucher (operator_id, code)` in the cloud, and a collision is
-     * settled at sync by quarantining the loser and alerting on both booths
-     * (D9) — never by a silent reassign, because the paper in a visitor's hand
-     * is the authority. A loop here would be a loop that cannot detect
-     * anything.
+     * caller can see the repeat that makes one necessary. The cloud's
+     * uniqueness is `promo.voucher (operator_id, code)`, and a collision
+     * there is settled at sync by quarantining the loser and alerting on
+     * both booths (D9) — never by a silent reassign, because the paper in a
+     * visitor's hand is the authority. That left the second family holding a
+     * slip which redeems as the first voucher, about three times a decade
+     * per booth. So the box keeps every code it has minted — one
+     * `box_runtime` row each, written in the spin's transaction below — and
+     * `mintUnusedCode` asks that memory before the code reaches paper. It
+     * knows this box's own codes only; two booths minting from one prefix
+     * are what the Console's per-operator prefix rule rules out.
      */
-    const voucherCode = mintBoothCode(prefix, randomIndex);
+    const voucherCode = await mintUnusedCode(prefix);
     const expiresAt = resolveExpiry(outcome.prize, timing.stampMs, branch.timezone);
 
     const spinFact: QueuedFact = {
@@ -1825,6 +1837,14 @@ export function createBooth(options: BoothOptions): BoothModule {
           issuedAt: timing.occurredAt,
           job: slip.job,
         });
+        // The code joins this box's memory of what it has minted, in the same
+        // transaction as the voucher it is on (SCRUM-414).
+        await tx.writeRuntimeValue(
+          boxId,
+          boothMintedCodeKey(voucherCode),
+          spinId,
+          timing.occurredAt,
+        );
       });
     } catch (err) {
       if (err instanceof BoothRefusal) throw err;
@@ -1870,6 +1890,30 @@ export function createBooth(options: BoothOptions): BoothModule {
       staffAccountId,
       clockSuspect: timing.clockSuspect,
     };
+  }
+
+  /**
+   * A code this box has not minted before.
+   *
+   * Each draw is `mintBoothCode`'s — uniform, check character and all — and
+   * one that this box's memory already holds is drawn again, up to
+   * `BOOTH_CODE_MINT_ATTEMPTS` times. A working random source repeats a
+   * code about three times a decade and never twice running, so the bound
+   * is only ever met by a source that is not random, and that is refused
+   * rather than printed. The code itself is not logged: it is on a slip in
+   * somebody's hand.
+   */
+  async function mintUnusedCode(prefix: string): Promise<string> {
+    for (let attempt = 1; attempt <= BOOTH_CODE_MINT_ATTEMPTS; attempt += 1) {
+      const code = mintBoothCode(prefix, randomIndex);
+      if ((await store.readRuntimeValue(boxId, boothMintedCodeKey(code))) === null) return code;
+      note('warn', 'a minted voucher code repeats one this box has minted before; drawing again', {
+        attempt,
+      });
+    }
+    throw new Error(
+      `${BOOTH_CODE_MINT_ATTEMPTS} draws in a row repeated codes this box had already minted — the random source is not random`,
+    );
   }
 
   function remember(key: string, response: Promise<SpinResponse>): void {
