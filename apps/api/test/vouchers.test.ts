@@ -23,17 +23,20 @@ import {
   ticketPackage,
   voucher,
   voucherDefinition,
+  voucherMiss,
   voucherRedemption,
 } from '@oto/db';
 import {
   BOOTH_CODE_ALPHABET,
   boothCodeCheckCharacter,
   boothStaffCode,
+  boothStaffLabel,
   mintBoothCode,
   newId,
   normaliseBoothCode,
 } from '@oto/shared';
 import {
+  BRANCH_MANAGER,
   CHALONG_MANAGER,
   RECEPTION,
   SECOND_OPERATOR_ADMIN,
@@ -50,7 +53,12 @@ import {
   replayOfflineSale,
   type ReplayScope,
 } from '../src/services/payments/offline';
-import { consumeSaleVouchers } from '../src/services/vouchers';
+import type { Tx } from '../src/services/tx';
+import {
+  consumeSaleVouchers,
+  formatVoucherDateTime,
+  personMissLockId,
+} from '../src/services/vouchers';
 
 /**
  * S2-10b (SCRUM-207) — a voucher at the counter, through the real routes with
@@ -77,6 +85,12 @@ let tillB: string;
 let chalongTill: string;
 /** Reception with no till picked. */
 let seatless: string;
+/**
+ * A second person at the same tills (SCRUM-425): the Central Floresta manager,
+ * in one session at Reception Till 1 and another at Counter 2.
+ */
+let managerAtA: string;
+let managerAtB: string;
 
 let operatorId: string;
 let hktId: string;
@@ -85,6 +99,7 @@ let t1: typeof station.$inferSelect;
 let t2: typeof station.$inferSelect;
 let t3: typeof station.$inferSelect;
 let receptionAccountId: string;
+let managerAccountId: string;
 let twoHoursHkt: string;
 let twoHoursChalong: string;
 let eatPlayHkt: string;
@@ -101,6 +116,26 @@ const KID = b(890);
 /** What the counter shows for a well-formed code the platform has not heard of. */
 const NOT_FOUND_WORDS =
   'Code not found — the booth may not have synced yet. A slip printed while the booth was offline works once the booth is back online';
+
+/** What the counter shows a person whose own look-ups are locked (SCRUM-425) — not the till's words. */
+const PERSON_LOCKED_WORDS =
+  'Too many wrong codes from you — you cannot redeem vouchers at any till for 10 minutes';
+
+/**
+ * Move one person's recorded wrong codes, and any lock one of them set, back
+ * by `ms` (SCRUM-425): the person's half of the window, as the tests of the
+ * till's half move `recent_misses`.
+ */
+async function ageMissesOf(accountId: string, ms: number): Promise<void> {
+  const by = `${ms} milliseconds`;
+  await ctx.db
+    .update(voucherMiss)
+    .set({
+      occurredAt: sql`${voucherMiss.occurredAt} - ${by}::interval`,
+      accountLockedUntil: sql`${voucherMiss.accountLockedUntil} - ${by}::interval`,
+    })
+    .where(eq(voucherMiss.accountId, accountId));
+}
 
 async function pick(cookie: string, stationId: string): Promise<void> {
   const res = await ctx.app.inject({
@@ -369,6 +404,11 @@ beforeAll(async () => {
     .from(account)
     .where(and(eq(account.operatorId, operatorId), eq(account.phone, RECEPTION.phone)));
   receptionAccountId = reception!.id;
+  const [manager] = await ctx.db
+    .select({ id: account.id })
+    .from(account)
+    .where(and(eq(account.operatorId, operatorId), eq(account.phone, BRANCH_MANAGER.phone)));
+  managerAccountId = manager!.id;
 
   const seeded = await ctx.db
     .select()
@@ -420,12 +460,17 @@ beforeAll(async () => {
   chalongTill = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
   await pick(chalongTill, t3.id);
   seatless = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+  managerAtA = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
+  await pick(managerAtA, t1.id);
+  managerAtB = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
+  await pick(managerAtB, t2.id);
 }, 180_000);
 
 afterEach(async () => {
-  // The guessing limit is per till and would otherwise carry from one test to
-  // the next; the offline switch likewise.
+  // The guessing limit is per till and per person, and would otherwise carry
+  // from one test to the next; the offline switch likewise.
   await ctx.db.delete(redemptionThrottle);
+  await ctx.db.delete(voucherMiss);
   await ctx.db.update(boxState).set({ offline: false, offlineSince: null, offlineReason: null });
 });
 
@@ -1697,8 +1742,10 @@ describe('codes printed before the check character', () => {
       const res = await lookup(tillA, dropped);
       expect(res.statusCode, `${v.code} without position ${i}: ${dropped}`).toBe(422);
       expect(res.json().error.code).toBe('INVALID_CODE');
-      // Eleven mistakes would lock the till; this is about the words, not the limit.
+      // Eleven mistakes would lock the till, and the person who made them
+      // (SCRUM-425); this is about the words, not the limit.
       await ctx.db.delete(redemptionThrottle);
+      await ctx.db.delete(voucherMiss);
     }
     // And the code itself, whole, is still the voucher.
     expect((await lookup(tillA, v.code)).json().voucher.id).toBe(v.id);
@@ -1803,18 +1850,22 @@ describe('guessing is limited: five misses in a minute lock the till for ten min
       .where(and(eq(auditLog.action, 'voucher.redemption_locked'), eq(auditLog.entityId, t1.id)));
     expect(locked).toHaveLength(1);
 
-    // Per till: Counter 2 is not locked.
-    expect((await lookup(tillB, real.code)).statusCode).toBe(200);
+    // Per till: Counter 2 is not locked — for anybody but the person who tried
+    // the five, whose own budget is spent at every till (SCRUM-425).
+    expect((await lookup(managerAtB, real.code)).statusCode).toBe(200);
+    expect((await lookup(tillB, real.code)).json().error.message).toBe(PERSON_LOCKED_WORDS);
 
     // A restart does not clear it — the lock is in the database.
     await ctx.restart();
     expect((await lookup(tillA, real.code)).json().error.code).toBe('LOCKED');
 
-    // After the window, the till works again.
+    // After the window, the till works again — and so does the person, whose
+    // own lock was set by the same fifth code and runs out with the till's.
     await ctx.db
       .update(redemptionThrottle)
       .set({ lockedUntil: new Date(Date.now() - 1000) })
       .where(eq(redemptionThrottle.stationId, t1.id));
+    await ageMissesOf(receptionAccountId, 10 * 60_000);
     expect((await lookup(tillA, real.code)).statusCode).toBe(200);
   });
 
@@ -1849,6 +1900,8 @@ describe('guessing is limited: five misses in a minute lock the till for ten min
         recentMisses: [1, 2, 3, 4].map((n) => new Date(Date.now() - 61_000 - n * 1000)),
       })
       .where(eq(redemptionThrottle.stationId, t1.id));
+    // (The person's own record of them too: they are one person's four, SCRUM-425.)
+    await ageMissesOf(receptionAccountId, 66_000);
     // … so a fifth different code is the first of a new minute, not the one that locks.
     expect((await lookup(tillA, 'ZZZZ5')).statusCode).toBe(422);
     const v = await issue(defs['spin-voucher-150']!);
@@ -1867,6 +1920,8 @@ describe('guessing is limited: five misses in a minute lock the till for ten min
       .from(redemptionThrottle)
       .where(eq(redemptionThrottle.stationId, t1.id));
     expect(row).toBeUndefined();
+    // Nor recorded as a wrong code against the person (SCRUM-425).
+    expect(await ctx.db.select().from(voucherMiss)).toEqual([]);
   });
 });
 
@@ -2085,6 +2140,8 @@ describe('a code tried again is one miss: the limit counts different codes (SCRU
       .update(redemptionThrottle)
       .set({ recentMisses: [4, 3, 2, 1].map((n) => new Date(Date.now() - 61_000 - n * 1000)) })
       .where(eq(redemptionThrottle.stationId, t1.id));
+    // They are one person's four as well, and fall out of that window too (SCRUM-425).
+    await ageMissesOf(receptionAccountId, 66_000);
 
     const fresh = unsynced();
     expect((await lookup(tillA, fresh)).statusCode).toBe(404);
@@ -2113,6 +2170,599 @@ describe('a code tried again is one miss: the limit counts different codes (SCRU
     );
     // The guide's table still opens with the words the till's answer opens with.
     expect(guide).toContain(`| ${NOT_FOUND_WORDS.split('. ')[0]} |`);
+  });
+});
+
+/**
+ * SCRUM-425 (the booth's closing audit, section 3.1 and T25) — a guessing
+ * budget for each PERSON as well as each till.
+ *
+ * The plan sets "per-station and per-staff not-found budget 5 per minute →
+ * 10-minute lock + alert `redemption.probing`" (`SPRINT_2_PLAN.md`, S2-10b).
+ * The till's half is above and stays as it was. The person's half: five
+ * different wrong codes from one signed-in account inside a minute, at any
+ * tills, lock that account's look-ups at every till for ten minutes, in words
+ * that say the lock is theirs, and raise an alert that names them. Every wrong
+ * code is a row of `promo.voucher_miss` — who, where, when, what the till said
+ * and the code's hash, never the code (migration 0026).
+ *
+ * Reception works Reception Till 1 (`tillA`) and Counter 2 (`tillB`); the
+ * Central Floresta manager is the second person, at both (`managerAtA`,
+ * `managerAtB`).
+ */
+describe('each person has a guessing budget of their own, across every till (SCRUM-425)', () => {
+  /** What a row remembers a code by: SHA-256 of the code as the table stores it, in hex. */
+  const hashOf = (code: string): string =>
+    createHash('sha256').update(normaliseBoothCode(code)).digest('hex');
+
+  /** A well-formed code nobody has — the counter answers "Code not found". */
+  const unsynced = (): string => mintBoothCode('B1', (max) => randomInt(max));
+
+  const TILL_LOCKED_WORDS = 'Too many wrong codes — try again in 10 minutes';
+
+  /** "Som (Reception) (S-…)": how the alert names reception, as a slip's Staff line would. */
+  let receptionLabel: string;
+  /** Central Floresta, as its alerts name it and tell its time. */
+  let hkt: { name: string; timezone: string };
+
+  beforeAll(async () => {
+    const [who] = await ctx.db
+      .select({ name: employee.name, nickname: employee.nickname })
+      .from(account)
+      .leftJoin(employee, eq(employee.id, account.employeeId))
+      .where(eq(account.id, receptionAccountId));
+    receptionLabel = boothStaffLabel(
+      who?.nickname ?? who?.name ?? null,
+      boothStaffCode(receptionAccountId),
+    )!;
+    const [row] = await ctx.db
+      .select({ name: branch.name, timezone: branch.timezone })
+      .from(branch)
+      .where(eq(branch.id, hktId));
+    hkt = row!;
+  });
+
+  async function missesOf(accountId: string) {
+    return ctx.db
+      .select()
+      .from(voucherMiss)
+      .where(eq(voucherMiss.accountId, accountId))
+      .orderBy(asc(voucherMiss.occurredAt), asc(voucherMiss.id));
+  }
+
+  async function throttleOf(stationId: string) {
+    const [row] = await ctx.db
+      .select()
+      .from(redemptionThrottle)
+      .where(eq(redemptionThrottle.stationId, stationId));
+    return row;
+  }
+
+  /** The audit rows of a lock: a person's (entity `account`) or a till's (entity `station`). */
+  async function locksOf(entityType: 'account' | 'station', entityId: string) {
+    return ctx.db
+      .select()
+      .from(auditLog)
+      .where(
+        and(
+          eq(auditLog.action, 'voucher.redemption_locked'),
+          eq(auditLog.entityType, entityType),
+          eq(auditLog.entityId, entityId),
+        ),
+      );
+  }
+
+  /** How many times an alert has been raised; tests compare against their own start. */
+  async function raised(key: string): Promise<number> {
+    const rows = await ctx.db
+      .select({ occurrences: alert.occurrences })
+      .from(alert)
+      .where(eq(alert.key, key));
+    return rows.reduce((sum, r) => sum + r.occurrences, 0);
+  }
+  const personAlert = (accountId: string) => `redemption.probing:account:${accountId}`;
+  const tillAlert = (stationId: string) => `redemption.probing:${stationId}`;
+
+  /**
+   * Hold a person's lock on `tx`, as one of their checks holds it while its
+   * code is looked up and its miss counted — so a burst queues behind it in an
+   * order the test arranges rather than one it hopes for.
+   */
+  async function holdPersonLock(tx: Tx, accountId: string): Promise<void> {
+    const [namespace, key] = personMissLockId(accountId);
+    await tx.execute(sql`select pg_advisory_xact_lock(${namespace}::int4, ${key}::int4)`);
+  }
+
+  /**
+   * Wait, on the connection holding a person's lock, until `count` of their
+   * checks are queued on it. `pg_locks` shows each half of the key as an
+   * unsigned oid.
+   */
+  async function queuedOn(tx: Tx, accountId: string, count: number): Promise<void> {
+    const [namespace, key] = personMissLockId(accountId);
+    const deadline = Date.now() + 10_000;
+    for (;;) {
+      const { rows } = await tx.execute(sql`
+        select count(*)::int as queued from pg_locks
+        where locktype = 'advisory' and not granted
+          and database = (select oid from pg_database where datname = current_database())
+          and classid = ${namespace >>> 0}::oid and objid = ${key >>> 0}::oid and objsubid = 2`);
+      const queued = Number((rows[0] as { queued: number }).queued);
+      if (queued === count) return;
+      if (Date.now() > deadline) {
+        throw new Error(`${queued} checks queued on the person's lock, not ${count}`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+  }
+
+  /** Lock a till outright, as somebody else's five codes would have, until `until`. */
+  const lockTill = (stationId: string, until: Date) =>
+    ctx.db
+      .insert(redemptionThrottle)
+      .values({ stationId, operatorId, branchId: hktId, lockedUntil: until })
+      .onConflictDoUpdate({ target: redemptionThrottle.stationId, set: { lockedUntil: until } });
+
+  it('one person over the budget across two tills is refused in words about their own lock, while both tills stay open', async () => {
+    const real = await issue(defs['spin-voucher-150']!);
+    const before = {
+      person: await raised(personAlert(receptionAccountId)),
+      t1: await raised(tillAlert(t1.id)),
+      t2: await raised(tillAlert(t2.id)),
+      audits: (await locksOf('account', receptionAccountId)).length,
+    };
+    const codes = Array.from({ length: 5 }, unsynced);
+    // Three at Reception Till 1 and two at Counter 2: neither till sees five.
+    for (const [i, code] of codes.entries()) {
+      const res = await lookup(i < 3 ? tillA : tillB, code);
+      // The fifth sets the person's lock and still answers with its own refusal.
+      expect(res.statusCode, `code ${i + 1}`).toBe(404);
+      expect(res.json().error).toEqual({ code: 'NOT_FOUND', message: NOT_FOUND_WORDS });
+    }
+
+    // Reception is refused at both tills — even a real voucher — in words about them.
+    for (const cookie of [tillA, tillB]) {
+      const res = await lookup(cookie, real.code);
+      expect(res.statusCode).toBe(429);
+      expect(res.json().error).toMatchObject({
+        code: 'LOCKED',
+        message: PERSON_LOCKED_WORDS,
+        details: { lock: 'person' },
+      });
+    }
+    // A hold is the same act, and is refused with it.
+    expect((await hold(tillA, newId(), real.code)).json().error.message).toBe(PERSON_LOCKED_WORDS);
+
+    // Both tills stay open: neither is locked, and somebody else redeems at each.
+    for (const t of [t1, t2]) {
+      const row = await throttleOf(t.id);
+      expect(row!.lockedUntil).toBeNull();
+      expect(row!.lockCount).toBe(0);
+    }
+    expect((await lookup(managerAtA, real.code)).statusCode).toBe(200);
+    expect((await lookup(managerAtB, real.code)).statusCode).toBe(200);
+
+    // A row per try: who, where, when, what the till said, and the hash — never the code.
+    const rows = await missesOf(receptionAccountId);
+    expect(rows.map((r) => r.stationId)).toEqual([t1.id, t1.id, t1.id, t2.id, t2.id]);
+    expect(rows.map((r) => r.codeHash)).toEqual(codes.map(hashOf));
+    for (const r of rows) {
+      expect(r).toMatchObject({ operatorId, branchId: hktId, result: 'not_found' });
+      expect(r.codeHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(r.requestId).toBeTruthy();
+    }
+    expect(JSON.stringify(rows)).not.toMatch(new RegExp(codes.join('|')));
+    // The fifth carries the lock, ten minutes from it; no other row does.
+    expect(rows.filter((r) => r.accountLockedUntil !== null)).toEqual([rows[4]]);
+    const lockedUntil = rows[4]!.accountLockedUntil!;
+    expect(lockedUntil.getTime() - rows[4]!.occurredAt.getTime()).toBe(10 * 60_000);
+
+    // Audited once, against the person, with the till the fifth was tried at.
+    const audits = await locksOf('account', receptionAccountId);
+    expect(audits).toHaveLength(before.audits + 1);
+    expect(audits.at(-1)!.after).toEqual({
+      lockedUntil: lockedUntil.toISOString(),
+      misses: 5,
+      windowSeconds: 60,
+      stationId: t2.id,
+    });
+
+    // One alert, and it names the person; no till's alert.
+    expect(await raised(personAlert(receptionAccountId))).toBe(before.person + 1);
+    expect(await raised(tillAlert(t1.id))).toBe(before.t1);
+    expect(await raised(tillAlert(t2.id))).toBe(before.t2);
+    const [open] = await ctx.db
+      .select()
+      .from(alert)
+      .where(and(eq(alert.key, personAlert(receptionAccountId)), eq(alert.status, 'open')));
+    expect(open).toMatchObject({
+      category: 'redemption.probing',
+      severity: 'warning',
+      subject: receptionLabel,
+      branchId: hktId,
+    });
+    expect(open!.summary).toBe(
+      `5 wrong voucher codes inside a minute from ${receptionLabel}, the last at ` +
+        `${t2.name} (${hkt.name}) — their voucher redemption is locked at every till ` +
+        `until ${formatVoucherDateTime(lockedUntil, hkt.timezone)}. ` +
+        'Somebody may be guessing codes with this account.',
+    );
+    expect(open!.detail).toMatchObject({
+      accountId: receptionAccountId,
+      stationId: t2.id,
+      misses: 5,
+      lockedUntil: lockedUntil.toISOString(),
+    });
+
+    // Ten minutes on, the lock has run out and reception redeems again.
+    await ageMissesOf(receptionAccountId, 10 * 60_000);
+    expect((await lookup(tillA, real.code)).statusCode).toBe(200);
+  });
+
+  it('a second person at the same till is unaffected: they redeem, and their wrong codes are their own', async () => {
+    const real = await issue(defs['spin-voucher-150']!);
+    const managerLocks = (await locksOf('account', managerAccountId)).length;
+    const codes = Array.from({ length: 5 }, unsynced);
+    for (const [i, code] of codes.entries()) {
+      expect((await lookup(i < 3 ? tillA : tillB, code)).statusCode).toBe(404);
+    }
+    expect((await lookup(tillA, real.code)).json().error.message).toBe(PERSON_LOCKED_WORDS);
+
+    // The manager, at the same till: the real voucher goes through ...
+    const theirs = await lookup(managerAtA, real.code);
+    expect(theirs.statusCode, theirs.body).toBe(200);
+    // ... and a wrong code of theirs is their own miss, answered in its own words.
+    const wrong = await lookup(managerAtA, unsynced());
+    expect(wrong.statusCode).toBe(404);
+    expect(wrong.json().error).toEqual({ code: 'NOT_FOUND', message: NOT_FOUND_WORDS });
+    const mine = await missesOf(managerAccountId);
+    expect(mine).toHaveLength(1);
+    expect(mine[0]).toMatchObject({ stationId: t1.id, accountLockedUntil: null });
+    expect(await locksOf('account', managerAccountId)).toHaveLength(managerLocks);
+    expect((await lookup(managerAtA, real.code)).statusCode).toBe(200);
+    // Reception's five are still five, still theirs, and still locked.
+    expect(await missesOf(receptionAccountId)).toHaveLength(5);
+    expect((await lookup(tillB, real.code)).json().error.message).toBe(PERSON_LOCKED_WORDS);
+  });
+
+  it('the till still locks on five different codes from different people, and locks neither of them', async () => {
+    const real = await issue(defs['spin-voucher-150']!);
+    const tillLocks = (await locksOf('station', t1.id)).length;
+    const personLocks = [
+      (await locksOf('account', receptionAccountId)).length,
+      (await locksOf('account', managerAccountId)).length,
+    ];
+    const codes = Array.from({ length: 5 }, unsynced);
+    // Three from reception and two from the manager, all at Reception Till 1.
+    for (const [i, code] of codes.entries()) {
+      const res = await lookup(i < 3 ? tillA : managerAtA, code);
+      expect(res.statusCode, `code ${i + 1}`).toBe(404);
+    }
+
+    // The till is locked, for both of them, in the till's own words.
+    for (const cookie of [tillA, managerAtA]) {
+      const res = await lookup(cookie, real.code);
+      expect(res.statusCode).toBe(429);
+      expect(res.json().error).toMatchObject({ code: 'LOCKED', message: TILL_LOCKED_WORDS });
+      // The till's refusal is the one it always was: no `lock: 'person'`.
+      expect(res.json().error.details).toEqual({ lockedUntil: expect.any(String) });
+    }
+    expect((await throttleOf(t1.id))!.lockCount).toBe(1);
+    expect(await locksOf('station', t1.id)).toHaveLength(tillLocks + 1);
+
+    // Neither person is locked: each redeems at Counter 2.
+    expect((await lookup(tillB, real.code)).statusCode).toBe(200);
+    expect((await lookup(managerAtB, real.code)).statusCode).toBe(200);
+    expect(await locksOf('account', receptionAccountId)).toHaveLength(personLocks[0]!);
+    expect(await locksOf('account', managerAccountId)).toHaveLength(personLocks[1]!);
+    // Each of the five is a row, with the person who tried it.
+    const byReception = (await missesOf(receptionAccountId)).map((r) => r.stationId);
+    expect(byReception).toEqual([t1.id, t1.id, t1.id]);
+    expect((await missesOf(managerAccountId)).map((r) => r.stationId)).toEqual([t1.id, t1.id]);
+  });
+
+  it('the same code tried again counts once for the person too, at every till — and every try is still a row', async () => {
+    const real = await issue(defs['spin-voucher-150']!);
+    const slip = unsynced();
+    // One slip, six tries, at both tills.
+    for (let i = 0; i < 6; i += 1) {
+      const res = await lookup(i % 2 ? tillB : tillA, slip);
+      expect(res.statusCode, `try ${i + 1}`).toBe(404);
+      expect(res.json().error.message).toBe(NOT_FOUND_WORDS);
+    }
+    let rows = await missesOf(receptionAccountId);
+    expect(rows).toHaveLength(6);
+    expect(new Set(rows.map((r) => r.codeHash))).toEqual(new Set([hashOf(slip)]));
+    expect(rows.every((r) => r.accountLockedUntil === null)).toBe(true);
+
+    // Three more different codes make four: still no lock.
+    const others = [unsynced(), unsynced(), unsynced()];
+    for (const [i, code] of others.entries()) {
+      expect((await lookup(i === 1 ? tillB : tillA, code)).statusCode).toBe(404);
+    }
+    expect((await lookup(tillA, real.code)).statusCode).toBe(200);
+
+    // The fifth different code locks the person, and neither till has five.
+    expect((await lookup(tillB, unsynced())).statusCode).toBe(404);
+    expect((await lookup(tillA, real.code)).json().error.message).toBe(PERSON_LOCKED_WORDS);
+    rows = await missesOf(receptionAccountId);
+    expect(rows).toHaveLength(10);
+    expect(rows.filter((r) => r.accountLockedUntil !== null)).toHaveLength(1);
+    expect((await throttleOf(t1.id))!.lockedUntil).toBeNull();
+    expect((await throttleOf(t2.id))!.lockedUntil).toBeNull();
+  });
+
+  it('a person’s wrong codes older than a minute do not count', async () => {
+    const real = await issue(defs['spin-voucher-150']!);
+    for (const [i, code] of Array.from({ length: 4 }, unsynced).entries()) {
+      expect((await lookup(i % 2 ? tillB : tillA, code)).statusCode).toBe(404);
+    }
+    // The four move back past the minute …
+    await ageMissesOf(receptionAccountId, 61_000);
+    // … so a fifth different code is the first of a new minute, not the one that locks.
+    expect((await lookup(tillA, unsynced())).statusCode).toBe(404);
+    expect((await lookup(tillB, real.code)).statusCode).toBe(200);
+    const rows = await missesOf(receptionAccountId);
+    expect(rows).toHaveLength(5);
+    expect(rows.every((r) => r.accountLockedUntil === null)).toBe(true);
+  });
+
+  it('inside the minute, they all count', async () => {
+    const real = await issue(defs['spin-voucher-150']!);
+    for (const [i, code] of Array.from({ length: 4 }, unsynced).entries()) {
+      expect((await lookup(i % 2 ? tillB : tillA, code)).statusCode).toBe(404);
+    }
+    // Fifty seconds on, the four are still inside the minute: a fifth different code locks.
+    await ageMissesOf(receptionAccountId, 50_000);
+    expect((await lookup(tillA, unsynced())).statusCode).toBe(404);
+    expect((await lookup(tillB, real.code)).json().error.message).toBe(PERSON_LOCKED_WORDS);
+  });
+
+  it('misses a till recorded before 0026 name nobody: they count for that till as before, and nothing against a person', async () => {
+    const real = await issue(defs['spin-voucher-150']!);
+    const personLocks = (await locksOf('account', receptionAccountId)).length;
+    // Reception Till 1's row as the api left it before 0026: four different
+    // codes inside the minute, and nobody's name beside them.
+    const now = Date.now();
+    await ctx.db.insert(redemptionThrottle).values({
+      stationId: t1.id,
+      operatorId,
+      branchId: hktId,
+      recentMisses: [40, 30, 20, 10].map((s) => new Date(now - s * 1000)),
+      recentMissCodeHashes: Array.from({ length: 4 }, () => hashOf(unsynced())),
+    });
+
+    // One more different code there is the till's fifth: the till locks ...
+    expect((await lookup(tillA, unsynced())).statusCode).toBe(404);
+    expect((await lookup(tillA, real.code)).json().error.message).toBe(TILL_LOCKED_WORDS);
+    // ... and the person who tried it has one wrong code, not five: they
+    // redeem at Counter 2, unlocked.
+    const rows = await missesOf(receptionAccountId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.accountLockedUntil).toBeNull();
+    expect((await lookup(tillB, real.code)).statusCode).toBe(200);
+    expect(await locksOf('account', receptionAccountId)).toHaveLength(personLocks);
+  });
+
+  it('in a burst across two tills, one person is counted one wrong code at a time: five, then the lock', async () => {
+    const personLocks = (await locksOf('account', receptionAccountId)).length;
+    // Eight different wrong codes at once, four at each till, as a script would
+    // send them. However they interleave, five are counted and the rest answer
+    // the person's lock — and neither till ever sees five.
+    const burst = await Promise.all(
+      Array.from({ length: 8 }, (_, i) => lookup(i % 2 ? tillB : tillA, unsynced())),
+    );
+    const own = burst.filter((r) => r.statusCode === 404);
+    const locked = burst.filter((r) => r.statusCode === 429);
+    expect(own, 'the five the budget allows').toHaveLength(5);
+    expect(locked, 'every one after them').toHaveLength(3);
+    for (const r of locked) expect(r.json().error.message).toBe(PERSON_LOCKED_WORDS);
+    expect(await locksOf('account', receptionAccountId)).toHaveLength(personLocks + 1);
+    const rows = await missesOf(receptionAccountId);
+    expect(rows.filter((r) => r.accountLockedUntil !== null)).toHaveLength(1);
+    expect((await throttleOf(t1.id))!.lockedUntil).toBeNull();
+    expect((await throttleOf(t2.id))!.lockedUntil).toBeNull();
+  });
+
+  it('a burst of forty wrong codes over both tills has five checked: five rows, and the rest refused unchecked', async () => {
+    const personLocks = (await locksOf('account', receptionAccountId)).length;
+    const codes = Array.from({ length: 40 }, unsynced);
+    // Looked up at Reception Till 1 and held at Counter 2, all at once, as a
+    // script would send them. Any of them may pass the lock reads in front
+    // before the fifth miss is committed; under reception's own lock, each
+    // one after the fifth finds them locked and is never looked up.
+    const burst = await Promise.all(
+      codes.map((code, i) => (i % 2 ? hold(tillB, newId(), code) : lookup(tillA, code))),
+    );
+    const own = burst.filter((r) => r.statusCode === 404);
+    expect(own, 'the five the budget allows').toHaveLength(5);
+    for (const r of own) {
+      expect(r.json().error).toEqual({ code: 'NOT_FOUND', message: NOT_FOUND_WORDS });
+    }
+    expect(
+      burst.filter((r) => r.statusCode === 429),
+      'every other one',
+    ).toHaveLength(35);
+
+    // A row per code checked, not per request: five, five different codes of
+    // the burst's, one of them carrying the lock.
+    const rows = await missesOf(receptionAccountId);
+    expect(rows).toHaveLength(5);
+    const sent = new Set(codes.map(hashOf));
+    expect(rows.every((r) => sent.has(r.codeHash))).toBe(true);
+    expect(new Set(rows.map((r) => r.codeHash)).size).toBe(5);
+    const locking = rows.filter((r) => r.accountLockedUntil !== null);
+    expect(locking).toHaveLength(1);
+    expect(await locksOf('account', receptionAccountId)).toHaveLength(personLocks + 1);
+
+    // Refused in reception's own words at a till that stayed open. Should all
+    // five have fallen on one till, that till locked with them, by the same
+    // miss and to the same moment: a tie, which the till answers.
+    const personUntil = locking[0]!.accountLockedUntil!.toISOString();
+    for (const [i, r] of burst.entries()) {
+      if (r.statusCode !== 429) continue;
+      const till = await throttleOf(i % 2 ? t2.id : t1.id);
+      if (till?.lockedUntil) {
+        expect(till.lockedUntil.toISOString()).toBe(personUntil);
+        expect(r.json().error).toMatchObject({
+          code: 'LOCKED',
+          details: { lockedUntil: personUntil },
+        });
+        expect(r.json().error.details.lock).toBeUndefined();
+      } else {
+        expect(r.json().error).toEqual({
+          code: 'LOCKED',
+          message: PERSON_LOCKED_WORDS,
+          details: { lockedUntil: personUntil, lock: 'person' },
+        });
+      }
+    }
+  });
+
+  it('after four wrong codes, a real code queued behind the fifth is refused unchecked, in the person’s words', async () => {
+    const real = await issue(defs['spin-voucher-150']!);
+    // Four wrong codes, two at each till: neither till comes near five.
+    for (const [i, code] of Array.from({ length: 4 }, unsynced).entries()) {
+      expect((await lookup(i % 2 ? tillB : tillA, code)).statusCode).toBe(404);
+    }
+    const fifth = unsynced();
+    const saleId = newId();
+    // Reception's lock held here, so the burst queues behind it in a known
+    // order: the fifth wrong code first; then the real code, looked up at both
+    // tills and held at one, and two more wrong codes. Nobody is locked yet,
+    // so every one of them passes the lock reads in front.
+    const queued = await ctx.db.transaction(async (tx) => {
+      await holdPersonLock(tx, receptionAccountId);
+      const first = lookup(tillA, fifth);
+      await queuedOn(tx, receptionAccountId, 1);
+      const behind = [
+        lookup(tillA, real.code),
+        hold(tillB, saleId, real.code),
+        lookup(tillB, real.code),
+        lookup(tillB, unsynced()),
+        hold(tillA, newId(), unsynced()),
+      ];
+      await queuedOn(tx, receptionAccountId, 1 + behind.length);
+      return { first, behind };
+    });
+
+    // The fifth is checked and counted, locks reception, and answers in its own words.
+    const first = await queued.first;
+    expect(first.statusCode).toBe(404);
+    expect(first.json().error).toEqual({ code: 'NOT_FOUND', message: NOT_FOUND_WORDS });
+    // Everything queued behind it is refused unchecked — the real code as well.
+    for (const res of await Promise.all(queued.behind)) {
+      expect(res.statusCode).toBe(429);
+      expect(res.json().error).toMatchObject({
+        code: 'LOCKED',
+        message: PERSON_LOCKED_WORDS,
+        details: { lock: 'person' },
+      });
+    }
+    // The voucher was never taken: on no cart, still issued. The wrong codes
+    // behind the fifth were never checked either, and left no row.
+    const v = await voucherRow(real.id);
+    expect(v.heldSaleId).toBeNull();
+    expect(v.status).toBe('issued');
+    const rows = await missesOf(receptionAccountId);
+    expect(rows).toHaveLength(5);
+    const locking = rows.filter((r) => r.accountLockedUntil !== null);
+    expect(locking.map((r) => r.codeHash)).toEqual([hashOf(fifth)]);
+    expect((await throttleOf(t1.id))!.lockedUntil).toBeNull();
+    expect((await throttleOf(t2.id))!.lockedUntil).toBeNull();
+  });
+
+  it('with the till and the person both locked, the lock that ends later answers — the till’s on a tie', async () => {
+    const real = await issue(defs['spin-voucher-150']!);
+    // Reception locked out by five wrong codes at Counter 2 ...
+    for (const code of Array.from({ length: 5 }, unsynced)) {
+      expect((await lookup(tillB, code)).statusCode).toBe(404);
+    }
+    const [locking] = (await missesOf(receptionAccountId)).filter((r) => r.accountLockedUntil);
+    const personUntil = locking!.accountLockedUntil!;
+    // ... and Reception Till 1 locked as well, by a lock with three minutes left.
+    const soon = new Date(Date.now() + 3 * 60_000);
+    await lockTill(t1.id, soon);
+
+    // Reception's own lock ends later: they are told their wait, not the till's
+    // three minutes — at the look-up and at the hold.
+    for (const res of [await lookup(tillA, real.code), await hold(tillA, newId(), real.code)]) {
+      expect(res.json().error).toEqual({
+        code: 'LOCKED',
+        message: PERSON_LOCKED_WORDS,
+        details: { lockedUntil: personUntil.toISOString(), lock: 'person' },
+      });
+    }
+    // Anybody else at that till is told the till's.
+    expect((await lookup(managerAtA, real.code)).json().error).toEqual({
+      code: 'LOCKED',
+      message: 'Too many wrong codes — try again in 3 minutes',
+      details: { lockedUntil: soon.toISOString() },
+    });
+
+    // The till's ends later: the till's answers.
+    const later = new Date(personUntil.getTime() + 60_000);
+    await lockTill(t1.id, later);
+    expect((await lookup(tillA, real.code)).json().error).toEqual({
+      code: 'LOCKED',
+      message: 'Too many wrong codes — try again in 11 minutes',
+      details: { lockedUntil: later.toISOString() },
+    });
+    // The two end together: the till's answers.
+    await lockTill(t1.id, personUntil);
+    expect((await lookup(tillA, real.code)).json().error).toEqual({
+      code: 'LOCKED',
+      message: TILL_LOCKED_WORDS,
+      details: { lockedUntil: personUntil.toISOString() },
+    });
+  });
+
+  it('a wrong code counted at a till that locked while it waited answers the lock that ends later', async () => {
+    // Four wrong codes at Counter 2: reception's next locks them.
+    for (const code of Array.from({ length: 4 }, unsynced)) {
+      expect((await lookup(tillB, code)).statusCode).toBe(404);
+    }
+    const fifth = unsynced();
+    const soon = new Date(Date.now() + 2 * 60_000);
+    // The fifth passes the lock reads in front and waits its turn at Reception
+    // Till 1; before it is looked up, that till is locked by somebody else's
+    // codes, with two minutes left.
+    const queued = await ctx.db.transaction(async (tx) => {
+      await holdPersonLock(tx, receptionAccountId);
+      const res = lookup(tillA, fifth);
+      await queuedOn(tx, receptionAccountId, 1);
+      await tx
+        .insert(redemptionThrottle)
+        .values({ stationId: t1.id, operatorId, branchId: hktId, lockedUntil: soon });
+      return { res };
+    });
+
+    // Checked and counted: reception's fifth, which locks them. The till was
+    // locked when it was counted, so it answers a lock rather than "not found"
+    // — reception's, which ends later than the till's two minutes.
+    const res = await queued.res;
+    const rows = await missesOf(receptionAccountId);
+    expect(rows).toHaveLength(5);
+    const locking = rows.filter((r) => r.accountLockedUntil !== null);
+    expect(locking.map((r) => [r.codeHash, r.stationId])).toEqual([[hashOf(fifth), t1.id]]);
+    expect(res.json().error).toEqual({
+      code: 'LOCKED',
+      message: PERSON_LOCKED_WORDS,
+      details: { lockedUntil: locking[0]!.accountLockedUntil!.toISOString(), lock: 'person' },
+    });
+    // Not counted against the till, whose lock it found: that lock is as it was.
+    const till = await throttleOf(t1.id);
+    expect(till!.lockedUntil).toEqual(soon);
+    expect(till!.recentMisses).toEqual([]);
+    expect(till!.lockCount).toBe(0);
+  });
+
+  it('the counter guide says a person has a budget of their own', () => {
+    const guide = readFileSync(
+      new URL('../../../docs/ops/COUNTER_VOUCHERS.md', import.meta.url),
+      'utf8',
+    );
+    expect(guide).toContain(PERSON_LOCKED_WORDS.split(' for 10 minutes')[0]);
   });
 });
 

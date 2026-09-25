@@ -61,7 +61,9 @@ import { sale } from './sales';
 // `promo.voucher` (a till has it on a cart), the station it was redeemed at,
 // the append-only `voucher_redemption` ledger and the per-till
 // `redemption_throttle`; `apps/api/src/services/vouchers.ts` is the one
-// writer of all of it.
+// writer of all of it. Migration 0026 (SCRUM-425) adds `voucher_miss`: every
+// wrong code tried at a till, with the person who tried it, which is also
+// each person's own guessing budget.
 
 /**
  * What the holder gets.
@@ -546,5 +548,93 @@ export const redemptionThrottle = promo.table(
     index('redemption_throttle_operator_idx').on(t.operatorId),
     index('redemption_throttle_branch_idx').on(t.branchId),
     check('redemption_throttle_lock_count_check', sql`${t.lockCount} >= 0`),
+  ],
+);
+
+/**
+ * What the till said to a wrong code: "Invalid code" (the wrong shape, a wrong
+ * check character, a ten- or four-character code nobody has) or "Code not
+ * found" (eleven characters, a right check, and no voucher by that code yet).
+ */
+export const VOUCHER_MISS_RESULTS = ['invalid', 'not_found'] as const;
+export type VoucherMissResult = (typeof VOUCHER_MISS_RESULTS)[number];
+
+/**
+ * Every wrong code checked at a till, one row per try, with the person who
+ * tried it (SCRUM-425, migration 0026; the booth's closing audit, §3.1 and T25).
+ *
+ * TWO USES, ONE ROW. It is the record the Console will show — who tried what,
+ * at which till, when, and what the till answered — and it is each person's
+ * guessing budget: five different codes from one signed-in account inside a
+ * minute, at any tills, lock that account's voucher look-ups at every till for
+ * ten minutes (`recordVoucherMiss` in `apps/api/src/services/vouchers.ts`).
+ * The till's own budget stays in `redemption_throttle`, as it was; either lock
+ * refuses, and neither lifts the other.
+ *
+ * NEVER THE CODE (the rule of 0024). `code_hash` is the SHA-256, in hex, of
+ * the code in the form `promo.voucher` stores it, and the CHECK refuses
+ * anything that is not one. A code tried again is a row again, so the record
+ * keeps every try; the budget counts the different hashes.
+ *
+ * `account_locked_until` is set on the one row whose miss put its person over
+ * the budget, and says until when that person's look-ups are refused. It is
+ * the only lock a person has, so a person's lock and the miss that caused it
+ * cannot disagree.
+ *
+ * A row is a code that was checked. One person's codes are checked one at a
+ * time, under a lock of theirs, so a code a locked person tries — even one
+ * sent in the same burst as the miss that locked them — is refused before it
+ * is looked up and leaves no row: nothing found it wrong.
+ *
+ * A row per try rather than an account id beside each miss in
+ * `redemption_throttle`: that row keeps one minute and is emptied by every
+ * lock, so it could neither show anybody later who tried what nor keep a
+ * person's misses once a till they tried at had locked. The misses a till
+ * recorded before 0026 name nobody and are not copied here: they count for
+ * that till, as before, and nothing against a person.
+ *
+ * Append-only by its one writer: nothing updates or deletes a row. No
+ * `updated_at`, as on `voucher_redemption`.
+ */
+export const voucherMiss = promo.table(
+  'voucher_miss',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    /** The till's branch. */
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    /** The till the session was standing at. */
+    stationId: uuid('station_id')
+      .notNull()
+      .references(() => station.id, { onDelete: 'restrict' }),
+    /** Who tried it: the signed-in account of the session. */
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    /** SHA-256, in hex, of the normalised code — never the code. */
+    codeHash: text('code_hash').notNull(),
+    result: text('result').$type<VoucherMissResult>().notNull(),
+    /** The request that tried it. */
+    requestId: text('request_id'),
+    occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+    /** Set on the miss that put this person over the budget: their look-ups are refused until then. */
+    accountLockedUntil: timestamp('account_locked_until', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    /** A person's budget and their lock: one person's last minutes. */
+    index('voucher_miss_account_idx').on(t.accountId, t.occurredAt),
+    /** Who tried what at one till. */
+    index('voucher_miss_station_idx').on(t.stationId, t.occurredAt),
+    index('voucher_miss_branch_idx').on(t.branchId, t.occurredAt),
+    index('voucher_miss_operator_idx').on(t.operatorId, t.occurredAt),
+    check('voucher_miss_code_hash_check', sql`${t.codeHash} ~ '^[0-9a-f]{64}$'`),
+    check('voucher_miss_result_check', sql`${t.result} in ('invalid','not_found')`),
   ],
 );

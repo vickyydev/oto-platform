@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
   boxState,
@@ -14,14 +14,17 @@ import {
   ticketPackage,
   voucher,
   voucherDefinition,
+  voucherMiss,
   voucherRedemption,
   type Db,
+  type VoucherMissResult,
   type VoucherReleaseReason,
 } from '@oto/db';
 import {
   BOOTH_CODE_ALPHABET,
   BOOTH_CODE_LENGTH,
   boothStaffCode,
+  boothStaffLabel,
   computeTicketCartTotals,
   isLegacyBoothCode,
   isoDateInTz,
@@ -85,11 +88,23 @@ import type { Exec, Tx } from './tx';
  *     every wrong code after the fifth answers the lock. The same code tried
  *     again is the same miss (SCRUM-406), so a slip its booth has not sent yet
  *     can be tried again without locking the till.
+ *   - The same budget holds for each PERSON, across every till (SCRUM-425):
+ *     five different wrong codes from one signed-in account inside a minute,
+ *     at any tills, lock that account's look-ups at every till for ten minutes
+ *     and raise `redemption.probing` naming them. One person's codes are
+ *     checked one at a time, each miss counted before their next code is
+ *     looked at (`findForRedemption`), so however many arrive at once, every
+ *     code after the fifth miss is refused unchecked. Either lock refuses,
+ *     neither lifts the other, and while both are on the one that ends later
+ *     answers. Every code checked and found wrong is a row of
+ *     `promo.voucher_miss` — who, where, when, and the code's hash — for the
+ *     Console to show.
  *
  * WHERE THE TILL IS. Every act here happens at the station the SESSION is
  * standing at (`PUT /me/session/station`), never at one a request names: the
  * guessing limit is per till, and a limit keyed on a value the caller chooses
- * is a limit the caller resets.
+ * is a limit the caller resets. The person is the session's account, for the
+ * same reason.
  */
 
 // --- Limits ------------------------------------------------------------------
@@ -99,6 +114,35 @@ export const VOUCHER_MISS_LIMIT = 5;
 export const VOUCHER_MISS_WINDOW_MS = 60_000;
 /** ... lock that till's voucher redemption for ten minutes. */
 export const VOUCHER_LOCK_MS = 10 * 60_000;
+/*
+ * The same three numbers are each person's budget (SCRUM-425): five different
+ * codes from one account inside a minute, at any tills, lock that account's
+ * look-ups for ten minutes. The plan gives one budget for both — "per-station
+ * and per-staff not-found budget 5 per minute → 10-minute lock"
+ * (`docs/progress/SPRINT_2_PLAN.md`, S2-10b) — so they are one set of values.
+ */
+
+/**
+ * The advisory lock one person's codes are checked under, one at a time
+ * across every till: the look-up and the miss it may be are one act under it
+ * (`findForRedemption`). Ours, beside the others in this api: `0x070a` the job
+ * runner, `0x070b` the QR invoice number, `0x070c` an operator's barcodes,
+ * `0x070e` the virtual box lease.
+ */
+const PERSON_MISS_LOCK_NAMESPACE = 0x070d;
+
+/**
+ * One person's lock in that namespace, as Postgres's two-integer form: the key
+ * is the first four bytes of the SHA-256 of their account id. Exported because
+ * the only honest way to test a check queued behind that lock is for the test
+ * to hold it, as `scheduleLockId` in `jobs.ts` is for the job runner's.
+ */
+export function personMissLockId(accountId: string): [namespace: number, key: number] {
+  return [
+    PERSON_MISS_LOCK_NAMESPACE,
+    createHash('sha256').update(accountId).digest().readInt32BE(0),
+  ];
+}
 
 /**
  * How long a hold on a cart that has NOT been rung up keeps a voucher from
@@ -226,6 +270,26 @@ export const voucherErrors = {
       { lockedUntil: until.toISOString() },
     );
   },
+  /**
+   * The person's own lock (SCRUM-425): theirs, at every till, and not this
+   * till's — the till may be open to everybody else. `lock: 'person'` tells it
+   * from the till's, which carries no `lock`.
+   */
+  personLocked: (until: Date, now: Date) => {
+    // Never more than the lock's own length. A request that began a moment
+    // before the miss that set the lock — one of a burst — would otherwise
+    // round the gap up and read a minute more than the lock lasts.
+    const minutes = Math.min(
+      VOUCHER_LOCK_MS / 60_000,
+      Math.max(1, Math.ceil((until.getTime() - now.getTime()) / 60_000)),
+    );
+    return new AppError(
+      429,
+      'LOCKED',
+      `Too many wrong codes from you — you cannot redeem vouchers at any till for ${minutes} minute${minutes === 1 ? '' : 's'}`,
+      { lockedUntil: until.toISOString(), lock: 'person' },
+    );
+  },
   notSetUp: (definitionCode: string, why: string) =>
     new AppError(409, 'VOUCHER_NOT_SET_UP', VOUCHER_MESSAGES.notSetUp, {
       definition: definitionCode,
@@ -310,20 +374,71 @@ export async function loadRedemptionStation(
 
 // --- The guessing limit ------------------------------------------------------
 
-/** Refuse a till whose voucher redemption is locked. Reads only. */
-export async function assertRedemptionUnlocked(
-  db: Exec,
-  stationId: string,
-  now: Date,
-): Promise<void> {
+/** Until when a till's voucher redemption is locked, or null. Reads only. */
+async function tillLockedUntil(db: Exec, stationId: string, now: Date): Promise<Date | null> {
   const [row] = await db
     .select({ lockedUntil: redemptionThrottle.lockedUntil })
     .from(redemptionThrottle)
     .where(eq(redemptionThrottle.stationId, stationId))
     .limit(1);
-  if (row?.lockedUntil && row.lockedUntil.getTime() > now.getTime()) {
-    throw voucherErrors.locked(row.lockedUntil, now);
+  return row?.lockedUntil && row.lockedUntil.getTime() > now.getTime() ? row.lockedUntil : null;
+}
+
+/**
+ * Until when a person's voucher look-ups are locked, or null (SCRUM-425): the
+ * latest lock one of their misses set that has not run out. A lock runs
+ * `VOUCHER_LOCK_MS` from the miss that set it, so only a miss of the last lock
+ * period can hold one, and the read stays on one person's latest rows
+ * (`voucher_miss_account_idx`).
+ */
+async function personLockedUntil(db: Exec, accountId: string, now: Date): Promise<Date | null> {
+  const [row] = await db
+    .select({ until: voucherMiss.accountLockedUntil })
+    .from(voucherMiss)
+    .where(
+      and(
+        eq(voucherMiss.accountId, accountId),
+        gt(voucherMiss.occurredAt, new Date(now.getTime() - VOUCHER_LOCK_MS)),
+        gt(voucherMiss.accountLockedUntil, now),
+      ),
+    )
+    .orderBy(desc(voucherMiss.accountLockedUntil))
+    .limit(1);
+  return row?.until ?? null;
+}
+
+/**
+ * The answer while a till's lock, a person's, or both are on; null while
+ * neither is (SCRUM-425).
+ *
+ * With both on, the one that ends later answers, and the till's on a tie.
+ * Nothing is looked up for that person at that till until both have run out,
+ * so "try again in N minutes" must never tell them less than that. A person's
+ * lock given, there is always an answer.
+ */
+function lockRefusal(tillUntil: Date | null, personUntil: Date, now: Date): AppError;
+function lockRefusal(tillUntil: Date | null, personUntil: Date | null, now: Date): AppError | null;
+function lockRefusal(tillUntil: Date | null, personUntil: Date | null, now: Date): AppError | null {
+  if (tillUntil && (!personUntil || tillUntil.getTime() >= personUntil.getTime())) {
+    return voucherErrors.locked(tillUntil, now);
   }
+  return personUntil ? voucherErrors.personLocked(personUntil, now) : null;
+}
+
+/**
+ * Refuse a till, or a person, whose voucher redemption is locked. Reads only,
+ * on the pool, in front of `findForRedemption`'s transaction: somebody already
+ * locked is answered at once rather than queued behind their own lock.
+ */
+export async function assertRedemptionUnlocked(
+  db: Exec,
+  stationId: string,
+  accountId: string,
+  now: Date,
+): Promise<void> {
+  const tillUntil = await tillLockedUntil(db, stationId, now);
+  const refusal = lockRefusal(tillUntil, await personLockedUntil(db, accountId, now), now);
+  if (refusal) throw refusal;
 }
 
 /** One wrong code at a till: when, and the code's hash — null for a miss counted before 0024. */
@@ -396,8 +511,120 @@ function distinctMisses(misses: readonly VoucherMiss[]): number {
 }
 
 /**
- * Count a wrong code at a till, and lock the till on the fifth DIFFERENT one
- * inside a minute.
+ * The codes one person has missed inside the window, at every till, each once:
+ * the different hashes among their rows (SCRUM-425). A code tried again is one
+ * code for the person, as it is for the till (SCRUM-406).
+ */
+async function personMissedCodes(tx: Tx, accountId: string, now: Date): Promise<Set<string>> {
+  const rows = await tx
+    .selectDistinct({ codeHash: voucherMiss.codeHash })
+    .from(voucherMiss)
+    .where(
+      and(
+        eq(voucherMiss.accountId, accountId),
+        gt(voucherMiss.occurredAt, new Date(now.getTime() - VOUCHER_MISS_WINDOW_MS)),
+      ),
+    );
+  return new Set(rows.map((r) => r.codeHash));
+}
+
+/** Where a till's budget stands once a miss is counted against it. */
+interface TillMiss {
+  lockedUntil: Date | null;
+  /** This miss set the lock. */
+  lockedNow: boolean;
+  /** The lock was there before this miss, which was then not counted against the till. */
+  alreadyLocked: boolean;
+  /** The different codes in the window, this one included; read only when this miss set the lock. */
+  misses: number;
+}
+
+/**
+ * Where a person's budget stands once a miss is counted against it: the lock
+ * this miss set, when it was their fifth. A person who was already locked has
+ * no code checked (`findForRedemption`), so there is no earlier lock to carry.
+ */
+interface PersonMiss {
+  lockedUntil: Date | null;
+  /** The different codes in the window, this one included. */
+  misses: number;
+}
+
+/** Both budgets once a miss is counted: the till's and the person's. */
+interface CountedMiss {
+  till: TillMiss;
+  person: PersonMiss;
+}
+
+/**
+ * The person's half of a miss (SCRUM-425), inside `findForRedemption`'s
+ * transaction: the row that records it, and that person's budget.
+ *
+ * UNDER THE PERSON'S LOCK. `findForRedemption` took the person's advisory
+ * lock before their code was looked up and read that they were not locked,
+ * so one miss of theirs is counted at a time, whichever till it is at, and no
+ * other code of theirs is looked up while it is: two different wrong codes
+ * from one person at two tills at once are counted as two, and the fifth
+ * locks before any later code of theirs is checked.
+ *
+ * The row is written for every miss counted: the record is every code that
+ * was checked and found wrong. The lock outlasts the window, so when it runs
+ * out every miss before it has left the window too: a fresh budget.
+ */
+async function countPersonMiss(
+  tx: Tx,
+  at: RedemptionStation,
+  actor: { accountId: string; requestId?: string },
+  codeHash: string,
+  result: VoucherMissResult,
+  now: Date,
+): Promise<PersonMiss> {
+  const codes = await personMissedCodes(tx, actor.accountId, now);
+  codes.add(codeHash);
+  const misses = codes.size;
+  const lockedUntil =
+    misses >= VOUCHER_MISS_LIMIT ? new Date(now.getTime() + VOUCHER_LOCK_MS) : null;
+  await tx.insert(voucherMiss).values({
+    id: newId(),
+    operatorId: at.operatorId,
+    branchId: at.branchId,
+    stationId: at.id,
+    accountId: actor.accountId,
+    codeHash,
+    result,
+    requestId: actor.requestId ?? null,
+    occurredAt: now,
+    accountLockedUntil: lockedUntil,
+  });
+  if (lockedUntil) {
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: at.operatorId,
+      branchId: at.branchId,
+      action: 'voucher.redemption_locked',
+      entityType: 'account',
+      entityId: actor.accountId,
+      requestId: actor.requestId ?? null,
+      after: {
+        lockedUntil: lockedUntil.toISOString(),
+        misses,
+        windowSeconds: VOUCHER_MISS_WINDOW_MS / 1000,
+        stationId: at.id,
+      },
+    });
+  }
+  return { lockedUntil, misses };
+}
+
+/** "Nok (S-7KMQ)": the name a slip's Staff line prints and the staff code beside it — never a phone number. */
+async function personLabelOf(db: Exec, accountId: string): Promise<string> {
+  const who = await issuedByOf(db, accountId);
+  return boothStaffLabel(who?.name, who?.code) ?? boothStaffCode(accountId);
+}
+
+/**
+ * Count a wrong code at a till and against the person who tried it, and lock
+ * the till on the fifth DIFFERENT code inside a minute.
  *
  * WHAT COUNTS IS THE CODE, NOT THE TRY (SCRUM-406). A family's slip printed
  * while its booth was offline answers "not found" until the booth has sent it,
@@ -408,94 +635,129 @@ function distinctMisses(misses: readonly VoucherMiss[]): number {
  * miss, and five different wrong codes lock the till as they always did. A
  * miss recorded before migration 0024 has no hash and counts one on its own.
  *
- * ON ITS OWN TRANSACTION, on the pool, committed before the refusal it goes
- * with is thrown: a miss recorded inside the request's transaction would be
- * rolled back by the very refusal that reports it, and the limit would count
- * nothing. The row is locked while it is read, so two different wrong codes
+ * IN THE TRANSACTION THE CODE WAS LOOKED UP IN (`findForRedemption`), under the
+ * person's lock, and committed before the refusal it goes with is thrown: a
+ * miss recorded in a transaction the refusal rolled back would count nothing.
+ * The till's row is locked while it is read, so two different wrong codes
  * arriving together are counted as two.
  *
- * The alert is raised once the lock is committed, on the pool as well — the
- * same rule `raiseBoothAlert` in `sync-booth.ts` follows.
+ * ONE LOCK ORDER, everywhere: the person's lock, then the till's row. The
+ * person's was taken before the code was looked up and the till's row is
+ * taken here, after it; nothing takes them the other way round, so one
+ * person's checks at two tills and two people's at one till queue behind each
+ * other but never deadlock.
  *
- * `alreadyLocked` is true when the till was locked BEFORE this miss — by an
- * earlier one in the window, perhaps one that arrived alongside it and passed
- * `assertRedemptionUnlocked` at the same moment. Such a miss is not counted
- * (the lock has spent the window) and its caller answers the lock rather than
- * the miss's own refusal: every wrong code after the fifth reads LOCKED, even
- * in a burst.
+ * `till.alreadyLocked` is true when the till was locked BEFORE this miss — by
+ * an earlier one in the window, perhaps one that arrived alongside it and
+ * passed `assertRedemptionUnlocked` at the same moment. Such a miss is not
+ * counted against the till (the lock has spent the window) and its caller
+ * answers the lock rather than the miss's own refusal: every wrong code after
+ * the fifth reads LOCKED, even in a burst.
+ *
+ * AND THE PERSON (SCRUM-425). In the same transaction the miss becomes a row
+ * of `promo.voucher_miss`, and counts against the account that tried it,
+ * across every till (`countPersonMiss`); `person` says where that budget
+ * stands, as `till` does for the till's. The two are counted apart and lock
+ * apart: a till full of different people's misses locks the till and nobody,
+ * and one person's misses spread over several tills lock that person and no
+ * till.
+ *
+ * The alerts are raised once all this is committed, on the pool
+ * (`raiseProbingAlerts`) — the same rule `raiseBoothAlert` in `sync-booth.ts`
+ * follows.
  */
-export async function recordVoucherMiss(
-  db: Db,
+async function recordVoucherMiss(
+  tx: Tx,
   at: RedemptionStation,
   actor: { accountId: string; requestId?: string },
   rawCode: string,
+  result: VoucherMissResult,
   now: Date,
-): Promise<{ lockedUntil: Date | null; alreadyLocked: boolean }> {
+): Promise<CountedMiss> {
   const codeHash = voucherMissCodeHash(rawCode);
-  const outcome = await db.transaction(async (tx) => {
-    await tx
-      .insert(redemptionThrottle)
-      .values({ stationId: at.id, operatorId: at.operatorId, branchId: at.branchId })
-      .onConflictDoNothing();
-    const [row] = await tx
-      .select()
-      .from(redemptionThrottle)
-      .where(eq(redemptionThrottle.stationId, at.id))
-      .for('update')
-      .limit(1);
-    if (!row) throw new Error('the redemption throttle row was not written');
-    if (row.lockedUntil && row.lockedUntil.getTime() > now.getTime()) {
-      return {
+  await tx
+    .insert(redemptionThrottle)
+    .values({ stationId: at.id, operatorId: at.operatorId, branchId: at.branchId })
+    .onConflictDoNothing();
+  const [row] = await tx
+    .select()
+    .from(redemptionThrottle)
+    .where(eq(redemptionThrottle.stationId, at.id))
+    .for('update')
+    .limit(1);
+  if (!row) throw new Error('the redemption throttle row was not written');
+  // The till's row just now, after the person's lock `findForRedemption` took
+  // before the look-up: the one order, so nothing deadlocks.
+  const person = await countPersonMiss(tx, at, actor, codeHash, result, now);
+  if (row.lockedUntil && row.lockedUntil.getTime() > now.getTime()) {
+    return {
+      person,
+      till: {
         lockedUntil: row.lockedUntil,
         lockedNow: false,
         alreadyLocked: true,
         misses: row.recentMisses.length,
-      };
-    }
-    const recent = missesInWindow(recordedMisses(row), { at: now, codeHash }, now);
-    const misses = distinctMisses(recent);
-    if (misses < VOUCHER_MISS_LIMIT) {
-      await tx
-        .update(redemptionThrottle)
-        .set({
-          recentMisses: recent.map((m) => m.at),
-          recentMissCodeHashes: recent.map((m) => m.codeHash),
-          updatedAt: now,
-        })
-        .where(eq(redemptionThrottle.stationId, at.id));
-      return { lockedUntil: null, lockedNow: false, alreadyLocked: false, misses };
-    }
-    const lockedUntil = new Date(now.getTime() + VOUCHER_LOCK_MS);
-    // The budget after a lock is a fresh one: the misses that caused it are
-    // spent on it, and are in the audit row below.
+      },
+    };
+  }
+  const recent = missesInWindow(recordedMisses(row), { at: now, codeHash }, now);
+  const misses = distinctMisses(recent);
+  if (misses < VOUCHER_MISS_LIMIT) {
     await tx
       .update(redemptionThrottle)
       .set({
-        recentMisses: [],
-        recentMissCodeHashes: [],
-        lockedUntil,
-        lockCount: sql`${redemptionThrottle.lockCount} + 1`,
+        recentMisses: recent.map((m) => m.at),
+        recentMissCodeHashes: recent.map((m) => m.codeHash),
         updatedAt: now,
       })
       .where(eq(redemptionThrottle.stationId, at.id));
-    await audit.record(tx, {
-      actorAccountId: actor.accountId,
-      operatorId: at.operatorId,
-      branchId: at.branchId,
-      action: 'voucher.redemption_locked',
-      entityType: 'station',
-      entityId: at.id,
-      requestId: actor.requestId ?? null,
-      after: {
-        lockedUntil: lockedUntil.toISOString(),
-        misses,
-        windowSeconds: VOUCHER_MISS_WINDOW_MS / 1000,
-      },
-    });
-    return { lockedUntil, lockedNow: true, alreadyLocked: false, misses };
+    return {
+      person,
+      till: { lockedUntil: null, lockedNow: false, alreadyLocked: false, misses },
+    };
+  }
+  const lockedUntil = new Date(now.getTime() + VOUCHER_LOCK_MS);
+  // The budget after a lock is a fresh one: the misses that caused it are
+  // spent on it, and are in the audit row below.
+  await tx
+    .update(redemptionThrottle)
+    .set({
+      recentMisses: [],
+      recentMissCodeHashes: [],
+      lockedUntil,
+      lockCount: sql`${redemptionThrottle.lockCount} + 1`,
+      updatedAt: now,
+    })
+    .where(eq(redemptionThrottle.stationId, at.id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: at.operatorId,
+    branchId: at.branchId,
+    action: 'voucher.redemption_locked',
+    entityType: 'station',
+    entityId: at.id,
+    requestId: actor.requestId ?? null,
+    after: {
+      lockedUntil: lockedUntil.toISOString(),
+      misses,
+      windowSeconds: VOUCHER_MISS_WINDOW_MS / 1000,
+    },
   });
+  return { person, till: { lockedUntil, lockedNow: true, alreadyLocked: false, misses } };
+}
 
-  if (outcome.lockedNow && outcome.lockedUntil) {
+/**
+ * The `redemption.probing` alerts for a miss that locked a till, a person, or
+ * both — raised on the pool once the miss is committed (`recordVoucherMiss`).
+ * The alert for a person's lock names them.
+ */
+async function raiseProbingAlerts(
+  db: Db,
+  at: RedemptionStation,
+  actor: { accountId: string },
+  { till, person }: CountedMiss,
+): Promise<void> {
+  if (till.lockedNow && till.lockedUntil) {
     await raiseAlert(
       db,
       {
@@ -504,13 +766,13 @@ export async function recordVoucherMiss(
         severity: 'warning',
         subject: `${at.name} (${at.branchName})`,
         summary:
-          `${outcome.misses} wrong voucher codes inside a minute at ${at.name} — voucher ` +
-          `redemption there is locked until ${formatVoucherDateTime(outcome.lockedUntil, at.timezone)}. ` +
+          `${till.misses} wrong voucher codes inside a minute at ${at.name} — voucher ` +
+          `redemption there is locked until ${formatVoucherDateTime(till.lockedUntil, at.timezone)}. ` +
           'Somebody may be guessing codes.',
         detail: {
           stationId: at.id,
-          misses: outcome.misses,
-          lockedUntil: outcome.lockedUntil.toISOString(),
+          misses: till.misses,
+          lockedUntil: till.lockedUntil.toISOString(),
           accountId: actor.accountId,
         },
         operatorId: at.operatorId,
@@ -519,7 +781,32 @@ export async function recordVoucherMiss(
       { flapWindowSeconds: 0 },
     );
   }
-  return { lockedUntil: outcome.lockedUntil, alreadyLocked: outcome.alreadyLocked };
+  if (person.lockedUntil) {
+    const who = await personLabelOf(db, actor.accountId);
+    await raiseAlert(
+      db,
+      {
+        key: `redemption.probing:account:${actor.accountId}`,
+        category: 'redemption.probing',
+        severity: 'warning',
+        subject: who,
+        summary:
+          `${person.misses} wrong voucher codes inside a minute from ${who}, the last at ` +
+          `${at.name} (${at.branchName}) — their voucher redemption is locked at every till ` +
+          `until ${formatVoucherDateTime(person.lockedUntil, at.timezone)}. ` +
+          'Somebody may be guessing codes with this account.',
+        detail: {
+          accountId: actor.accountId,
+          stationId: at.id,
+          misses: person.misses,
+          lockedUntil: person.lockedUntil.toISOString(),
+        },
+        operatorId: at.operatorId,
+        branchId: at.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  }
 }
 
 // --- Reading a voucher -------------------------------------------------------
@@ -1081,10 +1368,11 @@ export interface RedemptionActor {
 
 /**
  * The voucher behind a code with nothing changed — except, on a wrong code,
- * one more miss against this till.
+ * one more miss against this till and this person, and the row recording it.
  *
  * `db` is the pool and not a transaction on purpose: a miss has to be
- * committed whatever the answer is (`recordVoucherMiss`).
+ * committed whatever the answer is, so the code is checked in a transaction
+ * of its own (`findForRedemption`).
  */
 export async function lookupVoucher(
   db: Db,
@@ -1105,10 +1393,37 @@ export async function lookupVoucher(
   return { voucher: await viewOf(db, v, def, effect, state, legacyFormat) };
 }
 
+/** What checking a code decided, with everything the check wrote committed (`findForRedemption`). */
+type CodeCheck =
+  | { kind: 'found'; v: VoucherRow; def: DefinitionRow; legacyFormat: boolean }
+  | { kind: 'refused'; refusal: AppError }
+  | { kind: 'missed'; result: VoucherMissResult; counted: CountedMiss };
+
 /**
  * The code, checked, and the voucher it names — or the refusal, with the miss
  * counted. Shared by the look-up and the hold, so the two cannot disagree
  * about what a code is.
+ *
+ * ONE PERSON'S CODES ARE CHECKED ONE AT A TIME (SCRUM-425). The look-up and
+ * the miss it may be are one act: one transaction on the pool, under the
+ * person's advisory lock, in which their lock is read again, the code is
+ * looked up and, on a miss, the till's row and the person's budget are counted
+ * (`recordVoucherMiss`). It commits, and only then are the alerts raised and
+ * the refusal thrown, on the pool. A code of theirs that arrives in a burst
+ * waits its turn, and once the fifth miss has locked them it is refused
+ * unchecked and leaves no row: however many arrive together, nothing of
+ * theirs is looked up after the fifth miss, and a real code queued behind it
+ * is refused like any other.
+ *
+ * Every query between taking the lock and the commit runs on that
+ * transaction. One on the pool there could wait for a connection that the
+ * person's other checks, queued on this lock, are all holding — ten of them
+ * fill the pool — and nothing would move again.
+ *
+ * The lock reads in front, on the pool, answer somebody already locked at
+ * once, without queueing (`assertRedemptionUnlocked`). Under the person's
+ * lock only the person's is checked again; the till's stays as it was, read
+ * in front and counted under the till's row.
  */
 async function findForRedemption(
   db: Db,
@@ -1117,36 +1432,57 @@ async function findForRedemption(
   rawCode: string,
   now: Date,
 ): Promise<{ v: VoucherRow; def: DefinitionRow; legacyFormat: boolean }> {
-  await assertRedemptionUnlocked(db, at.id, now);
-  /**
-   * A wrong code is counted against the till, and answered with its own
-   * refusal — unless the till was already locked when it was counted, which
-   * happens when several arrive together and all pass the check above before
-   * the fifth locks it. Those answer the lock (`recordVoucherMiss`).
-   */
-  const miss = async (refusal: AppError): Promise<never> => {
-    const { lockedUntil, alreadyLocked } = await recordVoucherMiss(db, at, actor, rawCode, now);
-    if (alreadyLocked && lockedUntil) throw voucherErrors.locked(lockedUntil, now);
-    throw refusal;
-  };
+  await assertRedemptionUnlocked(db, at.id, actor.accountId, now);
   const code = classifyVoucherCode(rawCode);
-  // Decided from the string: no voucher row is read for a code that cannot be one.
-  if (code.kind === 'invalid') return miss(voucherErrors.invalid());
-  const [row] = await db
-    .select({ v: voucher, def: voucherDefinition })
-    .from(voucher)
-    .innerJoin(voucherDefinition, eq(voucherDefinition.id, voucher.voucherDefinitionId))
-    .where(and(eq(voucher.operatorId, actor.operatorId), eq(voucher.code, code.code)))
-    .limit(1);
-  if (!row) {
+  const checked = await db.transaction(async (tx): Promise<CodeCheck> => {
+    const [namespace, key] = personMissLockId(actor.accountId);
+    await tx.execute(sql`select pg_advisory_xact_lock(${namespace}::int4, ${key}::int4)`);
+    const personUntil = await personLockedUntil(tx, actor.accountId, now);
+    if (personUntil) {
+      // Locked while this waited its turn, by a miss of theirs that went first.
+      // Refused unchecked, and nothing is recorded: the code was never found
+      // wrong. The till's lock is read only to say which of the two ends later.
+      const tillUntil = await tillLockedUntil(tx, at.id, now);
+      return { kind: 'refused', refusal: lockRefusal(tillUntil, personUntil, now) };
+    }
+    // Decided from the string: no voucher row is read for a code that cannot be one.
+    if (code.kind !== 'invalid') {
+      const [row] = await tx
+        .select({ v: voucher, def: voucherDefinition })
+        .from(voucher)
+        .innerJoin(voucherDefinition, eq(voucherDefinition.id, voucher.voucherDefinitionId))
+        .where(and(eq(voucher.operatorId, actor.operatorId), eq(voucher.code, code.code)))
+        .limit(1);
+      if (row) {
+        const legacyFormat = code.kind === 'legacy_booth';
+        return { kind: 'found', v: row.v, def: row.def, legacyFormat };
+      }
+    }
     // Only an eleven-character code with a right check can be a booth that has
     // not synced. A ten-character one is a current code with a character
     // dropped — no box mints ten any more, and every such deletion leaves a
     // well-formed ten — and a four-character one is Radar's shape, which
     // nothing has imported yet. Both are mistakes: "Invalid code".
-    return miss(code.kind === 'current' ? voucherErrors.notFound() : voucherErrors.invalid());
+    const result: VoucherMissResult = code.kind === 'current' ? 'not_found' : 'invalid';
+    const counted = await recordVoucherMiss(tx, at, actor, rawCode, result, now);
+    return { kind: 'missed', result, counted };
+  });
+  if (checked.kind === 'found') {
+    return { v: checked.v, def: checked.def, legacyFormat: checked.legacyFormat };
   }
-  return { v: row.v, def: row.def, legacyFormat: code.kind === 'legacy_booth' };
+  if (checked.kind === 'refused') throw checked.refusal;
+  await raiseProbingAlerts(db, at, actor, checked.counted);
+  // A wrong code is answered with its own refusal — unless the till was
+  // already locked when it was counted, which happens when several arrive
+  // together at one till and all pass the reads in front before the fifth
+  // locks it. Those answer the lock: the till's, or the person's when this
+  // miss set theirs and it ends later.
+  const { till, person } = checked.counted;
+  if (till.alreadyLocked) {
+    const refusal = lockRefusal(till.lockedUntil, person.lockedUntil, now);
+    if (refusal) throw refusal;
+  }
+  throw checked.result === 'not_found' ? voucherErrors.notFound() : voucherErrors.invalid();
 }
 
 // --- Hold: put it on a cart --------------------------------------------------
@@ -1160,8 +1496,9 @@ export interface HoldResult {
 
 /**
  * The part of a hold that must be committed even when the hold is refused —
- * the code check and the miss count — run on the pool before the hold's own
- * transaction opens. Returns the voucher's id for `holdVoucher`.
+ * the code check and the miss count — in a transaction of its own
+ * (`findForRedemption`), committed before the hold's own transaction opens.
+ * Returns the voucher's id for `holdVoucher`.
  */
 export async function prepareHold(
   db: Db,
