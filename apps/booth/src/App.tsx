@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { BoothConfigBundle, SpinResponse } from '@oto/shared';
 import { booth, boothCredential } from './booth/client';
 import { BoothCallError, type BoothStatus } from './booth/contract';
@@ -6,7 +6,7 @@ import { readAssetManifest, readColor, readDesign, type WheelDesign } from './bo
 import { boothHost } from './booth/host';
 import { kiosk, type KioskState } from './booth/kiosk';
 import { sliceIndexFor, visiblePrizes } from './booth/wheel-view';
-import { COPY, type BilingualLine } from './copy';
+import { COPY, noWheelScreen, refusalLine, type BilingualLine } from './copy';
 import { flags, parseHash } from './flags';
 import {
   installPressListener,
@@ -27,7 +27,8 @@ import { Wheel, type WheelSlice } from './components/Wheel';
 /**
  * boot     — nothing has answered yet
  * unpaired — no staff member has paired this screen to a booth (SCRUM-244)
- * unsynced — no wheel has ever been published to this booth
+ * unsynced — the box has no wheel for this booth: none has been published to
+ *            it, or the box has never been able to fetch one
  * ready    — the attract; a press starts a draw
  * starting — the press is with the booth and the wheel has not moved
  * spinning — the wheel is turning toward a slice already decided
@@ -69,6 +70,36 @@ const INPUT_LOG_MAX = 8;
 const KIOSK_POLL_MS = 5000;
 /** How long "staff are signing in" stays over the wheel after a press the form took. */
 const HOLD_NOTICE_MS = 4000;
+
+/**
+ * Noto Sans Thai from Google Fonts: the face most text styles on this page
+ * name right after the park's brand faces, which the page does not carry
+ * (D23). Google serves it with Latin letters as well as Thai, so where it
+ * loads it draws the English on the television too, not only the Thai.
+ *
+ * **Asked for from here, once the page has loaded — never from index.html.**
+ * A stylesheet written into the page's `<head>` holds back the page's own
+ * script until it arrives. While Google did not answer — a browser with no
+ * fresh copy of this sheet, on a network that drops traffic to Google rather
+ * than refusing it — the television stayed white and the button did nothing
+ * until the request gave up: 21 to 30 seconds where it was measured, and
+ * about two minutes on a Pi by estimate. A stylesheet added by script holds
+ * back nothing: the page is drawn and playing first, and the face swaps in if
+ * and when Google answers. Until then, and for good on a booth that never
+ * reaches Google, Thai is drawn in 'Booth Thai' (src/kiosk.css) — the same
+ * face, built into the page — and English in the device's own sans-serif.
+ */
+const GOOGLE_FONT_STYLESHEET =
+  'https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap';
+
+function requestGoogleFont(): void {
+  if (document.querySelector('link[data-booth-google-font]') !== null) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = GOOGLE_FONT_STYLESHEET;
+  link.setAttribute('data-booth-google-font', '1');
+  document.head.appendChild(link);
+}
 
 /**
  * A page served by a booth box starts with the box's own questions: is it
@@ -149,6 +180,34 @@ export default function App() {
   useEffect(() => {
     configRef.current = config;
   }, [config]);
+
+  /** Whether the box has the internet, for the words a refused press gets. */
+  const onlineRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    onlineRef.current = status?.online ?? null;
+  }, [status]);
+
+  /**
+   * The gate screen on the television, read by the press handler.
+   *
+   * A layout effect rather than a plain one, so the handler never reads the
+   * screen before last: it is set before the browser paints the picker, not
+   * after, and a press that lands on a picker already drawn finds it here.
+   */
+  const gateRef = useRef<KioskGate>(gate);
+  useLayoutEffect(() => {
+    gateRef.current = gate;
+  }, [gate]);
+
+  // The Google stylesheet, once the page has loaded (see GOOGLE_FONT_STYLESHEET).
+  useEffect(() => {
+    if (document.readyState === 'complete') {
+      requestGoogleFont();
+      return;
+    }
+    window.addEventListener('load', requestGoogleFont, { once: true });
+    return () => window.removeEventListener('load', requestGoogleFont);
+  }, []);
 
   const signedIn = status?.staffSignedIn ?? false;
 
@@ -420,7 +479,7 @@ export default function App() {
       // `noteError`; putting a notice under a wheel it is no longer showing
       // would leave "please call staff" sitting on the pairing prompt.
       if (error instanceof BoothCallError && error.code === 'unpaired') return;
-      setNotice(noticeFor(error));
+      setNotice(noticeFor(error, onlineRef.current));
       setPhase('ready');
     }
   }, [applyConfig, fetchConfig, noteError]);
@@ -449,6 +508,14 @@ export default function App() {
   }, [goToReady]);
 
   const onPress = useCallback(() => {
+    /**
+     * Nothing while a gate screen is up — the booth picker above all. "Change
+     * booth" opens the picker over a wheel that is still `ready`, and the
+     * button used to spin that booth behind it: a slip printed, and choosing
+     * a booth then reset the page, so the guest never saw a card for it.
+     * Whichever booth is chosen, the next press is that booth's.
+     */
+    if (gateRef.current !== null) return;
     switch (phaseRef.current) {
       case 'ready':
         void startSpin();
@@ -489,7 +556,7 @@ export default function App() {
    * spins). Only where a press would otherwise have started a spin.
    */
   const onPressWhileTyping = useCallback(() => {
-    if (phaseRef.current !== 'ready') return;
+    if (gateRef.current !== null || phaseRef.current !== 'ready') return;
     setHoldNotice((n) => n + 1);
   }, []);
 
@@ -712,8 +779,8 @@ export default function App() {
           onPaired={() => {
             // Back to boot rather than straight to ready: the config and
             // status polls are still running, and which screen comes next —
-            // a wheel, or "not set up, connect to internet" — is their answer
-            // to give rather than this callback's.
+            // a wheel, or the screen for a booth with no wheel yet — is their
+            // answer to give rather than this callback's.
             setPhase('boot');
             void refreshStatus();
             // And the wheel now, not at the poll's next tick: the effect's
@@ -731,15 +798,28 @@ export default function App() {
   }
 
   if (phase === 'unsynced') {
+    /**
+     * No wheel yet. What it says depends on whether the box has the internet
+     * (`noWheelScreen` in src/copy.ts): offline, connect; online, nobody has
+     * published this booth's wheel — the guest is asked to fetch staff, and a
+     * panel in the pairing prompt's place tells staff where to publish it.
+     */
+    const noWheel = noWheelScreen(status?.online ?? null);
     return (
       <div className={'k-screen' + liteClass} data-kiosk-surface="1">
         <Ambient />
         <div className="k-body k-body--center">
           <OtoWordmark height={56} />
           <div className="k-setup">
-            <p className="k-setup-line">{COPY.notSetUp.en}</p>
-            <p className="k-setup-line k-th">{COPY.notSetUp.th}</p>
+            <p className="k-setup-line">{noWheel.guest.en}</p>
+            <p className="k-setup-line k-th">{noWheel.guest.th}</p>
           </div>
+          {noWheel.staff !== null && (
+            <div className="k-panel k-panel--center" data-booth-panel="no-wheel">
+              <div className="k-panel-head">{noWheel.staff.title}</div>
+              <p className="k-panel-line">{noWheel.staff.hint}</p>
+            </div>
+          )}
         </div>
         <StatusChip status={status} transport={booth.kind} onOpen={() => setSignInOpen(true)} />
         <OnDutyBadge status={status} onOpen={() => setSignInOpen(true)} />
@@ -847,25 +927,16 @@ export default function App() {
 }
 
 /**
- * The line a refused press puts under the wheel.
- *
- * Three answers, and the third is the one worth stating. Every failure this
- * page cannot name — a 500, an unknown code, a body that did not parse, the
- * booth service not answering at all — ends on "Booth not ready, please call
- * staff", because in all of those cases a member of staff is the thing the
- * family needs. The two named codes are the cases where that instruction would
- * be wrong: a booth nobody has published a wheel to needs an internet
- * connection, and a booth that has run today's spins needs tomorrow (SCRUM-257).
- * Neither is fixed by fetching somebody from reception.
+ * The line a refused press puts under the wheel: `refusalLine` in src/copy.ts
+ * chooses it from the refusal's code and whether the box has the internet, so
+ * the choice can be tested on its own. Anything that is not a `BoothCallError`
+ * has no code, and ends on "Booth not ready — please call staff".
  *
  * Nothing here reads the server's prose (D15); the code chooses a line written
- * in this file's own deck.
+ * in the page's own deck.
  */
-function noticeFor(error: unknown): BilingualLine {
-  if (!(error instanceof BoothCallError)) return COPY.notReady;
-  if (error.code === 'not_configured') return COPY.notSetUp;
-  if (error.code === 'daily_spin_cap_reached') return COPY.allSpinsGone;
-  return COPY.notReady;
+function noticeFor(error: unknown, online: boolean | null): BilingualLine {
+  return refusalLine(error instanceof BoothCallError ? error.code : null, online);
 }
 
 /**

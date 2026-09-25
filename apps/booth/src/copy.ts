@@ -127,7 +127,27 @@ export const COPY = {
     en: "That's all the spins for today — come back tomorrow",
     th: 'วันนี้หมุนครบแล้ว พรุ่งนี้มาใหม่นะ',
   } satisfies BilingualLine,
-  /** Never synced: there is no wheel to show, so the game does not open. */
+  /**
+   * The box answered a retried press with `duplicate_press`: it recorded that
+   * press and minted its voucher, but has no answer left to give, so no wheel
+   * turns and no card opens (see the code's note in src/booth/contract.ts).
+   *
+   * Its own line rather than `notReady`, because nothing is broken and the
+   * prize is real: on a booth with a printer the slip was queued with the
+   * spin. So the family is told the voucher is being printed, and to ask
+   * staff only if it does not come out — staff can print it again with
+   * "Reprint last voucher" on the panel, while it is still the booth's last.
+   */
+  voucherPrinting: {
+    en: 'Your voucher is being printed — ask our staff if it does not come out',
+    th: 'กำลังพิมพ์คูปองของคุณ หากคูปองไม่ออกมา กรุณาสอบถามพนักงาน',
+  } satisfies BilingualLine,
+  /**
+   * No wheel, and the box cannot reach the internet: the only thing that can
+   * bring the wheel is the connection. Only while the box is OFFLINE — an
+   * online box with no wheel is waiting for a publish, and telling staff to
+   * check the network would send them to the wrong place (`noWheelScreen`).
+   */
   notSetUp: {
     en: 'Booth not set up, connect to internet',
     th: 'ตู้ยังไม่ได้ตั้งค่า กรุณาเชื่อมต่ออินเทอร์เน็ต',
@@ -173,7 +193,12 @@ export const PAIR_COPY = {
 /** Staff-facing words. English only: these appear in panels, never on the game. */
 export const STAFF_COPY = {
   signInTitle: 'Staff sign-in',
-  signInHint: 'Enter your PIN, or scan your badge',
+  /**
+   * The PIN only. Signing in with a badge is not built yet (SCRUM-218): the
+   * box holds no badge to check a scan against, so a scan is always refused
+   * and counts toward the lockout. The panel does not invite one.
+   */
+  signInHint: 'Enter your PIN',
   signInWrong: 'That was not right',
   signInLocked: (seconds: number) => `Too many attempts — try again in ${seconds}s`,
   signInOk: 'Signed in',
@@ -219,6 +244,11 @@ export const STAFF_COPY = {
  * read is bilingual.
  */
 export const KIOSK_COPY = {
+  /**
+   * Also the guest's line on the no-wheel screen while the booth is online
+   * and nobody has published to it yet, on a box or a paired screen alike
+   * (`noWheelScreen` below): it is being set up, and staff are who can help.
+   */
   guest: {
     en: 'This booth is being set up — please ask our staff',
     th: 'บูธนี้กำลังตั้งค่า กรุณาสอบถามพนักงาน',
@@ -233,6 +263,88 @@ export const KIOSK_COPY = {
   pickTitle: 'Which booth is this?',
   pickHint: 'This box runs more than one booth. Choose the one at this television.',
   noBoothTitle: 'No booth on this box yet',
-  noBoothHint: 'In the Console, create a booth station on this box (Devices → New station, kind Booth), then publish its wheel.',
+  /**
+   * Names the code prefix because a booth cannot print a voucher without one:
+   * every code the box mints starts with exactly two letters or digits, and a
+   * booth station saved without them refuses every press.
+   */
+  noBoothHint:
+    'In the Console, create a booth station on this box (Devices → New station, kind Booth, with a code prefix of two letters or digits, such as B2), then publish its wheel.',
   starting: 'Starting the box…',
 } as const;
+
+/**
+ * The staff panel on the no-wheel screen while the booth is online. English,
+ * like every other staff word here; the guest's line beside it is bilingual.
+ *
+ * The time is the worst case of two polls: the box asks the cloud for a new
+ * wheel every 60 seconds, and this page asks the box every 30.
+ */
+export const NO_WHEEL_COPY = {
+  title: 'No wheel published for this booth yet',
+  hint: 'Publish it in Console → Booths. It appears on this television by itself, within about two minutes.',
+} as const;
+
+export interface NoWheelScreen {
+  /** Under the wordmark, for anyone looking at the television. */
+  guest: BilingualLine;
+  /** The staff panel under it, or null for none. */
+  staff: { title: string; hint: string } | null;
+}
+
+/**
+ * What the television says while it has no wheel to show: nobody has
+ * published one to this booth, or the box has never been able to fetch it.
+ *
+ * Chosen by whether the box has the internet (`BoothStatus.online`), because
+ * the same missing wheel asks for opposite fixes:
+ *
+ *  - **offline** — "Booth not set up, connect to internet". A wheel cannot
+ *    arrive without the connection.
+ *  - **online** — the guest is asked to fetch staff, and staff are told the
+ *    wheel has not been published and where to publish it. The connection is
+ *    fine; saying "connect to internet" beside a green dot sent the person
+ *    setting the booth up to check the network.
+ *  - **not known yet** (null, before the box has answered) — the guest's line
+ *    alone, which is true either way, and no instruction to staff until there
+ *    is an answer to base one on.
+ */
+export function noWheelScreen(online: boolean | null): NoWheelScreen {
+  if (online === false) return { guest: COPY.notSetUp, staff: null };
+  return { guest: KIOSK_COPY.guest, staff: online === true ? NO_WHEEL_COPY : null };
+}
+
+/**
+ * The line a refused press puts under the wheel, from the refusal's code
+ * (`BoothCallError.code`; null for a failure the page has no code for) and
+ * whether the box has the internet.
+ *
+ * Every failure without a line of its own — a 500, an unknown code, a body
+ * that did not parse, the box not answering at all — ends on "Booth not
+ * ready — please call staff", because in all of those a member of staff is
+ * what the family needs. The named codes are the cases where that
+ * instruction would be wrong:
+ *
+ *  - `duplicate_press` — the press was recorded and its voucher is being
+ *    printed; nothing is broken.
+ *  - `daily_spin_cap_reached` — the booth has run its day; staff cannot
+ *    change it, tomorrow can (SCRUM-257).
+ *  - `not_configured` — the box has no wheel. Offline, that needs the
+ *    internet; online, it needs a publish, and the guest is asked to fetch
+ *    staff rather than told to connect something that is connected.
+ *
+ * Nothing here reads the server's prose (D15): the code chooses a line from
+ * this file's own deck.
+ */
+export function refusalLine(code: string | null, online: boolean | null): BilingualLine {
+  switch (code) {
+    case 'duplicate_press':
+      return COPY.voucherPrinting;
+    case 'daily_spin_cap_reached':
+      return COPY.allSpinsGone;
+    case 'not_configured':
+      return noWheelScreen(online).guest;
+    default:
+      return COPY.notReady;
+  }
+}

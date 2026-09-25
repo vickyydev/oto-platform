@@ -36,17 +36,26 @@ interface Props {
 /** Longer than any PIN, short enough to bound a badge burst. */
 const MAX_ENTRY = 32;
 /**
+ * The longest PIN a booth takes. A booth PIN is 4 to 8 digits: the api sets
+ * no other (`apps/api/src/routes/booth.ts`, "A booth PIN is 4 to 8 digits"),
+ * and the Console's PIN form checks the same. So an entry this long or
+ * shorter is a PIN, however fast it was typed.
+ */
+const PIN_MAX_LENGTH = 8;
+/**
  * A USB badge scanner types its characters in a few milliseconds; a person at
  * a keypad does not. Sixty milliseconds between keystrokes is comfortably
  * above a scanner and comfortably below a human, so an entry that arrives
- * faster than this AND is longer than a PIN is treated as a scan.
+ * faster than this AND is longer than any PIN (`PIN_MAX_LENGTH`) is treated
+ * as a scan.
  *
- * It is a heuristic and it can be wrong in one direction: a very fast typist
- * entering a six-digit PIN could be read as a badge, the booth would refuse
- * it, and the attempt would count toward the backoff. The alternative — a
- * separate "scan" mode staff have to select — costs a touch on every scan, at
- * a booth where the scan is meant to be the quick path. If this misfires in
- * the park, the fix is a mode switch, not a tighter threshold.
+ * Longer than any PIN, not merely long: a PIN typed quickly is still a PIN.
+ * The threshold used to be six characters, so a 6-, 7- or 8-digit PIN typed
+ * fast was sent as a badge, refused, and counted toward the lockout. The one
+ * thing the heuristic can still get wrong is the other way round: a badge of
+ * eight characters or fewer would be sent as a PIN. Badge sign-in is not
+ * built yet (SCRUM-218) — the box holds no badge to check a scan against —
+ * so whoever builds it chooses badges longer than a PIN, or a mode switch.
  */
 const SCAN_MAX_MEAN_GAP_MS = 60;
 
@@ -167,7 +176,7 @@ export function StaffSignIn({
       const gaps = keyCount.current - 1;
       const meanGap =
         gaps > 0 ? (lastKeyAt.current - firstKeyAt.current) / gaps : Number.POSITIVE_INFINITY;
-      const scanned = value.length >= 6 && meanGap < SCAN_MAX_MEAN_GAP_MS;
+      const scanned = value.length > PIN_MAX_LENGTH && meanGap < SCAN_MAX_MEAN_GAP_MS;
 
       setBusy(true);
       setMessage(null);

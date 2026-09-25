@@ -18,18 +18,16 @@
       faces have no Thai glyphs, and every prize on this wheel is named in both
       languages on the result card.
 
-      It is fetched from Google first. A page that cannot reach Google — a
-      booth box that boots before the mall's internet, or a network that
-      blocks it — falls back to 'Booth Thai' in src/kiosk.css: the same face,
-      built into the page from packages/print/fonts, so a Raspberry Pi with no
-      Thai font of its own still draws Thai (SCRUM-223).
+      Nothing here fetches it, on purpose. A stylesheet in this <head> holds
+      back the page's script until it arrives, so a booth with no fresh copy of
+      Google's sheet, on a network that dropped traffic to Google, showed a
+      white screen and a dead button until the request gave up. The page asks
+      Google for the face itself, once it has loaded
+      (GOOGLE_FONT_STYLESHEET in src/App.tsx). Until that answers, and for good
+      on a booth that never reaches Google, Thai is drawn in 'Booth Thai' from
+      src/kiosk.css: the same face, built into the page from packages/print/fonts,
+      so a Raspberry Pi with no Thai font of its own still draws Thai (SCRUM-223).
     -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <div id="root"></div>

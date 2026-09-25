@@ -40,8 +40,10 @@ import type {
 export interface BoothConfigResponse {
   /**
    * `booth.booth_config_version.version`, or null when this booth has never
-   * had a wheel published to it — which is a different screen ("Booth not set
-   * up, connect to internet"), not an error.
+   * had a wheel published to it — which is a different screen, not an error:
+   * "Booth not set up, connect to internet" while the box is offline, and
+   * "No wheel published for this booth yet" while it is online (`noWheelScreen`
+   * in src/copy.ts).
    */
   version: number | null;
   bundle: BoothConfigBundle | null;
@@ -123,10 +125,13 @@ export interface BoothStatus {
   /** The box's link to the cloud. False lights the offline dot. */
   online: boolean;
   /**
-   * True until the first successful sync. Shows "Booth not set up, connect to
-   * internet" instead of the game, because a wheel with no published config
-   * is not a wheel — and it is a different state from "offline", which a
-   * booth that has run all week is in every time the mall's wifi drops.
+   * True until a wheel has been applied on the box. The page shows no game
+   * then, because a wheel with no published config is not a wheel — and it is
+   * a different state from "offline", which a booth that has run all week is
+   * in every time the mall's wifi drops. Which words that screen shows is
+   * decided by `online`: an offline box is told to connect, an online one that
+   * nobody has published to is told where to publish (`noWheelScreen` in
+   * src/copy.ts).
    */
   neverSynced: boolean;
   /** `booth.booth_config_version.version` the box is drawing from. */
@@ -155,7 +160,9 @@ export interface BoothStatus {
  * The failures this page knows how to say something about.
  *
  * `booth_not_ready` is D5's: every prize is inactive, capped or out of stock,
- * so the press is refused rather than drawing from an empty set.
+ * so the press is refused rather than drawing from an empty set. The box also
+ * sends it for a booth station whose code prefix cannot start a voucher code
+ * (closing audit H2); the television says the same line for both.
  * `unreachable` is not a server code at all — it is what the client returns
  * when the booth service could not be reached, kept in the same union so that
  * one branch on the page covers "it said no" and "it said nothing".
@@ -173,6 +180,21 @@ export const BOOTH_ERROR_CODES = [
    * staff who can do nothing about it until tomorrow.
    */
   'daily_spin_cap_reached',
+  /**
+   * The box has this press on record — its key was counted in the transaction
+   * that recorded the spin and minted the voucher — but holds no answer to
+   * give again, so it refuses to draw a second prize (409). The page meets it
+   * when its retry of an unanswered press reaches a box that no longer has the
+   * first attempt in hand: after a restart, for one.
+   *
+   * Listed so it does not fall through to "Booth not ready — please call
+   * staff": the prize exists, and on a booth with a printer its slip was
+   * queued in that same transaction, so the television says the voucher is
+   * being printed and to ask staff if it does not come out
+   * (`COPY.voucherPrinting`). No wheel turns and no card opens for it — the
+   * box did not send the prize again, and this page will not make one up.
+   */
+  'duplicate_press',
   'unreachable',
   /**
    * SCRUM-244 — this screen is not paired, or its credential no longer works.
