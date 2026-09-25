@@ -11,7 +11,8 @@
 #   --timezone ZONE       the park's timezone (default: Asia/Bangkok)
 #   --daily-reboot HH:MM  reboot every day at this local time (default 04:30)
 #   --no-daily-reboot     do not
-#   --ssh-keys-only       turn SSH password log-in off (only if a key is installed)
+#   --ssh-keys-only       turn SSH password log-in off (only if a key is installed;
+#                         without this it stays on, and the installer says so)
 #   --no-kiosk            the box without the television (a headless test)
 #   --rotate cw|ccw       which way the page turns a television hung portrait:
 #                         cw (the default) or ccw if the picture is upside down
@@ -57,14 +58,28 @@ while [ $# -gt 0 ]; do
     --ssh-keys-only) SSH_KEYS_ONLY=1; shift ;;
     --no-kiosk) WITH_KIOSK=0; shift ;;
     --rotate) ROTATE="${2:?--rotate needs cw or ccw}"; shift 2 ;;
-    -h|--help) sed -n '2,31p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,/^$/p' "$0"; exit 0 ;;
     *.tgz|*.tar.gz) TARBALL="$1"; shift ;;
     *) die "unknown option: $1" ;;
   esac
 done
 
 [ "$(id -u)" -eq 0 ] || die "run this with sudo"
-[ "$(uname -m)" = "aarch64" ] || warn "this is $(uname -m), not a 64-bit Pi (aarch64); continuing"
+# The userland, not the kernel: Raspberry Pi OS 32-bit boots a 64-bit kernel on
+# a Pi 5, so `uname -m` says aarch64 on a system whose libraries are armhf —
+# where the arm64 Node below cannot run, and the failure would have read
+# "Node did not install". dpkg knows which one this is.
+USERLAND="$(dpkg --print-architecture 2>/dev/null || true)"
+case "$USERLAND" in
+  arm64) ;;
+  amd64) warn "this is a 64-bit PC (amd64), not a Raspberry Pi; continuing" ;;
+  armhf|armel|i386) die "this is a 32-bit system ($USERLAND): write the card again with Raspberry Pi OS (64-bit), PI_BOOTH.md section 2" ;;
+  *)
+    [ "$(getconf LONG_BIT 2>/dev/null || echo 64)" = "64" ] || die "this is a 32-bit system: write the card again with Raspberry Pi OS (64-bit), PI_BOOTH.md section 2"
+    warn "could not tell the architecture from dpkg (${USERLAND:-none}); continuing"
+    ;;
+esac
+[ "$(uname -m)" = "aarch64" ] || warn "this is $(uname -m), not a Raspberry Pi (aarch64); continuing"
 if [ -r /etc/os-release ]; then
   . /etc/os-release
   [ "${VERSION_CODENAME:-}" = "bookworm" ] || warn "written for Debian 12 (bookworm); this is ${PRETTY_NAME:-unknown}"
@@ -123,7 +138,7 @@ if node_ok; then
 else
   say "Node $NODE_VERSION"
   ARCH=arm64
-  [ "$(uname -m)" = "x86_64" ] && ARCH=x64
+  if [ "$USERLAND" = "amd64" ] || [ "$(uname -m)" = "x86_64" ]; then ARCH=x64; fi
   FILE="node-v${NODE_VERSION}-linux-${ARCH}.tar.xz"
   curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${FILE}" -o "$WORK/$FILE"
   curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt" -o "$WORK/SHASUMS256.txt"
@@ -164,10 +179,16 @@ chown -R root:root "$TARGET.new"
 )
 rm -rf "$TARGET"
 mv "$TARGET.new" "$TARGET"
-PREVIOUS="$(readlink -f /opt/oto-box/current 2>/dev/null || true)"
+# -e, not -f: on a first install there is no `current` yet, and -f would still
+# print the path it would have had.
+PREVIOUS="$(readlink -e /opt/oto-box/current 2>/dev/null || true)"
 ln -sfn "$TARGET" /opt/oto-box/current.new
 mv -T /opt/oto-box/current.new /opt/oto-box/current
-[ -n "$PREVIOUS" ] && [ "$PREVIOUS" != "$TARGET" ] && echo "previous release kept at $PREVIOUS"
+if [ -z "$PREVIOUS" ]; then
+  echo "first install: nothing to roll back to yet"
+elif [ "$PREVIOUS" != "$TARGET" ]; then
+  echo "previous release kept at $PREVIOUS"
+fi
 
 # --- Configuration ------------------------------------------------------------
 say "/etc/oto-box/config"
@@ -223,6 +244,18 @@ install -m 0755 "$SOURCE/pi/oto-box-watchdog.sh" /usr/local/lib/oto-box/watchdog
 install -m 0644 "$SOURCE/pi/oto-box-watchdog.service" /etc/systemd/system/oto-box-watchdog.service
 install -m 0644 "$SOURCE/pi/oto-box-watchdog.timer" /etc/systemd/system/oto-box-watchdog.timer
 
+# --- The journal --------------------------------------------------------------
+# Kept on the card rather than in memory: the box reboots at 04:30 every day,
+# and a volatile journal took the previous day's log with it — the log an
+# engineer asks for the morning after a fault. `journalctl --list-boots` shows
+# more than one boot once this has taken.
+say "Journal kept across reboots"
+install -d -m 0755 /etc/systemd/journald.conf.d
+install -m 0644 "$SOURCE/pi/oto-box-journald.conf" /etc/systemd/journald.conf.d/oto-box.conf
+install -d -m 2755 -g systemd-journal /var/log/journal 2>/dev/null || install -d -m 0755 /var/log/journal
+systemctl restart systemd-journald || warn "journald did not restart; the journal is kept from the next boot"
+journalctl --flush 2>/dev/null || true
+
 if [ -n "$DAILY_REBOOT" ]; then
   say "Daily reboot at $DAILY_REBOOT"
   sed "s|@TIME@|$DAILY_REBOOT|g" "$SOURCE/pi/oto-box-reboot.timer" >/etc/systemd/system/oto-box-reboot.timer
@@ -251,15 +284,28 @@ if [ "$WITH_KIOSK" -eq 1 ]; then
 fi
 
 # --- SSH ------------------------------------------------------------------------
+# Password log-in stays ON unless asked: switching it off with no key on the Pi
+# locks everybody out of a box in a mall. Whatever is decided is said again at
+# the end, so nobody is left believing the box is keys-only when it is not.
+SSH_HOME="$(getent passwd "${KIOSK_USER:-root}" | cut -d: -f6)"
+KEYS="${SSH_HOME:-/root}/.ssh/authorized_keys"
 if [ "$SSH_KEYS_ONLY" -eq 1 ]; then
-  KEYS="$(getent passwd "${KIOSK_USER:-root}" | cut -d: -f6)/.ssh/authorized_keys"
   if [ -s "$KEYS" ]; then
+    install -d -m 0755 /etc/ssh/sshd_config.d
     printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\n' >/etc/ssh/sshd_config.d/oto-box.conf
-    systemctl reload ssh || systemctl reload sshd || true
+    systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true
     say "SSH: keys only"
+    SSH_NOTE="keys only (password log-in off; a key is in $KEYS)"
   else
     warn "no key in $KEYS: SSH password log-in left ON so you are not locked out"
+    SSH_NOTE="password log-in still ON — no key in $KEYS. Put your public key there, then run the installer again with --ssh-keys-only"
   fi
+elif [ -f /etc/ssh/sshd_config.d/oto-box.conf ]; then
+  SSH_NOTE="keys only (set by an earlier install)"
+elif [ -s "$KEYS" ]; then
+  SSH_NOTE="password log-in still ON. A key is in $KEYS, so it can go off: run the installer again with --ssh-keys-only"
+else
+  SSH_NOTE="password log-in still ON. To switch it off, put your public key in $KEYS and run the installer again with --ssh-keys-only"
 fi
 
 # --- Start ----------------------------------------------------------------------
@@ -285,12 +331,13 @@ Installed: oto-box $RELEASE, talking to $(grep '^OTO_BOX_API=' /etc/oto-box/conf
 Next:
   1. In the Console: Devices -> Add a box. Copy the claim code (valid for a short time).
   2. Type it on the television ("Set up this box"), or here:
-       sudo oto-box claim <CODE>
+       sudo oto-box claim          (it asks for the code, so the code stays out of the shell history)
   3. In the Console: add the receipt printer to this box at its network address,
      create a booth station on this box, put staff on the booth, publish the wheel.
   4. Check:   oto-box status     journalctl -u oto-box -f     (the box row in Console -> Devices)
   5. First install: reboot once (sudo reboot). The desktop logs in by itself and
      the television opens the booth; every boot after that does the same.
 
+SSH: $SSH_NOTE
 The credential is /var/lib/oto-box/credential.json (owner-only). Never copy it to another machine.
 EOF

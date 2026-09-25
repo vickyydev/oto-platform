@@ -71,6 +71,18 @@ export async function writeJsonAtomic(path: string, value: unknown, mode = 0o600
   // An existing file keeps the mode it had; the rename replaced it with ours,
   // but a filesystem that ignores the open mode is put right here.
   await chmod(path, mode).catch(() => {});
+  // The rename is a change to the DIRECTORY, and ext4 commits those on its
+  // own timer — up to a few seconds later — unless the directory is flushed
+  // as well. A credential written seconds before a power cut would otherwise
+  // be gone with the claim code already spent (SCRUM-418). Best effort: the
+  // file's own bytes are already on the card, and Windows cannot open a
+  // directory this way.
+  await open(dirname(path), 'r')
+    .then(async (dir) => {
+      await dir.sync().catch(() => {});
+      await dir.close();
+    })
+    .catch(() => {});
 }
 
 export async function readJsonFile(path: string): Promise<unknown> {

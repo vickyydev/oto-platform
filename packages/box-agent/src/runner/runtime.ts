@@ -398,7 +398,7 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
   if (!running) {
     log.warn(
       { module: 'runner' },
-      'this box has no credential yet: enter the claim code from Console → Devices on the television, or run "oto-box claim <code>"',
+      'this box has no credential yet: enter the claim code from Console → Devices on the television, or run "oto-box claim" and type the code at its prompt',
     );
   }
 
@@ -463,8 +463,8 @@ export interface ClaimOptions {
 }
 
 /**
- * `oto-box claim <code>`: register this box with a claim code from the
- * Console, write the credential file, and stop.
+ * `oto-box claim`: register this box with a claim code from the Console
+ * (typed at the command's prompt), write the credential file, and stop.
  *
  * Refuses a box that already has an identity unless told to replace it, and
  * then sets the old credential and store ASIDE rather than deleting them — a

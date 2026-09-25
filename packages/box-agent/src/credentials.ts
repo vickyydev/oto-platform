@@ -1,5 +1,5 @@
-import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { readFile, writeFile } from 'node:fs/promises';
+import { writeJsonAtomic } from './runner/home';
 
 /**
  * Where a box keeps the credential it was given at registration.
@@ -99,10 +99,12 @@ export function fileCredentialStore(path: string): CredentialStore {
       }
     },
     async write(credential) {
-      await mkdir(dirname(path), { recursive: true });
-      await writeFile(path, JSON.stringify(credential), { encoding: 'utf8', mode: 0o600 });
-      // Explicit, because an existing file keeps the mode it already had.
-      await chmod(path, 0o600);
+      // A temporary file, flushed and renamed over the old one, the way every
+      // other file in the box's home is written (`runner/home.ts`): a power
+      // cut in the middle leaves the old credential or the new one, never
+      // half of one — which would spend the claim code for nothing
+      // (SCRUM-418). Owner-only, as before.
+      await writeJsonAtomic(path, credential, 0o600);
     },
     async clear() {
       await writeFile(path, '', { encoding: 'utf8', mode: 0o600 });

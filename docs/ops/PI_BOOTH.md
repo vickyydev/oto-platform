@@ -43,12 +43,12 @@ sudo bash oto-box/pi/install.sh --api https://oto-api-staging.onrender.com
 
 Name the file rather than writing `oto-box-*.tgz`: once an old and a new release sit in the same folder, the wildcard names both and `tar` fails. `rm -rf oto-box` clears the folder the last release unpacked into, so nothing of it is left mixed into the new one.
 
-The installer puts in: Node 22 (checked against nodejs.org's checksums), a service user `oto-box`, the box (`oto-box.service`, restarted whenever it stops), a watchdog that restarts it if its page stops answering — or if systemd gave up on it after repeated crashes — the television (`oto-kiosk.service`: Chromium full screen on `http://127.0.0.1:8780/`, restarted if it closes), desktop auto-login, no screen blanking, network time, and a daily reboot at 04:30. Options: `--rotate ccw` (section 1), `--no-daily-reboot`, `--ssh-keys-only`; `sudo bash oto-box/pi/install.sh --help` lists them. It prints the next steps when it finishes.
+The installer puts in: Node 22 (checked against nodejs.org's checksums), a service user `oto-box`, the box (`oto-box.service`, restarted whenever it stops), a watchdog that restarts it if its page stops answering — or if systemd gave up on it after repeated crashes — the television (`oto-kiosk.service`: Chromium full screen on `http://127.0.0.1:8780/`, restarted if it closes), desktop auto-login, no screen blanking, network time, a journal kept across reboots (`journalctl --list-boots` shows the earlier boots), and a daily reboot at 04:30. It refuses a 32-bit system — a card written with the wrong image (section 2) — before it installs anything. Options: `--rotate ccw` (section 1), `--no-daily-reboot`, `--ssh-keys-only` (section 8); `sudo bash oto-box/pi/install.sh --help` lists them. It prints the next steps when it finishes, and whether SSH password log-in is still on.
 
 ## 4. Claim the box
 
 1. Console → **Devices** → **Add a box**: a **Name** (e.g. "Bench box"), a **Slot** — where the box stands, e.g. `booth-1` — and the role **Booth**. **Add the box** stays greyed out until the name and the slot are both filled in. Copy the claim code — it is valid for a short time and only once.
-2. On the television: **Set up this box** → type the code → Claim. Or on the Pi: `sudo oto-box claim <CODE>` — the running service notices within a few seconds and restarts itself to use it.
+2. On the television: **Set up this box** → type the code → Claim. Or on the Pi: `sudo oto-box claim`, and type the code at its prompt — it is asked for rather than typed on the command line, so it is not left in the shell's history. The running service notices within a few seconds and restarts itself to use it.
 
 The box writes its credential to `/var/lib/oto-box/credential.json` (owner-only, 0600). Never copy it to another Pi; a replacement Pi is claimed with a new code.
 
@@ -91,8 +91,8 @@ After the first install, **reboot once** (`sudo reboot`): the desktop logs in by
 
 ## 7. Checking and fixing
 
-- `oto-box status` — registered, which booth, printer, how much waits for the cloud.
-- `journalctl -u oto-box -f` (the box) · `journalctl -u oto-kiosk -f` (the television) · `journalctl -t oto-box-watchdog` (restarts).
+- `oto-box status` — registered, which api (the configured one until the box is claimed), which booth, printer, how much waits for the cloud.
+- `journalctl -u oto-box -f` (the box) · `journalctl -u oto-kiosk -f` (the television) · `journalctl -t oto-box-watchdog` (restarts). The journal is kept across reboots: `journalctl -u oto-box -b -1` is the boot before this one, and `journalctl --list-boots` lists them.
 - Console → Devices → the box: online, last heartbeat, printer, running wheel version.
 - Console → Booths → the booth → **What this booth is running**: **Spins today** counts the park's trading day, which starts at 05:00, not at midnight. A spin at 01:00 on 26 September counts under 25 September, while its slip is dated 26 September.
 - **The box's folder, `/var/lib/oto-box`, is private to its service user**: listing or editing anything in it needs `sudo` (for example `sudo ls -l /var/lib/oto-box`).
@@ -102,7 +102,7 @@ After the first install, **reboot once** (`sudo reboot`): the desktop logs in by
 - **Update**: we send you the new release with its checksum. Check it as in section 3, then run the section 3 commands again with the **new file's name**, without `--api` (the configured api is kept). The credential, the store and `/etc/oto-box/config` are kept; the previous release stays in `/opt/oto-box/releases/` (to roll back: `sudo ln -sfn <previous> /opt/oto-box/current && sudo systemctl restart oto-box`).
 - **A damaged store.** Rare — a card that lost data it had reported saved, after a power cut or because the card is failing — and restarting does not cure it. The television shows Chromium's own "This site can't be reached" page (turned sideways) instead of the wheel; the Console shows the box offline; `oto-box status` says `outbox (the store could not be read)`; and `journalctl -u oto-box` repeats "The box could not start: …". To bring the booth back:
   1. Console → Devices → **Add a box**: a new name and a new slot (the damaged box keeps its own), role Booth. Copy the claim code.
-  2. On the Pi: `sudo oto-box claim <CODE> --force`. It sets the damaged store and the old credential aside in `/var/lib/oto-box` (their names end in `.replaced-` and the date and time) and registers the Pi as the new box. The service picks the new credential up by itself within about a minute.
+  2. On the Pi: `sudo oto-box claim --force`, and type the new code at the prompt. It sets the damaged store and the old credential aside in `/var/lib/oto-box` (their names end in `.replaced-` and the date and time) and registers the Pi as the new box. The service picks the new credential up by itself within about a minute.
   3. `sudo systemctl restart oto-kiosk`: the television opens the booth page again, and once the box runs as the new box it says "No booth on this box yet".
   4. Console → Devices → the new box → **Add a device**: the receipt printer again, at the same address (section 5, step 1).
   5. Console → Devices → the booth's station → **Box**: the new box; **Receipt printer**: the printer from step 4 → **Save the station**. The booth keeps its wheel, its staff and their PINs, and the television shows the wheel within about two minutes. The damaged box stays in the list, offline.
@@ -114,7 +114,7 @@ After the first install, **reboot once** (`sudo reboot`): the desktop logs in by
 - The official 27 W supply — under-powered Pis corrupt cards. A good A2 card, or better a USB SSD. Keep a **spare card imaged** from a working booth (without its credential — claim the spare with a new code: a new box in the Console, with the booth moved to it, as in section 7, "A damaged store", steps 1, 4 and 5).
 - Fit the Pi 5's **RTC battery** (section 1) so the clock is right before the network is.
 - Printer and Pi on the **same router**, the printer on a **DHCP reservation**; cable the Pi where you can.
-- **SSH keys only** (`install.sh --ssh-keys-only` once your key is on the Pi). The credential file stays 0600.
+- **SSH keys only**: the installer leaves password log-in on and says so at the end of its run. Once your public key is in `~/.ssh/authorized_keys` on the Pi, run it again with `--ssh-keys-only`; it refuses to switch password log-in off while no key is there. The credential file stays 0600.
 - Leave the **daily reboot** at a quiet hour on (default 04:30).
 
 ## 9. Not automated yet — be aware

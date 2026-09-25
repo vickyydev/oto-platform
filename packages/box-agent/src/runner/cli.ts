@@ -1,10 +1,14 @@
 /**
  * `oto-box` — the booth box's command line (SCRUM-223).
  *
- *   oto-box claim <code> --api <url> [--home <dir>] [--hostname <name>] [--force]
+ *   oto-box claim --api <url> [--home <dir>] [--hostname <name>] [--force]
  *   oto-box run [--api <url>] [--home <dir>] [--port <n>] [--page <dir>]
  *   oto-box status [--home <dir>]
  *   oto-box version
+ *
+ * `claim` asks for the claim code at a prompt (SCRUM-418): a code given as an
+ * argument stays in the shell's history and in `ps` for as long as the claim
+ * takes. It is still taken from the command line when a script puts it there.
  *
  * Every option can come from the environment instead — `OTO_BOX_API`,
  * `OTO_BOX_HOME`, `OTO_BOX_PORT`, `OTO_BOX_PAGE`, `OTO_BOX_HOSTNAME` — which is
@@ -20,6 +24,7 @@
 
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { fileCredentialStore } from '../credentials';
 import { BOX_AGENT_VERSION } from '../protocol';
@@ -84,10 +89,45 @@ export function jsonLog(write: (line: string) => void = (l) => process.stdout.wr
   return { info: line('info'), warn: line('warn'), error: line('error') };
 }
 
+/** Where the command reads and writes; a test hands in streams of its own. */
+export interface CliStreams {
+  stdin?: NodeJS.ReadableStream;
+  stdout?: { write(chunk: string): unknown };
+  stderr?: { write(chunk: string): unknown };
+}
+
+/**
+ * One line from `input`, trimmed, or null when it closes without one.
+ *
+ * The prompt goes to `output` (stderr, in `main`) so stdout stays what it is
+ * everywhere else here: lines a script can read. `terminal: false` whatever
+ * the input is — the terminal's own line editing is enough for a claim code,
+ * and readline's raw mode would echo the keystrokes itself.
+ */
+export function readClaimCode(
+  input: NodeJS.ReadableStream,
+  output: { write(chunk: string): unknown },
+  prompt: string,
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    // readline only ever calls `write` on it, which is all a stream of ours has.
+    const rl = createInterface({ input, output: output as unknown as NodeJS.WritableStream, terminal: false });
+    let answered = false;
+    rl.once('close', () => {
+      if (!answered) resolve(null);
+    });
+    rl.question(prompt, (answer) => {
+      answered = true;
+      rl.close();
+      resolve(answer.trim() || null);
+    });
+  });
+}
+
 const USAGE = `oto-box ${BOX_AGENT_VERSION} — the OTO booth box
 
-  oto-box claim <code> --api <url> [--home <dir>] [--hostname <name>] [--force]
-      Register this box with the claim code from Console → Devices → Add a box.
+  oto-box claim --api <url> [--home <dir>] [--hostname <name>] [--force]
+      Register this box: asks for the claim code from Console → Devices → Add a box.
   oto-box run [--api <url>] [--home <dir>] [--port <n>] [--page <dir>]
       Run the box and serve the booth page at http://127.0.0.1:${KIOSK_DEFAULT_PORT}/.
   oto-box status [--home <dir>]
@@ -97,11 +137,14 @@ const USAGE = `oto-box ${BOX_AGENT_VERSION} — the OTO booth box
 Environment: OTO_BOX_API, OTO_BOX_HOME, OTO_BOX_PORT, OTO_BOX_PAGE, OTO_BOX_HOSTNAME.
 `;
 
-export async function main(argv: readonly string[]): Promise<number> {
+export async function main(argv: readonly string[], io: CliStreams = {}): Promise<number> {
   const parsed = parseArgs(argv);
   const home = resolve(option(parsed, 'home', 'OTO_BOX_HOME') ?? defaultHome());
-  const out = (text: string) => process.stdout.write(`${text}\n`);
-  const err = (text: string) => process.stderr.write(`${text}\n`);
+  const stdin = io.stdin ?? process.stdin;
+  const stdout = io.stdout ?? process.stdout;
+  const stderr = io.stderr ?? process.stderr;
+  const out = (text: string) => stdout.write(`${text}\n`);
+  const err = (text: string) => stderr.write(`${text}\n`);
 
   switch (parsed.command) {
     case 'version':
@@ -110,10 +153,16 @@ export async function main(argv: readonly string[]): Promise<number> {
       return 0;
 
     case 'claim': {
-      const code = parsed.positional[0];
       const api = option(parsed, 'api', 'OTO_BOX_API');
-      if (!code || !api) {
-        err('Usage: oto-box claim <code> --api <url> [--home <dir>]');
+      if (!api) {
+        err('Usage: oto-box claim --api <url> [--home <dir>]  (the claim code is asked for)');
+        return 2;
+      }
+      const code =
+        parsed.positional[0] ??
+        (await readClaimCode(stdin, stderr, 'Claim code (Console → Devices → Add a box): '));
+      if (!code) {
+        err('No claim code was entered.');
         return 2;
       }
       try {
@@ -182,7 +231,15 @@ export async function main(argv: readonly string[]): Promise<number> {
       const { overrides, problem } = await readOverrides(paths);
       out(`home        ${home}`);
       out(`registered  ${credential ? `yes — box ${credential.boxId}` : 'no (enter the claim code on the television, or run "oto-box claim")'}`);
-      out(`api         ${state.apiBaseUrl ?? '(not set)'}`);
+      // Before a claim, runner.json names no api; the configuration does, and
+      // it is the one a claim or a run would use (closing audit L25).
+      const configured = option(parsed, 'api', 'OTO_BOX_API');
+      const api =
+        state.apiBaseUrl ??
+        (configured
+          ? `${configured} (from the configuration; not claimed against it yet)`
+          : '(not set)');
+      out(`api         ${api}`);
       const booths = (bundle?.stations ?? []).filter((s) => s.kind === 'booth');
       out(`config      ${bundle?.configVersion ? `held (${bundle.configVersion}), box "${bundle.box?.name ?? '?'}"` : 'none held yet'}`);
       out(`booths      ${booths.length === 0 ? 'none on this box' : booths.map((b) => `${b.name} (${b.codePrefix ?? '—'})${b.id === state.stationId || booths.length === 1 ? ' ← running' : ''}`).join(', ')}`);
