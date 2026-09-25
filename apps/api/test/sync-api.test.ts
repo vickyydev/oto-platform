@@ -4,14 +4,19 @@ import {
   sign as signDetached,
   type KeyObject,
 } from 'node:crypto';
+import { hash as argonHash } from '@node-rs/argon2';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import {
   account,
   auditLog,
+  boothConfigVersion,
+  boothStaffAssignment,
   box,
   branch,
   child,
+  credential,
+  employee,
   member,
   opsRun,
   station,
@@ -26,6 +31,7 @@ import {
 import {
   SYNC_EVENT_SCHEMA_VERSION,
   addDaysToIsoDate,
+  boothStaffCode,
   businessDate,
   canonicalSyncBytes,
   newId,
@@ -1817,6 +1823,383 @@ describe('the cache bundle', () => {
     ]);
     // Null for everybody the seed gives no booth PIN, rather than absent.
     expect(staff.every((s) => 'pinHash' in s)).toBe(true);
+  });
+});
+
+/**
+ * SCRUM-412 — what a box is sent follows what the box is for.
+ *
+ * A box whose stations are all booths used to be sent everything a till's box
+ * is: the operator's members and their children, the branch's prices, today's
+ * bookings and bands — and, because a booth open to `all_staff` counted as a
+ * counter anybody could stand at, the password hash of everybody at the
+ * branch. A booth reads three things with no internet: its wheel, the
+ * deny-list, and the PIN hashes of the people on its own staff list. Those
+ * three scopes are all it is sent now; the staff entries in them keep the
+ * fields a till's carry, the password hash included. A box with a till is
+ * sent what it always was, a booth beside the till included.
+ *
+ * The boxes are built the way the Console builds them — a box, then its
+ * stations — at the seeded park, and claimed like any other.
+ */
+describe('the cache follows what the box is for (SCRUM-412)', () => {
+  /** The cache scopes a box with a till has always been sent, sorted. */
+  const EVERY_SCOPE = [
+    'bands',
+    'bookings',
+    'booth',
+    'catalogue',
+    'deny_list',
+    'members',
+    'receipt_series',
+    'staff',
+    'station_config',
+  ];
+  const BOOTH_SCOPES = ['booth', 'deny_list', 'staff'];
+  const MALI = { phone: '+66900004121', pin: '2580' };
+  const ANAN = { phone: '+66900004122' };
+
+  let operatorId: string;
+  let branchId: string;
+  let adminId: string;
+  let receptionId: string;
+  let managerId: string;
+  /** On the booth of `boothBox`, and on no other. */
+  let maliId: string;
+  /** On the booth of `otherBoothBox`, and on no other. */
+  let ananId: string;
+  let boothStation: string;
+  let boothBox: TestBox;
+  let otherBoothBox: TestBox;
+  let tillBox: TestBox;
+
+  type Bundle = {
+    bundleVersion: string;
+    scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+    truncated: string[];
+  };
+
+  async function bundleOf(
+    b: TestBox,
+    query = '',
+  ): Promise<{ status: number; etag: string | undefined; body: Bundle }> {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/box/v1/cache${query}`,
+      headers: headers(b),
+    });
+    return {
+      status: res.statusCode,
+      etag: res.headers.etag as string | undefined,
+      body: res.json() as Bundle,
+    };
+  }
+
+  /** A box of this role with these stations on it, claimed. */
+  async function boxWith(
+    role: 'booth' | 'counter',
+    stations: Array<{ name: string; kind: 'booth' | 'till'; codePrefix: string }>,
+  ): Promise<{ box: TestBox; stationIds: string[] }> {
+    const id = newId();
+    const slot = `scrum-412-${(slotCounter += 1)}`;
+    await ctx.db.insert(box).values({
+      id,
+      operatorId,
+      branchId,
+      name: `Role box ${slotCounter}`,
+      slot,
+      role,
+      status: 'unclaimed',
+    });
+    const stationIds: string[] = [];
+    for (const s of stations) {
+      const stationId = newId();
+      // `access_scope` is left at its default, `all_staff`: the setting that
+      // used to put the whole branch's hashes on a booth's box.
+      await ctx.db.insert(station).values({
+        id: stationId,
+        operatorId,
+        branchId,
+        boxId: id,
+        name: s.name,
+        kind: s.kind,
+        codePrefix: s.codePrefix,
+      });
+      stationIds.push(stationId);
+    }
+    return { box: await claim(slot), stationIds };
+  }
+
+  /** Somebody who works at the park, under the nickname a booth prints. */
+  async function person(nickname: string, phone: string): Promise<string> {
+    const employeeId = newId();
+    await ctx.db.insert(employee).values({
+      id: employeeId,
+      operatorId,
+      branchId,
+      name: `${nickname} (Test)`,
+      nickname,
+      phone,
+    });
+    const id = newId();
+    await ctx.db.insert(account).values({
+      id,
+      operatorId,
+      employeeId,
+      phone,
+      passwordHash: await argonHash(`${nickname.toLowerCase()}-pw-1`),
+      status: 'active',
+    });
+    return id;
+  }
+
+  const accountIdOf = async (phone: string): Promise<string> =>
+    (
+      await ctx.db.select({ id: account.id }).from(account).where(eq(account.phone, phone)).limit(1)
+    )[0]!.id;
+
+  beforeAll(async () => {
+    const seeded = await boxBySlot(ctx.db, 'virtual-1');
+    operatorId = seeded.operatorId;
+    branchId = seeded.branchId;
+    adminId = await accountIdOf(ADMIN.phone);
+    receptionId = await accountIdOf(RECEPTION.phone);
+    managerId = await accountIdOf(BRANCH_MANAGER.phone);
+    maliId = await person('Mali', MALI.phone);
+    ananId = await person('Anan', ANAN.phone);
+
+    const booth = await boxWith('booth', [
+      { name: 'Role Booth A', kind: 'booth', codePrefix: 'RA' },
+    ]);
+    boothBox = booth.box;
+    boothStation = booth.stationIds[0]!;
+    const other = await boxWith('booth', [
+      { name: 'Role Booth B', kind: 'booth', codePrefix: 'RB' },
+    ]);
+    otherBoothBox = other.box;
+    tillBox = (await boxWith('counter', [{ name: 'Role Till', kind: 'till', codePrefix: 'RT' }]))
+      .box;
+
+    await ctx.db.insert(boothStaffAssignment).values([
+      { id: newId(), stationId: boothStation, accountId: maliId, addedBy: adminId },
+      { id: newId(), stationId: other.stationIds[0]!, accountId: ananId, addedBy: adminId },
+    ]);
+    await ctx.db.insert(credential).values({
+      id: newId(),
+      operatorId,
+      accountId: maliId,
+      kind: 'pin',
+      secretHash: await argonHash(MALI.pin),
+      createdByAccountId: adminId,
+    });
+
+    // Booth 1's published wheel, on booth A, as a publish from the Console
+    // would leave one there.
+    const [booth1] = await ctx.db
+      .select({ id: station.id })
+      .from(station)
+      .where(and(eq(station.branchId, branchId), eq(station.name, 'Booth 1')))
+      .limit(1);
+    const [wheel] = await ctx.db
+      .select()
+      .from(boothConfigVersion)
+      .where(eq(boothConfigVersion.stationId, booth1!.id))
+      .orderBy(desc(boothConfigVersion.version))
+      .limit(1);
+    await ctx.db.insert(boothConfigVersion).values({
+      id: newId(),
+      operatorId,
+      branchId,
+      stationId: boothStation,
+      version: 1,
+      layoutId: wheel!.layoutId,
+      bundle: wheel!.bundle,
+      bundleHash: wheel!.bundleHash,
+      note: 'SCRUM-412: Booth 1’s wheel',
+    });
+  });
+
+  it('sends a box that runs only booths its wheel, the deny-list and its own booth staff — nothing else', async () => {
+    const { status, etag, body } = await bundleOf(boothBox);
+    expect(status).toBe(200);
+    expect(Object.keys(body.scopes).sort()).toEqual(BOOTH_SCOPES);
+    expect(body.truncated).toEqual([]);
+
+    /**
+     * Its own booth's people and nobody else. Not Anan, who is on a booth of
+     * another box; not reception, who works the till and Booth 1 on the
+     * virtual box; not the manager or the administrator, whom booth A's
+     * `all_staff` access rule used to bring along. All five are staff of this
+     * branch, which is exactly why "the branch" was the wrong list.
+     */
+    const staff = body.scopes.staff!.items as Array<Record<string, unknown>>;
+    expect(staff.map((s) => s.accountId)).toEqual([maliId]);
+    const [mali] = staff;
+    expect(String(mali!.pinHash)).toMatch(/^\$argon2/);
+    expect(String(mali!.passwordHash)).toMatch(/^\$argon2/);
+    expect(mali!.displayName).toBe('Mali');
+    expect(mali!.staffCode).toBe(boothStaffCode(maliId));
+
+    // The deny-list, whole, beside it.
+    const [deny] = body.scopes.deny_list!.items as Array<{ revokedAccountIds: unknown }>;
+    expect(Array.isArray(deny!.revokedAccountIds)).toBe(true);
+
+    // Its wheel, with the list a sign-in at it is checked against.
+    const wheels = body.scopes.booth!.items as Array<{ stationId: string; allowedStaff: string[] }>;
+    expect(wheels.map((w) => w.stationId)).toEqual([boothStation]);
+    expect(wheels[0]!.allowedStaff).toEqual([maliId]);
+
+    // Not one member of the park anywhere in it.
+    const members = await ctx.db
+      .select({ phone: member.phone })
+      .from(member)
+      .where(eq(member.operatorId, operatorId));
+    expect(members.length).toBeGreaterThan(0);
+    const raw = JSON.stringify(body);
+    for (const m of members) expect(raw).not.toContain(m.phone);
+
+    // And the minute tick still costs a 304 while nothing has moved.
+    expect(etag).toBeTruthy();
+    const again = await ctx.app.inject({
+      method: 'GET',
+      url: '/box/v1/cache',
+      headers: { ...headers(boothBox), 'if-none-match': etag! },
+    });
+    expect(again.statusCode).toBe(304);
+  });
+
+  it('carries each booth box its own people: somebody on another box’s booth is not on this one', async () => {
+    const { body } = await bundleOf(otherBoothBox);
+    expect(Object.keys(body.scopes).sort()).toEqual(BOOTH_SCOPES);
+    const staff = body.scopes.staff!.items as Array<{ accountId: string }>;
+    expect(staff.map((s) => s.accountId)).toEqual([ananId]);
+    // Booth B has nothing published, so it has no wheel to send — and no
+    // wheel of booth A's either.
+    expect(body.scopes.booth!.items).toEqual([]);
+  });
+
+  it('gives an old box that asks for more only what a booth may hold', async () => {
+    const everything = await bundleOf(boothBox, `?scopes=${EVERY_SCOPE.join(',')}`);
+    expect(everything.status).toBe(200);
+    expect(Object.keys(everything.body.scopes).sort()).toEqual(BOOTH_SCOPES);
+
+    // Members alone: answered, with nothing in it, and no validator — a
+    // version hashed over nothing would match every other empty answer.
+    const members = await bundleOf(boothBox, '?scopes=members');
+    expect(members.status).toBe(200);
+    expect(members.body.scopes).toEqual({});
+    expect(members.etag).toBeUndefined();
+
+    // A page of members, the way a till asks for the next one: a page of
+    // nothing, not a 400 — the question named one scope.
+    const page = await bundleOf(boothBox, `?scopes=members&limit=1&cursor=${newId()}`);
+    expect(page.status).toBe(200);
+    expect(page.body.scopes).toEqual({});
+    expect(page.body.truncated).toEqual([]);
+
+    // The receipt mark the agent asks for on every tick: nothing to write.
+    const mark = await bundleOf(boothBox, '?scopes=receipt_series');
+    expect(mark.status).toBe(200);
+    expect(mark.body.scopes).toEqual({});
+
+    // The staff list asked for alone still brings its deny-list.
+    const staff = await bundleOf(boothBox, '?scopes=staff');
+    expect(Object.keys(staff.body.scopes).sort()).toEqual(['deny_list', 'staff']);
+  });
+
+  it('hands a booth box none of the feed’s member changes, and a till box all of them', async () => {
+    const [last] = await ctx.db
+      .select({ seq: syncChange.seq })
+      .from(syncChange)
+      .orderBy(desc(syncChange.seq))
+      .limit(1);
+    const from = last ? Number(last.seq) : 0;
+
+    // A member taken at the till, which the feed files under `members` for
+    // the whole branch.
+    await registerKey(tillBox);
+    const phone = uniquePhone();
+    const pushed = await push(tillBox, [mint(tillBox, 'member.created', memberPayload(phone))]);
+    expect(pushed.body.applied).toBe(1);
+
+    const feed = async (b: TestBox, query = ''): Promise<Array<{ scope: string }>> => {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `/box/v1/sync/pull?cursorSeq=${from}&limit=500${query}`,
+        headers: headers(b),
+      });
+      expect(res.statusCode).toBe(200);
+      return (res.json() as { changes: Array<{ scope: string }> }).changes;
+    };
+
+    const atTheTill = await feed(tillBox);
+    expect(atTheTill.some((c) => c.scope === 'members')).toBe(true);
+    expect(JSON.stringify(atTheTill)).toContain(phone);
+
+    const atTheBooth = await feed(boothBox);
+    expect(atTheBooth.every((c) => BOOTH_SCOPES.includes(c.scope))).toBe(true);
+    expect(JSON.stringify(atTheBooth)).not.toContain(phone);
+    expect(await feed(boothBox, '&scopes=members')).toEqual([]);
+  });
+
+  it('gives a box declared a booth, with no station yet, the booth’s answer — and any other empty box the full one', async () => {
+    /**
+     * The window the Console opens by adding a booth box before its booth:
+     * the Pi registers and reports its devices first. Sent the member list
+     * then, it would keep it after the booth arrived, because a box replaces
+     * the scopes a pull carries and keeps the rest.
+     */
+    const waiting = (await boxWith('booth', [])).box;
+    const { body } = await bundleOf(waiting);
+    expect(Object.keys(body.scopes).sort()).toEqual(BOOTH_SCOPES);
+    expect(body.scopes.staff!.items).toEqual([]);
+    expect(body.scopes.booth!.items).toEqual([]);
+
+    // A box of any other role with no station is sent what it always was.
+    const spare = await freshBox();
+    expect(Object.keys((await bundleOf(spare)).body.scopes).sort()).toEqual(EVERY_SCOPE);
+  });
+
+  it('keeps a box with a till on everything it was sent before', async () => {
+    const { body } = await bundleOf(tillBox);
+    expect(Object.keys(body.scopes).sort()).toEqual(EVERY_SCOPE);
+    expect(body.scopes.members!.items.length).toBeGreaterThan(0);
+    // Its till is open to the branch, so the branch's staff are on it, as
+    // they were — the booth people among them, unnamed: no booth is here.
+    const staff = body.scopes.staff!.items as Array<{
+      accountId: string;
+      displayName: string | null;
+    }>;
+    expect(staff.map((s) => s.accountId)).toEqual(
+      expect.arrayContaining([adminId, receptionId, managerId, maliId, ananId]),
+    );
+    expect(staff.every((s) => s.displayName === null)).toBe(true);
+    expect(body.scopes.booth!.items).toEqual([]);
+  });
+
+  it('gives a box with a till and a booth both answers', async () => {
+    // The seeded virtual box: Reception Till 1, open to the branch, beside Booth 1.
+    const mixed = await claim('virtual-1');
+    const { body } = await bundleOf(mixed);
+    expect(Object.keys(body.scopes).sort()).toEqual(EVERY_SCOPE);
+    expect(body.scopes.members!.items.length).toBeGreaterThan(0);
+    const staff = body.scopes.staff!.items as Array<{
+      accountId: string;
+      displayName: string | null;
+      pinHash: string | null;
+    }>;
+    const byId = new Map(staff.map((s) => [s.accountId, s]));
+    // The till's: the manager works no booth and is carried for the till.
+    expect(byId.get(managerId)?.displayName).toBeNull();
+    // The booth's: reception, with the name the slip prints and the seeded PIN.
+    expect(byId.get(receptionId)?.displayName).toEqual(expect.any(String));
+    expect(String(byId.get(receptionId)?.pinHash)).toMatch(/^\$argon2/);
+    // Mali is branch staff, so the till carries her, but her booth is on
+    // another box, so nothing here names her.
+    expect(byId.get(maliId)?.displayName).toBeNull();
+    const wheels = body.scopes.booth!.items as Array<{ allowedStaff: string[] }>;
+    expect(wheels).toHaveLength(1);
+    expect(wheels[0]!.allowedStaff).toContain(receptionId);
   });
 });
 

@@ -1116,6 +1116,50 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
   return { configVersion: sha256Hex(JSON.stringify(body)).slice(0, 16), ...body };
 }
 
+// --- What a box's offline cache is for ---------------------------------------
+
+/**
+ * What a box's offline cache has to serve, read off the stations it drives
+ * (SCRUM-412). `cacheScopesOffered` in `sync.ts` turns the answer into scopes.
+ *
+ * `booth_only` — every live station on the box is a booth. A booth reads three
+ * things with no internet: its wheel, the deny-list, and the PIN hashes of the
+ * people on its own staff list. (Their entries still carry the password hash
+ * a till's offline unlock reads; nothing at a booth reads it, because an
+ * account sign-in there is checked by the cloud.) It sells nothing, looks
+ * nobody up and unlocks no till, so a box like this is not sent the operator's
+ * members, the branch's prices, its bookings and bands, or anybody who works
+ * only at a counter.
+ *
+ * `counter` — anything with a till, a kiosk, a gate or a display on it, alone
+ * or beside a booth. It is sent what every box was sent before this existed,
+ * which already carries the booth's data when there is a booth.
+ *
+ * **Decided by the stations, not by `box.role`.** The role is what somebody
+ * chose when the box was added and can be edited freely; a station is what
+ * actually runs there, and a till moved onto a "booth" box needs the till's
+ * cache from its first pull. The role is read in one case only: a box with no
+ * live station yet. The Console adds a booth box before its booth — the Pi
+ * has to report its devices first — and a box declared `booth` gets the
+ * booth's answer in that window instead of the member list, which would
+ * otherwise stay on its disk after the booth arrived: a box replaces the
+ * scopes a pull carries and keeps the ones it does not. Any other box with no
+ * station keeps the full answer, as before.
+ */
+export type BoxCacheRole = 'booth_only' | 'counter';
+
+export async function boxCacheRole(
+  db: Db,
+  auth: Pick<BoxAuth, 'boxId' | 'role'>,
+): Promise<BoxCacheRole> {
+  const kinds = await db
+    .selectDistinct({ kind: station.kind })
+    .from(station)
+    .where(and(eq(station.boxId, auth.boxId), isNull(station.archivedAt)));
+  if (kinds.length === 0) return auth.role === 'booth' ? 'booth_only' : 'counter';
+  return kinds.every((k) => k.kind === 'booth') ? 'booth_only' : 'counter';
+}
+
 // --- Commands ---------------------------------------------------------------
 
 async function countPendingCommands(db: Db, boxId: string): Promise<number> {

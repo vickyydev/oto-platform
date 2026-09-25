@@ -1,6 +1,18 @@
+import { randomInt } from 'node:crypto';
+import { hash as argonHash, verify as verifyArgon2 } from '@node-rs/argon2';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, eq } from 'drizzle-orm';
-import { account, boxCache, station, ticketPackage } from '@oto/db';
+import { and, desc, eq } from 'drizzle-orm';
+import {
+  account,
+  boothConfigVersion,
+  boothStaffAssignment,
+  box,
+  boxCache,
+  credential,
+  employee,
+  station,
+  ticketPackage,
+} from '@oto/db';
 import { newId } from '@oto/shared';
 import {
   SqlBoxStore,
@@ -12,7 +24,7 @@ import {
   type PgPoolLike,
 } from '@oto/box-agent';
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
-import { provisionVirtualBox } from '../src/services/box';
+import { issueClaimCode, provisionVirtualBox } from '../src/services/box';
 import { boxStoreFor } from '../src/lib/box-store';
 
 /**
@@ -290,5 +302,174 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
     expect(staffAfter!.appliedAt, 'the staff list was rewritten for nothing').toBe(
       staffBefore!.appliedAt,
     );
+  });
+});
+
+/**
+ * SCRUM-412 — the agent's half: a box that runs only a booth pulls the booth's
+ * three scopes and holds nothing else, and the booth still signs somebody in by
+ * PIN and plays from them with the internet gone.
+ *
+ * The real agent, the real store on Postgres and the real routes, as above — on
+ * a box of its own with one booth on it, built the way the Console builds one,
+ * so nothing here touches the virtual box the cases above hold. The wheel is
+ * Booth 1's published version, set on this booth as a publish would leave it.
+ */
+describe('a box that runs only a booth holds the booth’s cache and nothing else (SCRUM-412)', () => {
+  const PIN = '3691';
+  let boothBoxId: string;
+  let personId: string;
+  let boothAgent: BoxAgent;
+  let applied: string[];
+  /** The wire, as the booth box sees it: switched off for the offline case. */
+  let online = true;
+  const callsWhileOffline: string[] = [];
+
+  beforeAll(async () => {
+    const [till] = await ctx.db.select().from(station).where(eq(station.id, tillId)).limit(1);
+    const { operatorId, branchId } = till!;
+
+    boothBoxId = newId();
+    await ctx.db.insert(box).values({
+      id: boothBoxId,
+      operatorId,
+      branchId,
+      name: 'Booth-only box',
+      slot: 'booth-only-1',
+      role: 'booth',
+    });
+    const boothStationId = newId();
+    await ctx.db.insert(station).values({
+      id: boothStationId,
+      operatorId,
+      branchId,
+      boxId: boothBoxId,
+      name: 'Booth-only Booth',
+      kind: 'booth',
+      codePrefix: 'BZ',
+    });
+
+    const [booth1] = await ctx.db
+      .select({ id: station.id })
+      .from(station)
+      .where(and(eq(station.branchId, branchId), eq(station.name, 'Booth 1')))
+      .limit(1);
+    const [wheel] = await ctx.db
+      .select()
+      .from(boothConfigVersion)
+      .where(eq(boothConfigVersion.stationId, booth1!.id))
+      .orderBy(desc(boothConfigVersion.version))
+      .limit(1);
+    await ctx.db.insert(boothConfigVersion).values({
+      id: newId(),
+      operatorId,
+      branchId,
+      stationId: boothStationId,
+      version: 1,
+      layoutId: wheel!.layoutId,
+      bundle: wheel!.bundle,
+      bundleHash: wheel!.bundleHash,
+      note: 'SCRUM-412: Booth 1’s wheel',
+    });
+
+    // Somebody on this booth's list, and on no other, with a PIN.
+    const phone = '+66900004131';
+    const employeeId = newId();
+    await ctx.db.insert(employee).values({
+      id: employeeId,
+      operatorId,
+      branchId,
+      name: 'Kanya (Test)',
+      nickname: 'Kanya',
+      phone,
+    });
+    personId = newId();
+    await ctx.db.insert(account).values({
+      id: personId,
+      operatorId,
+      employeeId,
+      phone,
+      passwordHash: await argonHash('kanya-pw-1'),
+      status: 'active',
+    });
+    await ctx.db.insert(boothStaffAssignment).values({
+      id: newId(),
+      stationId: boothStationId,
+      accountId: personId,
+      addedBy: receptionAccountId,
+    });
+    await ctx.db.insert(credential).values({
+      id: newId(),
+      operatorId,
+      accountId: personId,
+      kind: 'pin',
+      secretHash: await argonHash(PIN),
+      createdByAccountId: receptionAccountId,
+    });
+
+    const wire = injectTransport();
+    boothAgent = createBoxAgent({
+      apiBaseUrl: 'http://booth-only.test',
+      credentials: memoryCredentialStore(),
+      hostname: 'booth-only-test',
+      fetch: async (url, init) => {
+        if (!online) {
+          callsWhileOffline.push(url);
+          throw new Error('the line is down');
+        }
+        return wire(url, init);
+      },
+      claimCode: async () => (await issueClaimCode(ctx.db, boothBoxId)).code,
+      store: freshStore(),
+      booth: {
+        randomIndex: (max) => randomInt(max),
+        verifySecret: (hash, secret) => verifyArgon2(hash, secret),
+      },
+    });
+    await boothAgent.ensureRegistered();
+    await boothAgent.syncConfig();
+    applied = await boothAgent.syncCache();
+  }, 180_000);
+
+  afterAll(() => {
+    boothAgent?.booth()?.stop();
+    boothAgent?.stop();
+  });
+
+  it('pulls the three scopes a booth reads, and writes no other', async () => {
+    // The deny-list first, as `planCacheApply` orders them.
+    expect(applied).toEqual(['deny_list', 'staff', 'booth']);
+
+    // Not a member, a price or a receipt mark on this box's disk: the
+    // receipt tick that follows every pull was answered with nothing to write.
+    const rows = await ctx.db.select().from(boxCache).where(eq(boxCache.boxId, boothBoxId));
+    expect(rows.map((r) => r.scope).sort()).toEqual(['booth', 'deny_list', 'staff']);
+
+    // Kanya, and not reception, who works the till and the virtual box's booth.
+    const staff = (
+      rows.find((r) => r.scope === 'staff')!.payload as { items: Array<{ accountId: string }> }
+    ).items;
+    expect(staff.map((s) => s.accountId)).toEqual([personId]);
+  });
+
+  it('signs the person in by PIN and plays, with the internet gone', async () => {
+    const booth = boothAgent.booth();
+    expect(booth, 'the agent built no booth module').toBeTruthy();
+    await booth!.start();
+    expect(booth!.config(), 'the booth adopted no wheel from the cache it holds').toBeTruthy();
+
+    await boothAgent.setOffline(true, { reason: 'test' });
+    online = false;
+
+    const signedIn = await booth!.signIn({ pin: PIN });
+    expect(signedIn.ok, 'the booth refused a PIN its own cache carries').toBe(true);
+    expect(signedIn.accountId).toBe(personId);
+
+    const spun = await booth!.spin({ idempotencyKey: newId() });
+    expect(spun.spinId).toBeTruthy();
+    expect(spun.voucherCode, 'the booth minted no code for the prize it drew').toBeTruthy();
+    expect(spun.staffAccountId, 'the spin was recorded unattributed').toBe(personId);
+
+    expect(callsWhileOffline, 'the booth reached for the internet').toEqual([]);
   });
 });

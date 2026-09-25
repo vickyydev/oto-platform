@@ -88,7 +88,12 @@ import { pinHashesByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
-import type { BoxAuth } from './box';
+/**
+ * What a box's cache is for (SCRUM-412). `./box` imports from this file too, so
+ * the pair is a cycle of the same function-level kind as the ones above:
+ * `boxCacheRole` is only ever called inside a request.
+ */
+import { boxCacheRole, type BoxAuth, type BoxCacheRole } from './box';
 
 /**
  * The cloud half of the box sync core (S2-05).
@@ -3182,12 +3187,28 @@ export async function pullChanges(
   auth: BoxAuth,
   query: PullQuery,
 ): Promise<SyncPullResponse> {
+  /**
+   * The same offer as the cache bundle (SCRUM-412). The feed is the bundle's
+   * increments, and a member row does not become something a booth needs by
+   * arriving one change at a time: a box that runs only booths is handed the
+   * changes in its own scopes and in no other, whatever it asks for. A box
+   * with a till is narrowed only by what it asked, as before.
+   */
+  const role = await boxCacheRole(db, auth);
+  const offered = cacheScopesOffered(role);
+  const asked: readonly SyncChangeScope[] | undefined = query.scopes?.length
+    ? query.scopes
+    : undefined;
+  const scopes =
+    role === 'counter' ? asked : (asked ?? offered).filter((name) => offered.includes(name));
   const where = and(
     eq(syncChange.operatorId, auth.operatorId),
     or(isNull(syncChange.branchId), eq(syncChange.branchId, auth.branchId)),
     or(isNull(syncChange.boxId), eq(syncChange.boxId, auth.boxId)),
     gt(syncChange.seq, query.cursorSeq),
-    query.scopes?.length ? inArray(syncChange.scope, query.scopes) : undefined,
+    // An empty list is `false` here, never "no filter": a booth box that asks
+    // only for scopes it is not offered is handed nothing.
+    scopes ? inArray(syncChange.scope, [...scopes]) : undefined,
   );
 
   const rows = await db
@@ -3279,6 +3300,36 @@ function isVolatileScope(name: string): boolean {
 }
 
 /**
+ * What a box that runs only booths is sent (SCRUM-412): its wheels, the
+ * deny-list, and a staff list narrowed to the people on its own booths — the
+ * three things a booth reads with no internet (`booth.ts` and
+ * `refreshBoothStaff` in `@oto/box-agent`). In `CACHE_SCOPES` order, so the
+ * version of a booth box's bundle is hashed over the same order on every ask.
+ *
+ * `receipt_series` is not in it: a booth mints voucher codes, not receipt
+ * numbers. The agent's every-tick `?scopes=receipt_series` is answered with no
+ * scope at all, which it reads as nothing to write.
+ */
+export const BOOTH_ONLY_CACHE_SCOPES = [
+  'staff',
+  'deny_list',
+  'booth',
+] as const satisfies readonly CacheScope[];
+
+/**
+ * The scopes a box is offered, by what it is for (`boxCacheRole` in `box.ts`).
+ *
+ * The platform decides and the box asks: the cache bundle and the change feed
+ * both serve what a box asks for AND is offered. Every agent asks for
+ * everything, so it is sent exactly its role's answer; an older one naming a
+ * scope outside its role is not sent that scope, the same way the route drops a
+ * scope name it has never heard of.
+ */
+export function cacheScopesOffered(role: BoxCacheRole): readonly CacheScope[] {
+  return role === 'booth_only' ? BOOTH_ONLY_CACHE_SCOPES : CACHE_SCOPES;
+}
+
+/**
  * Whether a bundle's version stands for anything that bundle contains.
  *
  * False for an answer made of volatile scopes alone — `?scopes=receipt_series`
@@ -3336,29 +3387,45 @@ export interface CacheBundle {
  *     argon2id hash and the status. Not a phone, not an employee record, not a
  *     role assignment;
  *   - **no private keys.** The signing keys in the config bundle are public
- *     halves, and this adds nothing to them.
+ *     halves, and this adds nothing to them;
+ *   - **on a box that runs only booths, no scope a booth does not read**
+ *     (SCRUM-412): its wheels, the deny-list and the people on its own booths,
+ *     and none of the rest — see `cacheScopesOffered` and `boxCacheRole`.
  *
  * What it DOES carry that is personal is the branch's members and their
  * children, including allergy and medical alerts — because a till with no
  * internet still has to warn the kitchen. Those fields are staff-only (R-58):
  * the box redacts them on the way to the customer display, once, so no screen
- * is trusted to hide anything.
+ * is trusted to hide anything. A box that runs only booths is sent none of
+ * them.
  */
 export async function cacheBundle(
   db: Db,
   auth: BoxAuth,
   query: CacheQuery,
 ): Promise<CacheBundle> {
-  // Copied, never the caller's array: the deny-list pairing below appends.
-  const wanted = query.scopes?.length ? [...query.scopes] : [...CACHE_SCOPES];
+  const role = await boxCacheRole(db, auth);
+  const offered = cacheScopesOffered(role);
+  const asked = query.scopes?.length ? query.scopes : offered;
   const limit = Math.min(query.limit ?? CACHE_DEFAULT_LIMIT, CACHE_MAX_LIMIT);
-  if (query.cursor && wanted.length !== 1) {
+  // Judged on the question rather than the answer: a cursor beside one named
+  // scope is a page of that scope, whether or not this box is offered it.
+  if (query.cursor && asked.length !== 1) {
     throw new AppError(
       400,
       'CACHE_CURSOR_AMBIGUOUS',
       'A cursor pages one scope — ask for that scope on its own',
     );
   }
+  /**
+   * Only what this box is offered, whatever it asked for (SCRUM-412). A box
+   * that runs only booths and asks for `members` — an agent from before this
+   * rule, or anything else holding its credential — gets an answer without
+   * it, exactly as it would for a scope name this api has never heard of.
+   *
+   * A new array, never the caller's: the deny-list pairing below appends.
+   */
+  const wanted = asked.filter((name) => offered.includes(name));
   /**
    * The staff list never travels without the deny-list (S2-06).
    *
@@ -3525,18 +3592,31 @@ export async function cacheBundle(
        * picker use, imported rather than restated — the two answers have to
        * agree, because a person the picker lets stand at a till and the bundle
        * does not cache is a person the till cannot let back in.
+       *
+       * **A box that runs only booths holds its booths' people and nobody
+       * else** (SCRUM-412). A booth station's access rule and its
+       * `station_staff` list answer who sees it in the POS picker, which
+       * nobody at a booth uses: a booth signs somebody in by PIN on the box or
+       * by password through the cloud, and both refuse anybody who is not on
+       * the booth's own list (`booth.booth_staff_assignment`, the
+       * `allowedStaff` of the `booth` scope). An `all_staff` booth used to
+       * put every password hash at the branch on the Pi for that reason
+       * alone. A box with a till keeps the rule above whole.
        */
-      const [openStation] = await db
-        .select({ id: station.id })
-        .from(station)
-        .where(
-          and(
-            eq(station.boxId, auth.boxId),
-            isNull(station.archivedAt),
-            eq(station.accessScope, 'all_staff'),
-          ),
-        )
-        .limit(1);
+      const boothOnly = role === 'booth_only';
+      const [openStation] = boothOnly
+        ? []
+        : await db
+            .select({ id: station.id })
+            .from(station)
+            .where(
+              and(
+                eq(station.boxId, auth.boxId),
+                isNull(station.archivedAt),
+                eq(station.accessScope, 'all_staff'),
+              ),
+            )
+            .limit(1);
 
       const namedOnThisBox = sql`exists (
         select 1
@@ -3583,9 +3663,11 @@ export async function cacheBundle(
             // "dropped from the bundle" is what a box does with somebody who
             // has left. `atBranch` says the same thing for its own half.
             sql`${account.status} <> 'inactive'`,
-            openStation
-              ? or(atBranch(branchId), namedOnThisBox, onABoothOfThisBox)
-              : or(namedOnThisBox, onABoothOfThisBox),
+            boothOnly
+              ? onABoothOfThisBox
+              : openStation
+                ? or(atBranch(branchId), namedOnThisBox, onABoothOfThisBox)
+                : or(namedOnThisBox, onABoothOfThisBox),
           ),
         )
         .limit(limit);
