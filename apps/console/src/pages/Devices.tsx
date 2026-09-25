@@ -115,7 +115,11 @@ export function Devices() {
       {branches && branches.length > 1 && (
         <Panel>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="Branch">
+            {/* Two of the row's cells (SCRUM-435): one is 213 px wide on a
+                1280 px screen, and a <select> that narrow cuts the seeded
+                "Oto Play Park, Robinson Chalong" to "Oto Play Park, Robinson
+                Chal…". Half the row on a desktop, the whole of it below lg. */}
+            <Field label="Branch" className="sm:col-span-2">
               <Select
                 value={branchId}
                 onChange={setBranchId}

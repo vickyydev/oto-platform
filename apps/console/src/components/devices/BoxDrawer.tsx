@@ -534,6 +534,12 @@ const PAPER_WIDTHS: { value: EscposDotsPerLine; label: string }[] = [
  * box lays every slip out to this width and the printer discards anything
  * wider without an error, so the wrong answer loses the right-hand 8 mm — the
  * price column — in silence.
+ *
+ * A row of its own in the form's two-column grid (SCRUM-435). The option
+ * labels say which units each width belongs to, and in half of a 576 px drawer
+ * a <select> clips both of them to "576 dots (most 80 mm printer" — the same
+ * `sm:col-span-<columns>` the booth's PIN form uses for a cell that needs the
+ * whole row.
  */
 function PaperWidthField({
   value,
@@ -543,7 +549,11 @@ function PaperWidthField({
   onChange: (next: EscposDotsPerLine) => void;
 }) {
   return (
-    <Field label="Paper width" hint="A 512-dot unit cuts the right edge of every slip otherwise.">
+    <Field
+      label="Paper width"
+      hint="A 512-dot unit cuts the right edge of every slip otherwise."
+      className="sm:col-span-2"
+    >
       <Select
         value={String(value)}
         onChange={(v) => onChange(v === '512' ? 512 : 576)}
