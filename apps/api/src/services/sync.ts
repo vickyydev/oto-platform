@@ -2250,24 +2250,39 @@ export async function pushEvents(
               detail: a.detail,
             });
           }
+          /**
+           * Filed only when the two clocks name DIFFERENT trading days
+           * (SCRUM-438). Which clock dated the row is already on the row —
+           * `business_date_source` says `received_at` whether or not this is
+           * filed, and that choice is unchanged. The anomaly is for a day's
+           * takings that MOVED because of it, which is the one thing a person
+           * reading the record needs explained. A Pi that has just rebooted
+           * sends `untrusted` on every event until it has measured its clock,
+           * and that clock is nearly always near enough: a row for each of
+           * those said "we used our clock" a few times per reboot and buried
+           * the anomalies that carry a fact.
+           */
           if (prepared.businessDateSource === 'received_at') {
-            anomalies.push({
-              kind: 'clock_recomputed',
-              eventId: envelope.eventId,
-              actionId: envelope.actionId ?? null,
-              detail: {
-                clockTrust: prepared.clockTrust,
-                clockOffsetMs: envelope.clockOffsetMs ?? null,
-                // Both candidates, so a day's takings that look wrong are
-                // explainable from the row months later.
-                fromOccurredAt: businessDate(
-                  prepared.occurredAt,
-                  scope.timezone,
-                  scope.dayStartMinutes,
-                ),
-                fromReceivedAt: prepared.businessDate,
-              },
-            });
+            const fromOccurredAt = businessDate(
+              prepared.occurredAt,
+              scope.timezone,
+              scope.dayStartMinutes,
+            );
+            if (fromOccurredAt !== prepared.businessDate) {
+              anomalies.push({
+                kind: 'clock_recomputed',
+                eventId: envelope.eventId,
+                actionId: envelope.actionId ?? null,
+                detail: {
+                  clockTrust: prepared.clockTrust,
+                  clockOffsetMs: envelope.clockOffsetMs ?? null,
+                  // Both candidates, so a day's takings that look wrong are
+                  // explainable from the row months later.
+                  fromOccurredAt,
+                  fromReceivedAt: prepared.businessDate,
+                },
+              });
+            }
           }
         });
       } catch (err) {

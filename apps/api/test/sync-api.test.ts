@@ -25,8 +25,11 @@ import {
 } from '@oto/db';
 import {
   SYNC_EVENT_SCHEMA_VERSION,
+  addDaysToIsoDate,
+  businessDate,
   canonicalSyncBytes,
   newId,
+  parseDayStart,
   type SyncEventEnvelope,
   type SyncPushResponse,
 } from '@oto/shared';
@@ -934,6 +937,98 @@ describe('the clock', () => {
     expect(anomaly?.detail).toMatchObject({ clockTrust: 'untrusted' });
     const detail = anomaly?.detail as { fromOccurredAt: string; fromReceivedAt: string };
     expect(detail.fromOccurredAt).not.toBe(detail.fromReceivedAt);
+  });
+
+  /**
+   * The trading day this box is in right now, and the instant it began — read
+   * from the branch rather than assumed, so the two cases below can put a
+   * box's clock a minute either side of the 05:00 boundary whatever hour the
+   * suite happens to run at.
+   */
+  async function tradingDayOf(b: TestBox): Promise<{ date: string; startsAt: Date }> {
+    const [br] = await ctx.db
+      .select({ timezone: branch.timezone, dayStart: branch.businessDayStart })
+      .from(branch)
+      .where(eq(branch.id, b.branchId))
+      .limit(1);
+    const dayStart = parseDayStart(br!.dayStart);
+    const date = businessDate(new Date(), br!.timezone, dayStart);
+    // Back a minute at a time to the first minute the day owns.
+    let startsAt = Date.now() - (Date.now() % 60_000);
+    while (businessDate(new Date(startsAt - 60_000), br!.timezone, dayStart) === date) {
+      startsAt -= 60_000;
+    }
+    return { date, startsAt: new Date(startsAt) };
+  }
+
+  /**
+   * SCRUM-438 — a disbelieved clock that agrees on the day has nothing to
+   * explain.
+   *
+   * A Pi that has just rebooted sends `untrusted` on every event until it has
+   * measured its clock, and that clock is nearly always near enough. The row
+   * is still dated from our clock — `business_date_source` says so — but the
+   * anomaly is for a day's takings that MOVED, and here none did.
+   */
+  it('files no anomaly when the disbelieved clock names the same trading day', async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const { date, startsAt } = await tradingDayOf(b);
+    const event = mint(b, 'member.created', memberPayload(uniquePhone()), {
+      // A minute into the trading day we are in: the same day, however far
+      // from now that is.
+      occurredAt: new Date(startsAt.getTime() + 60_000).toISOString(),
+      clockTrust: 'untrusted',
+    });
+
+    const { body } = await push(b, [event]);
+    // The choice of clock is unchanged: the date came from `received_at`.
+    expect(body.results[0]).toMatchObject({
+      result: 'applied',
+      businessDate: date,
+      businessDateSource: 'received_at',
+    });
+    const [ledger] = await ctx.db
+      .select()
+      .from(syncEvent)
+      .where(eq(syncEvent.eventId, event.eventId));
+    expect(ledger?.businessDateSource).toBe('received_at');
+    expect(ledger?.clockTrust).toBe('untrusted');
+
+    // And nothing filed against it, of any kind.
+    const anomalies = await ctx.db
+      .select()
+      .from(syncAnomaly)
+      .where(eq(syncAnomaly.eventId, event.eventId));
+    expect(anomalies).toEqual([]);
+  });
+
+  it('still files the anomaly when the two clocks straddle the day start', async () => {
+    const b = await freshBox();
+    await registerKey(b);
+    const { date, startsAt } = await tradingDayOf(b);
+    const event = mint(b, 'member.created', memberPayload(uniquePhone()), {
+      // A minute before the day began: the box's clock puts this on yesterday.
+      occurredAt: new Date(startsAt.getTime() - 60_000).toISOString(),
+      clockTrust: 'untrusted',
+    });
+
+    const { body } = await push(b, [event]);
+    expect(body.results[0]).toMatchObject({
+      result: 'applied',
+      businessDate: date,
+      businessDateSource: 'received_at',
+    });
+    const [anomaly] = await ctx.db
+      .select()
+      .from(syncAnomaly)
+      .where(and(eq(syncAnomaly.eventId, event.eventId), eq(syncAnomaly.kind, 'clock_recomputed')));
+    // Both days named, and they are the two either side of the boundary.
+    expect(anomaly?.detail).toMatchObject({
+      clockTrust: 'untrusted',
+      fromOccurredAt: addDaysToIsoDate(date, -1),
+      fromReceivedAt: date,
+    });
   });
 
   it('overrules a box that claims a trusted clock while reporting a large offset', async () => {
