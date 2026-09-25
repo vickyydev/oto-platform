@@ -331,6 +331,34 @@ different; the Pi runtime and the counter were not built at all).**
   then Opus rounds SCRUM-402 (the Pi's clock) and SCRUM-401 (promo codes priced
   by the platform), then the rest of 401–429 by priority. Deployed still needs
   a staging screenshot per ticket.
+- **The quick rounds proven and closed (25 Sept, 16:28).** SCRUM-429 landed as
+  `f851037` (a printer that answered before the job and is silent after it ends the
+  job failed with `PRINTER_SILENT_AFTER_JOB`, never printed; its residual — the next
+  job to a still-stopped printer looks like a never-answering unit — is SCRUM-431).
+  CI packs the Pi release per commit: the artifact of `f851037`
+  (`oto-box-0.1.0-f851037+local.tgz`, SHA-256 `27fcb3df…d349`; the "+local" is a CI
+  naming slip noted on SCRUM-422) was handed to the owner and copied to his Desktop.
+  **The combined staging pass** (`wf_16250ee9`, staging at `a3552e8`, then
+  `f851037`) produced nineteen images (`e7c3c80`): real screens for 409 (the worth
+  question with the count of 2), 414 (B1 refused at both branches, nothing created),
+  424 (a card: polls 9 / 0 / 10 across visible, hidden, visible), 420 (the Paper
+  width field) and 430 (the three voided sales and their pages); test-run cards for
+  411, 413, 427, 417 and 418. **Deployed:** 409, 411, 413, 414, 417, 418, 424, 427.
+  **Testing:** 420 (its labels clip in the half-width column → SCRUM-435 first), 430
+  (a void read back shows when and why but not who; "and a voucher it held is free
+  again" also on a sale with no voucher — both in the next quick round), 429. **New
+  from the pass:** SCRUM-432 (after a confirmed change of worth the type's words
+  still say the old number; quick round running), 433 (the full voucher code in the
+  discount line label, readable in History and the sale answer), 434 (a new booth
+  station is asked how money reaches it — a question for the owner), 435 (the
+  Devices branch select and the Paper width labels clip), 436 (the till's
+  Membership Check column clips at 1600 wide with the second screen open), 437 (an
+  empty cart shows the amber "Priced on this till" note). CI on `4bbb4fd` went red
+  only on the auth-enumeration timing assertion (noted on SCRUM-423). **Running on
+  Opus with gates:** SCRUM-401 (`wf_427cc7e6`) and SCRUM-402 (`wf_4c05abc5`).
+  **Next:** land 432, 401, 402; then quick rounds for 430's remainder + 437 + 436 +
+  433 (apps/pos and vouchers.ts, after 401) and 435 (Console, after 402); Deployed
+  for 420 and 430 after those; then the rest of the audit's tickets by priority.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as

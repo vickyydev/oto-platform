@@ -365,3 +365,21 @@ Statuses read from Jira at 06:29 on the 24th; times are Jira's and git's.
 | SCRUM-202 | Story | S2-09 — Checkout and sales ledger | In Progress | Medium | 203 Deployed; 204 in Testing on SCRUM-392; the two staging cards attached here too (04:29) |  |
 | SCRUM-392 | Bug | The shop screen never hears a scan on staging: the POS site’s /api rewrite holds the station channel’s live stream back | Deployed | High | raised 04:28; fixed `003dac7` (05:59; gate MERGE — 1,327 api tests, two plants, `392-poll-fallback.png`, `392-plant.png`); staging pass 06:13–06:17: `staging-392-scan-lands.png` — the scan on the cart 5.3 s after Scan through the poll; Deployed 06:27 | yes |
 | SCRUM-393 | Bug | Booking site: the "Stored as" hint under the phone field shows +660811111111 when a leading 0 is typed after +66 | To Do | Low | raised 04:29 — not started | yes |
+
+## Addendum — 2026-09-25 (afternoon): the booth audit's follow-ups and the proof pass
+
+The closing audit's tickets SCRUM-401…429 are listed in
+`plans/booth/AUDIT-CLOSING-2026-09-25.md` §5.6; their status today is in
+`SESSION_HANDOVER.md` ("Quick rounds after READY" and "The quick rounds proven and
+closed"). Raised today beyond that set:
+
+| Key | Type | Summary | Status | Priority | Where it stands | In sprint |
+|---|---|---|---|---|---|---|
+| SCRUM-430 | Bug | History after a void: the reason, the list, the Refund button, the Redeem box | Testing | Low | fixed `494b6d6` + `ddb5688`; staging proof attached; who-on-read-back and one sentence remain | yes |
+| SCRUM-431 | Bug | After a silent-after-job failure, the next job to the still-stopped printer is recorded printed | To Do | Medium | raised by SCRUM-429's gate — not started | yes |
+| SCRUM-432 | Task | Changing a voucher type's worth leaves its words contradicting it | In Progress | Low | quick round running | yes |
+| SCRUM-433 | Bug | The full voucher code sits in a sale's discount line, readable in History | To Do | Low | raised by the proof pass — after SCRUM-401 lands | yes |
+| SCRUM-434 | Task | A new booth station is asked how money reaches it | To Do | Low | a question for the owner | yes |
+| SCRUM-435 | Bug | Two clipped controls in the Console (branch select, Paper width labels) | To Do | Low | layout fix after SCRUM-402 lands; gates 420's Deployed | yes |
+| SCRUM-436 | Bug | The till's Membership Check column clips at 1600 wide with the second screen open | To Do | Low | layout fix after SCRUM-401 lands | yes |
+| SCRUM-437 | Bug | An empty cart shows the amber "Priced on this till" note | To Do | Low | after SCRUM-401 lands | yes |

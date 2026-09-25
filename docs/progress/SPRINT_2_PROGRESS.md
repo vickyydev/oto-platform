@@ -2,7 +2,7 @@
 
 ## Status
 
-_Last updated 2026-09-25, 15:12._
+_Last updated 2026-09-25, 16:28._
 
 > **Resuming? Read `SESSION_HANDOVER.md` → "2026-09-24 — closing S2-09", then
 > "State at the end of 2026-09-23".** It carries the live commit on every staging service, what landed
@@ -20,8 +20,9 @@ _Last updated 2026-09-25, 15:12._
   and proven on staging). CP2's remaining line is
   SCRUM-206's own end-to-end evidence, which waits on Slice F.
 
-- **Last landed.** `main` is **`4bbb4fd`** — the audit's follow-ups as quick rounds on
-  25 Sept (SCRUM-409, 411, 413/427, 417, 418, 414, 430/424; `494b6d6`…`4bbb4fd`), after
+- **Last landed.** `main` is **`e7c3c80`** — the audit's follow-ups as quick rounds on
+  25 Sept (SCRUM-409, 411, 413/427, 417, 418, 414, 430/424, 420, 429; `494b6d6`…`f851037`,
+  proof images `e7c3c80`; eight of them Deployed on staging proof), after
   the CI pack step (`cf9b9df`) and the printer guide (`a34acb0`). Before them, the
   closing audit's fix round, eight commits by lane (`79a1c0e`…`4d0e24e`: the void offer and History's Void, the
   hand-over prize at ฿0, the booth prefix rule, the bounded press and the
