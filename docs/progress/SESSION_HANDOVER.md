@@ -503,6 +503,12 @@ different; the Pi runtime and the counter were not built at all).**
   `BOOTH_SETUP.md`, `COUNTER_VOUCHERS.md`; the bench steps are in
   `plans/booth/PLAN.md`. His open questions (443, 407, 428, 401's three, 434, 431's
   timing, 433's code field) are answered by the narrowest reading; none blocks the bench.
+  **Done (01:59):** the five finished and landed — `9600129` SCRUM-445, `4f38e1f`
+  SCRUM-446, `cb0ccb0` SCRUM-412, `afc9d3e` SCRUM-422's till lint (the whole ticket is on
+  main), `c4ce3aa` SCRUM-425 (its first gate found a burst race, closed under a database
+  lock in a second round; migration 0026). All in Testing. CI green through `afc9d3e` and
+  staging live on it; `c4ce3aa` follows. **The tree holds here.** Nothing starts until the
+  owner's bench results; then one quick round per reported defect, no new tickets.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as

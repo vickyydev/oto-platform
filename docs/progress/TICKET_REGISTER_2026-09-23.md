@@ -389,7 +389,7 @@ closed"). Raised today beyond that set:
 | SCRUM-441 | Bug | The platform refuses an unknown promo code in different words from the till | In Progress | Low | in the SCRUM-433 round | yes |
 | SCRUM-442 | Bug | The ticket till leaves the typed promo code in its box after Apply | Testing | Low | fixed `d4f3fc5`; staging proof next pass | yes |
 | SCRUM-443 | Bug | The till header's branch chip clips the branch name at 1600 wide | To Do | Low | owner's choice: prefix off, wider chip, or a short name per branch | yes |
-| SCRUM-444 | Bug | The watchdog restarts a needs-service box every minute; blank TV after reboot | Testing | Medium | fixed with SCRUM-403 (`e33bf12`) | yes |
-| SCRUM-445 | Bug | Health files a needs-service box under "could not apply part of its offline copy" | To Do | Low | raised by SCRUM-403's gate — not started | yes |
-| SCRUM-446 | Bug | A stale send index passes the store's quick check, so unsent vouchers can hide from the outbox | To Do | Low | raised by SCRUM-403's third gate — not started | yes |
+| SCRUM-444 | Bug | The watchdog restarts a needs-service box every minute; blank TV after reboot | Testing | Medium | fixed with SCRUM-403 (`e33bf12`); staging proof waits for the bench | yes |
+| SCRUM-445 | Bug | Health files a needs-service box under "could not apply part of its offline copy" | Testing | Low | fixed `9600129` | yes |
+| SCRUM-446 | Bug | A stale send index passes the store's quick check, so unsent vouchers can hide from the outbox | Testing | Low | fixed `4f38e1f` | yes |
 | SCRUM-447 | Bug | A box registered again with a new claim code gets no fresh journal number from the platform | To Do | Medium | raised by SCRUM-403's third gate — an api fix, not started | yes |
