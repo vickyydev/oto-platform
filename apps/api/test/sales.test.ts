@@ -1357,6 +1357,8 @@ describe('discounts in the prototype’s order', () => {
   it('takes the manual discount first and the code against what is left', async () => {
     // Reversing the two moves the bill, so the assertion is on the ORDER and
     // not only on the total: a ฿100 manual then 10 % is not 10 % then ฿100.
+    // STAFF10 is the park's own seeded code, 10 % off: since SCRUM-401 a code
+    // is priced from its definition, so it has to be one the park set up.
     const cartLine = line(twoHoursId, 2, 3);
     const cart = {
       memberId: jamesId,
@@ -1364,7 +1366,7 @@ describe('discounts in the prototype’s order', () => {
       manualDiscounts: [
         { id: newId(), scope: 'order', type: 'fixed', value: b(100), reason: 'Loyalty' },
       ],
-      promos: [{ code: 'KIDS10', label: '10% off', type: 'percent', value: 10 }],
+      promos: [{ code: 'STAFF10', label: 'Staff Discount', type: 'percent', value: 10 }],
     };
     const quoted = await quote(cart);
     expect(quoted.statusCode, quoted.body).toBe(200);
@@ -1387,24 +1389,30 @@ describe('discounts in the prototype’s order', () => {
     // The sequence IS the money: a refund has to undo them in this order.
     expect(manual.sequence).toBe(1);
     expect(promo.sequence).toBe(2);
-    expect(promo.code).toBe('KIDS10');
+    expect(promo.code).toBe('STAFF10');
+    expect(promo.percentBp).toBe(1000);
     expect(promo.amountSatang).toBe(promoExpected);
   });
 });
 
 describe('promo codes', () => {
   it('refuses a code by name rather than pricing one the body defined', async () => {
-    // There is no promo-code catalogue on the platform yet (S2-09b owns the
-    // Discounts and promo codes panel). A code is never accepted as a
-    // DEFINITION from the request: that would be a discount anybody can write.
+    // A code is never accepted as a DEFINITION from the request: that would be
+    // a discount anybody can write. Named alone, or sent with a value the till
+    // made up, a code the park has not set up is refused by name and nothing
+    // comes off (SCRUM-401 prices every code from `pos.discount_definition`).
     const res = await quote({
       memberId: jamesId,
       lines: [line(twoHoursId, 1, 0)],
       promoCodes: ['KIDS23'],
+      promos: [{ code: 'KIDS24', label: '24% off', type: 'percent', value: 24 }],
     });
     const body = res.json();
-    expect(body.rejectedPromoCodes).toHaveLength(1);
-    expect(body.rejectedPromoCodes[0].code).toBe('KIDS23');
+    expect(body.rejectedPromoCodes).toEqual([
+      { code: 'KIDS23', reason: 'Code "KIDS23" isn\'t set up at this branch yet.' },
+      { code: 'KIDS24', reason: 'Code "KIDS24" isn\'t set up at this branch yet.' },
+    ]);
+    expect(body.appliedPromos).toEqual([]);
     expect(body.totals.promoDiscountSatang).toBe(0);
     expect(body.totals.grossSatang).toBe(body.totals.subtotalSatang);
   });

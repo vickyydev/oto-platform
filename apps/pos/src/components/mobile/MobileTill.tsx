@@ -53,7 +53,9 @@ import {
 import {
   buildCartPayload,
   claimVerifiedTier,
+  promoChargeSatang,
   quotedPricing,
+  refusedPromoCodes,
   type ApiSale,
   type CartIdentity,
   type SaleCartPayload,
@@ -815,6 +817,33 @@ export default function MobileTill() {
     setPromoError('');
   };
 
+  /**
+   * SCRUM-401 — A CODE THE PLATFORM REFUSED COMES OFF THE ORDER.
+   *
+   * The platform prices every code from the park's own definition, so a code
+   * this till's copy still honours can come back refused on the quote. The
+   * panel draws code badges from the platform's figures, which leaves a refused
+   * code with no badge and no remove button. Kept, it would still count in this
+   * till's own stacking check (`validatePromoCode`), refusing the next code
+   * against one nobody can see, and typed again it would be "already applied".
+   * So it is taken off as its remove button would take it — a free item's line
+   * with it — and the platform's reason goes on the promo box's refusal line,
+   * after the removal has cleared it (`refusedPromoCodes`).
+   *
+   * Keyed on the quote alone: the platform's answer replaces it only when it is
+   * about the cart on screen, discounts included, and the removal changes the
+   * cart, so each answer is acted on once.
+   */
+  useEffect(() => {
+    const refused = refusedPromoCodes(cart.quote, discounts);
+    if (refused.length === 0) return;
+    for (const { code } of refused) handleRemoveDiscount(code);
+    setPromoError(refused.map((rejected) => rejected.reason).join(' '));
+    // `discounts` is read as it stands with this quote, which was answered for
+    // it; `handleRemoveDiscount` is redefined every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.quote]);
+
   const handleSelectTicket = (ticket: TicketType) => {
     if (!tier) return;
     // The card for an unpriced tier does not answer a press (SCRUM-228); this
@@ -1330,9 +1359,14 @@ export default function MobileTill() {
 
   const commitPayload = (): SaleCartPayload | null => {
     if (!cartIdentity || !cart.quote.satang) return null;
+    // SCRUM-401 — with a promo code on the cart the amount due is the
+    // platform's quote, which priced the code from the park's own definition
+    // (`promoChargeSatang`). The counter till does the same.
+    const promoCharge = promoChargeSatang(cart.quote, discounts);
     return buildCartPayload(lines, discounts, manualDiscounts, cartIdentity, cart.quote.satang, {
       mode: cart.quote.pricingMode,
       modeReason: cart.quote.pricingModeReason,
+      ...(promoCharge !== undefined ? { expectedTotalSatang: promoCharge } : {}),
     });
   };
 

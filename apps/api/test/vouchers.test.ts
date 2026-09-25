@@ -2071,8 +2071,10 @@ describe('the park’s own discount codes are never voucher claims, whatever the
    * The gate's `discountShapes`. SONGKRAN25, MOTHERSDAY and BIRTHDAY25 have the
    * shape of a ten-character booth code and MEMBERDAY25 the shape of an
    * eleven-character one. As the park's own discount codes — active, archived
-   * or switched off — they quote and commit exactly as they did before
-   * vouchers existed.
+   * or switched off — none of them is ever taken for a voucher claim. What each
+   * is worth is its definition's (SCRUM-401): the live ones the park's 10 %,
+   * whatever the till says, and the archived and the switched-off one nothing,
+   * refused by name like a code the park never set up.
    */
   const lookalike = mintBoothCode('XM', (m) => randomInt(m));
   const DEFINED = ['SONGKRAN25', 'MOTHERSDAY', 'BIRTHDAY25', 'MEMBERDAY25', lookalike];
@@ -2127,18 +2129,33 @@ describe('the park’s own discount codes are never voucher claims, whatever the
 
   const tenPercent = (code: string) => ({ code, label: code, type: 'percent', value: 10 });
 
-  it('quote and commit with each of them, as before', async () => {
+  it('quote and commit each at its definition, never at the till’s figure', async () => {
+    // The till describes each as HALF off. The live codes are priced at the
+    // park's 10 % all the same; the archived and the switched-off one are
+    // refused by name and take nothing. None of them is a voucher claim.
+    const halfOff = (code: string) => ({ ...tenPercent(code), value: 50 });
+    const retired = new Set(['BIRTHDAY25', 'MEMBERDAY25']);
     for (const code of DEFINED) {
-      const priced = await quote(tillA, { ...kids(1), promos: [tenPercent(code)] });
+      const off = retired.has(code) ? 0 : b(89);
+      const refused = retired.has(code)
+        ? [{ code, reason: `Code "${code}" isn't set up at this branch yet.` }]
+        : [];
+      const priced = await quote(tillA, { ...kids(1), promos: [halfOff(code)] });
       expect(priced.statusCode, `${code}: ${priced.body}`).toBe(200);
-      expect(priced.json().totals.promoDiscountSatang).toBe(b(89));
+      expect(priced.json().totals.promoDiscountSatang, code).toBe(off);
+      expect(priced.json().rejectedPromoCodes, code).toEqual(refused);
 
       const saleId = newId();
-      const rung = await commit(tillA, { id: saleId, ...kids(1), promos: [tenPercent(code)] });
+      const rung = await commit(tillA, { id: saleId, ...kids(1), promos: [halfOff(code)] });
       expect(rung.statusCode, `${code}: ${rung.body}`).toBe(200);
-      expect((await saleRow(saleId)).promoDiscountSatang).toBe(b(89));
-      const [row] = await ctx.db.select().from(saleDiscount).where(eq(saleDiscount.saleId, saleId));
-      expect(row).toMatchObject({ code, amountSatang: b(89) });
+      expect(rung.json().rejectedPromoCodes, code).toEqual(refused);
+      expect((await saleRow(saleId)).promoDiscountSatang, code).toBe(off);
+      const rows = await ctx.db.select().from(saleDiscount).where(eq(saleDiscount.saleId, saleId));
+      expect(rows, code).toEqual(
+        retired.has(code)
+          ? []
+          : [expect.objectContaining({ code, percentBp: 1000, amountSatang: b(89) })],
+      );
     }
   });
 
@@ -2161,9 +2178,14 @@ describe('the park’s own discount codes are never voucher claims, whatever the
       expect(res.statusCode, code).toBe(409);
       expect(res.json().error.code).toBe('VOUCHER_CLAIM_REFUSED');
     }
-    // Eleven characters with a wrong check are nobody's voucher.
+    // Eleven characters with a wrong check are nobody's voucher — and nobody's
+    // discount code either, so it is refused by name and takes nothing.
     const res = await quote(tillA, { ...kids(1), promos: [tenPercent('MEMBERDAY26')] });
     expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().rejectedPromoCodes).toEqual([
+      { code: 'MEMBERDAY26', reason: 'Code "MEMBERDAY26" isn\'t set up at this branch yet.' },
+    ]);
+    expect(res.json().totals.promoDiscountSatang).toBe(0);
   });
 
   it('the offline replay banks such a sale instead of quarantining it', async () => {
@@ -2192,7 +2214,13 @@ describe('the park’s own discount codes are never voucher claims, whatever the
       return { saleId, run: ctx.db.transaction((tx) => replayOfflineSale(tx, scope, payload)) };
     };
     const banked = replay('SONGKRAN25');
-    await expect(banked.run).resolves.toMatchObject({ saleId: banked.saleId, finalised: true });
+    // Filed as the till applied it, which is also what the park's definition
+    // gives: nothing to flag (SCRUM-401).
+    await expect(banked.run).resolves.toMatchObject({
+      saleId: banked.saleId,
+      finalised: true,
+      promoDifferences: [],
+    });
     expect((await saleRow(banked.saleId)).promoDiscountSatang).toBe(b(89));
     // The control: a booth-shaped code the park never defined is still refused
     // — which is what sends an event to quarantine.

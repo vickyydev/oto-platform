@@ -9,6 +9,7 @@ import {
 import { z } from 'zod';
 import { errors } from '../../lib/errors';
 import { audit } from '../audit';
+import type { PromoDifference } from '../promo-codes';
 import { commitSale, finaliseSale, type ActorContext, type CommitSaleInput } from '../sale';
 import {
   findAttemptByAction,
@@ -52,6 +53,18 @@ import type { Tx } from '../tx';
  *     that priced the CART differently; this catches a box that priced it the
  *     same and then sent more money than the cart is worth, which is the other
  *     way a replay banks a number nobody quoted.
+ *
+ *     THE ONE THING PRICED AS THE BOX PRICED IT is a promo code (SCRUM-401).
+ *     A till's own commit has every code priced from the park's definition
+ *     (`services/promo-codes.ts`); here the money was taken, with the link
+ *     down, against the till's copy of the codes, and refusing the code now
+ *     would not give anybody their money back. So the sale is filed with the
+ *     value the till applied (`as_recorded`): its amount, the scope it was
+ *     applied to, and a free item's own line. Every code the park's definition
+ *     prices differently today, or does not know, is written on this path's
+ *     audit row and raised as an alert by the sync push
+ *     (`raiseOfflinePromoAlerts`). The sale carries the code like any other, so
+ *     the use counts against the code's limit.
  *  2. **The press is the key, not the event.** Every tender carries the
  *     `x-oto-action-id` minted where somebody pressed the button, and
  *     `payment_attempt_action_unique` is what makes the second arrival of the
@@ -84,8 +97,12 @@ import type { Tx } from '../tx';
  * that can be updated in a browser refresh, and this is the wire contract with
  * a box that may be running last month's build. They are allowed to move at
  * different speeds, and every other handler in the sync path declares its own
- * payload beside itself for the same reason. Nothing here carries a price that
- * is charged — a line's `lineTotalSatang` can only cause a refusal.
+ * payload beside itself for the same reason. A line's `lineTotalSatang` can only
+ * cause a refusal. The only prices here that are charged are the ones the till's
+ * own commit also takes from the till, because the platform's catalogue has no
+ * row to price them from: an add-on it does not hold, the socks when it holds
+ * none, a drop-off fee (`serviceFee`) and a free-item code's own line
+ * (`promoItem`). All are recorded as the till's snapshot.
  */
 const OfflineCartSchema = z.object({
   memberId: z.string().uuid().nullish(),
@@ -123,6 +140,25 @@ const OfflineCartSchema = z.object({
           .default([]),
         serviceFee: z
           .object({ label: z.string().max(120), amountSatang: z.number().int().min(0) })
+          .nullish(),
+        /**
+         * SCRUM-401 — the ticket till's own line for a free-item code
+         * (`applyFreeItemPromo` in `@oto/shared`): the item at the till's shelf
+         * price, which the code then takes to nothing. Carried so a sale with a
+         * free-item code is filed as the till rang it. Without it the line
+         * arrived as an empty ticket line priced at ฿0 against the till's own
+         * figure for it, and the whole sale was refused
+         * (SALE_LINE_PRICE_MISMATCH). Priced exactly as the till's own commit
+         * prices it (the same field in `routes/sales.ts`): from this snapshot,
+         * and recorded as one.
+         */
+        promoItem: z
+          .object({
+            itemId: z.string().min(1).max(100),
+            itemKind: z.enum(['menu', 'merch']),
+            name: z.string().max(160),
+            priceSatang: z.number().int().min(0),
+          })
           .nullish(),
         lineTotalSatang: z.number().int().min(0).optional(),
       }),
@@ -178,6 +214,16 @@ const OfflineCartSchema = z.object({
         value: z.number().min(0).max(100_000_000),
         freeItemId: z.string().max(100).optional(),
         freeItemKind: z.enum(['menu', 'merch']).optional(),
+        /**
+         * SCRUM-401 — the scope the till applied the code with, from its copy
+         * of the park's definition. The code is filed as recorded, so its scope
+         * is too. Without it a tickets-only code was priced across the whole
+         * order and the sale was refused (SALE_TOTAL_MISMATCH). Read only where
+         * the pricing engine can read it (`resolveCartPromos`), and a scope the
+         * park's definition does not give is flagged like a value it does not
+         * give.
+         */
+        target: z.unknown().optional(),
       }),
     )
     .max(10)
@@ -331,6 +377,12 @@ export interface ReplayOutcome {
   recorded: number;
   /** The box showed one number and the ledger issued another. Both are named. */
   receiptDiffers: { box: string; ledger: string } | null;
+  /**
+   * SCRUM-401 — each promo code this call filed at the value the till applied
+   * where the park's definition gives something else today, or nothing. Empty
+   * when they agree, and on a replay of a sale already filed.
+   */
+  promoDifferences: PromoDifference[];
 }
 
 /** The scope check a route makes on the branch, made here from the credential. */
@@ -433,7 +485,12 @@ export async function replayOfflineSale(
     expectedTotalSatang: cart.expectedTotalSatang,
   };
 
-  const committed = await commitSale(tx, actor, input, scope.occurredAt);
+  // The codes as the till applied them — the money is already taken — with
+  // each difference from the park's definition handed back (rule 1's note).
+  const committed = await commitSale(tx, actor, input, scope.occurredAt, {
+    promoPricing: 'as_recorded',
+  });
+  const promoDifferences = committed.promoDifferences ?? [];
 
   /**
    * THE THREE COLUMNS ONLY A BOX SALE HAS, written while the sale is still
@@ -464,6 +521,7 @@ export async function replayOfflineSale(
   const recorded = await recordTenders(tx, scope, payload.saleId, payload.tenders);
   return close(tx, scope, payload.saleId, recorded, payload.receipt ?? null, {
     committed: !committed.replay,
+    promoDifferences,
   });
 }
 
@@ -516,7 +574,10 @@ export async function replayOfflineTender(
   }
 
   const recorded = await recordTenders(tx, scope, payload.saleId, [payload.tender]);
-  return close(tx, scope, payload.saleId, recorded, null, { committed: false });
+  return close(tx, scope, payload.saleId, recorded, null, {
+    committed: false,
+    promoDifferences: [],
+  });
 }
 
 // --- The shared halves ------------------------------------------------------
@@ -717,7 +778,7 @@ async function close(
   saleId: string,
   recorded: Recorded,
   boxReceipt: { series: string; seq: number; number: string } | null,
-  flags: { committed: boolean },
+  flags: { committed: boolean; promoDifferences: PromoDifference[] },
 ): Promise<ReplayOutcome> {
   const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
   if (!row) throw new Error('the sale was not written');
@@ -784,6 +845,12 @@ async function close(
       receiptNumber,
       /** What the guest was shown at the counter, when it is not this. */
       ...(receiptDiffers ? { boxReceiptNumber: receiptDiffers.box } : {}),
+      /**
+       * SCRUM-401 — a code filed at the value the till applied that the park's
+       * definition prices differently today, or does not know. The sync push
+       * raises the same facts as an alert once the sale is filed.
+       */
+      ...(flags.promoDifferences.length > 0 ? { promoDifferences: flags.promoDifferences } : {}),
     },
   });
 
@@ -794,5 +861,6 @@ async function close(
     outstandingSatang: Math.max(0, outstanding),
     recorded: recorded.written,
     receiptDiffers,
+    promoDifferences: flags.promoDifferences,
   };
 }

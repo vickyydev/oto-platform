@@ -115,6 +115,20 @@ export interface SaleCartLinePayload {
   stayDurationLabel?: string;
 }
 
+/**
+ * A park promo code as this till applied it.
+ *
+ * SCRUM-401 — THE PLATFORM PRICES THE CODE, NOT THIS DESCRIPTION OF IT. It reads
+ * the code's value, scope, window, branch, stacking rule and usage limits from
+ * the park's own definition, and refuses by name a code it cannot stand behind
+ * (`rejectedPromoCodes`): the ticket tills and the F&B and shop stations then
+ * take that code off the order and say the platform's reason in the promo box
+ * (`refusedPromoCodes`). The type and value here are what this till worked out
+ * from its copy of the codes, sent so the local figure and the platform's can
+ * be told apart; they move no money. The one exception is a sale the box files
+ * after the link was down: the money was taken at this value, so it is filed as
+ * recorded and flagged.
+ */
 export interface SaleCartPromoPayload {
   code: string;
   label: string;
@@ -233,8 +247,9 @@ export interface SaleCartPayload {
    * here. A Lucky Wheel voucher held for this cart is named by its code and
    * the platform prices it from the voucher's definition
    * (`resolveCartVoucher`); the till never describes what it takes off, and a
-   * park discount code goes in `promos` with its definition as before.
-   * Omitted when the cart carries no voucher.
+   * park discount code goes in `promos`, which the platform also prices from
+   * the code's own definition (SCRUM-401). Omitted when the cart carries no
+   * voucher.
    */
   promoCodes?: string[];
   manualDiscounts: SaleCartManualDiscountPayload[];
@@ -815,7 +830,9 @@ export interface ItemCartIdentity extends CartIdentity {
  * row and `true` for `addOns` on an item row, so sending a food-scoped code
  * would have taken nothing off and sending an add-on-scoped one would have
  * discounted the food. Both are fixed in the engine, so the codes the station
- * holds now travel with the order and the platform honours the scope.
+ * holds now travel with the order and the platform honours the scope — the
+ * scope, the value and the limits of the park's own definition of each code,
+ * never the ones sent here (SCRUM-401).
  *
  * WHAT FOLLOWED FROM THAT, and it is answered — SCRUM-362. `computeFnbTotals`
  * and `computeMerchTotals` took no promo codes, so an order with a code on it
@@ -823,7 +840,10 @@ export interface ItemCartIdentity extends CartIdentity {
  * figure on the screen and then been refused at the commit against it. Both now
  * take the codes and price them through the same engine the platform does
  * (`lib/itemPromo.ts`), and `localItemQuote` passes them on, so the fallback
- * figure and the platform's are the same figure.
+ * figure and the platform's are the same figure while this station's copy of a
+ * code matches the park's definition. Where it does not (SCRUM-401), the
+ * platform's figure stands, and a code it refused comes off the order
+ * (`refusedPromoCodes`).
  */
 export function buildItemCartPayload(
   lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
@@ -972,7 +992,9 @@ export interface ItemQuoteArgs {
    * SCRUM-344 — the promo codes this station holds. Sent with the order so the
    * quote and the commit describe the same one, and applied by the local
    * fallback too since SCRUM-362, so the figure on the screen is the same
-   * figure whichever side priced it.
+   * figure whichever side priced it — while this station's copy of each code
+   * matches the park's definition. Where it does not (SCRUM-401), the
+   * platform's figure stands and a code it refused comes off the order.
    */
   promos?: readonly Discount[];
   /** S2-10b — the voucher held for this order, by its code. The platform prices it. */
@@ -1023,6 +1045,9 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
       lineTotals,
       ...(notice ? { platformNotice: notice } : {}),
       voucher: quote.voucher ?? null,
+      // SCRUM-401 — the codes it refused, so the station can take them off the
+      // order as the ticket tills do (`refusedPromoCodes`).
+      rejectedPromoCodes: quote.rejectedPromoCodes ?? [],
     };
   } catch (err) {
     if (isMissingRoute(err)) {
@@ -1235,6 +1260,13 @@ export interface CartQuote {
    * quote this till made itself: a voucher's value is the platform's alone.
    */
   voucher?: QuotedVoucher | null;
+  /**
+   * SCRUM-401 — the codes the platform would not honour on this cart, each with
+   * its reason (the same ones `platformNotice` says in a sentence). Absent on a
+   * quote this till made itself. Read by `promoChargeSatang` and
+   * `refusedPromoCodes`.
+   */
+  rejectedPromoCodes?: { code: string; reason: string }[];
 }
 
 /**
@@ -1449,6 +1481,7 @@ export async function quoteCart(args: QuoteCartArgs): Promise<CartQuote> {
       ...(quote.tierClaimRefusal ? { tierClaimRefusal: quote.tierClaimRefusal } : {}),
       ...(quote.tierSource ? { tierSource: quote.tierSource } : {}),
       voucher: quote.voucher ?? null,
+      rejectedPromoCodes: quote.rejectedPromoCodes ?? [],
     };
   } catch (err) {
     if (isMissingRoute(err)) {
@@ -1539,6 +1572,73 @@ export async function finaliseSale(
 /** The local engine's figures in the platform's own totals shape, for a sale that was not written. */
 export function localSaleTotals(totals: TicketCartTotals): ApiSaleTotals {
   return apiTotals(totals);
+}
+
+/**
+ * SCRUM-401 — WHAT A TICKET CART CARRYING PROMO CODES IS CHARGED: the
+ * platform's own quote, when the platform priced it.
+ *
+ * The platform prices every code from the park's definition, so a code this
+ * till's copy still honours — withdrawn since sign-in, used up at another till,
+ * outside its window, another branch's — comes back refused or priced
+ * differently, and the figure on the order panel, the customer display and the
+ * payment screen is the platform's. The commit reconciles against that figure,
+ * as it already does for a voucher: sending this till's own total instead would
+ * refuse the sale at Pay (`SALE_TOTAL_MISMATCH`) over a code the panel shows no
+ * row for, and either way nothing is charged that was not on the screen.
+ *
+ * Undefined when the platform did not price the cart, or it carries no code:
+ * this till's own figure is then the one that was shown, and the one sent.
+ *
+ * Undefined too when the platform refused a FREE-ITEM code whose item is still
+ * on the order: that line still reads "Free item ฿0" on the panel, and the
+ * platform's total charges for it. Sending this till's own figure means the
+ * platform refuses the sale at Pay rather than charge for an item the screen
+ * calls free. Both tills take a refused code and its free item's line off the
+ * order as soon as the quote is in (`refusedPromoCodes`), so this only covers a
+ * Pay pressed before they have.
+ */
+export function promoChargeSatang(
+  quote: CartQuote,
+  discounts: readonly Discount[],
+): number | undefined {
+  if (quote.source !== 'platform' || discounts.length === 0) return undefined;
+  const refused = new Set((quote.rejectedPromoCodes ?? []).map((rejected) => rejected.code));
+  if (discounts.some((discount) => discount.type === 'free_item' && refused.has(discount.code))) {
+    return undefined;
+  }
+  return toSatang(quote.totals.total);
+}
+
+/**
+ * SCRUM-401 — THE CODES ON THIS ORDER THAT THE PLATFORM REFUSED, each with its
+ * reason, from the platform's quote of the cart on screen.
+ *
+ * Once the platform's quote is in, the order panel draws each code's badge, and
+ * its remove button, from what the platform applied. A code it refused — one
+ * this till's copy still honours after the park withdrew it, used it up, or
+ * moved it out of its window or to another branch — therefore has no badge and
+ * nothing to press, while this till still holds it. Kept, it still counts in
+ * this till's own stacking check (`validatePromoCode`, `validateItemPromoCode`
+ * at the F&B and shop stations), so the next code the guest offers can be
+ * refused against it ("can't be combined with other codes — remove it first"),
+ * it is sent with every quote and commit, and typed again it is "already
+ * applied". So both ticket tills and both stations take each code named here
+ * off the order, the way its remove button does, and say the platform's reason
+ * on the promo box's refusal line.
+ *
+ * Empty on a quote this till made itself: only the platform refuses a code.
+ * A code named here that this till does not hold (a voucher's, which rides in
+ * `promoCodes`) is left out, so there is nothing to take off for it.
+ */
+export function refusedPromoCodes(
+  quote: CartQuote,
+  discounts: readonly Discount[],
+): { code: string; reason: string }[] {
+  if (quote.source !== 'platform') return [];
+  return (quote.rejectedPromoCodes ?? []).filter((rejected) =>
+    discounts.some((discount) => discount.code === rejected.code),
+  );
 }
 
 /**

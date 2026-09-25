@@ -82,6 +82,7 @@ import {
   type ReplayScope,
 } from './payments/offline';
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
+import { raiseOfflinePromoAlerts } from './promo-codes';
 import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
 import { pinHashesByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
@@ -589,6 +590,11 @@ export interface BatchScope {
    * transaction it was given, or a refused event leaves half of itself behind.
    */
   db: Db;
+  /**
+   * The push's logger, for a write a handler makes best-effort and must not
+   * fail its event over: an offline sale's promo alert (SCRUM-401).
+   */
+  log?: OpContext['log'];
 }
 
 export interface PreparedEvent {
@@ -1349,6 +1355,21 @@ const HANDLERS: Record<string, EventHandler> = {
     async apply(tx, scope, event, payload: z.infer<typeof OfflineSalePayloadSchema>) {
       const replay = replayScope(scope, event);
       const outcome = await replayOfflineSale(tx, replay, payload);
+      // SCRUM-401 — a promo code filed at the value the till applied, where the
+      // park's definition says otherwise today: flagged, never refused, because
+      // the money was taken. On the pool, as every alert a handler raises, and
+      // best-effort: an alert that cannot be written is logged, never thrown, so
+      // it cannot quarantine the sale it is about.
+      await raiseOfflinePromoAlerts(
+        scope.db,
+        {
+          operatorId: scope.auth.operatorId,
+          branchId: scope.auth.branchId,
+          boxName: `${scope.auth.name} (${scope.auth.slot})`,
+        },
+        outcome,
+        scope.log,
+      );
       return saleApplied(outcome);
     },
   },
@@ -1713,6 +1734,7 @@ export async function pushEvents(
     dayStartMinutes: parseDayStart(branchRow.businessDayStart),
     stationIds: new Set(stations.map((s) => s.id)),
     db,
+    log: ctx.log,
   };
 
   const epoch = boxRow.currentEpoch;

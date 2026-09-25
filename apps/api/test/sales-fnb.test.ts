@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   branch,
+  discountDefinition,
   member,
   modifierGroup,
   modifierOption,
@@ -717,18 +718,49 @@ describe('the cart names its lane and the platform checks it', () => {
 /**
  * SCRUM-344 — a promo code scoped to food comes off the food.
  *
- * The cart carries the code's definition from the till (S2-09b owns the
- * catalogue), so these send the same shape `buildItemCartPayload` does. What is
- * being proved is the ENGINE'S reach through the real route: which lines the
- * scope found, in satang, on rows the platform priced itself.
+ * SCRUM-401 prices every code from the park's own definition, so each scope is
+ * a code defined in `pos.discount_definition`. The cart still sends the till's
+ * own description beside the code, the shape `buildItemCartPayload` sends, and
+ * it moves no money. What is being proved is the ENGINE'S reach through the
+ * real route: which lines the definition's scope found, in satang, on rows the
+ * platform priced itself.
  */
 describe('a promo scope reaches the right item lines', () => {
   const lattePlusSocks = () => [
     itemLine('FB-LATTE', 1, { modifiers: [choose('FB-LATTE', 'Ice', 'No ice')] }),
     socksLine(),
   ];
-  const promo = (target: unknown) => ({
-    code: 'TENOFF',
+  /** One 10 % code per scope, as the Discounts panel saves one. */
+  const CODE_BY_SCOPE = new Map<string, string>();
+  beforeAll(async () => {
+    const [drinks] = await ctx.db
+      .select()
+      .from(productCategory)
+      .where(and(eq(productCategory.operatorId, operatorId), eq(productCategory.name, 'Drinks')));
+    const scopes: [string, Record<string, unknown>][] = [
+      ['fnb', { kind: 'fnb' }],
+      ['merch', { kind: 'merch' }],
+      ['fnbCategory', { kind: 'fnbCategory', category: drinks!.id }],
+      ['menuItems', { kind: 'menuItems', menuItemIds: [items.get('FB-LATTE')!.id] }],
+      ['addOns', { kind: 'addOns' }],
+    ];
+    for (const [scope, target] of scopes) {
+      const code = `TENOFF-${scope.toUpperCase()}`;
+      CODE_BY_SCOPE.set(scope, code);
+      await ctx.db.insert(discountDefinition).values({
+        id: newId(),
+        operatorId,
+        code,
+        label: '10% off',
+        kind: 'percent',
+        valueBp: 1000,
+        target,
+      });
+    }
+  });
+  /** The scope's code, with the till's own description of it beside the code. */
+  const promo = (target: { kind: string; [detail: string]: unknown }) => ({
+    code: CODE_BY_SCOPE.get(target.kind)!,
     label: '10% off',
     type: 'percent' as const,
     value: 10,

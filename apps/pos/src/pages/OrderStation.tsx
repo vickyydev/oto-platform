@@ -56,6 +56,7 @@ import { menuIsServerBacked } from '@/api/menu';
 import {
   buildItemCartPayload,
   offLedgerOnly,
+  refusedPromoCodes,
   type ApiSale,
   type ItemCartIdentity,
   type SaleCartPayload,
@@ -688,7 +689,10 @@ export default function OrderStation() {
    * against THIS order — its scope, its window, its limits — before it is
    * applied, the way the ticket till checks one (`pages/Till.tsx`). What makes
    * a code applicable here is `lib/itemPromo.ts`: the same engine, over the
-   * same rows, that the platform will price the order with.
+   * same rows, that the platform will price the order with. The platform reads
+   * the code from the park's own definition, not this station's copy of it
+   * (SCRUM-401), so a code the copy still passes can come back refused, and it
+   * then comes off the order with the platform's reason (below).
    */
   const handleApplyPromoCode = (code: string) => {
     // S2-10b — no promo code beside a voucher: the platform's own rule, said
@@ -724,6 +728,34 @@ export default function OrderStation() {
     setPromoCodes((prev) => prev.filter((promo) => promo.code !== code));
     setPromoError('');
   };
+
+  /**
+   * SCRUM-401 — A CODE THE PLATFORM REFUSED COMES OFF THE ORDER, as it does on
+   * the ticket till (`pages/Till.tsx`).
+   *
+   * The platform prices every code from the park's own definition, so a code
+   * this station's copy still honours can come back refused on the quote. The
+   * panel draws code badges from the platform's figures, which leaves a refused
+   * code with no badge and no remove button. Kept, it would be sent with every
+   * quote and commit, it would still count in this station's own stacking check
+   * (`validateItemPromoCode`), refusing the next code against one nobody can
+   * see, and typed again it would be "already applied". So it is taken off as
+   * its remove button would take it, and the platform's reason goes on the promo
+   * box's refusal line, after the removal has cleared it (`refusedPromoCodes`).
+   *
+   * Keyed on the quote alone: the platform's answer replaces it only when it is
+   * about the order on screen, codes included, and the removal changes the
+   * order, so each answer is acted on once.
+   */
+  useEffect(() => {
+    const refused = refusedPromoCodes(order.quote, promoCodes);
+    if (refused.length === 0) return;
+    for (const { code } of refused) handleRemovePromoCode(code);
+    setPromoError(refused.map((rejected) => rejected.reason).join(' '));
+    // `promoCodes` is read as it stands with this quote, which was answered for
+    // it; `handleRemovePromoCode` is redefined every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order.quote]);
 
   /**
    * S2-10b — A VOUCHER CODE, HOWEVER IT ARRIVED: the box's scanner through the

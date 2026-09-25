@@ -50,7 +50,6 @@ import {
   type ManualDiscount,
   type PrepStation,
   type PricingContext,
-  type PromoDiscount,
   type TaxableCategory,
   type TaxConfigShape,
   type TicketCartLine,
@@ -70,6 +69,13 @@ import {
 } from './payments/attempt';
 import { resolveDrawerKick, type DrawerKick } from './payments/drawer';
 import { resolveLineVariant, variantLineLabel } from './product-variants';
+import {
+  resolveCartPromos,
+  unknownPromoCode,
+  type FreeItemLine,
+  type PromoDifference,
+  type PromoPricing,
+} from './promo-codes';
 import {
   assertModifierSelection,
   effectiveModifierGroups,
@@ -257,22 +263,26 @@ export interface CartInput {
   pickupCode?: string;
   manualDiscounts?: ManualDiscountInput[];
   /**
-   * Promo codes the till resolved from its own catalogue.
+   * The park's promo codes the till applied, in the order it applied them.
    *
-   * THE PLATFORM HAS NO PROMO-CODE TABLE YET — the Discounts and promo codes
-   * panel is S2-09b — so there is nothing here to validate a code's limits,
-   * its expiry or its very existence against, and the definition arrives with
-   * the code. What keeps that from being a discount anybody can write is the
-   * same thing that governs a manual one: `pos:sale:discount`, an audited row
-   * naming who applied it, and the discounts-given report. It grants no
-   * authority a staff member does not already have — there is no manager
-   * approval step on discounts anywhere in this system, by design (R-08).
-   * When S2-09b lands the catalogue, the definition comes from it and this
-   * becomes the code alone.
+   * SCRUM-401 — ONLY THE CODE IS READ. Each one is priced from the operator's
+   * own definition in `pos.discount_definition` (`resolveCartPromos`): its
+   * value, its scope, its window, its branch, its stacking rule and its usage
+   * limits. The type, value and target the till sends beside the code are what
+   * it computed from its own copy of the codes, and none of them moves money —
+   * STAFF10 sent as 100 % is priced at 10 %, and a code the park has not set up,
+   * has archived or has switched off is refused by name with nothing taken off.
+   * `pos:sale:discount` still guards a cart carrying any code (the route).
+   *
+   * The one exception is an offline sale replayed from a box, where the money
+   * was taken against the till's copy: see `PromoPricing` (`as_recorded`).
    */
   promos?: PromoDiscountInput[];
   /**
-   * Codes with no definition attached: refused by name, and nothing is taken off.
+   * Codes named alone, with nothing the till computed beside them: refused by
+   * name, and nothing is taken off. The park's discount codes travel in
+   * `promos`, which the till has always filled; a discount code named here is
+   * refused in the words an unknown code gets, exactly as before.
    *
    * S2-10b — EXCEPT A VOUCHER'S. A booth voucher (or any voucher held at this
    * till) named here is resolved by `resolveCartVoucher` and priced from its
@@ -311,6 +321,13 @@ export interface CartInput {
   tierClaimActionId?: string | null;
 }
 
+/**
+ * A promo code as the till applied it. `code` is what the platform prices, from
+ * the park's definition; everything beside it is the till's own reading of its
+ * copy of that definition, never used for money — except on an offline sale
+ * replayed as recorded, where the money was already taken at this value
+ * (`PromoPricing`) and a difference is flagged rather than charged.
+ */
 export interface PromoDiscountInput {
   code: string;
   label: string;
@@ -610,6 +627,18 @@ export interface PricedCart {
   lines: PricedLine[];
   manualDiscounts: ManualDiscountInput[];
   rejectedPromoCodes: { code: string; reason: string }[];
+  /**
+   * SCRUM-401 — the promos the engine priced, as it priced them: the park's
+   * codes from their definitions (`resolveCartPromos`), or the voucher's. Kept
+   * so each discount row records the value that was charged and the line it was
+   * aimed at, rather than anything the till described.
+   */
+  promos: CartPromo[];
+  /**
+   * SCRUM-401 — an offline sale replayed as recorded: each code whose recorded
+   * value the park's definition does not give today. Empty on every other cart.
+   */
+  promoDifferences: PromoDifference[];
   /** The engine's own cart lines, kept so the committer prices nothing twice. */
   cartLines: TicketCartLine[];
   /** S2-10b — the voucher this cart carries, as the platform priced it. Null when none. */
@@ -1085,6 +1114,10 @@ async function resolveItemLines(
  * configuration, then hands the whole thing to `computeTicketCartTotals` — the
  * same function the public booking quote and the regression fixtures run
  * through.
+ *
+ * `promoPricing` is `definition` for every cart a till quotes or commits: each
+ * promo code is priced from the park's definition. Only the offline replay
+ * passes `as_recorded` (see `PromoPricing`).
  */
 export async function priceCart(
   db: Exec,
@@ -1092,6 +1125,7 @@ export async function priceCart(
   input: CartInput,
   now: Date = new Date(),
   voucherScope: CartVoucherScope = { mode: 'quote', stationId: null },
+  promoPricing: PromoPricing = 'definition',
 ): Promise<PricedCart> {
   const branchId = input.branchId ?? actor.branchId;
   if (!branchId) throw errors.badRequest('No active branch on this session');
@@ -1352,25 +1386,50 @@ export async function priceCart(
     throw errors.badRequest('The cart is empty');
   }
 
-  // A code with no definition attached has nothing to validate it against
-  // (S2-09b owns the catalogue), so it is refused by name and takes nothing
-  // off the bill rather than being guessed at.
-  const rejectedPromoCodes = voucherCart.otherCodes.map((code) => ({
-    code,
-    reason: `Code "${code}" isn't set up at this branch yet.`,
-  }));
-  const tillPromos: PromoDiscount[] = (input.promos ?? []).map((promo) => ({
-    code: promo.code,
-    label: promo.label,
-    type: promo.type,
-    value: promo.value,
-    ...(promo.freeItemId ? { freeItemId: promo.freeItemId } : {}),
-    ...(promo.freeItemKind ? { freeItemKind: promo.freeItemKind } : {}),
-    ...(promo.target ? { target: promo.target as PromoDiscount['target'] } : {}),
-  }));
+  /**
+   * SCRUM-401 — THE PARK'S PROMO CODES, priced from their definitions and never
+   * from the till: `resolveCartPromos` reads each code's value, scope, window,
+   * branch, stacking rule and usage limits from `pos.discount_definition`, on
+   * this sale's trading day at this branch, and refuses by name whatever it
+   * cannot stand behind. The quote and the commit both come through here, so
+   * they price a code identically.
+   *
+   * A free-item code takes its product off the line that holds it: the ticket
+   * till's own free-item line first, then an F&B or shop line of the product.
+   */
+  const freeItemLines: FreeItemLine[] = [
+    ...cartLines.flatMap((line) =>
+      line.promoItem && !voucherLines.has(line.id)
+        ? [{ lineId: line.id, productId: line.promoItem.itemId, unitSatang: line.lineTotal }]
+        : [],
+    ),
+    ...itemLines.map((item) => ({
+      lineId: item.cartLineId,
+      productId: item.productId,
+      unitSatang: item.cartLine.addOns[0]?.price ?? 0,
+    })),
+  ];
+  const resolvedPromos = await resolveCartPromos(
+    db,
+    {
+      operatorId: actor.operatorId,
+      branchId: scope.branchId,
+      businessDate: scope.businessDate,
+      memberId: input.memberId ?? null,
+    },
+    input.promos ?? [],
+    freeItemLines,
+    promoPricing,
+  );
+  // A code named alone, and the codes the definitions refused: each by name,
+  // and nothing comes off the bill for any of them.
+  const rejectedPromoCodes = [
+    ...voucherCart.otherCodes.map((code) => ({ code, reason: unknownPromoCode(code) })),
+    ...resolvedPromos.rejected,
+  ];
   // A voucher never shares a cart with another promo (`resolveCartVoucher`),
   // so this is one list or the other.
-  const promos: CartPromo[] = voucherInputs ? [voucherInputs.promo] : tillPromos;
+  const promos: CartPromo[] = voucherInputs ? [voucherInputs.promo] : resolvedPromos.promos;
 
   const totals = computeTicketCartTotals(
     cartLines,
@@ -1483,6 +1542,8 @@ export async function priceCart(
     lines,
     manualDiscounts,
     rejectedPromoCodes,
+    promos,
+    promoDifferences: resolvedPromos.differences,
     cartLines,
     voucher: pricedVoucher,
   };
@@ -2203,6 +2264,17 @@ export interface CommitResult {
   rejectedPromoCodes: { code: string; reason: string }[];
   /** S2-10b — the voucher this sale was priced with, when it carries one. */
   voucher: Omit<PricedVoucher, 'promo'> | null;
+  /**
+   * SCRUM-401 — set only when the codes were priced as recorded (the offline
+   * replay): each code whose recorded value the park's definition does not give
+   * today. Never set on a till's own commit, so the route's answer is unchanged.
+   */
+  promoDifferences?: PromoDifference[];
+}
+
+/** How a commit prices its promo codes. Only the offline replay sets it. */
+export interface CommitSaleOptions {
+  promoPricing?: PromoPricing;
 }
 
 /**
@@ -2238,7 +2310,9 @@ export async function commitSale(
   actor: ActorContext,
   input: CommitSaleInput,
   now: Date = new Date(),
+  options: CommitSaleOptions = {},
 ): Promise<CommitResult> {
+  const promoPricing = options.promoPricing ?? 'definition';
   const saleId = input.id ?? newId();
 
   // Replay by the till-minted id.
@@ -2284,6 +2358,7 @@ export async function commitSale(
     input,
     clock.occurredAt,
     { mode: 'commit', saleId, stationId: st.id },
+    promoPricing,
   );
   if (st.branchId !== priced.scope.branchId) {
     throw errors.badRequest('That station belongs to another branch');
@@ -2529,19 +2604,23 @@ export async function commitSale(
       appliedAt: now,
     });
   }
-  // What each code was configured to be worth, by code, so the row can record
-  // the instrument as well as what it took. A voucher's is the platform's own
-  // figure — the definition's amount, the free item's shelf price, one kid's
-  // price — never anything the till described.
+  // What each code was configured to be worth, so the row can record the
+  // instrument as well as what it took — read off the promo the engine priced,
+  // which it reports one for one and in order (`appliedPromos[i]` is
+  // `promos[i]`). That is the platform's own figure: a park code's definition
+  // (SCRUM-401), a voucher's amount, the free item's shelf price, one kid's
+  // price — never anything the till described. An offline sale replayed as
+  // recorded is the one exception, and it records the value the till charged.
   const voucherPromo = priced.voucher?.promo ?? null;
-  /** The line a voucher's markdown was aimed at — the free item's own, or one line's kids. */
-  const aimedAt = (code: string) =>
-    voucherPromo && code === voucherPromo.code ? (voucherPromo.line ?? null) : null;
-  const definitionOf = (code: string): number =>
-    voucherPromo && code === voucherPromo.code
-      ? voucherPromo.value
-      : ((input.promos ?? []).find((promo) => promo.code === code)?.value ?? 0);
-  for (const promo of priced.totals.appliedPromos) {
+  for (const [index, promo] of priced.totals.appliedPromos.entries()) {
+    const charged = priced.promos[index];
+    /**
+     * The line its markdown was aimed at: a voucher's free item or a park
+     * code's free item on its own line, a 1+1 at the kids of one line. Null
+     * for a code that came off the order.
+     */
+    const aimed = charged?.line ?? null;
+    const configured = charged?.value ?? 0;
     sequence += 1;
     await tx.insert(saleDiscount).values({
       id: newId(),
@@ -2558,24 +2637,18 @@ export async function commitSale(
       // `amount_satang` below, and the two differ whenever the balance ran out.
       percentBp:
         promo.type === 'percent'
-          ? voucherPromo && promo.code === voucherPromo.code
+          ? voucherPromo && charged === voucherPromo
             ? voucherConfiguredValue(voucherPromo)
-            : Math.round(definitionOf(promo.code) * 100)
+            : Math.round(configured * 100)
           : null,
-      valueSatang: promo.type === 'percent' ? null : definitionOf(promo.code),
+      valueSatang: promo.type === 'percent' ? null : configured,
       amountSatang: promo.amount,
       allocations: null,
-      // A voucher's free item is aimed at the one line it put on the bill, and a
-      // 1+1 at the kids of one line: the row says which.
-      scope: aimedAt(promo.code)
-        ? aimedAt(promo.code)?.component
-          ? 'component'
-          : 'line'
-        : 'order',
-      targetLineId: aimedAt(promo.code)?.lineId ?? null,
-      targetComponent: aimedAt(promo.code)?.component
-        ? componentKey(aimedAt(promo.code)!.component!)
-        : null,
+      // A free item is aimed at the one line that holds it, and a 1+1 at the
+      // kids of one line: the row says which.
+      scope: aimed ? (aimed.component ? 'component' : 'line') : 'order',
+      targetLineId: aimed?.lineId ?? null,
+      targetComponent: aimed?.component ? componentKey(aimed.component) : null,
       code: promo.code,
       label: promo.label,
       exhaustedReason: promo.exhaustedReason ?? null,
@@ -2674,6 +2747,7 @@ export async function commitSale(
     lines: priced.lines,
     rejectedPromoCodes: priced.rejectedPromoCodes,
     voucher: voucherViewOf(priced.voucher),
+    ...(promoPricing === 'as_recorded' ? { promoDifferences: priced.promoDifferences } : {}),
   };
 }
 

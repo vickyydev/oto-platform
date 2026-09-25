@@ -162,15 +162,28 @@ const ManualDiscount = z.object({
   appliedAt: z.string().max(40).optional(),
 });
 
-const Promo = z.object({
-  code: z.string().min(1).max(40),
-  label: z.string().max(160),
-  type: z.enum(['percent', 'fixed', 'free_item']),
-  value: z.number().min(0).max(100_000_000),
-  freeItemId: z.string().max(100).optional(),
-  freeItemKind: z.enum(['menu', 'merch']).optional(),
-  target: z.unknown().optional(),
-});
+/**
+ * A park promo code as the till applied it. SCRUM-401 — ONLY `code` IS PRICED:
+ * the service reads the code's value, scope, window, branch, stacking rule and
+ * usage limits from the park's own definition (`services/promo-codes.ts`) and
+ * refuses by name a code it has no live definition for. The rest is what the
+ * till computed from its copy of that definition; it is accepted so the till's
+ * payload validates, and it moves no money.
+ */
+const Promo = z
+  .object({
+    code: z.string().min(1).max(40),
+    label: z.string().max(160),
+    type: z.enum(['percent', 'fixed', 'free_item']),
+    value: z.number().min(0).max(100_000_000),
+    freeItemId: z.string().max(100).optional(),
+    freeItemKind: z.enum(['menu', 'merch']).optional(),
+    target: z.unknown().optional(),
+  })
+  .describe(
+    "A promo code as the till applied it. Only the code is priced, from the park's own " +
+      'definition; the type, value and target beside it are the till’s and move no money.',
+  );
 
 /**
  * NOTHING HERE DECIDES A PRICE. The body says what was sold; the platform says
