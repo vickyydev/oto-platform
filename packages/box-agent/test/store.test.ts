@@ -6,7 +6,13 @@ import { canonicalSyncBytes } from '../src/contract';
 import { verifyCanonical } from '../src/signing';
 import { BOX_ID, openTestStore, plus, STATION_ID } from './_support';
 import { BOX_LOCAL_TABLES, clockTrustFor, SqlBoxStore } from '../src/store-sql';
-import { prepareSqliteBoxStore, sqliteBoxDriver } from '../src/store-sqlite';
+import {
+  checkSqliteStore,
+  OUTBOX_COUNT_SQL,
+  prepareSqliteBoxStore,
+  sqliteBoxDriver,
+  type SqliteDatabaseLike,
+} from '../src/store-sqlite';
 import {
   backoffMs,
   BoxStoreFeatureMissingError,
@@ -1017,4 +1023,164 @@ test('a document written by a newer box is refused rather than misread', () => {
       }),
     StoreSchemaTooNewError,
   );
+});
+
+// --- The store's check (SCRUM-403; the outbox's indexes, SCRUM-446) ------------
+
+/** What `node:sqlite` throws, with its result code: 11 malformed, 10 a read refused. */
+function sqliteError(message: string, errcode: number): Error {
+  return Object.assign(new Error(message), { code: 'ERR_SQLITE_ERROR', errcode });
+}
+
+/**
+ * A store as `checkSqliteStore` sees it: what each statement answers, matched
+ * by a piece of its text, and every statement it ran, in order.
+ */
+function fakeStore(answers: Record<string, unknown[] | Error>): { db: SqliteDatabaseLike; ran: string[] } {
+  const ran: string[] = [];
+  const db: SqliteDatabaseLike = {
+    exec(sql) {
+      ran.push(sql);
+    },
+    prepare(sql) {
+      return {
+        all() {
+          ran.push(sql);
+          const key = Object.keys(answers).find((piece) => sql.includes(piece));
+          const answer = key === undefined ? undefined : answers[key];
+          if (answer === undefined) throw new Error(`the check ran a statement the test did not expect: ${sql}`);
+          if (answer instanceof Error) throw answer;
+          return answer;
+        },
+        run() {
+          throw new Error('the check writes nothing');
+        },
+      };
+    },
+    close() {},
+  };
+  return { db, ran };
+}
+
+/** Eight rows in the outbox, three of them unsent, and both indexes agreeing. */
+const HEALTHY_ANSWERS = {
+  quick_check: [{ quick_check: 'ok' }],
+  sqlite_master: [{ name: 'box_outbox' }, { name: 'box_outbox_journal_unique' }, { name: 'box_outbox_send_idx' }],
+  'not indexed': [{ total: 8, unsent: 3 }],
+  'indexed by box_outbox_send_idx': [{ n: 3 }],
+  'indexed by box_outbox_journal_unique': [{ n: 8 }],
+};
+
+test('the check counts the send index against the outbox, which quick_check cannot: fewer unsent rows in the index is damage, named by the index', () => {
+  const { db, ran } = fakeStore({ ...HEALTHY_ANSWERS, 'indexed by box_outbox_send_idx': [{ n: 0 }] });
+  assert.deepEqual(checkSqliteStore(db), {
+    ok: false,
+    problem: 'damaged',
+    detail: 'index box_outbox_send_idx holds 0 unsent row(s) where the table holds 3',
+  });
+  assert.equal(ran.some((sql) => /journal_unique/.test(sql)), false, 'the verdict is made at the first index that is wrong');
+  assert.deepEqual([ran[0], ran[ran.length - 1]], ['begin', 'commit'], 'one read transaction, ended');
+});
+
+test('a journal index short of rows is damage too, named by that index — and an index with more entries than the table is no better', () => {
+  const short = fakeStore({ ...HEALTHY_ANSWERS, 'indexed by box_outbox_journal_unique': [{ n: 7 }] });
+  assert.deepEqual(checkSqliteStore(short.db), {
+    ok: false,
+    problem: 'damaged',
+    detail: 'index box_outbox_journal_unique holds 7 row(s) where the table holds 8',
+  });
+  const over = fakeStore({ ...HEALTHY_ANSWERS, 'indexed by box_outbox_send_idx': [{ n: 5 }] });
+  assert.deepEqual(checkSqliteStore(over.db), {
+    ok: false,
+    problem: 'damaged',
+    detail: 'index box_outbox_send_idx holds 5 unsent row(s) where the table holds 3',
+  });
+});
+
+test('a store whose counts agree is fit, looked at in one read transaction: quick_check, the catalogue, one table walk, two index walks', () => {
+  const { db, ran } = fakeStore(HEALTHY_ANSWERS);
+  assert.deepEqual(checkSqliteStore(db), { ok: true });
+  assert.deepEqual(ran, [
+    'begin',
+    'pragma quick_check(10)',
+    'select name from sqlite_master where name in (?, ?, ?)',
+    OUTBOX_COUNT_SQL.table,
+    OUTBOX_COUNT_SQL.sendIndex,
+    OUTBOX_COUNT_SQL.journalIndex,
+    'commit',
+  ]);
+});
+
+test('a file with no outbox yet — one made before its first prepare — has nothing to count and is fit; an index the file lacks is not counted either', () => {
+  const bare = fakeStore({ quick_check: [{ quick_check: 'ok' }], sqlite_master: [] });
+  assert.deepEqual(checkSqliteStore(bare.db), { ok: true });
+  assert.equal(bare.ran.some((sql) => /count\(\*\)/.test(sql)), false);
+  const older = fakeStore({
+    ...HEALTHY_ANSWERS,
+    sqlite_master: [{ name: 'box_outbox' }, { name: 'box_outbox_journal_unique' }],
+  });
+  assert.deepEqual(checkSqliteStore(older.db), { ok: true });
+  assert.equal(older.ran.some((sql) => /box_outbox_send_idx/.test(sql)), false);
+  assert.equal(older.ran.some((sql) => /box_outbox_journal_unique/.test(sql)), true);
+});
+
+test("quick_check's own findings come first, and nothing is counted after them", () => {
+  const { db, ran } = fakeStore({
+    ...HEALTHY_ANSWERS,
+    quick_check: [{ quick_check: 'wrong # of entries in index box_outbox_journal_unique' }],
+  });
+  assert.deepEqual(checkSqliteStore(db), {
+    ok: false,
+    problem: 'damaged',
+    detail: 'wrong # of entries in index box_outbox_journal_unique',
+  });
+  assert.equal(ran.some((sql) => /count\(\*\)/.test(sql)), false);
+  assert.equal(ran[ran.length - 1], 'commit');
+});
+
+test('a count the card refuses is named as SQLite names it: malformed is damaged, a refused read is unreadable, and the transaction is ended on the way out', () => {
+  const malformed = fakeStore({ ...HEALTHY_ANSWERS, 'not indexed': sqliteError('database disk image is malformed', 11) });
+  assert.deepEqual(checkSqliteStore(malformed.db), {
+    ok: false,
+    problem: 'damaged',
+    detail: 'database disk image is malformed',
+  });
+  const refused = fakeStore({ ...HEALTHY_ANSWERS, 'indexed by box_outbox_send_idx': sqliteError('disk I/O error', 10) });
+  assert.deepEqual(checkSqliteStore(refused.db), { ok: false, problem: 'unreadable', detail: 'disk I/O error' });
+  assert.equal(refused.ran[refused.ran.length - 1], 'commit');
+});
+
+test('on a real store the three counts walk what they say — the table itself, the send index, the journal index — and a healthy store, rows or none, is fit', () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    prepareSqliteBoxStore(db);
+    const plan = (sql: string) =>
+      (db.prepare(`explain query plan ${sql}`).all() as Array<{ detail: string }>).map((row) => row.detail).join('; ');
+    assert.equal(/\bINDEX\b/i.test(plan(OUTBOX_COUNT_SQL.table)), false, plan(OUTBOX_COUNT_SQL.table));
+    assert.match(plan(OUTBOX_COUNT_SQL.sendIndex), /INDEX box_outbox_send_idx/);
+    assert.match(plan(OUTBOX_COUNT_SQL.journalIndex), /COVERING INDEX box_outbox_journal_unique/);
+
+    assert.deepEqual(checkSqliteStore(db), { ok: true }, 'an outbox with nothing in it');
+    const insert = db.prepare(
+      `insert into box_outbox (event_id, box_id, journal_epoch, box_seq, type, occurred_at, payload,
+                               payload_hash, sig, state, created_at)
+       values (?, ?, 1, ?, 'booth.spin_recorded', ?, '{}', ?, ?, ?, ?)`,
+    );
+    for (let n = 1; n <= 6; n += 1) {
+      insert.run(`ev-${n}`, BOX_ID, n, AT, `h${n}`, `s${n}`, n <= 4 ? 'acked' : 'queued', AT);
+    }
+    const [counted] = db.prepare(OUTBOX_COUNT_SQL.table).all() as Array<{ total: number; unsent: number }>;
+    assert.equal(counted?.total, 6);
+    assert.equal(counted?.unsent, 2);
+    assert.deepEqual(checkSqliteStore(db), { ok: true }, 'sent and unsent rows alike');
+  } finally {
+    db.close();
+  }
+  // A database with no tables at all: nothing to count, nothing wrong.
+  const empty = new DatabaseSync(':memory:');
+  try {
+    assert.deepEqual(checkSqliteStore(empty), { ok: true });
+  } finally {
+    empty.close();
+  }
 });

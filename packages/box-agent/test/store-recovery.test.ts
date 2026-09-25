@@ -27,12 +27,13 @@ import { main, type CliStreams } from '../src/runner/cli';
 import { runnerPaths } from '../src/runner/home';
 import {
   claimBox,
+  inspectStoreFile,
   startRunner,
   type OpenDatabase,
   type RunningBox,
   type SalvageDocument,
 } from '../src/runner/runtime';
-import { prepareSqliteBoxStore, UNSENT_OUTBOX_SQL } from '../src/store-sqlite';
+import { prepareSqliteBoxStore, UNSENT_OUTBOX_SQL, type SqliteStoreCheck } from '../src/store-sqlite';
 import type { AgentFetch, AgentLog, AgentResponse } from '../src/transport';
 import { BRANCH_ID, OPERATOR_ID } from './_support';
 
@@ -427,6 +428,13 @@ function lastHeartbeatErrors(cloud: FakeCloud): Array<{ fingerprint: string; cod
   return (beat?.errors ?? []) as Array<{ fingerprint: string; code: string; count: number }>;
 }
 
+/** The look's verdict, which the test expects to be a failure, narrowed to say why. */
+function failed(check: SqliteStoreCheck): { problem: 'unreadable' | 'damaged'; detail: string } {
+  assert.equal(check.ok, false, 'the look found nothing wrong');
+  if (check.ok) throw new Error('unreachable');
+  return check;
+}
+
 function lastHeartbeat(cloud: FakeCloud): Record<string, unknown> {
   return cloud.heartbeats[cloud.heartbeats.length - 1] ?? {};
 }
@@ -708,6 +716,11 @@ test('a store that passes the look and fails as it is prepared, "malformed", is 
 test('a good store: health 200, no notice, a press is recorded, and the heartbeat carries no store fault', async () => {
   const cloud = fakeCloud();
   const home = await ranOnce(cloud);
+  assert.deepEqual(
+    await inspectStoreFile(runnerPaths(home).database),
+    { ok: true },
+    'the look — quick_check and the outbox counted against its indexes — finds nothing',
+  );
   const box = await run(home, cloud);
   try {
     const health = await hit(box.port, 'GET', '/kiosk/health');
@@ -886,6 +899,12 @@ test('the salvage reads the outbox table, not its send index: a damaged index pa
   queueUnsent(paths.database, 5);
   // The send index's one page, damaged; every row is intact in the table.
   damagePage(paths.database, 'box_outbox_send_idx');
+  // Found by quick_check itself, in SQLite's words — not by the count that
+  // finds a stale index (SCRUM-446), which is never made on a page it cannot read.
+  const looked = failed(await inspectStoreFile(paths.database));
+  assert.equal(looked.problem, 'damaged');
+  assert.match(looked.detail, /btreeInitPage|page \d+/i);
+  assert.doesNotMatch(looked.detail, /holds/);
 
   const box = await run(home, cloud);
   try {
@@ -932,9 +951,10 @@ test('a send index the card left stale hides no unsent row: the salvage counts t
   const home = await ranOnce(cloud);
   const database = runnerPaths(home).database;
   // The send index's page as it stood with nothing unsent; three facts the
-  // cloud never had; that page written back. The index still reads well —
-  // the look the box takes does not match an index against its table — and
-  // says nothing is unsent. Damage elsewhere is what stops the box.
+  // cloud never had; that page written back. The index still reads well and
+  // says nothing is unsent. Damage elsewhere too, so the box stops on
+  // quick_check's own word and what is proved here is the salvage's read;
+  // the stale index alone is the next test (SCRUM-446).
   const before = readRootPage(database, 'box_outbox_send_idx');
   queueUnsent(database, 3);
   writePageBack(database, before);
@@ -966,6 +986,68 @@ test('a send index the card left stale hides no unsent row: the salvage counts t
     // Three, so the Console goes on refusing Reset the store.
     await box.agent.heartbeat();
     assert.equal(lastHeartbeat(cloud).outboxDepth, 3);
+  } finally {
+    await box.stop();
+  }
+
+  const io = streams();
+  assert.equal(await main(['status', '--home', home], io), 0);
+  assert.match(io.out(), /^outbox {6}3 fact\(s\) waiting to reach the cloud/m);
+});
+
+test('a send index the card left stale, and nothing else wrong, is found at open (SCRUM-446): quick_check passes, the store is damaged with the index named, the booth needs service, and the salvage holds every unsent row', async () => {
+  const cloud = fakeCloud();
+  const home = await ranOnce(cloud);
+  const database = runnerPaths(home).database;
+  // The crafting above, alone: the send index's page as it stood with
+  // nothing unsent, three facts the cloud never had, that page written back.
+  const before = readRootPage(database, 'box_outbox_send_idx');
+  queueUnsent(database, 3);
+  writePageBack(database, before);
+  // The premise. SQLite's own check counts a whole index against its table
+  // and cannot count a partial one, so it passes this file; and read through
+  // the index, the store has nothing unsent.
+  assert.equal(readRows<{ quick_check: string }>(database, 'pragma quick_check')[0]?.quick_check, 'ok');
+  assert.equal(
+    readRows<{ n: number }>(database, `select count(*) as n from box_outbox where state in ('queued', 'sending')`)[0]?.n,
+    0,
+  );
+
+  // The look the box takes counts the index against the table, and names the index.
+  const looked = failed(await inspectStoreFile(database));
+  assert.equal(looked.problem, 'damaged');
+  assert.equal(looked.detail, 'index box_outbox_send_idx holds 0 unsent row(s) where the table holds 3');
+
+  const { log, lines } = capture();
+  const box = await run(home, cloud, { log });
+  try {
+    const health = await hit(box.port, 'GET', '/kiosk/health');
+    assert.equal(health.status, 503);
+    assert.equal(health.json().store, 'damaged');
+    assert.equal(health.json().salvaged, 3, 'every unsent row, where the index gave none');
+    assert.equal(health.json().salvageError, null);
+    const saved = JSON.parse(readFileSync(String(health.json().salvageFile), 'utf8')) as SalvageDocument;
+    assert.equal(saved.complete, true);
+    assert.deepEqual(
+      saved.events.map((e) => e.event_id),
+      ['ev-1', 'ev-2', 'ev-3'],
+    );
+    assert.equal(box.storeFault?.store, 'damaged');
+    assert.match(String(box.storeFault?.detail), /box_outbox_send_idx/, 'the fault names the index');
+    const said = lines.find((l) => l.level === 'error' && /needs service/.test(l.msg));
+    assert.match(
+      String(said?.obj.detail),
+      /index box_outbox_send_idx holds 0 unsent row\(s\) where the table holds 3/,
+      'and so does the log',
+    );
+    assert.deepEqual((await hit(box.port, 'GET', '/kiosk/state')).json().service, { store: 'damaged' });
+    const spin = await hit(box.port, 'POST', '/booth/spin', { idempotencyKey: 'stale-446' });
+    assert.equal(spin.status, 503, 'no booth runs on a file the card has lost a write to');
+
+    // Three, so the Console goes on refusing Reset the store; and the fault rides the heartbeat.
+    await box.agent.heartbeat();
+    assert.equal(lastHeartbeat(cloud).outboxDepth, 3);
+    assert.equal(lastHeartbeatErrors(cloud)[0]?.code, 'box.store_damaged');
   } finally {
     await box.stop();
   }

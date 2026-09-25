@@ -275,7 +275,8 @@ export function prepareSqliteBoxStore(db: SqliteDatabaseLike): void {
  * `unreadable`: SQLite cannot read it as a database at all — a card that lost
  * the writes it said were saved, a file overwritten, a read that fails.
  * `damaged`: it opens, and its integrity check finds pages that contradict
- * each other. Both leave the booth unable to record a spin, and both are
+ * each other — or an index of the outbox that contradicts the outbox
+ * (SCRUM-446). Both leave the booth unable to record a spin, and both are
  * mended the same way (PI_BOOTH.md §7, "A damaged store").
  */
 export type SqliteStoreProblem = 'unreadable' | 'damaged';
@@ -285,27 +286,88 @@ export type SqliteStoreCheck =
   | {
       ok: false;
       problem: SqliteStoreProblem;
-      /** SQLite's own words, for the box log: page numbers, never contents. */
+      /**
+       * SQLite's own words, for the box log: page numbers, never contents —
+       * or, for an index that contradicts its table, the index's name and
+       * the two counts.
+       */
       detail: string;
     };
 
 /** SQLite's primary result code for a file whose pages contradict each other. */
 const SQLITE_CORRUPT = 11;
 
+/** The outbox and the two indexes the box reads it through, as `sqlite_master` names them. */
+const OUTBOX_TABLE = 'box_outbox';
+const OUTBOX_SEND_INDEX = 'box_outbox_send_idx';
+const OUTBOX_JOURNAL_INDEX = 'box_outbox_journal_unique';
+
+/**
+ * The outbox counted three ways at open, for `checkSqliteStore` (SCRUM-446).
+ *
+ * `table`: the outbox itself, `not indexed`, in one walk — every row, and
+ * the unsent ones among them. `sendIndex`: the unsent rows as
+ * `box_outbox_send_idx` has them; `indexed by` pins the read to the index
+ * where a plain read only usually goes there, and the condition is the
+ * index's own, so the walk is of the index and of nothing else.
+ * `journalIndex`: every row as `box_outbox_journal_unique` has them —
+ * `box_id is not null` is every row (the column is `not null`) and gives
+ * `indexed by` a condition to hold, where a bare `count(*)` takes whichever
+ * b-tree is smallest whatever it is told. A test pins the three plans.
+ */
+export const OUTBOX_COUNT_SQL = {
+  table: `select count(*) as total, count(case when state in ('queued', 'sending') then 1 end) as unsent from box_outbox not indexed`,
+  sendIndex: `select count(*) as n from box_outbox indexed by box_outbox_send_idx where state in ('queued', 'sending')`,
+  journalIndex: `select count(*) as n from box_outbox indexed by box_outbox_journal_unique where box_id is not null`,
+} as const;
+
 /**
  * Is this store fit to run a booth on?
  *
  * `pragma quick_check` rather than `integrity_check`: it reads every page and
  * checks every b-tree, which is what a card that lost writes breaks, and skips
- * matching each index against its table, which is what makes the full check
- * slow. Run BEFORE `prepareSqliteBoxStore`, because preparing writes — the WAL
- * switch, a missing table — and nothing should be written into a file that is
- * about to be read for what it still holds. A damaged file is found here and
- * not at the first press: `prepareSqliteBoxStore` succeeds on a file whose
- * outbox page is gone, and every press then failed while the kiosk's health
- * said all was well (closing audit M16, "nearby").
+ * matching each index entry against its table row, which is what makes the
+ * full check slow. Run BEFORE `prepareSqliteBoxStore`, because preparing
+ * writes — the WAL switch, a missing table — and nothing should be written
+ * into a file that is about to be read for what it still holds. A damaged
+ * file is found here and not at the first press: `prepareSqliteBoxStore`
+ * succeeds on a file whose outbox page is gone, and every press then failed
+ * while the kiosk's health said all was well (closing audit M16, "nearby").
+ *
+ * Then the outbox's indexes are counted against the outbox (SCRUM-446).
+ * `quick_check` counts the entries of a whole index against its table's rows
+ * ("wrong # of entries in index …"), but a partial index holds only the rows
+ * its condition picks, so there is no number to count it against — and
+ * `box_outbox_send_idx` is partial. A card that lost the write to that one
+ * page leaves a store `quick_check` passes, whose unsent rows are in the
+ * table and not in the index: the salvage reads the table
+ * (`UNSENT_OUTBOX_SQL`), but a box that RUNS on such a store runs on a file
+ * the card has already lost a write to. So the unsent rows are counted in
+ * the table and in the index, and a difference is damage, named by the
+ * index. The journal index — the one `takeBatch` and `depth` search by box
+ * id — is counted the same way, so the hot path's index does not rest on
+ * which counts a build of SQLite makes in quick mode. One table walk of a
+ * file `quick_check` has just read, and two index walks; all of it in one
+ * read transaction, so the counts are of the file `quick_check` saw and not
+ * of one a running box writes to between two statements (`oto-box claim`
+ * looks at the store while the service may be running on it).
  */
 export function checkSqliteStore(db: SqliteDatabaseLike): SqliteStoreCheck {
+  try {
+    db.exec('begin');
+  } catch (err) {
+    return { ok: false, problem: sqliteProblemOf(err), detail: sqliteMessage(err) };
+  }
+  try {
+    const quick = quickCheck(db);
+    return quick.ok ? checkOutboxIndexes(db) : quick;
+  } finally {
+    endRead(db);
+  }
+}
+
+/** `pragma quick_check`, as SQLite answers it: one row `ok`, or what it found. */
+function quickCheck(db: SqliteDatabaseLike): SqliteStoreCheck {
   let rows: unknown[];
   try {
     rows = db.prepare('pragma quick_check(10)').all();
@@ -313,7 +375,7 @@ export function checkSqliteStore(db: SqliteDatabaseLike): SqliteStoreCheck {
     return { ok: false, problem: sqliteProblemOf(err), detail: sqliteMessage(err) };
   }
   const lines = rows
-    .map((row) => (row && typeof row === 'object' ? Object.values(row)[0] : row))
+    .map(firstColumn)
     .map((value) => String(value ?? '').trim())
     .filter((line) => line !== '');
   if (lines.length === 1 && lines[0] === 'ok') return { ok: true };
@@ -322,6 +384,76 @@ export function checkSqliteStore(db: SqliteDatabaseLike): SqliteStoreCheck {
     problem: 'damaged',
     detail: (lines.join(' | ') || 'the integrity check gave no answer').slice(0, 500),
   };
+}
+
+/**
+ * The outbox's indexes against the outbox (`OUTBOX_COUNT_SQL`). A store
+ * without the table, or without an index — a file made before the index was,
+ * which `prepareSqliteBoxStore` then gives it — has nothing to compare yet.
+ */
+function checkOutboxIndexes(db: SqliteDatabaseLike): SqliteStoreCheck {
+  try {
+    const present = new Set(
+      db
+        .prepare('select name from sqlite_master where name in (?, ?, ?)')
+        .all(OUTBOX_TABLE, OUTBOX_SEND_INDEX, OUTBOX_JOURNAL_INDEX)
+        .map((row) => String(firstColumn(row) ?? '')),
+    );
+    if (!present.has(OUTBOX_TABLE)) return { ok: true };
+    const [counted] = db.prepare(OUTBOX_COUNT_SQL.table).all();
+    const total = countIn(counted, 'total');
+    const unsent = countIn(counted, 'unsent');
+    if (present.has(OUTBOX_SEND_INDEX)) {
+      const indexed = countIn(db.prepare(OUTBOX_COUNT_SQL.sendIndex).all()[0], 'n');
+      if (indexed !== unsent) {
+        return {
+          ok: false,
+          problem: 'damaged',
+          detail: `index ${OUTBOX_SEND_INDEX} holds ${indexed} unsent row(s) where the table holds ${unsent}`,
+        };
+      }
+    }
+    if (present.has(OUTBOX_JOURNAL_INDEX)) {
+      const indexed = countIn(db.prepare(OUTBOX_COUNT_SQL.journalIndex).all()[0], 'n');
+      if (indexed !== total) {
+        return {
+          ok: false,
+          problem: 'damaged',
+          detail: `index ${OUTBOX_JOURNAL_INDEX} holds ${indexed} row(s) where the table holds ${total}`,
+        };
+      }
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, problem: sqliteProblemOf(err), detail: sqliteMessage(err) };
+  }
+}
+
+/**
+ * The read transaction `checkSqliteStore` opened, ended. A read has nothing
+ * to keep: a commit that fails is rolled back, and one that cannot be is let
+ * go — whoever opened the connection is about to close it.
+ */
+function endRead(db: SqliteDatabaseLike): void {
+  try {
+    db.exec('commit');
+  } catch {
+    try {
+      db.exec('rollback');
+    } catch {
+      /* nothing was open */
+    }
+  }
+}
+
+function firstColumn(row: unknown): unknown {
+  return row && typeof row === 'object' ? Object.values(row)[0] : row;
+}
+
+/** One named count out of a row, as a number; a row that is not there counts nothing. */
+function countIn(row: unknown, column: string): number {
+  const value = row && typeof row === 'object' ? (row as Record<string, unknown>)[column] : undefined;
+  return typeof value === 'number' ? value : Number(value ?? 0);
 }
 
 /**
@@ -356,7 +488,10 @@ export interface OutboxSalvage {
  * the Console, which allows Reset the store only for a box with nothing
  * unsent. No ORDER BY either, for the same reason: the table is walked in its
  * own order, and the rows are put in journal order after. `oto-box status`
- * counts the outbox with the same condition (`runner/cli.ts`).
+ * counts the outbox with the same condition (`runner/cli.ts`). Since
+ * SCRUM-446 a stale send index is found at open (`checkSqliteStore`), so a
+ * box never runs on one; the salvage still reads the table, for the store
+ * whose damage is somewhere else.
  */
 export const UNSENT_OUTBOX_SQL = `select * from box_outbox not indexed where state in ('queued', 'sending')`;
 
