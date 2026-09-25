@@ -297,6 +297,40 @@ different; the Pi runtime and the counter were not built at all).**
   multi-staff attribution plan's six choices). Next after the bench: the
   audit's follow-ups SCRUM-401…430 in their priority order, then the Sprint 2
   order that waited (391, 388, 382, Slice F, …).
+- **Quick rounds after READY (25 Sept, 11:00–15:12).** The owner's instruction
+  of the afternoon: small defects and minor changes go on Fable quick rounds (one
+  fix agent, one light check, no long gates); stories and functional tasks stay on
+  Opus with full gates and every test case; every landing gets a Jira comment with
+  its proof; layout and responsiveness fixes are allowed, no design change without
+  permission; nothing extra without approval. His printer is an **Epson TM-T82IV
+  on Ethernet** — the Pi guide names it and how to read its address (`a34acb0`);
+  the red button stays Space, changeable in Console → Booths → Booth settings →
+  Button key (already built). Landed, each with a comment and the ticket in
+  Testing: `cf9b9df` CI packs the Pi release and checks the Pi scripts (the CI
+  part of SCRUM-422); `51e1988` + `815e7db` SCRUM-409 (the Console asks before
+  changing a voucher type's worth and names the unredeemed count); `494b6d6`
+  SCRUM-430 (History shows who voided and why, re-reads the list, hides Refund)
+  + SCRUM-424 (a timeout per scan poll, away from visibility); `4dc6cd7`
+  SCRUM-411 (migration 0023: a BEFORE TRUNCATE trigger on the ledger — the
+  non-owner database role half is a hosting step, flagged on the ticket);
+  `1bdc8d4` SCRUM-413 + 427 (a print fact must name the booth's own voucher and
+  a requester on its staff list; a voucher's type must have been on a published
+  wheel of that booth); `b39d39b` SCRUM-417 (the 1+1 aims at the line with the
+  most kid value left; a void gives the tier check back); `befdcf1` SCRUM-418
+  (atomic credential, the claim code at a prompt, status before claim, 32-bit
+  refusal, persistent journal, the SSH state named — keys-only stays opt-in,
+  flagged); `4bbb4fd` SCRUM-414 (the box remembers its minted codes and draws
+  again; a booth prefix is unique per operator; the collision test re-staged as
+  a second booth's fact, since one box no longer repeats itself). Staging ran
+  `494b6d6` on all five services at 14:35. **In flight:** SCRUM-429 (Opus, gated — a printer that answered before the job and is silent after it is failed with `PRINTER_SILENT_AFTER_JOB`, never recorded printed; `wf_753dddc0`), the sale view's `voidedAt`/`voidedByAccountId`/`voidReason` for History (`wf_30ab5eb0`), SCRUM-420 paper width (`wf_b71ff105`).
+  **Next:** land what is in flight; re-pack the Pi release at the batch's head
+  and send it with its SHA-256 (the owner's `8ffe856` release still benches —
+  nothing landed since blocks the bench); one combined staging pass with a
+  screenshot per ticket → Deployed for the screen-facing ones (409, 430, 424,
+  420), the api-only ones with the staging answer or the test run as the image;
+  then Opus rounds SCRUM-402 (the Pi's clock) and SCRUM-401 (promo codes priced
+  by the platform), then the rest of 401–429 by priority. Deployed still needs
+  a staging screenshot per ticket.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as

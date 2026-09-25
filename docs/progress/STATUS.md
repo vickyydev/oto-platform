@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-25, 10:14 (`main` at `be7139d` plus this checkpoint; staging at `8ffe856`)_
+_Last updated: 2026-09-25, 15:12 (`main` at `4bbb4fd` plus this checkpoint; staging at `494b6d6`, later commits in CI)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
@@ -78,6 +78,11 @@ big fixes held at `8ffe856` (three small History gaps → SCRUM-430, Low). **REA
 the owner's bench test**: the release `oto-box-0.1.0-8ffe856.tgz` is with him, the
 guides are `docs/ops/PI_BOOTH.md`, `BOOTH_SETUP.md` and `COUNTER_VOUCHERS.md`, the
 bench steps are in `plans/booth/PLAN.md`. Everything below waits behind the bench.
+While he benches, the audit's small follow-ups land as quick rounds (the handover's
+"Quick rounds after READY"): SCRUM-409, 411, 413, 414, 417, 418, 424, 427 and 430 are
+on `main` in Testing; SCRUM-420 and 429 and the sale view's void fields are in flight;
+SCRUM-402 and 401 (High) come next on Opus. The owner's rule since 25 Sept: small
+defects on Fable quick rounds, stories on Opus with full gates.
 
 **Then the recommended order, still the owner's to confirm**, with the reasoning in
 `SESSION_HANDOVER.md`:
