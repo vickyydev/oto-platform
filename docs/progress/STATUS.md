@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-25, 23:34 (`main` at `3cc8963` plus this checkpoint; staging follows CI)_
+_Last updated: 2026-09-26, 23:57 (STOP POINT — see the handover's first block; `main` at `01423b6`; staging at `3cc8963`)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the

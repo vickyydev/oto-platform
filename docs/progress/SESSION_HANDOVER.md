@@ -489,6 +489,20 @@ different; the Pi runtime and the counter were not built at all).**
   index passes quick_check) and SCRUM-447 (a re-registered box gets no fresh
   journal number from the platform — an api fix). SCRUM-443 waits on the
   owner's choice. **Running:** SCRUM-433's remainder with 441 on Opus (`wf_ae8cd82b`, migration 0025), r20 (`wf_8b932364`: 423's honest names and the booth fake). Watchers: the first CI run with the Console tests against the built bundle (`9ccc893`), and CI, the Pi artifact and staging at `e33bf12`; the next Pi release goes to the owner when that run is green.
+- **STOP POINT (26 Sept, 23:57).** The owner: the defect rounds and the ticket creation
+  were "never ending"; the sprint's stories cover the rest; the focus is the booth, the
+  voucher wheel and sales, and the next step is HIS bench test with the real devices.
+  Rule from here: no new audit or defect rounds, no new tickets unless he asks or a defect
+  blocks the bench; a gate's residuals go in one line of the ticket's comment, never
+  into a new ticket. The five rounds that were mid-flight when he wrote (SCRUM-445, 446,
+  412, 422's till lint, 425) were stopped and their unverified working-tree edits
+  reverted; at his word they were relaunched fresh from their saved scripts to finish
+  and land, after which the tree stays at the last pushed commit. Everything landed is
+  pushed (`01423b6`, CI running; staging at `3cc8963`); the release for the bench is
+  `oto-box-0.1.0-3cc8963.tgz` on his Desktop; the guides are `docs/ops/PI_BOOTH.md`,
+  `BOOTH_SETUP.md`, `COUNTER_VOUCHERS.md`; the bench steps are in
+  `plans/booth/PLAN.md`. His open questions (443, 407, 428, 401's three, 434, 431's
+  timing, 433's code field) are answered by the narrowest reading; none blocks the bench.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
