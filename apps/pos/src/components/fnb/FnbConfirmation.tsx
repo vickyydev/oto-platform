@@ -43,7 +43,8 @@ interface FnbConfirmationProps {
   flowLayout?: boolean;
   /**
    * S2-10b — one line under the order's number, for what the payment also did:
-   * the Lucky Wheel voucher it used up (`components/till/RedeemVoucher`).
+   * the Lucky Wheel voucher it used up and what to hand over for it
+   * (`VoucherUsedNote` in components/till/RedeemVoucher).
    */
   note?: ReactNode;
 }
@@ -77,10 +78,20 @@ export function FnbConfirmation({
             <CheckCircle2 className="w-11 h-11" />
           </div>
           <h2 className="text-3xl font-bold tracking-tight">Order Confirmed</h2>
-          <div className="flex items-center gap-2 text-primary mt-2 text-lg font-medium">
-            <ChefHat className="w-5 h-5" />
-            Sent to kitchen &amp; bar
-          </div>
+          {/* Said only when a ticket went to a prep station. An order of nothing
+              the kitchen or bar makes — a Lucky Wheel hand-over prize on its own
+              (C2) — sent them nothing, and the line says so. */}
+          {prepTickets.length > 0 ? (
+            <div className="flex items-center gap-2 text-primary mt-2 text-lg font-medium">
+              <ChefHat className="w-5 h-5" />
+              Sent to kitchen &amp; bar
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-muted-foreground mt-2 text-lg font-medium">
+              <ChefHat className="w-5 h-5" />
+              Nothing for the kitchen or bar
+            </div>
+          )}
           {receiptTpl?.headerText && (
             <p className="text-muted-foreground/80 mt-1 text-sm font-semibold tracking-wide">
               {receiptTpl.headerText}

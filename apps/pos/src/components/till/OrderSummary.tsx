@@ -82,8 +82,10 @@ interface OrderSummaryProps {
   /**
    * S2-10b — THE LUCKY WHEEL VOUCHER, in two places the panel already has.
    *
-   * `voucherLine` is the item a free-item voucher puts on the bill, drawn with
-   * the cart's lines (the prototype's free-item row); `voucher` is the Redeem
+   * `voucherLine` is the voucher as a line of the order — the item a free-item
+   * voucher puts on the bill, or the prize a hand-over voucher is (C2) — drawn
+   * with the cart's lines (the prototype's free-item row), so a cart holding
+   * only that is not "No items added yet"; `voucher` is the Redeem
    * voucher entry with the held voucher's card and any refusal, drawn under the
    * promo code box. Both come from the till (`components/till/RedeemVoucher`),
    * which owns what they say; absent on every screen that does not redeem

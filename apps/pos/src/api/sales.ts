@@ -313,6 +313,22 @@ export interface SaleTenderPayload {
 }
 
 /**
+ * THE TENDER OF A SALE THAT OWES NOTHING (L38) — what the ticket till sends to
+ * close a ฿0 sale, where no method was chosen because none was used. The
+ * platform takes no tender and records no payment when nothing is owed
+ * (`finaliseSale` in apps/api/src/services/sale.ts), so these fields are never
+ * read as a payment; `none` names no configured method, and a ฿0 amount is one
+ * the platform refuses to settle anything with should the sale turn out to owe.
+ */
+export const NO_TENDER: SaleTenderPayload = {
+  method: 'none',
+  kind: 'other',
+  amountSatang: 0,
+  tenderedSatang: 0,
+  changeSatang: 0,
+};
+
+/**
  * The finalise body.
  *
  * The tender rides BOTH nested and flat, for the same reason the commit's cart
@@ -582,11 +598,15 @@ export const salesApi = {
       headers: { 'x-oto-action-id': body.actionId },
     }),
   /**
-   * S2-10b — the till's Cancel of a sale rung up that took no money. The reason
-   * is required: a void with none is what the voids report exists to stop. A
-   * fresh key per press, because the platform keeps a refusal under its key as
-   * firmly as an answer, and the tender that refused this void may since have
-   * failed.
+   * S2-10b — void a sale rung up that took no money. Four callers: the till's
+   * Cancel (`cancel` in lib/saleWriter.ts); a corrected order after Pay, which
+   * voids without asking the sale THIS screen rang up (`moveTo` in
+   * lib/tillVoucher.ts, reason `ORDER_CHANGED_AFTER_PAY`); the offer on a
+   * voucher refusal that names an unpaid sale left at this till (`voidRungUp`
+   * in lib/tillVoucher.ts); and History's Void. The reason is required: a void
+   * with none is what the voids report exists to stop. A fresh key per call,
+   * because the platform keeps a refusal under its key as firmly as an answer,
+   * and the tender that refused this void may since have failed.
    */
   voidSale: (saleId: string, reason: string) =>
     api.post<SaleVoidAnswer>(

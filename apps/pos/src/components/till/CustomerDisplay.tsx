@@ -38,6 +38,7 @@ import {
   IdCard,
   BadgeCheck,
   AlertTriangle,
+  Gift,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -117,6 +118,14 @@ interface CustomerDisplayProps {
    * never rides beside a promo code, so with one on the cart that row is its.
    */
   voucherPrize?: { nameEn: string; nameTh: string | null } | null;
+  /**
+   * L38 — THE SALE OWES NOTHING, as the staff half's payment step says ("No
+   * payment needed", `StepPayment`). The payment stage then asks for nothing: it
+   * shows the ฿0, the prize the family won when a voucher is on the sale, and
+   * the display's own "Complimentary — enjoy!" rather than "Please pay ฿0 to our
+   * staff". Only the ticket till sets it; every other caller keeps the stage.
+   */
+  nothingToPay?: boolean;
 }
 
 function ChargeBanner({ target }: { target: ChargeTarget }) {
@@ -184,6 +193,7 @@ export function CustomerDisplay({
   onContactChannelChange,
   totals,
   voucherPrize,
+  nothingToPay,
 }: CustomerDisplayProps) {
   const { t, lang } = useLanguage();
   const displayName = nickname.trim() || member?.nickname || '';
@@ -608,6 +618,26 @@ export function CustomerDisplay({
      * stage checks it — not because a way through is known.
      */
     const unpriced = unpricedCartLines(sale.lines);
+    if (nothingToPay && unpriced.length === 0 && sale.total === 0) {
+      // Nothing to pay (L38): the prize by its name, in Thai where it has one,
+      // and no request for money. The success ink the thank-you stage uses.
+      const prize = voucherPrize ? (lang === 'th' && voucherPrize.nameTh) || voucherPrize.nameEn : null;
+      return (
+        <Shell customerName={displayName}>
+          <div
+            className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500"
+            data-testid="customer-nothing-to-pay"
+          >
+            <div className="w-24 h-24 rounded-full bg-emerald-500/15 flex items-center justify-center text-(--cd-success) mb-8">
+              <Gift className="w-12 h-12" />
+            </div>
+            {prize && <p className="text-4xl font-black mb-2">{prize}</p>}
+            <div className="text-7xl font-black text-(--cd-success) mb-4">฿0</div>
+            <p className="text-2xl text-foreground/70">{t('till.order.complimentary')}</p>
+          </div>
+        </Shell>
+      );
+    }
     if (sale.paymentMethod && paymentMethodKind(sale.paymentMethod) === 'qr') {
       return (
         <Shell customerName={displayName}>

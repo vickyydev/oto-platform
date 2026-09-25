@@ -69,11 +69,15 @@ interface FnbCartProps {
   onScanStaffBenefit?: () => void;
   /**
    * S2-10b — THE LUCKY WHEEL VOUCHER, in the till's own two places
-   * (`components/till/OrderSummary.tsx`): `voucherLine` is the item a free-item
-   * voucher puts on the bill, drawn with the order's rows, and `voucher` is the
+   * (`components/till/OrderSummary.tsx`): `voucherLine` is the voucher as a line
+   * of the order — the item a free-item voucher puts on the bill, or the prize a
+   * hand-over voucher is (C2) — drawn with the order's rows, and `voucher` is the
    * Redeem voucher entry with the held voucher's card, drawn under the promo
-   * code entry. An order holding only a voucher's Kids Pizza is not empty.
-   * Absent on every screen that does not redeem vouchers.
+   * code entry. An order holding only a voucher's Kids Pizza, or only a
+   * hand-over prize, is not empty: it is charged at the platform's ฿0. The
+   * station passes `voucherLine` only for those two kinds, so a voucher that
+   * takes money off leaves an order with no rows empty. Absent on every screen
+   * that does not redeem vouchers.
    */
   voucherLine?: ReactNode;
   voucher?: ReactNode;

@@ -1,6 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
+ * The account both tests sign in as, from the environment and never written
+ * here, as `voucher.spec.ts` reads it: a reception account — the seed's, on a
+ * seeded database. A test with either value missing is skipped and says so.
+ */
+const PHONE = process.env.POS_E2E_PHONE ?? '';
+const PASSWORD = process.env.POS_E2E_PASSWORD ?? '';
+const SIGN_IN_MISSING = 'Set POS_E2E_PHONE and POS_E2E_PASSWORD (a reception account) to run it';
+
+/**
  * Signing in now lands on the station picker before the till (S2-04): the
  * station is what decides which printers and scanner the screen drives.
  *
@@ -31,12 +40,13 @@ async function pickStationIfAsked(page: Page): Promise<void> {
  * because the static site rewrites `/api/*` to the api (S2-01c).
  */
 test('lock → sign in → membership lookup → child confirm → sign out', async ({ page }) => {
+  test.skip(!PHONE || !PASSWORD, SIGN_IN_MISSING);
   await page.goto('/');
 
   // Lock screen with the phone + password form (SCRUM-19 UI addition).
   await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible();
-  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill('0900000002');
-  await page.locator('input[type="password"]').fill('reception1234');
+  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(PHONE);
+  await page.locator('input[type="password"]').fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await pickStationIfAsked(page);
 
@@ -64,7 +74,9 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
   // shift stays signed in and the same password unlocks the same session.
   await page.getByLabel('Lock screen').click();
   await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
-  await page.locator('input[type="password"]').fill('reception1234');
+  // The locked screen has two masked fields — the password and "Badge or PIN"
+  // — so the password is the one the browser would fill as the current password.
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(PASSWORD);
   await page.getByRole('button', { name: 'Unlock', exact: true }).click();
   await expect(page.getByText('Membership Check')).toBeVisible({ timeout: 15_000 });
 
@@ -76,9 +88,10 @@ test('lock → sign in → membership lookup → child confirm → sign out', as
 });
 
 test('unknown phone offers the create-member path (SCRUM-31)', async ({ page }) => {
+  test.skip(!PHONE || !PASSWORD, SIGN_IN_MISSING);
   await page.goto('/');
-  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill('0900000002');
-  await page.locator('input[type="password"]').fill('reception1234');
+  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(PHONE);
+  await page.locator('input[type="password"]').fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await pickStationIfAsked(page);
   await expect(page.getByText('Membership Check')).toBeVisible({ timeout: 15_000 });

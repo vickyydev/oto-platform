@@ -1,22 +1,37 @@
 import { useEffect, useState } from 'react';
+import { PAYMENT_ATTEMPT_TAKEN_STATUSES, PAYMENT_ATTEMPT_TERMINAL_STATUSES } from '@oto/shared';
 import {
   getSale,
   baht,
   type ApiSaleDetail,
+  type BadgeStatus,
   type HistoryTxn,
   type PaymentAttemptView,
 } from '@/api/history';
+import { salesApi } from '@/api/sales';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
+import { useOperator } from '@/auth/OperatorContext';
 import { getTicketTypes } from '@/store/catalogStore';
 import { tierLabel } from '@/lib/membership';
+import { RECENT_SALE_MS } from '@/lib/tillVoucher';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from './StatusBadge';
 import { LEDGER_ONLY_NOTICE } from './ledgerNotice';
 import {
+  AlertTriangle,
   ArrowLeft,
   Baby,
+  Ban,
   Banknote,
   CreditCard,
   Ticket,
@@ -53,7 +68,152 @@ import {
  *
  * The actions that would CHANGE a recorded sale — reprint, add time, refund —
  * are still disabled with the ticket that brings them.
+ *
+ * ONE ACTION WORKS: VOID, for an unpaid sale that took no money (audit C1, the
+ * owner's answer to Q3: any cashier with the till's void permission, giving a
+ * reason). It sits where Refund sits, because an unpaid sale has nothing to
+ * refund and a void is what undoes it. A sale rung up and then left — the till
+ * locked or reloaded mid-payment — otherwise stays `tendering` for ever and
+ * keeps any Lucky Wheel voucher on it from being used.
  */
+/** "less than a minute", "1 minute", "12 minutes". */
+function minutesAgo(ms: number): string {
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 1) return 'less than a minute';
+  return minutes === 1 ? '1 minute' : `${minutes} minutes`;
+}
+
+/**
+ * THE VOID OF AN UNPAID SALE — the refund dialog's clothes (`RefundModal`), with
+ * the one thing a void needs: a reason, which the platform requires and the
+ * voids report shows. A sale rung up less than `RECENT_SALE_MS` ago says it may
+ * still be being paid for at its till. The platform decides: money taken, a
+ * tender in progress or a sale closed since are refused in its words, here.
+ */
+function VoidSaleDialog({
+  open,
+  onOpenChange,
+  txn,
+  stationName,
+  operatorName,
+  fmt,
+  onVoided,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  txn: HistoryTxn;
+  stationName: string | null;
+  operatorName: string;
+  fmt: (iso: string) => string;
+  onVoided: (voided: { reason: string }) => void;
+}) {
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // A clean slate each time it opens.
+  useEffect(() => {
+    if (open) {
+      setReason('');
+      setBusy(false);
+      setError(null);
+    }
+  }, [open]);
+
+  const sale = txn.ledger;
+  const age = Date.now() - new Date(sale.occurredAt).getTime();
+  const recent = !Number.isNaN(age) && age < RECENT_SALE_MS;
+  const trimmed = reason.trim();
+
+  const confirm = async () => {
+    if (!trimmed || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const answer = await salesApi.voidSale(sale.id, trimmed);
+      onVoided({ reason: answer.void.reason ?? trimmed });
+      onOpenChange(false);
+    } catch (err) {
+      setError(
+        err instanceof NetworkError
+          ? 'No connection to the platform, so the sale was not voided.'
+          : err instanceof Error
+            ? err.message
+            : 'The sale could not be voided.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Ban className="w-5 h-5 text-rose-400" />
+            Void unpaid sale
+          </DialogTitle>
+          <DialogDescription>
+            By {operatorName} · it can never be paid afterwards · logged for the voids report.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          <div className="rounded-lg bg-muted p-4 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Amount due</span>
+              <span className="text-2xl font-black tabular-nums">฿{baht(sale.totals.grossSatang)}</span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Rung up {fmt(sale.occurredAt)}
+              {stationName ? ` at ${stationName}` : ''} · no money taken
+            </div>
+          </div>
+
+          {recent && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>
+                Rung up {minutesAgo(Math.max(0, age))} ago. If it is being paid for
+                {stationName ? ` at ${stationName}` : ' at its till'} right now, finish it there
+                instead of voiding it here.
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Reason <span className="text-destructive">*</span>
+            </p>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Why is this sale being voided?"
+              maxLength={120}
+              rows={2}
+              aria-label="Reason for the void"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+
+          <Button
+            className="w-full h-14 text-lg bg-rose-500 hover:bg-rose-600 text-white"
+            disabled={!trimmed || busy}
+            onClick={() => void confirm()}
+          >
+            {busy ? 'Voiding…' : trimmed ? 'Void this sale' : 'Give a reason to void'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 /**
  * WHAT EACH TENDER IS CALLED ON A SCREEN A PERSON READS.
  *
@@ -162,13 +322,19 @@ export function SaleDetail({
   layout?: 'columns' | 'stacked';
 }) {
   const stacked = layout === 'stacked';
+  const { operator, can } = useOperator();
   const [detail, setDetail] = useState<ApiSaleDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** The void this screen just made, with the reason it was given. */
+  const [voided, setVoided] = useState<{ reason: string } | null>(null);
+  const [showVoid, setShowVoid] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setDetail(null);
     setError(null);
+    setVoided(null);
+    setShowVoid(false);
     getSale(txn.id)
       .then((d) => {
         if (!cancelled) setDetail(d);
@@ -221,6 +387,32 @@ export function SaleDetail({
     packageId ? (getTicketTypes().find((t) => t.id === packageId)?.name ?? null) : null;
 
   const attempts = detail?.attempts ?? [];
+  /**
+   * Where the sale stands NOW: the detail is read when it opens, so a sale paid
+   * or voided at a till since the list loaded says so here; a void made on this
+   * screen says so at once.
+   */
+  const status = voided ? 'voided' : (detail?.sale.status ?? sale.status);
+  const badge: BadgeStatus =
+    status === 'voided'
+      ? 'voided'
+      : status === 'tendering'
+        ? 'unpaid'
+        : txn.badge === 'unpaid'
+          ? 'paid'
+          : txn.badge;
+  /**
+   * AN UNPAID SALE THAT TOOK NO MONEY — the one kind History may void: rung up,
+   * still `tendering`, no tender that took money and none still in progress. Read
+   * from the detail's own attempts, so nothing is offered before they are known;
+   * the platform checks the same again when the void is sent.
+   */
+  const tookNoMoney =
+    detail !== null &&
+    status === 'tendering' &&
+    !attempts.some((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status)) &&
+    attempts.every((a) => PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status));
+  const mayVoid = can('pos:sale:void');
   const tierClaim = detail?.sale.tierClaim ?? sale.tierClaim ?? null;
   const totals = sale.totals;
   const taxTotal = totals.taxInclusiveSatang + totals.taxExclusiveSatang;
@@ -277,7 +469,7 @@ export function SaleDetail({
           <ArrowLeft className="w-4 h-4" />
           Back to history
         </Button>
-        <StatusBadge status={txn.badge} />
+        <StatusBadge status={badge} />
       </div>
 
       <div
@@ -394,7 +586,7 @@ export function SaleDetail({
             </div>
             <div className="flex items-end justify-between gap-3">
               <span className="text-base font-semibold text-muted-foreground">
-                {txn.badge === 'unpaid' ? 'Amount due' : 'Total paid'}
+                {badge === 'unpaid' ? 'Amount due' : badge === 'voided' ? 'Total (voided)' : 'Total paid'}
               </span>
               <span className="text-4xl font-black tabular-nums leading-none">
                 ฿{baht(totals.grossSatang)}
@@ -429,8 +621,9 @@ export function SaleDetail({
             </Card>
           )}
 
-          {/* Actions — every one of these changes a recorded sale, and none of
-              them can yet, so they say so instead of pretending. */}
+          {/* Actions — every one of these changes a recorded sale. Reprint, Add
+              time and Refund cannot yet, so they say so instead of pretending;
+              an unpaid sale that took no money can be voided, in Refund's place. */}
           <div className="shrink-0 space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" className="h-14 text-base gap-2" disabled>
@@ -442,13 +635,44 @@ export function SaleDetail({
                 Add time
               </Button>
             </div>
-            <Button
-              className="w-full h-14 text-lg gap-2 bg-rose-500 hover:bg-rose-600 text-white"
-              disabled
-            >
-              <Undo2 className="w-5 h-5" />
-              Refund
-            </Button>
+            {tookNoMoney ? (
+              <>
+                <Button
+                  className="w-full h-14 text-lg gap-2 bg-rose-500 hover:bg-rose-600 text-white"
+                  disabled={!mayVoid}
+                  onClick={() => setShowVoid(true)}
+                  data-testid="void-sale"
+                >
+                  <Ban className="w-5 h-5" />
+                  Void unpaid sale
+                </Button>
+                {!mayVoid && (
+                  <p className="text-sm text-muted-foreground">
+                    Voiding a sale needs the till&apos;s void permission.
+                  </p>
+                )}
+              </>
+            ) : (
+              <Button
+                className="w-full h-14 text-lg gap-2 bg-rose-500 hover:bg-rose-600 text-white"
+                disabled
+              >
+                <Undo2 className="w-5 h-5" />
+                Refund
+              </Button>
+            )}
+            {voided && (
+              <div
+                className="rounded-lg border p-3 text-sm text-muted-foreground flex items-start gap-2"
+                data-testid="sale-voided"
+              >
+                <Ban className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  Voided by {operator?.name ?? 'you'} — {voided.reason}. It can never be paid, and a
+                  voucher it held is free again.
+                </span>
+              </div>
+            )}
             <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground flex items-start gap-2">
               <Info className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{LEDGER_ONLY_NOTICE}</span>
@@ -456,6 +680,16 @@ export function SaleDetail({
           </div>
         </div>
       </div>
+
+      <VoidSaleDialog
+        open={showVoid}
+        onOpenChange={setShowVoid}
+        txn={txn}
+        stationName={sale.stationName}
+        operatorName={operator?.name ?? 'this account'}
+        fmt={fmt}
+        onVoided={setVoided}
+      />
     </div>
   );
 }

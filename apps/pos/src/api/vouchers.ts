@@ -15,13 +15,31 @@ import { api, idemKey } from './client';
  *            till minted for that cart (usually before any sale row exists).
  *   release  take it off a cart that has not been rung up.
  *
- * A voucher on a sale already rung up is let go only by voiding that sale —
- * the till's Cancel, which voids any rung-up sale that took no money, so it
- * lives with the sales calls (`salesApi.voidSale` in api/sales.ts).
+ * A voucher on a sale already rung up is let go only by voiding that sale, so
+ * that call lives with the sales calls (`salesApi.voidSale` in api/sales.ts).
+ * Four paths void one: the till's Cancel, which voids any rung-up sale that
+ * took no money; a corrected order after Pay, which voids without asking the
+ * sale THIS screen rang up (`moveTo` in lib/tillVoucher.ts, reason
+ * `ORDER_CHANGED_AFTER_PAY`); the offer on a refusal that names an unpaid sale
+ * left at this till (`voidRungUp` in lib/tillVoucher.ts); and History's Void.
  *
  * Every call acts at the till the SESSION stands at (`PUT /me/session/station`),
  * never at a station the request names.
  */
+
+/**
+ * What a `HELD_ELSEWHERE` refusal carries (`heldElsewhere` in
+ * apps/api/src/services/vouchers.ts): where the voucher is, whether the cart
+ * holding it has been rung up, and — only to a session standing at that same
+ * till — which sale it is on (`saleId`), so the till can offer to void it.
+ */
+export interface HeldElsewhereDetails {
+  stationId?: string;
+  stationName?: string | null;
+  rungUp?: boolean;
+  /** Set only for a rung-up sale, and only when the asking session stands at its till. */
+  saleId?: string | null;
+}
 
 /** What a voucher is worth, as the platform resolved it at this branch. */
 export type VoucherEffect =

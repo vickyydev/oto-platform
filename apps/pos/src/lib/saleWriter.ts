@@ -38,7 +38,10 @@ import {
  *    new ones; retry the SAME order and it keeps them, which is the whole point
  *    of having them. Before this, a refusal left the till holding one number
  *    for ever: the corrected cart answered `IDEMPOTENCY_MISMATCH` every time
- *    and only Cancel escaped, discarding the order.
+ *    and only Cancel escaped, discarding the order. Two answers give the same
+ *    cart a new number under the same press: a key spent on another body, and a
+ *    voucher the platform says is not held for the sale (`voucherNotHeld`),
+ *    because the stored refusal would outlive the scan that fixes it.
  *
  * 3. A FAILURE IS VISIBLE, AND SAYS WHICH KIND IT IS. Nothing here resolves as
  *    success unless the platform said so, and a refusal carries its cause —
@@ -153,6 +156,20 @@ function classify(err: unknown): { cause: SaleFailureCause; retryable: boolean }
   return { cause: 'connection', retryable: true }; // an unknown fault is more likely plumbing
 }
 
+/**
+ * THE PLATFORM SAID THE VOUCHER IS NOT HELD FOR THIS SALE (`VOUCHER_NOT_HELD`):
+ * its hold lapsed and another till took it, or it was let go. The idempotency
+ * store keeps that refusal under this sale's key (`sale:<id>`) and replays it to
+ * every later attempt with the same body, so once the voucher has been scanned
+ * again — held 200 — the same cart would still meet the stored 409 until it
+ * changed. The next attempt takes a fresh number instead, keeping the press as a
+ * spent key does (`renewKeyRef`), and the till moves the voucher to that number
+ * before it commits (`prepare`, then `moveTo` in lib/tillVoucher.ts).
+ */
+function voucherNotHeld(err: unknown): boolean {
+  return err instanceof ApiError && err.code === 'VOUCHER_NOT_HELD';
+}
+
 /** The sale id a `SALE_ACTION_REPLAY` refusal names, when it names one. */
 function replayedSaleId(err: unknown): string | null {
   if (!(err instanceof ApiError) || err.code !== 'SALE_ACTION_REPLAY') return null;
@@ -227,6 +244,16 @@ export interface SaleWriter {
   saleId: string | null;
   /** The sale the platform holds for the cart on screen, when it holds one. */
   committed: ApiSale | null;
+  /**
+   * S2-10b — WHETHER THIS SCREEN RANG THAT SALE UP: an id one of its own attempts
+   * was sent under, the sale on screen, or one it left behind when the order
+   * changed after Pay. Only such a sale may be voided without asking when a
+   * voucher has to follow the corrected cart (`moveTo` in lib/tillVoucher.ts).
+   * The platform names a rung-up sale to every screen standing at the same till,
+   * and another screen may be taking cash for it (audit M12), so a sale this
+   * returns false for is voided only by a person's deliberate choice.
+   */
+  ownsSale: (saleId: string) => boolean;
 }
 
 export function useSaleWriter(): SaleWriter {
@@ -239,9 +266,11 @@ export function useSaleWriter(): SaleWriter {
   const renewKeyRef = useRef(false);
   const inFlightRef = useRef<{ signature: string; promise: Promise<SaleWriteOutcome> } | null>(null);
   /**
-   * S2-10b — every sale id an attempt has been sent under. Its idempotency key
-   * is spent on that attempt's body, so a new cart never takes one of these as
-   * its id, whatever voucher is held for it (`preferSaleId`).
+   * S2-10b — every sale id an attempt has been sent under, and the id of a sale
+   * adopted from a `SALE_ACTION_REPLAY`. Its idempotency key is spent on that
+   * attempt's body, so a new cart never takes one of these as its id, whatever
+   * voucher is held for it (`preferSaleId`). It is also what makes a sale this
+   * screen's own (`ownsSale`).
    */
   const sentRef = useRef<Set<string>>(new Set());
   /**
@@ -365,6 +394,7 @@ export function useSaleWriter(): SaleWriter {
             if (epochRef.current === epoch) {
               committedRef.current = sale;
               saleRef.current = { ...ids, saleId: sale.id };
+              sentRef.current.add(sale.id);
               setState(
                 sale.status === 'finalised'
                   ? { kind: 'written', saleId: sale.id, sale, replay: true }
@@ -378,7 +408,13 @@ export function useSaleWriter(): SaleWriter {
           }
         }
         const { cause, retryable } = classify(err);
-        if (cause === 'stale-key') renewKeyRef.current = true;
+        // A spent key, or a refusal the store would replay after its cause has
+        // cleared (`voucherNotHeld`): the next attempt at this cart goes under a
+        // new number. Only when this attempt's answer still belongs to this
+        // cart — a cart that moved on has new ids already.
+        if ((cause === 'stale-key' || voucherNotHeld(err)) && epochRef.current === epoch) {
+          renewKeyRef.current = true;
+        }
         const message = messageOf(err);
         if (epochRef.current === epoch) {
           setState({
@@ -520,6 +556,14 @@ export function useSaleWriter(): SaleWriter {
     return { ok: true, voided: true };
   }, []);
 
+  const ownsSale = useCallback(
+    (saleId: string): boolean =>
+      sentRef.current.has(saleId) ||
+      supersededRef.current.has(saleId) ||
+      committedRef.current?.id === saleId,
+    [],
+  );
+
   const declareUnwritten = useCallback((reason: string): string => {
     const ids =
       saleRef.current ??
@@ -544,5 +588,6 @@ export function useSaleWriter(): SaleWriter {
     reset,
     saleId: saleRef.current?.saleId ?? null,
     committed: committedRef.current,
+    ownsSale,
   };
 }

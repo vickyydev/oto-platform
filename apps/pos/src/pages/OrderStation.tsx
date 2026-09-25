@@ -46,6 +46,7 @@ import {
   VoucherFreeItemLine,
   VoucherRefusalCard,
   VoucherUsedNote,
+  voucherIsGift,
 } from '@/components/till/RedeemVoucher';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
@@ -116,7 +117,7 @@ let orderCounter = 1;
 let lineCounter = 1;
 
 export default function OrderStation() {
-  const { operator, offlineUnlock } = useOperator();
+  const { operator, offlineUnlock, can } = useOperator();
   const { station } = useStation();
   const { branch } = useBranch();
   const [, navigate] = useLocation();
@@ -168,7 +169,10 @@ export default function OrderStation() {
    */
   const stationOffline = (): boolean =>
     (typeof navigator !== 'undefined' && navigator.onLine === false) || offlineUnlock !== null;
-  const voucher = useTillVoucher({ isOffline: stationOffline });
+  // A sale this screen rang up is the writer's to void when the order changes
+  // after the charge opened (`ownsSale`); any other the platform names is voided
+  // only when staff choose the refusal's offer (C1, M12).
+  const voucher = useTillVoucher({ isOffline: stationOffline, ownsSale: saleWriter.ownsSale });
   /** The platform's words when throwing the order away could not void the sale it was rung up as. */
   const [cancelRefusal, setCancelRefusal] = useState<string | null>(null);
   /** The voucher the last order used up, for its confirmation screen. */
@@ -862,9 +866,29 @@ export default function OrderStation() {
    * this till's record — the platform took its price off — routed by the menu
    * item's own prep station, and its note says which voucher it came from, so
    * the ticket answers "why is this free".
+   *
+   * A HAND-OVER PRIZE (C2) is a line too, named after the prize, so the receipt
+   * and this till's record say what was handed over. It is nothing the kitchen
+   * or the bar makes, so it goes to no prep station and prints no ticket.
    */
   const voucherOrderLine = (held: HeldVoucher): FnbOrderLine | null => {
     const effect = held.view.effect;
+    if (effect.type === 'hand_over') {
+      return {
+        id: `voucher-${held.view.id}`,
+        menuItem: {
+          id: `voucher-prize-${held.view.id}`,
+          name: held.view.prize.nameEn,
+          category: '',
+          price: { weekday: 0, weekend: 0 },
+          prepStationOverride: 'none',
+        },
+        qty: 1,
+        selectedModifiers: [],
+        lineTotal: 0,
+        note: `Lucky Wheel voucher ${held.code}`,
+      };
+    }
     if (effect.type !== 'free_item') return null;
     const menuItem: MenuItem = menuItems.find((item) => item.id === effect.product.id) ?? {
       id: effect.product.id,
@@ -1371,7 +1395,15 @@ export default function OrderStation() {
                 onApplyPromoCode={handleApplyPromoCode}
                 onRemovePromoCode={handleRemovePromoCode}
                 onScanStaffBenefit={() => setShowBenefitScan(true)}
-                voucherLine={voucher.held ? <VoucherFreeItemLine held={voucher.held} /> : undefined}
+                // The voucher is a line of the order only when it is what the
+                // order hands over — a free item, or a hand-over prize (C2) — so
+                // an order holding one of those alone is not empty and can be
+                // charged at ฿0. One that takes money off is its card below.
+                voucherLine={
+                  voucher.held && voucherIsGift(voucher.held) ? (
+                    <VoucherFreeItemLine held={voucher.held} />
+                  ) : undefined
+                }
                 voucher={
                   <div className="space-y-2">
                     {voucher.held && (
@@ -1387,7 +1419,16 @@ export default function OrderStation() {
                     )}
                     <RedeemVoucherEntry onRedeem={redeemVoucher} busy={voucher.busy} />
                     {voucher.refusal && (
-                      <VoucherRefusalCard refusal={voucher.refusal} onDismiss={voucher.dismiss} />
+                      <VoucherRefusalCard
+                        refusal={voucher.refusal}
+                        onDismiss={voucher.dismiss}
+                        busy={voucher.busy}
+                        // C1 — the unpaid sale the voucher was left on is voided
+                        // only by this press, by an account the platform lets void.
+                        {...(can('pos:sale:void')
+                          ? { onVoidRungUp: () => void voucher.voidRungUp() }
+                          : {})}
+                      />
                     )}
                     {cancelRefusal && (
                       <TillRefusalNotice

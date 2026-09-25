@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Check } from 'lucide-react';
+import { Check, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getEnabledPaymentMethods, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
 import type { PaymentMethodKind } from '@/types';
@@ -38,6 +38,15 @@ interface StepPaymentProps {
    * carts (the party tab) leave it unset and nothing changes for them.
    */
   unpriced?: boolean;
+  /**
+   * THE SALE OWES NOTHING (L38) — a voucher took it to ฿0, or it is a hand-over
+   * prize or a free item on its own. There is no tender to choose, so the
+   * method grid gives way to "No payment needed" and the button closes the sale
+   * without one: the restaurant till's rule for a ฿0 order (`FnbPayment`).
+   * Set by the ticket till from the platform's figure; callers that leave it
+   * unset keep the grid at every total.
+   */
+  nothingToPay?: boolean;
 }
 
 // Visual accent per method KIND (the tender list itself is configured in Admin).
@@ -75,9 +84,12 @@ const KIND_STYLE: Record<
   },
 };
 
-export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced }: StepPaymentProps) {
+export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, nothingToPay }: StepPaymentProps) {
   const methods = getEnabledPaymentMethods();
   const isQrPending = !!selectedMethod && paymentMethodKind(selectedMethod) === 'qr';
+  // Only a priced ฿0 owes nothing: an unpriced cart's ฿0 stands in for a
+  // missing price and keeps Confirm shut.
+  const free = Boolean(nothingToPay) && !unpriced && total === 0;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
@@ -86,43 +98,61 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
         <div className="text-6xl font-black text-primary">{unpriced ? '—' : `฿${total}`}</div>
       </div>
 
-      <h3 className="text-xl font-bold mb-4">Select Payment Method</h3>
-      <div
-        className="grid gap-4"
-        style={{ gridTemplateColumns: `repeat(${Math.max(1, Math.min(methods.length, 4))}, minmax(0, 1fr))` }}
-      >
-        {methods.map((m) => {
-          const Icon = paymentMethodIcon(m.kind);
-          const style = KIND_STYLE[m.kind] ?? KIND_STYLE.other;
-          const selected = selectedMethod === m.id;
-          return (
-            <Card
-              key={m.id}
-              className={cn(
-                'relative flex flex-col items-center justify-center p-6 cursor-pointer transition-all',
-                selected ? style.ring : style.hover
-              )}
-              onClick={() => onSelectMethod(m.id)}
-            >
-              {selected && (
-                <div className={cn('absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-foreground', style.accent)}>
-                  <Check className="w-4 h-4" />
-                </div>
-              )}
-              <div className={cn('h-20 w-20 rounded-full flex items-center justify-center mb-4', style.iconBg)}>
-                <Icon className={cn('h-10 w-10', style.iconColor)} />
-              </div>
-              <h3 className="text-2xl font-bold">{m.label}</h3>
-            </Card>
-          );
-        })}
-      </div>
+      {free ? (
+        <Card className="p-6 border-primary/40 bg-primary/5" data-testid="no-payment-needed">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
+              <CheckCircle2 className="h-7 w-7" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-xl font-bold">No payment needed</h3>
+              <p className="text-muted-foreground">
+                This sale is fully covered — nothing to collect.
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <>
+          <h3 className="text-xl font-bold mb-4">Select Payment Method</h3>
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${Math.max(1, Math.min(methods.length, 4))}, minmax(0, 1fr))` }}
+          >
+            {methods.map((m) => {
+              const Icon = paymentMethodIcon(m.kind);
+              const style = KIND_STYLE[m.kind] ?? KIND_STYLE.other;
+              const selected = selectedMethod === m.id;
+              return (
+                <Card
+                  key={m.id}
+                  className={cn(
+                    'relative flex flex-col items-center justify-center p-6 cursor-pointer transition-all',
+                    selected ? style.ring : style.hover
+                  )}
+                  onClick={() => onSelectMethod(m.id)}
+                >
+                  {selected && (
+                    <div className={cn('absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-foreground', style.accent)}>
+                      <Check className="w-4 h-4" />
+                    </div>
+                  )}
+                  <div className={cn('h-20 w-20 rounded-full flex items-center justify-center mb-4', style.iconBg)}>
+                    <Icon className={cn('h-10 w-10', style.iconColor)} />
+                  </div>
+                  <h3 className="text-2xl font-bold">{m.label}</h3>
+                </Card>
+              );
+            })}
+          </div>
 
-      {isQrPending && (
-        <div className="mt-6 rounded-xl border border-violet-500/30 bg-violet-500/10 p-4 text-sm text-muted-foreground">
-          <span className="font-bold text-foreground">QR shown to customer.</span> Confirm once the
-          gateway reports the payment as received.
-        </div>
+          {isQrPending && (
+            <div className="mt-6 rounded-xl border border-violet-500/30 bg-violet-500/10 p-4 text-sm text-muted-foreground">
+              <span className="font-bold text-foreground">QR shown to customer.</span> Confirm once the
+              gateway reports the payment as received.
+            </div>
+          )}
+        </>
       )}
 
       {notice}
@@ -134,10 +164,14 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
         <Button
           size="lg"
           className="flex-1 h-16 text-xl font-bold"
-          disabled={!selectedMethod || busy || unpriced}
+          disabled={(!selectedMethod && !free) || busy || unpriced}
           onClick={onComplete}
         >
-          {busy ? (busyLabel ?? 'Saving the sale…') : 'Confirm Payment Received'}
+          {busy
+            ? (busyLabel ?? 'Saving the sale…')
+            : free
+              ? 'Complete Sale'
+              : 'Confirm Payment Received'}
         </Button>
       </div>
     </div>

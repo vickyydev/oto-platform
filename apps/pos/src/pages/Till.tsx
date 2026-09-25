@@ -45,6 +45,7 @@ import {
 } from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import {
+  NO_TENDER,
   buildCartPayload,
   claimVerifiedTier,
   quotedPricing,
@@ -52,6 +53,7 @@ import {
   type ApiSale,
   type CartIdentity,
   type SaleCartPayload,
+  type SaleTenderPayload,
 } from '@/api/sales';
 import { paymentMethodKind } from '@/lib/payments';
 import { useCartQuote } from '@/lib/cartQuote';
@@ -79,6 +81,7 @@ import {
   VoucherFreeItemLine,
   VoucherRefusalCard,
   VoucherUsedNote,
+  voucherIsGift,
 } from '@/components/till/RedeemVoucher';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { apiChildToSavedChild, apiMemberToMember } from '@/api/mappers';
@@ -118,7 +121,7 @@ function lineDiscountComponents(line: CartLine): DiscountComponentOption[] {
 }
 
 export default function Till() {
-  const { operator, offlineUnlock } = useOperator();
+  const { operator, offlineUnlock, can } = useOperator();
   const { station } = useStation();
   const { branch } = useBranch();
   /**
@@ -138,12 +141,17 @@ export default function Till() {
    * never sends. So this till says where to take it once the lookup has said
    * what it is, and holds nothing (`isMenuItemVoucher`). A shop product or a
    * ticket extra is handed over here.
+   *
+   * A sale this screen rang up is the writer's to void when the order changes
+   * after Pay (`ownsSale`); a sale the platform names that this screen did not
+   * ring up is voided only when staff choose the refusal's offer (C1, M12).
    */
   const tillOffline = (): boolean =>
     (typeof navigator !== 'undefined' && navigator.onLine === false) || offlineUnlock !== null;
   const voucher = useTillVoucher({
     isOffline: tillOffline,
     refuseHere: (view) => (isMenuItemVoucher(view) ? VOUCHER_AT_THE_RESTAURANT : null),
+    ownsSale: saleWriter.ownsSale,
   });
   /** The platform's words when the till's Cancel could not void the sale on screen. */
   const [cancelRefusal, setCancelRefusal] = useState<string | null>(null);
@@ -497,6 +505,20 @@ export default function Till() {
     // S2-10b — the held voucher rides by its code; the platform prices it.
     promoCodes: voucherCodes,
   });
+
+  /**
+   * L38 — THIS SALE OWES NOTHING: a voucher took it to ฿0, a hand-over prize or
+   * a free item is on its own, or a discount covered it. The payment screen
+   * then asks for no method ("No payment needed", `StepPayment`), the customer
+   * display asks for no money, and the sale is closed with no tender. Read off
+   * the figure on screen — the platform's quote, which is what the commit
+   * carries as the amount the sale must come to — and never for an unpriced
+   * cart, whose ฿0 stands in for a missing price.
+   */
+  const saleOwesNothing =
+    (lines.length > 0 || voucher.held !== null) &&
+    cart.totals.total === 0 &&
+    unpricedCartLines(lines).length === 0;
 
   const resetSale = () => {
     saleEpochRef.current += 1;
@@ -1153,7 +1175,7 @@ export default function Till() {
     const cancelled = await saleWriter.cancel(CANCELLED_AT_THE_TILL);
     if (saleEpochRef.current !== epoch) return;
     if (!cancelled.ok) {
-      if (cancelled.closed && pendingPaymentMethod) {
+      if (cancelled.closed && (pendingPaymentMethod || saleOwesNothing)) {
         void completeSale(epoch);
         return;
       }
@@ -2105,7 +2127,8 @@ export default function Till() {
 
   const handleCompletePayment = () => {
     if (!preflightSale()) return;
-    if (!pendingPaymentMethod) return;
+    // A method is chosen for every sale that owes something (L38).
+    if (!pendingPaymentMethod && !saleOwesNothing) return;
     // NOTHING BELOW THE PLATFORM'S ANSWER RUNS UNTIL IT ANSWERS (S2-09a): no
     // receipt, no band, no wallet, no confirmation screen. A refusal leaves the
     // till on this screen with the failure panel and the same sale waiting, so
@@ -2232,7 +2255,7 @@ export default function Till() {
    * the corrected cart instead of finalising the old one.
    */
   const completeSale = async (epoch: number) => {
-    if (!tier || !pendingPaymentMethod || !operator || !station) return;
+    if (!tier || (!pendingPaymentMethod && !saleOwesNothing) || !operator || !station) return;
 
     const payload = commitPayload();
     if (!payload) {
@@ -2272,14 +2295,32 @@ export default function Till() {
     if (recorded.status !== 'finalised') {
       // THE TENDER. One press, one method, and the amount due taken in full —
       // all this screen knows. S2-10a adds the cash keypad, the card terminal
-      // and the QR result onto this same call.
-      const closed = await saleWriter.finalise({
-        method: pendingPaymentMethod,
-        kind: paymentMethodKind(pendingPaymentMethod),
-        amountSatang: recorded.totals.grossSatang,
-        tenderedSatang: recorded.totals.grossSatang,
-        changeSatang: 0,
-      });
+      // and the QR result onto this same call. A sale the platform says owes
+      // nothing is closed with no tender (L38): the platform records no payment
+      // for it, and the body names no method this till did not use.
+      const owed = recorded.totals.grossSatang;
+      let tender: SaleTenderPayload;
+      if (owed === 0) {
+        tender = NO_TENDER;
+      } else if (pendingPaymentMethod) {
+        tender = {
+          method: pendingPaymentMethod,
+          kind: paymentMethodKind(pendingPaymentMethod),
+          amountSatang: owed,
+          tenderedSatang: owed,
+          changeSatang: 0,
+        };
+      } else {
+        // The screen said nothing was owed and the platform says otherwise: no
+        // sale is closed without the method it was paid by.
+        toast({
+          title: 'Choose a payment method',
+          description: `The platform says ฿${owed / 100} is owed on this sale.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      const closed = await saleWriter.finalise(tender);
       if (saleEpochRef.current !== epoch) {
         if (closed.ok && closed.written) noteSaleLeftBehind(closed.sale, closed.saleId);
         return;
@@ -2311,8 +2352,14 @@ export default function Till() {
   const handleRetrySaleWrite = () => {
     const epoch = saleEpochRef.current;
     // Before a method is chosen there is no tender to record, so a retry is the
-    // record alone.
-    if (!pendingPaymentMethod) {
+    // record alone. A sale that owes nothing has no method to choose: its retry
+    // closes it again only when closing it is what failed.
+    const closing =
+      pendingPaymentMethod !== null ||
+      (saleOwesNothing &&
+        saleWriter.state.kind === 'failed' &&
+        saleWriter.state.stage === 'finalise');
+    if (!closing) {
       void recordSaleOnPlatform(epoch);
       return;
     }
@@ -2332,7 +2379,10 @@ export default function Till() {
    * detail read (S2-09a).
    */
   const finalizeSale = (saleId: string, quoted: SaleQuotedPricing) => {
-    if (!tier || !pendingPaymentMethod || !operator || !station) return;
+    if (!tier || !operator || !station) return;
+    // A sale that owed nothing was closed with no method, and its record names
+    // none (L38); every other sale was closed by the method chosen.
+    if (!pendingPaymentMethod && !saleOwesNothing) return;
     const newSale = buildSale({
       id: saleId,
       operatorId: operator.id,
@@ -2344,7 +2394,7 @@ export default function Till() {
       memberId: member?.id,
       customerPhone,
       customerNickname,
-      paymentMethod: pendingPaymentMethod,
+      paymentMethod: pendingPaymentMethod ?? undefined,
       quoted,
     });
     recordSale(newSale);
@@ -2405,7 +2455,8 @@ export default function Till() {
           serviceFeeTHB: d.serviceFeeTHB,
           durationHours,
           totalTHB: l.lineTotal,
-          paymentMethod: pendingPaymentMethod,
+          // No method for a sale that owed nothing (L38): an empty token, not a tender.
+          paymentMethod: pendingPaymentMethod ?? '',
           nannyId: d.service === 'nanny' ? d.nannyId : undefined,
           foodProvision: d.foodProvision,
         };
@@ -2537,12 +2588,17 @@ export default function Till() {
     : null;
   const voucherHoldsPay =
     voucher.held !== null && (voucher.busy || voucherQuote === null || !voucherQuote.applicable);
-  const voucherFreeItem = voucher.held?.view.effect.type === 'free_item';
+  /**
+   * A voucher that is itself what the sale hands over — a free item, or a
+   * hand-over prize (C2) — is a sale on its own: Pay runs for it with nothing
+   * else on the cart, and the platform prices, commits and closes it at ฿0.
+   */
+  const voucherGift = voucherIsGift(voucher.held);
   /** Rung up with the voucher: it goes only with a void now, which Cancel does. */
   const voucherRungUp =
     voucher.held !== null && saleWriter.committed?.id === voucher.held.saleId;
   const canPay =
-    (lines.some((l) => l.kids + l.adults > 0) || voucherFreeItem) &&
+    (lines.some((l) => l.kids + l.adults > 0) || voucherGift) &&
     allLengthsChosen &&
     allNanniesAssigned &&
     !voucherHoldsPay;
@@ -2652,6 +2708,7 @@ export default function Till() {
             <StepPayment
               total={total}
               unpriced={unpricedCartLines(lines).length > 0}
+              nothingToPay={saleOwesNothing}
               selectedMethod={pendingPaymentMethod}
               onSelectMethod={setPendingPaymentMethod}
               onComplete={handleCompletePayment}
@@ -2746,7 +2803,11 @@ export default function Till() {
             }
             priceNote={<PriceSourceNote quote={cart.quote} pending={cart.pending} />}
             tierClaimRefusal={tierClaimRefusal}
-            voucherLine={voucher.held ? <VoucherFreeItemLine held={voucher.held} /> : undefined}
+            // The voucher is a line of the order only when it is what the sale
+            // hands over; one that takes money off is its card below.
+            voucherLine={
+              voucher.held && voucherGift ? <VoucherFreeItemLine held={voucher.held} /> : undefined
+            }
             voucher={
               <div className="space-y-2">
                 {voucher.held && (
@@ -2766,7 +2827,16 @@ export default function Till() {
                   disabled={step === 5}
                 />
                 {voucher.refusal && (
-                  <VoucherRefusalCard refusal={voucher.refusal} onDismiss={voucher.dismiss} />
+                  <VoucherRefusalCard
+                    refusal={voucher.refusal}
+                    onDismiss={voucher.dismiss}
+                    busy={voucher.busy}
+                    // C1 — the unpaid sale the voucher was left on is voided only
+                    // by this press, and only by an account the platform lets void.
+                    {...(can('pos:sale:void')
+                      ? { onVoidRungUp: () => void voucher.voidRungUp() }
+                      : {})}
+                  />
                 )}
                 {cancelRefusal && (
                   <TillRefusalNotice
@@ -2870,6 +2940,7 @@ export default function Till() {
               onContactChannelChange={handleCustomerContactChannelChange}
               totals={saleResult ? undefined : cart.totals}
               voucherPrize={voucher.held?.view.prize ?? null}
+              nothingToPay={saleOwesNothing}
             />
           </div>
         )}
