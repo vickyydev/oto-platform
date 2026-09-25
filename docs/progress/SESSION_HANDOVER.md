@@ -237,18 +237,21 @@ different; the Pi runtime and the counter were not built at all).**
   (eight lanes, eight lane gates, one integration gate — every bench
   scenario passed on the combined tree, the merge held on comments and one
   Linux-only test) then `wf_c10bc803` (the text and the test; MERGE). The
-  wip ref `wip/booth-p7` dropped. **The release for the Pi is packed at
-  `4d0e24e`:** `packages/box-agent/dist/oto-box-0.1.0-4d0e24e.tgz`
-  (1,022,552 bytes, SHA-256
-  `cca962b8c272a8154f0646bae5d15ce9bef8b2c0749376b2a940351b673b7b70`),
-  handed to the owner once CI is green (`dist/` is ignored by git).
+  wip ref `wip/booth-p7` dropped. **CI on `4d0e24e` went red on one
+  wall-clock bound in the new printer tests (1.25 s on the shared runner);
+  `8ffe856` loosens the bounds to hang guards (the status queries are the
+  proof) and is green. The release for the Pi is packed at `8ffe856`:**
+  `packages/box-agent/dist/oto-box-0.1.0-8ffe856.tgz` (1,022,558 bytes,
+  SHA-256 `7e98001b93d2ffcb61490f9b784c9a823ca871eada761a83fe312351055cb609`),
+  sent to the owner with its checksum file at 09:4x (`dist/` is ignored by
+  git; re-pack with `pnpm --filter @oto/box-agent pack:pi`).
   **The audit's follow-ups are SCRUM-401 to SCRUM-429** (29, in the sprint:
   401 promo codes priced by the platform and 402 the Pi's clock at High; the
   damaged store, the outbox growth, free products at other parks, the
   retried unsynced slip, the till's sale through a lock, the CI tests and
-  the CI pack step at Medium; the rest Low). **In flight: P8**
-  (`wf_f1376481`), the staging proof of C1, C2, H1, H2 and the counter
-  guide once staging is live at `4d0e24e`; then "ready".
+  the CI pack step at Medium; the rest Low). **In flight: P8** (`wf_eb9c1b9f`; the first run `wf_f1376481` stopped
+  correctly at the red CI), the staging proof of C1, C2, H1, H2 and the
+  counter guide once staging is live at `8ffe856`; then "ready".
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
