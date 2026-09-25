@@ -394,6 +394,31 @@ different; the Pi runtime and the counter were not built at all).**
   at that head; then 438/439, the remaining audit tickets by priority (403, 404,
   406, 407, 408, 412, 415, 419, 421, 422, 423, 425, 428; 405, 410, 426 wait on
   the owner), SCRUM-434's answer, and behind the booth the Sprint 2 order.
+- **Evening landings (25 Sept, 20:39).** `2246aef` SCRUM-433 (a sale's voucher line
+  names only the code's last four characters; the sale answer's own code field
+  stays for the till, noted on the ticket) + SCRUM-430's `voidedByName` on the
+  sale view; `1620de7` SCRUM-422's CI naming (pnpm's chmod of the box's bin on
+  Linux was the "+local" cause — the bin is tracked executable, the packer ignores
+  mode bits, the pack step prints the tree's state; proven: the run of `1620de7`
+  packed `oto-box-0.1.0-1620de7.tgz`) and the Console's vendor chunks;
+  `08c3162` SCRUM-430's till half (Voided by <name>, the voucher sentence only
+  when one was held), SCRUM-437 (no amber note on an empty cart), SCRUM-436 (the
+  event-pass card and the identify rows wrap, so the Membership Check column no
+  longer clips beside the second screen), the itemPromo comment; `e86d6f2`
+  SCRUM-431 (the box remembers per printer that the unit answers status; a
+  remembered printer silent before a job holds the job with
+  `PRINTER_SILENT_BEFORE_JOB` and the ordinary retry prints it; residual
+  SCRUM-440: held jobs delay the heartbeat tick) + `2ae20a8` (the till header
+  names both silences). **Releases handed over:** `oto-box-0.1.0-f851037+local`
+  and `oto-box-0.1.0-a63d0b5+local` (the first with the clock fix; SHA-256
+  `1b91af90…5eaf`), both on the owner's Desktop. Staging ran `08c3162` on all
+  five at 21:0x; the second proof pass runs on it (`wf_228ca0fb`: 402, 401,
+  432, 435/420, 430, 433, 436, 437 on staging; cards for 429, 431, 422).
+  **Building:** SCRUM-403 on Opus (`wf_27c27ae1`: listen first, a needs-service television, the outbox salvaged, no fact before a fresh epoch), SCRUM-406 on Opus (`wf_78fc771e`: a code hash beside each miss, distinct codes counted; migration 0024), SCRUM-408 on Opus, bounded (`wf_9fde98f9`: a vitest runner and tests for the till's pure libraries in CI), quick rounds r14 (`wf_210d12f9`: SCRUM-438 and the unlock test's timing flake) and r15 (`wf_00dfe73c`: SCRUM-439's alert summary, print retries and station leases held to a cap). CI on `2ae20a8` and staging watched.
+  **Owner questions open:** SCRUM-401's three (one-use code rung up twice; a free
+  item and paid extras; refunded sales and limits), SCRUM-434 (a new booth asked
+  how money reaches it), the bench measurement for SCRUM-431 (how long the Epson
+  takes to answer the first status question), SCRUM-433's code field.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
