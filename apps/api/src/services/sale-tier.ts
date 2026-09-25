@@ -55,7 +55,9 @@ import type { Exec, Tx } from './tx';
  *           update in the transaction that writes the sale, so one document
  *           check prices one sale and a second cart naming it is refused
  *           (`TIER_CLAIM_SPENT`). Two carts racing for one claim cannot both
- *           win it: the second update matches no row.
+ *           win it: the second update matches no row. A void of that sale —
+ *           which takes no money — gives the claim back
+ *           (`restoreTierClaimOf`), so the corrected order is priced on it.
  *   OLD     the window below. Nothing is deleted when either happens — the row
  *           stays as the record of what was checked and, once spent, of which
  *           sale it paid for.
@@ -64,6 +66,7 @@ import type { Exec, Tx } from './tx';
 /** `core.audit_log.entity_type` for the row written beside a claim. */
 export const TIER_CLAIM_ENTITY = 'sale_tier_claim';
 const CLAIM_CREATE_ACTION = 'sale_tier_claim.create';
+const CLAIM_RESTORE_ACTION = 'sale_tier_claim.restore';
 
 /**
  * HOW LONG A CLAIM CAN PRICE A CART.
@@ -484,4 +487,53 @@ export async function spendTierClaim(
       { claimId },
     );
   }
+}
+
+/**
+ * Give a document check back when the sale it priced is voided (audit L6).
+ *
+ * A void is only allowed on a sale that took no money (`voidSale`), so the
+ * claim it spent has paid for nothing — and the till's own flow voids and
+ * re-rings a corrected order under the same check. Without this the corrected
+ * sale was refused with TIER_CLAIM_SPENT over a passport nobody had stopped
+ * looking at. The window is not extended: a claim given back is still the
+ * claim made at 14:30, and it prices nothing after 15:00.
+ *
+ * Conditional on the claim being spent BY THIS SALE, so a void answered as a
+ * replay (the sale was already void) or one arriving after the claim has
+ * priced its corrected sale gives nothing back. The voided sale lets go of
+ * its `tier_claim_id` in the statement that voids it (`voidSale`), because
+ * `sale_tier_claim_unique` lets one sale name a claim and the corrected sale
+ * is about to; the void's audit row and the one written here keep the link,
+ * and the sale's `customer_tier` still says what it was rung up at.
+ *
+ * Returns the claim's id, or null when the sale had spent none.
+ */
+export async function restoreTierClaimOf(
+  tx: Tx,
+  actor: { accountId: string; operatorId: string; requestId?: string },
+  saleId: string,
+  branchId: string,
+): Promise<string | null> {
+  const [restored] = await tx
+    .update(saleTierClaim)
+    .set({ spentBySaleId: null, spentAt: null })
+    .where(
+      and(eq(saleTierClaim.spentBySaleId, saleId), eq(saleTierClaim.operatorId, actor.operatorId)),
+    )
+    .returning({ id: saleTierClaim.id, actionId: saleTierClaim.actionId });
+  if (!restored) return null;
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId,
+    action: CLAIM_RESTORE_ACTION,
+    entityType: TIER_CLAIM_ENTITY,
+    entityId: restored.id,
+    before: { spentBySaleId: saleId },
+    after: { spentBySaleId: null, reason: 'sale_voided' },
+    actionId: restored.actionId,
+    requestId: actor.requestId ?? null,
+  });
+  return restored.id;
 }

@@ -438,6 +438,106 @@ describe('one document check prices one sale (SCRUM-311)', () => {
   });
 });
 
+/**
+ * L6 of the booth's closing audit. The till voids a sale that took no money
+ * and rings the corrected order up under the same document check; before
+ * this the corrected sale was refused with TIER_CLAIM_SPENT, over a passport
+ * still lying on the counter.
+ */
+describe('a void gives the document check back', () => {
+  const commit = (payload: Record<string, unknown>) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie },
+      payload: { id: newId(), stationId, branchId, ...payload },
+    });
+  const voidSale = (saleId: string, reason = 'Order changed before paying') =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/void`,
+      headers: { cookie },
+      payload: { reason },
+    });
+  const claimRow = async (actionId: string) =>
+    (await ctx.db.select().from(saleTierClaim).where(eq(saleTierClaim.actionId, actionId)))[0]!;
+
+  it('prices the corrected order on the same passport once the first sale is voided', async () => {
+    const actionId = await expatClaim();
+    const first = await commit({ tierClaimActionId: actionId, lines: [line(twoHoursId, 2, 1)] });
+    expect(first.statusCode, first.body).toBe(200);
+    const firstSaleId = first.json().sale.id as string;
+    expect((await claimRow(actionId)).spentBySaleId).toBe(firstSaleId);
+
+    // The order was wrong. No money was taken, so the till voids it and rings
+    // the corrected one up — the visitor's document has not changed.
+    const voided = await voidSale(firstSaleId);
+    expect(voided.statusCode, voided.body).toBe(200);
+    expect(voided.json().replay).toBe(false);
+    const given = await claimRow(actionId);
+    expect(given.spentBySaleId).toBeNull();
+    expect(given.spentAt).toBeNull();
+
+    const second = await commit({ tierClaimActionId: actionId, lines: [line(twoHoursId, 1, 1)] });
+    expect(second.statusCode, second.body).toBe(200);
+    const secondSaleId = second.json().sale.id as string;
+    const [corrected] = await ctx.db.select().from(sale).where(eq(sale.id, secondSaleId));
+    expect(corrected!.customerTier).toBe('expat');
+    expect(corrected!.tierClaimId).toBe(given.id);
+    expect((await claimRow(actionId)).spentBySaleId).toBe(secondSaleId);
+    // One sale names a claim (`sale_tier_claim_unique`), so the voided sale has
+    // let go of it — and still says what it was rung up at.
+    const [voidedRow] = await ctx.db.select().from(sale).where(eq(sale.id, firstSaleId));
+    expect(voidedRow!.tierClaimId).toBeNull();
+    expect(voidedRow!.customerTier).toBe('expat');
+
+    // The give-back is audited on both sides, under the void's own request.
+    const [voidAudit] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'sale.void'), eq(auditLog.entityId, firstSaleId)));
+    expect(voidAudit!.before).toMatchObject({ tierClaimId: given.id });
+    expect(voidAudit!.after).toMatchObject({ restoredTierClaimId: given.id });
+    const restores = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'sale_tier_claim.restore'), eq(auditLog.entityId, given.id)));
+    expect(restores).toHaveLength(1);
+    expect(restores[0]).toMatchObject({
+      entityType: TIER_CLAIM_ENTITY,
+      requestId: voidAudit!.requestId,
+      before: { spentBySaleId: firstSaleId },
+      after: { spentBySaleId: null },
+    });
+
+    // Voiding the first sale again is answered as the replay it is, and does
+    // not take the check off the corrected sale.
+    const again = await voidSale(firstSaleId);
+    expect(again.statusCode).toBe(200);
+    expect(again.json().replay).toBe(true);
+    expect((await claimRow(actionId)).spentBySaleId).toBe(secondSaleId);
+  });
+
+  it('gives nothing back for a sale that spent no check', async () => {
+    const plain = await commit({ lines: [line(twoHoursId, 1, 0)] });
+    expect(plain.statusCode, plain.body).toBe(200);
+    const saleId = plain.json().sale.id as string;
+    const voided = await voidSale(saleId);
+    expect(voided.statusCode, voided.body).toBe(200);
+    const [voidAudit] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'sale.void'), eq(auditLog.entityId, saleId)));
+    expect(voidAudit!.after).toMatchObject({ restoredTierClaimId: null });
+    expect(
+      await ctx.db
+        .select()
+        .from(auditLog)
+        .where(eq(auditLog.action, 'sale_tier_claim.restore')),
+    ).toHaveLength(1);
+  });
+});
+
 describe('what may be claimed, and by whom', () => {
   it('refuses a document that has already expired', async () => {
     const res = await claim({

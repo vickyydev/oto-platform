@@ -77,7 +77,12 @@ import {
   resolveItemTaxCategories,
   type ModifierGroupWithOptions,
 } from './menu';
-import { resolveTierClaim, spendTierClaim, type TierClaimRefusal } from './sale-tier';
+import {
+  resolveTierClaim,
+  restoreTierClaimOf,
+  spendTierClaim,
+  type TierClaimRefusal,
+} from './sale-tier';
 import type { Exec, Tx } from './tx';
 import {
   assertSaleVouchersHeld,
@@ -1304,8 +1309,12 @@ export async function priceCart(
     input.promos ?? [],
   );
   const voucherClaim: CartVoucherClaim | null = voucherCart.claim;
+  const manualDiscounts = input.manualDiscounts ?? [];
   const voucherInputs = voucherClaim
-    ? voucherPricing(voucherClaim, cartLines, ctx, resolvedTier.code)
+    ? voucherPricing(voucherClaim, cartLines, ctx, resolvedTier.code, {
+        manualDiscounts: manualDiscounts as ManualDiscount[],
+        taxConfig: scope.taxConfig,
+      })
     : null;
   /** The voucher's own line, by cart line id, so the ledger row can say what it is. */
   const voucherLines = new Map<string, { id: string; code: string; productId: string }>();
@@ -1363,7 +1372,6 @@ export async function priceCart(
   // so this is one list or the other.
   const promos: CartPromo[] = voucherInputs ? [voucherInputs.promo] : tillPromos;
 
-  const manualDiscounts = input.manualDiscounts ?? [];
   const totals = computeTicketCartTotals(
     cartLines,
     promos,
@@ -3105,7 +3113,10 @@ export interface VoidSaleResult {
  * taken off (`releaseVoucher`). When the guest walks away, or the card is
  * declined and they leave, this is the way out: the sale is closed as void so
  * it can never be paid, and a voucher it held is free again — released by the
- * trigger in migration 0021 in the same statement, with its ledger row.
+ * trigger in migration 0021 in the same statement, with its ledger row. The
+ * document check that priced it is given back too (`restoreTierClaimOf`): the
+ * till voids and re-rings a corrected order under the same check, and the
+ * corrected sale must not be refused on a passport nobody stopped looking at.
  *
  * WHAT IT REFUSES, because each is a different act:
  *   - money taken on the sale (an attempt `approved` or `awaiting_settlement`)
@@ -3194,6 +3205,10 @@ export async function voidSale(
       voidedAt: now,
       voidedByAccountId: actor.accountId,
       voidReason: reason,
+      // Let go of the document check in the same statement: one sale names a
+      // claim (`sale_tier_claim_unique`), and the corrected sale is about to.
+      // The audit rows below and on the claim keep the link.
+      tierClaimId: null,
     })
     .where(eq(sale.id, saleId))
     .returning();
@@ -3207,6 +3222,14 @@ export async function voidSale(
     { accountId: actor.accountId, requestId: actor.requestId },
     reason,
   );
+  // A void takes no money, so the document check that priced this sale has
+  // paid for nothing: it is given back for the corrected sale (audit L6).
+  const restoredTierClaimId = await restoreTierClaimOf(
+    tx,
+    { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId },
+    saleId,
+    row.branchId,
+  );
   await audit.record(tx, {
     actorAccountId: actor.accountId,
     operatorId: actor.operatorId,
@@ -3215,7 +3238,7 @@ export async function voidSale(
     entityType: 'sale',
     entityId: saleId,
     requestId: actor.requestId,
-    before: { status: row.status },
+    before: { status: row.status, tierClaimId: row.tierClaimId },
     after: {
       status: 'voided',
       reason,
@@ -3225,6 +3248,7 @@ export async function voidSale(
       // beside them.
       failedAttemptIds: attempts.map((a) => a.id),
       releasedVoucherIds: held.map((v) => v.id),
+      restoredTierClaimId,
     },
   });
   return {

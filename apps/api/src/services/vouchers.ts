@@ -21,6 +21,7 @@ import {
   BOOTH_CODE_ALPHABET,
   BOOTH_CODE_LENGTH,
   boothStaffCode,
+  computeTicketCartTotals,
   isLegacyBoothCode,
   isoDateInTz,
   newId,
@@ -30,8 +31,10 @@ import {
   verifyBoothCode,
   wallClockMinutesInTz,
   type CartPromo,
+  type ManualDiscount,
   type PricingContext,
   type PromoDiscount,
+  type TaxConfigShape,
   type TicketCartLine,
 } from '@oto/shared';
 import { AppError } from '../lib/errors';
@@ -1650,11 +1653,13 @@ export const VOUCHER_LINE_PACKAGE_KEY = 'voucher-line';
  *                receipt line as on the bill.
  *   1+1 kids     with two or more kids tickets of the linked package on the
  *                cart, one kid's price for that package, AIMED AT THE KIDS OF
- *                ONE LINE of that package — the first line with a kid on it —
- *                so the free ticket is one kid's, never a share of the adults'
- *                or of every line's. Only the linked package qualifies, which
- *                is how "not valid for Eat & Play" holds: that package is never
- *                the one linked.
+ *                ONE LINE of that package — the line with the most kid value
+ *                left once the manual discounts have come off, the first such
+ *                line on a tie — so the free ticket is one kid's, never a
+ *                share of the adults' or of every line's, and never half a
+ *                kid off a line a manual discount already reduced (audit L1).
+ *                Only the linked package qualifies, which is how "not valid
+ *                for Eat & Play" holds: that package is never the one linked.
  *   hand over    a promo worth nothing, so the sale still records which voucher
  *                it carried, and no line: the prize has no product and no
  *                price. On its own it is still a sale — a ฿0 one, which
@@ -1665,11 +1670,18 @@ export const VOUCHER_LINE_PACKAGE_KEY = 'voucher-line';
  * come off — a quote shows it, a commit refuses it, so a voucher is never used
  * up for nothing.
  */
+/** What else is on the bill, for aiming a 1+1: the manual discounts, and the tax rules the engine runs under. */
+export interface VoucherAimContext {
+  manualDiscounts: readonly ManualDiscount[];
+  taxConfig: TaxConfigShape;
+}
+
 export function voucherPricing(
   claim: CartVoucherClaim,
   lines: readonly TicketCartLine[],
   ctx: PricingContext,
   tierCode: string,
+  aim: VoucherAimContext,
 ): { promo: CartPromo; line: TicketCartLine | null; notApplicable: string | null } {
   const base = { code: claim.code, label: claim.label } as const;
   const effect = claim.effect;
@@ -1729,9 +1741,18 @@ export function voucherPricing(
     case 'free_kids_ticket': {
       const qualifying = lines.filter((l) => l.packageId === effect.package.id && !l.promoItem);
       const kids = qualifying.reduce((sum, l) => sum + l.kids, 0);
-      // The kid whose ticket is free is on the first line of the package that
-      // has one; the price is that line's.
-      const aimedAt = qualifying.find((l) => l.kids > 0);
+      // The kid whose ticket is free is on the line of the package with the
+      // most kid value left once the manual discounts have come off — the
+      // first such line on a tie — and the price is that line's. Aimed at the
+      // first line with a kid, a 50% manual discount on that line left the
+      // voucher taking half a kid while the next line's kid paid in full
+      // (audit L1).
+      const aimedAt = qualifying
+        .filter((l) => l.kids > 0)
+        .reduce<{ line: TicketCartLine; left: number } | null>((best, line) => {
+          const left = kidValueLeft(line, lines, aim, ctx);
+          return best && best.left >= left ? best : { line, left };
+        }, null)?.line;
       const kidPrice = aimedAt ? priceForTier(aimedAt.package, aimedAt.tier, ctx.mode) : 0;
       return {
         promo: {
@@ -1753,6 +1774,34 @@ export function voucherPricing(
         notApplicable: null,
       };
   }
+}
+
+/**
+ * How much of one line's kids row a discount aimed at it could still take,
+ * once the manual discounts on the cart have come off.
+ *
+ * The engine's own answer, read by aiming a probe of unlimited value at that
+ * row and seeing what it takes: `computeTicketCartTotals` applies the manual
+ * discounts first — line ones in order, then order-wide ones spread across
+ * every unit — and clamps a line-aimed promo to what its scope has left. Read
+ * that way, this restates neither the discount order nor the spreading
+ * arithmetic, both of which are the engine's to change.
+ */
+function kidValueLeft(
+  line: TicketCartLine,
+  lines: readonly TicketCartLine[],
+  aim: VoucherAimContext,
+  ctx: PricingContext,
+): number {
+  const probe: CartPromo = {
+    code: 'probe',
+    label: 'probe',
+    type: 'fixed',
+    value: Number.MAX_SAFE_INTEGER,
+    line: { lineId: line.id, component: { kind: 'kids' } },
+  };
+  const totals = computeTicketCartTotals(lines, [probe], aim.manualDiscounts, aim.taxConfig, ctx);
+  return totals.appliedPromos[0]?.amount ?? 0;
 }
 
 /** The configured value a voucher's discount row records: satang, or basis points for a percentage. */

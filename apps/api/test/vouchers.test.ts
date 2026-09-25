@@ -2271,6 +2271,55 @@ describe('a voucher’s markdown lands on the line it belongs to', () => {
       amountSatang: KID,
     });
   });
+
+  /**
+   * L1 of the booth's closing audit. Aimed at the first line with a kid, the
+   * 1+1 took ฿445 off a line a 50% manual discount had already halved, while
+   * the next line's kid paid ฿890 in full: half a kid free instead of one.
+   */
+  it('a 1+1 is aimed at the line with the most kid value left once the manual discounts are off', async () => {
+    const v = await issue(defs.oneplusone!);
+    const halved = newId();
+    const full = newId();
+    const saleId = await holdAndCommit(tillA, v.code, {
+      stationId: t1.id,
+      lines: [
+        { id: halved, packageId: twoHoursHkt, kids: 1, adults: 0 },
+        { id: full, packageId: twoHoursHkt, kids: 1, adults: 0 },
+      ],
+      manualDiscounts: [
+        {
+          id: newId(),
+          scope: 'line',
+          targetLineId: halved,
+          type: 'percent',
+          value: 50,
+          reason: 'Staff family',
+        },
+      ],
+    });
+    const lines = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
+    const kidsOf = (cartLineId: string) =>
+      lines.find((l) => l.cartLineId === cartLineId && l.componentKey === 'kids')!;
+    // The manual half off the first line's kid; the whole free kid on the second.
+    expect(kidsOf(halved)).toMatchObject({ baseSatang: KID, discountSatang: KID / 2 });
+    expect(kidsOf(full)).toMatchObject({ baseSatang: KID, discountSatang: KID, grossSatang: 0 });
+    const [row] = await ctx.db
+      .select()
+      .from(saleDiscount)
+      .where(and(eq(saleDiscount.saleId, saleId), eq(saleDiscount.kind, 'promo')));
+    expect(row).toMatchObject({
+      scope: 'component',
+      targetLineId: full,
+      targetComponent: 'kids',
+      amountSatang: KID,
+    });
+    expect(await saleRow(saleId)).toMatchObject({
+      manualDiscountSatang: KID / 2,
+      promoDiscountSatang: KID,
+      grossSatang: KID / 2,
+    });
+  });
 });
 
 describe('a voucher that takes the whole bill', () => {
