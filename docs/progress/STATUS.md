@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-25, 08:59 (`main` at `4d0e24e` plus this checkpoint; staging deploying it)_
+_Last updated: 2026-09-25, 10:14 (`main` at `be7139d` plus this checkpoint; staging at `8ffe856`)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
@@ -73,8 +73,11 @@ Testing). The end-to-end proof on staging held at 9673e39 (a real box process on
 machine, the slip decoded from the printer bytes, the voucher redeemed once at the
 staging till) and the eight booth tickets are Deployed (03:41). The closing audit's fix
 round landed as `79a1c0e`…`4d0e24e` (the eight lanes); its 29 follow-ups are
-SCRUM-401…429; the Pi release is packed at `4d0e24e`. Running: the staging proof of
-the four big fixes, then "ready". Everything below waits behind it.
+SCRUM-401…429; the Pi release is packed at `4d0e24e`. The staging proof of the four
+big fixes held at `8ffe856` (three small History gaps → SCRUM-430, Low). **READY for
+the owner's bench test**: the release `oto-box-0.1.0-8ffe856.tgz` is with him, the
+guides are `docs/ops/PI_BOOTH.md`, `BOOTH_SETUP.md` and `COUNTER_VOUCHERS.md`, the
+bench steps are in `plans/booth/PLAN.md`. Everything below waits behind the bench.
 
 **Then the recommended order, still the owner's to confirm**, with the reasoning in
 `SESSION_HANDOVER.md`:

@@ -19,7 +19,7 @@ The ticket till is the POS's **Tickets** tab; the restaurant till is its **F&B**
 2. Type the code off the slip into **Redeem voucher**, under the promo code box, and press **Redeem** — or scan the slip's QR with the counter's scanner, which does the same. Spaces, dashes and small letters do not matter. After its first two characters a code never has a 0, 1, I, L, O or U in it.
 3. The **voucher card** appears, in green. Check it against the slip: the prize, the code, the booth and when it was printed, the last day it is valid, and "Printed by" — the name on the slip's Staff line. (The card writes dates its own way — "9 Oct 2026" where the slip has "09 Oct 2026", and "Sep" where the slip has "Sept" — but they are the same dates.)
 4. Do what the card says (section 4).
-5. **Pay** → how the family pays → **Confirm Payment Received**. When the sale comes to ฿0 there is nothing to choose: the screen says "No payment needed" — press **Complete Sale**. The voucher is used up only now; the confirmation says "Voucher … used".
+5. **Pay** → the *Customer Details* screen (the family's display asks for their details; the till waits until they finish or skip) → how the family pays → **Confirm Payment Received**. When the sale comes to ฿0 there is nothing to choose: the screen says "No payment needed" — press **Complete Sale**. The voucher is used up only now; the confirmation says "Voucher … used".
 
 ## 3. At the restaurant till
 

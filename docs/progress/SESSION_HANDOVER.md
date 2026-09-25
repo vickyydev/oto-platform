@@ -252,6 +252,51 @@ different; the Pi runtime and the counter were not built at all).**
   the CI pack step at Medium; the rest Low). **In flight: P8** (`wf_eb9c1b9f`; the first run `wf_f1376481` stopped
   correctly at the red CI), the staging proof of C1, C2, H1, H2 and the
   counter guide once staging is live at `8ffe856`; then "ready".
+- **P8 held on staging at `8ffe856` (09:19–09:48, `wf_eb9c1b9f`): every fix of
+  the closing audit works as a person sees it.** H2: an empty prefix refused
+  with the red line and Create greyed, "PI1" cut to "PI", "B-" refused by the
+  api's own sentence in the drawer, the api refusing null/PI1/B-/b3 on create
+  and update, the box's television naming the prefix rule before any booth
+  exists. H1: with the stand-in printer silent to status queries the wheel
+  turned 2.2 s after the press and the slip printed (decoded from the bytes),
+  never "Booth not ready"; answering, 0.18 s; a reprint on the silent printer
+  went through. C2: a "Proof gift" hand-over type created, its slip alone →
+  "Ring up to use it, then hand over", Pay ฿0 → "No payment needed" → Complete
+  Sale (T1-000023) → a second scan "Already redeemed … by Som"; the type
+  archived with the Console's warning about the prize that points at it. C1:
+  Pay, the padlock, the same slip on a new cart → the refusal named the unpaid
+  sale (till, time, ฿890) and offered the void → voided with its reason, the
+  voucher on the new sale, paid (T1-000024), a third scan refused; History's
+  own "Void unpaid sale" with a reason works. M6: the slip's "Expires 09 Oct
+  2026", the card "valid until 9 Oct 2026", the api's moment the end of that
+  day in Bangkok. The counter guide walked at both tills (Bracelet at the
+  ticket till, Kids Pizza refused there and taken at the F&B tab, a scanned
+  slip landing by itself in 6.6 s, the bin before Pay, Cancel after Pay). The
+  demo wheel spins. Cards: `staging-207-fixes.png`, `staging-398-printer.png`,
+  `staging-399-prefix.png`, `staging-400-console-fixes.png` (all four opened
+  and checked; comments 10:08–10:09 on 207, 398, 399, 400, which stay
+  Deployed). **Three small gaps → SCRUM-430 (Low):** History shows a sale
+  voided from the till's offer as Voided without its reason; the list says
+  "Unpaid" after a void until a reload; a voided sale keeps a greyed Refund;
+  the code stays in the Redeem box after the offer's void. One guide sentence
+  corrected in this commit: the counter guide's Pay step now names the
+  Customer Details screen the till shows first. Left on staging: "Proof box 2
+  (26 Sept)" offline with its credential deleted, its printer row at a
+  loopback address, "Booth 3 (fixes)" (B3, v1; its Proof gift prize points at
+  the archived type, so its next publish is refused until the prize is
+  changed), sales T1-000023–26 and three voided unpaid sales, two unused
+  Bracelet slips, **som's booth PIN minted by the pass (the owner resets it —
+  a PIN belongs to the person, so it applies at Booths 1, 2 and 3)**; Booth
+  1's odds, the six launch types, the shop untouched.
+- **READY (10:14).** Told to the owner with: the release
+  `oto-box-0.1.0-8ffe856.tgz` and its SHA-256 (sent 09:4x); the bench steps
+  of `docs/progress/plans/booth/PLAN.md` with the three guides; what to reset
+  on staging first (som's PIN; archive the two proof boxes and their booths;
+  clear the Health warning); the printer question (Q4) and the decisions
+  still open (the audit's Q1–Q3, Q5, Q6 taken by recommendation; the
+  multi-staff attribution plan's six choices). Next after the bench: the
+  audit's follow-ups SCRUM-401…430 in their priority order, then the Sprint 2
+  order that waited (391, 388, 382, Slice F, …).
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as

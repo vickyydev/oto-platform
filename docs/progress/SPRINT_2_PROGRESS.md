@@ -2,7 +2,7 @@
 
 ## Status
 
-_Last updated 2026-09-25, 08:59._
+_Last updated 2026-09-25, 10:14._
 
 > **Resuming? Read `SESSION_HANDOVER.md` → "2026-09-24 — closing S2-09", then
 > "State at the end of 2026-09-23".** It carries the live commit on every staging service, what landed
@@ -11,7 +11,10 @@ _Last updated 2026-09-25, 08:59._
 > has the ticket-by-ticket evidence. This block is the summary; those files are
 > the detail.
 
-- **Current checkpoint.** CP1 passed; the sprint is inside **S2-10 (payments)**,
+- **Current checkpoint.** The booth is **ready for the owner's bench test** (25 Sept,
+  10:14): four slices, the closing audit's fix round and its staging proof landed;
+  the Pi release at `8ffe856` is with the owner; SCRUM-401…430 are the follow-ups.
+  CP1 passed; the sprint is inside **S2-10 (payments)**,
   and **S2-09 is closed** — SCRUM-202, 204 and 392 Deployed on the 24th at 06:27
   (392, the scan stream held back by the POS site's rewrite, fixed at `003dac7`
   and proven on staging). CP2's remaining line is
