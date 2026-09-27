@@ -536,8 +536,11 @@ different; the Pi runtime and the counter were not built at all).**
   Windows-level hook and a tap on the channel proved it, the test key
   injected into the hook as the control). The maker's setup program (the
   manual's QR code; step 4 picks Space on the on-screen keyboard, step 5
-  saves) sets it to Space; the fallback, only on the owner's say-so, is a
-  Pi-side adapter turning that report into a Space key. The old Replit wheel
+  saves) sets it to Space. **Resolved at 02:12:** the owner found the maker's
+  program on a Lanzou share (`2026gaijian V2.exe`, "LinTxKeyboard-B" 1.5; a
+  Defender scan of the folder was clean, the warning was SmartScreen's
+  unknown-publisher notice; its config switched to English) and set the
+  button to Space with it — the Pi-side adapter is not needed. The old Replit wheel
   accepted Space or Enter and its site button sent Enter, which TV Bro ate —
   Space-only stands. `button-test.html` (a browser key test) is on his Desktop.
 - **Open with the owner: multi-staff attribution at one booth** (his

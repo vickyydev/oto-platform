@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-28, 01:57 (STOP POINT held; bench prep — `main` at `c34ec17`: the installer's `--printer-direct` option, the release on the owner's Desktop; staging follows CI)_
+_Last updated: 2026-09-28, 01:57 (STOP POINT held; bench prep — `main` at `c34ec17`: the installer's `--printer-direct` option, the release on the owner's Desktop, the red button set to Space; staging follows CI)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
