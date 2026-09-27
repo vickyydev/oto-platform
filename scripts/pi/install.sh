@@ -16,6 +16,10 @@
 #   --no-kiosk            the box without the television (a headless test)
 #   --rotate cw|ccw       which way the page turns a television hung portrait:
 #                         cw (the default) or ccw if the picture is upside down
+#   --printer-direct      the receipt printer plugs by network cable straight into
+#                         the Pi's Ethernet socket, no router between them: gives
+#                         eth0 a fixed address for it (192.168.192.10) and leaves
+#                         Wi-Fi and every other connection alone
 #
 # Written for Raspberry Pi OS 64-bit (Debian 12, Bookworm) WITH the desktop:
 # the television is Chromium on that desktop, so Lite (no desktop) will not do.
@@ -42,6 +46,9 @@ SSH_KEYS_ONLY=0
 WITH_KIOSK=1
 API_GIVEN=0
 ROTATE=""
+PRINTER_DIRECT=0
+PRINTER_IFACE="eth0"
+PRINTER_LINK_ADDR="192.168.192.10/24"
 TARBALL=""
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
@@ -58,6 +65,7 @@ while [ $# -gt 0 ]; do
     --ssh-keys-only) SSH_KEYS_ONLY=1; shift ;;
     --no-kiosk) WITH_KIOSK=0; shift ;;
     --rotate) ROTATE="${2:?--rotate needs cw or ccw}"; shift 2 ;;
+    --printer-direct) PRINTER_DIRECT=1; shift ;;
     -h|--help) sed -n '2,/^$/p' "$0"; exit 0 ;;
     *.tgz|*.tar.gz) TARBALL="$1"; shift ;;
     *) die "unknown option: $1" ;;
@@ -122,6 +130,63 @@ fi
 say "Clock: NTP on, timezone $TIMEZONE"
 timedatectl set-ntp true || warn "could not switch NTP on"
 timedatectl set-timezone "$TIMEZONE" || warn "could not set the timezone"
+
+# --- The printer cable ------------------------------------------------------
+# The booth's standard (PI_BOOTH.md section 1): the receipt printer plugs by
+# network cable straight into the Pi's Ethernet socket, with no router between
+# them, and the Pi's internet comes over Wi-Fi or a SIM dongle. The printer
+# keeps its factory settings — Epson's are 192.168.192.168 on a /24 with "get
+# address automatically" on — so eth0 gets a fixed address on that network,
+# and a link-local address beside it for a printer that answered no DHCP by
+# falling back to 169.254.x.x; never-default keeps the internet route off the
+# cable. One NetworkManager profile, "printer-link": added the first time,
+# re-applied on every run after, never a second one. Nothing else on the Pi —
+# Wi-Fi, a dongle, any other profile — is touched. Not yet run on a Pi either:
+# the bench is its first real run.
+PRINTER_NOTE="on the router path (no --printer-direct): the printer and the Pi on the same network, the printer on a DHCP reservation. For a printer cabled straight into the Pi, run the installer again with --printer-direct"
+if [ "$PRINTER_DIRECT" -eq 1 ]; then
+  say "Printer cable: printer-link on $PRINTER_IFACE ($PRINTER_LINK_ADDR)"
+  if ! command -v nmcli >/dev/null; then
+    warn "nmcli is not on this system (no NetworkManager), so the printer cable was NOT set up; Wi-Fi and every other connection were left as they are. Raspberry Pi OS Bookworm has nmcli — is this another system?"
+    PRINTER_NOTE="NOT set up — nmcli is missing on this system. Use the router path (PI_BOOTH.md section 1), or run the installer again with --printer-direct on Raspberry Pi OS"
+  else
+    [ -e "/sys/class/net/$PRINTER_IFACE" ] || warn "no $PRINTER_IFACE on this machine: the printer link is saved for it all the same"
+    NM_PROPS=(
+      connection.autoconnect yes connection.autoconnect-priority 10
+      ipv4.method manual ipv4.addresses "$PRINTER_LINK_ADDR" ipv4.never-default yes ipv4.link-local enabled
+      ipv6.method disabled
+    )
+    if nmcli connection show printer-link >/dev/null 2>&1; then
+      LINK="already there, its settings applied again"
+      nmcli connection modify printer-link connection.interface-name "$PRINTER_IFACE" "${NM_PROPS[@]}" || LINK=""
+    else
+      LINK="added"
+      nmcli connection add type ethernet ifname "$PRINTER_IFACE" con-name printer-link "${NM_PROPS[@]}" || LINK=""
+    fi
+    if [ -z "$LINK" ]; then
+      warn "nmcli refused the printer-link connection, so the printer cable was NOT set up; nothing else was changed"
+      PRINTER_NOTE="NOT set up — nmcli refused the printer-link connection (its message is above). Nothing else was changed"
+    else
+      ACTIVE="$(nmcli -g GENERAL.CONNECTION device show "$PRINTER_IFACE" 2>/dev/null || true)"
+      GATEWAY="$(nmcli -g IP4.GATEWAY device show "$PRINTER_IFACE" 2>/dev/null || true)"
+      [ "$GATEWAY" = "--" ] && GATEWAY=""
+      if [ "$ACTIVE" = "printer-link" ]; then
+        echo "printer-link $LINK; it is up on $PRINTER_IFACE"
+        PRINTER_NOTE="printer-link on $PRINTER_IFACE ($PRINTER_LINK_ADDR), up"
+      elif [ -n "$GATEWAY" ]; then
+        # Switching eth0 over now would cut off an installer running over SSH on it.
+        warn "$PRINTER_IFACE carries this Pi's internet right now (gateway $GATEWAY: the cable goes to a router, not the printer), so printer-link was saved but not switched on — switching would have cut this session off. It takes $PRINTER_IFACE by itself at the next boot; before then give the Pi its internet over Wi-Fi: sudo nmcli device wifi connect \"<network name>\" password \"<password>\""
+        PRINTER_NOTE="printer-link on $PRINTER_IFACE saved, NOT switched on: $PRINTER_IFACE still carries the internet (the warning above). Put the Pi on Wi-Fi, move the cable to the printer, reboot"
+      elif nmcli -w 20 connection up printer-link >/dev/null; then
+        echo "printer-link $LINK; it is up on $PRINTER_IFACE"
+        PRINTER_NOTE="printer-link on $PRINTER_IFACE ($PRINTER_LINK_ADDR), up"
+      else
+        echo "printer-link $LINK; not up yet (no cable, or the printer is off) — it comes up by itself once the printer is plugged in and switched on"
+        PRINTER_NOTE="printer-link on $PRINTER_IFACE ($PRINTER_LINK_ADDR), saved — it comes up by itself when the printer is plugged in and switched on"
+      fi
+    fi
+  fi
+fi
 
 # --- Node 22 ----------------------------------------------------------------
 # From nodejs.org, checked against its published SHA-256 list. Debian's own
@@ -324,6 +389,19 @@ fi
 sleep 3
 systemctl --no-pager --lines=0 status oto-box.service || true
 
+if [ "$PRINTER_DIRECT" -eq 1 ]; then
+  PRINTER_STEP="  3. The printer: plug it into the Pi's Ethernet socket with an ordinary network
+     cable and switch it on; nothing on the printer needs setting. Print its
+     self-test page (switch it off, hold FEED, switch it on and keep holding until
+     it prints): its address is on that page. In the Console, add the receipt
+     printer to this box at that address followed by :9100 — usually
+     192.168.192.168:9100. Then create a booth station on this box, put staff on
+     the booth, publish the wheel."
+else
+  PRINTER_STEP="  3. In the Console: add the receipt printer to this box at its network address,
+     create a booth station on this box, put staff on the booth, publish the wheel."
+fi
+
 cat <<EOF
 
 Installed: oto-box $RELEASE, talking to $(grep '^OTO_BOX_API=' /etc/oto-box/config | cut -d= -f2-)
@@ -332,12 +410,12 @@ Next:
   1. In the Console: Devices -> Add a box. Copy the claim code (valid for a short time).
   2. Type it on the television ("Set up this box"), or here:
        sudo oto-box claim          (it asks for the code, so the code stays out of the shell history)
-  3. In the Console: add the receipt printer to this box at its network address,
-     create a booth station on this box, put staff on the booth, publish the wheel.
+$PRINTER_STEP
   4. Check:   oto-box status     journalctl -u oto-box -f     (the box row in Console -> Devices)
   5. First install: reboot once (sudo reboot). The desktop logs in by itself and
      the television opens the booth; every boot after that does the same.
 
 SSH: $SSH_NOTE
+Printer: $PRINTER_NOTE
 The credential is /var/lib/oto-box/credential.json (owner-only). Never copy it to another machine.
 EOF
