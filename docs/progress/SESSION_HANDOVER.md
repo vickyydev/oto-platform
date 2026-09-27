@@ -517,6 +517,29 @@ different; the Pi runtime and the counter were not built at all).**
   the box/booth/shared test files' hygiene still open). Nothing is in Testing now. One
   flaky Console browser case since the built-bundle switch (one failure in nine runs) is
   noted on 422, not ticketed.
+- **Bench prep (28 Sept, 01:57).** At the owner's request, not a defect round:
+  `c34ec17` — the Pi installer's `--printer-direct` option (one NetworkManager
+  profile, `printer-link` on eth0: 192.168.192.10/24 beside a link-local
+  address, no internet route over the cable, applied again on every run,
+  never switched on while eth0 carries the Pi's internet) and the Pi guide's
+  direct-cable standard (sections 1, 3, 5, 7 and 8; the park's router stays
+  the alternative). CI green; the release `oto-box-0.1.0-c34ec17.tgz` (SHA-256
+  `b220c181…c40c`) verified and on the owner's Desktop — **the one to
+  install**. Note on SCRUM-418; no new ticket. The owner benches from his
+  MacBook: Imager (Legacy 64-bit, Bookworm desktop), `scp` to `booth.local`,
+  the install over Wi-Fi with the option, claim, the printer cabled straight
+  into the Pi, its self-test page's address followed by `:9100` in the Console.
+  **The red button** is a Tezuo foot-switch board (USB `8088:0015`, calls
+  itself "LinTx Keyboard"): programmable, and today it sends **no key** —
+  presses reach the PC only on its vendor setup channel (65-byte reports
+  `00 66 CC 03 00 01 07 …`), nothing on the keyboard or mouse channel (a
+  Windows-level hook and a tap on the channel proved it, the test key
+  injected into the hook as the control). The maker's setup program (the
+  manual's QR code; step 4 picks Space on the on-screen keyboard, step 5
+  saves) sets it to Space; the fallback, only on the owner's say-so, is a
+  Pi-side adapter turning that report into a Space key. The old Replit wheel
+  accepted Space or Enter and its site button sent Enter, which TV Bro ate —
+  Space-only stands. `button-test.html` (a browser key test) is on his Desktop.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
