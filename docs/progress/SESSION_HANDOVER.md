@@ -509,6 +509,14 @@ different; the Pi runtime and the counter were not built at all).**
   lock in a second round; migration 0026). All in Testing. CI green through `afc9d3e` and
   staging live on it; `c4ce3aa` follows. **The tree holds here.** Nothing starts until the
   owner's bench results; then one quick round per reported defect, no new tickets.
+  **Testing queue closed (27 Sept, 15:45) at the owner's request:** one proof pass
+  (`wf_c5d49988`, images `aa376c3`) — History's masked labels after migration 0025, the
+  promo box, the platform's "was not found" wording on staging; test-run and CI cards for
+  403, 412, 422, 425, 440, 444, 445, 446 — walked 433, 442, 441, 403, 444, 440, 446, 412,
+  425, 445 and 422 to **Deployed**; **423 back to In Progress** (undo SQL for 0021/0022 and
+  the box/booth/shared test files' hygiene still open). Nothing is in Testing now. One
+  flaky Console browser case since the built-bundle switch (one failure in nine runs) is
+  noted on 422, not ticketed.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as

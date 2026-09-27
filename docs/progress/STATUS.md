@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-26, 01:59 (STOP POINT — the last five rounds landed; `main` at `c4ce3aa`; staging at `afc9d3e`, `c4ce3aa` following)_
+_Last updated: 2026-09-27, 15:45 (STOP POINT held; the Testing queue closed — eleven Deployed, 423 In Progress; `main` at `aa376c3`; staging at `c4ce3aa`)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the
