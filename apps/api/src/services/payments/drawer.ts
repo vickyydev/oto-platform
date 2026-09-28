@@ -148,10 +148,9 @@ export async function resolveDrawerKick(
  * command's `{commandId, actionId}` overwrites the sale — so the retry is
  * answered 200 with no sale in it and nothing to print.
  *
- * One request, one stored answer. The kick keeps everything else the context
- * carries — the actor, the operator, the branch, the request id and the
- * logger — so its audit row and its log line still say which press opened the
- * drawer.
+ * One request, one stored answer. The kick retains the request id and logger.
+ * Its success audit gets the actor and branch from queueCommand's own input;
+ * the context's actor and branch are retained for failure reporting.
  */
 function withoutIdempotencyClaim(ctx: OpContext): OpContext {
   const { idempotency: _theFinalisesClaim, ...rest } = ctx;

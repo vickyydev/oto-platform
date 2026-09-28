@@ -74,8 +74,7 @@ const remove = (code: string) =>
 const auditRows = async (action: string) =>
   ctx.db.select().from(auditLog).where(eq(auditLog.action, action));
 
-/** A sale settled at the counter, so a tender has money against it. */
-async function sellFor(tender: Record<string, unknown>): Promise<string> {
+async function tryTender(tender: Record<string, unknown>) {
   const till = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   const saleId = newId();
   const committed = await ctx.app.inject({
@@ -96,7 +95,13 @@ async function sellFor(tender: Record<string, unknown>): Promise<string> {
     headers: { cookie: till },
     payload: tender,
   });
-  expect(finalised.statusCode).toBe(200);
+  return { saleId, response: finalised };
+}
+
+/** A sale settled at the counter, so a tender has money against it. */
+async function sellFor(tender: Record<string, unknown>): Promise<string> {
+  const { saleId, response } = await tryTender(tender);
+  expect(response.statusCode).toBe(200);
   return saleId;
 }
 
@@ -332,26 +337,9 @@ describe('removing a tender', () => {
 /**
  * WHAT THE LEDGER ITSELF WILL AND WILL NOT REFUSE.
  *
- * Three tests, because between them they say exactly how much of "the till may
- * only take money in a tender the park offers" is enforced below the screen —
- * and the honest answer today is: only for a caller that declares no kind.
- *
- * `finaliseSale` resolves a tender through `pos.payment_method` and falls back
- * to the kind the till declared when no live row answers (`tenderMethodOf`,
- * `services/sale.ts`). That fallback is deliberate and right: a tender archived
- * between the press and the write must not cost the park a sale at the counter.
- * Its consequence is that the METHOD GRID is the whole of the enforcement for
- * both `enabled` and `archived_at`, because the till always declares a kind
- * (`SaleTenderPayload.kind` is required, `apps/pos/src/api/sales.ts`).
- *
- * That is a real gap against the prototype's rule — "never record an order
- * against a hidden tender"
- * (`imports/oto-pos/artifacts/oto-till/src/components/fnb/FnbPayment.tsx:82`) —
- * and it is not this slice's to close: the predicate belongs in
- * `tenderMethodOf`, in the file Slice B owns, so that the EDC, the QR and the
- * offline writers inherit the same refusal. Pinned here so that the day it is
- * closed, these two tests fail and their opposites go in their place rather
- * than the change landing silently.
+ * SCRUM-382: a declared kind cannot bypass a configured disabled or archived
+ * tender. A new live row with the same code wins over archived history. The
+ * older-catalogue classification fallback remains only when no row exists.
  */
 describe('what the ledger does with a tender that has left the list', () => {
   it('refuses a tender it has never heard of, when nothing declares its kind', async () => {
@@ -379,30 +367,52 @@ describe('what the ledger does with a tender that has left the list', () => {
     expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
   });
 
-  it('still records one against an ARCHIVED tender when the till declares a kind', async () => {
+  it('refuses an archived tender even when the till declares a kind', async () => {
     await create({ code: 'gift_certificate', label: 'Gift certificate', kind: 'cash' });
     expect((await remove('gift_certificate')).statusCode).toBe(200);
-    const saleId = await sellFor({ method: 'gift_certificate', kind: 'cash' });
-    const [attempt] = await ctx.db
-      .select()
-      .from(paymentAttempt)
-      .where(eq(paymentAttempt.saleId, saleId));
-    expect(attempt!.method).toBe('cash');
-    expect(attempt!.methodCode).toBe('gift_certificate');
-    // And the archived tender's history stays countable, which is why a
-    // re-created `gift_certificate` would be refused a delete from here on.
+    const { saleId, response } = await tryTender({ method: 'gift_certificate', kind: 'cash' });
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('PAYMENT_METHOD_UNAVAILABLE');
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
     expect((await list()).map((m) => m.id)).not.toContain('gift_certificate');
   });
 
-  it('still records one against a DISABLED tender — Slice B’s to refuse', async () => {
+  it('refuses a disabled tender even when the till declares a kind', async () => {
     await patch('promptpay', { enabled: false });
-    const saleId = await sellFor({ method: 'promptpay', kind: 'qr' });
-    const [attempt] = await ctx.db
-      .select()
-      .from(paymentAttempt)
-      .where(eq(paymentAttempt.saleId, saleId));
-    expect(attempt!.method).toBe('qr');
-    expect(attempt!.methodCode).toBe('promptpay');
-    await patch('promptpay', { enabled: true });
+    try {
+      const { saleId, response } = await tryTender({ method: 'promptpay', kind: 'qr' });
+      expect(response.statusCode).toBe(409);
+      expect(response.json().error.code).toBe('PAYMENT_METHOD_UNAVAILABLE');
+      expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
+    } finally {
+      await patch('promptpay', { enabled: true });
+    }
+  });
+
+  it('applies the disabled card refusal to its legacy credit_card alias', async () => {
+    await patch('card', { enabled: false });
+    try {
+      const { saleId, response } = await tryTender({ method: 'credit_card', kind: 'card' });
+      expect(response.statusCode).toBe(409);
+      expect(response.json().error.code).toBe('PAYMENT_METHOD_UNAVAILABLE');
+      expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
+    } finally {
+      await patch('card', { enabled: true });
+    }
+  });
+
+  it('uses a new live tender instead of its archived history with the same code', async () => {
+    expect((await create({ code: 'gift_certificate', label: 'Gift certificate', kind: 'cash' })).statusCode).toBe(200);
+    const saleId = await sellFor({ method: 'gift_certificate', kind: 'cash' });
+    const [attempt] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    expect(attempt!.method).toBe('cash');
+    expect(attempt!.methodCode).toBe('gift_certificate');
+  });
+
+  it('retains classification for an older-catalogue token with no configured row', async () => {
+    const saleId = await sellFor({ method: 'legacy_cash_token', kind: 'cash' });
+    const [attempt] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    expect(attempt!.method).toBe('cash');
+    expect(attempt!.methodCode).toBe('legacy_cash_token');
   });
 });

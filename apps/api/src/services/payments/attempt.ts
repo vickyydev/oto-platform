@@ -1,7 +1,8 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { paymentAttempt, paymentMethod, sale, type PaymentMethod, type PaymentProvider } from '@oto/db';
 import {
   newId,
+  PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   type PaymentAttemptStatus,
   type PaymentAttemptView,
@@ -44,7 +45,7 @@ import type { Exec, Tx } from '../tx';
  */
 
 /** The statuses that mean the money was taken (`PAYMENT_ATTEMPT_TAKEN_STATUSES`). */
-const TAKEN: readonly PaymentAttemptStatus[] = ['approved', 'awaiting_settlement'];
+const TAKEN = PAYMENT_ATTEMPT_TAKEN_STATUSES;
 
 /**
  * THE STATUS `outstandingOf` COUNTS, and the one a cash tender is written at.
@@ -354,9 +355,9 @@ export async function findAttemptByAction(
  * `credit_card` resolves to `card` first, because the POS has normalised that
  * legacy token on read since the prototype (`lib/payments.ts:12`) and the
  * ledger should not be the one place it stops resolving. The till's own
- * classification is the fallback for a token this operator has no row for — a
- * till running an older catalogue, a tender archived between the press and the
- * write.
+ * classification is the fallback only for a token this operator has no row
+ * for. A configured disabled or archived tender is refused, even when an older
+ * till still displays it. Settling an existing attempt does not re-resolve it.
  *
  * A TENDER NOBODY CAN CLASSIFY IS REFUSED rather than guessed at. The list's
  * fourth kind, `other`, has no word in the ledger's vocabulary: `wallet` and
@@ -376,16 +377,24 @@ export async function tenderMethodOf(
 ): Promise<PaymentMethod> {
   const code = methodCode === 'credit_card' ? 'card' : methodCode;
   const [configured] = await db
-    .select({ kind: paymentMethod.kind })
+    .select({ kind: paymentMethod.kind, enabled: paymentMethod.enabled, archivedAt: paymentMethod.archivedAt })
     .from(paymentMethod)
     .where(
       and(
         eq(paymentMethod.operatorId, operatorId),
         eq(paymentMethod.code, code),
-        isNull(paymentMethod.archivedAt),
       ),
     )
+    // A live replacement wins over archived history with the same code.
+    .orderBy(sql`${paymentMethod.archivedAt} asc nulls first`)
     .limit(1);
+  if (configured && (!configured.enabled || configured.archivedAt)) {
+    throw errors.conflict(
+      'PAYMENT_METHOD_UNAVAILABLE',
+      'This payment method is no longer available. Choose an available method.',
+      { method: methodCode },
+    );
+  }
   const kind = configured?.kind ?? declaredKind;
   if (kind === 'cash' || kind === 'card' || kind === 'qr') return kind;
   // Two different refusals, because they are two different things to go and

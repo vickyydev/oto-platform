@@ -9,7 +9,8 @@ Write new history and progress comments about OTO Park and the park.
 
 Branch `fix/payment-prerequisites` starts at main `a4a79d7`. The first batch is
 SCRUM-391, SCRUM-388 and SCRUM-382; all three have starting comments.
-SCRUM-388 moves to Testing on this push; 391 and 382 remain In Progress.
+SCRUM-388 is Testing; SCRUM-382 moves to Testing on this push; 391 remains
+In Progress.
 SCRUM-388 adds one common sale-locked reservation check in
 `services/payments/attempt.ts`. Every writer reserves pending money before
 requesting another payment; failed attempts release it, while the paid-only
@@ -19,10 +20,18 @@ statuses, cash/manual refusals and a split remainder; all 22 existing offline
 replay tests also pass. API typecheck, changed-file lint and independent
 review pass. Staging still has the previous release.
 
-SCRUM-391 is in parallel implementation in payment routing, terminal/gateway
-services and their existing tests. SCRUM-382 follows this checkpoint in the
-common method resolver. Keep these as separate ticket commits and deploy the
-batch after review and green CI. Each push needs a ticket status change and
+SCRUM-382 is complete in the common resolver: configured disabled or archived
+methods refuse with 409 PAYMENT_METHOD_UNAVAILABLE. A live replacement wins
+over archived history; the declared-kind fallback applies only when no row
+exists. Its two comment follow-ups are included. The method suite passes 23
+tests. The sync suite now passes 23, including offline refusal retaining the
+complete signed fact, no partial money, and successful Replay after re-enable.
+Such offline facts need Console Failures correction and Replay; the box does
+not automatically re-send an acknowledged quarantined event.
+
+SCRUM-391's routing, terminal/gateway services and existing tests are implemented
+in parallel and ready for their separate commit. Source checks and independent
+review pass. Deploy the batch after green CI. Each push needs a ticket status change and
 progress comment. Deployed still requires a named staging screenshot.
 
 After these prerequisites, resume SCRUM-206 Slice F. Its UI must use the

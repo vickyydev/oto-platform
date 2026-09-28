@@ -16,9 +16,18 @@ cash-suite tests and 22 offline replay tests pass, including simultaneous
 presses and cash/manual bypass. API typecheck, changed-file lint and an
 independent money/locking review pass. This change is not deployed yet.
 
-SCRUM-391 is being implemented in parallel; SCRUM-382 follows the reservation
-checkpoint. SCRUM-388 moves to Testing on this push; 391 and 382 remain
-In Progress in active sprint id 3, Sprint 2.
+SCRUM-382 now refuses disabled or archived methods with
+`PAYMENT_METHOD_UNAVAILABLE`, including the legacy card alias. A live replacement
+wins over archived history; classification fallback remains only for an absent
+row. All 23 existing method tests pass. Offline money refused by this rule is
+retained in quarantine, with no partial sale; after correction, Console Replay
+applies it once. That recovery passes in the existing 23-test sync file.
+The shared taken-status list and drawer audit comment follow-ups are included.
+
+SCRUM-391 is implemented in parallel and awaiting its commit. SCRUM-388 is
+Testing; SCRUM-382 moves to Testing on this push; 391 remains In Progress in
+active sprint id 3, Sprint 2. The batch's source checks and independent review
+pass; staging proof follows the final routing checkpoint.
 Slice F remains unbuilt. Its complete offline and separate-display acceptance
 also needs the existing SCRUM-269/285 and S2-08 seams. Real 2C2P sandbox
 confirmation still needs credentials; simulator proof can proceed.

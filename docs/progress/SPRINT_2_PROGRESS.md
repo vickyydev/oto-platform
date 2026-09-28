@@ -6,11 +6,13 @@ _Current checkpoint: 2026-09-29._
 
 The Lucky Wheel bench test and walkthrough are complete. Sprint 2 resumes
 with SCRUM-391, SCRUM-388 and SCRUM-382 on `fix/payment-prerequisites`, then
-SCRUM-206 Slice F. SCRUM-388 moves to Testing on this push; 391 and 382
-remain In Progress in active sprint id 3. The common pending-payment
+SCRUM-206 Slice F. SCRUM-388 is Testing; SCRUM-382 moves to Testing on
+this push; 391 remains In Progress in active sprint id 3. The common pending-payment
 reservation is implemented; the existing cash and offline replay suites pass
-43 tests, API typecheck, changed-file lint and independent review pass. The QR
-routing work is in parallel implementation. Nothing in this batch is deployed
+43 tests at its checkpoint. SCRUM-382 refuses unavailable methods, preserves
+live replacements and proves quarantined offline recovery; its method and sync
+files pass 46 tests. API typecheck, changed-file lint and independent review
+pass. The QR routing work is implemented and ready for its commit. Nothing in this batch is deployed
 yet. See the newest STOP POINT in `SESSION_HANDOVER.md` for the working state.
 
 Slice F also depends on the existing offline transport work (269/285) and

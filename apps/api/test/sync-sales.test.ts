@@ -8,6 +8,7 @@ import {
   boxCommand,
   device,
   paymentAttempt,
+  paymentMethod,
   receiptSeries,
   sale,
   station,
@@ -276,6 +277,46 @@ const saleRow = async (saleId: string) => {
 // ---------------------------------------------------------------------------
 
 describe('a sale taken with no internet reaches the ledger (SCRUM-206)', () => {
+  it('retains unavailable-tender money in quarantine and applies it after re-enable (SCRUM-382)', async () => {
+    const b = await freshBox();
+    const total = await quotedTotal(b.stationId);
+    const saleId = newId();
+    const event = mint(b, 'sale.finalised', {
+      saleId,
+      cart: cart(total),
+      tenders: [cashTender(total)],
+      receipt: { series: b.prefix, seq: 1, number: `${b.prefix}-000001` },
+    });
+    const cash = and(eq(paymentMethod.operatorId, operatorId), eq(paymentMethod.code, 'cash'));
+    await ctx.db.update(paymentMethod).set({ enabled: false }).where(cash);
+    try {
+      const answer = await push(b, [event]);
+      expect(answer.applied).toBe(0);
+      expect(answer.quarantined).toBe(1);
+      expect(answer.results[0]!.errorCode).toBe('PAYMENT_METHOD_UNAVAILABLE');
+      expect(await saleRow(saleId)).toBeUndefined();
+      expect(await attemptsOf(saleId)).toHaveLength(0);
+      const [filed] = await ctx.db.select().from(syncQuarantine)
+        .where(and(eq(syncQuarantine.boxId, b.boxId), eq(syncQuarantine.status, 'open'))).limit(1);
+      expect(filed!.errorCode).toBe('PAYMENT_METHOD_UNAVAILABLE');
+      expect(filed!.payload).toEqual(event);
+      await ctx.db.update(paymentMethod).set({ enabled: true }).where(cash);
+      const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, b.boxId)).limit(1);
+      const replayed = await replayQuarantined(
+        ctx.db, boxAuthFromRow(boxRow!), filed!.id,
+        { requestId: 'test-unavailable-method-replay', operatorId, branchId }, receptionAccountId,
+      );
+      expect(replayed.result).toBe('applied');
+      expect((await saleRow(saleId))!.status).toBe('finalised');
+      const attempts = await attemptsOf(saleId);
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0]!.amountSatang).toBe(total);
+      expect(attempts[0]!.offline).toBe(true);
+    } finally {
+      await ctx.db.update(paymentMethod).set({ enabled: true }).where(cash);
+    }
+  });
+
   it('prices it here, records its money, numbers it, and files it against the box', async () => {
     const b = await freshBox();
     const total = await quotedTotal(b.stationId);
