@@ -77,8 +77,12 @@ Console's Vouchers page, Spins panel and set-up checklist was started.
    `old-oto-box-releases`), and tell the owner the name and checksum. He updates the Pi
    once: guide section 7, "Update" (the section 3 commands with the new file's name,
    without `--api`).
-6. Jira: comments on the existing tickets in the same turn as each push (section 6);
-   Deployed only with a staging screenshot attached. No new tickets.
+6. Jira: create one ticket per significant part of the round in the current sprint
+   (print at the reveal; button-only sign-in; booth PIN rules; Console vouchers ledger,
+   spins panel and checklist) with `createInSprint` from `scripts/session/jira-lib.mjs`,
+   linked in the comment to SCRUM-198; a status change and a comment in the same turn as
+   each push; small fixes and follow-ups go under the ticket they belong to as progress
+   comments; Deployed only with a staging screenshot attached and named in the comment.
 7. Checkpoint the docs (`STATUS.md`, the handover's stop block) and push.
 
 ## 4. The brief of "bench round 1" (approved by the owner, 28 September)
@@ -239,7 +243,9 @@ spikes, solo capacity, codes on the box. Waiting on him: SCRUM-443 (branch chip)
   check that read the diff and ran only the touched tests, then a landing by explicit file
   list, a push, CI, staging, a Jira comment, a docs checkpoint. Small defects: one quick
   round each. The owner has said the defect rounds and ticket creation had become endless
-  — do not start audits, do not file findings as tickets, fix what the bench finds.
+  — do not start audits, and do not file every observation as a ticket. His precise rule:
+  work that is significant on its own gets its own ticket; small things are handled under
+  the bigger ticket with progress comments and tracking there; fix what the bench finds.
 - **Proof before "Deployed".** A screenshot from staging attached to the ticket, or a
   test-run card when a screen cannot show it; the comment names the image.
 - **Docs are the memory.** `docs/progress/STATUS.md` (one paragraph, first thing read) and
@@ -253,15 +259,32 @@ spikes, solo capacity, codes on the box. Waiting on him: SCRUM-443 (branch chip)
 ## 8. Setting the next agent up (for the owner)
 
 - Codex reads `AGENTS.md` at the repository root by itself; it points here.
-- Codex needs network access for `git push`, `gh`, Jira and Render, and write access to
-  this folder. In `~/.codex/config.toml`: `approval_policy = "on-request"`,
-  `sandbox_mode = "workspace-write"`, and under `[sandbox_workspace_write]`
-  `network_access = true`.
-- Jira works without any MCP through `scripts/session/jira-lib.mjs` and `.env`. If an
-  Atlassian MCP is wanted for browsing, add to `~/.codex/config.toml`:
-  `[mcp_servers.atlassian]` / `command = "npx"` / `args = ["-y", "mcp-remote",
-  "https://mcp.atlassian.com/v1/sse"]` — it opens a browser for Atlassian sign-in on
-  first use. No other MCP was needed for this work.
+- Codex needs network access for `git push`, `gh`, Jira and Render, write access to this
+  folder, and the Atlassian connection so it can browse Jira the way the previous session
+  did (that session used the Atlassian MCP for reading and searching issues, and the
+  repository's `scripts/session/jira-lib.mjs` with `.env` for comments, attachments and
+  transitions; both stay available). The complete `C:\Users\waqar\.codex\config.toml`:
+
+  ```toml
+  # Codex settings for the OTO platform work.
+  approval_policy = "on-request"
+  sandbox_mode = "workspace-write"
+
+  [sandbox_workspace_write]
+  network_access = true
+
+  # Atlassian's hosted MCP (Jira and Confluence). Opens the browser for the
+  # Atlassian sign-in on first use; the token is cached by mcp-remote.
+  [mcp_servers.atlassian]
+  command = "npx"
+  args = ["-y", "mcp-remote", "https://mcp.atlassian.com/v1/sse"]
+  startup_timeout_sec = 60
+  ```
+
+  If a Codex version rejects `startup_timeout_sec`, remove that line. Jira writes
+  (comments, attachments, transitions, creating a ticket in the sprint) go through
+  `scripts/session/jira-lib.mjs`, which reads `JIRA_BASE_URL`, `JIRA_EMAIL` and
+  `JIRA_API_TOKEN` from `.env`; browsing and searching can use either.
 - First prompt to give the agent: "Read AGENTS.md and docs/handover/CODEX_HANDOVER.md,
   then docs/progress/STATUS.md and the newest STOP POINT block of
   docs/progress/SESSION_HANDOVER.md. Tell me in ten lines where the work stands and what
