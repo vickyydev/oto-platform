@@ -546,7 +546,7 @@ export interface PublishedVersionView {
 }
 
 export interface BoothDraftView {
-  booth: { id: string; name: string; branchId: string };
+  booth: { id: string; name: string; branchId: string; codePrefix: string | null };
   settings: {
     layoutId: string | null;
     layoutName: string | null;
@@ -623,7 +623,7 @@ export async function boothDraft(db: Db, row: BoothStationRow): Promise<BoothDra
     : null;
 
   return {
-    booth: { id: row.stationId, name: row.name, branchId: row.branchId },
+    booth: { id: row.stationId, name: row.name, branchId: row.branchId, codePrefix: draft.codePrefix },
     settings: {
       layoutId: draft.settings.layoutId,
       layoutName: draft.layout?.name ?? null,

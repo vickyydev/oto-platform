@@ -36,6 +36,8 @@ import {
 } from '@/components/booth/boothApi';
 import { BoothScreensPanel, boothBoxPlace } from '@/components/booth/BoothScreensPanel';
 import { BoothSettingsPanel, type BoothSettingsEdit } from '@/components/booth/BoothSettingsPanel';
+import { BoothSpinsPanel } from '@/components/booth/BoothSpinsPanel';
+import { BoothSetupChecklist } from '@/components/booth/BoothSetupChecklist';
 import { BoothStaffPanel } from '@/components/booth/BoothStaffPanel';
 import { PrizeEditor } from '@/components/booth/PrizeEditor';
 import { PrizeTable } from '@/components/booth/PrizeTable';
@@ -98,18 +100,26 @@ export function Booths() {
   const canPublish = has('admin:booth:publish');
   /** Who works the booth is a different decision from its odds (`@oto/shared`), and a different permission. */
   const canAssignStaff = has('admin:booth:staff_assign');
-  const timezone = me?.branch?.timezone;
 
   const [branches, setBranches] = useState<BranchRow[] | null>(null);
   const [branchId, setBranchId] = useState(me?.branch?.id ?? '');
+  const timezone = branches?.find((b) => b.id === branchId)?.timezone ?? me?.branch?.timezone;
   const [booths, setBooths] = useState<Read<BoothListRow[]>>(() => unread<BoothListRow[]>([]));
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Read<BoothDraft | null>>(() => unread<BoothDraft | null>(null));
-  const [status, setStatus] = useState<Read<BoothStatus | null>>(() => unread<BoothStatus | null>(null));
-  const [versions, setVersions] = useState<Read<BoothVersionRow[]>>(() => unread<BoothVersionRow[]>([]));
+  const [draft, setDraft] = useState<Read<BoothDraft | null>>(() =>
+    unread<BoothDraft | null>(null),
+  );
+  const [status, setStatus] = useState<Read<BoothStatus | null>>(() =>
+    unread<BoothStatus | null>(null),
+  );
+  const [versions, setVersions] = useState<Read<BoothVersionRow[]>>(() =>
+    unread<BoothVersionRow[]>([]),
+  );
   const [layouts, setLayouts] = useState<BoothLayoutRow[]>([]);
   const [definitions, setDefinitions] = useState<VoucherDefinitionRow[]>([]);
-  const [screens, setScreens] = useState<Read<BoothScreenRow[]>>(() => unread<BoothScreenRow[]>([]));
+  const [screens, setScreens] = useState<Read<BoothScreenRow[]>>(() =>
+    unread<BoothScreenRow[]>([]),
+  );
   const [staff, setStaff] = useState<Read<BoothStaffRow[]>>(() => unread<BoothStaffRow[]>([]));
   /**
    * The pairing code just minted (SCRUM-244).
@@ -424,8 +434,15 @@ export function Booths() {
         )}
       </Panel>
 
+      {selected && <BoothSetupChecklist draft={draft} status={status} staff={staff} />}
       {selectedId && (
-        <LiveStatus status={status} timezone={timezone} onRetry={() => void loadBooth(selectedId)} />
+        <div id="booth-printer">
+          <LiveStatus
+            status={status}
+            timezone={timezone}
+            onRetry={() => void loadBooth(selectedId)}
+          />
+        </div>
       )}
 
       {draft.state === 'absent' ? (
@@ -461,121 +478,148 @@ export function Booths() {
             </p>
           )}
 
-          <Panel
-            title="Prizes and odds"
-            description="What the wheel gives away, what each one costs, and whether the odds add up."
-            actions={
-              canManage ? (
-                <Button size="sm" variant="outline" onClick={() => setEditing(blankPrize(selected))}>
-                  <Plus className="w-4 h-4" />
-                  Add prize
-                </Button>
-              ) : undefined
-            }
-          >
-            {errorAt('prizes') && <ErrorNote message={errorAt('prizes')!} />}
-            {selected.prizes.length === 0 ? (
-              <EmptyState
-                title="No prizes on this booth"
-                detail="A wheel with nothing on it refuses every press. Add the first prize to start."
-              />
-            ) : (
-              <PrizeTable
-                prizes={selected.prizes}
-                spinsToday={status.state === 'read' ? (status.value?.today.spins ?? null) : null}
-                cappedToday={status.value?.today.dailyCapsReached ?? []}
-                onEdit={(p) => setEditing(p)}
-                disabled={!canManage || busy}
-              />
-            )}
-          </Panel>
-
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div id="booth-station">
+            <Panel
+              title="Booth station"
+              description="The station and its voucher prefix, set under Devices."
+            >
+              <p className="text-sm">
+                {selected.booth.name} · Prefix: {selected.booth.codePrefix ?? 'Not set'}
+              </p>
+              <a className="underline text-sm" href="/devices">
+                Open Devices to set the station or printer
+              </a>
+            </Panel>
+          </div>
+          <div id="booth-settings">
+            <BoothSettingsPanel
+              draft={selected}
+              layouts={layouts}
+              saving={busy}
+              unavailable={writeUnavailable}
+              readOnly={!canManage}
+              error={errorAt('settings')}
+              onSave={(settings: BoothSettingsEdit) =>
+                void run('settings', () => boothApi.saveSettings(selected.booth.id, settings))
+              }
+            />
+          </div>
+          <div id="booth-staff">
+            <BoothStaffPanel
+              // The PIN form holds digits for one booth; another booth is another panel.
+              key={selected.booth.id}
+              branchId={selected.booth.branchId}
+              staff={staff}
+              // What the box grants now is the PUBLISHED length; the draft's
+              // reaches it with the next publish, and the note says both.
+              session={{
+                running: publishedSessionMinutes(selected),
+                next: selected.settings.staffSessionMinutes ?? null,
+              }}
+              busy={busy}
+              readOnly={!canAssignStaff}
+              error={errorAt('staff')}
+              onAdd={(accountId) =>
+                void runStaff(() => boothApi.addStaff(selected.booth.id, accountId))
+              }
+              onRemove={(accountId) =>
+                void runStaff(() => boothApi.removeStaff(selected.booth.id, accountId))
+              }
+              onSetPin={async (accountId, input) => {
+                let result: BoothPinResult | null = null;
+                await runStaff(async () => {
+                  result = await boothApi.setPin(selected.booth.id, accountId, input);
+                });
+                return result;
+              }}
+              onClearPin={(accountId) =>
+                void runStaff(() =>
+                  boothApi.clearPin(selected.booth.id, accountId, 'withdrawn from the Console'),
+                )
+              }
+              onRetry={() => selectedId && void loadBooth(selectedId)}
+            />
+          </div>
+          <div id="booth-prizes">
+            <Panel
+              title="Prizes and odds"
+              description="What the wheel gives away, what each one costs, and whether the odds add up."
+              actions={
+                canManage ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditing(blankPrize(selected))}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add prize
+                  </Button>
+                ) : undefined
+              }
+            >
+              {errorAt('prizes') && <ErrorNote message={errorAt('prizes')!} />}
+              {selected.prizes.length === 0 ? (
+                <EmptyState
+                  title="No prizes on this booth"
+                  detail="A wheel with nothing on it refuses every press. Add the first prize to start."
+                />
+              ) : (
+                <PrizeTable
+                  prizes={selected.prizes}
+                  spinsToday={status.state === 'read' ? (status.value?.today.spins ?? null) : null}
+                  cappedToday={status.value?.today.dailyCapsReached ?? []}
+                  onEdit={(p) => setEditing(p)}
+                  disabled={!canManage || busy}
+                />
+              )}
+            </Panel>
             <Panel
               title="Wheel preview"
               description="Slice order and colours, as the television draws them."
             >
               <WheelPreview prizes={selected.prizes} />
             </Panel>
-
-            <div className="flex flex-col gap-4">
-              <BoothSettingsPanel
+          </div>
+          <div id="booth-publish">
+            {canPublish ? (
+              <PublishPanel
                 draft={selected}
-                layouts={layouts}
-                saving={busy}
+                publishing={busy}
                 unavailable={writeUnavailable}
-                readOnly={!canManage}
-                error={errorAt('settings')}
-                onSave={(settings: BoothSettingsEdit) =>
-                  void run('settings', () => boothApi.saveSettings(selected.booth.id, settings))
+                error={errorAt('publish')}
+                lastPublished={lastPublished}
+                timezone={timezone}
+                onPublish={(note, expectedBundleHash) =>
+                  void run('publish', async () => {
+                    const answer = await boothApi.publish(selected.booth.id, {
+                      note: note.trim() === '' ? null : note.trim(),
+                      // Sent only when the draft had one: the API treats it
+                      // as "refuse if this is not still the draft", and an
+                      // absent hash is a booth with no publishable bundle,
+                      // not a licence to overwrite.
+                      ...(expectedBundleHash ? { expectedBundleHash } : {}),
+                    });
+                    setLastPublished({ version: answer.version.version });
+                    await loadBooths(branchId);
+                  })
                 }
               />
-
-              {canPublish ? (
-                <PublishPanel
-                  draft={selected}
-                  publishing={busy}
-                  unavailable={writeUnavailable}
-                  error={errorAt('publish')}
-                  lastPublished={lastPublished}
-                  timezone={timezone}
-                  onPublish={(note, expectedBundleHash) =>
-                    void run('publish', async () => {
-                      const answer = await boothApi.publish(selected.booth.id, {
-                        note: note.trim() === '' ? null : note.trim(),
-                        // Sent only when the draft had one: the API treats it
-                        // as "refuse if this is not still the draft", and an
-                        // absent hash is a booth with no publishable bundle,
-                        // not a licence to overwrite.
-                        ...(expectedBundleHash ? { expectedBundleHash } : {}),
-                      });
-                      setLastPublished({ version: answer.version.version });
-                      await loadBooths(branchId);
-                    })
-                  }
-                />
-              ) : (
-                <Panel title="Publish" description="Freezes the draft as a new version the booths pick up.">
-                  <p className="text-sm text-muted-foreground">
-                    Publishing needs <code className="font-mono text-xs">admin:booth:publish</code>.
-                    A manager can grant it from the Login Users panel.
-                  </p>
-                </Panel>
-              )}
-            </div>
+            ) : (
+              <Panel
+                title="Publish"
+                description="Freezes the draft as a new version the booths pick up."
+              >
+                <p className="text-sm text-muted-foreground">
+                  Publishing needs <code className="font-mono text-xs">admin:booth:publish</code>. A
+                  manager can grant it from the Login Users panel.
+                </p>
+              </Panel>
+            )}
           </div>
-
-          <BoothStaffPanel
-            // The PIN form holds digits for one booth; another booth is another panel.
-            key={selected.booth.id}
-            branchId={selected.booth.branchId}
-            staff={staff}
-            // What the box grants now is the PUBLISHED length; the draft's
-            // reaches it with the next publish, and the note says both.
-            session={{
-              running: publishedSessionMinutes(selected),
-              next: selected.settings.staffSessionMinutes ?? null,
-            }}
-            busy={busy}
-            readOnly={!canAssignStaff}
-            error={errorAt('staff')}
-            onAdd={(accountId) => void runStaff(() => boothApi.addStaff(selected.booth.id, accountId))}
-            onRemove={(accountId) =>
-              void runStaff(() => boothApi.removeStaff(selected.booth.id, accountId))
-            }
-            onSetPin={async (accountId, input) => {
-              let result: BoothPinResult | null = null;
-              await runStaff(async () => {
-                result = await boothApi.setPin(selected.booth.id, accountId, input);
-              });
-              return result;
-            }}
-            onClearPin={(accountId) =>
-              void runStaff(() =>
-                boothApi.clearPin(selected.booth.id, accountId, 'withdrawn from the Console'),
-              )
-            }
-            onRetry={() => selectedId && void loadBooth(selectedId)}
+          <BoothSpinsPanel
+            key={'spins-' + selected.booth.id}
+            id={selected.booth.id}
+            timezone={timezone}
           />
 
           <BoothScreensPanel
@@ -592,12 +636,18 @@ export function Booths() {
               void run('screens', async () => {
                 // The answer is the only copy of the code there will ever be,
                 // so it is put on screen before anything else can throw.
-                setMintedCode(await boothApi.mintPairingCode(selected.booth.id, 'Booth television'));
+                setMintedCode(
+                  await boothApi.mintPairingCode(selected.booth.id, 'Booth television'),
+                );
               })
             }
             onUnpair={(screen) =>
               void run('screens', async () => {
-                await boothApi.unpairScreen(selected.booth.id, screen.id, 'unpaired from the Console');
+                await boothApi.unpairScreen(
+                  selected.booth.id,
+                  screen.id,
+                  'unpaired from the Console',
+                );
                 setMintedCode(null);
               })
             }
@@ -726,16 +776,13 @@ function LiveStatus({
             reached rather than after — a booth that has stopped playing is
             something somebody wants to know without doing the arithmetic.
           */}
-          {s.today.spinCap === null
-            ? s.today.spins
-            : `${s.today.spins} of ${s.today.spinCap}`}
+          {s.today.spinCap === null ? s.today.spins : `${s.today.spins} of ${s.today.spinCap}`}
           {s.today.spinCap !== null && s.today.spins >= s.today.spinCap && (
             <span style={{ color: 'hsl(var(--status-warn))' }}> · no more spins today</span>
           )}
           {s.today.unattributed > 0 && (
             <span style={{ color: 'hsl(var(--status-warn))' }}>
-              {' '}
-              · {s.today.unattributed} with nobody signed in
+                · {s.today.unattributed} with nobody signed in
             </span>
           )}
         </Fact>
@@ -782,7 +829,10 @@ function VersionHistory({
       ) : versions.state === 'unread' ? (
         <Loading what="versions" />
       ) : versions.value.length === 0 ? (
-        <EmptyState title="Nothing published yet" detail="This booth has never been given a wheel." />
+        <EmptyState
+          title="Nothing published yet"
+          detail="This booth has never been given a wheel."
+        />
       ) : (
         <ul className="flex flex-col divide-y">
           {versions.value.map((v) => (

@@ -98,6 +98,13 @@ export const consoleNav: ConsoleNavGroup[] = [
         permission: 'admin:booth:read',
       },
       {
+        id: 'vouchers',
+        label: 'Vouchers',
+        icon: Ticket,
+        description: 'Issued vouchers, their value and where they were redeemed.',
+        permission: 'admin:booth:read',
+      },
+      {
         id: 'voucher-types',
         label: 'Voucher types',
         icon: Ticket,

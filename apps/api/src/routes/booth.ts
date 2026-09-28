@@ -40,6 +40,7 @@ import {
 } from '../services/booth-admin';
 import { loadBranchForOperator } from '../services/fleet';
 import { opCtx } from '../services/tx';
+import { listBoothSpins } from '../services/voucher-ledger';
 
 /**
  * The Lucky Wheel's two surfaces (S2-07a).
@@ -691,6 +692,58 @@ export async function boothRoutes(app: App): Promise<void> {
       const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:booth:read', { branchId: row.branchId });
       return listBoothVersions(app.db, row.stationId, req.query.limit);
+    },
+  );
+
+  const SpinPerson = z.object({ accountId: z.string().uuid(), name: z.string().nullable(), code: z.string() });
+
+  app.get(
+    '/booths/:id/spins',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Every press of this booth’s button on one trading day (`date`, today at the branch when absent), newest first and paged: when, whose session was open (null: unattributed), the prize or no prize, the last four characters of the voucher code, whether its slip reached paper — printed, failed (the box reported an attempt that produced none) or not reported yet — and whether a till has redeemed it. The day’s counts beside them. Simulated `#debug` spins are left out, and a press the box has not synced yet is not here.',
+        params: BoothIdParams,
+        querystring: z.object({
+          date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'A date is YYYY-MM-DD').optional(),
+          limit: z.coerce.number().int().min(1).max(200).default(50),
+          offset: z.coerce.number().int().min(0).default(0),
+        }),
+        response: {
+          200: z.object({
+            businessDate: z.string(),
+            total: z.number().int(),
+            summary: z.object({
+              spins: z.number().int(),
+              unattributed: z.number().int(),
+              printed: z.number().int(),
+              redeemed: z.number().int(),
+            }),
+            spins: z.array(
+              z.object({
+                id: z.string().uuid(),
+                occurredAt: z.string(),
+                staff: SpinPerson.nullable(),
+                outcome: z.enum(['prize', 'no_prize']),
+                prize: z.object({ id: z.string().uuid(), nameEn: z.string() }).nullable(),
+                codeLast4: z.string().nullable(),
+                print: z.enum(['printed', 'failed', 'not_reported']).nullable(),
+                redeemed: z.boolean(),
+                redeemedAt: z.string().nullable(),
+                clockSuspect: z.boolean(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:read', { branchId: row.branchId });
+      const br = await loadBranchForOperator(app.db, auth.operatorId, row.branchId);
+      return listBoothSpins(app.db, row, br, req.query);
     },
   );
 

@@ -14,7 +14,7 @@ export function FilterBar({ children, className }: { children: ReactNode; classN
   return <div className={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-4', className)}>{children}</div>;
 }
 
-function Labelled({ label, children }: { label: string; children: ReactNode }) {
+export function Labelled({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1 min-w-0">
       <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground/45">

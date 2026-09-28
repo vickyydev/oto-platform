@@ -162,7 +162,7 @@ export interface BoothVersionRow {
 
 /** `BoothDraftView`. One read: the settings, the slices, and every refusal. */
 export interface BoothDraft {
-  booth: { id: string; name: string; branchId: string };
+  booth: { id: string; name: string; branchId: string; codePrefix: string | null };
   settings: BoothSettingsDraft;
   /** In slice order — `sortOrder`, then name, which is what a publish freezes. */
   prizes: BoothPrizeDraft[];

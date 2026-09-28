@@ -1,23 +1,31 @@
-# Current status — read this first when resuming
+# Current status - read this first when resuming
 
-_Last updated: 2026-09-28, evening — bench round 1 resumed on `feat/bench-round-1`, based on `main` at `5c0eb91`, reusing the reviewed draft from `wip/bench-round-1`._
+_Last updated: 2026-09-28, evening - bench round 1 implemented on feat/bench-round-1._
 
-**Bench round 1:** four tasks created in sprint id 3 and linked in comments to SCRUM-198:
-SCRUM-448 print at reveal, SCRUM-449 button-only sign-in, SCRUM-450 five-digit PINs,
-SCRUM-451 Vouchers ledger, Spins and checklist. The reveal-print part is implemented:
-the press saves the spin and held job, the result card asks for its slip, retries of
-that request print once, and the fallback waits 30 seconds. Existing box tests pass
-(85), as do the booth API tests (21), box/booth/API typechecks and touched-source lint.
-Print at reveal is pushed as `628a393`. Button-only sign-in is now implemented:
-assigned staff list, five-digit pad, menu and booth picker use the button gestures;
-keyboard and phone/password remain available. Its checks pass: 3 press cases,
-73 box staff/booth cases, 21 API cases, typechecks and touched-source lint.
-Button sign-in is pushed as a99f9fc. PIN management now enforces exactly five digits,
-offers set/generate/expiry/remove, sends pinExpiresAt with the hash, and refuses expired
-PINs on the box. Migration 0027 verified; existing checks pass: 97 API cases, 89 box
-cases (with the corrected five-digit fixture), 7 Console browser cases, typechecks and
-lint across the touched packages. The Console ledger/spins/checklist is next. Nothing from this round has deployed; all four
-parts will land together for one staging deploy and one CI-packed Pi release.
+Four parts are complete on the work branch: print at reveal (8df6482), button-only
+staff sign-in (94042b3), exactly five-digit PIN management (652d933), and the Console
+Vouchers ledger, per-booth Spins panel and six-step setup checklist (this checkpoint).
+Sprint 3 tasks SCRUM-448 through SCRUM-451 are linked to SCRUM-198.
+
+Existing checks passed: box/booth/API tests for the press and sign-in changes;
+97 PIN/sync API cases; 157 voucher/booth API cases; 34 health/sync/route-guard cases;
+7 Console booth setup cases; typecheck and lint in the touched packages.
+Migration 0027 matches its snapshot and the Console production build passes.
+A disposable-database manual check exercised the ledger, CSV, Spins, branch scope,
+and date refusal. Counter issue rows do not record an issuing station, which the
+ledger states explicitly. Existing four-digit PINs must be replaced in the Console.
+
+A manual API-to-box PIN check now passes generation, exact length, expiry and removal;
+the cache-to-booth mapping carries pinExpiresAt. The 26 existing agent cache/offline/runner
+cases and agent typecheck/lint also pass.
+
+The full CI run found one remaining four-digit offline-cache fixture. It now uses
+five digits and its seven existing cases pass. The correction is folded into the PIN
+commit; no production code changed for this finding.
+
+No deployment from this round yet. Next: land the four commits together, await green
+CI and all five staging services, attach staging screenshots before Deployed, then
+verify and place the CI-packed Pi release and checksum on the Desktop.
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the

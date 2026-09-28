@@ -1,50 +1,42 @@
-# Handover — where this is, and what to do next
+# Handover - where this is, and what to do next
 
-## STOP POINT — 28 September 2026, evening — bench round 1 resumed
+## STOP POINT - 28 September 2026, evening - bench round 1 ready to land
 
-Work is on `feat/bench-round-1`, based on current `main` (`5c0eb91`). The two
-unchecked commits on `wip/bench-round-1` remain intact; useful changes are being
-reviewed and completed as four separate commits. Sprint id 3 tasks: SCRUM-448
-(print at reveal), SCRUM-449 (button-only sign-in), SCRUM-450 (five-digit PINs),
-SCRUM-451 (Vouchers ledger, booth Spins and checklist), each linked to SCRUM-198.
+Work is on feat/bench-round-1, based on main 5c0eb91. The stopped wip/bench-round-1
+branch remains intact. Its useful pieces were reviewed and completed in four parts:
+- SCRUM-448: 8df6482, print at reveal, held 30-second fallback, idempotent reveal call.
+- SCRUM-449: 94042b3, button gestures, assigned staff list, five-digit pad and menu.
+- SCRUM-450: 652d933, set/generate/expiry/remove PIN, migration 0027, pinExpiresAt cache.
+- SCRUM-451: this checkpoint, Vouchers ledger/CSV, booth Spins and setup checklist.
 
-SCRUM-448 is implemented locally: a press durably records its spin and held print
-job, then answers queued; the result card calls `POST /booth/print { spinId }`.
-The call is idempotent for the retained recent spin, waits at most `printWaitMs`,
-and rejects an unknown or foreign spin with 404. The kiosk forwards the route
-through its existing `/booth/*` handler; the API relays it for paired screens.
-The card shows Printing briefly and then the code/QR unless printed. The retry
-queue leaves a held slip alone until 30 seconds after the press. Reprint is unchanged.
-Existing checks: 85 box tests, 21 booth API tests, box/booth/API typechecks and
-touched-source lint passed. No new test suite. Windows uses `pnpm.cmd`; Vitest
-needs execution outside the sandbox for its bundler and embedded test Postgres.
+The first three commits were rewritten locally to include their existing test
+adjustments; the feature branch push uses a lease against its previous 31f81f1 tip.
+No new test suite. Checks passed: the existing box/booth press and staff cases,
+97 PIN/sync API cases, 157 voucher/booth API cases, 34 health/sync/route-guard cases,
+7 Console browser setup cases, touched-package typecheck/lint and Console build.
+Migration 0027 matches its snapshot. A manual disposable-database probe checked the
+new ledger, CSV, Spins, branch guard and invalid-date refusal, then was removed.
 
-SCRUM-448 is pushed as `628a393` and in Testing. SCRUM-449 is implemented locally:
-the staff list and five-digit pad use button navigation through `press.ts`, as
-do the staff menu and booth picker. One press moves, two within 400 ms select,
-hold from 600 ms repeats every 250 ms, and a 3-second hold begun on the ready
-wheel opens staff while retaining the immediate spin. The staff list closes
-after 30 seconds idle; keyboard and phone/password paths remain. GET `/booth/staff`
-returns assigned active staff names/codes and hasPin, and PIN sign-in can name
-the selected account. Checks passed: 3 gesture cases, 73 existing box booth/staff
-cases and 21 API cases, with box/booth/API typechecks and touched-source lint.
-The staff-session tests were adjusted to call print at the reveal, preserving
-their reprint and session assertions. The Pi guide describes the new controls.
+The ledger includes booth, counter and imported vouchers and shows only code last4.
+Counter issue rows have no issuing station in the existing table; the page says so.
+Its totals follow all selected filters and CSV exports the filtered range, not a page.
+The booth checklist reads the saved draft, staff and live status; panels follow its order.
+Existing four-digit PINs must be replaced through the Console before using this release.
 
-SCRUM-449 is pushed as a99f9fc. SCRUM-450 is implemented: exactly five digits,
-set or generate (shown once), optional expiry and Remove PIN. The staff cache carries
-pinExpiresAt beside its hash; the box checks its corrected clock even offline.
-Migration 0027 matches its snapshot. Existing checks passed: 97 API cases,
-89 box cases with the five-digit fixture corrected, 7 Console browser cases,
-typechecks and lint for the touched packages. No new suite.
+A manual PIN check found and fixed the agent mapping that dropped pinExpiresAt.
+Generation, exact length, expiry reaching the box and removal all pass, with no
+secrets recorded. The 26 existing cache/offline/runner cases and agent checks pass.
 
-Next: complete SCRUM-451, checking only its existing
-tests and touched packages. Checkpoint on this work branch; land all four parts
-on main together for one staging deployment. Then attach staging screenshots to
-the four tickets before Deployed, download the CI Pi artifact, verify it, and
-place the archive and checksum on the Desktop while archiving older releases.
-No staging proof or new Pi artifact yet. The existing unrelated changes in
-`render.yaml`, `services/` and `MerchCustomerDisplay.tsx` remain excluded.
+The full CI run found a remaining four-digit fixture in box-cache-survives.test.ts.
+Its seven existing cases pass with five digits. This is folded into the PIN commit,
+keeping four feature commits. The previous round tip never passed CI or deployed.
+
+Next: await green CI and the single staging deployment of the corrected four commits; wait for green CI and all five Render
+services on that commit. Attach staging screenshots to the four tickets before moving
+them to Deployed. Download the CI Pi artifact, verify its checksum and put the archive
+and checksum on the Desktop, moving older releases to old-oto-box-releases. Finish
+with a docs-only checkpoint and push. No staging evidence or new Pi release yet.
+Unrelated render.yaml, services/ and MerchCustomerDisplay.tsx remain excluded.
 
 ## 2026-09-24, afternoon — the Lucky Wheel booth is the first priority
 
