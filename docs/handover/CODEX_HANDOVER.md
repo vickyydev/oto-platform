@@ -5,6 +5,19 @@ in the same working folder, and for the owner setting it up. Everything below wa
 when it was written; verify the live state from `docs/progress/STATUS.md` and the newest
 STOP POINT block of `docs/progress/SESSION_HANDOVER.md` before acting.
 
+## Resume note - 29 September 2026
+
+OTO Park has completed the Lucky Wheel physical bench test and shared the demo.
+The active instruction is now to resume the remaining Sprint 2 software.
+SCRUM-391, SCRUM-388 and SCRUM-382 are implemented on main at b02f7e0 and are
+Testing. Main CI is green and the release is live on staging. Behavioural
+proof awaits explicit approval for dedicated simulated test records after
+automatic approval review blocked execution. The next story is
+SCRUM-206 Slice F; its offline and separate-display dependencies remain under
+the existing tickets. Read the newest 29 September STOP POINT and STATUS for
+the current release and evidence. The bench instructions in section 4 below
+are historical completed work; their shared contract names remain unchanged.
+
 ## 1. What this is, in five lines
 
 OTO Park is an indoor children's play park in Phuket. This repository is its operations

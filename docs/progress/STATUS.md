@@ -7,14 +7,15 @@ walkthrough. Sprint 2 now resumes in the documented order: SCRUM-391 (QR
 routing), SCRUM-388 (pending money reservation), SCRUM-382 (unavailable
 tenders), then SCRUM-206 Slice F across the four tills.
 
-Work is on `fix/payment-prerequisites`, based on main `a4a79d7`. SCRUM-388
+The three source changes are on main at `b02f7e0`, with the work branch
+`fix/payment-prerequisites` preserved. SCRUM-388
 now checks every new tender under the sale lock: accepted money and unresolved
 attempts leave only the unreserved balance available. Declined, cancelled and
 not-found attempts release their reservation. Outstanding remains the amount
 actually unpaid, so a pending attempt cannot close a sale. All 21 existing
-cash-suite tests and 22 offline replay tests pass, including simultaneous
+cash-suite tests and 23 offline replay tests pass, including simultaneous
 presses and cash/manual bypass. API typecheck, changed-file lint and an
-independent money/locking review pass. This change is not deployed yet.
+independent money/locking review pass.
 
 SCRUM-382 now refuses disabled or archived methods with
 `PAYMENT_METHOD_UNAVAILABLE`, including the legacy card alias. A live replacement
@@ -31,15 +32,26 @@ route even after routing changes or payment; external gateway calls happen
 after the durable attempt commits. The existing gateway and terminal files pass
 66 tests, including paid-after-disable and final HTTP idempotency replay.
 
-The three separate commits are on `fix/payment-prerequisites`: reservation
-`e333994`, method availability `c0aefae`, and routing at this checkpoint.
+The three separate commits are reservation `e333994`, method availability
+`c0aefae`, and routing `b02f7e0`.
 All three tickets are Testing in active sprint id 3, Sprint 2. Seven existing
 API files pass 196 tests; API typecheck, changed-file lint and independent review
-pass. No new suite, migration or dependency. Await green CI, then fast-forward
-main for one deployment and scoped staging proof. Staging remains on `b9d68e3`.
+pass. No new suite, migration or dependency.
+
+[Main CI 36486990526](https://github.com/vickyydev/oto-platform/actions/runs/36486990526)
+and the final branch run 36485272336 are green. One deployment put API, POS,
+Console, Launcher and Booth live on `b02f7e0`; the OTO App remains on `c416065`.
+Read-only staging inspection confirms the in-process box and gateway simulator.
+Its [report and Console screenshot](../qa/payment-prerequisites/README.md) are
+saved; the screenshot is attached to SCRUM-391 as 10854.
+The behavioural proof has not run: automatic approval review rejected creation
+and archival of shared staging test records. Explicit approval was requested
+for a dedicated simulated station, terminal, methods and test sales. Keep the
+three tickets Testing until that proof passes and named screenshots are attached.
+
 Slice F remains unbuilt. Its complete offline and separate-display acceptance
 also needs the existing SCRUM-269/285 and S2-08 seams. Real 2C2P sandbox
-confirmation still needs credentials; simulator proof can proceed.
+confirmation still needs credentials; the simulator is available for approved proof.
 
 ## Historical checkpoint - 28 September
 

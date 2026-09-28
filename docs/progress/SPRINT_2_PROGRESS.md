@@ -5,16 +5,22 @@
 _Current checkpoint: 2026-09-29._
 
 The Lucky Wheel bench test and walkthrough are complete. Sprint 2 resumes
-with SCRUM-391, SCRUM-388 and SCRUM-382 on `fix/payment-prerequisites`, then
+with SCRUM-391, SCRUM-388 and SCRUM-382 landed on main at `b02f7e0`, then
 SCRUM-206 Slice F. All three prerequisites are Testing in active sprint id 3.
 The common writer reserves unresolved money; unavailable configured methods
 refuse, with offline facts retained for correction and Replay; the till-facing
 QR route honours the station's saved setting and returns QR/expiry metadata.
 Seven existing API files pass 196 tests; API typecheck, changed-file lint and
 independent review pass. No new suite, migration or dependency. The first two
-commits are e333994 and c0aefae; routing is the third checkpoint. Await green
-CI before one staging deployment and named screenshot evidence. Nothing in
-this batch is deployed yet. Read the newest STOP POINT in `SESSION_HANDOVER.md`.
+commits are e333994 and c0aefae; routing is b02f7e0. Main CI 36486990526 and
+branch CI 36485272336 are green. API, POS, Console, Launcher and Booth are live
+on b02f7e0 after one deployment; the OTO App remains c416065.
+
+Read-only inspection confirms the staging simulators. Behavioural proof awaits
+explicit approval to create and archive dedicated simulated test records after
+automatic approval review blocked it before execution. The tickets remain
+Testing until proof passes and named staging screenshots are attached.
+Read the newest STOP POINT in `SESSION_HANDOVER.md`.
 
 Slice F also depends on the existing offline transport work (269/285) and
 S2-08 for separate-device display acceptance. Simulator payment evidence and

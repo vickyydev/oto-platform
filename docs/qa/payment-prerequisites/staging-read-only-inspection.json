@@ -1,0 +1,76 @@
+{
+  "sourceReleaseSha": "b02f7e0",
+  "capturedAt": "2026-09-28T22:00:05.133Z",
+  "inspectionOnly": true,
+  "paymentBehaviourProven": false,
+  "branchId": "01a0bbdc-8c42-7753-b7e3-5ae19fb66d33",
+  "virtualBoxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+  "gateway": {
+    "provider": "simulator",
+    "simulatorAvailable": true,
+    "backendReturnUrlSet": false,
+    "webhookSecretSet": false,
+    "maintenanceConfigured": false,
+    "pendingAttemptCount": 0
+  },
+  "virtualDevices": [
+    {
+      "id": "01a0be8c-89b2-7f21-84e0-74c754838f5b",
+      "kind": "band_printer",
+      "transport": "simulated"
+    },
+    {
+      "id": "01a0be8c-89af-7c2b-861f-f3d1f0f5d27b",
+      "kind": "band_printer",
+      "transport": "simulated"
+    },
+    {
+      "id": "01a0be8c-89a9-7c0b-a630-a16c81fdea52",
+      "kind": "kitchen_printer",
+      "transport": "simulated"
+    },
+    {
+      "id": "01a0be8c-89a4-756b-aca1-3be1082c669d",
+      "kind": "receipt_printer",
+      "transport": "simulated"
+    },
+    {
+      "id": "01a0be8c-89ac-7196-8b7f-9855cfab6003",
+      "kind": "receipt_printer",
+      "transport": "simulated"
+    },
+    {
+      "id": "01a0be8c-89b5-7058-805e-0d66c670753b",
+      "kind": "scanner",
+      "transport": "simulated"
+    },
+    {
+      "id": "01a0be8c-89b8-7153-bd24-678c65024de8",
+      "kind": "terminal",
+      "transport": "simulated"
+    },
+    {
+      "id": "01a0be8c-89bb-7f43-b557-b0e8e876ccac",
+      "kind": "terminal",
+      "transport": "simulated"
+    }
+  ],
+  "virtualStations": [
+    {
+      "id": "01a0e72b-12e1-72a7-bc9d-866678d60b30",
+      "kind": "booth",
+      "paymentRouting": {}
+    },
+    {
+      "id": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a",
+      "kind": "till",
+      "paymentRouting": null
+    }
+  ],
+  "limitations": [
+    "Read-only configuration and native Console screenshot only.",
+    "No test sale, payment attempt, terminal outcome, gateway callback or inquiry-recovery case was executed.",
+    "Reservation and unavailable-tender behaviour remain unproven on staging."
+  ],
+  "screenshot": "staging-391-gateway-read-only.png"
+}

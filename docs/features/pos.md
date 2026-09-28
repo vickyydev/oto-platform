@@ -15,7 +15,28 @@ the printers, card terminals, scanners and gate.
 - **Ported to:** `apps/pos/` (UI) with a real backend in `apps/api/`, schema in `packages/db/`, shared logic in `packages/shared/`.
 - **Design notes worth reading:** `imports/oto-pos/replit.md`, `imports/oto-pos/.agents/memory/` (print templates, pickup-photo policy, architecture rationale), `imports/oto-pos/attached_assets/` (the original feature prompts), `imports/oto-pos/artifacts/oto-till/BACKEND_REQUIREMENTS.md`.
 
-## Status
+## Payment checkpoint - 29 September 2026
+
+SCRUM-391, SCRUM-388 and SCRUM-382 are implemented on
+main at `b02f7e0` and are Testing. The till-facing API now routes QR
+through the station's saved gateway/terminal setting and returns QR/expiry
+metadata. The common writer reserves unresolved amounts under the sale lock;
+new payments using configured disabled or archived methods refuse. Existing
+accepted attempts still settle, and refused offline facts remain replayable in
+quarantine. Seven existing API files pass 196 tests, API typecheck and
+changed-file lint pass, and main CI is green. The release is live on staging.
+Behavioural proof awaits approval for dedicated simulated test records; the
+tickets cannot be marked Deployed from configuration inspection alone.
+
+SCRUM-206 Slice F remains unbuilt: the four till screens still need shared cash,
+terminal, gateway and split-payment state. Offline browser-to-box transport
+needs SCRUM-269/285; independent customer-display acceptance needs S2-08.
+Real 2C2P sandbox confirmation remains separate from simulator verification.
+Read the newest STOP POINT in `../progress/SESSION_HANDOVER.md`.
+
+## Historical Sprint 1 status
+
+The table below is the original baseline, not the current Sprint 2 inventory.
 | Area | State | Notes |
 |---|---|---|
 | Sign-in, account setup, password reset, sign-out | done | Phone + password; SMS via console or Twilio adapter |

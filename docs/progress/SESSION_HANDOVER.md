@@ -7,17 +7,18 @@ Resume the remaining Sprint 2 software in the plan's order. The active Jira
 sprint is id 3, named Sprint 2 - Complete build. Parallel work is authorised.
 Write new history and progress comments about OTO Park and the park.
 
-Branch `fix/payment-prerequisites` starts at main `a4a79d7`. The first batch is
-SCRUM-391, SCRUM-388 and SCRUM-382; all three have starting comments.
-SCRUM-388 and SCRUM-382 are Testing; SCRUM-391 moves to Testing on this push.
+Main is `b02f7e0`; the completed work branch `fix/payment-prerequisites`, based
+on `a4a79d7`, is preserved. The first batch is SCRUM-391, SCRUM-388 and
+SCRUM-382. All three are Testing, with starting, implementation and landing
+comments. SCRUM-206 remains In Progress.
 SCRUM-388 adds one common sale-locked reservation check in
 `services/payments/attempt.ts`. Every writer reserves pending money before
 requesting another payment; failed attempts release it, while the paid-only
 outstanding calculation stays unchanged. The existing cash suite passes 21
 tests, including two distinct simultaneous presses, all five unresolved
-statuses, cash/manual refusals and a split remainder; all 22 existing offline
+statuses, cash/manual refusals and a split remainder; all 23 existing offline
 replay tests also pass. API typecheck, changed-file lint and independent
-review pass. Staging still has the previous release.
+review pass.
 
 SCRUM-382 is complete in the common resolver: configured disabled or archived
 methods refuse with 409 PAYMENT_METHOD_UNAVAILABLE. A live replacement wins
@@ -36,16 +37,28 @@ tender. Gateway I/O follows its committed attempt; only the final HTTP response
 is cached. Existing gateway/terminal files pass 66 tests, including changed
 routing replay, full HTTP idempotency, pending reservations and paid-after-disable.
 
-Reservation commit e333994 and availability commit c0aefae are pushed; routing
-is the third separate ticket commit at this checkpoint. Seven existing API
+Reservation commit e333994, availability commit c0aefae and routing commit
+b02f7e0 are pushed on main. Seven existing API
 files pass 196 tests (cash21, methods23, terminal24, gateway42, sync23, sales58,
 redaction5); API typecheck, changed-file lint and independent review pass.
-No new suite, migration or dependency. Await green CI on this branch, then
-fast-forward main for one deployment. Verify the new release using a dedicated
-station on the in-process box and proof-only methods. Do not alter the physical
-booth or globally disable PromptPay. Staging remains on b9d68e3.
-Each push needs a ticket status change and
-progress comment. Deployed still requires a named staging screenshot.
+No new suite, migration or dependency. Branch CI 36485272336 and main CI
+36486990526 are green. One deployment put API, POS, Console, Launcher and Booth
+live on b02f7e0; the OTO App remains c416065.
+
+Read-only staging inspection confirms the in-process box and gateway simulator.
+The report and native Console screenshot are in docs/qa/payment-prerequisites;
+staging-391-gateway-read-only.png is attached to SCRUM-391 as 10854.
+The disposable behavioural proof in test-results/payment-prerequisites-proof.mts
+was blocked before execution by automatic approval review: creation and archival
+of shared staging test configuration and financial records needs explicit
+approval. No proof records were created. Approval was requested for a dedicated
+simulated station, terminal and methods, with test sales retained in the audit
+history. Keep the three tickets Testing until approved proof passes; do not
+label read-only configuration evidence as payment verification. The physical
+booth and global tender methods remain unchanged.
+
+Each push needs a ticket status change and progress comment. Deployed still
+requires a named staging screenshot.
 
 After these prerequisites, resume SCRUM-206 Slice F. Its UI must use the
 authoritative sale and a distinct stable identity per deliberate split tender;
