@@ -1,6 +1,6 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-28, 16:34 (STOP POINT held; the first real Pi run at the bench — three findings fixed the same afternoon; `main` at `08ffe66`; the release to install is `oto-box-0.1.0-08ffe66.tgz`; staging follows CI)_
+_Last updated: 2026-09-28, 17:01 (STOP POINT — the bench round stopped part-way for tokens, its partial edits on `wip/bench-round-1`; `main` at `c416065`; the release to install is `oto-box-0.1.0-08ffe66.tgz`; staging follows CI)_
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the

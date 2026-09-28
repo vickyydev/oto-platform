@@ -566,6 +566,44 @@ different; the Pi runtime and the counter were not built at all).**
   bench Pi runs `c34ec17` plus the two repairs by hand, which is the same
   behaviour. Harmless noise seen: `perl: Setting locale failed` at the top of
   the installer's output when run over SSH from a Mac.
+- **STOP POINT (28 Sept, 17:01) — the bench round, approved and then stopped for
+  tokens.** After playing the wheel on the real Pi the owner approved "bench
+  round 1": (1) print at the reveal, not at the press; (2) sign-in from the red
+  button alone — a staff list, then a PIN pad, one press moves, two select,
+  hold repeats, a 3-second hold opens the staff menu, the list steps aside after
+  30 s so the wheel still plays unattributed; (3) booth PINs of exactly five
+  digits that an admin types or has generated, with an optional expiry and a
+  remove, carried to the box as `pinExpiresAt` in the staff scope; (4) in the
+  Console a Vouchers ledger with totals and a CSV, a per-booth Spins panel and a
+  "Set up this booth" checklist with the panels in that order; (5) the OTO
+  App's old voucher module switched off; (6) the launcher's wheel tile live.
+  His rules: quick, no new test suites, one deploy. **Landed on main today:**
+  `c34ec17` printer cable, `5838eb6` printer address, `08ffe66` television,
+  `42564c3` the Box log route (GET /boxes/:id/log reads the newest collect_logs
+  answer; the drawer re-reads every minute and Refresh asks the box first),
+  `c416065` the OTO App's voucher module off (five pages and a section
+  removed, every old address shows "Vouchers have moved to the Console"), and
+  `VITE_BOOTH_URL` set on the staging launcher through the Render API (no
+  code; render.yaml still lacks it because that file carries another
+  session's uncommitted block). **Stopped part-way and kept on the branch
+  `wip/bench-round-1` (`3bd9b06`, on top of main, NOT merged, unchecked):** the box
+  side of print-at-reveal (the press no longer waits on the printer, the job
+  is held for a later print call; the call, the kiosk route, the page's part,
+  the staff list and the button-only sign-in were not reached), migration
+  0027 with the PIN expiry column in the schema and seed, and the API's
+  half-written PIN rule, generate and expiry in the booth routes and admin
+  service, the staff scope's `pinExpiresAt`, and a voucher-ledger service
+  draft with its route stub (none of it typechecks yet; the Console's
+  Vouchers page, Spins panel and checklist were not started). **To resume:** either finish from
+  that branch (the full brief is in the round's script,
+  `workflows/scripts/bench-round-1-wf_59dbbe78-482.js` under the session
+  folder, and in this block) or start the round again from main; then land,
+  let CI pack the release, and the owner updates the Pi once (guide section
+  7, "Update"). The bench Pi runs `c34ec17` plus the printer-address and
+  television repairs by hand, which equals `08ffe66`. Notes on SCRUM-418
+  (three Pi fixes), SCRUM-195 (box log) and SCRUM-198 (this stop); no new
+  tickets. Vouchers: SCRUM-207 is Deployed (slips redeem at the tills, the
+  same ledger); reports and the Radar feed are SCRUM-216, To Do.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
