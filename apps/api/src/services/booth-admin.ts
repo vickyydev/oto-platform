@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { hash as argonHash } from '@node-rs/argon2';
 import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import {
@@ -1453,11 +1453,17 @@ export interface BoothStaffView {
   addedAt: string;
   addedBy: string;
   /**
-   * Whether this person has a live booth PIN. **Never the PIN and never its
-   * hash** — the question a manager asks is "can they get in", and that is all
-   * this answers.
+   * Whether this person has a booth PIN on record — set and not withdrawn.
+   * **Never the PIN and never its hash** — the question a manager asks is "can
+   * they get in", and that is all this and the next field answer.
    */
   hasPin: boolean;
+  /**
+   * When that PIN stops working (migration 0027), ISO 8601; null when it
+   * never does or there is no PIN. A PIN past it is still `hasPin` — nobody
+   * withdrew it — and opens no booth: the Console shows it as expired.
+   */
+  pinExpiresAt: string | null;
 }
 
 export async function listBoothStaff(
@@ -1476,7 +1482,7 @@ export async function listBoothStaff(
   if (rows.length === 0) return { staff: [] };
 
   const pins = await db
-    .select({ accountId: credential.accountId })
+    .select({ accountId: credential.accountId, expiresAt: credential.expiresAt })
     .from(credential)
     .where(
       and(
@@ -1485,13 +1491,14 @@ export async function listBoothStaff(
         eq(credential.active, true),
       ),
     );
-  const held = new Set(pins.map((p) => p.accountId));
+  const held = new Map(pins.map((p) => [p.accountId, p.expiresAt] as const));
   return {
     staff: rows.map((r) => ({
       accountId: r.accountId,
       addedAt: r.addedAt.toISOString(),
       addedBy: r.addedBy,
       hasPin: held.has(r.accountId),
+      pinExpiresAt: held.get(r.accountId)?.toISOString() ?? null,
     })),
   };
 }
@@ -1705,9 +1712,57 @@ export async function removeBoothStaff(
 }
 
 /**
- * Set somebody's booth PIN.
+ * A booth PIN is EXACTLY five digits (owner, 28 September): typed at the api,
+ * in the Console and on the box's number pad, and refused anywhere else with
+ * the same sentence. A fixed length is what lets the box's pad know a PIN is
+ * complete, and one fewer thing to get wrong at a wheel.
+ */
+export const BOOTH_PIN_LENGTH = 5;
+const BOOTH_PIN_SHAPE = new RegExp(`^[0-9]{${BOOTH_PIN_LENGTH}}$`);
+export const BOOTH_PIN_RULE = `A booth PIN is exactly ${BOOTH_PIN_LENGTH} digits (0–9).`;
+
+export function isBoothPin(pin: string | null | undefined): pin is string {
+  return typeof pin === 'string' && BOOTH_PIN_SHAPE.test(pin);
+}
+
+/**
+ * Five digits drawn by the platform, from the operating system's secure
+ * source. Every one of the hundred thousand is equally likely — leading zeros
+ * included, which is why it is padded rather than drawn from 10000 upwards.
+ */
+function drawBoothPin(): string {
+  return String(randomInt(0, 10 ** BOOTH_PIN_LENGTH)).padStart(BOOTH_PIN_LENGTH, '0');
+}
+
+/** What setting a PIN takes: one typed, or one drawn here — and when it ends. */
+export interface BoothPinInput {
+  /** Five digits typed by the administrator. Exactly one of this and `generate`. */
+  pin?: string;
+  /** Draw a random five-digit PIN here and hand it back once. */
+  generate?: boolean;
+  /** When it stops working. Null or absent: never. Must be in the future. */
+  expiresAt?: Date | null;
+}
+
+export interface BoothPinSetResult {
+  accountId: string;
+  hasPin: true;
+  pinExpiresAt: string | null;
+  /**
+   * The PIN the platform drew, present only when `generate` was asked for.
+   * This answer is the only place it exists in clear: the row holds its
+   * argon2id hash, the audit row says only that one was drawn, and the route
+   * declares `secretResponse`, so the replay store never keeps this body.
+   */
+  pin?: string;
+}
+
+/**
+ * Set somebody's booth PIN: five digits the administrator typed, or five the
+ * platform draws and hands back once (`generate`), with an optional moment it
+ * stops working (`expiresAt`, migration 0027).
  *
- * **Three rules, and each of them is about where the four digits go.**
+ * **Three rules, and each of them is about where the five digits go.**
  *
  *   - **Never onto the box command queue.** `edge.box_command.payload` is
  *     stored and rendered on a Console screen, which is why S2-07a left badge
@@ -1715,11 +1770,13 @@ export async function removeBoothStaff(
  *     argon2id hash on the `staff` cache scope, which is the same path the
  *     password hash already takes.
  *   - **Never into the idempotency store.** That store keeps a request hash
- *     for a day, and a plain SHA-256 over a body holding four digits is ten
- *     thousand guesses. The route declares `secretResponse: true` so no key is
- *     claimed and no hash of this body is ever written.
+ *     for a day, and a plain SHA-256 over a body holding five digits is a
+ *     hundred thousand guesses. The route declares `secretResponse: true` so
+ *     no key is claimed, no hash of this body is ever written, and the answer
+ *     that carries a drawn PIN is never kept to be replayed.
  *   - **Never in the audit row.** The row says a PIN was set, by whom, for
- *     whom. Not what it is, and not its hash.
+ *     whom, whether the platform drew it and when it expires. Not what it is,
+ *     and not its hash.
  *
  * The PIN is the ACCOUNT's, not this booth's: `credential_active_kind_unique`
  * allows one live `pin` per person, so setting a new one revokes the old in
@@ -1734,8 +1791,27 @@ export async function setBoothPin(
   actor: BoothPinActor,
   row: BoothStationRow,
   accountId: string,
-  pin: string,
-): Promise<{ accountId: string; hasPin: true }> {
+  input: BoothPinInput,
+): Promise<BoothPinSetResult> {
+  const generated = input.generate === true;
+  if (generated === (input.pin !== undefined)) {
+    throw new AppError(
+      400,
+      'BOOTH_PIN_INPUT',
+      'Type a five-digit PIN, or ask for one to be generated — one of the two.',
+    );
+  }
+  if (!generated && !isBoothPin(input.pin)) {
+    throw new AppError(400, 'BOOTH_PIN_INVALID', BOOTH_PIN_RULE);
+  }
+  const expiresAt = input.expiresAt ?? null;
+  if (expiresAt && expiresAt.getTime() <= Date.now()) {
+    throw new AppError(
+      400,
+      'BOOTH_PIN_EXPIRY_PAST',
+      'A PIN’s expiry has to be in the future. Leave it empty for a PIN that does not expire.',
+    );
+  }
   await requireStaffAccount(db, actor.operatorId, accountId);
   await requirePinTarget(db, actor, row, accountId);
   if (!(await isOnBooth(db, row.stationId, accountId))) {
@@ -1746,6 +1822,7 @@ export async function setBoothPin(
     );
   }
 
+  const pin = generated ? drawBoothPin() : input.pin!;
   const secretHash = await argonHash(pin);
   await withTx(db, ctx, 'booth_pin.set', async (tx) => {
     const now = new Date();
@@ -1766,6 +1843,7 @@ export async function setBoothPin(
       secretHash,
       label: `Booth PIN (${row.name})`,
       createdByAccountId: actor.accountId,
+      expiresAt,
     });
     await audit.record(tx, {
       actorAccountId: actor.accountId,
@@ -1774,12 +1852,24 @@ export async function setBoothPin(
       action: 'booth_pin.set',
       entityType: 'credential',
       entityId: id,
-      // The fact, never the secret and never its hash.
-      after: { accountId, kind: 'pin', stationId: row.stationId },
+      // The fact, never the secret and never its hash — "drawn by the
+      // platform" is said, the digits it drew are not.
+      after: {
+        accountId,
+        kind: 'pin',
+        stationId: row.stationId,
+        generated,
+        expiresAt: expiresAt?.toISOString() ?? null,
+      },
       requestId: ctx.requestId,
     });
   });
-  return { accountId, hasPin: true };
+  return {
+    accountId,
+    hasPin: true,
+    pinExpiresAt: expiresAt?.toISOString() ?? null,
+    ...(generated ? { pin } : {}),
+  };
 }
 
 /**
@@ -1849,22 +1939,36 @@ export async function clearBoothPin(
   return { accountId, hasPin: false };
 }
 
+/** A PIN a box may verify: its argon2id hash, and when it stops working. */
+export interface LiveBoothPin {
+  secretHash: string;
+  /** Null never expires. */
+  expiresAt: Date | null;
+}
+
 /**
- * The live PIN hashes for a set of accounts, for the `staff` cache scope.
+ * The live PINs of a set of accounts, for the `staff` cache scope.
  *
  * Exported because the scope is built in `services/sync.ts` and the query
- * belongs beside the table it is about. Returns argon2id hashes and nothing
- * else — the same class of secret that scope already carries in
- * `passwordHash`, and the reason `BoothStaffCacheFields.pinHash` in
+ * belongs beside the table it is about. Returns argon2id hashes and their
+ * expiry and nothing else — the same class of secret that scope already
+ * carries in `passwordHash`, and the reason `BoothStaffCacheFields.pinHash` in
  * `@oto/shared` exists.
+ *
+ * Active PINs include their expiry even after it passes, so the box can
+ * explain an expired PIN consistently before and after a cache pull.
  */
-export async function pinHashesByAccount(
+export async function livePinsByAccount(
   db: Db,
   accountIds: string[],
-): Promise<Map<string, string>> {
+): Promise<Map<string, LiveBoothPin>> {
   if (accountIds.length === 0) return new Map();
   const rows = await db
-    .select({ accountId: credential.accountId, secretHash: credential.secretHash })
+    .select({
+      accountId: credential.accountId,
+      secretHash: credential.secretHash,
+      expiresAt: credential.expiresAt,
+    })
     .from(credential)
     .where(
       and(
@@ -1873,7 +1977,9 @@ export async function pinHashesByAccount(
         eq(credential.active, true),
       ),
     );
-  return new Map(rows.map((r) => [r.accountId, r.secretHash]));
+  return new Map(
+    rows.map((r) => [r.accountId, { secretHash: r.secretHash, expiresAt: r.expiresAt }] as const),
+  );
 }
 
 /** The total the active slices must add up to, for the routes' descriptions. */

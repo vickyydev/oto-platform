@@ -198,10 +198,10 @@ test('Booths: somebody is added to Booth 1, given a PIN that is never shown agai
   await expect(manager).toBeVisible({ timeout: 30_000 });
   await expect(manager).toContainText('no PIN');
 
-  const pin = '5937';
+  const pin = '59370';
   await manager.getByRole('button', { name: 'Set PIN', exact: true }).click();
   await manager.getByLabel('PIN', { exact: true }).fill(pin);
-  await manager.getByLabel('PIN again').fill('5938');
+  await manager.getByLabel('PIN again').fill('59380');
   await expect(manager.getByRole('button', { name: 'Save PIN', exact: true })).toBeDisabled();
   await manager.getByLabel('PIN again').fill(pin);
   await manager.getByRole('button', { name: 'Save PIN', exact: true }).click();

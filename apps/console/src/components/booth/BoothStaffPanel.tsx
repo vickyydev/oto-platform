@@ -7,41 +7,26 @@ import {
   type SystemRole,
 } from '@oto/shared';
 import { staffCandidates, type BranchStaffMember } from '@/api/fleet';
-import { EmptyState, ErrorNote, Loading, Panel, RouteUnavailable, Unreadable } from '@/components/Panel';
+import {
+  EmptyState,
+  ErrorNote,
+  Loading,
+  Panel,
+  RouteUnavailable,
+  Unreadable,
+} from '@/components/Panel';
 import { Button } from '@/components/ui/button';
 import { Field, Select, TextInput } from '@/components/Form';
 import { CONTROL } from '@/components/Filters';
 import { StatusPill } from '@/components/Status';
 import { cn } from '@/lib/utils';
-import type { BoothStaffRow } from './boothApi';
+import type { BoothPinInput, BoothPinResult, BoothStaffRow } from './boothApi';
 import type { Read } from './readState';
 
 /**
- * Console > Booths > "Booth staff" (SCRUM-400): who may sign in at this
- * booth, and the PIN each of them types there.
- *
- * **Two ways in, both only for the people on this list.** The PIN is checked
- * on the box, so it works with the mall's internet down; a phone and password
- * is checked by the platform, and only for somebody whose role carries
- * `booth:staff:sign_in` — the note at the foot of the panel names the roles
- * that do. Taking somebody off the list refuses their phone-and-password
- * sign-in at once, because the platform reads the list live; their PIN keeps
- * working until the box's next pull brings the new list, and a sign-in they
- * already have at the booth ends at that pull.
- *
- * **A PIN is typed twice, sent once, and never shown.** It goes to the API in
- * the one request that sets it, is hashed there with argon2id, and reaches a
- * box only as that hash. This panel keeps it in two fields until the answer
- * comes back and then empties them: there is nothing to read back, and the
- * list says only whether a PIN is set. A PIN is the person's, not the
- * booth's, so setting it here replaces the one they type at every booth.
- *
- * **Two people must not share a PIN, and nothing here checks.** Refusing a PIN
- * because somebody already uses those digits would tell whoever sets PINs what
- * a colleague's PIN is. So the check is the box's: a PIN that matches two
- * people on its list signs nobody in and is refused like a wrong one — and the
- * form says, while it is open, to choose digits nobody else at this person's
- * booths uses.
+ * Staff assigned to the booth, with person-wide PIN management.
+ * Typed PINs are cleared after saving; generated PINs are displayed once.
+ * Only hashes and expiry reach the box, where offline sign-in is checked.
  */
 export function BoothStaffPanel({
   branchId,
@@ -73,7 +58,7 @@ export function BoothStaffPanel({
   onAdd: (accountId: string) => void;
   onRemove: (accountId: string) => void;
   /** Resolves true once the API has the PIN, so the fields can be emptied. */
-  onSetPin: (accountId: string, pin: string) => Promise<boolean>;
+  onSetPin: (accountId: string, input: BoothPinInput) => Promise<BoothPinResult | null>;
   onClearPin: (accountId: string) => void;
   onRetry: () => void;
 }) {
@@ -85,7 +70,12 @@ export function BoothStaffPanel({
   const [pinFor, setPinFor] = useState<string | null>(null);
   const [pin, setPin] = useState('');
   const [again, setAgain] = useState('');
-  const [confirm, setConfirm] = useState<{ accountId: string; what: 'remove' | 'withdraw' } | null>(null);
+  const [generate, setGenerate] = useState(false);
+  const [expires, setExpires] = useState('');
+  const [generated, setGenerated] = useState<{ accountId: string; pin: string } | null>(null);
+  const [confirm, setConfirm] = useState<{ accountId: string; what: 'remove' | 'withdraw' } | null>(
+    null,
+  );
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -99,7 +89,9 @@ export function BoothStaffPanel({
       .catch((reason: unknown) => {
         if (cancelled) return;
         setCandidates([]);
-        setCandidatesFailed(reason instanceof Error ? reason.message : 'The staff list could not be read');
+        setCandidatesFailed(
+          reason instanceof Error ? reason.message : 'The staff list could not be read',
+        );
       });
     return () => {
       cancelled = true;
@@ -124,20 +116,27 @@ export function BoothStaffPanel({
     return c?.name ?? c?.phone ?? `Account ${boothStaffCode(accountId)}`;
   };
 
-  const pinValid = /^\d{4,8}$/.test(pin);
+  const pinValid = /^\d{5}$/.test(pin);
   const pinsMatch = pin === again;
   const closePin = () => {
     setPinFor(null);
     setPin('');
     setAgain('');
+    setExpires('');
+    setGenerate(false);
   };
 
   const submitPin = async (accountId: string) => {
-    if (!pinValid || !pinsMatch) return;
-    const ok = await onSetPin(accountId, pin);
+    if (!generate && (!pinValid || !pinsMatch)) return;
+    setGenerated(null);
+    const result = await onSetPin(accountId, {
+      ...(generate ? { generate: true } : { pin }),
+      expiresAt: expires ? new Date(expires).toISOString() : null,
+    });
     // Emptied whatever the answer: a PIN is not kept on screen for a retry.
     closePin();
-    if (ok) {
+    if (result) {
+      if (result.pin) setGenerated({ accountId, pin: result.pin });
       setNotice(
         `PIN set for ${nameOf(accountId)}. It reaches the booth at the box's next pull — within about a minute when the box is online.`,
       );
@@ -188,7 +187,10 @@ export function BoothStaffPanel({
       )}
 
       {staff.state === 'absent' ? (
-        <RouteUnavailable what="Booth staff" detail="This deployment does not serve the booth staff routes yet." />
+        <RouteUnavailable
+          what="Booth staff"
+          detail="This deployment does not serve the booth staff routes yet."
+        />
       ) : staff.state === 'failed' ? (
         <Unreadable what="This booth’s staff" message={staff.error} onRetry={onRetry} />
       ) : staff.state === 'unread' ? (
@@ -215,48 +217,78 @@ export function BoothStaffPanel({
                   ) : (
                     <StatusPill tone="idle">no PIN</StatusPill>
                   )}
+                  {member.hasPin && member.pinExpiresAt && (
+                    <span className="text-xs text-muted-foreground">
+                      {Date.parse(member.pinExpiresAt) <= Date.now() ? 'Expired' : 'Expires'}{' '}
+                      {new Date(member.pinExpiresAt).toLocaleString()}
+                    </span>
+                  )}
                   {candidates !== null && !known && (
                     <span className="text-xs text-muted-foreground">
                       not on this branch’s staff list — deactivated, or moved to another park
                     </span>
                   )}
-                  {!readOnly && pinFor !== member.accountId && confirm?.accountId !== member.accountId && (
-                    <span className="ml-auto flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={busy}
-                        onClick={() => {
-                          setNotice(null);
-                          setConfirm(null);
-                          setPin('');
-                          setAgain('');
-                          setPinFor(member.accountId);
-                        }}
-                      >
-                        <KeyRound className="w-4 h-4" />
-                        {member.hasPin ? 'Reset PIN' : 'Set PIN'}
-                      </Button>
-                      {member.hasPin && (
+                  {!readOnly &&
+                    pinFor !== member.accountId &&
+                    confirm?.accountId !== member.accountId && (
+                      <span className="ml-auto flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => {
+                            setNotice(null);
+                            setConfirm(null);
+                            setPin('');
+                            setAgain('');
+                            setGenerate(false);
+                            setExpires('');
+                            setGenerated(null);
+                            setPinFor(member.accountId);
+                          }}
+                        >
+                          <KeyRound className="w-4 h-4" />
+                          Set PIN
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => {
+                            closePin();
+                            setConfirm(null);
+                            setNotice(null);
+                            setGenerated(null);
+                            setGenerate(true);
+                            setPinFor(member.accountId);
+                          }}
+                        >
+                          Generate PIN
+                        </Button>
+                        {member.hasPin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={busy}
+                            onClick={() =>
+                              setConfirm({ accountId: member.accountId, what: 'withdraw' })
+                            }
+                          >
+                            Remove PIN
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
                           disabled={busy}
-                          onClick={() => setConfirm({ accountId: member.accountId, what: 'withdraw' })}
+                          onClick={() =>
+                            setConfirm({ accountId: member.accountId, what: 'remove' })
+                          }
                         >
-                          Withdraw PIN
+                          Remove
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={busy}
-                        onClick={() => setConfirm({ accountId: member.accountId, what: 'remove' })}
-                      >
-                        Remove
-                      </Button>
-                    </span>
-                  )}
+                      </span>
+                    )}
                 </div>
 
                 {confirm?.accountId === member.accountId && (
@@ -264,7 +296,7 @@ export function BoothStaffPanel({
                     <span className="text-sm">
                       {confirm.what === 'remove'
                         ? `Take ${name} off this booth? Their PIN stays theirs for any other booth they work.`
-                        : `Withdraw ${name}'s booth PIN? It stops working at every booth at the next pull.`}
+                        : `Remove ${name}'s booth PIN? It stops working at every booth at the next pull.`}
                     </span>
                     <Button
                       variant="destructive"
@@ -277,7 +309,7 @@ export function BoothStaffPanel({
                         else onClearPin(member.accountId);
                       }}
                     >
-                      {confirm.what === 'remove' ? 'Remove' : 'Withdraw'}
+                      {confirm.what === 'remove' ? 'Remove' : 'Remove PIN'}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => setConfirm(null)}>
                       Keep
@@ -293,49 +325,99 @@ export function BoothStaffPanel({
                       void submitPin(member.accountId);
                     }}
                   >
-                    <Field
-                      label={member.hasPin ? 'New PIN' : 'PIN'}
-                      hint={
-                        pin !== '' && !pinValid ? (
-                          <span style={{ color: 'hsl(var(--status-down))' }}>4 to 8 digits.</span>
-                        ) : (
-                          '4 to 8 digits, typed on the booth’s number pad.'
-                        )
-                      }
-                    >
-                      <PinInput
-                        label={member.hasPin ? 'New PIN' : 'PIN'}
-                        value={pin}
-                        onChange={setPin}
+                    {!generate && (
+                      <>
+                        <Field
+                          label={member.hasPin ? 'New PIN' : 'PIN'}
+                          hint={
+                            pin !== '' && !pinValid ? (
+                              <span style={{ color: 'hsl(var(--status-down))' }}>
+                                Exactly five digits.
+                              </span>
+                            ) : (
+                              'Exactly five digits, including any leading zero.'
+                            )
+                          }
+                        >
+                          <PinInput
+                            label={member.hasPin ? 'New PIN' : 'PIN'}
+                            value={pin}
+                            onChange={setPin}
+                            disabled={busy}
+                          />
+                        </Field>
+                        <Field
+                          label="PIN again"
+                          hint={
+                            again !== '' && !pinsMatch ? (
+                              <span style={{ color: 'hsl(var(--status-down))' }}>
+                                The two PINs are not the same.
+                              </span>
+                            ) : (
+                              'Never shown again once saved.'
+                            )
+                          }
+                        >
+                          <PinInput
+                            label="PIN again"
+                            value={again}
+                            onChange={setAgain}
+                            disabled={busy}
+                          />
+                        </Field>
+                      </>
+                    )}
+                    <Field label="Expires" hint="Optional. Leave empty for no expiry.">
+                      <input
+                        type="datetime-local"
+                        aria-label="Expires"
+                        className={CONTROL}
+                        value={expires}
+                        onChange={(event) => setExpires(event.target.value)}
                         disabled={busy}
                       />
                     </Field>
-                    <Field
-                      label="PIN again"
-                      hint={
-                        again !== '' && !pinsMatch ? (
-                          <span style={{ color: 'hsl(var(--status-down))' }}>The two PINs are not the same.</span>
-                        ) : (
-                          'Never shown again once saved.'
-                        )
-                      }
-                    >
-                      <PinInput label="PIN again" value={again} onChange={setAgain} disabled={busy} />
-                    </Field>
                     <div className="flex gap-2">
-                      <Button type="submit" size="sm" disabled={busy || !pinValid || !pinsMatch}>
-                        Save PIN
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={busy || (!generate && (!pinValid || !pinsMatch))}
+                      >
+                        {generate ? 'Generate PIN' : 'Save PIN'}
                       </Button>
                       <Button type="button" variant="ghost" size="sm" onClick={closePin}>
                         Cancel
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground sm:col-span-3">
-                      Choose digits nobody else at this person’s booths uses. Two people must not
-                      share a PIN: a booth refuses one that two of its people share, as if it were
-                      wrong.
+                      This replaces the person's PIN at every booth. A generated PIN is shown once:
+                      write it down before closing.
                     </p>
                   </form>
+                )}
+                {generated?.accountId === member.accountId && (
+                  <div className="rounded-xl border p-3 flex flex-wrap items-center gap-3">
+                    <span>
+                      Generated PIN:{' '}
+                      <strong className="font-mono tracking-widest">{generated.pin}</strong>. Shown
+                      once — write it down.
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        void navigator.clipboard
+                          .writeText(generated.pin)
+                          .then(() => setNotice('PIN copied.'))
+                          .catch(() => setNotice('Copy did not work. Write the PIN down.'))
+                      }
+                    >
+                      Copy PIN
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setGenerated(null)}>
+                      Done
+                    </Button>
+                  </div>
                 )}
               </li>
             );
@@ -346,10 +428,17 @@ export function BoothStaffPanel({
       {!readOnly && staff.state !== 'absent' && (
         <div className="mt-4 rounded-xl border p-3 flex flex-col gap-3">
           <p className="text-sm font-semibold">Add somebody to this booth</p>
-          {candidatesFailed && <ErrorNote message={`The staff list could not be read: ${candidatesFailed}`} />}
+          {candidatesFailed && (
+            <ErrorNote message={`The staff list could not be read: ${candidatesFailed}`} />
+          )}
           <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
             <Field label="Search">
-              <TextInput value={query} onChange={setQuery} placeholder="Name or phone" disabled={busy} />
+              <TextInput
+                value={query}
+                onChange={setQuery}
+                placeholder="Name or phone"
+                disabled={busy}
+              />
             </Field>
             <Field label="Person">
               <Select
@@ -359,7 +448,9 @@ export function BoothStaffPanel({
                 placeholder={candidates === null ? 'Loading staff…' : '— choose somebody —'}
                 options={offered.map((c) => ({
                   value: c.accountId,
-                  label: c.name ? `${c.name}${c.phone ? ` — ${c.phone}` : ''}` : (c.phone ?? c.accountId),
+                  label: c.name
+                    ? `${c.name}${c.phone ? ` — ${c.phone}` : ''}`
+                    : (c.phone ?? c.accountId),
                 }))}
               />
             </Field>
@@ -377,17 +468,18 @@ export function BoothStaffPanel({
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            The people of this branch: those who work here, those with a role at this branch, and the
-            park’s administrators.
+            The people of this branch: those who work here, those with a role at this branch, and
+            the park’s administrators.
           </p>
         </div>
       )}
 
       <p className="mt-4 text-xs text-muted-foreground">
-        Staff on this list can also sign in at the booth with their own phone and password, when their
-        role allows it (<code className="font-mono">booth:staff:sign_in</code>): {roles.join(', ')}. A role the
-        park created itself allows it only if it carries that permission. Either way a sign-in {lasts} — set
-        under Booth settings — and does not end when nobody presses anything.
+        Staff on this list can also sign in at the booth with their own phone and password, when
+        their role allows it (<code className="font-mono">booth:staff:sign_in</code>):{' '}
+        {roles.join(', ')}. A role the park created itself allows it only if it carries that
+        permission. Either way a sign-in {lasts} — set under Booth settings — and does not end when
+        nobody presses anything.
       </p>
     </Panel>
   );
@@ -425,7 +517,7 @@ function PinInput({
       type="password"
       inputMode="numeric"
       autoComplete="new-password"
-      maxLength={8}
+      maxLength={5}
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))}

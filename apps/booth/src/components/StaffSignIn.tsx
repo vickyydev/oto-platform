@@ -154,6 +154,7 @@ export function StaffSignIn({
         setLockedUntil(Date.now() + wait);
       }
       const lines: Partial<Record<NonNullable<StaffSignInResponse['reason']>, string>> = {
+        pin_expired: STAFF_COPY.pinExpired,
         offline: STAFF_COPY.offline,
         not_assigned: STAFF_COPY.notAssigned,
         not_allowed: STAFF_COPY.notAllowed,

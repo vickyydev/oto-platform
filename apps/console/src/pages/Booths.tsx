@@ -27,6 +27,7 @@ import {
   type BoothPrizeDraft,
   type BoothScreenRow,
   type BoothStaffRow,
+  type BoothPinResult,
   type BoothStatus,
   type BoothVersionRow,
   type MintedPairingCode,
@@ -439,7 +440,9 @@ export function Booths() {
           onRetry={() => selectedId && void loadBooth(selectedId)}
         />
       ) : selected === null ? (
-        draft.refreshing ? <Loading what="this booth’s draft" /> : null
+        draft.refreshing ? (
+          <Loading what="this booth’s draft" />
+        ) : null
       ) : (
         <>
           {draft.state === 'stale' && draft.readAt !== null && (
@@ -560,9 +563,13 @@ export function Booths() {
             onRemove={(accountId) =>
               void runStaff(() => boothApi.removeStaff(selected.booth.id, accountId))
             }
-            onSetPin={(accountId, pin) =>
-              runStaff(() => boothApi.setPin(selected.booth.id, accountId, pin))
-            }
+            onSetPin={async (accountId, input) => {
+              let result: BoothPinResult | null = null;
+              await runStaff(async () => {
+                result = await boothApi.setPin(selected.booth.id, accountId, input);
+              });
+              return result;
+            }}
             onClearPin={(accountId) =>
               void runStaff(() =>
                 boothApi.clearPin(selected.booth.id, accountId, 'withdrawn from the Console'),

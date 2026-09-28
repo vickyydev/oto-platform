@@ -84,7 +84,7 @@ import {
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
 import { raiseOfflinePromoAlerts } from './promo-codes';
 import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
-import { pinHashesByAccount } from './booth-admin';
+import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
@@ -3694,10 +3694,16 @@ export async function cacheBundle(
        * It adds no new class of secret to the bundle: this scope already
        * carries each account's password hash for the offline unlock, under the
        * same rule that will not serve it without the deny-list beside it.
-       * Accounts with no PIN carry null, which is what every account does
-       * today.
+       * Accounts with no PIN carry null.
+       *
+       * `pinExpiresAt` rides beside it (migration 0027): when the PIN stops
+       * working, or null for never. The box checks this against its corrected
+       * clock on every PIN sign-in, including while offline.
        */
-      const pinHashes = await pinHashesByAccount(db, rows.map((a) => a.id));
+      const pins = await livePinsByAccount(
+        db,
+        rows.map((a) => a.id),
+      );
       /**
        * The name and staff code a booth prints — "Staff: Nok (S-7KMQ)" — for
        * the people on this box's booths, and for nobody else (SCRUM-223).
@@ -3746,7 +3752,9 @@ export async function cacheBundle(
           mustChangePassword: a.mustChangePassword,
           lastTokenAt: lastToken.get(a.id)?.toISOString() ?? null,
           /** argon2id over the booth PIN, or null. Never the PIN. */
-          pinHash: pinHashes.get(a.id) ?? null,
+          pinHash: pins.get(a.id)?.secretHash ?? null,
+          /** When that PIN stops working, ISO 8601, or null: never, or no PIN. */
+          pinExpiresAt: pins.get(a.id)?.expiresAt?.toISOString() ?? null,
           /** Null for anybody not on a booth of this box. See above. */
           displayName: onBooth.get(a.id) ?? null,
           staffCode: onBooth.has(a.id) ? boothStaffCode(a.id) : null,

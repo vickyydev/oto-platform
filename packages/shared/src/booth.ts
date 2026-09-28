@@ -376,6 +376,8 @@ export interface BoothStaffCacheFields {
    * slow by design and a four-digit brute force against the whole branch.
    */
   pinHash?: string | null;
+  /** ISO 8601; null means the PIN does not expire. */
+  pinExpiresAt?: string | null;
   /**
    * The badge secret's digest, from `core.credential` (kind `badge`).
    *
@@ -504,6 +506,7 @@ export type BoothSignInMethod = (typeof BOOTH_SIGN_IN_METHODS)[number];
  *    booth. This box's copy is out of date until its next pull.
  */
 export const BOOTH_SIGN_IN_REFUSALS = [
+  'pin_expired',
   'wrong',
   'locked',
   'offline',

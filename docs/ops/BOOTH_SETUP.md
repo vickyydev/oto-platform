@@ -58,8 +58,9 @@ What is the same for every booth voucher, and is therefore not a setting: it is 
 ## 3. Booth staff and PINs — Console → Booths → the booth → Booth staff
 
 - **Add somebody**: choose them under **Person** (search by name or phone) → **Add to booth**. The list offers the people of the booth's branch and the park's administrators — add yourself too.
-- **Set PIN**: 4 to 8 digits, typed twice → **Save PIN**. The PIN is never shown again, anywhere. Forgotten? **Reset PIN** gives a new one. A PIN belongs to the person, so it is the same at every booth they work. Give each person digits nobody else at their booths uses: a booth refuses a PIN that two of its people share, as if it were wrong, and signs neither of them in.
-- **Withdraw PIN** stops the PIN working; **Remove** takes the person off this booth (their PIN stays theirs for other booths).
+- **Set PIN**: exactly five digits, typed twice → **Save PIN**. Leading zeros count. **Generate PIN** makes five random digits and shows them once with **Copy PIN**; write them down before closing. A PIN belongs to the person and replaces their previous PIN at every booth they work. Give each person their own PIN.
+- **Expires** is optional. Once that time passes, the box refuses the PIN even offline and asks the person to get a new one from a manager. Leave it empty for no expiry.
+- **Remove PIN** stops the PIN working; **Remove** takes the person off this booth (their PIN stays theirs for other booths). Existing four-digit PINs must be replaced with five-digit PINs before using this release.
 - People on the list can also sign in at the booth with **their own phone and password** when their role allows it — the panel names those roles. Somebody not on the list cannot sign in at this booth either way.
 
 Changes here reach the booth at the box's next pull — within about a minute when it is online. No publish is needed. From that pull a new PIN works and a withdrawn one no longer does; somebody taken off the list can no longer sign in with their PIN, and a sign-in they already have at the booth ends at that pull too. A phone-and-password sign-in is checked by the platform itself, so somebody taken off the list is refused that way at once. Do not send PINs in chat or email; tell each person their own.

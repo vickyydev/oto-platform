@@ -12,7 +12,11 @@ Print at reveal is pushed as `628a393`. Button-only sign-in is now implemented:
 assigned staff list, five-digit pad, menu and booth picker use the button gestures;
 keyboard and phone/password remain available. Its checks pass: 3 press cases,
 73 box staff/booth cases, 21 API cases, typechecks and touched-source lint.
-PIN management and the Console ledger/spins/checklist are next. Nothing from this round has deployed; all four
+Button sign-in is pushed as a99f9fc. PIN management now enforces exactly five digits,
+offers set/generate/expiry/remove, sends pinExpiresAt with the hash, and refuses expired
+PINs on the box. Migration 0027 verified; existing checks pass: 97 API cases, 89 box
+cases (with the corrected five-digit fixture), 7 Console browser cases, typechecks and
+lint across the touched packages. The Console ledger/spins/checklist is next. Nothing from this round has deployed; all four
 parts will land together for one staging deploy and one CI-packed Pi release.
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —

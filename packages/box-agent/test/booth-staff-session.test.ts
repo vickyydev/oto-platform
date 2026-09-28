@@ -103,7 +103,7 @@ function entry(over: Partial<BoothCacheEntry> & { staffSessionMinutes?: number }
 const staff = (over: Partial<BoothStaffRecord> = {}): BoothStaffRecord => ({
   accountId: ACCOUNT,
   status: 'active',
-  pinHash: 'argon2:7391',
+  pinHash: 'argon2:73910',
   badgeHash: null,
   staffCode: 'S-7KMQ',
   displayName: 'Nok',
@@ -275,7 +275,7 @@ test('with no internet an account sign-in is refused "offline", and the PIN stil
   // Not a guess, so it spends nothing on the booth's throttle.
   assert.equal(await h.store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, STATION_A), null);
 
-  const pin = await h.booth.signIn({ pin: '7391' });
+  const pin = await h.booth.signIn({ pin: '73910' });
   assert.equal(pin.ok, true);
   assert.equal((await h.booth.staffSession())?.credentialKind, 'pin');
   h.close();
@@ -332,7 +332,7 @@ test('a wrong password counts against the booth like a wrong PIN, and the sixth 
   assert.equal(sixth.ok, false);
   assert.equal(sixth.retryAfterMs, 30_000);
   // And the lock stands for a PIN as well: the throttle is the booth's.
-  const pin = await h.booth.signIn({ pin: '7391' });
+  const pin = await h.booth.signIn({ pin: '73910' });
   assert.equal(pin.ok, false);
   assert.ok((pin.retryAfterMs ?? 0) > 0);
   h.close();
@@ -374,7 +374,7 @@ test('a session lasts the booth’s session length, survives a restart, and neve
   try {
     const first = open({ file });
     await publish(first, [entry({ staffSessionMinutes: 90 })]);
-    assert.equal((await first.booth.signIn({ pin: '7391' })).ok, true);
+    assert.equal((await first.booth.signIn({ pin: '73910' })).ok, true);
     const session = await first.booth.staffSession();
     assert.equal(session?.expiresAt, plus(90), 'sign-in plus ninety minutes');
     first.close();
@@ -411,7 +411,7 @@ test('a session lasts the booth’s session length, survives a restart, and neve
 test('with no length in the published wheel a session runs twelve hours', async () => {
   const h = open();
   await publish(h, [entry()]);
-  await h.booth.signIn({ pin: '7391' });
+  await h.booth.signIn({ pin: '73910' });
   assert.equal((await h.booth.staffSession())?.expiresAt, plus(720));
   h.close();
 });
@@ -419,7 +419,7 @@ test('with no length in the published wheel a session runs twelve hours', async 
 test('somebody taken off the booth after signing in is signed out at the next pull', async () => {
   const h = open();
   await publish(h, [entry()]);
-  assert.equal((await h.booth.signIn({ pin: '7391' })).ok, true);
+  assert.equal((await h.booth.signIn({ pin: '73910' })).ok, true);
 
   // The Console removes them; the next pull carries the shorter list.
   await publish(h, [entry({ allowedStaff: [OTHER_ACCOUNT] })], plus(5));
@@ -442,12 +442,12 @@ test('a list pulled BEFORE an account sign-in does not sign that person out', as
 test('a staff list change reaches the booth without a new publish', async () => {
   const h = open();
   await publish(h, [entry({ allowedStaff: [] })]);
-  assert.deepEqual(await h.booth.signIn({ pin: '7391' }), { ok: false }, 'not on the list yet');
+  assert.deepEqual(await h.booth.signIn({ pin: '73910' }), { ok: false }, 'not on the list yet');
 
   // Same version, same wheel, a longer staff list beside it.
   await publish(h, [entry({ allowedStaff: [ACCOUNT] })], plus(1));
   assert.equal(h.booth.config()?.version, 1);
-  assert.equal((await h.booth.signIn({ pin: '7391' })).ok, true);
+  assert.equal((await h.booth.signIn({ pin: '73910' })).ok, true);
   h.close();
 });
 
@@ -490,7 +490,7 @@ test('a reprint is staff-only, prints the same code, and never draws a second pr
   );
   assert.equal(h.submitted.length, 1, 'nothing printed for nobody');
 
-  await h.booth.signIn({ pin: '7391' });
+  await h.booth.signIn({ pin: '73910' });
   const countersBefore = await h.store.readCounters(BOX_ID, BOOTH_PRIZE_COUNTER_SCOPE, '2026-09-24');
   const depthBefore = (await h.store.depth(BOX_ID)).queued;
 
@@ -550,7 +550,7 @@ test('a reprint of a named spin, one that is not here, and one after a restart',
     await h.booth.print({ spinId: one.spinId });
     const two = await h.booth.spin({ idempotencyKey: 'p2' });
     await h.booth.print({ spinId: two.spinId });
-    await h.booth.signIn({ pin: '7391' });
+    await h.booth.signIn({ pin: '73910' });
     assert.equal((await h.booth.reprint({ spinId: one.spinId })).spinId, one.spinId);
     await assert.rejects(
       () => h.booth.reprint({ spinId: '018f1d2c-0000-7000-8000-0000000000ff' }),
@@ -579,7 +579,7 @@ test('with no printer a reprint is still recorded, as a skipped print', async ()
   await publish(h, [entry()]);
   const won = await h.booth.spin({ idempotencyKey: 'press-1' });
   await h.booth.print({ spinId: won.spinId });
-  await h.booth.signIn({ pin: '7391' });
+  await h.booth.signIn({ pin: '73910' });
   assert.deepEqual(await h.booth.reprint({}), { spinId: won.spinId, printState: 'no_printer' });
   const batch = await h.store.takeBatch(BOX_ID, { now: AT });
   const print = batch.events.find((e) => e.type === 'booth.voucher_printed');
@@ -600,7 +600,7 @@ test('a reprint answers "queued" in time when the printer is slow, and asking ag
   await publish(h, [entry()]);
   const won = await h.booth.spin({ idempotencyKey: 'press-1' });
   await h.booth.print({ spinId: won.spinId });
-  await h.booth.signIn({ pin: '7391' });
+  await h.booth.signIn({ pin: '73910' });
   const release = h.holdPrints();
 
   const first = await h.booth.reprint({});
@@ -724,7 +724,7 @@ test('the http contract takes an account sign-in and a reprint, and words neithe
   assert.equal(noStaff.status, 403);
   assert.equal((noStaff.body as { error: { code: string } }).error.code, 'staff_required');
 
-  await handle({ method: 'POST', path: '/staff/sign-in', body: { mode: 'pin', pin: '7391' } });
+  await handle({ method: 'POST', path: '/staff/sign-in', body: { mode: 'pin', pin: '73910' } });
   const nothing = await handle({ method: 'POST', path: '/reprint', body: {} });
   assert.equal(nothing.status, 404);
   assert.equal((nothing.body as { error: { code: string } }).error.code, 'nothing_to_reprint');

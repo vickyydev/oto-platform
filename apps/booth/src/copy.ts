@@ -193,6 +193,7 @@ export const PAIR_COPY = {
 
 /** Staff-facing words. English only: these appear in panels, never on the game. */
 export const STAFF_COPY = {
+  pinExpired: 'This PIN has expired — ask a manager for a new one',
   buttonHint: 'Press once to move, twice to choose. Hold to keep moving.',
   pickStaff: 'Choose your name',
   fiveDigits: 'Enter five digits. The fifth signs you in.',

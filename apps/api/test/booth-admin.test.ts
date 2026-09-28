@@ -994,7 +994,7 @@ describe('voucher definitions (S2-07b)', () => {
  * locking it out.
  */
 describe('the booth PIN (S2-07b)', () => {
-  const PIN = '1357';
+  const PIN = '13570';
 
   it('sets a PIN nobody can read back, and the booth then lets that person in', async () => {
     const res = await ctx.app.inject({
@@ -1004,7 +1004,7 @@ describe('the booth PIN (S2-07b)', () => {
       payload: { pin: PIN },
     });
     expect(res.statusCode, res.body).toBe(200);
-    expect(res.json()).toEqual({ accountId: receptionAccountId, hasPin: true });
+    expect(res.json()).toEqual({ accountId: receptionAccountId, hasPin: true, pinExpiresAt: null });
 
     const [row] = await db
       .select()
@@ -1022,7 +1022,7 @@ describe('the booth PIN (S2-07b)', () => {
     expect(await verifyArgon2(row!.secretHash, PIN)).toBe(true);
 
     /**
-     * Where the four digits must NOT be, each checked rather than asserted in
+     * Where the five digits must NOT be, each checked rather than asserted in
      * a comment.
      */
     const [entry] = await db
@@ -1035,8 +1035,8 @@ describe('the booth PIN (S2-07b)', () => {
     expect(JSON.stringify(entry)).not.toContain(PIN);
     expect(JSON.stringify(entry)).not.toContain(row!.secretHash);
 
-    // The idempotency store keeps a request hash for a day, and four digits
-    // behind a plain SHA-256 is ten thousand guesses. The route declares
+    // The idempotency store keeps a request hash for a day, and five digits
+    // behind a plain SHA-256 is one hundred thousand guesses. The route declares
     // `secretResponse`, so no key is claimed at all.
     const keys = await db.select().from(idempotencyKey);
     const pinKeys = keys.filter((k) => k.requestHash && k.responseBody !== null && JSON.stringify(k).includes('/pin'));
@@ -1209,7 +1209,7 @@ describe('booth staff and PINs stop at the person’s branch and role (M9)', () 
   let chalongPin: string;
 
   /** Four digits drawn at run time, so no PIN is written into this file. */
-  const freshPin = (): string => String(randomInt(1_000, 10_000));
+  const freshPin = (): string => String(randomInt(10_000, 100_000));
 
   const accountIdOf = async (phone: string): Promise<string> => {
     const [row] = await db.select({ id: account.id }).from(account).where(eq(account.phone, phone)).limit(1);

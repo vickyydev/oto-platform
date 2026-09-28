@@ -15,7 +15,7 @@
  * demo rows (accounts, members, children) are created once and then left
  * alone, so a password changed or a note edited on staging survives a sync.
  */
-import { createHash } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
 import {
   newId,
@@ -1548,10 +1548,8 @@ export async function seed(db: Db = getDb()): Promise<void> {
    *
    * Reception rather than the administrator: the booth is worked by whoever is
    * looking after it, and this is also the account S2-07b's PIN management is
-   * demonstrated on. `2468` is a local-dev value in the same class as the
-   * seeded passwords — it is hashed with argon2id here, as every secret on
-   * this platform is, and a staging deployment that wants a different one sets
-   * it from the Console.
+   * demonstrated on. A new seed receives a random five-digit PIN, stored
+   * only as its hash. Set or generate a usable PIN from the Console.
    */
   await db
     .insert(s.boothStaffAssignment)
@@ -1575,7 +1573,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
       operatorId,
       accountId: receptionAccountId,
       kind: 'pin',
-      secretHash: await hash('2468'),
+      secretHash: await hash(String(randomInt(100_000)).padStart(5, '0')),
       createdByAccountId: adminAccountId,
     });
   }

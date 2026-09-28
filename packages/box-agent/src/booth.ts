@@ -198,6 +198,7 @@ export interface BoothStaffRecord {
   status: string;
   /** argon2id over the booth PIN. Null for somebody who has not been given one. */
   pinHash?: string | null;
+  pinExpiresAt?: string | null;
   /** argon2id over the badge secret. Nothing writes this yet — see `signIn`. */
   badgeHash?: string | null;
   /** The short code a person types before their PIN. Not a secret. */
@@ -1437,6 +1438,7 @@ export function createBooth(options: BoothOptions): BoothModule {
     const secret = request.badge ?? request.pin ?? '';
     const kind: 'badge' | 'pin' = request.badge !== undefined ? 'badge' : 'pin';
     const verify = options.verifySecret;
+    const validShape = kind !== 'pin' || /^\d{5}$/.test(secret);
     const candidates = eligibleStaff().filter((person) =>
       kind !== 'pin' || request.accountId === undefined || person.accountId === request.accountId);
     /**
@@ -1457,7 +1459,7 @@ export function createBooth(options: BoothOptions): BoothModule {
      * many it matched and never whom.
      */
     const matched: BoothStaffRecord[] = [];
-    if (verify && secret !== '') {
+    if (verify && secret !== '' && validShape) {
       for (const candidate of candidates) {
         const hash = kind === 'badge' ? candidate.badgeHash : candidate.pinHash;
         if (!hash) continue;
@@ -1470,7 +1472,8 @@ export function createBooth(options: BoothOptions): BoothModule {
       }
     }
 
-    if (matched.length > 1) {
+    const live = kind === 'pin' ? matched.filter((person) => person.pinExpiresAt == null || Date.parse(person.pinExpiresAt) > nowMs) : matched;
+    if (live.length > 1) {
       note(
         'warn',
         'a sign-in matched more than one person on this booth, so nobody was signed in',
@@ -1479,7 +1482,8 @@ export function createBooth(options: BoothOptions): BoothModule {
       return { ok: false };
     }
 
-    const person = matched[0];
+    const person = live[0];
+    if (!person && matched.length > 0) return { ok: false, reason: 'pin_expired' };
     if (!person) {
       const { record, retryAfterMs } = await countFailure(station.id, held, at);
       note('warn', 'a booth sign-in was refused', {

@@ -316,7 +316,7 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
  * Booth 1's published version, set on this booth as a publish would leave it.
  */
 describe('a box that runs only a booth holds the booth’s cache and nothing else (SCRUM-412)', () => {
-  const PIN = '3691';
+  const PIN = '36910';
   let boothBoxId: string;
   let personId: string;
   let boothAgent: BoxAgent;

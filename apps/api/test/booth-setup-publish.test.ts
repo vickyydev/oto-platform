@@ -356,11 +356,11 @@ describe('a prize that never expires, worded by the park, published and printed 
       method: 'PUT',
       url: `/booths/${boothId}/staff/${receptionAccountId}/pin`,
       headers: { cookie: adminCookie },
-      payload: { pin: '4826' },
+      payload: { pin: '48260' },
     });
     expect(pin.statusCode, pin.body).toBe(200);
     await agent.syncCache();
-    const signedIn = await booth.signIn({ pin: '4826' });
+    const signedIn = await booth.signIn({ pin: '48260' });
     expect(signedIn.ok, 'the booth refused the PIN the Console set').toBe(true);
     const session = await booth.staffSession();
     expect(Date.parse(session!.expiresAt!) - Date.parse(session!.signedInAt)).toBe(600 * 60_000);

@@ -2115,6 +2115,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           accountId: entry.accountId,
           status: typeof entry.status === 'string' ? entry.status : 'unknown',
           pinHash: typeof entry.pinHash === 'string' ? entry.pinHash : null,
+          pinExpiresAt: typeof entry.pinExpiresAt === 'string' ? entry.pinExpiresAt : null,
           badgeHash: typeof entry.badgeHash === 'string' ? entry.badgeHash : null,
           staffCode: typeof entry.staffCode === 'string' ? entry.staffCode : null,
           displayName: typeof entry.displayName === 'string' ? entry.displayName : null,

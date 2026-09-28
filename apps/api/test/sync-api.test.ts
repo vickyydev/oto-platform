@@ -1817,6 +1817,7 @@ describe('the cache bundle', () => {
       'lastTokenAt',
       'mustChangePassword',
       'passwordHash',
+      'pinExpiresAt',
       'pinHash',
       'staffCode',
       'status',

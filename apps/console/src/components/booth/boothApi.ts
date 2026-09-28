@@ -197,9 +197,7 @@ export interface BoothDraft {
  */
 export function publishedSessionMinutes(draft: BoothDraft): number | null {
   const published = draft.publishedBundle as
-    | { settings?: { staffSessionMinutes?: unknown } }
-    | null
-    | undefined;
+    { settings?: { staffSessionMinutes?: unknown } } | null | undefined;
   const minutes = published?.settings?.staffSessionMinutes;
   return typeof minutes === 'number' && Number.isInteger(minutes) && minutes > 0 ? minutes : null;
 }
@@ -326,6 +324,19 @@ export interface BoothStaffRow {
   addedAt: string;
   addedBy: string;
   hasPin: boolean;
+  pinExpiresAt: string | null;
+}
+
+export interface BoothPinInput {
+  pin?: string;
+  generate?: boolean;
+  expiresAt?: string | null;
+}
+export interface BoothPinResult {
+  accountId: string;
+  hasPin: true;
+  pinExpiresAt: string | null;
+  pin?: string;
 }
 
 /** What a prize create or edit sends. Every field but the name is optional. */
@@ -528,11 +539,8 @@ export const boothApi = {
    * go in this one request body and nowhere else — not in state after the
    * form clears, not in a log, not on screen.
    */
-  setPin: (id: string, accountId: string, pin: string) =>
-    api.put<{ accountId: string; hasPin: true }>(
-      `${at(id)}/staff/${encodeURIComponent(accountId)}/pin`,
-      { pin },
-    ),
+  setPin: (id: string, accountId: string, input: BoothPinInput) =>
+    api.put<BoothPinResult>(`${at(id)}/staff/${encodeURIComponent(accountId)}/pin`, input),
 
   clearPin: (id: string, accountId: string, reason: string) =>
     api.delete<{ accountId: string; hasPin: false }>(

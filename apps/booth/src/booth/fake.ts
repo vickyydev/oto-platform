@@ -350,7 +350,7 @@ export class FakeBooth implements BoothTransport {
    * D15 exists to correct that. A fake that hard-coded the seeded development
    * PIN would put the same real value back into the same public place, so this
    * one holds no PIN at all: with `VITE_BOOTH_FAKE_PIN` unset it accepts any
-   * four digits or more and refuses anything shorter, which is enough to work
+   * exactly five digits and refuses other lengths, which is enough to work
    * the panel and enough to demonstrate the backoff by submitting `1` six
    * times. Set the variable to pin it to one value.
    *
@@ -388,8 +388,8 @@ export class FakeBooth implements BoothTransport {
         : badge !== ''
           ? badge.trim().length >= 6
           : typeof expected === 'string' && expected !== ''
-            ? pin === expected
-            : /^\d{4,}$/.test(pin);
+            ? /^\d{5}$/.test(pin) && pin === expected
+            : /^\d{5}$/.test(pin);
 
     if (ok) {
       this.failures = 0;

@@ -184,7 +184,7 @@ interface FakeCloud {
 }
 
 async function fakeCloud(): Promise<FakeCloud> {
-  const pinHash = await argonHash('7391');
+  const pinHash = await argonHash('73910');
   const cloud: FakeCloud = {
     calls: [],
     down: false,
@@ -721,7 +721,7 @@ test('a box that boots with no internet still plays: the config copy on disk car
     });
     assert.deepEqual(account.json(), { ok: false, reason: 'offline' });
     // The PIN is checked on the box, against the real argon2 hash.
-    const pin = await hit(second.port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '7391' } });
+    const pin = await hit(second.port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '73910' } });
     assert.deepEqual(pin.json(), { ok: true });
   } finally {
     await second.stop();
@@ -789,7 +789,7 @@ test('a cloud that takes the connection and never answers: the television is up 
 
     // A PIN is the box's to check; an account sign-in asks the cloud, gives up
     // inside the allowance, and says so rather than hanging the panel.
-    const pin = await hit(port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '7391' } });
+    const pin = await hit(port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '73910' } });
     assert.deepEqual(pin.json(), { ok: true });
     const askedAt = Date.now();
     const account = await hit(port, 'POST', '/booth/staff/sign-in', {
@@ -1077,7 +1077,7 @@ test('the booth prints over TCP 9100 to the printer config.json names, at its wi
     assert.equal(onDisk.stations[0]?.devices[0]?.address, '192.168.88.207:9100');
 
     // Staff reprint the voucher: the same code comes out of the same printer.
-    await hit(box.port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '7391' } });
+    await hit(box.port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '73910' } });
     const before = printer.received().length;
     const reprint = (await hit(box.port, 'POST', '/booth/reprint', { body: {} })).json() as {
       printState: string;
@@ -1156,8 +1156,8 @@ test('with no printer answering the code goes to the screen and the job waits on
 test('the PIN verifier is @node-rs/argon2, and it checks the hashes the api writes', async () => {
   const verify = await loadArgon2Verifier(quiet);
   assert.ok(verify, 'the native module loaded on this machine');
-  const stored = await argonHash('7391');
-  assert.equal(await verify!(stored, '7391'), true);
+  const stored = await argonHash('73910');
+  assert.equal(await verify!(stored, '73910'), true);
   assert.equal(await verify!(stored, '1357'), false);
-  assert.equal(await verify!('not-a-hash', '7391'), false, 'a malformed hash is a no, not a crash');
+  assert.equal(await verify!('not-a-hash', '73910'), false, 'a malformed hash is a no, not a crash');
 });

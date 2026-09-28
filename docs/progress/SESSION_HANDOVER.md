@@ -31,7 +31,14 @@ cases and 21 API cases, with box/booth/API typechecks and touched-source lint.
 The staff-session tests were adjusted to call print at the reveal, preserving
 their reprint and session assertions. The Pi guide describes the new controls.
 
-Next: complete SCRUM-450 and SCRUM-451, checking only their existing
+SCRUM-449 is pushed as a99f9fc. SCRUM-450 is implemented: exactly five digits,
+set or generate (shown once), optional expiry and Remove PIN. The staff cache carries
+pinExpiresAt beside its hash; the box checks its corrected clock even offline.
+Migration 0027 matches its snapshot. Existing checks passed: 97 API cases,
+89 box cases with the five-digit fixture corrected, 7 Console browser cases,
+typechecks and lint for the touched packages. No new suite.
+
+Next: complete SCRUM-451, checking only its existing
 tests and touched packages. Checkpoint on this work branch; land all four parts
 on main together for one staging deployment. Then attach staging screenshots to
 the four tickets before Deployed, download the CI Pi artifact, verify it, and

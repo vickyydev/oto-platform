@@ -15,6 +15,7 @@ import {
   revokeBoothScreen,
 } from '../services/device-credential';
 import {
+  BOOTH_PIN_LENGTH,
   BOOTH_TOTAL_WEIGHT_BP,
   addBoothStaff,
   archiveBoothPrize,
@@ -744,6 +745,8 @@ export async function boothRoutes(app: App): Promise<void> {
         addedAt: z.string(),
         addedBy: z.string().uuid(),
         hasPin: z.boolean(),
+        /** When the PIN stops working; null for never, or no PIN. Past it, the PIN opens nothing. */
+        pinExpiresAt: z.string().nullable(),
       }),
     ),
   });
@@ -754,7 +757,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Who may sign in at this booth, when they were added and by whom, and whether each has a live booth PIN. Never a PIN and never its hash — "can they get in" is the whole question this answers.',
+          'Who may sign in at this booth, when they were added and by whom, whether each has a booth PIN, and when that PIN stops working (`pinExpiresAt`, null for never — a PIN past it is still listed and opens nothing). Never a PIN and never its hash — "can they get in" is the whole question this answers.',
         params: BoothIdParams,
         response: { 200: StaffResponse },
       },
@@ -821,25 +824,40 @@ export async function boothRoutes(app: App): Promise<void> {
     '/booths/:id/staff/:accountId/pin',
     {
       /**
-       * `secretResponse` here is about the REQUEST, not the answer.
+       * `secretResponse` is about the REQUEST and, for a drawn PIN, the answer.
        *
-       * The answer carries nothing — an account id and a boolean. What must
-       * not be kept is the BODY: the idempotency plugin stores a plain
-       * SHA-256 over method, url and body for a day, and four digits behind an
-       * unsalted hash of a known shape is ten thousand guesses. Declaring this
-       * makes the plugin claim no key at all, so no hash of this body is ever
-       * written. A retry simply sets the PIN again, which is the same PIN.
+       * The idempotency plugin stores a plain SHA-256 over method, url and
+       * body for a day, and five digits behind an unsalted hash of a known
+       * shape is a hundred thousand guesses; and with `generate` the answer
+       * carries the PIN itself, which a replay store would hand back to
+       * anybody holding the key. Declaring this makes the plugin claim no key
+       * at all, so neither is ever written. A retry of a typed PIN sets the
+       * same PIN again; a retry of `generate` draws a new one and revokes the
+       * first — the one on screen is always the one that works.
        */
       config: { dynamicPermission: true, secretResponse: true },
       schema: {
-        description:
-          'Set this person’s booth PIN. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one, at every booth they work — and it reaches a booth only as that hash, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log. Because the PIN is the person’s, the person must be yours: somebody who does not work at this booth’s branch is refused with 403 `OUT_OF_BRANCH_SCOPE`, and somebody holding a role you do not hold in full — an operator administrator, to a branch manager — with 403 `ROLE_NOT_DOMINATED`, as a temporary password is. They must also be on this booth (400 `BOOTH_STAFF_NOT_FOUND`).',
+        description: `Set this person’s booth PIN: exactly ${BOOTH_PIN_LENGTH} digits typed in \`pin\`, or \`generate: true\` for the platform to draw ${BOOTH_PIN_LENGTH} random digits and answer them ONCE in \`pin\` — one of the two, anything else refused with 400 (\`BOOTH_PIN_INVALID\`, \`BOOTH_PIN_INPUT\`). \`expiresAt\` (ISO 8601, in the future, else 400 \`BOOTH_PIN_EXPIRY_PAST\`) is when it stops working; absent or null, never. It is hashed with argon2id and stored on the account — one live PIN per person, so this replaces and revokes any previous one, at every booth they work — and it reaches a booth only as that hash, with its expiry, on the staff cache scope, never on the box command queue whose payloads are stored and shown on a Console screen; the box checks expiry with its corrected clock. The PIN itself is held nowhere: not in the audit row, not in the idempotency store, not in a log. Because the PIN is the person’s, the person must be yours: somebody who does not work at this booth’s branch is refused with 403 \`OUT_OF_BRANCH_SCOPE\`, and somebody holding a role you do not hold in full — an operator administrator, to a branch manager — with 403 \`ROLE_NOT_DOMINATED\`, as a temporary password is. They must also be on this booth (400 \`BOOTH_STAFF_NOT_FOUND\`).`,
         params: StaffParams,
         body: z.object({
-          /** Digits, because a booth overlay on a television is a number pad. */
-          pin: z.string().regex(/^\d{4,8}$/, 'A booth PIN is 4 to 8 digits'),
+          /**
+           * Digits, because a booth overlay on a television is a number pad.
+           * Bounded here and judged by the service, whose refusal names the
+           * rule — "exactly five digits" — rather than a schema path.
+           */
+          pin: z.string().max(16).optional(),
+          generate: z.boolean().optional(),
+          expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
         }),
-        response: { 200: z.object({ accountId: z.string().uuid(), hasPin: z.literal(true) }) },
+        response: {
+          200: z.object({
+            accountId: z.string().uuid(),
+            hasPin: z.literal(true),
+            pinExpiresAt: z.string().nullable(),
+            /** Only for `generate`: the drawn PIN, shown once and kept nowhere. */
+            pin: z.string().optional(),
+          }),
+        },
       },
     },
     async (req) => {
@@ -858,7 +876,11 @@ export async function boothRoutes(app: App): Promise<void> {
         },
         row,
         req.params.accountId,
-        req.body.pin,
+        {
+          ...(req.body.pin !== undefined ? { pin: req.body.pin } : {}),
+          ...(req.body.generate !== undefined ? { generate: req.body.generate } : {}),
+          expiresAt: req.body.expiresAt ? new Date(req.body.expiresAt) : null,
+        },
       );
     },
   );
@@ -869,7 +891,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Withdraw this person’s booth PIN, at every booth at once. Marked revoked with a reason rather than deleted, so "whose PIN was withdrawn, and when" stays answerable. It stops working at a booth when its box next pulls — minutes online, and however long it stays offline otherwise, which is the same window the deny-list has. Refused as setting one is — 403 `OUT_OF_BRANCH_SCOPE` for somebody who does not work at this booth’s branch, 403 `ROLE_NOT_DOMINATED` for somebody holding a role you do not hold in full — and with 400 `BOOTH_STAFF_NOT_FOUND` for somebody not on this booth.',
+          'Withdraw this person’s booth PIN — the Console’s Remove PIN — at every booth at once. Marked revoked with a reason rather than deleted, so "whose PIN was withdrawn, and when" stays answerable. It stops working at a booth when its box next pulls — minutes online, and however long it stays offline otherwise, which is the same window the deny-list has. Refused as setting one is — 403 `OUT_OF_BRANCH_SCOPE` for somebody who does not work at this booth’s branch, 403 `ROLE_NOT_DOMINATED` for somebody holding a role you do not hold in full — and with 400 `BOOTH_STAFF_NOT_FOUND` for somebody not on this booth.',
         params: StaffParams,
         querystring: z.object({ reason: z.string().max(200).optional() }),
         response: { 200: z.object({ accountId: z.string().uuid(), hasPin: z.literal(false) }) },
