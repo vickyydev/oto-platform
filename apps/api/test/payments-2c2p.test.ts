@@ -5,9 +5,11 @@ import {
   alert,
   auditLog,
   branch,
+  boxCommand,
   member,
   opsRun,
   paymentAttempt,
+  paymentMethod,
   paymentNotification,
   sale,
   station,
@@ -225,6 +227,168 @@ function simulator() {
 }
 
 // --- The happy path ---------------------------------------------------------
+
+describe('the saved QR route at the counter (SCRUM-391)', () => {
+  async function withRouting(qr: 'gateway' | 'none', run: () => Promise<void>) {
+    const [before] = await ctx.db.select().from(station).where(eq(station.id, stationId));
+    await ctx.db.update(station).set({ paymentRouting: { qr } }).where(eq(station.id, stationId));
+    try {
+      await run();
+    } finally {
+      await ctx.db.update(station).set({ paymentRouting: before!.paymentRouting }).where(eq(station.id, stationId));
+    }
+  }
+
+  function press(saleId: string, extra: Record<string, unknown> = {}, key?: string) {
+    return ctx.app.inject({
+      method: 'POST',
+      url: '/payments/attempts',
+      headers: { cookie, ...(key ? { 'idempotency-key': key } : {}) },
+      payload: { saleId, tender: 'qr', method: 'promptpay', kind: 'qr', ...extra },
+    });
+  }
+
+  it('returns a gateway QR and expiry through the tender route and polling read', async () => {
+    await withRouting('gateway', async () => {
+      const { saleId, grossSatang } = await openSale();
+      const actionId = newId();
+      const first = await press(saleId, { actionId }, `qr:${actionId}`);
+      expect(first.statusCode, first.body).toBe(200);
+      const shown = first.json();
+      expect(shown.route).toBe('gateway');
+      expect(shown.attempt.provider).toBe('simulator');
+      expect(shown.attempt.invoiceNo).toMatch(/^[A-Z0-9]{1,20}$/);
+      expect(shown.qrPayload).toMatch(/^000201/);
+      expect(shown.expiresAt).not.toBeNull();
+      expect(shown.expiryTimerMs).toBeGreaterThan(0);
+      expect(shown.outstandingSatang).toBe(grossSatang);
+      expect((await attemptOf(shown.attempt.id)).deviceId).toBeNull();
+      expect(await ctx.db.select().from(boxCommand).where(eq(boxCommand.actionId, actionId))).toHaveLength(0);
+
+      // A dropped-connection retry must replay the complete HTTP answer, not an intermediate write.
+      const cached = await press(saleId, { actionId }, `qr:${actionId}`);
+      expect(cached.statusCode, cached.body).toBe(200);
+      expect(cached.json()).toEqual(shown);
+      const polled = await ctx.app.inject({
+        method: 'GET', url: `/payments/attempts/${shown.attempt.id}`, headers: { cookie },
+      });
+      expect(polled.statusCode, polled.body).toBe(200);
+      expect(polled.json()).toMatchObject({
+        attempt: shown.attempt, qrPayload: shown.qrPayload, qrImageUrl: shown.qrImageUrl,
+        expiresAt: shown.expiresAt, outstandingSatang: grossSatang,
+      });
+
+      simulator().apply(shown.attempt.invoiceNo, 'paid');
+      const paid = await post(notification({
+        invoiceNo: shown.attempt.invoiceNo, amount: wire(grossSatang), tranRef: `HTTP-${actionId}`,
+      }));
+      expect(paid.json().outcome).toBe('settled');
+      const replay = await press(saleId, { actionId });
+      expect(replay.statusCode, replay.body).toBe(200);
+      expect(replay.json()).toMatchObject({
+        route: 'gateway', replayed: true, outstandingSatang: 0,
+        attempt: { id: shown.attempt.id, status: 'approved' },
+      });
+      expect((await saleOf(saleId)).receiptNumber).not.toBeNull();
+      expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(1);
+    });
+  });
+
+  it('keeps a press on its original gateway route when the saved routing changes', async () => {
+    await withRouting('gateway', async () => {
+      const { saleId } = await openSale();
+      const actionId = newId();
+      const first = await press(saleId, { actionId });
+      expect(first.statusCode, first.body).toBe(200);
+      await ctx.db.update(station).set({ paymentRouting: { qr: 'none' } }).where(eq(station.id, stationId));
+      const replay = await press(saleId, { actionId });
+      expect(replay.statusCode, replay.body).toBe(200);
+      expect(replay.json()).toMatchObject({
+        route: 'gateway', replayed: true, qrPayload: first.json().qrPayload,
+        attempt: { id: first.json().attempt.id },
+      });
+    });
+  });
+
+  it('refuses a new QR press where the counter disables QR', async () => {
+    await withRouting('none', async () => {
+      const { saleId } = await openSale();
+      const res = await press(saleId);
+      expect(res.statusCode).toBe(409);
+      expect(res.json().error.code).toBe('QR_DISABLED_FOR_STATION');
+      expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
+    });
+  });
+
+  it.each(['disabled', 'archived'] as const)('refuses a %s payment method before creating a gateway attempt', async (state) => {
+    await withRouting('gateway', async () => {
+      const [method] = await ctx.db.select().from(paymentMethod).where(and(
+        eq(paymentMethod.operatorId, operatorId), eq(paymentMethod.code, 'promptpay'),
+      ));
+      await ctx.db.update(paymentMethod).set(state === 'disabled'
+        ? { enabled: false }
+        : { archivedAt: new Date() }).where(eq(paymentMethod.id, method!.id));
+      try {
+        const { saleId } = await openSale();
+        const res = await press(saleId);
+        expect(res.statusCode).toBe(409);
+        expect(res.json().error.code).toBe('PAYMENT_METHOD_UNAVAILABLE');
+        expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
+      } finally {
+        await ctx.db.update(paymentMethod).set({ enabled: method!.enabled, archivedAt: method!.archivedAt }).where(eq(paymentMethod.id, method!.id));
+      }
+    });
+  });
+
+  it('settles a QR already shown when its payment method is disabled afterward', async () => {
+    await withRouting('gateway', async () => {
+      const { saleId, grossSatang } = await openSale();
+      const actionId = newId();
+      const shown = await press(saleId, { actionId });
+      expect(shown.statusCode, shown.body).toBe(200);
+      const [method] = await ctx.db.select().from(paymentMethod).where(and(
+        eq(paymentMethod.operatorId, operatorId), eq(paymentMethod.code, 'promptpay'),
+      ));
+      await ctx.db.update(paymentMethod).set({ enabled: false }).where(eq(paymentMethod.id, method!.id));
+      try {
+        simulator().apply(shown.json().attempt.invoiceNo, 'paid');
+        const paid = await post(notification({
+          invoiceNo: shown.json().attempt.invoiceNo, amount: wire(grossSatang), tranRef: `DISABLED-${actionId}`,
+        }));
+        expect(paid.json().outcome).toBe('settled');
+        expect((await saleOf(saleId)).status).toBe('finalised');
+        const replay = await press(saleId, { actionId });
+        expect(replay.statusCode, replay.body).toBe(200);
+        expect(replay.json()).toMatchObject({ replayed: true, outstandingSatang: 0, attempt: { status: 'approved' } });
+        expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(1);
+      } finally {
+        await ctx.db.update(paymentMethod).set({ enabled: method!.enabled }).where(eq(paymentMethod.id, method!.id));
+      }
+    });
+  });
+
+  it('cannot reuse a press for another sale or amount, or mint a second unresolved QR', async () => {
+    await withRouting('gateway', async () => {
+      const { saleId, grossSatang } = await openSale();
+      const actionId = newId();
+      expect((await press(saleId, { actionId })).statusCode).toBe(200);
+      const { saleId: otherSaleId } = await openSale();
+      const foreign = await press(otherSaleId, { actionId });
+      expect(foreign.statusCode).toBe(409);
+      expect(foreign.json().error.code).toBe('ACTION_ID_REUSED');
+      const changed = await press(saleId, { actionId, amountSatang: grossSatang - 1 });
+      expect(changed.statusCode).toBe(409);
+      expect(changed.json().error.code).toBe('ACTION_ID_REUSED');
+      const changedTender = await press(saleId, { actionId, tender: 'card' });
+      expect(changedTender.statusCode).toBe(409);
+      expect(changedTender.json().error.code).toBe('ACTION_ID_REUSED');
+      const second = await press(saleId, { actionId: newId() });
+      expect(second.statusCode).toBe(409);
+      expect(second.json().error.code).toBe('PAYMENT_IN_FLIGHT');
+      expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(1);
+    });
+  });
+});
 
 describe('a QR is shown, paid, and the sale closes', () => {
   it('mints one invoice number per attempt and stores the payload the display renders', async () => {

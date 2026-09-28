@@ -26,12 +26,12 @@ import {
   recordTerminalResult,
   recordTerminalRun,
   requestInquiry,
-  startTerminalTender,
   type TenderActor,
 } from '../services/payments/terminal';
+import { startPaymentTender } from '../services/payments/routing';
 
 /**
- * THE TENDER SURFACE (S2-10a, SCRUM-206) — the card terminal, the inquiry, the
+ * THE TENDER SURFACE (S2-10a, SCRUM-206) — gateway QR, the card terminal, the inquiry, the
  * audited confirmation, a manual entry, and the box's way back.
  *
  * WHY IT IS `/payments/*` AND NOT UNDER `/sales/*`. `apps/api/test/sales.test.ts`
@@ -40,7 +40,7 @@ import {
  * construction — on purpose: `/sales` is the ledger's surface and a tender in
  * flight is not a sale.
  *
- *   POST /payments/attempts                 send a tender to the station's terminal
+ *   POST /payments/attempts                 use the station's terminal or QR gateway
  *   GET  /payments/attempts/:id             what the till polls while it waits
  *   POST /payments/attempts/:id/result      the box says what the terminal did
  *   POST /payments/attempts/:id/inquire     ask the terminal again, by hand
@@ -205,10 +205,10 @@ export async function paymentRoutes(app: App): Promise<void> {
       config: { permission: 'pos:payment:capture' },
       schema: {
         description:
-          'Take this sale’s balance on the station’s card terminal. The attempt is recorded and ' +
-          'the instruction queued for the box in one transaction; the outcome arrives later on ' +
-          '/payments/attempts/:id/result and the till polls the attempt until it does. A station ' +
-          'routed to manual entry answers route=manual and opens nothing.',
+          'Take a tender using the station’s saved routing: a terminal, the QR gateway, or ' +
+          'manual card entry. Gateway QR answers with its payload and expiry; terminal outcomes ' +
+          'arrive later from the box. The till polls the attempt while it waits. Manual routing ' +
+          'opens no attempt.',
         body: z.object({
           saleId: z.string().uuid(),
           amountSatang: z.number().int().min(1).optional(),
@@ -223,10 +223,14 @@ export async function paymentRoutes(app: App): Promise<void> {
         }),
         response: {
           200: z.object({
-            route: z.enum(['card_terminal', 'manual']),
+            route: z.enum(['card_terminal', 'manual', 'gateway']),
             attempt: AttemptSchema.nullable(),
             replayed: z.boolean(),
             outstandingSatang: z.number().int(),
+            qrPayload: z.string().nullable(),
+            qrImageUrl: z.string().nullable(),
+            expiresAt: z.string().nullable(),
+            expiryTimerMs: z.number().int().nullable(),
           }),
         },
       },
@@ -234,22 +238,20 @@ export async function paymentRoutes(app: App): Promise<void> {
     async (req, reply) => {
       const actor = actorOf(req, 'pos:payment:capture');
       const actionId = req.body.actionId ?? actionIdOf(req.headers);
-      const result = await withTx(app.db, opCtx(req), 'payment.tender.start', (tx) =>
-        startTerminalTender(tx, actor, {
-          saleId: req.body.saleId,
-          ...(req.body.amountSatang === undefined ? {} : { amountSatang: req.body.amountSatang }),
-          tender: req.body.tender,
-          ...(req.body.method ? { methodCode: req.body.method } : {}),
-          ...(req.body.kind ? { kind: req.body.kind } : {}),
-          wallet: req.body.wallet ?? null,
-          ...(req.body.qrDirection ? { qrDirection: req.body.qrDirection } : {}),
-          ...(req.body.requestQrPayload === undefined
-            ? {}
-            : { requestQrPayload: req.body.requestQrPayload }),
-          cashier: req.body.cashier ?? null,
-          actionId,
-        }),
-      );
+      const result = await startPaymentTender(app.db, app.env, req.log, opCtx(req), actor, {
+        saleId: req.body.saleId,
+        ...(req.body.amountSatang === undefined ? {} : { amountSatang: req.body.amountSatang }),
+        tender: req.body.tender,
+        ...(req.body.method ? { methodCode: req.body.method } : {}),
+        ...(req.body.kind ? { kind: req.body.kind } : {}),
+        wallet: req.body.wallet ?? null,
+        ...(req.body.qrDirection ? { qrDirection: req.body.qrDirection } : {}),
+        ...(req.body.requestQrPayload === undefined
+          ? {}
+          : { requestQrPayload: req.body.requestQrPayload }),
+        cashier: req.body.cashier ?? null,
+        actionId,
+      });
       if (result.replayed) reply.header('x-oto-replay', 'true');
       return result;
     },
@@ -263,13 +265,16 @@ export async function paymentRoutes(app: App): Promise<void> {
       config: { permission: 'pos:payment:read' },
       schema: {
         description:
-          'One tender as the till reads it while it waits: the status, what the terminal said, ' +
-          'the QR payload where the terminal minted one, and what the sale still owes.',
+          'One tender as the till reads it while it waits: the status, provider response, ' +
+          'QR payload and expiry when present, and what the sale still owes.',
         params: IdParams,
         response: {
           200: z.object({
             attempt: AttemptSchema,
             qrPayload: z.string().nullable(),
+            qrImageUrl: z.string().nullable(),
+            expiresAt: z.string().nullable(),
+            expiryTimerMs: z.number().int().nullable(),
             deviceLabel: z.string().nullable(),
             responseText: z.string().nullable(),
             outstandingSatang: z.number().int().nullable(),

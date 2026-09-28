@@ -259,8 +259,11 @@ export async function loadAttemptForBox(
 
 export interface AttemptReadView {
   attempt: PaymentAttemptView;
-  /** The EMVCo payload the display draws, when the terminal minted one. */
+  /** The EMVCo payload the display draws for a gateway or terminal QR. */
   qrPayload: string | null;
+  qrImageUrl: string | null;
+  expiresAt: string | null;
+  expiryTimerMs: number | null;
   /** The terminal this tender went to, for the screen to name it. */
   deviceLabel: string | null;
   /** What the vendor said, as the till may show it. Never a code on its own. */
@@ -276,6 +279,7 @@ export async function readAttempt(
 ): Promise<AttemptReadView> {
   const row = await loadAttempt(db, operatorId, id);
   const payload = (row.payload ?? {}) as AttemptPayload;
+  const qrImageUrl = (row.payload as { qrImageUrl?: unknown } | null)?.qrImageUrl;
   let outstandingSatang: number | null = null;
   if (row.saleId) {
     const [saleRow] = await db
@@ -288,6 +292,9 @@ export async function readAttempt(
   return {
     attempt: attemptView(row),
     qrPayload: row.qrPayload,
+    qrImageUrl: typeof qrImageUrl === 'string' ? qrImageUrl : null,
+    expiresAt: row.expiresAt?.toISOString() ?? null,
+    expiryTimerMs: row.expiresAt ? Math.max(0, row.expiresAt.getTime() - Date.now()) : null,
     deviceLabel: typeof payload.deviceLabel === 'string' ? payload.deviceLabel : null,
     responseText:
       typeof payload.exchange?.responseText === 'string' ? payload.exchange.responseText : null,

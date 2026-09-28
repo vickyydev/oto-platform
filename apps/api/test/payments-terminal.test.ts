@@ -864,3 +864,46 @@ describe('the terminal simulator control', () => {
     expect(res.json().error.code).toBe('BOX_NOT_IN_THIS_PROCESS');
   });
 });
+
+describe('QR routing alongside the card terminal (SCRUM-391)', () => {
+  it('sends an explicitly routed terminal QR to its assigned box', async () => {
+    const [before] = await ctx.db.select().from(station).where(eq(station.id, stationId));
+    await ctx.db.update(station).set({ paymentRouting: { qr: 'qr_terminal' } }).where(eq(station.id, stationId));
+    try {
+      const { saleId } = await commitSale();
+      await setOutcome(qrDeviceId, { outcome: 'approved' });
+      const started = await startTender(saleId, { tender: 'qr', method: 'promptpay' });
+      expect(started.statusCode, started.body).toBe(200);
+      expect(started.json()).toMatchObject({
+        route: 'card_terminal', qrPayload: null, expiresAt: null,
+      });
+      const row = await attemptRow(started.json().attempt.id);
+      expect(row.deviceId).toBe(qrDeviceId);
+      expect(row.invoiceNo).toBeNull();
+      expect(await terminalCommands(row.id)).toHaveLength(1);
+      await agent.runPendingCommands();
+      expect((await readAttempt(row.id)).attempt.status).toBe('approved');
+    } finally {
+      await ctx.db.update(station).set({ paymentRouting: before!.paymentRouting }).where(eq(station.id, stationId));
+    }
+  });
+
+  it('keeps card on its terminal when QR uses the gateway', async () => {
+    const [before] = await ctx.db.select().from(station).where(eq(station.id, stationId));
+    await ctx.db.update(station).set({ paymentRouting: { qr: 'gateway' } }).where(eq(station.id, stationId));
+    try {
+      const { saleId } = await commitSale();
+      await setOutcome(cardDeviceId, { outcome: 'approved' });
+      const started = await startTender(saleId);
+      expect(started.statusCode, started.body).toBe(200);
+      expect(started.json()).toMatchObject({ route: 'card_terminal', qrPayload: null, expiresAt: null });
+      const row = await attemptRow(started.json().attempt.id);
+      expect(row.deviceId).toBe(cardDeviceId);
+      expect(row.invoiceNo).toBeNull();
+      await agent.runPendingCommands();
+      expect((await readAttempt(row.id)).attempt.status).toBe('approved');
+    } finally {
+      await ctx.db.update(station).set({ paymentRouting: before!.paymentRouting }).where(eq(station.id, stationId));
+    }
+  });
+});

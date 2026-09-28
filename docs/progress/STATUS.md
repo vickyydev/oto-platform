@@ -24,10 +24,19 @@ retained in quarantine, with no partial sale; after correction, Console Replay
 applies it once. That recovery passes in the existing 23-test sync file.
 The shared taken-status list and drawer audit comment follow-ups are included.
 
-SCRUM-391 is implemented in parallel and awaiting its commit. SCRUM-388 is
-Testing; SCRUM-382 moves to Testing on this push; 391 remains In Progress in
-active sprint id 3, Sprint 2. The batch's source checks and independent review
-pass; staging proof follows the final routing checkpoint.
+SCRUM-391 now dispatches QR using the station's saved gateway/terminal/disabled
+setting. POST and polling responses carry the shared attempt vocabulary plus
+nullable QR payload, image and expiry metadata. Retries keep their original
+route even after routing changes or payment; external gateway calls happen
+after the durable attempt commits. The existing gateway and terminal files pass
+66 tests, including paid-after-disable and final HTTP idempotency replay.
+
+The three separate commits are on `fix/payment-prerequisites`: reservation
+`e333994`, method availability `c0aefae`, and routing at this checkpoint.
+All three tickets are Testing in active sprint id 3, Sprint 2. Seven existing
+API files pass 196 tests; API typecheck, changed-file lint and independent review
+pass. No new suite, migration or dependency. Await green CI, then fast-forward
+main for one deployment and scoped staging proof. Staging remains on `b9d68e3`.
 Slice F remains unbuilt. Its complete offline and separate-display acceptance
 also needs the existing SCRUM-269/285 and S2-08 seams. Real 2C2P sandbox
 confirmation still needs credentials; simulator proof can proceed.

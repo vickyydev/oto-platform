@@ -9,8 +9,7 @@ Write new history and progress comments about OTO Park and the park.
 
 Branch `fix/payment-prerequisites` starts at main `a4a79d7`. The first batch is
 SCRUM-391, SCRUM-388 and SCRUM-382; all three have starting comments.
-SCRUM-388 is Testing; SCRUM-382 moves to Testing on this push; 391 remains
-In Progress.
+SCRUM-388 and SCRUM-382 are Testing; SCRUM-391 moves to Testing on this push.
 SCRUM-388 adds one common sale-locked reservation check in
 `services/payments/attempt.ts`. Every writer reserves pending money before
 requesting another payment; failed attempts release it, while the paid-only
@@ -29,9 +28,23 @@ complete signed fact, no partial money, and successful Replay after re-enable.
 Such offline facts need Console Failures correction and Replay; the box does
 not automatically re-send an acknowledged quarantined event.
 
-SCRUM-391's routing, terminal/gateway services and existing tests are implemented
-in parallel and ready for their separate commit. Source checks and independent
-review pass. Deploy the batch after green CI. Each push needs a ticket status change and
+SCRUM-391 is complete: the till-facing start route honours the saved gateway,
+terminal or disabled QR setting. POST and polling responses add nullable
+qrPayload/qrImageUrl/expiresAt/expiryTimerMs, using the existing attempt statuses.
+Action replay keeps its original route and validates sale, token, amount and
+tender. Gateway I/O follows its committed attempt; only the final HTTP response
+is cached. Existing gateway/terminal files pass 66 tests, including changed
+routing replay, full HTTP idempotency, pending reservations and paid-after-disable.
+
+Reservation commit e333994 and availability commit c0aefae are pushed; routing
+is the third separate ticket commit at this checkpoint. Seven existing API
+files pass 196 tests (cash21, methods23, terminal24, gateway42, sync23, sales58,
+redaction5); API typecheck, changed-file lint and independent review pass.
+No new suite, migration or dependency. Await green CI on this branch, then
+fast-forward main for one deployment. Verify the new release using a dedicated
+station on the in-process box and proof-only methods. Do not alter the physical
+booth or globally disable PromptPay. Staging remains on b9d68e3.
+Each push needs a ticket status change and
 progress comment. Deployed still requires a named staging screenshot.
 
 After these prerequisites, resume SCRUM-206 Slice F. Its UI must use the

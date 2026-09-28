@@ -36,6 +36,7 @@ import {
   openAttempt,
   outstandingAfter,
   settleAttempt,
+  tenderMethodOf,
   type AttemptRow,
 } from './attempt';
 import { withTx, type OpContext, type Tx } from '../tx';
@@ -228,6 +229,7 @@ export interface OpenQrAttemptInput {
   amountSatang: number;
   /** The configured tender's token, so the receipt prints the name the park gave it. */
   methodCode?: string | null;
+  kind?: string;
   /** `x-oto-action-id` — one press of QR, however many HTTP attempts it took. */
   actionId?: string | null;
   /** Who pressed it. Recorded, and it is who the sale is closed BY when the money lands. */
@@ -277,40 +279,12 @@ export async function openQrAttempt(
 ): Promise<OpenQrAttemptResult> {
   const { qr, selection } = gatewayFor(env, log);
   if (input.amountSatang <= 0) throw errors.badRequest('A QR tender has to settle something');
-
-  const existing = input.actionId
-    ? await findAttemptByAction(db, input.operatorId, input.actionId)
-    : null;
-  if (existing) {
-    return {
-      attempt: attemptView(existing),
-      qrPayload: existing.qrPayload,
-      qrImageUrl: null,
-      expiresAt: existing.expiresAt?.toISOString() ?? null,
-      expiryTimerMs: existing.expiresAt
-        ? Math.max(0, existing.expiresAt.getTime() - Date.now())
-        : null,
-      invoiceNo: existing.invoiceNo ?? '',
-      replay: true,
-    };
-  }
-
-  const [st] = await db
-    .select({ codePrefix: station.codePrefix })
-    .from(station)
-    .where(eq(station.id, input.stationId))
-    .limit(1);
-  if (!st?.codePrefix) {
-    // The same refusal `finaliseSale` makes about a receipt series, made
-    // earlier: an invoice number needs three characters of station code, and
-    // discovering that after the guest has scanned is too late.
-    throw errors.badRequest(
-      'This station has no code prefix, so it cannot number a gateway invoice — set one on the station',
-    );
-  }
+  const methodCode = input.methodCode ?? 'promptpay';
+  const operationCtx = { ...ctx, idempotency: undefined };
 
   // Act 1.
-  const opened = await withTx(db, ctx, 'payment.qr.open', async (tx) => {
+  const prepared = await withTx(db, operationCtx, 'payment.qr.open', async (tx) => {
+    let saleRow: typeof sale.$inferSelect | undefined;
     if (input.saleId) {
       /**
        * S2-10b — THE TENDER GUARD, before a QR the guest can pay exists: the
@@ -321,14 +295,8 @@ export async function openQrAttempt(
        * close would refuse. Locked first, as every other tender locks it, so a
        * void or a close cannot slip in between this and the attempt.
        */
-      const [saleRow] = await tx
-        .select({
-          id: sale.id,
-          operatorId: sale.operatorId,
-          branchId: sale.branchId,
-          stationId: sale.stationId,
-          status: sale.status,
-        })
+      [saleRow] = await tx
+        .select()
         .from(sale)
         .where(eq(sale.id, input.saleId))
         .for('update')
@@ -336,6 +304,32 @@ export async function openQrAttempt(
       if (!saleRow || saleRow.operatorId !== input.operatorId) {
         throw errors.notFound('Sale not found');
       }
+      if (
+        saleRow.branchId !== input.branchId ||
+        saleRow.stationId !== input.stationId ||
+        saleRow.businessDate !== input.businessDate
+      ) {
+        throw errors.badRequest('This QR tender does not match its recorded sale');
+      }
+    }
+    const existing = input.actionId
+      ? await findAttemptByAction(tx, input.operatorId, input.actionId)
+      : null;
+    if (existing) {
+      if (
+        existing.saleId !== (input.saleId ?? null) ||
+        existing.branchId !== input.branchId ||
+        existing.stationId !== input.stationId ||
+        existing.amountSatang !== input.amountSatang ||
+        existing.methodCode !== methodCode ||
+        existing.method !== 'qr' ||
+        !existing.invoiceNo
+      ) {
+        throw errors.conflict('ACTION_ID_REUSED', 'That action id already recorded a different tender');
+      }
+      return { row: existing, replay: true, stationCode: '' };
+    }
+    if (saleRow) {
       if (saleRow.status !== 'tendering') {
         throw errors.conflict(
           'SALE_CLOSED',
@@ -353,9 +347,20 @@ export async function openQrAttempt(
         new Date(),
       );
     }
+    const [st] = await tx.select().from(station).where(eq(station.id, input.stationId)).limit(1);
+    if (!st || st.operatorId !== input.operatorId || st.branchId !== input.branchId || st.archivedAt) {
+      throw errors.badRequest('This QR tender names a station that is no longer available');
+    }
+    if (!st.codePrefix) {
+      throw errors.badRequest(
+        'This station has no code prefix, so it cannot number a gateway invoice — set one on the station',
+      );
+    }
+    const method = await tenderMethodOf(tx, input.operatorId, methodCode, input.kind ?? 'qr');
+    if (method !== 'qr') throw errors.badRequest('A gateway QR must use a QR payment method');
     const invoiceNo = await mintInvoiceNo(tx, {
       stationId: input.stationId,
-      stationCode: st.codePrefix!,
+      stationCode: st.codePrefix,
       businessDate: input.businessDate,
       prefix: env.PGW_INVOICE_PREFIX,
     });
@@ -365,8 +370,8 @@ export async function openQrAttempt(
       saleId: input.saleId ?? null,
       stationId: input.stationId,
       businessDate: input.businessDate,
-      method: 'qr',
-      methodCode: input.methodCode ?? null,
+      method,
+      methodCode,
       provider: selection.provider === '2c2p' ? '2c2p' : 'simulator',
       status: 'created',
       amountSatang: input.amountSatang,
@@ -401,8 +406,21 @@ export async function openQrAttempt(
         provider: row.provider,
       },
     });
-    return row;
+    return { row, replay: false, stationCode: st.codePrefix };
   });
+  const opened = prepared.row;
+  if (prepared.replay) {
+    const image = (opened.payload as { qrImageUrl?: unknown } | null)?.qrImageUrl;
+    return {
+      attempt: attemptView(opened),
+      qrPayload: opened.qrPayload,
+      qrImageUrl: typeof image === 'string' ? image : null,
+      expiresAt: opened.expiresAt?.toISOString() ?? null,
+      expiryTimerMs: opened.expiresAt ? Math.max(0, opened.expiresAt.getTime() - Date.now()) : null,
+      invoiceNo: opened.invoiceNo!,
+      replay: true,
+    };
+  }
 
   // Act 2 — outside every transaction.
   const startedAt = new Date();
@@ -414,7 +432,7 @@ export async function openQrAttempt(
       amountSatang: input.amountSatang,
       description: input.description ?? 'OTO Park',
       expiryMinutes: env.PGW_PAYMENT_EXPIRY_MIN,
-      userDefined: { stationCode: st.codePrefix!, businessDate: input.businessDate },
+      userDefined: { stationCode: prepared.stationCode, businessDate: input.businessDate },
     });
     await recordRun(db, {
       kind: 'adapter',
@@ -440,7 +458,7 @@ export async function openQrAttempt(
       stationId: input.stationId,
       detail: { invoiceNo: opened.invoiceNo },
     });
-    await withTx(db, ctx, 'payment.qr.failed', async (tx) => {
+    await withTx(db, operationCtx, 'payment.qr.failed', async (tx) => {
       await failAttempt(tx, opened.id, {
         status: 'declined',
         payload: mergePayload(opened.payload, { gatewayError: (err as Error).name }),
@@ -450,7 +468,7 @@ export async function openQrAttempt(
   }
 
   if (minted.state !== 'qr_shown' || !(minted.qrPayload || minted.qrImageUrl)) {
-    await withTx(db, ctx, 'payment.qr.failed', async (tx) => {
+    await withTx(db, operationCtx, 'payment.qr.failed', async (tx) => {
       await failAttempt(tx, opened.id, {
         status: 'declined',
         payload: mergePayload(opened.payload, { respCode: minted.respCode, state: minted.state }),
@@ -479,7 +497,7 @@ export async function openQrAttempt(
   }
 
   // Act 3.
-  const shown = await withTx(db, ctx, 'payment.qr.shown', async (tx) =>
+  const shown = await withTx(db, operationCtx, 'payment.qr.shown', async (tx) =>
     advanceAttempt(tx, opened.id, {
       status: 'sent_to_terminal',
       qrPayload: minted.qrPayload,
@@ -1858,5 +1876,4 @@ function shapeOf(body: unknown): string {
   if (Array.isArray(body)) return 'array';
   return typeof body;
 }
-
 
