@@ -1,18 +1,10 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { StudioLayout } from "@/components/layout/studio-layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Building2, Shield, Gift, Loader2, Link, UserX, Key, Clock, ExternalLink, AlertTriangle } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import type { User as UserType, Branch, VoucherTemplate, UserVoucher } from "@shared/schema";
+import { User, Building2, Shield, Link, UserX, Key, Clock, ExternalLink, AlertTriangle } from "lucide-react";
+import type { User as UserType, Branch } from "@shared/schema";
 import { format } from "date-fns";
 
 const HR_APP_URL = import.meta.env.VITE_HR_APP_URL || "https://oto-hr.replit.app";
@@ -45,70 +37,10 @@ const accessLevelColors: Record<string, string> = {
   STAFF: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
 };
 
-type UserVoucherWithTemplate = UserVoucher & { template: VoucherTemplate };
-
 export default function StudioUsersPage() {
-  const { toast } = useToast();
-  const [vouchersDialogOpen, setVouchersDialogOpen] = useState(false);
-  const [vouchersUser, setVouchersUser] = useState<UserWithBranch | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
-  const [voucherNotes, setVoucherNotes] = useState<string>("");
-
   const { data: users = [], isLoading: loadingUsers } = useQuery<UserWithBranch[]>({
     queryKey: ["/api/admin/users"],
   });
-
-  const { data: voucherTemplates = [] } = useQuery<VoucherTemplate[]>({
-    queryKey: ["/api/studio/voucher-templates"],
-  });
-
-  const { data: userVouchers = [], refetch: refetchUserVouchers } = useQuery<UserVoucherWithTemplate[]>({
-    queryKey: ["/api/studio/users", vouchersUser?.id, "vouchers"],
-    queryFn: async () => {
-      if (!vouchersUser) return [];
-      const res = await fetch(`/api/studio/users/${vouchersUser.id}/vouchers`, { credentials: "include" });
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!vouchersUser,
-  });
-
-  const assignVoucherMutation = useMutation({
-    mutationFn: async ({ userId, templateId, notes }: { userId: string; templateId?: string; notes?: string }) => {
-      const res = await apiRequest("POST", `/api/studio/users/${userId}/vouchers`, { templateId, notes });
-      return res.json();
-    },
-    onSuccess: () => {
-      refetchUserVouchers();
-      toast({ title: "Voucher assigned" });
-      setSelectedTemplateId("");
-      setVoucherNotes("");
-    },
-    onError: () => {
-      toast({ title: "Failed to assign voucher", variant: "destructive" });
-    },
-  });
-
-  const revokeVoucherMutation = useMutation({
-    mutationFn: async (voucherId: string) => {
-      const res = await apiRequest("PATCH", `/api/studio/vouchers/${voucherId}`, { status: "revoked" });
-      return res.json();
-    },
-    onSuccess: () => {
-      refetchUserVouchers();
-      toast({ title: "Voucher revoked" });
-    },
-    onError: () => {
-      toast({ title: "Failed to revoke voucher", variant: "destructive" });
-    },
-  });
-
-  const openVouchersDialog = (user: UserWithBranch) => {
-    setVouchersUser(user);
-    setVouchersDialogOpen(true);
-    setSelectedTemplateId("");
-    setVoucherNotes("");
-  };
 
   const getHRLink = (user: UserWithBranch) => {
     if (user.hrPersonId) {
@@ -239,15 +171,6 @@ export default function StudioUsersPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      onClick={() => openVouchersDialog(user)}
-                      title="Manage vouchers"
-                      data-testid={`button-vouchers-user-${user.id}`}
-                    >
-                      <Gift className="h-4 w-4" />
-                    </Button>
                     {getHRLink(user) ? (
                       <Button
                         size="sm"
@@ -279,84 +202,6 @@ export default function StudioUsersPage() {
           </div>
         )}
       </div>
-
-      <Dialog open={vouchersDialogOpen} onOpenChange={setVouchersDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Vouchers for {vouchersUser?.name}</DialogTitle>
-            <DialogDescription>Assign and manage reward vouchers</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Assign New Voucher</Label>
-              <div className="flex gap-2">
-                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                  <SelectTrigger className="flex-1" data-testid="select-voucher-template">
-                    <SelectValue placeholder="Select voucher type..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {voucherTemplates.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={() => {
-                    if (vouchersUser && selectedTemplateId) {
-                      assignVoucherMutation.mutate({
-                        userId: vouchersUser.id,
-                        templateId: selectedTemplateId,
-                        notes: voucherNotes || undefined,
-                      });
-                    }
-                  }}
-                  disabled={!selectedTemplateId || assignVoucherMutation.isPending}
-                  data-testid="button-assign-voucher"
-                >
-                  {assignVoucherMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Assign"}
-                </Button>
-              </div>
-              <Input
-                placeholder="Optional note..."
-                value={voucherNotes}
-                onChange={(e) => setVoucherNotes(e.target.value)}
-                data-testid="input-voucher-notes"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Active Vouchers</Label>
-              {userVouchers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No active vouchers</p>
-              ) : (
-                <div className="space-y-2">
-                  {userVouchers.filter(v => v.status === "active").map((v) => (
-                    <Card key={v.id} className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{v.template?.name || "Unknown"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Expires: {v.validToOverride ? format(new Date(v.validToOverride), "d MMM yyyy") : "Never"}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => revokeVoucherMutation.mutate(v.id)}
-                          disabled={revokeVoucherMutation.isPending}
-                          data-testid={`button-revoke-voucher-${v.id}`}
-                        >
-                          Revoke
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </StudioLayout>
   );
 }

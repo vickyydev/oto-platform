@@ -49,7 +49,7 @@ export default function ModuleChooser() {
     {
       key: "studio" as const,
       name: "OTO Studio",
-      description: "Configure checklists, SOPs, training content, and vouchers",
+      description: "Configure checklists, SOPs, and training content",
       icon: Settings,
       enabled: modules.studio,
       color: "bg-violet-500",

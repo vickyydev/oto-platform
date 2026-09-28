@@ -18,7 +18,7 @@ import { CoreLayout } from "@/components/layout/core-layout";
 import { StudioLayout } from "@/components/layout/studio-layout";
 import { GlobalUploadProgress } from "@/components/media/GlobalUploadProgress";
 import { useNotificationCount, NotificationPanel } from "@/components/notification-bell";
-import { Loader2, LogOut, KeyRound, CalendarDays, Moon, Sun, Link as LinkIcon, Smartphone, Camera, QrCode, Lock, User, Bell, Video, VideoOff } from "lucide-react";
+import { Loader2, LogOut, KeyRound, CalendarDays, Moon, Sun, Link as LinkIcon, Smartphone, Camera, Lock, User, Bell, Video, VideoOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -109,9 +109,7 @@ const CoreReportIssuePage = lazy(() => import("@/pages/core/report-issue"));
 const CoreEscalatePage = lazy(() => import("@/pages/core/escalate"));
 const CoreEventsPage = lazy(() => import("@/pages/core/events"));
 const CoreEventDetailPage = lazy(() => import("@/pages/core/event-detail"));
-const CoreVouchersPage = lazy(() => import("@/pages/core/vouchers"));
-const CoreRedeemPage = lazy(() => import("@/pages/core/redeem"));
-const CoreMyVouchersPage = lazy(() => import("@/pages/core/my-vouchers"));
+const VouchersMovedPage = lazy(() => import("@/pages/vouchers-moved"));
 const CoreMyAvailabilityPage = lazy(() => import("@/pages/core/my-availability"));
 const CoreChecklistRunPage = lazy(() => import("@/pages/core/checklist-run"));
 const CoreTroubleshootPage = lazy(() => import("@/pages/core/troubleshoot"));
@@ -147,7 +145,6 @@ const StudioTroubleshootingPage = lazy(() => import("@/pages/studio/troubleshoot
 const StudioQuizzesPage = lazy(() => import("@/pages/studio/quizzes"));
 const StudioEventsPage = lazy(() => import("@/pages/studio/events"));
 const CampDetailPage = lazy(() => import("@/pages/studio/camp-detail"));
-const StudioVouchersPage = lazy(() => import("@/pages/studio/vouchers"));
 const StudioEventSettingsPage = lazy(() => import("@/pages/studio/event-settings"));
 const ChildrenDatabasePage = lazy(() => import("@/pages/studio/children"));
 
@@ -241,12 +238,6 @@ function HRLayout({ children }: { children: React.ReactNode }) {
                     <a href="/core/rota">
                       <CalendarDays className="mr-2 h-4 w-4" />
                       My Schedule
-                    </a>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <a href="/core/my-vouchers">
-                      <QrCode className="mr-2 h-4 w-4" />
-                      My Vouchers
                     </a>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -450,6 +441,17 @@ function StudioProtectedLayout({ component: Component }: { component: React.Comp
   );
 }
 
+// The old Studio voucher page carried the Studio frame itself, as every Studio
+// page does. The notice that replaced it is the same one the Core addresses
+// show, so the frame is put around it here.
+function StudioVouchersMovedPage() {
+  return (
+    <StudioLayout>
+      <VouchersMovedPage />
+    </StudioLayout>
+  );
+}
+
 function HRProtectedLayout({ component: Component }: { component: React.ComponentType }) {
   return (
     <HRLayout>
@@ -581,10 +583,11 @@ function Router() {
       <ProtectedRoute path="/core/issues/escalate" component={() => <CoreProtectedLayout component={CoreEscalatePage} />} />
       <ProtectedRoute path="/core/events" component={() => <CoreProtectedLayout component={CoreEventsPage} />} />
       <ProtectedRoute path="/core/events/:id" component={() => <CoreProtectedLayout component={CoreEventDetailPage} />} />
-      <ProtectedRoute path="/core/vouchers" component={() => <CoreProtectedLayout component={CoreVouchersPage} />} />
-      <ProtectedRoute path="/core/my-vouchers" component={() => <CoreProtectedLayout component={CoreMyVouchersPage} />} />
+      {/* The old voucher module's addresses: vouchers live in the Console now, so each shows the notice */}
+      <ProtectedRoute path="/core/vouchers" component={() => <CoreProtectedLayout component={VouchersMovedPage} />} />
+      <ProtectedRoute path="/core/my-vouchers" component={() => <CoreProtectedLayout component={VouchersMovedPage} />} />
       <ProtectedRoute path="/core/my-availability" component={() => <CoreProtectedLayout component={CoreMyAvailabilityPage} />} />
-            <ProtectedRoute path="/core/vouchers/redeem" component={() => <CoreProtectedLayout component={CoreRedeemPage} />} />
+      <ProtectedRoute path="/core/vouchers/redeem" component={() => <CoreProtectedLayout component={VouchersMovedPage} />} />
       <ProtectedRoute path="/core/checklist/:id" component={() => <CoreProtectedLayout component={CoreChecklistRunPage} />} />
       <ProtectedRoute path="/core/troubleshoot" component={() => <CoreProtectedLayout component={CoreTroubleshootPage} />} />
       <ProtectedRoute path="/core/learn" component={() => <CoreProtectedLayout component={CoreLearnPage} />} />
@@ -624,7 +627,7 @@ function Router() {
       <ProtectedRoute path="/studio/events/calendar/:month" component={() => <StudioProtectedLayout component={StudioEventsPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/events/calendar" component={() => <StudioProtectedLayout component={StudioEventsPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/events" component={() => <Redirect to="/studio/events/kanban" />} requiredRole={["manager", "admin"]} />
-      <ProtectedRoute path="/studio/vouchers" component={() => <StudioProtectedLayout component={StudioVouchersPage} />} requiredRole={["manager", "admin"]} />
+      <ProtectedRoute path="/studio/vouchers" component={() => <StudioProtectedLayout component={StudioVouchersMovedPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/event-settings" component={() => <StudioProtectedLayout component={StudioEventSettingsPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/children" component={() => <StudioProtectedLayout component={ChildrenDatabasePage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/form-builder" component={() => <StudioProtectedLayout component={CoreFormBuilderPage} />} requiredRole="admin" />

@@ -1,6 +1,6 @@
 import { StudioLayout } from "@/components/layout/studio-layout";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarDays, ClipboardList, ListTodo, Baby, Ticket } from "lucide-react";
+import { CalendarDays, ClipboardList, ListTodo, Baby } from "lucide-react";
 import { Link } from "wouter";
 
 const studioSections = [
@@ -35,14 +35,6 @@ const studioSections = [
     href: "/studio/checklists",
     color: "text-blue-600 dark:text-blue-400",
     bgColor: "bg-blue-100 dark:bg-blue-900/30",
-  },
-  {
-    title: "Vouchers",
-    description: "Create and manage discount vouchers",
-    icon: Ticket,
-    href: "/studio/vouchers",
-    color: "text-orange-600 dark:text-orange-400",
-    bgColor: "bg-orange-100 dark:bg-orange-900/30",
   },
 ];
 

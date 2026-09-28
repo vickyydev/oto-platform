@@ -53,7 +53,6 @@ import { UpdateTermsModal } from "@/components/update-terms-modal";
 import { OffboardingModal } from "@/components/offboarding-modal";
 import { IssueWarningModal } from "@/components/issue-warning-modal";
 import { EmployeeOnboardingStepper } from "@/components/employee-onboarding-stepper";
-import { EmployeeVouchersSection } from "@/components/employee-vouchers-section";
 import {
   Dialog,
   DialogContent,
@@ -4334,8 +4333,6 @@ export default function EmployeeEditorPage() {
           <div data-testid="section-timekeeping">
             <TimekeepingSection employeeId={employee.id} canEdit={canEdit} forceOpen={forceOpenTimekeepingSection} />
           </div>
-
-          <EmployeeVouchersSection employeeId={employee.id} />
 
           <Collapsible open={contractSectionOpen} onOpenChange={setContractSectionOpen} data-section-id="contracts">
             <Card className="mt-6 border-l-4 border-l-purple-500 bg-purple-500/5">

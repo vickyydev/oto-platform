@@ -26,7 +26,6 @@ import {
   BookOpen,
   LogOut,
   KeyRound,
-  QrCode,
   CalendarDays,
   Moon,
   Sun,
@@ -132,12 +131,6 @@ export function CoreLayout({ children }: CoreLayoutProps) {
                 <Link href="/core/rota">
                   <CalendarDays className="mr-2 h-4 w-4" />
                   My Schedule
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/core/my-vouchers">
-                  <QrCode className="mr-2 h-4 w-4" />
-                  My Vouchers
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

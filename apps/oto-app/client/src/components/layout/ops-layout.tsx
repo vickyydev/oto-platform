@@ -24,7 +24,6 @@ import {
   Moon,
   Sun,
   Lock,
-  QrCode,
   User,
   Bell,
   Video,
@@ -117,12 +116,6 @@ export function OpsLayout({ children }: OpsLayoutProps) {
                 <Link href="/core/rota">
                   <Calendar className="mr-2 h-4 w-4" />
                   My Schedule
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/core/my-vouchers">
-                  <QrCode className="mr-2 h-4 w-4" />
-                  My Vouchers
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

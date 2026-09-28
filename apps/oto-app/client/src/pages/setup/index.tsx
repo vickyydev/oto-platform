@@ -20,7 +20,6 @@ import {
   MapPin,
   CalendarDays,
   Baby,
-  Ticket,
 } from "lucide-react";
 
 interface SetupSection {
@@ -123,14 +122,6 @@ const setupSections: SetupSection[] = [
         href: "/studio/checklists",
         color: "text-blue-600 dark:text-blue-400",
         bgColor: "bg-blue-100 dark:bg-blue-900/30",
-      },
-      {
-        title: "Vouchers",
-        description: "Create and manage discount vouchers",
-        icon: Ticket,
-        href: "/studio/vouchers",
-        color: "text-orange-600 dark:text-orange-400",
-        bgColor: "bg-orange-100 dark:bg-orange-900/30",
       },
     ],
   },
