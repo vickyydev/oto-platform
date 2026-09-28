@@ -24,19 +24,33 @@ PROFILE="${HOME}/.config/oto-kiosk"
 RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
 # Wait for the desktop session: a Wayland socket (labwc or wayfire) or X11.
+# Chromium is then told which of the two to use, outright. Left to guess
+# ("--ozone-platform-hint=auto"), it has no logged-in session to read the
+# answer from — this script runs as a system service, not inside the desktop's
+# own environment — so it picks X11 and dies with "Missing X server or
+# $DISPLAY", and systemd starts it again every five seconds while the screen
+# shows the bare desktop. That is what the first Pi at the bench did (28
+# September 2026). The session's message bus is named for the same reason:
+# without it Chromium logs "Failed to connect to the bus" on every start.
+OZONE=""
 for _ in $(seq 1 120); do
   SOCKET="$(ls "${RUNTIME}"/wayland-? 2>/dev/null | head -n 1 || true)"
   if [ -n "$SOCKET" ]; then
     export WAYLAND_DISPLAY="$(basename "$SOCKET")"
+    OZONE=wayland
     break
   fi
   if [ -S /tmp/.X11-unix/X0 ]; then
     export DISPLAY=:0
+    OZONE=x11
     break
   fi
   sleep 1
 done
 export XDG_RUNTIME_DIR="$RUNTIME"
+if [ -S "${RUNTIME}/bus" ]; then
+  export DBUS_SESSION_BUS_ADDRESS="unix:path=${RUNTIME}/bus"
+fi
 
 # Wait (a minute at most) for the box to answer, so the first screen is the
 # booth and not "this site can't be reached". Any answer will do, a 503 too:
@@ -77,6 +91,6 @@ exec "$BROWSER" \
   --autoplay-policy=no-user-gesture-required \
   --overscroll-history-navigation=0 \
   --disable-pinch \
-  --ozone-platform-hint=auto \
+  --ozone-platform="${OZONE:-x11}" \
   --user-data-dir="${PROFILE}" \
   "$URL"
