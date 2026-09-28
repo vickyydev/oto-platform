@@ -39,6 +39,7 @@ import {
   pairCredential,
   pickStation,
   queueCommand,
+  readBoxLog,
   reissueClaimCode,
   revokeCredential,
   updateBox,
@@ -760,6 +761,46 @@ export async function fleetRoutes(app: App): Promise<void> {
       const row = await loadBox(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:box:read', { branchId: row.branchId });
       return { heartbeats: await listHeartbeats(app.db, row.id, req.query.limit) };
+    },
+  );
+
+  // The box's own log: what it last handed over with a `collect_logs` command
+  // (`services/fleet.ts`, `readBoxLog`). Read-only, at the box's branch; the
+  // drawer's Refresh queues the command through POST …/commands first.
+  const BoxLogLineSchema = z.object({
+    at: z.string(),
+    level: z.enum(['info', 'warn', 'error']).nullable(),
+    message: z.string(),
+    actionId: z.string().nullable(),
+  });
+
+  app.get(
+    '/boxes/:id/log',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The box’s own log as it last handed it over with a collect_logs command — the Box log section of the Devices drawer. Empty, with collectedAt null, for a box never asked.',
+        params: IdParams,
+        querystring: z.object({
+          limit: z.coerce.number().int().min(1).max(500).default(500),
+          actionId: z.string().trim().min(1).max(120).optional(),
+        }),
+        response: {
+          200: z.object({
+            lines: z.array(BoxLogLineSchema),
+            truncated: z.boolean(),
+            collectedAt: z.string().nullable(),
+            commandId: z.string().nullable(),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBox(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:box:read', { branchId: row.branchId });
+      return readBoxLog(app.db, row.id, req.query.limit, req.query.actionId);
     },
   );
 

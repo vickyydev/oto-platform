@@ -527,16 +527,18 @@ export const fleetApi = {
     ),
 
   /**
-   * The box's own account of itself. Deliberately outside the settled S2-04
-   * route table: there is nothing behind it yet — the `edge` schema holds
-   * commands and heartbeats and no log — so this asks, reads a 404 as "not on
-   * this deployment", and the drawer says what a command's result can still
-   * tell you in the meantime.
+   * The box's own account of itself: the lines it last handed over as the
+   * result of a `collect_logs` command, laid out by the platform. `collectedAt`
+   * says when that was, null for a box never asked. A 404 still reads as "not
+   * on this deployment" for a platform from before the route existed.
    */
   log: (boxId: string, params: { limit?: number; actionId?: string } = {}) =>
-    api.get<{ lines: BoxLogLine[]; truncated?: boolean }>(
-      `/boxes/${encodeURIComponent(boxId)}/log${qs({ limit: 500, ...params })}`,
-    ),
+    api.get<{
+      lines: BoxLogLine[];
+      truncated?: boolean;
+      collectedAt?: string | null;
+      commandId?: string | null;
+    }>(`/boxes/${encodeURIComponent(boxId)}/log${qs({ limit: 500, ...params })}`),
 
   heartbeats: (boxId: string, limit = 30) =>
     api.get<{ heartbeats: BoxHeartbeatRow[] }>(

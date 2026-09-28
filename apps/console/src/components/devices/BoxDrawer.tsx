@@ -1262,6 +1262,12 @@ function BoxLog({
   const [missing, setMissing] = useState(false);
   const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(false);
+  /** When the box last handed its log over; null until it has. */
+  const [collectedAt, setCollectedAt] = useState<string | null>(null);
+  /** What Refresh is doing or found out, shown under the heading. */
+  const [asking, setAsking] = useState<string | null>(null);
+  /** True while Refresh is asking the box and waiting for its answer. */
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1271,6 +1277,7 @@ function BoxLog({
       });
       setLines(result.lines);
       setTruncated(result.truncated === true);
+      setCollectedAt(result.collectedAt ?? null);
       setMissing(false);
     } catch (err) {
       setLines([]);
@@ -1284,15 +1291,69 @@ function BoxLog({
     void load();
   }, [load, refreshedAt]);
 
+  // The platform holds what the box last handed over; a box that is running
+  // answers a collect_logs command within seconds. So the section re-reads
+  // every minute on its own, and Refresh asks the box for a fresh copy first.
+  useEffect(() => {
+    const timer = setInterval(() => void load(), 60_000);
+    return () => clearInterval(timer);
+  }, [load]);
+
+  const refresh = useCallback(async () => {
+    setBusy(true);
+    setAsking('Asking the box for its latest log…');
+    try {
+      const { commandId } = await fleetApi.sendCommand(boxId, {
+        kind: 'collect_logs',
+        payload: { lines: 500 },
+      });
+      let answered = false;
+      for (let attempt = 0; attempt < 10 && !answered; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 2_000));
+        const { commands } = await fleetApi.commands(boxId, 10);
+        const command = commands.find((c) => c.id === commandId);
+        answered = command !== undefined && !['queued', 'running'].includes(command.state);
+      }
+      await load();
+      setAsking(
+        answered
+          ? null
+          : 'The box has not answered yet — it hands its log over when it is next online, and this section re-reads every minute.',
+      );
+    } catch (err) {
+      setAsking(`Could not ask the box: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setBusy(false);
+    }
+  }, [boxId, load]);
+
   return (
     <section>
       <div className="flex items-center justify-between gap-2 mb-2">
-        <h3 className="text-sm font-bold">Box log</h3>
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void load()} disabled={loading}>
-          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+        <div>
+          <h3 className="text-sm font-bold">Box log</h3>
+          <p className="text-xs text-muted-foreground">
+            {collectedAt
+              ? `Handed over ${formatWhen(collectedAt, timezone)} · re-read every minute`
+              : 'The box has not handed its log over yet — Refresh asks it to.'}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => void refresh()}
+          disabled={loading || busy}
+        >
+          {loading || busy ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="w-3.5 h-3.5" />
+          )}
           Refresh
         </Button>
       </div>
+      {asking && <p className="mb-2 text-xs text-muted-foreground">{asking}</p>}
 
       <div className="mb-3 flex flex-wrap items-end gap-2">
         <Field label="Action id" className="flex-1 min-w-[12rem]">

@@ -1651,6 +1651,88 @@ export async function listHeartbeats(
   }));
 }
 
+/** One line of the box's own log, laid out for the Devices drawer. */
+export interface BoxLogLineView {
+  at: string;
+  level: 'info' | 'warn' | 'error' | null;
+  message: string;
+  actionId: string | null;
+}
+
+export interface BoxLogView {
+  lines: BoxLogLineView[];
+  truncated: boolean;
+  /** When the box handed these lines over, or null when it never has. */
+  collectedAt: string | null;
+  commandId: string | null;
+}
+
+/** `<ISO time> <level> <words>` — the shape `note()` in the agent writes into its ring. */
+const BOX_LOG_LINE = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z) (info|warn|error) (.*)$/;
+/** An action id named in a line's words, so the drawer's filter can pick one command's account of itself. */
+const BOX_LOG_ACTION = /\baction(?:Id)?[=: ]+([A-Za-z0-9_-]{6,})/;
+
+/**
+ * The box's own log, as it last handed it over.
+ *
+ * Nothing streams from a box: the agent keeps its last few hundred notes in
+ * memory and hands them back as the result of a `collect_logs` command
+ * (`packages/box-agent/src/agent.ts`, `recentLogs`). This reads the newest
+ * such result for the box and lays its lines out, so the drawer's Box log
+ * shows what the box last said; the drawer's Refresh queues a fresh
+ * `collect_logs` before reading again. A box that has never been asked
+ * answers an empty log with `collectedAt` null — an empty log, not a missing
+ * route.
+ */
+export async function readBoxLog(
+  db: Db,
+  boxId: string,
+  limit: number,
+  actionId?: string,
+): Promise<BoxLogView> {
+  const [row] = await db
+    .select({
+      id: boxCommand.id,
+      result: boxCommand.result,
+      finishedAt: boxCommand.finishedAt,
+      createdAt: boxCommand.createdAt,
+    })
+    .from(boxCommand)
+    .where(
+      and(
+        eq(boxCommand.boxId, boxId),
+        eq(boxCommand.kind, 'collect_logs'),
+        eq(boxCommand.state, 'succeeded'),
+      ),
+    )
+    .orderBy(desc(boxCommand.finishedAt), desc(boxCommand.createdAt))
+    .limit(1);
+  if (!row) return { lines: [], truncated: false, collectedAt: null, commandId: null };
+  const collectedAt = (row.finishedAt ?? row.createdAt).toISOString();
+  const held = row.result as { lines?: unknown } | null;
+  const raw = Array.isArray(held?.lines) ? held.lines.filter((l): l is string => typeof l === 'string') : [];
+  const parsed = raw.map((text) => parseBoxLogLine(text, collectedAt));
+  const wanted = actionId ? parsed.filter((l) => l.actionId === actionId || l.message.includes(actionId)) : parsed;
+  const lines = wanted.slice(-limit);
+  return { lines, truncated: wanted.length > lines.length, collectedAt, commandId: row.id };
+}
+
+function parseBoxLogLine(text: string, fallbackAt: string): BoxLogLineView {
+  const m = BOX_LOG_LINE.exec(text);
+  const at = m?.[1];
+  const level = m?.[2];
+  const message = m?.[3];
+  if (at === undefined || message === undefined || !isBoxLogLevel(level)) {
+    return { at: fallbackAt, level: null, message: text, actionId: null };
+  }
+  const action = BOX_LOG_ACTION.exec(message)?.[1];
+  return { at, level, message, actionId: action ?? null };
+}
+
+function isBoxLogLevel(value: string | undefined): value is 'info' | 'warn' | 'error' {
+  return value === 'info' || value === 'warn' || value === 'error';
+}
+
 /**
  * Queue a command for a box to collect on its next poll.
  *
