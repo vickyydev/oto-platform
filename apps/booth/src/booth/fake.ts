@@ -188,6 +188,9 @@ function after<T>(ms: number, value: T): Promise<T> {
 }
 
 export class FakeBooth implements BoothTransport {
+  async getStaff() {
+    return { staff: [{ accountId: FAKE_STAFF_ACCOUNT_ID, name: 'Demo staff', code: 'S-DEMO', hasPin: true }] };
+  }
   private readonly slips = new Map<string, SpinResponse>();
   readonly kind = 'fake' as const;
 

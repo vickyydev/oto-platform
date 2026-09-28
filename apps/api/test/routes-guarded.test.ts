@@ -123,6 +123,7 @@ describe('route guards (S2-01b)', () => {
       .sort();
     expect(boothRoutes).toEqual([
       'GET /booth/config [booth]',
+      'GET /booth/staff [booth]',
       'GET /booth/status [booth]',
       // The pairing exchange, and the only open one. It is on the open list
       // above as well, deliberately: it belongs to both surfaces and a reader

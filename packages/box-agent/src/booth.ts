@@ -570,6 +570,7 @@ export interface BoothHeartbeatReport {
 
 export interface BoothSignInRequest {
   pin?: string;
+  accountId?: string;
   badge?: string;
   /**
    * A phone and password, checked by the cloud (SCRUM-223). Never held after
@@ -600,6 +601,7 @@ export interface BoothReprintRequest {
 }
 
 export interface Booth {
+  staffList?(): { accountId: string; name: string | null; code: string | null; hasPin: boolean }[];
   print?(request: { spinId: string; actionId?: string | null }): Promise<SpinResponse>;
   /** Adopt whatever the cache holds and pick up any vouchers still to print. */
   start(): Promise<void>;
@@ -1435,7 +1437,8 @@ export function createBooth(options: BoothOptions): BoothModule {
     const secret = request.badge ?? request.pin ?? '';
     const kind: 'badge' | 'pin' = request.badge !== undefined ? 'badge' : 'pin';
     const verify = options.verifySecret;
-    const candidates = eligibleStaff();
+    const candidates = eligibleStaff().filter((person) =>
+      kind !== 'pin' || request.accountId === undefined || person.accountId === request.accountId);
     /**
      * Every candidate is checked, not the first that matches (closing audit
      * M10).
@@ -2825,6 +2828,12 @@ export function createBooth(options: BoothOptions): BoothModule {
     status,
     heartbeat,
     ownsPrintJob,
+    staffList: () => eligibleStaff().map((person) => ({
+      accountId: person.accountId,
+      name: person.displayName ?? null,
+      code: person.staffCode ?? null,
+      hasPin: Boolean(person.pinHash),
+    })).sort((a, b) => (a.name ?? a.code ?? '').localeCompare(b.name ?? b.code ?? '')),
     print,
     async reportPrint(outcome) {
       if (outcome.deviceId) lastPrintDeviceId = outcome.deviceId;

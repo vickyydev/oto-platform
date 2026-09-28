@@ -24,6 +24,7 @@ import {
   type BoothErrorCode,
   type BoothReprintResponse,
   type BoothStatus,
+  type BoothStaffChoice,
   type BoothTransport,
   type SpinRequest,
   type SpinResponse,
@@ -210,6 +211,10 @@ async function call<T>(
 
 class HttpBooth implements BoothTransport {
   readonly kind = 'http' as const;
+
+  getStaff(): Promise<{ staff: BoothStaffChoice[] }> {
+    return call('/staff');
+  }
 
   getConfig(): Promise<BoothConfigResponse> {
     return call<BoothConfigResponse>('/config');

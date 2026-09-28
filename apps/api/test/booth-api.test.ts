@@ -503,6 +503,7 @@ describe('the booth surface declares its guards (S2-07a)', () => {
       .sort();
     expect(television).toEqual([
       'GET /booth/config',
+      'GET /booth/staff',
       'GET /booth/status',
       'POST /booth/print',
       'POST /booth/reprint',

@@ -43,7 +43,7 @@ Object.assign(globalThis, {
   },
 });
 
-const { installPressListener } = await import('../src/press.ts');
+const { installPressListener, registerButtonOverlay } = await import('../src/press.ts');
 
 function key(type: 'keydown' | 'keyup', target: FakeElement, repeat = false): FakeKey {
   const event: FakeKey = {
@@ -74,7 +74,8 @@ function listen() {
 const body = new FakeElement('BODY');
 const password = new FakeElement('INPUT');
 
-test('on the game the button key is a press, and the browser does nothing else with it', () => {
+test('on the game the button key spins immediately; overlays move, select and repeat', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 10_000 });
   const { seen, remove } = listen();
   const down = key('keydown', body);
   const up = key('keyup', body);
@@ -82,7 +83,52 @@ test('on the game the button key is a press, and the browser does nothing else w
   assert.equal(seen.held, 0);
   assert.equal(down.defaultPrevented, true);
   assert.equal(up.defaultPrevented, true);
+  let moves = 0;
+  let selections = 0;
+  const removeOverlay = registerButtonOverlay({
+    move: () => moves++,
+    select: () => selections++,
+    touch: () => {},
+  });
+  key('keydown', body);
+  key('keyup', body);
+  t.mock.timers.tick(400);
+  assert.equal(moves, 1);
+  key('keydown', body);
+  key('keyup', body);
+  t.mock.timers.tick(200);
+  key('keydown', body);
+  key('keyup', body);
+  assert.equal(selections, 1);
+  assert.equal(moves, 1, 'a double press selects the existing highlight');
+  t.mock.timers.tick(401);
+  key('keydown', body);
+  t.mock.timers.tick(600);
+  const beforeRepeats = moves;
+  t.mock.timers.tick(500);
+  assert.equal(moves, beforeRepeats + 2);
+  key('keyup', body);
+  assert.equal(seen.presses, 1, 'overlay presses never spin');
+  removeOverlay();
   remove();
+  let opened = 0;
+  let spins = 0;
+  const stop = installPressListener({
+    buttonKey: 'Space',
+    lockoutMs: () => 0,
+    onPress: () => spins++,
+    canOpenStaff: () => true,
+    onOpenStaff: () => opened++,
+  });
+  key('keydown', body);
+  assert.equal(spins, 1, 'no delay on the ready wheel');
+  t.mock.timers.tick(2_999);
+  assert.equal(opened, 0);
+  t.mock.timers.tick(1);
+  assert.equal(opened, 1);
+  key('keyup', body);
+  assert.equal(spins, 1);
+  stop();
 });
 
 test('in a staff field the key is the field’s: nothing is drawn, and the page is told', () => {

@@ -125,6 +125,7 @@ const SpinBodySchema = z.object({
  * rather than one worth hiding.
  */
 const StaffSignInBodySchema = z.object({
+  accountId: z.string().uuid().optional(),
   /**
    * `account` signs in with a phone and password, which the box forwards to
    * `POST /box/v1/booth/staff/verify` under its own credential (SCRUM-223);
@@ -247,6 +248,15 @@ export async function boothRoutes(app: App): Promise<void> {
       },
     },
     async (req, reply) => relay(req, reply, 'POST', '/print'),
+  );
+
+  app.get(
+    '/booth/staff',
+    {
+      config: { credential: 'booth', ...limited },
+      schema: { description: 'Assigned active booth staff, with names, codes and whether a PIN is set. No credentials.' },
+    },
+    async (req, reply) => relay(req, reply, 'GET', '/staff'),
   );
 
   app.post(

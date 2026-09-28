@@ -70,8 +70,16 @@ export interface SpinRequest {
   idempotencyKey?: string;
 }
 
+export interface BoothStaffChoice {
+  accountId: string;
+  name: string | null;
+  code: string | null;
+  hasPin: boolean;
+}
+
 /** `POST /booth/staff/sign-in` */
 export interface StaffSignInRequest {
+  accountId?: string;
   /**
    * `account` is a phone and password, which the box checks with the cloud
    * (SCRUM-223); `pin` or nothing is the PIN, checked on the box.
@@ -254,6 +262,7 @@ export class BoothCallError extends Error {
  * `#debug` panel names the live one so that a person can.
  */
 export interface BoothTransport {
+  getStaff(): Promise<{ staff: BoothStaffChoice[] }>;
   /** Which implementation this is, for the `#debug` header. */
   readonly kind: 'fake' | 'http';
   getConfig(): Promise<BoothConfigResponse>;

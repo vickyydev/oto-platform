@@ -1503,3 +1503,6 @@ body {
   font-size: 14px;
   font-weight: 600;
 }
+
+.k-panel [data-button-choice]:focus { outline: 4px solid #ff3030; outline-offset: 3px; }
+.k-staff-list { max-height: 380px; overflow-y: auto; }

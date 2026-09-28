@@ -28,6 +28,9 @@
  */
 
 export interface PressListenerOptions {
+  /** Captured before an immediate spin starts: holding that press opens staff. */
+  canOpenStaff?: () => boolean;
+  onOpenStaff?: () => void;
   /**
    * `KeyboardEvent.code` (`Space`, `KeyF`, `NumpadEnter`) or `.key`. Both are
    * compared, because a booth is configured by a person reading one of them
@@ -55,6 +58,21 @@ export const PRESS_LOCKOUT_MS = 350;
  * double-press "play again" gesture is never swallowed.
  */
 export const RESULT_PRESS_LOCKOUT_MS = 200;
+
+interface ButtonOverlay {
+  move(): void;
+  select(): void;
+  touch(): void;
+}
+let activeOverlay: ButtonOverlay | null = null;
+
+/** Overlays register actions; this file remains the sole source of button keys. */
+export function registerButtonOverlay(overlay: ButtonOverlay): () => void {
+  activeOverlay = overlay;
+  return () => {
+    if (activeOverlay === overlay) activeOverlay = null;
+  };
+}
 
 /** Never the badge scanner's key, whatever a bundle says. */
 export function isForbiddenButtonKey(key: string): boolean {
@@ -109,10 +127,40 @@ export function installPressListener(options: PressListenerOptions): () => void 
   const { buttonKey, lockoutMs, onPress, onPressWhileTyping, onKeyRecorded } = options;
   let sawKeyDown = false;
   let lastPressAt = 0;
+  let single: ReturnType<typeof setTimeout> | undefined;
+  let hold: ReturnType<typeof setTimeout> | undefined;
+  let repeat: ReturnType<typeof setInterval> | undefined;
+  let firstTapAt: number | null = null;
+  let tappedOverlay: ButtonOverlay | null = null;
+  const stopHold = () => {
+    clearTimeout(hold);
+    clearInterval(repeat);
+  };
+  const overlayPress = (overlay: ButtonOverlay) => {
+    overlay.touch();
+    const at = Date.now();
+    if (firstTapAt !== null && tappedOverlay === overlay && at - firstTapAt <= 400) {
+      clearTimeout(single);
+      firstTapAt = null;
+      overlay.select();
+    } else {
+      clearTimeout(single);
+      firstTapAt = at;
+      tappedOverlay = overlay;
+      single = setTimeout(() => {
+        firstTapAt = null;
+        if (activeOverlay === overlay) overlay.move();
+      }, 400);
+    }
+  };
 
   const matches = (event: KeyboardEvent): boolean => isButtonKey(event, buttonKey);
 
   const accept = (): void => {
+    if (activeOverlay) {
+      overlayPress(activeOverlay);
+      return;
+    }
     const now = Date.now();
     if (now - lastPressAt < lockoutMs()) {
       onKeyRecorded?.('press ignored (lockout)');
@@ -143,11 +191,33 @@ export function installPressListener(options: PressListenerOptions): () => void 
       return;
     }
     onKeyRecorded?.('press (keydown)');
+    stopHold();
+    const overlay = activeOverlay;
+    if (overlay) {
+      hold = setTimeout(() => {
+        if (activeOverlay !== overlay) return;
+        clearTimeout(single);
+        firstTapAt = null;
+        overlay.move();
+        overlay.touch();
+        repeat = setInterval(() => {
+          if (activeOverlay !== overlay) {
+            stopHold();
+            return;
+          }
+          overlay.move();
+          overlay.touch();
+        }, 250);
+      }, 600);
+    } else if (options.canOpenStaff?.()) {
+      hold = setTimeout(() => options.onOpenStaff?.(), 3_000);
+    }
     accept();
   };
 
   const onKeyUp = (event: KeyboardEvent): void => {
     if (!matches(event)) return;
+    stopHold();
     if (sawKeyDown) {
       sawKeyDown = false;
       if (!isTypingTarget(event.target)) event.preventDefault();
@@ -162,6 +232,8 @@ export function installPressListener(options: PressListenerOptions): () => void 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   return () => {
+    stopHold();
+    clearTimeout(single);
     window.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('keyup', onKeyUp);
   };

@@ -221,6 +221,11 @@ export function createBoothHttp(options: BoothHttpOptions): (
         };
       }
 
+      if (path === '/staff') {
+        if (method !== 'GET') return refuse(405, 'method_not_allowed', 'Use GET');
+        return { status: 200, body: { staff: booth.staffList?.() ?? [] } };
+      }
+
       if (path === '/staff/sign-in') {
         if (method !== 'POST') return refuse(405, 'method_not_allowed', 'Use POST');
         const body = asRecord(request.body);
@@ -246,7 +251,11 @@ export function createBoothHttp(options: BoothHttpOptions): (
             password: typeof body.password === 'string' ? body.password : '',
           };
         } else if (badge !== undefined) signIn.badge = badge;
-        else if (pin !== undefined) signIn.pin = pin;
+        else if (pin !== undefined) {
+          signIn.pin = pin;
+          const accountId = readString(body.accountId);
+          if (accountId !== undefined) signIn.accountId = accountId;
+        }
         const result = await booth.signIn(signIn);
         /**
          * A refused sign-in is 200 with `ok: false`, not 401.

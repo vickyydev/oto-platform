@@ -260,6 +260,7 @@ test('an account sign-in the cloud accepts opens a session, and the slip names t
   assert.equal(status.staff?.method, 'account');
 
   const spin = await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.print({ spinId: spin.spinId });
   assert.equal(spin.staffAccountId, ACCOUNT);
   assert.equal(voucherData(h.submitted[0]?.job).staff, 'Nok (S-7KMQ)');
   h.close();
@@ -387,11 +388,13 @@ test('a session lasts the booth’s session length, survives a restart, and neve
     const held = await second.booth.staffSession();
     assert.equal(held?.accountId, ACCOUNT, 'still signed in after the restart, with nothing pressed');
     const late = await second.booth.spin({ idempotencyKey: 'late-press' });
+    await second.booth.print({ spinId: late.spinId });
     assert.equal(late.staffAccountId, ACCOUNT);
 
     second.setNow(plus(91));
     assert.equal(await second.booth.staffSession(), null, 'ended by its length, not by a sign-out');
     const after = await second.booth.spin({ idempotencyKey: 'after-press' });
+    await second.booth.print({ spinId: after.spinId });
     assert.equal(after.staffAccountId, null, 'and the wheel plays on, unattributed');
     assert.equal(voucherData(second.submitted.at(-1)?.job).staff, null);
     assert.equal((await second.booth.status({ online: true })).staffSignedIn, false);
@@ -461,11 +464,13 @@ test('a box with two booths runs the chosen one, and none until one is chosen', 
   h.setStation(STATION_B);
   assert.equal(await h.booth.refresh(), true);
   const spin = await h.booth.spin({ idempotencyKey: 'b-press' });
+  await h.booth.print({ spinId: spin.spinId });
   assert.match(spin.voucherCode ?? '', /^BB/, 'Booth B’s prefix on Booth B’s voucher');
 
   h.setStation(STATION_A);
   await h.booth.refresh();
   const other = await h.booth.spin({ idempotencyKey: 'a-press' });
+  await h.booth.print({ spinId: other.spinId });
   assert.match(other.voucherCode ?? '', /^BA/);
   h.close();
 });
@@ -476,6 +481,7 @@ test('a reprint is staff-only, prints the same code, and never draws a second pr
   const h = open();
   await publish(h, [entry()]);
   const won = await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.print({ spinId: won.spinId });
   assert.equal(h.submitted.length, 1);
 
   await assert.rejects(
@@ -541,7 +547,9 @@ test('a reprint of a named spin, one that is not here, and one after a restart',
     const h = open({ file });
     await publish(h, [entry()]);
     const one = await h.booth.spin({ idempotencyKey: 'p1' });
+    await h.booth.print({ spinId: one.spinId });
     const two = await h.booth.spin({ idempotencyKey: 'p2' });
+    await h.booth.print({ spinId: two.spinId });
     await h.booth.signIn({ pin: '7391' });
     assert.equal((await h.booth.reprint({ spinId: one.spinId })).spinId, one.spinId);
     await assert.rejects(
@@ -570,6 +578,7 @@ test('with no printer a reprint is still recorded, as a skipped print', async ()
   const h = open({ print: false });
   await publish(h, [entry()]);
   const won = await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.print({ spinId: won.spinId });
   await h.booth.signIn({ pin: '7391' });
   assert.deepEqual(await h.booth.reprint({}), { spinId: won.spinId, printState: 'no_printer' });
   const batch = await h.store.takeBatch(BOX_ID, { now: AT });
@@ -590,6 +599,7 @@ test('a reprint answers "queued" in time when the printer is slow, and asking ag
   const h = open({ printWaitMs: 40 });
   await publish(h, [entry()]);
   const won = await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.print({ spinId: won.spinId });
   await h.booth.signIn({ pin: '7391' });
   const release = h.holdPrints();
 
@@ -621,6 +631,7 @@ test('a slip a restarted box prints before a booth is chosen is filed under its 
     const first = open({ file });
     await publish(first, [entry()]);
     const won = await first.booth.spin({ idempotencyKey: 'press-1' });
+    await first.booth.print({ spinId: won.spinId });
     const jobId = first.submitted[0]!.id;
     first.close();
 
@@ -664,6 +675,7 @@ test('a booth started again in the same process keeps what it knows about a slip
   await publish(h, [entry()]);
   await h.booth.start();
   const won = await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.print({ spinId: won.spinId });
   const jobId = h.submitted[0]!.id;
 
   // A `restart` command stops the booth and starts it again while the slip

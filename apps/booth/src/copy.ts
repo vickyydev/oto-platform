@@ -193,6 +193,16 @@ export const PAIR_COPY = {
 
 /** Staff-facing words. English only: these appear in panels, never on the game. */
 export const STAFF_COPY = {
+  buttonHint: 'Press once to move, twice to choose. Hold to keep moving.',
+  pickStaff: 'Choose your name',
+  fiveDigits: 'Enter five digits. The fifth signs you in.',
+  more: 'More…',
+  backToStaff: 'Back to staff',
+  deleteDigit: 'Delete digit',
+  unnamedStaff: 'Staff member',
+  noStaff: 'No staff assigned — ask a manager to add staff in the Console.',
+  noPin: 'No PIN set — ask a manager, or use phone and password.',
+  staffUnavailable: 'The box did not answer — try again.',
   signInTitle: 'Staff sign-in',
   /**
    * The PIN only. Signing in with a badge is not built yet (SCRUM-218): the

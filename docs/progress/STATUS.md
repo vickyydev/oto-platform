@@ -8,7 +8,11 @@ SCRUM-451 Vouchers ledger, Spins and checklist. The reveal-print part is impleme
 the press saves the spin and held job, the result card asks for its slip, retries of
 that request print once, and the fallback waits 30 seconds. Existing box tests pass
 (85), as do the booth API tests (21), box/booth/API typechecks and touched-source lint.
-The remaining three parts are next. Nothing from this round has deployed; all four
+Print at reveal is pushed as `628a393`. Button-only sign-in is now implemented:
+assigned staff list, five-digit pad, menu and booth picker use the button gestures;
+keyboard and phone/password remain available. Its checks pass: 3 press cases,
+73 box staff/booth cases, 21 API cases, typechecks and touched-source lint.
+PIN management and the Console ledger/spins/checklist are next. Nothing from this round has deployed; all four
 parts will land together for one staging deploy and one CI-packed Pi release.
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —

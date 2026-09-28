@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { kiosk, type KioskBooth, type KioskStoreProblem } from '../booth/kiosk';
 import { COPY, KIOSK_COPY, SERVICE_COPY, type BilingualLine } from '../copy';
 import OtoWordmark from './OtoWordmark';
+import { registerButtonOverlay } from '../press';
 
 /**
  * The screens a booth BOX shows before it has a wheel (SCRUM-223).
@@ -162,6 +163,7 @@ export function BoothPicker({
   current: string | null;
   onChosen: () => void;
 }) {
+  const panel = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -191,9 +193,25 @@ export function BoothPicker({
     return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [booths, choose]);
 
+  useEffect(() => {
+    panel.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+    return registerButtonOverlay({
+      touch: () => {},
+      move: () => {
+        const choices = [...(panel.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])];
+        const index = choices.findIndex((button) => button === document.activeElement);
+        choices[(index + 1) % choices.length]?.focus();
+      },
+      select: () => {
+        const focused = document.activeElement;
+        if (focused instanceof HTMLButtonElement && panel.current?.contains(focused) && !focused.disabled) focused.click();
+      },
+    });
+  }, [busy]);
+
   return (
     <Frame>
-      <div className="k-panel k-panel--center" data-booth-panel="pick">
+      <div ref={panel} className="k-panel k-panel--center" data-booth-panel="pick">
         <div className="k-panel-head">{KIOSK_COPY.pickTitle}</div>
         <p className="k-panel-line">{KIOSK_COPY.pickHint}</p>
         <div className="k-panel-stack">
@@ -205,6 +223,7 @@ export function BoothPicker({
               disabled={busy}
               onClick={() => choose(b.stationId)}
               data-booth-choice={b.stationId}
+              data-button-choice
             >
               {i + 1}. {b.name}
               {b.codePrefix ? ` · ${b.codePrefix}` : ''}

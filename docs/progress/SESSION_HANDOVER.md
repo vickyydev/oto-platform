@@ -19,7 +19,19 @@ Existing checks: 85 box tests, 21 booth API tests, box/booth/API typechecks and
 touched-source lint passed. No new test suite. Windows uses `pnpm.cmd`; Vitest
 needs execution outside the sandbox for its bundler and embedded test Postgres.
 
-Next: complete SCRUM-449, SCRUM-450 and SCRUM-451, checking only their existing
+SCRUM-448 is pushed as `628a393` and in Testing. SCRUM-449 is implemented locally:
+the staff list and five-digit pad use button navigation through `press.ts`, as
+do the staff menu and booth picker. One press moves, two within 400 ms select,
+hold from 600 ms repeats every 250 ms, and a 3-second hold begun on the ready
+wheel opens staff while retaining the immediate spin. The staff list closes
+after 30 seconds idle; keyboard and phone/password paths remain. GET `/booth/staff`
+returns assigned active staff names/codes and hasPin, and PIN sign-in can name
+the selected account. Checks passed: 3 gesture cases, 73 existing box booth/staff
+cases and 21 API cases, with box/booth/API typechecks and touched-source lint.
+The staff-session tests were adjusted to call print at the reveal, preserving
+their reprint and session assertions. The Pi guide describes the new controls.
+
+Next: complete SCRUM-450 and SCRUM-451, checking only their existing
 tests and touched packages. Checkpoint on this work branch; land all four parts
 on main together for one staging deployment. Then attach staging screenshots to
 the four tickets before Deployed, download the CI Pi artifact, verify it, and

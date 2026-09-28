@@ -161,6 +161,8 @@ export default function App() {
   const [notice, setNotice] = useState<BilingualLine | null>(null);
   const [replayArmed, setReplayArmed] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
+  const signInOpenRef = useRef(signInOpen);
+  signInOpenRef.current = signInOpen;
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugRequested, setDebugRequested] = useState(flags.debug);
   const [mismatches, setMismatches] = useState(0);
@@ -531,7 +533,7 @@ export default function App() {
      * a booth then reset the page, so the guest never saw a card for it.
      * Whichever booth is chosen, the next press is that booth's.
      */
-    if (gateRef.current !== null) return;
+    if (gateRef.current !== null || signInOpenRef.current) return;
     switch (phaseRef.current) {
       case 'ready':
         void startSpin();
@@ -580,6 +582,8 @@ export default function App() {
     () =>
       installPressListener({
         buttonKey,
+        canOpenStaff: () => gateRef.current === null && !signInOpenRef.current && phaseRef.current === 'ready',
+        onOpenStaff: () => setSignInOpen(true),
         lockoutMs: () =>
           phaseRef.current === 'result' ? RESULT_PRESS_LOCKOUT_MS : PRESS_LOCKOUT_MS,
         onPress,
@@ -718,7 +722,7 @@ export default function App() {
    */
   const offeredSignIn = useRef<string | null>(null);
   useEffect(() => {
-    if (!IN_BOX || phase !== 'ready' || status === null) return;
+    if (phase !== 'ready' || status === null) return;
     if (offeredSignIn.current === boothKey) return;
     offeredSignIn.current = boothKey;
     if (!status.staffSignedIn) setSignInOpen(true);

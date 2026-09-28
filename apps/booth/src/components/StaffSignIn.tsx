@@ -1,81 +1,27 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-  type MouseEvent as ReactMouseEvent,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { booth } from '../booth/client';
-import { BoothCallError, type BoothStaffOnDuty, type StaffSignInResponse } from '../booth/contract';
+import {
+  BoothCallError,
+  type BoothStaffChoice,
+  type BoothStaffOnDuty,
+  type StaffSignInResponse,
+} from '../booth/contract';
 import { STAFF_COPY } from '../copy';
-import { createPanelTimer } from '../panel-timer';
-import { isButtonKey } from '../press';
+import { isButtonKey, registerButtonOverlay } from '../press';
 import { backoffFor, secondsLeft } from '../staff-backoff';
 
 interface Props {
   open: boolean;
   signedIn: boolean;
-  /** Who is on duty, when somebody is: name, code, and when the session ends. */
   staff?: BoothStaffOnDuty | null;
   onClose: () => void;
-  /** A sign-in or sign-out landed; the caller refreshes status from the booth. */
   onChanged: () => void;
-  /** A box running several booths offers "Change booth" here. */
   onChangeBooth?: () => void;
-  /** A digit typed while the panel was closed opened it; this is that digit. */
   seed?: string | null;
-  /**
-   * The key the booth's button sends. A press of it is a guest's, so it never
-   * keeps the panel open (`panel-timer.ts`).
-   */
   buttonKey: string;
 }
+type View = 'pick' | 'pin' | 'account' | 'menu';
 
-/** Longer than any PIN, short enough to bound a badge burst. */
-const MAX_ENTRY = 32;
-/**
- * The longest PIN a booth takes. A booth PIN is 4 to 8 digits: the api sets
- * no other (`apps/api/src/routes/booth.ts`, "A booth PIN is 4 to 8 digits"),
- * and the Console's PIN form checks the same. So an entry this long or
- * shorter is a PIN, however fast it was typed.
- */
-const PIN_MAX_LENGTH = 8;
-/**
- * A USB badge scanner types its characters in a few milliseconds; a person at
- * a keypad does not. Sixty milliseconds between keystrokes is comfortably
- * above a scanner and comfortably below a human, so an entry that arrives
- * faster than this AND is longer than any PIN (`PIN_MAX_LENGTH`) is treated
- * as a scan.
- *
- * Longer than any PIN, not merely long: a PIN typed quickly is still a PIN.
- * The threshold used to be six characters, so a 6-, 7- or 8-digit PIN typed
- * fast was sent as a badge, refused, and counted toward the lockout. The one
- * thing the heuristic can still get wrong is the other way round: a badge of
- * eight characters or fewer would be sent as a PIN. Badge sign-in is not
- * built yet (SCRUM-218) — the box holds no badge to check a scan against —
- * so whoever builds it chooses badges longer than a PIN, or a mode switch.
- */
-const SCAN_MAX_MEAN_GAP_MS = 60;
-
-type Mode = 'pin' | 'account';
-
-/**
- * The staff panel: sign in with a PIN or with a phone and password, and —
- * once signed in — reprint the last voucher, change booth, or sign out
- * (SCRUM-223).
- *
- * **Two ways in, one rule about the game.** Nothing typed here ever reaches
- * the wheel: the PIN pad takes its digits in the capture phase, and the phone
- * and password fields keep theirs because the press listener ignores keys
- * typed into a field. And nothing here stops the wheel either — a booth with
- * nobody signed in still plays, and the spin is recorded unattributed.
- *
- * **An account sign-in needs the internet** — the box asks the cloud — so
- * with none, the answer is "No internet — sign in with your PIN", which the
- * box can check on its own.
- */
 export function StaffSignIn({
   open,
   signedIn,
@@ -86,526 +32,492 @@ export function StaffSignIn({
   seed,
   buttonKey,
 }: Props) {
-  const [mode, setMode] = useState<Mode>('pin');
+  const [view, setView] = useState<View>('pick');
+  const [people, setPeople] = useState<BoothStaffChoice[]>([]);
+  const [picked, setPicked] = useState<BoothStaffChoice | null>(null);
+  const [loading, setLoading] = useState(false);
   const [entry, setEntry] = useState('');
+  const entryRef = useRef('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [failures, setFailures] = useState(0);
   const [lockedUntil, setLockedUntil] = useState(0);
-  const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState(Date.now);
   const [message, setMessage] = useState<string | null>(null);
-  const [now, setNow] = useState(() => Date.now());
-
-  // Keystroke timing for the scanner heuristic above. Refs, not state: they
-  // are written on every keypress and read once, at submit.
-  const firstKeyAt = useRef(0);
-  const lastKeyAt = useRef(0);
-  const keyCount = useRef(0);
-  const phoneField = useRef<HTMLInputElement | null>(null);
-  const passwordField = useRef<HTMLInputElement | null>(null);
-  const signedInPanel = useRef<HTMLDivElement | null>(null);
-  /** A phone-and-password sign-in was refused: the password box takes the keyboard back. */
-  const refocusPassword = useRef(false);
-
+  const panel = useRef<HTMLDivElement>(null);
+  const phoneField = useRef<HTMLInputElement>(null);
+  const passwordField = useRef<HTMLInputElement>(null);
+  const lastActivity = useRef(Date.now());
+  const openedAt = useRef(Date.now());
   const locked = lockedUntil > now;
+  const touch = useCallback(() => {
+    lastActivity.current = Date.now();
+  }, []);
+  const changeEntry = useCallback((value: string) => {
+    entryRef.current = value;
+    setEntry(value);
+  }, []);
 
-  const reset = useCallback(() => {
-    setEntry('');
+  useEffect(() => {
+    changeEntry(open && !signedIn ? (seed ?? '') : '');
     setPassword('');
-    firstKeyAt.current = 0;
-    lastKeyAt.current = 0;
-    keyCount.current = 0;
-  }, []);
+    setPhone('');
+    setPicked(null);
+    setMessage(null);
+    setView(signedIn ? 'menu' : seed ? 'pin' : 'pick');
+    if (!open) return;
+    openedAt.current = Date.now();
+    touch();
+    let cancelled = false;
+    setLoading(true);
+    void booth
+      .getStaff()
+      .then(({ staff: list }) => {
+        if (!cancelled) setPeople(list);
+      })
+      .catch(() => {
+        if (!cancelled) setMessage(STAFF_COPY.staffUnavailable);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, signedIn, seed, changeEntry, touch]);
 
-  /** What a refusal tells the person at the booth, by code (D15: the words are ours). */
-  const refusalLine = useCallback((result: StaffSignInResponse): string => {
-    switch (result.reason) {
-      case 'offline':
-        return STAFF_COPY.offline;
-      case 'not_assigned':
-        return STAFF_COPY.notAssigned;
-      case 'not_allowed':
-        return STAFF_COPY.notAllowed;
-      case 'must_change_password':
-        return STAFF_COPY.mustChange;
-      // The internet is fine and the person may be too: it is the box, or the
-      // booth's place on it, that the cloud refused (SCRUM-223).
-      case 'box_refused':
-        return STAFF_COPY.boxRefused;
-      case 'booth_not_on_box':
-        return STAFF_COPY.boothNotOnBox;
-      default:
-        return STAFF_COPY.signInWrong;
-    }
-  }, []);
+  useEffect(() => {
+    if (!open) return;
+    const timer = setInterval(() => {
+      const at = Date.now();
+      setNow(at);
+      const idle = view === 'pick' ? 30_000 : 45_000;
+      if (
+        !busyRef.current &&
+        (at - lastActivity.current >= idle ||
+          (view === 'account' && at - openedAt.current >= 120_000))
+      )
+        onClose();
+    }, 250);
+    return () => clearInterval(timer);
+  }, [open, view, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    touch();
+    if (view === 'account') phoneField.current?.focus();
+    else
+      panel.current
+        ?.querySelector<HTMLButtonElement>('button[data-button-choice]:not(:disabled)')
+        ?.focus();
+    return registerButtonOverlay({
+      touch,
+      move: () => {
+        const choices = [
+          ...(panel.current?.querySelectorAll<HTMLButtonElement>(
+            'button[data-button-choice]:not(:disabled)',
+          ) ?? []),
+        ];
+        const index = choices.findIndex((button) => button === document.activeElement);
+        choices[(index + 1) % choices.length]?.focus();
+      },
+      select: () => {
+        const focused = document.activeElement;
+        if (
+          focused instanceof HTMLButtonElement &&
+          panel.current?.contains(focused) &&
+          !focused.disabled
+        )
+          focused.click();
+      },
+    });
+  }, [open, view, loading, busy, locked, touch]);
 
   const settle = useCallback(
     (result: StaffSignInResponse) => {
       if (result.ok) {
         setFailures(0);
         setLockedUntil(0);
-        setMessage(STAFF_COPY.signInOk);
         onChanged();
+        onClose();
         return;
       }
-      // Reasons that are not a wrong guess do not move the panel's backoff:
-      // no internet, a role or a box the Console has to fix, is not somebody
-      // guessing.
-      const guess = result.reason === undefined || result.reason === 'wrong' || result.reason === 'locked';
-      const next = guess ? failures + 1 : failures;
-      if (guess) setFailures(next);
-      // The panel's own backoff and whatever the booth says, whichever is
-      // longer. The panel's exists so the wait is right even against a
-      // service that sends nothing; the booth's is the one that is real.
+      const guess =
+        result.reason === undefined || result.reason === 'wrong' || result.reason === 'locked';
+      const next = failures + (guess ? 1 : 0);
+      setFailures(next);
       const wait = Math.max(guess ? backoffFor(next) : 0, result.retryAfterMs ?? 0);
       if (wait > 0) {
-        // The clock the countdown reads is moved to the same instant the
-        // deadline is set from, so the first frame does not read a second long.
-        const at = Date.now();
-        setNow(at);
-        setLockedUntil(at + wait);
+        setNow(Date.now());
+        setLockedUntil(Date.now() + wait);
       }
-      setMessage(refusalLine(result));
+      const lines: Partial<Record<NonNullable<StaffSignInResponse['reason']>, string>> = {
+        offline: STAFF_COPY.offline,
+        not_assigned: STAFF_COPY.notAssigned,
+        not_allowed: STAFF_COPY.notAllowed,
+        must_change_password: STAFF_COPY.mustChange,
+        box_refused: STAFF_COPY.boxRefused,
+        booth_not_on_box: STAFF_COPY.boothNotOnBox,
+      };
+      setMessage(
+        result.reason ? (lines[result.reason] ?? STAFF_COPY.signInWrong) : STAFF_COPY.signInWrong,
+      );
     },
-    [failures, onChanged, refusalLine],
+    [failures, onChanged, onClose],
   );
 
   const submitPin = useCallback(
     (value: string) => {
-      if (value === '' || busy || Date.now() < lockedUntil) return;
-      const gaps = keyCount.current - 1;
-      const meanGap =
-        gaps > 0 ? (lastKeyAt.current - firstKeyAt.current) / gaps : Number.POSITIVE_INFINITY;
-      const scanned = value.length > PIN_MAX_LENGTH && meanGap < SCAN_MAX_MEAN_GAP_MS;
-
-      setBusy(true);
-      setMessage(null);
-      void booth
-        .signIn(scanned ? { badge: value } : { mode: 'pin', pin: value })
-        .then(settle)
-        .catch(() => {
-          // A booth that cannot be reached is not a wrong PIN: it must not
-          // count toward a lockout, or an hour of flaky wifi locks the shift
-          // out of their own booth.
-          setMessage(STAFF_COPY.signInWrong);
-        })
-        .finally(() => {
-          setBusy(false);
-          reset();
-        });
-    },
-    [busy, lockedUntil, reset, settle],
-  );
-
-  const submitAccount = useCallback(
-    (event?: FormEvent) => {
-      event?.preventDefault();
-      if (busy || Date.now() < lockedUntil) return;
-      if (phone.trim() === '' || password === '') return;
+      if (!/^\d{5}$/.test(value) || busyRef.current || Date.now() < lockedUntil) return;
+      busyRef.current = true;
       setBusy(true);
       setMessage(STAFF_COPY.working);
-      const typed = { phone: phone.trim(), password };
-      // The password is held only for this one request.
-      setPassword('');
+      changeEntry('');
       void booth
-        .signIn({ mode: 'account', ...typed })
-        .then((result) => {
-          settle(result);
-          if (!result.ok) refocusPassword.current = true;
-        })
-        .catch(() => {
-          setMessage(STAFF_COPY.offline);
-          refocusPassword.current = true;
-        })
-        .finally(() => setBusy(false));
+        .signIn({ mode: 'pin', pin: value, ...(picked ? { accountId: picked.accountId } : {}) })
+        .then(settle)
+        .catch(() => setMessage(STAFF_COPY.staffUnavailable))
+        .finally(() => {
+          busyRef.current = false;
+          setBusy(false);
+          touch();
+        });
     },
-    [busy, lockedUntil, password, phone, settle],
+    [lockedUntil, picked, settle, changeEntry, touch],
   );
 
-  // ---- Keyboard --------------------------------------------------------
-  // Capture phase, and every key the PIN pad consumes is stopped here. The
-  // press listener (src/press.ts) is on the bubble phase, so a key the panel
-  // takes never reaches the game — and every other key, the booth's button
-  // included, passes straight through. That is deliberate: a staff member
-  // fumbling a PIN must not stop a child spinning. In the account form the
-  // fields take their own keys and only Escape is the panel's.
+  const digit = useCallback(
+    (value: string) => {
+      if (busyRef.current || Date.now() < lockedUntil) return;
+      touch();
+      const next =
+        value === 'delete' ? entryRef.current.slice(0, -1) : (entryRef.current + value).slice(0, 5);
+      changeEntry(next);
+      if (next.length === 5) submitPin(next);
+    },
+    [lockedUntil, touch, changeEntry, submitPin],
+  );
+
+  const submitAccount = (event: FormEvent) => {
+    event.preventDefault();
+    if (busyRef.current || locked || !phone.trim() || !password) return;
+    busyRef.current = true;
+    setBusy(true);
+    setMessage(STAFF_COPY.working);
+    const typed = { phone: phone.trim(), password };
+    setPassword('');
+    void booth
+      .signIn({ mode: 'account', ...typed })
+      .then(settle)
+      .catch(() => setMessage(STAFF_COPY.offline))
+      .finally(() => {
+        busyRef.current = false;
+        setBusy(false);
+        touch();
+        setTimeout(() => passwordField.current?.focus(), 0);
+      });
+  };
+
   useEffect(() => {
-    if (!open || signedIn) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      const key = event.key;
-      if (key === 'Escape') {
+    if (!open) return;
+    const key = (event: KeyboardEvent) => {
+      if (!isButtonKey(event, buttonKey)) touch();
+      if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
-        reset();
         onClose();
         return;
       }
-      if (mode === 'account') return;
-      const isEntryChar = key.length === 1 && /[0-9A-Za-z]/.test(key);
-      if (!isEntryChar && key !== 'Backspace' && key !== 'Enter') return;
-      event.preventDefault();
-      event.stopPropagation();
-      if (key === 'Backspace') {
-        setEntry((current) => current.slice(0, -1));
-        return;
+      if (signedIn || view === 'account' || view === 'menu') return;
+      if (/^\d$/.test(event.key)) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (view !== 'pin') {
+          setPicked(null);
+          setView('pin');
+        }
+        digit(event.key);
+      } else if (view === 'pin' && event.key === 'Backspace') {
+        event.preventDefault();
+        event.stopPropagation();
+        digit('delete');
       }
-      if (key === 'Enter') {
-        setEntry((current) => {
-          submitPin(current);
-          return current;
-        });
-        return;
-      }
-      const at = Date.now();
-      if (keyCount.current === 0) firstKeyAt.current = at;
-      lastKeyAt.current = at;
-      keyCount.current += 1;
-      setEntry((current) => (current.length >= MAX_ENTRY ? current : current + key));
     };
-    window.addEventListener('keydown', onKeyDown, true);
-    return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [open, signedIn, mode, onClose, reset, submitPin]);
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
+  }, [open, signedIn, view, digit, onClose, buttonKey, touch]);
 
-  // A digit that opened the panel is the first digit of the PIN.
-  useEffect(() => {
-    if (!open || signedIn || !seed) return;
-    setMode('pin');
-    const at = Date.now();
-    firstKeyAt.current = at;
-    lastKeyAt.current = at;
-    keyCount.current = 1;
-    setEntry(seed);
-  }, [open, signedIn, seed]);
-
-  useEffect(() => {
-    if (open && mode === 'account' && !signedIn) phoneField.current?.focus();
-  }, [open, mode, signedIn]);
-
-  /**
-   * After a refusal the password box has the keyboard again, as it had before
-   * the form was sent (the fields are disabled while the box answers, and that
-   * drops the focus onto the page). Staff retype the password, which a refusal
-   * clears, without reaching for the touchpad — and the red button goes on
-   * waiting, as it does while anything is typed here, instead of spinning
-   * behind a form that is still up. Not before a lockout has run out: a
-   * disabled box cannot take the focus. A form that has gone — closed,
-   * signed in, the PIN tab — owes nobody the focus, and a later one starts
-   * on the phone box as usual.
-   */
-  useEffect(() => {
-    if (!open || signedIn || mode !== 'account') {
-      refocusPassword.current = false;
-      return;
-    }
-    if (busy || locked || !refocusPassword.current) return;
-    refocusPassword.current = false;
-    passwordField.current?.focus();
-  }, [open, signedIn, mode, busy, locked]);
-
-  // Signed in, the panel is buttons. It takes the focus when it opens, so Tab
-  // starts at Reprint — a booth with a keypad and no pointer reaches every
-  // action with Tab and Enter — and Escape closes it.
-  useEffect(() => {
-    if (!open || !signedIn) return;
-    signedInPanel.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopPropagation();
-      onClose();
-    };
-    window.addEventListener('keydown', onKeyDown, true);
-    return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [open, signedIn, onClose]);
-
-  // ---- Countdown and auto-close ---------------------------------------
-  useEffect(() => {
-    if (!open) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(timer);
-  }, [open]);
-
-  /**
-   * The panel closes itself: 45 seconds after the last thing staff did in it,
-   * and two minutes after it opened whatever is done (`panel-timer.ts`, which
-   * also says why a press of the booth's button is not something staff did).
-   * Read through refs, so the one timer made here always closes the panel and
-   * judges a key as they are now.
-   */
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  const buttonKeyRef = useRef(buttonKey);
-  buttonKeyRef.current = buttonKey;
-  const autoClose = useMemo(
-    () =>
-      createPanelTimer({
-        onClose: () => closeRef.current(),
-        isButtonKey: (event) => isButtonKey(event, buttonKeyRef.current),
-      }),
-    [],
-  );
-
-  // Opened, or signed in — a new view: both countdowns from now.
-  useEffect(() => {
-    if (!open) return;
-    autoClose.open();
-    return () => autoClose.stop();
-  }, [open, signedIn, autoClose]);
-
-  // Every key, in the capture phase, where the PIN pad takes its digits.
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => autoClose.key(event);
-    window.addEventListener('keydown', onKeyDown, true);
-    return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [open, autoClose]);
-
-  // A sign-in sent or answered, a tab changed: somebody is working the panel.
-  useEffect(() => {
-    if (open) autoClose.touch();
-  }, [open, busy, mode, autoClose]);
-
-  useEffect(() => {
-    if (!open) {
-      reset();
-      setMessage(null);
-      setMode('pin');
-    }
-  }, [open, reset]);
-
-  const reprint = useCallback(() => {
-    if (busy) return;
+  const reprint = () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     setMessage(STAFF_COPY.reprinting);
     void booth
       .reprint({})
-      .then((result) => {
+      .then((result) =>
         setMessage(
           result.printState === 'printed'
             ? STAFF_COPY.reprinted
             : result.printState === 'no_printer'
               ? STAFF_COPY.reprintNoPrinter
               : STAFF_COPY.reprintQueued,
-        );
-      })
-      .catch((error: unknown) => {
-        const code = error instanceof BoothCallError ? error.code : null;
+        ),
+      )
+      .catch((error: unknown) =>
         setMessage(
-          code === 'nothing_to_reprint'
+          error instanceof BoothCallError && error.code === 'nothing_to_reprint'
             ? STAFF_COPY.nothingToReprint
-            : code === 'staff_required'
-              ? STAFF_COPY.reprintNeedsStaff
-              : STAFF_COPY.reprintFailed,
-        );
-      })
-      .finally(() => setBusy(false));
-  }, [busy]);
-
-  if (!open) return null;
-
-  /**
-   * A pressed action button hands its focus back to the panel. Left on the
-   * button, the focus would let the next Enter — the badge scanner ends every
-   * scan with one — press it again: a second reprint, or a sign-out nobody
-   * asked for. (The booth's own button key never reaches a focused button:
-   * the press listener cancels it.)
-   */
-  const act = (run: () => void) => (event: ReactMouseEvent<HTMLButtonElement>) => {
-    event.currentTarget.blur();
-    signedInPanel.current?.focus();
-    run();
+            : STAFF_COPY.reprintFailed,
+        ),
+      )
+      .finally(() => {
+        busyRef.current = false;
+        setBusy(false);
+        touch();
+      });
   };
 
-  if (signedIn) {
-    const who = staff ? [staff.name, staff.code ? `(${staff.code})` : null].filter(Boolean).join(' ') : '';
-    const until = staff?.expiresAt ? formatTime(staff.expiresAt) : null;
-    return (
-      <div
-        className="k-panel"
-        data-booth-panel="staff"
-        ref={signedInPanel}
-        tabIndex={-1}
-        onPointerDown={() => autoClose.touch()}
-      >
-        <div className="k-panel-head">{STAFF_COPY.signInTitle}</div>
-        <p className="k-panel-line" data-booth-staff-name="1">
-          {who ? STAFF_COPY.signedInAs(who) : STAFF_COPY.signInOk}
-        </p>
-        {until && <p className="k-panel-line">{STAFF_COPY.until(until)}</p>}
-        <div className="k-panel-stack">
-          <button
-            type="button"
-            className="k-panel-btn k-panel-btn--wide"
-            disabled={busy}
-            onClick={act(reprint)}
-            data-booth-action="reprint"
-          >
-            {STAFF_COPY.reprint}
-          </button>
-          {onChangeBooth && (
+  if (!open) return null;
+  const who = staff
+    ? [staff.name, staff.code ? `(${staff.code})` : null].filter(Boolean).join(' ')
+    : '';
+  const until = staff?.expiresAt ? formatTime(staff.expiresAt) : null;
+  return (
+    <div ref={panel} className="k-panel" data-booth-panel="staff" onPointerDown={touch}>
+      <div className="k-panel-head">{STAFF_COPY.signInTitle}</div>
+      <p className="k-panel-line">{STAFF_COPY.buttonHint}</p>
+      {view === 'menu' ? (
+        <>
+          {signedIn && (
+            <p className="k-panel-line" data-booth-staff-name="1">
+              {who ? STAFF_COPY.signedInAs(who) : STAFF_COPY.signInOk}
+            </p>
+          )}
+          {signedIn && until && <p className="k-panel-line">{STAFF_COPY.until(until)}</p>}
+          <div className="k-panel-stack">
             <button
+              data-button-choice
               type="button"
               className="k-panel-btn k-panel-btn--wide"
-              onClick={act(() => {
-                onClose();
-                onChangeBooth();
-              })}
+              disabled={busy || !signedIn}
+              onClick={reprint}
+              data-booth-action="reprint"
             >
-              {STAFF_COPY.changeBooth}
+              {STAFF_COPY.reprint}
             </button>
-          )}
-        </div>
-        {message !== null && <p className="k-panel-line k-panel-note">{message}</p>}
-        <div className="k-panel-row">
-          <button
-            type="button"
-            className="k-panel-btn"
-            onClick={act(() => {
-              void booth.signOut().then(onChanged).catch(onChanged);
-              onClose();
-            })}
-          >
-            {STAFF_COPY.signOut}
-          </button>
-          <button type="button" className="k-panel-btn" onClick={act(onClose)}>
-            {STAFF_COPY.cancel}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const keypad = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓'];
-
-  return (
-    <div className="k-panel" data-booth-panel="staff" onPointerDown={() => autoClose.touch()}>
-      <div className="k-panel-head">{STAFF_COPY.signInTitle}</div>
-      <div className="k-tabs" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'pin'}
-          className={mode === 'pin' ? 'k-tab k-tab--on' : 'k-tab'}
-          onClick={() => {
-            setMode('pin');
-            setMessage(null);
-          }}
-        >
-          {STAFF_COPY.usePin}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'account'}
-          className={mode === 'account' ? 'k-tab k-tab--on' : 'k-tab'}
-          onClick={() => {
-            setMode('account');
-            setMessage(null);
-          }}
-          data-booth-tab="account"
-        >
-          {STAFF_COPY.useAccount}
-        </button>
-      </div>
-
-      {mode === 'pin' ? (
-        <>
-          <p className="k-panel-line">{STAFF_COPY.signInHint}</p>
-          {/* Dots, never characters: a booth screen faces a shopping centre. */}
-          <div className="k-pin" aria-hidden>
-            {entry === '' ? <span className="k-pin-empty">·</span> : '•'.repeat(entry.length)}
-          </div>
-          <div className="k-keypad">
-            {keypad.map((label) => (
+            {onChangeBooth && (
               <button
-                key={label}
+                data-button-choice
                 type="button"
-                className="k-key"
-                disabled={busy || locked}
+                className="k-panel-btn k-panel-btn--wide"
                 onClick={() => {
-                  if (label === '⌫') {
-                    setEntry((current) => current.slice(0, -1));
-                    return;
-                  }
-                  if (label === '✓') {
-                    submitPin(entry);
-                    return;
-                  }
-                  const at = Date.now();
-                  if (keyCount.current === 0) firstKeyAt.current = at;
-                  lastKeyAt.current = at;
-                  keyCount.current += 1;
-                  setEntry((current) => (current.length >= MAX_ENTRY ? current : current + label));
+                  onClose();
+                  onChangeBooth();
                 }}
               >
-                {label}
+                {STAFF_COPY.changeBooth}
               </button>
-            ))}
+            )}
+            <button
+              data-button-choice
+              type="button"
+              className="k-panel-btn k-panel-btn--wide"
+              disabled={busy || !signedIn}
+              onClick={() => {
+                busyRef.current = true;
+                setBusy(true);
+                void booth
+                  .signOut()
+                  .then(() => {
+                    onChanged();
+                    onClose();
+                  })
+                  .catch(() => setMessage(STAFF_COPY.staffUnavailable))
+                  .finally(() => {
+                    busyRef.current = false;
+                    setBusy(false);
+                  });
+              }}
+            >
+              {STAFF_COPY.signOut}
+            </button>
+            <button
+              data-button-choice
+              type="button"
+              className="k-panel-btn k-panel-btn--wide"
+              onClick={onClose}
+            >
+              {STAFF_COPY.cancel}
+            </button>
           </div>
         </>
       ) : (
-        <form className="k-account" onSubmit={submitAccount} autoComplete="off">
-          <p className="k-panel-line">{STAFF_COPY.accountHint}</p>
-          <label className="k-field">
-            <span>{STAFF_COPY.phoneLabel}</span>
-            <input
-              ref={phoneField}
-              type="tel"
-              inputMode="tel"
-              name="booth-phone"
-              autoComplete="off"
-              value={phone}
-              maxLength={32}
-              disabled={busy || locked}
-              // No spaces: the cloud reads a number without them, and the red
-              // button sends a space. Pressed while this field has the
-              // keyboard it then changes nothing. (Nor does it keep the panel
-              // open: the button's key never restarts its countdown.)
-              onChange={(event) => setPhone(event.target.value.replace(/\s+/g, ''))}
-            />
-          </label>
-          <label className="k-field">
-            <span>{STAFF_COPY.passwordLabel}</span>
-            <input
-              ref={passwordField}
-              type="password"
-              name="booth-password"
-              autoComplete="off"
-              value={password}
-              maxLength={256}
-              disabled={busy || locked}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
-          <div className="k-panel-row">
+        <>
+          <div className="k-tabs" role="tablist">
             <button
-              type="submit"
-              className="k-panel-btn"
-              disabled={busy || locked || phone.trim() === '' || password === ''}
+              type="button"
+              role="tab"
+              aria-selected={view !== 'account'}
+              className={view !== 'account' ? 'k-tab k-tab--on' : 'k-tab'}
+              onClick={() => {
+                setView('pick');
+                changeEntry('');
+              }}
             >
-              {STAFF_COPY.signInButton}
+              {STAFF_COPY.usePin}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === 'account'}
+              className={view === 'account' ? 'k-tab k-tab--on' : 'k-tab'}
+              onClick={() => setView('account')}
+              data-booth-tab="account"
+            >
+              {STAFF_COPY.useAccount}
             </button>
           </div>
-        </form>
+          {view === 'pick' ? (
+            <>
+              <p className="k-panel-line">{loading ? STAFF_COPY.working : STAFF_COPY.pickStaff}</p>
+              {!loading && people.length === 0 && (
+                <p className="k-panel-line">{STAFF_COPY.noStaff}</p>
+              )}
+              <div className="k-panel-stack k-staff-list">
+                {people.map((person) => (
+                  <button
+                    data-button-choice
+                    type="button"
+                    key={person.accountId}
+                    className="k-panel-btn k-panel-btn--wide"
+                    onClick={() => {
+                      if (!person.hasPin) {
+                        setMessage(STAFF_COPY.noPin);
+                        return;
+                      }
+                      setPicked(person);
+                      changeEntry('');
+                      setMessage(null);
+                      setView('pin');
+                    }}
+                  >
+                    {[person.name, person.code].filter(Boolean).join(' · ') ||
+                      STAFF_COPY.unnamedStaff}
+                  </button>
+                ))}
+                <button
+                  data-button-choice
+                  type="button"
+                  className="k-panel-btn k-panel-btn--wide"
+                  onClick={() => setView('menu')}
+                >
+                  {STAFF_COPY.more}
+                </button>
+              </div>
+            </>
+          ) : view === 'pin' ? (
+            <>
+              <p className="k-panel-line">
+                {picked?.name ?? picked?.code ?? STAFF_COPY.signInHint}
+              </p>
+              <p className="k-panel-line">{STAFF_COPY.fiveDigits}</p>
+              <div className="k-pin" aria-hidden>
+                {entry ? '•'.repeat(entry.length) : <span className="k-pin-empty">·</span>}
+              </div>
+              <div className="k-keypad">
+                {['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'delete'].map((value) => (
+                  <button
+                    data-button-choice
+                    type="button"
+                    key={value}
+                    className="k-key"
+                    disabled={busy || locked}
+                    onClick={() => digit(value)}
+                    aria-label={value === 'delete' ? STAFF_COPY.deleteDigit : value}
+                  >
+                    {value === 'delete' ? '⌫' : value}
+                  </button>
+                ))}
+              </div>
+              <button
+                data-button-choice
+                type="button"
+                className="k-panel-btn"
+                onClick={() => {
+                  changeEntry('');
+                  setView('pick');
+                }}
+              >
+                {STAFF_COPY.backToStaff}
+              </button>
+              <button data-button-choice type="button" className="k-panel-btn" onClick={onClose}>
+                {STAFF_COPY.cancel}
+              </button>
+            </>
+          ) : (
+            <form className="k-account" onSubmit={submitAccount} autoComplete="off">
+              <p className="k-panel-line">{STAFF_COPY.accountHint}</p>
+              <label className="k-field">
+                <span>{STAFF_COPY.phoneLabel}</span>
+                <input
+                  ref={phoneField}
+                  type="tel"
+                  inputMode="tel"
+                  name="booth-phone"
+                  autoComplete="off"
+                  value={phone}
+                  maxLength={32}
+                  disabled={busy || locked}
+                  onChange={(event) => setPhone(event.target.value.replace(/\s+/g, ''))}
+                />
+              </label>
+              <label className="k-field">
+                <span>{STAFF_COPY.passwordLabel}</span>
+                <input
+                  ref={passwordField}
+                  type="password"
+                  name="booth-password"
+                  autoComplete="off"
+                  value={password}
+                  maxLength={256}
+                  disabled={busy || locked}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </label>
+              <div className="k-panel-row">
+                <button
+                  data-button-choice
+                  type="submit"
+                  className="k-panel-btn"
+                  disabled={busy || locked || !phone.trim() || !password}
+                >
+                  {STAFF_COPY.signInButton}
+                </button>
+                <button data-button-choice type="button" className="k-panel-btn" onClick={onClose}>
+                  {STAFF_COPY.cancel}
+                </button>
+              </div>
+            </form>
+          )}
+        </>
       )}
-
       {locked && (
         <p className="k-panel-warn">{STAFF_COPY.signInLocked(secondsLeft(lockedUntil, now))}</p>
       )}
-      {!locked && message !== null && <p className="k-panel-warn">{message}</p>}
-
-      <div className="k-panel-row">
-        <button type="button" className="k-panel-btn" onClick={onClose}>
-          {STAFF_COPY.cancel}
-        </button>
-      </div>
+      {!locked && message && (
+        <p className="k-panel-warn" role="status">
+          {message}
+        </p>
+      )}
     </div>
   );
 }
 
-/** "18:00" in the television's own time, which on a booth box is the park's. */
 function formatTime(iso: string): string | null {
   const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return null;
-  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(at);
+  return Number.isNaN(at.getTime())
+    ? null
+    : new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(at);
 }
