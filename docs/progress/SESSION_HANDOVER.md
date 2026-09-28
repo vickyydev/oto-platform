@@ -1,5 +1,32 @@
 # Handover — where this is, and what to do next
 
+## STOP POINT — 28 September 2026, evening — bench round 1 resumed
+
+Work is on `feat/bench-round-1`, based on current `main` (`5c0eb91`). The two
+unchecked commits on `wip/bench-round-1` remain intact; useful changes are being
+reviewed and completed as four separate commits. Sprint id 3 tasks: SCRUM-448
+(print at reveal), SCRUM-449 (button-only sign-in), SCRUM-450 (five-digit PINs),
+SCRUM-451 (Vouchers ledger, booth Spins and checklist), each linked to SCRUM-198.
+
+SCRUM-448 is implemented locally: a press durably records its spin and held print
+job, then answers queued; the result card calls `POST /booth/print { spinId }`.
+The call is idempotent for the retained recent spin, waits at most `printWaitMs`,
+and rejects an unknown or foreign spin with 404. The kiosk forwards the route
+through its existing `/booth/*` handler; the API relays it for paired screens.
+The card shows Printing briefly and then the code/QR unless printed. The retry
+queue leaves a held slip alone until 30 seconds after the press. Reprint is unchanged.
+Existing checks: 85 box tests, 21 booth API tests, box/booth/API typechecks and
+touched-source lint passed. No new test suite. Windows uses `pnpm.cmd`; Vitest
+needs execution outside the sandbox for its bundler and embedded test Postgres.
+
+Next: complete SCRUM-449, SCRUM-450 and SCRUM-451, checking only their existing
+tests and touched packages. Checkpoint on this work branch; land all four parts
+on main together for one staging deployment. Then attach staging screenshots to
+the four tickets before Deployed, download the CI Pi artifact, verify it, and
+place the archive and checksum on the Desktop while archiving older releases.
+No staging proof or new Pi artifact yet. The existing unrelated changes in
+`render.yaml`, `services/` and `MerchCustomerDisplay.tsx` remain excluded.
+
 ## 2026-09-24, afternoon — the Lucky Wheel booth is the first priority
 
 The owner has his Raspberry Pi 5, the receipt printer, the vertical TV and the

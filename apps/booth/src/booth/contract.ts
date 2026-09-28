@@ -212,6 +212,7 @@ export const BOOTH_ERROR_CODES = [
   'staff_required',
   /** SCRUM-223 — a reprint with no voucher on the box to print again. */
   'nothing_to_reprint',
+  'nothing_to_print',
   /**
    * SCRUM-403 — the box's store cannot be used, so no press can be recorded.
    * The page shows its full-screen "needs service" notice from the box's own
@@ -258,6 +259,7 @@ export interface BoothTransport {
   getConfig(): Promise<BoothConfigResponse>;
   getStatus(): Promise<BoothStatus>;
   spin(request: SpinRequest): Promise<SpinResponse>;
+  print(request: { spinId: string }): Promise<SpinResponse>;
   signIn(request: StaffSignInRequest): Promise<StaffSignInResponse>;
   signOut(): Promise<void>;
   /**

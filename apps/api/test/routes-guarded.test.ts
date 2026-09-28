@@ -128,6 +128,7 @@ describe('route guards (S2-01b)', () => {
       // above as well, deliberately: it belongs to both surfaces and a reader
       // of either list should see it.
       'POST /booth/pair [public]',
+      'POST /booth/print [booth]',
       'POST /booth/reprint [booth]',
       'POST /booth/spin [booth]',
       'POST /booth/staff/sign-in [booth]',

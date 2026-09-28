@@ -206,6 +206,7 @@ describe('a booth reaches the Health page (S2-07a)', () => {
      * single press could only ever show one of the two.
      */
     const first = await booth.spin({ idempotencyKey: newId() });
+    await booth.print!({ spinId: first.spinId });
     expect(first.staffAccountId, 'the booth attributed a spin nobody signed in for').toBeNull();
     const pushed = await agent.outbox()!.flush();
     expect(pushed.state).toBe('pushed');

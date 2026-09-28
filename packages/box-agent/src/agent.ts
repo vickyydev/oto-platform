@@ -1913,7 +1913,12 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         station: boothStation,
         branch: boothBranch,
         privateKey: () => syncPrivateKeyPem,
-        print: printing ? { submit: (request) => printing!.submit(request) } : null,
+        print: printing
+          ? {
+              submit: (request) => printing!.submit(request),
+              hold: (request, until) => printing!.hold(request, until),
+            }
+          : null,
         printerHealth: () => printing?.jobs.health() ?? {},
         staff: () => boothStaff,
         ...(options.booth?.verifySecret ? { verifySecret: options.booth.verifySecret } : {}),

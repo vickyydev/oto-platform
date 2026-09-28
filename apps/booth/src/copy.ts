@@ -23,6 +23,7 @@ export interface BilingualLine {
 }
 
 export const COPY = {
+  printing: { en: 'Printing…', th: 'กำลังพิมพ์…' } satisfies BilingualLine,
   /** Under the wheel, idle. */
   pressToSpin: { en: 'Press the button to spin', th: 'กดปุ่มเพื่อหมุน' } satisfies BilingualLine,
   /**

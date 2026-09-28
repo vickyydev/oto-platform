@@ -229,12 +229,24 @@ export async function boothRoutes(app: App): Promise<void> {
     {
       config: { credential: 'booth', ...limited },
       schema: {
-        description:
-          `One press of the red button. The BOX draws, records the spin and mints the code before this answers; the press key travels in \`${BOOTH_IDEMPOTENCY_HEADER}\` or in the body, so a network retry is one spin and a second press is two. \`simulate\` draws and changes nothing — no spin row, no voucher, no print, no cap consumed. \`${BOOTH_ACTION_HEADER}\` is carried through to the spin row.`,
+        description: `One press of the red button. The BOX draws, records the spin and mints the code before this answers; the press key travels in \`${BOOTH_IDEMPOTENCY_HEADER}\` or in the body, so a network retry is one spin and a second press is two. \`simulate\` draws and changes nothing — no spin row, no voucher, no print, no cap consumed. \`${BOOTH_ACTION_HEADER}\` is carried through to the spin row.`,
         body: SpinBodySchema,
       },
     },
     async (req, reply) => relay(req, reply, 'POST', '/spin'),
+  );
+
+  app.post(
+    '/booth/print',
+    {
+      config: { credential: 'booth', ...limited },
+      schema: {
+        description:
+          'Print the saved voucher when the prize is revealed. Repeating a spin id returns the same outcome without another copy.',
+        body: z.object({ spinId: z.string().uuid() }),
+      },
+    },
+    async (req, reply) => relay(req, reply, 'POST', '/print'),
   );
 
   app.post(

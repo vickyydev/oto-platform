@@ -115,6 +115,7 @@ function statusFor(code: BoothRefusalCode): number {
     case 'staff_required':
       return 403;
     case 'nothing_to_reprint':
+    case 'nothing_to_print':
       return 404;
   }
 }
@@ -204,6 +205,20 @@ export function createBoothHttp(options: BoothHttpOptions): (
           actionId: readString(headers[BOOTH_ACTION_HEADER]) ?? null,
         });
         return { status: 200, body: response };
+      }
+
+      if (path === '/print') {
+        if (method !== 'POST') return refuse(405, 'method_not_allowed', 'Use POST');
+        const spinId = readString(asRecord(request.body).spinId);
+        if (!spinId) return refuse(400, 'bad_request', 'A spin id is required');
+        if (!booth.print) return refuse(404, 'nothing_to_print', 'No slip for that spin');
+        return {
+          status: 200,
+          body: await booth.print({
+            spinId,
+            actionId: readString(request.headers?.[BOOTH_ACTION_HEADER]) ?? null,
+          }),
+        };
       }
 
       if (path === '/staff/sign-in') {

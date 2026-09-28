@@ -178,13 +178,22 @@ async function rig(opts: { now?: () => Date } = {}): Promise<Rig> {
 }
 
 test('the first hand-over after a boot, of a job whose row is already on the card, prints once', async () => {
-  const { printing, printer, box, reported } = await rig();
+  let clock = AT;
+  const { printing, printer, box, reported } = await rig({ now: () => new Date(clock) });
   // The spin's transaction has written the row; nothing has resumed the queue yet.
-  await box.store.putPrintJob(writtenBySpin('job-1'));
+  await box.store.putPrintJob({ ...writtenBySpin('job-1'), nextAttemptAt: plus(AT, 30_000) });
+  assert.deepEqual(await printing.tick(), [], 'a restart also respects the saved hold');
 
+  await printing.hold(request('job-1'), new Date(plus(AT, 30_000)));
+  assert.deepEqual(await printing.tick(), [], 'the retry leaves a held slip alone');
+  assert.equal(printer.slips(), 0);
   const outcome = await printing.submit(request('job-1'));
   assert.equal(outcome.status, 'printed');
-  assert.deepEqual(printing.pending(), [], 'the row read back at the resume was this job, not a second one');
+  assert.deepEqual(
+    printing.pending(),
+    [],
+    'the row read back at the resume was this job, not a second one',
+  );
   assert.deepEqual(await printing.tick(), [], 'so the next tick has nothing to print');
   assert.equal(printer.slips(), 1);
   assert.deepEqual(
@@ -192,7 +201,25 @@ test('the first hand-over after a boot, of a job whose row is already on the car
     [['job-1', 'printed']],
     'one outcome, reported once',
   );
-  assert.deepEqual(await box.store.loadPendingPrintJobs(BOX_ID), [], 'and nothing left on the card');
+  await box.store.putPrintJob({
+    ...writtenBySpin('held-fallback'),
+    nextAttemptAt: plus(AT, 30_000),
+  });
+  await printing.hold(request('held-fallback'), new Date(plus(AT, 30_000)));
+  clock = plus(AT, 29_999);
+  assert.deepEqual(await printing.tick(), [], 'no paper during the animation');
+  clock = plus(AT, 30_000);
+  assert.equal(
+    (await printing.tick())[0]?.status,
+    'printed',
+    'a missing reveal call gets its slip',
+  );
+  assert.equal(printer.slips(), 2);
+  assert.deepEqual(
+    await box.store.loadPendingPrintJobs(BOX_ID),
+    [],
+    'and nothing left on the card',
+  );
   box.close();
 });
 

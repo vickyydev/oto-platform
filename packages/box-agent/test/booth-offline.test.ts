@@ -205,7 +205,7 @@ test('three spins with no line survive a restart, still pending and still verifi
     assert.equal(response.printState, 'queued');
     before.push({ spinId: response.spinId, code: response.voucherCode! });
   }
-  assert.equal(first.submissions.length, 3);
+  assert.equal(first.submissions.length, 0, 'held until the reveal or the delayed retry');
   assert.equal((await first.store.depth(BOX_ID)).queued, 6, 'three spins and three vouchers');
 
   const codes = new Set(before.map((b) => b.code));

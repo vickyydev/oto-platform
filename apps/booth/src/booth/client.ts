@@ -223,6 +223,10 @@ class HttpBooth implements BoothTransport {
     return call<SpinResponse>('/spin', { method: 'POST', body: JSON.stringify(request) });
   }
 
+  print(request: { spinId: string }): Promise<SpinResponse> {
+    return call<SpinResponse>('/print', { method: 'POST', body: JSON.stringify(request) });
+  }
+
   signIn(request: StaffSignInRequest): Promise<StaffSignInResponse> {
     return call<StaffSignInResponse>('/staff/sign-in', {
       method: 'POST',

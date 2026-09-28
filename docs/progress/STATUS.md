@@ -1,6 +1,15 @@
 # Current status — read this first when resuming
 
-_Last updated: 2026-09-28, 17:01 (STOP POINT — the bench round stopped part-way for tokens, its partial edits on `wip/bench-round-1`; `main` at `c416065`; the release to install is `oto-box-0.1.0-08ffe66.tgz`; staging follows CI)_
+_Last updated: 2026-09-28, evening — bench round 1 resumed on `feat/bench-round-1`, based on `main` at `5c0eb91`, reusing the reviewed draft from `wip/bench-round-1`._
+
+**Bench round 1:** four tasks created in sprint id 3 and linked in comments to SCRUM-198:
+SCRUM-448 print at reveal, SCRUM-449 button-only sign-in, SCRUM-450 five-digit PINs,
+SCRUM-451 Vouchers ledger, Spins and checklist. The reveal-print part is implemented:
+the press saves the spin and held job, the result card asks for its slip, retries of
+that request print once, and the fallback waits 30 seconds. Existing box tests pass
+(85), as do the booth API tests (21), box/booth/API typechecks and touched-source lint.
+The remaining three parts are next. Nothing from this round has deployed; all four
+parts will land together for one staging deploy and one CI-packed Pi release.
 
 > **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
 > closing S2-09", then "State at the end of 2026-09-23". Together they carry the

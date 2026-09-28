@@ -14,7 +14,7 @@ import {
   BoothRefusal,
   boothMintedCodeKey,
   createBooth,
-  type Booth,
+  type BoothModule,
   type BoothCacheEntry,
   type BoothPrintPort,
   type BoothPrintSubmitOutcome,
@@ -103,7 +103,7 @@ function entry(over: Partial<BoothCacheEntry> = {}): BoothCacheEntry {
 
 interface Harness {
   store: SqlBoxStore;
-  booth: Booth;
+  booth: BoothModule;
   printed: PrintJobRecord[];
   submissions: { id: string }[];
   /** What the port answers. Changed per test to model a printer that is out. */
@@ -189,8 +189,7 @@ function openBooth(options: HarnessOptions = {}): Harness {
       timezone: options.timezone ?? 'Asia/Bangkok',
       businessDayStart: '05:00',
     }),
-    privateKey: () =>
-      options.privateKey === undefined ? keys.privateKeyPem : options.privateKey,
+    privateKey: () => (options.privateKey === undefined ? keys.privateKeyPem : options.privateKey),
     print: options.print === false ? null : port,
     staff: () => options.staff ?? [],
     // A stand-in for argon2id: the SHAPE under test is "iterate the booth's
@@ -440,7 +439,11 @@ test('a press writes the spin, mints a code, queues the print and moves the coun
   // about the press, not about the code's length.
   assert.match(response.voucherCode ?? '', /^B1[23456789ABCDEFGHJKMNPQRSTVWXYZ]{8,}$/);
   assert.equal(response.configVersion, 1);
-  assert.equal(response.printState, 'printed');
+  assert.equal(response.printState, 'queued');
+  assert.equal(h.submissions.length, 0, 'the animation starts before paper');
+  const printed = await h.booth.print({ spinId: response.spinId });
+  assert.equal(printed.printState, 'printed');
+  assert.deepEqual(await h.booth.print({ spinId: response.spinId }), printed);
   assert.equal(response.staffAccountId, null, 'nobody is signed in, and that is allowed');
   assert.equal(response.clockSuspect, false);
   // The prize the page will animate to is the prize the box drew.
@@ -747,6 +750,8 @@ test('a retry carrying the same key is one spin; a second press is two', async (
 
   const batch = await h.store.takeBatch(BOX_ID, { now: AT });
   assert.equal(batch.events.length, 4, 'two presses, two facts each');
+  await h.booth.print({ spinId: first.spinId });
+  await h.booth.print({ spinId: second.spinId });
   assert.equal(h.submissions.length, 2);
   h.close();
 });
@@ -760,16 +765,18 @@ test('a retry carrying the same key is one spin; a second press is two', async (
  * `duplicate_press`: "Booth not ready" on the television while the slip came
  * out. The press is now remembered from the moment it starts.
  */
-test('a retry of a press still waiting on its slip joins that press: one answer, one spin, one slip', async () => {
+test('a retry of the reveal print joins the first call: one answer, one spin, one slip', async () => {
   // The wait is long here on purpose: this test is about the join, and the
   // print answers only when the test lets it.
   const h = openBooth({ rolls: [0], printWaitMs: 60_000 });
   await seed(h);
   const release = h.holdPrints();
 
-  const first = h.booth.spin({ idempotencyKey: 'press-1' });
-  await until(() => h.submissions.length === 1, 'the press reached the printer');
-  const retry = h.booth.spin({ idempotencyKey: 'press-1' });
+  const press = await h.booth.spin({ idempotencyKey: 'press-1' });
+  assert.equal(h.submissions.length, 0);
+  const first = h.booth.print({ spinId: press.spinId });
+  await until(() => h.submissions.length === 1, 'the reveal reached the printer');
+  const retry = h.booth.print({ spinId: press.spinId });
   release();
 
   const [answered, retried] = await Promise.all([first, retry]);
@@ -796,13 +803,15 @@ test('a retry that arrives while the press is still being written joins it too',
     h.booth.spin({ idempotencyKey: 'press-1' }),
   ]);
   assert.deepEqual(b, a);
+  assert.equal(h.submissions.length, 0);
+  await h.booth.print({ spinId: a.spinId });
   const batch = await h.store.takeBatch(BOX_ID, { now: AT });
   assert.equal(batch.events.length, 2, 'one spin and its voucher');
   assert.equal(h.submissions.length, 1);
   h.close();
 });
 
-test('a press whose printer has not answered in time answers "queued", and the slip still prints', async () => {
+test('a reveal whose printer has not answered in time answers "queued", and the slip still prints', async () => {
   /**
    * The page gives up on a call after six seconds (`REQUEST_TIMEOUT_MS` in
    * `apps/booth/src/booth/client.ts`). The booth's own wait must leave room
@@ -819,6 +828,10 @@ test('a press whose printer has not answered in time answers "queued", and the s
 
   const started = performance.now();
   const response = await h.booth.spin({ idempotencyKey: 'press-1' });
+  assert.equal(h.submissions.length, 0);
+  const printed = await h.booth.print({ spinId: response.spinId });
+  assert.equal(printed.printState, 'queued');
+  assert.deepEqual(await h.booth.print({ spinId: response.spinId }), printed);
   const took = performance.now() - started;
   assert.equal(response.printState, 'queued', 'the television shows the code and its QR');
   assert.notEqual(response.voucherCode, null);
@@ -1032,7 +1045,7 @@ test('a booth refuses the press once it has given away its spins for the day', a
    */
   const batch = await h.store.takeBatch(BOX_ID, { now: AT });
   assert.equal(batch.events.length, 4, 'two spins and their two vouchers, and nothing else');
-  assert.equal(h.submissions.length, 2, 'two slips, not three');
+  assert.equal((await h.store.loadPendingPrintJobs(BOX_ID)).length, 2, 'two held slips, not three');
   const spins = await h.store.readCounters(BOX_ID, BOOTH_SPIN_COUNTER_SCOPE, BUSINESS_DATE);
   assert.deepEqual(spins, { [STATION_ID]: 2 }, 'the refused press did not count towards the day');
   const presses = await h.store.readCounters(BOX_ID, BOOTH_PRESS_COUNTER_SCOPE, BUSINESS_DATE);
@@ -1532,6 +1545,7 @@ test('a print outcome for a booth voucher becomes an outbox fact (D20)', async (
   await seed(h);
   h.printOutcome = 'queued';
   await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.print({ spinId: (await h.booth.spin({ idempotencyKey: 'press-1' })).spinId });
   const jobId = h.submissions[0]!.id;
 
   await h.booth.reportPrint({
@@ -1582,6 +1596,7 @@ test('an outcome that arrives after the job was reported still goes to the outbo
   await seed(h);
   h.printOutcome = 'queued';
   const response = await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.print({ spinId: (await h.booth.spin({ idempotencyKey: 'press-1' })).spinId });
   const jobId = h.submissions[0]!.id;
   const outcome = {
     id: jobId,
@@ -1615,6 +1630,7 @@ test('a voucher a power cut caught on its way to the printer is the booth’s to
   await seed(h);
   h.printOutcome = 'queued';
   const response = await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.print({ spinId: (await h.booth.spin({ idempotencyKey: 'press-1' })).spinId });
   const jobId = h.submissions[0]!.id;
   // Bytes were going to the head when the power went: the row says `sending`,
   // and the next process's store marks it interrupted when it opens.
@@ -1656,6 +1672,7 @@ test('a booth adopts the vouchers a previous process left unprinted, and can sti
   await seed(h);
   h.printOutcome = 'queued';
   const response = await h.booth.spin({ idempotencyKey: 'press-1' });
+  await h.booth.print({ spinId: (await h.booth.spin({ idempotencyKey: 'press-1' })).spinId });
   const jobId = h.submissions[0]!.id;
 
   const restarted = openBooth({ store: h.store });

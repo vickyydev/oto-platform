@@ -188,6 +188,7 @@ function after<T>(ms: number, value: T): Promise<T> {
 }
 
 export class FakeBooth implements BoothTransport {
+  private readonly slips = new Map<string, SpinResponse>();
   readonly kind = 'fake' as const;
 
   private readonly bundle: BoothConfigBundle;
@@ -311,7 +312,7 @@ export class FakeBooth implements BoothTransport {
     const spinId = fakeId();
     const printState = flags.printer ?? 'no_printer';
     this.lastVoucher = { spinId, printState };
-    return after(FAKE_SPIN_LATENCY_MS, {
+    const response: SpinResponse = {
       spinId,
       prizeIndex: index,
       prizeId,
@@ -321,7 +322,15 @@ export class FakeBooth implements BoothTransport {
       printState,
       staffAccountId: this.signedIn ? FAKE_STAFF_ACCOUNT_ID : null,
       clockSuspect: false,
-    });
+    };
+    this.slips.set(spinId, response);
+    return after(FAKE_SPIN_LATENCY_MS, { ...response, printState: 'queued' });
+  }
+
+  async print({ spinId }: { spinId: string }): Promise<SpinResponse> {
+    const response = this.slips.get(spinId);
+    if (!response) throw new BoothCallError('nothing_to_print', 404);
+    return after(FAKE_SPIN_LATENCY_MS, response);
   }
 
   /** The same refusals a box gives: nobody signed in, or nothing to reprint. */

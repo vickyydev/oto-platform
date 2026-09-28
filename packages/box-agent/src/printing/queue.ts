@@ -278,6 +278,23 @@ export interface PrintSubsystem {
    */
   submit(request: PrintRequest): Promise<PrintJobOutcome>;
   /**
+   * Take a job onto the queue WITHOUT attempting it, and keep the retry tick
+   * off it until `until` (bench, 28 September).
+   *
+   * A booth's slip: the press saves it, the wheel turns for several seconds,
+   * and the page asks for the paper when the result card opens. The slip used
+   * to come out before the wheel moved. Held here, it is printed by whichever
+   * comes first — `submit` of the same id, which takes it at once, or the
+   * tick once `until` has passed, which is how a page that never asks (a
+   * crash mid-spin) still gets its slip.
+   *
+   * The caller writes the job's row itself, as a spin does in its own
+   * transaction; this writes nothing. A job already on the printer is left as
+   * it is. A hold further off than twice its own length was set on a clock
+   * that has since gone back, and no longer holds (`heldBack`).
+   */
+  hold(request: PrintRequest, until: Date): Promise<void>;
+  /**
    * Pulse a station's cash drawer, now or not at all (S2-10a).
    *
    * NOT QUEUED, and that is the whole difference from `submit`. A receipt that
@@ -390,6 +407,12 @@ interface PendingJob {
    * attempt already going, instead of starting another one on the printer.
    */
   running: Promise<PrintJobOutcome> | null;
+  /**
+   * Kept off the retry tick until this time, on the queue's clock, and how
+   * long the hold was when it was set; both 0 for a job nobody held (`hold`).
+   */
+  heldUntil: number;
+  heldForMs: number;
 }
 
 /**
@@ -656,6 +679,10 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         queuedAt: record.queuedAt,
         deviceId: record.deviceId,
         running: null,
+        // A hold does not outlive the process; a held row's retry time,
+        // written as the end of its hold, keeps it off the tick instead.
+        heldUntil: 0,
+        heldForMs: 0,
       });
     }
     return reported;
@@ -844,13 +871,20 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
       const error =
         err instanceof PrinterError
           ? err
-          : new PrinterError('PRINTER_WRITE_FAILED', err instanceof Error ? err.message : String(err), {
-              partial: true,
-            });
+          : new PrinterError(
+              'PRINTER_WRITE_FAILED',
+              err instanceof Error ? err.message : String(err),
+              {
+                partial: true,
+              },
+            );
       health[routed.device.id] = {
         ...(health[routed.device.id] ?? unknownHealth(now().toISOString())),
         reachability: error.code === 'PRINTER_UNREACHABLE' ? 'unreachable' : 'reachable',
-        paperStatus: error.code === 'PRINTER_PAPER_OUT' ? 'out' : health[routed.device.id]?.paperStatus ?? 'unknown',
+        paperStatus:
+          error.code === 'PRINTER_PAPER_OUT'
+            ? 'out'
+            : (health[routed.device.id]?.paperStatus ?? 'unknown'),
         lastError: error.code,
         checkedAt: now().toISOString(),
       };
@@ -929,6 +963,18 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
    */
   function retryDue(pending: PendingJob, nowMs: number): boolean {
     return pending.nextAttemptAt <= nowMs || pending.nextAttemptAt > nowMs + retryDelayMs;
+  }
+
+  /**
+   * Whether a held job is still kept off the tick (`hold`): its time has not
+   * come — and it is not further off than twice the hold's own length, which
+   * only a clock that has gone back since could make it, as `retryDue` says
+   * of a retry. Twice rather than once, so an ordinary correction of a second
+   * or two does not let a slip out while its wheel is still turning.
+   */
+  function heldBack(pending: PendingJob, nowMs: number): boolean {
+    if (pending.heldUntil <= nowMs) return false;
+    return pending.heldUntil - nowMs <= 2 * pending.heldForMs;
   }
 
   /** One attempt, and what it leaves behind: the job back on the queue, or gone. */
@@ -1012,6 +1058,9 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         // The resume assumed its first `queued` outcome was old news; to the
         // caller asking now, it is not.
         held.queuedReported = false;
+        // Asked for: whatever `hold` kept it back for is over.
+        held.heldUntil = 0;
+        held.heldForMs = 0;
         if (held.running) return held.running;
         held.request = request;
         return run(held, { record: true });
@@ -1025,9 +1074,41 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         queuedAt: now().toISOString(),
         deviceId: null,
         running: null,
+        heldUntil: 0,
+        heldForMs: 0,
       };
       queue.push(pending);
       return run(pending, { record: true });
+    },
+    async hold(request, until) {
+      await ensureResumed();
+      const nowMs = now().getTime();
+      const heldUntil = until.getTime();
+      const heldForMs = Math.max(0, heldUntil - nowMs);
+      // The row the caller wrote may already be here, picked up by the resume
+      // above: that is this job, held rather than queued a second time.
+      const found = queue.find((p) => p.request.id === request.id);
+      if (found) {
+        // On the printer already, because somebody asked for it: nothing to hold.
+        if (found.running) return;
+        found.request = request;
+        found.queuedReported = false;
+        found.heldUntil = heldUntil;
+        found.heldForMs = heldForMs;
+        return;
+      }
+      queue.push({
+        request,
+        attempts: 0,
+        nextAttemptAt: 0,
+        lastError: null,
+        queuedReported: false,
+        queuedAt: now().toISOString(),
+        deviceId: null,
+        running: null,
+        heldUntil,
+        heldForMs,
+      });
     },
     async pulseDrawer(request) {
       const role = request.role ?? ROLE_FOR_KIND.receipt;
@@ -1117,8 +1198,13 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
     },
     async tick() {
       await ensureResumed();
+      // A held slip is left alone until its hold is over (`hold`), however
+      // due its retry time says it is.
       const isDue = (p: PendingJob): boolean =>
-        p.running === null && queue.includes(p) && retryDue(p, now().getTime());
+        p.running === null &&
+        queue.includes(p) &&
+        !heldBack(p, now().getTime()) &&
+        retryDue(p, now().getTime());
       const due = queue.filter(isDue);
       const outcomes: PrintJobOutcome[] = [];
       /**

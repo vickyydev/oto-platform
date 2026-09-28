@@ -466,10 +466,17 @@ test('a box with no credential serves the claim screen, takes the code, and star
   const cloud = await fakeCloud();
   const box = await run(tempHome(), cloud);
   try {
-    const before = (await hit(box.port, 'GET', '/kiosk/state')).json() as { registered: boolean; booths: unknown[] };
+    const before = (await hit(box.port, 'GET', '/kiosk/state')).json() as {
+      registered: boolean;
+      booths: unknown[];
+    };
     assert.equal(before.registered, false);
     assert.deepEqual(before.booths, []);
-    assert.equal((await hit(box.port, 'GET', '/booth/config')).status, 409, 'no booth to answer for yet');
+    assert.equal(
+      (await hit(box.port, 'GET', '/booth/config')).status,
+      409,
+      'no booth to answer for yet',
+    );
 
     const wrong = await hit(box.port, 'POST', '/kiosk/claim', { body: { code: 'WRONG-CODE-9' } });
     assert.deepEqual(wrong.json(), { ok: false, reason: 'refused' });
@@ -634,15 +641,32 @@ test('a box with two booths asks which one, remembers the choice, and runs that 
     };
     assert.equal(state.booths.length, 2);
     assert.equal(state.selectedStationId, null, 'two booths and no choice: the picker');
-    assert.equal(((await hit(box.port, 'GET', '/booth/config')).json() as { version: unknown }).version, null);
+    assert.equal(
+      ((await hit(box.port, 'GET', '/booth/config')).json() as { version: unknown }).version,
+      null,
+    );
 
-    assert.equal((await hit(box.port, 'POST', '/kiosk/booth', { body: { stationId: '018f1d2c-0000-7000-8000-0000000000ff' } })).status, 404);
-    assert.equal((await hit(box.port, 'POST', '/kiosk/booth', { body: { stationId: STATION_B } })).status, 200);
+    assert.equal(
+      (
+        await hit(box.port, 'POST', '/kiosk/booth', {
+          body: { stationId: '018f1d2c-0000-7000-8000-0000000000ff' },
+        })
+      ).status,
+      404,
+    );
+    assert.equal(
+      (await hit(box.port, 'POST', '/kiosk/booth', { body: { stationId: STATION_B } })).status,
+      200,
+    );
     assert.equal((await readRunnerState(box.paths)).stationId, STATION_B, 'kept on disk');
 
-    const config = (await hit(box.port, 'GET', '/booth/config')).json() as { bundle: { prizes: Array<{ nameEn: string }> } };
+    const config = (await hit(box.port, 'GET', '/booth/config')).json() as {
+      bundle: { prizes: Array<{ nameEn: string }> };
+    };
     assert.equal(config.bundle.prizes[0]?.nameEn, 'Booth B voucher');
-    const spin = (await hit(box.port, 'POST', '/booth/spin', { body: { idempotencyKey: 'b-1' } })).json() as { voucherCode: string };
+    const spin = (
+      await hit(box.port, 'POST', '/booth/spin', { body: { idempotencyKey: 'b-1' } })
+    ).json() as { voucherCode: string };
     assert.match(spin.voucherCode, /^BB/);
   } finally {
     await box.stop();
@@ -656,24 +680,38 @@ test('a box that boots with no internet still plays: the config copy on disk car
   const cloud = await fakeCloud();
   const first = await run(home, cloud);
   await hit(first.port, 'POST', '/kiosk/claim', { body: { code: CODE } });
-  assert.equal(((await hit(first.port, 'GET', '/booth/config')).json() as { version: number }).version, 3);
+  assert.equal(
+    ((await hit(first.port, 'GET', '/booth/config')).json() as { version: number }).version,
+    3,
+  );
   await first.stop();
-  const onDisk = JSON.parse(readFileSync(runnerPaths(home).configBundle, 'utf8')) as { configVersion: string };
+  const onDisk = JSON.parse(readFileSync(runnerPaths(home).configBundle, 'utf8')) as {
+    configVersion: string;
+  };
   assert.equal(onDisk.configVersion, 'cfg-one');
 
   // The mall's router is still coming up.
   cloud.down = true;
   const second = await run(home, cloud);
   try {
-    const state = (await hit(second.port, 'GET', '/kiosk/state')).json() as { registered: boolean; online: boolean; selectedStationId: string };
+    const state = (await hit(second.port, 'GET', '/kiosk/state')).json() as {
+      registered: boolean;
+      online: boolean;
+      selectedStationId: string;
+    };
     assert.equal(state.registered, true);
     assert.equal(state.online, false);
     assert.equal(state.selectedStationId, STATION_A);
-    const spin = await hit(second.port, 'POST', '/booth/spin', { body: { idempotencyKey: 'offline-1' } });
+    const spin = await hit(second.port, 'POST', '/booth/spin', {
+      body: { idempotencyKey: 'offline-1' },
+    });
     assert.equal(spin.status, 200);
     const won = spin.json() as { voucherCode: string; printState: string };
     assert.match(won.voucherCode, /^BA/, 'minted on the box, with no internet');
-    const status = (await hit(second.port, 'GET', '/booth/status')).json() as { online: boolean; vouchersPending: number };
+    const status = (await hit(second.port, 'GET', '/booth/status')).json() as {
+      online: boolean;
+      vouchersPending: number;
+    };
     assert.equal(status.online, false, 'the dot is off');
     assert.ok(status.vouchersPending >= 2, 'and the spin and voucher wait for the line');
 
@@ -848,10 +886,21 @@ test('a press while start still waits on a silent cloud prints one slip; the fir
       );
       if (health !== 200) await wait(20);
     }
-    const spin = await hit(port, 'POST', '/booth/spin', { body: { idempotencyKey: 'stall-press-1' } });
+    const spin = await hit(port, 'POST', '/booth/spin', {
+      body: { idempotencyKey: 'stall-press-1' },
+    });
     assert.equal(spin.status, 200);
-    assert.equal((spin.json() as { printState: string }).printState, 'printed');
-    assert.equal(started, false, 'the press came before start, so before its heartbeat ticked the queue');
+    assert.equal((spin.json() as { printState: string }).printState, 'queued');
+    assert.equal(printer.slips(), 0, 'no paper before the reveal');
+    const printed = await hit(port, 'POST', '/booth/print', {
+      body: { spinId: (spin.json() as { spinId: string }).spinId },
+    });
+    assert.equal((printed.json() as { printState: string }).printState, 'printed');
+    assert.equal(
+      started,
+      false,
+      'the press came before start, so before its heartbeat ticked the queue',
+    );
 
     const box = await booting;
     // `start` is done, and its heartbeat has ticked the print queue; one more
@@ -892,8 +941,15 @@ test('the Console’s offline switch on at boot: a press, back online, one heart
   const box = await run(home, cloud);
   try {
     assert.equal(box.agent.state.offline, true, 'it came back with the switch on');
-    const spin = await hit(box.port, 'POST', '/booth/spin', { body: { idempotencyKey: 'offline-press-1' } });
-    assert.equal((spin.json() as { printState: string }).printState, 'printed');
+    const spin = await hit(box.port, 'POST', '/booth/spin', {
+      body: { idempotencyKey: 'offline-press-1' },
+    });
+    assert.equal((spin.json() as { printState: string }).printState, 'queued');
+    assert.equal(printer.slips(), 0, 'no paper before the reveal');
+    const printed = await hit(box.port, 'POST', '/booth/print', {
+      body: { spinId: (spin.json() as { spinId: string }).spinId },
+    });
+    assert.equal((printed.json() as { printState: string }).printState, 'printed');
     await wait(200);
     assert.equal(printer.slips(), 1);
 
@@ -927,14 +983,23 @@ test('an account sign-in goes to the cloud under the box credential, and names t
     });
     assert.deepEqual(signed.json(), { ok: true });
     const asked = cloud.calls.find((c) => c.path === '/box/v1/booth/staff/verify');
-    assert.deepEqual(asked?.body, { stationId: STATION_A, phone: '0812345678', password: 'secret-pw' });
-    const status = (await hit(box.port, 'GET', '/booth/status')).json() as { staff: { name: string; code: string; method: string } };
+    assert.deepEqual(asked?.body, {
+      stationId: STATION_A,
+      phone: '0812345678',
+      password: 'secret-pw',
+    });
+    const status = (await hit(box.port, 'GET', '/booth/status')).json() as {
+      staff: { name: string; code: string; method: string };
+    };
     assert.deepEqual(
       { name: status.staff.name, code: status.staff.code, method: status.staff.method },
       { name: 'Nok', code: 'S-7KMQ', method: 'account' },
     );
 
-    cloud.verifyAnswer = { status: 403, body: { error: { code: 'BOOTH_STAFF_NOT_ASSIGNED', message: 'x' } } };
+    cloud.verifyAnswer = {
+      status: 403,
+      body: { error: { code: 'BOOTH_STAFF_NOT_ASSIGNED', message: 'x' } },
+    };
     const refused = await hit(box.port, 'POST', '/booth/staff/sign-in', {
       body: { mode: 'account', phone: '0899999999', password: 'pw' },
     });
@@ -988,11 +1053,16 @@ test('the booth prints over TCP 9100 to the printer config.json names, at its wi
   const box = await run(home, cloud);
   try {
     await hit(box.port, 'POST', '/kiosk/claim', { body: { code: CODE } });
-    const spin = (await hit(box.port, 'POST', '/booth/spin', { body: { idempotencyKey: 'tcp-1' } })).json() as {
+    const spin = (
+      await hit(box.port, 'POST', '/booth/spin', { body: { idempotencyKey: 'tcp-1' } })
+    ).json() as {
+      spinId: string;
       printState: string;
       voucherCode: string;
     };
-    assert.equal(spin.printState, 'printed');
+    assert.equal(spin.printState, 'queued');
+    const printed = await hit(box.port, 'POST', '/booth/print', { body: { spinId: spin.spinId } });
+    assert.equal((printed.json() as { printState: string }).printState, 'printed');
     const bytes = printer.received();
     // GS v 0: the raster command, at 512 dots = 64 bytes a row.
     const raster = bytes.indexOf(Buffer.from([0x1d, 0x76, 0x30, 0x00]));
@@ -1009,7 +1079,9 @@ test('the booth prints over TCP 9100 to the printer config.json names, at its wi
     // Staff reprint the voucher: the same code comes out of the same printer.
     await hit(box.port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '7391' } });
     const before = printer.received().length;
-    const reprint = (await hit(box.port, 'POST', '/booth/reprint', { body: {} })).json() as { printState: string };
+    const reprint = (await hit(box.port, 'POST', '/booth/reprint', { body: {} })).json() as {
+      printState: string;
+    };
     assert.equal(reprint.printState, 'printed');
     assert.ok(printer.received().length > before, 'a second slip went to the printer');
   } finally {
@@ -1034,15 +1106,22 @@ test('with no printer answering the code goes to the screen and the job waits on
   const box = await run(home, cloud, { log, printRetryDelayMs: 200 });
   try {
     await hit(box.port, 'POST', '/kiosk/claim', { body: { code: CODE } });
-    const spin = (await hit(box.port, 'POST', '/booth/spin', { body: { idempotencyKey: 'dead-1' } })).json() as {
+    const spin = (
+      await hit(box.port, 'POST', '/booth/spin', { body: { idempotencyKey: 'dead-1' } })
+    ).json() as {
+      spinId: string;
       printState: string;
       voucherCode: string | null;
     };
+    await hit(box.port, 'POST', '/booth/print', { body: { spinId: spin.spinId } });
     assert.notEqual(spin.printState, 'printed');
     assert.match(spin.voucherCode ?? '', /^BA/, 'the television shows the code and its QR instead');
     const pending = box.agent.printing()?.jobs.pending() ?? [];
     assert.equal(pending.length, 1, 'the voucher waits in the queue');
-    assert.ok(lines.some((l) => /PRINTER_UNREACHABLE|unreachable/i.test(l)), 'the failure is in the log');
+    assert.ok(
+      lines.some((l) => /PRINTER_UNREACHABLE|unreachable/i.test(l)),
+      'the failure is in the log',
+    );
     assert.equal(
       lines.some((l) => /no durable print queue/.test(l)),
       false,

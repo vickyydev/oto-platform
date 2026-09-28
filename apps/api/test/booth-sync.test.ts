@@ -386,8 +386,9 @@ describe('a spin crosses the seam (S2-07a)', () => {
 
   it('carries the print outcome as a fact, not up the cloud print route (D20)', async () => {
     const drawn = await booth.spin({ idempotencyKey: newId() });
+    const revealed = await booth.print!({ spinId: drawn.spinId });
     expect(
-      drawn.printState,
+      revealed.printState,
       'the simulated printer produced nothing, so there is no outcome to carry',
     ).toBe('printed');
     /**

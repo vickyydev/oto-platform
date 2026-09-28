@@ -164,6 +164,8 @@ export interface BoothBranchContext {
  * function that records what it was asked to print.
  */
 export interface BoothPrintPort {
+  /** Save a slip on the retry queue without printing while the wheel turns. */
+  hold?(request: Parameters<BoothPrintPort['submit']>[0], until: Date): Promise<void>;
   submit(request: {
     id: string;
     kind: 'booth_voucher';
@@ -392,6 +394,9 @@ const REPLAY_LIMIT = 64;
  */
 export const BOOTH_PRINT_WAIT_MS = 3_000;
 
+/** A page that stops during the animation still gets its saved slip on a later tick. */
+export const BOOTH_PRINT_HOLD_MS = 30_000;
+
 /**
  * Two letters or digits: the prefix `mintBoothCode` can print, after it has
  * upper-cased what it was given — the same rule, checked here BEFORE the draw
@@ -495,6 +500,7 @@ export const BOOTH_REFUSAL_CODES = [
   'staff_required',
   /** A reprint with nothing to reprint: no voucher yet, or not that spin's. */
   'nothing_to_reprint',
+  'nothing_to_print',
 ] as const;
 export type BoothRefusalCode = (typeof BOOTH_REFUSAL_CODES)[number];
 
@@ -594,6 +600,7 @@ export interface BoothReprintRequest {
 }
 
 export interface Booth {
+  print?(request: { spinId: string; actionId?: string | null }): Promise<SpinResponse>;
   /** Adopt whatever the cache holds and pick up any vouchers still to print. */
   start(): Promise<void>;
   stop(): void;
@@ -709,7 +716,7 @@ function methodOf(credentialKind: string): BoothSignInMethod {
 }
 
 /** What `createBooth` builds: a `Booth` whose reprint is always there. */
-export type BoothModule = Booth & Required<Pick<Booth, 'reprint'>>;
+export type BoothModule = Booth & Required<Pick<Booth, 'reprint' | 'print'>>;
 
 export function createBooth(options: BoothOptions): BoothModule {
   const { boxId, store } = options;
@@ -804,6 +811,17 @@ export function createBooth(options: BoothOptions): BoothModule {
    * printer's hands, so asking after that is a new copy, as it always was.
    */
   const reprintsInFlight = new Map<string, Promise<BoothReprintResponse>>();
+  const pressSlips = new Map<
+    string,
+    {
+      stationId: string;
+      jobId: string;
+      job: RenderPrintJob;
+      response: SpinResponse;
+      state: BoothPrintState | null;
+      answer: Promise<SpinResponse> | null;
+    }
+  >();
   /**
    * The sign-in attempt each station is working through; the next one waits
    * for it (closing audit M11). Holds a promise that never rejects, so one
@@ -1778,7 +1796,8 @@ export function createBooth(options: BoothOptions): BoothModule {
       issuedAtMs: timing.stampMs,
       staffLabel: onDutyNow?.label ?? null,
     });
-    const printJob = options.print ? slip : null;
+    const heldUntil = new Date(Date.parse(timing.occurredAt) + BOOTH_PRINT_HOLD_MS);
+    const printJob = options.print ? { ...slip, nextAttemptAt: heldUntil.toISOString() } : null;
 
     /**
      * One transaction: the facts, the print job and the counters commit
@@ -1912,8 +1931,30 @@ export function createBooth(options: BoothOptions): BoothModule {
     lastSpinAt = timing.occurredAt;
     if (timing.believable) await noteTime(timing.occurredAt);
 
-    let printState: BoothPrintState = 'no_printer';
+    const response: SpinResponse = {
+      spinId,
+      prizeIndex: outcome.index,
+      prizeId: outcome.prize.id,
+      configVersion: entry.version,
+      voucherCode,
+      expiresAt,
+      printState: printJob ? 'queued' : 'no_printer',
+      staffAccountId,
+      clockSuspect: timing.clockSuspect,
+    };
     const port = options.print;
+    pressSlips.set(spinId, {
+      stationId: station.id,
+      jobId: printJobId,
+      job: slip.job,
+      response,
+      state: null,
+      answer: null,
+    });
+    while (pressSlips.size > REPLAY_LIMIT) {
+      const oldest = pressSlips.keys().next();
+      if (!oldest.done) pressSlips.delete(oldest.value);
+    }
     if (printJob && port) {
       ownedPrintJobs.set(printJobId, {
         voucherId,
@@ -1922,27 +1963,50 @@ export function createBooth(options: BoothOptions): BoothModule {
         requestedByAccountId: null,
         stationId: station.id,
       });
-      // Waited on for `printWaitMs` at most; the print goes on after the
-      // answer if the printer is slower than that (closing audit H1).
-      printState = await answerWithin(
-        attemptPrint(port, printJobId, printJob.job, station.id, request.actionId ?? null),
-        { spinId, jobId: printJobId },
-      );
+      // The durable job is already saved. Holding never opens the printer.
+      await port
+        .hold?.(
+          {
+            id: printJobId,
+            kind: 'booth_voucher',
+            job: printJob.job,
+            stationId: station.id,
+            actionId: request.actionId ?? null,
+            copies: 1,
+          },
+          heldUntil,
+        )
+        .catch(() => {
+          note('warn', 'the voucher waits on the card for the print queue', { jobId: printJobId });
+        });
     }
 
     // `spin` put this press's promise in `replay` when it started; the answer
     // is kept by that, not by anything here.
-    return {
-      spinId,
-      prizeIndex: outcome.index,
-      prizeId: outcome.prize.id,
-      configVersion: entry.version,
-      voucherCode,
-      expiresAt,
-      printState,
-      staffAccountId,
-      clockSuspect: timing.clockSuspect,
-    };
+    return response;
+  }
+
+  async function print(request: {
+    spinId: string;
+    actionId?: string | null;
+  }): Promise<SpinResponse> {
+    const slip = pressSlips.get(request.spinId);
+    if (!slip || slip.stationId !== options.station()?.id) {
+      throw new BoothRefusal('nothing_to_print', 'This booth holds no slip for that spin');
+    }
+    if (slip.answer) return slip.answer;
+    const port = options.print;
+    const ended = slip.state !== null && slip.state !== 'queued' ? slip.state : null;
+    const outcome =
+      ended !== null || !port
+        ? Promise.resolve(ended ?? 'no_printer')
+        : answerWithin(
+            attemptPrint(port, slip.jobId, slip.job, slip.stationId, request.actionId ?? null),
+            { spinId: request.spinId, jobId: slip.jobId },
+          );
+    // Keep the first answer, including a bounded wait's queued outcome.
+    slip.answer = outcome.then((printState) => ({ ...slip.response, printState }));
+    return slip.answer;
   }
 
   /**
@@ -2455,6 +2519,9 @@ export function createBooth(options: BoothOptions): BoothModule {
    * the right order whenever the link comes back.
    */
   async function reportPrint(outcome: BoothPrintSubmitOutcome): Promise<void> {
+    for (const slip of pressSlips.values()) {
+      if (slip.jobId === outcome.id) slip.state = printStateFor(outcome.status);
+    }
     const finished = finishedPrintJobs.get(outcome.id);
     const printed = ownedPrintJobs.get(outcome.id) ?? finished;
     if (!printed) return;
@@ -2758,6 +2825,7 @@ export function createBooth(options: BoothOptions): BoothModule {
     status,
     heartbeat,
     ownsPrintJob,
+    print,
     async reportPrint(outcome) {
       if (outcome.deviceId) lastPrintDeviceId = outcome.deviceId;
       await reportPrint(outcome);

@@ -13,6 +13,7 @@ interface Props {
    */
   prize: BoothConfigPrize | null;
   open: boolean;
+  printing?: boolean;
   /** Bottom prompt telling the player to press the button to continue. */
   promptText: string;
   /** Dismiss back to the wheel — the button, the backdrop or the X. */
@@ -40,7 +41,7 @@ const QR_SIZE = 200;
  *
  * Nothing personal is on this card (D15). A prize name, a code, a date.
  */
-export function ResultModal({ spin, prize, open, promptText, onClose }: Props) {
+export function ResultModal({ spin, prize, open, printing = false, promptText, onClose }: Props) {
   if (!open || !spin) return null;
 
   const color = prize?.sliceColor ?? '#FF8A3D';
@@ -55,7 +56,7 @@ export function ResultModal({ spin, prize, open, promptText, onClose }: Props) {
   const hasCode = spin.voucherCode !== null && spin.voucherCode !== '';
   // The tallest card: the code and its QR are the voucher. It drops the
   // decoration above the prize name to keep the whole card on the screen.
-  const showsCode = hasCode && !printed;
+  const showsCode = hasCode && !printed && !printing;
 
   return (
     <div className="k-modal">
@@ -125,6 +126,12 @@ export function ResultModal({ spin, prize, open, promptText, onClose }: Props) {
             <p className="k-scan">{COPY.noCodeNeeded.en}</p>
             <p className="k-scan k-th">{COPY.noCodeNeeded.th}</p>
           </>
+        ) : printing ? (
+          <div className="k-printedbox" role="status">
+            <PrinterMark color={color} />
+            <p className="k-booth-lead">{COPY.printing.en}</p>
+            <p className="k-booth-lead k-th">{COPY.printing.th}</p>
+          </div>
         ) : printed ? (
           <>
             <div className="k-scan-pill">{COPY.takeVoucher.en}</div>

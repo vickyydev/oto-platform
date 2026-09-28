@@ -210,6 +210,7 @@ describe('the audit row commits with the change (SCRUM-291)', () => {
  */
 const NO_DIRECT_WRITE = [
   'POST /auth/badge',
+  'POST /booth/print',
   'POST /booth/reprint',
   'POST /booth/spin',
   'POST /booth/staff/sign-in',
@@ -409,6 +410,7 @@ const OUTSIDE_THE_REPLAY_STORE = [
    * safe instead is that minting revokes the booth's previous unredeemed code.
    */
   'POST /booth/pair [secretResponse]',
+  'POST /booth/print [credential:booth]',
   'POST /booth/reprint [credential:booth]',
   'POST /booth/spin [credential:booth]',
   'POST /booth/staff/sign-in [credential:booth]',

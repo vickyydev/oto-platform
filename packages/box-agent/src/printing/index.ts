@@ -53,6 +53,8 @@ export interface PrintingOptions {
 export interface PrintingController {
   readonly jobs: PrintSubsystem;
   submit(request: PrintRequest): ReturnType<PrintSubsystem['submit']>;
+  /** Keep a job on the queue, unattempted, until `until`: a booth's slip while its wheel turns. */
+  hold(request: PrintRequest, until: Date): ReturnType<PrintSubsystem['hold']>;
   /** Open a station's cash drawer through its receipt printer (S2-10a). */
   pulseDrawer(request: DrawerPulseRequest): ReturnType<PrintSubsystem['pulseDrawer']>;
   /** Every simulator this box currently stands up, keyed by device id. */
@@ -162,6 +164,7 @@ export function createPrinting(options: PrintingOptions): PrintingController {
   return {
     jobs,
     submit: (request) => jobs.submit(request),
+    hold: (request, until) => jobs.hold(request, until),
     pulseDrawer: (request) => jobs.pulseDrawer(request),
     simulators() {
       reconcile();

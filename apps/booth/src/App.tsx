@@ -156,6 +156,7 @@ export default function App() {
   const [config, setConfig] = useState<AppliedConfig | null>(null);
   const [status, setStatus] = useState<BoothStatus | null>(null);
   const [spin, setSpin] = useState<SpinResponse | null>(null);
+  const [printAnsweredFor, setPrintAnsweredFor] = useState<string | null>(null);
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
   const [notice, setNotice] = useState<BilingualLine | null>(null);
   const [replayArmed, setReplayArmed] = useState(false);
@@ -607,6 +608,27 @@ export default function App() {
     }, REVEAL_DELAY_MS);
   }, []);
 
+  const revealedSpinId = phase === 'result' && spin?.voucherCode ? spin.spinId : null;
+  useEffect(() => {
+    if (revealedSpinId === null) return;
+    let cancelled = false;
+    void booth
+      .print({ spinId: revealedSpinId })
+      .then((answer) => {
+        if (!cancelled)
+          setSpin((current) => (current?.spinId === answer.spinId ? answer : current));
+      })
+      .catch(() => {
+        // The saved code stays on screen if the box cannot answer the print call.
+      })
+      .finally(() => {
+        if (!cancelled) setPrintAnsweredFor(revealedSpinId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [revealedSpinId]);
+
   useEffect(
     () => () => {
       if (revealTimer.current !== null) window.clearTimeout(revealTimer.current);
@@ -905,6 +927,7 @@ export default function App() {
 
       <ResultModal
         spin={spin}
+        printing={revealedSpinId !== null && printAnsweredFor !== revealedSpinId}
         prize={prize}
         open={phase === 'result'}
         promptText={replayArmed ? COPY.playAgainConfirm.en : COPY.playAgain.en}
