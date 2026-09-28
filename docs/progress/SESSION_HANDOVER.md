@@ -543,6 +543,29 @@ different; the Pi runtime and the counter were not built at all).**
   button to Space with it — the Pi-side adapter is not needed. The old Replit wheel
   accepted Space or Enter and its site button sent Enter, which TV Bro ate —
   Space-only stands. `button-test.html` (a browser key test) is on his Desktop.
+- **The first real Pi run (28 Sept, afternoon, 16:34).** The owner imaged a USB
+  stick (his card reader failed; the Pi 5 boots from the stick with the card
+  slot empty), copied the release by `scp` to the Pi's address (his network
+  does not pass `booth.local` around), and ran the installer with
+  `--printer-direct`: clean, printer-link up, the box claimed and running
+  ("FortuneWheelBox", booth "FortuneWheelBooth", prefix FW, printer from the
+  Console). Three findings, each fixed the same hour and applied to his Pi by
+  hand: (1) **the printer had no address** — its self-test page said
+  *IP Address: None*; Epson's reference guide: DHCP on, link-local fallback
+  off, 192.168.192.168 only in manual mode — `5838eb6` puts a one-address
+  dnsmasq on the printer socket inside `--printer-direct` (the guide's old
+  "factory address reachable" story was wrong and is gone); (2) **the
+  television never opened** — `oto-kiosk.service` looped *Missing X server or
+  $DISPLAY*: Chromium with `--ozone-platform-hint=auto`, run as a system
+  service with no session environment, picked X11 on the Wayland desktop —
+  `08ffe66` passes `--ozone-platform=wayland|x11` outright and names the
+  session bus; (3) **the red button sent no key** (the morning's finding),
+  set to Space with its maker's program. Notes on SCRUM-418 for both Pi
+  fixes; no new tickets. **The release to install from here:**
+  `oto-box-0.1.0-08ffe66.tgz` (SHA-256 `de9c90e4…6fd3`), on the owner's Desktop; his
+  bench Pi runs `c34ec17` plus the two repairs by hand, which is the same
+  behaviour. Harmless noise seen: `perl: Setting locale failed` at the top of
+  the installer's output when run over SSH from a Mac.
 - **Open with the owner: multi-staff attribution at one booth** (his
   question of the evening). Today one session per booth; proposed a roster
   with a claim per spin (a number-pad digit or a badge) and shared credit as
