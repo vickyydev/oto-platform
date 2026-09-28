@@ -18,14 +18,17 @@
 #                         cw (the default) or ccw if the picture is upside down
 #   --printer-direct      the receipt printer plugs by network cable straight into
 #                         the Pi's Ethernet socket, no router between them: gives
-#                         eth0 a fixed address for it (192.168.192.10) and leaves
-#                         Wi-Fi and every other connection alone
+#                         eth0 a fixed address for it (192.168.192.10), runs a
+#                         small DHCP server on that cable which always hands the
+#                         printer 192.168.192.168, and leaves Wi-Fi and every
+#                         other connection alone
 #
 # Written for Raspberry Pi OS 64-bit (Debian 12, Bookworm) WITH the desktop:
 # the television is Chromium on that desktop, so Lite (no desktop) will not do.
-# NOT YET RUN ON A RASPBERRY PI: checked for syntax and in pieces on a bench
-# laptop, so the first install at the bench is its first real run — read what
-# it prints. Run it again with a newer release to update: the credential, the
+# RUN ONCE ON A RASPBERRY PI 5 so far (the bench, 28 September 2026): the
+# printer link came up. The printer's address service below is newer than that
+# run, and the rest was checked for syntax and in pieces on a bench laptop, so
+# read what it prints. Run it again with a newer release to update: the credential, the
 # store and /etc/oto-box/config are kept, and the previous release stays on
 # disk for a rollback (see PI_BOOTH.md).
 #
@@ -49,6 +52,9 @@ ROTATE=""
 PRINTER_DIRECT=0
 PRINTER_IFACE="eth0"
 PRINTER_LINK_ADDR="192.168.192.10/24"
+PRINTER_LINK_NETMASK="255.255.255.0"   # the /24 of PRINTER_LINK_ADDR, written the way dnsmasq wants it
+PRINTER_DHCP_ADDR="192.168.192.168"    # the one address the Pi hands the printer on that cable
+PRINTER_DHCP_CONF="/etc/dnsmasq.d/oto-printer-link.conf"
 TARBALL=""
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
@@ -135,15 +141,24 @@ timedatectl set-timezone "$TIMEZONE" || warn "could not set the timezone"
 # The booth's standard (PI_BOOTH.md section 1): the receipt printer plugs by
 # network cable straight into the Pi's Ethernet socket, with no router between
 # them, and the Pi's internet comes over Wi-Fi or a SIM dongle. The printer
-# keeps its factory settings — Epson's are 192.168.192.168 on a /24 with "get
-# address automatically" on — so eth0 gets a fixed address on that network,
-# and a link-local address beside it for a printer that answered no DHCP by
-# falling back to 169.254.x.x; never-default keeps the internet route off the
-# cable. One NetworkManager profile, "printer-link": added the first time,
-# re-applied on every run after, never a second one. Nothing else on the Pi —
-# Wi-Fi, a dongle, any other profile — is touched. Not yet run on a Pi either:
-# the bench is its first real run.
+# keeps its factory settings, and Epson's are "ask a DHCP server for an
+# address", with nothing to fall back on: on a cable with nobody answering the
+# printer has no address at all — the first Pi run at the bench found its
+# self-test page saying "IP Address: None" — and 192.168.192.168 is only what
+# Epson fills in once somebody sets the printer to a fixed address by hand.
+# So the Pi answers. eth0 gets a fixed address of its own on that network
+# (never-default keeps the internet route off the cable; the link-local
+# address beside it is harmless and stays), and dnsmasq, with its DNS off and
+# its DHCP kept to the printer cable, hands the one device on the cable
+# 192.168.192.168 — always that one, so the Console address never changes.
+# Nothing on the printer is set. One NetworkManager profile, "printer-link",
+# and one dnsmasq file, /etc/dnsmasq.d/oto-printer-link.conf: added the first
+# time, re-applied on every run after, never a second one. Nothing else on the
+# Pi — Wi-Fi, a dongle, any other profile, the Pi's own name look-ups — is
+# touched. The link has had one real run on a Pi 5 (it came up); the DHCP
+# part has not yet.
 PRINTER_NOTE="on the router path (no --printer-direct): the printer and the Pi on the same network, the printer on a DHCP reservation. For a printer cabled straight into the Pi, run the installer again with --printer-direct"
+DHCP_OK=0
 if [ "$PRINTER_DIRECT" -eq 1 ]; then
   say "Printer cable: printer-link on $PRINTER_IFACE ($PRINTER_LINK_ADDR)"
   if ! command -v nmcli >/dev/null; then
@@ -184,6 +199,52 @@ if [ "$PRINTER_DIRECT" -eq 1 ]; then
         echo "printer-link $LINK; not up yet (no cable, or the printer is off) — it comes up by itself once the printer is plugged in and switched on"
         PRINTER_NOTE="printer-link on $PRINTER_IFACE ($PRINTER_LINK_ADDR), saved — it comes up by itself when the printer is plugged in and switched on"
       fi
+      # The printer's address: dnsmasq on the printer cable (the comment above).
+      # Whether the link could be switched on just now makes no difference:
+      # the server waits on the cable for the printer. Checked as a package,
+      # not a command — NetworkManager's own dnsmasq-base puts a dnsmasq
+      # command on the Pi with no service behind it.
+      DHCP_NOTE=""
+      if ! dpkg -s dnsmasq 2>/dev/null | grep -q '^Status: install ok installed'; then
+        apt-get install -y -qq dnsmasq >/dev/null || DHCP_NOTE="the Pi's address service for the printer (dnsmasq) did NOT install (apt's message is above), so the printer will get no address from the Pi: run the installer again with --printer-direct once the Pi has its internet, or set the printer to a fixed address instead ($PRINTER_DHCP_ADDR, mask $PRINTER_LINK_NETMASK)"
+      fi
+      if [ -n "$DHCP_NOTE" ]; then
+        warn "$DHCP_NOTE"
+      else
+        install -d -m 0755 /etc/dnsmasq.d
+        cat >"$PRINTER_DHCP_CONF" <<EOF
+# Written by the OTO box installer (--printer-direct) for the printer cable on
+# $PRINTER_IFACE: DNS off, DHCP on that cable only, one address for the one
+# device on it. Rewritten on every install run. To go back to the router path
+# delete it and switch dnsmasq off (PI_BOOTH.md section 7).
+port=0
+interface=$PRINTER_IFACE
+bind-dynamic
+dhcp-authoritative
+dhcp-range=$PRINTER_DHCP_ADDR,$PRINTER_DHCP_ADDR,$PRINTER_LINK_NETMASK,12h
+dhcp-option=option:router
+dhcp-option=option:dns-server
+EOF
+        chmod 0644 "$PRINTER_DHCP_CONF"
+        # Where resolvconf manages /etc/resolv.conf, the package's start hook
+        # would add this dnsmasq — whose DNS is off — as the Pi's first name
+        # server. DNSMASQ_EXCEPT=lo in its defaults file is the package's own
+        # way of saying "not a name server for this machine". Raspberry Pi OS
+        # Bookworm has no resolvconf, so there this changes nothing.
+        if command -v resolvconf >/dev/null && ! grep -q '^DNSMASQ_EXCEPT=' /etc/default/dnsmasq 2>/dev/null; then
+          printf 'DNSMASQ_EXCEPT="lo"\n' >>/etc/default/dnsmasq
+        fi
+        if systemctl enable --now dnsmasq >/dev/null && systemctl restart dnsmasq; then
+          DHCP_OK=1
+          echo "dnsmasq hands the printer $PRINTER_DHCP_ADDR on $PRINTER_IFACE ($PRINTER_DHCP_CONF)"
+          DHCP_NOTE="the printer gets $PRINTER_DHCP_ADDR from the Pi (dnsmasq on $PRINTER_IFACE)"
+        else
+          warn "dnsmasq, the Pi's address service for the printer, did not start — its status is below. The printer gets no address from the Pi until it runs"
+          systemctl status dnsmasq --no-pager 2>&1 | tail -n 12 >&2 || true
+          DHCP_NOTE="the Pi's address service for the printer (dnsmasq) is NOT running (its status is above), so the printer gets no address from the Pi until it is: sudo systemctl restart dnsmasq, then journalctl -u dnsmasq -n 20"
+        fi
+      fi
+      PRINTER_NOTE="$PRINTER_NOTE; $DHCP_NOTE"
     fi
   fi
 fi
@@ -389,14 +450,26 @@ fi
 sleep 3
 systemctl --no-pager --lines=0 status oto-box.service || true
 
-if [ "$PRINTER_DIRECT" -eq 1 ]; then
+if [ "$PRINTER_DIRECT" -eq 1 ] && [ "$DHCP_OK" -eq 1 ]; then
   PRINTER_STEP="  3. The printer: plug it into the Pi's Ethernet socket with an ordinary network
-     cable and switch it on; nothing on the printer needs setting. Print its
-     self-test page (switch it off, hold FEED, switch it on and keep holding until
-     it prints): its address is on that page. In the Console, add the receipt
-     printer to this box at that address followed by :9100 — usually
-     192.168.192.168:9100. Then create a booth station on this box, put staff on
-     the booth, publish the wheel."
+     cable and switch it on; nothing on the printer needs setting. It asks the Pi
+     for an address and the Pi always gives it $PRINTER_DHCP_ADDR. Once it has
+     asked, its self-test page shows that address: with the cable in, switch the
+     printer off and on, wait 20 seconds, then print the page (switch it off, hold
+     FEED, switch it on and keep holding until it prints). \"None\" on the page
+     means it has not asked yet, or the cable is not in: check the cable, switch
+     it off and on, print the page again. In the Console, add the receipt printer
+     to this box at $PRINTER_DHCP_ADDR:9100. Then create a booth station on this
+     box, put staff on the booth, publish the wheel."
+elif [ "$PRINTER_DIRECT" -eq 1 ]; then
+  PRINTER_STEP="  3. The printer: plug it into the Pi's Ethernet socket with an ordinary network
+     cable and switch it on. The Pi's address service for it (dnsmasq) is NOT
+     running — the Printer line below says why — so the printer has no address
+     until that is put right: run the installer again with --printer-direct, or
+     set the printer to a fixed address by hand ($PRINTER_DHCP_ADDR, mask
+     $PRINTER_LINK_NETMASK). In the Console, add the receipt printer to this box
+     at $PRINTER_DHCP_ADDR:9100. Then create a booth station on this box, put
+     staff on the booth, publish the wheel."
 else
   PRINTER_STEP="  3. In the Console: add the receipt printer to this box at its network address,
      create a booth station on this box, put staff on the booth, publish the wheel."
