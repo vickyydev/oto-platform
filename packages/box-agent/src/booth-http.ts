@@ -115,6 +115,8 @@ function statusFor(code: BoothRefusalCode): number {
     case 'staff_required':
       return 403;
     case 'nothing_to_reprint':
+    // A print for a spin this booth holds no slip for (bench, 28 September).
+    case 'nothing_to_print':
       return 404;
   }
 }
@@ -231,7 +233,14 @@ export function createBoothHttp(options: BoothHttpOptions): (
             password: typeof body.password === 'string' ? body.password : '',
           };
         } else if (badge !== undefined) signIn.badge = badge;
-        else if (pin !== undefined) signIn.pin = pin;
+        else if (pin !== undefined) {
+          signIn.pin = pin;
+          // `{ mode: 'pin', pin, accountId }` from the television's pad, where
+          // the person was picked first (bench, 28 September): the PIN is
+          // checked against theirs alone.
+          const accountId = readString(body.accountId);
+          if (accountId !== undefined) signIn.accountId = accountId;
+        }
         const result = await booth.signIn(signIn);
         /**
          * A refused sign-in is 200 with `ok: false`, not 401.

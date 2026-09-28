@@ -1548,10 +1548,12 @@ export async function seed(db: Db = getDb()): Promise<void> {
    *
    * Reception rather than the administrator: the booth is worked by whoever is
    * looking after it, and this is also the account S2-07b's PIN management is
-   * demonstrated on. `2468` is a local-dev value in the same class as the
-   * seeded passwords — it is hashed with argon2id here, as every secret on
-   * this platform is, and a staging deployment that wants a different one sets
-   * it from the Console.
+   * demonstrated on. `24680` is a local-dev value in the same class as the
+   * seeded passwords — five digits, as every booth PIN is since 28 September
+   * — hashed with argon2id here, as every secret on this platform is, and a
+   * staging deployment that wants a different one sets it from the Console. A
+   * database seeded before then keeps the four-digit PIN it was given, which
+   * no booth accepts any more: set a new one from the Console there.
    */
   await db
     .insert(s.boothStaffAssignment)
@@ -1575,7 +1577,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
       operatorId,
       accountId: receptionAccountId,
       kind: 'pin',
-      secretHash: await hash('2468'),
+      secretHash: await hash('24680'),
       createdByAccountId: adminAccountId,
     });
   }

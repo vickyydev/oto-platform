@@ -5,9 +5,10 @@
  * and a printed voucher brings the family to the park. Everything between the
  * press and the paper happens here: the published wheel is read from the
  * box's cache, the prize is drawn on the box, the spin is written down before
- * anything animates, the code is minted, the voucher is queued for the
- * printer, and the facts go in the outbox for whenever the mall's internet
- * comes back.
+ * anything animates, the code is minted, the voucher's slip is saved for the
+ * printer — and printed when the page reveals the prize, not before the wheel
+ * moves (`print`) — and the facts go in the outbox for whenever the mall's
+ * internet comes back.
  *
  * **There is no cloud transport in this file, and that is the design** (D2).
  * `createBooth` takes no base URL, no `fetch`, no credential; it cannot reach
@@ -164,14 +165,25 @@ export interface BoothBranchContext {
  * function that records what it was asked to print.
  */
 export interface BoothPrintPort {
-  submit(request: {
-    id: string;
-    kind: 'booth_voucher';
-    job: RenderPrintJob;
-    stationId: string | null;
-    actionId: string | null;
-    copies: number;
-  }): Promise<BoothPrintSubmitOutcome>;
+  submit(request: BoothPrintPortRequest): Promise<BoothPrintSubmitOutcome>;
+  /**
+   * Hand the voucher's saved job to the print queue WITHOUT printing it, and
+   * keep the queue's retry tick off it until `until` (bench, 28 September):
+   * the agent passes `printing.hold`. The press calls it, so a page that
+   * never asks for the paper — a crash mid-spin — still gets its slip from
+   * the tick. Optional: a port without it prints only when asked.
+   */
+  hold?(request: BoothPrintPortRequest, until: Date): Promise<void>;
+}
+
+/** One voucher's slip, as the booth hands it to the print queue. */
+export interface BoothPrintPortRequest {
+  id: string;
+  kind: 'booth_voucher';
+  job: RenderPrintJob;
+  stationId: string | null;
+  actionId: string | null;
+  copies: number;
 }
 
 /** The part of a print outcome the booth reads. Structural, so the port is cheap to stand in for. */
@@ -196,6 +208,13 @@ export interface BoothStaffRecord {
   status: string;
   /** argon2id over the booth PIN. Null for somebody who has not been given one. */
   pinHash?: string | null;
+  /**
+   * When the PIN stops working, ISO 8601, as the Console set it (bench,
+   * 28 September). Null or absent: it does not expire. The platform stops
+   * sending a PIN once it is past this; between pulls the box refuses it
+   * from here, by its own corrected clock — see `signInInTurn`.
+   */
+  pinExpiresAt?: string | null;
   /** argon2id over the badge secret. Nothing writes this yet — see `signIn`. */
   badgeHash?: string | null;
   /** The short code a person types before their PIN. Not a secret. */
@@ -220,6 +239,29 @@ export interface BoothStaffRecord {
 export type BoothAccountVerdict =
   | { ok: true; accountId: string; displayName: string | null; staffCode: string | null }
   | { ok: false; reason: BoothSignInRefusal; retryAfterMs?: number };
+
+/**
+ * The PIN was right and its expiry, as the Console set it, has passed
+ * (bench, 28 September). The television says "This PIN has expired — ask a
+ * manager for a new one". The box's own reason beside the shared ones: only a
+ * PIN checked on the box can expire.
+ */
+export const BOOTH_PIN_EXPIRED = 'pin_expired';
+export type BoothSignInReason = BoothSignInRefusal | typeof BOOTH_PIN_EXPIRED;
+
+/**
+ * One person on this booth's staff list, as the television's staff pick
+ * shows them (bench, 28 September): `GET /booth/staff`. Names and codes
+ * only — never a hash, a phone or anything that signs anybody in. The
+ * account id is what the PIN pad sends back beside the PIN.
+ */
+export interface BoothStaffListItem {
+  accountId: string;
+  name: string | null;
+  code: string | null;
+  /** Whether the box holds a PIN for them. Without one the pad cannot sign them in. */
+  hasPin: boolean;
+}
 
 export interface BoothOptions {
   boxId: string;
@@ -374,23 +416,41 @@ export const BOOTH_STAFF_THROTTLE_SCOPE = 'booth_staff';
 /** How many press replies are kept in memory for a retry. See `spin`. */
 const REPLAY_LIMIT = 64;
 
+/** How many presses' slips the page can still ask to print. See `print`. */
+const PRESS_SLIPS_KEPT = 64;
+
 /**
- * How long a press, or a reprint, waits for its slip before it answers
- * (closing audit H1).
+ * How long the print a page asks for at the reveal, or a reprint, waits for
+ * its slip before it answers (closing audit H1; bench, 28 September).
  *
  * The page gives up on a call after six seconds (`REQUEST_TIMEOUT_MS` in
- * `apps/booth/src/booth/client.ts`) and retries a press once. A press used to
- * wait for the printer however long it took, and a printer slow to answer —
- * one that does not reply to the status questions the box asks before and
- * after every job — made that wait longer than the page's: the television
- * said "Booth not ready" while the slip came out. Three seconds is half the
- * page's patience, which leaves the other half for the press's own writes and
- * the network, and it is far longer than a press takes with a printer that
- * answers (92 to 159 ms, measured in the closing audit). Past it the answer
- * is `queued`, the television shows the code and its QR, and the print goes
- * on as it would have — see `answerWithin`.
+ * `apps/booth/src/booth/client.ts`). A press used to wait for the printer
+ * however long it took, and a printer slow to answer — one that does not
+ * reply to the status questions the box asks before and after every job —
+ * made that wait longer than the page's: the television said "Booth not
+ * ready" while the slip came out. Three seconds is half the page's patience,
+ * which leaves the other half for the box's own writes and the network, and
+ * it is far longer than a slip takes with a printer that answers (92 to
+ * 159 ms, measured in the closing audit). Past it the answer is `queued`, the
+ * television shows the code and its QR, and the print goes on as it would
+ * have — see `answerWithin`. A press no longer touches the printer at all
+ * (`BOOTH_PRINT_HOLD_MS`).
  */
 export const BOOTH_PRINT_WAIT_MS = 3_000;
+
+/**
+ * How long a press's slip is kept off the print queue's retry tick when the
+ * page has not asked for it (bench, 28 September).
+ *
+ * The slip is printed at the REVEAL: the press writes the spin and saves its
+ * print job, answers at once, and the page asks for the paper when the result
+ * card opens (`print`). The slip used to come out before the wheel moved, and
+ * a slow printer held the spin up. Thirty seconds is well past a spin and its
+ * reveal, so the tick — once a minute, on the heartbeat — never prints during
+ * the animation, and a page that never asks (a crash mid-spin) still gets its
+ * slip within about a minute and a half.
+ */
+export const BOOTH_PRINT_HOLD_MS = 30_000;
 
 /**
  * Two letters or digits: the prefix `mintBoothCode` can print, after it has
@@ -482,9 +542,8 @@ export const BOOTH_REFUSAL_CODES = [
    * This exact press was already recorded, and this process holds no record
    * of it to answer from: the box restarted since, or 64 newer presses have
    * pushed its answer out of memory. A retry that arrives while the press is
-   * still being answered — still writing, or still waiting on the printer —
-   * is not refused: it joins that press and gets its answer (closing audit
-   * H1; see `spin`).
+   * still being written is not refused: it joins that press and gets its
+   * answer (closing audit H1; see `spin`).
    */
   'duplicate_press',
   /**
@@ -495,6 +554,13 @@ export const BOOTH_REFUSAL_CODES = [
   'staff_required',
   /** A reprint with nothing to reprint: no voucher yet, or not that spin's. */
   'nothing_to_reprint',
+  /**
+   * The page asked for the paper of a spin this booth holds no slip for
+   * (bench, 28 September): not this booth's, from before a restart, or a
+   * press that had no printer to save a slip for. The page shows the code
+   * and its QR instead, as it does for any print that did not come out.
+   */
+  'nothing_to_print',
 ] as const;
 export type BoothRefusalCode = (typeof BOOTH_REFUSAL_CODES)[number];
 
@@ -564,6 +630,13 @@ export interface BoothHeartbeatReport {
 
 export interface BoothSignInRequest {
   pin?: string;
+  /**
+   * The person picked on the television's staff list, when the PIN came from
+   * the pad (bench, 28 September): the PIN is checked against theirs alone.
+   * Absent — a PIN typed on a keyboard — every allowed person is tried, as
+   * before.
+   */
+  accountId?: string;
   badge?: string;
   /**
    * A phone and password, checked by the cloud (SCRUM-223). Never held after
@@ -581,15 +654,22 @@ export interface BoothSignInResult {
   /**
    * Why an ACCOUNT sign-in was refused, when the reason is something the
    * person can act on (SCRUM-223): no internet, not on this booth, a role that
-   * may not sign in here. Absent for a wrong PIN or password, which is the
+   * may not sign in here — or a right PIN past its expiry (`pin_expired`,
+   * bench, 28 September). Absent for a wrong PIN or password, which is the
    * shape every PIN refusal has always had.
    */
-  reason?: BoothSignInRefusal;
+  reason?: BoothSignInReason;
 }
 
 export interface BoothReprintRequest {
   /** The spin whose voucher to print again. Absent: this booth's last one. */
   spinId?: string;
+  actionId?: string | null;
+}
+
+/** `POST /booth/print` — the paper for a press, asked for when its result card opens. */
+export interface BoothPrintRequest {
+  spinId: string;
   actionId?: string | null;
 }
 
@@ -618,6 +698,16 @@ export interface Booth {
    * http contract answers 404 for a booth without it.
    */
   reprint?(request: BoothReprintRequest): Promise<BoothReprintResponse>;
+  /**
+   * Print a press's slip, now (bench, 28 September): the page asks when the
+   * result card opens, and gets the press's answer again with what became of
+   * the paper, within `printWaitMs`. Once per spin — asking again answers the
+   * same and prints nothing more. Optional like `reprint`, for the same
+   * reason; the http contract answers 404 for a booth without it.
+   */
+  print?(request: BoothPrintRequest): Promise<SpinResponse>;
+  /** Who may sign in at this booth, for the television's staff pick. Names and codes only. */
+  staffList?(): Promise<BoothStaffListItem[]>;
   status(opts: { online: boolean }): Promise<BoothStatusReport>;
   heartbeat(): Promise<BoothHeartbeatReport | null>;
   /**
@@ -685,6 +775,27 @@ interface RecentVoucher {
   job: RenderPrintJob;
 }
 
+/**
+ * A press's slip, from the press to the paper (bench, 28 September): the job
+ * the press saved, the answer it gave, and what has become of the paper.
+ *
+ * In memory, like the press replies: a restart forgets it, the saved job is
+ * picked up from the store and printed by the queue's tick, and a page that
+ * asks after the restart is told there is nothing to print here (404) and
+ * shows the code and its QR.
+ */
+interface PressSlip {
+  stationId: string;
+  jobId: string;
+  job: RenderPrintJob;
+  /** The press's answer; the print call answers with it and the paper's state. */
+  response: SpinResponse;
+  /** What the print queue last said of the job, once it has said anything. */
+  state: BoothPrintState | null;
+  /** The page's print, once asked for: every later ask gets this answer. */
+  answer: Promise<SpinResponse> | null;
+}
+
 /** How many of the booth's last vouchers stay reprintable. */
 const RECENT_VOUCHERS_KEPT = 10;
 
@@ -708,8 +819,32 @@ function methodOf(credentialKind: string): BoothSignInMethod {
   return 'pin';
 }
 
-/** What `createBooth` builds: a `Booth` whose reprint is always there. */
-export type BoothModule = Booth & Required<Pick<Booth, 'reprint'>>;
+/**
+ * Whether a person's PIN is past its expiry at `nowMs` (bench, 28 September).
+ * Null or absent is a PIN that does not expire. A value that is not a time
+ * counts as past it: a PIN whose expiry cannot be read is refused rather than
+ * honoured for ever.
+ */
+function pinExpired(record: BoothStaffRecord, nowMs: number): boolean {
+  const at = record.pinExpiresAt;
+  if (at === null || at === undefined) return false;
+  const ms = Date.parse(at);
+  return !Number.isFinite(ms) || ms <= nowMs;
+}
+
+/** The staff pick's order: by name, then code; nameless people last. */
+function byName(a: BoothStaffListItem, b: BoothStaffListItem): number {
+  if (a.name === null || b.name === null) {
+    if (a.name !== b.name) return a.name === null ? 1 : -1;
+  } else {
+    const names = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    if (names !== 0) return names;
+  }
+  return (a.code ?? '').localeCompare(b.code ?? '');
+}
+
+/** What `createBooth` builds: a `Booth` whose reprint, print and staff list are always there. */
+export type BoothModule = Booth & Required<Pick<Booth, 'reprint' | 'print' | 'staffList'>>;
 
 export function createBooth(options: BoothOptions): BoothModule {
   const { boxId, store } = options;
@@ -777,8 +912,8 @@ export function createBooth(options: BoothOptions): BoothModule {
    *
    * **A promise, and it goes in when the press STARTS** (closing audit H1).
    * A retry therefore gets the answer whether it arrives after the press was
-   * answered or while it is still being written or waiting on the printer —
-   * it waits for the same promise. The answer used to go in only once the
+   * answered or while it is still being written — it waits for the same
+   * promise. The answer used to go in only once the
    * slip had printed, so a page that gave up on a slow printer and retried
    * met the durable guard below and was refused `duplicate_press`, while the
    * slip came out anyway. A press that is refused is taken back out, so a
@@ -804,6 +939,11 @@ export function createBooth(options: BoothOptions): BoothModule {
    * printer's hands, so asking after that is a new copy, as it always was.
    */
   const reprintsInFlight = new Map<string, Promise<BoothReprintResponse>>();
+  /**
+   * The slip of each recent press, by spin id, oldest first (bench,
+   * 28 September): what `print` prints when the page asks. See `PressSlip`.
+   */
+  const pressSlips = new Map<string, PressSlip>();
   /**
    * The sign-in attempt each station is working through; the next one waits
    * for it (closing audit M11). Holds a promise that never rejects, so one
@@ -1417,7 +1557,16 @@ export function createBooth(options: BoothOptions): BoothModule {
     const secret = request.badge ?? request.pin ?? '';
     const kind: 'badge' | 'pin' = request.badge !== undefined ? 'badge' : 'pin';
     const verify = options.verifySecret;
-    const candidates = eligibleStaff();
+    /**
+     * A PIN from the television's pad names the person it is for (bench,
+     * 28 September): picked on the staff list, then typed. Only their PIN is
+     * checked. Somebody not on this booth's list, or not active, leaves
+     * nobody to check, and the attempt is refused and counted like a wrong
+     * PIN — the throttle is the booth's either way.
+     */
+    const picked = kind === 'pin' && typeof request.accountId === 'string' ? request.accountId : null;
+    const candidates =
+      picked === null ? eligibleStaff() : eligibleStaff().filter((c) => c.accountId === picked);
     /**
      * Every candidate is checked, not the first that matches (closing audit
      * M10).
@@ -1449,16 +1598,31 @@ export function createBooth(options: BoothOptions): BoothModule {
       }
     }
 
-    if (matched.length > 1) {
+    /**
+     * A right PIN past its expiry signs nobody in (bench, 28 September). The
+     * Console sets how long a PIN lasts; the platform stops sending one once
+     * it is past that, and until this box's next pull the expiry sent beside
+     * the hash is what refuses it — by the box's corrected clock, the one the
+     * attempt was judged by. It is not counted towards the lock: the digits
+     * were right, and nothing is being guessed. And an expired PIN no longer
+     * makes a live one ambiguous: only live matches are weighed below.
+     */
+    const live = kind === 'pin' ? matched.filter((c) => !pinExpired(c, nowMs)) : matched;
+
+    if (live.length > 1) {
       note(
         'warn',
         'a sign-in matched more than one person on this booth, so nobody was signed in',
-        { kind, matches: matched.length },
+        { kind, matches: live.length },
       );
       return { ok: false };
     }
 
-    const person = matched[0];
+    const person = live[0];
+    if (!person && matched.length > 0) {
+      note('info', 'a booth sign-in was refused: the PIN has expired', { kind });
+      return { ok: false, reason: BOOTH_PIN_EXPIRED };
+    }
     if (!person) {
       const { record, retryAfterMs } = await countFailure(station.id, held, at);
       note('warn', 'a booth sign-in was refused', {
@@ -1498,6 +1662,25 @@ export function createBooth(options: BoothOptions): BoothModule {
     );
   }
 
+  /**
+   * Who the television's staff pick lists (bench, 28 September): exactly the
+   * people a sign-in here would try — this booth's list, active accounts —
+   * by name. Names and staff codes only, and whether the box holds a PIN for
+   * them; never a hash. A PIN past its expiry still counts as held, so the
+   * person picks their name and is told it has expired rather than that
+   * they have none.
+   */
+  async function staffList(): Promise<BoothStaffListItem[]> {
+    return eligibleStaff()
+      .map((record) => ({
+        accountId: record.accountId,
+        name: record.displayName ?? null,
+        code: record.staffCode ?? null,
+        hasPin: typeof record.pinHash === 'string' && record.pinHash !== '',
+      }))
+      .sort(byName);
+  }
+
   async function signOut(): Promise<void> {
     const station = options.station();
     if (!station) return;
@@ -1529,8 +1712,8 @@ export function createBooth(options: BoothOptions): BoothModule {
    * one key per press and sends it again when its first attempt goes
    * unanswered for six seconds. The press's own promise goes into `replay`
    * here, before anything is awaited, so the second arrival of a key — while
-   * the first is still writing, or still waiting on the printer, or after it
-   * has answered — waits for that same promise and gets that same answer.
+   * the first is still writing, or after it has answered — waits for that
+   * same promise and gets that same answer.
    * Nothing between the lookup and the insertion awaits (`press` runs to its
    * own first `await` and hands back its promise), so two arrivals of one key
    * cannot both miss it. `duplicate_press` is left for a key this process
@@ -1778,7 +1961,14 @@ export function createBooth(options: BoothOptions): BoothModule {
       issuedAtMs: timing.stampMs,
       staffLabel: onDutyNow?.label ?? null,
     });
-    const printJob = options.print ? slip : null;
+    /**
+     * Saved HELD (bench, 28 September): the slip is printed when the page
+     * reveals the prize (`print`), not now. Its retry time is the end of the
+     * hold, so the print queue's tick leaves it alone while the wheel turns —
+     * after a restart too, when the hold in the queue's memory is gone.
+     */
+    const heldUntil = new Date(Date.parse(timing.occurredAt) + BOOTH_PRINT_HOLD_MS);
+    const printJob = options.print ? { ...slip, nextAttemptAt: heldUntil.toISOString() } : null;
 
     /**
      * One transaction: the facts, the print job and the counters commit
@@ -1912,8 +2102,25 @@ export function createBooth(options: BoothOptions): BoothModule {
     lastSpinAt = timing.occurredAt;
     if (timing.believable) await noteTime(timing.occurredAt);
 
-    let printState: BoothPrintState = 'no_printer';
     const port = options.print;
+    /**
+     * The press answers at once (bench, 28 September): the prize, the code
+     * and `queued` — the slip is saved and nothing has touched a printer. It
+     * used to wait here for the paper, so the slip was out before the wheel
+     * moved and a slow printer held the spin up. The page asks for the paper
+     * when the result card opens (`print`).
+     */
+    const response: SpinResponse = {
+      spinId,
+      prizeIndex: outcome.index,
+      prizeId: outcome.prize.id,
+      configVersion: entry.version,
+      voucherCode,
+      expiresAt,
+      printState: printJob && port ? 'queued' : 'no_printer',
+      staffAccountId,
+      clockSuspect: timing.clockSuspect,
+    };
     if (printJob && port) {
       ownedPrintJobs.set(printJobId, {
         voucherId,
@@ -1922,27 +2129,105 @@ export function createBooth(options: BoothOptions): BoothModule {
         requestedByAccountId: null,
         stationId: station.id,
       });
-      // Waited on for `printWaitMs` at most; the print goes on after the
-      // answer if the printer is slower than that (closing audit H1).
-      printState = await answerWithin(
-        attemptPrint(port, printJobId, printJob.job, station.id, request.actionId ?? null),
-        { spinId, jobId: printJobId },
-      );
+      keepSlip({ stationId: station.id, jobId: printJobId, job: printJob.job, response, state: null, answer: null });
+      /**
+       * On the print queue's list now, held until the end of the hold, so a
+       * page that never asks — a crash mid-spin — still gets its slip from the
+       * queue's tick. Not awaited: the queue's first act after a boot is to
+       * read the card, and the answer to a press waits for nothing it need
+       * not. The row is on disk already, which is what a restart needs.
+       */
+      if (port.hold) {
+        const hold = port.hold.bind(port);
+        const held: BoothPrintPortRequest = {
+          id: printJobId,
+          kind: 'booth_voucher',
+          job: printJob.job,
+          stationId: station.id,
+          actionId: request.actionId ?? null,
+          copies: 1,
+        };
+        void Promise.resolve()
+          .then(() => hold(held, heldUntil))
+          .catch((err: unknown) => {
+            note('warn', 'the voucher could not be handed to the print queue; it waits on the card', {
+              jobId: printJobId,
+              err: String(err),
+            });
+          });
+      }
     }
 
     // `spin` put this press's promise in `replay` when it started; the answer
     // is kept by that, not by anything here.
-    return {
-      spinId,
-      prizeIndex: outcome.index,
-      prizeId: outcome.prize.id,
-      configVersion: entry.version,
-      voucherCode,
-      expiresAt,
+    return response;
+  }
+
+  /** Keep a press's slip for `print`, the last `PRESS_SLIPS_KEPT` only. */
+  function keepSlip(slip: PressSlip): void {
+    pressSlips.set(slip.response.spinId, slip);
+    while (pressSlips.size > PRESS_SLIPS_KEPT) {
+      const oldest = pressSlips.keys().next();
+      if (oldest.done) break;
+      pressSlips.delete(oldest.value);
+    }
+  }
+
+  /**
+   * What the print queue said of a press's slip — printed by its tick after
+   * the hold, say, before the page asked — so a later ask answers that and
+   * prints nothing more.
+   */
+  function noteSlip(outcome: BoothPrintSubmitOutcome): void {
+    for (const slip of pressSlips.values()) {
+      if (slip.jobId !== outcome.id) continue;
+      slip.state = printStateFor(outcome.status);
+      return;
+    }
+  }
+
+  /**
+   * Put a press's slip on paper, now (bench, 28 September).
+   *
+   * The page asks when the result card opens, so the slip comes out as the
+   * prize is revealed rather than before the wheel moves. The answer is the
+   * press's own answer again, with what became of the paper — `printed`,
+   * `queued` for a printer that has not produced it within `printWaitMs`, or
+   * `failed` — which is what the card decides on: the code and its QR go on
+   * the television whenever the answer is not `printed`.
+   *
+   * **Once per spin.** The first ask is kept, and every later one gets the
+   * same answer and prints nothing more. A slip the queue's tick already
+   * printed, after the hold, is answered from what the queue said of it.
+   * A spin this booth holds no slip for — another booth's, one from before a
+   * restart, or a press with no printer to save one for — is refused
+   * `nothing_to_print`, and the page shows the code.
+   */
+  async function print(request: BoothPrintRequest): Promise<SpinResponse> {
+    const station = options.station();
+    const slip = pressSlips.get(request.spinId);
+    if (!station || !slip || slip.stationId !== station.id) {
+      throw new BoothRefusal('nothing_to_print', 'This booth holds no slip for that spin');
+    }
+    if (slip.answer) return slip.answer;
+    const answered = (printState: BoothPrintState): SpinResponse => ({
+      ...slip.response,
       printState,
-      staffAccountId,
-      clockSuspect: timing.clockSuspect,
-    };
+    });
+    const port = options.print;
+    const ended = slip.state !== null && slip.state !== 'queued' ? slip.state : null;
+    if (ended !== null || !port) {
+      slip.answer = Promise.resolve(answered(ended ?? 'no_printer'));
+      return slip.answer;
+    }
+    // The saved job, taken off its hold and attempted now. Waited on for
+    // `printWaitMs` at most; the print goes on after the answer if the
+    // printer is slower than that (closing audit H1).
+    slip.answer = answerWithin(
+      attemptPrint(port, slip.jobId, slip.job, slip.stationId, request.actionId ?? null),
+      { spinId: request.spinId, jobId: slip.jobId },
+    ).then(answered);
+    return slip.answer;
   }
 
   /**
@@ -2758,8 +3043,11 @@ export function createBooth(options: BoothOptions): BoothModule {
     status,
     heartbeat,
     ownsPrintJob,
+    print,
+    staffList,
     async reportPrint(outcome) {
       if (outcome.deviceId) lastPrintDeviceId = outcome.deviceId;
+      noteSlip(outcome);
       await reportPrint(outcome);
     },
     noteCloudTime: noteTime,

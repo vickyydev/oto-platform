@@ -108,9 +108,9 @@ export const fileObject = core.table(
  *
  * `password` is the phone-and-password sign-in the POS has had since Sprint 1.
  * `pin` and `badge` are what a booth takes (S2-07a): the staff overlay on a
- * mall booth asks for four digits or a scanned badge, because a person
- * standing at a wheel in a shopping centre is not going to type a password on
- * a television.
+ * mall booth asks for a PIN — exactly five digits since 28 September — or a
+ * scanned badge, because a person standing at a wheel in a shopping centre is
+ * not going to type a password on a television.
  */
 export const CREDENTIAL_KINDS = ['password', 'pin', 'badge'] as const;
 export type CredentialKind = (typeof CREDENTIAL_KINDS)[number];
@@ -169,6 +169,18 @@ export const credential = core.table(
     lastUsedAt: timestamp('last_used_at', { withTimezone: true, mode: 'date' }),
     revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
     revokedReason: text('revoked_reason'),
+    /**
+     * When this secret stops working (migration 0027). Null never expires.
+     *
+     * Set on a booth PIN from the Console (owner, 28 September). An expired
+     * PIN is still `active` — nobody withdrew it — and opens nothing: the
+     * platform stops handing its hash to boxes once the moment has passed
+     * (`livePinsByAccount` in `apps/api/src/services/booth-admin.ts`), and a
+     * box refuses it between pulls from the `pinExpiresAt` it was given beside
+     * the hash, so a booth that is offline across the moment still refuses it.
+     * Withdrawing it is still `active = false` with a reason, as above.
+     */
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
     ...timestamps,
   },
   (t) => [

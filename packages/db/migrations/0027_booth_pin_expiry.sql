@@ -1,0 +1,17 @@
+-- Booth PINs (owner, 28 September) — a PIN can be given an end.
+--
+-- A booth PIN is now exactly five digits, typed in the Console or drawn by the
+-- platform, and an administrator may say when it stops working. The length is
+-- the api's and the box's to refuse; the end has to be stored, and it is stored
+-- on the PIN's own row: core.credential.expires_at, null for a PIN that never
+-- expires, which is what every PIN set before this migration is.
+--
+-- An expired PIN is not withdrawn — active stays true and revoked_at null, so
+-- credential_revocation_check and the one-live-PIN-per-person index read it as
+-- they read any live row — it simply opens nothing. The platform stops handing
+-- its hash to boxes once the moment has passed (the staff cache scope), and a
+-- box refuses it between pulls from the pinExpiresAt sent beside the hash.
+--
+-- One nullable column added to an existing table; no row is rewritten and no
+-- existing PIN changes meaning. Safe to apply on a live database.
+ALTER TABLE "core"."credential" ADD COLUMN "expires_at" timestamp with time zone;
