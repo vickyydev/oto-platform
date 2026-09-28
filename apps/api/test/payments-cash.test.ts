@@ -389,3 +389,85 @@ describe('two tills, one press', () => {
     expect(row!.receiptNumber).toBeNull();
   });
 });
+
+describe('money reserved by an unresolved payment', () => {
+  const startCard = (saleId: string, amountSatang?: number) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: '/payments/attempts',
+      headers: { cookie },
+      payload: { saleId, tender: 'card', actionId: newId(), amountSatang },
+    });
+
+  it('opens only one full-balance terminal tender from two distinct simultaneous presses', async () => {
+    const saleId = newId();
+    await commit(saleId);
+    const answers = await Promise.all([startCard(saleId), startCard(saleId)]);
+    expect(answers.map((answer) => answer.statusCode).sort()).toEqual([200, 409]);
+    expect(answers.find((answer) => answer.statusCode === 409)!.json().error.code)
+      .toBe('PAYMENT_IN_FLIGHT');
+    const attempts = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    expect(attempts).toHaveLength(1);
+    const commands = await ctx.db.select().from(boxCommand).where(eq(boxCommand.kind, 'terminal_sale'));
+    expect(commands.filter((command) => (command.payload as { attemptId?: string }).attemptId === attempts[0]!.id))
+      .toHaveLength(1);
+  });
+
+  it.each(['created', 'sent_to_terminal', 'unknown', 'inquiring', 'awaiting_staff_confirmation'] as const)(
+    'does not record cash or manual money against the balance reserved by %s',
+    async (status) => {
+      const saleId = newId();
+      await commit(saleId);
+      const opened = await startCard(saleId);
+      expect(opened.statusCode).toBe(200);
+      await ctx.db.update(paymentAttempt).set({ status }).where(eq(paymentAttempt.id, opened.json().attempt.id));
+      const kicksBefore = (await drawerCommands()).length;
+      const cash = await finalise(saleId, { method: 'cash', kind: 'cash', actionId: newId() });
+      expect(cash.statusCode).toBe(409);
+      expect(cash.json().error.code).toBe('PAYMENT_IN_FLIGHT');
+      const manual = await ctx.app.inject({
+        method: 'POST', url: '/payments/manual', headers: { cookie },
+        payload: { saleId, approvalCode: 'TESTONLY', tid: 'TEST', actionId: newId() },
+      });
+      expect(manual.statusCode).toBe(409);
+      expect(manual.json().error.code).toBe('PAYMENT_IN_FLIGHT');
+      expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(1);
+      expect((await drawerCommands()).length).toBe(kicksBefore);
+      const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+      expect(row!.status).toBe('tendering');
+      expect(row!.receiptNumber).toBeNull();
+    },
+  );
+
+  it('allows only the unreserved half and keeps the sale open until the other payment resolves', async () => {
+    const saleId = newId();
+    const owed = (await commit(saleId)).json().outstandingSatang as number;
+    const reserved = Math.floor(owed / 2);
+    const first = await startCard(saleId, reserved);
+    expect(first.statusCode).toBe(200);
+    const extra = await finalise(saleId, { method: 'cash', kind: 'cash', amountSatang: owed - reserved + 1 });
+    expect(extra.statusCode).toBe(409);
+    const remaining = await finalise(saleId, {
+      method: 'cash', kind: 'cash', amountSatang: owed - reserved, actionId: newId(),
+    });
+    expect(remaining.statusCode).toBe(200);
+    expect(remaining.json().finalised).toBe(false);
+    expect(remaining.json().outstandingSatang).toBe(reserved);
+    await ctx.db.update(paymentAttempt).set({ status: 'declined' }).where(eq(paymentAttempt.id, first.json().attempt.id));
+    const completed = await finalise(saleId, { method: 'cash', kind: 'cash', actionId: newId() });
+    expect(completed.statusCode).toBe(200);
+    expect(completed.json().finalised).toBe(true);
+    expect(completed.json().outstandingSatang).toBe(0);
+  });
+
+  it.each(['declined', 'cancelled', 'not_found'] as const)('releases a %s reservation', async (status) => {
+    const saleId = newId();
+    await commit(saleId);
+    const first = await startCard(saleId);
+    expect(first.statusCode).toBe(200);
+    await ctx.db.update(paymentAttempt).set({ status }).where(eq(paymentAttempt.id, first.json().attempt.id));
+    const cash = await finalise(saleId, { method: 'cash', kind: 'cash', actionId: newId() });
+    expect(cash.statusCode).toBe(200);
+    expect(cash.json().finalised).toBe(true);
+  });
+});

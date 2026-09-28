@@ -1,5 +1,43 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 29 September 2026 - Sprint 2 payments resumed
+
+OTO Park has finished the physical booth bench test and shared the demo.
+Resume the remaining Sprint 2 software in the plan's order. The active Jira
+sprint is id 3, named Sprint 2 - Complete build. Parallel work is authorised.
+Write new history and progress comments about OTO Park and the park.
+
+Branch `fix/payment-prerequisites` starts at main `a4a79d7`. The first batch is
+SCRUM-391, SCRUM-388 and SCRUM-382; all three have starting comments.
+SCRUM-388 moves to Testing on this push; 391 and 382 remain In Progress.
+SCRUM-388 adds one common sale-locked reservation check in
+`services/payments/attempt.ts`. Every writer reserves pending money before
+requesting another payment; failed attempts release it, while the paid-only
+outstanding calculation stays unchanged. The existing cash suite passes 21
+tests, including two distinct simultaneous presses, all five unresolved
+statuses, cash/manual refusals and a split remainder; all 22 existing offline
+replay tests also pass. API typecheck, changed-file lint and independent
+review pass. Staging still has the previous release.
+
+SCRUM-391 is in parallel implementation in payment routing, terminal/gateway
+services and their existing tests. SCRUM-382 follows this checkpoint in the
+common method resolver. Keep these as separate ticket commits and deploy the
+batch after review and green CI. Each push needs a ticket status change and
+progress comment. Deployed still requires a named staging screenshot.
+
+After these prerequisites, resume SCRUM-206 Slice F. Its UI must use the
+authoritative sale and a distinct stable identity per deliberate split tender;
+an approved electronic attempt must not be charged again through cash-style
+finalise. Offline browser-to-box transport is missing (SCRUM-269/285), and the
+independent customer display route belongs to S2-08. Do not claim complete
+offline or cross-device acceptance from an online same-page demonstration.
+Real 2C2P sandbox proof requires credentials; the existing simulator is usable.
+
+Unrelated `render.yaml`, `services/`, `output/` and
+`apps/pos/src/components/merch/MerchCustomerDisplay.tsx` remain excluded.
+Do not print secret values. The completed booth and Pi release below are
+historical evidence; no physical booth configuration has been changed.
+
 ## STOP POINT - 28 September 2026, evening - bench round 1 deployed
 
 23:23 follow-up: the owner reports the physical Pi update and bench testing work.

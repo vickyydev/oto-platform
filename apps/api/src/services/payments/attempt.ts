@@ -1,6 +1,11 @@
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import { paymentAttempt, paymentMethod, type PaymentMethod, type PaymentProvider } from '@oto/db';
-import { newId, type PaymentAttemptStatus, type PaymentAttemptView } from '@oto/shared';
+import { paymentAttempt, paymentMethod, sale, type PaymentMethod, type PaymentProvider } from '@oto/db';
+import {
+  newId,
+  PAYMENT_ATTEMPT_TERMINAL_STATUSES,
+  type PaymentAttemptStatus,
+  type PaymentAttemptView,
+} from '@oto/shared';
 import { errors } from '../../lib/errors';
 import type { Exec, Tx } from '../tx';
 
@@ -133,6 +138,42 @@ export interface OpenAttemptInput {
  * money" instead of an error at a counter.
  */
 export async function openAttempt(tx: Tx, input: OpenAttemptInput): Promise<AttemptRow> {
+  if (input.saleId) {
+    // All tender writers reserve under the same sale lock before requesting money.
+    const [saleRow] = await tx
+      .select()
+      .from(sale)
+      .where(and(eq(sale.id, input.saleId), eq(sale.operatorId, input.operatorId)))
+      .for('update')
+      .limit(1);
+    if (!saleRow) throw errors.notFound('Sale not found');
+    const attempts = await tx
+      .select({ amountSatang: paymentAttempt.amountSatang, status: paymentAttempt.status })
+      .from(paymentAttempt)
+      .where(eq(paymentAttempt.saleId, saleRow.id));
+    let taken = 0;
+    let reserved = 0;
+    for (const attempt of attempts) {
+      if (TAKEN.includes(attempt.status)) taken += attempt.amountSatang;
+      else if (!PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(attempt.status)) {
+        reserved += attempt.amountSatang;
+      }
+    }
+    const availableSatang = saleRow.grossSatang - taken - reserved;
+    if (input.amountSatang > availableSatang) {
+      if (reserved > 0) {
+        throw errors.conflict(
+          'PAYMENT_IN_FLIGHT',
+          'A payment is still waiting for an answer. Resolve it before charging this balance again.',
+          { availableSatang, reservedSatang: reserved },
+        );
+      }
+      throw errors.badRequest('That tender is more than this sale still owes', {
+        amountSatang: input.amountSatang,
+        outstandingSatang: availableSatang,
+      });
+    }
+  }
   const [row] = await tx
     .insert(paymentAttempt)
     .values({

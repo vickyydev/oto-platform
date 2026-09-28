@@ -1,5 +1,30 @@
 # Current status - read this first when resuming
 
+_Last updated: 2026-09-29 - Sprint 2 payment prerequisites resumed._
+
+OTO Park has completed the physical Lucky Wheel bench test and shared the
+walkthrough. Sprint 2 now resumes in the documented order: SCRUM-391 (QR
+routing), SCRUM-388 (pending money reservation), SCRUM-382 (unavailable
+tenders), then SCRUM-206 Slice F across the four tills.
+
+Work is on `fix/payment-prerequisites`, based on main `a4a79d7`. SCRUM-388
+now checks every new tender under the sale lock: accepted money and unresolved
+attempts leave only the unreserved balance available. Declined, cancelled and
+not-found attempts release their reservation. Outstanding remains the amount
+actually unpaid, so a pending attempt cannot close a sale. All 21 existing
+cash-suite tests and 22 offline replay tests pass, including simultaneous
+presses and cash/manual bypass. API typecheck, changed-file lint and an
+independent money/locking review pass. This change is not deployed yet.
+
+SCRUM-391 is being implemented in parallel; SCRUM-382 follows the reservation
+checkpoint. SCRUM-388 moves to Testing on this push; 391 and 382 remain
+In Progress in active sprint id 3, Sprint 2.
+Slice F remains unbuilt. Its complete offline and separate-display acceptance
+also needs the existing SCRUM-269/285 and S2-08 seams. Real 2C2P sandbox
+confirmation still needs credentials; simulator proof can proceed.
+
+## Historical checkpoint - 28 September
+
 _Last updated: 2026-09-28, 23:23 Bangkok - physical bench walkthrough captured._
 
 The owner reports the physical Pi update is working. A live Console inspection
