@@ -1,0 +1,20 @@
+{
+  "stagingCommit": "b9d68e3",
+  "booth": "Booth 2 (proof)",
+  "printer": "Simulated receipt printer",
+  "spinState": "queued",
+  "revealState": "printed",
+  "delayMs": 6651,
+  "resultVisible": true,
+  "retryState": "printed",
+  "unknownSpinStatus": 404,
+  "buttonPinSignIn": "passed",
+  "pinGenerateSetExpiryAndLength": "passed",
+  "ledgerPrint": "printed",
+  "csv": "passed",
+  "temporarySetupRestored": true,
+  "pinRemovalConfirmed": true,
+  "ciRun": 36432299165,
+  "releaseFile": "oto-box-0.1.0-b9d68e3.tgz",
+  "releaseSha256": "ab4f98cff2408f9ac8f5f6b610e82bb46155d52fd27d43e5654d9bce455b3a0d"
+}

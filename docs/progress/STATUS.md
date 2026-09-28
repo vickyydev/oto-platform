@@ -1,40 +1,46 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-28, evening - bench round 1 implemented on feat/bench-round-1._
+_Last updated: 2026-09-28, 21:25 Bangkok - bench round 1 deployed._
 
-Four parts are complete on the work branch: print at reveal (8df6482), button-only
-staff sign-in (94042b3), exactly five-digit PIN management (652d933), and the Console
-Vouchers ledger, per-booth Spins panel and six-step setup checklist (this checkpoint).
-Sprint 3 tasks SCRUM-448 through SCRUM-451 are linked to SCRUM-198.
+Bench round 1 WORKS on staging. Four feature commits are on main:
+- SCRUM-448: `8df6482`, print when the result is revealed.
+- SCRUM-449: `94042b3`, button-only staff selection, five-digit pad and staff menu.
+- SCRUM-450: `652d933`, five-digit PIN set/generate/expiry/remove, migration 0027.
+- SCRUM-451: `b9d68e3`, Vouchers ledger/CSV, booth Spins and setup checklist.
 
-Existing checks passed: box/booth/API tests for the press and sign-in changes;
-97 PIN/sync API cases; 157 voucher/booth API cases; 34 health/sync/route-guard cases;
-7 Console booth setup cases; typecheck and lint in the touched packages.
-Migration 0027 matches its snapshot and the Console production build passes.
-A disposable-database manual check exercised the ledger, CSV, Spins, branch scope,
-and date refusal. Counter issue rows do not record an issuing station, which the
-ledger states explicitly. Existing four-digit PINs must be replaced in the Console.
+The stopped `wip/bench-round-1` remains intact. Its useful changes were reviewed
+and completed from main `5c0eb91`, rather than merging the unchecked branch.
+All four tickets are in sprint id 3, linked to SCRUM-198, and Deployed with
+named staging screenshots attached (attachments 10841 through 10848).
 
-A manual API-to-box PIN check now passes generation, exact length, expiry and removal;
-the cache-to-booth mapping carries pinExpiresAt. The 26 existing agent cache/offline/runner
-cases and agent typecheck/lint also pass.
+[CI 36432299165](https://github.com/vickyydev/oto-platform/actions/runs/36432299165)
+is green, including typecheck, lint, existing tests, migration replay, builds,
+Pi packaging and Console browser checks. No new test suite was added.
+API, POS, Console, Launcher and Booth are live on `b9d68e3` after one deployment;
+the OTO App remains on `c416065`. The final documentation push skips deployment.
 
-The full CI run found one remaining four-digit offline-cache fixture. It now uses
-five digits and its seven existing cases pass. The correction is folded into the PIN
-commit; no production code changed for this finding.
+The staging proof used Booth 2 (proof) and a simulated receipt printer. Staff
+selection and all five PIN digits used only Space gestures. The spin returned
+queued, and the print call arrived 6,651 ms later with the result visible; it
+printed, repeated safely, and refused an unknown spin with 404. Five-digit PIN
+generation, setting, expiry storage, invalid-length refusal and removal passed.
+The same printed voucher appeared in Spins, Vouchers and CSV. Temporary booth,
+staff, PIN and screen settings were restored. Screenshots and the measured report
+are in [bench-round-1](../qa/bench-round-1/README.md).
 
-No deployment from this round yet. Next: land the four commits together, await green
-CI and all five staging services, attach staging screenshots before Deployed, then
-verify and place the CI-packed Pi release and checksum on the Desktop.
+The CI-packed `oto-box-0.1.0-b9d68e3.tgz` and its `.tgz.sha256` are on the Desktop.
+Both the download and Desktop copy matched SHA-256:
+`ab4f98cff2408f9ac8f5f6b610e82bb46155d52fd27d43e5654d9bce455b3a0d`
+The previous Desktop release pair is in `old-oto-box-releases`.
 
-> **Resuming?** Read **`SESSION_HANDOVER.md`** first — its block "2026-09-24 —
-> closing S2-09", then "State at the end of 2026-09-23". Together they carry the
-> live commit on every service, what landed, what is
-> in flight, every open defect with its key, and the recommended next order. The
-> ticket-by-ticket detail for today is `TICKET_REGISTER_2026-09-23.md`. The
-> precise sprint checkpoint is in `SPRINT_2_PROGRESS.md` (Status block first).
-> The technical plan an agent follows is `../architecture/DEVELOPMENT_PLAN.md`;
-> the tickets are in `SPRINT_2_PLAN.md`.
+Next is the owner's physical Pi update and bench check using
+[PI_BOOTH.md, Update](../ops/PI_BOOTH.md#7-checking-and-fixing). The physical Pi was not
+updated by this session. Existing four-digit booth PINs must be replaced with
+five-digit PINs through the Console. Counter-issued rows do not record an issuing
+station in the existing table; the ledger says so rather than inventing one.
+
+The newest STOP POINT in SESSION_HANDOVER.md is authoritative. The sections below
+retain the earlier sprint background; their dated figures are historical.
 
 ## Where we are
 
@@ -134,8 +140,8 @@ Render project **OTO Platform** in the Oto dev workspace, environment `staging`:
 Postgres 16, and six services — `oto-api-staging`, `oto-pos-staging`,
 `oto-console-staging`, `oto-launcher-staging`, `oto-booth-staging`,
 `oto-app-staging`. All six auto-deploy on a push to `main`, but only once the
-GitHub checks are green. Tonight the first five are live at **`d435db4`** (21:01) and
-`oto-app-staging` at `16c621a`, which deploys only on its own files. The full account is
+GitHub checks are green. On 28 September at 21:25 Bangkok the first five are live
+at **`b9d68e3`** and `oto-app-staging` at `c416065`, which deploys only on its own files. The full account is
 `DEPLOYMENT_STAGING.md`; the topology is `../architecture/DEPLOYMENT_TOPOLOGY.md`.
 
 Two rules that cost time today, now recorded in memory `oto-render-staging`:

@@ -1,42 +1,56 @@
 # Handover - where this is, and what to do next
 
-## STOP POINT - 28 September 2026, evening - bench round 1 ready to land
+## STOP POINT - 28 September 2026, evening - bench round 1 deployed
 
-Work is on feat/bench-round-1, based on main 5c0eb91. The stopped wip/bench-round-1
-branch remains intact. Its useful pieces were reviewed and completed in four parts:
-- SCRUM-448: 8df6482, print at reveal, held 30-second fallback, idempotent reveal call.
+The round is complete on main. `wip/bench-round-1` is preserved; useful pieces
+were reviewed and completed from main 5c0eb91 on feat/bench-round-1. The four
+feature commits are:
+- SCRUM-448: 8df6482, print at reveal, 30-second held-job fallback, idempotent print.
 - SCRUM-449: 94042b3, button gestures, assigned staff list, five-digit pad and menu.
 - SCRUM-450: 652d933, set/generate/expiry/remove PIN, migration 0027, pinExpiresAt cache.
-- SCRUM-451: this checkpoint, Vouchers ledger/CSV, booth Spins and setup checklist.
+- SCRUM-451: b9d68e3, Vouchers ledger/CSV, booth Spins and six-step setup checklist.
 
-The first three commits were rewritten locally to include their existing test
-adjustments; the feature branch push uses a lease against its previous 31f81f1 tip.
-No new test suite. Checks passed: the existing box/booth press and staff cases,
-97 PIN/sync API cases, 157 voucher/booth API cases, 34 health/sync/route-guard cases,
-7 Console browser setup cases, touched-package typecheck/lint and Console build.
-Migration 0027 matches its snapshot. A manual disposable-database probe checked the
-new ledger, CSV, Spins, branch guard and invalid-date refusal, then was removed.
+All four tickets are Deployed in sprint id 3 and linked in comments to SCRUM-198.
+Staging attachments 10841-10848 are named in their completion comments. Screenshots
+and the measured result are in docs/qa/bench-round-1. Main has a final docs-only
+checkpoint after the four feature commits, with [skip render] to keep one deploy.
 
-The ledger includes booth, counter and imported vouchers and shows only code last4.
-Counter issue rows have no issuing station in the existing table; the page says so.
-Its totals follow all selected filters and CSV exports the filtered range, not a page.
-The booth checklist reads the saved draft, staff and live status; panels follow its order.
-Existing four-digit PINs must be replaced through the Console before using this release.
+CI 36432299165 passed on b9d68e3de1db3f4e6629d12595c1188150dbeaf8:
+typecheck, lint, migration replay twice, tests, builds, Pi scripts/package and
+Console browser checks. No new test suite. Local verification used the existing
+touched-file tests; disposable manual probes also checked ledger/CSV/Spins branch
+scope and invalid dates, and API-to-box PIN generation, exact length, expiry and
+removal. Migration 0027 matches its snapshot. CI's old four-digit fixtures were
+corrected inside the PIN commit before this release; the earlier tips never deployed.
 
-A manual PIN check found and fixed the agent mapping that dropped pinExpiresAt.
-Generation, exact length, expiry reaching the box and removal all pass, with no
-secrets recorded. The 26 existing cache/offline/runner cases and agent checks pass.
+One staging deployment: API, POS, Console, Launcher and Booth are live on b9d68e3;
+OTO App is unchanged on c416065. The real staging proof used the published Booth 2
+(proof) on the virtual box with its simulated receipt printer. It selected staff
+and entered all five PIN digits using Space only, opened the staff menu by holding,
+and spun on the first press. The press answered queued; print was requested 6,651 ms
+later while the result card was visible and answered printed. A duplicate returned
+the same outcome; an unknown spin returned 404. The code and QR were hidden after
+printing. PIN generation/set/expiry storage/invalid-length refusal/removal passed.
+Spins, Vouchers and CSV contained the printed voucher and issuing staff.
 
-The full CI run found a remaining four-digit fixture in box-cache-survives.test.ts.
-Its seven existing cases pass with five digits. This is folded into the PIN commit,
-keeping four feature commits. The previous round tip never passed CI or deployed.
+Temporary station assignments, manager assignment, PIN and screen credential were
+restored or revoked after the proof. The physical Pi and FWBooth1 were not changed.
+Two proof spins remain as normal staging records (the first capture had a browser
+selector issue; the completed repeat produced verification.json).
 
-Next: await green CI and the single staging deployment of the corrected four commits; wait for green CI and all five Render
-services on that commit. Attach staging screenshots to the four tickets before moving
-them to Deployed. Download the CI Pi artifact, verify its checksum and put the archive
-and checksum on the Desktop, moving older releases to old-oto-box-releases. Finish
-with a docs-only checkpoint and push. No staging evidence or new Pi release yet.
-Unrelated render.yaml, services/ and MerchCustomerDisplay.tsx remain excluded.
+The CI artifact, not a local build, was downloaded from run 36432299165. Desktop:
+- oto-box-0.1.0-b9d68e3.tgz
+- oto-box-0.1.0-b9d68e3.tgz.sha256
+SHA-256: ab4f98cff2408f9ac8f5f6b610e82bb46155d52fd27d43e5654d9bce455b3a0d
+The download and Desktop copy both matched. The older 08ffe66 pair was moved into
+Desktop/old-oto-box-releases alongside the previously archived releases.
+
+Next: the owner updates the Pi using PI_BOOTH.md's Update step, without --api,
+then checks the physical button and printer. Existing four-digit booth PINs must
+be replaced through the Console. Counter-issued vouchers have no issuing station
+in the existing table; the ledger labels that absence. No other bench-round work
+is outstanding. Unrelated render.yaml, services/ and MerchCustomerDisplay.tsx
+remain excluded and uncommitted.
 
 ## 2026-09-24, afternoon — the Lucky Wheel booth is the first priority
 
