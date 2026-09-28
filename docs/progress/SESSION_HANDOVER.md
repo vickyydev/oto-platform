@@ -2,6 +2,28 @@
 
 ## STOP POINT - 28 September 2026, evening - bench round 1 deployed
 
+23:23 follow-up: the owner reports the physical Pi update and bench testing work.
+Read-only staging inspection at 23:12-23:16 verified FortuneWheelBox / booth-1
+(hostname booth), FWBooth1 / B1, Booth Voucher Printer reachable with paper OK,
+and published/running wheel version 5 with seven active prizes. The 28 September
+Spins and Vouchers totals agree: 24 spins, 24 printed, zero redeemed. Nine rows
+name staff; 15 earlier rows are unattributed and one is clock-uncertain.
+Three prints at 22:57 occurred between failed cloud calls; outcomes ending 3NR3,
+BPJM and SE26 are now in the cloud ledger. Recent heartbeats show outbox zero.
+A single draft sort-order value for the 300 THB prize remains different from
+version 5; nothing was saved or published. Three gift prizes lack cost entries.
+
+The 15-step numbered walkthrough is in docs/qa/booth-walkthrough, with a PDF,
+numbered PNGs and ZIP in Desktop/OTO Booth Walkthrough. Every PDF page was
+rendered and visually reviewed. Forms were opened only for reference and
+cancelled; a diagnostic log refresh was the only box command. No new spins,
+configuration changes, application code, tests or deployment. This is a
+documentation follow-up under SCRUM-451, linked to SCRUM-198. Next is the owner's
+video of the physical press, reveal, print and matching Console voucher row.
+Five named staging screenshots are attached to SCRUM-451 as 10849-10853;
+the progress comment records the evidence and the ticket is Deployed again.
+The earlier deployment checkpoint below remains historical evidence.
+
 The round is complete on main. `wip/bench-round-1` is preserved; useful pieces
 were reviewed and completed from main 5c0eb91 on feat/bench-round-1. The four
 feature commits are:
@@ -45,9 +67,8 @@ SHA-256: ab4f98cff2408f9ac8f5f6b610e82bb46155d52fd27d43e5654d9bce455b3a0d
 The download and Desktop copy both matched. The older 08ffe66 pair was moved into
 Desktop/old-oto-box-releases alongside the previously archived releases.
 
-Next: the owner updates the Pi using PI_BOOTH.md's Update step, without --api,
-then checks the physical button and printer. Existing four-digit booth PINs must
-be replaced through the Console. Counter-issued vouchers have no issuing station
+At the earlier 21:25 checkpoint, the Pi update and physical checks remained for
+the owner; the 23:23 follow-up above supersedes that next step. Counter-issued vouchers have no issuing station
 in the existing table; the ledger labels that absence. No other bench-round work
 is outstanding. Unrelated render.yaml, services/ and MerchCustomerDisplay.tsx
 remain excluded and uncommitted.

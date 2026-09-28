@@ -1,6 +1,17 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-28, 21:25 Bangkok - bench round 1 deployed._
+_Last updated: 2026-09-28, 23:23 Bangkok - physical bench walkthrough captured._
+
+The owner reports the physical Pi update is working. A live Console inspection
+at 23:12-23:16 confirmed FortuneWheelBox (booth-1), FWBooth1 (prefix B1), the
+reachable Booth Voucher Printer, and published/running wheel configuration 5
+with seven active prizes. Today's booth totals match: 24 spins, 24 printed,
+zero redeemed. Three 22:57 prints continued while cloud calls failed; all three
+are now in the cloud ledger and the box's outbox is zero. Fifteen earlier spins
+are unattributed and one has an uncertain-clock flag. A pending draft sort-order
+value was left unchanged. See the [15-step walkthrough](../qa/booth-walkthrough/README.md),
+also saved on the Desktop as PDF and numbered screenshots. This follow-up under
+SCRUM-451 changes only documentation and does not deploy an application.
 
 Bench round 1 WORKS on staging. Four feature commits are on main:
 - SCRUM-448: `8df6482`, print when the result is revealed.
@@ -33,10 +44,10 @@ Both the download and Desktop copy matched SHA-256:
 `ab4f98cff2408f9ac8f5f6b610e82bb46155d52fd27d43e5654d9bce455b3a0d`
 The previous Desktop release pair is in `old-oto-box-releases`.
 
-Next is the owner's physical Pi update and bench check using
-[PI_BOOTH.md, Update](../ops/PI_BOOTH.md#7-checking-and-fixing). The physical Pi was not
-updated by this session. Existing four-digit booth PINs must be replaced with
-five-digit PINs through the Console. Counter-issued rows do not record an issuing
+Next is the owner's physical demonstration video, matching a fresh printed slip
+to its row in the Console. The owner performed the Pi update; this session did
+not install it over SSH. [PI_BOOTH.md, Update](../ops/PI_BOOTH.md#7-checking-and-fixing)
+remains the update guide. Counter-issued rows do not record an issuing
 station in the existing table; the ledger says so rather than inventing one.
 
 The newest STOP POINT in SESSION_HANDOVER.md is authoritative. The sections below
