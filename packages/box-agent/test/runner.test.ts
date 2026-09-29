@@ -352,6 +352,18 @@ async function fakePrinterOn(wanted: number): Promise<FakePrinter> {
   };
 }
 
+/**
+ * Wait until the printer has `n` slips — polled, not slept. The fake counts a
+ * slip when the box closes the connection after the job, a tick after the box
+ * has answered "printed"; a fixed 200 ms once stood in for that tick, which a
+ * loaded runner can outlast (SCRUM-423). The deadline is a hang guard: the
+ * caller's own assertion reads the count and names the shortfall.
+ */
+async function untilSlips(printer: FakePrinter, n: number): Promise<void> {
+  const until = Date.now() + 5_000;
+  while (printer.slips() < n && Date.now() < until) await wait(20);
+}
+
 function pageDir(): string {
   const dir = mkdtempSync(join(tmpdir(), 'oto-box-page-'));
   mkdirSync(join(dir, 'assets'));
@@ -519,12 +531,19 @@ test('a claim made in a terminal while the box runs unclaimed restarts it; one t
   // Claimed on the television instead: the same file is written from inside
   // the process, and that is no reason to restart.
   let kioskRestarts = 0;
-  const other = await run(tempHome(), cloud, { credentialPollMs: 25, onRestartNeeded: () => (kioskRestarts += 1) });
+  const otherHome = tempHome();
+  const other = await run(otherHome, cloud, { credentialPollMs: 25, onRestartNeeded: () => (kioskRestarts += 1) });
   try {
     const right = await hit(other.port, 'POST', '/kiosk/claim', { body: { code: CODE } });
     assert.deepEqual(right.json(), { ok: true });
+    // The file the watch reads is there, and the box is registered — which is
+    // what stops the watch, not an absence of anything to find. Then eight
+    // polls' worth at 25 ms, so the watch has ticked over that file.
+    assert.ok(existsSync(runnerPaths(otherHome).credential), 'the claim wrote the credential the watch reads');
+    const state = (await hit(other.port, 'GET', '/kiosk/state')).json() as { registered: boolean };
+    assert.equal(state.registered, true);
     await wait(200);
-    assert.equal(kioskRestarts, 0);
+    assert.equal(kioskRestarts, 0, 'a claim typed on the television is no reason to restart');
   } finally {
     await other.stop();
   }
@@ -791,12 +810,15 @@ test('a cloud that takes the connection and never answers: the television is up 
     // inside the allowance, and says so rather than hanging the panel.
     const pin = await hit(port, 'POST', '/booth/staff/sign-in', { body: { mode: 'pin', pin: '73910' } });
     assert.deepEqual(pin.json(), { ok: true });
-    const askedAt = Date.now();
+    const askedBefore = stalled.connections();
     const account = await hit(port, 'POST', '/booth/staff/sign-in', {
       body: { mode: 'account', phone: '0812345678', password: 'pw' },
     });
+    // "offline" is what the box answers once the cloud has been asked and has
+    // not answered: proven by the connection the stalled cloud took, not by a
+    // stopwatch on this machine (SCRUM-423). A hang would fail the run itself.
     assert.deepEqual(account.json(), { ok: false, reason: 'offline' });
-    assert.ok(Date.now() - askedAt < 3_000, 'answered inside the allowance');
+    assert.ok(stalled.connections() > askedBefore, 'the cloud was asked, and given up on');
 
     const box = await booting;
     assert.ok(startedAfter !== null && startedAfter >= 1_200, `start gave up on four calls (${startedAfter} ms)`);
@@ -906,7 +928,7 @@ test('a press while start still waits on a silent cloud prints one slip; the fir
     // `start` is done, and its heartbeat has ticked the print queue; one more
     // heartbeat is the next tick a Pi would run.
     await box.agent.heartbeat().catch(() => null);
-    await wait(200);
+    await untilSlips(printer, 1);
     assert.equal(printer.slips(), 1, 'one press, one slip');
     assert.deepEqual(box.agent.printing()?.jobs.pending() ?? [], [], 'and nothing left waiting to print');
     assert.equal(
@@ -950,14 +972,17 @@ test('the Console’s offline switch on at boot: a press, back online, one heart
       body: { spinId: (spin.json() as { spinId: string }).spinId },
     });
     assert.equal((printed.json() as { printState: string }).printState, 'printed');
-    await wait(200);
+    await untilSlips(printer, 1);
     assert.equal(printer.slips(), 1);
 
     await box.agent.setOffline(false);
+    // The heartbeat waits for its tick of the print queue, so whatever that
+    // tick printed has been sent by the time it answers: nothing left waiting
+    // is the proof here, and the slip count is read below, once the printer's
+    // sockets are closed and the count is final — no fixed wait for a second
+    // slip that must not come (SCRUM-423).
     await box.agent.heartbeat();
-    await wait(200);
-    assert.equal(printer.slips(), 1, 'coming back online printed nothing more');
-    assert.deepEqual(box.agent.printing()?.jobs.pending() ?? [], []);
+    assert.deepEqual(box.agent.printing()?.jobs.pending() ?? [], [], 'nothing left waiting after the tick');
     assert.equal(
       cloud.calls.some((call) => call.path.startsWith('/box/v1/print-jobs/')),
       false,
@@ -967,6 +992,8 @@ test('the Console’s offline switch on at boot: a press, back online, one heart
     await box.stop();
     await printer.close();
   }
+  // With the box stopped and the printer's sockets closed, the count is final.
+  assert.equal(printer.slips(), 1, 'coming back online printed nothing more');
   assert.deepEqual(printFacts(home).map((fact) => fact.status), ['printed']);
 });
 
