@@ -48,6 +48,27 @@ colleague, not a generator.
   deployed that you did not see built, tested or deployed. Three answers only to "is X
   built?": WORKS / BROKEN / NOT BUILT, read from the code and from staging.
 
+## Two parallel lanes (30 September 2026, evening)
+
+Two agent sessions work this repository at once, on disjoint areas:
+
+- **Lane 1 (Claude session): SCRUM-208 (S2-11)** — owns `packages/db`,
+  `packages/shared`, `apps/api`, `packages/box-agent`, `packages/print`,
+  `apps/pos` while its story runs.
+- **Lane 2 (Codex session): SCRUM-193 (S2-17b, the OTO App full lift)** — owns
+  `apps/oto-app/**`; folds in SCRUM-261 and SCRUM-262 where the lift touches
+  those paths, closing their tickets properly.
+
+Rules while both run: **only lane 1 creates `packages/db/migrations`** — if the
+lift needs a platform-side change (a central migration, an API route, a shared
+package change), lane 2 records the need as a comment on its Jira ticket and a
+"Needs from the platform lane" line in its STATUS stop block, and lane 1 builds
+it; lane 2 works on a feature branch and lands to `main` in verified slices,
+pulling latest `main` before every land; both lanes pull before landing and
+never edit the other's area; `apps/launcher` changes only by a recorded
+coordination note. Each lane updates its own Jira tickets and its own stop
+block, never the other's.
+
 ## Current direction (30 September 2026, evening — the owner approved the next phase)
 
 SCRUM-201 is closed. The main story now under way is **SCRUM-208 (S2-11): sale
