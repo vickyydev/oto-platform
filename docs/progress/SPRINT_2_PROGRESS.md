@@ -1,37 +1,62 @@
 # Sprint 2 progress
 
-## Release checkpoint - 30 September 2026 - final layout check
+## Release checkpoint - 30 September 2026 - break checkpoint saved
 
-Source b31b01b7 is LIVE on API, POS, Console, Launcher and Booth after
-authorised manual deployment. The migration step completed; station reads
-pass and retired lookup routes return 404. Automatic settings are unchanged.
-After migration 0033, the earliest compatible API rollback is 85d35e0.
+The current release checkpoint is complete. Stop here and await the next
+instruction; do not select another Jira ticket. No current subtasks remain.
 
-SCRUM-201 passes 21 staging food/shop checks and 7 consent checks. Reviewed
-evidence is saved under docs/qa/separate-display. Consent correctly requires
-the real joint photo before private staff readiness; successful public Done
-was proven locally, not fabricated on staging. All owned fixtures were cleaned
-up. A small header/language-control overlap found during screenshot review is
-fixed in two POS components. POS typecheck, full lint and build pass; the
-POS-only deployment and final order-layout recapture remain before closure.
+Live staging: POS 0683ffd10a859465aaa14c0b09f241edf555e581; API, Console,
+Launcher and Booth b31b01b71a3846047a9a7beb3fb273cb4bd02b7d. OTO App remains
+c416065. Main includes the source plus subsequent evidence/documentation.
+Manual Render deployment was authorised because Actions cannot start. Normal
+checksPass/auto-deploy settings are unchanged. Migration 0033 completed in the
+API pre-deploy step, followed by working station access and removed routes 404.
+There was no direct staging database inspection. Never roll the API back before
+85d35e0 after this migration. Exact deployment IDs are in the QA release record.
 
-SCRUM-206 current follow-ups are deployed and verified: the retained GHL
-simulation recovered without another SALE, and a fresh native run passed
-11 checks, including audited staff confirmation and one cash settlement.
-Both runs cleaned up their owned setup rows; the historical uncertain partial
-remains protected. The full story stays In Progress because separate To Do
-SCRUM-269 is still required for offline trading. No new task is started.
-SCRUM-285 remains Deployed with staging attachment 10905.
+SCRUM-201 is Deployed with named, reviewed staging screenshots. Foundation
+checks passed, followed by 21 food/shop checks and 7 consent checks. The final
+POS-only header spacing fix was verified at 1024x768 and 1280x800 without sale
+or payment writes. Consent preserves private data and staff authority, retries
+the same action after a lost reply, and survives lock/unlock. Current staging
+policy requires a real joint photo before Done; that positive completion is
+proven locally, not fabricated on staging. Physical display hardware remains
+outside this software acceptance. Owned fixtures were archived/revoked; completed
+synthetic sales remain for audit. Evidence: docs/qa/separate-display.
 
-Local verification passed: all 6 native browser flows, POS 92, shared 19,
-box 40, terminal 33 and DB 43 existing checks; applicable package typechecks,
-lint, POS build and schema verification pass. No new test suite or dependency.
-CI run 36619796693 ran zero steps due billing availability. No new CI-packed
-Pi archive exists; the existing Desktop release is unchanged.
+SCRUM-206 current payment follow-ups are deployed and verified. A retained
+no-response simulation recovered with one original SALE and full reservation;
+the known simulator outcome was resolved through an audited staff API action.
+A fresh native GHL case passed 11 checks, recorded staff confirmation and
+collected the unchanged balance once as cash. Earlier partial-reversal,
+disabled-QR and zero-sale follow-ups also pass. Evidence: docs/qa/payment-stage.
+The full story stays In Progress: separate To Do SCRUM-269 is required for
+offline trading. It has not been started, and neither story has subtasks.
+The historical uncertain partial run 0d008153 and its eight setup rows remain
+untouched; never replay SALE, invent an acknowledgement or confirm no money.
 
-Finish the final POS layout proof, attach and name staging screenshots, update
-Jira and the final handover/guidelines, then stop and await the next instruction.
-Neither current story has subtasks. Do not start another ticket.
+SCRUM-285 remains Deployed with its 11-check staging card, attachment 10905.
+The cloud offline-test guard is verified; full offline till trading is not built.
+No other story or old To Do item was selected for this checkpoint.
+
+Existing checks passed: six native browser flows; POS 92, shared 19, box 40,
+terminal 33 and DB 43; affected package typechecks/lint, POS production build,
+standalone smoke typing and schema verification. The final two-class layout
+change passed POS typecheck/lint/build and native staging geometry. No new
+test suite or dependency. Build chunk/import notices remain nonblocking.
+
+GitHub runs 36619796693 (base source) and 36621089212 (final POS) ran zero steps
+because account billing/spending availability prevented startup. CI is not green.
+No new CI-packed Pi archive exists. Desktop keeps oto-box-0.1.0-0468c38.tgz
+and its checksum; no physical Pi update was performed in this checkpoint.
+
+Resume rules: read this block, STATUS, CODEX_HANDOVER and AGENTS before acting.
+Keep explicit commit file lists, no attribution or secrets, Jira status/comment
+with every push and named staging screenshot before Deployed. Use a dedicated
+absolute output directory for every temporary browser runner. Excluded dirt
+in render.yaml, services/ and MerchCustomerDisplay.tsx is preserved. Remaining
+questions, protected evidence and rejected temporary cleanup are recorded in
+OPEN_QUESTIONS.md. Wait for the next instruction.
 
 ## Previous checkpoint
 

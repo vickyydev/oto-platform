@@ -1,7 +1,12 @@
 # SCRUM-201 separate display checkpoint
 
-29 September 2026. Online ticket identification and order/payment/thank-you checked; full story remains In Progress. This checkpoint
-uses local disposable-database evidence, not staging acceptance.
+30 September 2026. SCRUM-201 is Deployed. POS 0683ffd1 and API b31b01b7
+are verified on staging. Pairing, privacy, revocation, food/shop payments,
+consent acknowledgement and fallback checks pass, with reviewed screenshots
+attached to Jira. The current real-photo requirement is preserved; positive
+public Done is locally proven, not fabricated on staging. Physical display
+hardware and offline till transport remain outside this software acceptance.
+The dated sections below retain the implementation and verification history.
 
 ## Implemented contract
 
@@ -491,3 +496,28 @@ All own fixtures were cleaned up. See staging-consent-results.json and its
 publishedEvidence images. Two earlier helper-only failures (pairing label
 selector and discounted-tier verification) were fully cleaned before rerun;
 the passing run uses Tourist tier without fabricated identity verification.
+
+## Final acceptance and attachment index
+
+The POS-only spacing correction is LIVE at 0683ffd1; the verified API remains
+b31b01b7. All 14 final order-layout checks pass at 1024x768 and 1280x800, with
+no sale/payment write and complete own-fixture cleanup. Header labels clear
+the language control. See staging-order-layout-results.json.
+
+| Reviewed staging screenshot | Jira attachment |
+|---|---|
+| SCRUM-201-staging-fnb-completed.png | 10924 |
+| SCRUM-201-staging-shop-partial-cash.png | 10925 |
+| SCRUM-201-staging-shop-completed.png | 10926 |
+| SCRUM-201-consent-staging-retry-masked.png | 10927 |
+| SCRUM-201-consent-staging-readiness-blocked.png | 10928 |
+| SCRUM-201-consent-staging-private-staff.png | 10929 |
+| SCRUM-201-staging-fnb-order-1024.png | 10932 |
+| SCRUM-201-staging-fnb-order-1280.png | 10933 |
+| SCRUM-201-staging-shop-order-1024.png | 10934 |
+| SCRUM-201-staging-shop-order-1280.png | 10935 |
+
+SCRUM-201 was transitioned to Deployed only after those images were attached
+and named in the deployment comment. The break checkpoint is complete; wait
+for the next instruction. Exact live versions and CI limitations are in
+release-deployment.json and docs/progress/STATUS.md.

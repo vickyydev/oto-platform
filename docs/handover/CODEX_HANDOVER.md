@@ -5,32 +5,28 @@ in the same working folder, and for the owner setting it up. Everything below wa
 when it was written; verify the live state from `docs/progress/STATUS.md` and the newest
 STOP POINT block of `docs/progress/SESSION_HANDOVER.md` before acting.
 
-## Resume note - 29 September 2026
+## Resume note - 30 September 2026 - stop and wait
 
-OTO Park has completed the Lucky Wheel physical bench test and shared the demo.
-The active instruction is now to resume the remaining Sprint 2 software.
-SCRUM-391, SCRUM-388 and SCRUM-382 are implemented on main at b02f7e0 and are
-Deployed. Main CI is green and all 21 staging behaviour checks passed, with
-named screenshots attached. The next story is
-SCRUM-206 Slice F; its offline and separate-display dependencies remain under
-the existing tickets. Read the newest 29 September STOP POINT and STATUS for
-the current release and evidence. The bench instructions in section 4 below
-are historical completed work; their shared contract names remain unchanged.
+The break checkpoint is saved. Do not start new work until the next instruction.
+The Lucky Wheel bench/demo and the old bench branch are historical completed
+work. SCRUM-201 and SCRUM-285 are Deployed with named staging screenshots.
+Current SCRUM-206 follow-ups are deployed and verified; its full story remains
+In Progress for separate To Do SCRUM-269 offline trading. No subtasks remain
+under the current stories, and SCRUM-269 has not been started.
 
-The five staging services run main source `5fb8525`, with green main CI
-36521266122. SCRUM-387's complete response/atomic print fixes and SCRUM-452's
-ten-second wheel default/Console control passed 231 affected existing-file
-tests and deployed together. Both tickets are Deployed: six replay and nine
-duration staging checks passed, with reviewed screenshots attached and named.
-The duration evidence uses native staging assets on an isolated local box;
-the physical Pi still needs the packaged release update.
-Slice F's foundation is deployed. Its UI source is pushed as `cf67d86` on
-`feat/payment-stage-ui`, in `test-results/payment-ui-worktree`: the four tills
-and mobile food-station caller share real tender collection. All 53 checks in
-the existing writer suite, POS typecheck, lint and production build pass;
-branch CI 36523891229 is green.
-This UI branch has not deployed and still needs native staging proof. See the
-live checkpoint for evidence and the required packaged Pi update.
+Live POS source is 0683ffd1; API, Console, Launcher and Booth are b31b01b7.
+Main also carries the evidence and checkpoint documentation. Manual Render
+deployment was authorised while GitHub Actions billing prevents jobs from
+starting; CI is not green. No new CI-packed Pi release was produced. The
+Desktop still holds the previously verified 0468c38 archive and checksum.
+Migration 0033 completed after the old API readers had retired; the earliest
+compatible API rollback is 85d35e0. Do not deploy older API code.
+
+Read STATUS and the newest 30 September STOP POINT for exact evidence, current
+limits and protected simulated-payment records. Successful public consent Done
+is locally proven; staging verified its required real-photo/staff-readiness
+guard without fabricating a photo. Physical display acceptance is separate.
+Section 4 below is historical; keep its shared contract names unchanged.
 
 ## 1. What this is, in five lines
 

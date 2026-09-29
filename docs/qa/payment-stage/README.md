@@ -1,4 +1,14 @@
-# Online till payment stage - 29 September 2026
+# Online till payment stage
+
+30 September 2026: the current payment follow-ups are deployed and verified
+on API/POS b31b01b7. POS subsequently received only header spacing in 0683ffd1.
+The restart-recovery API card is attached as 10923; fresh native GHL staff
+confirmation and completion images are 10930 and 10931. SCRUM-206 remains
+In Progress because offline trading acceptance depends on separate To Do
+SCRUM-269. The historical uncertain partial remains untouched. No new work
+is started for this break checkpoint. Dated evidence below is retained.
+
+## Earlier online release - 29 September 2026
 
 SCRUM-206 remains In Progress. Online source `0468c38` is live on API, POS,
 Console, Launcher and Booth after

@@ -1,0 +1,89 @@
+{
+  "ticket": "SCRUM-201",
+  "environment": "staging",
+  "source": "0683ffd10a859465aaa14c0b09f241edf555e581",
+  "posSource": "0683ffd10a859465aaa14c0b09f241edf555e581",
+  "apiSource": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+  "run": "b3bb2948",
+  "selected": [
+    "fnb",
+    "shop"
+  ],
+  "startedAt": "2026-09-29T19:43:55.063Z",
+  "mode": "order-only",
+  "sourceVerification": "POS and API SHAs supplied after separate live deployment confirmations",
+  "status": "PASS",
+  "phase": "shop: order header geometry",
+  "checks": [
+    "Dedicated virtual station is online without changing box state",
+    "Console pairs the independently authenticated display with the dedicated station",
+    "fnb: public rows and total match the actual quote",
+    "fnb: order viewport 1024 has no horizontal overflow",
+    "fnb: order header clears language control at 1024",
+    "fnb: order viewport 1280 has no horizontal overflow",
+    "fnb: order header clears language control at 1280",
+    "shop: public rows and total match the actual quote",
+    "shop: platform size label is captured in the public row",
+    "shop: order viewport 1024 has no horizontal overflow",
+    "shop: order header clears language control at 1024",
+    "shop: order viewport 1280 has no horizontal overflow",
+    "shop: order header clears language control at 1280",
+    "Native order flow requested no sale or payment write"
+  ],
+  "screenshots": [
+    "SCRUM-201-staging-fnb-order-1024.png",
+    "SCRUM-201-staging-fnb-order-1280.png",
+    "SCRUM-201-staging-shop-order-1024.png",
+    "SCRUM-201-staging-shop-order-1280.png"
+  ],
+  "fixtures": {
+    "stationId": "01a0eeb2-0b5d-754c-bfc7-529d3d6c3598",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "credentialId": "01a0eeb2-4eef-7c10-af8e-88b750b5e588",
+    "productIds": [
+      "01a0eeb2-1083-70ee-9138-a71fceaa837f",
+      "01a0eeb2-1753-7a5d-a6a4-571acb9ce46c"
+    ],
+    "categoryIds": [
+      "01a0eeb2-0d37-7808-b925-ea524cb0620a",
+      "01a0eeb2-13d1-7d7d-8c43-3270d4834fc7"
+    ]
+  },
+  "sales": [],
+  "cleanup": [
+    {
+      "type": "display",
+      "revoked": true
+    },
+    {
+      "type": "station",
+      "id": "01a0eeb2-0b5d-754c-bfc7-529d3d6c3598",
+      "archived": true
+    },
+    {
+      "type": "product",
+      "id": "01a0eeb2-1083-70ee-9138-a71fceaa837f",
+      "archived": true
+    },
+    {
+      "type": "product",
+      "id": "01a0eeb2-1753-7a5d-a6a4-571acb9ce46c",
+      "archived": true
+    },
+    {
+      "type": "category",
+      "id": "01a0eeb2-0d37-7808-b925-ea524cb0620a",
+      "archived": true
+    },
+    {
+      "type": "category",
+      "id": "01a0eeb2-13d1-7d7d-8c43-3270d4834fc7",
+      "archived": true
+    }
+  ],
+  "retained": [],
+  "physicalInventoryUntouched": true,
+  "finishedAt": "2026-09-29T19:44:45.971Z",
+  "cleanupComplete": true,
+  "proofCompleted": true
+}

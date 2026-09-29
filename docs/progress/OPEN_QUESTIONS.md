@@ -1,60 +1,52 @@
 # Open questions for the owner
 
-## Current follow-ups - 29 September 2026
+## Current follow-ups - 30 September 2026
 
-- **Break checkpoint direction.** Finish the current release work, verify staging,
-  update Jira with named screenshots and stop. No new ticket is to be started.
-  Manual Render deployment is authorised while Actions billing prevents jobs.
-  Tested source 88140af is now live on all five platform services. Do not
-  describe GitHub CI as green or create a substitute labelled CI-packed.
-
-- **Local test cleanup follow-up.** The first F&B pricing regression run
-  passed all 90 assertions, but teardown hit Windows EBUSY on the disposable
-  directory `C:\Users\waqar\AppData\Local\Temp\oto-pg-ROiSmN`. The isolated
-  F&B rerun passed with clean teardown. No matching PostgreSQL master was
-  found for the old directory. Automatic approval review rejected recursive
-  cleanup as "blocked by policy"; the remaining directory was left in place.
-  Do not delete unrelated temporary databases or stop another process. This
-  housekeeping follow-up does not block the product work or release checks.
-
-- **Temporary verification files were lost during the Snapshot check.** An
-  ad-hoc Playwright config inherited the repository's default `test-results`
-  output directory; the runner cleared that ignored directory at startup.
-  Committed source, evidence and branch tips remain intact. The new 23-step
-  browser run passed, but its temporary report/images and earlier ignored
-  payment/display helpers were removed. Three ignored worktree directories
-  were also cleared; their branch commits remain available. Recreate those
-  checkouts from their named branches only when needed. Rebuild the payment
-  and offline proof helpers before the post-deploy checks; old command paths
-  in dated notes are no longer runnable. Snapshot evidence was regenerated
-  under `output/snapshot-verification` and committed in c8f6375; six native
-  checks and the two existing Console cases pass. Every temporary browser
-  config must set a dedicated absolute output directory. This is an execution
-  issue to repair, not a park decision or permission request.
-- **GitHub Actions availability.** Main source 88140af is checked locally,
-  but CI 36589992120 ran zero steps because account billing/spending prevents
-  jobs starting. Restore Actions availability; no spending setting is changed
-  by development. Meanwhile SCRUM-201 continues independently. Deployment,
-  staging proof and the next CI-packed Pi artifact remain pending.
-- **Compatibility removal order.** The live 0468c38 POS still calls the old
-  staff-session pending-lookup routes. The current POS does not. First deploy
-  and verify the independent-display POS; only then remove the routes. Drop
-  the columns in a later forward migration after old API readers retire.
-  This is a rollout constraint, not an unresolved park decision.
-- **Retained simulated partial outcome.** The historical run 0d008153 remains
-  unresolved; existing controls cannot retrieve its lost final result. Its
-  eight inventory rows and original payment evidence are retained. A fresh
-  isolated proof will verify the corrected release without replaying SALE or
-  claiming the old payment was reversed. Any later reconciliation proposal
-  must state that this is simulated evidence and preserve the original audit.
-- **SCRUM-269 implementation decisions to resolve before local trading.**
-  The first safe slice is an authenticated box station bridge. Follow the
-  existing Caddy/DNS and device-auth decisions; confirm the concrete LAN origin
-  and permissions contract before wiring it to the POS. Cash trading also
-  needs a complete cache-age/payment-method rule and atomic local action,
-  receipt and outbox writes. Existing offline replay primitives alone do not
-  satisfy these requirements. These are recorded implementation gaps, not a
-  request to reopen the agreed architecture or a blocker for SCRUM-201.
+- **Break checkpoint direction.** The current release is deployed and verified;
+  Jira evidence and statuses are saved. Stop and wait for the next instruction.
+  SCRUM-201/285 are Deployed. Current SCRUM-206 follow-ups are complete, while
+  the full story remains In Progress for separate To Do SCRUM-269. Neither
+  story has subtasks. No new ticket or dependency was started.
+- **Actions availability and Pi artifact.** Source b31b01b7 and POS 0683ffd1
+  passed local checks and deployed manually as authorised. Their Actions runs
+  started zero steps because of account billing/spending availability. Normal
+  deployment settings are unchanged. No newer CI-packed archive exists; keep
+  the Desktop 0468c38 release and checksum. A future green exact-source run
+  must supply the actual packed artifact before the next physical Pi update.
+- **Consent physical verification.** Current park policy requires the real
+  child/guardian photo before staff readiness. Staging proved private-data
+  separation, lost-reply retry, lock adoption and refusal before readiness;
+  positive Done is locally proven. No staging photo was fabricated. Physical
+  display/photo acceptance remains a real-device check, outside SCRUM-201's
+  software scope.
+- **Rollback constraint.** API migration 0033 completed after no-reader 85d35e0
+  was live. API rollback must stay at 85d35e0 or a verified descendant. The
+  retired mailbox routes return 404 and ordinary sessions work; no direct
+  staging column inspection was claimed.
+- **Retained historical simulated partial.** Run 0d008153 remains unresolved;
+  its eight inventory rows and original evidence are preserved. Never replay
+  SALE, fabricate a callback, confirm no money or archive those rows. Exact
+  IDs are in docs/qa/payment-stage. The newer retained GHL simulation is now
+  recovered and cleaned up, with separate API proof; fresh native GHL also
+  passes. Do not confuse the two outcomes.
+- **SCRUM-269 before local trading.** The authenticated box station bridge,
+  concrete LAN origin/permissions, cache-age/payment-method rules and atomic
+  local action/receipt/outbox writes remain to be implemented under that
+  separate ticket. Existing replay primitives and the offline-test guard do
+  not establish offline till sales. Record decisions before that work starts.
+- **Temporary browser outputs.** An earlier default Playwright output path
+  cleared ignored helper/worktree files; committed source, evidence and branch
+  tips survived. Rebuilt helpers and native proofs now pass. Every temporary
+  runner must set its own absolute output directory. Preserved branch tips
+  include fix/offline-proof, release/payment-follow-ups and
+  fix/payment-request-copy; do not prune them during housekeeping.
+- **Rejected temporary cleanup.** An early F&B regression run passed 90 checks
+  but teardown hit EBUSY at C:\Users\waqar\AppData\Local\Temp\oto-pg-ROiSmN.
+  The rerun passed with clean teardown; no matching database master was found.
+  Automatic approval review rejected that directory's recursive cleanup as
+  "blocked by policy". It remains in place. Do not work around the rejection,
+  delete unrelated databases or stop another process. This is housekeeping,
+  not a product release blocker.
 
 Older questions below retain their original dated evidence.
 

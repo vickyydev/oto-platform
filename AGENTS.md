@@ -10,7 +10,7 @@ colleague, not a generator.
 1. `docs/handover/CODEX_HANDOVER.md` — the hand-over written for this session: where the
    work stands, the exact next steps, the rules, the environment, how to test and deploy.
 2. `docs/progress/STATUS.md` → `docs/progress/SESSION_HANDOVER.md` (its newest STOP POINT
-   block, 28 September 2026) — the live state of the work.
+   block) — the live state of the work; older blocks are historical.
 3. `CLAUDE.md` — the original brief and the standing engineering standards (sections 3, 7
    and 8 stay in force; the rest is superseded by `docs/progress/SPRINT_2_PLAN.md` and
    `docs/architecture/DEVELOPMENT_PLAN.md`).
@@ -48,12 +48,20 @@ colleague, not a generator.
   deployed that you did not see built, tested or deployed. Three answers only to "is X
   built?": WORKS / BROKEN / NOT BUILT, read from the code and from staging.
 
-## The owner's current instruction (28 September 2026)
+## Current direction (30 September 2026)
 
-Finish the stopped "bench round 1" quickly and precisely: one round, one deploy, no new
-test suites, only the existing tests of the files you touch. The brief is in
-`docs/handover/CODEX_HANDOVER.md`, section 4. Partial, unchecked edits from the stopped
-round are on the branch `wip/bench-round-1`; main is clean. The round's parts are
-significant work: give each part its own ticket in the sprint (print at the reveal;
-button-only sign-in; booth PIN rules; Console vouchers ledger, spins and checklist), keep
-their progress in comments there, and take each to Deployed with its staging screenshot.
+Complete the existing release checkpoint, then stop and await the next instruction.
+Do not select another ticket or revive the historical bench branch. Bench round 1
+and the physical Lucky Wheel demo are complete. Current checkpoint scope is
+SCRUM-201, the already-started SCRUM-206 follow-ups, and SCRUM-285 verification.
+Read STATUS and the newest STOP POINT for exact deployed versions and acceptance.
+SCRUM-206 must remain open while separate To Do SCRUM-269 prevents offline trading;
+do not start that dependency as part of the break checkpoint.
+
+Use existing affected tests, package typecheck and lint; no new test suites.
+Manual Render deployment is authorised while Actions cannot start because of
+billing. Deploy the verified API before matching frontends; keep normal automatic
+deployment settings. After migration 0033, never roll API back before 85d35e0.
+Do not call CI green or deliver a release as CI-packed without actual CI evidence.
+Every temporary Playwright configuration must use its own absolute output directory.
+Keep unresolved simulated payment records identified in the QA notes untouched.

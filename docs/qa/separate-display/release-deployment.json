@@ -15,8 +15,8 @@
     {
       "name": "oto-pos-staging",
       "url": "https://oto-pos-staging.onrender.com",
-      "commit": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
-      "deployId": "dep-dau15a942hec73del6o0",
+      "commit": "0683ffd10a859465aaa14c0b09f241edf555e581",
+      "deployId": "dep-dau194dg1s2s73b319a0",
       "status": "live",
       "autoDeploy": "yes",
       "trigger": "checksPass"
@@ -88,5 +88,21 @@
       }
     ],
     "note": "Render live deployment establishes release completion; this probe does not directly inspect database columns."
+  },
+  "posSource": "0683ffd10a859465aaa14c0b09f241edf555e581",
+  "posFollowup": {
+    "scope": "Order header spacing in two POS display components only; API and payment behaviour unchanged",
+    "checks": [
+      "POS typecheck passed",
+      "POS full lint passed",
+      "POS production build passed"
+    ],
+    "ci": {
+      "runId": 36621089212,
+      "checkId": 109586374198,
+      "conclusion": "failure",
+      "stepsRun": 0,
+      "reason": "Account billing or spending availability prevented the job from starting"
+    }
   }
 }
