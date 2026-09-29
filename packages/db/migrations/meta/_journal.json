@@ -211,6 +211,20 @@
       "when": 1790680195995,
       "tag": "0029_payment_gateway_invoice_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1790684278541,
+      "tag": "0030_display_pairing",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1790685493048,
+      "tag": "0031_active_station_display",
+      "breakpoints": true
     }
   ]
 }

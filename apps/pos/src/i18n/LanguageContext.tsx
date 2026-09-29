@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { DEFAULT_LANG, type SupportedLang } from './types';
 import { lookup } from './dictionary';
 // Sprint 1 rebuild (SCRUM-17): the shared i18n scaffold (@oto/shared, en+th
@@ -23,12 +23,22 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
   );
 }
 
-// App-wide language selection for CUSTOMER-FACING chrome only. React state
-// only (no persistence) — a full reload always resets to English, matching
-// the project's no-browser-storage rule. Staff/admin screens never call t()
-// so they render in English regardless of the selected language.
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<SupportedLang>(DEFAULT_LANG);
+// Customer-facing language stays in memory by default. The independently
+// paired display supplies its own storage key so its choice survives reload.
+// Staff/admin screens remain in English.
+export function LanguageProvider({ children, storageKey }: { children: ReactNode; storageKey?: string }) {
+  const [lang, setLang] = useState<SupportedLang>(() => {
+    if (!storageKey) return DEFAULT_LANG;
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+      return saved === 'en' || saved === 'th' || saved === 'zh' || saved === 'ru' || saved === 'fr' ? saved : DEFAULT_LANG;
+    } catch { return DEFAULT_LANG; }
+  });
+  useEffect(() => {
+    if (storageKey) {
+      try { window.localStorage.setItem(storageKey, lang); } catch { /* This page still keeps its choice in memory. */ }
+    }
+  }, [lang, storageKey]);
 
   const t = useMemo<TFunction>(
     () => (key, vars) => {

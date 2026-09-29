@@ -13,6 +13,7 @@ import DropOff from "@/pages/DropOff";
 import Messages from "@/pages/Messages";
 import Book from "@/pages/Book";
 import StationSetup from "@/pages/StationSetup";
+import Display from "@/pages/Display";
 import Admin from "@/pages/Admin";
 import { AdminAccessGate } from "@/components/admin/AdminAccessGate";
 import { MobileStock } from "@/components/mobile/stock/MobileStock";
@@ -68,6 +69,7 @@ function AuthGate() {
   const { station, fleetAvailable, resolved: stationResolved } = useStation();
   const [location] = useLocation();
   const isMobile = useIsMobile();
+  const ticketTill = !isMobile && location === "/";
   // Until the resume (and any launcher hand-off) has answered, the till knows
   // nothing: showing the sign-in form here would prompt an operator who has
   // just signed in next door, and flash it on every reload.
@@ -78,9 +80,10 @@ function AuthGate() {
       </div>
     );
   }
-  // Signed out → sign in. Signed in but locked → unlock the same session
-  // with the password (S2-01a); the shift is not ended by inactivity.
-  if (!operator || locked) return <LockScreen />;
+  // Only the ticket till retains its current visitor through a same-session
+  // lock. Its hooks pause while locked and its staff subtree renders nothing.
+  if (!operator || (locked && (!ticketTill || mustChangePassword || !stationResolved
+    || (fleetAvailable && !station)))) return <LockScreen />;
   // A temporary password opens the door and nothing else: the API refuses the
   // station list and everything behind it until it is replaced (SCRUM-235).
   // The form goes BEFORE the station question, because the station question is
@@ -104,6 +107,15 @@ function AuthGate() {
   if (fleetAvailable && !station && !location.startsWith('/station-setup')) {
     return <StationPicker />;
   }
+  if (ticketTill) {
+    return <>
+      <div className="contents" hidden={locked} inert={locked} aria-hidden={locked}
+        style={locked ? { display: 'none' } : undefined}>
+        <Till key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />
+      </div>
+      {locked ? <LockScreen /> : <InactivityWarning />}
+    </>;
+  }
   if (isMobile) {
     return (
       <>
@@ -120,7 +132,12 @@ function AuthGate() {
   );
 }
 
-function App() {
+function StaffToaster() {
+  const { operator, locked } = useOperator();
+  return operator && !locked ? <Toaster /> : null;
+}
+
+function StaffApp() {
   // The staff theme drives the document root so every staff surface AND every
   // portaled overlay (dialogs, popovers, toasts attach to <body>) follows it.
   // The customer display(s) override locally with their own .dark/.light wrapper.
@@ -139,7 +156,6 @@ function App() {
           <LanguageProvider>
           <OperatorProvider>
             <StationProvider>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
                 <Switch>
                   {/* Public, self-driven customer booking engine — no operator login. */}
                   <Route path="/book" component={Book} />
@@ -154,8 +170,7 @@ function App() {
                     <AuthGate />
                   </Route>
                 </Switch>
-              </WouterRouter>
-              <Toaster />
+              <StaffToaster />
               {/* Renders nothing. Registers the service worker that makes the
                   shell load with no internet, and applies a waiting build only
                   at the lock screen with no open sale (S2-06). */}
@@ -168,6 +183,17 @@ function App() {
       </TooltipProvider>
     </QueryClientProvider>
   );
+}
+
+function App() {
+  return <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+    <Switch>
+      <Route path="/display">
+        <TooltipProvider><LanguageProvider storageKey="oto.display.language"><Display /></LanguageProvider></TooltipProvider>
+      </Route>
+      <Route component={StaffApp} />
+    </Switch>
+  </WouterRouter>;
 }
 
 export default App;

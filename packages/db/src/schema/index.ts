@@ -3,6 +3,7 @@ export * from './tenancy';
 export * from './members';
 export * from './catalog';
 export * from './fleet';
+export * from './display';
 export * from './staff-token';
 export * from './print';
 export * from './platform';

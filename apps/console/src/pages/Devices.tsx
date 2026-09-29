@@ -20,6 +20,7 @@ import { EmptyState, ErrorNote, Loading, Panel, RouteUnavailable } from '@/compo
 import { Chip, StatusMark, StatusPill, type Tone } from '@/components/Status';
 import { Field, Select, TextInput } from '@/components/Form';
 import { BoxDrawer } from '@/components/devices/BoxDrawer';
+import { DisplayPairPanel } from '@/components/devices/DisplayPairPanel';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
 import { StationDrawer } from '@/components/devices/StationDrawer';
 import { TerminalSimulatorPanel } from '@/components/devices/TerminalSimulatorPanel';
@@ -60,7 +61,7 @@ import { elapsed, formatWhen, timeAgo } from '@/lib/time';
  * should not be looking at it wondering why.
  */
 export function Devices() {
-  const { me, has } = useSession();
+  const { me, has, permissions } = useSession();
   const timezone = me?.branch?.timezone;
 
   const canRegisterBox = has('admin:box:register');
@@ -108,6 +109,20 @@ export function Devices() {
   );
 
   const stations = fleet.stations.filter((s) => showArchived || !s.archived);
+  const displayStations = fleet.stations.filter(
+    (s) =>
+      !s.archived &&
+      s.branchId === branchId &&
+      s.boxId &&
+      (s.kind === 'till' || s.kind === 'kiosk') &&
+      permissions.some(
+        (grant) =>
+          grant.permission === 'admin:device:pair' &&
+          (grant.scopeType === 'operator'
+            ? grant.scopeId === null || grant.scopeId === me?.account.operatorId
+            : grant.scopeType === 'branch' && grant.scopeId === s.branchId),
+      ),
+  );
   const currentBranchName = branchName(branchId) ?? 'this branch';
 
   return (
@@ -240,9 +255,11 @@ export function Devices() {
       </Panel>
 
       <PairedScreens
+        key={branchId}
         credentials={fleet.credentials}
         missing={fleet.missing.credentials}
         stations={fleet.stations.filter((s) => !s.archived)}
+        displayStations={displayStations}
         stationName={stationName}
         timezone={timezone}
         canPair={canPair}
@@ -758,6 +775,7 @@ function PairedScreens({
   credentials,
   missing,
   stations,
+  displayStations,
   stationName,
   timezone,
   canPair,
@@ -767,6 +785,7 @@ function PairedScreens({
   credentials: CredentialRow[];
   missing: boolean;
   stations: StationRow[];
+  displayStations: StationRow[];
   stationName: (id: string | null | undefined) => string | null;
   timezone?: string | null;
   canPair: boolean;
@@ -774,6 +793,7 @@ function PairedScreens({
   onChanged: () => void;
 }) {
   const [pairing, setPairing] = useState(false);
+  const [pairingDisplay, setPairingDisplay] = useState(false);
   const live = credentials.filter((c) => !c.revokedAt);
 
   return (
@@ -781,11 +801,26 @@ function PairedScreens({
       title="Paired screens"
       description="A customer display, a kiosk or a booth holds a credential of its own rather than a person's session. A box pairs with a claim code instead."
       actions={
-        canPair && !missing && stations.length > 0 ? (
-          <Button size="sm" className="h-9 gap-2" onClick={() => setPairing(true)}>
-            <Plus className="w-4 h-4" />
-            Pair a screen
-          </Button>
+        !missing ? (
+          <div className="flex flex-wrap gap-2">
+            {displayStations.length > 0 && (
+              <Button size="sm" className="h-9 gap-2" onClick={() => setPairingDisplay(true)}>
+                <Plus className="w-4 h-4" />
+                Pair a display
+              </Button>
+            )}
+            {canPair && stations.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 gap-2"
+                onClick={() => setPairing(true)}
+              >
+                <Plus className="w-4 h-4" />
+                Pair a screen
+              </Button>
+            )}
+          </div>
         ) : undefined
       }
     >
@@ -794,7 +829,7 @@ function PairedScreens({
       ) : live.length === 0 ? (
         <EmptyState
           title="Nothing is paired yet"
-          detail="Pair a screen to get a code; the screen redeems it once and holds a secret of its own afterwards."
+          detail="Open the customer display to get its code, then pair it to a station here. Kiosks and booths use Pair a screen."
         />
       ) : (
         <ul className="flex flex-col divide-y">
@@ -813,6 +848,15 @@ function PairedScreens({
 
       {pairing && (
         <PairPanel stations={stations} onClose={() => setPairing(false)} onPaired={onChanged} />
+      )}
+      {pairingDisplay && displayStations.length > 0 && (
+        <Dialog title="Pair a display" onClose={() => setPairingDisplay(false)}>
+          <DisplayPairPanel
+            stations={displayStations}
+            onClose={() => setPairingDisplay(false)}
+            onPaired={onChanged}
+          />
+        </Dialog>
       )}
     </Panel>
   );
@@ -890,7 +934,7 @@ function PairPanel({
   onPaired: () => void;
 }) {
   const [stationId, setStationId] = useState(stations[0]?.id ?? '');
-  const [kind, setKind] = useState<CredentialKind>('display');
+  const [kind, setKind] = useState<CredentialKind>('kiosk');
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
@@ -999,7 +1043,10 @@ function PairPanel({
             <Select
               value={kind}
               onChange={(v) => setKind(v as CredentialKind)}
-              options={PAIRABLE_KINDS.map((k) => ({ value: k, label: credentialKindWord(k) }))}
+              options={PAIRABLE_KINDS.filter((k) => k !== 'display').map((k) => ({
+                value: k,
+                label: credentialKindWord(k),
+              }))}
             />
           </Field>
           <Field label="Label" hint="Which screen this is, so the right one can be revoked later.">

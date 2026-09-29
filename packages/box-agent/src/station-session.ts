@@ -68,6 +68,7 @@ export interface IntentContext {
   intent: StationIntent;
   source: StationEventSource;
   accountId: string | null;
+  serverTime: string;
 }
 
 export interface IntentSpec {
@@ -77,6 +78,8 @@ export interface IntentSpec {
   sources: readonly StationEventSource[];
   /** False for the display's own intents, which are sent with no lease held. */
   requiresLease: boolean;
+  /** Typed display answers advance the fence so a concurrent publish cannot erase them. */
+  advanceSequence?: boolean;
   apply(ctx: IntentContext): IntentOutcome;
 }
 
@@ -620,7 +623,7 @@ export class StationSessionManager {
   async applyIntent(
     stationId: string,
     intent: StationIntent,
-    context: { source: StationEventSource; accountId?: string | null },
+    context: { source: StationEventSource; accountId?: string | null; deviceId?: string },
   ): Promise<IntentResult> {
     const nowIso = this.nowIso();
     const document = await this.open(stationId);
@@ -645,7 +648,7 @@ export class StationSessionManager {
           errorCode: refusal,
           actorAccountId: context.accountId ?? null,
           actionId: intent.actionId ?? null,
-          payload: redactIntentPayload(intent),
+          payload: redactIntentPayload(intent, context.source === 'display' ? context.deviceId : undefined),
         },
         nowIso,
       );
@@ -697,6 +700,7 @@ export class StationSessionManager {
       intent,
       source: context.source,
       accountId: context.accountId ?? null,
+      serverTime: nowIso,
     });
     if (!outcome.ok) return refuse(outcome.refusal, outcome.message, document);
 
@@ -733,18 +737,9 @@ export class StationSessionManager {
         // lease, so requiring one would make the display unable to answer the
         // prompt the till just put on it.
         leaseId: spec.requiresLease ? (intent.leaseId ?? null) : null,
-        /**
-         * **And it may not move the sequence the holder is fenced against.**
-         *
-         * The display and a second till both send these with no lease, so
-         * bumping the sequence for them handed any screen that can reach the
-         * station a way to make the holder's next intent `409 STALE`: toggle the
-         * language, the number moves, and the till working the sale is told the
-         * session moved to another till. It is fenced on the sequence it read —
-         * so it still cannot overwrite a change it has not seen — and it leaves
-         * the number where it was, the way the lease renewal does.
-         */
-        advanceSequence: spec.requiresLease,
+        // Language leaves the holder's fence unchanged. Typed answers advance
+        // it so a concurrent publisher must rehydrate before publishing again.
+        advanceSequence: spec.requiresLease || spec.advanceSequence === true,
       },
       { ...outcome.write, lastActionId: intent.actionId ?? null },
       nowIso,
@@ -773,7 +768,7 @@ export class StationSessionManager {
         outcome: 'applied',
         actorAccountId: context.accountId ?? null,
         actionId: intent.actionId ?? null,
-        payload: redactIntentPayload(intent),
+        payload: redactIntentPayload(intent, context.source === 'display' ? context.deviceId : undefined),
       },
       nowIso,
     );
@@ -805,6 +800,16 @@ const CUSTOMER_DENIED_KEYS = [
   'medicalnote',
   'medicalnotes',
   'medicalalert',
+  'medicalalerts',
+  'allergynote',
+  'allergynotes',
+  'allergyalert',
+  'allergyalerts',
+  'holdername',
+  'holdernote',
+  'holdernotes',
+  'membernote',
+  'membernotes',
   'consent',
   'consents',
   'foodconsent',
@@ -825,6 +830,7 @@ export function redactForCustomer(document: StationSessionDocument): StationSess
     // The till's wizard position means nothing on the display and tells anyone
     // watching how far through a sale the staff member is.
     step: null,
+    lease: null,
     cart: stripKeys(document.cart),
     totals: stripKeys(document.totals),
     payment: stripKeys(document.payment),
@@ -839,7 +845,7 @@ function pickMemberFields(
   if (!member) return null;
   const out: Record<string, unknown> = {};
   for (const key of CUSTOMER_MEMBER_FIELDS) {
-    if (key in member) out[key] = member[key];
+    if (key in member) out[key] = deepStrip(member[key]);
   }
   return out;
 }
@@ -854,7 +860,7 @@ function deepStrip(value: unknown): unknown {
   if (typeof value !== 'object') return value;
   const out: Record<string, unknown> = {};
   for (const [key, inner] of Object.entries(value as Record<string, unknown>)) {
-    if (CUSTOMER_DENIED_KEYS.includes(key.toLowerCase().replace(/_/g, ''))) continue;
+    if (CUSTOMER_DENIED_KEYS.includes(key.toLowerCase().replace(/[^a-z0-9]/g, ''))) continue;
     out[key] = deepStrip(inner);
   }
   return out;
@@ -865,8 +871,8 @@ function deepStrip(value: unknown): unknown {
  * was in them. A phone number in a log is a phone number in a log whether or
  * not anybody meant it to be there.
  */
-function redactIntentPayload(intent: StationIntent): Record<string, unknown> {
-  return { keys: Object.keys(intent.payload ?? {}).sort() };
+function redactIntentPayload(intent: StationIntent, deviceId?: string): Record<string, unknown> {
+  return { keys: Object.keys(intent.payload ?? {}).sort(), ...(deviceId ? { deviceId } : {}) };
 }
 
 // --- The intents the box understands today ----------------------------------
@@ -907,7 +913,116 @@ function wrong(message: string): IntentOutcome {
   return { ok: false, refusal: 'wrong_stage', message };
 }
 
+function notPermitted(message: string): IntentOutcome {
+  return { ok: false, refusal: 'not_permitted', message };
+}
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function exactFields(payload: Record<string, unknown>, fields: readonly string[]): boolean {
+  return Object.keys(payload).every((key) => fields.includes(key));
+}
+
+function boundedText(value: unknown, max: number, empty = false): value is string {
+  return typeof value === 'string' && value.trim().length <= max && (empty || value.trim().length > 0);
+}
+
+function displayAnswer(ctx: IntentContext, type: 'identify' | 'skip_identify' | 'contact_done'): IntentOutcome {
+  const { document, intent, serverTime } = ctx;
+  const kind = type === 'contact_done' ? 'contact' : 'identify';
+  if (!document.prompt || document.prompt.kind !== kind || document.stage !== (kind === 'contact' ? 'input' : 'identify')) {
+    return wrong('This screen is not asking for that answer.');
+  }
+  const fields = type === 'identify' ? ['requestId', 'phone', 'nickname', 'contactChannel']
+    : type === 'skip_identify' ? ['requestId'] : ['requestId', 'phone', 'nickname', 'contactChannel'];
+  if (!exactFields(intent.payload, fields) || !boundedText(intent.actionId, 64)
+    || !boundedText(intent.payload.requestId, 64) || intent.payload.requestId !== document.prompt.requestId) {
+    return notPermitted('This answer does not match the current request.');
+  }
+  if (type === 'identify' && !boundedText(intent.payload.phone, 32)) return notPermitted('Enter a phone number to identify.');
+  if (type === 'identify' && ((intent.payload.nickname !== undefined && !boundedText(intent.payload.nickname, 100, true))
+    || (intent.payload.contactChannel !== undefined && (typeof intent.payload.contactChannel !== 'string'
+      || !['whatsapp', 'telegram', 'line'].includes(intent.payload.contactChannel))))) {
+    return notPermitted('That identification answer is not valid.');
+  }
+  if (type === 'contact_done' && (!boundedText(intent.payload.phone, 32, true)
+    || !boundedText(intent.payload.nickname, 100, true)
+    || typeof intent.payload.contactChannel !== 'string'
+    || !['whatsapp', 'telegram', 'line'].includes(intent.payload.contactChannel))) {
+    return notPermitted('That contact answer is not valid.');
+  }
+  if (document.prompt.answer !== undefined && document.prompt.answer !== null) {
+    if (recordValue(document.prompt.answer)?.actionId === intent.actionId) return ok({ prompt: document.prompt });
+    return notPermitted('The till is still handling the answer already sent.');
+  }
+  return ok({ prompt: { ...document.prompt,
+    answer: { type, actionId: intent.actionId,
+      ...(type !== 'skip_identify' ? { phone: (intent.payload.phone as string).trim() } : {}),
+      ...(type !== 'skip_identify' && intent.payload.nickname !== undefined ? { nickname: (intent.payload.nickname as string).trim() } : {}),
+      ...(type !== 'skip_identify' && intent.payload.contactChannel !== undefined ? { contactChannel: intent.payload.contactChannel } : {}),
+    }, answeredAt: serverTime,
+  } });
+}
+
 export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
+  'session.publish_display': {
+    sources: ['till'],
+    requiresLease: true,
+    apply({ document, intent }) {
+      const { stage, step, cart, member, totals, payment, prompt } = intent.payload;
+      if (!exactFields(intent.payload, ['stage', 'step', 'cart', 'member', 'totals', 'payment', 'prompt'])
+        || typeof stage !== 'string' || !isStage(stage)
+        || (step !== undefined && step !== null && (!Number.isInteger(step) || Number(step) < 1 || Number(step) > 9))) {
+        return notPermitted('That display presentation is not valid.');
+      }
+      for (const value of [cart, member, totals, payment, prompt]) {
+        if (value !== undefined && value !== null && !recordValue(value)) return notPermitted('Display presentation fields must be records.');
+      }
+      const proposedPrompt = recordValue(prompt);
+      if (proposedPrompt && (!boundedText(proposedPrompt.kind, 32)
+        || (proposedPrompt.phone !== undefined && !boundedText(proposedPrompt.phone, 32, true))
+        || (proposedPrompt.nickname !== undefined && !boundedText(proposedPrompt.nickname, 100, true))
+        || (proposedPrompt.contactChannel !== undefined && (typeof proposedPrompt.contactChannel !== 'string'
+          || !['whatsapp', 'telegram', 'line'].includes(proposedPrompt.contactChannel))))) {
+        return notPermitted('That display prompt is not valid.');
+      }
+      if (proposedPrompt && ['identify', 'contact'].includes(String(proposedPrompt.kind))) {
+        if (!boundedText(proposedPrompt.requestId, 64)) return notPermitted('A display prompt needs a stable request id.');
+        if (stage !== (proposedPrompt.kind === 'identify' ? 'identify' : 'input')) return wrong('That prompt belongs to another display stage.');
+      }
+      const savedPrompt = proposedPrompt ? Object.fromEntries(['kind', 'requestId', 'phone', 'nickname', 'contactChannel']
+        .filter((key) => key in proposedPrompt).map((key) => [key, proposedPrompt[key]])) : null;
+      if (savedPrompt) {
+        delete savedPrompt.answer;
+        delete savedPrompt.answeredAt;
+        if (savedPrompt.requestId && savedPrompt.requestId === document.prompt?.requestId && savedPrompt.kind === document.prompt.kind) {
+          if (document.prompt.answer !== undefined) savedPrompt.answer = document.prompt.answer;
+          if (document.prompt.answeredAt !== undefined) savedPrompt.answeredAt = document.prompt.answeredAt;
+        }
+      }
+      const shownCart = recordValue(cart);
+      const shownMember = recordValue(member);
+      return ok({ stage, step: typeof step === 'number' ? step : null,
+        cart: shownCart ? Object.fromEntries(['sale', 'voucherPrize', 'nothingToPay', 'supported'].filter((key) => key in shownCart).map((key) => [key, deepStrip(shownCart[key])])) : null,
+        member: shownMember ? Object.fromEntries(['id', 'nickname', 'tier'].filter((key) => key in shownMember).map((key) => [key, deepStrip(shownMember[key])])) : null,
+        totals: stripKeys(totals), payment: stripKeys(payment), prompt: stripKeys(savedPrompt),
+      });
+    },
+  },
+  'display.identify': {
+    sources: ['display'], stages: ['identify'], requiresLease: false, advanceSequence: true,
+    apply: (ctx) => displayAnswer(ctx, 'identify'),
+  },
+  'display.skip_identify': {
+    sources: ['display'], stages: ['identify'], requiresLease: false, advanceSequence: true,
+    apply: (ctx) => displayAnswer(ctx, 'skip_identify'),
+  },
+  'display.contact_done': {
+    sources: ['display'], stages: ['input'], requiresLease: false, advanceSequence: true,
+    apply: (ctx) => displayAnswer(ctx, 'contact_done'),
+  },
   /** The display's language toggle, which the prototype already shows. */
   'display.set_language': {
     sources: DISPLAY_AND_TILL,
@@ -927,6 +1042,10 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
     requiresLease: false,
     apply({ document, intent }) {
       if (!document.prompt) return wrong('Nothing is being asked on this screen.');
+      if (['identify', 'contact'].includes(String(document.prompt.kind))) return notPermitted('Use the matching display action for this request.');
+      if (String(document.prompt.kind).toLowerCase().replace(/[^a-z]/g, '').includes('consent') && document.stage !== 'input') {
+        return wrong('Consent can only be answered on its input screen.');
+      }
       return ok({
         prompt: {
           ...document.prompt,

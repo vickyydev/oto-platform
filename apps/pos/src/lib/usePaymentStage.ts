@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { newId, PAYMENT_ATTEMPT_TAKEN_STATUSES, PAYMENT_ATTEMPT_TERMINAL_STATUSES, type PaymentAttemptView } from '@oto/shared';
 import { ApiError, NetworkError } from '@/api/client';
 import { paymentsApi, type ManualPaymentBody, type PaymentConfirmationBody, type PaymentQrMetadata, type PaymentStartBody } from '@/api/payments';
-import type { ApiSale, SaleTenderPayload } from '@/api/sales';
+import { salesApi, type ApiSale, type SaleTenderPayload } from '@/api/sales';
 import type { SaleWriteOutcome } from './saleWriter';
 import { findPaymentMethod } from './payments';
 import { lookup } from '@/i18n/dictionary';
@@ -40,6 +40,8 @@ export interface PaymentStageOptions {
   scope: string | number;
   isCurrentScope: (scope: string | number) => boolean;
   active?: boolean;
+  /** A staff lock pauses work without discarding this visitor's money state. */
+  paused?: boolean;
   totalSatang: number;
   prepareSale: () => Promise<SaleWriteOutcome>;
   finaliseSale: (tender?: SaleTenderPayload, actionId?: string) => Promise<SaleWriteOutcome>;
@@ -76,7 +78,9 @@ const initial = (total: number): PaymentStageState => ({
   phase: 'ready', saleId: null, method: null, kind: null, outstandingSatang: total, amountSatang: total,
   tenderedSatang: total, attempt: null, route: null, qr: emptyQr, error: null, retryable: false, settlements: [],
 });
-interface Context { scope: string | number; generation: number; saleId: string | null }
+interface Context { scope: string | number; generation: number; pause: number; saleId: string | null }
+type Operation = (ctx: Context) => Promise<void>;
+interface ResumeEvidence { saleId: string; attempt?: PaymentAttemptView | null; route?: PaymentStageState['route']; qr?: PaymentQrMetadata }
 
 /** Online collection only. A timer or a failed request never proves money was not taken. */
 export function usePaymentStage(options: PaymentStageOptions): PaymentStageController {
@@ -90,7 +94,15 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   const generation = useRef(0);
   const mounted = useRef(true);
   const inFlight = useRef<Promise<void> | null>(null);
-  const retryOperation = useRef<(() => Promise<void>) | null>(null);
+  const retryOperation = useRef<Operation | null>(null);
+  const pauseSequence = useRef(0);
+  const pauseState = useRef(Boolean(options.paused));
+  const resumeNeeded = useRef(false);
+  const resumeEvidence = useRef<ResumeEvidence | null>(null);
+  if (pauseState.current !== Boolean(options.paused)) {
+    pauseState.current = Boolean(options.paused);
+    pauseSequence.current += 1;
+  }
   const closeAction = useRef<string | null>(null);
   const completed = useRef<string | null>(null);
   const readSequence = useRef(0);
@@ -99,18 +111,27 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     stateRef.current = { ...stateRef.current, ...patch };
     setState(stateRef.current);
   };
-  const context = (): Context => ({ scope: optionsRef.current.scope, generation: generation.current, saleId: stateRef.current.saleId });
-  const current = (ctx: Context): boolean => mounted.current && generation.current === ctx.generation
-    && optionsRef.current.scope === ctx.scope && optionsRef.current.isCurrentScope(ctx.scope)
-    && optionsRef.current.active !== false
+  const context = (): Context => ({ scope: optionsRef.current.scope, generation: generation.current,
+    pause: pauseSequence.current, saleId: stateRef.current.saleId });
+  const sameSession = (ctx: Context): boolean => mounted.current && generation.current === ctx.generation
+    && optionsRef.current.scope === ctx.scope
     && (!ctx.saleId || !stateRef.current.saleId || ctx.saleId === stateRef.current.saleId);
-  const left = (ctx: Context, saleId: string) => { if (!current(ctx)) optionsRef.current.onLeftBehind?.(saleId); };
+  const current = (ctx: Context): boolean => sameSession(ctx) && pauseSequence.current === ctx.pause
+    && optionsRef.current.isCurrentScope(ctx.scope) && !optionsRef.current.paused
+    && optionsRef.current.active !== false;
+  const left = (ctx: Context, saleId: string) => { if (!sameSession(ctx)) optionsRef.current.onLeftBehind?.(saleId); };
+  const retain = (ctx: Context, evidence: ResumeEvidence) => {
+    if (sameSession(ctx)) resumeEvidence.current = evidence;
+    else left(ctx, evidence.saleId);
+  };
 
   useEffect(() => {
     generation.current += 1;
     readSequence.current += 1;
     inFlight.current = null;
     retryOperation.current = null;
+    resumeNeeded.current = false;
+    resumeEvidence.current = null;
     closeAction.current = null;
     completed.current = null;
     stateRef.current = initial(optionsRef.current.totalSatang);
@@ -141,9 +162,9 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     closeAction.current ??= newId();
     update({ phase: 'busy' });
     const result = await optionsRef.current.finaliseSale(undefined, closeAction.current);
-    if (!current(ctx)) { left(ctx, result.saleId); return; }
+    if (!current(ctx)) { retain(ctx, { saleId: result.saleId }); return; }
     if (!result.ok || !result.written) {
-      retryOperation.current = () => close(ctx);
+      retryOperation.current = close;
       update({ phase: 'blocked', error: result.ok ? 'This sale has not been recorded.' : result.message, retryable: !result.ok && result.retryable });
       return;
     }
@@ -208,13 +229,13 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     if (sequence !== readSequence.current || !current(ctx) || isComplete() || stateRef.current.attempt?.id !== attemptId) return;
     await adopt(ctx, result.attempt, result.outstandingSatang, result);
   };
-  const perform = (operation: () => Promise<void>, ctx: Context): Promise<void> => {
+  const perform = (operation: Operation, ctx: Context): Promise<void> => {
     if (inFlight.current) return inFlight.current;
     if (!current(ctx) || isComplete()) return Promise.resolve();
     readSequence.current += 1;
     retryOperation.current = operation;
     update({ phase: 'busy', error: null, retryable: false });
-    const running = Promise.resolve().then(operation).catch((err: unknown) => {
+    const running = Promise.resolve().then(() => current(ctx) ? operation(ctx) : undefined).catch((err: unknown) => {
       if (!current(ctx) || stateRef.current.phase === 'complete') return;
       const reserved = err instanceof ApiError && err.code === 'PAYMENT_IN_FLIGHT';
       const retryable = err instanceof NetworkError || !(err instanceof ApiError) || err.status >= 500 || err.code === 'IDEMPOTENCY_IN_FLIGHT';
@@ -230,7 +251,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   };
   const prepare = async (ctx: Context): Promise<ApiSale | null> => {
     const result = await optionsRef.current.prepareSale();
-    if (!current(ctx)) { left(ctx, result.saleId); return null; }
+    if (!current(ctx)) { retain(ctx, { saleId: result.saleId }); return null; }
     if (!result.ok || !result.written) {
       update({ phase: 'failed', error: result.ok ? 'Record this sale before taking payment.' : result.message,
         retryable: !result.ok && result.retryable });
@@ -246,7 +267,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
 
   const submit = (): Promise<void> => {
     const snapshot = stateRef.current;
-    if (!onlineRef.current || ['complete', 'blocked', 'pending', 'manual', 'busy'].includes(snapshot.phase) || unresolved(snapshot.attempt)) return Promise.resolve();
+    if (optionsRef.current.paused || !onlineRef.current || ['complete', 'blocked', 'pending', 'manual', 'busy'].includes(snapshot.phase) || unresolved(snapshot.attempt)) return Promise.resolve();
     const configured = snapshot.method ? findPaymentMethod(snapshot.method) : undefined;
     // A deliberate gesture freezes the current configuration, not the earlier
     // selection. Its body, kind and action stay unchanged if it needs a retry.
@@ -256,9 +277,12 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     const actionId = newId();
     const amount = snapshot.amountSatang;
     const tendered = snapshot.tenderedSatang;
-    return perform(async () => {
-      const sale = await prepare(ctx);
+    let preparedSale: ApiSale | null = null;
+    return perform(async (ctx) => {
+      const sale = preparedSale ?? await prepare(ctx);
       if (!sale || !current(ctx)) return;
+      preparedSale = sale;
+      ctx.saleId = sale.id;
       if (stateRef.current.outstandingSatang === 0) { await close(ctx); return; }
       if (!method?.enabled || !money(amount) || amount <= 0 || amount > stateRef.current.outstandingSatang) {
         update({ phase: 'failed', error: 'Choose an enabled payment method and an amount within the balance.', retryable: false });
@@ -271,7 +295,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         }
         const tender: SaleTenderPayload = { method: method.id, kind: 'cash', amountSatang: amount, tenderedSatang: tendered, changeSatang: tendered - amount };
         const result = await optionsRef.current.finaliseSale(tender, actionId);
-        if (!current(ctx)) { left(ctx, result.saleId); return; }
+        if (!current(ctx)) { retain(ctx, { saleId: result.saleId, ...(result.ok && result.written ? { attempt: result.attempt } : {}) }); return; }
         if (!result.ok || !result.written) {
           update({ phase: !result.ok && (result.retryable || result.code === 'PAYMENT_IN_FLIGHT') ? 'blocked' : 'failed', retryable: !result.ok && result.retryable,
             error: result.ok ? 'This payment has not been recorded.' : result.message });
@@ -289,12 +313,12 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         const body: PaymentStartBody = { saleId: sale.id, actionId, method: method.id, kind: method.kind,
           tender: method.kind, amountSatang: amount, ...(method.kind === 'qr' ? { requestQrPayload: true, qrDirection: 'show' } : {}) };
         const result = await paymentsApi.start(body);
-        if (!current(ctx)) { left(ctx, sale.id); return; }
+        if (!current(ctx)) { retain(ctx, { saleId: sale.id, attempt: result.attempt, route: result.route, qr: result }); return; }
         update({ route: result.route, outstandingSatang: result.outstandingSatang, qr: result });
         if (result.route === 'manual' && !result.attempt) update({ phase: 'manual' });
         else if (result.attempt) {
           const attemptId = result.attempt.id;
-          retryOperation.current = () => refresh(ctx, attemptId);
+          retryOperation.current = (ctx) => refresh(ctx, attemptId);
           await adopt(ctx, result.attempt, result.outstandingSatang, result);
         }
         else throw new Error('The payment route did not return an attempt.');
@@ -308,7 +332,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     if (retryOperation.current) return perform(retryOperation.current, context());
     const attempt = stateRef.current.attempt;
     const ctx = context();
-    return attempt ? perform(() => refresh(ctx, attempt.id), ctx) : Promise.resolve();
+    return attempt ? perform((ctx) => refresh(ctx, attempt.id), ctx) : Promise.resolve();
   };
   const canInquire = state.route === 'card_terminal' && Boolean(state.attempt && supportsInquiry(state.attempt)
     && ['unknown', 'awaiting_staff_confirmation'].includes(state.attempt.status));
@@ -320,11 +344,11 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     const ctx = context();
     const attemptId = stateRef.current.attempt.id;
     const actionId = newId();
-    return perform(async () => {
+    return perform(async (ctx) => {
       const result = await paymentsApi.inquire(attemptId, actionId);
       if (!current(ctx) || stateRef.current.attempt?.id !== attemptId) return;
       update({ attempt: result.attempt });
-      retryOperation.current = () => refresh(ctx, attemptId);
+      retryOperation.current = (ctx) => refresh(ctx, attemptId);
       await refresh(ctx, attemptId);
     }, ctx);
   };
@@ -334,11 +358,11 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     const attemptId = stateRef.current.attempt.id;
     const actionId = newId();
     const body = { ...details, took };
-    return perform(async () => {
+    return perform(async (ctx) => {
       const result = await paymentsApi.confirm(attemptId, body, actionId);
       if (!current(ctx) || stateRef.current.attempt?.id !== attemptId) return;
       update({ attempt: result.attempt });
-      retryOperation.current = () => refresh(ctx, attemptId);
+      retryOperation.current = (ctx) => refresh(ctx, attemptId);
       await refresh(ctx, attemptId);
     }, ctx);
   };
@@ -352,17 +376,69 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     const body: ManualPaymentBody = { ...details, approvalCode: details.approvalCode.trim(), tid: details.tid.trim(),
       saleId: snapshot.saleId, actionId: newId(), method: method.id, kind: method.kind, amountSatang: snapshot.amountSatang };
     update({ kind: method.kind });
-    return perform(async () => {
+    return perform(async (ctx) => {
       const result = await paymentsApi.manual(body);
-      if (!current(ctx)) { left(ctx, body.saleId); return; }
+      if (!current(ctx)) { retain(ctx, { saleId: body.saleId, attempt: result.attempt }); return; }
       update({ attempt: result.attempt });
-      retryOperation.current = () => refresh(ctx, result.attempt.id);
+      retryOperation.current = (ctx) => refresh(ctx, result.attempt.id);
       await adopt(ctx, result.attempt, result.outstandingSatang);
     }, ctx);
   };
 
   useEffect(() => {
-    if (!online || options.active === false || !state.attempt || state.phase === 'busy' || state.phase === 'complete'
+    if (options.paused) {
+      resumeNeeded.current = true;
+      readSequence.current += 1;
+      return;
+    }
+    if (!resumeNeeded.current || options.active === false || !online) return;
+    resumeNeeded.current = false;
+    if (isComplete()) return;
+    const ctx = context();
+    const pending = inFlight.current;
+    const beforeResume = stateRef.current;
+    update({ phase: 'blocked', retryable: false, error: 'Checking the payment after unlock.' });
+    const recover = async () => {
+      await pending;
+      if (!current(ctx) || isComplete()) return;
+      const evidence = resumeEvidence.current;
+      const retainedOperation = retryOperation.current;
+      await perform(async (ctx) => {
+        const saleId = evidence?.saleId ?? stateRef.current.saleId;
+        let sale: ApiSale | undefined;
+        if (saleId) {
+          sale = (await salesApi.get(saleId)).sale;
+          if (!current(ctx)) return;
+          if (sale.id !== saleId) throw new Error('The payment answer belongs to another sale.');
+          ctx.saleId = sale.id;
+          update({ saleId: sale.id });
+        }
+        const attempt = evidence?.attempt ?? stateRef.current.attempt;
+        if (attempt) {
+          update({ attempt, ...(evidence?.route ? { route: evidence.route } : {}), ...(evidence?.qr ? { qr: evidence.qr } : {}) });
+          retryOperation.current = (ctx) => refresh(ctx, attempt.id);
+          await refresh(ctx, attempt.id);
+        } else if (evidence?.route === 'manual' || beforeResume.phase === 'manual') {
+          update({ route: 'manual', phase: 'manual' });
+        } else if (retainedOperation) {
+          retryOperation.current = retainedOperation;
+          update({ phase: 'blocked', error: 'The payment answer could not be confirmed. Retry the original payment.', retryable: true });
+        } else if (sale?.status === 'finalised') {
+          await finish(ctx, sale);
+        } else {
+          update({ phase: beforeResume.phase === 'blocked' ? 'blocked' : 'ready',
+            error: beforeResume.error, retryable: beforeResume.retryable });
+        }
+        if (current(ctx)) resumeEvidence.current = null;
+      }, ctx);
+    };
+    void recover();
+    // Resume uses retained refs, not a new collection gesture.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options.paused, options.active, options.scope, online]);
+
+  useEffect(() => {
+    if (!online || options.paused || options.active === false || !state.attempt || state.phase === 'busy' || state.phase === 'complete'
       || (!unresolved(state.attempt) && !state.retryable)) return;
     const ctx = context();
     const attemptId = state.attempt.id;
@@ -377,23 +453,23 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     return () => { stopped = true; clearTimeout(timer); };
     // The retained attempt owns this loop; render callbacks use current refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [online, options.active, options.scope, state.attempt?.id, state.attempt?.status, state.attempt?.reversalPending, state.phase, state.retryable]);
+  }, [online, options.paused, options.active, options.scope, state.attempt?.id, state.attempt?.status, state.attempt?.reversalPending, state.phase, state.retryable]);
 
   const busy = state.phase === 'busy';
-  const locked = busy || unresolved(state.attempt) || state.phase === 'blocked';
+  const locked = Boolean(options.paused) || busy || unresolved(state.attempt) || state.phase === 'blocked';
   const method = state.method ? findPaymentMethod(state.method) : undefined;
   const canSubmit = !locked && state.phase !== 'complete' && state.phase !== 'manual'
     && (state.outstandingSatang === 0 || Boolean(method?.enabled && money(state.amountSatang) && state.amountSatang > 0
       && state.amountSatang <= state.outstandingSatang && (method.kind !== 'cash' || state.tenderedSatang >= state.amountSatang)));
   return {
-    state, busy, online, locked, canSubmit: canSubmit && online, canInquire: canInquire && !busy && online, canConfirm: canConfirm && !busy && online,
+    state, busy, online, locked, canSubmit: canSubmit && online, canInquire: canInquire && !busy && online && !options.paused, canConfirm: canConfirm && !busy && online && !options.paused,
     canBack: !locked && state.settlements.length === 0 && state.phase !== 'complete',
     display: { saleId: state.saleId, amountSatang: state.attempt?.amountSatang ?? state.amountSatang,
       qrPayload: state.qr.qrPayload, qrImageUrl: state.qr.qrImageUrl, expiresAt: state.qr.expiresAt,
       status: state.phase === 'complete' ? 'paid' : locked ? state.phase === 'blocked' ? 'blocked' : 'pending' : state.phase === 'failed' ? 'failed' : 'idle',
       offline: state.attempt?.offline ?? false, online },
     selectMethod: (token) => {
-      if (stateRef.current.phase === 'busy' || stateRef.current.phase === 'blocked' || unresolved(stateRef.current.attempt) || stateRef.current.phase === 'complete') return;
+      if (optionsRef.current.paused || stateRef.current.phase === 'busy' || stateRef.current.phase === 'blocked' || unresolved(stateRef.current.attempt) || stateRef.current.phase === 'complete') return;
       const selected = findPaymentMethod(token);
       if (!selected?.enabled) return;
       retryOperation.current = null;

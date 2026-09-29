@@ -4,14 +4,42 @@
 
 _Current checkpoint: 2026-09-29._
 
-SCRUM-201 is the next active story: a separate display browser paired to the
-ticket till, using the existing box station document. The first complete slice
-covers expiring six-digit pairing, manager claim, display-only credentials,
-redacted snapshots, stage-valid identification/contact/language, revocation
-and independence from staff lock/sign-out. API/DB, box intent rules and Console
-claim controls are proceeding in parallel with the POS route and till bridge.
-The inline harness remains available, including supervision flows that need
-their later display acceptance. No separate-display acceptance is claimed yet.
+SCRUM-201 is In Progress. The checked online ticket
+identification slice now has real browser proof: expiring six-digit display
+pairing, Console claim, an independent device credential, redacted station
+snapshots, identification/contact/language intents and revocation. Eleven
+local browser checks passed against a disposable database, including all five
+languages, reload, a lost reply while staff are locked, adoption by the same
+visitor on unlock, hidden staff dialogs and sign-out independence. Local
+screenshots are labelled and credentials are masked. These are not staging
+acceptance or evidence of physical/offline operation.
+
+The first slice also enforces one active paired display per station. Forward
+migration 0030 adds pairing-request hashes; 0031 adds the narrow active-display
+index and a count-only duplicate preflight. It preserves historical and
+unredeemed credentials and never chooses a display to revoke. Read-only
+staging metadata showed zero active paired displays in accessible OTO parks.
+The migration also checks operators outside that visibility.
+
+Same-session ticket locks retain visitor state while removing staff surfaces
+and pausing privileged work. A true sign-out, station/account change or reload
+resets that in-memory workflow. Payment pause/recovery retains the same attempt and action. Unlock reads the
+authoritative result; an unknown reply requires Retry of the original gesture
+and cannot start a new collection automatically.
+The existing inline harness remains for order/payment/thank-you, supervision,
+F&B and shop. Full SCRUM-201 is NOT BUILT yet. Next is the online ticket
+order/payment projection, followed by supervision intents and Console
+diagnostics; see `docs/qa/separate-display/README.md`.
+
+Validation: **328 affected existing-file tests pass** (API 130, database 28,
+box station 24, POS scan/display 40, payment writer 64, till voucher 40 and
+Console browser controls 2). Eleven additional native browser checks pass.
+All five touched packages pass typecheck and full lint; POS and Console
+production builds pass. Fresh/repeat migrations and schema verification match
+0031. Independent review found a queued-payment lock race; its final fence
+and existing-file regression now pass. No new suite or dependency.
+Six reviewed local screenshots are attached to SCRUM-201 as 10882-10887 and
+named in the push comment. They do not justify Deployed.
 
 The 29 September continuation instruction explicitly keeps independent work
 moving while deployment or an owner decision is pending. Checkpoint after each

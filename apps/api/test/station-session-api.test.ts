@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { randomBytes } from 'node:crypto';
 import { and, desc, eq } from 'drizzle-orm';
 import {
   account,
@@ -30,6 +31,95 @@ import { newId } from '@oto/shared';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 import { provisionVirtualBox } from '../src/services/box';
 import { forcedOfflineStation } from '../src/services/station-offline';
+
+describe('paired display transport uses the redacted station document (SCRUM-201)', () => {
+  let proof: TestContext;
+  let staffCookie: string;
+  let targetId: string;
+  let deviceId: string;
+  let authorization: string;
+  let leaseId: string;
+  let sequence: number;
+  const requestId = newId();
+  const staffIntent = (type: string, payload: Record<string, unknown>) => proof.app.inject({
+    method: 'POST', url: `/stations/${targetId}/intents`, headers: { cookie: staffCookie },
+    payload: { type, payload, leaseId, lastSeenSequence: sequence, actionId: newId() },
+  });
+  const displayRead = () => proof.app.inject({ method: 'GET', url: '/display/session', headers: { authorization } });
+  const send = (type: string, payload: Record<string, unknown>, lastSeenSequence = sequence) => proof.app.inject({
+    method: 'POST', url: '/display/intents', headers: { authorization },
+    payload: { type, payload, lastSeenSequence, actionId: newId() },
+  });
+
+  beforeAll(async () => {
+    proof = await createTestContext();
+    const managerCookie = await signInAs(proof.app, ADMIN.phone, ADMIN.password);
+    staffCookie = await signInAs(proof.app, RECEPTION.phone, RECEPTION.password);
+    const [target] = await proof.db.select({ id: station.id }).from(station)
+      .where(eq(station.name, 'Reception Till 1')).limit(1);
+    targetId = target!.id;
+    expect((await proof.app.inject({ method: 'PUT', url: '/me/session/station', headers: { cookie: staffCookie },
+      payload: { stationId: targetId } })).statusCode).toBe(200);
+    authorization = `Bearer ${randomBytes(32).toString('hex')}`;
+    const requested = await proof.app.inject({ method: 'POST', url: '/display/pairing', headers: { authorization }, payload: {} });
+    expect(requested.statusCode).toBe(200);
+    const claimed = await proof.app.inject({ method: 'POST', url: `/stations/${targetId}/displays/claim`,
+      headers: { cookie: managerCookie }, payload: { pairingCode: requested.json().pairingCode, name: 'Test display' } });
+    expect(claimed.statusCode).toBe(200);
+    deviceId = claimed.json().device.id as string;
+    const lease = await proof.app.inject({ method: 'POST', url: `/stations/${targetId}/lease`,
+      headers: { cookie: staffCookie }, payload: { holder: 'Display transport proof', holderKind: 'till' } });
+    expect(lease.statusCode).toBe(200);
+    leaseId = lease.json().lease.leaseId as string;
+    sequence = lease.json().document.sequence as number;
+  });
+  afterAll(async () => { await proof.close(); });
+
+  it('publishes only the customer view, with no health notes or staff lease on success and refusals', async () => {
+    const published = await staffIntent('session.publish_display', {
+      stage: 'identify', step: 1, cart: null, totals: null, payment: null,
+      member: { id: newId(), nickname: 'Park guest', tier: 'tourist', notes: 'Private note', allergies: ['fixture allergen'] },
+      prompt: { kind: 'identify', requestId, phone: '', nickname: '', contactChannel: 'whatsapp' },
+    });
+    expect(published.statusCode).toBe(200);
+    sequence = published.json().document.sequence as number;
+    const shown = await displayRead();
+    expect(shown.statusCode).toBe(200);
+    expect(shown.json().document.lease).toBeNull();
+    expect(shown.json().document.step).toBeNull();
+    expect('notes' in shown.json().document.member).toBe(false);
+    expect('allergies' in shown.json().document.member).toBe(false);
+    const refused = await send('session.reset', {});
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json().error.code).toBe('DISPLAY_INTENT_REFUSED');
+    expect(refused.json().error.details.document.lease).toBeNull();
+    expect('notes' in refused.json().error.details.document.member).toBe(false);
+    const stale = await send('display.identify', { requestId, phone: '0812340000' }, 0);
+    expect(stale.statusCode).toBe(409);
+    expect(stale.json().error.code).toBe('STATION_STALE');
+    expect(stale.json().error.details.document.lease).toBeNull();
+    expect('allergies' in stale.json().error.details.document.member).toBe(false);
+  });
+
+  it('applies typed identify once, advances the sequence and keeps language lease-free', async () => {
+    const identified = await send('display.identify', { requestId, phone: '0812340000' });
+    expect(identified.statusCode).toBe(200);
+    expect(identified.json().document.sequence).toBe(sequence + 1);
+    expect(identified.json().document.prompt.answer.type).toBe('identify');
+    sequence = identified.json().document.sequence as number;
+    const language = await send('display.set_language', { language: 'th' });
+    expect(language.statusCode).toBe(200);
+    expect(language.json().document.language).toBe('th');
+    expect(language.json().document.sequence).toBe(sequence);
+    const typedBypass = await send('display.answer_prompt', { value: 'untyped answer' });
+    expect(typedBypass.statusCode).toBe(403);
+    const wrongStage = await send('display.contact_done', { requestId, phone: '0812340000', nickname: 'Guest', contactChannel: 'whatsapp' });
+    expect(wrongStage.statusCode).toBe(403);
+    const status = await proof.app.inject({ method: 'GET', url: `/stations/${targetId}/displays`, headers: { cookie: staffCookie } });
+    expect(status.statusCode).toBe(200);
+    expect(status.json().displays).toContainEqual({ id: deviceId, name: 'Test display', lastSeenAt: expect.any(String), connected: true });
+  });
+});
 
 /**
  * S2-05 — the station session document, reached the way a screen reaches it.

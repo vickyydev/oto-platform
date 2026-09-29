@@ -54,6 +54,7 @@ import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
 import { permissionPlugin } from './plugins/permission';
 import { stationOfflinePlugin } from './plugins/station-offline';
+import { displayRoutes } from './routes/display';
 import { credentialPlugin } from './plugins/credential';
 import { telemetryPlugin } from './plugins/telemetry';
 import { pgErrorOf, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
@@ -394,6 +395,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // reason: its routes hang off `/stations/:id` and `/me`, two prefixes that
   // are already spoken for, so the paths are declared in full.
   await app.register(stationSessionRoutes);
+  await app.register(displayRoutes);
   // Printing (S2-06), beside the fleet and for the same reason: its resources
   // hang off /branches/:branchId, /boxes/:id, /stations/:id and /devices/:id,
   // four prefixes already spoken for, so the paths are declared in full.

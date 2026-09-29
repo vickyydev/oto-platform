@@ -9,6 +9,7 @@ import {
   type BoothDeviceAuth,
 } from '../services/device-credential';
 import type { PermissionConfig } from './permission';
+import { authenticateDisplay, displayBearerHash, displayUnpaired, type DisplayDeviceAuth } from '../services/display';
 
 /**
  * `config.credential` was a label; this makes it a guard (S2-04 review, F3).
@@ -37,6 +38,8 @@ declare module 'fastify' {
     boxAuth: BoxAuth | null;
     /** Set by this plugin on a `credential: 'booth'` route, null everywhere else. */
     boothDevice: BoothDeviceAuth | null;
+    displayDevice: DisplayDeviceAuth | null;
+    displayPairingHash: string | null;
   }
 }
 
@@ -62,15 +65,38 @@ export function boothDeviceOf(req: FastifyRequest): BoothDeviceAuth {
   return req.boothDevice;
 }
 
+export function displayDeviceOf(req: FastifyRequest): DisplayDeviceAuth {
+  if (!req.displayDevice) throw displayUnpaired();
+  return req.displayDevice;
+}
+
+export function displayPairingHashOf(req: FastifyRequest): string {
+  if (!req.displayPairingHash) throw displayUnpaired();
+  return req.displayPairingHash;
+}
+
 export const credentialPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest('boxAuth', null);
   app.decorateRequest('boothDevice', null);
+  app.decorateRequest('displayDevice', null);
+  app.decorateRequest('displayPairingHash', null);
 
   app.addHook('onRoute', (route: RouteOptions) => {
     const kind = (route.config as PermissionConfig | undefined)?.credential;
     if (!kind) return;
 
     const guard = async (req: FastifyRequest) => {
+      if (kind === 'display-pairing') {
+        req.displayPairingHash = displayBearerHash(req.headers.authorization);
+        return;
+      }
+      if (kind === 'display') {
+        req.displayDevice = await authenticateDisplay(
+          app.db, displayBearerHash(req.headers.authorization),
+          req.routeOptions.config.displayScope ?? 'display:read',
+        );
+        return;
+      }
       if (kind === 'box') {
         req.boxAuth = await authenticateBox(app.db, req.headers.authorization, {
           ip: req.ip,

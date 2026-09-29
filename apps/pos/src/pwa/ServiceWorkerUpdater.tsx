@@ -35,18 +35,13 @@ const ACTIVITY_EVENTS = ['keydown', 'pointerdown', 'touchstart'] as const;
  *
  * Three conditions, and they rule out different things.
  *
- * `atLockScreen` is the strong one: it is the only state in which the shell is
- * holding nothing — no cart, no member on screen, no half-finished child
- * confirmation — because `AuthGate` renders the lock screen INSTEAD of the
- * router, so every selling surface is unmounted behind it.
+ * `atLockScreen` requires the staff controls to be closed. The desktop ticket
+ * till can retain a visitor in memory during a same-session lock, so this
+ * condition alone does not make a reload safe.
  *
- * `saleOpen` asks the selling surfaces themselves (`src/pwa/openSale.ts`).
- * Because of what the previous paragraph says, it is already false whenever
- * the first condition is true: a locked till has no mounted till page to
- * report a cart. It is evaluated rather than assumed because the two
- * conditions are about different things — which screen is showing, and what
- * the till is holding — and they only coincide while the lock screen replaces
- * the router rather than covering it.
+ * `saleOpen` asks the selling surfaces (`src/pwa/openSale.ts`) whether they
+ * hold a cart, visitor or paired display prompt. Those retained workflows
+ * block the update until they finish or staff sign out.
  *
  * `idle` is the one that does real work every time: a lock screen with
  * somebody standing at it, typing, is not a safe moment even though it holds

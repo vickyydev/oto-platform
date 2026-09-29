@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
 import {
   account,
   box,
@@ -2169,6 +2169,14 @@ export async function pairCredential(
   const code = mintClaimCode();
   const expiresAt = new Date(Date.now() + boxSettings().claimCodeTtlS * 1000);
   const created = await withTx(db, ctx, 'device_credential.pair', async (tx) => {
+    if (input.kind === 'display') {
+      await tx.select({ id: station.id }).from(station).where(eq(station.id, stationRow.id)).for('update');
+      const [active] = await tx.select({ id: deviceCredential.id }).from(deviceCredential).where(and(
+        eq(deviceCredential.stationId, stationRow.id), eq(deviceCredential.kind, 'display'),
+        isNull(deviceCredential.revokedAt), isNotNull(deviceCredential.pairedAt), isNotNull(deviceCredential.secretHash),
+      )).limit(1);
+      if (active) throw new AppError(409, 'DISPLAY_STATION_OCCUPIED', 'Revoke the current display before pairing another at this station');
+    }
     await tx.insert(deviceCredential).values({
       id,
       operatorId: actor.operatorId,
@@ -2215,7 +2223,8 @@ export async function revokeCredential(
   if (before.revokedAt) {
     throw new AppError(409, 'CREDENTIAL_ALREADY_REVOKED', 'That credential is already revoked');
   }
-  await withTx(db, ctx, 'device_credential.revoke', async (tx) => {
+  const action = before.kind === 'display' ? 'display.revoked' : 'device_credential.revoke';
+  await withTx(db, ctx, action, async (tx) => {
     /**
      * Revoking is not deleting: the row stays, with who revoked it and why.
      * What goes is everything that could still authenticate — the live secret
@@ -2235,7 +2244,7 @@ export async function revokeCredential(
       actorAccountId: actor.accountId,
       operatorId: actor.operatorId,
       branchId: before.branchId,
-      action: 'device_credential.revoke',
+      action,
       entityType: 'device_credential',
       entityId: before.id,
       before: credentialView(before),

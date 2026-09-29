@@ -118,6 +118,141 @@ test('Devices: a box is added by pressing the dialog, and Cancel adds nothing', 
   await expect(added).toBeVisible({ timeout: 30_000 });
 });
 
+test('Devices: a display code is cleared after refusal and claim, and the paired screen can be revoked', async ({
+  page,
+}) => {
+  await signInAndWait(page);
+  const displayId = crypto.randomUUID();
+  const displayName = 'Smoke display 201';
+  let claimed = false;
+  let revoked = false;
+  let claimCount = 0;
+  let validRequest = false;
+  let submittedCode = '';
+  let chosenStationId = '';
+  let chosenStationName = '';
+
+  await page.route('**/api/branches/*/credentials', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    if (claimed && !revoked) {
+      body.credentials.push({
+        id: displayId,
+        kind: 'display',
+        label: displayName,
+        stationId: chosenStationId,
+        pairedAt: new Date().toISOString(),
+        lastSeenAt: null,
+        pairingOutstanding: false,
+        revokedAt: null,
+        scopes: ['display:read', 'display:intents'],
+      });
+    }
+    await route.fulfill({ response, json: body });
+  });
+  await page.route('**/api/stations/*/displays/claim', async (route) => {
+    const body = route.request().postDataJSON();
+    claimCount += 1;
+    submittedCode = body.pairingCode;
+    validRequest =
+      route.request().method() === 'POST' &&
+      new URL(route.request().url()).pathname.endsWith(
+        `/stations/${chosenStationId}/displays/claim`,
+      ) &&
+      /^[0-9]{6}$/.test(body.pairingCode) &&
+      body.name === displayName &&
+      Boolean(route.request().headers()['idempotency-key']);
+    if (claimCount === 1) {
+      await route.fulfill({
+        status: 409,
+        json: {
+          error: {
+            code: 'DISPLAY_PAIRING_INVALID',
+            message: `Unavailable code: ${body.pairingCode}`,
+          },
+        },
+      });
+    } else {
+      claimed = true;
+      await route.fulfill({
+        json: {
+          station: { id: chosenStationId, name: chosenStationName, kind: 'till' },
+          device: { id: displayId, name: displayName },
+        },
+      });
+    }
+  });
+  await page.route(`**/api/credentials/${displayId}/revoke`, async (route) => {
+    revoked = true;
+    await route.fulfill({ json: { ok: true } });
+  });
+
+  await openSection(page, 'Devices');
+  await chooseBranch(page, CENTRAL_FLORESTA);
+  const pairedScreens = page.locator('section').filter({
+    has: page.getByRole('heading', { name: 'Paired screens', exact: true }),
+  });
+  await pairedScreens.getByRole('button', { name: 'Pair a display', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Pair a display', exact: true });
+  const station = dialog.getByRole('combobox', { name: 'Station', exact: true });
+  chosenStationId = await station.inputValue();
+  chosenStationName = await station.locator('option:checked').innerText();
+  await dialog.getByLabel('Display name').fill(` ${displayName} `);
+  const code = dialog.getByLabel('Pairing code');
+  const submit = dialog.getByRole('button', { name: 'Pair the display', exact: true });
+  await expect(code).toHaveAttribute('type', 'password');
+  await expect(code).toHaveAttribute('inputmode', 'numeric');
+  await code.fill(String(Math.floor(Math.random() * 90_000) + 10_000));
+  await expect(submit).toBeDisabled();
+  expect(claimCount).toBe(0);
+  await code.fill(String(Math.floor(Math.random() * 900_000) + 100_000));
+  await submit.click();
+  await expect(dialog.getByRole('alert')).toContainText('Get a new code on the display');
+  expect((await code.inputValue()) === '').toBe(true);
+  expect((await dialog.innerText()).includes(submittedCode)).toBe(false);
+  expect(validRequest).toBe(true);
+
+  await code.fill(String(Math.floor(Math.random() * 900_000) + 100_000));
+  await submit.click();
+  await expect(dialog.getByRole('status')).toContainText(
+    `${displayName} is paired to ${chosenStationName}`,
+  );
+  expect(claimCount).toBe(2);
+  expect(validRequest).toBe(true);
+  await expect(code).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+  const row = pairedScreens.getByRole('listitem').filter({ hasText: displayName });
+  await expect(row).toBeVisible();
+  await expect(row).toContainText(chosenStationName);
+  await row.getByRole('button', { name: 'Revoke', exact: true }).click();
+  await expect(row).toHaveCount(0);
+  expect(revoked).toBe(true);
+});
+
+test('Devices: a display pairing grant for another branch does not offer this park a claim', async ({
+  page,
+}) => {
+  await signInAndWait(page);
+  await page.route('**/api/me/permissions', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.permissions = body.permissions.filter(
+      (grant: { permission: string }) => grant.permission !== 'admin:device:pair',
+    );
+    body.permissions.push({
+      permission: 'admin:device:pair',
+      scopeType: 'branch',
+      scopeId: crypto.randomUUID(),
+    });
+    await route.fulfill({ response, json: body });
+  });
+  await page.reload();
+  await openSection(page, 'Devices');
+  await chooseBranch(page, CENTRAL_FLORESTA);
+  await expect(page.getByRole('heading', { name: 'Paired screens', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pair a display', exact: true })).toHaveCount(0);
+});
+
 /**
  * THE CARD TERMINALS — SCRUM-206's Console surface.
  *

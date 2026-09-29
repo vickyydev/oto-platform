@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import pg from 'pg';
 import {
+  newId,
   PAYMENT_ATTEMPT_STATUSES as SHARED_STATUSES,
   PAYMENT_METHOD_KINDS as SHARED_KINDS,
   PAYMENT_METHODS as SHARED_METHODS,
@@ -38,6 +40,69 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
 
 let db: { url: string; drop: () => Promise<void> };
 let client: pg.Client;
+
+describe('anonymous display pairing constraints (SCRUM-201)', () => {
+  it('keeps anonymous request tokens and outstanding codes unique and rejects half-claimed rows', async () => {
+    const requestId = newId();
+    const tokenHash = `fixture-token-${newId()}`;
+    const codeHash = `fixture-code-${newId()}`;
+    const insert = (id: string, token: string, code: string | null) => client.query(
+      `insert into core.display_pairing_request (id, token_hash, pairing_code_hash, expires_at)
+       values ($1, $2, $3, now() + interval '10 minutes')`, [id, token, code],
+    );
+    await insert(requestId, tokenHash, codeHash);
+    await expect(insert(newId(), tokenHash, null)).rejects.toThrow(/display_pairing_request_token_unique/);
+    await expect(insert(newId(), `fixture-token-${newId()}`, codeHash)).rejects.toThrow(/display_pairing_request_code_unique/);
+    await expect(client.query(
+      'update core.display_pairing_request set claimed_at = now() where id = $1', [requestId],
+    )).rejects.toThrow(/display_pairing_request_claim_check/);
+    await client.query('update core.display_pairing_request set pairing_code_hash = null where id = $1', [requestId]);
+    await expect(insert(newId(), `fixture-token-${newId()}`, codeHash)).resolves.toBeDefined();
+  });
+
+  it('limits live paired displays while retaining revoked and unredeemed history', async () => {
+    const { rows } = await client.query<{ id: string; operator_id: string; branch_id: string }>(
+      `with o as (
+         insert into core.operator (id, name) values (gen_random_uuid(), 'Display constraint op') returning id
+       ), b as (
+         insert into core.branch (id, operator_id, name, code)
+         select gen_random_uuid(), o.id, 'Display constraint park', 'DP' from o returning id, operator_id
+       )
+       insert into core.station (id, operator_id, branch_id, name, kind)
+       select gen_random_uuid(), b.operator_id, b.id, 'Display constraint station', 'till' from b
+       returning id, operator_id, branch_id`,
+    );
+    const target = rows[0]!;
+    const insert = (id: string, kind: 'display' | 'kiosk', paired: boolean) => client.query(
+      `insert into core.device_credential (id, operator_id, branch_id, station_id, kind, paired_at, secret_hash)
+       values ($1, $2, $3, $4, $5, case when $6 then now() else null end, $7)`,
+      [id, target.operator_id, target.branch_id, target.id, kind, paired, paired ? `fixture-secret-hash-${newId()}` : null],
+    );
+    await insert(newId(), 'display', false);
+    await insert(newId(), 'display', false);
+    const first = newId();
+    await insert(first, 'display', true);
+    // Rehearse 0031 against conflicting historical rows without altering them.
+    // Rolling back also restores the index removed only in this test database.
+    await client.query('begin');
+    try {
+      await client.query('drop index core.device_credential_active_display_unique');
+      await insert(newId(), 'display', true);
+      const migration = readFileSync(new URL('../migrations/0031_active_station_display.sql', import.meta.url), 'utf8');
+      await expect(client.query(migration)).rejects.toThrow(/1 station\(s\) have multiple live paired displays/);
+    } finally {
+      await client.query('rollback');
+    }
+    await expect(insert(newId(), 'display', true)).rejects.toThrow(/device_credential_active_display_unique/);
+    await expect(insert(newId(), 'kiosk', true)).resolves.toBeDefined();
+    await client.query('update core.device_credential set revoked_at = now(), secret_hash = null where id = $1', [first]);
+    await expect(insert(newId(), 'display', true)).resolves.toBeDefined();
+    const history = await client.query<{ count: number }>(
+      "select count(*)::integer as count from core.device_credential where station_id = $1 and kind = 'display'", [target.id],
+    );
+    expect(history.rows[0]!.count).toBe(4);
+  });
+});
 
 beforeAll(async () => {
   db = await createTestDatabase();

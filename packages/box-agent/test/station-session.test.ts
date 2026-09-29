@@ -7,7 +7,7 @@ import {
   type StationLease,
 } from '../src/contract';
 import { StationSessionManager } from '../src/station-session';
-import type { QueuedFact } from '../src/store';
+import type { QueuedFact, StationEventWrite } from '../src/store';
 import { BOX_ID, BRANCH_ID, OPERATOR_ID, openTestStore, plus, STATION_ID } from './_support';
 
 const AT = '2026-09-20T03:00:00.000Z';
@@ -17,6 +17,7 @@ const MANAGER_ID = '018f0000-0000-7000-8000-0000000000a1';
 interface Harness {
   manager: StationSessionManager;
   facts: QueuedFact[];
+  events: StationEventWrite[];
   setNow(iso: string): void;
   close(): void;
 }
@@ -25,6 +26,12 @@ async function openManager(): Promise<Harness> {
   const store = openTestStore(AT);
   await store.store.init(BOX_ID);
   const facts: QueuedFact[] = [];
+  const events: StationEventWrite[] = [];
+  const recordStationEvent = store.store.recordStationEvent.bind(store.store);
+  store.store.recordStationEvent = async (event, now) => {
+    events.push(event);
+    await recordStationEvent(event, now);
+  };
   const manager = new StationSessionManager({
     store: store.store,
     boxId: BOX_ID,
@@ -37,7 +44,7 @@ async function openManager(): Promise<Harness> {
     },
     now: () => store.now(),
   });
-  return { manager, facts, setNow: store.setNow, close: store.close };
+  return { manager, facts, events, setNow: store.setNow, close: store.close };
 }
 
 test('two screens on one station see the same snapshot and the same sequence', async () => {
@@ -645,6 +652,180 @@ test('the display holds no lease and may still answer what it was asked', async 
   assert.equal(forbidden.ok, false);
   if (forbidden.ok) return;
   assert.equal(forbidden.refusal, 'not_permitted');
+  h.close();
+});
+
+test('typed display answers are matched, timestamped and retained until the till moves on', async () => {
+  const h = await openManager();
+  const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'display-till', holderKind: 'till' });
+  assert.ok(claim.ok);
+  let current = claim.document;
+  const publish = async (stage: 'identify' | 'input' | 'payment', prompt: Record<string, unknown> | null) => {
+    const result = await h.manager.applyIntent(STATION_ID, {
+      type: 'session.publish_display', leaseId: claim.lease.leaseId, lastSeenSequence: current.sequence,
+      payload: { stage, step: 1, cart: { sale: { lines: [] }, supported: true }, member: null,
+        totals: { total: 0 }, payment: null, prompt },
+    }, { source: 'till' });
+    assert.ok(result.ok);
+    current = result.document;
+  };
+  await publish('identify', { kind: 'identify', requestId: 'identify-1' });
+  const sequence = current.sequence;
+  const identify = { type: 'display.identify', lastSeenSequence: sequence, actionId: 'identify-action-1',
+    payload: { requestId: 'identify-1', phone: ' 0811111111 ' } };
+  const answered = await h.manager.applyIntent(STATION_ID, identify, { source: 'display', deviceId: 'display-device-1' });
+  assert.ok(answered.ok);
+  current = answered.document;
+  assert.equal(current.sequence, sequence + 1);
+  assert.deepEqual(current.prompt?.answer, { type: 'identify', actionId: 'identify-action-1', phone: '0811111111' });
+  assert.equal(current.prompt?.answeredAt, AT);
+  const answerEvent = h.events.find((event) => event.intentType === 'display.identify' && event.outcome === 'applied');
+  assert.deepEqual(answerEvent?.payload, { keys: ['phone', 'requestId'], deviceId: 'display-device-1' });
+  assert.equal(answerEvent?.actorAccountId, null);
+
+  h.setNow(plus(AT, 1000));
+  await publish('identify', { kind: 'identify', requestId: 'identify-1', answer: null, answeredAt: 'forged' });
+  assert.deepEqual(current.prompt?.answer, answered.document.prompt?.answer);
+  assert.equal(current.prompt?.answeredAt, AT);
+  const replacement = await h.manager.applyIntent(STATION_ID, { ...identify, lastSeenSequence: current.sequence,
+    actionId: 'different-action', payload: { requestId: 'identify-1', phone: '0822222222' } }, { source: 'display', deviceId: 'display-device-1' });
+  assert.equal(replacement.ok, false);
+  assert.deepEqual(h.events.at(-1)?.payload, { keys: ['phone', 'requestId'], deviceId: 'display-device-1' });
+  const retry = await h.manager.applyIntent(STATION_ID, { ...identify, lastSeenSequence: current.sequence }, { source: 'display' });
+  assert.ok(retry.ok);
+  current = retry.document;
+  assert.equal(current.prompt?.answeredAt, AT);
+
+  await publish('identify', { kind: 'identify', requestId: 'identify-2' });
+  assert.equal(current.prompt?.answer, undefined);
+  const late = await h.manager.applyIntent(STATION_ID, { ...identify, lastSeenSequence: current.sequence }, { source: 'display' });
+  assert.equal(late.ok, false);
+  const skipped = await h.manager.applyIntent(STATION_ID, { type: 'display.skip_identify', actionId: 'skip-action-2',
+    lastSeenSequence: current.sequence, payload: { requestId: 'identify-2' } }, { source: 'display' });
+  assert.ok(skipped.ok);
+  current = skipped.document;
+  assert.deepEqual(current.prompt?.answer, { type: 'skip_identify', actionId: 'skip-action-2' });
+
+  await publish('input', { kind: 'contact', requestId: 'contact-1', phone: '', nickname: '', contactChannel: 'line' });
+  const contact = await h.manager.applyIntent(STATION_ID, { type: 'display.contact_done', actionId: 'contact-action-1',
+    lastSeenSequence: current.sequence, payload: { requestId: 'contact-1', phone: '', nickname: '', contactChannel: 'line' } }, { source: 'display' });
+  assert.ok(contact.ok);
+  current = contact.document;
+  assert.deepEqual(current.prompt?.answer, { type: 'contact_done', actionId: 'contact-action-1', phone: '', nickname: '', contactChannel: 'line' });
+  assert.equal(current.prompt?.answeredAt, plus(AT, 1000));
+  await publish('payment', null);
+  const wrongStage = await h.manager.applyIntent(STATION_ID, { type: 'display.contact_done', actionId: 'late-contact',
+    lastSeenSequence: current.sequence, payload: { requestId: 'contact-1', phone: '', nickname: '', contactChannel: 'line' } }, { source: 'display' });
+  assert.equal(wrongStage.ok, false);
+  if (!wrongStage.ok) assert.equal(wrongStage.refusal, 'wrong_stage');
+  assert.equal(h.facts.length, 0, 'presentation and answers perform no money effect');
+  h.close();
+});
+
+test('typed prompts refuse generic bypasses, unkeyed answers and extra contact fields', async () => {
+  const h = await openManager();
+  const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'strict-display-till', holderKind: 'till' });
+  assert.ok(claim.ok);
+  const publish = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: claim.document.sequence, payload: { stage: 'identify', prompt: { kind: 'identify', requestId: 'strict-identify' } } }, { source: 'till' });
+  assert.ok(publish.ok);
+  const sequence = publish.document.sequence;
+  for (const intent of [
+    { type: 'display.answer_prompt', payload: { value: '0811111111' }, actionId: 'generic-bypass' },
+    { type: 'display.identify', payload: { requestId: 'strict-identify', phone: '0811111111' } },
+    { type: 'display.identify', payload: { requestId: 'strict-identify', phone: '0811111111' }, actionId: '   ' },
+    { type: 'display.identify', payload: { requestId: 'strict-identify', phone: '' }, actionId: 'empty-phone' },
+    { type: 'display.identify', payload: { requestId: 'strict-identify', phone: '0811111111', contactChannel: 'email' }, actionId: 'invalid-identify-channel' },
+    { type: 'display.identify', payload: { requestId: 'strict-identify', phone: '0811111111', nickname: 'x'.repeat(101) }, actionId: 'long-identify-name' },
+    { type: 'display.identify', payload: { requestId: 'strict-identify', phone: '0811111111', at: AT }, actionId: 'forged-time' },
+  ]) {
+    const result = await h.manager.applyIntent(STATION_ID, { ...intent, lastSeenSequence: sequence }, { source: 'display' });
+    assert.equal(result.ok, false);
+  }
+  const identified = await h.manager.applyIntent(STATION_ID, { type: 'display.identify', actionId: 'identify-details',
+    lastSeenSequence: sequence, payload: { requestId: 'strict-identify', phone: ' 0811111111 ', nickname: ' Nok ', contactChannel: 'telegram' } }, { source: 'display' });
+  assert.ok(identified.ok);
+  assert.deepEqual(identified.document.prompt?.answer, { type: 'identify', actionId: 'identify-details', phone: '0811111111', nickname: 'Nok', contactChannel: 'telegram' });
+  const contact = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: identified.document.sequence, payload: { stage: 'input', prompt: { kind: 'contact', requestId: 'strict-contact' } } }, { source: 'till' });
+  assert.ok(contact.ok);
+  for (const payload of [
+    { requestId: 'strict-contact', phone: '', nickname: '', contactChannel: 'email' },
+    { requestId: 'strict-contact', phone: '', nickname: 'x'.repeat(101), contactChannel: 'line' },
+    { requestId: 'strict-contact', phone: '', nickname: '', contactChannel: 'line', memberNotes: 'private' },
+  ]) {
+    const result = await h.manager.applyIntent(STATION_ID, { type: 'display.contact_done', actionId: 'bad-contact',
+      lastSeenSequence: contact.document.sequence, payload }, { source: 'display' });
+    assert.equal(result.ok, false);
+  }
+  const consent = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: contact.document.sequence, payload: { stage: 'payment', prompt: { kind: 'food_consent' } } }, { source: 'till' });
+  assert.ok(consent.ok);
+  const wrongConsent = await h.manager.applyIntent(STATION_ID, { type: 'display.answer_prompt',
+    lastSeenSequence: consent.document.sequence, payload: { value: true } }, { source: 'display' });
+  assert.equal(wrongConsent.ok, false);
+  if (!wrongConsent.ok) assert.equal(wrongConsent.refusal, 'wrong_stage');
+  h.close();
+});
+
+test('a typed answer survives a simultaneous publish from another manager sharing the store', async () => {
+  const store = openTestStore(AT);
+  await store.store.init(BOX_ID);
+  const options = { store: store.store, boxId: BOX_ID,
+    resolveStation: (stationId: string) => ({ stationId, boxId: BOX_ID, operatorId: OPERATOR_ID, branchId: BRANCH_ID }),
+    now: () => store.now() };
+  const displayManager = new StationSessionManager(options);
+  const tillManager = new StationSessionManager(options);
+  const claim = await tillManager.claim({ stationId: STATION_ID, holder: 'shared-store-till', holderKind: 'till' });
+  assert.ok(claim.ok);
+  const payload = { stage: 'identify', prompt: { kind: 'identify', requestId: 'racing-request' } };
+  const published = await tillManager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: claim.document.sequence, payload }, { source: 'till' });
+  assert.ok(published.ok);
+  const [answer, stalePublish] = await Promise.all([
+    displayManager.applyIntent(STATION_ID, { type: 'display.identify', actionId: 'racing-answer',
+      lastSeenSequence: published.document.sequence, payload: { requestId: 'racing-request', phone: '0811111111' } }, { source: 'display' }),
+    tillManager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: published.document.sequence, payload }, { source: 'till' }),
+  ]);
+  assert.ok(answer.ok);
+  assert.equal(stalePublish.ok, false);
+  if (!stalePublish.ok) assert.equal(stalePublish.refusal, 'stale');
+  const fresh = await tillManager.open(STATION_ID);
+  const republished = await tillManager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: fresh.sequence, payload }, { source: 'till' });
+  assert.ok(republished.ok);
+  assert.deepEqual(republished.document.prompt?.answer, answer.document.prompt?.answer);
+  const secondAnswer = await displayManager.applyIntent(STATION_ID, { type: 'display.skip_identify', actionId: 'second-racing-answer',
+    lastSeenSequence: republished.document.sequence, payload: { requestId: 'racing-request' } }, { source: 'display' });
+  assert.equal(secondAnswer.ok, false);
+  assert.deepEqual((await tillManager.open(STATION_ID)).prompt?.answer, answer.document.prompt?.answer);
+  store.close();
+});
+
+test('display publication is till-only and recursively removes presentation-private aliases', async () => {
+  const h = await openManager();
+  const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'presentation-till', holderKind: 'till' });
+  assert.ok(claim.ok);
+  const payload = { stage: 'order', step: 4, cart: { sale: { lines: [{ name: 'Play', medical_notes: 'private-medical',
+    detail: { 'allergy-alert': 'private-allergy', 'holder name': 'private-holder', memberNotes: 'private-member' } }] },
+    supported: true, unexpected: 'private-extra' }, member: { id: 'm-1', nickname: 'Nok', phone: 'private-phone',
+    tier: { name: 'Member', holder_notes: 'private-tier' } }, totals: { total: 200 }, payment: null, prompt: null };
+  for (const source of ['display', 'kiosk', 'console'] as const) {
+    const result = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: claim.document.sequence, payload }, { source });
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.refusal, 'not_permitted');
+  }
+  const result = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: claim.document.sequence, payload }, { source: 'till' });
+  assert.ok(result.ok);
+  const snapshot = h.manager.snapshotFor(result.document, 'customer', null).document;
+  assert.equal(snapshot.step, null);
+  assert.equal(snapshot.lease, null);
+  assert.equal(snapshot.member?.nickname, 'Nok');
+  assert.equal(JSON.stringify(snapshot).includes('private-'), false);
+  assert.equal(h.facts.length, 0);
   h.close();
 });
 

@@ -1,11 +1,13 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { createHash, randomBytes } from 'node:crypto';
+import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import {
   auditLog,
   box,
   boxCommand,
   device,
   deviceCredential,
+  displayPairingRequest,
   idempotencyKey,
   opsRun,
   role,
@@ -68,6 +70,179 @@ beforeAll(async () => {
   tillId = till!.id;
   const [booth] = await ctx.db.select().from(station).where(eq(station.name, 'Booth 1')).limit(1);
   boothId = booth!.id;
+});
+
+describe('a display requests pairing before a manager chooses its station (SCRUM-201)', () => {
+  let proof: TestContext;
+  let managerCookie: string;
+  let staffCookie: string;
+  let target: typeof station.$inferSelect;
+  const bearer = () => randomBytes(32).toString('hex');
+  const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
+  const headers = (token: string) => ({ authorization: `Bearer ${token}` });
+  const mint = (token: string, extra: Record<string, string> = {}) => proof.app.inject({
+    method: 'POST', url: '/display/pairing', headers: { ...headers(token), ...extra }, payload: {},
+  });
+  const claim = (pairingCode: string, cookie = managerCookie) => proof.app.inject({
+    method: 'POST', url: `/stations/${target.id}/displays/claim`, headers: { cookie },
+    payload: { pairingCode, name: 'Reception display' },
+  });
+  const paired = async () => {
+    const token = bearer();
+    const requested = await mint(token);
+    expect(requested.statusCode).toBe(200);
+    const claimed = await claim(requested.json().pairingCode as string);
+    expect(claimed.statusCode).toBe(200);
+    return { token, deviceId: claimed.json().device.id as string };
+  };
+
+  beforeAll(async () => {
+    proof = await createTestContext();
+    managerCookie = await signInAs(proof.app, ADMIN.phone, ADMIN.password);
+    staffCookie = await signInAs(proof.app, RECEPTION.phone, RECEPTION.password);
+    const [row] = await proof.db.select().from(station).where(eq(station.name, 'Reception Till 1')).limit(1);
+    target = row!;
+  });
+  afterEach(async () => {
+    await proof.db.update(deviceCredential).set({ revokedAt: new Date(), secretHash: null }).where(and(
+      eq(deviceCredential.stationId, target.id), eq(deviceCredential.kind, 'display'),
+      isNull(deviceCredential.revokedAt), isNotNull(deviceCredential.pairedAt),
+    ));
+  });
+  afterAll(async () => { await proof.close(); });
+
+  it('keeps only hashes, survives a lost claim answer, and records the manager once', async () => {
+    const token = bearer();
+    const key = newId();
+    const requested = await mint(token, { cookie: managerCookie, 'idempotency-key': key });
+    expect(requested.statusCode).toBe(200);
+    const answer = requested.json() as { pairingCode: string; expiresAt: string };
+    expect(/^\d{6}$/.test(answer.pairingCode)).toBe(true);
+    const [stored] = await proof.db.select().from(displayPairingRequest)
+      .where(eq(displayPairingRequest.tokenHash, tokenHash(token)));
+    expect(stored?.tokenHash === token).toBe(false);
+    expect(stored?.pairingCodeHash === answer.pairingCode).toBe(false);
+    expect(Boolean(stored?.pairingCodeHash?.match(/^[a-f0-9]{64}$/))).toBe(true);
+    expect(await proof.db.select().from(idempotencyKey).where(eq(idempotencyKey.key, key))).toHaveLength(0);
+    const waiting = await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: headers(token) });
+    expect(waiting.json()).toEqual({ status: 'pending' });
+    const claimed = await claim(answer.pairingCode);
+    expect(claimed.statusCode).toBe(200);
+    expect(Object.keys(claimed.json()).sort()).toEqual(['device', 'station']);
+    const status = await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: headers(token) });
+    expect(status.json()).toMatchObject({ status: 'paired', station: { id: target.id }, device: { name: 'Reception display' } });
+    expect((await claim(answer.pairingCode)).statusCode).toBe(409);
+    const deviceId = claimed.json().device.id as string;
+    const [credential] = await proof.db.select().from(deviceCredential).where(eq(deviceCredential.id, deviceId));
+    expect({ kind: credential?.kind, stationId: credential?.stationId, scopes: credential?.scopes })
+      .toEqual({ kind: 'display', stationId: target.id, scopes: ['display:read', 'display:intents'] });
+    expect(credential?.secretHash === token).toBe(false);
+    expect(await proof.db.select({ id: auditLog.id }).from(auditLog)
+      .where(and(eq(auditLog.action, 'display.paired'), eq(auditLog.entityId, deviceId)))).toHaveLength(1);
+    expect((await mint(token)).statusCode).toBe(409);
+  });
+
+  it('rotates a pending code safely after a lost mint answer and expires unclaimed requests', async () => {
+    const token = bearer();
+    const first = await mint(token);
+    const second = await mint(token);
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(200);
+    expect(first.json().pairingCode === second.json().pairingCode).toBe(false);
+    expect((await claim(first.json().pairingCode as string)).statusCode).toBe(409);
+    await proof.db.update(displayPairingRequest).set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(displayPairingRequest.tokenHash, tokenHash(token)));
+    expect((await claim(second.json().pairingCode as string)).statusCode).toBe(409);
+    const expired = await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: headers(token) });
+    expect(expired.json()).toEqual({ status: 'expired' });
+  });
+
+  it('consumes a code atomically when two manager requests race', async () => {
+    const token = bearer();
+    const requested = await mint(token);
+    const results = await Promise.all([claim(requested.json().pairingCode as string), claim(requested.json().pairingCode as string)]);
+    expect(results.map((result) => result.statusCode).sort()).toEqual([200, 409]);
+    expect(await proof.db.select({ id: deviceCredential.id }).from(deviceCredential)
+      .where(eq(deviceCredential.secretHash, tokenHash(token)))).toHaveLength(1);
+  });
+
+  it('allows one active display even when distinct codes race, then permits re-pairing after revocation', async () => {
+    const tokens = [bearer(), bearer()];
+    const requests = await Promise.all(tokens.map((token) => mint(token)));
+    expect(requests.map((result) => result.statusCode)).toEqual([200, 200]);
+    const claims = await Promise.all(requests.map((result) => claim(result.json().pairingCode as string)));
+    expect(claims.map((result) => result.statusCode).sort()).toEqual([200, 409]);
+    const winner = claims.findIndex((result) => result.statusCode === 200);
+    const loser = winner === 0 ? 1 : 0;
+    expect(claims[loser]!.json().error.code).toBe('DISPLAY_STATION_OCCUPIED');
+    expect(await proof.db.select({ id: deviceCredential.id }).from(deviceCredential).where(and(
+      eq(deviceCredential.stationId, target.id), eq(deviceCredential.kind, 'display'),
+      isNull(deviceCredential.revokedAt), isNotNull(deviceCredential.pairedAt), isNotNull(deviceCredential.secretHash),
+    ))).toHaveLength(1);
+    const legacy = await proof.app.inject({ method: 'POST', url: `/stations/${target.id}/credentials`,
+      headers: { cookie: managerCookie }, payload: { kind: 'display', label: 'Legacy display request' } });
+    expect(legacy.statusCode).toBe(409);
+    expect(legacy.json().error.code).toBe('DISPLAY_STATION_OCCUPIED');
+    const waiting = await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: headers(tokens[loser]!) });
+    expect(waiting.json()).toEqual({ status: 'pending' });
+    const deviceId = claims[winner]!.json().device.id as string;
+    const revoke = () => proof.app.inject({ method: 'POST', url: `/credentials/${deviceId}/revoke`,
+      headers: { cookie: managerCookie }, payload: { reason: 'Display replacement proof' } });
+    expect((await revoke()).statusCode).toBe(200);
+    expect((await revoke()).statusCode).toBe(409);
+    expect(await proof.db.select({ id: auditLog.id }).from(auditLog).where(and(
+      eq(auditLog.action, 'display.revoked'), eq(auditLog.entityId, deviceId),
+    ))).toHaveLength(1);
+    expect((await claim(requests[loser]!.json().pairingCode as string)).statusCode).toBe(200);
+    expect((await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(tokens[winner]!) })).statusCode).toBe(401);
+  });
+
+  it('requires pairing permission and a bearer, regardless of the staff cookie', async () => {
+    const token = bearer();
+    const requested = await mint(token);
+    expect((await claim(requested.json().pairingCode as string, staffCookie)).statusCode).toBe(403);
+    const anonymous = await proof.app.inject({ method: 'POST', url: '/display/pairing', headers: { cookie: managerCookie }, payload: {} });
+    expect(anonymous.statusCode).toBe(401);
+    expect(anonymous.json().error.code).toBe('DISPLAY_UNPAIRED');
+    const sessionOnly = await proof.app.inject({ method: 'GET', url: '/display/session', headers: { cookie: managerCookie } });
+    expect(sessionOnly.statusCode).toBe(401);
+    expect(sessionOnly.json().error.code).toBe('DISPLAY_UNPAIRED');
+  });
+
+  it('keeps the display independent of staff lock and rejects its next call after revocation', async () => {
+    const { token, deviceId } = await paired();
+    await proof.db.update(sessionTable).set({ lockedAt: new Date() })
+      .where(eq(sessionTable.accountId, (await proof.db.select({ id: account.id }).from(account).where(eq(account.phone, RECEPTION.phone)).limit(1))[0]!.id));
+    const read = await proof.app.inject({ method: 'GET', url: '/display/session', headers: { ...headers(token), cookie: staffCookie } });
+    expect(read.statusCode).toBe(200);
+    expect(read.json()).toMatchObject({ station: { id: target.id }, device: { id: deviceId } });
+    const revoked = await proof.app.inject({
+      method: 'POST', url: `/credentials/${deviceId}/revoke`, headers: { cookie: managerCookie }, payload: { reason: 'Display proof' },
+    });
+    expect(revoked.statusCode).toBe(200);
+    const refused = await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(token) });
+    expect(refused.statusCode).toBe(401);
+    expect(refused.json().error.code).toBe('DISPLAY_UNPAIRED');
+    const status = await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: headers(token) });
+    expect(status.json()).toEqual({ status: 'expired' });
+  });
+
+  it('checks the credential kind, scope and target before answering a display', async () => {
+    const { token, deviceId } = await paired();
+    await proof.db.update(deviceCredential).set({ scopes: ['display:read'] }).where(eq(deviceCredential.id, deviceId));
+    const refused = await proof.app.inject({
+      method: 'POST', url: '/display/intents', headers: { ...headers(token), cookie: managerCookie },
+      payload: { type: 'display.set_language', lastSeenSequence: 0, payload: { language: 'th' } },
+    });
+    expect(refused.statusCode).toBe(401);
+    await proof.db.update(deviceCredential).set({ kind: 'booth', scopes: ['display:read', 'display:intents'] })
+      .where(eq(deviceCredential.id, deviceId));
+    expect((await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(token) })).statusCode).toBe(401);
+    await proof.db.update(deviceCredential).set({ kind: 'display' }).where(eq(deviceCredential.id, deviceId));
+    await proof.db.update(station).set({ archivedAt: new Date() }).where(eq(station.id, target.id));
+    expect((await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(token) })).statusCode).toBe(401);
+    await proof.db.update(station).set({ archivedAt: null }).where(eq(station.id, target.id));
+  });
 });
 afterAll(async () => {
   await ctx.close();

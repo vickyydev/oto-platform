@@ -7,6 +7,7 @@ import { braceletPrintJobs, dispatchPrintJobs, promptSetupStation, ticketPrintJo
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
+import { useTicketDisplay } from '@/lib/displaySession';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
@@ -34,7 +35,7 @@ import { Monitor, User } from 'lucide-react';
 
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
-import { authApi, membersApi, visitsApi } from '@/api/platform';
+import { membersApi, visitsApi } from '@/api/platform';
 import { childrenApi, lookupMember } from '@/api/members';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import {
@@ -122,7 +123,9 @@ function lineDiscountComponents(line: CartLine): DiscountComponentOption[] {
 }
 
 export default function Till() {
-  const { operator, offlineUnlock, can } = useOperator();
+  const { operator, locked, offlineUnlock, can } = useOperator();
+  const staffLocked = useRef(locked);
+  staffLocked.current = locked;
   const { station } = useStation();
   const { branch } = useBranch();
   /**
@@ -227,10 +230,11 @@ export default function Till() {
    * Tell the shell this till is mid-sale, so a new build is not swapped in
    * under the cart (S2-06; read by src/pwa/ServiceWorkerUpdater.tsx). A cart
    * with lines in it, or a finished sale still on screen waiting to be handed
-   * over, both count. The cleanup clears the flag when this page unmounts,
-   * which is what a lock does.
+   * over, both count. A retained visitor also blocks a shell update during
+   * staff lock. Sign-out or leaving the till clears the flag on unmount.
    */
-  const saleOnScreen = lines.length > 0 || saleResult !== null || voucher.held !== null;
+  const saleOnScreen = lines.length > 0 || saleResult !== null || voucher.held !== null
+    || customerPhone !== '' || customerNickname !== '' || member !== null || step !== 1;
   useEffect(() => {
     setSaleOpen('till', saleOnScreen);
     return () => setSaleOpen('till', false);
@@ -509,7 +513,7 @@ export default function Till() {
     discounts,
     manualDiscounts,
     identity: cartIdentity,
-    enabled: saleResult === null,
+    enabled: !locked && saleResult === null,
     // S2-10b — the held voucher rides by its code; the platform prices it.
     promoCodes: voucherCodes,
   });
@@ -562,22 +566,15 @@ export default function Till() {
     setSupervisionResolved(false);
   };
 
-  // Customer entered their phone on their display — look up any verified rate.
-  // SCRUM-30 (rebuild): the lookup typed on the customer display reaches the
-  // till THROUGH THE API — staged as a short-lived pending lookup on the
-  // session, consumed here, then resolved against /members/lookup. The
-  // props link between the two panes remains only a render harness.
-  const handleIdentify = () => {
+  // Both the inline harness and a paired display use the same lookup. The
+  // separate screen delivers its phone through the station document.
+  const identifyPhone = (value: string) => {
+    const epoch = saleEpochRef.current;
     void (async () => {
-      const typed = customerPhone.trim();
+      const phone = value.trim();
       try {
-        let phone = typed;
-        if (typed) {
-          await authApi.stagePendingLookup(typed); // customer display → API
-          const staged = await authApi.consumePendingLookup(); // API → till
-          phone = staged.phone ?? typed;
-        }
         const found = phone ? (await membersApi.lookup(phone)).member : null;
+        if (saleEpochRef.current !== epoch) return;
         const mapped = found ? apiMemberToMember(found) : null;
         setMember(mapped);
         if (mapped) {
@@ -589,6 +586,7 @@ export default function Till() {
           setOfferCreateMember(true);
         }
       } catch (err) {
+        if (saleEpochRef.current !== epoch) return;
         toast({
           title: 'Membership lookup failed',
           description: err instanceof Error ? err.message : 'Unknown error',
@@ -599,6 +597,7 @@ export default function Till() {
       setStep(2);
     })();
   };
+  const handleIdentify = () => identifyPhone(customerPhone);
 
   // Walk-in: no membership, default to Tourist.
   const handleSkipIdentify = () => {
@@ -1175,11 +1174,11 @@ export default function Till() {
       }
     });
   };
-  useStationScans(station?.stationId, (event: StationScanEvent) => {
+  useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
     const code = readVoucherScan(event);
     if (code) redeemScannedVoucher(code);
   });
-  useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode });
+  useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode, enabled: !locked });
 
   /**
    * S2-10b — THE ORDER PANEL'S CANCEL.
@@ -2015,17 +2014,17 @@ export default function Till() {
   // (SCRUM-227): find or create the member through the API, then record the
   // evidence against them. Staff carry on to payment while that lands; a
   // failure says so and leaves the verification pending, so Done retries it.
-  const handleCustomerDone = () => {
-    if (pendingVerification && !member && customerPhone.trim()) {
+  const finishCustomerContact = (phone: string, nickname: string, channel: ContactChannel) => {
+    if (pendingVerification && !member && phone.trim()) {
       const verification = pendingVerification;
       // The sale this belongs to. If the till has moved on by the time the
       // three round trips finish, the record was still written against the
       // right member — it is only this screen that must not be touched.
       const epoch = saleEpochRef.current;
       void saveDeferredVerification({
-        phone: customerPhone,
-        nickname: customerNickname,
-        channel: customerContactChannel,
+        phone,
+        nickname,
+        channel,
         verification,
       })
         .then((saved) => {
@@ -2048,6 +2047,7 @@ export default function Till() {
     }
     setStep(5);
   };
+  const handleCustomerDone = () => finishCustomerContact(customerPhone, customerNickname, customerContactChannel);
 
   /**
    * EVERYTHING THAT MUST BE TRUE BEFORE THIS CART BECOMES A SALE.
@@ -2291,15 +2291,15 @@ export default function Till() {
   // Entering the payment screen is the Pay press. Every route into it — a known
   // member, the customer-details handoff, the supervision gate — arrives here.
   useEffect(() => {
-    if (step !== 5) return;
+    if (locked || step !== 5) return;
     void recordSaleOnPlatform(saleEpochRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once on entering the payment screen: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
-  }, [step]);
+  }, [step, locked]);
 
   /** Only a finalised platform sale can issue this order's receipt and bands. */
   const completeSale = (recorded: ApiSale, settlements: readonly PaymentSettlement[]) => {
     if (
-      saleEpochRef.current !== paymentEpoch ||
+      staffLocked.current || saleEpochRef.current !== paymentEpoch ||
       paymentScopeRef.current.scope !== paymentScope ||
       recorded.status !== 'finalised' ||
       completedPaymentRef.current === recorded.id
@@ -2462,9 +2462,10 @@ export default function Till() {
   paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
   const paymentStage = usePaymentStage({
     scope: paymentScope,
-    isCurrentScope: (scope) => scope === paymentScopeRef.current.scope &&
+    isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope &&
       paymentScopeRef.current.epoch === saleEpochRef.current,
     active: step === 5 && completionRetry === null,
+    paused: locked,
     totalSatang: toSatang(cart.totals.total),
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,
@@ -2646,6 +2647,38 @@ export default function Till() {
   else if (step === 1) customerStage = 'identify';
   else if (lines.length > 0) customerStage = 'order';
   else customerStage = 'welcome';
+
+  const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {
+    stage: customerStage, step, sessionKey: `${saleEpochRef.current}`, tier: tier ?? getDefaultTier().id,
+    phone: customerPhone, nickname: customerNickname, contactChannel: customerContactChannel, member,
+  }, answer => {
+    if (answer.type === 'identify' && step === 1 && answer.phone !== undefined) {
+      setCustomerPhone(answer.phone);
+      if (answer.nickname !== undefined) setCustomerNickname(answer.nickname);
+      if (answer.contactChannel !== undefined) handleCustomerContactChannelChange(answer.contactChannel);
+      identifyPhone(answer.phone);
+    } else if (answer.type === 'skip_identify' && step === 1) {
+      handleSkipIdentify();
+    } else if (answer.type === 'contact_done' && step === 4 && answer.phone !== undefined
+      && answer.nickname !== undefined && answer.contactChannel !== undefined) {
+      setCustomerPhone(answer.phone);
+      setCustomerNickname(answer.nickname);
+      handleCustomerContactChannelChange(answer.contactChannel);
+      finishCustomerContact(answer.phone, answer.nickname, answer.contactChannel);
+    }
+  }, !locked);
+  const inlineDisplay = showCustomerDisplay && (!linkedDisplay.connected.length || !linkedDisplay.supported || !!linkedDisplay.error);
+  const displayInUse = linkedDisplay.connected.length > 0;
+  useEffect(() => {
+    // A visitor may be typing on the separate display while staff are locked.
+    // A shell reload would discard the retained prompt before its answer arrives.
+    setSaleOpen('ticket-display', displayInUse);
+    return () => setSaleOpen('ticket-display', false);
+  }, [displayInUse]);
+
+  // Retain the same visitor through a staff lock, but unmount every child
+  // surface and portal so no member details or staff controls remain visible.
+  if (locked) return null;
 
   const staffTill = (
     <div className="flex h-full w-full bg-background text-foreground overflow-hidden">
@@ -2889,8 +2922,9 @@ export default function Till() {
         <div className="flex items-center gap-2 min-w-0">
           <Monitor className="w-4 h-4 shrink-0" />
           <span className="truncate">
-            Test harness — staff till (left) + customer display (right) share one live sale. In
-            production the customer display runs on a separate device.
+            {linkedDisplay.connected.length
+              ? `Display connected: ${linkedDisplay.connected.map(display => display.name).join(', ')}`
+              : 'Test harness — staff till and customer display share one live sale.'}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -2905,6 +2939,8 @@ export default function Till() {
         </div>
       </div>
 
+      {linkedDisplay.error && <p role="status" className="shrink-0 bg-amber-100 px-4 py-2 text-sm text-amber-950">Display connection: {linkedDisplay.error} The team can continue using this screen.</p>}
+
       <div className="contents" inert={step === 5 && (completionRetry !== null || !paymentStage.canBack)}>
         <StationHeader active="tickets" />
 
@@ -2913,10 +2949,10 @@ export default function Till() {
       </div>
 
       <div className="flex-1 flex min-h-0">
-        <div className={`${showCustomerDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
+        <div className={`${inlineDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
           {staffTill}
         </div>
-        {showCustomerDisplay && step === 7 && (
+        {inlineDisplay && step === 7 && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <ConsentCapture
               slots={superSlots}
@@ -2935,7 +2971,7 @@ export default function Till() {
             />
           </div>
         )}
-        {showCustomerDisplay && step === 8 && tier && (
+        {inlineDisplay && step === 8 && tier && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <SavedChildrenReview
               slots={superSlots}
@@ -2952,7 +2988,7 @@ export default function Till() {
             />
           </div>
         )}
-        {showCustomerDisplay && step !== 7 && step !== 8 && (
+        {inlineDisplay && step !== 7 && step !== 8 && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <CustomerDisplay
               stage={customerStage}

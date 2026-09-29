@@ -61,7 +61,9 @@ export interface PermissionConfig {
    * five entries to the pinned list of genuinely open endpoints, which is the
    * one thing that list exists to stop.
    */
-  credential?: 'box' | 'box-claim' | 'booth';
+  credential?: 'box' | 'box-claim' | 'booth' | 'display' | 'display-pairing';
+  /** Required capability of a paired display, checked without a staff cookie. */
+  displayScope?: 'display:read' | 'display:intents';
   /**
    * This route's answer IS a credential — a box secret, a temporary password,
    * a hand-off token — so it must never enter the idempotency store, which

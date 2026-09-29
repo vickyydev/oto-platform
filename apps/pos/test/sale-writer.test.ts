@@ -623,6 +623,7 @@ describe('payment request identities', () => {
     const inquire = vi.spyOn(paymentsApi, 'inquire').mockResolvedValue({ attempt: attempt('awaiting_staff_confirmation') });
     const confirm = vi.spyOn(paymentsApi, 'confirm').mockResolvedValue({ attempt: attempt('approved') });
     const manual = vi.spyOn(paymentsApi, 'manual').mockResolvedValue({ attempt: attempt('approved', { provider: 'manual' }), outstandingSatang: 0, replayed: false });
+    getSale.mockResolvedValue({ sale: apiSale() });
     const options: PaymentStageOptions = { scope: 'current', isCurrentScope: (scope) => scope === 'current',
       totalSatang: 54_000, prepareSale, finaliseSale, onComplete, ...extra };
     const hook = renderHook((props: PaymentStageOptions) => usePaymentStage(props), options);
@@ -690,6 +691,160 @@ describe('payment request identities', () => {
     expect(test.result.current.canInquire).toBe(false);
     await test.result.current.inquire();
     expect(test.inquire).not.toHaveBeenCalled();
+  });
+
+  it('retains split money and its pending terminal across lock, discarding a pre-lock poll', async () => {
+    const test = mountPayment();
+    test.finaliseSale.mockResolvedValueOnce(outcome(apiSale(), { finalised: false, outstandingSatang: 27_000, attempt: cashAttempt('sale-1') }));
+    test.result.current.selectMethod('park-cash');
+    test.result.current.setAmountSatang(27_000);
+    await test.result.current.submit();
+    test.start.mockResolvedValueOnce({ ...qr, route: 'card_terminal', attempt: attempt('sent_to_terminal', { amountSatang: 27_000 }), outstandingSatang: 27_000, replayed: false });
+    let late!: (value: PaymentAttemptRead) => void;
+    test.reading.mockImplementationOnce(() => new Promise(resolve => { late = resolve; }))
+      .mockResolvedValue(read(attempt('approved', { amountSatang: 27_000 }), 0));
+    test.result.current.selectMethod('park-card');
+    await test.result.current.submit();
+    await vi.advanceTimersByTimeAsync(1500);
+    test.rerender({ ...test.options, paused: true });
+    late(read(attempt('approved', { amountSatang: 27_000 }), 0));
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(test.reading).toHaveBeenCalledTimes(1);
+    expect(test.result.current.state).toMatchObject({ outstandingSatang: 27_000, attempt: { status: 'sent_to_terminal' } });
+    expect(test.result.current.state.settlements.map(part => part.method)).toEqual(['park-cash']);
+    expect(test.result.current.canBack).toBe(false);
+    expect(test.onComplete).not.toHaveBeenCalled();
+    expect(test.finaliseSale).toHaveBeenCalledTimes(1);
+
+    test.rerender({ ...test.options, paused: false });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(getSale).toHaveBeenCalledWith('sale-1');
+    expect(test.start).toHaveBeenCalledTimes(1);
+    expect(test.finaliseSale.mock.calls[1]![0]).toBeUndefined();
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+    expect(test.onComplete.mock.calls[0]![1].map(part => part.method)).toEqual(['park-cash', 'park-card']);
+  });
+
+  it('fences a collection queued just before lock and retains its original gesture for retry', async () => {
+    const test = mountPayment();
+    test.finaliseSale.mockRejectedValueOnce(new NetworkError(new Error('Reply lost')))
+      .mockResolvedValueOnce(outcome(apiSale(), { finalised: false, outstandingSatang: 27_000, attempt: cashAttempt('sale-1') }));
+    test.result.current.selectMethod('park-cash');
+    test.result.current.setAmountSatang(27_000);
+    test.result.current.setTenderedSatang(30_000);
+    const queued = test.result.current.submit();
+    test.rerender({ ...test.options, paused: true });
+    await queued;
+    expect(test.prepareSale).not.toHaveBeenCalled();
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    expect(test.start).not.toHaveBeenCalled();
+    test.rerender({ ...test.options, paused: false });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.result.current.state.phase).toBe('blocked');
+    expect(test.result.current.canSubmit).toBe(false);
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    await test.result.current.retry();
+    await test.result.current.retry();
+    expect(test.finaliseSale.mock.calls[0]).toEqual(test.finaliseSale.mock.calls[1]);
+    expect(test.finaliseSale.mock.calls[0]![0]).toEqual({ method: 'park-cash', kind: 'cash', amountSatang: 27_000, tenderedSatang: 30_000, changeSatang: 3_000 });
+    expect(test.result.current.state.settlements).toHaveLength(1);
+    expect(test.onComplete).not.toHaveBeenCalled();
+  });
+
+  it('rehydrates a successful start that answers after unlock without sending another SALE', async () => {
+    const test = mountPayment();
+    let answer!: (value: Awaited<ReturnType<typeof paymentsApi.start>>) => void;
+    test.start.mockImplementationOnce(() => new Promise(resolve => { answer = resolve; }));
+    test.reading.mockResolvedValue(read(attempt('approved'), 0));
+    test.result.current.selectMethod('park-card');
+    const sending = test.result.current.submit();
+    await vi.advanceTimersByTimeAsync(0);
+    test.rerender({ ...test.options, paused: true });
+    test.rerender({ ...test.options, paused: false });
+    expect(test.onComplete).not.toHaveBeenCalled();
+    answer({ ...qr, route: 'card_terminal', attempt: attempt('approved'), outstandingSatang: 0, replayed: false });
+    await sending;
+    await vi.advanceTimersByTimeAsync(0);
+    expect(getSale).toHaveBeenCalledWith('sale-1');
+    expect(test.reading).toHaveBeenCalledWith('electronic-attempt');
+    expect(test.start).toHaveBeenCalledTimes(1);
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+    expect(test.onComplete.mock.calls[0]![1][0]).toMatchObject({ method: 'park-card', amountSatang: 54_000 });
+  });
+
+  it('keeps cash receipt evidence when the collection answers while locked', async () => {
+    const test = mountPayment();
+    let answer!: (value: SaleWriteOutcome) => void;
+    test.finaliseSale.mockImplementationOnce(() => new Promise(resolve => { answer = resolve; }));
+    const paid = { ...cashAttempt('sale-1'), amountSatang: 54_000, tenderedSatang: 60_000, changeSatang: 6_000 };
+    test.reading.mockResolvedValue(read(paid, 0));
+    getSale.mockResolvedValue({ sale: apiSale({ status: 'finalised' }) });
+    test.result.current.selectMethod('park-cash');
+    test.result.current.setTenderedSatang(60_000);
+    const sending = test.result.current.submit();
+    await vi.advanceTimersByTimeAsync(0);
+    test.rerender({ ...test.options, paused: true });
+    answer(outcome(apiSale({ status: 'finalised' }), { finalised: true, outstandingSatang: 0, attempt: paid }));
+    await sending;
+    expect(test.onComplete).not.toHaveBeenCalled();
+    expect(test.reading).not.toHaveBeenCalled();
+    expect(test.result.current.state.settlements).toEqual([]);
+    test.rerender({ ...test.options, paused: false });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.finaliseSale).toHaveBeenCalledTimes(2);
+    expect(test.finaliseSale.mock.calls[0]![0]).toMatchObject({ amountSatang: 54_000, tenderedSatang: 60_000, changeSatang: 6_000 });
+    expect(test.finaliseSale.mock.calls[1]![0]).toBeUndefined();
+    expect(test.onComplete.mock.calls[0]![1][0]).toMatchObject({ method: 'park-cash', amountSatang: 54_000, tenderedSatang: 60_000, changeSatang: 6_000 });
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries an unreadable locked cash reply with the exact original collection gesture', async () => {
+    const test = mountPayment();
+    let reject!: (reason: unknown) => void;
+    test.finaliseSale.mockImplementationOnce(() => new Promise((_resolve, refuse) => { reject = refuse; }))
+      .mockResolvedValueOnce(outcome(apiSale(), { finalised: false, outstandingSatang: 27_000, attempt: cashAttempt('sale-1') }));
+    test.result.current.selectMethod('park-cash');
+    test.result.current.setAmountSatang(27_000);
+    const sending = test.result.current.submit();
+    await vi.advanceTimersByTimeAsync(0);
+    test.rerender({ ...test.options, paused: true });
+    reject(new NetworkError(new Error('Connection interrupted')));
+    await sending;
+    test.rerender({ ...test.options, paused: false });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.result.current.state.phase).toBe('blocked');
+    expect(test.finaliseSale).toHaveBeenCalledTimes(1);
+    await test.result.current.retry();
+    expect(test.finaliseSale.mock.calls[1]).toEqual(test.finaliseSale.mock.calls[0]);
+    expect(test.result.current.state.outstandingSatang).toBe(27_000);
+    expect(test.result.current.state.settlements).toHaveLength(1);
+    expect(test.result.current.canBack).toBe(false);
+    expect(test.onComplete).not.toHaveBeenCalled();
+    expect(test.start).not.toHaveBeenCalled();
+  });
+
+  it('discards retained lock recovery when the cart scope actually changes', async () => {
+    let scope = 'current';
+    const onLeftBehind = vi.fn();
+    const test = mountPayment({ isCurrentScope: value => value === scope, onLeftBehind });
+    let answer!: (value: Awaited<ReturnType<typeof paymentsApi.start>>) => void;
+    test.start.mockImplementationOnce(() => new Promise(resolve => { answer = resolve; }));
+    test.result.current.selectMethod('park-card');
+    const sending = test.result.current.submit();
+    await vi.advanceTimersByTimeAsync(0);
+    test.rerender({ ...test.options, paused: true });
+    scope = 'replacement';
+    test.rerender({ ...test.options, scope, paused: false });
+    answer({ ...qr, route: 'card_terminal', attempt: attempt('approved'), outstandingSatang: 0, replayed: false });
+    await sending;
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.result.current.state.saleId).toBeNull();
+    expect(test.result.current.state.attempt).toBeNull();
+    expect(test.result.current.state.settlements).toEqual([]);
+    expect(getSale).not.toHaveBeenCalled();
+    expect(test.onComplete).not.toHaveBeenCalled();
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    expect(onLeftBehind).toHaveBeenCalledWith('sale-1');
   });
 
   it('never offers terminal confirmation for a gateway anomaly or releases it at QR expiry', async () => {

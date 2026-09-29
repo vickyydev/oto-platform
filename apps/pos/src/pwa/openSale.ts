@@ -11,8 +11,8 @@ import { useSyncExternalStore } from 'react';
  *
  * WHAT IT IS NOT. Not persistence: nothing here survives a reload, and nothing
  * here is written to disk. A cart lives in the component that owns it, and the
- * day a sale has to survive a lock it will be a record on the box and not a
- * flag in this module.
+ * ticket till retains that component during a same-session lock. This flag
+ * only prevents a shell update from discarding it; it cannot restore a cart.
  */
 
 const openSurfaces = new Set<string>();

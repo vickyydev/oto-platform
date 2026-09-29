@@ -564,6 +564,15 @@ export const fleetApi = {
       { idempotencyKey: idemKey() },
     ),
 
+  /** Claim the short-lived code shown by the display. No credential secret is returned here. */
+  claimDisplay: (stationId: string, body: { pairingCode: string; name: string }) =>
+    api.post<{
+      station: { id: string; name: string; kind: string };
+      device: { id: string; name: string };
+    }>(`/stations/${encodeURIComponent(stationId)}/displays/claim`, body, {
+      idempotencyKey: idemKey(),
+    }),
+
   /** Revoking is not deleting: the row stays, with who revoked it and why. */
   revokeCredential: (id: string, reason?: string) =>
     api.post<{ ok: true }>(`/credentials/${encodeURIComponent(id)}/revoke`, { reason }, {
