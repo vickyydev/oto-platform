@@ -4,12 +4,26 @@
 
 _Current checkpoint: 2026-09-29._
 
-Current round: online SCRUM-206 Slice F is landing on main from the rebased
-`cf67d86` UI checkpoint, with the unsafe cash/part paste follow-up included.
-All 53 affected writer checks and POS typecheck, package lint and build pass.
-Current-release CI, deployment and native staging UI proof are pending.
-SCRUM-206 remains In Progress; offline transport and independent display
-acceptance must also be completed under their existing tickets.
+Current online SCRUM-206 Slice F source `0468c38` is live on all five platform
+staging services after green CI 36547262414; OTO App remains `c416065`.
+All 53 affected writer checks and POS typecheck, lint and build pass. Native
+cash/change, handheld cash/manual split and food QR/reconnect pass; seven
+terminal/checkout cases remain under verification. Reviewed cash screenshots
+are attached to SCRUM-206 as 10868-10869. The full story remains In Progress
+pending SCRUM-269 local till transport and SCRUM-201 separate display.
+
+SCRUM-285 is pushed on `fix/offline-proof` at `d38eb3e`: cloud trade refuses
+the authenticated station's forced-offline virtual box before idempotency,
+with original permissions, reporting and recovery preserved. All 44 affected
+existing API checks, typecheck and full package lint pass; the honest capability
+matrix is included. It stays Testing, not deployed. The five-language payment
+request wording follow-up is on `fix/payment-request-copy` at `edce9bb`, with
+POS typecheck/lint passing. Both branch CI jobs were blocked before execution
+by GitHub account billing/spending availability. Keep both source gates intact.
+The current verified CI-packed 0468c38 Pi release pair is on the Desktop;
+its checksum and next steps are in STATUS and the newest STOP POINT.
+
+The earlier releases below are retained as history.
 
 The Lucky Wheel bench test and walkthrough are complete. Sprint 2 resumes
 with SCRUM-391, SCRUM-388 and SCRUM-382 landed on main at `b02f7e0`, then

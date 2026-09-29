@@ -1,15 +1,39 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-29 - online till payment UI landing and staging proof._
+_Last updated: 2026-09-29 - online payment release live; native proof underway._
 
-The current SCRUM-206 round lands the checked online Slice F UI on main.
-The source originally pushed as `cf67d86` has been rebased onto the verified
-release checkpoint, preserving its behavior and rejecting unsafe pasted money
-before the visible amount changes. Mobile food-station confirmation now shows
-the authoritative receipt number. All 53 affected writer checks, POS
-typecheck, package lint and build pass. Current-release CI and native staging
-proof are pending; SCRUM-206 stays In Progress. The previous deployed source
-and evidence below remain authoritative until this round's deployment completes.
+SCRUM-206 online Slice F is live on main source `0468c38`. CI 36547262414 is
+green; API, POS, Console, Launcher and Booth are confirmed live on that source.
+OTO App remains `c416065`. All 53 affected writer checks, POS typecheck,
+package lint and build pass. Native desktop cash/change, handheld cash/manual
+split and food QR/reconnect pass. The remaining seven native terminal and
+checkout cases are underway. Completed payments are retained, never repeated
+to repair a proof observation. Reviewed cash staging screenshots are attached
+to SCRUM-206 as 10868-10869. The full story stays In Progress: SCRUM-269 local
+till transport and SCRUM-201 separate display acceptance are NOT BUILT.
+
+SCRUM-285 is implemented and pushed on `fix/offline-proof` at `d38eb3e`.
+The server refuses cloud trade operations for a station's forced-offline
+virtual box before idempotency replay or payment effects; reporting, setup
+and Go online remain available. All 44 checks in the two affected existing
+API files, API typecheck and full package lint pass. The capability matrix
+records the missing local till transport honestly. The task stays Testing.
+The shared payment-request wording follow-up is pushed separately on
+`fix/payment-request-copy` at `edce9bb`; POS typecheck and lint pass.
+
+Both new branch CI runs (36550625372 and 36553644035) were prevented from
+starting by GitHub account billing/spending availability. No build or test
+step ran. Both branches remain undeployed; do not bypass the CI gate. Restore
+Actions availability, run exact-source CI, land the checked branches, then
+deploy and complete SCRUM-285 staging proof before moving it to Deployed.
+
+The last green CI-packed `oto-box-0.1.0-0468c38.tgz` and its `.tgz.sha256`
+are on the Desktop, with both downloaded and delivered hashes verified:
+`044edbb9a474a945eadcc91e82598bee86b7b3f472e1630b79dceabcd1fbf1ea`.
+Older release pairs are in `old-oto-box-releases`. No physical Pi installation
+was performed; use PI_BOOTH.md's Update step.
+
+The earlier releases below are retained as history.
 
 OTO Park has completed the physical Lucky Wheel bench test and shared the
 walkthrough. Sprint 2 now resumes in the documented order: SCRUM-391 (QR
