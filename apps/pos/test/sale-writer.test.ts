@@ -753,6 +753,42 @@ describe('payment request identities', () => {
     expect(test.start.mock.calls.length + test.finaliseSale.mock.calls.length).toBe(1);
   });
 
+  it('keeps a declined partial approval blocked and polling until its reversal is confirmed', async () => {
+    const test = mountPayment();
+    test.start.mockResolvedValueOnce({ ...qr, route: 'card_terminal',
+      attempt: attempt('declined', { reversalPending: true }), outstandingSatang: 54_000, replayed: false });
+    test.reading.mockResolvedValue(read(attempt('declined', { reversalPending: true }), 54_000));
+    test.result.current.selectMethod('park-card');
+    await test.result.current.submit();
+    expect(test.result.current.state.phase).toBe('blocked');
+    expect(test.result.current.canBack).toBe(false);
+    expect(test.result.current.canSubmit).toBe(false);
+    test.result.current.selectMethod('park-cash');
+    await test.result.current.submit();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(test.reading).toHaveBeenCalled();
+    expect(test.result.current.locked).toBe(true);
+    expect(test.start).toHaveBeenCalledTimes(1);
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    expect(test.onComplete).not.toHaveBeenCalled();
+
+    test.reading.mockResolvedValue(read(attempt('declined'), 54_000));
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(test.result.current.locked).toBe(true);
+    expect(test.result.current.state.attempt?.reversalPending).toBe(true);
+    expect(test.onComplete).not.toHaveBeenCalled();
+
+    test.reading.mockResolvedValue(read(attempt('declined', { reversalPending: false }), 54_000));
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(test.result.current.locked).toBe(false);
+    expect(test.result.current.state.phase).toBe('ready');
+    test.result.current.selectMethod('park-cash');
+    await test.result.current.submit();
+    expect(test.start).toHaveBeenCalledTimes(1);
+    expect(test.finaliseSale).toHaveBeenCalledTimes(1);
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+  });
+
   it('retries an uncertain start with the original token, amount, body and gesture', async () => {
     const test = mountPayment();
     test.start.mockRejectedValueOnce(new NetworkError(new Error('Connection lost')));

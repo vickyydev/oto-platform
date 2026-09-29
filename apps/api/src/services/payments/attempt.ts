@@ -2,6 +2,7 @@ import { and, asc, eq, sql } from 'drizzle-orm';
 import { paymentAttempt, paymentMethod, sale, type PaymentMethod, type PaymentProvider } from '@oto/db';
 import {
   newId,
+  isPaymentReversalPending,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   type PaymentAttemptStatus,
@@ -70,7 +71,7 @@ export type AttemptRow = typeof paymentAttempt.$inferSelect;
  * are not here (`PaymentAttemptView` in `@oto/shared` says why).
  */
 export function attemptView(row: AttemptRow): PaymentAttemptView {
-  const payload = (row.payload ?? {}) as { protocol?: string; tender?: string };
+  const payload = (row.payload ?? {}) as { protocol?: string; tender?: string; void?: { reason?: string } };
   const tender = payload.tender ?? 'card';
   return {
     id: row.id,
@@ -84,6 +85,7 @@ export function attemptView(row: AttemptRow): PaymentAttemptView {
     terminalRef: row.terminalRef,
     inquirySupported: Boolean(row.deviceId && row.terminalRef && (payload.protocol === 'digio_tlv'
       || (payload.protocol === 'ghl_linkpos' && (tender === 'qr' || tender === 'wallet')))),
+    ...(payload.void?.reason === 'partial_approval' ? { reversalPending: isPaymentReversalPending(row.payload) } : {}),
     tid: row.tid,
     approvalCode: row.approvalCode,
     last4: row.last4,
@@ -153,14 +155,14 @@ export async function openAttempt(tx: Tx, input: OpenAttemptInput): Promise<Atte
       .limit(1);
     if (!saleRow) throw errors.notFound('Sale not found');
     const attempts = await tx
-      .select({ amountSatang: paymentAttempt.amountSatang, status: paymentAttempt.status })
+      .select({ amountSatang: paymentAttempt.amountSatang, status: paymentAttempt.status, payload: paymentAttempt.payload })
       .from(paymentAttempt)
       .where(eq(paymentAttempt.saleId, saleRow.id));
     let taken = 0;
     let reserved = 0;
     for (const attempt of attempts) {
       if (TAKEN.includes(attempt.status)) taken += attempt.amountSatang;
-      else if (!PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(attempt.status)) {
+      else if (!PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(attempt.status) || isPaymentReversalPending(attempt.payload)) {
         reserved += attempt.amountSatang;
       }
     }

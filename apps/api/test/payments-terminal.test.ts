@@ -211,7 +211,7 @@ async function readAttempt(id: string) {
   });
   expect(res.statusCode, res.body).toBe(200);
   return res.json() as {
-    attempt: { status: string; provider: string; inquirySupported: boolean; approvalCode: string | null; last4: string | null; tid: string | null };
+    attempt: { status: string; provider: string; inquirySupported: boolean; reversalPending?: boolean; approvalCode: string | null; last4: string | null; tid: string | null };
     qrPayload: string | null;
     deviceLabel: string | null;
     responseText: string | null;
@@ -374,6 +374,36 @@ describe('PLANT — the terminal approves ฿1 less than the sale asked for', ()
     expect((voidCommand!.payload as { amountSatang: number }).amountSatang).toBe(owed - 100);
     expect((voidCommand!.payload as { tranRef: string }).tranRef).toBe(afterSale.tranRef);
 
+    const expectReplacementBlocked = async () => {
+      const before = await ctx.db.select({ id: paymentAttempt.id }).from(paymentAttempt)
+        .where(eq(paymentAttempt.saleId, saleId));
+      const answers = [
+        await ctx.app.inject({ method: 'POST', url: `/sales/${saleId}/finalise`, headers: { cookie },
+          payload: { method: 'cash', kind: 'cash', actionId: newId() } }),
+        await ctx.app.inject({ method: 'POST', url: '/payments/manual', headers: { cookie },
+          payload: { saleId, approvalCode: 'TESTONLY', tid: 'TEST', actionId: newId() } }),
+        await startTender(saleId, { actionId: newId() }),
+        await ctx.app.inject({ method: 'POST', url: `/sales/${saleId}/void`, headers: { cookie },
+          payload: { reason: 'Pending reversal must not be abandoned' } }),
+      ];
+      for (const answer of answers) {
+        expect(answer.statusCode).toBe(409);
+        expect(answer.json().error.code).toBe('PAYMENT_IN_FLIGHT');
+      }
+      expect(await ctx.db.select({ id: paymentAttempt.id }).from(paymentAttempt)
+        .where(eq(paymentAttempt.saleId, saleId))).toHaveLength(before.length);
+      expect((await readAttempt(attemptId)).attempt.reversalPending).toBe(true);
+    };
+    await expectReplacementBlocked();
+
+    // A refused rescue is not evidence that the partial charge was returned.
+    const failedVoid = await postResult(attemptId, {
+      stage: 'final', protocol: 'ghl_linkpos', outcome: 'declined',
+    }, voidCommand!.actionId!);
+    expect(failedVoid.statusCode).toBe(200);
+    expect(failedVoid.json().phase).toBe('void');
+    await expectReplacementBlocked();
+
     // Run it, and read the FRAME the simulator was actually sent — the status
     // alone would pass even if the void had gone out keyed on the sale's own
     // reference, which both vendors forbid.
@@ -398,6 +428,14 @@ describe('PLANT — the terminal approves ฿1 less than the sale asked for', ()
     // Nothing of this sale was taken.
     const view = await readAttempt(attemptId);
     expect(view.outstandingSatang).toBe(owed);
+    expect(view.attempt.reversalPending).toBe(false);
+    const cash = await ctx.app.inject({
+      method: 'POST', url: `/sales/${saleId}/finalise`, headers: { cookie },
+      payload: { method: 'cash', kind: 'cash', actionId: newId() },
+    });
+    expect(cash.statusCode).toBe(200);
+    expect(cash.json().finalised).toBe(true);
+    expect(cash.json().outstandingSatang).toBe(0);
   });
 });
 

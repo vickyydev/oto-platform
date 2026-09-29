@@ -7,9 +7,14 @@ _Current checkpoint: 2026-09-29._
 Current online SCRUM-206 Slice F source `0468c38` is live on all five platform
 staging services after green CI 36547262414; OTO App remains `c416065`.
 All 53 affected writer checks and POS typecheck, lint and build pass. Native
-cash/change, handheld cash/manual split and food QR/reconnect pass; seven
-terminal/checkout cases remain under verification. Reviewed cash screenshots
-are attached to SCRUM-206 as 10868-10869. The full story remains In Progress
+cash/change, handheld split/manual, food QR/reconnect, shop approval,
+decline/cash fallback and timeout/inquiry/audited confirmation pass (six cases).
+Reviewed native screenshots are attached to SCRUM-206 as 10868-10881. The
+partial image records an unresolved state: the simulated partial command
+succeeded, but the cloud attempt stayed pending with no rescue VOID. Eight
+temporary rows remain retained; no repeat collection or no-money confirmation.
+GHL confirmation, QR-disabled and zero-price native proof remain unverified.
+The report is in docs/qa/payment-stage. The full story remains In Progress
 pending SCRUM-269 local till transport and SCRUM-201 separate display.
 
 SCRUM-285 is pushed on `fix/offline-proof` at `d38eb3e`: cloud trade refuses
@@ -17,12 +22,13 @@ the authenticated station's forced-offline virtual box before idempotency,
 with original permissions, reporting and recovery preserved. All 44 affected
 existing API checks, typecheck and full package lint pass; the honest capability
 matrix is included. It stays Testing, not deployed. The five-language payment
-request wording follow-up is on `fix/payment-request-copy` at `edce9bb`.
-The branch also fixes unsupported simulated GHL card inquiry through optional
-`PaymentAttemptView.inquirySupported` and POS guards. Existing terminal/writer/
-shared-payment files pass 104 checks; API/POS/shared typecheck and full package
-lint pass. Neither follow-up is live. The server still refuses safely if the
-device protocol is changed during an attempt. Both branch CI jobs were blocked before execution
+request wording is `edce9bb` and inquiry capability is `9a54d58` on
+`fix/payment-request-copy`. The same branch adds checked partial-reversal
+reservation, sale abandonment/zero-close refusal and blocked POS polling until
+explicit successful reversal. Existing affected files pass 189 checks, with
+API/POS/shared typechecks and full lint passing. These fixes are not live and
+do not claim to resolve the separate staged callback problem. New branch CI
+jobs were blocked before execution
 by GitHub account billing/spending availability. Keep both source gates intact.
 The current verified CI-packed 0468c38 Pi release pair is on the Desktop;
 its checksum and next steps are in STATUS and the newest STOP POINT.

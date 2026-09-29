@@ -404,6 +404,61 @@ describe('money reserved by an unresolved payment', () => {
       payload: { saleId, tender: 'card', actionId: newId(), amountSatang },
     });
 
+  it.each([
+    { name: 'an unvoidable positive partial approval', payload: { void: { reason: 'partial_approval', amountSatang: 100, unvoidable: 'no transaction reference' } } },
+    { name: 'an unknown approved amount saved as zero', payload: { exchange: { approvedSatang: null }, void: { reason: 'partial_approval', amountSatang: 0 } } },
+    { name: 'a partial approval with no saved amount', payload: { void: { reason: 'partial_approval' } } },
+  ])('retains the original reservation for $name', async ({ payload }) => {
+    const saleId = newId();
+    await commit(saleId);
+    const first = await startCard(saleId);
+    expect(first.statusCode).toBe(200);
+    const attemptId = first.json().attempt.id as string;
+    await ctx.db.update(paymentAttempt).set({ status: 'declined', payload })
+      .where(eq(paymentAttempt.id, attemptId));
+    const cash = await finalise(saleId, { method: 'cash', kind: 'cash', actionId: newId() });
+    expect(cash.statusCode).toBe(409);
+    expect(cash.json().error.code).toBe('PAYMENT_IN_FLIGHT');
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(1);
+  });
+
+  it('does not reserve a confirmed zero approval', async () => {
+    const saleId = newId();
+    await commit(saleId);
+    const first = await startCard(saleId);
+    expect(first.statusCode).toBe(200);
+    await ctx.db.update(paymentAttempt).set({ status: 'declined', payload: {
+      exchange: { approvedSatang: 0 }, void: { reason: 'partial_approval', amountSatang: 0 },
+    } }).where(eq(paymentAttempt.id, first.json().attempt.id));
+    const cash = await finalise(saleId, { method: 'cash', kind: 'cash', actionId: newId() });
+    expect(cash.statusCode).toBe(200);
+    expect(cash.json().finalised).toBe(true);
+  });
+
+  it('does not close a fully covered sale while an older partial charge awaits reversal', async () => {
+    const saleId = newId();
+    await commit(saleId);
+    const first = await startCard(saleId);
+    expect(first.statusCode).toBe(200);
+    const [original] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.id, first.json().attempt.id));
+    await ctx.db.update(paymentAttempt).set({ status: 'declined', payload: {
+      void: { reason: 'partial_approval', amountSatang: 100 },
+    } }).where(eq(paymentAttempt.id, original!.id));
+    // Model the persisted state left by the earlier gap: a second full tender
+    // was recorded before the first partial charge had been returned.
+    await ctx.db.insert(paymentAttempt).values({
+      ...original!, id: newId(), actionId: newId(), deviceId: null,
+      method: 'cash', methodCode: 'cash', provider: 'manual', status: 'approved',
+      paidAt: new Date(), payload: null,
+    });
+    const close = await finalise(saleId, { method: 'other', kind: 'other', amountSatang: 0 });
+    expect(close.statusCode).toBe(409);
+    expect(close.json().error.code).toBe('PAYMENT_IN_FLIGHT');
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    expect(row!.status).toBe('tendering');
+    expect(row!.receiptNumber).toBeNull();
+  });
+
   it('opens only one full-balance terminal tender from two distinct simultaneous presses', async () => {
     const saleId = newId();
     await commit(saleId);

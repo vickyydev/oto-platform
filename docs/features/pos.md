@@ -48,7 +48,16 @@ POS and shared typecheck and full package lint pass. This follow-up is pushed
 separately and is not live: Actions billing/spending availability blocks new
 CI jobs before execution. Device reconfiguration during an attempt can still
 cause a safe server refusal; changing the hardware does not authorise payment.
-Full offline
+The checked partial-reversal follow-up reserves the original amount while its
+saved reversal is pending, failed or unvoidable. Sale void and zero-balance
+close refuse, and the UI keeps polling until explicit `reversalPending:false`;
+an omitted flag cannot release a known pending reversal. Existing affected
+terminal/cash/sales/writer/shared-payment files pass 189 checks, and touched
+API/POS/shared typechecks and full lint pass. This follow-up is not live.
+Six native online cases pass; the partial case remains BROKEN in the staging
+run because its final report did not reach the cloud attempt. Its isolated
+inventory is retained. That callback cause remains unresolved; GHL confirmation,
+QR-disabled and zero-price native proof are still pending. Full offline
 browser-to-box transport needs SCRUM-269/285; independent customer-display
 acceptance needs SCRUM-201 (S2-08). The full story stays In Progress.
 Real 2C2P sandbox confirmation remains separate from simulator verification.
