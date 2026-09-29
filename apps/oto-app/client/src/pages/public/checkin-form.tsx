@@ -29,6 +29,11 @@ interface FormFieldConfig {
     fieldId: string;
     value: string | boolean | string[];
   };
+  visibilityRule?: {
+    fieldId: string;
+    operator: "equals" | "not_equals" | "contains" | "not_empty";
+    value?: string;
+  };
   displayOrder: number;
   validation?: {
     minLength?: number;
@@ -139,6 +144,14 @@ export default function PublicCheckinForm() {
   };
 
   const isFieldVisible = (field: FormFieldConfig): boolean => {
+    if (field.visibilityRule) {
+      const { fieldId, operator, value } = field.visibilityRule;
+      const current = String(formValues[fieldId] ?? "");
+      if (operator === "equals") return current === value;
+      if (operator === "not_equals") return current !== value;
+      if (operator === "contains") return current.includes(value ?? "");
+      if (operator === "not_empty") return current.trim().length > 0;
+    }
     if (!field.conditionalOn) return true;
     const { fieldId, value } = field.conditionalOn;
     const currentValue = formValues[fieldId];
@@ -222,11 +235,24 @@ export default function PublicCheckinForm() {
       }
 
       const contactMethod = formValues.contact_method || "whatsapp";
-      if (contactMethod === "whatsapp" && !formValues.whatsapp_number) {
+      const whatsappPhone = formValues.whatsapp_phone || formValues.whatsapp_number || "";
+      const hasAllergies = (formValues.has_allergies_or_medical ?? formValues.allergies_medical) === "yes";
+      const allergiesDetails = formValues.allergies_medical_details || formValues.allergies_details || "";
+      if (contactMethod === "whatsapp" && !whatsappPhone) {
         throw new Error(t("dropoff.error.whatsapp_required", "Please enter your WhatsApp number"));
       }
       if (contactMethod === "telegram" && !formValues.telegram_phone) {
         throw new Error(t("dropoff.error.telegram_required", "Please enter your Telegram phone number"));
+      }
+      if (hasAllergies && !allergiesDetails.trim()) {
+        throw new Error("Please describe the allergies or medical conditions");
+      }
+      const confirmed = (publishedId: string, fallbackId: string) =>
+        (formValues[publishedId] ?? formValues[fallbackId]) === true;
+      if (!confirmed("confirm_mall_15min", "confirm_15min") ||
+          !confirmed("confirm_early_pickup_refund", "confirm_refund") ||
+          !confirmed("confirm_evac_loading_bay", "confirm_evac")) {
+        throw new Error("Please confirm all three drop-off conditions");
       }
 
       const formData = new FormData();
@@ -234,16 +260,16 @@ export default function PublicCheckinForm() {
       formData.append("branchToken", token!);
       formData.append("parentFullName", formValues.parent_full_name || "");
       formData.append("contactMethod", contactMethod);
-      formData.append("whatsappPhone", formValues.whatsapp_number || "");
+      formData.append("whatsappPhone", whatsappPhone);
       formData.append("telegramPhone", formValues.telegram_phone || "");
       formData.append("children", JSON.stringify(children));
-      formData.append("hasAllergiesOrMedical", formValues.allergies_medical === "yes" ? "true" : "false");
-      formData.append("allergiesMedicalDetails", formValues.allergies_details || "");
-      formData.append("allowStaffOrderFood", formValues.allow_food_order === "yes" ? "true" : "false");
-      formData.append("foodNotesRestrictions", formValues.food_restrictions || "");
-      formData.append("confirmMall15min", String(formValues.confirm_15min === true));
-      formData.append("confirmEarlyPickupRefund", String(formValues.confirm_refund === true));
-      formData.append("confirmEvacLoadingBay", String(formValues.confirm_evac === true));
+      formData.append("hasAllergiesOrMedical", hasAllergies ? "true" : "false");
+      formData.append("allergiesMedicalDetails", allergiesDetails);
+      formData.append("allowStaffOrderFood", (formValues.allow_staff_order_food ?? formValues.allow_food_order) === "yes" ? "true" : "false");
+      formData.append("foodNotesRestrictions", formValues.food_notes_restrictions || formValues.food_restrictions || "");
+      formData.append("confirmMall15min", String(confirmed("confirm_mall_15min", "confirm_15min")));
+      formData.append("confirmEarlyPickupRefund", String(confirmed("confirm_early_pickup_refund", "confirm_refund")));
+      formData.append("confirmEvacLoadingBay", String(confirmed("confirm_evac_loading_bay", "confirm_evac")));
       formData.append("signature", signature);
       formData.append("photo", photoFile);
       formData.append("formData", JSON.stringify(formValues));
@@ -458,6 +484,43 @@ export default function PublicCheckinForm() {
                 </div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (section.id === "verification") {
+      return (
+        <Card key={section.id}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              {t(section.titleKey, "Photo and Signature")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("dropoff.photo.label", "Photo of parent and child")} *</Label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handlePhotoChange}
+                ref={fileInputRef}
+                className="hidden"
+                data-testid="input-photo"
+              />
+              {photoPreview ? (
+                <img src={photoPreview} alt="Preview" className="w-full max-h-48 object-contain rounded-md" />
+              ) : (
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} data-testid="button-upload-photo">
+                  <Camera className="h-4 w-4 mr-2" /> {t("dropoff.photo.label", "Upload photo")}
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>{t("dropoff.signature.label", "Signature")} *</Label>
+              <SignatureCanvas onSignatureChange={setSignature} />
+            </div>
           </CardContent>
         </Card>
       );

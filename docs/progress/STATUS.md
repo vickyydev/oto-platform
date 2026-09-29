@@ -17,6 +17,8 @@ SCRUM-453 is Testing under SCRUM-193: staff could read Xero status and finance s
 
 Public check-in and the staff board passed an isolated local synthetic flow: invalid QR token 403, missing consent 400, valid registration 201, staff list/status/checkout/revert all 200. The multi-child drop-off form created two child rows with age-based service suggestions; photo and signature bytes round-tripped through storage. All synthetic rows and files were removed. The form now checks the server's 10 MB limit after compression. Staging health and anonymous staff-list/invalid-token guards returned 200/401/403. The signed-in staging walkthrough and nanny reservation remain unverified; see `docs/qa/oto-app-lift/checkins.md`.
 
+The default published drop-off form had mismatched field IDs and lacked working photo/signature controls. The client/server repair maps published fields, preserves allergy and food answers, enforces confirmations, and renders verification controls. A temporary local published-form fixture passed refusal cases and a full browser submission; rows, media and fixture state were restored. Production build passed; typecheck remains at 578 inherited errors with no edited-line diagnostic, and edited-line lint is clear. Staging proof of this repair and signed-in module acceptance remain pending. Branch-scoped check-in access and nanny eligibility/conflicts are open under SCRUM-193; see `docs/qa/oto-app-lift/checkins.md`.
+
 ## Release checkpoint - 30 September 2026 - break checkpoint saved
 
 The current release checkpoint is complete. Stop here and await the next

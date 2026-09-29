@@ -212,9 +212,9 @@ const dropoffCheckinSchema = z.object({
   allergiesMedicalDetails: z.string().optional(),
   allowStaffOrderFood: z.enum(["true", "false"]),
   foodNotesRestrictions: z.string().optional(),
-  confirmMall15min: z.enum(["true"]).optional(),
-  confirmEarlyPickupRefund: z.enum(["true"]).optional(),
-  confirmEvacLoadingBay: z.enum(["true"]).optional(),
+  confirmMall15min: z.literal("true"),
+  confirmEarlyPickupRefund: z.literal("true"),
+  confirmEvacLoadingBay: z.literal("true"),
   signature: z.string().min(1, "Signature is required"),
 }).refine((data) => {
   // Conditional validation: require whatsapp phone if contact method is whatsapp
@@ -229,7 +229,9 @@ const dropoffCheckinSchema = z.object({
     return data.telegramPhone && data.telegramPhone.length >= 5;
   }
   return true;
-}, { message: "Telegram phone number is required", path: ["telegramPhone"] });
+}, { message: "Telegram phone number is required", path: ["telegramPhone"] })
+.refine((data) => data.hasAllergiesOrMedical !== "true" || !!data.allergiesMedicalDetails?.trim(),
+  { message: "Allergy or medical details are required", path: ["allergiesMedicalDetails"] });
 
 const childSchema = z.object({
   name: z.string().min(1, "Child name is required"),
@@ -280,16 +282,16 @@ router.post("/api/public/dropoff-checkin", async (req: Request, res: Response) =
           branchToken: req.body.branchToken,
           parentFullName: schemaFormData.parent_full_name || schemaFormData.parent_name || schemaFormData.guardian_name || "",
           contactMethod: schemaFormData.contact_method || "whatsapp",
-          whatsappPhone: schemaFormData.whatsapp_phone || schemaFormData.whatsapp_number || "",
-          telegramPhone: schemaFormData.telegram_phone || "",
+          whatsappPhone: schemaFormData.whatsapp_phone || schemaFormData.whatsapp_number || req.body.whatsappPhone || "",
+          telegramPhone: schemaFormData.telegram_phone || req.body.telegramPhone || "",
           children: childrenValue,
-          hasAllergiesOrMedical: schemaFormData.has_allergies_medical === "yes" ? "true" : "false",
-          allergiesMedicalDetails: schemaFormData.allergies_medical_details || "",
-          allowStaffOrderFood: schemaFormData.allow_staff_order_food === "yes" ? "true" : "false",
-          foodNotesRestrictions: schemaFormData.food_notes_restrictions || "",
-          confirmMall15min: schemaFormData.confirm_mall_15min ? "true" : undefined,
-          confirmEarlyPickupRefund: schemaFormData.confirm_early_pickup_refund ? "true" : undefined,
-          confirmEvacLoadingBay: schemaFormData.confirm_evac_loading_bay ? "true" : undefined,
+          hasAllergiesOrMedical: (schemaFormData.has_allergies_or_medical ?? schemaFormData.has_allergies_medical ?? schemaFormData.allergies_medical) === "yes" ? "true" : "false",
+          allergiesMedicalDetails: schemaFormData.allergies_medical_details || schemaFormData.allergies_details || "",
+          allowStaffOrderFood: (schemaFormData.allow_staff_order_food ?? schemaFormData.allow_food_order) === "yes" ? "true" : "false",
+          foodNotesRestrictions: schemaFormData.food_notes_restrictions || schemaFormData.food_restrictions || "",
+          confirmMall15min: (schemaFormData.confirm_mall_15min ?? schemaFormData.confirm_15min ?? (req.body.confirmMall15min === "true")) === true ? "true" : "false",
+          confirmEarlyPickupRefund: (schemaFormData.confirm_early_pickup_refund ?? schemaFormData.confirm_refund ?? (req.body.confirmEarlyPickupRefund === "true")) === true ? "true" : "false",
+          confirmEvacLoadingBay: (schemaFormData.confirm_evac_loading_bay ?? schemaFormData.confirm_evac ?? (req.body.confirmEvacLoadingBay === "true")) === true ? "true" : "false",
           signature: schemaFormData.consent_signature || schemaFormData.signature || req.body.signature || "",
         };
       } catch (e) {
