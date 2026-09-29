@@ -1,6 +1,33 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-29 - online till payment UI landing and staging proof._
+_Last updated: 2026-09-29 - native payment proof and checked follow-ups._
+
+Online UI source `0468c38` is live on API, POS, Console, Launcher and Booth;
+main CI 36547262414 is green. Native cash/change and handheld cash/manual-card
+split cases pass. Cash screenshots are attached to SCRUM-206 as 10868-10869.
+The remaining native cases are being checked; completed money cases are never
+repeated. An unused simulator QR attempt was expired, verified with zero taken
+money and voided before retry; its temporary inventory was archived.
+
+The small SCRUM-206 wording follow-up on `fix/payment-request-copy` says
+"Payment requested" for both terminal and gateway requests in all five
+languages, keeping the shared status name. POS typecheck and full package lint
+pass. It is not deployed. SCRUM-285 source `d38eb3e` is pushed on
+`fix/offline-proof`: 26 trading routes are guarded; all 44 existing station/route
+checks, API typecheck and full API lint pass. Its current capability matrix
+keeps the unbuilt full local till transport explicit.
+
+Guard branch CI 36550625372 did not start any step: GitHub reports an account
+billing/spending-limit block. Restore Actions availability, rerun checked source
+CI, then land/deploy the follow-ups and take the staging guard screenshots.
+SCRUM-285 remains Testing and full SCRUM-206 remains In Progress pending
+local till transport (269) and separate display acceptance (201).
+
+The verified CI Pi pair on Desktop is `oto-box-0.1.0-0468c38.tgz` and its
+`.tgz.sha256`; the older `5fb8525` pair is in `old-oto-box-releases`.
+SHA-256: `044edbb9a474a945eadcc91e82598bee86b7b3f472e1630b79dceabcd1fbf1ea`.
+No physical Pi update was performed in this round. The older release notes
+below are retained as history.
 
 The current SCRUM-206 round lands the checked online Slice F UI on main.
 The source originally pushed as `cf67d86` has been rebased onto the verified

@@ -2,6 +2,31 @@
 
 ## STOP POINT - 29 September 2026 - Sprint 2 payments resumed
 
+Current checkpoint: online UI `0468c38` is live on the five staging services
+with green main CI 36547262414. Native cash/change and handheld cash/manual-card
+split pass; reviewed cash screenshots are Jira attachments 10868-10869. The
+remaining native cases are in progress. Preserve paid cases; inspect and resolve
+the exact failed proof sale before collecting again. The unused gateway QR
+attempt was officially expired, read back with zero money and voided; six
+temporary inventory rows were archived before its fresh proof retry.
+
+SCRUM-285 `d38eb3e` is checked/pushed on `fix/offline-proof`: 26 cloud trading
+routes refuse the selected virtual box's deliberate offline flag before
+idempotency. All 44 existing station/route tests, API typecheck and full API lint
+pass. Architecture section 17 records current capabilities and NOT BUILT local
+till transport. The small wording follow-up on `fix/payment-request-copy`
+uses "Payment requested" in all five languages without changing the status
+contract; POS typecheck/lint pass. Both follow-ups await green CI and deployment.
+
+GitHub branch CI 36550625372 did not start because of account billing/spending
+availability. No source check failed. Restore Actions, retry the checked source
+CI, then land the branches without including unrelated root dirt and deploy.
+Do not interrupt native payment proof with a deployment or offline toggle.
+SCRUM-285 stays Testing; full 206 stays In Progress until 269 and 201 acceptance.
+Desktop release pair is `oto-box-0.1.0-0468c38.tgz` plus `.tgz.sha256`, verified
+as `044edbb9a474a945eadcc91e82598bee86b7b3f472e1630b79dceabcd1fbf1ea`;
+the older pair was archived. No physical Pi update. Earlier notes below are history.
+
 Current round: the online SCRUM-206 Slice F UI is landing on main from the
 rebased `cf67d86` checkpoint. The four till screens and mobile food-station
 caller share real collection and guarded recovery. Small source follow-ups

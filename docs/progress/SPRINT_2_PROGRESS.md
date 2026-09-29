@@ -4,6 +4,16 @@
 
 _Current checkpoint: 2026-09-29._
 
+Online payment UI `0468c38` is live, with green main CI 36547262414. Native
+cash/change and handheld cash/manual-card split pass; cash screenshots are
+attached to SCRUM-206 as 10868-10869. Remaining cases are in progress.
+SCRUM-285 `d38eb3e` is checked/pushed on `fix/offline-proof` with 44 existing
+checks, API typecheck and full package lint passing. Branch CI 36550625372 could
+not start because of GitHub billing/spending availability. The small five-language
+request-status copy follow-up is checked on `fix/payment-request-copy`; POS
+typecheck/lint pass. Both follow-ups await CI/deployment. Full 206 is In Progress;
+285 is Testing. Local till transport and separate display remain outstanding.
+
 Current round: online SCRUM-206 Slice F is landing on main from the rebased
 `cf67d86` UI checkpoint, with the unsafe cash/part paste follow-up included.
 All 53 affected writer checks and POS typecheck, package lint and build pass.

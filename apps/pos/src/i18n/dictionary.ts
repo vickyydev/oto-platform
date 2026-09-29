@@ -35,7 +35,7 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'payment.stage.timeExpired': { en: 'Wait for the payment answer. An expired QR does not confirm that no money was taken.', zh: '请等待付款结果。二维码过期不代表未收款。', th: 'รอผลการชำระเงิน คิวอาร์หมดอายุไม่ได้ยืนยันว่าไม่ได้รับเงิน', ru: 'Дождитесь результата. Истечение QR не доказывает отсутствие оплаты.', fr: "Attendez le résultat. Un QR expiré ne prouve pas l'absence de paiement." },
   'payment.stage.offlineRecorded': { en: 'Payment recorded offline', zh: '付款已离线记录', th: 'บันทึกการชำระเงินแบบออฟไลน์แล้ว', ru: 'Оплата записана без связи', fr: 'Paiement enregistré hors ligne' },
   'payment.stage.status.created': { en: 'Payment created', zh: '付款已创建', th: 'สร้างการชำระเงินแล้ว', ru: 'Платеж создан', fr: 'Paiement créé' },
-  'payment.stage.status.sent_to_terminal': { en: 'Sent to terminal', zh: '已发送至终端', th: 'ส่งไปยังเครื่องรับบัตรแล้ว', ru: 'Отправлено на терминал', fr: 'Envoyé au terminal' },
+  'payment.stage.status.sent_to_terminal': { en: 'Payment requested', zh: '已请求付款', th: 'ส่งคำขอชำระเงินแล้ว', ru: 'Платёж запрошен', fr: 'Paiement demandé' },
   'payment.stage.status.approved': { en: 'Payment approved', zh: '付款已批准', th: 'อนุมัติการชำระเงินแล้ว', ru: 'Оплата одобрена', fr: 'Paiement approuvé' },
   'payment.stage.status.declined': { en: 'Payment declined', zh: '付款被拒绝', th: 'การชำระเงินถูกปฏิเสธ', ru: 'Оплата отклонена', fr: 'Paiement refusé' },
   'payment.stage.status.cancelled': { en: 'Payment cancelled', zh: '付款已取消', th: 'ยกเลิกการชำระเงินแล้ว', ru: 'Оплата отменена', fr: 'Paiement annulé' },
