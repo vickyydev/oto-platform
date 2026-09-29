@@ -1,30 +1,20 @@
 // seed: full
 import { test, expect, type Page } from "@playwright/test";
-import { execSync } from "child_process";
-import { login, users, createStaffWithLogin, loginAsStaff } from "./helpers";
+import { pool } from "../server/db";
+import { runMidnightTaskGeneration } from "../server/scheduled-jobs";
+import { login, createStaffWithLogin, loginAsStaff } from "./helpers";
 
-function queryDB(sql: string): string {
-  return execSync(
-    `kubectl --context docker-desktop exec deploy/postgres -- psql -U oto -d oto_dev -tAc "${sql}"`,
-    { encoding: "utf-8" },
-  ).trim();
-}
-
-function runMidnightJob(): string {
-  return execSync(
-    `kubectl --context docker-desktop exec deploy/oto-app -- npx tsx -e "
-      import { runMidnightTaskGeneration } from './server/scheduled-jobs';
-      runMidnightTaskGeneration().then(() => process.exit(0));
-    "`,
-    { encoding: "utf-8", timeout: 30000 },
-  ).trim();
+async function queryDB(query: string, values: unknown[] = []): Promise<string> {
+  const result = await pool.query(query, values);
+  const first = Object.values(result.rows[0] ?? {})[0];
+  return first == null ? "" : String(first);
 }
 
 const uid = () => Math.random().toString(36).slice(2, 8);
 
 /** Get current day-of-month in the branch's timezone, matching the server's generation logic. */
-function branchDayOfMonth(): number {
-  const tz = queryDB("SELECT timezone FROM branches LIMIT 1");
+async function branchDayOfMonth(): Promise<number> {
+  const tz = await queryDB("SELECT timezone FROM branches LIMIT 1");
   return parseInt(
     new Intl.DateTimeFormat("en-US", { timeZone: tz, day: "numeric" }).format(new Date()),
     10,
@@ -36,7 +26,7 @@ async function loginAdmin(page: Page) {
   await page.goto("about:blank");
 }
 
-function getBranchId(): string {
+async function getBranchId(): Promise<string> {
   return queryDB("SELECT id FROM branches LIMIT 1");
 }
 
@@ -44,8 +34,8 @@ test.describe("Recurring task bugs", () => {
   test("creating a monthly task generates an instance for today", async ({ page }) => {
     await loginAdmin(page);
     const title = `Monthly create ${uid()}`;
-    const branchId = getBranchId();
-    const dayOfMonth = branchDayOfMonth();
+    const branchId = await getBranchId();
+    const dayOfMonth = await branchDayOfMonth();
 
     const res = await page.request.post("/api/core/tasks", {
       data: {
@@ -58,8 +48,8 @@ test.describe("Recurring task bugs", () => {
     });
     expect(res.ok()).toBeTruthy();
 
-    const count = queryDB(
-      `SELECT count(*) FROM tasks WHERE title = '${title}' AND is_recurring_definition = false`,
+    const count = await queryDB(
+      "SELECT count(*) FROM tasks WHERE title = $1 AND is_recurring_definition = false", [title],
     );
     expect(Number(count)).toBe(1);
   });
@@ -67,8 +57,8 @@ test.describe("Recurring task bugs", () => {
   test("creating an assigned task generates an instance with the assignment", async ({ page }) => {
     await loginAdmin(page);
     const title = `Assigned create ${uid()}`;
-    const branchId = getBranchId();
-    const employeeId = queryDB("SELECT id FROM employees LIMIT 1");
+    const branchId = await getBranchId();
+    const employeeId = await queryDB("SELECT id FROM employees LIMIT 1");
 
     const res = await page.request.post("/api/core/tasks", {
       data: {
@@ -81,20 +71,20 @@ test.describe("Recurring task bugs", () => {
     });
     expect(res.ok()).toBeTruthy();
 
-    const defId = queryDB(
-      `SELECT id FROM tasks WHERE title = '${title}' AND is_recurring_definition = true`,
+    const defId = await queryDB(
+      "SELECT id FROM tasks WHERE title = $1 AND is_recurring_definition = true", [title],
     );
-    const defAssignment = queryDB(
-      `SELECT assignment_id FROM task_assignments WHERE task_id = '${defId}'`,
+    const defAssignment = await queryDB(
+      "SELECT assignment_id FROM task_assignments WHERE task_id = $1", [defId],
     );
     expect(defAssignment).toBe(employeeId);
 
-    const instanceId = queryDB(
-      `SELECT id FROM tasks WHERE title = '${title}' AND is_recurring_definition = false`,
+    const instanceId = await queryDB(
+      "SELECT id FROM tasks WHERE title = $1 AND is_recurring_definition = false", [title],
     );
     expect(instanceId).toBeTruthy();
-    const instanceAssignment = queryDB(
-      `SELECT assignment_id FROM task_assignments WHERE task_id = '${instanceId}'`,
+    const instanceAssignment = await queryDB(
+      "SELECT assignment_id FROM task_assignments WHERE task_id = $1", [instanceId],
     );
     expect(instanceAssignment).toBe(employeeId);
   });
@@ -102,8 +92,8 @@ test.describe("Recurring task bugs", () => {
   test("midnight job generates instance for monthly task", async ({ page }) => {
     await loginAdmin(page);
     const title = `Monthly midnight ${uid()}`;
-    const branchId = getBranchId();
-    const dayOfMonth = branchDayOfMonth();
+    const branchId = await getBranchId();
+    const dayOfMonth = await branchDayOfMonth();
 
     const res = await page.request.post("/api/core/tasks", {
       data: {
@@ -116,14 +106,14 @@ test.describe("Recurring task bugs", () => {
     });
     expect(res.ok()).toBeTruthy();
 
-    queryDB(
-      `DELETE FROM tasks WHERE title = '${title}' AND is_recurring_definition = false`,
+    await queryDB(
+      "DELETE FROM tasks WHERE title = $1 AND is_recurring_definition = false", [title],
     );
 
-    runMidnightJob();
+    await runMidnightTaskGeneration();
 
-    const count = queryDB(
-      `SELECT count(*) FROM tasks WHERE title = '${title}' AND is_recurring_definition = false`,
+    const count = await queryDB(
+      "SELECT count(*) FROM tasks WHERE title = $1 AND is_recurring_definition = false", [title],
     );
     expect(Number(count)).toBe(1);
   });
@@ -131,8 +121,8 @@ test.describe("Recurring task bugs", () => {
   test("midnight job copies assignments to generated instance", async ({ page }) => {
     await loginAdmin(page);
     const title = `Assigned midnight ${uid()}`;
-    const branchId = getBranchId();
-    const employeeId = queryDB("SELECT id FROM employees LIMIT 1");
+    const branchId = await getBranchId();
+    const employeeId = await queryDB("SELECT id FROM employees LIMIT 1");
 
     const res = await page.request.post("/api/core/tasks", {
       data: {
@@ -145,29 +135,29 @@ test.describe("Recurring task bugs", () => {
     });
     expect(res.ok()).toBeTruthy();
 
-    const defId = queryDB(
-      `SELECT id FROM tasks WHERE title = '${title}' AND is_recurring_definition = true`,
+    const defId = await queryDB(
+      "SELECT id FROM tasks WHERE title = $1 AND is_recurring_definition = true", [title],
     );
-    const defAssignment = queryDB(
-      `SELECT assignment_id FROM task_assignments WHERE task_id = '${defId}'`,
+    const defAssignment = await queryDB(
+      "SELECT assignment_id FROM task_assignments WHERE task_id = $1", [defId],
     );
     expect(defAssignment).toBe(employeeId);
 
-    queryDB(
-      `DELETE FROM task_assignments WHERE task_id IN (SELECT id FROM tasks WHERE title = '${title}' AND is_recurring_definition = false)`,
+    await queryDB(
+      "DELETE FROM task_assignments WHERE task_id IN (SELECT id FROM tasks WHERE title = $1 AND is_recurring_definition = false)", [title],
     );
-    queryDB(
-      `DELETE FROM tasks WHERE title = '${title}' AND is_recurring_definition = false`,
+    await queryDB(
+      "DELETE FROM tasks WHERE title = $1 AND is_recurring_definition = false", [title],
     );
 
-    runMidnightJob();
+    await runMidnightTaskGeneration();
 
-    const instanceId = queryDB(
-      `SELECT id FROM tasks WHERE title = '${title}' AND is_recurring_definition = false`,
+    const instanceId = await queryDB(
+      "SELECT id FROM tasks WHERE title = $1 AND is_recurring_definition = false", [title],
     );
     expect(instanceId).toBeTruthy();
-    const instanceAssignment = queryDB(
-      `SELECT assignment_id FROM task_assignments WHERE task_id = '${instanceId}'`,
+    const instanceAssignment = await queryDB(
+      "SELECT assignment_id FROM task_assignments WHERE task_id = $1", [instanceId],
     );
     expect(instanceAssignment).toBe(employeeId);
   });
@@ -187,13 +177,13 @@ test.describe("Recurring task bugs", () => {
       const staffB = await createStaffWithLogin(adminPage);
 
       // Get employee ID for staff A
-      const staffAEmployeeId = queryDB(
-        `SELECT id FROM employees WHERE email = '${staffA.email}'`,
+      const staffAEmployeeId = await queryDB(
+        "SELECT id FROM employees WHERE email = $1", [staffA.email],
       );
 
       // Create a daily task assigned to staff A
       const title = `Visibility ${uid()}`;
-      const branchId = getBranchId();
+      const branchId = await getBranchId();
       const res = await adminPage.request.post("/api/core/tasks", {
         data: {
           branchIds: [branchId],
@@ -206,20 +196,20 @@ test.describe("Recurring task bugs", () => {
       expect(res.ok()).toBeTruthy();
 
       // Delete creation-generated instance, run midnight job
-      queryDB(
-        `DELETE FROM task_assignments WHERE task_id IN (SELECT id FROM tasks WHERE title = '${title}' AND is_recurring_definition = false)`,
+      await queryDB(
+        "DELETE FROM task_assignments WHERE task_id IN (SELECT id FROM tasks WHERE title = $1 AND is_recurring_definition = false)", [title],
       );
-      queryDB(
-        `DELETE FROM tasks WHERE title = '${title}' AND is_recurring_definition = false`,
+      await queryDB(
+        "DELETE FROM tasks WHERE title = $1 AND is_recurring_definition = false", [title],
       );
-      runMidnightJob();
+      await runMidnightTaskGeneration();
 
       // Log in as staff B and check they can't see the task
       await loginAsStaff(staffPage, staffB.email, staffB.tempPassword, staffB.finalPassword);
       const todayRes = await staffPage.request.get("/api/tasks/today");
       expect(todayRes.ok()).toBeTruthy();
       const todayTasks = await todayRes.json();
-      const titles = todayTasks.map((t: any) => t.title);
+      const titles = (todayTasks as Array<{ title: string }>).map((task) => task.title);
       expect(titles).not.toContain(title);
     } finally {
       await adminContext.close();

@@ -107,7 +107,7 @@ test("global admin Fix Board honors an explicit branch and restores all branches
       new Set([selectedBranch.id, otherBranch.id]),
     );
 
-    await page.goto("/core/fix");
+    await page.goto("/core/fix-board");
     await page.getByTestId("select-branch").click();
     const selectedBranchRequest = page.waitForRequest((request) => {
       const url = new URL(request.url());
