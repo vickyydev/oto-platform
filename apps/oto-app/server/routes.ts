@@ -23949,6 +23949,9 @@ ${context}`;
   app.get("/api/payroll/payslips/:id", requireAuth, async (req, res, next) => {
     try {
       const user = req.user as any;
+      if (!new RegExp(`^${payrollUuidPattern}$`).test(req.params.id)) {
+        return res.status(400).json({ message: "Invalid payslip ID" });
+      }
       const payslip = await storage.getPayslip(req.params.id);
       if (!payslip) {
         return res.status(404).json({ message: "Payslip not found" });
