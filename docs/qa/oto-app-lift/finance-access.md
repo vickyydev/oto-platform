@@ -1,0 +1,5 @@
+# SCRUM-453 under SCRUM-193: finance access
+
+The OTO App analytics screen is admin-only, but the Xero and finance API routers previously required only a signed-in session. A local full-seed probe received HTTP 200 from both Xero status and finance sync history as staff. The routers now use the existing authenticated admin gate, and the raw advisor-account block includes these finance prefixes so an advisor with an effective admin role cannot bypass that gate. The same gate covers the OAuth callback before it can store a token.
+
+After the change, the isolated app returned 401 for anonymous Xero status, finance history and callback requests; 403 for all three as staff; and 200 for Xero status and finance history as admin. The temporary probe was removed. The production build passed. App typecheck remains at 578 inherited errors with zero diagnostics on the changed lines; scoped ESLint found zero changed-line diagnostics. No advisor session or positive OAuth exchange was tested. Staging deployment, staff/admin access proof and a named screenshot or test-run card are required before SCRUM-453 can move to Deployed.

@@ -764,7 +764,7 @@ export async function registerRoutes(
     try {
       const sessionUser = req.user as { id?: string } | undefined;
       if (sessionUser?.id) {
-        const blockedPrefixes = ["/api/contracts", "/api/schedule", "/api/rota", "/api/payroll"];
+        const blockedPrefixes = ["/api/contracts", "/api/schedule", "/api/rota", "/api/payroll", "/api/auth/xero", "/api/finance"];
         if (blockedPrefixes.some((p) => req.path.startsWith(p))) {
           const rawUser = await storage.getUser(sessionUser.id);
           if (rawUser?.role === "advisor") {
@@ -819,11 +819,11 @@ export async function registerRoutes(
 
   // Xero integration routes (OAuth + accounting API)
   const xeroRoutes = await import("./xero-routes");
-  app.use("/api/auth/xero", xeroRoutes.default);
+  app.use("/api/auth/xero", requireAuth, requireAdmin, xeroRoutes.default);
 
   // Finance Sync routes (Xero data sync + query)
   const financeSyncRoutes = await import("./finance-sync-routes");
-  app.use("/api/finance", financeSyncRoutes.default);
+  app.use("/api/finance", requireAuth, requireAdmin, financeSyncRoutes.default);
 
   // Production database sync (development only)
   const { registerProdSyncRoutes } = await import("./prod-sync");
