@@ -2,6 +2,21 @@
 
 ## Current follow-ups - 29 September 2026
 
+- **Break checkpoint direction.** Finish the current release work, verify staging,
+  update Jira with named screenshots and stop. No new ticket is to be started.
+  Manual Render deployment is authorised while Actions billing prevents jobs.
+  Tested source 88140af is now live on all five platform services. Do not
+  describe GitHub CI as green or create a substitute labelled CI-packed.
+
+- **Local test cleanup follow-up.** The first F&B pricing regression run
+  passed all 90 assertions, but teardown hit Windows EBUSY on the disposable
+  directory `C:\Users\waqar\AppData\Local\Temp\oto-pg-ROiSmN`. The isolated
+  F&B rerun passed with clean teardown. No matching PostgreSQL master was
+  found for the old directory. Automatic approval review rejected recursive
+  cleanup as "blocked by policy"; the remaining directory was left in place.
+  Do not delete unrelated temporary databases or stop another process. This
+  housekeeping follow-up does not block the product work or release checks.
+
 - **Temporary verification files were lost during the Snapshot check.** An
   ad-hoc Playwright config inherited the repository's default `test-results`
   output directory; the runner cleared that ignored directory at startup.
@@ -16,8 +31,8 @@
   checks and the two existing Console cases pass. Every temporary browser
   config must set a dedicated absolute output directory. This is an execution
   issue to repair, not a park decision or permission request.
-- **GitHub Actions availability.** Main source c8f6375 is checked locally,
-  but CI 36585794087 ran zero steps because account billing/spending prevents
+- **GitHub Actions availability.** Main source 88140af is checked locally,
+  but CI 36589992120 ran zero steps because account billing/spending prevents
   jobs starting. Restore Actions availability; no spending setting is changed
   by development. Meanwhile SCRUM-201 continues independently. Deployment,
   staging proof and the next CI-packed Pi artifact remain pending.

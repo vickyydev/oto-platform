@@ -18,6 +18,7 @@ export * from './cart-totals';
 export * from './station-session';
 export * from './display-presentation';
 export * from './display-child-review';
+export * from './display-fnb';
 export * from './sync';
 export * from './print';
 export * from './staff-token';

@@ -1,8 +1,37 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 29 September 2026 late evening - authorised manual release
+
+The owner requested a release checkpoint and then a break, without starting
+new tickets. Manual Render deployment is explicitly authorised while GitHub
+Actions cannot start because of billing/spending availability. At this check,
+API, POS, Console, Launcher and Booth are LIVE on tested source 88140af.
+The API was deployed first, followed by the four front ends. All normal
+autoDeploy/checksPass settings remain unchanged; OTO App stays c416065.
+
+Current release work is SCRUM-201 (In Progress), SCRUM-206 (In Progress) and
+SCRUM-285 (Testing). The F&B guest display now passes 223 relevant checks, including native
+quote/lock/language/cash/pickup proof. Shop and typed consent are being
+completed. Shop and typed consent are remaining parts of SCRUM-201, not
+new tickets. Separate local transport SCRUM-269 remains To Do and blocks the
+full offline tender acceptance of SCRUM-206. Existing older parent stories
+191/205/223 and hygiene423 retain their honest status; their untouched To Do
+work is not being started for this checkpoint.
+
+Staging proof uses dedicated virtual fixtures and reviewed masked screenshots.
+The historical partial payment and physical booth are untouched. SCRUM-285 passes all 11 staging checks, including the corrected deep replay
+comparison. Its reviewed test-run card is Jira attachment10905; the box is
+restored online and dedicated stations are archived. New Deployed transitions still need named
+staging attachments. GitHub CI and its next packed Pi artifact remain blocked.
+
+Complete current release verification, save exact commits and Jira evidence,
+then stop and wait for the next instruction. Do not start another ticket.
+
+
 ## STOP POINT - 29 September 2026 evening - saved-child display review
 
-SCRUM-201 now includes online saved-child review on the separate display.
+Main 88140af is pushed and includes SCRUM-201 online saved-child review.
+F&B guest display integration is in progress on feat/display-fnb-guest.
 This checkpoint adds the finite child_review prompt and display.child_review
 actions while preserving StationSessionDocument, StationIntent, actionId,
 lastSeenSequence and leaseId. Full SCRUM-201 remains In Progress and NOT BUILT
@@ -40,11 +69,11 @@ business boundaries are in docs/qa/separate-display. Initial browser failures
 and the fixed public-step rendering mismatch are recorded there. This is
 local evidence, not a staging deployment or physical-device acceptance.
 
-The prior main checkpoint c8f6375 added recorded display responses. Its CI
-36585794087 ran zero steps due to GitHub Actions billing/spending availability.
+Exact-main CI 88140af run 36589992120 / check 109480274224 ran zero steps
+due to GitHub Actions billing/spending availability.
 Render's checksPass gate remains intact. Last verified live API/POS/Console/
-Launcher/Booth is 0468c38; OTO App is c416065. Recheck the next exact main CI
-and deployment after push. No new CI-packed Pi artifact is available yet.
+Launcher/Booth is 0468c38; OTO App is c416065. Render was checked after the
+push and has not advanced. No new CI-packed Pi artifact is available yet.
 
 Continue with F&B guest display integration, then shop, under SCRUM-201.
 Use captured quoted rows and real payment/completion facts, finite public

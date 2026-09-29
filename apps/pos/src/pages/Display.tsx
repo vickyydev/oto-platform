@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Monitor } from 'lucide-react';
-import type { StationIntent } from '@oto/shared';
+import { DisplayPaymentSchema, DisplayTotalsSchema, readDisplayFnbCart, type StationIntent } from '@oto/shared';
 import { displayApi, DisplayError, newDisplayCredential, newerDisplaySession, readDisplayCredential, rememberDisplayCredential, type DisplaySession } from '@/api/display';
 import { CustomerDisplay } from '@/components/till/CustomerDisplay';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import type { ContactChannel } from '@/types';
 import { readTicketDisplayView } from '@/lib/displaySession';
 import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildrenReview';
+import { FnbCustomerDisplay, type FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
 export default function Display() {
@@ -191,7 +192,16 @@ export default function Display() {
   }, [lang, pairedDeviceId, session?.document.sequence, session?.document.language, languageRetry, send]);
 
   const document = session?.document;
-  const view = document ? readTicketDisplayView(document) : null;
+  const isFnb = document?.cart?.kind === 'fnb';
+  const fnbCart = document && isFnb ? readDisplayFnbCart(document.cart, document.stage) : null;
+  const fnbTotals = fnbCart?.supported ? DisplayTotalsSchema.safeParse(document?.totals) : null;
+  const fnbPayment = fnbCart?.supported ? DisplayPaymentSchema.safeParse(document?.payment) : null;
+  const fnb = fnbCart?.supported && (fnbTotals?.success || document?.stage === 'welcome')
+    && document?.member === null && document.prompt === null
+    && (document.stage !== 'payment' || fnbPayment?.success)
+    && (!fnbCart.completion || fnbTotals?.success && fnbCart.completion.total === fnbTotals.data.total)
+    ? { cart: fnbCart, totals: fnbTotals?.success ? fnbTotals.data : undefined } : null;
+  const view = document && !isFnb ? readTicketDisplayView(document) : null;
   const answer = document?.prompt?.answer;
   // The public response deliberately omits the staff wizard step. Its validated
   // input prompt identifies the review without exposing that staff-only state.
@@ -216,7 +226,13 @@ export default function Display() {
         <Button variant="outline" onClick={newPairing}>New code</Button>
       </> : pairingMode === 'expiry-error' ? <p>Pairing is paused until code expiry is confirmed.</p>
         : <Loader2 className="h-8 w-8 animate-spin" aria-label={pairingMode === 'expiring' ? 'Expiring code' : 'Connecting'} />}
-    </main> : childReview ? <>
+    </main> : fnb && document ? <>
+      <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
+      <div className="flex-1 min-h-0" data-testid="display-fnb">
+        <FnbCustomerDisplay stage={document.stage as FnbCustomerStage} presentation={fnb}
+          payment={fnbPayment?.success ? fnbPayment.data : undefined} />
+      </div>
+    </> : childReview ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
       <div className="flex-1 min-h-0" inert={busy || !!answer || !!pending.current}>
         <PublicSavedChildrenReview key={childReview.visitorId} prompt={childReview}

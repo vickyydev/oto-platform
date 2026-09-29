@@ -25,6 +25,7 @@ import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
 import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
+import { useFnbDisplay } from '@/lib/fnbDisplaySession';
 import { readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { useScannerBurst } from '@/lib/scannerBurst';
 import {
@@ -93,7 +94,9 @@ let orderCounter = 1;
 let lineCounter = 1;
 
 export default function OrderStation() {
-  const { operator, offlineUnlock, can } = useOperator();
+  const { operator, offlineUnlock, can, locked } = useOperator();
+  const staffLocked = useRef(locked);
+  staffLocked.current = locked;
   const { station } = useStation();
   const { branch } = useBranch();
   const [, navigate] = useLocation();
@@ -296,7 +299,7 @@ export default function OrderStation() {
     manualDiscounts: effectiveManualDiscounts,
     promos: promoCodes,
     identity: orderIdentity,
-    enabled: stage !== 'confirmation',
+    enabled: !locked && stage !== 'confirmation',
     // S2-10b — the held voucher rides by its code; the platform prices it.
     promoCodes: voucherCodes,
   });
@@ -760,6 +763,7 @@ export default function OrderStation() {
 
   /** A scan — from the box, or from a USB scanner on this computer. */
   const redeemScannedVoucher = (code: string) => {
+    if (staffLocked.current) return;
     if (stage === 'confirmation') {
       toast({ title: VOUCHER_AFTER_SALE, description: code, variant: 'destructive' });
       return;
@@ -774,11 +778,11 @@ export default function OrderStation() {
     if (stage === 'scan') loadBand(null);
     void redeemVoucher(code);
   };
-  useStationScans(station?.stationId, (event: StationScanEvent) => {
+  useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
     const code = readVoucherScan(event);
     if (code) redeemScannedVoucher(code);
   });
-  useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode });
+  useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode, enabled: !locked });
 
   /**
    * S2-10b — THE ORDER THROWN AWAY: the order panel's X and Clear.
@@ -797,8 +801,13 @@ export default function OrderStation() {
    * till takes it over on its next order).
    */
   const letOrderGo = async (): Promise<boolean> => {
+    if (staffLocked.current) return false;
+    const epoch = orderEpochRef.current;
+    const scope = paymentScopeRef.current.scope;
+    const current = () => !staffLocked.current && orderEpochRef.current === epoch && paymentScopeRef.current.scope === scope;
     setCancelRefusal(null);
     const cancelled = await saleWriter.cancel(CANCELLED_AT_THE_TILL);
+    if (!current()) return false;
     if (!cancelled.ok) {
       setCancelRefusal(cancelled.message);
       return false;
@@ -806,6 +815,7 @@ export default function OrderStation() {
     // A voucher still held for an order that was never rung up is let go; one
     // the void has just freed answers that it is no longer held for it.
     if (voucher.current()) await voucher.release();
+    if (!current()) return false;
     voucher.reset();
     // A voided order's ids are spent: whatever is charged next is a new sale.
     if (cancelled.voided) saleWriter.reset();
@@ -822,6 +832,8 @@ export default function OrderStation() {
   useEffect(() => () => leaveStation.current(), []);
 
   const handleClearCart = () => {
+    if (staffLocked.current) return;
+    orderEpochRef.current += 1;
     setCart([]);
     setOrderNote('');
     setManualDiscounts([]);
@@ -834,11 +846,13 @@ export default function OrderStation() {
   // Any allergy/medical flag is surfaced as a persistent red banner on the order
   // stage (not a blocking modal), so scans always go straight to the order stage.
   const loadBand = (wb: Wristband | null) => {
+    if (staffLocked.current) return;
     setWristband(wb);
     setStage('order');
   };
 
   const resetOrder = () => {
+    if (staffLocked.current) return;
     // A new order takes new sale ids, and any answer still in flight for the
     // previous one is ignored rather than drawn onto this guest.
     orderEpochRef.current += 1;
@@ -1010,6 +1024,7 @@ export default function OrderStation() {
   const recordOrderOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
     const payload = commitPayload();
     const refused = (message: string): SaleWriteOutcome => ({ ok: false, saleId: saleWriter.committed?.id ?? '', message, retryable: false });
+    if (staffLocked.current) return refused('Unlock this station before saving the order.');
     if (!station) {
       promptSetupStation(navigate);
       return refused('Set up this station before taking payment.');
@@ -1017,9 +1032,10 @@ export default function OrderStation() {
     if (!payload) return refused(unwritableReason());
     const input = writeInput(payload);
     if (!(await voucherReadyFor(input))) return refused('Recheck the voucher before taking payment.');
+    if (staffLocked.current) return refused('Unlock this station before saving the order.');
     if (orderEpochRef.current !== epoch || !paymentContextCurrent()) return refused('This order or station changed before it could be saved.');
     const outcome = await saleWriter.commit(input);
-    if ((orderEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
+    if (!staffLocked.current && (orderEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
       // This station moved on before the answer landed. The order IS on the
       // platform and nothing on this screen will ever mention it again, so it
       // is said out loud rather than dropped — the same thing the till does
@@ -1034,12 +1050,13 @@ export default function OrderStation() {
   };
 
   useEffect(() => {
-    if (stage !== 'payment') return;
+    if (locked || stage !== 'payment') return;
     void paymentSnapshotRef.current?.prepare();
-  }, [stage]);
+  }, [stage, locked]);
 
   /** Complete local kitchen/receipt work only after the platform closed this sale. */
   const completeOrder = (written: ApiSale, settlements: readonly PaymentSettlement[]) => {
+    if (staffLocked.current) return;
     if (!paymentContextCurrent() || written.stationId !== orderIdentity?.stationId) { notePaymentLeftBehind(written.id); return; }
     if (!operator || !station || written.status !== 'finalised') return;
     if (completedSaleRef.current === written.id) return;
@@ -1136,8 +1153,9 @@ export default function OrderStation() {
   }
   const paymentStage = usePaymentStage({
     scope: paymentScope,
-    isCurrentScope: (scope) => scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
+    isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
     active: stage === 'payment',
+    paused: locked,
     totalSatang: Math.round(total * 100),
     prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordOrderOnPlatform(paymentEpoch),
     finaliseSale: saleWriter.finalise,
@@ -1156,6 +1174,19 @@ export default function OrderStation() {
   else if (stage === 'payment') customerStage = 'payment';
   else if (stage === 'order') customerStage = 'order';
   else customerStage = 'welcome';
+
+  const separateDisplay = useFnbDisplay(station?.stationId ?? null, {
+    sessionKey: `${operator?.id ?? ''}:${station?.branchId ?? branch.id}:${station?.stationId ?? ''}:${orderEpochRef.current}`,
+    stage: customerStage, online: !stationOffline(),
+    excluded: !!wristband || !!benefitOperator || !!voucher.held || !!voucherUsed || promoCodes.length > 0
+      || !!offLedgerOnly(lines) || lines.some(line => line.isPrepaid),
+    lines, orderNote, manualDiscounts: effectiveManualDiscounts, quote: order.quote,
+    pending: order.pending, quoteFailed: !!order.error, payment: paymentStage.display, completedOrder, platformSale,
+  }, !locked && !stationOffline());
+  const inlineDisplay = showCustomerDisplay && (!separateDisplay.connected.length || !separateDisplay.supported || !!separateDisplay.error);
+
+  // Keep the order and payment hooks mounted, without staff controls or portals.
+  if (locked) return null;
 
   const staffStation = (
     <div className="h-full w-full flex flex-col bg-background text-foreground overflow-hidden">
@@ -1461,8 +1492,11 @@ export default function OrderStation() {
         <div className="flex items-center gap-2 min-w-0">
           <Monitor className="w-4 h-4 shrink-0" />
           <span className="truncate">
-            Test harness — staff station (left) + customer display (right) share one live order. In
-            production the customer display runs on a separate device.
+            {separateDisplay.connected.length
+              ? separateDisplay.supported ? 'Separate display connected — guest order and payment are shared.'
+                : 'Separate display connected — follow the staff screen for this flow.'
+              : separateDisplay.error ? 'Separate display unavailable — use the inline customer display.'
+                : 'Test harness — staff station (left) + customer display (right) share one live order. In production the customer display runs on a separate device.'}
           </span>
         </div>
         <Button
@@ -1478,12 +1512,13 @@ export default function OrderStation() {
       <div className="shrink-0" inert={stage === 'payment' && !paymentStage.canBack}><StationHeader active="fnb" /></div>
 
       <div className="flex-1 flex min-h-0">
-        <div className={`${showCustomerDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
+        <div className={`${inlineDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
           {staffStation}
         </div>
-        {showCustomerDisplay && (
+        {inlineDisplay && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <FnbCustomerDisplay
+              presentation={separateDisplay.presentation}
               stage={customerStage}
               wristband={wristband}
               lines={displayLines}

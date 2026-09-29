@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { STATION_LEASE_TTL_S, stationLeaseLive } from '../src/station-session';
 import { projectDisplayDiagnosticDocument } from '../src/display-presentation';
 import { ChildReviewActionSchema, ChildReviewPromptSchema, childReviewAge } from '../src/display-child-review';
+import { DisplayFnbCartSchema, readDisplayFnbCart } from '../src/display-fnb';
 
 /**
  * A lease is live for one lease length and no longer (SCRUM-439).
@@ -117,5 +118,59 @@ describe('finite saved-child review contract (SCRUM-201)', () => {
     const projected = ChildReviewPromptSchema.parse({ ...prompt, slots: [{ ...prompt.slots[0], medicalNotes: 'private', childPhotoUrl: 'private' }],
       choices: [{ ...prompt.choices[0], medicalNotes: 'private' }] });
     expect(JSON.stringify(projected)).not.toContain('private');
+  });
+});
+
+describe('finite guest F&B presentation (SCRUM-201)', () => {
+  const cart = { kind: 'fnb', supported: true,
+    lines: [{ id: 'line-1', name: 'Cold drink', translations: { en: 'Cold drink', th: 'Drink TH' }, qty: 2,
+      basePrice: 40, lineTotal: 100, modifiers: [{ groupName: 'Size', optionName: 'Large', price: 10 }], note: 'Less ice', variantLabel: 'Large' }],
+    orderNote: 'Serve together', manualDiscounts: [{ id: 'discount-1', scope: 'order', type: 'fixed', value: 10 }], completion: null };
+  const completion = { saleId: 'sale-1', pickupCode: 'A12', total: 90, payment: { cash: 30, card: 20, promptpay: 40 } };
+  it('retains captured rows and strips catalog, staff, wristband and private fields recursively', () => {
+    const parsed = DisplayFnbCartSchema.parse({ ...cart, wristband: { allergiesMedical: 'private' }, operatorName: 'private',
+      lines: cart.lines.map(line => ({ ...line, menuItem: { cost: 10 }, translations: { ...line.translations, internal: 'private' },
+        modifiers: line.modifiers.map(modifier => ({ ...modifier, cost: 2, internal: 'private' })) })),
+      manualDiscounts: cart.manualDiscounts.map(discount => ({ ...discount, reason: 'private', appliedBy: 'private' })),
+    });
+    expect(parsed).toEqual(cart);
+    expect(JSON.stringify(parsed)).not.toMatch(/private|wristband|operatorName|menuItem|cost|reason|appliedBy/);
+  });
+  it('refuses bounds and invalid money without silently discarding order lines', () => {
+    for (const invalid of [
+      { ...cart, lines: Array.from({ length: 201 }, (_, i) => ({ ...cart.lines[0], id: `line-${i}` })) },
+      { ...cart, lines: [{ ...cart.lines[0], modifiers: Array.from({ length: 101 }, () => cart.lines[0]!.modifiers[0]) }] },
+      { ...cart, lines: [{ ...cart.lines[0], qty: 0 }] }, { ...cart, lines: [{ ...cart.lines[0], basePrice: -1 }] },
+      { ...cart, lines: [{ ...cart.lines[0], lineTotal: 100.001 }] }, { ...cart, orderNote: 'x'.repeat(1001) },
+      { ...cart, completion: { ...completion, payment: { cash: 30, card: 20, promptpay: 39 } } },
+      { ...cart, supported: false },
+    ]) expect(DisplayFnbCartSchema.safeParse(invalid).success).toBe(false);
+  });
+  it('allows completion only at thank-you, including zero sales, and always allows a safe empty fallback', () => {
+    for (const stage of ['welcome', 'order', 'payment']) {
+      expect(readDisplayFnbCart(cart, stage)).toEqual(cart);
+      expect(readDisplayFnbCart({ ...cart, completion }, stage)).toBeNull();
+    }
+    expect(readDisplayFnbCart(cart, 'thankyou')).toBeNull();
+    expect(readDisplayFnbCart({ ...cart, completion }, 'thankyou')?.completion).toEqual(completion);
+    expect(readDisplayFnbCart({ ...cart, completion: { ...completion, total: 0, payment: { cash: 0, card: 0, promptpay: 0 } } }, 'thankyou')?.completion?.total).toBe(0);
+    const fallback = { kind: 'fnb', supported: false, lines: [], orderNote: '', manualDiscounts: [], completion: null };
+    expect(readDisplayFnbCart(fallback, 'thankyou')).toEqual(fallback);
+    expect(readDisplayFnbCart(fallback, 'input')).toBeNull();
+  });
+  it('records F&B facts but no member/contact bleed or usable payment QR, and rejects malformed legacy fallthrough', () => {
+    const frame = { stationId: '018f0000-0000-7000-8000-000000000001', boxId: '018f0000-0000-7000-8000-000000000002',
+      schemaVersion: 1, sequence: 4, stage: 'payment', language: 'en', takeoverCount: 0, updatedAt: '2026-09-29T12:00:00.000Z' };
+    const projected = projectDisplayDiagnosticDocument({ ...frame, cart,
+      member: { id: 'member', nickname: 'Private marker', tier: 'member' },
+      prompt: { kind: 'contact', phone: 'Private marker', answer: 'Private marker' },
+      payment: { saleId: 'sale-1', amountSatang: 9000, qrPayload: 'QR fixture contents', qrImageUrl: 'https://example.test/qr.png',
+        expiresAt: null, status: 'pending', online: true, offline: false },
+    });
+    expect(projected?.cart).toEqual(cart);
+    expect(projected?.member).toBeNull(); expect(projected?.prompt).toBeNull();
+    expect(projected?.payment).toMatchObject({ amountSatang: 9000, hasQrPayload: true, hasQrImage: true });
+    expect(JSON.stringify(projected)).not.toMatch(/Private marker|QR fixture contents|example\.test/);
+    expect(projectDisplayDiagnosticDocument({ ...frame, cart: { kind: 'fnb', supported: true, sale: { tier: 'tourist' } } })?.cart).toBeNull();
   });
 });

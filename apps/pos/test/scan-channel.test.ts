@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cartQuote, settle } from './support/fixtures';
+import { apiSale, cartQuote, settle } from './support/fixtures';
 import { renderHook, type RenderedHook } from './support/hooks';
 import type { StationSessionDocument } from '@oto/shared';
 import { displayRequest, DisplayError, newDisplayCredential, newerDisplaySession, type DisplaySession } from '@/api/display';
 import { childReviewPatch, readDisplayAnswer, readTicketDisplayView, takeTicketDisplayLeaseForSignOut, ticketDisplayPresentation, useChildReviewSave, useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
 import { authApi } from '@/api/platform';
-import type { Sale } from '@/types';
+import { fnbDisplayPresentation, useFnbDisplay, type FnbDisplayState } from '@/lib/fnbDisplaySession';
+import type { FnbOrder, Sale } from '@/types';
 import {
   readProductScan,
   readVoucherScan,
@@ -29,8 +30,9 @@ vi.mock('react', () => import('./support/hooks'));
 describe('SCRUM-201 — separate display transport and station presentation', () => {
   let displayHook: RenderedHook<void, ReturnType<typeof useTicketDisplay>> | undefined;
   let childSaveHook: RenderedHook<void, ReturnType<typeof useChildReviewSave>> | undefined;
+  let fnbDisplayHook: RenderedHook<void, ReturnType<typeof useFnbDisplay>> | undefined;
   beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { displayHook?.unmount(); displayHook = undefined; childSaveHook?.unmount(); childSaveHook = undefined; vi.useRealTimers(); vi.unstubAllGlobals(); });
+  afterEach(() => { displayHook?.unmount(); displayHook = undefined; childSaveHook?.unmount(); childSaveHook = undefined; fnbDisplayHook?.unmount(); fnbDisplayHook = undefined; vi.useRealTimers(); vi.unstubAllGlobals(); });
 
   const state = (overrides: Partial<TicketDisplayState> = {}): TicketDisplayState => ({
     stage:'identify', step:1, sessionKey:'visit-1', tier:'tourist', phone:'', nickname:'', contactChannel:'whatsapp', member:null, ...overrides,
@@ -64,6 +66,105 @@ describe('SCRUM-201 — separate display transport and station presentation', ()
   const apiChild = { id: 'child-1', name: 'Child corrected', dateOfBirth: '2020-01-10', ageYears: 6,
     allergies: 'Private health', medicalNotes: null, medicalAlert: true, dietary: null,
     foodRestrictions: 'Private food', notes: null, lastConfirmedAt: null };
+
+  const fnbState = (overrides: Partial<FnbDisplayState> = {}): FnbDisplayState => ({
+    sessionKey: 'guest-1', stage: 'order', online: true, excluded: false,
+    lines: [{ id: 'food-1', menuItem: { id: 'menu-1', name: 'Old local fries', category: 'private-category',
+      price: { weekday: 1, weekend: 999 }, modifierGroups: [], translations: { th: { name: 'Old local translation' } } },
+      qty: 2, selectedModifiers: [], lineTotal: 2 }], orderNote: 'No salt', manualDiscounts: [],
+    quote: cartQuote(220, { lineTotals: { 'food-1': 220 }, itemPresentation: {
+      'food-1': { name: 'Canonical fries', basePrice: 100, modifiers: [{ groupName: 'Sauce', optionName: 'Mayo', price: 10 }] },
+    } }), pending: false, quoteFailed: false,
+    payment: { saleId: 'sale-food', amountSatang: 22000, status: 'pending', qrPayload: 'actual-payment-payload',
+      qrImageUrl: null, expiresAt: '2026-09-29T12:03:00.000Z', offline: false, online: true },
+    completedOrder: null, platformSale: null, ...overrides,
+  });
+
+  it('publishes canonical guest food components, discounts, tax and actual payment without private catalog data', () => {
+    const input = fnbState({ stage: 'payment' });
+    input.quote.totals.manualAmounts = { discount: 20 };
+    input.quote.totals.discountAmount = 20;
+    input.quote.totals.total = 214;
+    input.quote.totals.taxBreakdown.categories = [{ category: 'fnb', base: 200, taxMode: 'exclusive', taxName: 'VAT',
+      taxPercent: 7, serviceCharge: 0, tax: 14, secondaryTaxMode: 'none', secondaryTaxPercent: 0, secondaryTax: 0, gross: 214 }];
+    input.manualDiscounts = [{ id: 'discount', scope: 'order', type: 'fixed', value: 20, reason: 'Private reason',
+      amountTHB: 20, appliedBy: 'Private staff', appliedById: 'private-staff', appliedAt: '' }];
+    const frame = fnbDisplayPresentation(input);
+    expect(frame.cart.supported).toBe(true);
+    expect(frame.cart.lines[0]).toMatchObject({ name: 'Canonical fries', basePrice: 100, qty: 2, lineTotal: 220,
+      modifiers: [{ groupName: 'Sauce', optionName: 'Mayo', price: 10 }] });
+    expect(frame.cart.lines[0].translations).toBeUndefined();
+    expect(frame.totals?.manualAmounts).toEqual({ discount: 20 });
+    expect(frame.totals?.taxBreakdown.categories[0].tax).toBe(14);
+    expect(frame.payment?.qrPayload).toBe('actual-payment-payload');
+    expect(frame.member).toBeNull(); expect(frame.prompt).toBeNull();
+    expect(JSON.stringify(frame)).not.toMatch(/private-category|menu-1|weekday|Private staff|Private reason/);
+  });
+
+  it('clears unsupported guest frames when canonical components are absent, inconsistent, offline or excluded', () => {
+    const input = fnbState();
+    const missing = { ...input.quote, itemPresentation: undefined };
+    const offset = { ...input.quote, itemPresentation: { 'food-1': { name: 'Fries', basePrice: 101,
+      modifiers: [{ groupName: 'Sauce', optionName: 'Mayo', price: 10 }] } } };
+    for (const changed of [{ quote: missing }, { quote: offset }, { online: false }, { excluded: true },
+      { pending: true }, { quoteFailed: true }, { quote: { ...input.quote, source: 'till' as const } }]) {
+      const frame = fnbDisplayPresentation({ ...input, ...changed });
+      expect(frame.cart).toEqual({ kind: 'fnb', supported: false, lines: [], orderNote: '', manualDiscounts: [], completion: null });
+      expect(frame.payment).toBeNull(); expect(frame.totals).toBeNull();
+    }
+    const equalTotal = fnbDisplayPresentation({ ...input, quote: { ...input.quote, itemPresentation: {
+      'food-1': { name: 'Changed fries', basePrice: 105, modifiers: [{ groupName: 'Sauce', optionName: 'Mayo', price: 5 }] },
+    } } });
+    expect(equalTotal.cart.lines[0]).toMatchObject({ basePrice: 105, modifiers: [{ price: 5 }] });
+  });
+
+  it('shows guest thank-you only for an actual finalised sale and matching completed settlement', () => {
+    const input = fnbState({ stage: 'thankyou' });
+    const completed = { id: 'local-order', status: 'paid', pickupCode: 'G-12', total: 220,
+      payment: { cash: 200, card: 20, promptpay: 0 } } as FnbOrder;
+    const written = apiSale({ id: 'sale-food', status: 'finalised', totals: { ...apiSale().totals, grossSatang: 22000 } });
+    expect(fnbDisplayPresentation(input).cart.supported).toBe(false);
+    expect(fnbDisplayPresentation({ ...input, platformSale: { ...written, status: 'tendering' }, completedOrder: completed }).cart.supported).toBe(false);
+    const frame = fnbDisplayPresentation({ ...input, platformSale: written, completedOrder: completed });
+    expect(frame.cart.completion).toEqual({ saleId: 'sale-food', pickupCode: 'G-12', total: 220, payment: { cash: 200, card: 20, promptpay: 0 } });
+    expect(frame.payment).toBeNull();
+    expect(fnbDisplayPresentation({ ...input, platformSale: written, completedOrder: { ...completed, total: 221 } }).cart.supported).toBe(false);
+    expect(fnbDisplayPresentation({ ...input, platformSale: written, completedOrder: { ...completed, payment: { ...completed.payment, cash: 0 } } }).cart.supported).toBe(false);
+  });
+
+  it('retains the guest publisher during lock, never handles ticket answers and gives native sign-out its own lease', async () => {
+    let active = true;
+    let input = fnbState();
+    let doc = document({ stage: 'order' });
+    const request = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith('/displays')) return reply({ displays: [{ id: 'display-1', name: 'Guest screen', connected: true }] });
+      if (path.endsWith('/lease')) return reply({ document: doc, lease: { leaseId: 'guest-own-lease' } });
+      if (path.endsWith('/session')) return reply({ document: doc });
+      if (path.endsWith('/intents')) {
+        const body = JSON.parse(String(init?.body));
+        expect(body.type).toBe('session.publish_display');
+        doc = { ...doc, ...body.payload, sequence: doc.sequence + 1 };
+        return reply({ document: doc });
+      }
+      return reply({ released: true });
+    });
+    vi.stubGlobal('fetch', request);
+    fnbDisplayHook = renderHook(() => useFnbDisplay('guest-station', input, active));
+    await settle();
+    expect(doc.cart?.kind).toBe('fnb');
+    const calls = request.mock.calls.length;
+    active = false; fnbDisplayHook.rerender();
+    input = { ...input, stage: 'payment' }; fnbDisplayHook.rerender();
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(request.mock.calls).toHaveLength(calls);
+    expect(fnbDisplayHook.result.current.connected).toHaveLength(1);
+    active = true; fnbDisplayHook.rerender(); await settle();
+    expect(doc.stage).toBe('payment');
+    expect(request.mock.calls.filter(([path]) => path.endsWith('/lease'))).toHaveLength(1);
+    await expect(takeTicketDisplayLeaseForSignOut()).resolves.toBe('guest-own-lease');
+    fnbDisplayHook.unmount();
+    expect(request.mock.calls.some(([path]) => path.endsWith('/lease/release'))).toBe(false);
+  });
 
   it('publishes a finite online child review without private profile fields and refuses malformed fallback', () => {
     const input = state({ stage: 'input', step: 8, online: true, childReview: childReview() });

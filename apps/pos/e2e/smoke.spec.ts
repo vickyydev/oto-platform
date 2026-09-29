@@ -514,3 +514,145 @@ test('separate display saved-child review persists before Done and retries a los
     }
   }
 });
+
+test('separate display guest F&B uses the captured order through lock, cash payment and pickup', async ({ page, browser, baseURL }) => {
+  test.setTimeout(120_000);
+  requireLocalFixture(baseURL);
+  await page.goto('/');
+  await signIn(page);
+  const fixture = await pairedDisplay(browser, page, baseURL);
+  const fnbSession = (stage: string, discounted = false) => {
+    let lastStatus: number | null = null;
+    let lastStage = 'none';
+    let lastKind = 'none';
+    let lastSupported = false;
+    return fixture.display.waitForResponse(async response => {
+      if (!response.url().endsWith('/api/display/session')) return false;
+      lastStatus = response.status();
+      if (lastStatus !== 200) return false;
+      const document = (await response.json().catch(() => null))?.document;
+      lastStage = ['identify', 'welcome', 'order', 'input', 'payment', 'thankyou'].includes(document?.stage) ? document.stage : 'other';
+      lastKind = document?.cart?.kind === 'fnb' ? 'fnb' : 'other';
+      lastSupported = document?.cart?.supported === true;
+      return document?.stage === stage && lastKind === 'fnb' && lastSupported
+        && (!discounted || document.cart.manualDiscounts?.length === 1);
+    }).catch(() => {
+      throw new Error(`F&B display ${stage} response missing (status=${lastStatus}, stage=${lastStage}, kind=${lastKind}, supported=${lastSupported})`);
+    });
+  };
+  try {
+    const welcome = fnbSession('welcome');
+    await page.getByRole('button', { name: 'F&B', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Scan Wristband', exact: true })).toBeVisible();
+    await welcome;
+    const publicFnb = fixture.display.getByTestId('display-fnb');
+    await expect(publicFnb.getByRole('heading', { name: 'Order here', exact: true })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: /No wristband.*continue as guest/ }).click();
+    await page.getByPlaceholder('Search dish…').fill('French Fries');
+    await page.getByRole('button', { name: /French Fries/ }).click();
+    const options = page.getByRole('dialog');
+    await options.getByRole('button', { name: /Cheese sauce/ }).click();
+    await options.getByRole('button', { name: 'Add one French Fries', exact: true }).click();
+    await options.getByPlaceholder('e.g. no pickles, extra crispy').fill('Local menu note');
+    const added = fnbSession('order');
+    await options.getByRole('button', { name: /^Add to order/ }).click();
+    await added;
+    await expect(publicFnb.getByTestId('fnb-display-line')).toHaveCount(1, { timeout: 20_000 });
+    await expect(publicFnb.getByText('Cheese sauce', { exact: true })).toBeVisible();
+    await expect(publicFnb.getByText('Local menu note', { exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Add manual discount', exact: true }).click();
+    const discount = page.getByRole('dialog');
+    await discount.getByRole('button', { name: '1', exact: true }).click();
+    await discount.getByRole('button', { name: '0', exact: true }).click();
+    await discount.getByText(/^Reason/).locator('..').getByRole('button').first().click();
+    const quoted = page.waitForResponse(response => response.url().endsWith('/api/sales/quote')
+      && response.request().method() === 'POST' && response.status() === 200
+      && response.request().postDataJSON()?.manualDiscounts?.length === 1);
+    const discounted = fnbSession('order', true);
+    await discount.getByRole('button', { name: /^Apply/ }).click();
+    const quote = (await (await quoted).json()).quote;
+    const document = (await (await discounted).json()).document;
+    const line = document.cart.lines[0];
+    expect(document.step === null && document.member === null && document.prompt === null).toBe(true);
+    expect(line.qty === 2 && line.name === 'French Fries' && line.basePrice === 90
+      && line.modifiers.some((modifier: { optionName: string; price: number }) => modifier.optionName === 'Cheese sauce' && modifier.price === 25)).toBe(true);
+    expect(Math.round(document.totals.total * 100) === quote.totals.grossSatang).toBe(true);
+    const discountId = document.cart.manualDiscounts[0].id;
+    expect(document.totals.manualAmounts[discountId] > 0).toBe(true);
+    await expect(publicFnb.getByText(`฿${line.basePrice} base`, { exact: true })).toBeVisible();
+    await expect(publicFnb.getByText(`฿${line.lineTotal}`, { exact: true })).toBeVisible();
+    await expect(publicFnb.getByText(`−฿${document.totals.manualAmounts[discountId]}`, { exact: true })).toBeVisible();
+    await expect(publicFnb.getByText(`฿${document.totals.total}`, { exact: true })).toBeVisible();
+    await expect(publicFnb.getByText(/credit balance|remaining credit|allergy|medical|prepaid|staff benefit/i)).toHaveCount(0);
+    for (const viewport of [{ width: 1024, height: 768 }, { width: 1280, height: 800 }]) {
+      await fixture.display.setViewportSize(viewport);
+      expect(await fixture.display.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+    await fixture.display.setViewportSize({ width: 1024, height: 768 });
+    await captureLocalCheck(fixture.display, 'fnb-display-order-local.png');
+
+    await page.getByLabel('Lock screen').click();
+    await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
+    const locked = (await (await fnbSession('order', true)).json()).document;
+    expect(JSON.stringify(locked.cart) === JSON.stringify(document.cart)
+      && JSON.stringify(locked.totals) === JSON.stringify(document.totals)).toBe(true);
+    await unlock(page);
+    await expect(page.getByRole('button', { name: `Charge ฿${document.totals.total}`, exact: true })).toBeVisible();
+    await expect(publicFnb.getByText('Local menu note', { exact: true })).toBeVisible();
+    await publicFnb.getByLabel('Change language').click();
+    const languageSet = fixture.display.waitForResponse(response => response.url().endsWith('/api/display/intents')
+      && response.request().postDataJSON()?.type === 'display.set_language'
+      && response.request().postDataJSON()?.payload?.language === 'fr' && response.status() === 200);
+    await publicFnb.getByRole('button', { name: 'Français', exact: true }).click();
+    // The publisher may advance the sequence before the language gesture.
+    // The display rehydrates and retries; prove the eventual accepted response.
+    expect((await (await languageSet).json()).document?.language === 'fr').toBe(true);
+    await expect(publicFnb.getByText('Frites', { exact: true })).toBeVisible();
+    await publicFnb.getByLabel('Change language').click();
+    const languageReset = fixture.display.waitForResponse(response => response.url().endsWith('/api/display/intents')
+      && response.request().postDataJSON()?.type === 'display.set_language'
+      && response.request().postDataJSON()?.payload?.language === 'en' && response.status() === 200);
+    await publicFnb.getByRole('button', { name: 'English', exact: true }).click();
+    expect((await (await languageReset).json()).document?.language === 'en').toBe(true);
+
+    const payment = fnbSession('payment');
+    await page.getByRole('button', { name: `Charge ฿${document.totals.total}`, exact: true }).click();
+    const pickup = page.getByRole('dialog', { name: 'Pick-up Code', exact: true });
+    await pickup.getByRole('button', { name: '1', exact: true }).click();
+    await pickup.getByRole('button', { name: '2', exact: true }).click();
+    await pickup.getByRole('button', { name: /^Continue to Payment/ }).click();
+    const paymentDocument = (await (await payment).json()).document;
+    expect(paymentDocument.cart.completion === null && paymentDocument.prompt === null
+      && paymentDocument.payment.amountSatang === Math.round(document.totals.total * 100)).toBe(true);
+    await expect(publicFnb.getByText('Amount to pay', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await captureLocalCheck(fixture.display, 'fnb-display-payment-local.png');
+    await page.getByRole('button', { name: /^Cash / }).click();
+    await page.getByLabel('Cash received', { exact: true }).fill((document.totals.total + 10).toFixed(2));
+    const finalised = page.waitForResponse(response => /\/api\/sales\/[^/]+\/finalise$/.test(new URL(response.url()).pathname)
+      && response.request().method() === 'POST' && response.status() === 200);
+    const thankyou = fnbSession('thankyou');
+    await page.getByRole('button', { name: 'Record cash', exact: true }).click();
+    const finalResponse = await finalised;
+    const written = (await finalResponse.json()).sale;
+    expect(written?.status === 'finalised' && written.totals.grossSatang === quote.totals.grossSatang).toBe(true);
+    const completed = (await (await thankyou).json()).document;
+    const summary = completed.cart.completion;
+    expect(summary?.saleId === written.id && typeof summary.pickupCode === 'string' && summary.pickupCode.length > 0
+      && Math.round(summary.total * 100) === written.totals.grossSatang
+      && summary.payment.cash === summary.total && summary.payment.card === 0 && summary.payment.promptpay === 0).toBe(true);
+    await expect(page.getByRole('heading', { name: 'Order Confirmed', exact: true })).toBeVisible();
+    await expect(publicFnb.getByRole('heading', { name: 'Thank you!', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(publicFnb.getByText(summary.pickupCode, { exact: true })).toBeVisible();
+    await expect(publicFnb.getByText('Cash', { exact: true })).toBeVisible();
+    await expect(publicFnb.getByText(/credit balance|remaining credit|fnb credit/i)).toHaveCount(0);
+    await captureLocalCheck(fixture.display, 'fnb-display-completed-local.png');
+  } finally {
+    try {
+      if (await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible()) await unlock(page);
+      if (await page.getByLabel('Lock screen').isVisible()) { await fixture.releaseLease(); await signOut(page); }
+    } finally {
+      try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
+    }
+  }
+});

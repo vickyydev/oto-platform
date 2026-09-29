@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "environment": "local disposable databases",
+  "existingTests": {
+    "apiSales": 58,
+    "apiFnb": 32,
+    "sharedStation": 14,
+    "boxStation": 35,
+    "posScanChannel": 58,
+    "posCartQuote": 22,
+    "nativePos": 4
+  },
+  "browserRuns": {
+    "baseline": "results-run_1790696810682_8eb1179f.json: first three passed",
+    "fnb": "results-run_1790697084202_e6560954.json: focused fourth case passed"
+  },
+  "checks": [
+    "authoritative base/modifier quote with offsetting price changes",
+    "finite public projection and payment/completion totals",
+    "late quote lock fence",
+    "two contexts, two viewport widths, retained cart, language retry, actual cash finalisation and pickup"
+  ],
+  "staticChecks": [
+    "API/POS typecheck and full lint",
+    "shared/box typecheck and full lint",
+    "POS production build"
+  ],
+  "limitations": [
+    "Guest online F&B only; wallet, prepaid, staff benefits, promos and voucher orders retain explicit staff fallback",
+    "No physical printing or bank payment",
+    "Payment screenshot caught fade-in before stable opacity and was excluded from reviewed evidence"
+  ],
+  "cleanup": {
+    "ownNativeProcesses": true,
+    "disposableDatabases": true
+  }
+}

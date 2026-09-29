@@ -384,7 +384,24 @@ export function takeTicketDisplayLeaseForSignOut(): Promise<string | undefined> 
 }
 
 /** A lock pauses this publisher without discarding the current visitor's prompt. */
+type DisplayPresentation = Pick<StationSessionDocument, 'stage' | 'step' | 'cart' | 'member' | 'totals' | 'payment' | 'prompt'>;
+interface StationDisplayState {
+  key: string;
+  supported: boolean;
+  presentation: (requestId: string) => DisplayPresentation;
+}
+
 export function useTicketDisplay(stationId: string | null, state: TicketDisplayState, onAnswer: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>, active = true) {
+  return useStationDisplay(stationId, {
+    key: `${state.sessionKey}:${state.stage}:${state.step}:${state.reviewRevision ?? 0}:${state.online === true}:${state.childReview?.visitorId ?? ''}`,
+    supported: ticketDisplayPresentation(state, '').cart.supported,
+    presentation: requestId => ticketDisplayPresentation(state, requestId),
+  }, active, onAnswer);
+}
+
+/** The ticket and guest order surfaces share one leased presentation publisher. */
+export function useStationDisplay(stationId: string | null, state: StationDisplayState, active = true,
+  onAnswer?: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>) {
   const current = useRef({ state, onAnswer, active });
   current.current = { state, onAnswer, active };
   const publisher = useRef<DisplayPublisher | null>(null);
@@ -444,18 +461,18 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
           if (paused()) return;
         }
         const latest = current.current;
-        const key = `${latest.state.sessionKey}:${latest.state.stage}:${latest.state.step}:${latest.state.reviewRevision ?? 0}:${latest.state.online === true}:${latest.state.childReview?.visitorId ?? ''}`;
+        const key = latest.state.key;
         if (key !== channel.promptKey) {
           channel.promptKey = key;
           channel.requestId = crypto.randomUUID();
         }
-        const answer = readDisplayAnswer(document, channel.requestId);
+        const answer = latest.onAnswer ? readDisplayAnswer(document, channel.requestId) : null;
         if (answer && channel.processing?.promptKey === key) return;
         if (answer && !channel.handled.has(answer.actionId)) {
           const processing = { actionId: answer.actionId, promptKey: key };
           channel.processing = processing;
           try {
-            const consumed = await latest.onAnswer(answer);
+            const consumed = await latest.onAnswer?.(answer);
             if (paused()) return;
             if (consumed !== false) channel.handled.add(answer.actionId);
           } finally {
@@ -464,7 +481,7 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
           // React applies the resulting stage/contact state before the next publish.
           return;
         }
-        const payload = ticketDisplayPresentation(latest.state, channel.requestId);
+        const payload = latest.state.presentation(channel.requestId);
         const signature = JSON.stringify(payload);
         if (signature !== channel.lastPublished) {
           await api.post(`${base}/intents`, { type: 'session.publish_display', leaseId: channel.leaseId,
@@ -492,5 +509,5 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
       clearTimeout(timer);
     };
   }, [stationId, active]);
-  return { connected, error, supported: ticketDisplayPresentation(state, '').cart.supported };
+  return { connected, error, supported: state.supported };
 }

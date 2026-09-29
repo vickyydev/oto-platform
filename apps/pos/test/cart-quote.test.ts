@@ -355,6 +355,33 @@ describe('useItemCartQuoteWithPromos — the F&B and shop stations', () => {
     stationAsked = holdAnswers(askStation);
   });
 
+  it('pauses sent quote responses and refusals during a staff lock, retaining the last same-cart quote on resume', async () => {
+    const lines = [friesLine(['fries-sauce-ketchup'])];
+    const args: StationArgs = { kind: 'fnb', lines, manualDiscounts: [], promos: [], identity: stationIdentity };
+    const view = mountStation(lines);
+    await vi.advanceTimersByTimeAsync(QUOTE_DEBOUNCE_MS);
+    view.rerender({ ...args, enabled: false });
+    await stationAsked[0]!.answer(platformQuote(101));
+    expect(view.result.current.quote.source).toBe('till');
+    expect(view.result.current.pending).toBe(false);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(askStation).toHaveBeenCalledTimes(1);
+
+    view.rerender(args);
+    await vi.advanceTimersByTimeAsync(QUOTE_DEBOUNCE_MS);
+    await stationAsked[1]!.answer(platformQuote(102));
+    view.rerender({ ...args, enabled: false });
+    expect(view.result.current.totals.total).toBe(102);
+    view.rerender(args);
+    await vi.advanceTimersByTimeAsync(QUOTE_DEBOUNCE_MS);
+    expect(view.result.current.totals.total).toBe(102);
+    view.rerender({ ...args, enabled: false });
+    await stationAsked[2]!.refuse(new ApiError(409, 'MODIFIER_REQUIRED', 'Choose a sauce'));
+    expect(view.result.current.error).toBeNull();
+    expect(view.result.current.totals.total).toBe(102);
+    view.unmount();
+  });
+
   it('asks again for a note — two notes are two lines to the kitchen — but not for sauces picked in another order', async () => {
     const view = mountStation([friesLine(['fries-sauce-ketchup', 'fries-sauce-mayo'])]);
     await vi.advanceTimersByTimeAsync(QUOTE_DEBOUNCE_MS);

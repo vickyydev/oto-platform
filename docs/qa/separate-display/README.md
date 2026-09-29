@@ -383,10 +383,33 @@ This avoids UTC/local birthday drift while rejecting impossible/future DOBs
 and confirmations outside the existing child API's 0-17 age range. Older
 legacy read values may be shown for staff help but cannot be confirmed here.
 
-Main c8f6375 includes recorded display responses, sign-out handover and earlier display/payment work.
-GitHub Actions run 36585794087 stopped before any step because billing/spending availability
+Main 88140af includes saved-child review, recorded responses and the earlier display/payment work.
+GitHub Actions run 36589992120 / check 109480274224 stopped before any step because billing/spending availability
 prevented jobs starting. Render still gates deployment on successful checks;
 no bypass or billing change is made. Restore Actions, verify the exact release
 SHA, then use one normal deployment and run staging proof. The retained
 simulated partial payment remains untouched. Pending actions are saved in
 docs/progress/OPEN_QUESTIONS.md.
+
+## Guest food order checkpoint
+
+The separate F&B screen shows server-captured item/base/modifier prices, note,
+manual discount, tax and total. Captured quote components remain correct even
+when base and modifier prices change in opposite directions. Money stays on
+the authorised till; thank-you requires the actual finalised sale and tender
+sum and shows the real pickup code. Lock pauses quote, scan, publisher and
+payment effects while preserving the current order. Unsupported wallet,
+prepaid, benefit, promo, voucher and local-price paths clear the public frame
+and retain the staff/inline fallback. Shared contract names are unchanged.
+
+223 relevant checks pass across existing files and browser cases. API/POS/
+shared/box typechecks and full lint pass; POS build passes. Native proof used
+fresh databases and two contexts. All three earlier cases passed; the focused
+fourth case then passed after correcting native navigation, required pickup
+entry and a stale-sequence language retry assumption. Its order and completed
+images are reviewed LOCAL CHECK evidence, 26-local-fnb-order.png and
+27-local-fnb-completed.png. The payment image was captured during its fade-in
+and excluded. No new suite, dependency or migration.
+
+F&B reviewed local attachments: 26-local-fnb-order.png (10906) and
+27-local-fnb-completed.png (10907). Both are LOCAL CHECK, not staging proof.

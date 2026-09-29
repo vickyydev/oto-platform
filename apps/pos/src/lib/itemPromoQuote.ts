@@ -120,6 +120,8 @@ export function useItemCartQuoteWithPromos(args: {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<QuoteError | null>(null);
   const seqRef = useRef(0);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   useEffect(() => {
     if (!enabled || !identity || (lines.length === 0 && promoCodes.length === 0)) {
@@ -140,19 +142,19 @@ export function useItemCartQuoteWithPromos(args: {
         .then((quote) => {
           // The order has moved on since this went out, or another request has
           // overtaken it: this answer is about an order nobody is looking at.
-          if (seqRef.current !== seq) return;
+          if (!enabledRef.current || seqRef.current !== seq) return;
           setPlatform({ signature, quote });
           setError(null);
           setPending(false);
         })
         .catch((err: unknown) => {
-          if (seqRef.current !== seq) return;
+          if (!enabledRef.current || seqRef.current !== seq) return;
           setPlatform(null);
           setError(quoteErrorOf(err, 'The platform did not price this order.'));
           setPending(false);
         });
     }, QUOTE_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
+    return () => { window.clearTimeout(timer); seqRef.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature, enabled]);
 

@@ -1786,6 +1786,19 @@ export async function quoteSale(
   });
   const lineTotals: Record<string, number> = {};
   for (const cartLine of priced.cartLines) lineTotals[cartLine.id] = cartLine.lineTotal;
+  // The separate display needs the same base and option prices the platform
+  // resolved, even when catalogue changes offset each other in the row total.
+  // Build only public labels and money; the full line payload stays private.
+  const itemPresentation = Object.fromEntries(priced.lines
+    .filter(line => line.kind === 'fnb_item' || line.kind === 'merch_item')
+    .map(line => {
+      const modifiers = (line.payload?.modifiers ?? []).map(option => ({
+        groupName: option.groupName, optionName: option.optionName, priceSatang: option.unitSatang,
+      }));
+      return [line.cartLineId, { name: line.label,
+        basePriceSatang: line.unitSatang - modifiers.reduce((sum, option) => sum + option.priceSatang, 0),
+        modifiers }];
+    }));
 
   const quote = {
     branchId: priced.scope.branchId,
@@ -1807,6 +1820,7 @@ export async function quoteSale(
     totals: priced.money,
     /** Resolved satang per cart line id — what each line came to. */
     lineTotals,
+    itemPresentation,
     /** Resolved satang per manual discount id (the prototype's `manualAmounts`). */
     manualAmounts: priced.totals.manualAmounts,
     appliedPromos: priced.totals.appliedPromos.map((promo) => ({

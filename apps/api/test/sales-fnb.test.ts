@@ -242,6 +242,40 @@ describe('the menu’s own rules decide what may be ordered', () => {
     });
   });
 
+  it('quotes public base and modifier prices even when changed prices keep the same total', async () => {
+    const fries = items.get('FB-FRIES')!;
+    const optionId = fries.groups.get('Sauces')!.options.get('Cheese sauce')!;
+    const [beforeItem] = await ctx.db.select().from(product).where(eq(product.id, fries.id));
+    const [beforeOption] = await ctx.db.select().from(modifierOption).where(eq(modifierOption.id, optionId));
+    const row = itemLine('FB-FRIES', 2, { modifiers: [choose('FB-FRIES', 'Sauces', 'Cheese sauce')] });
+    const ask = () => ctx.app.inject({ method: 'POST', url: '/sales/quote', headers: { cookie },
+      payload: { stationId, items: [row] } });
+    const first = await ask();
+    expect(first.statusCode).toBe(200);
+    expect(first.json().quote.itemPresentation[row.id as string]).toEqual({
+      name: 'French Fries', basePriceSatang: b(90),
+      modifiers: [{ groupName: 'Sauces', optionName: 'Cheese sauce', priceSatang: b(25) }],
+    });
+    try {
+      await ctx.db.update(product).set({ priceSatang: b(95), priceWeekendSatang: b(95) }).where(eq(product.id, fries.id));
+      await ctx.db.update(modifierOption).set({ priceSatang: b(20), priceWeekendSatang: b(20) }).where(eq(modifierOption.id, optionId));
+      const changed = await ask();
+      expect(changed.statusCode).toBe(200);
+      expect(changed.json().quote.lineTotals).toEqual(first.json().quote.lineTotals);
+      expect(changed.json().quote.itemPresentation[row.id as string]).toEqual({
+        name: 'French Fries', basePriceSatang: b(95),
+        modifiers: [{ groupName: 'Sauces', optionName: 'Cheese sauce', priceSatang: b(20) }],
+      });
+      expect(changed.json().itemPresentation).toEqual(changed.json().quote.itemPresentation);
+      expect(JSON.stringify(changed.json().quote.itemPresentation)).not.toMatch(/cost|operatorId|optionId|productId|prepStation|payload/);
+    } finally {
+      await ctx.db.update(product).set({ priceSatang: beforeItem!.priceSatang,
+        priceWeekendSatang: beforeItem!.priceWeekendSatang }).where(eq(product.id, fries.id));
+      await ctx.db.update(modifierOption).set({ priceSatang: beforeOption!.priceSatang,
+        priceWeekendSatang: beforeOption!.priceWeekendSatang }).where(eq(modifierOption.id, optionId));
+    }
+  });
+
   it('refuses an option that is not one of that question’s answers', async () => {
     const strayOption = items.get('FB-PIZZA')!.groups.get('Extra toppings')!.options.get('Ham')!;
     const res = await commit({

@@ -1,4 +1,5 @@
 import { ChargeTarget, FnbOrder, FnbOrderLine, ManualDiscount, Wristband } from '@/types';
+import type { DisplayFnbCart, DisplayTotals } from '@oto/shared';
 import { breakdownModifiers, describeModifiers } from '@/lib/fnb';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
@@ -27,18 +28,35 @@ export type FnbCustomerStage = 'welcome' | 'order' | 'payment' | 'thankyou';
 
 interface FnbCustomerDisplayProps {
   stage: FnbCustomerStage;
-  wristband: Wristband | null;
-  lines: FnbOrderLine[];
-  orderNote: string;
-  manualDiscounts: ManualDiscount[];
-  total: number;
-  taxBreakdown: TaxBreakdown;
+  wristband?: Wristband | null;
+  lines?: FnbOrderLine[];
+  orderNote?: string;
+  manualDiscounts?: ManualDiscount[];
+  total?: number;
+  taxBreakdown?: TaxBreakdown;
   payment?: PaymentDisplayState;
   /** Legacy party display input; it cannot supply a verified payment QR. */
   promptpayAmount?: number | null;
-  completedOrder: FnbOrder | null;
-  newBalance: number | null;
+  completedOrder?: FnbOrder | null;
+  newBalance?: number | null;
   chargeTarget?: ChargeTarget;
+  /** Captured public quote; this path never resolves a local menu or price. */
+  presentation?: { cart: DisplayFnbCart; totals?: DisplayTotals };
+}
+
+type PublicDiscount = DisplayFnbCart['manualDiscounts'][number];
+const discountDetail = (discount: ManualDiscount | PublicDiscount) => 'reason' in discount
+  ? formatDiscountDetail(discount)
+  : discount.type === 'comp' ? 'Comp (100% off)' : discount.type === 'percent'
+    ? `${discount.value}% off` : `฿${discount.value} off`;
+
+function capturedTaxes(totals: DisplayTotals): TaxBreakdown {
+  // Only the captured service/tax fields are read by summarizeTax.
+  return { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0, inclusiveTaxTotal: 0,
+    taxTotal: 0, grandTotal: totals.total, serviceChargeTotal: totals.taxBreakdown.serviceChargeTotal,
+    categories: totals.taxBreakdown.categories.map(category => ({ ...category, category: 'fnb',
+      base: 0, taxPercent: 0, serviceCharge: 0, secondaryTaxPercent: 0, gross: 0 })),
+  };
 }
 
 function OrderNoteCallout({ note }: { note: string }) {
@@ -111,22 +129,29 @@ function OrderLines({
   lines,
   manualDiscounts,
   manualAmounts,
+  capturedLines,
 }: {
   lines: FnbOrderLine[];
-  manualDiscounts: ManualDiscount[];
+  manualDiscounts: readonly (ManualDiscount | PublicDiscount)[];
   manualAmounts: Record<string, number>;
+  capturedLines?: DisplayFnbCart['lines'];
 }) {
   const { lang } = useLanguage();
+  const rows = capturedLines?.map(line => ({ ...line, displayName: line.translations?.[lang] ?? line.name }))
+    ?? lines.map(line => ({ id: line.id, qty: line.qty, displayName: resolveName(line.menuItem, lang),
+      basePrice: resolveRateToday(line.menuItem.price), lineTotal: line.lineTotal,
+      modifiers: breakdownModifiers(line.menuItem, line.selectedModifiers), note: line.note, variantLabel: line.variantLabel }));
   return (
     <div className="space-y-3">
-      {lines.map((line) => {
-        const breakdown = breakdownModifiers(line.menuItem, line.selectedModifiers);
+      {rows.map((line) => {
+        const breakdown = line.modifiers;
         const lineDiscounts = manualDiscounts.filter(
           (md) => md.scope === 'line' && md.targetLineId === line.id
         );
         return (
           <div
             key={line.id}
+            data-testid="fnb-display-line"
             className="bg-foreground/5 rounded-2xl px-5 py-4 border border-foreground/10 animate-in fade-in slide-in-from-right-2 duration-300"
           >
             <div className="flex items-start justify-between gap-4">
@@ -135,8 +160,9 @@ function OrderLines({
                   {line.qty}
                 </span>
                 <div className="min-w-0">
-                  <div className="text-xl font-bold leading-tight">{resolveName(line.menuItem, lang)}</div>
-                  <div className="text-foreground/40 text-sm tabular-nums">฿{resolveRateToday(line.menuItem.price)} base</div>
+                  <div className="text-xl font-bold leading-tight">{line.displayName}</div>
+                  <div className="text-foreground/40 text-sm tabular-nums">฿{line.basePrice} base</div>
+                  {capturedLines && line.variantLabel && <div className="text-foreground/60 text-sm">{line.variantLabel}</div>}
                   {line.qty > 1 && (
                     <div className="text-foreground/40 text-sm tabular-nums">
                       {/*
@@ -188,7 +214,7 @@ function OrderLines({
                 >
                   <span className="flex items-center gap-2.5 text-base font-semibold">
                     <BadgePercent className="w-5 h-5 shrink-0" />
-                    {formatDiscountDetail(md)}
+                    {discountDetail(md)}
                   </span>
                   <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
                 </div>
@@ -203,18 +229,27 @@ function OrderLines({
 
 export function FnbCustomerDisplay({
   stage,
-  wristband,
-  lines,
-  orderNote,
-  manualDiscounts,
-  total,
-  taxBreakdown,
-  payment = { saleId: null, amountSatang: Math.round(total * 100), qrPayload: null, qrImageUrl: null, expiresAt: null, status: 'idle', offline: false, online: globalThis.navigator?.onLine !== false },
-  completedOrder,
-  newBalance,
-  chargeTarget,
+  wristband: legacyWristband = null,
+  lines = [],
+  orderNote: legacyOrderNote = '',
+  manualDiscounts: legacyDiscounts = [],
+  total: legacyTotal = 0,
+  taxBreakdown: legacyTaxBreakdown,
+  payment: suppliedPayment,
+  completedOrder = null,
+  newBalance = null,
+  chargeTarget: legacyChargeTarget,
+  presentation,
 }: FnbCustomerDisplayProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const wristband = presentation ? null : legacyWristband;
+  const chargeTarget = presentation ? undefined : legacyChargeTarget;
+  const orderNote = presentation?.cart.orderNote ?? legacyOrderNote;
+  const manualDiscounts = presentation?.cart.manualDiscounts ?? legacyDiscounts;
+  const total = presentation?.totals?.total ?? legacyTotal;
+  const taxBreakdown = presentation ? presentation.totals ? capturedTaxes(presentation.totals) : undefined : legacyTaxBreakdown;
+  const payment = suppliedPayment ?? { saleId: null, amountSatang: Math.round(total * 100), qrPayload: null,
+    qrImageUrl: null, expiresAt: null, status: 'idle', offline: false, online: globalThis.navigator?.onLine !== false };
   if (stage === 'welcome') {
     return (
       <Shell>
@@ -235,7 +270,7 @@ export function FnbCustomerDisplay({
 
   if (stage === 'order') {
     // Wristband loaded but nothing ordered yet — greet by nickname and show balance.
-    if (lines.length === 0) {
+    if ((presentation?.cart.lines ?? lines).length === 0) {
       return (
         <Shell>
           {chargeTarget && <ChargeBanner target={chargeTarget} />}
@@ -278,13 +313,10 @@ export function FnbCustomerDisplay({
       );
     }
 
-    const subtotal = lines.reduce((acc, l) => acc + l.lineTotal, 0);
-    const lineAmounts = Object.fromEntries(lines.map((l) => [l.id, l.lineTotal]));
-    const { amounts: manualAmounts } = computeManualDiscount(
-      manualDiscounts,
-      subtotal,
-      lineAmounts
-    );
+    const manualAmounts = presentation ? presentation.totals?.manualAmounts ?? {} : computeManualDiscount(
+      legacyDiscounts, lines.reduce((acc, line) => acc + line.lineTotal, 0),
+      Object.fromEntries(lines.map(line => [line.id, line.lineTotal]))
+    ).amounts;
     const orderDiscounts = manualDiscounts.filter((md) => md.scope === 'order');
     return (
       <Shell>
@@ -305,7 +337,7 @@ export function FnbCustomerDisplay({
           )}
         </div>
         <div className="flex-1 overflow-y-auto p-8 space-y-4">
-          <OrderLines lines={lines} manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} />
+          <OrderLines lines={lines} capturedLines={presentation?.cart.lines} manualDiscounts={manualDiscounts} manualAmounts={manualAmounts} />
           {orderNote.trim() && <OrderNoteCallout note={orderNote.trim()} />}
         </div>
         <div className="p-8 border-t border-foreground/10 shrink-0">
@@ -319,13 +351,13 @@ export function FnbCustomerDisplay({
               >
                 <span className="flex items-center gap-2 text-lg">
                   <BadgePercent className="w-5 h-5 shrink-0" />
-                  {t('common.discount')} · {formatDiscountDetail(md)}
+                  {t('common.discount')} · {discountDetail(md)}
                 </span>
                 <span className="text-lg font-bold tabular-nums">−฿{amt}</span>
               </div>
             );
           })}
-          {summarizeTax(taxBreakdown).map((row) => (
+          {(taxBreakdown ? summarizeTax(taxBreakdown) : []).map((row) => (
             <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
               <span className="text-lg">{row.label}</span>
               <span className="text-lg tabular-nums">฿{roundTHB(row.amount)}</span>
@@ -392,8 +424,9 @@ export function FnbCustomerDisplay({
   }
 
   // thankyou
-  const order = completedOrder;
-  if (!order) {
+  const order = presentation ? null : completedOrder;
+  const completion = presentation?.cart.completion;
+  if (!order && !completion) {
     return (
       <Shell>
         <div className="flex-1 flex items-center justify-center text-foreground/50 text-2xl">{t('fnb.thankyou.title')}</div>
@@ -401,9 +434,17 @@ export function FnbCustomerDisplay({
     );
   }
 
-  const paidCash = order.payment.cash;
-  const paidCard = order.payment.card;
-  const paidPromptpay = order.payment.promptpay;
+  const paid = completion?.payment ?? order!.payment;
+  const paidCash = paid.cash;
+  const paidCard = paid.card;
+  const paidPromptpay = paid.promptpay;
+  const receiptLines = presentation ? presentation.cart.lines.map(line => ({ ...line,
+    displayName: line.translations?.[lang] ?? line.name,
+    modifierNames: line.modifiers.map(modifier => `${modifier.groupName}: ${modifier.optionName}`),
+  })) : order!.lines.map(line => ({ ...line, displayName: line.menuItem.name,
+    modifierNames: describeModifiers(line.menuItem, line.selectedModifiers),
+  }));
+  const receiptNote = presentation?.cart.orderNote ?? order?.orderNote;
 
   return (
     <Shell>
@@ -423,19 +464,19 @@ export function FnbCustomerDisplay({
               <span className="text-xl text-foreground/80">{t('fnb.thankyou.pickupCode')}</span>
             </div>
             <span className="text-4xl font-black text-primary tabular-nums tracking-widest">
-              {order.pickupCode}
+              {completion?.pickupCode ?? order?.pickupCode}
             </span>
           </div>
 
           <div className="rounded-3xl bg-foreground/5 border border-foreground/10 p-6">
             <div className="text-sm font-bold uppercase tracking-wide text-foreground/50 mb-3">{t('fnb.thankyou.yourOrder')}</div>
             <div className="space-y-2">
-              {order.lines.map((line) => {
-                const mods = describeModifiers(line.menuItem, line.selectedModifiers);
+              {receiptLines.map((line) => {
+                const mods = line.modifierNames;
                 return (
                   <div key={line.id} className="flex items-start justify-between text-lg gap-3">
                     <span className="text-foreground/80 min-w-0">
-                      <span className="font-bold tabular-nums">{line.qty}×</span> {line.menuItem.name}
+                      <span className="font-bold tabular-nums">{line.qty}×</span> {line.displayName}
                       {mods.length > 0 && (
                         <span className="block text-sm text-foreground/50">{mods.join(', ')}</span>
                       )}
@@ -451,17 +492,17 @@ export function FnbCustomerDisplay({
                 );
               })}
             </div>
-            {order.orderNote && (
+            {receiptNote && (
               <div className="mt-3 pt-3 border-t border-foreground/10">
-                <OrderNoteCallout note={order.orderNote} />
+                <OrderNoteCallout note={receiptNote} />
               </div>
             )}
             <div className="border-t border-foreground/10 mt-3 pt-3 space-y-1.5">
               <div className="flex items-center justify-between text-xl font-bold">
                 <span>{t('common.total')}</span>
-                <span className="tabular-nums">฿{order.total}</span>
+                <span className="tabular-nums">฿{completion?.total ?? order?.total}</span>
               </div>
-              {order.payment.creditUsed > 0 && (
+              {order && order.payment.creditUsed > 0 && (
                 <PaidRow icon={Wallet} label={t('fnb.thankyou.fnbCredit')} amount={order.payment.creditUsed} />
               )}
               {paidCash > 0 && <PaidRow icon={Banknote} label={t('common.cash')} amount={paidCash} />}
@@ -472,7 +513,7 @@ export function FnbCustomerDisplay({
             </div>
           </div>
 
-          {order.wristband && newBalance !== null && (
+          {order?.wristband && newBalance !== null && (
             <div className="rounded-3xl bg-primary/10 border border-primary/30 p-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Wallet className="w-7 h-7 text-primary" />

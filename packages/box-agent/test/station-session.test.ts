@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { ChildReviewPrompt } from '@oto/shared';
+import type { ChildReviewPrompt, DisplayFnbCart } from '@oto/shared';
 
 import {
   STATION_LEASE_TTL_S,
@@ -79,6 +79,111 @@ function childReviewPrompt(overrides: Partial<ChildReviewPrompt> = {}): ChildRev
       { id: 'child-2', name: 'Mali', dateOfBirth: null, ageYears: 8 }],
     save: { status: 'idle', slotId: null, actionId: null }, canContinue: false, ...overrides };
 }
+
+function fnbCart(): DisplayFnbCart {
+  return { kind: 'fnb', supported: true,
+    lines: [{ id: 'food-line', name: 'Cold drink', translations: { en: 'Cold drink', th: 'Drink TH' }, qty: 2,
+      basePrice: 40, lineTotal: 100, modifiers: [{ groupName: 'Size', optionName: 'Large', price: 10 }], note: 'Less ice' }],
+    orderNote: 'Serve together', manualDiscounts: [{ id: 'discount-1', scope: 'order', type: 'fixed', value: 10 }], completion: null };
+}
+
+test('guest F&B publication keeps captured rows, real payment metadata and settled completion without private records', async () => {
+  const h = await openManager();
+  try {
+    const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'food-till', holderKind: 'till' });
+    assert.ok(claim.ok);
+    const cart = fnbCart();
+    const totals = { ...publicPresentation().totals, total: 90 };
+    const payment = { ...publicPresentation().payment, saleId: 'food-sale', amountSatang: 9000 };
+    const publish = async (stage: string, value: unknown, selectedPayment: unknown = null) => {
+      const current = await h.manager.open(STATION_ID);
+      return h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+        lastSeenSequence: current.sequence, payload: { stage, cart: value, totals, payment: selectedPayment, member: null, prompt: null } }, { source: 'till' });
+    };
+    const publicCart = { ...cart, wristband: { holderName: 'private-holder', medicalNotes: 'private-medical' },
+      lines: cart.lines.map(line => ({ ...line, menuItem: { cost: 10, inventoryItemId: 'private-inventory' },
+        modifiers: line.modifiers.map(modifier => ({ ...modifier, cost: 1 })) })),
+      manualDiscounts: cart.manualDiscounts.map(discount => ({ ...discount, appliedBy: 'private-staff', reason: 'private-reason' })),
+    };
+    for (const stage of ['welcome', 'order', 'payment']) {
+      const published = await publish(stage, publicCart, stage === 'payment' ? payment : null);
+      assert.ok(published.ok);
+      const publicDoc = h.manager.snapshotFor(published.document, 'customer', null).document;
+      assert.deepEqual(publicDoc.cart, cart);
+      assert.deepEqual(publicDoc.totals, totals);
+      assert.equal(publicDoc.prompt, null); assert.equal(publicDoc.member, null);
+      assert.doesNotMatch(JSON.stringify(publicDoc), /private-|menuItem|cost|reason|appliedBy/);
+      if (stage === 'payment') assert.equal(publicDoc.payment?.qrPayload, payment.qrPayload);
+    }
+    const completion = { saleId: 'food-sale', pickupCode: 'A12', total: 90, payment: { cash: 30, card: 20, promptpay: 40 } };
+    const finished = await publish('thankyou', { ...cart, completion: { ...completion, operatorName: 'private-staff' } });
+    assert.ok(finished.ok);
+    assert.deepEqual(finished.document.cart?.completion, completion);
+    assert.equal(h.facts.length, 0, 'the display publication cannot take money or create an order');
+  } finally { h.close(); }
+});
+
+test('guest F&B refuses wrong stages, private prompt bleed, missing totals/payment and inconsistent completion', async () => {
+  const h = await openManager();
+  try {
+    const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'strict-food-till', holderKind: 'till' });
+    assert.ok(claim.ok);
+    const cart = fnbCart();
+    const completion = { saleId: 'food-sale', pickupCode: 'A12', total: 90, payment: { cash: 90, card: 0, promptpay: 0 } };
+    const totals = { ...publicPresentation().totals, total: 90 };
+    const initial = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: claim.document.sequence, payload: { stage: 'order', cart, totals } }, { source: 'till' });
+    assert.ok(initial.ok);
+    for (const changes of [
+      { stage: 'input' }, { stage: 'identify' }, { stage: 'consent' },
+      { prompt: { kind: 'contact', requestId: 'request', phone: '' } }, { member: { id: 'member', nickname: 'Private visitor', tier: 'member' } },
+      { totals: null }, { stage: 'payment', payment: null }, { stage: 'thankyou' },
+      { cart: { ...cart, completion } }, { stage: 'thankyou', cart: { ...cart, completion: { ...completion, total: 100, payment: { cash: 100, card: 0, promptpay: 0 } } } },
+      { stage: 'thankyou', cart: { ...cart, completion: { ...completion, payment: { cash: 89, card: 0, promptpay: 0 } } } },
+      { cart: { ...cart, lines: Array.from({ length: 201 }, (_, i) => ({ ...cart.lines[0], id: `line-${i}` })) } },
+    ]) {
+      const result = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+        lastSeenSequence: initial.document.sequence, payload: { stage: 'order', cart, totals, member: null, prompt: null, ...changes } }, { source: 'till' });
+      assert.equal(result.ok, false);
+    }
+    const unchanged = await h.manager.open(STATION_ID);
+    assert.equal(unchanged.sequence, initial.document.sequence);
+    assert.deepEqual(unchanged.cart, cart);
+    const forbidden = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display',
+      lastSeenSequence: unchanged.sequence, payload: { stage: 'order', cart, totals } }, { source: 'display' });
+    assert.equal(forbidden.ok, false);
+  } finally { h.close(); }
+});
+
+test('an unsupported guest F&B frame clears the prior visitor and payment even at thank-you', async () => {
+  const h = await openManager();
+  try {
+    const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'food-fallback-till', holderKind: 'till' });
+    assert.ok(claim.ok);
+    const identified = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: claim.document.sequence, payload: { stage: 'identify', cart: { supported: true, sale: { tier: 'member' } },
+        member: { id: 'old-member', nickname: 'Old visitor', tier: 'member' }, prompt: { kind: 'identify', requestId: 'old-request' } } }, { source: 'till' });
+    assert.ok(identified.ok);
+    const displayed = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: identified.document.sequence, payload: { stage: 'payment', cart: fnbCart(),
+        totals: { ...publicPresentation().totals, total: 90 }, payment: publicPresentation().payment, member: null, prompt: null } }, { source: 'till' });
+    assert.ok(displayed.ok);
+    assert.equal(displayed.document.member, null); assert.equal(displayed.document.prompt, null);
+    const fallback = { kind: 'fnb', supported: false, lines: [], orderNote: '', manualDiscounts: [], completion: null };
+    const cleared = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: displayed.document.sequence, payload: { stage: 'thankyou', cart: fallback,
+        totals: null, payment: null, member: null, prompt: null } }, { source: 'till' });
+    assert.ok(cleared.ok);
+    const publicDoc = h.manager.snapshotFor(cleared.document, 'customer', null).document;
+    assert.deepEqual(publicDoc.cart, fallback);
+    assert.equal(publicDoc.totals, null); assert.equal(publicDoc.payment, null);
+    assert.equal(publicDoc.member, null); assert.equal(publicDoc.prompt, null);
+    assert.doesNotMatch(JSON.stringify(publicDoc), /Cold drink|Old visitor|old-request|test-only-payment-data/);
+    const legacy = h.manager.snapshotFor({ ...displayed.document,
+      member: { id: 'old-member', nickname: 'Old visitor', tier: 'member' }, prompt: { kind: 'contact', phone: 'Private visitor' } }, 'customer', null).document;
+    assert.equal(legacy.member, null); assert.equal(legacy.prompt, null);
+  } finally { h.close(); }
+});
 
 async function openChildReview() {
   const h = await openManager();

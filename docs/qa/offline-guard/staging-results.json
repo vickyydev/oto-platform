@@ -1,0 +1,30 @@
+{
+  "ticket": "SCRUM-285",
+  "environment": "staging",
+  "source": "88140af",
+  "run": "c5deb632",
+  "status": "PASS",
+  "checks": [
+    "Dedicated unpaid sale exists before offline simulation",
+    "Selected forced-offline station refuses cash before money is recorded",
+    "Operational member lookup is refused for the offline station",
+    "New terminal payment is refused for the offline station",
+    "Sale reporting remains available and the sale is not paid",
+    "A separate box is not blocked by the offline simulation",
+    "Unbound Console administration remains available",
+    "Console can read recovery commands while the box is offline",
+    "Reconnect accepts the original cash gesture once",
+    "Offline guard also refuses a previously cached success",
+    "Online retry replays the identical result without collecting again"
+  ],
+  "cleanup": {
+    "offlineRestored": true,
+    "stationsArchived": true
+  },
+  "saleId": "8183a556-377f-4ffd-82c2-0af066553154",
+  "replay": {
+    "status": 200,
+    "replayed": true,
+    "sameBody": true
+  }
+}

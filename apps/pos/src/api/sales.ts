@@ -410,6 +410,12 @@ export interface ApiSaleQuote {
   totals: ApiSaleTotals;
   /** Resolved satang per line id, in cart order. */
   lineTotals: Record<string, number>;
+  /** Optional during rollout; public components resolved with this quote. */
+  itemPresentation?: Record<string, {
+    name: string;
+    basePriceSatang: number;
+    modifiers: { groupName: string; optionName: string; priceSatang: number }[];
+  }>;
   /** Resolved satang per manual discount id. */
   manualAmounts: Record<string, number>;
   appliedPromos: {
@@ -1048,6 +1054,13 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
     for (const [key, satang] of Object.entries(quote.lineTotals)) {
       lineTotals[localIdFor(localIds, key) ?? key] = toBaht(satang);
     }
+    const itemPresentation = quote.itemPresentation === undefined ? undefined
+      : Object.fromEntries(Object.entries(quote.itemPresentation).map(([key, row]) => [
+        localIdFor(localIds, key) ?? key,
+        { name: row.name, basePrice: toBaht(row.basePriceSatang),
+          modifiers: row.modifiers.map(option => ({ groupName: option.groupName,
+            optionName: option.optionName, price: toBaht(option.priceSatang) })) },
+      ]));
     return {
       totals: quoteToTotals(quote, manualDiscounts.map((discount) => discount.id)),
       satang: null,
@@ -1056,6 +1069,7 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
       pricingModeReason: quote.pricingModeReason,
       engineVersion: quote.engineVersion,
       lineTotals,
+      ...(itemPresentation === undefined ? {} : { itemPresentation }),
       ...(notice ? { platformNotice: notice } : {}),
       voucher: quote.voucher ?? null,
       // SCRUM-401 — the codes it refused, so the station can take them off the
@@ -1235,6 +1249,12 @@ export interface CartQuote {
    * the cart line's own total and do not need it.
    */
   lineTotals?: Record<string, number>;
+  /** Public base/modifier prices captured by the platform, in baht. */
+  itemPresentation?: Record<string, {
+    name: string;
+    basePrice: number;
+    modifiers: { groupName: string; optionName: string; price: number }[];
+  }>;
   source: QuoteSource;
   pricingMode: RateMode;
   pricingModeReason: string;

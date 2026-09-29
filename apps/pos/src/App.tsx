@@ -70,6 +70,8 @@ function AuthGate() {
   const [location] = useLocation();
   const isMobile = useIsMobile();
   const ticketTill = !isMobile && location === "/";
+  const guestOrderStation = !isMobile && location === '/order-station';
+  const retainedStation = ticketTill || guestOrderStation;
   // Until the resume (and any launcher hand-off) has answered, the till knows
   // nothing: showing the sign-in form here would prompt an operator who has
   // just signed in next door, and flash it on every reload.
@@ -80,9 +82,9 @@ function AuthGate() {
       </div>
     );
   }
-  // Only the ticket till retains its current visitor through a same-session
+  // Ticket and desktop F&B stations retain their visitor through a same-session
   // lock. Its hooks pause while locked and its staff subtree renders nothing.
-  if (!operator || (locked && (!ticketTill || mustChangePassword || !stationResolved
+  if (!operator || (locked && (!retainedStation || mustChangePassword || !stationResolved
     || (fleetAvailable && !station)))) return <LockScreen />;
   // A temporary password opens the door and nothing else: the API refuses the
   // station list and everything behind it until it is replaced (SCRUM-235).
@@ -107,11 +109,12 @@ function AuthGate() {
   if (fleetAvailable && !station && !location.startsWith('/station-setup')) {
     return <StationPicker />;
   }
-  if (ticketTill) {
+  if (retainedStation) {
     return <>
       <div className="contents" hidden={locked} inert={locked} aria-hidden={locked}
         style={locked ? { display: 'none' } : undefined}>
-        <Till key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />
+        {ticketTill ? <Till key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />
+          : <OrderStation key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />}
       </div>
       {locked ? <LockScreen /> : <InactivityWarning />}
     </>;

@@ -32,6 +32,7 @@ import {
   DisplayMemberSchema,
   DisplayPaymentSchema,
   DisplayTotalsSchema,
+  readDisplayFnbCart,
   stationLeaseLive,
 } from '@oto/shared';
 
@@ -847,19 +848,21 @@ export function redactForCustomer(document: StationSessionDocument): StationSess
   const payment = DisplayPaymentSchema.safeParse(document.payment);
   const childReview = document.prompt?.kind === 'child_review'
     ? ChildReviewDocumentPromptSchema.safeParse(document.prompt) : null;
+  const isFnb = document.cart?.kind === 'fnb';
+  const cart = customerDisplayCart(document.cart, document.stage);
   return {
     ...document,
     // The till's wizard position means nothing on the display and tells anyone
     // watching how far through a sale the staff member is.
     step: null,
     lease: null,
-    cart: customerDisplayCart(document.cart, document.stage),
-    totals: totals.success ? totals.data : null,
-    payment: payment.success ? payment.data : null,
+    cart,
+    totals: isFnb && !cart?.supported ? null : totals.success ? totals.data : null,
+    payment: isFnb && !cart?.supported ? null : payment.success ? payment.data : null,
     // Date of birth is permitted only in this finite, visitor-bound review.
     // The generic customer deny-list remains unchanged everywhere else.
-    prompt: childReview ? childReview.success ? childReview.data : null : stripKeys(document.prompt),
-    member: pickMemberFields(document.member),
+    prompt: isFnb ? null : childReview ? childReview.success ? childReview.data : null : stripKeys(document.prompt),
+    member: isFnb ? null : pickMemberFields(document.member),
   };
 }
 
@@ -882,6 +885,7 @@ function pickMemberFields(
 /** Older identification publishers carry only the tier; no legacy full sale crosses this boundary. */
 function customerDisplayCart(value: unknown, stage: StationSessionStage): Record<string, unknown> | null {
   if (value === null || value === undefined) return null;
+  if (recordValue(value)?.kind === 'fnb') return readDisplayFnbCart(value, stage);
   const parsed = DisplayCartSchema.safeParse(value);
   if (parsed.success) return parsed.data;
   const cart = recordValue(value);
@@ -1112,7 +1116,10 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
           if (document.prompt.answeredAt !== undefined) savedPrompt.answeredAt = document.prompt.answeredAt;
         }
       }
-      const shownCart = customerDisplayCart(cart, stage);
+      const isFnb = recordValue(cart)?.kind === 'fnb';
+      const fnbCart = isFnb ? readDisplayFnbCart(cart, stage) : null;
+      const shownCart = isFnb ? fnbCart : customerDisplayCart(cart, stage);
+      if (isFnb && (prompt != null || member != null)) return notPermitted('Guest food orders cannot contain member details or prompts.');
       const shownMember = DisplayMemberSchema.safeParse(member);
       const shownTotals = DisplayTotalsSchema.safeParse(totals);
       const shownPayment = DisplayPaymentSchema.safeParse(payment);
@@ -1122,11 +1129,16 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
         || (payment !== undefined && payment !== null && !shownPayment.success)) {
         return notPermitted('That public display presentation is not valid.');
       }
+      if (fnbCart?.supported && (stage !== 'welcome' && !shownTotals.success
+        || stage === 'payment' && !shownPayment.success
+        || fnbCart.completion && shownTotals.success && fnbCart.completion.total !== shownTotals.data.total)) {
+        return notPermitted('The food order needs its current totals and payment state.');
+      }
       return ok({ stage, step: typeof step === 'number' ? step : null,
         cart: shownCart,
-        member: shownMember.success ? shownMember.data : null,
-        totals: shownTotals.success ? shownTotals.data : null,
-        payment: shownPayment.success ? shownPayment.data : null,
+        member: isFnb ? null : shownMember.success ? shownMember.data : null,
+        totals: isFnb && !shownCart?.supported ? null : shownTotals.success ? shownTotals.data : null,
+        payment: isFnb && !shownCart?.supported ? null : shownPayment.success ? shownPayment.data : null,
         prompt: savedPrompt?.kind === 'child_review' ? savedPrompt : stripKeys(savedPrompt),
       });
     },
