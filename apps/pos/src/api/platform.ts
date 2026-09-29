@@ -25,7 +25,8 @@ export interface MeResponse {
 export const authApi = {
   signIn: (phone: string, password: string) =>
     api.post<{ accountId: string; mustChangePassword: boolean }>('/auth/sign-in', { phone, password }),
-  signOut: () => api.post<{ ok: true }>('/auth/sign-out'),
+  signOut: (stationLeaseId?: string) => api.post<{ ok: true }>('/auth/sign-out',
+    stationLeaseId ? { stationLeaseId } : undefined),
   /**
    * Spend a launcher hand-off token for this origin's own session cookie
    * (S2-02). The token is single-use, short-lived and bound to this origin,
@@ -70,8 +71,6 @@ export const authApi = {
   resetComplete: (phone: string, code: string, password: string) =>
     api.post<{ ok: true }>('/auth/password-reset/complete', { phone, code, password }),
   switchBranch: (branchId: string) => api.put<{ ok: true }>('/me/session/branch', { branchId }),
-  stagePendingLookup: (phone: string) => api.put<{ ok: true }>('/me/session/pending-lookup', { phone }),
-  consumePendingLookup: () => api.post<{ phone: string | null }>('/me/session/pending-lookup/consume'),
 };
 
 // --- members / children / visits -------------------------------------------

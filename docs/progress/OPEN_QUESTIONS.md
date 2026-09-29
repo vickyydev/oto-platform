@@ -2,11 +2,16 @@
 
 ## Current follow-ups - 29 September 2026
 
-- **GitHub Actions availability.** Main source 28da7df is checked locally,
-  but CI 36574043088 ran zero steps because account billing/spending prevents
+- **GitHub Actions availability.** Main source 02813cb is checked locally,
+  but CI 36576638516 ran zero steps because account billing/spending prevents
   jobs starting. Restore Actions availability; no spending setting is changed
   by development. Meanwhile SCRUM-201 continues independently. Deployment,
   staging proof and the next CI-packed Pi artifact remain pending.
+- **Compatibility removal order.** The live 0468c38 POS still calls the old
+  staff-session pending-lookup routes. The current POS does not. First deploy
+  and verify the independent-display POS; only then remove the routes. Drop
+  the columns in a later forward migration after old API readers retire.
+  This is a rollout constraint, not an unresolved park decision.
 - **Retained simulated partial outcome.** The historical run 0d008153 remains
   unresolved; existing controls cannot retrieve its lost final result. Its
   eight inventory rows and original payment evidence are retained. A fresh

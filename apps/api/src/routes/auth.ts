@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
-import { account } from '@oto/db';
+import { and, eq, isNull } from 'drizzle-orm';
+import { account, station } from '@oto/db';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { clearSessionCookie, setSessionCookie, SESSION_COOKIE } from '../plugins/session';
@@ -32,6 +32,8 @@ import { opCtx, withTx } from '../services/tx';
 import { limitPrincipal } from '../services/throttle';
 import { ipLimited } from '../plugins/rate-limit';
 import { verify } from '@node-rs/argon2';
+import { boxStoreFor } from '../lib/box-store';
+import { managerForStation } from '../services/station-session';
 
 const PhoneSchema = z.string().min(6).max(32);
 
@@ -88,13 +90,37 @@ export async function authRoutes(app: App): Promise<void> {
   // needs the network — the rule an offline box depends on later.
   app.post(
     '/sign-out',
-    { config: { public: true }, schema: { description: 'Sign out' } },
+    { config: { public: true }, schema: { description: 'Sign out', body: z.unknown().optional() } },
     async (req, reply) => {
-    const auth = req.auth;
-    if (auth) await signOut(app.db, auth.sessionId, auth.accountId, req.id);
-    clearSessionCookie(reply, app.env.COOKIE_SECURE);
-    return { ok: true };
-  });
+      const auth = req.auth;
+      if (auth) {
+        // A locked till can end its session. Its lease hint is optional and
+        // never authority to release another account or another station.
+        const hint = z.object({ stationLeaseId: z.string().uuid() }).safeParse(req.body);
+        if (hint.success && auth.stationId) {
+          try {
+            const [row] = await app.db.select().from(station).where(and(
+              eq(station.id, auth.stationId), eq(station.operatorId, auth.operatorId), isNull(station.archivedAt),
+            )).limit(1);
+            const document = row?.boxId ? await boxStoreFor(app.db).readSession(row.id) : null;
+            if (row?.boxId && document?.boxId === row.boxId
+              && document.lease?.leaseId === hint.data.stationLeaseId
+              && document.lease.accountId === auth.accountId) {
+              const { manager } = managerForStation(app.db, row, req.log);
+              await manager.release(row.id, hint.data.stationLeaseId, { accountId: auth.accountId });
+            }
+          } catch {
+            // Release is best effort; ending the session must still revoke
+            // its cookie and shift credential. Never log the lease hint.
+            req.log.warn({ event: 'station.sign_out_release_failed' }, 'The station lease could not be released during sign-out');
+          }
+        }
+        await signOut(app.db, auth.sessionId, auth.accountId, req.id);
+      }
+      clearSessionCookie(reply, app.env.COOKIE_SECURE);
+      return { ok: true };
+    },
+  );
 
   // S2-01a — lock: the session survives, but may do no business until it is
   // unlocked with the password.

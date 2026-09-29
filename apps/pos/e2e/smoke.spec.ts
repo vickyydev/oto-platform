@@ -1,109 +1,355 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, request, test, type Browser, type Page, type Response } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
-/**
- * The account both tests sign in as, from the environment and never written
- * here, as `voucher.spec.ts` reads it: a reception account — the seed's, on a
- * seeded database. A test with either value missing is skipped and says so.
- */
 const PHONE = process.env.POS_E2E_PHONE ?? '';
 const PASSWORD = process.env.POS_E2E_PASSWORD ?? '';
-const SIGN_IN_MISSING = 'Set POS_E2E_PHONE and POS_E2E_PASSWORD (a reception account) to run it';
+const ADMIN_PHONE = process.env.POS_E2E_ADMIN_PHONE ?? '';
+const ADMIN_PASSWORD = process.env.POS_E2E_ADMIN_PASSWORD ?? '';
+const MEMBER_PHONE = '0811111111';
+const STATION_NAME = 'Reception Till 1';
+const signedOutPages = new WeakSet<Page>();
 
-/**
- * Signing in now lands on the station picker before the till (S2-04): the
- * station is what decides which printers and scanner the screen drives.
- *
- * It is taken when it appears rather than waited for, because a deployment
- * whose API has no fleet routes yet goes straight to the till and both are
- * correct. "Reception Till 1" is the seed's all-staff station, so the reception
- * account sees it; the booth beside it is kept for named staff and is absent
- * from this list entirely.
- */
-async function pickStationIfAsked(page: Page): Promise<void> {
-  const heading = page.getByRole('heading', { name: 'Which station are you on?' });
-  const asked = await heading
-    .waitFor({ state: 'visible', timeout: 10_000 })
-    .then(() => true)
-    .catch(() => false);
-  if (!asked) return;
-  await page.getByRole('button', { name: /Reception Till 1/ }).click();
-  await expect(heading).toBeHidden({ timeout: 15_000 });
+// Playwright's failure DOM attachment is unmasked even when trace/video are off.
+process.env.PLAYWRIGHT_NO_COPY_PROMPT = '1';
+test.use({ trace: 'off', video: 'off', screenshot: 'off' });
+test.setTimeout(120_000);
+
+function requireLocalFixture(baseURL: string | undefined): asserts baseURL is string {
+  test.skip(!PHONE || !PASSWORD || !ADMIN_PHONE || !ADMIN_PASSWORD,
+    'Set POS_E2E_PHONE, POS_E2E_PASSWORD, POS_E2E_ADMIN_PHONE and POS_E2E_ADMIN_PASSWORD');
+  test.skip(!baseURL || !['localhost', '127.0.0.1', '[::1]'].includes(new URL(baseURL).hostname),
+    'This smoke flow requires a disposable seeded local API');
 }
 
-/**
- * The CLAUDE.md §8 smoke flow: lock → sign-in → membership lookup → child
- * confirm → lock → unlock → sign out. Runs against the seeded database
- * (reception account, member Mali +66811111111 with 2 children).
- *
- * Set `SMOKE_BASE_URL` to run the same flows against a deployment, where the
- * POS and the API are two services and the session cookie only survives
- * because the static site rewrites `/api/*` to the api (S2-01c).
- */
-test('lock → sign in → membership lookup → child confirm → sign out', async ({ page }) => {
-  test.skip(!PHONE || !PASSWORD, SIGN_IN_MISSING);
-  await page.goto('/');
-
-  // Lock screen with the phone + password form (SCRUM-19 UI addition).
+async function signIn(page: Page): Promise<void> {
+  signedOutPages.delete(page);
   await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible();
-  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(PHONE);
-  await page.locator('input[type="password"]').fill(PASSWORD);
+  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(PHONE)
+    .catch(() => { throw new Error('The staff phone field could not be filled'); });
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(PASSWORD)
+    .catch(() => { throw new Error('The staff password field could not be filled'); });
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await pickStationIfAsked(page);
-
-  // Till home: operator badge + API-driven pricing chip.
-  await expect(page.getByText('Membership Check')).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText(/Weekday pricing|Weekend pricing/).first()).toBeVisible();
-
-  // Customer display: enter Mali's phone on the keypad, find membership.
-  for (const digit of '0811111111') {
-    await page.getByRole('button', { name: digit, exact: true }).first().click();
+  const stationPicker = page.getByRole('heading', { name: 'Which station are you on?' });
+  await expect.poll(async () => (await stationPicker.isVisible())
+    || (await page.getByText('Membership Check', { exact: true }).isVisible())).toBe(true);
+  if (await stationPicker.isVisible()) {
+    await page.getByRole('button', { name: new RegExp(STATION_NAME) }).click();
   }
-  await page.getByRole('button', { name: 'Find my membership' }).click();
+  await expect(page.getByText('Membership Check', { exact: true })).toBeVisible({ timeout: 20_000 });
+}
 
-  // SCRUM-30: member found via the API; SCRUM-32: children re-confirm modal.
-  await expect(page.getByText("Who's visiting today?")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText('Nong Ploy')).toBeVisible();
-  await expect(page.getByText('Nong Tan')).toBeVisible();
-  await page.getByRole('button', { name: /Confirm 2 children/ }).click();
-  await expect(page.getByText('Visit confirmed', { exact: true })).toBeVisible({ timeout: 15_000 });
-
-  // Verified tier auto-applied from the member record.
-  await expect(page.getByText('Thai · verified')).toBeVisible();
-
-  // S2-01a: the Lock button LOCKS the session rather than ending it. The
-  // shift stays signed in and the same password unlocks the same session.
-  await page.getByLabel('Lock screen').click();
+async function unlock(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
-  // The locked screen has two masked fields — the password and "Badge or PIN"
-  // — so the password is the one the browser would fill as the current password.
-  await page.locator('input[type="password"][autocomplete="current-password"]').fill(PASSWORD);
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(PASSWORD)
+    .catch(() => { throw new Error('The unlock password field could not be filled'); });
   await page.getByRole('button', { name: 'Unlock', exact: true }).click();
-  await expect(page.getByText('Membership Check')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeHidden({ timeout: 20_000 });
+  await expect(page.getByLabel('Lock screen')).toBeVisible();
+}
 
-  // SCRUM-24: signing out is the only thing that ends the session, and it
-  // returns the till to the sign-in screen rather than the locked one.
+async function signOut(page: Page): Promise<void> {
   await page.getByLabel('Lock screen').click();
+  const completed = page.waitForResponse(response => response.url().endsWith('/api/auth/sign-out')
+    && response.request().method() === 'POST');
   await page.getByRole('button', { name: /Sign out and hand over the till/ }).click();
+  expect((await completed).status()).toBe(200);
+  signedOutPages.add(page);
   await expect(page.getByRole('heading', { name: 'Oto POS is locked' })).toBeVisible();
+}
+
+async function clearStaffPage(page: Page): Promise<void> {
+  try {
+    if (!signedOutPages.has(page)) {
+      const session = await page.request.get('/api/me').catch(() => null);
+      if (session?.status() === 200) await page.request.post('/api/auth/sign-out').catch(() => undefined);
+    }
+  } finally {
+    await page.goto('about:blank').catch(() => undefined);
+  }
+}
+
+async function displayPrompt(page: Page, expectedId?: string): Promise<string> {
+  const response = await page.waitForResponse(async candidate => {
+    if (!candidate.url().endsWith('/api/display/session') || candidate.request().method() !== 'GET'
+      || candidate.status() !== 200) return false;
+    return expectedId === undefined || (await candidate.json()).document?.prompt?.requestId === expectedId;
+  });
+  const body = await response.json();
+  expect(typeof body.document?.prompt?.requestId === 'string').toBe(true);
+  return body.document.prompt.requestId;
+}
+
+async function typePhone(page: Page, phone: string): Promise<void> {
+  for (const digit of phone) await page.getByRole('button', { name: digit, exact: true }).click();
+}
+
+async function captureLocalCheck(page: Page, name: string): Promise<void> {
+  const directory = process.env.POS_E2E_EVIDENCE_DIR;
+  if (!directory) return;
+  await mkdir(directory, { recursive: true });
+  await page.evaluate(() => {
+    const stamp = document.createElement('div');
+    stamp.dataset.localCheck = 'true';
+    stamp.textContent = 'LOCAL CHECK';
+    stamp.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:2147483647;padding:8px 12px;background:#111;color:#fff;font:700 14px sans-serif';
+    document.body.append(stamp);
+  });
+  try {
+    await page.screenshot({ path: resolve(directory, name), fullPage: true,
+      mask: [page.getByTestId('display-pairing-code'), page.locator('input[type="password"]')] });
+  } finally {
+    await page.locator('[data-local-check="true"]').evaluateAll(elements => elements.forEach(element => element.remove()));
+  }
+}
+
+async function pairedDisplay(browser: Browser, staff: Page, baseURL: string) {
+  const context = await browser.newContext({ baseURL, viewport: { width: 1024, height: 768 } });
+  const display = await context.newPage();
+  const admin = await request.newContext({ baseURL });
+  let credentialId: string | null = null;
+  let stationId: string | null = null;
+  let ownLeaseId: string | null = null;
+  const pendingClaims = new Set<Promise<void>>();
+  const observeLease = (response: Response) => {
+    if (!stationId || response.url().split('?')[0] !== new URL(`/api/stations/${stationId}/lease`, baseURL).href
+      || response.request().method() !== 'POST' || response.status() !== 200) return;
+    const pending = response.json().then(body => {
+      if (body.document?.stationId === stationId && typeof body.lease?.leaseId === 'string') ownLeaseId = body.lease.leaseId;
+    }).catch(() => undefined);
+    pendingClaims.add(pending);
+    void pending.finally(() => pendingClaims.delete(pending));
+  };
+  staff.on('response', observeLease);
+  const releaseLease = async () => {
+    await Promise.allSettled([...pendingClaims]);
+    if (!stationId || !ownLeaseId) return;
+    const response = await staff.request.post(`/api/stations/${stationId}/lease/release`, {
+      data: { leaseId: ownLeaseId }, headers: { 'Idempotency-Key': `display-smoke-release-${crypto.randomUUID()}` },
+    });
+    expect(response.status()).toBe(200);
+    ownLeaseId = null;
+  };
+  let revoked = false;
+  const revoke = async () => {
+    if (!credentialId || revoked) return;
+    const response = await admin.post(`/api/credentials/${credentialId}/revoke`, {
+      data: { reason: 'Local separate-display smoke cleanup' },
+      headers: { 'Idempotency-Key': `display-smoke-revoke-${crypto.randomUUID()}` },
+    });
+    expect(response.status()).toBe(200);
+    revoked = true;
+  };
+  const cleanup = async () => {
+    let revokeFailed = false;
+    try { await revoke(); } catch { revokeFailed = true; }
+    // The browser-held credential never leaves this context or enters an artifact.
+    await display.evaluate(async () => {
+      const bearer = localStorage.getItem('oto.display.credential');
+      if (bearer) await fetch('/api/display/pairing/expire', {
+        method: 'POST', credentials: 'omit',
+        headers: { authorization: `Bearer ${bearer}`, 'content-type': 'application/json' }, body: '{}',
+      });
+    }).catch(() => undefined);
+    await display.goto('about:blank').catch(() => undefined);
+    await context.close();
+    staff.off('response', observeLease);
+    await admin.post('/api/auth/sign-out').catch(() => undefined);
+    await admin.dispose();
+    if (revokeFailed) throw new Error('The dedicated display credential could not be revoked');
+  };
+  try {
+    const signedIn = await admin.post('/api/auth/sign-in', { data: { phone: ADMIN_PHONE, password: ADMIN_PASSWORD } })
+      .catch(() => { throw new Error('The local setup account could not sign in'); });
+    expect(signedIn.status()).toBe(200);
+    const meResponse = await staff.request.get('/api/me');
+    expect(meResponse.status()).toBe(200);
+    const me = await meResponse.json();
+    expect(typeof me.branch?.id === 'string').toBe(true);
+    const linkResponse = await staff.request.get('/api/me/station/link');
+    expect(linkResponse.status()).toBe(200);
+    const link = await linkResponse.json();
+    expect(typeof link.stationId === 'string' && typeof link.boxId === 'string' && link.offline === false).toBe(true);
+    stationId = link.stationId;
+    const stationResponse = await admin.get(`/api/stations/${link.stationId}`);
+    expect(stationResponse.status()).toBe(200);
+    const { station } = await stationResponse.json();
+    expect(station.name === STATION_NAME && station.branchId === me.branch.id && station.boxId === link.boxId).toBe(true);
+    const selected = await admin.put('/api/me/session/station', {
+      data: { stationId: link.stationId }, headers: { 'Idempotency-Key': `display-smoke-station-${crypto.randomUUID()}` },
+    });
+    expect(selected.status()).toBe(200);
+
+    await display.goto('/display');
+    await expect(display.getByRole('heading', { name: 'Set up this display' })).toBeVisible();
+    const code = await display.getByTestId('display-pairing-code').textContent();
+    expect(typeof code === 'string' && /^\d{6}$/.test(code)).toBe(true);
+    const publication = staff.waitForResponse(response => response.url().endsWith(`/api/stations/${link.stationId}/intents`)
+      && response.request().method() === 'POST' && response.status() === 200
+      && response.request().postDataJSON()?.type === 'session.publish_display').catch(() => null);
+    const claimed = await admin.post(`/api/stations/${link.stationId}/displays/claim`, {
+      data: { pairingCode: code, name: `Local smoke display ${crypto.randomUUID().slice(0, 8)}` },
+      headers: { 'Idempotency-Key': `display-smoke-claim-${crypto.randomUUID()}` },
+    }).catch(() => { throw new Error('The dedicated display pairing request failed'); });
+    expect(claimed.status()).toBe(200);
+    const paired = await claimed.json();
+    expect(typeof paired.device?.id === 'string').toBe(true);
+    credentialId = paired.device.id;
+    expect(paired.station?.id === link.stationId).toBe(true);
+    const published = await publication;
+    expect(published !== null).toBe(true);
+    if (!published) throw new Error('The staff till did not publish its new display prompt');
+    const payload = published.request().postDataJSON()?.payload;
+    expect(payload?.stage === 'identify' && typeof payload.prompt?.requestId === 'string').toBe(true);
+    await displayPrompt(display, payload.prompt.requestId);
+    await expect(display.getByTestId('display-station')).toContainText(STATION_NAME, { timeout: 20_000 });
+    await expect(display.getByRole('button', { name: 'Find my membership', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(staff.getByRole('button', { name: 'Find my membership', exact: true })).toHaveCount(0);
+    expect((await display.request.get('/api/me')).status()).toBe(401);
+    return { display, admin, revoke, releaseLease, cleanup };
+  } catch (error) {
+    try {
+      await releaseLease();
+    } finally {
+      try { await cleanup(); } finally {
+        await clearStaffPage(staff);
+      }
+    }
+    throw error;
+  }
+}
+
+// Seeded member Mali and the two saved children must survive the independent staff lock.
+test('lock → sign in → membership lookup → child confirm → sign out', async ({ page, browser, baseURL }) => {
+  requireLocalFixture(baseURL);
+  await page.goto('/');
+  await signIn(page);
+  await expect(page.getByText(/Weekday pricing|Weekend pricing/).first()).toBeVisible();
+  const fixture = await pairedDisplay(browser, page, baseURL);
+  try {
+    const originalResponse = await page.request.get('/api/members/lookup', { params: { phone: MEMBER_PHONE } });
+    expect(originalResponse.status()).toBe(200);
+    const original = (await originalResponse.json()).member;
+    expect(original.nickname === 'Mali' && original.children?.length === 2).toBe(true);
+    const originalChildIds = original.children.map((child: { id: string }) => child.id).sort();
+    const promptId = await displayPrompt(fixture.display);
+    await typePhone(fixture.display, MEMBER_PHONE);
+    await page.getByLabel('Lock screen').click();
+    await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
+    expect((await displayPrompt(fixture.display)) === promptId).toBe(true);
+    const answered = fixture.display.waitForResponse((response) => response.url().endsWith('/api/display/intents')
+      && response.request().method() === 'POST' && response.request().postDataJSON()?.type === 'display.identify');
+    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    expect((await answered).status()).toBe(200);
+    await expect(page.getByText("Who's visiting today?", { exact: true })).toHaveCount(0);
+    const lookup = page.waitForResponse((response) => response.url().includes('/api/members/lookup?') && response.status() === 200);
+    await unlock(page);
+    const found = (await (await lookup).json()).member;
+    expect(found.id === original.id && JSON.stringify(found.children.map((child: { id: string }) => child.id).sort())
+      === JSON.stringify(originalChildIds)).toBe(true);
+    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
+    const childrenDialog = page.getByRole('dialog');
+    await expect(childrenDialog.getByText('Nong Ploy', { exact: true })).toBeVisible();
+    await expect(childrenDialog.getByText('Nong Tan', { exact: true })).toBeVisible();
+    await expect(fixture.display.getByText('Nong Ploy', { exact: true })).toHaveCount(0);
+    await expect(fixture.display.getByText('Nong Tan', { exact: true })).toHaveCount(0);
+    const details = childrenDialog.getByRole('button', { name: /^Details/ });
+    await expect(details).toHaveCount(2);
+    for (const button of await details.all()) {
+      if (await button.getAttribute('aria-expanded') === 'true') await button.click();
+    }
+    await expect(childrenDialog.getByText('Nong Ploy', { exact: true })).toBeInViewport();
+    await expect(childrenDialog.getByText('Nong Tan', { exact: true })).toBeInViewport();
+    await expect(childrenDialog.getByRole('button', { name: /Confirm 2 children/ })).toBeInViewport();
+    await captureLocalCheck(page, 'ticket-children-local.png');
+    await page.getByRole('button', { name: /Confirm 2 children/ }).click();
+    await expect(page.getByText('Visit confirmed', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Thai · verified')).toBeVisible();
+    await expect(fixture.display.getByRole('heading', { name: 'Welcome back, Mali!', exact: true })).toBeVisible({ timeout: 20_000 });
+    await captureLocalCheck(fixture.display, 'ticket-display-welcome-local.png');
+    await page.getByLabel('Lock screen').click();
+    await unlock(page);
+    await expect(page.getByRole('heading', { name: 'Select Customer Type', exact: true })).toBeVisible();
+    await expect(page.getByText('Mali', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Thai · verified')).toBeVisible();
+    await signOut(page);
+    await fixture.display.reload();
+    await expect(fixture.display.getByTestId('display-station')).toContainText(STATION_NAME, { timeout: 20_000 });
+    await signIn(page);
+    const rejected = fixture.display.waitForResponse((response) => response.url().endsWith('/api/display/session') && response.status() === 401);
+    await fixture.revoke();
+    expect((await rejected).status()).toBe(401);
+    await expect(fixture.display.getByRole('heading', { name: 'Set up this display' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Membership Check', { exact: true })).toBeVisible();
+    await signOut(page);
+  } finally {
+    try {
+      if (await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible()) await unlock(page);
+      if (await page.getByLabel('Lock screen').isVisible()) {
+        await fixture.releaseLease();
+        await signOut(page);
+      }
+    } finally {
+      try { await fixture.cleanup(); } finally {
+        await clearStaffPage(page);
+      }
+    }
+  }
 });
 
-test('unknown phone offers the create-member path (SCRUM-31)', async ({ page }) => {
-  test.skip(!PHONE || !PASSWORD, SIGN_IN_MISSING);
+test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, browser, baseURL }) => {
+  requireLocalFixture(baseURL);
   await page.goto('/');
-  await page.locator('input[inputmode="tel"], input[type="tel"]').first().fill(PHONE);
-  await page.locator('input[type="password"]').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await pickStationIfAsked(page);
-  await expect(page.getByText('Membership Check')).toBeVisible({ timeout: 15_000 });
-
-  const unknown = `06${String(Math.floor(10000000 + Math.random() * 89999999))}`;
-  for (const digit of unknown) {
-    await page.getByRole('button', { name: digit, exact: true }).first().click();
+  await signIn(page);
+  const fixture = await pairedDisplay(browser, page, baseURL);
+  let createdMemberId: string | null = null;
+  try {
+    await captureLocalCheck(fixture.display, 'ticket-fresh-display-local.png');
+    const unknown = `06${String(Math.floor(10000000 + Math.random() * 89999999))}`;
+    const expectedPhone = `+66${unknown.slice(1)}`;
+    await typePhone(fixture.display, unknown.slice(1));
+    const answered = fixture.display.waitForResponse(response => response.url().endsWith('/api/display/intents')
+      && response.request().method() === 'POST' && response.request().postDataJSON()?.type === 'display.identify');
+    const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?')
+      && response.request().method() === 'GET').catch(() => null);
+    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    const answer = await answered;
+    expect(answer.status()).toBe(200);
+    expect(answer.request().postDataJSON()?.payload?.phone === expectedPhone).toBe(true);
+    const lookedUp = await lookup;
+    expect(lookedUp?.status() === 200).toBe(true);
+    if (!lookedUp) throw new Error('The staff till did not look up the entered phone');
+    expect(new URL(lookedUp.url()).searchParams.get('phone') === expectedPhone).toBe(true);
+    expect((await lookedUp.json()).member === null).toBe(true);
+    await expect(page.getByText('New member?', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await page.getByPlaceholder('e.g. Mali').fill('Smoke visitor');
+    const created = page.waitForResponse((response) => response.url().endsWith('/api/members') && response.request().method() === 'POST');
+    await page.getByRole('button', { name: 'Create member', exact: true }).click();
+    const response = await created;
+    expect(response.ok()).toBe(true);
+    const member = (await response.json()).member;
+    expect(typeof member?.id === 'string').toBe(true);
+    createdMemberId = member.id;
+    expect(member.nickname === 'Smoke visitor').toBe(true);
+    await expect(page.getByText('Member created', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await signOut(page);
+  } finally {
+    try {
+      if (await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible()) await unlock(page);
+      if (await page.getByLabel('Lock screen').isVisible()) {
+        await fixture.releaseLease();
+        await signOut(page);
+      }
+      if (createdMemberId) {
+        const archived = await fixture.admin.delete(`/api/members/${createdMemberId}`, {
+          headers: { 'Idempotency-Key': `display-smoke-member-cleanup-${crypto.randomUUID()}` },
+        });
+        expect(archived.ok()).toBe(true);
+      }
+    } finally {
+      try { await fixture.cleanup(); } finally {
+        await clearStaffPage(page);
+      }
+    }
   }
-  await page.getByRole('button', { name: 'Find my membership' }).click();
-
-  await expect(page.getByText('New member?', { exact: true })).toBeVisible({ timeout: 15_000 });
-  await page.getByPlaceholder('e.g. Mali').fill('Smoke Test');
-  await page.getByRole('button', { name: 'Create member', exact: true }).click();
-  await expect(page.getByText('Member created', { exact: true })).toBeVisible({ timeout: 15_000 });
 });

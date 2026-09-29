@@ -1,0 +1,59 @@
+{
+  "date": "2026-09-29",
+  "environment": "disposable local seeded database",
+  "staging": false,
+  "browser": {
+    "status": "passed",
+    "tests": [
+      {
+        "name": "lock → sign in → membership lookup → child confirm → sign out",
+        "status": "passed",
+        "problem": ""
+      },
+      {
+        "name": "unknown phone offers the create-member path (SCRUM-31)",
+        "status": "passed",
+        "problem": ""
+      }
+    ]
+  },
+  "validation": {
+    "api": {
+      "auth": 24,
+      "security": 22,
+      "stationSession": 41,
+      "routeConformance": 12,
+      "guardedRoutes": 9
+    },
+    "pos": {
+      "scanChannel": 47,
+      "smoke": 2
+    },
+    "typecheck": [
+      "api",
+      "pos"
+    ],
+    "fullLint": [
+      "api",
+      "pos"
+    ],
+    "build": [
+      "pos"
+    ]
+  },
+  "attachments": [
+    {
+      "id": "10897",
+      "name": "17-local-two-browser-children.png"
+    },
+    {
+      "id": "10898",
+      "name": "18-local-fresh-shift-display.png"
+    }
+  ],
+  "limitations": [
+    "GitHub Actions billing availability still blocks staging deployment.",
+    "Unknown lease claims during network failure retain bounded TTL recovery.",
+    "Legacy lookup routes must stay until the currently live POS is replaced."
+  ]
+}

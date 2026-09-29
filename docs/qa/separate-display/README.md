@@ -161,6 +161,37 @@ alongside the prior full ticket flow. Reviewed local attachments:
 
 All are LOCAL CHECK; staging acceptance remains pending.
 
+## Sign-out handover and repeatable smoke
+
+Normal sign-out releases the signing-out till's own lease, even while locked,
+through an optional server-validated stationLeaseId hint. Another account,
+station or replacement lease is protected; missing or failed release never
+prevents ordinary session revocation. The publisher stops immediately and
+waits at most three seconds for an in-flight claim. An unknown network outcome
+uses TTL recovery. Subsequent sign-in waits for the earlier cookie clear.
+
+157 existing-file checks pass: API 108, POS 47 and two native browser cases.
+Both package typechecks/full lint, smoke TypeScript and POS build pass.
+The smoke now uses isolated staff and display contexts and real API records,
+waits for the new staff prompt, and covers both existing member flows. It is
+restricted to a disposable seeded local API. It needs POS_E2E_PHONE/PASSWORD
+and POS_E2E_ADMIN_PHONE/PASSWORD in the process environment; values stay in
+memory. Optional POS_E2E_EVIDENCE_DIR receives masked LOCAL CHECK screenshots.
+PLAYWRIGHT_NO_COPY_PROMPT suppresses unmasked failure DOM; tracing, video and
+automatic screenshots are disabled. Run the existing e2e/smoke.spec.ts against
+the local seeded API and POS with the edge role running, using one worker.
+
+Report: handover-local-results.json. Reviewed local attachments:
+
+- 17-local-two-browser-children.png (10897)
+- 18-local-fresh-shift-display.png (10898)
+
+No new suite, dependency or migration. A duplicate station fixture name and
+outdated retained-screen assertions were corrected. The smoke waits for the
+native sign-out response and avoids racing it with cleanup; it does not
+manually release the lease before the handover assertions. These local images
+do not satisfy the staging/Deployed gate.
+
 ## Remaining acceptance
 
 The story is NOT BUILT as a whole. Preserve these boundaries in Jira:
@@ -173,8 +204,9 @@ The story is NOT BUILT as a whole. Preserve these boundaries in Jira:
    Snapshot, test intents, Box refusals and observed rejection diagnostics are
    checked. Unused-code expiry is on the unpaired display setup screen; a
    separate Console expiry action is not claimed.
-4. Remove unused staff-session pending-lookup compatibility only after all
-   callers are checked. Applied migrations remain forward-only.
+4. After the independent-display POS is verified live, remove the legacy
+   staff-session pending-lookup routes. Keep the columns through that release,
+   then remove them in a later forward migration after old API readers retire.
 5. Complete the story's two-browser staging smoke, both layouts, failure
    cases and reviewed screenshots before moving SCRUM-201 to Deployed.
 
@@ -183,21 +215,49 @@ POS_RULES_RECONCILIATION R-54; DEVELOPMENT_PLAN separate-display sequence.
 Full reload recovery of a visitor/cart and physical/offline display transport
 are not established by this first slice.
 
-Implementation notes for the remaining work: the pending-lookup API wrappers
-have no current POS callers; the two routes and security/conformance fixtures
-still exist. Remove callers/routes first. Keep the database columns through
-that release because the currently deployed API still reads them; contract
-them in a later forward migration after the rollout is verified.
+Implementation notes for the remaining work: pending-lookup wrappers have no
+current POS callers and are removed from the current POS API module. The live
+0468c38 POS still calls both mailbox routes from Till.tsx. Keep the server
+routes for the first independent-display rollout, verify the new POS live,
+then retire those routes. Keep the database columns through route retirement
+because the older API still selects them; remove them in a later forward
+migration after that rollout is verified. Repository searches must include
+the live release, not just the working tree, before compatibility is removed.
 ConsentCapture and SavedChildrenReview have editable medical/photo fields.
 Their display integration must not republish saved medical data in the public
 snapshot. Typed slot changes need prompt, visitor and slot identity fences;
 the staff-authorised path must continue to enforce supervision policy and
 write the member record. Reusing the layout alone does not complete that work.
 
+The next consent slice is a typed draft handoff through the existing display
+intent endpoint: child review, child selection/edit, acknowledgement and Done.
+Each action needs the current prompt and declared slot/choice binding, plus
+the existing device/stage/sequence fences. The till must await real child-save
+success before progressing; lost replies keep the same action and body, and
+failed writes stay retryable. Public fields may include names, dates of birth,
+guardian contact and required confirmation labels; saved health/food records,
+photos, staff waiver state and registration records must stay on the till.
+Transport acknowledgement does not establish persisted supervision consent,
+registration or check-in. Those effects still require S2-13. Photo format and
+retention decisions belong to that later work and do not block safe handoff.
+
+The archived Snapshot follow-up must be per display credential, not a fresh
+station read. Save only a finite diagnostic projection of protected display
+responses; omit QR contents and all private fields before storage. Pairing,
+Console probes and rejected credentials must not replace that record.
+Recheck credential/park/station/box bindings at capture and at the scoped
+manager read. Retain revoked history without labelling an old station or box
+epoch as the current target. Response preparation needs its own ordering:
+document sequence alone cannot distinguish language responses. The label must
+say last recorded response prepared by OTO Park, with a time; browser receipt
+is not verified. A missing record stays empty rather than substituting current
+state. An additive migration and existing API/database/Console tests belong
+with that implementation, not with this compatibility checkpoint.
+
 ## Release gate
 
-Main 28da7df has the checked ticket flow and prior payment follow-ups.
-GitHub Actions run 36574043088 stopped before any step because billing/spending availability
+Main 02813cb has the checked diagnostics, ticket flow and payment follow-ups.
+GitHub Actions run 36576638516 stopped before any step because billing/spending availability
 prevented jobs starting. Render still gates deployment on successful checks;
 no bypass or billing change is made. Restore Actions, verify the exact release
 SHA, then use one normal deployment and run staging proof. The retained

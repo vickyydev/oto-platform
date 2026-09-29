@@ -1,7 +1,10 @@
 import { randomBytes } from 'node:crypto';
 import { and, eq, isNotNull, isNull, ne, sql } from 'drizzle-orm';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { deviceCredential, session, station, stationEvent, verificationCode } from '@oto/db';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { deviceCredential, session, station, stationEvent, stationSession, verificationCode } from '@oto/db';
+import { newId } from '@oto/shared';
+import { boxStoreFor } from '../src/lib/box-store';
+import { managerForStation } from '../src/services/station-session';
 import {
   ADMIN,
   RECEPTION,
@@ -69,6 +72,104 @@ describe('SCRUM-24 — sign out', () => {
     expect(out.statusCode).toBe(200);
     const me = await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie } });
     expect(me.statusCode).toBe(401);
+  });
+
+  const newTill = async () => {
+    const [base] = await ctx.db.select().from(station).where(eq(station.name, 'Reception Till 1')).limit(1);
+    const id = newId();
+    const [target] = await ctx.db.insert(station).values({ id, name: `Sign-out proof ${id}`,
+      operatorId: base!.operatorId, branchId: base!.branchId, boxId: base!.boxId, kind: 'till' }).returning();
+    return target!;
+  };
+  const pick = async (cookie: string, stationId: string) => {
+    expect((await ctx.app.inject({ method: 'PUT', url: '/me/session/station', headers: { cookie },
+      payload: { stationId } })).statusCode).toBe(200);
+  };
+  const claim = async (cookie: string, stationId: string, takeover = false) => {
+    const result = await ctx.app.inject({ method: 'POST', url: `/stations/${stationId}/lease`,
+      headers: { cookie }, payload: { holder: newId(), takeover } });
+    expect(result.statusCode).toBe(200);
+    return result.json().lease.leaseId as string;
+  };
+  const publisher = async (principal = RECEPTION) => {
+    const cookie = await signInAs(ctx.app, principal.phone, principal.password);
+    const target = await newTill();
+    await pick(cookie, target.id);
+    const leaseId = await claim(cookie, target.id);
+    return { cookie, target, leaseId };
+  };
+  const end = async (cookie: string, payload?: unknown) => {
+    const result = await ctx.app.inject({ method: 'POST', url: '/auth/sign-out', headers: { cookie },
+      ...(payload === undefined ? {} : { payload: payload as never }) });
+    expect(result.statusCode).toBe(200);
+    expect(result.json()).toEqual({ ok: true });
+    expect((await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie } })).statusCode).toBe(401);
+  };
+
+  it('releases its own lease while locked, then lets a fresh browser claim immediately', async () => {
+    const { cookie, target, leaseId } = await publisher();
+    expect((await ctx.app.inject({ method: 'POST', url: '/auth/lock', headers: { cookie } })).statusCode).toBe(200);
+    // Teardown's ordinary guarded release cannot do this while locked.
+    expect((await ctx.app.inject({ method: 'POST', url: `/stations/${target.id}/lease/release`,
+      headers: { cookie }, payload: { leaseId } })).statusCode).toBe(423);
+    await end(cookie, { stationLeaseId: leaseId });
+    expect((await boxStoreFor(ctx.db).readSession(target.id))?.lease).toBeNull();
+
+    const fresh = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    await pick(fresh, target.id);
+    const nextLease = await claim(fresh, target.id);
+    expect(nextLease).not.toBe(leaseId);
+  });
+
+  it('does not release another account lease even when its current ID is supplied', async () => {
+    const { cookie: holder, target, leaseId } = await publisher(ADMIN);
+    const cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    await pick(cookie, target.id);
+    await end(cookie, { stationLeaseId: leaseId });
+    expect((await boxStoreFor(ctx.db).readSession(target.id))?.lease?.leaseId).toBe(leaseId);
+    expect((await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie: holder } })).statusCode).toBe(200);
+  });
+
+  it('does not release the same account lease at another session station', async () => {
+    const { cookie: holder, target, leaseId } = await publisher();
+    const cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const other = await newTill();
+    await pick(cookie, other.id);
+    await end(cookie, { stationLeaseId: leaseId, stationId: target.id });
+    expect((await boxStoreFor(ctx.db).readSession(target.id))?.lease?.leaseId).toBe(leaseId);
+    expect(await boxStoreFor(ctx.db).readSession(other.id)).toBeNull();
+    expect((await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie: holder } })).statusCode).toBe(200);
+  });
+
+  it('leaves a replacement lease intact after a manager takeover', async () => {
+    const { cookie, target, leaseId } = await publisher();
+    const managerCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    await pick(managerCookie, target.id);
+    const replacement = await claim(managerCookie, target.id, true);
+    await end(cookie, { stationLeaseId: leaseId });
+    expect((await boxStoreFor(ctx.db).readSession(target.id))?.lease?.leaseId).toBe(replacement);
+  });
+
+  it.each(['missing', 'malformed', 'unknown', 'expired'] as const)('still signs out with a %s lease hint', async (kind) => {
+    const { cookie, target, leaseId } = await publisher();
+    if (kind === 'expired') await ctx.db.update(stationSession).set({ leaseExpiresAt: new Date(Date.now() - 1_000) })
+      .where(eq(stationSession.stationId, target.id));
+    const payload = kind === 'missing' ? undefined : { stationLeaseId: kind === 'malformed' ? 'not-a-uuid'
+      : kind === 'unknown' ? newId() : leaseId };
+    await end(cookie, payload);
+    const after = await boxStoreFor(ctx.db).readSession(target.id);
+    expect(after?.lease?.leaseId ?? null).toBe(kind === 'expired' ? null : leaseId);
+  });
+
+  it('still revokes the session if the optional lease release fails', async () => {
+    const { cookie, target, leaseId } = await publisher();
+    const { manager } = managerForStation(ctx.db, target);
+    const release = vi.spyOn(manager, 'release').mockRejectedValueOnce(new Error('Simulated lease release failure'));
+    try {
+      await end(cookie, { stationLeaseId: leaseId });
+      expect(release).toHaveBeenCalledOnce();
+      expect((await boxStoreFor(ctx.db).readSession(target.id))?.lease?.leaseId).toBe(leaseId);
+    } finally { release.mockRestore(); }
   });
 });
 

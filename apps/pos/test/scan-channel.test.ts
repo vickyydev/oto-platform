@@ -3,7 +3,8 @@ import { cartQuote, settle } from './support/fixtures';
 import { renderHook, type RenderedHook } from './support/hooks';
 import type { StationSessionDocument } from '@oto/shared';
 import { displayRequest, DisplayError, newDisplayCredential, newerDisplaySession, type DisplaySession } from '@/api/display';
-import { readDisplayAnswer, readTicketDisplayView, ticketDisplayPresentation, useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
+import { readDisplayAnswer, readTicketDisplayView, takeTicketDisplayLeaseForSignOut, ticketDisplayPresentation, useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
+import { authApi } from '@/api/platform';
 import type { Sale } from '@/types';
 import {
   readProductScan,
@@ -248,6 +249,80 @@ describe('SCRUM-201 — separate display transport and station presentation', ()
     expect(doc.prompt?.requestId === promptId).toBe(false);
     expect(doc.prompt?.answer).toBeUndefined();
     expect(onAnswer).toHaveBeenCalledTimes(1);
+  });
+
+  it('captures its held lease before locked sign-out and suppresses the teardown release race', async () => {
+    let active = true;
+    let doc = document();
+    const request = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith('/displays')) return reply({ displays: [{ id: 'display-1', name: 'Screen', connected: true }] });
+      if (path.endsWith('/lease')) {
+        doc = { ...doc, lease: { leaseId: 'own-lease', holder: 'till', holderKind: 'till', accountId: 'account-1',
+          startedAt: doc.updatedAt, heartbeatAt: doc.updatedAt, expiresAt: '2026-09-29T12:01:00.000Z' } };
+        return reply({ document: doc, lease: doc.lease });
+      }
+      if (path.endsWith('/session')) return reply({ document: doc });
+      if (path.endsWith('/intents')) return reply({ document: doc });
+      if (path.endsWith('/auth/sign-out')) {
+        expect(JSON.parse(String(init?.body))).toEqual({ stationLeaseId: 'own-lease' });
+        return reply({ ok: true });
+      }
+      return reply({ released: true });
+    });
+    vi.stubGlobal('fetch', request);
+    displayHook = renderHook(() => useTicketDisplay('station-signout', state(), vi.fn(), active));
+    await settle();
+    active = false;
+    displayHook.rerender();
+    const hint = takeTicketDisplayLeaseForSignOut();
+    await expect(hint).resolves.toBe('own-lease');
+    await authApi.signOut(await hint);
+    displayHook.unmount();
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(request.mock.calls.filter(([path]) => path.endsWith('/lease/release'))).toHaveLength(0);
+    expect(request.mock.calls.filter(([path]) => path.endsWith('/auth/sign-out'))).toHaveLength(1);
+    await expect(takeTicketDisplayLeaseForSignOut()).resolves.toBeUndefined();
+  });
+
+  it('includes an own claim reply received during sign-out without adopting or publishing the departed visitor', async () => {
+    let finishClaim: ((response: Response) => void) | undefined;
+    const onAnswer = vi.fn();
+    const request = vi.fn(async (path: string) => {
+      if (path.endsWith('/displays')) return reply({ displays: [{ id: 'display-1', name: 'Screen', connected: true }] });
+      if (path.endsWith('/lease')) return new Promise<Response>((resolve) => { finishClaim = resolve; });
+      return reply({ document: document() });
+    });
+    vi.stubGlobal('fetch', request);
+    displayHook = renderHook(() => useTicketDisplay('station-late-signout', state(), onAnswer));
+    await settle();
+    expect(finishClaim).toBeTypeOf('function');
+    const hint = takeTicketDisplayLeaseForSignOut();
+    displayHook.unmount();
+    finishClaim?.(reply({ document: document({ prompt: { requestId: 'old', answer: { type: 'identify', actionId: 'old-answer', phone: 'number' } } }),
+      lease: { leaseId: 'late-own-lease' } }));
+    await expect(hint).resolves.toBe('late-own-lease');
+    await settle();
+    expect(onAnswer).not.toHaveBeenCalled();
+    expect(request.mock.calls.some(([path]) => path.endsWith('/intents') || path.endsWith('/lease/release'))).toBe(false);
+  });
+
+  it('bounds a stalled claim wait and ignores its eventual reply after local sign-out', async () => {
+    let finishClaim: ((response: Response) => void) | undefined;
+    const request = vi.fn(async (path: string) => {
+      if (path.endsWith('/displays')) return reply({ displays: [{ id: 'display-1', name: 'Screen', connected: true }] });
+      if (path.endsWith('/lease')) return new Promise<Response>((resolve) => { finishClaim = resolve; });
+      return reply({ document: document() });
+    });
+    vi.stubGlobal('fetch', request);
+    displayHook = renderHook(() => useTicketDisplay('station-stalled-signout', state(), vi.fn()));
+    await settle();
+    const hint = takeTicketDisplayLeaseForSignOut();
+    displayHook.unmount();
+    await vi.advanceTimersByTimeAsync(3_000);
+    await expect(hint).resolves.toBeUndefined();
+    finishClaim?.(reply({ document: document(), lease: { leaseId: 'too-late' } }));
+    await settle();
+    expect(request.mock.calls.some(([path]) => path.endsWith('/intents') || path.endsWith('/lease/release'))).toBe(false);
   });
 });
 

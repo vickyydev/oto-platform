@@ -215,6 +215,25 @@ interface DisplayPublisher {
   promptKey: string;
   requestId: string;
   handled: Set<string>;
+  signingOut: boolean;
+  claiming: Promise<string | undefined> | null;
+}
+
+let signOutPublisher: DisplayPublisher | null = null;
+
+/** Capture only this browser's own publisher before the staff session ends. */
+export function takeTicketDisplayLeaseForSignOut(): Promise<string | undefined> {
+  const channel = signOutPublisher;
+  signOutPublisher = null;
+  if (!channel) return Promise.resolve(undefined);
+  channel.signingOut = true;
+  if (!channel.claiming) return Promise.resolve(channel.leaseId ?? undefined);
+  // A claim already on the wire may have acquired the lease. Wait briefly
+  // for its result, but a stalled connection must not prevent server sign-out.
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(undefined), 3_000);
+    void channel.claiming!.then((leaseId) => { clearTimeout(timer); resolve(leaseId); });
+  });
 }
 
 /** A lock pauses this publisher without discarding the current visitor's prompt. */
@@ -231,11 +250,14 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
     const channel: DisplayPublisher = {
       stationId, holder: holderFor(stationId), leaseId: null, renewedAt: 0,
       lastPublished: '', promptKey: '', requestId: '', handled: new Set(),
+      signingOut: false, claiming: null,
     };
     publisher.current = channel;
+    signOutPublisher = channel;
     return () => {
       if (publisher.current === channel) publisher.current = null;
-      if (channel.leaseId) void api.post(`/stations/${stationId}/lease/release`, { leaseId: channel.leaseId }).catch(() => undefined);
+      if (signOutPublisher === channel) signOutPublisher = null;
+      if (channel.leaseId && !channel.signingOut) void api.post(`/stations/${stationId}/lease/release`, { leaseId: channel.leaseId }).catch(() => undefined);
     };
   }, [stationId]);
 
@@ -245,7 +267,7 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const base = `/stations/${stationId}`;
-    const paused = () => stopped || !current.current.active || publisher.current !== channel;
+    const paused = () => stopped || channel.signingOut || !current.current.active || publisher.current !== channel;
     const tick = async () => {
       if (paused()) return;
       try {
@@ -256,9 +278,12 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
         if (!online.length) return;
         let document: StationSessionDocument;
         if (!channel.leaseId) {
-          const claimed = await api.post<{ document: StationSessionDocument; lease: { leaseId: string } }>(`${base}/lease`, { holder: channel.holder });
-          if (paused()) return;
+          const acquisition = api.post<{ document: StationSessionDocument; lease: { leaseId: string } }>(`${base}/lease`, { holder: channel.holder });
+          channel.claiming = acquisition.then((claimed) => claimed.lease.leaseId, () => undefined);
+          const claimed = await acquisition;
           channel.leaseId = claimed.lease.leaseId;
+          channel.claiming = null;
+          if (paused()) return;
           channel.renewedAt = Date.now();
           document = claimed.document;
           channel.lastPublished = '';
@@ -294,6 +319,7 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
         }
         setError(null);
       } catch (failure) {
+        channel.claiming = null;
         if (paused()) return;
         if (failure instanceof ApiError && ['STATION_STALE','STATION_NO_LEASE'].includes(failure.code)) {
           channel.leaseId = null;

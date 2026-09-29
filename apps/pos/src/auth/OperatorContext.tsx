@@ -16,6 +16,7 @@ import { authApi } from '@/api/platform';
 import { ApiError, NetworkError } from '@/api/client';
 import { forgetStaffToken, readStaffToken, staffTokenLive } from '@/auth/staffToken';
 import { loadCatalogFromApi } from '@/api/catalogBridge';
+import { takeTicketDisplayLeaseForSignOut } from '@/lib/displaySession';
 
 /**
  * Operator session — the "operator" (prototype term for the signed-in STAFF
@@ -176,6 +177,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const warnTimer = useRef<number | null>(null);
   const logoutTimer = useRef<number | null>(null);
   const countdown = useRef<number | null>(null);
+  const pendingSignOut = useRef<Promise<void> | null>(null);
 
   const clearTimers = useCallback(() => {
     if (warnTimer.current !== null) window.clearTimeout(warnTimer.current);
@@ -189,6 +191,9 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   const can = useCallback((permission: Permission) => held.has(permission), [held]);
 
   const logout = useCallback(() => {
+    // Suspend before clearing React state; the server releases this
+    // browser's own lease while its session still exists, even when locked.
+    const displayLease = takeTicketDisplayLeaseForSignOut();
     clearTimers();
     setWarningActive(false);
     setLocked(false);
@@ -203,9 +208,15 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
      * request below ever reaches anybody.
      */
     forgetStaffToken();
-    void authApi.signOut().catch(() => {
-      // Session may already be gone (expiry, deactivation) — signed out either way.
-    });
+    if (!pendingSignOut.current) {
+      const ending = displayLease.then((stationLeaseId) => authApi.signOut(stationLeaseId)).then(() => undefined).catch(() => {
+        // Session may already be gone (expiry, deactivation) — signed out either way.
+      });
+      pendingSignOut.current = ending;
+      void ending.finally(() => {
+        if (pendingSignOut.current === ending) pendingSignOut.current = null;
+      });
+    }
   }, [clearTimers]);
 
   /**
@@ -270,6 +281,9 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(
     async (phone: string, password: string): Promise<Operator> => {
+      // A delayed sign-out clears its cookie. Let it finish before issuing a
+      // new one, so its response cannot erase the next staff session.
+      await pendingSignOut.current;
       // Signing in by hand answers the hand-off notice, whatever it said.
       setHandoffError(null);
       await authApi.signIn(phone, password);
