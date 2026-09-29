@@ -3,6 +3,7 @@ import type { SavedChild } from '@/types';
 import { type SupervisedSlot, slotAge } from '@/components/till/SupervisionGate';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { ageFromDob } from '@/lib/childDob';
+import { childReviewAge } from '@oto/shared';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,19 +19,23 @@ import {
   Lock,
 } from 'lucide-react';
 
-interface SavedChildrenReviewProps {
+export type SavedChildrenReviewSlot = Pick<SupervisedSlot, 'id' | 'savedChildId' | 'name' | 'age' | 'dateOfBirth'>
+  & Partial<Pick<SupervisedSlot, 'allergiesMedical' | 'foodRestrictions'>>;
+export type SavedChildrenReviewChoice = Pick<SavedChild, 'id' | 'childName' | 'dateOfBirth'> & { childAge: number | null };
+
+interface SavedChildrenReviewProps<Child extends SavedChildrenReviewChoice> {
   // One slot per child coming today (count fixed by the cart's kid tickets). A
   // slot with savedChildId was pre-filled from a saved profile; one without is a
   // brand-new child being entered (and saved on capture).
-  slots: SupervisedSlot[];
+  slots: SavedChildrenReviewSlot[];
   // The member's full saved-children list — drives the per-slot swap picker.
-  savedChildren: SavedChild[];
+  savedChildren: Child[];
   // Slot ids the parent has explicitly re-confirmed ("still correct?").
   confirmedIds: string[];
   onUpdateSlot: (id: string, patch: Partial<SupervisedSlot>) => void;
   onConfirmSlot: (id: string) => void;
   // Swap a (different) saved child into a slot, or mark the slot as a new child.
-  onAssignSaved: (slotId: string, child: SavedChild) => void;
+  onAssignSaved: (slotId: string, child: Child) => void;
   onMarkNew: (slotId: string) => void;
   // Delete a saved child from the member's profile (and free the slot to new).
   onRemoveSaved: (slotId: string, childId: string) => void;
@@ -56,6 +61,11 @@ interface SavedChildrenReviewProps {
    * keeps its details in this browser says so, which is the booking site.
    */
   detailsStore?: 'member-record' | 'browser-memory';
+  /** The separate display reviews saved names and ages; other changes use staff. */
+  publicMode?: boolean;
+  busy?: boolean;
+  onStaffHelp?: () => void;
+  publicReferenceDate?: string;
 }
 
 /**
@@ -67,7 +77,7 @@ interface SavedChildrenReviewProps {
  * profile, or leave a slot as a brand-new child. The photo, consent and
  * supervision still run afterwards every visit — only the text fields pre-fill.
  */
-export function SavedChildrenReview({
+export function SavedChildrenReview<Child extends SavedChildrenReviewChoice>({
   slots,
   savedChildren,
   confirmedIds,
@@ -80,7 +90,11 @@ export function SavedChildrenReview({
   onContinue,
   canContinue,
   detailsStore = 'member-record',
-}: SavedChildrenReviewProps) {
+  publicMode = false,
+  busy = false,
+  onStaffHelp,
+  publicReferenceDate,
+}: SavedChildrenReviewProps<Child>) {
   // Saved children already mapped to a slot — so a swap picker never offers the
   // same child twice across two slots.
   const assignedIds = useMemo(
@@ -99,7 +113,8 @@ export function SavedChildrenReview({
           {slots.length === 1 ? 'Is this still your child?' : 'Are these still your children?'}
         </h2>
         <p className="mt-1 text-lg text-foreground/60">
-          We saved their details from last time — check each one and confirm.
+          {publicMode ? 'Choose a saved child for each place, check their name and age, then confirm.'
+            : 'We saved their details from last time — check each one and confirm.'}
         </p>
       </div>
 
@@ -107,7 +122,9 @@ export function SavedChildrenReview({
         {slots.map((slot, idx) => {
           const prefilled = !!slot.savedChildId;
           const confirmed = confirmedIds.includes(slot.id);
-          const aged = slotAge(slot) !== null;
+          const effectiveAge = publicMode && slot.dateOfBirth && publicReferenceDate
+            ? childReviewAge(slot.dateOfBirth, publicReferenceDate) : slotAge(slot);
+          const aged = effectiveAge !== null && (!publicMode || effectiveAge <= 17);
           const named = slot.name.trim().length > 0;
           // Saved children selectable for THIS slot: unassigned ones + its own.
           const pickable = savedChildren.filter(
@@ -117,6 +134,7 @@ export function SavedChildrenReview({
           return (
             <div
               key={slot.id}
+              data-testid="saved-child-review-card"
               className={`rounded-3xl border p-6 transition-colors ${
                 confirmed
                   ? 'border-emerald-500/40 bg-emerald-500/5'
@@ -139,7 +157,7 @@ export function SavedChildrenReview({
                   )
                 ) : (
                   <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-base text-primary">
-                    <UserPlus className="h-4 w-4" /> New — we'll save this
+                    <UserPlus className="h-4 w-4" /> {publicMode ? 'Choose a saved child or ask the team' : "New — we'll save this"}
                   </Badge>
                 )}
               </div>
@@ -148,7 +166,10 @@ export function SavedChildrenReview({
                 <div className="flex-1">
                   <label className="text-lg text-foreground/70">Child's name</label>
                   <Input
+                    aria-label={`Child ${idx + 1} name`}
                     value={slot.name}
+                    disabled={busy || publicMode && !prefilled}
+                    maxLength={publicMode ? 100 : undefined}
                     onChange={(e) => onUpdateSlot(slot.id, { name: e.target.value })}
                     placeholder="Full name"
                     className="mt-2 h-14 border-foreground/10 bg-foreground/5 px-4 text-2xl text-foreground placeholder:text-foreground/30"
@@ -157,8 +178,11 @@ export function SavedChildrenReview({
                 <div className="sm:w-40">
                   <label className="text-lg text-foreground/70">Age</label>
                   <ChildDobPicker
+                    disabled={busy || publicMode && !prefilled}
+                    referenceDate={publicMode ? publicReferenceDate : undefined}
+                    maxAge={publicMode ? 17 : undefined}
                     dateOfBirth={slot.dateOfBirth}
-                    age={slotAge(slot)}
+                    age={effectiveAge}
                     childName={slot.name}
                     onChange={({ dateOfBirth, age }) =>
                       onUpdateSlot(slot.id, { dateOfBirth, age: String(age) })
@@ -168,15 +192,15 @@ export function SavedChildrenReview({
                 </div>
               </div>
 
-              {(slot.allergiesMedical.trim() || slot.foodRestrictions.trim()) && (
+              {!publicMode && (slot.allergiesMedical?.trim() || slot.foodRestrictions?.trim()) && (
                 <div className="mt-3 space-y-1 text-base text-foreground/60">
-                  {slot.allergiesMedical.trim() && (
+                  {slot.allergiesMedical?.trim() && (
                     <p>
                       <span className="font-semibold text-foreground/80">Allergies / medical:</span>{' '}
                       {slot.allergiesMedical}
                     </p>
                   )}
-                  {slot.foodRestrictions.trim() && (
+                  {slot.foodRestrictions?.trim() && (
                     <p>
                       <span className="font-semibold text-foreground/80">Dietary:</span>{' '}
                       {slot.foodRestrictions}
@@ -193,7 +217,7 @@ export function SavedChildrenReview({
                   <Button
                     size="lg"
                     className="h-12 rounded-2xl px-6 text-lg font-bold"
-                    disabled={!named || !aged}
+                    disabled={busy || !named || !aged}
                     onClick={() => onConfirmSlot(slot.id)}
                   >
                     <Check className="mr-2 h-5 w-5" /> Confirm
@@ -203,11 +227,14 @@ export function SavedChildrenReview({
                 {/* Swap a different saved child into this slot, or mark it new. */}
                 {savedChildren.length > 0 && (
                   <select
+                    aria-label={`Child ${idx + 1} saved profile`}
+                    disabled={busy}
                     value={slot.savedChildId ?? '__new__'}
                     onChange={(e) => {
                       const v = e.target.value;
                       if (v === '__new__') {
-                        onMarkNew(slot.id);
+                        if (publicMode) onStaffHelp?.();
+                        else onMarkNew(slot.id);
                         return;
                       }
                       const child = savedChildren.find((c) => c.id === v);
@@ -217,10 +244,12 @@ export function SavedChildrenReview({
                   >
                     {pickable.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.childName} (age {c.dateOfBirth ? ageFromDob(c.dateOfBirth) : c.childAge})
+                        {c.childName} (age {(c.dateOfBirth
+                          ? publicMode && publicReferenceDate ? childReviewAge(c.dateOfBirth, publicReferenceDate) : ageFromDob(c.dateOfBirth)
+                          : c.childAge) ?? 'not set'})
                       </option>
                     ))}
-                    <option value="__new__">+ A new child</option>
+                    <option value="__new__">{publicMode ? '+ A new child — ask the team' : '+ A new child'}</option>
                   </select>
                 )}
 
@@ -229,9 +258,10 @@ export function SavedChildrenReview({
                     variant="ghost"
                     size="lg"
                     className="h-12 rounded-2xl px-4 text-base text-destructive hover:text-destructive"
-                    onClick={() => onRemoveSaved(slot.id, slot.savedChildId!)}
+                    disabled={!publicMode && busy}
+                    onClick={() => publicMode ? onStaffHelp?.() : onRemoveSaved(slot.id, slot.savedChildId!)}
                   >
-                    <Trash2 className="mr-2 h-5 w-5" /> Remove from saved
+                    <Trash2 className="mr-2 h-5 w-5" /> {publicMode ? 'Ask the team to remove a child' : 'Remove from saved'}
                   </Button>
                 )}
               </div>
@@ -242,7 +272,10 @@ export function SavedChildrenReview({
         {/* Privacy note — what happens to what is typed here, per detailsStore. */}
         <div className="flex items-start gap-3 rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-sm text-foreground/60">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-foreground/40" />
-          {detailsStore === 'browser-memory' ? (
+          {publicMode ? (
+            <p>Edits stay on this display until you press Confirm. Wait for the member's record to be
+              confirmed before pressing Done. Adding or removing a child continues on the staff screen.</p>
+          ) : detailsStore === 'browser-memory' ? (
             <p>
               These saved details are a prototype convenience held in memory only and reset on
               reload. Real storage of children's data needs explicit consent records, retention
@@ -266,16 +299,21 @@ export function SavedChildrenReview({
             size="lg"
             className="h-14 rounded-2xl px-6 text-lg"
             onClick={onBack}
+            disabled={busy}
           >
             <ArrowLeft className="mr-2 h-5 w-5" /> Back
           </Button>
+          {publicMode && onStaffHelp && <Button variant="outline" size="lg"
+            className="h-14 rounded-2xl px-6 text-lg" onClick={onStaffHelp}>
+            Continue on staff screen
+          </Button>}
           <Button
             size="lg"
-            disabled={!canContinue}
+            disabled={busy || !canContinue}
             className="h-14 flex-1 rounded-2xl text-lg font-bold gap-2"
             onClick={onContinue}
           >
-            Continue
+            {publicMode ? 'Done' : 'Continue'}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>

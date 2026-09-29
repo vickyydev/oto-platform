@@ -1,0 +1,55 @@
+{
+  "environment": "local disposable seeded database",
+  "date": "2026-09-29",
+  "status": "passed",
+  "sharedStationTests": 10,
+  "boxStationTests": 32,
+  "apiStationTests": 50,
+  "posScanChannelTests": 54,
+  "native": {
+    "status": "passed",
+    "tests": [
+      {
+        "name": "lock → sign in → membership lookup → child confirm → sign out",
+        "status": "passed",
+        "errors": []
+      },
+      {
+        "name": "unknown phone offers the create-member path (SCRUM-31)",
+        "status": "passed",
+        "errors": []
+      },
+      {
+        "name": "separate display saved-child review persists before Done and retries a lost save reply",
+        "status": "passed",
+        "errors": []
+      }
+    ],
+    "cleanup": {
+      "processes": true,
+      "database": true
+    },
+    "errors": []
+  },
+  "assertions": [
+    "authorised profile readback",
+    "same body and key after lost save reply",
+    "pending controls and Done fenced",
+    "other slot draft retained",
+    "dirty confirmation blocks Done",
+    "private profile fields absent",
+    "1024x768 and 1280x800 without horizontal overflow",
+    "no registration, visit, sale or payment POST during review",
+    "Done returns to staff supervision"
+  ],
+  "images": [
+    "23-local-child-save-pending.png",
+    "24-local-child-save-retry.png",
+    "25-local-child-review-confirmed.png"
+  ],
+  "limits": [
+    "not staging evidence",
+    "no registration or supervision consent persisted by display review",
+    "no physical device, payment or printing acceptance"
+  ]
+}

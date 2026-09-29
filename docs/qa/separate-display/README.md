@@ -280,7 +280,7 @@ Transport acknowledgement does not establish persisted supervision consent,
 registration or check-in. Those effects still require S2-13. Photo format and
 retention decisions belong to that later work and do not block safe handoff.
 
-The next bounded implementation is existing-member saved-child review at
+This checkpoint implements existing-member saved-child review at
 ticket step 8. Reuse stage input and a finite child_review prompt with
 requestId, stable visitorId, declared slots/choices, public name/DOB/age and
 confirmation/save state. display.child_review carries select, confirm, done,
@@ -296,10 +296,95 @@ removal fall back to staff; completed review opens step 7 inline. Prove real
 profile readback, retry/lock/context fences and absence of registration,
 check-in or money calls. Full S2-13 remains separate.
 
+## Saved-child review verification - 29 September 2026
+
+149 checks pass in existing files: shared station 10, box station 32, API
+station 50, POS scan-channel 54 and the existing POS smoke's three cases.
+Shared/box/POS typecheck and full lint pass. POS build and standalone smoke
+TypeScript pass. The build retains the existing chunk-size/import warnings.
+No new suite, dependency or migration was added.
+
+The third native case uses a fresh database and the real staff/display API.
+It checks a public name/DOB correction against the saved member record, holds
+and then loses the actual successful reply, verifies controls stay locked,
+and retries with exactly the same body/key. Other-slot drafts survive; a
+dirty confirmed field disables Done. Both 1024x768 and 1280x800 fit without
+horizontal scrolling. Done opens the staff supervision screen. No
+registration, visit, sale or payment POST occurs during the review portion.
+The earlier membership-confirm setup still creates its normal draft visit.
+
+Local evidence attached to SCRUM-201:
+
+- 23-local-child-save-pending.png (10902): real write answered at the API,
+  but the display still waits for the till's confirmed reply.
+- 24-local-child-save-retry.png (10903): lost reply with explicit Retry.
+- 25-local-child-review-confirmed.png (10904): both children confirmed and
+  Done enabled after successful readback/retry.
+
+The sanitised child-review-local-results.json records the three passing
+native cases and successful cleanup of owned processes and the disposable DB.
+The ignored runner is output/child-review-verification/pos-run.mjs; every run
+sets its own absolute outputDir under that directory. Credentials remain in
+memory and screenshots are masked and stamped LOCAL CHECK.
+
+Review fixed retained-save loss on disconnect, lock/failure replay, stale
+epoch/slot adoption, canonical returned field adoption and picker day drift.
+The first browser run failed an existing new-member setup assertion and the
+new review. On stable source both unchanged baseline cases passed. The new
+review failure exposed a real rendering bug: the public response deliberately
+sets step to null, so the display must use its validated child_review prompt,
+not staff step 8. Redaction stays intact. The corrected full run passes all
+three cases. The lint dependency warning and optional test callback typing
+error were also fixed and rechecked. No failed run is counted as acceptance.
+
+This is online saved-profile review only. Step 7, registration, consent
+effects, new-child creation and removal remain staff-owned; physical/offline
+transport and staging acceptance are not established here.
+
 ## Release gate
 
-Main cbce199 includes the checked sign-out handover and earlier display/payment work.
-GitHub Actions run 36581970114 stopped before any step because billing/spending availability
+The next independent display slice is F&B guest trading, then shop. Publish
+captured quoted rows, resolved modifier labels, quantities, manual amounts,
+tax/discount totals, the actual payment attempt and finalised completion.
+Never send a whole order, catalog or wristband record. F&B currently derives
+prices from the local catalog/clock; its separate display needs supplied
+public rows. Wallet, prepaid, staff-benefit and party-charge paths retain
+explicit staff fallback until their own authoritative business work lands.
+
+App.AuthGate currently retains only the ticket till across a staff lock.
+Before connecting another station, extend that same-session retention and
+pause scans, quotes, payment polling and late callbacks while locked. Keep
+the sign-out lease handover. Shop must preserve its existing real-payment
+overlay; the excluded MerchCustomerDisplay.tsx cannot be edited or used to
+show its prototype payment QR. These are scoped implementation requirements,
+not completed or deployed acceptance.
+
+The checked child-review implementation keeps a retained save operation with
+the original PATCH body and idempotency key. A lost reply stays unresolved
+until an explicit retry; unlock alone must not issue the PATCH again. Both
+inline and separate Confirm need an awaitable result and a scope fence so a
+late response cannot update another member's screen. Switching offline or
+handing review to staff invalidates the public prompt even on the same step.
+The shared prompt is bounded to 50 slots and 100 saved choices; exceeding the
+bound must show staff fallback, never silently drop children. Calendar dates
+must be valid and age/DOB handling must follow the existing review rules.
+Display-local edits make Continue unavailable until confirmed, including
+when an older server snapshot still marks that slot confirmed. Drafts for
+other slots survive polling; changing visitor or assigned child discards a
+stale draft. These rules are covered by the local source and native checks below; full
+story and staging acceptance remain incomplete.
+
+Confirm also names the savedChildId, checked against both the box prompt and
+the till's current assignment. Slot identity alone does not protect a reply
+that arrives between a staff reassignment and its next publication. DOB age
+uses a staff-published referenceDate for the visit/local day, bounded within
+one calendar day of server time. Display actions cannot change that date.
+This avoids UTC/local birthday drift while rejecting impossible/future DOBs
+and confirmations outside the existing child API's 0-17 age range. Older
+legacy read values may be shown for staff help but cannot be confirmed here.
+
+Main c8f6375 includes recorded display responses, sign-out handover and earlier display/payment work.
+GitHub Actions run 36585794087 stopped before any step because billing/spending availability
 prevented jobs starting. Render still gates deployment on successful checks;
 no bypass or billing change is made. Restore Actions, verify the exact release
 SHA, then use one normal deployment and run staging proof. The retained

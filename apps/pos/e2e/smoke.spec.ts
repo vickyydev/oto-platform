@@ -1,4 +1,4 @@
-import { expect, request, test, type Browser, type Page, type Response } from '@playwright/test';
+import { expect, request, test, type Browser, type Page, type Request, type Response } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -350,6 +350,167 @@ test('unknown phone offers the create-member path (SCRUM-31)', async ({ page, br
       try { await fixture.cleanup(); } finally {
         await clearStaffPage(page);
       }
+    }
+  }
+});
+
+test('separate display saved-child review persists before Done and retries a lost save reply', async ({ page, browser, baseURL }) => {
+  test.setTimeout(120_000);
+  requireLocalFixture(baseURL);
+  await page.goto('/');
+  await signIn(page);
+  const fixture = await pairedDisplay(browser, page, baseURL);
+  let releaseLostReply: (() => void) | undefined;
+  let restoredChild: { id: string; name: string; dateOfBirth: string | null; ageYears: number | null } | undefined;
+  let unrelatedWrites = 0;
+  const observeReviewWrite = (request: Request) => {
+    if (request.method() !== 'POST') return;
+    const pathname = new URL(request.url()).pathname;
+    if (/^\/api\/(sales?|payments|children|check-?ins?|visits|checkout)(\/|$)/.test(pathname)
+      || /^\/api\/members\/[^/]+\/children(\/|$)/.test(pathname)) unrelatedWrites += 1;
+  };
+  try {
+    const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
+    await typePhone(fixture.display, MEMBER_PHONE);
+    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    const original = (await (await lookup).json()).member;
+    expect(Array.isArray(original?.children) && original.children.length === 2).toBe(true);
+    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
+    for (const button of await page.getByRole('dialog').getByRole('button', { name: /^Details/ }).all()) {
+      if (await button.getAttribute('aria-expanded') === 'true') await button.click();
+    }
+    await page.getByRole('button', { name: /Confirm 2 children/ }).click();
+    await expect(page.getByText('Visit confirmed', { exact: true })).toBeVisible();
+    await page.getByRole('heading', { name: 'Thai', exact: true }).click();
+    await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
+    await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Add one Kids', exact: true }).first().click();
+    const publishedReview = fixture.display.waitForResponse(async response => response.url().endsWith('/api/display/session')
+      && response.status() === 200 && (await response.json()).document?.prompt?.kind === 'child_review');
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    const prompt = (await (await publishedReview).json()).document.prompt;
+    expect(prompt.slots?.length === 2 && prompt.choices?.length === 2 && prompt.save?.status === 'idle').toBe(true);
+    expect(prompt.slots.every((slot: Record<string, unknown>) => Object.keys(slot).every(key =>
+      ['id', 'savedChildId', 'name', 'dateOfBirth', 'ageYears', 'confirmed'].includes(key)))).toBe(true);
+    const review = fixture.display.getByTestId('display-child-review');
+    await expect(review).toBeVisible({ timeout: 20_000 });
+    page.on('request', observeReviewWrite);
+    fixture.display.on('request', observeReviewWrite);
+    for (const viewport of [{ width: 1024, height: 768 }, { width: 1280, height: 800 }]) {
+      await fixture.display.setViewportSize(viewport);
+      expect(await fixture.display.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+    await fixture.display.setViewportSize({ width: 1024, height: 768 });
+    await expect(review.getByText(/allergies|medical|dietary|food|photo|waiver/i)).toHaveCount(0);
+    await expect(review.locator('video, canvas, input[type="file"]')).toHaveCount(0);
+    const cards = review.getByTestId('saved-child-review-card');
+    const firstName = review.getByLabel('Child 1 name', { exact: true });
+    const secondName = review.getByLabel('Child 2 name', { exact: true });
+    const childId = prompt.slots[0].savedChildId;
+    const initialChild = original.children.find((child: { id: string }) => child.id === childId);
+    expect(typeof childId === 'string' && initialChild !== undefined).toBe(true);
+    restoredChild = { id: childId, name: initialChild.name, dateOfBirth: initialChild.dateOfBirth, ageYears: initialChild.ageYears };
+
+    // A declared saved profile is explicitly selected; the other slot's draft survives its acknowledgement.
+    await secondName.fill('Other child local draft');
+    const selected = fixture.display.waitForResponse(response => response.url().endsWith('/api/display/intents')
+      && response.request().postDataJSON()?.payload?.action === 'select');
+    await review.getByLabel('Child 1 saved profile', { exact: true }).selectOption(childId);
+    expect((await selected).status()).toBe(200);
+    await expect(firstName).toBeEnabled({ timeout: 20_000 });
+    await expect(secondName).toHaveValue('Other child local draft');
+    await firstName.fill('Local child correction');
+    await cards.first().getByRole('button', { name: /yrs/ }).click();
+    const picker = fixture.display.getByRole('dialog');
+    await picker.getByRole('button', { name: '8', exact: true }).click();
+    await picker.getByRole('button', { name: 'Jan', exact: true }).click();
+    await picker.getByRole('button', { name: '15', exact: true }).click();
+    await picker.getByRole('button', { name: 'Confirm', exact: true }).click();
+    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
+
+    let firstPatchBody: unknown;
+    let firstPatchKey: string | undefined;
+    let patchCount = 0;
+    let signalCommitted: (() => void) | undefined;
+    const committed = new Promise<void>(resolve => { signalCommitted = resolve; });
+    const lostReply = new Promise<void>(resolve => { releaseLostReply = resolve; });
+    await page.route(`**/api/members/children/${childId}`, async route => {
+      if (route.request().method() !== 'PATCH') { await route.continue(); return; }
+      patchCount += 1;
+      const body = route.request().postDataJSON();
+      const key = route.request().headers()['idempotency-key'];
+      expect(Object.keys(body).every(field => ['name', 'dateOfBirth', 'ageYears'].includes(field))).toBe(true);
+      if (patchCount === 1) {
+        firstPatchBody = body;
+        firstPatchKey = key;
+        const actual = await route.fetch();
+        expect(actual.status()).toBe(200);
+        signalCommitted?.();
+        await lostReply;
+        await route.abort('failed');
+      } else {
+        expect(typeof key === 'string' && key === firstPatchKey && JSON.stringify(body) === JSON.stringify(firstPatchBody)).toBe(true);
+        await route.continue();
+      }
+    });
+    await cards.first().getByRole('button', { name: 'Confirm', exact: true }).click();
+    await committed;
+    await expect(fixture.display.getByText('Please wait for the team to confirm this change.', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(firstName).toBeDisabled();
+    await expect(secondName).toBeDisabled();
+    await expect(review.getByLabel('Child 1 saved profile', { exact: true })).toBeDisabled();
+    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
+    const profile = await fixture.admin.get(`/api/members/${original.id}`);
+    expect(profile.status()).toBe(200);
+    const saved = (await profile.json()).member.children.find((child: { id: string }) => child.id === childId);
+    const submitted = firstPatchBody as { name: string; dateOfBirth: string; ageYears: number };
+    expect(saved?.name === submitted.name && saved?.dateOfBirth === submitted.dateOfBirth && saved?.ageYears === submitted.ageYears).toBe(true);
+    await captureLocalCheck(fixture.display, 'ticket-display-child-save-pending-local.png');
+    releaseLostReply?.();
+    await expect(review.getByRole('button', { name: 'Retry child save', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(firstName).toBeDisabled();
+    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
+    await captureLocalCheck(fixture.display, 'ticket-display-child-retry-local.png');
+    const replay = page.waitForResponse(response => response.url().endsWith(`/api/members/children/${childId}`)
+      && response.request().method() === 'PATCH' && response.status() === 200);
+    await review.getByRole('button', { name: 'Retry child save', exact: true }).click();
+    await replay;
+    await expect(cards.first().getByText('Confirmed', { exact: true })).toBeVisible({ timeout: 20_000 });
+    expect(patchCount === 2).toBe(true);
+    await expect(secondName).toHaveValue('Other child local draft');
+    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
+    await secondName.fill(prompt.slots[1].name);
+    await cards.nth(1).getByRole('button', { name: 'Confirm', exact: true }).click();
+    await expect(cards.nth(1).getByText('Confirmed', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled();
+    // Editing a confirmed record stays local and cannot use the old confirmation to continue.
+    await firstName.fill('Another unsaved draft');
+    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
+    await firstName.fill('Local child correction');
+    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled();
+    await captureLocalCheck(fixture.display, 'ticket-display-child-confirmed-local.png');
+    await review.getByRole('button', { name: 'Done', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(fixture.display.getByText('Please follow the staff screen.', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(fixture.display.getByTestId('display-child-review')).toHaveCount(0);
+    expect(unrelatedWrites === 0).toBe(true);
+  } finally {
+    releaseLostReply?.();
+    page.off('request', observeReviewWrite);
+    fixture.display.off('request', observeReviewWrite);
+    try {
+      if (restoredChild) {
+        await page.unroute(`**/api/members/children/${restoredChild.id}`);
+        const restored = await fixture.admin.patch(`/api/members/children/${restoredChild.id}`, {
+          data: { name: restoredChild.name, dateOfBirth: restoredChild.dateOfBirth, ageYears: restoredChild.ageYears },
+          headers: { 'Idempotency-Key': `display-smoke-child-cleanup-${crypto.randomUUID()}` },
+        });
+        expect(restored.status()).toBe(200);
+      }
+      if (await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible()) await unlock(page);
+      if (await page.getByLabel('Lock screen').isVisible()) { await fixture.releaseLease(); await signOut(page); }
+    } finally {
+      try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
     }
   }
 });

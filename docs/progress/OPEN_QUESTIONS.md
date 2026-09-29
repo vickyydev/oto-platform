@@ -11,12 +11,13 @@
   were also cleared; their branch commits remain available. Recreate those
   checkouts from their named branches only when needed. Rebuild the payment
   and offline proof helpers before the post-deploy checks; old command paths
-  in dated notes are no longer runnable. Current Snapshot evidence is being
-  regenerated under `output/snapshot-verification`; every temporary browser
+  in dated notes are no longer runnable. Snapshot evidence was regenerated
+  under `output/snapshot-verification` and committed in c8f6375; six native
+  checks and the two existing Console cases pass. Every temporary browser
   config must set a dedicated absolute output directory. This is an execution
   issue to repair, not a park decision or permission request.
-- **GitHub Actions availability.** Main source cbce199 is checked locally,
-  but CI 36581970114 ran zero steps because account billing/spending prevents
+- **GitHub Actions availability.** Main source c8f6375 is checked locally,
+  but CI 36585794087 ran zero steps because account billing/spending prevents
   jobs starting. Restore Actions availability; no spending setting is changed
   by development. Meanwhile SCRUM-201 continues independently. Deployment,
   staging proof and the next CI-packed Pi artifact remain pending.

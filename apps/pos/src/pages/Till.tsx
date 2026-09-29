@@ -7,7 +7,8 @@ import { braceletPrintJobs, dispatchPrintJobs, promptSetupStation, ticketPrintJo
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
-import { useTicketDisplay } from '@/lib/displaySession';
+import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
+import { ChildReviewPromptSchema, childReviewAge, type ChildReviewPrompt } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
@@ -120,6 +121,11 @@ function lineDiscountComponents(line: CartLine): DiscountComponentOption[] {
     label: item.quantity > 1 ? `${item.label} × ${item.quantity}` : item.label,
     amount: item.subtotal,
   }));
+}
+
+function reviewDate() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 export default function Till() {
@@ -361,6 +367,10 @@ export default function Till() {
   const [superAcknowledgedConfirmationIds, setSuperAcknowledgedConfirmationIds] = useState<string[]>([]);
   // Slot ids the parent re-confirmed on the saved-children review step (step 8).
   const [confirmedSavedIds, setConfirmedSavedIds] = useState<string[]>([]);
+  const [reviewVisitorId, setReviewVisitorId] = useState(() => crypto.randomUUID());
+  const [reviewReferenceDate, setReviewReferenceDate] = useState(reviewDate);
+  const [reviewRevision, setReviewRevision] = useState(0);
+  const [reviewStaffOnly, setReviewStaffOnly] = useState(false);
   // True once the gate has resolved + converted the anonymous kids, so re-pressing
   // Pay (e.g. after assigning a nanny at step 3) doesn't re-open the gate.
   const [supervisionResolved, setSupervisionResolved] = useState<boolean>(false);
@@ -563,6 +573,10 @@ export default function Till() {
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
     setConfirmedSavedIds([]);
+    setReviewVisitorId(crypto.randomUUID());
+    setReviewReferenceDate(reviewDate());
+    setReviewRevision(0);
+    setReviewStaffOnly(false);
     setSupervisionResolved(false);
   };
 
@@ -1491,6 +1505,10 @@ export default function Till() {
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
     setConfirmedSavedIds([]);
+    setReviewVisitorId(crypto.randomUUID());
+    setReviewReferenceDate(reviewDate());
+    setReviewRevision(0);
+    setReviewStaffOnly(false);
     // A returning member with saved children sees the re-confirm step first; their
     // details pre-fill the slots (text only, never the photo) but are applied only
     // after they confirm. First-timers / walk-ins skip straight to the gate.
@@ -1528,6 +1546,7 @@ export default function Till() {
 
 
   const handleSupervisionBack = () => {
+    if (reviewSave.save.status !== 'idle') return;
     // Return to the ticket grid to edit the cart; the draft stays in memory and
     // is rebuilt fresh next time the gate opens (supervisionResolved is false).
     setStep(3);
@@ -1536,8 +1555,10 @@ export default function Till() {
   // --- Saved-children review (step 8) handlers ------------------------------
   // Editing name/age un-confirms the slot so the parent re-confirms the change.
   const handleReviewUpdateSlot = (id: string, patch: Partial<SupervisedSlot>) => {
+    if (reviewSave.save.status !== 'idle') return;
     handleUpdateSlot(id, patch);
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== id));
+    setReviewRevision(previous => previous + 1);
   };
 
   /**
@@ -1604,9 +1625,9 @@ export default function Till() {
   };
 
   /** Put a child the API has just answered with back onto the member in hand. */
-  const applySavedChild = (child: SavedChild) =>
+  const applySavedChild = (child: SavedChild, memberId = member?.id) =>
     setMember((m) => {
-      if (!m) return m;
+      if (!m || m.id !== memberId) return m;
       const children = m.savedChildren ?? [];
       return {
         ...m,
@@ -1616,8 +1637,30 @@ export default function Till() {
       };
     });
 
-  /** The slot whose save is in flight, so a second press cannot double-write. */
-  const [confirmingSlotId, setConfirmingSlotId] = useState<string | null>(null);
+  const reviewOnline = !tillOffline();
+  const reviewEpoch = saleEpochRef.current;
+  const reviewScope = `${reviewEpoch}:${branch.id}:${station?.stationId ?? ''}:${operator?.id ?? ''}:${member?.id ?? ''}:${reviewVisitorId}`;
+  const reviewContext = useRef({ scope: reviewScope, member, slots: superSlots, visitorId: reviewVisitorId, step, online: reviewOnline, staffOnly: reviewStaffOnly, eligible: false });
+  reviewContext.current = { scope: reviewScope, member, slots: superSlots, visitorId: reviewVisitorId, step, online: reviewOnline, staffOnly: reviewStaffOnly, eligible: false };
+  const reviewSave = useChildReviewSave({
+    scope: reviewScope, paused: locked || !reviewOnline,
+    isCurrent: (scope, slotId, childId) => {
+      const current = reviewContext.current;
+      return reviewEpoch === saleEpochRef.current && current.scope === scope && current.step === 8
+        && current.slots.some(slot => slot.id === slotId && slot.savedChildId === childId)
+        && !!current.member?.savedChildren?.some(child => child.id === childId);
+    },
+    onSaved: (slotId, child) => {
+      if (child) {
+        applySavedChild(apiChildToSavedChild(child), reviewContext.current.member?.id);
+        const age = child.dateOfBirth ? childReviewAge(child.dateOfBirth, reviewReferenceDate) : child.ageYears;
+        handleUpdateSlot(slotId, { name: child.name, dateOfBirth: child.dateOfBirth ?? undefined,
+          age: age === null ? '' : String(age) });
+      }
+      setConfirmedSavedIds(previous => previous.includes(slotId) ? previous : [...previous, slotId]);
+      setReviewRevision(previous => previous + 1);
+    },
+  });
 
   // "Still correct?" → write any edits back to the saved profile and mark done.
   // The profile is the member's record on the platform; a correction here is
@@ -1625,43 +1668,31 @@ export default function Till() {
   // sends nothing. A failed write leaves the slot UNCONFIRMED and says why —
   // a green tick over a correction that did not land is the fake success this
   // ticket exists to remove.
-  const handleConfirmSlot = (id: string) => {
-    if (confirmingSlotId) return;
+  const handleConfirmSlot = async (id: string) => {
+    if (staffLocked.current || reviewSave.save.status !== 'idle') return false;
     const slot = superSlots.find((s) => s.id === id);
     const age = slot ? slotAge(slot) : null;
     const saved = slot?.savedChildId
       ? member?.savedChildren?.find((c) => c.id === slot.savedChildId)
       : undefined;
-    const patch = slot && saved && age !== null ? gateChildPatch(slot, age, saved) : null;
-    if (!patch || !slot?.savedChildId) {
-      setConfirmedSavedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-      return;
-    }
-    setConfirmingSlotId(id);
-    void membersApi
-      .updateChild(slot.savedChildId, patch)
-      .then((res) => {
-        applySavedChild(apiChildToSavedChild(res.child));
-        setConfirmedSavedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-      })
-      .catch((err: unknown) => {
-        toast({
-          title: `Couldn't save ${slot.name.trim() || 'this child'}'s details`,
-          description: `${err instanceof Error ? err.message : 'Unknown error'} The change is still on screen — try again.`,
-          variant: 'destructive',
-        });
-      })
-      .finally(() => setConfirmingSlotId(null));
+    if (!slot?.savedChildId || !saved || age === null || age > 17 || !slot.name.trim()) return false;
+    return reviewSave.confirm(id, slot.savedChildId, gateChildPatch(slot, age, saved) ?? {}, crypto.randomUUID());
   };
 
   // Swap a different saved child into this slot (pre-fill, must re-confirm).
   const handleAssignSaved = (slotId: string, child: SavedChild) => {
+    if (reviewSave.save.status !== 'idle') return;
+    if (superSlots.some(slot => slot.id !== slotId && slot.savedChildId === child.id)) return;
     handleUpdateSlot(slotId, slotPatchFromSavedChild(child));
     setConfirmedSavedIds((prev) => prev.filter((x) => x !== slotId));
+    setReviewRevision(previous => previous + 1);
   };
 
   // Drop the saved-profile link and blank the slot — entered fresh as a new child.
   const handleMarkNew = (slotId: string) => {
+    if (reviewSave.save.status !== 'idle') return;
+    setReviewStaffOnly(true);
+    setReviewRevision(previous => previous + 1);
     handleUpdateSlot(slotId, {
       savedChildId: undefined,
       name: '',
@@ -1691,17 +1722,26 @@ export default function Till() {
    * land is the same fake success the Confirm button was fixed for.
    */
   const handleRemoveSaved = (slotId: string, childId: string) => {
+    if (reviewSave.save.status !== 'idle') return;
+    const scope = reviewContext.current.scope;
+    const memberId = reviewContext.current.member?.id;
+    const currentRemoval = () => reviewEpoch === saleEpochRef.current && reviewContext.current.scope === scope
+      && reviewContext.current.member?.id === memberId
+      && reviewContext.current.slots.some(slot => slot.id === slotId && slot.savedChildId === childId);
+    if (!memberId || !currentRemoval()) return;
     void childrenApi
       .archive(childId)
       .then(() => {
+        if (!currentRemoval()) return;
         setMember((m) =>
-          m
+          m?.id === memberId
             ? { ...m, savedChildren: (m.savedChildren ?? []).filter((c) => c.id !== childId) }
             : m,
         );
         handleMarkNew(slotId);
       })
       .catch((err: unknown) => {
+        if (!currentRemoval()) return;
         toast({
           title: "Couldn't remove this child",
           description: `${err instanceof Error ? err.message : 'Unknown error'} They are still on the member's saved list.`,
@@ -1712,6 +1752,7 @@ export default function Till() {
 
   // Every slot must be named + aged; every still-linked saved child re-confirmed.
   const reviewCanContinue =
+    reviewSave.save.status === 'idle' &&
     superSlots.length > 0 &&
     superSlots.every(
       (s) =>
@@ -1719,6 +1760,16 @@ export default function Till() {
         slotAge(s) !== null &&
         (!s.savedChildId || confirmedSavedIds.includes(s.id)),
     );
+  const finishReview = () => { if (reviewCanContinue && !staffLocked.current) setStep(7); };
+  const reviewSaveNotice = reviewSave.save.status === 'idle' ? null : (
+    <div className="mx-6 my-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4" role="status">
+      <p>{reviewSave.save.status === 'saving' ? "Saving this child's details…" : "The save reply could not be confirmed. Retry the same correction before continuing."}</p>
+      {reviewSave.save.status === 'failed' && <Button className="mt-3" onClick={() => {
+        const { slotId, actionId } = reviewSave.save;
+        if (slotId && actionId) void reviewSave.retry(slotId, actionId);
+      }}>Retry child save</Button>}
+    </div>
+  );
 
   // Resolve the gate: convert each supervised kid into a drop-off line + walk-in
   // check-in, leave 'none'/waived kids as plain tickets, audit each waiver, then
@@ -2643,19 +2694,81 @@ export default function Till() {
   let customerStage: CustomerStage;
   if (step === 6) customerStage = 'thankyou';
   else if (step === 5) customerStage = 'payment';
-  else if (step === 4) customerStage = 'input';
+  else if (step === 4 || step === 8) customerStage = 'input';
   else if (step === 1) customerStage = 'identify';
   else if (lines.length > 0) customerStage = 'order';
   else customerStage = 'welcome';
 
+  const reviewCandidate: Omit<ChildReviewPrompt, 'kind' | 'requestId'> = {
+    visitorId: reviewVisitorId, referenceDate: reviewReferenceDate,
+    slots: superSlots.map(slot => ({ id: slot.id, savedChildId: slot.savedChildId ?? null, name: slot.name,
+      dateOfBirth: slot.dateOfBirth ?? null,
+      ageYears: slot.dateOfBirth ? childReviewAge(slot.dateOfBirth, reviewReferenceDate) : slotAge(slot),
+      confirmed: confirmedSavedIds.includes(slot.id) })),
+    choices: (member?.savedChildren ?? []).map(child => ({ id: child.id, name: child.childName,
+      dateOfBirth: child.dateOfBirth ?? null,
+      ageYears: child.dateOfBirth ? childReviewAge(child.dateOfBirth, reviewReferenceDate) : child.childAge })),
+    save: reviewSave.save, canContinue: reviewCanContinue,
+  };
+  const displayOnline = reviewOnline && cart.quote.source === 'platform' && !cart.pending && !cart.error;
+  const childReview = step === 8 && displayOnline && !reviewStaffOnly && !!member && superSlots.length > 0
+    && superSlots.every(slot => !!slot.savedChildId)
+    && ChildReviewPromptSchema.safeParse({ ...reviewCandidate, kind: 'child_review', requestId: 'validation' }).success
+    ? reviewCandidate : undefined;
+  reviewContext.current.eligible = !!childReview;
   const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {
     stage: customerStage, step, sessionKey: `${saleEpochRef.current}`, tier: tier ?? getDefaultTier().id,
     phone: customerPhone, nickname: customerNickname, contactChannel: customerContactChannel, member,
     sale: { ...liveSale, id: saleWriter.committed?.id ?? liveSale.id }, totals: cart.totals,
     rateMode: cart.quote.pricingMode,
-    online: !tillOffline() && cart.quote.source === 'platform' && !cart.pending && !cart.error,
+    online: displayOnline,
     payment: paymentDisplay, voucherPrize: voucher.held?.view.prize ?? null, nothingToPay: saleOwesNothing,
-  }, answer => {
+    childReview, reviewRevision,
+  }, async answer => {
+    if (answer.type === 'child_review') {
+      const current = reviewContext.current;
+      const action = answer.payload;
+      if (reviewEpoch !== saleEpochRef.current || staffLocked.current || current.step !== 8 || !current.online || current.staffOnly || !current.eligible
+        || action.visitorId !== current.visitorId) return false;
+      if (action.action === 'staff_help') {
+        setReviewStaffOnly(true);
+        setReviewRevision(previous => previous + 1);
+        return true;
+      }
+      if (action.action === 'retry') {
+        if (reviewSave.save.status !== 'failed' || reviewSave.save.slotId !== action.slotId
+          || reviewSave.save.actionId !== action.retryActionId) return false;
+        await reviewSave.retry(action.slotId, action.retryActionId);
+      } else {
+        if (reviewSave.save.status !== 'idle') return false;
+        if (action.action === 'done') {
+          if (reviewCanContinue) finishReview();
+          else setReviewRevision(previous => previous + 1);
+          return true;
+        }
+        if (action.action === 'back') { handleSupervisionBack(); return true; }
+        const slot = current.slots.find(item => item.id === action.slotId);
+        if (!slot) return false;
+        if (action.action === 'select') {
+          if (action.choiceId === null) { setReviewStaffOnly(true); setReviewRevision(previous => previous + 1); return true; }
+          const saved = current.member?.savedChildren?.find(child => child.id === action.choiceId);
+          if (!saved || current.slots.some(item => item.id !== slot.id && item.savedChildId === saved.id)) return false;
+          handleAssignSaved(slot.id, saved);
+          return true;
+        }
+        if (action.savedChildId !== slot.savedChildId) return false;
+        const saved = current.member?.savedChildren?.find(child => child.id === slot.savedChildId);
+        if (!saved || !slot.savedChildId || !action.name.trim() || action.ageYears === null || action.ageYears > 17
+          || action.dateOfBirth !== null && childReviewAge(action.dateOfBirth, reviewReferenceDate) !== action.ageYears) return false;
+        const patch = childReviewPatch(action, saved);
+        handleUpdateSlot(slot.id, { name: action.name.trim(), dateOfBirth: action.dateOfBirth ?? undefined, age: String(action.ageYears) });
+        setConfirmedSavedIds(previous => previous.filter(id => id !== slot.id));
+        await reviewSave.confirm(slot.id, slot.savedChildId, patch, answer.actionId);
+      }
+      if (reviewEpoch !== saleEpochRef.current || reviewContext.current.scope !== current.scope) return false;
+      setReviewRevision(previous => previous + 1);
+      return true;
+    }
     if (answer.type === 'identify' && step === 1 && answer.phone !== undefined) {
       setCustomerPhone(answer.phone);
       if (answer.nickname !== undefined) setCustomerNickname(answer.nickname);
@@ -2780,7 +2893,7 @@ export default function Till() {
             )}
           </>)}
           {step === 8 && tier && (
-            <SavedChildrenReview
+            <>{reviewSaveNotice}<SavedChildrenReview
               slots={superSlots}
               savedChildren={member?.savedChildren ?? []}
               confirmedIds={confirmedSavedIds}
@@ -2790,9 +2903,10 @@ export default function Till() {
               onMarkNew={handleMarkNew}
               onRemoveSaved={handleRemoveSaved}
               onBack={handleSupervisionBack}
-              onContinue={() => setStep(7)}
+              onContinue={finishReview}
               canContinue={reviewCanContinue}
-            />
+              busy={reviewSave.save.status !== 'idle'}
+            /></>
           )}
           {step === 7 && tier && (
             <SupervisionGate
@@ -2977,6 +3091,7 @@ export default function Till() {
         )}
         {inlineDisplay && step === 8 && tier && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
+            {reviewSaveNotice}
             <SavedChildrenReview
               slots={superSlots}
               savedChildren={member?.savedChildren ?? []}
@@ -2987,8 +3102,9 @@ export default function Till() {
               onMarkNew={handleMarkNew}
               onRemoveSaved={handleRemoveSaved}
               onBack={handleSupervisionBack}
-              onContinue={() => setStep(7)}
+              onContinue={finishReview}
               canContinue={reviewCanContinue}
+              busy={reviewSave.save.status !== 'idle'}
             />
           </div>
         )}

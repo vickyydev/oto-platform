@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { STATION_LEASE_TTL_S, stationLeaseLive } from '../src/station-session';
 import { projectDisplayDiagnosticDocument } from '../src/display-presentation';
+import { ChildReviewActionSchema, ChildReviewPromptSchema, childReviewAge } from '../src/display-child-review';
 
 /**
  * A lease is live for one lease length and no longer (SCRUM-439).
@@ -66,5 +67,55 @@ describe('finite recorded display response (SCRUM-201)', () => {
   it('does not disguise malformed full presentation as the older tier-only contract', () => {
     expect(projectDisplayDiagnosticDocument({ ...frame, cart: { supported: true, sale: { id: 'sale', tier: 'member' } } })?.cart).toBeNull();
     expect(projectDisplayDiagnosticDocument({ ...frame, stationId: 'malformed' })).toBeNull();
+  });
+  it('records only child-review prompt metadata, never child details or the typed answer', () => {
+    const projected = projectDisplayDiagnosticDocument({ ...frame, prompt: {
+      kind: 'child_review', requestId: 'review-request', visitorId: 'visitor-private', referenceDate: '2026-09-29',
+      slots: [{ id: 'slot-private', savedChildId: 'child-private', name: 'Child private', dateOfBirth: '2020-03-14', ageYears: 6 }],
+      choices: [{ id: 'child-private', name: 'Child private', dateOfBirth: '2020-03-14', ageYears: 6 }],
+      answer: { type: 'child_review', payload: { dateOfBirth: '2020-03-14', name: 'Child private' } },
+      answeredAt: frame.updatedAt,
+    } });
+    expect(projected?.prompt).toEqual({ kind: 'child_review', requestId: 'review-request', hasAnswer: true, answeredAt: frame.updatedAt });
+    expect(JSON.stringify(projected)).not.toMatch(/2020-03-14|Child private|child-private|visitor-private|referenceDate|slots|choices/);
+  });
+});
+
+describe('finite saved-child review contract (SCRUM-201)', () => {
+  const prompt = { kind: 'child_review', requestId: 'request', visitorId: 'visitor', referenceDate: '2026-09-20',
+    slots: [{ id: 'slot', savedChildId: 'child', name: 'Nok', dateOfBirth: '2020-03-14', ageYears: 6, confirmed: false }],
+    choices: [{ id: 'child', name: 'Nok', dateOfBirth: '2020-03-14', ageYears: 6 }],
+    save: { status: 'idle', slotId: null, actionId: null }, canContinue: false };
+  it('uses real dates and the frozen visit day, while preserving age-only child records', () => {
+    expect(childReviewAge('2020-02-29', '2026-02-28')).toBe(5);
+    expect(childReviewAge('2020-02-29', '2026-03-01')).toBe(6);
+    expect(childReviewAge('2020-02-30', '2026-03-01')).toBeNull();
+    expect(childReviewAge('2026-09-21', '2026-09-20')).toBeNull();
+    expect(ChildReviewPromptSchema.safeParse({ ...prompt, slots: [{ ...prompt.slots[0], confirmed: true }], canContinue: true }).success).toBe(true);
+    expect(ChildReviewPromptSchema.safeParse({ ...prompt, slots: [{ ...prompt.slots[0], dateOfBirth: null, confirmed: true }], canContinue: true }).success).toBe(true);
+  });
+  it('fails closed on overbound, duplicate, unsaved or falsely confirmed drafts', () => {
+    for (const invalid of [
+      { ...prompt, slots: Array.from({ length: 51 }, (_, i) => ({ ...prompt.slots[0], id: `slot-${i}`, savedChildId: null })) },
+      { ...prompt, choices: Array.from({ length: 101 }, (_, i) => ({ ...prompt.choices[0], id: `child-${i}` })) },
+      { ...prompt, slots: [...prompt.slots, prompt.slots[0]] },
+      { ...prompt, slots: [{ ...prompt.slots[0], savedChildId: 'undeclared' }] },
+      { ...prompt, slots: [{ ...prompt.slots[0], savedChildId: null, confirmed: true }], canContinue: true },
+      { ...prompt, slots: [{ ...prompt.slots[0], ageYears: 5, confirmed: true }], canContinue: true },
+      { ...prompt, canContinue: true },
+      { ...prompt, save: { status: 'failed', slotId: 'missing', actionId: 'save' } },
+    ]) expect(ChildReviewPromptSchema.safeParse(invalid).success).toBe(false);
+  });
+  it('requires an exact saved-child confirmation, never private fields or adult numeric ages', () => {
+    const confirm = { action: 'confirm', requestId: 'request', visitorId: 'visitor', slotId: 'slot', savedChildId: 'child',
+      name: ' Nok ', dateOfBirth: null, ageYears: 6 };
+    expect(ChildReviewActionSchema.parse(confirm)).toEqual({ ...confirm, name: 'Nok' });
+    for (const invalid of [{ ...confirm, savedChildId: null }, { ...confirm, ageYears: 18 },
+      { ...confirm, dateOfBirth: '2020-02-30' }, { ...confirm, medicalNotes: 'private' }, { ...confirm, ageYears: null }]) {
+      expect(ChildReviewActionSchema.safeParse(invalid).success).toBe(false);
+    }
+    const projected = ChildReviewPromptSchema.parse({ ...prompt, slots: [{ ...prompt.slots[0], medicalNotes: 'private', childPhotoUrl: 'private' }],
+      choices: [{ ...prompt.choices[0], medicalNotes: 'private' }] });
+    expect(JSON.stringify(projected)).not.toContain('private');
   });
 });

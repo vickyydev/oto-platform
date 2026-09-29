@@ -105,13 +105,17 @@ it. Do not repeat SALE, fabricate a callback, confirm no money or archive these
 records. The logged invoice unique violation and old-migration regressions
 support the corrected callback path; they do not establish recovery of this row.
 
+The ignored helpers `test-results/payment-stage-native-proof.mts` and
+`test-results/offline-guard-proof.mts` were cleared by a temporary Playwright
+output-path mistake during the later SCRUM-201 check. Their old commands are
+not runnable. Committed reports/screenshots and the retained simulated payment
+are intact. Rebuild and review those helpers before post-deployment use, with
+dedicated absolute output directories and explicit protection of the IDs above.
 After corrected source is LIVE, prove fresh partial reversal, GHL confirmation,
-QR-disabled refusal and zero-price checkout in an isolated report using
-`test-results/payment-stage-native-proof.mts`, `--output-dir` and `--only`.
-The helper protects the historical records and original report; completion
-applies only to requested cases. Then run `test-results/offline-guard-proof.mts`
-on independent disposable fixtures, restoring the forced-offline flag afterward.
-These proofs must not change the retained historical failure into a success.
+QR-disabled refusal and zero-price checkout in an isolated report. Completion
+applies only to requested cases. Prove the offline guard on independent
+disposable fixtures and restore its forced-offline flag afterward. These
+proofs must not change the retained historical failure into a success.
 
 Green CI packed `oto-box-0.1.0-0468c38.tgz`. The archive and its `.tgz.sha256`
 are on the Desktop; both downloaded and delivered hashes were verified:

@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   DisplayCartSchema, DisplayMemberSchema, DisplayTotalsSchema, DisplayPaymentSchema,
+  ChildReviewPromptSchema, ChildReviewDocumentPromptSchema, ChildReviewAnswerSchema,
   type DisplayCart, type DisplayTotals, type DisplayPayment, type DisplayLineBreakdown,
+  type ChildReviewPrompt, type ChildReviewAnswer,
   type StationSessionDocument, type StationSessionStage,
 } from '@oto/shared';
 import { api, ApiError } from '@/api/client';
@@ -9,14 +11,17 @@ import type { ContactChannel, Member, Sale } from '@/types';
 import { computeLineBreakdown, isAdultRulePriced, isTierPriced, unpricedCartLines } from './pricing';
 import type { RateMode } from './pricingMode';
 import type { OrderTotals } from '@/api/sales';
+import { membersApi, type ApiChild } from '@/api/platform';
+import type { SavedChild } from '@/types';
 
-export interface DisplayAnswer {
+interface ContactDisplayAnswer {
   type: 'identify' | 'skip_identify' | 'contact_done';
   actionId: string;
   phone?: string;
   nickname?: string;
   contactChannel?: ContactChannel;
 }
+export type DisplayAnswer = ContactDisplayAnswer | ChildReviewAnswer;
 export interface TicketDisplayState {
   stage: StationSessionStage;
   step: number;
@@ -33,14 +38,18 @@ export interface TicketDisplayState {
   payment?: DisplayPayment;
   voucherPrize?: { nameEn: string; nameTh: string | null } | null;
   nothingToPay?: boolean;
+  childReview?: Omit<ChildReviewPrompt, 'kind' | 'requestId'>;
+  reviewRevision?: number;
 }
 
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
 const earlyStages = ['identify', 'welcome', 'input'];
 
-/** Shares captured ticket presentation only, never child, staff or issue records. */
+/** Shares captured ticket rows and finite child review, never private profiles or issue records. */
 export function ticketDisplayPresentation(state: TicketDisplayState, requestId: string) {
-  const allowed = state.step !== 7 && state.step !== 8;
+  const childReview = state.step === 8 && state.stage === 'input' && state.online === true && state.childReview
+    ? ChildReviewPromptSchema.safeParse({ ...state.childReview, kind: 'child_review', requestId: requestId || 'pending' }) : null;
+  const allowed = state.step !== 7 && (state.step !== 8 || childReview?.success === true);
   const supported = allowed && (earlyStages.includes(state.stage)
     || state.online === true && !!state.sale && !!state.totals && (state.stage !== 'payment' || !!state.payment));
   const sale = state.sale;
@@ -100,7 +109,7 @@ export function ticketDisplayPresentation(state: TicketDisplayState, requestId: 
       qrPayload: state.payment.qrPayload, qrImageUrl: state.payment.qrImageUrl, expiresAt: state.payment.expiresAt,
       status: state.payment.status, offline: state.payment.offline, online: state.payment.online,
     } : null,
-    prompt: supported && (state.stage === 'identify' || state.stage === 'input') ? {
+    prompt: childReview?.success && supported ? childReview.data : supported && (state.stage === 'identify' || state.stage === 'input') ? {
       kind: state.stage === 'identify' ? 'identify' : 'contact', requestId,
       phone: state.phone, nickname: state.nickname, contactChannel: state.contactChannel,
     } : null,
@@ -117,18 +126,22 @@ export interface TicketDisplayView {
   lineBreakdowns?: Record<string, DisplayLineBreakdown>;
   voucherPrize?: DisplayCart['voucherPrize'];
   nothingToPay?: boolean;
+  childReview?: ChildReviewPrompt;
 }
 
 /** Reject malformed public data before it reaches the customer renderer. */
 export function readTicketDisplayView(document: StationSessionDocument): TicketDisplayView | null {
   if (!['identify', 'welcome', 'order', 'input', 'payment', 'thankyou'].includes(document.stage)
-    || document.step === 7 || document.step === 8 || document.cart?.supported !== true) return null;
+    || document.step === 7 || document.cart?.supported !== true) return null;
   const stage = document.stage as TicketDisplayView['stage'];
+  const childReview = stage === 'input' && document.prompt?.kind === 'child_review'
+    ? ChildReviewDocumentPromptSchema.safeParse(document.prompt) : null;
+  if (childReview && !childReview.success || document.step === 8 && !childReview?.success) return null;
   const member = document.member == null ? null : DisplayMemberSchema.safeParse(document.member);
   const totals = document.totals == null ? null : DisplayTotalsSchema.safeParse(document.totals);
   const payment = document.payment == null ? null : DisplayPaymentSchema.safeParse(document.payment);
   if (member && !member.success || totals && !totals.success || payment && !payment.success) return null;
-  if (stage === 'identify' || stage === 'input') {
+  if ((stage === 'identify' || stage === 'input') && !childReview?.success) {
     const prompt = document.prompt;
     if (!prompt || prompt.kind !== (stage === 'identify' ? 'identify' : 'contact')
       || typeof prompt.requestId !== 'string' || !prompt.requestId || prompt.requestId.length > 200
@@ -172,6 +185,7 @@ export function readTicketDisplayView(document: StationSessionDocument): TicketD
     payment: payment?.success ? payment.data : undefined,
     lineBreakdowns: publicSale ? Object.fromEntries(publicSale.lines.map(line => [line.id, line.breakdown])) : undefined,
     voucherPrize: cart?.voucherPrize, nothingToPay: cart?.nothingToPay,
+    childReview: childReview?.success ? childReview.data : undefined,
   };
 }
 
@@ -184,9 +198,141 @@ function displayTotals(totals: DisplayTotals): TicketDisplayView['totals'] {
   } };
 }
 
+/** A display correction never includes the private fields held by the till. */
+export function childReviewPatch(draft: Pick<ChildReviewPrompt['slots'][number], 'name' | 'dateOfBirth' | 'ageYears'>, saved: SavedChild) {
+  const patch: Record<string, unknown> = {};
+  const name = draft.name.trim();
+  if (name !== saved.childName.trim()) patch.name = name;
+  if ((draft.dateOfBirth ?? '') !== (saved.dateOfBirth ?? '')) {
+    patch.dateOfBirth = draft.dateOfBirth;
+    patch.ageYears = draft.ageYears;
+  } else if (draft.ageYears !== saved.childAge) patch.ageYears = draft.ageYears;
+  return patch;
+}
+
+interface ChildReviewSaveOperation {
+  scope: string;
+  slotId: string;
+  childId: string;
+  actionId: string;
+  key: string;
+  patch: Record<string, unknown>;
+  result?: ApiChild;
+  inFlight?: Promise<boolean>;
+  controller?: AbortController;
+  timer?: ReturnType<typeof setTimeout>;
+}
+const CHILD_REVIEW_IDLE: ChildReviewPrompt['save'] = { status: 'idle', slotId: null, actionId: null };
+
+/** Retains one profile correction until its reply is known or its visitor leaves. */
+export function useChildReviewSave(options: {
+  scope: string;
+  paused: boolean;
+  isCurrent: (scope: string, slotId: string, childId: string) => boolean;
+  onSaved: (slotId: string, child?: ApiChild) => void;
+}) {
+  const current = useRef(options);
+  current.current = options;
+  const operation = useRef<ChildReviewSaveOperation | null>(null);
+  const mounted = useRef(true);
+  const [save, setSave] = useState<ChildReviewPrompt['save']>(CHILD_REVIEW_IDLE);
+  const live = useCallback((op: ChildReviewSaveOperation, allowPaused = false) => mounted.current
+    && operation.current === op && current.current.scope === op.scope
+    && current.current.isCurrent(op.scope, op.slotId, op.childId) && (allowPaused || !current.current.paused), []);
+  const adopt = useCallback((op: ChildReviewSaveOperation) => {
+    if (!live(op) || !op.result) return false;
+    operation.current = null;
+    setSave(CHILD_REVIEW_IDLE);
+    current.current.onSaved(op.slotId, op.result);
+    return true;
+  }, [live]);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      const op = operation.current;
+      operation.current = null;
+      clearTimeout(op?.timer);
+      op?.controller?.abort();
+    };
+  }, []);
+  const { scope, paused, isCurrent } = options;
+  useEffect(() => {
+    const op = operation.current;
+    if (op && (op.scope !== scope || !isCurrent(op.scope, op.slotId, op.childId))) {
+      operation.current = null;
+      clearTimeout(op.timer);
+      op.controller?.abort();
+      setSave(CHILD_REVIEW_IDLE);
+    } else if (op && !paused) adopt(op);
+    // An unlock adopts an already received reply; it never starts another save.
+  }, [scope, paused, isCurrent, adopt]);
+  const run = async (op: ChildReviewSaveOperation): Promise<boolean> => {
+    if (!live(op)) return false;
+    if (op.result) return adopt(op);
+    if (op.inFlight) return op.inFlight;
+    setSave({ status: 'saving', slotId: op.slotId, actionId: op.actionId });
+    if (!live(op)) {
+      if (live(op, true)) setSave({ status: 'failed', slotId: op.slotId, actionId: op.actionId });
+      return false;
+    }
+    const pending = (async () => {
+      const controller = new AbortController();
+      op.controller = controller;
+      // An aborted reply leaves the write outcome unknown; retry the same key.
+      op.timer = setTimeout(() => controller.abort(), 8_000);
+      try {
+        const result = await membersApi.updateChild(op.childId, op.patch, op.key, controller.signal);
+        if (!live(op, true)) return false;
+        if (controller.signal.aborted || result.child.id !== op.childId) {
+          setSave({ status: 'failed', slotId: op.slotId, actionId: op.actionId });
+          return false;
+        }
+        op.result = result.child;
+        return adopt(op);
+      } catch {
+        if (live(op, true)) setSave({ status: 'failed', slotId: op.slotId, actionId: op.actionId });
+        return false;
+      } finally {
+        clearTimeout(op.timer);
+        op.timer = undefined;
+        op.controller = undefined;
+        op.inFlight = undefined;
+      }
+    })();
+    op.inFlight = pending;
+    return pending;
+  };
+  return {
+    save,
+    confirm: async (slotId: string, childId: string, patch: Record<string, unknown>, actionId: string) => {
+      if (!mounted.current || current.current.paused || !current.current.isCurrent(options.scope, slotId, childId)) return false;
+      const retained = operation.current;
+      if (retained) return retained.scope === options.scope && retained.slotId === slotId
+        && retained.childId === childId && retained.actionId === actionId ? run(retained) : false;
+      if (!Object.keys(patch).length) { current.current.onSaved(slotId); return true; }
+      const op: ChildReviewSaveOperation = { scope: options.scope, slotId, childId, actionId,
+        key: `child-review:${actionId}`, patch: { ...patch } };
+      operation.current = op;
+      return run(op);
+    },
+    retry: async (slotId: string, actionId: string) => {
+      const op = operation.current;
+      return op?.slotId === slotId && op.actionId === actionId ? run(op) : false;
+    },
+  };
+}
+
 export function readDisplayAnswer(document: StationSessionDocument, requestId: string): DisplayAnswer | null {
   if (document.prompt?.requestId !== requestId) return null;
-  const answer = document.prompt.answer as Partial<DisplayAnswer> | undefined;
+  if (document.prompt.kind === 'child_review') {
+    const prompt = ChildReviewDocumentPromptSchema.safeParse(document.prompt);
+    const answer = ChildReviewAnswerSchema.safeParse(document.prompt.answer);
+    return document.stage === 'input' && prompt.success && answer.success
+      && answer.data.payload.requestId === requestId && answer.data.payload.visitorId === prompt.data.visitorId
+      ? answer.data : null;
+  }
+  const answer = document.prompt.answer as Partial<ContactDisplayAnswer> | undefined;
   if (!answer || typeof answer.actionId !== 'string') return null;
   if (answer.type === 'skip_identify' && document.stage === 'identify') return answer as DisplayAnswer;
   if (answer.type === 'identify' && document.stage === 'identify' && typeof answer.phone === 'string') return answer as DisplayAnswer;
@@ -217,6 +363,7 @@ interface DisplayPublisher {
   handled: Set<string>;
   signingOut: boolean;
   claiming: Promise<string | undefined> | null;
+  processing: { actionId: string; promptKey: string } | null;
 }
 
 let signOutPublisher: DisplayPublisher | null = null;
@@ -237,7 +384,7 @@ export function takeTicketDisplayLeaseForSignOut(): Promise<string | undefined> 
 }
 
 /** A lock pauses this publisher without discarding the current visitor's prompt. */
-export function useTicketDisplay(stationId: string | null, state: TicketDisplayState, onAnswer: (answer: DisplayAnswer) => void, active = true) {
+export function useTicketDisplay(stationId: string | null, state: TicketDisplayState, onAnswer: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>, active = true) {
   const current = useRef({ state, onAnswer, active });
   current.current = { state, onAnswer, active };
   const publisher = useRef<DisplayPublisher | null>(null);
@@ -250,7 +397,7 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
     const channel: DisplayPublisher = {
       stationId, holder: holderFor(stationId), leaseId: null, renewedAt: 0,
       lastPublished: '', promptKey: '', requestId: '', handled: new Set(),
-      signingOut: false, claiming: null,
+      signingOut: false, claiming: null, processing: null,
     };
     publisher.current = channel;
     signOutPublisher = channel;
@@ -297,15 +444,23 @@ export function useTicketDisplay(stationId: string | null, state: TicketDisplayS
           if (paused()) return;
         }
         const latest = current.current;
-        const key = `${latest.state.sessionKey}:${latest.state.stage}:${latest.state.step}`;
+        const key = `${latest.state.sessionKey}:${latest.state.stage}:${latest.state.step}:${latest.state.reviewRevision ?? 0}:${latest.state.online === true}:${latest.state.childReview?.visitorId ?? ''}`;
         if (key !== channel.promptKey) {
           channel.promptKey = key;
           channel.requestId = crypto.randomUUID();
         }
         const answer = readDisplayAnswer(document, channel.requestId);
+        if (answer && channel.processing?.promptKey === key) return;
         if (answer && !channel.handled.has(answer.actionId)) {
-          channel.handled.add(answer.actionId);
-          latest.onAnswer(answer);
+          const processing = { actionId: answer.actionId, promptKey: key };
+          channel.processing = processing;
+          try {
+            const consumed = await latest.onAnswer(answer);
+            if (paused()) return;
+            if (consumed !== false) channel.handled.add(answer.actionId);
+          } finally {
+            if (channel.processing === processing) channel.processing = null;
+          }
           // React applies the resulting stage/contact state before the next publish.
           return;
         }

@@ -1,80 +1,63 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-29 - recorded display Snapshot checked locally._
+_Last updated: 2026-09-29 - saved-child display review checked locally._
 
-SCRUM-201's per-display recorded response Snapshot is checked locally on
-feat/display-response-snapshot, ready to fast-forward to main after cbce199.
-Full SCRUM-201 stays In Progress and NOT BUILT as a whole until its remaining
-work and staging acceptance are complete.
+SCRUM-201 now includes online saved-child review on the separate display.
+This checkpoint adds the finite child_review prompt and display.child_review
+actions while preserving StationSessionDocument, StationIntent, actionId,
+lastSeenSequence and leaseId. Full SCRUM-201 remains In Progress and NOT BUILT
+as a whole; staging acceptance and the remaining display integrations remain.
 
-GET /credentials/:id/display-snapshot now reads a saved response for that
-credential. Protected display session and intent responses save a finite
-projection before returning; pairing, Console probes, rejected credentials
-and absent refusal documents do not replace history. QR contents, contact
-answers, health records, staff lease and credentials are omitted before
-storage and again on read. Failed recording retains the last good response
-without preventing the display response. No browser receipt is claimed.
+At ticket step 8, an existing member can select a saved child, edit public
+name/DOB/age and Confirm. The authorised till performs the real child PATCH;
+only its successful response confirms the slot. Done requires every slot to
+be confirmed and returns to staff supervision at step 7. New-child entry and
+removal use explicit staff fallback. Private health/food/photo/waiver fields
+remain on the till; recorded diagnostics still contain prompt metadata only.
+This does not establish registration, check-in or persisted supervision consent.
 
-Station/credential locks and checks of park, operator, box and reset epoch
-fence recording. Current and historical park grants are required on reads.
-Revoked, moved, unassigned and archived targets retain correctly labelled
-history. The Console validates the shared DisplaySnapshotResponse contract,
-shows prepared time and status, and never substitutes a fresh station view.
-Refresh does not make a delivery. An empty record remains empty.
+Visitor, epoch, member, station and saved-child assignment fence late results.
+The visit referenceDate drives the age picker and confirmation, within one
+calendar day of server time; child confirmation uses the existing 0-17 range.
+Lost or timed-out replies retain the original PATCH body/key. Eight seconds
+bounds the transport wait; Retry is explicit. Lock/offline pause adoption and
+do not repeat the save. Other local child drafts survive polling; dirty edits
+invalidate their old confirmation. Oversized/malformed review uses staff fallback.
 
-Forward migration 0032 adds only core.display_response_snapshot, one row per
-credential, with restrictive foreign keys and finite checks. No existing
-table or applied migration changes. Database verification matches the new
-snapshot. All 187 affected existing checks pass: API 165 (station 50, fleet
-70, auth 24, route conformance 12, guards 9), shared 6, database shape 14,
-Console 2. Shared/DB/API/Console typechecks and full lint pass; Console build
-passes. Independent source/migration review passes. No new suite/dependency.
+All 149 affected existing checks pass: shared station 10, box station 32,
+API station 50, POS scan-channel 54 and native POS smoke 3. Shared/box/POS
+typechecks and full package lint pass; POS build and standalone smoke typing
+pass. No new suite, dependency or migration. Native proof uses a fresh seeded
+database and separate staff/display contexts, verifies real profile readback,
+same-key/body lost-reply retry, both display widths and staff handoff, and
+observes no registration/visit/sale/payment POST during review. Its own
+processes and database were removed after the run.
 
-The first native full ticket/browser run passed 23 checks, but its temporary
-report and images were later cleared by an ad-hoc Playwright output-path
-mistake. Committed source and earlier evidence remain intact. The isolated
-replacement proof passes six checks and regenerates reviewed LOCAL CHECK
-images: 20-local-console-recorded-response.png (10899),
-21-local-console-disconnected-history.png (10900), and
-22-local-console-revoked-response.png (10901), attached to SCRUM-201. It uses
-a synthetic public order through the real protected API and browser, with no
-sale/payment. It proves empty history, recording, disconnection while staff
-advance, reconnection, revocation and persistence through a cold API restart.
+Reviewed LOCAL CHECK screenshots on SCRUM-201: 23-local-child-save-pending.png
+(10902), 24-local-child-save-retry.png (10903), and
+25-local-child-review-confirmed.png (10904). Sanitised results and the exact
+business boundaries are in docs/qa/separate-display. Initial browser failures
+and the fixed public-step rendering mismatch are recorded there. This is
+local evidence, not a staging deployment or physical-device acceptance.
 
-The path mistake also cleared ignored payment/display helpers and three
-temporary worktree directories. Branch commits remain available. Old helper
-paths in dated notes are not runnable until rebuilt. Every temporary browser
-config now needs an explicit dedicated absolute output directory. See
-OPEN_QUESTIONS.md. Windows shell filtering and temporary config startup errors
-were corrected without changing product behaviour. Two regression assertions
-were corrected for valid stale actions and closed-park session refusal; the
-anonymous pairing table now has a precise existing tenancy-test exception.
+The prior main checkpoint c8f6375 added recorded display responses. Its CI
+36585794087 ran zero steps due to GitHub Actions billing/spending availability.
+Render's checksPass gate remains intact. Last verified live API/POS/Console/
+Launcher/Booth is 0468c38; OTO App is c416065. Recheck the next exact main CI
+and deployment after push. No new CI-packed Pi artifact is available yet.
 
-Last verified CI is cbce199 run 36581970114: zero steps, GitHub Actions
-billing/spending availability. Render's checksPass gate stays intact. Last
-verified live API/POS/Console/Launcher/Booth is 0468c38; OTO App is c416065.
-No new staging deployment or CI-packed Pi release is claimed. Check the exact
-new main run after this push. Rebuild lost temporary payment/offline proof
-helpers before the post-deploy checks; the retained simulated partial outcome
-is untouched. No physical Pi action was taken.
+Continue with F&B guest display integration, then shop, under SCRUM-201.
+Use captured quoted rows and real payment/completion facts, finite public
+projection, retained station state across lock and explicit staff fallback
+for unsupported wallet/prepaid/party paths. The scoped plan is saved in the
+QA document. Keep live legacy lookup routes until the new POS is deployed;
+retire columns only after old API readers retire in a later release.
+Rebuild the lost temporary payment/offline proof helpers before post-deploy
+verification; the retained simulated partial payment remains untouched.
 
-Next SCRUM-201 slice: online existing-member saved-child review at ticket
-step 8 using the separate display. Use a typed finite child_review prompt
-and display.child_review actions, stable visitor/request/slot bindings and
-existing sequence CAS. Confirm must await the staff-authorised child PATCH;
-late replies must be fenced from another visitor. New children/removal and
-step 7 supervision retain explicit staff fallback. Generic prompt answers
-must not bypass validation. Health, food, photos and waiver data stay on the
-till. This transport slice does not establish S2-13 registration/check-in.
-The detailed plan is in docs/qa/separate-display/README.md. F&B/shop display
-integration and full story staging proof remain. Keep the live legacy lookup
-routes until the independent-display POS is verified deployed; remove columns
-only in a later forward migration after old API readers retire.
-
-Continue independent work while deployment or an owner decision is pending.
-After each substantial part update checkpoint docs, push by explicit file
-list, and update Jira status and progress in the same turn. Deployed requires
-reviewed staging screenshots attached and named. No secret values in evidence.
+After every substantial part: update this checkpoint and Jira status/comment
+in the same turn as the push. Deployed still requires named, attached staging
+screenshots. Pending decisions and operational blockers are in OPEN_QUESTIONS.md.
 
 Current staging: SCRUM-206 online Slice F source `0468c38` is LIVE on
 API, POS, Console, Launcher and Booth after green CI 36547262414. OTO App

@@ -3,7 +3,7 @@ import { cartQuote, settle } from './support/fixtures';
 import { renderHook, type RenderedHook } from './support/hooks';
 import type { StationSessionDocument } from '@oto/shared';
 import { displayRequest, DisplayError, newDisplayCredential, newerDisplaySession, type DisplaySession } from '@/api/display';
-import { readDisplayAnswer, readTicketDisplayView, takeTicketDisplayLeaseForSignOut, ticketDisplayPresentation, useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
+import { childReviewPatch, readDisplayAnswer, readTicketDisplayView, takeTicketDisplayLeaseForSignOut, ticketDisplayPresentation, useChildReviewSave, useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
 import { authApi } from '@/api/platform';
 import type { Sale } from '@/types';
 import {
@@ -28,8 +28,9 @@ vi.mock('react', () => import('./support/hooks'));
 
 describe('SCRUM-201 — separate display transport and station presentation', () => {
   let displayHook: RenderedHook<void, ReturnType<typeof useTicketDisplay>> | undefined;
+  let childSaveHook: RenderedHook<void, ReturnType<typeof useChildReviewSave>> | undefined;
   beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { displayHook?.unmount(); displayHook = undefined; vi.useRealTimers(); vi.unstubAllGlobals(); });
+  afterEach(() => { displayHook?.unmount(); displayHook = undefined; childSaveHook?.unmount(); childSaveHook = undefined; vi.useRealTimers(); vi.unstubAllGlobals(); });
 
   const state = (overrides: Partial<TicketDisplayState> = {}): TicketDisplayState => ({
     stage:'identify', step:1, sessionKey:'visit-1', tier:'tourist', phone:'', nickname:'', contactChannel:'whatsapp', member:null, ...overrides,
@@ -52,6 +53,171 @@ describe('SCRUM-201 — separate display transport and station presentation', ()
     stage:'order',step:3,sale:sale(),totals:cartQuote(200).totals,rateMode:'weekday',online:true,...overrides,
   });
   const presented = (input: TicketDisplayState): StationSessionDocument => document(ticketDisplayPresentation(input,'prompt-1'));
+  const childReview = (): NonNullable<TicketDisplayState['childReview']> => ({
+    visitorId: 'visit-review', referenceDate: '2026-09-29',
+    slots: [{ id: 'slot-1', savedChildId: 'child-1', name: 'Child one', dateOfBirth: '2020-01-10', ageYears: 6, confirmed: false }],
+    choices: [{ id: 'child-1', name: 'Child one', dateOfBirth: '2020-01-10', ageYears: 6 }],
+    save: { status: 'idle', slotId: null, actionId: null }, canContinue: false,
+  });
+  const savedChild = { id: 'child-1', childName: 'Child one', childAge: 6, dateOfBirth: '2020-01-10',
+    allergiesMedical: 'Private health', foodRestrictions: 'Private food', savedAt: '', updatedAt: '' };
+  const apiChild = { id: 'child-1', name: 'Child corrected', dateOfBirth: '2020-01-10', ageYears: 6,
+    allergies: 'Private health', medicalNotes: null, medicalAlert: true, dietary: null,
+    foodRestrictions: 'Private food', notes: null, lastConfirmedAt: null };
+
+  it('publishes a finite online child review without private profile fields and refuses malformed fallback', () => {
+    const input = state({ stage: 'input', step: 8, online: true, childReview: childReview() });
+    const view = readTicketDisplayView(presented(input));
+    expect(view?.childReview?.slots[0].name).toBe('Child one');
+    expect(view?.childReview?.referenceDate).toBe('2026-09-29');
+    expect(readTicketDisplayView({ ...presented(input), step: null })?.childReview).toEqual(view?.childReview);
+    expect(JSON.stringify(presented(input))).not.toMatch(/allergies|medical|foodRestrictions|savedAt/);
+    const changed = childReview(); changed.slots[0].dateOfBirth = '2020-02-31';
+    expect(ticketDisplayPresentation({ ...input, childReview: changed }, 'prompt-1').cart.supported).toBe(false);
+    expect(readTicketDisplayView(presented({ ...input, online: false }))).toBeNull();
+    expect(readTicketDisplayView(presented({ ...input, childReview: undefined }))).toBeNull();
+    expect(childReviewPatch({ name: ' Child corrected ', dateOfBirth: '2020-01-10', ageYears: 6 }, savedChild))
+      .toEqual({ name: 'Child corrected' });
+    expect(childReviewPatch({ name: 'Child one', dateOfBirth: null, ageYears: 7 }, savedChild))
+      .toEqual({ dateOfBirth: null, ageYears: 7 });
+  });
+
+  it('reads only the current child-review answer and visitor at the input stage', () => {
+    const doc = presented(state({ stage: 'input', step: 8, online: true, childReview: childReview() }));
+    const payload = { action: 'confirm', requestId: 'prompt-1', visitorId: 'visit-review', slotId: 'slot-1',
+      savedChildId: 'child-1', name: 'Child corrected', dateOfBirth: '2020-01-10', ageYears: 6 };
+    const answered = { ...doc, prompt: { ...doc.prompt, answer: { type: 'child_review', actionId: 'confirm-1', payload } } };
+    expect(readDisplayAnswer(answered, 'prompt-1')?.type).toBe('child_review');
+    expect(readDisplayAnswer(answered, 'new-request')).toBeNull();
+    expect(readDisplayAnswer({ ...answered, stage: 'payment' }, 'prompt-1')).toBeNull();
+    expect(readDisplayAnswer({ ...answered, prompt: { ...answered.prompt, answer: {
+      type: 'child_review', actionId: 'confirm-1', payload: { ...payload, visitorId: 'old-visit' },
+    } } }, 'prompt-1')).toBeNull();
+  });
+
+  it('keeps an unreadable child save frozen until explicit retry with the same body and key', async () => {
+    const writes: RequestInit[] = [];
+    const request = vi.fn(async (_path: string, init?: RequestInit) => {
+      writes.push(init!);
+      if (writes.length === 1) return { ...reply(null), json: async () => { throw new SyntaxError('Unreadable reply'); } } as Response;
+      return reply({ child: apiChild });
+    });
+    vi.stubGlobal('fetch', request);
+    const onSaved = vi.fn();
+    childSaveHook = renderHook(() => useChildReviewSave({ scope: 'visit-1', paused: false, isCurrent: () => true, onSaved }));
+    const patch = { name: 'Child corrected' };
+    await expect(childSaveHook.result.current.confirm('slot-1', 'child-1', patch, 'confirm-1')).resolves.toBe(false);
+    expect(childSaveHook.result.current.save.status).toBe('failed');
+    patch.name = 'Later unsent edit';
+    childSaveHook.rerender();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(request).toHaveBeenCalledTimes(1);
+    await expect(childSaveHook.result.current.confirm('slot-1', 'child-1', patch, 'confirm-2')).resolves.toBe(false);
+    await expect(childSaveHook.result.current.retry('slot-1', 'wrong-action')).resolves.toBe(false);
+    await expect(childSaveHook.result.current.retry('slot-1', 'confirm-1')).resolves.toBe(true);
+    expect(writes.map(write => JSON.parse(String(write.body)))).toEqual([{ name: 'Child corrected' }, { name: 'Child corrected' }]);
+    expect(writes.map(write => (write.headers as Record<string, string>)['idempotency-key']))
+      .toEqual(['child-review:confirm-1', 'child-review:confirm-1']);
+    expect(onSaved).toHaveBeenCalledExactlyOnceWith('slot-1', apiChild);
+    expect(childSaveHook.result.current.save.status).toBe('idle');
+  });
+
+  it('retains a save reply during lock and adopts it once after unlock without repeating PATCH', async () => {
+    let paused = false;
+    let finish: ((response: Response) => void) | undefined;
+    const request = vi.fn(() => new Promise<Response>(resolve => { finish = resolve; }));
+    vi.stubGlobal('fetch', request);
+    const onSaved = vi.fn();
+    childSaveHook = renderHook(() => useChildReviewSave({ scope: 'visit-lock', paused, isCurrent: () => true, onSaved }));
+    const result = childSaveHook.result.current.confirm('slot-1', 'child-1', { name: 'Child corrected' }, 'confirm-lock');
+    expect(childSaveHook.result.current.save.status).toBe('saving');
+    paused = true; childSaveHook.rerender();
+    finish?.(reply({ child: apiChild }));
+    await expect(result).resolves.toBe(false);
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(childSaveHook.result.current.save.status).toBe('saving');
+    paused = false; childSaveHook.rerender();
+    expect(onSaved).toHaveBeenCalledExactlyOnceWith('slot-1', apiChild);
+    expect(childSaveHook.result.current.save.status).toBe('idle');
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a failed save during lock or disconnection until an explicit same-action retry', async () => {
+    let paused = false;
+    let fail: ((failure: Error) => void) | undefined;
+    const writes: RequestInit[] = [];
+    const request = vi.fn((_path: string, init?: RequestInit) => {
+      writes.push(init!);
+      return writes.length === 1 ? new Promise<Response>((_resolve, reject) => { fail = reject; })
+        : Promise.resolve(reply({ child: apiChild }));
+    });
+    vi.stubGlobal('fetch', request);
+    const onSaved = vi.fn();
+    childSaveHook = renderHook(() => useChildReviewSave({ scope: 'visit-retained', paused, isCurrent: () => true, onSaved }));
+    const result = childSaveHook.result.current.confirm('slot-1', 'child-1', { name: 'Child corrected' }, 'confirm-retained');
+    paused = true; childSaveHook.rerender();
+    fail?.(new TypeError('Reply lost'));
+    await expect(result).resolves.toBe(false);
+    paused = false; childSaveHook.rerender();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(childSaveHook.result.current.save.status).toBe('failed');
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(request).toHaveBeenCalledTimes(1);
+    await expect(childSaveHook.result.current.confirm('slot-1', 'child-1', { name: 'Child corrected' }, 'fresh-action')).resolves.toBe(false);
+    expect(request).toHaveBeenCalledTimes(1);
+    await expect(childSaveHook.result.current.retry('slot-1', 'confirm-retained')).resolves.toBe(true);
+    expect(writes[1].body).toBe(writes[0].body);
+    expect((writes[1].headers as Record<string, string>)['idempotency-key'])
+      .toBe((writes[0].headers as Record<string, string>)['idempotency-key']);
+  });
+
+  it('aborts an unanswered save at eight seconds and retries its unknown outcome without overlapping transports', async () => {
+    const writes: RequestInit[] = [];
+    let activeRequests = 0;
+    let maximumActive = 0;
+    const request = vi.fn((_path: string, init?: RequestInit) => {
+      writes.push(init!); activeRequests += 1; maximumActive = Math.max(maximumActive, activeRequests);
+      if (writes.length > 1) { activeRequests -= 1; return Promise.resolve(reply({ child: apiChild })); }
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => { activeRequests -= 1; reject(new DOMException('Aborted', 'AbortError')); });
+      });
+    });
+    vi.stubGlobal('fetch', request);
+    childSaveHook = renderHook(() => useChildReviewSave({ scope: 'visit-timeout', paused: false, isCurrent: () => true, onSaved: vi.fn() }));
+    const result = childSaveHook.result.current.confirm('slot-1', 'child-1', { name: 'Child corrected' }, 'confirm-timeout');
+    await vi.advanceTimersByTimeAsync(7_999);
+    expect(childSaveHook.result.current.save.status).toBe('saving');
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(result).resolves.toBe(false);
+    expect(writes[0].signal?.aborted).toBe(true);
+    expect(childSaveHook.result.current.save.status).toBe('failed');
+    await expect(childSaveHook.result.current.retry('slot-1', 'confirm-timeout')).resolves.toBe(true);
+    expect(maximumActive).toBe(1);
+    expect(writes[1].body).toBe(writes[0].body);
+    expect((writes[1].headers as Record<string, string>)['idempotency-key'])
+      .toBe((writes[0].headers as Record<string, string>)['idempotency-key']);
+  });
+
+  it('drops an old visitor or reassigned slot reply without confirming or leaving the new review busy', async () => {
+    for (const change of ['visitor', 'slot'] as const) {
+      let scope = 'visit-original';
+      let selected = 'child-1';
+      let finish: ((response: Response) => void) | undefined;
+      vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { finish = resolve; })));
+      const onSaved = vi.fn();
+      childSaveHook = renderHook(() => useChildReviewSave({ scope, paused: false,
+        isCurrent: (expected, _slot, child) => expected === scope && child === selected, onSaved }));
+      const result = childSaveHook.result.current.confirm('slot-1', 'child-1', { name: 'Child corrected' }, 'confirm-old');
+      if (change === 'visitor') scope = 'visit-new'; else selected = 'child-2';
+      childSaveHook.rerender();
+      expect(childSaveHook.result.current.save.status).toBe('idle');
+      finish?.(reply({ child: apiChild }));
+      await expect(result).resolves.toBe(false);
+      expect(onSaved).not.toHaveBeenCalled();
+      expect(childSaveHook.result.current.save.status).toBe('idle');
+      childSaveHook.unmount(); childSaveHook = undefined;
+    }
+  });
 
   it('uses a display bearer without staff cookies or staff lock events', async () => {
     const dispatch = vi.fn();

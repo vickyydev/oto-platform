@@ -1,9 +1,69 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 29 September 2026 evening - saved-child display review
+
+SCRUM-201 now includes online saved-child review on the separate display.
+This checkpoint adds the finite child_review prompt and display.child_review
+actions while preserving StationSessionDocument, StationIntent, actionId,
+lastSeenSequence and leaseId. Full SCRUM-201 remains In Progress and NOT BUILT
+as a whole; staging acceptance and the remaining display integrations remain.
+
+At ticket step 8, an existing member can select a saved child, edit public
+name/DOB/age and Confirm. The authorised till performs the real child PATCH;
+only its successful response confirms the slot. Done requires every slot to
+be confirmed and returns to staff supervision at step 7. New-child entry and
+removal use explicit staff fallback. Private health/food/photo/waiver fields
+remain on the till; recorded diagnostics still contain prompt metadata only.
+This does not establish registration, check-in or persisted supervision consent.
+
+Visitor, epoch, member, station and saved-child assignment fence late results.
+The visit referenceDate drives the age picker and confirmation, within one
+calendar day of server time; child confirmation uses the existing 0-17 range.
+Lost or timed-out replies retain the original PATCH body/key. Eight seconds
+bounds the transport wait; Retry is explicit. Lock/offline pause adoption and
+do not repeat the save. Other local child drafts survive polling; dirty edits
+invalidate their old confirmation. Oversized/malformed review uses staff fallback.
+
+All 149 affected existing checks pass: shared station 10, box station 32,
+API station 50, POS scan-channel 54 and native POS smoke 3. Shared/box/POS
+typechecks and full package lint pass; POS build and standalone smoke typing
+pass. No new suite, dependency or migration. Native proof uses a fresh seeded
+database and separate staff/display contexts, verifies real profile readback,
+same-key/body lost-reply retry, both display widths and staff handoff, and
+observes no registration/visit/sale/payment POST during review. Its own
+processes and database were removed after the run.
+
+Reviewed LOCAL CHECK screenshots on SCRUM-201: 23-local-child-save-pending.png
+(10902), 24-local-child-save-retry.png (10903), and
+25-local-child-review-confirmed.png (10904). Sanitised results and the exact
+business boundaries are in docs/qa/separate-display. Initial browser failures
+and the fixed public-step rendering mismatch are recorded there. This is
+local evidence, not a staging deployment or physical-device acceptance.
+
+The prior main checkpoint c8f6375 added recorded display responses. Its CI
+36585794087 ran zero steps due to GitHub Actions billing/spending availability.
+Render's checksPass gate remains intact. Last verified live API/POS/Console/
+Launcher/Booth is 0468c38; OTO App is c416065. Recheck the next exact main CI
+and deployment after push. No new CI-packed Pi artifact is available yet.
+
+Continue with F&B guest display integration, then shop, under SCRUM-201.
+Use captured quoted rows and real payment/completion facts, finite public
+projection, retained station state across lock and explicit staff fallback
+for unsupported wallet/prepaid/party paths. The scoped plan is saved in the
+QA document. Keep live legacy lookup routes until the new POS is deployed;
+retire columns only after old API readers retire in a later release.
+Rebuild the lost temporary payment/offline proof helpers before post-deploy
+verification; the retained simulated partial payment remains untouched.
+
+After every substantial part: update this checkpoint and Jira status/comment
+in the same turn as the push. Deployed still requires named, attached staging
+screenshots. Pending decisions and operational blockers are in OPEN_QUESTIONS.md.
+
 ## STOP POINT - 29 September 2026 evening - recorded display Snapshot
 
-SCRUM-201's per-display recorded response Snapshot is checked locally on
-feat/display-response-snapshot, ready to fast-forward to main after cbce199.
+SCRUM-201's per-display recorded response Snapshot is committed and pushed
+on main c8f6375. Online saved-child review is now in progress on
+feat/display-child-review.
 Full SCRUM-201 stays In Progress and NOT BUILT as a whole until its remaining
 work and staging acceptance are complete.
 
@@ -50,11 +110,13 @@ were corrected without changing product behaviour. Two regression assertions
 were corrected for valid stale actions and closed-park session refusal; the
 anonymous pairing table now has a precise existing tenancy-test exception.
 
-Last verified CI is cbce199 run 36581970114: zero steps, GitHub Actions
+Exact-main CI c8f6375 run 36585794087 / check 109465628907: zero steps,
+GitHub Actions
 billing/spending availability. Render's checksPass gate stays intact. Last
 verified live API/POS/Console/Launcher/Booth is 0468c38; OTO App is c416065.
-No new staging deployment or CI-packed Pi release is claimed. Check the exact
-new main run after this push. Rebuild lost temporary payment/offline proof
+No new staging deployment or CI-packed Pi release is claimed. Render was
+rechecked after the push and remains on those live commits. Rebuild lost
+temporary payment/offline proof
 helpers before the post-deploy checks; the retained simulated partial outcome
 is untouched. No physical Pi action was taken.
 

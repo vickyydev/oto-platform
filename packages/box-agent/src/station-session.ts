@@ -23,6 +23,11 @@ import type {
 } from './store';
 import { silentLog, type AgentLog } from './transport';
 import {
+  ChildReviewActionSchema,
+  ChildReviewAnswerSchema,
+  ChildReviewDocumentPromptSchema,
+  ChildReviewPromptSchema,
+  childReviewAge,
   DisplayCartSchema,
   DisplayMemberSchema,
   DisplayPaymentSchema,
@@ -840,6 +845,8 @@ export function redactScanForCustomer(message: StationScanMessage): StationScanM
 export function redactForCustomer(document: StationSessionDocument): StationSessionDocument {
   const totals = DisplayTotalsSchema.safeParse(document.totals);
   const payment = DisplayPaymentSchema.safeParse(document.payment);
+  const childReview = document.prompt?.kind === 'child_review'
+    ? ChildReviewDocumentPromptSchema.safeParse(document.prompt) : null;
   return {
     ...document,
     // The till's wizard position means nothing on the display and tells anyone
@@ -849,7 +856,9 @@ export function redactForCustomer(document: StationSessionDocument): StationSess
     cart: customerDisplayCart(document.cart, document.stage),
     totals: totals.success ? totals.data : null,
     payment: payment.success ? payment.data : null,
-    prompt: stripKeys(document.prompt),
+    // Date of birth is permitted only in this finite, visitor-bound review.
+    // The generic customer deny-list remains unchanged everywhere else.
+    prompt: childReview ? childReview.success ? childReview.data : null : stripKeys(document.prompt),
     member: pickMemberFields(document.member),
   };
 }
@@ -1002,11 +1011,62 @@ function displayAnswer(ctx: IntentContext, type: 'identify' | 'skip_identify' | 
   } });
 }
 
+function childReviewAnswer({ document, intent, serverTime }: IntentContext): IntentOutcome {
+  if (document.step !== 8 || document.prompt?.kind !== 'child_review') return wrong('This screen is not reviewing saved children.');
+  const prompt = ChildReviewDocumentPromptSchema.safeParse(document.prompt);
+  const action = ChildReviewActionSchema.safeParse(intent.payload);
+  if (!prompt.success || !action.success || !boundedText(intent.actionId, 64)
+    || action.data.requestId !== prompt.data.requestId || action.data.visitorId !== prompt.data.visitorId) {
+    return notPermitted('This answer does not match the current child review.');
+  }
+  const payload = action.data;
+  if (!currentChildReviewDate(prompt.data.referenceDate, serverTime)) {
+    return notPermitted('Ask staff to refresh this child review before continuing.');
+  }
+  if (prompt.data.answer) {
+    if (prompt.data.answer.actionId !== intent.actionId) return notPermitted('The till is still handling the answer already sent.');
+    if (JSON.stringify(prompt.data.answer.payload) !== JSON.stringify(payload)) return notPermitted('This action was already sent with different details.');
+    return ok({ prompt: prompt.data });
+  }
+  if (payload.action !== 'staff_help' && payload.action !== 'retry' && prompt.data.save.status !== 'idle') {
+    return notPermitted('Finish the current child save before changing this review.');
+  }
+  if ('slotId' in payload && !prompt.data.slots.some(slot => slot.id === payload.slotId)) {
+    return notPermitted('That child slot is not in this review.');
+  }
+  if (payload.action === 'select' && payload.choiceId !== null
+    && (!prompt.data.choices.some(choice => choice.id === payload.choiceId)
+      || prompt.data.slots.some(slot => slot.id !== payload.slotId && slot.savedChildId === payload.choiceId))) {
+    return notPermitted('That saved child is not available for this slot.');
+  }
+  if (payload.action === 'confirm') {
+    const slot = prompt.data.slots.find(slot => slot.id === payload.slotId);
+    if (slot?.savedChildId !== payload.savedChildId) return notPermitted('That saved child is no longer assigned to this slot.');
+    if (payload.dateOfBirth !== null && childReviewAge(payload.dateOfBirth, prompt.data.referenceDate) !== payload.ageYears) {
+      return notPermitted('Enter a valid child date of birth and matching age.');
+    }
+  }
+  if (payload.action === 'done' && !prompt.data.canContinue) return notPermitted('Confirm every child before continuing.');
+  if (payload.action === 'retry' && (prompt.data.save.status !== 'failed'
+    || payload.slotId !== prompt.data.save.slotId || payload.retryActionId !== prompt.data.save.actionId)) {
+    return notPermitted('This retry does not match the child save that failed.');
+  }
+  return ok({ prompt: { ...prompt.data,
+    answer: { type: 'child_review', actionId: intent.actionId, payload }, answeredAt: serverTime,
+  } });
+}
+
+function currentChildReviewDate(referenceDate: string, serverTime: string): boolean {
+  const difference = Math.abs(Date.parse(`${referenceDate}T00:00:00.000Z`)
+    - Date.parse(`${serverTime.slice(0, 10)}T00:00:00.000Z`));
+  return difference <= 86_400_000;
+}
+
 export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
   'session.publish_display': {
     sources: ['till'],
     requiresLease: true,
-    apply({ document, intent }) {
+    apply({ document, intent, serverTime }) {
       const { stage, step, cart, member, totals, payment, prompt } = intent.payload;
       if (!exactFields(intent.payload, ['stage', 'step', 'cart', 'member', 'totals', 'payment', 'prompt'])
         || typeof stage !== 'string' || !isStage(stage)
@@ -1028,13 +1088,27 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
         if (!boundedText(proposedPrompt.requestId, 64)) return notPermitted('A display prompt needs a stable request id.');
         if (stage !== (proposedPrompt.kind === 'identify' ? 'identify' : 'input')) return wrong('That prompt belongs to another display stage.');
       }
-      const savedPrompt = proposedPrompt ? Object.fromEntries(['kind', 'requestId', 'phone', 'nickname', 'contactChannel']
-        .filter((key) => key in proposedPrompt).map((key) => [key, proposedPrompt[key]])) : null;
+      const childReview = proposedPrompt?.kind === 'child_review' ? ChildReviewPromptSchema.safeParse(proposedPrompt) : null;
+      if (childReview && !childReview.success) return notPermitted('That child review is not valid.');
+      if (childReview && (stage !== 'input' || step !== 8)) return wrong('Child review belongs to its saved-children input screen.');
+      if (childReview?.success && !currentChildReviewDate(childReview.data.referenceDate, serverTime)) {
+        return notPermitted('Ask staff to refresh this child review before continuing.');
+      }
+      const savedPrompt: Record<string, unknown> | null = childReview?.success ? { ...childReview.data }
+        : proposedPrompt ? Object.fromEntries(['kind', 'requestId', 'phone', 'nickname', 'contactChannel']
+          .filter((key) => key in proposedPrompt).map((key) => [key, proposedPrompt[key]])) : null;
       if (savedPrompt) {
         delete savedPrompt.answer;
         delete savedPrompt.answeredAt;
-        if (savedPrompt.requestId && savedPrompt.requestId === document.prompt?.requestId && savedPrompt.kind === document.prompt.kind) {
-          if (document.prompt.answer !== undefined) savedPrompt.answer = document.prompt.answer;
+        if (savedPrompt.requestId && savedPrompt.requestId === document.prompt?.requestId && savedPrompt.kind === document.prompt.kind
+          && (savedPrompt.kind !== 'child_review' || savedPrompt.visitorId === document.prompt.visitorId)) {
+          if (document.prompt.answer !== undefined) {
+            if (savedPrompt.kind !== 'child_review') savedPrompt.answer = document.prompt.answer;
+            else {
+              const answer = ChildReviewAnswerSchema.safeParse(document.prompt.answer);
+              if (answer.success) savedPrompt.answer = answer.data;
+            }
+          }
           if (document.prompt.answeredAt !== undefined) savedPrompt.answeredAt = document.prompt.answeredAt;
         }
       }
@@ -1053,7 +1127,7 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
         member: shownMember.success ? shownMember.data : null,
         totals: shownTotals.success ? shownTotals.data : null,
         payment: shownPayment.success ? shownPayment.data : null,
-        prompt: stripKeys(savedPrompt),
+        prompt: savedPrompt?.kind === 'child_review' ? savedPrompt : stripKeys(savedPrompt),
       });
     },
   },
@@ -1068,6 +1142,10 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
   'display.contact_done': {
     sources: ['display'], stages: ['input'], requiresLease: false, advanceSequence: true,
     apply: (ctx) => displayAnswer(ctx, 'contact_done'),
+  },
+  'display.child_review': {
+    sources: ['display'], stages: ['input'], requiresLease: false, advanceSequence: true,
+    apply: childReviewAnswer,
   },
   /** The display's language toggle, which the prototype already shows. */
   'display.set_language': {
@@ -1088,7 +1166,7 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
     requiresLease: false,
     apply({ document, intent }) {
       if (!document.prompt) return wrong('Nothing is being asked on this screen.');
-      if (['identify', 'contact'].includes(String(document.prompt.kind))) return notPermitted('Use the matching display action for this request.');
+      if (['identify', 'contact', 'child_review'].includes(String(document.prompt.kind))) return notPermitted('Use the matching display action for this request.');
       if (String(document.prompt.kind).toLowerCase().replace(/[^a-z]/g, '').includes('consent') && document.stage !== 'input') {
         return wrong('Consent can only be answered on its input screen.');
       }

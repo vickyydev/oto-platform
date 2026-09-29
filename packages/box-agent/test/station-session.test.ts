@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import type { ChildReviewPrompt } from '@oto/shared';
 
 import {
   STATION_LEASE_TTL_S,
@@ -70,6 +71,182 @@ function publicPresentation() {
       expiresAt: plus(AT, 60_000), status: 'pending', offline: false, online: true },
   };
 }
+
+function childReviewPrompt(overrides: Partial<ChildReviewPrompt> = {}): ChildReviewPrompt {
+  return { kind: 'child_review', requestId: 'review-1', visitorId: 'visitor-1', referenceDate: '2026-09-20',
+    slots: [{ id: 'slot-1', savedChildId: 'child-1', name: 'Nok', dateOfBirth: '2020-03-14', ageYears: 6, confirmed: false }],
+    choices: [{ id: 'child-1', name: 'Nok', dateOfBirth: '2020-03-14', ageYears: 6 },
+      { id: 'child-2', name: 'Mali', dateOfBirth: null, ageYears: 8 }],
+    save: { status: 'idle', slotId: null, actionId: null }, canContinue: false, ...overrides };
+}
+
+async function openChildReview() {
+  const h = await openManager();
+  const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'child-review-till', holderKind: 'till' });
+  assert.ok(claim.ok);
+  const publish = async (prompt: unknown, stage = 'input', step = 8) => {
+    const current = await h.manager.open(STATION_ID);
+    return h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: current.sequence, payload: { stage, step, prompt } }, { source: 'till' });
+  };
+  const published = await publish(childReviewPrompt());
+  assert.ok(published.ok);
+  return { ...h, claim, publish, published };
+}
+
+test('saved-child review publishes only finite child details and keeps diagnostic events private', async () => {
+  const h = await openChildReview();
+  try {
+    const prompt = childReviewPrompt();
+    const published = await h.publish({ ...prompt, medicalNotes: 'private-medical', token: 'private-extra',
+      slots: prompt.slots.map(slot => ({ ...slot, allergies: 'private-allergy', childPhotoUrl: 'private-photo' })),
+      choices: prompt.choices.map(choice => ({ ...choice, medicalNotes: 'private-choice' })),
+      answer: { type: 'child_review', actionId: 'forged', payload: { action: 'done' } } });
+    assert.ok(published.ok);
+    const publicDoc = h.manager.snapshotFor(published.document, 'customer', null).document;
+    assert.deepEqual(publicDoc.prompt, prompt);
+    assert.ok(JSON.stringify(publicDoc).includes('2020-03-14'), 'DOB is allowed only in this finite review prompt');
+    assert.doesNotMatch(JSON.stringify(publicDoc), /private-|forged/);
+    const answered = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'confirm-1',
+      lastSeenSequence: published.document.sequence, payload: { action: 'confirm', requestId: prompt.requestId, visitorId: prompt.visitorId,
+        slotId: 'slot-1', savedChildId: 'child-1', name: ' Nok corrected ', dateOfBirth: '2020-03-14', ageYears: 6 } },
+    { source: 'display', deviceId: 'review-display' });
+    assert.ok(answered.ok);
+    const publicAnswer = h.manager.snapshotFor(answered.document, 'customer', null).document.prompt?.answer;
+    assert.deepEqual(publicAnswer, { type: 'child_review', actionId: 'confirm-1', payload: {
+      action: 'confirm', requestId: prompt.requestId, visitorId: prompt.visitorId, slotId: 'slot-1', savedChildId: 'child-1',
+      name: 'Nok corrected', dateOfBirth: '2020-03-14', ageYears: 6 } });
+    assert.equal(answered.document.prompt?.answeredAt, AT);
+    assert.doesNotMatch(JSON.stringify(h.events), /Nok corrected|2020-03-14|private-/);
+    assert.equal(h.facts.length, 0, 'review transport does not register, check in or collect money');
+  } finally { h.close(); }
+});
+
+test('saved-child review refuses stale visitor, source, assignment and forged child details', async () => {
+  const h = await openChildReview();
+  try {
+    const fence = { requestId: 'review-1', visitorId: 'visitor-1' };
+    const confirm = { ...fence, action: 'confirm', slotId: 'slot-1', savedChildId: 'child-1', name: 'Nok', dateOfBirth: '2020-03-14', ageYears: 6 };
+    for (const payload of [
+      { ...confirm, requestId: 'old-review' }, { ...confirm, visitorId: 'old-visitor' }, { ...confirm, slotId: 'other-slot' },
+      { ...confirm, savedChildId: 'child-2' }, { ...confirm, ageYears: 7 }, { ...confirm, dateOfBirth: '2026-09-21', ageYears: 0 },
+      { ...confirm, dateOfBirth: '2020-02-30' }, { ...confirm, ageYears: 18 }, { ...confirm, medicalNotes: 'private' },
+      { ...fence, action: 'select', slotId: 'slot-1', choiceId: 'undeclared' }, { ...fence, action: 'done' },
+      { ...fence, action: 'retry', slotId: 'slot-1', retryActionId: 'unknown' },
+    ]) {
+      const result = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'refused',
+        lastSeenSequence: h.published.document.sequence, payload }, { source: 'display' });
+      assert.equal(result.ok, false);
+    }
+    for (const source of ['till', 'console'] as const) {
+      const result = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', leaseId: h.claim.lease.leaseId,
+        lastSeenSequence: h.published.document.sequence, actionId: 'wrong-source', payload: confirm }, { source });
+      assert.equal(result.ok, false);
+    }
+    const generic = await h.manager.applyIntent(STATION_ID, { type: 'display.answer_prompt', actionId: 'generic',
+      lastSeenSequence: h.published.document.sequence, payload: { value: true } }, { source: 'display' });
+    assert.equal(generic.ok, false);
+    assert.equal((await h.manager.open(STATION_ID)).sequence, h.published.document.sequence);
+    assert.equal((await h.manager.open(STATION_ID)).prompt?.answer, undefined);
+  } finally { h.close(); }
+});
+
+test('saved-child review is first-answer-wins and preserves the original action through publication and replay', async () => {
+  const h = await openChildReview();
+  try {
+    const intent = { type: 'display.child_review', actionId: 'select-action', lastSeenSequence: h.published.document.sequence,
+      payload: { action: 'select', requestId: 'review-1', visitorId: 'visitor-1', slotId: 'slot-1', choiceId: 'child-2' } };
+    const answer = await h.manager.applyIntent(STATION_ID, intent, { source: 'display' });
+    assert.ok(answer.ok);
+    assert.equal(answer.document.sequence, h.published.document.sequence + 1);
+    const directReplay = await h.manager.applyIntent(STATION_ID, intent, { source: 'display' });
+    assert.equal(directReplay.ok, false, 'an old sequence must rehydrate before a same-action replay');
+    if (!directReplay.ok) {
+      assert.equal(directReplay.refusal, 'stale');
+      assert.deepEqual(directReplay.document?.prompt?.answer, answer.document.prompt?.answer);
+    }
+    const republish = await h.publish({ ...childReviewPrompt(), answer: null, answeredAt: 'forged' });
+    assert.ok(republish.ok);
+    assert.deepEqual(republish.document.prompt?.answer, answer.document.prompt?.answer);
+    assert.equal(republish.document.prompt?.answeredAt, AT);
+    const replay = await h.manager.applyIntent(STATION_ID, { ...intent, lastSeenSequence: republish.document.sequence }, { source: 'display' });
+    assert.ok(replay.ok);
+    for (const changed of [ { ...intent, actionId: 'replacement-action' },
+      { ...intent, payload: { ...intent.payload, choiceId: 'child-1' } } ]) {
+      const refused = await h.manager.applyIntent(STATION_ID, { ...changed, lastSeenSequence: replay.document.sequence }, { source: 'display' });
+      assert.equal(refused.ok, false);
+    }
+    const next = await h.publish(childReviewPrompt({ requestId: 'review-2' }));
+    assert.ok(next.ok);
+    assert.equal(next.document.prompt?.answer, undefined);
+    const stale = await h.manager.applyIntent(STATION_ID, { ...intent, lastSeenSequence: next.document.sequence }, { source: 'display' });
+    assert.equal(stale.ok, false);
+  } finally { h.close(); }
+});
+
+test('saved-child saves freeze edits and require the original failed action, while staff help remains available', async () => {
+  const h = await openChildReview();
+  try {
+    const fence = { requestId: 'review-1', visitorId: 'visitor-1' };
+    for (const status of ['saving', 'failed'] as const) {
+      const published = await h.publish(childReviewPrompt({ save: { status, slotId: 'slot-1', actionId: 'original-save' } }));
+      assert.ok(published.ok);
+      for (const payload of [{ ...fence, action: 'back' }, { ...fence, action: 'done' },
+        { ...fence, action: 'select', slotId: 'slot-1', choiceId: null },
+        { ...fence, action: 'confirm', slotId: 'slot-1', savedChildId: 'child-1', name: 'Nok', dateOfBirth: null, ageYears: 6 },
+        { ...fence, action: 'retry', slotId: 'slot-1', retryActionId: 'changed-save' }]) {
+        const result = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'blocked',
+          lastSeenSequence: published.document.sequence, payload }, { source: 'display' });
+        assert.equal(result.ok, false);
+      }
+      const payload = status === 'failed' ? { ...fence, action: 'retry', slotId: 'slot-1', retryActionId: 'original-save' }
+        : { ...fence, action: 'staff_help' };
+      const accepted = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: `accepted-${status}`,
+        lastSeenSequence: published.document.sequence, payload }, { source: 'display' });
+      assert.ok(accepted.ok);
+      const cleared = await h.publish(childReviewPrompt({ requestId: 'review-2' }));
+      assert.ok(cleared.ok);
+    }
+    const confirmedSlot = childReviewPrompt().slots[0];
+    assert.ok(confirmedSlot);
+    const confirmed = childReviewPrompt({ requestId: 'review-done', slots: [{ ...confirmedSlot, confirmed: true }], canContinue: true });
+    const published = await h.publish(confirmed);
+    assert.ok(published.ok);
+    const done = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'done', lastSeenSequence: published.document.sequence,
+      payload: { action: 'done', requestId: confirmed.requestId, visitorId: confirmed.visitorId } }, { source: 'display' });
+    assert.ok(done.ok);
+    assert.equal(h.facts.length, 0);
+  } finally { h.close(); }
+});
+
+test('saved-child publication fails closed for wrong step, stale dates, duplicate assignment and excessive drafts', async () => {
+  const h = await openChildReview();
+  try {
+    const prompt = childReviewPrompt();
+    for (const invalid of [ { ...prompt, referenceDate: '2026-09-18' },
+      { ...prompt, slots: [...prompt.slots, { ...prompt.slots[0], id: 'slot-2' }] },
+      { ...prompt, slots: Array.from({ length: 51 }, (_, i) => ({ ...prompt.slots[0], id: `slot-${i}`, savedChildId: null })) },
+      { ...prompt, slots: [{ ...prompt.slots[0], savedChildId: null, confirmed: true }], canContinue: true },
+    ]) assert.equal((await h.publish(invalid)).ok, false);
+    assert.equal((await h.publish(prompt, 'input', 7)).ok, false);
+    assert.equal((await h.publish(prompt, 'welcome', 8)).ok, false);
+    const withSecond = await h.publish(childReviewPrompt({ slots: [...prompt.slots,
+      { id: 'slot-2', savedChildId: 'child-2', name: 'Mali', dateOfBirth: null, ageYears: 8, confirmed: false }] }));
+    assert.ok(withSecond.ok);
+    const duplicate = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'duplicate',
+      lastSeenSequence: withSecond.document.sequence, payload: { action: 'select', requestId: prompt.requestId, visitorId: prompt.visitorId,
+        slotId: 'slot-1', choiceId: 'child-2' } }, { source: 'display' });
+    assert.equal(duplicate.ok, false);
+    const stale = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'stale',
+      lastSeenSequence: withSecond.document.sequence - 1, payload: { action: 'back', requestId: prompt.requestId, visitorId: prompt.visitorId } }, { source: 'display' });
+    assert.equal(stale.ok, false);
+    if (!stale.ok) assert.equal(stale.refusal, 'stale');
+    h.setNow(plus(AT, 2 * 86_400_000));
+    const expired = await h.manager.applyIntent(STATION_ID, { type: 'display.child_review', actionId: 'expired',
+      lastSeenSequence: withSecond.document.sequence, payload: { action: 'back', requestId: prompt.requestId, visitorId: prompt.visitorId } }, { source: 'display' });
+    assert.equal(expired.ok, false);
+  } finally { h.close(); }
+});
 
 test('Console display probes use the real stage rules without writing or mutating nested live data', async () => {
   const h = await openManager();

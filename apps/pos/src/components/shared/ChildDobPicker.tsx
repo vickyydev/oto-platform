@@ -13,11 +13,11 @@ import { cn } from '@/lib/utils';
 
 interface ChildDobPickerProps {
   // Stored ISO date of birth (preferred source of truth). When present the
-  // displayed age is always DERIVED from it against today.
+  // displayed age is derived against referenceDate when supplied, otherwise today.
   dateOfBirth?: string;
   // Fallback numeric age for legacy records that have no DOB yet.
   age?: number | null;
-  // Emitted on confirm: a real DOB plus the age it derives to today (callers
+  // Emitted on confirm: a real DOB plus the age at the reference date (callers
   // keep their existing numeric-age field in sync from this).
   onChange: (next: { dateOfBirth: string; age: number }) => void;
   maxAge?: number;
@@ -30,6 +30,8 @@ interface ChildDobPickerProps {
   // The child this picker edits — each picker is always for ONE child, so the
   // age prompt is singular. When a name is known it personalizes the question.
   childName?: string;
+  // An independent display uses the staff-selected visit date, rather than its own clock.
+  referenceDate?: string;
 }
 
 type Step = 'age' | 'month' | 'day' | 'confirm';
@@ -47,19 +49,26 @@ export function ChildDobPicker({
   placeholder = 'Tap to set age',
   disabled,
   childName,
+  referenceDate,
 }: ChildDobPickerProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>('age');
   const [pickedAge, setPickedAge] = useState<number | null>(null);
   const [pickedMonth, setPickedMonth] = useState<number | null>(null);
   const [pickedDay, setPickedDay] = useState<number | null>(null);
+  const asOf = useMemo(() => {
+    if (!referenceDate) return undefined;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(referenceDate);
+    if (!match) return undefined;
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }, [referenceDate]);
 
   // The age shown on the trigger: derived from DOB when present, else the legacy
   // numeric age, else nothing.
   const displayAge = useMemo(() => {
-    if (dateOfBirth) return ageFromDob(dateOfBirth);
+    if (dateOfBirth) return ageFromDob(dateOfBirth, asOf);
     return age ?? null;
-  }, [dateOfBirth, age]);
+  }, [dateOfBirth, age, asOf]);
 
   // Seed the draft from the current value whenever the dialog opens.
   useEffect(() => {
@@ -67,7 +76,7 @@ export function ChildDobPicker({
     setStep('age');
     const m = dateOfBirth ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth) : null;
     if (m) {
-      setPickedAge(ageFromDob(dateOfBirth!));
+      setPickedAge(ageFromDob(dateOfBirth!, asOf));
       setPickedMonth(Number(m[2]));
       setPickedDay(Number(m[3]));
     } else {
@@ -75,7 +84,7 @@ export function ChildDobPicker({
       setPickedMonth(null);
       setPickedDay(null);
     }
-  }, [open, dateOfBirth, age]);
+  }, [open, dateOfBirth, age, asOf]);
 
   const handlePickAge = (a: number) => {
     setPickedAge(a);
@@ -85,7 +94,7 @@ export function ChildDobPicker({
     setPickedMonth(mo);
     // A day already chosen for a prior month may now be out of range — clamp it.
     if (pickedDay != null) {
-      const maxD = daysInMonth(mo, new Date().getFullYear());
+      const maxD = daysInMonth(mo, (asOf ?? new Date()).getFullYear());
       if (pickedDay > maxD) setPickedDay(null);
     }
     setStep('day');
@@ -97,9 +106,9 @@ export function ChildDobPicker({
 
   const previewDob =
     pickedAge != null && pickedMonth != null && pickedDay != null
-      ? dobFromPickedAge(pickedAge, pickedMonth, pickedDay)
+      ? dobFromPickedAge(pickedAge, pickedMonth, pickedDay, asOf)
       : null;
-  const previewAge = previewDob ? ageFromDob(previewDob) : null;
+  const previewAge = previewDob ? ageFromDob(previewDob, asOf) : null;
 
   const handleConfirm = () => {
     if (!previewDob || previewAge == null) return;
@@ -107,9 +116,9 @@ export function ChildDobPicker({
     setOpen(false);
   };
 
-  // Use a non-leap reference year for the day grid so we never offer Feb 29 here;
-  // dobFromPickedAge clamps to the real birth-year length anyway.
-  const dayCount = pickedMonth ? daysInMonth(pickedMonth, 2025) : 31;
+  // Keep the default non-leap grid. A public visit date supplies its calendar year;
+  // dobFromPickedAge still clamps the day to the inferred birth-year length.
+  const dayCount = pickedMonth ? daysInMonth(pickedMonth, asOf?.getFullYear() ?? 2025) : 31;
 
   const triggerSizing =
     size === 'sm' ? 'h-12 px-3 text-base' : 'h-14 px-4 text-xl';

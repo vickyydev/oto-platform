@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
 import type { ContactChannel } from '@/types';
 import { readTicketDisplayView } from '@/lib/displaySession';
+import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildrenReview';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
 export default function Display() {
@@ -192,6 +193,9 @@ export default function Display() {
   const document = session?.document;
   const view = document ? readTicketDisplayView(document) : null;
   const answer = document?.prompt?.answer;
+  // The public response deliberately omits the staff wizard step. Its validated
+  // input prompt identifies the review without exposing that staff-only state.
+  const childReview = view?.childReview ?? null;
 
   return <div className="dark h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col" data-testid="separate-display">
     {error && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
@@ -212,7 +216,17 @@ export default function Display() {
         <Button variant="outline" onClick={newPairing}>New code</Button>
       </> : pairingMode === 'expiry-error' ? <p>Pairing is paused until code expiry is confirmed.</p>
         : <Loader2 className="h-8 w-8 animate-spin" aria-label={pairingMode === 'expiring' ? 'Expiring code' : 'Connecting'} />}
-    </main> : view && document ? <>
+    </main> : childReview ? <>
+      <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
+      <div className="flex-1 min-h-0" inert={busy || !!answer || !!pending.current}>
+        <PublicSavedChildrenReview key={childReview.visitorId} prompt={childReview}
+          busy={busy || !!answer || !!pending.current}
+          onAction={action => { void send('display.child_review', action); }} />
+      </div>
+      {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">
+        {busy ? 'Sending…' : 'Please wait for the team to confirm this change.'}
+      </p>}
+    </> : view && document ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
       <div className="flex-1 min-h-0" inert={busy || !!answer || !!pending.current}>
         <CustomerDisplay stage={view.stage} sale={view.sale} phone={phone}

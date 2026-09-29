@@ -142,8 +142,8 @@ export const membersApi = {
     api.patch<{ member: ApiMember }>(`/members/${id}`, patch),
   addChild: (memberId: string, body: Record<string, unknown>) =>
     api.post<{ child: ApiChild }>(`/members/${memberId}/children`, body, { idempotencyKey: idemKey() }),
-  updateChild: (childId: string, patch: Record<string, unknown>) =>
-    api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch),
+  updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
+    api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch, { idempotencyKey, signal }),
   verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt: string; note?: string }) =>
     api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, { idempotencyKey: idemKey() }),
   /**

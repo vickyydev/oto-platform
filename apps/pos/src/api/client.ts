@@ -59,7 +59,7 @@ async function request<T>(
   method: string,
   path: string,
   body?: unknown,
-  opts: { idempotencyKey?: string; headers?: Record<string, string> } = {},
+  opts: { idempotencyKey?: string; headers?: Record<string, string>; signal?: AbortSignal } = {},
 ): Promise<T> {
   let res: Response;
   try {
@@ -75,6 +75,7 @@ async function request<T>(
         ...(opts.headers ?? {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: opts.signal,
     });
   } catch (err) {
     throw new NetworkError(err);
@@ -154,7 +155,7 @@ export const api = {
   postBlob: (path: string, body?: unknown, signal?: AbortSignal) =>
     requestBlob('POST', path, body, signal),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
-  patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string }) =>
+  patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string; signal?: AbortSignal }) =>
     request<T>('PATCH', path, body, opts),
   /**
    * A DELETE may carry a body and an idempotency key, and one route needs
