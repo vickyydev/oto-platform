@@ -60,7 +60,23 @@ booth and global tender methods remain unchanged.
 Each push needs a ticket status change and progress comment. Deployed still
 requires a named staging screenshot.
 
-After these prerequisites, resume SCRUM-206 Slice F. Its UI must use the
+Independent SCRUM-206 Slice F work is now on `feat/payment-stage`, from
+main checkpoint `11d216d`. The shared foundation adds `api/payments.ts` using
+`PaymentAttemptView` and the existing QR/expiry fields; `api/sales.ts` supports
+separate stable tender identities and explicit zero-tender closing; the writer
+keeps successful partial tenders committed, with authoritative remaining money.
+Epoch and sale-identity guards reject stale adoption after cart change, reset
+and unmount. All 38 tests in the existing sale-writer file pass, including API
+body/key contracts, split completion and stale responses. POS typecheck, package
+lint and independent review pass. No till UI has been wired and this branch
+has not deployed. The checkpoint is on the work branch; main and staging stay
+on the previous release while the complete workflow is built.
+
+SCRUM-387 carries the newly confirmed inquiry/confirmation cache-envelope case
+as a follow-up comment. Fix those responses and their existing-suite replay
+checks before using reliable UI retries. No new defect ticket was created.
+
+Continue SCRUM-206 Slice F. Its UI must use the
 authoritative sale and a distinct stable identity per deliberate split tender;
 an approved electronic attempt must not be charged again through cash-style
 finalise. Offline browser-to-box transport is missing (SCRUM-269/285), and the

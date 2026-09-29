@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
-import { newId } from '@oto/shared';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { newId, type PaymentAttemptView } from '@oto/shared';
 import { ApiError, NetworkError } from '@/api/client';
 import {
   commitSale,
@@ -50,9 +50,9 @@ import {
  *    instructions and reception cannot tell them apart from a status code.
  *
  * 4. AN ANSWER NEVER LANDS ON A TILL THAT HAS MOVED ON. Every attempt captures
- *    the writer's epoch, and `reset()` bumps it. An answer from a previous sale
- *    is dropped rather than written onto the visitor now standing at the
- *    counter — the same guard, for the same reason, as `saleEpochRef` in
+ *    the writer's epoch and sale identity; reset and unmount invalidate it.
+ *    An answer from a previous sale is dropped rather than drawn onto the next
+ *    visitor at the counter — the same guard as `saleEpochRef` in
  *    `pages/Till.tsx`.
  */
 
@@ -70,7 +70,7 @@ export type SaleFailureCause =
 export type SaleWriteState =
   | { kind: 'idle' }
   | { kind: 'writing'; saleId: string; attempt: number }
-  /** The platform holds this sale, unfinalised: it is recorded, and unpaid. */
+  /** The platform holds this open sale, with any partial payments recorded. */
   | { kind: 'committed'; saleId: string; sale: ApiSale }
   | { kind: 'finalising'; saleId: string; attempt: number }
   /** Finalised: the money is recorded and the sale carries its receipt number. */
@@ -113,7 +113,17 @@ export interface SaleWriteInput {
 }
 
 export type SaleWriteOutcome =
-  | { ok: true; written: true; sale: ApiSale; replay: boolean; saleId: string }
+  | {
+      ok: true;
+      /** The platform recorded the sale; `finalised` says whether it closed. */
+      written: true;
+      sale: ApiSale;
+      replay: boolean;
+      saleId: string;
+      finalised?: boolean;
+      outstandingSatang?: number;
+      attempt?: PaymentAttemptView | null;
+    }
   | { ok: true; written: false; saleId: string; reason: string }
   | { ok: false; saleId: string; message: string; retryable: boolean };
 
@@ -219,8 +229,8 @@ export interface SaleWriter {
    * the voucher is held for (`lib/tillVoucher.ts`).
    */
   prepare: (input: SaleWriteInput) => string;
-  /** The tender completed — close the sale and take its receipt number. */
-  finalise: (tender: SaleTenderPayload) => Promise<SaleWriteOutcome>;
+  /** Record a tender, or close after recorded payments when no tender is supplied. */
+  finalise: (tender?: SaleTenderPayload, actionId?: string) => Promise<SaleWriteOutcome>;
   /**
    * S2-10b — THE TILL'S CANCEL of the sale this cart was rung up as: voided with
    * `reason`, so it can never be paid and any voucher it held is free again
@@ -281,6 +291,16 @@ export function useSaleWriter(): SaleWriter {
    */
   const supersededRef = useRef<Map<string, ApiSale>>(new Map());
 
+  useEffect(() => {
+    return () => { epochRef.current += 1; };
+  }, []);
+
+  const isCurrent = useCallback(
+    (epoch: number, saleId: string): boolean =>
+      epochRef.current === epoch && saleRef.current?.saleId === saleId,
+    [],
+  );
+
   /**
    * The ids the next attempt at a cart carries — the rule `commit` has always
    * followed, in one place so `prepare` can answer it before the commit runs.
@@ -334,7 +354,9 @@ export function useSaleWriter(): SaleWriter {
     // The same cart is already going out. Join that attempt rather than opening
     // a second one — a double press, or a screen that mounts twice.
     const inFlight = inFlightRef.current;
-    if (inFlight && inFlight.signature === signature) return inFlight.promise;
+    if (inFlight && inFlight.signature === signature && saleRef.current?.signature === signature) {
+      return inFlight.promise;
+    }
 
     // The same cart keeps its number — a retry has to be the same sale, and a
     // burnt key takes a new number while keeping the press, so
@@ -359,11 +381,11 @@ export function useSaleWriter(): SaleWriter {
           note: input.note ?? null,
           finalise: input.finalise,
         });
-        if (epochRef.current === epoch) committedRef.current = result.sale;
+        if (isCurrent(epoch, ids.saleId)) committedRef.current = result.sale;
         // The till has started another sale. The write still happened and the
         // platform holds it; what must not happen is this answer being drawn
         // onto the visitor now at the counter.
-        if (epochRef.current === epoch) {
+        if (isCurrent(epoch, ids.saleId)) {
           setState(
             result.sale.status === 'finalised'
               ? { kind: 'written', saleId: ids.saleId, sale: result.sale, replay: result.replay }
@@ -379,7 +401,7 @@ export function useSaleWriter(): SaleWriter {
         };
       } catch (err) {
         if (err instanceof SalesLedgerUnavailable) {
-          if (epochRef.current === epoch) {
+          if (isCurrent(epoch, ids.saleId)) {
             setState({ kind: 'unwritten', saleId: ids.saleId, reason: err.message });
           }
           return { ok: true, written: false, saleId: ids.saleId, reason: err.message };
@@ -391,7 +413,7 @@ export function useSaleWriter(): SaleWriter {
         if (existing) {
           try {
             const { sale } = await salesApi.get(existing);
-            if (epochRef.current === epoch) {
+            if (isCurrent(epoch, ids.saleId)) {
               committedRef.current = sale;
               saleRef.current = { ...ids, saleId: sale.id };
               sentRef.current.add(sale.id);
@@ -412,11 +434,11 @@ export function useSaleWriter(): SaleWriter {
         // cleared (`voucherNotHeld`): the next attempt at this cart goes under a
         // new number. Only when this attempt's answer still belongs to this
         // cart — a cart that moved on has new ids already.
-        if ((cause === 'stale-key' || voucherNotHeld(err)) && epochRef.current === epoch) {
+        if ((cause === 'stale-key' || voucherNotHeld(err)) && isCurrent(epoch, ids.saleId)) {
           renewKeyRef.current = true;
         }
         const message = messageOf(err);
-        if (epochRef.current === epoch) {
+        if (isCurrent(epoch, ids.saleId)) {
           setState({
             kind: 'failed',
             saleId: ids.saleId,
@@ -437,7 +459,7 @@ export function useSaleWriter(): SaleWriter {
       if (inFlightRef.current?.promise === promise) inFlightRef.current = null;
     });
     return promise;
-  }, [decideIds]);
+  }, [decideIds, isCurrent]);
 
   const prepare = useCallback(
     (input: SaleWriteInput): string => {
@@ -446,7 +468,7 @@ export function useSaleWriter(): SaleWriter {
       const held = committedRef.current;
       if (held && saleRef.current?.signature === signature) return held.id;
       const inFlight = inFlightRef.current;
-      if (inFlight && inFlight.signature === signature && saleRef.current) {
+      if (inFlight && inFlight.signature === signature && saleRef.current?.signature === signature) {
         return saleRef.current.saleId;
       }
       // Decided now and kept: `commit` finds this cart's ids and uses them.
@@ -458,7 +480,7 @@ export function useSaleWriter(): SaleWriter {
     [decideIds],
   );
 
-  const finalise = useCallback(async (tender: SaleTenderPayload): Promise<SaleWriteOutcome> => {
+  const finalise = useCallback(async (tender?: SaleTenderPayload, actionId?: string): Promise<SaleWriteOutcome> => {
     const ids = saleRef.current;
     const held = committedRef.current;
     if (!ids || !held) {
@@ -472,26 +494,38 @@ export function useSaleWriter(): SaleWriter {
     // Already closed: a retry must not take a second receipt number, and the
     // platform would not give one, so there is nothing to ask for.
     if (held.status === 'finalised') {
-      return { ok: true, written: true, sale: held, replay: true, saleId: held.id };
+      return {
+        ok: true, written: true, sale: held, replay: true, saleId: held.id,
+        finalised: true, outstandingSatang: 0, attempt: null,
+      };
     }
 
     const epoch = epochRef.current;
     const attempt = ++attemptsRef.current;
     setState({ kind: 'finalising', saleId: held.id, attempt });
     try {
-      const result = await finaliseSale(held.id, ids.actionId, tender);
-      if (epochRef.current === epoch) {
+      // A split uses one explicit identity per deliberate tender; retries keep it.
+      const result = await finaliseSale(held.id, actionId ?? ids.actionId, tender);
+      const finalised = result.finalised ?? result.sale.status === 'finalised';
+      if (isCurrent(epoch, ids.saleId)) {
         committedRef.current = result.sale;
-        setState({ kind: 'written', saleId: held.id, sale: result.sale, replay: result.replay });
+        setState(finalised
+          ? { kind: 'written', saleId: held.id, sale: result.sale, replay: result.replay }
+          : { kind: 'committed', saleId: held.id, sale: result.sale });
       }
-      return { ok: true, written: true, sale: result.sale, replay: result.replay, saleId: held.id };
+      return {
+        ok: true, written: true, sale: result.sale, replay: result.replay, saleId: held.id,
+        finalised,
+        ...(result.outstandingSatang === undefined ? {} : { outstandingSatang: result.outstandingSatang }),
+        attempt: result.attempt ?? null,
+      };
     } catch (err) {
       if (err instanceof SalesLedgerUnavailable) {
         // The sale is recorded; only its closing is not. Saying "saved on this
         // till only" here would be false — the platform holds the row.
         const message =
           'This deployment cannot close a sale yet (SCRUM-203): the sale is recorded and has no receipt number.';
-        if (epochRef.current === epoch) {
+        if (isCurrent(epoch, ids.saleId)) {
           setState({
             kind: 'failed',
             saleId: held.id,
@@ -505,7 +539,7 @@ export function useSaleWriter(): SaleWriter {
       }
       const { cause, retryable } = classify(err);
       const message = messageOf(err);
-      if (epochRef.current === epoch) {
+      if (isCurrent(epoch, ids.saleId)) {
         setState({
           kind: 'failed',
           saleId: held.id,
@@ -518,11 +552,16 @@ export function useSaleWriter(): SaleWriter {
       }
       return { ok: false, saleId: held.id, message, retryable };
     }
-  }, []);
+  }, [isCurrent]);
 
   const cancel = useCallback(async (reason: string): Promise<SaleCancelOutcome> => {
+    const epoch = epochRef.current;
+    const actionId = saleRef.current?.actionId;
     const inFlight = inFlightRef.current;
     if (inFlight) await inFlight.promise;
+    if (epochRef.current !== epoch || saleRef.current?.actionId !== actionId) {
+      return { ok: true, voided: false };
+    }
     const onScreen = committedRef.current;
     if (onScreen?.status === 'finalised') {
       // Known closed: said in the platform's words for it, without asking.
@@ -541,8 +580,10 @@ export function useSaleWriter(): SaleWriter {
     for (const s of rungUp) {
       try {
         const answer = await salesApi.voidSale(s.id, reason);
-        if (committedRef.current?.id === s.id) committedRef.current = answer.sale;
-        supersededRef.current.delete(s.id);
+        if (epochRef.current === epoch && saleRef.current?.actionId === actionId) {
+          if (committedRef.current?.id === s.id) committedRef.current = answer.sale;
+          supersededRef.current.delete(s.id);
+        }
       } catch (err) {
         const code = err instanceof ApiError ? err.code : 'CONNECTION';
         return {

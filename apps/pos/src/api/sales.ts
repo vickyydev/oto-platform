@@ -15,6 +15,7 @@ import {
   computeTicketCartTotals,
   newId,
   type AppliedPromo,
+  type PaymentAttemptView,
   type TaxBreakdown as EngineTaxBreakdown,
   type TaxableCategory,
   type TicketCartTotals,
@@ -508,6 +509,10 @@ export interface SaleFinaliseResult {
   sale: ApiSale;
   /** True when the sale was already finalised — a retry takes no second number. */
   replay: boolean;
+  /** False for an accepted split part that leaves money outstanding. */
+  finalised?: boolean;
+  outstandingSatang?: number;
+  attempt?: PaymentAttemptView | null;
   /** S2-10b — the vouchers this call used up, by id. Empty unless it closed a sale carrying one. */
   redeemedVoucherIds?: string[];
 }
@@ -522,14 +527,18 @@ export interface SaleFinaliseResult {
 export const saleIdempotencyKey = (saleId: string): string => `sale:${saleId}`;
 
 /**
- * The finalise has a key of its own, derived from the same sale id.
+ * The finalise has a key of its own, scoped to the sale and tender gesture.
  *
  * It has to differ from the commit's or the second call would be answered with
  * the first one's stored body — the sale as it was BEFORE it took its receipt
  * number — and the till would print a receipt with no number on it.
  */
-export const saleFinaliseIdempotencyKey = (saleId: string, tender: SaleTenderPayload): string =>
-  `sale:${saleId}:finalise:${tenderSignature(tender)}`;
+export const saleFinaliseIdempotencyKey = (
+  saleId: string,
+  tender: SaleTenderPayload = NO_TENDER,
+  actionId?: string,
+): string =>
+  `sale:${saleId}:finalise:${actionId ? `${actionId}:` : ''}${tenderSignature(tender)}`;
 
 /**
  * The tender is part of the key, so a DIFFERENT closing act gets a fresh one.
@@ -613,7 +622,7 @@ export const salesApi = {
     }),
   finalise: (saleId: string, body: SaleFinaliseBody) =>
     api.post<SaleFinaliseResult>(`/sales/${encodeURIComponent(saleId)}/finalise`, body, {
-      idempotencyKey: saleFinaliseIdempotencyKey(saleId, body.tender),
+      idempotencyKey: saleFinaliseIdempotencyKey(saleId, body.tender, body.actionId),
       headers: { 'x-oto-action-id': body.actionId },
     }),
   /**
@@ -1564,9 +1573,12 @@ export async function commitSale(args: CommitSaleArgs): Promise<SaleCommitResult
 export async function finaliseSale(
   saleId: string,
   actionId: string,
-  tender: SaleTenderPayload,
+  tender?: SaleTenderPayload,
 ): Promise<SaleFinaliseResult> {
-  const body: SaleFinaliseBody = { ...tender, actionId, tender };
+  // An empty body would collect an outstanding balance as cash. The explicit
+  // zero tender closes only a settled sale and refuses if it still owes money.
+  const selectedTender = tender ?? NO_TENDER;
+  const body: SaleFinaliseBody = { ...selectedTender, actionId, tender: selectedTender };
   try {
     return await salesApi.finalise(saleId, body);
   } catch (err) {

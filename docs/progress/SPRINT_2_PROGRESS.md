@@ -22,6 +22,14 @@ automatic approval review blocked it before execution. The tickets remain
 Testing until proof passes and named staging screenshots are attached.
 Read the newest STOP POINT in `SESSION_HANDOVER.md`.
 
+Slice F foundation work is on `feat/payment-stage` from `11d216d`: shared cloud
+payment client, partial-state handling, separate stable tender identities,
+explicit zero-tender closing and stale-response guards. All 38 existing-file
+tests, POS typecheck, package lint and independent review pass. The four screens
+remain unwired and nothing from this branch has
+deployed. The inquiry/confirmation response-envelope follow-up is recorded
+under the existing SCRUM-387 defect.
+
 Slice F also depends on the existing offline transport work (269/285) and
 S2-08 for separate-device display acceptance. Simulator payment evidence and
 real 2C2P sandbox evidence must remain distinct.

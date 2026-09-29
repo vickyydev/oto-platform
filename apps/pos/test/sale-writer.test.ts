@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiSale } from './support/fixtures';
 import { renderHook } from './support/hooks';
-import { ApiError, NetworkError } from '@/api/client';
+import { api, ApiError, NetworkError } from '@/api/client';
+import { paymentsApi } from '@/api/payments';
+import type { PaymentAttemptView } from '@oto/shared';
 import {
   commitSale,
   finaliseSale,
@@ -11,6 +13,8 @@ import {
   type CommitSaleArgs,
   type SaleCartPayload,
   type SaleCommitResult,
+  type SaleFinaliseResult,
+  type SaleTenderPayload,
 } from '@/api/sales';
 import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
 import { CANCELLED_AT_THE_TILL } from '@/lib/tillVoucher';
@@ -84,6 +88,21 @@ function mountWriter() {
   return renderHook(() => useSaleWriter());
 }
 
+const cashPart: SaleTenderPayload = {
+  method: 'park-cash', kind: 'cash', amountSatang: 27_000,
+  tenderedSatang: 27_000, changeSatang: 0,
+};
+
+function cashAttempt(saleId: string): PaymentAttemptView {
+  return {
+    id: 'attempt-first-part', saleId, method: 'cash', provider: 'manual', status: 'approved',
+    amountSatang: 27_000, tenderedSatang: 27_000, changeSatang: 0,
+    terminalRef: null, tid: null, approvalCode: null, last4: null,
+    invoiceNo: null, tranRef: null, actionId: 'first-part', offline: false,
+    paidAt: '2026-09-25T04:20:00.000Z', createdAt: '2026-09-25T04:20:00.000Z',
+  };
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -98,6 +117,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -315,6 +335,74 @@ describe('closing the sale', () => {
     });
     expect(finalise).not.toHaveBeenCalled();
   });
+
+  it('keeps an accepted split part open until the distinct second tender closes it', async () => {
+    const { result } = mountWriter();
+    const recorded = await result.current.commit(order(1));
+    const firstAttempt = cashAttempt(recorded.saleId);
+    const partial = apiSale({ id: recorded.saleId });
+    finalise.mockResolvedValueOnce({
+      sale: partial, replay: false, finalised: false,
+      outstandingSatang: 27_000, attempt: firstAttempt,
+    });
+
+    await expect(result.current.finalise(cashPart, 'first-part')).resolves.toMatchObject({
+      ok: true, written: true, finalised: false, sale: partial,
+      outstandingSatang: 27_000, attempt: firstAttempt,
+    });
+    expect(result.current.state).toEqual({ kind: 'committed', saleId: recorded.saleId, sale: partial });
+    expect(result.current.committed?.receiptNumber).toBeUndefined();
+
+    const closed = apiSale({ id: recorded.saleId, status: 'finalised', receiptNumber: 'PARK-1' });
+    finalise.mockResolvedValueOnce({ sale: closed, replay: false, finalised: true, outstandingSatang: 0 });
+    await expect(result.current.finalise(cashPart, 'second-part')).resolves.toMatchObject({
+      ok: true, finalised: true, outstandingSatang: 0, sale: closed,
+    });
+    expect(finalise.mock.calls).toEqual([
+      [recorded.saleId, 'first-part', cashPart],
+      [recorded.saleId, 'second-part', cashPart],
+    ]);
+    expect(result.current.state).toMatchObject({ kind: 'written', sale: closed });
+  });
+
+  it('retries one deliberate tender with the same explicit identity and body', async () => {
+    const { result } = mountWriter();
+    const recorded = await result.current.commit(order(1));
+    finalise.mockRejectedValueOnce(new NetworkError(new Error('No answer')));
+    finalise.mockResolvedValueOnce({
+      sale: apiSale({ id: recorded.saleId }), replay: true, finalised: false, outstandingSatang: 27_000,
+    });
+
+    await expect(result.current.finalise(cashPart, 'first-part')).resolves.toMatchObject({ ok: false, retryable: true });
+    await expect(result.current.finalise(cashPart, 'first-part')).resolves.toMatchObject({ ok: true, finalised: false });
+    expect(finalise.mock.calls).toEqual([
+      [recorded.saleId, 'first-part', cashPart],
+      [recorded.saleId, 'first-part', cashPart],
+    ]);
+    expect(result.current.state).toMatchObject({ kind: 'committed' });
+  });
+
+  it('keeps the legacy action across retries and passes no new tender for close', async () => {
+    const { result } = mountWriter();
+    const recorded = await result.current.commit(order(1));
+    finalise.mockRejectedValueOnce(new NetworkError(new Error('No answer')));
+    finalise.mockResolvedValueOnce({ sale: apiSale({ id: recorded.saleId, status: 'finalised' }), replay: true });
+
+    await result.current.finalise();
+    await expect(result.current.finalise()).resolves.toMatchObject({ ok: true, finalised: true });
+    expect(finalise.mock.calls).toEqual([
+      [recorded.saleId, sent()[0]!.actionId, undefined],
+      [recorded.saleId, sent()[0]!.actionId, undefined],
+    ]);
+  });
+
+  it('derives an open response from the sale status when old metadata is absent', async () => {
+    const { result } = mountWriter();
+    const recorded = await result.current.commit(order(1));
+    finalise.mockResolvedValueOnce({ sale: apiSale({ id: recorded.saleId }), replay: false });
+    await expect(result.current.finalise(cashPart)).resolves.toMatchObject({ ok: true, finalised: false });
+    expect(result.current.state).toMatchObject({ kind: 'committed' });
+  });
 });
 
 describe("the till's Cancel", () => {
@@ -400,5 +488,157 @@ describe('an answer never lands on a till that has moved on', () => {
     refuse(new ApiError(422, 'SALE_LINE_PRICE_MISMATCH', 'The price moved'));
     await paying;
     expect(result.current.state).toEqual({ kind: 'idle' });
+  });
+
+  it('keeps the new cart when an earlier commit answers without a reset', async () => {
+    let answer!: (result: SaleCommitResult) => void;
+    commit.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+    const { result } = mountWriter();
+    const earlier = result.current.commit(order(1));
+    const current = await result.current.commit(order(2));
+
+    answer({ sale: apiSale({ id: sent()[0]!.saleId }), replay: false });
+    await earlier;
+    expect(result.current.state).toMatchObject({ kind: 'committed', saleId: current.saleId });
+    expect(result.current.committed?.id).toBe(current.saleId);
+  });
+
+  it('does not lend an old pending cart the newly prepared cart id', async () => {
+    let answer!: (result: SaleCommitResult) => void;
+    commit.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+    const { result } = mountWriter();
+    const earlier = result.current.commit(order(1));
+    const newCartId = result.current.prepare(order(2));
+    const returnedCartId = result.current.prepare(order(1));
+    expect(returnedCartId).not.toBe(newCartId);
+    expect(returnedCartId).not.toBe(sent()[0]!.saleId);
+
+    answer({ sale: apiSale({ id: sent()[0]!.saleId }), replay: false });
+    await earlier;
+    expect(result.current.committed).toBeNull();
+  });
+
+  it('drops a late finalise success after reset, while telling its original caller the outcome', async () => {
+    let answer!: (result: SaleFinaliseResult) => void;
+    finalise.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+    const { result } = mountWriter();
+    const recorded = await result.current.commit(order(1));
+    const closing = result.current.finalise(cashPart, 'first-part');
+    result.current.reset();
+
+    answer({ sale: apiSale({ id: recorded.saleId, status: 'finalised' }), replay: false, finalised: true });
+    await expect(closing).resolves.toMatchObject({ ok: true, finalised: true });
+    expect(result.current.state).toEqual({ kind: 'idle' });
+    expect(result.current.committed).toBeNull();
+  });
+
+  it('drops finalise success and failure from a replaced cart without a reset', async () => {
+    let answer!: (result: SaleFinaliseResult) => void;
+    let refuse!: (error: unknown) => void;
+    finalise.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+    finalise.mockImplementationOnce(() => new Promise((_resolve, reject) => (refuse = reject)));
+    const { result } = mountWriter();
+    const first = await result.current.commit(order(1));
+    const closingFirst = result.current.finalise(cashPart, 'first-part');
+    const second = await result.current.commit(order(2));
+    const closingSecond = result.current.finalise(cashPart, 'second-part');
+    const current = await result.current.commit(order(3));
+
+    answer({ sale: apiSale({ id: first.saleId, status: 'finalised' }), replay: false, finalised: true });
+    refuse(new ApiError(409, 'PAYMENT_IN_FLIGHT', 'A payment is still in progress'));
+    await Promise.all([closingFirst, closingSecond]);
+    expect(second.saleId).not.toBe(current.saleId);
+    expect(result.current.state).toMatchObject({ kind: 'committed', saleId: current.saleId });
+    expect(result.current.committed?.id).toBe(current.saleId);
+  });
+
+  it('does not adopt a replayed sale after the screen unmounts', async () => {
+    let answer!: (result: { sale: ReturnType<typeof apiSale> }) => void;
+    commit.mockRejectedValueOnce(new ApiError(409, 'SALE_ACTION_REPLAY', 'Already rung up', { saleId: 'previous-sale' }));
+    getSale.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+    const { result, unmount } = mountWriter();
+    const writing = result.current.commit(order(1));
+    await Promise.resolve();
+    expect(getSale).toHaveBeenCalledWith('previous-sale');
+    unmount();
+
+    answer({ sale: apiSale({ id: 'previous-sale' }) });
+    await writing;
+    expect(result.current.ownsSale('previous-sale')).toBe(false);
+    expect(result.current.committed).toBeNull();
+  });
+
+  it('does not let an earlier Cancel void the next cart after reset', async () => {
+    let answer!: (result: SaleCommitResult) => void;
+    commit.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+    const { result } = mountWriter();
+    const writing = result.current.commit(order(1));
+    const cancelling = result.current.cancel(CANCELLED_AT_THE_TILL);
+    result.current.reset();
+    const current = await result.current.commit(order(2));
+
+    answer({ sale: apiSale({ id: sent()[0]!.saleId }), replay: false });
+    await writing;
+    await expect(cancelling).resolves.toEqual({ ok: true, voided: false });
+    expect(voidSale).not.toHaveBeenCalled();
+    expect(result.current.committed?.id).toBe(current.saleId);
+  });
+});
+
+describe('payment request identities', () => {
+  it('retries an equal split part under one key and gives its next deliberate part another key', async () => {
+    const actual = await vi.importActual<typeof import('@/api/sales')>('@/api/sales');
+    const post = vi.spyOn(api, 'post').mockResolvedValue({});
+    await actual.finaliseSale('sale-1', 'first-part', cashPart);
+    await actual.finaliseSale('sale-1', 'first-part', cashPart);
+    await actual.finaliseSale('sale-1', 'second-part', cashPart);
+
+    expect(post.mock.calls[0]).toEqual(post.mock.calls[1]);
+    expect(post.mock.calls[0]![2]?.idempotencyKey).not.toBe(post.mock.calls[2]![2]?.idempotencyKey);
+    expect(post.mock.calls[0]![1]).toMatchObject({ actionId: 'first-part', tender: cashPart });
+    expect(post.mock.calls[2]![1]).toMatchObject({ actionId: 'second-part', tender: cashPart });
+  });
+
+  it('closes recorded payments with an explicit zero tender so it cannot collect an unpaid balance', async () => {
+    const actual = await vi.importActual<typeof import('@/api/sales')>('@/api/sales');
+    const post = vi.spyOn(api, 'post').mockResolvedValue({});
+    await actual.finaliseSale('sale-1', 'close-recorded');
+    expect(post).toHaveBeenCalledWith('/sales/sale-1/finalise',
+      { ...NO_TENDER, actionId: 'close-recorded', tender: NO_TENDER },
+      {
+        idempotencyKey: actual.saleFinaliseIdempotencyKey('sale-1', NO_TENDER, 'close-recorded'),
+        headers: { 'x-oto-action-id': 'close-recorded' },
+      });
+  });
+
+  it('preserves the configured QR token, action header and key across start retries', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({});
+    const body = {
+      saleId: 'sale-1', actionId: 'qr-start', tender: 'qr' as const,
+      method: 'park-qr', kind: 'qr', amountSatang: 27_000, requestQrPayload: true,
+    };
+    await paymentsApi.start(body);
+    await paymentsApi.start(body);
+    expect(post.mock.calls[0]).toEqual(post.mock.calls[1]);
+    expect(post.mock.calls[0]).toEqual(['/payments/attempts', body, {
+      idempotencyKey: 'payment:sale-1:start:qr-start', headers: { 'x-oto-action-id': 'qr-start' },
+    }]);
+  });
+
+  it('separates inquire and confirm operations and deliberate confirmation gestures', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({});
+    await paymentsApi.inquire('attempt-1', 'first-gesture');
+    await paymentsApi.inquire('attempt-1', 'first-gesture');
+    await paymentsApi.confirm('attempt-1', { took: false }, 'first-gesture');
+    await paymentsApi.confirm('attempt-1', { took: true, note: 'Verified on the terminal' }, 'next-gesture');
+    const keys = post.mock.calls.map((call) => call[2]?.idempotencyKey);
+    expect(keys[0]).toBe(keys[1]);
+    expect(new Set([keys[0], keys[2], keys[3]]).size).toBe(3);
+    expect(post.mock.calls[2]).toEqual([
+      '/payments/attempts/attempt-1/confirm', { took: false }, {
+        idempotencyKey: 'payment:attempt-1:confirm:first-gesture',
+        headers: { 'x-oto-action-id': 'first-gesture' },
+      },
+    ]);
   });
 });

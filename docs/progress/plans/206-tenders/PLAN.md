@@ -579,6 +579,25 @@ are ported, not rewritten).
 **Goal.** One screen, four tenders and a split, in the prototype's design language, on
 the four tills that share the writer.
 
+### Implementation checkpoint - 29 September 2026
+
+The shared foundation is in progress on `feat/payment-stage`: the cloud payment
+client keeps configured tokens and stable gesture identities; the writer
+retains partial payments as committed rather than completed. Each deliberate
+split part has a separate stable action, and the HTTP key includes that action.
+An omitted close tender resolves to explicit `NO_TENDER`; it must never send an
+empty finalise body, which the server treats as cash when money remains.
+Sale identity and epoch guard late responses after cart change, reset or unmount.
+All 38 tests in the existing sale-writer file, POS typecheck, package lint and
+independent review pass. The four UI workflows remain unbuilt and the foundation
+has not deployed.
+
+Before wiring inquiry/confirmation retries, address the public response-envelope
+case recorded under existing SCRUM-387. The till must retain the start route:
+gateway anomaly states do not permit terminal staff confirmation, and a local
+QR countdown does not establish that no money was taken. Offline transport
+269/285 and the S2-08 independent display remain separate acceptance seams.
+
 ### Owns
 - `apps/pos/src/components/till/StepPayment.tsx`,
   `apps/pos/src/components/till/CustomerDisplay.tsx`,

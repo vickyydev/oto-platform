@@ -49,7 +49,17 @@ and archival of shared staging test records. Explicit approval was requested
 for a dedicated simulated station, terminal, methods and test sales. Keep the
 three tickets Testing until that proof passes and named screenshots are attached.
 
-Slice F remains unbuilt. Its complete offline and separate-display acceptance
+Independent Slice F work has started on `feat/payment-stage`, from checkpoint
+`11d216d`. Its shared foundation adds the cloud payment client, keeps partial
+tenders in the writer's committed state, gives deliberate split parts separate
+stable identities, and closes settled payments with explicit `NO_TENDER`.
+Late responses are fenced by sale identity and epoch, including cart changes,
+reset and unmount. All 38 tests in the existing sale-writer file pass, as do
+POS typecheck, package lint and independent review. This branch has not deployed.
+The existing SCRUM-387 now carries an inquiry/confirmation response-cache
+follow-up: complete public envelopes must be cached before safe UI retries.
+
+The four-screen Slice F workflow remains unbuilt. Its complete offline and separate-display acceptance
 also needs the existing SCRUM-269/285 and S2-08 seams. Real 2C2P sandbox
 confirmation still needs credentials; the simulator is available for approved proof.
 
