@@ -28,11 +28,17 @@ import {
   ChildReviewDocumentPromptSchema,
   ChildReviewPromptSchema,
   childReviewAge,
+  ConsentActionSchema,
+  ConsentAnswerSchema,
+  ConsentDocumentPromptSchema,
+  ConsentPromptSchema,
+  consentActionAllowed,
   DisplayCartSchema,
   DisplayMemberSchema,
   DisplayPaymentSchema,
   DisplayTotalsSchema,
   readDisplayFnbCart,
+  readDisplayMerchCart,
   stationLeaseLive,
 } from '@oto/shared';
 
@@ -848,7 +854,8 @@ export function redactForCustomer(document: StationSessionDocument): StationSess
   const payment = DisplayPaymentSchema.safeParse(document.payment);
   const childReview = document.prompt?.kind === 'child_review'
     ? ChildReviewDocumentPromptSchema.safeParse(document.prompt) : null;
-  const isFnb = document.cart?.kind === 'fnb';
+  const consent = document.prompt?.kind === 'consent' ? ConsentDocumentPromptSchema.safeParse(document.prompt) : null;
+  const isGuestOrder = document.cart?.kind === 'fnb' || document.cart?.kind === 'merch';
   const cart = customerDisplayCart(document.cart, document.stage);
   return {
     ...document,
@@ -857,12 +864,13 @@ export function redactForCustomer(document: StationSessionDocument): StationSess
     step: null,
     lease: null,
     cart,
-    totals: isFnb && !cart?.supported ? null : totals.success ? totals.data : null,
-    payment: isFnb && !cart?.supported ? null : payment.success ? payment.data : null,
+    totals: isGuestOrder && !cart?.supported ? null : totals.success ? totals.data : null,
+    payment: isGuestOrder && !cart?.supported ? null : payment.success ? payment.data : null,
     // Date of birth is permitted only in this finite, visitor-bound review.
     // The generic customer deny-list remains unchanged everywhere else.
-    prompt: isFnb ? null : childReview ? childReview.success ? childReview.data : null : stripKeys(document.prompt),
-    member: isFnb ? null : pickMemberFields(document.member),
+    prompt: isGuestOrder ? null : consent ? consent.success ? consent.data : null
+      : childReview ? childReview.success ? childReview.data : null : stripKeys(document.prompt),
+    member: isGuestOrder ? null : pickMemberFields(document.member),
   };
 }
 
@@ -886,6 +894,7 @@ function pickMemberFields(
 function customerDisplayCart(value: unknown, stage: StationSessionStage): Record<string, unknown> | null {
   if (value === null || value === undefined) return null;
   if (recordValue(value)?.kind === 'fnb') return readDisplayFnbCart(value, stage);
+  if (recordValue(value)?.kind === 'merch') return readDisplayMerchCart(value, stage);
   const parsed = DisplayCartSchema.safeParse(value);
   if (parsed.success) return parsed.data;
   const cart = recordValue(value);
@@ -1066,6 +1075,24 @@ function currentChildReviewDate(referenceDate: string, serverTime: string): bool
   return difference <= 86_400_000;
 }
 
+function consentAnswer({ document, intent, serverTime }: IntentContext): IntentOutcome {
+  if (document.step !== 7 || document.prompt?.kind !== 'consent') return wrong('This screen is not asking for guardian acknowledgement.');
+  const prompt = ConsentDocumentPromptSchema.safeParse(document.prompt);
+  const action = ConsentActionSchema.safeParse(intent.payload);
+  if (!prompt.success || !action.success || !boundedText(intent.actionId, 64)) {
+    return notPermitted('That guardian acknowledgement is not valid.');
+  }
+  if (prompt.data.answer) {
+    if (prompt.data.answer.actionId !== intent.actionId
+      || JSON.stringify(prompt.data.answer.payload) !== JSON.stringify(action.data)) {
+      return notPermitted('The till is still handling the acknowledgement already sent.');
+    }
+    return ok({ prompt: prompt.data });
+  }
+  if (!consentActionAllowed(prompt.data, action.data)) return notPermitted('This acknowledgement does not match the current staff checks.');
+  return ok({ prompt: { ...prompt.data, answer: { type: 'consent', actionId: intent.actionId, payload: action.data }, answeredAt: serverTime } });
+}
+
 export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
   'session.publish_display': {
     sources: ['till'],
@@ -1093,21 +1120,27 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
         if (stage !== (proposedPrompt.kind === 'identify' ? 'identify' : 'input')) return wrong('That prompt belongs to another display stage.');
       }
       const childReview = proposedPrompt?.kind === 'child_review' ? ChildReviewPromptSchema.safeParse(proposedPrompt) : null;
+      const consent = proposedPrompt?.kind === 'consent' ? ConsentPromptSchema.safeParse(proposedPrompt) : null;
+      if (consent && !consent.success) return notPermitted('That guardian acknowledgement is not valid.');
+      if (consent && (stage !== 'input' || step !== 7)) return wrong('Guardian acknowledgement belongs to its supervision input screen.');
       if (childReview && !childReview.success) return notPermitted('That child review is not valid.');
       if (childReview && (stage !== 'input' || step !== 8)) return wrong('Child review belongs to its saved-children input screen.');
       if (childReview?.success && !currentChildReviewDate(childReview.data.referenceDate, serverTime)) {
         return notPermitted('Ask staff to refresh this child review before continuing.');
       }
-      const savedPrompt: Record<string, unknown> | null = childReview?.success ? { ...childReview.data }
+      const savedPrompt: Record<string, unknown> | null = consent?.success ? { ...consent.data } : childReview?.success ? { ...childReview.data }
         : proposedPrompt ? Object.fromEntries(['kind', 'requestId', 'phone', 'nickname', 'contactChannel']
           .filter((key) => key in proposedPrompt).map((key) => [key, proposedPrompt[key]])) : null;
       if (savedPrompt) {
         delete savedPrompt.answer;
         delete savedPrompt.answeredAt;
         if (savedPrompt.requestId && savedPrompt.requestId === document.prompt?.requestId && savedPrompt.kind === document.prompt.kind
-          && (savedPrompt.kind !== 'child_review' || savedPrompt.visitorId === document.prompt.visitorId)) {
+          && (!['child_review', 'consent'].includes(String(savedPrompt.kind)) || savedPrompt.visitorId === document.prompt.visitorId)) {
           if (document.prompt.answer !== undefined) {
-            if (savedPrompt.kind !== 'child_review') savedPrompt.answer = document.prompt.answer;
+            if (savedPrompt.kind === 'consent') {
+              const answer = ConsentAnswerSchema.safeParse(document.prompt.answer);
+              if (answer.success) savedPrompt.answer = answer.data;
+            } else if (savedPrompt.kind !== 'child_review') savedPrompt.answer = document.prompt.answer;
             else {
               const answer = ChildReviewAnswerSchema.safeParse(document.prompt.answer);
               if (answer.success) savedPrompt.answer = answer.data;
@@ -1117,9 +1150,11 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
         }
       }
       const isFnb = recordValue(cart)?.kind === 'fnb';
-      const fnbCart = isFnb ? readDisplayFnbCart(cart, stage) : null;
-      const shownCart = isFnb ? fnbCart : customerDisplayCart(cart, stage);
-      if (isFnb && (prompt != null || member != null)) return notPermitted('Guest food orders cannot contain member details or prompts.');
+      const isMerch = recordValue(cart)?.kind === 'merch';
+      const isGuestOrder = isFnb || isMerch;
+      const guestCart = isFnb ? readDisplayFnbCart(cart, stage) : isMerch ? readDisplayMerchCart(cart, stage) : null;
+      const shownCart = isGuestOrder ? guestCart : customerDisplayCart(cart, stage);
+      if (isGuestOrder && (prompt != null || member != null)) return notPermitted('Guest orders cannot contain member details or prompts.');
       const shownMember = DisplayMemberSchema.safeParse(member);
       const shownTotals = DisplayTotalsSchema.safeParse(totals);
       const shownPayment = DisplayPaymentSchema.safeParse(payment);
@@ -1129,17 +1164,17 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
         || (payment !== undefined && payment !== null && !shownPayment.success)) {
         return notPermitted('That public display presentation is not valid.');
       }
-      if (fnbCart?.supported && (stage !== 'welcome' && !shownTotals.success
+      if (guestCart?.supported && (stage !== 'welcome' && !shownTotals.success
         || stage === 'payment' && !shownPayment.success
-        || fnbCart.completion && shownTotals.success && fnbCart.completion.total !== shownTotals.data.total)) {
-        return notPermitted('The food order needs its current totals and payment state.');
+        || guestCart.completion && shownTotals.success && guestCart.completion.total !== shownTotals.data.total)) {
+        return notPermitted('The order needs its current totals and payment state.');
       }
       return ok({ stage, step: typeof step === 'number' ? step : null,
         cart: shownCart,
-        member: isFnb ? null : shownMember.success ? shownMember.data : null,
-        totals: isFnb && !shownCart?.supported ? null : shownTotals.success ? shownTotals.data : null,
-        payment: isFnb && !shownCart?.supported ? null : shownPayment.success ? shownPayment.data : null,
-        prompt: savedPrompt?.kind === 'child_review' ? savedPrompt : stripKeys(savedPrompt),
+        member: isGuestOrder ? null : shownMember.success ? shownMember.data : null,
+        totals: isGuestOrder && !shownCart?.supported ? null : shownTotals.success ? shownTotals.data : null,
+        payment: isGuestOrder && !shownCart?.supported ? null : shownPayment.success ? shownPayment.data : null,
+        prompt: ['child_review', 'consent'].includes(String(savedPrompt?.kind)) ? savedPrompt : stripKeys(savedPrompt),
       });
     },
   },
@@ -1158,6 +1193,10 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
   'display.child_review': {
     sources: ['display'], stages: ['input'], requiresLease: false, advanceSequence: true,
     apply: childReviewAnswer,
+  },
+  'display.consent': {
+    sources: ['display'], stages: ['input'], requiresLease: false, advanceSequence: true,
+    apply: consentAnswer,
   },
   /** The display's language toggle, which the prototype already shows. */
   'display.set_language': {
@@ -1178,7 +1217,7 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
     requiresLease: false,
     apply({ document, intent }) {
       if (!document.prompt) return wrong('Nothing is being asked on this screen.');
-      if (['identify', 'contact', 'child_review'].includes(String(document.prompt.kind))) return notPermitted('Use the matching display action for this request.');
+      if (['identify', 'contact', 'child_review', 'consent'].includes(String(document.prompt.kind))) return notPermitted('Use the matching display action for this request.');
       if (String(document.prompt.kind).toLowerCase().replace(/[^a-z]/g, '').includes('consent') && document.stage !== 'input') {
         return wrong('Consent can only be answered on its input screen.');
       }

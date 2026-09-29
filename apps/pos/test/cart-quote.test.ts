@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cartQuote, settle } from './support/fixtures';
+import { apiSale, cartQuote, settle } from './support/fixtures';
 import { renderHook } from './support/hooks';
 import { ApiError } from '@/api/client';
 import {
@@ -11,9 +11,11 @@ import {
 } from '@/api/sales';
 import { useCartQuote } from '@/lib/cartQuote';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
+import { merchDisplayPresentation, type MerchDisplayState } from '@/lib/merchDisplaySession';
+import { readDisplayMerchCart } from '@oto/shared';
 import { computeLineTotal } from '@/lib/pricing';
 import { getMenuItems, getTicketTypes } from '@/store/catalogStore';
-import type { CartLine, Discount, FnbOrderLine, ManualDiscount } from '@/types';
+import type { CartLine, Discount, FnbOrderLine, ManualDiscount, MerchOrder } from '@/types';
 
 /**
  * THE PRICE ON THE SCREEN — `lib/cartQuote.ts` (S2-09a, SCRUM-203) for the
@@ -36,6 +38,7 @@ import type { CartLine, Discount, FnbOrderLine, ManualDiscount } from '@/types';
  * local figure is the till's real engine over the catalogue's seed.
  */
 vi.mock('react', () => import('./support/hooks'));
+vi.mock('@/lib/displaySession', () => ({ useStationDisplay: vi.fn() }));
 vi.mock('@/api/sales', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/api/sales')>()),
   quoteCart: vi.fn(),
@@ -121,6 +124,95 @@ beforeEach(() => {
   // The hooks debounce on `window.setTimeout`; in Node that is the global's, faked above.
   vi.stubGlobal('window', globalThis);
   asked = holdAnswers(askTill);
+});
+
+describe('captured guest shop display', () => {
+  function guest(overrides: Partial<MerchDisplayState> = {}): MerchDisplayState {
+    return { sessionKey: 'guest-1', stage: 'order', online: true, excluded: false,
+      lines: [{ id: 'shop-1', merchItem: { id: 'item-1', name: 'Old shop label', active: true,
+        price: { weekday: 999, weekend: 999 } }, qty: 2, lineTotal: 1998, variantLabel: 'Old size' }],
+      manualDiscounts: [],
+      quote: cartQuote(240, { lineTotals: { 'shop-1': 240 },
+        itemPresentation: { 'shop-1': { name: 'Grip Socks (M)', basePrice: 120, modifiers: [] } } }),
+      pending: false, quoteFailed: false,
+      payment: { saleId: 'sale-1', amountSatang: 24_000, qrPayload: null, qrImageUrl: null,
+        expiresAt: null, status: 'idle', offline: false, online: true },
+      completedOrder: null, platformSale: null, ...overrides };
+  }
+
+  function paid(): MerchDisplayState {
+    const state = guest({ stage: 'thankyou' });
+    const completedOrder: MerchOrder = { id: 'local-1', operatorId: 'staff-1', operatorName: 'Till staff',
+      lines: [...state.lines], manualDiscounts: [], total: 240,
+      payment: { creditUsed: 0, cash: 100, card: 140, promptpay: 0 },
+      createdAt: '2026-09-29T00:00:00.000Z', status: 'paid', refunds: [] };
+    const sale = apiSale({ status: 'finalised' });
+    return { ...state, completedOrder,
+      platformSale: { ...sale, totals: { ...sale.totals, grossSatang: 24_000 } } };
+  }
+
+  it('uses captured names, sizes and unit amounts without local catalog repricing', () => {
+    const view = merchDisplayPresentation(guest());
+    expect(view.cart.lines).toEqual([{ id: 'shop-1', name: 'Grip Socks (M)', qty: 2, unitPrice: 120, lineTotal: 240 }]);
+    expect(view.totals?.total).toBe(240);
+    expect(view.member).toBeNull();
+    expect(view.prompt).toBeNull();
+  });
+
+  it('uses the captured staff discount amounts and strips its private audit fields', () => {
+    const state = guest();
+    const discount: ManualDiscount = { id: 'discount-1', scope: 'order', type: 'percent', value: 10,
+      reason: 'Private reason', amountTHB: 24, appliedBy: 'Till staff', appliedById: 'staff-1', appliedAt: '2026-09-29T00:00:00.000Z' };
+    const quote = { ...state.quote, totals: { ...state.quote.totals, manualAmounts: { 'discount-1': 24 }, total: 216 } };
+    const view = merchDisplayPresentation({ ...state, quote, manualDiscounts: [discount] });
+    expect(view.totals?.manualAmounts).toEqual({ 'discount-1': 24 });
+    expect(view.cart.manualDiscounts).toEqual([{ id: 'discount-1', scope: 'order', type: 'percent', value: 10 }]);
+  });
+
+  it('clears the purchase for excluded, offline, stale or non-platform quote states', () => {
+    const state = guest();
+    for (const change of [{ excluded: true }, { online: false }, { pending: true }, { quoteFailed: true },
+      { quote: { ...state.quote, source: 'till' as const } }]) {
+      const view = merchDisplayPresentation({ ...state, ...change });
+      expect(view.cart).toEqual({ kind: 'merch', supported: false, lines: [], manualDiscounts: [], completion: null });
+      expect(view.totals).toBeNull();
+      expect(view.payment).toBeNull();
+    }
+  });
+
+  it('refuses missing or mismatched capture rather than inventing a unit price', () => {
+    const state = guest();
+    for (const quote of [{ ...state.quote, itemPresentation: undefined },
+      { ...state.quote, lineTotals: { 'shop-1': 239 } },
+      { ...state.quote, itemPresentation: { 'shop-1': { name: 'Grip Socks', basePrice: 120,
+        modifiers: [{ groupName: 'Unexpected', optionName: 'Option', price: 0 }] } } }]) {
+      expect(merchDisplayPresentation({ ...state, quote }).cart.supported).toBe(false);
+    }
+  });
+
+  it('shares an actual pending payment frame and accepts only real settled completion', () => {
+    const state = guest({ stage: 'payment' });
+    state.payment = { ...state.payment, status: 'pending', qrImageUrl: 'https://example.test/payment.png' };
+    expect(merchDisplayPresentation(state).payment).toMatchObject({ status: 'pending', qrImageUrl: 'https://example.test/payment.png', amountSatang: 24_000 });
+    const completed = merchDisplayPresentation(paid());
+    expect(completed.cart.completion).toEqual({ saleId: 'sale-1', total: 240, payment: { cash: 100, card: 140, promptpay: 0 } });
+    expect(merchDisplayPresentation({ ...paid(), platformSale: apiSale() }).cart.supported).toBe(false);
+    const badPaid = paid();
+    badPaid.completedOrder!.payment.creditUsed = 10;
+    expect(merchDisplayPresentation(badPaid).cart.supported).toBe(false);
+    badPaid.completedOrder!.payment.creditUsed = 0;
+    badPaid.completedOrder!.payment.card = 139;
+    expect(merchDisplayPresentation(badPaid).cart.supported).toBe(false);
+  });
+
+  it('validates guest stages and strips unknown nested private fields', () => {
+    const cart = merchDisplayPresentation(guest()).cart;
+    expect(readDisplayMerchCart({ ...cart, member: { phone: 'private' },
+      lines: cart.lines.map(line => ({ ...line, stock: 4, staff: 'private' })) }, 'order')).toEqual(cart);
+    expect(readDisplayMerchCart(cart, 'identify')).toBeNull();
+    expect(readDisplayMerchCart(cart, 'thankyou')).toBeNull();
+    expect(readDisplayMerchCart(merchDisplayPresentation(paid()).cart, 'payment')).toBeNull();
+  });
 });
 
 afterEach(() => {

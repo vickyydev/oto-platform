@@ -5,6 +5,9 @@ import type { SupportedLang } from './types';
 // somehow missing a key (defensive; shouldn't happen with this map typed).
 // {{var}} placeholders are substituted by t(key, vars).
 export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
+  'merch.display.guestWelcome': { en: 'Take a piece of OTO Park home — apparel, toys and more.', zh: '把 OTO Park 的欢乐带回家——服饰、玩具及更多好物。', th: 'นำความสุขจาก OTO Park กลับบ้าน ทั้งเสื้อผ้า ของเล่น และอีกมากมาย', ru: 'Заберите частичку OTO Park домой — одежду, игрушки и многое другое.', fr: 'Emportez un peu d’OTO Park chez vous — vêtements, jouets et bien plus.' },
+  'superviseConsent.askTeam': { en: 'Ask the team', zh: '请工作人员帮助', th: 'ขอความช่วยเหลือจากทีมงาน', ru: 'Обратиться к сотрудникам', fr: "Demander à l'équipe" },
+  'superviseConsent.waitForTeam': { en: 'Thank you. The team will complete the staff checks.', zh: '谢谢。工作人员将完成检查。', th: 'ขอบคุณ ทีมงานจะดำเนินการตรวจสอบให้เสร็จ', ru: 'Спасибо. Сотрудники завершат проверку.', fr: "Merci. L'équipe terminera les vérifications." },
   'payment.stage.pending': { en: 'Waiting for the payment answer…', zh: '正在等待付款结果…', th: 'กำลังรอผลการชำระเงิน…', ru: 'Ожидание результата оплаты…', fr: 'En attente du résultat du paiement…' },
   'payment.stage.reversalPending': { en: 'The terminal took part of this payment. Wait for the reversal before choosing another method.', zh: '终端已收取部分款项。请等待冲正完成后再选择其他付款方式。', th: 'เครื่องรับชำระได้หักเงินบางส่วนแล้ว รอให้ยกเลิกรายการสำเร็จก่อนเลือกวิธีชำระอื่น', ru: 'Терминал списал часть суммы. Дождитесь отмены списания, прежде чем выбирать другой способ оплаты.', fr: 'Le terminal a prélevé une partie du paiement. Attendez son annulation avant de choisir un autre moyen de paiement.' },
   'payment.stage.complete': { en: 'Complete Sale', zh: '完成销售', th: 'เสร็จสิ้นการขาย', ru: 'Завершить продажу', fr: 'Terminer la vente' },

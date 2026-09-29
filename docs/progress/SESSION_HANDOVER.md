@@ -1,38 +1,34 @@
 # Handover - where this is, and what to do next
 
-## STOP POINT - 29 September 2026 late evening - terminal restart recovery
+## STOP POINT - 30 September 2026 - ready to deploy
 
-Current API85d35e0 is LIVE; POS/Console/Launcher/Booth remain88140af.
-Manual Render release is authorised while Actions cannot start because of
-billing/spending availability. Normal deployment settings remain unchanged.
-No new ticket is being started; finish this release checkpoint, then wait.
+The interrupted work is intact. All six existing native POS flows pass,
+including F&B, shop, saved-child review and guardian acknowledgement. The
+combined run cleaned up its own database and processes. Shop and consent
+captures also pass focused native checks; measured page bounds show no clipping.
+POS typecheck, full lint, production build and standalone smoke typing pass.
+Existing affected checks: POS92, shared19, box40; shared/box typecheck and lint
+pass. DB43 and schema verification pass for forward migration0033.
 
-SCRUM-206 restart recovery is checked:31 existing terminal tests, API typecheck
-and full lint pass. A missing result after the exchange timeout plus delivery
-grace moves only the scoped running SALE to inquiry or staff confirmation.
-It keeps the full reservation, never requeues SALE, records the diagnostic,
-and accepts a genuine late result only while unresolved. The command stays
-running for its genuine acknowledgement. Concurrent readers produce one audit.
-The old uncertain partial remains untouched. The newer GHL simulation stranded
-by the deployment is retained for post-deploy recovery through authorised APIs;
-no second charge or invented result has been sent.
+SCRUM-206 terminal recovery now also handles an already-failed command without
+a result, preserves its diagnostic and full reservation, and never sends a
+second SALE. All33 existing terminal tests, API typecheck and full lint pass.
+The historical uncertain partial remains protected. The separate newer GHL
+no-response simulation awaits recovery after deployment; its known simulator
+path did not take money. Three other fresh staging payment follow-ups passed
+with reviewed attachments10917-10920.
 
-Native staging checks already pass for automatic partial reversal followed by
-cash, disabled QR before any attempt followed by cash, and zero-value sale
-without a tender. Reviewed screenshots10917-10920 are attached to SCRUM-206.
-The ticket remains In Progress; separate To Do SCRUM-269 blocks full offline
-trading. No new ticket or independent offline-transport work is being started.
+Source is ready for the final manual Render release. Current API85d35e0 and
+frontends88140af are LIVE. GitHub Actions still cannot start because of billing;
+CI is not green and no newer CI-packed Pi archive exists. Deploy the final API
+first, then POS/Console/Launcher/Booth, and prove the feature on staging.
+After0033 the earliest compatible API rollback is85d35e0, never88140af or older.
 
-SCRUM-201 shop and consent native cases now pass individually. The consent
-unlock defect is fixed by pausing typed publication during online quote refresh,
-with92 POS checks passing; actual offline still invalidates stale answers.
-Final combined browser proof and shop visual review precede feature commit and
-staging verification.0033 is already checked:43 DB cases, schema verification,
-typecheck/lint pass; migration awaits final deployment. After0033, API rollback
-must remain at85d35e0 or a verified descendant; never88140af or older.
-Foundation staging screenshots10908-10916 are attached. SCRUM-285 is Deployed
-with its11-check staging card10905. CI is not green and no new CI Pi artifact
-exists. Save final exact versions, evidence and guidelines before the break.
+SCRUM-201 is ready for staging testing; SCRUM-285 is already Deployed with
+attachment10905. SCRUM-206 remains In Progress because separate To Do SCRUM-269
+blocks complete offline trading. Neither current ticket has subtasks. Finish
+only this release checkpoint, attach named staging screenshots, save final
+versions and guidelines, then stop. Do not select another ticket.
 
 ## STOP POINT - 29 September 2026 evening - saved-child display review
 

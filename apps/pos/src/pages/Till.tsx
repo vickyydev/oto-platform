@@ -8,12 +8,13 @@ import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
-import { ChildReviewPromptSchema, childReviewAge, type ChildReviewPrompt } from '@oto/shared';
+import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentActionAllowed,
+  type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
-import { resolveGroupRequirements, resolveSupervisionOutcome, buildAcknowledgedConfirmations } from '@/lib/supervision';
+import { resolveGroupRequirements, resolveSupervisionOutcome, buildAcknowledgedConfirmations, sortedConfirmations } from '@/lib/supervision';
 import { buildSale } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
@@ -371,6 +372,9 @@ export default function Till() {
   const [reviewReferenceDate, setReviewReferenceDate] = useState(reviewDate);
   const [reviewRevision, setReviewRevision] = useState(0);
   const [reviewStaffOnly, setReviewStaffOnly] = useState(false);
+  const [consentStaffOnly, setConsentStaffOnly] = useState(false);
+  const [consentPrivateOpen, setConsentPrivateOpen] = useState(false);
+  const [consentCompletedScope, setConsentCompletedScope] = useState<string | null>(null);
   // True once the gate has resolved + converted the anonymous kids, so re-pressing
   // Pay (e.g. after assigning a nanny at step 3) doesn't re-open the gate.
   const [supervisionResolved, setSupervisionResolved] = useState<boolean>(false);
@@ -577,6 +581,9 @@ export default function Till() {
     setReviewReferenceDate(reviewDate());
     setReviewRevision(0);
     setReviewStaffOnly(false);
+    setConsentStaffOnly(false);
+    setConsentPrivateOpen(false);
+    setConsentCompletedScope(null);
     setSupervisionResolved(false);
   };
 
@@ -1509,6 +1516,9 @@ export default function Till() {
     setReviewReferenceDate(reviewDate());
     setReviewRevision(0);
     setReviewStaffOnly(false);
+    setConsentStaffOnly(false);
+    setConsentPrivateOpen(false);
+    setConsentCompletedScope(null);
     // A returning member with saved children sees the re-confirm step first; their
     // details pre-fill the slots (text only, never the photo) but are applied only
     // after they confirm. First-timers / walk-ins skip straight to the gate.
@@ -2694,7 +2704,7 @@ export default function Till() {
   let customerStage: CustomerStage;
   if (step === 6) customerStage = 'thankyou';
   else if (step === 5) customerStage = 'payment';
-  else if (step === 4 || step === 8) customerStage = 'input';
+  else if (step === 4 || step === 7 || step === 8) customerStage = 'input';
   else if (step === 1) customerStage = 'identify';
   else if (lines.length > 0) customerStage = 'order';
   else customerStage = 'welcome';
@@ -2711,6 +2721,30 @@ export default function Till() {
     save: reviewSave.save, canContinue: reviewCanContinue,
   };
   const displayOnline = reviewOnline && cart.quote.source === 'platform' && !cart.pending && !cart.error;
+  const consentRequirements = resolveGroupRequirements(superSlots.map(slot => ({ id: slot.id, age: slotAge(slot) ?? -1 })), supervisionPolicy);
+  const consentRows = superSlots.map(slot => ({ slot, outcome: resolveSupervisionOutcome(
+    consentRequirements.find(item => item.id === slot.id)?.requirement ?? 'none', slot.waived, slot.optIn) }));
+  const consentRequired = consentRows.some(row => row.outcome.needsConsent);
+  const consentStaffReady = !gateSaving && consentRows.every(row => !row.outcome.needsConsent || !!row.slot.childPhotoUrl);
+  const consentConfirmations = sortedConfirmations(supervisionPolicy).map(item => ({ id: item.id, text: item.text,
+    required: item.required, acknowledged: superAcknowledgedConfirmationIds.includes(item.id) }));
+  const consentBase: Omit<ConsentPrompt, 'kind' | 'requestId' | 'completed'> = {
+    visitorId: reviewVisitorId,
+    slots: consentRows.map(({ slot, outcome }) => ({ id: slot.id, name: slot.name,
+      ageYears: slotAge(slot) ?? -1, requirement: outcome.effective })),
+    guardianName: superParentName, consentRequired, consentAcknowledged: superConsentAck,
+    confirmations: consentConfirmations, staffReady: consentStaffReady,
+    canContinue: consentStaffReady && (!consentRequired || !!superParentName.trim() && superConsentAck)
+      && consentConfirmations.every(item => !item.required || item.acknowledged),
+  };
+  const consentSignature = JSON.stringify(consentBase);
+  const consentCandidate = { ...consentBase, completed: consentCompletedScope === consentSignature };
+  const consent = step === 7 && displayOnline && !consentStaffOnly
+    && ConsentPromptSchema.safeParse({ ...consentCandidate, kind: 'consent', requestId: 'validation' }).success
+    ? consentCandidate : undefined;
+  const consentScope = `${reviewScope}:${consentSignature}`;
+  const consentContext = useRef({ scope: consentScope, signature: consentSignature, consent, online: displayOnline, step });
+  consentContext.current = { scope: consentScope, signature: consentSignature, consent, online: displayOnline, step };
   const childReview = step === 8 && displayOnline && !reviewStaffOnly && !!member && superSlots.length > 0
     && superSlots.every(slot => !!slot.savedChildId)
     && ChildReviewPromptSchema.safeParse({ ...reviewCandidate, kind: 'child_review', requestId: 'validation' }).success
@@ -2722,9 +2756,28 @@ export default function Till() {
     sale: { ...liveSale, id: saleWriter.committed?.id ?? liveSale.id }, totals: cart.totals,
     rateMode: cart.quote.pricingMode,
     online: displayOnline,
+    quoteRefreshing: reviewOnline && cart.pending,
     payment: paymentDisplay, voucherPrize: voucher.held?.view.prize ?? null, nothingToPay: saleOwesNothing,
-    childReview, reviewRevision,
+    childReview, reviewRevision, consent, consentRevision: `${consentSignature}:${consentCandidate.completed}:${consentStaffOnly}`,
   }, async answer => {
+    if (answer.type === 'consent') {
+      const current = consentContext.current;
+      const action = ConsentActionSchema.safeParse(answer.payload);
+      if (reviewEpoch !== saleEpochRef.current || staffLocked.current || current.scope !== consentScope
+        || current.step !== 7 || !current.online || !current.consent || !action.success) return false;
+      const prompt = ConsentPromptSchema.safeParse({ ...current.consent, kind: 'consent', requestId: action.data.requestId });
+      if (!prompt.success || !consentActionAllowed(prompt.data, action.data)) return false;
+      if (action.data.action === 'staff_help') setConsentStaffOnly(true);
+      else if (action.data.action === 'acknowledge') {
+        setSuperParentName(action.data.guardianName);
+        setSuperConsentAck(action.data.consentAcknowledged);
+        setSuperAcknowledgedConfirmationIds(action.data.acknowledgedConfirmationIds);
+        setConsentCompletedScope(null);
+      } else setConsentCompletedScope(current.signature);
+      // Acknowledgement never authorises registration, policy changes or payment.
+      // Continue remains the existing staff action after all private checks.
+      return true;
+    }
     if (answer.type === 'child_review') {
       const current = reviewContext.current;
       const action = answer.payload;
@@ -2909,7 +2962,14 @@ export default function Till() {
             /></>
           )}
           {step === 7 && tier && (
-            <SupervisionGate
+            <div className="flex h-full min-h-0 flex-col">
+              {linkedDisplay.connected.length > 0 && <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground">{consentCandidate.completed
+                  ? 'The guardian has finished the display acknowledgements. Review the private details before Continue.'
+                  : 'The guardian can acknowledge on the display. Private child details stay on this screen.'}</p>
+                <Button size="sm" variant="outline" disabled={gateSaving} onClick={() => setConsentPrivateOpen(true)}>Private child details</Button>
+              </div>}
+              <div className="flex-1 min-h-0"><SupervisionGate
               slots={superSlots}
               parentName={superParentName}
               consentAck={superConsentAck}
@@ -2920,7 +2980,8 @@ export default function Till() {
               onBack={handleSupervisionBack}
               onContinue={handleSupervisionContinue}
               busy={gateSaving}
-            />
+              /></div>
+            </div>
           )}
           {step === 6 && saleResult && (
             <div className="flex h-full min-h-0 flex-col">
@@ -3131,6 +3192,23 @@ export default function Till() {
           </div>
         )}
       </div>
+
+      <Dialog open={step === 7 && consentPrivateOpen} onOpenChange={setConsentPrivateOpen}>
+        <DialogContent className="max-w-4xl h-[90dvh] min-h-0 flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 shrink-0">
+            <DialogTitle>Private child details</DialogTitle>
+            <DialogDescription>Complete the child and guardian checks on this staff screen before continuing.</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 dark" inert={gateSaving}>
+            <ConsentCapture slots={superSlots} parentName={superParentName} consentAck={superConsentAck} policy={supervisionPolicy}
+              parentPhone={superParentPhone} parentContactMethod={superParentContactMethod}
+              onParentNameChange={setSuperParentName} onParentPhoneChange={setSuperParentPhone}
+              onParentContactMethodChange={setSuperParentContactMethod} onConsentAckChange={setSuperConsentAck}
+              onUpdateChild={handleUpdateSlot} acknowledgedConfirmationIds={superAcknowledgedConfirmationIds}
+              onToggleConfirmation={handleToggleConfirmation} />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {operator && (
         <ManualDiscountModal

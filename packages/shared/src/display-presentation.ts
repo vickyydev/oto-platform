@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { StationSessionDocumentSchema } from './station-session';
 import { DisplayFnbCartSchema, readDisplayFnbCart } from './display-fnb';
+import { DisplayMerchCartSchema, readDisplayMerchCart } from './display-merch';
 
 const text = z.string().max(500);
 const id = z.string().min(1).max(200);
@@ -88,7 +89,7 @@ const legacyCart = z.object({ supported: z.boolean(), sale: z.object({ tier: id 
 
 /** A finite diagnostic, never a replayable payment QR or visitor answer. */
 export const DisplayDiagnosticDocumentSchema = diagnosticFrame.extend({
-  cart: z.union([DisplayFnbCartSchema, DisplayCartSchema, legacyCart]).nullable(),
+  cart: z.union([DisplayFnbCartSchema, DisplayMerchCartSchema, DisplayCartSchema, legacyCart]).nullable(),
   member: DisplayMemberSchema.nullable(), totals: DisplayTotalsSchema.nullable(),
   payment: diagnosticPayment.nullable(),
   prompt: z.object({ kind: z.string().min(1).max(32), requestId: z.string().min(1).max(64).optional(),
@@ -107,7 +108,10 @@ export function projectDisplayDiagnosticDocument(input: unknown): DisplayDiagnos
   const cart = DisplayCartSchema.safeParse(source.cart);
   const rawCart = record(source.cart);
   const isFnb = rawCart?.kind === 'fnb';
-  const fnb = isFnb ? readDisplayFnbCart(rawCart, frame.data.stage) : null;
+  const isMerch = rawCart?.kind === 'merch';
+  const isGuestOrder = isFnb || isMerch;
+  const guestCart = isFnb ? readDisplayFnbCart(rawCart, frame.data.stage)
+    : isMerch ? readDisplayMerchCart(rawCart, frame.data.stage) : null;
   const rawSale = record(rawCart?.sale);
   const legacy = rawSale && !('id' in rawSale) ? legacyCart.safeParse(rawCart) : null;
   const member = DisplayMemberSchema.safeParse(source.member);
@@ -125,11 +129,11 @@ export function projectDisplayDiagnosticDocument(input: unknown): DisplayDiagnos
     answeredAt: rawPrompt.answeredAt,
   } : null);
   return {
-    ...frame.data, cart: isFnb ? fnb : cart.success ? cart.data : legacy?.success ? legacy.data : null,
-    member: isFnb ? null : member.success ? member.data : null,
-    totals: isFnb && !fnb?.supported ? null : totals.success ? totals.data : null,
-    payment: isFnb && !fnb?.supported ? null : payment.success ? payment.data : null,
-    prompt: isFnb ? null : prompt.success ? prompt.data : null,
+    ...frame.data, cart: isGuestOrder ? guestCart : cart.success ? cart.data : legacy?.success ? legacy.data : null,
+    member: isGuestOrder ? null : member.success ? member.data : null,
+    totals: isGuestOrder && !guestCart?.supported ? null : totals.success ? totals.data : null,
+    payment: isGuestOrder && !guestCart?.supported ? null : payment.success ? payment.data : null,
+    prompt: isGuestOrder ? null : prompt.success ? prompt.data : null,
   };
 }
 

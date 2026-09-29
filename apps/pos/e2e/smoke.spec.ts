@@ -87,6 +87,13 @@ async function typePhone(page: Page, phone: string): Promise<void> {
 async function captureLocalCheck(page: Page, name: string): Promise<void> {
   const directory = process.env.POS_E2E_EVIDENCE_DIR;
   if (!directory) return;
+  await expect.poll(() => page.evaluate(() => document.body.getAnimations({ subtree: true })
+    .every(animation => animation.effect?.getComputedTiming().iterations === Infinity
+      || !animation.pending && animation.playState !== 'running')
+    && Array.from(document.querySelectorAll('.animate-in'))
+      .filter(element => element.getBoundingClientRect().width > 0 && element.getBoundingClientRect().height > 0)
+      .every(element => Number(getComputedStyle(element).opacity) >= 0.99)), { timeout: 5000 }).toBe(true);
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await mkdir(directory, { recursive: true });
   await page.evaluate(() => {
     const stamp = document.createElement('div');
@@ -186,7 +193,8 @@ async function pairedDisplay(browser: Browser, staff: Page, baseURL: string) {
     expect(typeof code === 'string' && /^\d{6}$/.test(code)).toBe(true);
     const publication = staff.waitForResponse(response => response.url().endsWith(`/api/stations/${link.stationId}/intents`)
       && response.request().method() === 'POST' && response.status() === 200
-      && response.request().postDataJSON()?.type === 'session.publish_display').catch(() => null);
+      && response.request().postDataJSON()?.type === 'session.publish_display'
+      && response.request().postDataJSON()?.payload?.stage === 'identify').catch(() => null);
     const claimed = await admin.post(`/api/stations/${link.stationId}/displays/claim`, {
       data: { pairingCode: code, name: `Local smoke display ${crypto.randomUUID().slice(0, 8)}` },
       headers: { 'Idempotency-Key': `display-smoke-claim-${crypto.randomUUID()}` },
@@ -491,7 +499,7 @@ test('separate display saved-child review persists before Done and retries a los
     await captureLocalCheck(fixture.display, 'ticket-display-child-confirmed-local.png');
     await review.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(fixture.display.getByText('Please follow the staff screen.', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(fixture.display.getByTestId('display-consent')).toBeVisible({ timeout: 20_000 });
     await expect(fixture.display.getByTestId('display-child-review')).toHaveCount(0);
     expect(unrelatedWrites === 0).toBe(true);
   } finally {
@@ -648,6 +656,278 @@ test('separate display guest F&B uses the captured order through lock, cash paym
     await expect(publicFnb.getByText(/credit balance|remaining credit|fnb credit/i)).toHaveCount(0);
     await captureLocalCheck(fixture.display, 'fnb-display-completed-local.png');
   } finally {
+    try {
+      if (await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible()) await unlock(page);
+      if (await page.getByLabel('Lock screen').isVisible()) { await fixture.releaseLease(); await signOut(page); }
+    } finally {
+      try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
+    }
+  }
+});
+
+test('separate display guardian acknowledgement retains lock and retry, while staff authorises private readiness', async ({ page, browser, baseURL }) => {
+  test.setTimeout(150_000);
+  requireLocalFixture(baseURL);
+  await page.goto('/');
+  await signIn(page);
+  const fixture = await pairedDisplay(browser, page, baseURL);
+  let blockRead = false;
+  let publicWrites = 0;
+  let businessWrites = 0;
+  const observe = (request: Request) => {
+    if (!['POST', 'PATCH', 'PUT', 'DELETE'].includes(request.method())) return;
+    const pathname = new URL(request.url()).pathname;
+    if (/^\/api\/(payments|check-?ins?|registrations?|visits|checkout)(\/|$)/.test(pathname)
+      || pathname === '/api/sales' || /^\/api\/sales\/[^/]+\/finalise$/.test(pathname)
+      || /^\/api\/members\/[^/]+\/children(\/|$)/.test(pathname)) businessWrites += 1;
+  };
+  const readConsent = (ready?: boolean, completed?: boolean) => fixture.display.waitForResponse(async response => {
+    if (!response.url().endsWith('/api/display/session') || response.status() !== 200) return false;
+    const document = (await response.json()).document;
+    return document?.prompt?.kind === 'consent' && (ready === undefined || document.prompt.canContinue === ready)
+      && (completed === undefined || document.prompt.completed === completed);
+  });
+  try {
+    const lookup = page.waitForResponse(response => response.url().includes('/api/members/lookup?') && response.status() === 200);
+    await typePhone(fixture.display, MEMBER_PHONE);
+    await fixture.display.getByRole('button', { name: 'Find my membership', exact: true }).click();
+    await lookup;
+    await expect(page.getByText("Who's visiting today?", { exact: true })).toBeVisible({ timeout: 20_000 });
+    for (const button of await page.getByRole('dialog').getByRole('button', { name: /^Details/ }).all()) {
+      if (await button.getAttribute('aria-expanded') === 'true') await button.click();
+    }
+    await page.getByRole('button', { name: /Confirm 2 children/ }).click();
+    await page.getByRole('heading', { name: 'Thai', exact: true }).click();
+    await page.getByRole('heading', { name: '1 Hour Play', exact: true }).click();
+    await page.getByRole('button', { name: 'Remove one Adults', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    const review = fixture.display.getByTestId('display-child-review');
+    await expect(review).toBeVisible({ timeout: 20_000 });
+    await review.getByRole('button', { name: 'Confirm', exact: true }).click();
+    await expect(review.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
+    const opened = readConsent(false);
+    await review.getByRole('button', { name: 'Done', exact: true }).click();
+    const document = (await (await opened).json()).document;
+    expect(document.step === null && document.prompt.slots.length === 1 && document.prompt.staffReady === false).toBe(true);
+    const consent = fixture.display.getByTestId('display-consent');
+    await expect(consent).toBeVisible({ timeout: 20_000 });
+    expect(document.prompt.slots.every((slot: Record<string, unknown>) => Object.keys(slot).every(key =>
+      ['id', 'name', 'ageYears', 'requirement'].includes(key)))).toBe(true);
+    expect(/allergies|medical|foodRestrictions|childPhotoUrl|waived|savedChildId|policy/.test(JSON.stringify(document))).toBe(false);
+    await expect(consent.locator('video, canvas, input[type="file"]')).toHaveCount(0);
+    for (const viewport of [{ width: 1024, height: 768 }, { width: 1280, height: 800 }]) {
+      await fixture.display.setViewportSize(viewport);
+      expect(await fixture.display.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+    await fixture.display.setViewportSize({ width: 1024, height: 768 });
+    page.on('request', observe); fixture.display.on('request', observe);
+    await consent.getByLabel('Parent / guardian name', { exact: true }).fill('Local guardian');
+    for (const checkbox of await consent.getByRole('checkbox').all()) await checkbox.check();
+    await page.getByLabel('Lock screen').click();
+    await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
+    await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardian');
+    let originalGesture: { actionId: string; payload: unknown } | undefined;
+    await fixture.display.route('**/api/display/session', async route => {
+      if (blockRead) await route.abort('failed'); else await route.continue();
+    });
+    await fixture.display.route('**/api/display/intents', async route => {
+      const body = route.request().postDataJSON();
+      if (body.type !== 'display.consent' || body.payload.action !== 'acknowledge') { await route.continue(); return; }
+      publicWrites += 1;
+      if (publicWrites === 1) {
+        originalGesture = { actionId: body.actionId, payload: body.payload };
+        blockRead = true;
+        const actual = await route.fetch();
+        expect(actual.status()).toBe(200);
+        await route.abort('failed');
+      } else {
+        expect(body.actionId === originalGesture?.actionId && JSON.stringify(body.payload) === JSON.stringify(originalGesture?.payload)).toBe(true);
+        blockRead = false;
+        await route.continue();
+      }
+    });
+    await consent.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(fixture.display.getByRole('button', { name: 'Retry', exact: true })).toBeVisible({ timeout: 20_000 });
+    await fixture.display.getByRole('button', { name: 'Retry', exact: true }).click();
+    await expect.poll(() => publicWrites).toBe(2);
+    await unlock(page);
+    await expect(consent.getByLabel('Parent / guardian name', { exact: true })).toHaveValue('Local guardian');
+    await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeDisabled();
+    await captureLocalCheck(fixture.display, 'ticket-display-consent-pending-local.png');
+
+    // This deterministic local camera frame exercises the existing staff-only capture component.
+    await page.evaluate(() => {
+      const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 240;
+      const context = canvas.getContext('2d')!; context.fillStyle = '#285646'; context.fillRect(0, 0, 320, 240);
+      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { configurable: true, value: async () => {
+        const stream = canvas.captureStream(5);
+        const repaint = window.setInterval(() => context.fillRect(0, 0, 320, 240), 100);
+        stream.getVideoTracks()[0].addEventListener('ended', () => window.clearInterval(repaint), { once: true });
+        return stream;
+      } });
+    });
+    await page.getByRole('button', { name: 'Private child details', exact: true }).click();
+    const privateForm = page.getByRole('dialog', { name: 'Private child details', exact: true });
+    await expect(privateForm.getByPlaceholder('Your full name', { exact: true })).toHaveValue('Local guardian', { timeout: 20_000 });
+    await privateForm.getByPlaceholder(/^e.g. peanut allergy/).fill('Private local health marker');
+    await privateForm.getByRole('button', { name: 'Start camera', exact: true }).click();
+    await privateForm.getByRole('button', { name: 'Take photo', exact: true }).click();
+    await expect(privateForm.getByAltText('Captured', { exact: true })).toBeVisible();
+    const ready = readConsent(true);
+    await privateForm.getByRole('button', { name: 'Close', exact: true }).click();
+    const valid = (await (await ready).json()).document;
+    expect(valid.prompt.staffReady === true && valid.prompt.consentAcknowledged === true
+      && valid.prompt.confirmations.every((item: { required: boolean; acknowledged: boolean }) => !item.required || item.acknowledged)).toBe(true);
+    expect(/Private local health marker|childPhotoUrl|data:image|medical|foodRestrictions|waived/.test(JSON.stringify(valid))).toBe(false);
+    await expect(consent.getByRole('button', { name: 'Done', exact: true })).toBeEnabled({ timeout: 20_000 });
+    const finished = readConsent(true, true);
+    await consent.getByRole('button', { name: 'Done', exact: true }).click();
+    await finished;
+    await expect(page.getByRole('heading', { name: 'Children playing alone', exact: true })).toBeVisible();
+    await expect(consent.getByText('Thank you. The team will complete the staff checks.', { exact: true })).toBeVisible();
+    expect(businessWrites === 0).toBe(true);
+    await captureLocalCheck(fixture.display, 'ticket-display-consent-complete-local.png');
+
+    await page.getByRole('button', { name: 'Private child details', exact: true }).click();
+    await privateForm.getByPlaceholder('Your full name', { exact: true }).fill('Local guardian updated');
+    await privateForm.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(consent.getByRole('button', { name: 'Ask the team', exact: true })).toBeVisible({ timeout: 20_000 });
+    await consent.getByRole('button', { name: 'Ask the team', exact: true }).click();
+    await expect(fixture.display.getByText('Please follow the staff screen.', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByPlaceholder('Your full name', { exact: true })).toBeVisible();
+    expect(businessWrites === 0).toBe(true);
+  } catch (error) {
+    await captureLocalCheck(page, 'consent-failure-staff-local.png').catch(() => undefined);
+    throw error;
+  } finally {
+    blockRead = false;
+    page.off('request', observe); fixture.display.off('request', observe);
+    try {
+      await fixture.releaseLease();
+    } finally {
+      try { await fixture.cleanup(); } finally { await clearStaffPage(page); }
+    }
+  }
+});
+
+test('separate display guest shop uses captured sizes, lock retention, disconnect fallback and settled cash split', async ({ page, browser, baseURL }) => {
+  test.setTimeout(120_000);
+  requireLocalFixture(baseURL);
+  await page.goto('/');
+  await signIn(page);
+  const fixture = await pairedDisplay(browser, page, baseURL);
+  const shopSession = (stage: string, quantity?: number, amountSatang?: number) => {
+    let lastStatus: number | null = null;
+    let lastStage = 'none';
+    let lastSupported = false;
+    return fixture.display.waitForResponse(async response => {
+      if (!response.url().endsWith('/api/display/session')) return false;
+      lastStatus = response.status();
+      if (lastStatus !== 200) return false;
+      const document = (await response.json().catch(() => null))?.document;
+      lastStage = ['welcome', 'order', 'payment', 'thankyou'].includes(document?.stage) ? document.stage : 'other';
+      lastSupported = document?.cart?.kind === 'merch' && document.cart.supported === true;
+      return lastStage === stage && lastSupported
+        && (quantity === undefined || document.cart.lines[0]?.qty === quantity)
+        && (amountSatang === undefined || document.payment?.amountSatang === amountSatang);
+    }).catch(() => { throw new Error(`Shop display ${stage} response missing (status=${lastStatus}, stage=${lastStage}, supported=${lastSupported})`); });
+  };
+  try {
+    const welcome = shopSession('welcome');
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Retail Sale', exact: true })).toBeVisible();
+    await welcome;
+    const publicShop = fixture.display.getByTestId('display-merch');
+    await expect(publicShop.getByRole('heading', { name: 'Oto Shop', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(publicShop.getByText(/wristband|credit balance|remaining credit/i)).toHaveCount(0);
+    await page.getByRole('button', { name: /No wristband.*continue as guest/ }).click();
+    await page.getByRole('button', { name: /Grip Socks/ }).click();
+    const picked = shopSession('order', 1);
+    await page.getByRole('dialog', { name: 'Choose size — Grip Socks', exact: true })
+      .getByRole('button', { name: 'M', exact: true }).click();
+    await picked;
+    const quoted = page.waitForResponse(response => response.url().endsWith('/api/sales/quote')
+      && response.request().method() === 'POST' && response.status() === 200
+      && response.request().postDataJSON()?.items?.some((item: { quantity: number }) => item.quantity === 2));
+    const doubled = shopSession('order', 2);
+    await page.getByRole('button', { name: 'Add one Grip Socks', exact: true }).click();
+    const quote = (await (await quoted).json()).quote;
+    const document = (await (await doubled).json()).document;
+    const line = document.cart.lines[0];
+    const captured = Object.values(quote.itemPresentation)[0] as { name: string; basePriceSatang: number };
+    expect(line.qty === 2 && line.name === captured.name && line.name.includes('Grip Socks') && line.name.includes('M')
+      && Math.round(line.unitPrice * 100) === captured.basePriceSatang
+      && Math.round(line.lineTotal * 100) === captured.basePriceSatang * 2
+      && Math.round(document.totals.total * 100) === quote.totals.grossSatang
+      && document.step === null && document.member === null && document.prompt === null).toBe(true);
+    await expect(publicShop.getByTestId('merch-display-line')).toHaveCount(1);
+    await expect(publicShop.getByText(line.name, { exact: true })).toBeVisible();
+    await expect(publicShop.getByText(`฿${line.unitPrice} each`, { exact: true })).toBeVisible();
+    await expect(publicShop.getByText(`฿${document.totals.total}`, { exact: true }).last()).toBeVisible();
+    await expect(publicShop.getByText(/medical|allergy|wallet|remaining credit|stock|cost/i)).toHaveCount(0);
+    for (const viewport of [{ width: 1024, height: 768 }, { width: 1280, height: 800 }]) {
+      await fixture.display.setViewportSize(viewport);
+      expect(await fixture.display.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+    await fixture.display.setViewportSize({ width: 1024, height: 768 });
+    await captureLocalCheck(fixture.display, 'shop-display-order-local.png');
+
+    await page.getByLabel('Lock screen').click();
+    await expect(page.getByRole('heading', { name: 'Locked', exact: true })).toBeVisible();
+    const locked = (await (await shopSession('order', 2)).json()).document;
+    expect(JSON.stringify(locked.cart) === JSON.stringify(document.cart)
+      && JSON.stringify(locked.totals) === JSON.stringify(document.totals)).toBe(true);
+    await unlock(page);
+    await expect(page.getByRole('button', { name: `Charge ฿${document.totals.total}`, exact: true })).toBeVisible();
+
+    await fixture.display.context().setOffline(true);
+    await expect(page.getByTestId('merch-display-line')).toHaveCount(1, { timeout: 25_000 });
+    await expect(page.getByTestId('merch-display-line').getByText(line.name, { exact: true })).toBeVisible();
+    await captureLocalCheck(page, 'shop-display-disconnected-inline-local.png');
+    const reconnected = shopSession('order', 2);
+    await fixture.display.context().setOffline(false);
+    await reconnected;
+    await expect(page.getByText(/Display connected:/)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId('merch-display-line')).toHaveCount(0, { timeout: 20_000 });
+
+    const payment = shopSession('payment', 2);
+    await page.getByRole('button', { name: `Charge ฿${document.totals.total}`, exact: true }).click();
+    await payment;
+    await expect(publicShop.getByText('Amount to pay', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: /^Cash / }).click();
+    await page.getByLabel('Payment amount', { exact: true }).fill('100.00');
+    await page.getByLabel('Cash received', { exact: true }).fill('110.00');
+    const partial = page.waitForResponse(response => /\/api\/sales\/[^/]+\/finalise$/.test(new URL(response.url()).pathname)
+      && response.request().method() === 'POST' && response.status() === 200);
+    const remainingSatang = quote.totals.grossSatang - 10_000;
+    const remainder = shopSession('payment', 2, remainingSatang);
+    await page.getByRole('button', { name: 'Record cash', exact: true }).click();
+    const part = (await (await partial).json());
+    expect(part.sale?.status === 'tendering' && part.outstandingSatang === remainingSatang).toBe(true);
+    const unpaid = (await (await remainder).json()).document;
+    expect(unpaid.cart.completion === null && unpaid.payment.amountSatang === remainingSatang).toBe(true);
+    await expect(page.getByRole('heading', { name: 'Sale Confirmed', exact: true })).toHaveCount(0);
+    await expect(publicShop.getByRole('heading', { name: 'Thank you!', exact: true })).toHaveCount(0);
+    await captureLocalCheck(fixture.display, 'shop-display-payment-partial-local.png');
+    await page.getByRole('button', { name: /^Cash / }).click();
+    await page.getByLabel('Cash received', { exact: true }).fill((remainingSatang / 100 + 10).toFixed(2));
+    const finalised = page.waitForResponse(response => /\/api\/sales\/[^/]+\/finalise$/.test(new URL(response.url()).pathname)
+      && response.request().method() === 'POST' && response.status() === 200);
+    const thankyou = shopSession('thankyou', 2);
+    await page.getByRole('button', { name: 'Record cash', exact: true }).click();
+    const written = (await (await finalised).json()).sale;
+    const completed = (await (await thankyou).json()).document;
+    const summary = completed.cart.completion;
+    expect(written?.status === 'finalised' && summary?.saleId === written.id
+      && Math.round(summary.total * 100) === written.totals.grossSatang
+      && summary.payment.cash === summary.total && summary.payment.card === 0 && summary.payment.promptpay === 0).toBe(true);
+    await expect(page.getByRole('heading', { name: 'Sale Confirmed', exact: true })).toBeVisible();
+    await expect(publicShop.getByRole('heading', { name: 'Thank you!', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(publicShop.getByText('Cash', { exact: true })).toBeVisible();
+    await expect(publicShop.getByText(/wallet|remaining credit|credit balance/i)).toHaveCount(0);
+    await captureLocalCheck(fixture.display, 'shop-display-completed-local.png');
+  } finally {
+    await fixture.display.context().setOffline(false).catch(() => undefined);
     try {
       if (await page.getByRole('heading', { name: 'Locked', exact: true }).isVisible()) await unlock(page);
       if (await page.getByLabel('Lock screen').isVisible()) { await fixture.releaseLease(); await signOut(page); }

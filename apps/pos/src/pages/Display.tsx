@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Monitor } from 'lucide-react';
-import { DisplayPaymentSchema, DisplayTotalsSchema, readDisplayFnbCart, type StationIntent } from '@oto/shared';
+import { DisplayPaymentSchema, DisplayTotalsSchema, readDisplayFnbCart, readDisplayMerchCart, type StationIntent } from '@oto/shared';
 import { displayApi, DisplayError, newDisplayCredential, newerDisplaySession, readDisplayCredential, rememberDisplayCredential, type DisplaySession } from '@/api/display';
 import { CustomerDisplay } from '@/components/till/CustomerDisplay';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import type { ContactChannel } from '@/types';
 import { readTicketDisplayView } from '@/lib/displaySession';
 import { PublicSavedChildrenReview } from '@/components/shared/PublicSavedChildrenReview';
 import { FnbCustomerDisplay, type FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
+import { PublicMerchCustomerDisplay, type PublicMerchStage } from '@/components/merch/PublicMerchCustomerDisplay';
+import { PublicConsentCapture } from '@/components/till/PublicConsentCapture';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
 export default function Display() {
@@ -201,7 +203,16 @@ export default function Display() {
     && (document.stage !== 'payment' || fnbPayment?.success)
     && (!fnbCart.completion || fnbTotals?.success && fnbCart.completion.total === fnbTotals.data.total)
     ? { cart: fnbCart, totals: fnbTotals?.success ? fnbTotals.data : undefined } : null;
-  const view = document && !isFnb ? readTicketDisplayView(document) : null;
+  const isMerch = document?.cart?.kind === 'merch';
+  const merchCart = document && isMerch ? readDisplayMerchCart(document.cart, document.stage) : null;
+  const merchTotals = merchCart?.supported ? DisplayTotalsSchema.safeParse(document?.totals) : null;
+  const merchPayment = merchCart?.supported ? DisplayPaymentSchema.safeParse(document?.payment) : null;
+  const merch = merchCart?.supported && (merchTotals?.success || document?.stage === 'welcome')
+    && document?.member === null && document.prompt === null
+    && (document.stage !== 'payment' || merchPayment?.success)
+    && (!merchCart.completion || merchTotals?.success && merchCart.completion.total === merchTotals.data.total)
+    ? { cart: merchCart, totals: merchTotals?.success ? merchTotals.data : undefined } : null;
+  const view = document && !isFnb && !isMerch ? readTicketDisplayView(document) : null;
   const answer = document?.prompt?.answer;
   // The public response deliberately omits the staff wizard step. Its validated
   // input prompt identifies the review without exposing that staff-only state.
@@ -242,6 +253,22 @@ export default function Display() {
       {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">
         {busy ? 'Sending…' : 'Please wait for the team to confirm this change.'}
       </p>}
+    </> : view?.consent ? <>
+      <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
+      <div className="flex-1 min-h-0" inert={busy || !!answer || !!pending.current}>
+        <PublicConsentCapture key={view.consent.visitorId} prompt={view.consent}
+          busy={busy || !!answer || !!pending.current}
+          onAction={action => { void send('display.consent', action); }} />
+      </div>
+      {(busy || !!answer) && <p role="status" className="shrink-0 text-center py-3">
+        {busy ? 'Sending…' : 'Please wait for the team to confirm this change.'}
+      </p>}
+    </> : merch && document ? <>
+      <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
+      <div className="flex-1 min-h-0" data-testid="display-merch">
+        <PublicMerchCustomerDisplay stage={document.stage as PublicMerchStage}
+          cart={merch.cart} totals={merch.totals} payment={merchPayment?.success ? merchPayment.data : undefined} />
+      </div>
     </> : view && document ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
       <div className="flex-1 min-h-0" inert={busy || !!answer || !!pending.current}>

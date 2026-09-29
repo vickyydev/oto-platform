@@ -441,3 +441,27 @@ session/station read200. Existing DB tests43/43 and verify-schema pass with
 plus snapshot identity/journal entry. After deployment,85d35e0 is the earliest
 API rollback;88140af and older must not run against0033. Migration deployment
 and final feature verification remain pending at this checkpoint.
+
+## Final local display verification - 30 September
+
+All six existing native POS flows pass together; the sanitised result is
+final-local-browser-results.json. The run removed its own database/processes.
+POS typecheck, full lint, build and standalone browser-test typing pass.
+Existing affected suites pass: POS92, shared19 and box40, with shared/box
+typecheck and lint. No new suite or dependency was added.
+
+Shop presentation uses captured quoted variant rows, discounts, tender state
+and actual settlement, retaining the order across lock and switching to the
+inline staff view when the display disconnects. Unsupported benefit/payment
+paths retain explicit staff fallback. Public consent captures only guardian
+acknowledgements; private child health, photos and waiver policy remain at the
+till. Done never performs registration or payment or replaces staff Continue.
+An online quote refresh now pauses typed publication, preserving the accepted
+answer through unlock; real offline/error still invalidates stale answers.
+
+Reviewed local captures28-local-shop-completed.png and
+29-local-consent-completed.png are marked LOCAL CHECK. Focused native reruns
+confirmed viewport and language-control bounds before and after capture;
+no clipping or retained document scroll was reproduced. Finite transition
+waits remain in the existing screenshot helper; temporary diagnostics were
+removed. Staging acceptance remains required before SCRUM-201 is Deployed.

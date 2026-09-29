@@ -3,6 +3,8 @@ import { STATION_LEASE_TTL_S, stationLeaseLive } from '../src/station-session';
 import { projectDisplayDiagnosticDocument } from '../src/display-presentation';
 import { ChildReviewActionSchema, ChildReviewPromptSchema, childReviewAge } from '../src/display-child-review';
 import { DisplayFnbCartSchema, readDisplayFnbCart } from '../src/display-fnb';
+import { ConsentActionSchema, ConsentPromptSchema, consentActionAllowed } from '../src/display-consent';
+import { DisplayMerchCartSchema, readDisplayMerchCart } from '../src/display-merch';
 
 /**
  * A lease is live for one lease length and no longer (SCRUM-439).
@@ -172,5 +174,92 @@ describe('finite guest F&B presentation (SCRUM-201)', () => {
     expect(projected?.payment).toMatchObject({ amountSatang: 9000, hasQrPayload: true, hasQrImage: true });
     expect(JSON.stringify(projected)).not.toMatch(/Private marker|QR fixture contents|example\.test/);
     expect(projectDisplayDiagnosticDocument({ ...frame, cart: { kind: 'fnb', supported: true, sale: { tier: 'tourist' } } })?.cart).toBeNull();
+  });
+});
+
+// Public consent remains a visitor draft; registration is authorised at the till.
+describe('finite guardian acknowledgement (SCRUM-201)', () => {
+  const prompt = { kind: 'consent', requestId: 'request', visitorId: 'visitor',
+    slots: [{ id: 'slot', name: 'Child one', ageYears: 6, requirement: 'drop_off' }],
+    guardianName: 'Guardian', consentRequired: true, consentAcknowledged: true,
+    confirmations: [{ id: 'safety', text: 'Confirm the pickup arrangements', required: true, acknowledged: true }],
+    staffReady: true, canContinue: true, completed: false };
+  it('requires current staff readiness and every required acknowledgement before Done', () => {
+    expect(ConsentPromptSchema.safeParse(prompt).success).toBe(true);
+    for (const invalid of [
+      { ...prompt, staffReady: false }, { ...prompt, consentRequired: false },
+      { ...prompt, consentAcknowledged: false }, { ...prompt, guardianName: ' ' },
+      { ...prompt, confirmations: [{ ...prompt.confirmations[0], acknowledged: false }] },
+      { ...prompt, slots: [...prompt.slots, prompt.slots[0]] },
+      { ...prompt, slots: [{ ...prompt.slots[0], ageYears: 18 }] },
+      { ...prompt, staffReady: false, canContinue: false, completed: true },
+      { ...prompt, slots: Array.from({ length: 51 }, (_, index) => ({ ...prompt.slots[0], id: `slot-${index}` })) },
+    ]) expect(ConsentPromptSchema.safeParse(invalid).success).toBe(false);
+  });
+  it('strips private fields from the finite public prompt and refuses private action writes', () => {
+    const parsed = ConsentPromptSchema.parse({ ...prompt, policy: 'Private marker',
+      slots: prompt.slots.map(slot => ({ ...slot, allergiesMedical: 'Private marker', childPhotoUrl: 'Private marker', waived: true })),
+      confirmations: prompt.confirmations.map(item => ({ ...item, appliedBy: 'Private marker' })) });
+    expect(parsed).toEqual(prompt);
+    const action = { action: 'acknowledge', requestId: 'request', visitorId: 'visitor', guardianName: ' Guardian ',
+      consentAcknowledged: true, acknowledgedConfirmationIds: ['safety'] };
+    expect(ConsentActionSchema.parse(action)).toMatchObject({ guardianName: 'Guardian' });
+    expect(ConsentActionSchema.safeParse({ ...action, childPhotoUrl: 'Private marker' }).success).toBe(false);
+    expect(ConsentActionSchema.safeParse({ ...action, acknowledgedConfirmationIds: ['safety', 'safety'] }).success).toBe(false);
+    const current = ConsentPromptSchema.parse(prompt);
+    const accepted = ConsentActionSchema.parse(action);
+    expect(consentActionAllowed(current, accepted)).toBe(true);
+    for (const refused of [{ ...action, requestId: 'old-request' }, { ...action, visitorId: 'old-visitor' },
+      { ...action, acknowledgedConfirmationIds: ['unknown'] }]) {
+      expect(consentActionAllowed(current, ConsentActionSchema.parse(refused))).toBe(false);
+    }
+    expect(consentActionAllowed(current, { action: 'done', requestId: 'request', visitorId: 'visitor' })).toBe(true);
+    expect(consentActionAllowed({ ...current, staffReady: false, canContinue: false }, { action: 'done', requestId: 'request', visitorId: 'visitor' })).toBe(false);
+  });
+  it('records prompt metadata only, without guardian, child details or acknowledgement answers', () => {
+    const frame = { stationId: '018f0000-0000-7000-8000-000000000001', boxId: '018f0000-0000-7000-8000-000000000002',
+      schemaVersion: 1, sequence: 4, stage: 'input', language: 'en', takeoverCount: 0, updatedAt: '2026-09-29T12:00:00.000Z' };
+    const projected = projectDisplayDiagnosticDocument({ ...frame, prompt: { ...prompt,
+      answer: { type: 'consent', actionId: 'answer', payload: { action: 'done', requestId: 'request', visitorId: 'visitor' } } } });
+    expect(projected?.prompt).toEqual({ kind: 'consent', requestId: 'request', hasAnswer: true });
+    expect(JSON.stringify(projected)).not.toMatch(/Guardian|Child one|pickup arrangements|visitor|consentAcknowledged|slots/);
+  });
+});
+
+describe('finite guest shop presentation (SCRUM-201)', () => {
+  const cart = { kind: 'merch', supported: true,
+    lines: [{ id: 'line-1', name: 'Grip Socks (M)', qty: 2, unitPrice: 120, lineTotal: 240 }],
+    manualDiscounts: [{ id: 'discount-1', scope: 'order', type: 'fixed', value: 10 }], completion: null };
+  const completion = { saleId: 'sale-1', total: 230, payment: { cash: 100, card: 130, promptpay: 0 } };
+  it('keeps finite captured purchase facts and strips wallet, stock and staff audit fields', () => {
+    const parsed = DisplayMerchCartSchema.parse({ ...cart, wristband: { creditBalanceTHB: 20 },
+      lines: cart.lines.map(line => ({ ...line, merchItem: { cost: 2, stock: 8 } })),
+      manualDiscounts: cart.manualDiscounts.map(discount => ({ ...discount, reason: 'Private marker', appliedBy: 'Private marker' })) });
+    expect(parsed).toEqual(cart);
+    const frame = { stationId: '018f0000-0000-7000-8000-000000000001', boxId: '018f0000-0000-7000-8000-000000000002',
+      schemaVersion: 1, sequence: 4, stage: 'payment', language: 'en', takeoverCount: 0, updatedAt: '2026-09-29T12:00:00.000Z' };
+    const projected = projectDisplayDiagnosticDocument({ ...frame, cart: parsed,
+      member: { id: 'member', nickname: 'Private marker', tier: 'member' }, prompt: { kind: 'contact', phone: 'Private marker' },
+      payment: { saleId: 'sale-1', amountSatang: 23000, qrPayload: 'QR fixture contents', qrImageUrl: 'https://example.test/qr.png',
+        expiresAt: null, status: 'pending', online: true, offline: false } });
+    expect(projected?.cart).toEqual(cart);
+    expect(projected?.member).toBeNull(); expect(projected?.prompt).toBeNull();
+    expect(projected?.payment).toMatchObject({ hasQrPayload: true, hasQrImage: true });
+    expect(JSON.stringify(projected)).not.toMatch(/Private marker|QR fixture contents|example\.test|creditBalance|merchItem|stock/);
+  });
+  it('refuses wrong-stage, unsafe money and unsettled completion and permits only a cleared fallback', () => {
+    expect(readDisplayMerchCart(cart, 'order')).toEqual(cart);
+    expect(readDisplayMerchCart(cart, 'input')).toBeNull();
+    expect(readDisplayMerchCart(cart, 'thankyou')).toBeNull();
+    expect(readDisplayMerchCart({ ...cart, completion }, 'thankyou')?.completion).toEqual(completion);
+    expect(readDisplayMerchCart({ ...cart, completion }, 'payment')).toBeNull();
+    for (const invalid of [{ ...cart, supported: false }, { ...cart, lines: [{ ...cart.lines[0], qty: 0 }] },
+      { ...cart, lines: [{ ...cart.lines[0], unitPrice: 120.001 }] },
+      { ...cart, lines: Array.from({ length: 201 }, (_, index) => ({ ...cart.lines[0], id: `line-${index}` })) },
+      { ...cart, completion: { ...completion, payment: { cash: 100, card: 129, promptpay: 0 } } }]) {
+      expect(DisplayMerchCartSchema.safeParse(invalid).success).toBe(false);
+    }
+    const fallback = { kind: 'merch', supported: false, lines: [], manualDiscounts: [], completion: null };
+    expect(readDisplayMerchCart(fallback, 'thankyou')).toEqual(fallback);
   });
 });

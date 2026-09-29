@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { ChildReviewPrompt, DisplayFnbCart } from '@oto/shared';
+import type { ChildReviewPrompt, ConsentPrompt, DisplayFnbCart, DisplayMerchCart } from '@oto/shared';
 
 import {
   STATION_LEASE_TTL_S,
@@ -182,6 +182,100 @@ test('an unsupported guest F&B frame clears the prior visitor and payment even a
     const legacy = h.manager.snapshotFor({ ...displayed.document,
       member: { id: 'old-member', nickname: 'Old visitor', tier: 'member' }, prompt: { kind: 'contact', phone: 'Private visitor' } }, 'customer', null).document;
     assert.equal(legacy.member, null); assert.equal(legacy.prompt, null);
+  } finally { h.close(); }
+});
+
+function consentPrompt(overrides: Partial<ConsentPrompt> = {}): ConsentPrompt {
+  return { kind: 'consent', requestId: 'guardian-request', visitorId: 'guardian-visitor',
+    slots: [{ id: 'slot', name: 'Child one', ageYears: 6, requirement: 'drop_off' }],
+    guardianName: '', consentRequired: true, consentAcknowledged: false,
+    confirmations: [{ id: 'safety', text: 'Confirm pickup arrangements', required: true, acknowledged: false }],
+    staffReady: false, canContinue: false, completed: false, ...overrides };
+}
+
+async function openConsent() {
+  const h = await openManager();
+  const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'consent-till', holderKind: 'till' });
+  assert.ok(claim.ok);
+  const publish = async (prompt: unknown, stage = 'input', step = 7) => {
+    const current = await h.manager.open(STATION_ID);
+    return h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: current.sequence, payload: { stage, step, prompt } }, { source: 'till' });
+  };
+  const published = await publish(consentPrompt());
+  assert.ok(published.ok);
+  const send = async (payload: Record<string, unknown>, actionId: string, source: 'display' | 'console' = 'display') => {
+    const current = await h.manager.open(STATION_ID);
+    return h.manager.applyIntent(STATION_ID, { type: 'display.consent', actionId,
+      lastSeenSequence: current.sequence, payload }, { source, deviceId: 'guardian-screen' });
+  };
+  return { ...h, publish, send };
+}
+
+test('guardian acknowledgement exposes finite public facts and never private child fields or log values', async () => {
+  const h = await openConsent();
+  try {
+    const prompt = consentPrompt();
+    const published = await h.publish({ ...prompt, policy: 'private-policy',
+      slots: prompt.slots.map(slot => ({ ...slot, childPhotoUrl: 'private-photo', allergiesMedical: 'private-health', waived: true })),
+      answer: { type: 'consent', actionId: 'forged-answer', payload: { action: 'done' } } });
+    assert.ok(published.ok);
+    const publicDoc = h.manager.snapshotFor(published.document, 'customer', null).document;
+    assert.deepEqual(publicDoc.prompt, prompt);
+    assert.equal(publicDoc.step, null);
+    assert.doesNotMatch(JSON.stringify(publicDoc), /private-policy|private-photo|private-health|waived|forged-answer/);
+    const answer = await h.send({ action: 'acknowledge', requestId: prompt.requestId, visitorId: prompt.visitorId,
+      guardianName: 'Guardian private', consentAcknowledged: true, acknowledgedConfirmationIds: ['safety'] }, 'guardian-ack');
+    assert.ok(answer.ok);
+    assert.equal(answer.document.stage, 'input');
+    assert.equal(answer.document.step, 7);
+    assert.doesNotMatch(JSON.stringify(h.events), /Guardian private|Child one|pickup arrangements/);
+    assert.equal(h.facts.length, 0, 'public acknowledgement cannot register a child or collect payment');
+  } finally { h.close(); }
+});
+
+test('guardian acknowledgement refuses foreign prompts, stages, sources, checklist fields and premature Done', async () => {
+  const h = await openConsent();
+  try {
+    const prompt = consentPrompt();
+    const action = { action: 'acknowledge', requestId: prompt.requestId, visitorId: prompt.visitorId,
+      guardianName: 'Guardian', consentAcknowledged: true, acknowledgedConfirmationIds: ['safety'] };
+    for (const [index, invalid] of [{ ...action, visitorId: 'old-visitor' }, { ...action, requestId: 'old-request' },
+      { ...action, acknowledgedConfirmationIds: ['undeclared'] }, { ...action, childPhotoUrl: 'private-photo' },
+      { action: 'done', requestId: prompt.requestId, visitorId: prompt.visitorId }].entries()) {
+      const refused = await h.send(invalid, `refused-${index}`); assert.equal(refused.ok, false);
+    }
+    assert.equal((await h.send(action, 'wrong-source', 'console')).ok, false);
+    assert.equal((await h.publish(prompt, 'welcome', 7)).ok, false);
+    assert.equal((await h.publish(prompt, 'input', 8)).ok, false);
+    const current = await h.manager.open(STATION_ID);
+    const generic = await h.manager.applyIntent(STATION_ID, { type: 'display.answer_prompt', lastSeenSequence: current.sequence,
+      payload: { value: true } }, { source: 'display' });
+    assert.equal(generic.ok, false, 'generic prompt input cannot bypass the typed acknowledgement');
+    assert.equal((await h.manager.open(STATION_ID)).prompt?.answer, undefined);
+  } finally { h.close(); }
+});
+
+test('guardian acknowledgement keeps the first action on replay and Done leaves registration to the staff', async () => {
+  const h = await openConsent();
+  try {
+    const prompt = consentPrompt();
+    const action = { action: 'acknowledge', requestId: prompt.requestId, visitorId: prompt.visitorId,
+      guardianName: 'Guardian', consentAcknowledged: true, acknowledgedConfirmationIds: ['safety'] };
+    const first = await h.send(action, 'same-ack'); assert.ok(first.ok);
+    const republished = await h.publish(prompt); assert.ok(republished.ok);
+    assert.deepEqual(republished.document.prompt?.answer, first.document.prompt?.answer);
+    assert.equal((await h.send(action, 'same-ack')).ok, true);
+    assert.equal((await h.send({ ...action, guardianName: 'Changed' }, 'same-ack')).ok, false);
+    assert.equal((await h.send(action, 'second-ack')).ok, false);
+    const ready = consentPrompt({ requestId: 'ready-request', guardianName: 'Guardian', consentAcknowledged: true,
+      confirmations: [{ id: 'safety', text: 'Confirm pickup arrangements', required: true, acknowledged: true }],
+      staffReady: true, canContinue: true });
+    assert.ok((await h.publish(ready)).ok);
+    const done = await h.send({ action: 'done', requestId: ready.requestId, visitorId: ready.visitorId }, 'guardian-done');
+    assert.ok(done.ok);
+    assert.equal(done.document.stage, 'input'); assert.equal(done.document.step, 7);
+    assert.equal(h.facts.length, 0);
   } finally { h.close(); }
 });
 
@@ -1506,4 +1600,67 @@ test('the compare-and-set claims a stretched lease and refuses one renewed onto 
   assert.equal(lost, null, 'the claimant must not take a station from a till that renewed');
   assert.equal((await box.store.readSession(stations.renewed))?.lease?.holder, 'till-3');
   box.close();
+});
+
+function merchCart(): DisplayMerchCart {
+  return { kind: 'merch', supported: true,
+    lines: [{ id: 'shop-line', name: 'Grip Socks (M)', qty: 2, unitPrice: 120, lineTotal: 240 }],
+    manualDiscounts: [], completion: null };
+}
+
+test('guest shop publication keeps captured amounts and settled completion without taking money', async () => {
+  const h = await openManager();
+  try {
+    const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'shop-till', holderKind: 'till' });
+    assert.ok(claim.ok);
+    const totals = { ...publicPresentation().totals, total: 240 };
+    const cart = merchCart();
+    const publish = async (stage: string, value: unknown, payment: unknown = null) => {
+      const current = await h.manager.open(STATION_ID);
+      return h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+        lastSeenSequence: current.sequence, payload: { stage, cart: value, totals, payment, member: null, prompt: null } }, { source: 'till' });
+    };
+    const published = await publish('order', { ...cart, wallet: 'Private marker',
+      lines: cart.lines.map(line => ({ ...line, merchItem: { stock: 5, cost: 10 } })) });
+    assert.ok(published.ok);
+    const publicDoc = h.manager.snapshotFor(published.document, 'customer', null).document;
+    assert.deepEqual(publicDoc.cart, cart);
+    assert.equal(publicDoc.member, null); assert.equal(publicDoc.prompt, null);
+    assert.doesNotMatch(JSON.stringify(publicDoc), /Private marker|wallet|stock|cost|merchItem/);
+    const completion = { saleId: 'shop-sale', total: 240, payment: { cash: 100, card: 140, promptpay: 0 } };
+    const finished = await publish('thankyou', { ...cart, completion });
+    assert.ok(finished.ok);
+    assert.deepEqual(finished.document.cart?.completion, completion);
+    assert.equal(h.facts.length, 0, 'display publication cannot create a sale or payment');
+    const fallback = { kind: 'merch', supported: false, lines: [], manualDiscounts: [], completion: null };
+    const cleared = await publish('thankyou', fallback, publicPresentation().payment);
+    assert.ok(cleared.ok);
+    const clearedDoc = h.manager.snapshotFor(cleared.document, 'customer', null).document;
+    assert.deepEqual(clearedDoc.cart, fallback);
+    assert.equal(clearedDoc.totals, null); assert.equal(clearedDoc.payment, null);
+    assert.doesNotMatch(JSON.stringify(clearedDoc), /Grip Socks|shop-sale|test-only-payment-data/);
+  } finally { h.close(); }
+});
+
+test('guest shop refuses private prompts, missing totals, bad completion and display-origin publication', async () => {
+  const h = await openManager();
+  try {
+    const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'strict-shop-till', holderKind: 'till' });
+    assert.ok(claim.ok);
+    const cart = merchCart();
+    const totals = { ...publicPresentation().totals, total: 240 };
+    const current = await h.manager.open(STATION_ID);
+    for (const changes of [{ stage: 'input' }, { totals: null }, { stage: 'payment', payment: null },
+      { member: { id: 'member', nickname: 'Private marker', tier: 'member' } },
+      { prompt: { kind: 'contact', requestId: 'request' } }, { stage: 'thankyou' },
+      { stage: 'thankyou', cart: { ...cart, completion: { saleId: 'sale', total: 239, payment: { cash: 239, card: 0, promptpay: 0 } } } }]) {
+      const refused = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+        lastSeenSequence: current.sequence, payload: { stage: 'order', cart, totals, member: null, prompt: null, ...changes } }, { source: 'till' });
+      assert.equal(refused.ok, false);
+    }
+    const forbidden = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display',
+      lastSeenSequence: current.sequence, payload: { stage: 'order', cart, totals } }, { source: 'display' });
+    assert.equal(forbidden.ok, false);
+    assert.equal((await h.manager.open(STATION_ID)).sequence, current.sequence);
+  } finally { h.close(); }
 });

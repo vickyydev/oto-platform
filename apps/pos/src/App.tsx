@@ -71,7 +71,8 @@ function AuthGate() {
   const isMobile = useIsMobile();
   const ticketTill = !isMobile && location === "/";
   const guestOrderStation = !isMobile && location === '/order-station';
-  const retainedStation = ticketTill || guestOrderStation;
+  const guestMerchStation = !isMobile && location === '/merch-station';
+  const retainedStation = ticketTill || guestOrderStation || guestMerchStation;
   // Until the resume (and any launcher hand-off) has answered, the till knows
   // nothing: showing the sign-in form here would prompt an operator who has
   // just signed in next door, and flash it on every reload.
@@ -114,7 +115,8 @@ function AuthGate() {
       <div className="contents" hidden={locked} inert={locked} aria-hidden={locked}
         style={locked ? { display: 'none' } : undefined}>
         {ticketTill ? <Till key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />
-          : <OrderStation key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />}
+          : guestOrderStation ? <OrderStation key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />
+            : <MerchStation key={`${operator.id}:${station?.branchId ?? ''}:${station?.stationId ?? 'legacy'}`} />}
       </div>
       {locked ? <LockScreen /> : <InactivityWarning />}
     </>;

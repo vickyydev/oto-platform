@@ -11,6 +11,7 @@ import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
+import { useMerchDisplay } from '@/lib/merchDisplaySession';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
 import { useStation } from '@/station/StationContext';
@@ -41,6 +42,7 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { MerchConfirmation } from '@/components/merch/MerchConfirmation';
 import { MerchCustomerDisplay, MerchCustomerStage } from '@/components/merch/MerchCustomerDisplay';
+import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustomerDisplay';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
@@ -53,7 +55,11 @@ let orderCounter = 1;
 let lineCounter = 1;
 
 export default function MerchStation() {
-  const { operator } = useOperator();
+  const { operator, locked, offlineUnlock } = useOperator();
+  const staffLocked = useRef(locked);
+  staffLocked.current = locked;
+  const stationOffline = (): boolean =>
+    (typeof navigator !== 'undefined' && navigator.onLine === false) || offlineUnlock !== null;
   const { branch } = useBranch();
   const { station } = useStation();
   const { t } = useLanguage();
@@ -152,7 +158,7 @@ export default function MerchStation() {
     manualDiscounts,
     promos: promoCodes,
     identity: saleIdentity,
-    enabled: stage !== 'confirmation',
+    enabled: !locked && stage !== 'confirmation',
   });
   const { subtotal, total, manualAmounts, taxBreakdown } = sale.totals;
 
@@ -291,6 +297,7 @@ export default function MerchStation() {
    * change under the person paying.
    */
   const handleScan = (event: StationScanEvent) => {
+    if (staffLocked.current) return;
     const scan = readProductScan(event);
     if (!scan) return;
     if (scan.kind === 'unknown') {
@@ -344,7 +351,7 @@ export default function MerchStation() {
     if (asksForSize(item)) setPendingVariantItem(item);
     else addToCart(item);
   };
-  useStationScans(station?.stationId, handleScan);
+  useStationScans(locked ? undefined : station?.stationId, handleScan);
 
   const handleChangeQty = (lineId: string, qty: number) => {
     if (qty <= 0) {
@@ -489,11 +496,12 @@ export default function MerchStation() {
 
   /** Reaching the payment screen is the Pay press — the till's seam (S2-09a). */
   const recordSaleOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
+    if (staffLocked.current) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: 'Unlock this station before saving the sale.', retryable: false };
     if (saleEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: 'This sale or station changed before it could be saved.', retryable: false };
     const payload = commitPayload();
     if (!payload) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: unwritableReason(), retryable: false };
     const outcome = await saleWriter.commit({ cart: payload, finalise: false });
-    if ((saleEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
+    if (!staffLocked.current && (saleEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
       // The station moved on before the answer landed. The sale IS on the
       // platform and nothing on this screen will mention it again, so it is
       // said out loud rather than dropped.
@@ -507,12 +515,13 @@ export default function MerchStation() {
   };
 
   useEffect(() => {
-    if (stage !== 'payment') return;
+    if (locked || stage !== 'payment') return;
     void paymentSnapshotRef.current?.prepare();
-  }, [stage]);
+  }, [stage, locked]);
 
   /** The local stock/receipt record follows the platform's finalised sale once. */
   const completeSale = (written: ApiSale, settlements: readonly PaymentSettlement[]) => {
+    if (staffLocked.current) return;
     if (!paymentContextCurrent() || written.stationId !== saleIdentity?.stationId) { notePaymentLeftBehind(written.id); return; }
     if (!operator || written.status !== 'finalised') return;
     if (completedSaleRef.current === written.id) return;
@@ -547,8 +556,9 @@ export default function MerchStation() {
   }
   const paymentStage = usePaymentStage({
     scope: paymentScope,
-    isCurrentScope: (scope) => scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === saleEpochRef.current,
+    isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === saleEpochRef.current,
     active: stage === 'payment',
+    paused: locked,
     totalSatang: Math.round(total * 100),
     prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordSaleOnPlatform(paymentEpoch),
     finaliseSale: saleWriter.finalise,
@@ -567,6 +577,18 @@ export default function MerchStation() {
   else if (stage === 'payment') customerStage = 'payment';
   else if (stage === 'order') customerStage = 'order';
   else customerStage = 'welcome';
+
+  const separateDisplay = useMerchDisplay(station?.stationId ?? null, {
+    sessionKey: `${operator?.id ?? ''}:${station?.branchId ?? branch.id}:${station?.stationId ?? ''}:${saleEpochRef.current}`,
+    stage: customerStage, online: !stationOffline(),
+    excluded: !!wristband || promoCodes.length > 0 || !shopFromPlatform,
+    lines, manualDiscounts, quote: sale.quote, pending: sale.pending, quoteFailed: !!sale.error,
+    payment: paymentStage.display, completedOrder, platformSale,
+  }, !locked && !stationOffline());
+  const inlineDisplay = showCustomerDisplay && (!separateDisplay.connected.length || !separateDisplay.supported || !!separateDisplay.error);
+
+  // Preserve the sale hooks across a lock without staff controls or portals.
+  if (locked) return null;
 
   const staffStation = (
     <div className="h-full w-full flex flex-col bg-background text-foreground overflow-hidden">
@@ -709,8 +731,10 @@ export default function MerchStation() {
         <div className="flex items-center gap-2 min-w-0">
           <Monitor className="w-4 h-4 shrink-0" />
           <span className="truncate">
-            Test harness — staff station (left) + customer display (right) share one live sale. In
-            production the customer display runs on a separate device.
+            {separateDisplay.connected.length
+              ? `Display connected: ${separateDisplay.connected.map(device => device.name).join(', ')} — ${separateDisplay.supported ? 'guest purchase and payment are shared.' : 'follow the staff screen for this flow.'}`
+              : separateDisplay.error ? 'Separate display unavailable — use the inline customer display.'
+                : 'Test harness — staff station (left) + customer display (right) share one live sale. In production the customer display runs on a separate device.'}
           </span>
         </div>
         <Button
@@ -727,13 +751,16 @@ export default function MerchStation() {
 
       <div className="flex-1 flex min-h-0">
         <div
-          className={`${showCustomerDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}
+          className={`${inlineDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}
         >
           {staffStation}
         </div>
-        {showCustomerDisplay && (
+        {inlineDisplay && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
-            {stage === 'payment' ? (
+            {separateDisplay.presentation ? <PublicMerchCustomerDisplay
+              stage={customerStage} cart={separateDisplay.presentation.cart}
+              totals={separateDisplay.presentation.totals} payment={paymentStage.display}
+            /> : stage === 'payment' ? (
               <div className="relative h-full bg-[image:var(--cd-gradient)] text-foreground flex flex-col items-center justify-center gap-6 px-10 text-center">
                 <div className="absolute top-4 right-4"><LanguageSwitcher variant="dark" /></div>
                 <h2 className="text-4xl font-black">{t('merch.payment.amountToPay')}</h2>

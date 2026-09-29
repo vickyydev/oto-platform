@@ -166,6 +166,180 @@ describe('SCRUM-201 — separate display transport and station presentation', ()
     expect(request.mock.calls.some(([path]) => path.endsWith('/lease/release'))).toBe(false);
   });
 
+  const consent = (): NonNullable<TicketDisplayState['consent']> => ({ visitorId: 'visit-consent',
+    slots: [{ id: 'slot-1', name: 'Child one', ageYears: 6, requirement: 'drop_off' }],
+    guardianName: 'Guardian', consentRequired: true, consentAcknowledged: true,
+    confirmations: [{ id: 'safety', text: 'Confirm pickup arrangements', required: true, acknowledged: true }],
+    staffReady: true, canContinue: true, completed: false });
+
+  it('publishes only finite guardian acknowledgements and rejects unsupported or falsely ready drafts', () => {
+    const input = state({ stage: 'input', step: 7, online: true, consent: consent() });
+    const view = readTicketDisplayView(presented(input));
+    expect(view?.consent?.guardianName).toBe('Guardian');
+    expect(readTicketDisplayView({ ...presented(input), step: null })?.consent).toEqual(view?.consent);
+    const privateDraft = { ...consent(), medicalNotes: 'Private health', slots: consent().slots.map(slot =>
+      ({ ...slot, allergiesMedical: 'Private health', childPhotoUrl: 'Private photo', waived: true })) };
+    expect(JSON.stringify(presented({ ...input, consent: privateDraft }))).not.toMatch(/Private health|Private photo|waived|allergiesMedical/);
+    for (const invalid of [{ ...input, online: false }, { ...input, consent: undefined },
+      { ...input, consent: { ...consent(), staffReady: false } }]) {
+      expect(ticketDisplayPresentation(invalid, 'prompt-1').cart.supported).toBe(false);
+      expect(readTicketDisplayView(presented(invalid))).toBeNull();
+    }
+  });
+
+  it('accepts guardian answers only for the current visitor, request and supervision input screen', () => {
+    const doc = presented(state({ stage: 'input', step: 7, online: true, consent: consent() }));
+    const payload = { action: 'done', requestId: 'prompt-1', visitorId: 'visit-consent' };
+    const answered = { ...doc, prompt: { ...doc.prompt, answer: { type: 'consent', actionId: 'done-1', payload } } };
+    expect(readDisplayAnswer(answered, 'prompt-1')?.type).toBe('consent');
+    expect(readDisplayAnswer(answered, 'new-request')).toBeNull();
+    expect(readDisplayAnswer({ ...answered, stage: 'payment' }, 'prompt-1')).toBeNull();
+    expect(readDisplayAnswer({ ...answered, step: 8 }, 'prompt-1')).toBeNull();
+    expect(readDisplayAnswer({ ...answered, prompt: { ...answered.prompt, answer: {
+      type: 'consent', actionId: 'done-1', payload: { ...payload, visitorId: 'old-visitor' },
+    } } }, 'prompt-1')).toBeNull();
+  });
+
+  it('replaces the guardian request before adopting an answer after staff readiness changes', async () => {
+    let input = state({ stage: 'input', step: 7, online: true, consent: consent(), consentRevision: 'ready' });
+    let doc = document({ stage: 'input', step: 7 });
+    const onAnswer = vi.fn();
+    const request = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith('/displays')) return reply({ displays: [{ id: 'display-1', name: 'Guardian screen', connected: true }] });
+      if (path.endsWith('/lease')) return reply({ document: doc, lease: { leaseId: 'consent-lease' } });
+      if (path.endsWith('/session')) return reply({ document: doc });
+      if (path.endsWith('/intents')) {
+        const body = JSON.parse(String(init?.body));
+        doc = { ...doc, ...body.payload, sequence: doc.sequence + 1 };
+        return reply({ document: doc });
+      }
+      return reply({ released: true });
+    });
+    vi.stubGlobal('fetch', request);
+    displayHook = renderHook(() => useTicketDisplay('consent-station', input, onAnswer)); await settle();
+    const oldRequest = doc.prompt?.requestId;
+    doc = { ...doc, sequence: doc.sequence + 1, prompt: { ...doc.prompt, answer: { type: 'consent', actionId: 'old-done',
+      payload: { action: 'done', requestId: oldRequest, visitorId: 'visit-consent' } } } };
+    input = { ...input, consentRevision: 'photo-needed', consent: { ...consent(), staffReady: false, canContinue: false } };
+    displayHook.rerender(); await vi.advanceTimersByTimeAsync(1_500);
+    expect(onAnswer).not.toHaveBeenCalled();
+    expect(doc.prompt?.requestId).not.toBe(oldRequest);
+    expect(doc.prompt?.answer).toBeUndefined();
+    expect(doc.prompt?.canContinue).toBe(false);
+  });
+
+  it('retains one guardian acknowledgement through staff lock without registering or repeating the gesture', async () => {
+    let active = true;
+    const input = state({ stage: 'input', step: 7, online: true, consent: consent(), consentRevision: 'ready' });
+    let doc = document({ stage: 'input', step: 7 });
+    const onAnswer = vi.fn();
+    const request = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith('/displays')) return reply({ displays: [{ id: 'display-1', name: 'Guardian screen', connected: true }] });
+      if (path.endsWith('/lease')) return reply({ document: doc, lease: { leaseId: 'consent-lock-lease' } });
+      if (path.endsWith('/session')) return reply({ document: doc });
+      if (path.endsWith('/intents')) {
+        const body = JSON.parse(String(init?.body));
+        expect(body.type).toBe('session.publish_display');
+        doc = { ...doc, ...body.payload, sequence: doc.sequence + 1 };
+        return reply({ document: doc });
+      }
+      return reply({ released: true });
+    });
+    vi.stubGlobal('fetch', request);
+    displayHook = renderHook(() => useTicketDisplay('consent-lock-station', input, onAnswer, active)); await settle();
+    const requestId = doc.prompt?.requestId;
+    active = false; displayHook.rerender();
+    doc = { ...doc, sequence: doc.sequence + 1, prompt: { ...doc.prompt, answer: { type: 'consent', actionId: 'retained-done',
+      payload: { action: 'done', requestId, visitorId: 'visit-consent' } } } };
+    const before = request.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(request.mock.calls).toHaveLength(before); expect(onAnswer).not.toHaveBeenCalled();
+    active = true; displayHook.rerender(); await settle();
+    expect(doc.prompt?.requestId).toBe(requestId);
+    expect(onAnswer).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ actionId: 'retained-done' }));
+    await vi.advanceTimersByTimeAsync(1_500);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls.every(([path]) => !path.includes('/sales') && !path.includes('/children'))).toBe(true);
+  });
+
+  it('adopts the locked guardian acknowledgement once after an online quote refresh without replacing its request', async () => {
+    let active = true;
+    const pendingConsent = { ...consent(), guardianName: '', consentAcknowledged: false, staffReady: false, canContinue: false,
+      confirmations: consent().confirmations.map(item => ({ ...item, acknowledged: false })) };
+    let input = state({ stage: 'input', step: 7, online: true, consent: pendingConsent, consentRevision: 'same-private-state' });
+    let doc = document({ stage: 'input', step: 7 });
+    const onAnswer = vi.fn();
+    const request = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith('/displays')) return reply({ displays: [{ id: 'display-1', name: 'Guardian screen', connected: true }] });
+      if (path.endsWith('/lease')) return reply({ document: doc, lease: { leaseId: 'consent-refresh-lease' } });
+      if (path.endsWith('/session')) return reply({ document: doc });
+      if (path.endsWith('/intents')) {
+        const body = JSON.parse(String(init?.body));
+        expect(body.type).toBe('session.publish_display');
+        doc = { ...doc, ...body.payload, sequence: doc.sequence + 1 };
+        return reply({ document: doc });
+      }
+      return reply({ released: true });
+    });
+    vi.stubGlobal('fetch', request);
+    displayHook = renderHook(() => useTicketDisplay('consent-refresh-station', input, onAnswer, active)); await settle();
+    const requestId = doc.prompt?.requestId;
+    active = false; displayHook.rerender();
+    const payload = { action: 'acknowledge', requestId, visitorId: pendingConsent.visitorId,
+      guardianName: 'Locked guardian', consentAcknowledged: true, acknowledgedConfirmationIds: ['safety'] };
+    doc = { ...doc, sequence: doc.sequence + 1, prompt: { ...doc.prompt,
+      answer: { type: 'consent', actionId: 'locked-acknowledgement', payload } } };
+    input = { ...input, online: false, consent: undefined, quoteRefreshing: true };
+    active = true; displayHook.rerender();
+    const before = request.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(request.mock.calls).toHaveLength(before);
+    expect(onAnswer).not.toHaveBeenCalled();
+    expect(doc.prompt?.requestId).toBe(requestId);
+    expect(doc.prompt?.answer).toBeDefined();
+    input = { ...input, online: true, consent: pendingConsent, quoteRefreshing: false };
+    displayHook.rerender(); await settle();
+    expect(onAnswer).toHaveBeenCalledExactlyOnceWith({ type: 'consent', actionId: 'locked-acknowledgement', payload });
+    expect(doc.prompt?.requestId).toBe(requestId);
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls.filter(([path]) => path.endsWith('/lease'))).toHaveLength(1);
+    expect(request.mock.calls.every(([path]) => !path.includes('/sales') && !path.includes('/children'))).toBe(true);
+  });
+
+  it('still invalidates a guardian answer on real offline fallback instead of treating it as a price refresh', async () => {
+    let active = true;
+    let input = state({ stage: 'input', step: 7, online: true, consent: consent(), consentRevision: 'same-private-state' });
+    let doc = document({ stage: 'input', step: 7 });
+    const onAnswer = vi.fn();
+    const request = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith('/displays')) return reply({ displays: [{ id: 'display-1', name: 'Guardian screen', connected: true }] });
+      if (path.endsWith('/lease')) return reply({ document: doc, lease: { leaseId: 'consent-offline-lease' } });
+      if (path.endsWith('/session')) return reply({ document: doc });
+      if (path.endsWith('/intents')) {
+        const body = JSON.parse(String(init?.body));
+        doc = { ...doc, ...body.payload, sequence: doc.sequence + 1 };
+        return reply({ document: doc });
+      }
+      return reply({ released: true });
+    });
+    vi.stubGlobal('fetch', request);
+    displayHook = renderHook(() => useTicketDisplay('consent-offline-station', input, onAnswer, active)); await settle();
+    const oldRequest = doc.prompt?.requestId;
+    active = false; displayHook.rerender();
+    doc = { ...doc, sequence: doc.sequence + 1, prompt: { ...doc.prompt, answer: { type: 'consent', actionId: 'offline-old-done',
+      payload: { action: 'done', requestId: oldRequest, visitorId: consent().visitorId } } } };
+    input = { ...input, online: false, consent: undefined, quoteRefreshing: false };
+    active = true; displayHook.rerender(); await settle();
+    expect(onAnswer).not.toHaveBeenCalled();
+    expect(doc.prompt).toBeNull();
+    expect(doc.cart?.supported).toBe(false);
+    input = { ...input, online: true, consent: consent() };
+    displayHook.rerender(); await vi.advanceTimersByTimeAsync(1_500);
+    expect(onAnswer).not.toHaveBeenCalled();
+    expect(doc.prompt?.requestId).not.toBe(oldRequest);
+  });
+
   it('publishes a finite online child review without private profile fields and refuses malformed fallback', () => {
     const input = state({ stage: 'input', step: 8, online: true, childReview: childReview() });
     const view = readTicketDisplayView(presented(input));

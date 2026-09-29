@@ -417,7 +417,7 @@ export function FnbCustomerDisplay({
             </div>
           </div>
 
-          <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded') : payment.status === 'pending' ? t('fnb.payment.waiting') : payment.status === 'paid' ? t('till.payment.received') : payment.status === 'blocked' || payment.status === 'failed' ? t('till.payment.checking') : t('fnb.payment.confirmWithStaff')}</p>
+          <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded') : payment.status === 'pending' ? t('fnb.payment.waiting') : payment.status === 'paid' ? t('till.payment.received') : payment.status === 'blocked' ? t('till.payment.checking') : t('fnb.payment.confirmWithStaff')}</p>
         </div>
       </Shell>
     );

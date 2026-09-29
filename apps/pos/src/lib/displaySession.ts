@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   DisplayCartSchema, DisplayMemberSchema, DisplayTotalsSchema, DisplayPaymentSchema,
   ChildReviewPromptSchema, ChildReviewDocumentPromptSchema, ChildReviewAnswerSchema,
+  ConsentPromptSchema, ConsentDocumentPromptSchema, ConsentAnswerSchema,
   type DisplayCart, type DisplayTotals, type DisplayPayment, type DisplayLineBreakdown,
   type ChildReviewPrompt, type ChildReviewAnswer,
+  type ConsentPrompt, type ConsentAnswer,
   type StationSessionDocument, type StationSessionStage,
 } from '@oto/shared';
 import { api, ApiError } from '@/api/client';
@@ -21,7 +23,7 @@ interface ContactDisplayAnswer {
   nickname?: string;
   contactChannel?: ContactChannel;
 }
-export type DisplayAnswer = ContactDisplayAnswer | ChildReviewAnswer;
+export type DisplayAnswer = ContactDisplayAnswer | ChildReviewAnswer | ConsentAnswer;
 export interface TicketDisplayState {
   stage: StationSessionStage;
   step: number;
@@ -35,11 +37,15 @@ export interface TicketDisplayState {
   totals?: OrderTotals;
   rateMode?: RateMode;
   online?: boolean;
+  /** Keep typed answers while an online price refresh temporarily hides their presentation. */
+  quoteRefreshing?: boolean;
   payment?: DisplayPayment;
   voucherPrize?: { nameEn: string; nameTh: string | null } | null;
   nothingToPay?: boolean;
   childReview?: Omit<ChildReviewPrompt, 'kind' | 'requestId'>;
   reviewRevision?: number;
+  consent?: Omit<ConsentPrompt, 'kind' | 'requestId'>;
+  consentRevision?: string;
 }
 
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
@@ -49,7 +55,9 @@ const earlyStages = ['identify', 'welcome', 'input'];
 export function ticketDisplayPresentation(state: TicketDisplayState, requestId: string) {
   const childReview = state.step === 8 && state.stage === 'input' && state.online === true && state.childReview
     ? ChildReviewPromptSchema.safeParse({ ...state.childReview, kind: 'child_review', requestId: requestId || 'pending' }) : null;
-  const allowed = state.step !== 7 && (state.step !== 8 || childReview?.success === true);
+  const consent = state.step === 7 && state.stage === 'input' && state.online === true && state.consent
+    ? ConsentPromptSchema.safeParse({ ...state.consent, kind: 'consent', requestId: requestId || 'pending' }) : null;
+  const allowed = (state.step !== 7 || consent?.success === true) && (state.step !== 8 || childReview?.success === true);
   const supported = allowed && (earlyStages.includes(state.stage)
     || state.online === true && !!state.sale && !!state.totals && (state.stage !== 'payment' || !!state.payment));
   const sale = state.sale;
@@ -109,7 +117,7 @@ export function ticketDisplayPresentation(state: TicketDisplayState, requestId: 
       qrPayload: state.payment.qrPayload, qrImageUrl: state.payment.qrImageUrl, expiresAt: state.payment.expiresAt,
       status: state.payment.status, offline: state.payment.offline, online: state.payment.online,
     } : null,
-    prompt: childReview?.success && supported ? childReview.data : supported && (state.stage === 'identify' || state.stage === 'input') ? {
+    prompt: consent?.success && supported ? consent.data : childReview?.success && supported ? childReview.data : supported && (state.stage === 'identify' || state.stage === 'input') ? {
       kind: state.stage === 'identify' ? 'identify' : 'contact', requestId,
       phone: state.phone, nickname: state.nickname, contactChannel: state.contactChannel,
     } : null,
@@ -127,21 +135,25 @@ export interface TicketDisplayView {
   voucherPrize?: DisplayCart['voucherPrize'];
   nothingToPay?: boolean;
   childReview?: ChildReviewPrompt;
+  consent?: ConsentPrompt;
 }
 
 /** Reject malformed public data before it reaches the customer renderer. */
 export function readTicketDisplayView(document: StationSessionDocument): TicketDisplayView | null {
   if (!['identify', 'welcome', 'order', 'input', 'payment', 'thankyou'].includes(document.stage)
-    || document.step === 7 || document.cart?.supported !== true) return null;
+    || document.cart?.supported !== true) return null;
   const stage = document.stage as TicketDisplayView['stage'];
   const childReview = stage === 'input' && document.prompt?.kind === 'child_review'
     ? ChildReviewDocumentPromptSchema.safeParse(document.prompt) : null;
-  if (childReview && !childReview.success || document.step === 8 && !childReview?.success) return null;
+  const consent = stage === 'input' && document.prompt?.kind === 'consent'
+    ? ConsentDocumentPromptSchema.safeParse(document.prompt) : null;
+  if (childReview && !childReview.success || document.step === 8 && !childReview?.success
+    || consent && !consent.success || document.step === 7 && !consent?.success) return null;
   const member = document.member == null ? null : DisplayMemberSchema.safeParse(document.member);
   const totals = document.totals == null ? null : DisplayTotalsSchema.safeParse(document.totals);
   const payment = document.payment == null ? null : DisplayPaymentSchema.safeParse(document.payment);
   if (member && !member.success || totals && !totals.success || payment && !payment.success) return null;
-  if ((stage === 'identify' || stage === 'input') && !childReview?.success) {
+  if ((stage === 'identify' || stage === 'input') && !childReview?.success && !consent?.success) {
     const prompt = document.prompt;
     if (!prompt || prompt.kind !== (stage === 'identify' ? 'identify' : 'contact')
       || typeof prompt.requestId !== 'string' || !prompt.requestId || prompt.requestId.length > 200
@@ -186,6 +198,7 @@ export function readTicketDisplayView(document: StationSessionDocument): TicketD
     lineBreakdowns: publicSale ? Object.fromEntries(publicSale.lines.map(line => [line.id, line.breakdown])) : undefined,
     voucherPrize: cart?.voucherPrize, nothingToPay: cart?.nothingToPay,
     childReview: childReview?.success ? childReview.data : undefined,
+    consent: consent?.success ? consent.data : undefined,
   };
 }
 
@@ -325,6 +338,13 @@ export function useChildReviewSave(options: {
 
 export function readDisplayAnswer(document: StationSessionDocument, requestId: string): DisplayAnswer | null {
   if (document.prompt?.requestId !== requestId) return null;
+  if (document.prompt.kind === 'consent') {
+    const prompt = ConsentDocumentPromptSchema.safeParse(document.prompt);
+    const answer = ConsentAnswerSchema.safeParse(document.prompt.answer);
+    return document.stage === 'input' && (document.step === 7 || document.step === null)
+      && prompt.success && answer.success && answer.data.payload.requestId === requestId
+      && answer.data.payload.visitorId === prompt.data.visitorId ? answer.data : null;
+  }
   if (document.prompt.kind === 'child_review') {
     const prompt = ChildReviewDocumentPromptSchema.safeParse(document.prompt);
     const answer = ChildReviewAnswerSchema.safeParse(document.prompt.answer);
@@ -392,11 +412,12 @@ interface StationDisplayState {
 }
 
 export function useTicketDisplay(stationId: string | null, state: TicketDisplayState, onAnswer: (answer: DisplayAnswer) => void | boolean | Promise<void | boolean>, active = true) {
+  const refreshingInput = state.quoteRefreshing === true && (state.step === 7 || state.step === 8);
   return useStationDisplay(stationId, {
-    key: `${state.sessionKey}:${state.stage}:${state.step}:${state.reviewRevision ?? 0}:${state.online === true}:${state.childReview?.visitorId ?? ''}`,
+    key: `${state.sessionKey}:${state.stage}:${state.step}:${state.reviewRevision ?? 0}:${state.online === true}:${state.childReview?.visitorId ?? ''}:${state.consentRevision ?? ''}:${state.consent?.visitorId ?? ''}`,
     supported: ticketDisplayPresentation(state, '').cart.supported,
     presentation: requestId => ticketDisplayPresentation(state, requestId),
-  }, active, onAnswer);
+  }, active && !refreshingInput, onAnswer);
 }
 
 /** The ticket and guest order surfaces share one leased presentation publisher. */
