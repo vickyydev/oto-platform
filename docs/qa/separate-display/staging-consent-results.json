@@ -1,0 +1,62 @@
+{
+  "ticket": "SCRUM-201",
+  "source": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+  "environment": "staging",
+  "run": "3ecd54c6",
+  "status": "PASS_WITH_LIMITATION",
+  "sourceVerification": "Exact deployed SHA supplied by the coordinated release.",
+  "checks": [
+    "Dedicated station and display are paired through the native Console flow",
+    "Current consent requirements are finite and private child/staff fields stay absent at both display widths",
+    "A real locked acknowledgement survives a lost reply and retries the identical action and body",
+    "Unlock adopts only the typed guardian acknowledgement and makes no registration or payment write",
+    "Public Done is disabled and the real typed Done is refused until private staff readiness",
+    "Public Done/refusal produces no registration, check-in, sale or payment write",
+    "Ask the team returns consent to the existing staff screen without a business write"
+  ],
+  "limitations": [
+    "Current staging policy requires private staff readiness. No camera or clinical details were fabricated; successful public Done was not attempted."
+  ],
+  "screenshots": [
+    "SCRUM-201-consent-staging-pairing-masked.png",
+    "SCRUM-201-consent-staging-retry-masked.png",
+    "SCRUM-201-consent-staging-private-staff.png",
+    "SCRUM-201-consent-staging-readiness-blocked.png",
+    "SCRUM-201-consent-staging-staff-help.png",
+    "SCRUM-201-consent-staging-inline-fallback.png"
+  ],
+  "policy": {
+    "authority": "Current staff-published finite consent prompt; no policy changes",
+    "requirements": [
+      "drop_off"
+    ],
+    "consentRequired": true,
+    "requiredConfirmations": 3,
+    "staffReadyInitially": false,
+    "staffReadyAfterAcknowledgement": false
+  },
+  "businessWrites": {
+    "staff": 0,
+    "display": 0
+  },
+  "cleanup": {
+    "leaseReleased": true,
+    "displayRevoked": true,
+    "childArchived": true,
+    "memberArchived": true,
+    "stationArchived": true,
+    "staffSignedOut": true,
+    "managerSignedOut": true
+  },
+  "fixture": {
+    "stationId": "01a0eeab-f868-726c-a16a-b3fe88311eff",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "memberId": "01a0eeab-fdcc-7dd7-a890-047a3d1399b8",
+    "childId": "01a0eeab-ffac-7d44-b6c4-64794c781da0"
+  },
+  "publishedEvidence": [
+    "SCRUM-201-consent-staging-retry-masked.png",
+    "SCRUM-201-consent-staging-readiness-blocked.png",
+    "SCRUM-201-consent-staging-private-staff.png"
+  ]
+}

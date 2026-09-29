@@ -1,0 +1,117 @@
+{
+  "ticket": "SCRUM-201",
+  "environment": "staging",
+  "source": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+  "run": "88b11700",
+  "selected": [
+    "fnb",
+    "shop"
+  ],
+  "startedAt": "2026-09-29T19:35:09.340Z",
+  "sourceVerification": "Release SHA supplied after deployment confirmation",
+  "status": "PASS",
+  "phase": "shop: real cash collection",
+  "checks": [
+    "Dedicated virtual station is online without changing box state",
+    "Console pairs the independently authenticated display with the dedicated station",
+    "fnb: public rows and total match the actual quote",
+    "fnb: required viewport has no horizontal overflow",
+    "fnb: required viewport has no horizontal overflow",
+    "fnb: independent display retains the captured guest order through staff lock",
+    "fnb: payment shows the authoritative outstanding amount before completion",
+    "fnb: thank-you uses the finalised sale and real settled cash amounts",
+    "fnb: completed order has its actual pickup code",
+    "fnb: retained ledger contains exactly the intended cash parts",
+    "shop: public rows and total match the actual quote",
+    "shop: platform size label is captured in the public row",
+    "shop: required viewport has no horizontal overflow",
+    "shop: required viewport has no horizontal overflow",
+    "shop: independent display retains the captured guest order through staff lock",
+    "shop: display-browser disconnect restores inline layout and reconnect keeps pairing",
+    "shop: payment shows the authoritative outstanding amount before completion",
+    "shop: accepted partial cash leaves the real balance and no completed purchase",
+    "shop: thank-you uses the finalised sale and real settled cash amounts",
+    "shop: retained ledger contains exactly the intended cash parts",
+    "Native flow requested only dedicated cash and display writes"
+  ],
+  "screenshots": [
+    "SCRUM-201-staging-fnb-order.png",
+    "SCRUM-201-staging-fnb-payment.png",
+    "SCRUM-201-staging-fnb-completed.png",
+    "SCRUM-201-staging-shop-order.png",
+    "SCRUM-201-staging-shop-inline-fallback.png",
+    "SCRUM-201-staging-shop-payment.png",
+    "SCRUM-201-staging-shop-partial-cash.png",
+    "SCRUM-201-staging-shop-completed.png"
+  ],
+  "fixtures": {
+    "stationId": "01a0eeaa-086d-70d1-b418-210702479e41",
+    "boxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+    "credentialId": "01a0eeaa-4aa7-7cd2-8177-efa7051dea37",
+    "productIds": [
+      "01a0eeaa-0c51-7c15-b73b-a9fcee36052e",
+      "01a0eeaa-0fe1-7dbc-8689-27e1383fc6ec"
+    ],
+    "categoryIds": [
+      "01a0eeaa-0a7f-79aa-89c5-82e26f0b6cf3",
+      "01a0eeaa-0e22-7a2b-97c4-53d4636d3692"
+    ]
+  },
+  "sales": [
+    {
+      "kind": "fnb",
+      "id": "01a0eeaa-9808-7db8-aeb1-d0a86604b16a",
+      "status": "finalised",
+      "grossSatang": 16000,
+      "businessDate": "2026-09-29"
+    },
+    {
+      "kind": "shop",
+      "id": "01a0eeab-1e05-7bde-b13e-7575aa189329",
+      "status": "finalised",
+      "grossSatang": 24000,
+      "businessDate": "2026-09-29"
+    }
+  ],
+  "cleanup": [
+    {
+      "type": "display",
+      "revoked": true
+    },
+    {
+      "type": "station",
+      "id": "01a0eeaa-086d-70d1-b418-210702479e41",
+      "archived": true
+    },
+    {
+      "type": "product",
+      "id": "01a0eeaa-0c51-7c15-b73b-a9fcee36052e",
+      "archived": true
+    },
+    {
+      "type": "product",
+      "id": "01a0eeaa-0fe1-7dbc-8689-27e1383fc6ec",
+      "archived": true
+    },
+    {
+      "type": "category",
+      "id": "01a0eeaa-0a7f-79aa-89c5-82e26f0b6cf3",
+      "archived": true
+    },
+    {
+      "type": "category",
+      "id": "01a0eeaa-0e22-7a2b-97c4-53d4636d3692",
+      "archived": true
+    }
+  ],
+  "retained": [],
+  "physicalInventoryUntouched": true,
+  "finishedAt": "2026-09-29T19:36:42.683Z",
+  "cleanupComplete": true,
+  "proofCompleted": true,
+  "publishedEvidence": [
+    "SCRUM-201-staging-fnb-completed.png",
+    "SCRUM-201-staging-shop-partial-cash.png",
+    "SCRUM-201-staging-shop-completed.png"
+  ]
+}

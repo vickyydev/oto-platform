@@ -1,46 +1,37 @@
 # Handover - where this is, and what to do next
 
-## STOP POINT - 30 September 2026 - staging verification
+## STOP POINT - 30 September 2026 - final layout check
 
-The interrupted work is intact. All six existing native POS flows pass,
-including F&B, shop, saved-child review and guardian acknowledgement. The
-combined run cleaned up its own database and processes. Shop and consent
-captures also pass focused native checks; measured page bounds show no clipping.
-POS typecheck, full lint, production build and standalone smoke typing pass.
-Existing affected checks: POS92, shared19, box40; shared/box typecheck and lint
-pass. DB43 and schema verification pass for forward migration0033.
+Source b31b01b7 is LIVE on API, POS, Console, Launcher and Booth after
+authorised manual deployment. The migration step completed; station reads
+pass and retired lookup routes return 404. Automatic settings are unchanged.
+After migration 0033, the earliest compatible API rollback is 85d35e0.
 
-SCRUM-206 terminal recovery now also handles an already-failed command without
-a result, preserves its diagnostic and full reservation, and never sends a
-second SALE. All33 existing terminal tests, API typecheck and full lint pass.
-The historical uncertain partial remains protected. The separate newer GHL
-no-response simulation awaits recovery after deployment; its known simulator
-path did not take money. Three other fresh staging payment follow-ups passed
-with reviewed attachments10917-10920.
+SCRUM-201 passes 21 staging food/shop checks and 7 consent checks. Reviewed
+evidence is saved under docs/qa/separate-display. Consent correctly requires
+the real joint photo before private staff readiness; successful public Done
+was proven locally, not fabricated on staging. All owned fixtures were cleaned
+up. A small header/language-control overlap found during screenshot review is
+fixed in two POS components. POS typecheck, full lint and build pass; the
+POS-only deployment and final order-layout recapture remain before closure.
 
-All five platform staging services are LIVE on b31b01b7 after authorised manual
-Render deployment. API pre-deploy migrations completed before frontend release;
-ordinary station access is200 and both retired lookup routes are404. Exact
-versions, deployment IDs and readiness are in the separate-display release
-evidence. Normal automatic deployment settings are unchanged. After0033 the
-earliest compatible API rollback is85d35e0, never88140af or older.
+SCRUM-206 current follow-ups are deployed and verified: the retained GHL
+simulation recovered without another SALE, and a fresh native run passed
+11 checks, including audited staff confirmation and one cash settlement.
+Both runs cleaned up their owned setup rows; the historical uncertain partial
+remains protected. The full story stays In Progress because separate To Do
+SCRUM-269 is still required for offline trading. No new task is started.
+SCRUM-285 remains Deployed with staging attachment 10905.
 
-The newer retained GHL no-response simulation now passes API recovery: full
-reservation, one original SALE and staff review. The known simulator no-money
-outcome was confirmed through the staff API and audited; the unpaid sale was
-voided and four dedicated setup rows archived. This is API proof, not native
-confirmation/cash completion. Fresh native GHL, food/shop display and consent
-staging checks are running on separate owned fixtures. The older uncertain
-partial stays untouched.
+Local verification passed: all 6 native browser flows, POS 92, shared 19,
+box 40, terminal 33 and DB 43 existing checks; applicable package typechecks,
+lint, POS build and schema verification pass. No new test suite or dependency.
+CI run 36619796693 ran zero steps due billing availability. No new CI-packed
+Pi archive exists; the existing Desktop release is unchanged.
 
-CI36619796693 ran zero steps because billing prevented startup. CI is not green
-and no new CI-packed Pi archive exists. Existing Desktop release is unchanged.
-
-SCRUM-201 is Testing; SCRUM-285 is already Deployed with
-attachment10905. SCRUM-206 remains In Progress because separate To Do SCRUM-269
-blocks complete offline trading. Neither current ticket has subtasks. Finish
-only this release checkpoint, attach named staging screenshots, save final
-versions and guidelines, then stop. Do not select another ticket.
+Finish the final POS layout proof, attach and name staging screenshots, update
+Jira and the final handover/guidelines, then stop and await the next instruction.
+Neither current story has subtasks. Do not start another ticket.
 
 ## STOP POINT - 29 September 2026 evening - saved-child display review
 

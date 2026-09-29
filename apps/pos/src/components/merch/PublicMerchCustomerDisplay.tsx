@@ -68,7 +68,7 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
   }
   if (stage === 'order' && totals) {
     return <Shell>
-      <div className="p-8 flex items-center justify-between border-b border-foreground/10 shrink-0">
+      <div className="py-8 pl-8 pr-36 flex items-center justify-between border-b border-foreground/10 shrink-0">
         <Brand /><span className="text-lg text-foreground/60">{t('merch.header.yourSale')}</span>
       </div>
       <div className="flex-1 overflow-y-auto p-8 space-y-4">

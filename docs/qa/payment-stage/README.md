@@ -160,3 +160,23 @@ supported QR inquiry still requires the captured terminal reference. Two
 existing-suite cases prove concurrent reads produce one audit, cash stays
 blocked, and no second attempt or SALE is created. All33 terminal tests,
 API typecheck and full lint pass. This follow-up still awaits deployment.
+
+## Staging recovery completed - 30 September
+
+API and POS b31b01b7 pass the retained restart recovery and a fresh native GHL
+no-response flow. The retained simulation kept one original SALE and its full
+reservation, then accepted an audited no-money decision through the staff API.
+Its unpaid sale was voided and four dedicated setup rows archived. Evidence:
+ghl-recovery.json and SCRUM-206-restart-fallback-api-check.png, attachment10923.
+This API card does not claim the original browser confirmation or cash flow.
+
+The fresh native run a54d326c passes11 checks. The actual staff dialog records
+the decision and account, no unsupported inquiry or second SALE is queued,
+and one cash tender settles the unchanged THB200 balance. The finalised sale
+is retained for audit; all four owned setup rows are archived. Evidence is
+staging-ghl-final-results.json and the reviewed confirmation/completed PNGs.
+The historical uncertain partial from run0d008153 remains untouched.
+
+The current payment follow-ups are deployed and verified. SCRUM-206 stays
+In Progress because full offline acceptance depends on separate To Do
+SCRUM-269. No new offline trading work is started for this break checkpoint.

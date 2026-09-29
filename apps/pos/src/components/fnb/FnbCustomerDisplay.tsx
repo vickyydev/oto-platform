@@ -321,7 +321,7 @@ export function FnbCustomerDisplay({
     return (
       <Shell>
         {chargeTarget && <ChargeBanner target={chargeTarget} />}
-        <div className="p-8 flex items-center justify-between border-b border-foreground/10 shrink-0">
+        <div className="py-8 pl-8 pr-36 flex items-center justify-between border-b border-foreground/10 shrink-0">
           <Brand />
           {wristband ? (
             <BalanceChip wristband={wristband} />

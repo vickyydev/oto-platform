@@ -1,0 +1,111 @@
+{
+  "ticket": "SCRUM-206",
+  "environment": "staging",
+  "source": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+  "run": "a54d326c",
+  "selected": [
+    "shop-ghl-confirm"
+  ],
+  "versions": {
+    "api": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+    "pos": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d"
+  },
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "shop-ghl-confirm",
+      "status": "PASS",
+      "stationId": "01a0eeaa-b2ed-72fd-8287-150a001dad1f",
+      "saleId": "01a0eeaa-d31c-745a-a22c-a70165c5126e",
+      "ledger": {
+        "status": "finalised",
+        "attempts": [
+          {
+            "id": "01a0eeab-295e-7003-b526-ecae3129660c",
+            "method": "card",
+            "status": "declined",
+            "amountSatang": 20000,
+            "tenderedSatang": null,
+            "changeSatang": null,
+            "reversalPending": null,
+            "inquirySupported": false
+          },
+          {
+            "id": "01a0eead-1b78-7be1-8716-be8079a406fe",
+            "method": "cash",
+            "status": "approved",
+            "amountSatang": 20000,
+            "tenderedSatang": 20000,
+            "changeSatang": 0,
+            "reversalPending": null,
+            "inquirySupported": false
+          }
+        ]
+      }
+    }
+  ],
+  "checks": [
+    "shop-ghl-confirm: dedicated virtual station is online",
+    "shop-ghl-confirm: native picker retains the dedicated online station",
+    "shop-ghl-confirm: native cart has canonical quote",
+    "shop-ghl-confirm: native payment screen records only its dedicated unpaid sale",
+    "shop-ghl-confirm: native terminal request preserves configured method token",
+    "shop-ghl-confirm: frozen GHL card capability forbids inquiry",
+    "shop-ghl-confirm: official simulator reports silence without an invented approval",
+    "shop-ghl-confirm: native no-money confirmation records the staff account and decision",
+    "shop-ghl-confirm: no unsupported inquiry or second SALE is queued",
+    "shop-ghl-confirm: full unchanged balance settles once as cash",
+    "shop-ghl-confirm: native cash request preserves configured method token"
+  ],
+  "screenshots": [
+    "SCRUM-206-shop-ghl-confirm-pending.png",
+    "SCRUM-206-shop-ghl-confirm-confirmation.png",
+    "SCRUM-206-shop-ghl-confirm-completed.png"
+  ],
+  "cleanup": [
+    {
+      "case": "shop-ghl-confirm",
+      "type": "station",
+      "id": "01a0eeaa-b2ed-72fd-8287-150a001dad1f",
+      "archived": true
+    },
+    {
+      "case": "shop-ghl-confirm",
+      "type": "device",
+      "id": "01a0eeaa-b12b-7fd4-a0ba-215e1b0c2341",
+      "archived": true
+    },
+    {
+      "case": "shop-ghl-confirm",
+      "type": "product",
+      "id": "01a0eeaa-b4ce-709d-a506-f4d195febac7",
+      "archived": true
+    },
+    {
+      "type": "category",
+      "id": "01a0eeaa-ad8d-7b35-b07e-9eb972278fbe",
+      "archived": true
+    }
+  ],
+  "retained": [],
+  "historicalPaymentUntouched": true,
+  "fixtures": [
+    {
+      "case": "shop-ghl-confirm",
+      "stationId": "01a0eeaa-b2ed-72fd-8287-150a001dad1f",
+      "deviceId": "01a0eeaa-b12b-7fd4-a0ba-215e1b0c2341",
+      "productId": "01a0eeaa-b4ce-709d-a506-f4d195febac7",
+      "saleId": "01a0eeaa-d31c-745a-a22c-a70165c5126e",
+      "attemptIds": [
+        "01a0eeab-295e-7003-b526-ecae3129660c"
+      ],
+      "passed": true
+    }
+  ],
+  "completedSelectedCases": true,
+  "cleanupComplete": true,
+  "publishedEvidence": [
+    "SCRUM-206-shop-ghl-confirm-confirmation.png",
+    "SCRUM-206-shop-ghl-confirm-completed.png"
+  ]
+}

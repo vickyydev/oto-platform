@@ -465,3 +465,29 @@ confirmed viewport and language-control bounds before and after capture;
 no clipping or retained document scroll was reproduced. Finite transition
 waits remain in the existing screenshot helper; temporary diagnostics were
 removed. Staging acceptance remains required before SCRUM-201 is Deployed.
+
+## Staging feature verification - 30 September
+
+Source b31b01b7 is LIVE on API, POS, Console, Launcher and Booth. Deployment
+and migration/readiness evidence is in release-deployment.json. Actions run
+36619796693 ran zero steps because billing prevented startup; manual Render
+deployment was authorised, and normal automatic settings remain unchanged.
+
+Guest food/shop proof passes21 checks, including actual quoted rows, both
+required widths, lock retention, real pickup, split cash and display disconnect
+fallback. Two finalised synthetic sales remain for audit; owned setup rows
+were archived and the display revoked. See staging-guest-order-results.json
+and its publishedEvidence images. Final screenshot review found a small order
+header/language-control overlap; the current POS-only spacing correction
+reserves room for the control without changing payment or API behaviour.
+
+Consent proof passes7 checks with an explicit staging limit. Current park
+policy requires a real joint photo before private staff readiness. No photo
+or clinical data was fabricated, so successful public Done is proven locally,
+not on staging. Staging proves acknowledgement while locked, identical-action
+lost-reply retry, actual staff adoption, privacy at both widths, Done disabled
+and a real typed Done403, plus staff-help fallback and zero business writes.
+All own fixtures were cleaned up. See staging-consent-results.json and its
+publishedEvidence images. Two earlier helper-only failures (pairing label
+selector and discounted-tier verification) were fully cleaned before rerun;
+the passing run uses Tourist tier without fabricated identity verification.
