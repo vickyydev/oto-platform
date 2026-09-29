@@ -61,8 +61,8 @@ unchanged.
 The checked payment follow-ups and SCRUM-285 guard are assembled on the
 latest main checkpoint as five linear source commits: wording `2899439`,
 inquiry capability `4817aa1`, partial reversal `f1b122e`, invoice scope
-`c215757` and forced-offline guard `346bfae`. This checkpoint lands that
-combined source on main; the original work branches remain preserved.
+`c215757` and forced-offline guard `346bfae`. Main release checkpoint `fe9c683` landed that
+combined source on origin/main; the original work branches remain preserved.
 All **305 affected existing-file checks pass**: API terminal 27, gateway 44,
 cash 26, sales 58, station session 35 and guarded routes 9; POS writer 58,
 shared payments 22 and database migration 26. One local guarded-route suite
@@ -82,10 +82,16 @@ The offline guard runs before idempotency and refuses trading only for the
 authenticated station's persisted forced-offline virtual box. Reporting,
 setup, Go online and box callbacks remain available with original permissions.
 
-The latest branch CI rerun, 36560856529, still has zero executed steps because
-GitHub billing/spending availability prevents jobs starting. Check the exact
-new main run after pushing. Render's normal checksPass gate stays intact;
-no corrected source or migration is deployed yet. SCRUM-206 remains In Progress
+Exact-main [CI 36565169997](https://github.com/vickyydev/oto-platform/actions/runs/36565169997)
+on `fe9c68374449a867254992c0f0e4d869876b6b34` stopped with zero steps.
+Check job 109395214284 explicitly reports failed recent account payments or
+an insufficient spending limit. This is an external Actions availability
+block, not a source-test failure. Render's normal checksPass gate stays intact;
+all five platform services were rechecked LIVE on 0468c38. No corrected source
+or migration is deployed yet. Restore Actions billing/spending availability,
+rerun 36565169997, then deploy its tested source and complete isolated staging
+proof, named Jira screenshots and the new CI artifact delivery. Documentation
+checkpoints do not change the tested release source. SCRUM-206 remains In Progress
 pending SCRUM-269 local till transport and SCRUM-201 separate display acceptance.
 SCRUM-285 remains Testing until named staging screenshot evidence is attached.
 

@@ -5,9 +5,12 @@
   "liveRelease": "0468c38",
   "followUpDeployed": false,
   "ci": {
-    "run": 36560856529,
+    "run": 36565169997,
+    "headSha": "fe9c68374449a867254992c0f0e4d869876b6b34",
+    "checkJob": 109395214284,
     "startedSteps": 0,
-    "blockedBy": "GitHub billing/spending availability"
+    "blockedBy": "GitHub billing/spending availability",
+    "diagnostic": "The job was not started because recent account payments have failed or your spending limit needs to be increased."
   },
   "stagingLogEvidence": {
     "service": "oto-api-staging",
@@ -58,7 +61,7 @@
     "newProofUsesSeparateFixturesAndReport": true
   },
   "rollout": [
-    "Push the checked combined source to main and require exact-main CI before deployment.",
+    "Combined source is landed on main at fe9c683; rerun exact-source main CI 36565169997 after Actions availability is restored.",
     "Restore Actions billing/spending availability; preserve Render checksPass gating.",
     "After corrected source is LIVE, prove four fresh native cases in an isolated report and the offline guard on independent fixtures.",
     "Retain the original unresolved simulated outcome; never fabricate its callback, repeat SALE or confirm no money.",
@@ -84,5 +87,7 @@
     "schemaVerification": "PASS",
     "independentReview": "PASS",
     "guardedRoutesRerun": "PASS after local PostgreSQL port collision"
-  }
+  },
+  "mainReleaseCheckpoint": "fe9c68374449a867254992c0f0e4d869876b6b34",
+  "mainSourceLanded": true
 }
