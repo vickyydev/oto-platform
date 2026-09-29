@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { session, verificationCode } from '@oto/db';
+import { randomBytes } from 'node:crypto';
+import { and, eq, isNotNull, isNull, ne, sql } from 'drizzle-orm';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { deviceCredential, session, station, stationEvent, verificationCode } from '@oto/db';
 import {
   ADMIN,
   RECEPTION,
@@ -246,5 +247,116 @@ describe('SCRUM-28 — deactivation and temporary passwords', () => {
     expect(refused.json().error.code).toBe('INVALID_CREDENTIALS');
     const dead = await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie: live } });
     expect(dead.statusCode).toBe(401);
+  });
+});
+
+describe('revoked display protected-call observations (SCRUM-201)', () => {
+  let proof: TestContext;
+  let managerCookie: string;
+  let target: typeof station.$inferSelect;
+  const headers = (token: string) => ({ authorization: `Bearer ${token}` });
+  const rejectedEvents = (deviceId: string) => proof.db.select().from(stationEvent).where(and(
+    eq(stationEvent.source, 'display'), eq(stationEvent.kind, 'error'),
+    eq(stationEvent.outcome, 'refused'), eq(stationEvent.errorCode, 'DISPLAY_UNPAIRED'),
+    sql`${stationEvent.payload}->>'deviceId' = ${deviceId}`,
+  ));
+  const pair = async () => {
+    const token = randomBytes(32).toString('hex');
+    const mint = await proof.app.inject({ method: 'POST', url: '/display/pairing', headers: headers(token), payload: {} });
+    expect(mint.statusCode).toBe(200);
+    const claim = await proof.app.inject({ method: 'POST', url: `/stations/${target.id}/displays/claim`,
+      headers: { cookie: managerCookie }, payload: { pairingCode: mint.json().pairingCode, name: 'Auth proof display' } });
+    expect(claim.statusCode).toBe(200);
+    return { token, deviceId: claim.json().device.id as string };
+  };
+  const revoke = async (deviceId: string) => {
+    const result = await proof.app.inject({ method: 'POST', url: `/credentials/${deviceId}/revoke`,
+      headers: { cookie: managerCookie }, payload: { reason: 'Auth observation proof' } });
+    expect(result.statusCode).toBe(200);
+  };
+  beforeAll(async () => {
+    proof = await createTestContext();
+    managerCookie = await signInAs(proof.app, ADMIN.phone, ADMIN.password);
+    const [row] = await proof.db.select().from(station).where(eq(station.name, 'Reception Till 1')).limit(1);
+    target = row!;
+  });
+  afterEach(async () => {
+    await proof.db.update(deviceCredential).set({ revokedAt: new Date(), secretHash: null }).where(and(
+      eq(deviceCredential.stationId, target.id), eq(deviceCredential.kind, 'display'),
+      isNull(deviceCredential.revokedAt), isNotNull(deviceCredential.pairedAt),
+    ));
+  });
+  afterAll(async () => { await proof.close(); });
+
+  it('records actual protected 401s once under concurrent polling, never the expired pairing answer', async () => {
+    const { token, deviceId } = await pair();
+    expect((await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(token) })).statusCode).toBe(200);
+    await revoke(deviceId);
+    const status = await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: headers(token) });
+    expect(status.statusCode).toBe(200);
+    expect(status.json()).toEqual({ status: 'expired' });
+    expect((await rejectedEvents(deviceId)).length).toBe(0);
+    const responses = await Promise.all([
+      proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(token) }),
+      proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(token) }),
+      proof.app.inject({ method: 'POST', url: '/display/intents', headers: headers(token),
+        payload: { type: 'display.set_language', lastSeenSequence: 0, actionId: 'private-action', payload: { language: 'th' } } }),
+    ]);
+    expect(responses.map(response => response.statusCode)).toEqual([401, 401, 401]);
+    expect(responses.every(response => response.json().error.code === 'DISPLAY_UNPAIRED')).toBe(true);
+    const events = await rejectedEvents(deviceId);
+    expect(events).toHaveLength(1);
+    const event = events[0]!;
+    expect({ stationId: event.stationId, boxId: event.boxId, kind: event.kind, source: event.source,
+      outcome: event.outcome, errorCode: event.errorCode, payload: event.payload })
+      .toEqual({ stationId: target.id, boxId: target.boxId, kind: 'error', source: 'display',
+        outcome: 'refused', errorCode: 'DISPLAY_UNPAIRED', payload: { deviceId } });
+    expect(['display.session', 'display.intents'].includes(event.intentType!)).toBe(true);
+    expect([event.actorAccountId, event.actionId, event.leaseId, event.sequence, event.stage]).toEqual([null, null, null, null, null]);
+    expect(event.occurredAt?.getTime()).toBe(event.receivedAt.getTime());
+    expect(JSON.stringify(events).includes(token)).toBe(false);
+    expect(JSON.stringify(events).includes('private-action')).toBe(false);
+    // A later real rejection can refresh the observation after the minute window.
+    await proof.db.update(stationEvent).set({ receivedAt: new Date(Date.now() - 61_000) }).where(eq(stationEvent.id, event.id));
+    const later = await proof.app.inject({ method: 'POST', url: '/display/intents', headers: headers(token), payload: {} });
+    expect(later.statusCode, 'authentication still precedes body validation').toBe(401);
+    const refreshed = await rejectedEvents(deviceId);
+    expect(refreshed).toHaveLength(2);
+    expect(refreshed.filter(row => row.intentType === 'display.intents')).not.toHaveLength(0);
+  });
+
+  it('does not attribute unknown, malformed, unpaired or live wrong-scope refusals to a device', async () => {
+    const before = await proof.db.select({ id: stationEvent.id }).from(stationEvent)
+      .where(eq(stationEvent.errorCode, 'DISPLAY_UNPAIRED'));
+    const { token, deviceId } = await pair();
+    const unknown = randomBytes(32).toString('hex');
+    const pending = randomBytes(32).toString('hex');
+    expect((await proof.app.inject({ method: 'POST', url: '/display/pairing', headers: headers(pending), payload: {} })).statusCode).toBe(200);
+    for (const requestHeaders of [headers(unknown), headers(pending), headers('not-a-bearer'), { cookie: managerCookie }]) {
+      const response = await proof.app.inject({ method: 'GET', url: '/display/session', headers: requestHeaders });
+      expect(response.statusCode).toBe(401);
+      expect(response.json().error.code).toBe('DISPLAY_UNPAIRED');
+    }
+    await proof.db.update(deviceCredential).set({ scopes: ['display:read'] }).where(eq(deviceCredential.id, deviceId));
+    const scope = await proof.app.inject({ method: 'POST', url: '/display/intents', headers: headers(token), payload: {} });
+    expect(scope.statusCode).toBe(401);
+    expect((await rejectedEvents(deviceId)).length).toBe(0);
+    const all = await proof.db.select({ id: stationEvent.id }).from(stationEvent)
+      .where(eq(stationEvent.errorCode, 'DISPLAY_UNPAIRED'));
+    expect(all, 'unattributed and live-scope refusals create no observation').toHaveLength(before.length);
+  });
+
+  it('does not write observation through a mismatched station operator or park binding', async () => {
+    const { token, deviceId } = await pair();
+    await revoke(deviceId);
+    const [other] = await proof.db.select({ operatorId: station.operatorId, branchId: station.branchId })
+      .from(station).where(ne(station.operatorId, target.operatorId)).limit(1);
+    expect(Boolean(other)).toBe(true);
+    await proof.db.update(deviceCredential).set({ operatorId: other!.operatorId, branchId: other!.branchId })
+      .where(eq(deviceCredential.id, deviceId));
+    const result = await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(token) });
+    expect(result.statusCode).toBe(401);
+    expect(result.json().error.code).toBe('DISPLAY_UNPAIRED');
+    expect((await rejectedEvents(deviceId)).length).toBe(0);
   });
 });

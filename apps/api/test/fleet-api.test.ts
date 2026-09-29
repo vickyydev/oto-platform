@@ -14,6 +14,7 @@ import {
   roleAssignment,
   session as sessionTable,
   station,
+  stationEvent,
   stationStaff,
   account,
 } from '@oto/db';
@@ -265,6 +266,72 @@ describe('a display requests pairing before a manager chooses its station (SCRUM
     await proof.db.update(station).set({ archivedAt: new Date() }).where(eq(station.id, target.id));
     expect((await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(token) })).statusCode).toBe(401);
     await proof.db.update(station).set({ archivedAt: null }).where(eq(station.id, target.id));
+  });
+
+  it('lists only the latest protected rejection at the matching display station and box', async () => {
+    const { token, deviceId } = await paired();
+    const credential = async () => {
+      const response = await proof.app.inject({ method: 'GET', url: `/branches/${target.branchId}/credentials?includeRevoked=true`,
+        headers: { cookie: managerCookie } });
+      expect(response.statusCode).toBe(200);
+      return (response.json().credentials as Array<Record<string, unknown>>).find((row) => row.id === deviceId)!;
+    };
+    expect(await credential()).toMatchObject({ lastRejectedAt: null, lastRejectedCode: null });
+    expect((await proof.app.inject({ method: 'POST', url: `/credentials/${deviceId}/revoke`,
+      headers: { cookie: managerCookie }, payload: {} })).statusCode).toBe(200);
+    expect((await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: headers(token) })).statusCode).toBe(200);
+    expect(await credential()).toMatchObject({ lastRejectedAt: null, lastRejectedCode: null });
+    const now = Date.now();
+    const latest = new Date(now - 1000);
+    const [otherBox] = (await proof.db.select().from(box)).filter((row) => row.id !== target.boxId);
+    const [otherStation] = (await proof.db.select().from(station)).filter((row) => row.id !== target.id);
+    const base = { stationId: target.id, boxId: target.boxId!, kind: 'error' as const, source: 'display' as const,
+      outcome: 'refused', errorCode: 'DISPLAY_UNPAIRED', intentType: 'display.session', payload: { deviceId } };
+    await proof.db.insert(stationEvent).values([
+      { ...base, id: newId(), occurredAt: new Date(now - 2000), receivedAt: new Date(now - 2000) },
+      { ...base, id: newId(), occurredAt: latest, receivedAt: latest },
+      { ...base, id: newId(), boxId: otherBox!.id, receivedAt: new Date(now) },
+      { ...base, id: newId(), stationId: otherStation!.id, receivedAt: new Date(now) },
+      { ...base, id: newId(), intentType: 'display.pairing', receivedAt: new Date(now) },
+      { ...base, id: newId(), kind: 'intent', receivedAt: new Date(now) },
+    ]);
+    const view = await credential();
+    expect(view).toMatchObject({ lastRejectedAt: latest.toISOString(), lastRejectedCode: 'DISPLAY_UNPAIRED' });
+    expect(Object.keys(view)).not.toContain('payload');
+    expect(Object.keys(view)).not.toContain('secretHash');
+  });
+
+  it('serves bounded, redacted station refusals separately from uploaded Box logs', async () => {
+    const { deviceId } = await paired();
+    const actionId = newId();
+    const now = new Date();
+    const base = { stationId: target.id, boxId: target.boxId!, kind: 'intent' as const, source: 'console' as const,
+      sequence: 3, stage: 'welcome', intentType: 'display.answer_prompt', outcome: 'refused', errorCode: 'wrong_stage',
+      actionId, occurredAt: now, receivedAt: now,
+      payload: { test: true, deviceId, testStage: 'welcome', simulatedSource: 'display', privateData: { medical: 'fixture only' } } };
+    const [otherBox] = (await proof.db.select().from(box)).filter((row) => row.id !== target.boxId);
+    await proof.db.insert(stationEvent).values([
+      { ...base, id: newId() },
+      { ...base, id: newId(), receivedAt: new Date(now.getTime() + 1) },
+      { ...base, id: newId(), outcome: 'validated', receivedAt: new Date(now.getTime() + 2) },
+      { ...base, id: newId(), boxId: otherBox!.id, receivedAt: new Date(now.getTime() + 3) },
+    ]);
+    const url = `/boxes/${target.boxId}/station-events?actionId=${actionId}&limit=1`;
+    const response = await proof.app.inject({ method: 'GET', url, headers: { cookie: managerCookie } });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['cache-control']).toBe('private, no-store');
+    expect(response.json().truncated).toBe(true);
+    expect(response.json().events).toHaveLength(1);
+    expect(response.json().events[0]).toMatchObject({ stationId: target.id, deviceId, source: 'console',
+      stage: 'welcome', errorCode: 'wrong_stage', actionId, test: true, testStage: 'welcome' });
+    expect(Object.keys(response.json().events[0]).sort()).toEqual([
+      'actionId', 'at', 'deviceId', 'errorCode', 'id', 'intentType', 'outcome', 'source', 'stage', 'stationId', 'test', 'testStage',
+    ]);
+    expect((await proof.app.inject({ method: 'GET', url })).statusCode).toBe(401);
+    const unlockedStaff = await signInAs(proof.app, RECEPTION.phone, RECEPTION.password);
+    expect((await proof.app.inject({ method: 'GET', url, headers: { cookie: unlockedStaff } })).statusCode).toBe(403);
+    expect((await proof.app.inject({ method: 'GET', url: `/boxes/${target.boxId}/station-events?limit=101`,
+      headers: { cookie: managerCookie } })).statusCode).toBe(400);
   });
 });
 afterAll(async () => {
@@ -589,6 +656,8 @@ describe('a station edit resolves its own branch (S2-04 review, finding 2)', () 
       payload: { name: 'Renamed from another branch' },
     });
     expect(elsewhere.statusCode).toBe(403);
+    const [otherStation] = await ctx.db.select({ boxId: station.boxId }).from(station).where(eq(station.id, otherStationId));
+    expect((await call('GET', `/boxes/${otherStation!.boxId}/station-events`, { cookie: managerCookie })).statusCode).toBe(403);
     /**
      * SCRUM-300 — refused for the same reason as before, and now saying so.
      * `Missing permission admin:station:update` was a sentence about the

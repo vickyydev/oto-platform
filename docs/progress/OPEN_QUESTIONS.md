@@ -2,8 +2,8 @@
 
 ## Current follow-ups - 29 September 2026
 
-- **GitHub Actions availability.** Main source b052767 is checked locally,
-  but CI 36570597484 ran zero steps because account billing/spending prevents
+- **GitHub Actions availability.** Main source 28da7df is checked locally,
+  but CI 36574043088 ran zero steps because account billing/spending prevents
   jobs starting. Restore Actions availability; no spending setting is changed
   by development. Meanwhile SCRUM-201 continues independently. Deployment,
   staging proof and the next CI-packed Pi artifact remain pending.

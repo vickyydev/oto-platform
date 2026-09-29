@@ -43,16 +43,21 @@ export default function Display() {
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let hasCode = false;
+    let knownPaired = sessionRef.current !== null;
     const inactive = () => stopped || generation.current !== startedGeneration;
     const tick = async () => {
       try {
         const bearer = bearerRef.current;
         setPersistent(rememberDisplayCredential(bearer));
-        const paired = await displayApi.pairing(bearer, controller.signal);
+        // Once paired, the protected read is the authority. Revocation must
+        // produce a real refused call before returning this browser to setup.
+        const paired = knownPaired ? { status: 'paired' as const }
+          : await displayApi.pairing(bearer, controller.signal);
         if (inactive()) return;
         if (paired.status === 'paired') {
           const current = await displayApi.session(bearer, controller.signal);
           if (inactive()) return;
+          knownPaired = true;
           setSession(previous => newerDisplaySession(previous, current));
           setPairing(null);
           const answer = current.document.prompt?.answer as { actionId?: string } | undefined;
@@ -89,6 +94,7 @@ export default function Display() {
           setPairing(null);
           pending.current = null;
           hasCode = false;
+          knownPaired = false;
           if (failure.code !== 'DISPLAY_ALREADY_PAIRED') bearerRef.current = newDisplayCredential();
         } else setError(failure instanceof Error ? failure.message : 'The display could not connect.');
       } finally {

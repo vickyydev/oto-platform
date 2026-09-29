@@ -1,63 +1,68 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-29 - ticket display flow checked; deployment awaits Actions._
+_Last updated: 2026-09-29 - display diagnostics checked; deployment awaits Actions._
 
-The SCRUM-201 ticket display checkpoint extends main b052767 with online
-order, payment and thank-you screens, explicit unused-code expiry and Console
-snapshot/revocation diagnostics. Full SCRUM-201 remains In Progress and NOT
-BUILT as a whole. These changes are checked locally, NOT DEPLOYED.
+The SCRUM-201 display diagnostics checkpoint is locally checked and ready
+to follow main 28da7df. Full SCRUM-201 remains In Progress and NOT BUILT as a
+whole; no new staging deployment is claimed.
 
-The visitor display receives the till's calculated rows, quote, tax and
-discount figures. It never loads a second catalog to price the order. Payment
-shows the selected split amount and real QR/expiry metadata when supplied;
-money writes remain staff-authorised. Thank-you shows bracelet and entitlement
-summaries without exposing or inventing redeemable grant codes. Unsupported
-or malformed snapshots fall back safely; supervision steps 7/8 and F&B/shop
-remain inline. Shared StationSessionDocument and StationIntent names stay intact.
+Console Send test intent now checks a finite choice of stage and intent using
+the box's real validation rules on a private copy. It refuses missing or
+mismatched live sessions and never creates or writes a live session, answers
+for a visitor, changes the lease or collects money. The existing transaction
+records safe Console test metadata and the replay response together. A retry
+retains the same action and key. Station, display, park and permission bindings
+are rechecked; the live display must be paired and active.
 
-Shared public schemas validate both publication and cached customer reads,
-stripping nested private fields. Scan polling and streaming use a separate
-shared redaction helper: the existing parity test caught and now guards the
-mistake of treating scan details as cart data. Explicit code expiry is
-idempotent, retries an uncertain reply on the same credential and cannot
-revoke a paired display. A reviewed mint/expiry race is fenced before starting
-the request. Pairing remains paused until New code is explicitly selected.
+The Box drawer shows a bounded station-refusal feed, separately labelled from
+uploaded box logs. The record for a welcome-stage consent test says wrong_stage
+and Test. Actual rejected protected display calls are recorded only for a known
+revoked device and contain a fixed code/route plus device id. Credential locking
+bounds repeated observations to one per device per minute. Unknown credentials
+and a successful pairing-status response do not create rejection evidence.
+The paired browser now reads its protected session directly; a real 401 sends
+it back to setup. Console shows Last protected call rejected only when the
+event exists, separately from Last seen.
 
-Console Snapshot reads the current station customer view; it does not claim
-to archive what a disconnected device received. QR contents are omitted.
-Revoked rows show Access revoked and Last seen; no rejected-call time is
-invented. Console Send test intent and rejected-call history remain next.
+Validation: 223 existing checks pass for this slice: API 147 (fleet 70,
+station 41, auth 15, route conformance 12 and guarded routes 9), box 27, POS 44 and
+Console 5. API/POS/Console/box typecheck and full package lint pass. POS and
+Console production builds pass with the existing POS chunk warnings.
+Twenty-two native checks pass on a disposable database, including real Console
+refusal/log evidence, unchanged live visitor state, protected401 after revoke,
+and the full ticket/cash/display flow from the previous checkpoint. Three
+reviewed LOCAL CHECK screenshots 10894-10896 are attached to SCRUM-201 and named
+in docs/qa/separate-display/README.md. No new suite, dependency or migration.
 
-Validation: 506 existing tests pass: API 120, POS 84, box 26, Console 4 and
-shared 272. All five touched packages pass typecheck and full package lint;
-POS and Console production builds pass with the existing POS chunk warnings.
-Nineteen native browser checks pass on a fresh disposable database, including
-the completed cash sale, split-amount display, new visitor reset, both lost
-reply paths, lock/sign-out independence and Console snapshot/revocation.
-Six reviewed LOCAL CHECK screenshots are attached to SCRUM-201 as 10888-10893
-and listed in docs/qa/separate-display/README.md. They are not staging proof.
-No new suite, dependency or migration was added in this slice.
+Review tightened absent-session, wrong-box and changed-target handling. Route
+conformance exposed the missing explicit replay-store inventory for the three
+independent display routes; their hash/expiry/action-fence semantics are now
+documented in that existing check. Two Console test locators were aligned with
+the existing Field/ErrorNote widgets; no shared widget change was needed.
 
-Deployment remains externally blocked. Predecessor exact-main CI
-[36570597484](https://github.com/vickyydev/oto-platform/actions/runs/36570597484)
-on b052767 ran zero steps: check 109413331138 reports Actions billing/spending
-availability. The normal successful-check deployment gate remains intact.
-Render was rechecked on 29 September evening: API, POS, Console, Launcher
-and Booth are still LIVE at 0468c38; OTO App remains c416065. The next exact
-main run must be checked after this push. No staging migration or new Pi
-artifact is claimed. Pending actions are in OPEN_QUESTIONS.md.
+Main 28da7df already contains the checked online ticket order/payment/thank-you,
+public schema, expiry and snapshot slice (506 existing checks, 19 native checks,
+local attachments 10888-10893). b052767 holds the earlier pairing/identification
+and lock checkpoint (328 existing checks, 11 native checks, 10882-10887).
+Shared StationSessionDocument/StationIntent names remain intact. The display
+uses the till's captured prices and selected tender amount; it never reprices
+against another catalog. Public/cached snapshots omit private fields and
+redeemable grant identifiers. Migrations 0030/0031 are committed and forward-only.
 
-Earlier b052767 identification evidence remains valid: 328 existing checks,
-11 native browser checks and screenshots10882-10887. Migrations0030/0031
-are committed and forward-only; the latter refuses duplicate active paired
-displays rather than choosing one to revoke. Same-session ticket locks retain
-the visitor and payment action while hiding staff surfaces. Full staff-page
-reload recovery and physical LAN/offline display transport remain unproven.
+Deployment is still externally blocked: exact-source CI
+[36574043088](https://github.com/vickyydev/oto-platform/actions/runs/36574043088)
+on 28da7df ran zero steps; check 109424941224 explicitly reports GitHub Actions
+billing/spending availability. The normal checksPass deployment gate is intact.
+API/POS/Console/Launcher/Booth were rechecked LIVE at 0468c38; OTO App at c416065.
+Check the next exact-main run after this push. No new Pi artifact is available.
+Pending actions remain in OPEN_QUESTIONS.md; independent work continues.
 
-Next: finish Console diagnostic intents and refusal evidence, then typed
-supervision consent/child-slot/completion and independent F&B/shop displays.
-Remove unused compatibility only after checking callers; complete the
-two-browser staging acceptance and named screenshots before Deployed.
+Next: typed supervision consent, child-slot edits and completion, followed by
+independent F&B/shop display integration and compatibility retirement. Current
+Snapshot is a fresh customer view, not archived last-delivered JSON. Full
+staff-page reload recovery and physical LAN/offline display operation are not
+established here. Deployed requires completed staging acceptance with named
+screenshots. Preserve the retained simulated partial payment evidence.
 
 The 29 September continuation instruction explicitly keeps independent work
 moving while deployment or an owner decision is pending. Checkpoint after each

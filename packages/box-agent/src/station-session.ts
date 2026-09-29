@@ -69,6 +69,13 @@ import {
 export type IntentOutcome =
   { ok: true; write: SessionWrite } | { ok: false; refusal: StationIntentRefusal; message: string };
 
+export const DISPLAY_TEST_INTENTS = ['identify', 'skip_identify', 'contact_done', 'set_language', 'consent_ack'] as const;
+export type DisplayTestIntent = (typeof DISPLAY_TEST_INTENTS)[number];
+
+type IntentAssessment =
+  | { ok: true; write: SessionWrite; requiresLease: boolean; advanceSequence: boolean }
+  | { ok: false; refusal: StationIntentRefusal; message: string };
+
 export interface IntentContext {
   document: StationSessionDocument;
   intent: StationIntent;
@@ -626,6 +633,73 @@ export class StationSessionManager {
 
   // --- Intents --------------------------------------------------------------
 
+  /** A Console probe uses the real rules on a private copy, never the live writer. */
+  testDisplayIntent(
+    document: StationSessionDocument,
+    stage: StationSessionStage,
+    choice: DisplayTestIntent,
+    actionId: string,
+  ) {
+    const probe = structuredClone(document);
+    probe.stage = stage;
+    const requestId = `test-${actionId}`;
+    probe.prompt = choice === 'consent_ack' ? { kind: 'food_consent' }
+      : { kind: choice === 'contact_done' ? 'contact' : 'identify', requestId };
+    const intent: StationIntent = {
+      type: choice === 'consent_ack' ? 'display.answer_prompt' : `display.${choice}`,
+      actionId, lastSeenSequence: probe.sequence,
+      payload: choice === 'set_language' ? { language: 'en' }
+        : choice === 'consent_ack' ? { value: true }
+          : choice === 'skip_identify' ? { requestId }
+            : { requestId, phone: '0000000000', nickname: 'Test visitor', contactChannel: 'whatsapp' },
+    };
+    const result = this.assessIntent(probe, intent, { source: 'display' }, this.nowIso());
+    return {
+      intentType: intent.type,
+      accepted: result.ok,
+      reason: result.ok ? null : result.refusal,
+      message: result.ok ? 'Valid for this stage. The test did not change the station.' : result.message,
+    };
+  }
+
+  private assessIntent(
+    document: StationSessionDocument,
+    intent: StationIntent,
+    context: { source: StationEventSource; accountId?: string | null },
+    nowIso: string,
+  ): IntentAssessment {
+    const spec = this.intents.get(intent.type);
+    if (!spec) return { ok: false, refusal: 'unknown_intent', message: `This box does not understand ${intent.type}.` };
+    if (!spec.sources.includes(context.source)) {
+      return { ok: false, refusal: 'not_permitted', message: `A ${context.source} may not send ${intent.type}.` };
+    }
+    if (spec.stages && !spec.stages.includes(document.stage)) {
+      return { ok: false, refusal: 'wrong_stage', message: `${intent.type} is not available while the screen is on ${document.stage}.` };
+    }
+    if (spec.requiresLease && !intent.leaseId) {
+      return { ok: false, refusal: 'no_lease', message: 'This till does not hold the station.' };
+    }
+    if (spec.requiresLease && document.lease?.leaseId !== intent.leaseId) {
+      return { ok: false, refusal: 'stale', message: 'Session moved to another till.' };
+    }
+    // Knowing a published lease id never authorizes a different account.
+    if (spec.requiresLease && document.lease && !heldBy(document.lease, context.accountId ?? null)) {
+      return { ok: false, refusal: 'not_permitted', message: NOT_THE_HOLDER };
+    }
+    const outcome = spec.apply({ document, intent, source: context.source,
+      accountId: context.accountId ?? null, serverTime: nowIso });
+    if (!outcome.ok) return outcome;
+    if (!spec.requiresLease) {
+      const reached = Object.keys(outcome.write).filter((key) => !LEASE_FREE_FIELDS.includes(key as keyof SessionWrite));
+      if (reached.length > 0) {
+        return { ok: false, refusal: 'not_permitted',
+          message: `${intent.type} may not change ${reached.join(', ')} without holding the station.` };
+      }
+    }
+    return { ...outcome, requiresLease: spec.requiresLease,
+      advanceSequence: spec.requiresLease || spec.advanceSequence === true };
+  }
+
   async applyIntent(
     stationId: string,
     intent: StationIntent,
@@ -633,7 +707,6 @@ export class StationSessionManager {
   ): Promise<IntentResult> {
     const nowIso = this.nowIso();
     const document = await this.open(stationId);
-    const spec = this.intents.get(intent.type);
 
     const refuse = async (
       refusal: StationIntentRefusal,
@@ -661,79 +734,8 @@ export class StationSessionManager {
       return { ok: false, refusal, message, document: doc };
     };
 
-    if (!spec) {
-      // Usually a till newer than the box, which is the ordinary state of a
-      // fleet mid-rollout. Naming it is what turns "nothing happened" into
-      // "this box needs updating".
-      return refuse('unknown_intent', `This box does not understand ${intent.type}.`, document);
-    }
-    if (!spec.sources.includes(context.source)) {
-      return refuse('not_permitted', `A ${context.source} may not send ${intent.type}.`, document);
-    }
-    if (spec.stages && !spec.stages.includes(document.stage)) {
-      return refuse(
-        'wrong_stage',
-        `${intent.type} is not available while the screen is on ${document.stage}.`,
-        document,
-      );
-    }
-    if (spec.requiresLease && !intent.leaseId) {
-      return refuse('no_lease', 'This till does not hold the station.', document);
-    }
-    if (spec.requiresLease && document.lease?.leaseId !== intent.leaseId) {
-      return refuse('stale', 'Session moved to another till.', document);
-    }
-    /**
-     * Holding the lease, not knowing its id.
-     *
-     * The check above is the FENCE: it separates this till from one whose
-     * lease has moved on. It cannot be the authorisation as well, because the
-     * id it compares is published — the snapshot every watcher of this station
-     * receives carries it, so a second till that was refused the station could
-     * read the id back and drive the sale with it. The account on the lease is
-     * what a reader cannot copy: the claim took it from the session.
-     *
-     * `not_permitted` rather than `stale`, and so not carrying the hint to
-     * rehydrate: nothing about the document is out of date for this caller.
-     * They are simply not the till working here.
-     */
-    if (spec.requiresLease && document.lease && !heldBy(document.lease, context.accountId ?? null)) {
-      return refuse('not_permitted', NOT_THE_HOLDER, document);
-    }
-
-    const outcome = spec.apply({
-      document,
-      intent,
-      source: context.source,
-      accountId: context.accountId ?? null,
-      serverTime: nowIso,
-    });
+    const outcome = this.assessIntent(document, intent, context, nowIso);
     if (!outcome.ok) return refuse(outcome.refusal, outcome.message, document);
-
-    /**
-     * A lease-free intent may write only the fields that belong to the screen
-     * sending it.
-     *
-     * `requiresLease: false` is for the customer display: the language toggle
-     * and the answer to the prompt the till has just put up. Both are the
-     * visitor's own side of the conversation, and neither is something the till
-     * is holding the station in order to do. The rule is enforced on the WRITE
-     * rather than trusted to the spec, because the next lease-free intent
-     * somebody adds will be written by reading these two — and a lease-free
-     * intent that could set the cart would be a second till operating the sale.
-     */
-    if (!spec.requiresLease) {
-      const reached = Object.keys(outcome.write).filter(
-        (key) => !LEASE_FREE_FIELDS.includes(key as keyof SessionWrite),
-      );
-      if (reached.length > 0) {
-        return refuse(
-          'not_permitted',
-          `${intent.type} may not change ${reached.join(', ')} without holding the station.`,
-          document,
-        );
-      }
-    }
 
     const next = await this.store.applySession(
       stationId,
@@ -742,10 +744,10 @@ export class StationSessionManager {
         // A display's intent is checked against the sequence only: it holds no
         // lease, so requiring one would make the display unable to answer the
         // prompt the till just put on it.
-        leaseId: spec.requiresLease ? (intent.leaseId ?? null) : null,
+        leaseId: outcome.requiresLease ? (intent.leaseId ?? null) : null,
         // Language leaves the holder's fence unchanged. Typed answers advance
         // it so a concurrent publisher must rehydrate before publishing again.
-        advanceSequence: spec.requiresLease || spec.advanceSequence === true,
+        advanceSequence: outcome.advanceSequence,
       },
       { ...outcome.write, lastActionId: intent.actionId ?? null },
       nowIso,
@@ -753,7 +755,7 @@ export class StationSessionManager {
 
     if (!next) {
       const fresh = await this.open(stationId);
-      const moved = fresh.lease?.leaseId !== intent.leaseId && spec.requiresLease;
+      const moved = fresh.lease?.leaseId !== intent.leaseId && outcome.requiresLease;
       return refuse(
         'stale',
         moved ? 'Session moved to another till.' : 'The screen moved on; this is the latest.',

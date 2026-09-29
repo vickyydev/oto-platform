@@ -1,0 +1,56 @@
+{
+  "environment": "local disposable database",
+  "result": "PASS",
+  "checks": [
+    "Code expiry survives a lost reply, pauses pairing and creates a new code only on request",
+    "Fresh display needs no staff login; pairing code is masked in evidence",
+    "Console claims the real display against Reception Till 1",
+    "Separate display follows ticket till at 1024 by 768; staff screen fits 1280 by 800",
+    "Display pairing survives reload independently of staff cookies",
+    "All five display languages persist through reload without changing staff language",
+    "Real display identification survives a lost reply and opens seeded member children on staff screen",
+    "Lock removes staff dialogs and unlock restores the same visitor",
+    "Same visitor answer is adopted once after unlock and polling clears the lost-reply warning",
+    "Console welcome-stage consent diagnostic is refused while the live visitor stays unchanged",
+    "Box drawer exposes the same safe station-event refusal separately from uploaded logs",
+    "Ticket order and positive quoted total appear on the separate display without staff or medical fields",
+    "Console reads the live public order with calculated rows and omits private and payment QR contents",
+    "Known member skips repeated contact entry and payment uses the quoted order total",
+    "Visitor payment amount follows the selected split part without changing the order total",
+    "Cash finalises one recorded sale and the separate display shows its thank-you and bracelet counts",
+    "New sale clears the previous visitor and restores the separate identification screen",
+    "Staff lock does not revoke or require staff login on display",
+    "Staff sign-out leaves the independently paired display authenticated",
+    "Console revocation returns the live display to setup",
+    "Console keeps the revoked display visible with explicit access status",
+    "Real protected display call receives401 after revocation and Console shows its recorded rejection"
+  ],
+  "limitations": [
+    "Ticket online order/payment/thankyou only; supervision and F&B/shop remain pending",
+    "Visitor/cart continuity through a full staff-page reload is not claimed",
+    "Staging deployment waits for Actions billing availability"
+  ],
+  "validation": {
+    "api": 147,
+    "pos": 44,
+    "box": 27,
+    "console": 5,
+    "total": 223,
+    "typecheck": [
+      "api",
+      "pos",
+      "console",
+      "box-agent"
+    ],
+    "lint": [
+      "api",
+      "pos",
+      "console",
+      "box-agent"
+    ],
+    "build": [
+      "pos",
+      "console"
+    ]
+  }
+}

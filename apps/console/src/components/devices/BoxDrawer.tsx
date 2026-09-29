@@ -29,6 +29,7 @@ import { Field, Select, TextInput } from '@/components/Form';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
 import { SimulatorPanel } from '@/components/devices/SimulatorPanel';
 import { PrintPanel } from '@/components/devices/PrintPanel';
+import { StationRefusalsPanel } from '@/components/devices/DisplayDiagnosticsPanel';
 import type { BoxDeviceList } from '@/lib/deviceList';
 import {
   boxRoleWord,
@@ -174,6 +175,8 @@ export function BoxDrawer({
         timezone={timezone}
         onFilterByAction={setActionFilter}
       />
+
+      <StationRefusalsPanel boxId={box.id} timezone={timezone} />
 
       <BoxLog
         boxId={box.id}
@@ -1514,4 +1517,3 @@ function Heartbeats({ boxId, timezone }: { boxId: string; timezone?: string | nu
     </section>
   );
 }
-

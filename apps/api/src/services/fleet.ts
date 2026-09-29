@@ -11,6 +11,7 @@ import {
   session as sessionTable,
   station,
   stationDevice,
+  stationEvent,
   stationStaff,
   BOX_COMMAND_KINDS,
   type BoxCommandKind,
@@ -29,6 +30,7 @@ import {
   SIMULATOR_ACTIONS_WITH_SECRETS,
   SimulatorActionSchema,
   newId,
+  STATION_SESSION_STAGES,
   type DeviceSettings,
 } from '@oto/shared';
 import { TerminalCommandPayloadSchema } from '@oto/box-agent';
@@ -194,6 +196,8 @@ export interface CredentialView {
   pairedAt: string | null;
   pairedByAccountId: string | null;
   lastSeenAt: string | null;
+  lastRejectedAt: string | null;
+  lastRejectedCode: 'DISPLAY_UNPAIRED' | null;
   revokedAt: string | null;
   revokedReason: string | null;
   scopes: string[];
@@ -1717,6 +1721,51 @@ export async function readBoxLog(
   return { lines, truncated: wanted.length > lines.length, collectedAt, commandId: row.id };
 }
 
+export interface StationRefusalView {
+  id: string;
+  stationId: string;
+  deviceId: string | null;
+  source: string;
+  at: string;
+  stage: string | null;
+  intentType: string | null;
+  outcome: string | null;
+  errorCode: string | null;
+  actionId: string | null;
+  test: boolean;
+  testStage: string | null;
+}
+
+/** Current station refusals are durable telemetry, separate from uploaded agent logs. */
+export async function readStationRefusals(
+  db: Db,
+  scope: { boxId: string; operatorId: string; branchId: string },
+  limit: number,
+  actionId?: string,
+): Promise<{ events: StationRefusalView[]; truncated: boolean }> {
+  const rows = await db.select({ event: stationEvent }).from(stationEvent)
+    .innerJoin(station, eq(station.id, stationEvent.stationId))
+    .where(and(eq(stationEvent.boxId, scope.boxId), eq(station.operatorId, scope.operatorId),
+      eq(station.branchId, scope.branchId), eq(stationEvent.outcome, 'refused'),
+      actionId ? eq(stationEvent.actionId, actionId) : undefined))
+    .orderBy(desc(stationEvent.receivedAt), desc(stationEvent.id)).limit(limit + 1);
+  const events = rows.slice(0, limit).map(({ event }): StationRefusalView => {
+    const payload = event.payload && typeof event.payload === 'object' && !Array.isArray(event.payload)
+      ? event.payload as Record<string, unknown> : {};
+    const test = event.source === 'console' && payload.test === true;
+    const testStage = typeof payload.testStage === 'string' && (STATION_SESSION_STAGES as readonly string[]).includes(payload.testStage)
+      ? payload.testStage : null;
+    return {
+      id: event.id, stationId: event.stationId,
+      deviceId: typeof payload.deviceId === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(payload.deviceId) ? payload.deviceId : null,
+      source: event.source, at: (event.occurredAt ?? event.receivedAt).toISOString(),
+      stage: event.stage, intentType: event.intentType, outcome: event.outcome,
+      errorCode: event.errorCode, actionId: event.actionId, test, testStage: test ? testStage : null,
+    };
+  });
+  return { events, truncated: rows.length > limit };
+}
+
 function parseBoxLogLine(text: string, fallbackAt: string): BoxLogLineView {
   const m = BOX_LOG_LINE.exec(text);
   const at = m?.[1];
@@ -2118,6 +2167,8 @@ function credentialView(row: typeof deviceCredential.$inferSelect): CredentialVi
     pairedAt: row.pairedAt?.toISOString() ?? null,
     pairedByAccountId: row.pairedByAccountId,
     lastSeenAt: row.lastSeenAt?.toISOString() ?? null,
+    lastRejectedAt: null,
+    lastRejectedCode: null,
     revokedAt: row.revokedAt?.toISOString() ?? null,
     revokedReason: row.revokedReason,
     scopes: (row.scopes ?? []) as string[],
@@ -2139,7 +2190,25 @@ export async function listCredentials(
       ),
     )
     .orderBy(desc(deviceCredential.createdAt));
-  return rows.map(credentialView);
+  const displayIds = rows.filter((row) => row.kind === 'display').map((row) => row.id);
+  if (!displayIds.length) return rows.map(credentialView);
+  const eventDeviceId = sql<string>`${stationEvent.payload}->>'deviceId'`;
+  const refusals = await db.selectDistinctOn([stationEvent.stationId, eventDeviceId], {
+    deviceId: eventDeviceId, stationId: stationEvent.stationId, at: stationEvent.receivedAt,
+  }).from(stationEvent).innerJoin(station, eq(station.id, stationEvent.stationId))
+    .innerJoin(box, and(eq(box.id, stationEvent.boxId), eq(box.operatorId, station.operatorId), eq(box.branchId, station.branchId)))
+    .where(and(eq(station.operatorId, ctx.operatorId), eq(station.branchId, ctx.branchId),
+      eq(stationEvent.boxId, station.boxId),
+      inArray(eventDeviceId, displayIds), eq(stationEvent.kind, 'error'), eq(stationEvent.source, 'display'),
+      eq(stationEvent.outcome, 'refused'), eq(stationEvent.errorCode, 'DISPLAY_UNPAIRED'),
+      inArray(stationEvent.intentType, ['display.session', 'display.intents'])))
+    .orderBy(stationEvent.stationId, eventDeviceId, desc(stationEvent.receivedAt), desc(stationEvent.id));
+  const rejected = new Map(refusals.map((row) => [`${row.stationId}:${row.deviceId}`, row.at]));
+  return rows.map((row) => {
+    const at = rejected.get(`${row.stationId}:${row.id}`);
+    return { ...credentialView(row), lastRejectedAt: at?.toISOString() ?? null,
+      lastRejectedCode: at ? 'DISPLAY_UNPAIRED' as const : null };
+  });
 }
 
 /**

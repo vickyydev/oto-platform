@@ -123,6 +123,44 @@ Reviewed local screenshots attached to SCRUM-201:
 
 All carry LOCAL CHECK. These do not satisfy the staging Deployed gate.
 
+## Diagnostic refusal checkpoint
+
+Send test intent checks a finite stage/intent choice on a private clone using
+the same box validator as live intents. Existing session state, sequence,
+nested visitor data, lease and channel traffic stay untouched. An absent or
+wrong-box session is refused; testing does not create a live session. The
+manager needs the target park's pairing permission and an active paired display.
+Its safe Console test event and replay response commit together under the same
+action/key. Box logs show these station refusals separately from uploaded logs.
+
+The credential guard records actual protected-session/intent 401 refusals for
+known revoked displays through the retained pairing-request hash relation. No
+bearer, hash or request body is written. Unknown, pending and merely expired
+pairing-status requests write nothing. A credential lock limits observations
+to one per minute across concurrent requests. Fleet reads verify the current
+station/box/park/operator binding before exposing Last protected call rejected.
+The independent display polls its protected session once paired, so revocation
+produces the observed refusal before the screen returns to setup.
+
+223 existing checks pass: API 147 (fleet 70, station 41, auth 15, route inventory 12,
+guards 9), box 27, POS 44 and Console 5. Four package typechecks/full lint and both
+front-end builds pass. The unchanged shared/database packages were not retested
+for this slice. Independent review found and closed absent-session creation,
+wrong-box rejection attribution and stale target UI state. The route inventory
+now explicitly covers independent display replay exceptions; it caught the
+missing entries. Two locator-only errors were fixed without widget changes.
+
+Native report diagnostic-local-results.json records 22 passed checks. It proves
+the real Console welcome/consent rejection, matching station event in the Box
+drawer, unchanged visitor state, and actual 401/Console rejection after revoke,
+alongside the prior full ticket flow. Reviewed local attachments:
+
+- 14-local-consent-test-refused.png (10894)
+- 15-local-box-refusal-log.png (10895)
+- 16-local-revoked-call-rejected.png (10896)
+
+All are LOCAL CHECK; staging acceptance remains pending.
+
 ## Remaining acceptance
 
 The story is NOT BUILT as a whole. Preserve these boundaries in Jira:
@@ -131,10 +169,10 @@ The story is NOT BUILT as a whole. Preserve these boundaries in Jira:
    Keep money operations on the staff-authorised path.
 2. Add typed consent, child-slot edits and completion with authoritative
    policy checks. Supervision steps 7/8 stay inline until that is proven.
-3. Finish Console Send test intent and last-rejected diagnostics with matching
-   Box-log evidence. Current Snapshot/revoked views are checked; unused-code
-   expiry is on the unpaired display setup screen. Archived last-delivery data
-   and a Console expiry action are not claimed.
+3. Complete the archived last-delivery Snapshot requirement. Current public
+   Snapshot, test intents, Box refusals and observed rejection diagnostics are
+   checked. Unused-code expiry is on the unpaired display setup screen; a
+   separate Console expiry action is not claimed.
 4. Remove unused staff-session pending-lookup compatibility only after all
    callers are checked. Applied migrations remain forward-only.
 5. Complete the story's two-browser staging smoke, both layouts, failure
@@ -145,10 +183,21 @@ POS_RULES_RECONCILIATION R-54; DEVELOPMENT_PLAN separate-display sequence.
 Full reload recovery of a visitor/cart and physical/offline display transport
 are not established by this first slice.
 
+Implementation notes for the remaining work: the pending-lookup API wrappers
+have no current POS callers; the two routes and security/conformance fixtures
+still exist. Remove callers/routes first. Keep the database columns through
+that release because the currently deployed API still reads them; contract
+them in a later forward migration after the rollout is verified.
+ConsentCapture and SavedChildrenReview have editable medical/photo fields.
+Their display integration must not republish saved medical data in the public
+snapshot. Typed slot changes need prompt, visitor and slot identity fences;
+the staff-authorised path must continue to enforce supervision policy and
+write the member record. Reusing the layout alone does not complete that work.
+
 ## Release gate
 
-Main b052767 has the checked identification slice and prior payment follow-ups.
-GitHub Actions run36570597484 stopped before any step because billing/spending availability
+Main 28da7df has the checked ticket flow and prior payment follow-ups.
+GitHub Actions run 36574043088 stopped before any step because billing/spending availability
 prevented jobs starting. Render still gates deployment on successful checks;
 no bypass or billing change is made. Restore Actions, verify the exact release
 SHA, then use one normal deployment and run staging proof. The retained

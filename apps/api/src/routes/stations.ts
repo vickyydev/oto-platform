@@ -1,11 +1,17 @@
 import { z } from 'zod';
+import { and, eq, isNull } from 'drizzle-orm';
+import { deviceCredential, station, stationEvent } from '@oto/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
   STATION_LEASE_HEARTBEAT_S,
   STATION_LEASE_TTL_S,
+  STATION_INTENT_REFUSALS,
+  STATION_SESSION_STAGES,
   STATION_VIEWS,
   StationIntentSchema,
+  newId,
 } from '@oto/shared';
+import { DISPLAY_TEST_INTENTS } from '@oto/box-agent';
 /**
  * The channel's own types come from `@oto/box-agent` rather than from
  * `@oto/shared`, even though the two are asserted identical item for item by
@@ -16,6 +22,7 @@ import {
 import type { StationChannelMessage, StationView } from '@oto/box-agent';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
+import { boxStoreFor } from '../lib/box-store';
 import { stationChannels } from '../lib/station-channel';
 import { holdsGrantAt } from '../services/access-control';
 import {
@@ -25,6 +32,7 @@ import {
   type StationRow,
 } from '../services/station-session';
 import { readStationScans, relayInProcessBoxScans } from '../services/station-scans';
+import { opCtx, withTx } from '../services/tx';
 
 /**
  * The station session document, over HTTP (S2-05).
@@ -433,6 +441,53 @@ export async function stationSessionRoutes(app: App): Promise<void> {
   );
 
   // --- Intents --------------------------------------------------------------
+
+  app.post('/stations/:id/displays/:displayId/test-intent', {
+    config: { dynamicPermission: true },
+    schema: {
+      description: 'Validate a finite display test on a private copy. The live stage, visitor, lease and sale are never changed.',
+      params: IdParams.extend({ displayId: z.string().uuid() }),
+      body: z.object({ stage: z.enum(STATION_SESSION_STAGES), intent: z.enum(DISPLAY_TEST_INTENTS), actionId: z.string().uuid() }).strict(),
+      response: { 200: z.object({ actionId: z.string().uuid(), testStage: z.enum(STATION_SESSION_STAGES),
+        liveStage: z.enum(STATION_SESSION_STAGES), sequence: z.number().int().min(0),
+        accepted: z.boolean(), reason: z.enum(STATION_INTENT_REFUSALS).nullable(), message: z.string() }) },
+    },
+  }, async (req) => {
+    const auth = req.requireAuth();
+    const target = await loadStationRow(app.db, auth.operatorId, req.params.id);
+    await req.requirePermission('admin:device:pair', { branchId: target.branchId });
+    return withTx(app.db, opCtx(req), 'display.test_intent', async (tx) => {
+      const [current] = await tx.select().from(station).where(and(eq(station.id, target.id),
+        eq(station.operatorId, auth.operatorId), eq(station.branchId, target.branchId),
+        isNull(station.archivedAt))).limit(1).for('share');
+      if (!current) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station');
+      const [display] = await tx.select().from(deviceCredential).where(and(
+        eq(deviceCredential.id, req.params.displayId), eq(deviceCredential.kind, 'display'),
+        eq(deviceCredential.stationId, current.id), eq(deviceCredential.operatorId, current.operatorId),
+        eq(deviceCredential.branchId, current.branchId),
+      )).limit(1).for('share');
+      if (!display) throw new AppError(404, 'DISPLAY_NOT_FOUND', 'No display at this station');
+      if (display.revokedAt || !display.pairedAt || !display.secretHash || !display.scopes.includes('display:intents')) {
+        throw new AppError(409, 'DISPLAY_UNAVAILABLE', 'Pair an active display before testing it');
+      }
+      const { manager, boxId } = managerForStation(app.db, current);
+      const document = await boxStoreFor(app.db).readSession(current.id);
+      if (!document || document.boxId !== boxId) {
+        throw new AppError(409, 'STATION_SESSION_UNAVAILABLE', 'Open the till at this station before testing its display');
+      }
+      const result = manager.testDisplayIntent(document, req.body.stage, req.body.intent, req.body.actionId);
+      const now = new Date();
+      await tx.insert(stationEvent).values({
+        id: newId(), stationId: current.id, boxId, kind: 'intent', source: 'console',
+        sequence: document.sequence, stage: document.stage, intentType: result.intentType,
+        outcome: result.accepted ? 'validated' : 'refused', errorCode: result.reason,
+        actorAccountId: auth.accountId, actionId: req.body.actionId, occurredAt: now, receivedAt: now,
+        payload: { test: true, deviceId: display.id, simulatedSource: 'display', testStage: req.body.stage, intent: req.body.intent },
+      });
+      return { actionId: req.body.actionId, testStage: req.body.stage, liveStage: document.stage,
+        sequence: document.sequence, accepted: result.accepted, reason: result.reason, message: result.message };
+    });
+  });
 
   app.post(
     '/stations/:id/intents',

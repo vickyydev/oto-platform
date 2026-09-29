@@ -40,6 +40,7 @@ import {
   pickStation,
   queueCommand,
   readBoxLog,
+  readStationRefusals,
   reissueClaimCode,
   revokeCredential,
   updateBox,
@@ -251,6 +252,8 @@ const CredentialSchema = z.object({
   pairedAt: z.string().nullable(),
   pairedByAccountId: z.string().uuid().nullable(),
   lastSeenAt: z.string().nullable(),
+  lastRejectedAt: z.string().nullable(),
+  lastRejectedCode: z.literal('DISPLAY_UNPAIRED').nullable(),
   revokedAt: z.string().nullable(),
   revokedReason: z.string().nullable(),
   scopes: z.array(z.string()),
@@ -772,6 +775,27 @@ export async function fleetRoutes(app: App): Promise<void> {
     level: z.enum(['info', 'warn', 'error']).nullable(),
     message: z.string(),
     actionId: z.string().nullable(),
+  });
+
+  app.get('/boxes/:id/station-events', {
+    config: { dynamicPermission: true },
+    schema: {
+      description: 'Current station refusals with safe diagnostic metadata, separate from the last uploaded agent log.',
+      params: IdParams,
+      querystring: z.object({ limit: z.coerce.number().int().min(1).max(100).default(50),
+        actionId: z.string().trim().min(1).max(64).optional() }),
+      response: { 200: z.object({ events: z.array(z.object({ id: z.string().uuid(), stationId: z.string().uuid(),
+        deviceId: z.string().uuid().nullable(), source: z.string(), at: z.string(), stage: z.string().nullable(),
+        intentType: z.string().nullable(), outcome: z.string().nullable(), errorCode: z.string().nullable(),
+        actionId: z.string().nullable(), test: z.boolean(), testStage: z.string().nullable() })), truncated: z.boolean() }) },
+    },
+  }, async (req, reply) => {
+    const auth = req.requireAuth();
+    const target = await loadBox(app.db, auth.operatorId, req.params.id);
+    await req.requirePermission('admin:box:read', { branchId: target.branchId });
+    reply.header('cache-control', 'private, no-store');
+    return readStationRefusals(app.db, { boxId: target.id, operatorId: target.operatorId, branchId: target.branchId },
+      req.query.limit, req.query.actionId);
   });
 
   app.get(

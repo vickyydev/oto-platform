@@ -498,6 +498,117 @@ test('Devices: a station-read grant for another park does not expose a display s
   await expect(row.getByRole('button', { name: 'Snapshot', exact: true })).toHaveCount(0);
 });
 
+test('Devices: display rule checks keep the live till unchanged and open the separate refusal log', async ({ page }) => {
+  await signInAndWait(page);
+  const displayId = crypto.randomUUID();
+  const displayName = 'Rule-check display 201';
+  const hiddenMarker = 'Synthetic private diagnostic detail';
+  let stationId = '';
+  let boxId = '';
+  let rejectedCallObserved = false;
+  let testBody: { stage: string; intent: string; actionId: string } | null = null;
+  let idempotencyKey = '';
+  const checks: { actionId: string; key: string }[] = [];
+  let liveWrites = 0;
+  page.on('request', request => {
+    const path = new URL(request.url()).pathname;
+    if (request.method() !== 'GET' && (/\/api\/stations\/[^/]+\/intents$/.test(path)
+      || path === '/api/display/intents' || /^\/api\/(payments|sales)(\/|$)/.test(path))) liveWrites += 1;
+  });
+  await page.route('**/api/branches/*/credentials*', async route => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const branchId = new URL(route.request().url()).pathname.split('/')[3];
+    const { stations } = await (await page.request.get(`/api/branches/${branchId}/stations`)).json();
+    const station = stations.find((candidate: { kind: string; boxId: string | null; archived: boolean }) =>
+      candidate.kind === 'till' && candidate.boxId && !candidate.archived);
+    stationId = station.id; boxId = station.boxId;
+    body.credentials.push({
+      id: displayId, kind: 'display', label: displayName, stationId, boxId,
+      pairedAt: '2026-09-29T09:00:00.000Z', lastSeenAt: '2026-09-29T09:30:00.000Z',
+      revokedAt: rejectedCallObserved ? '2026-09-29T09:35:00.000Z' : null,
+      lastRejectedAt: rejectedCallObserved ? '2026-09-29T09:36:00.000Z' : null,
+      lastRejectedCode: rejectedCallObserved ? 'DISPLAY_UNPAIRED' : null, pairingOutstanding: false,
+    });
+    await route.fulfill({ response, json: body });
+  });
+  await page.route('**/api/stations/*/displays/*/test-intent', async route => {
+    const body = route.request().postDataJSON();
+    expect(Object.keys(body).sort()).toEqual(['actionId', 'intent', 'stage']);
+    expect(route.request().method()).toBe('POST');
+    expect(new URL(route.request().url()).pathname).toBe(`/api/stations/${stationId}/displays/${displayId}/test-intent`);
+    expect(body.actionId).toMatch(/^[0-9a-f-]{36}$/);
+    testBody = body;
+    idempotencyKey = route.request().headers()['idempotency-key'] ?? '';
+    checks.push({ actionId: body.actionId, key: idempotencyKey });
+    if (checks.length === 1) {
+      await route.fulfill({ status: 503, json: { error: { code: 'TEMPORARY', message: hiddenMarker } } });
+      return;
+    }
+    await route.fulfill({ json: { actionId: body.actionId, testStage: body.stage,
+      liveStage: 'input', sequence: 19, accepted: false, reason: 'wrong_stage',
+      message: 'Consent is not accepted at the welcome stage.' } });
+  });
+  await page.route('**/api/boxes/*/station-events*', async route => {
+    expect(new URL(route.request().url()).pathname).toBe(`/api/boxes/${boxId}/station-events`);
+    await route.fulfill({ json: { events: [{ id: crypto.randomUUID(), stationId, deviceId: displayId,
+      source: 'display', at: '2026-09-29T09:34:00.000Z', stage: 'input', intentType: 'display.consent_ack',
+      outcome: 'refused', errorCode: 'wrong_stage', actionId: testBody?.actionId, test: true, testStage: 'welcome',
+      payload: { phone: hiddenMarker, medicalNotes: hiddenMarker }, token: hiddenMarker }, {
+      id: crypto.randomUUID(), stationId, deviceId: displayId, source: 'display', at: '2026-09-29T09:36:00.000Z',
+      stage: null, intentType: 'display.session', outcome: null, errorCode: 'DISPLAY_UNPAIRED', actionId: null,
+      test: false, testStage: null }], truncated: false } });
+  });
+  await page.route('**/api/boxes/*/log*', async route => {
+    await route.fulfill({ json: { lines: [{ at: '2026-09-29T09:31:00.000Z', level: 'info', source: 'config',
+      message: 'Uploaded box log is separate' }], collectedAt: '2026-09-29T09:32:00.000Z' } });
+  });
+  await openSection(page, 'Devices');
+  await chooseBranch(page, CENTRAL_FLORESTA);
+  const screens = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Paired screens', exact: true }) });
+  const row = screens.getByRole('listitem').filter({ hasText: displayName });
+  await expect(row).toContainText('No rejected protected call recorded');
+  await row.getByRole('button', { name: 'Send test intent', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: `${displayName} test intent`, exact: true });
+  await expect(dialog.getByLabel('Stage to test').locator('option')).toHaveCount(6);
+  await expect(dialog.getByLabel('Intent').locator('option')).toHaveCount(5);
+  await dialog.getByLabel('Stage to test').selectOption('welcome');
+  await dialog.getByLabel('Intent').selectOption('consent_ack');
+  await dialog.getByRole('button', { name: 'Send test intent', exact: true }).click();
+  await expect(dialog.getByText('The test result could not be read. Retry sends the same diagnostic check.', { exact: true })).toBeVisible();
+  expect((await dialog.innerText()).includes(hiddenMarker)).toBe(false);
+  await dialog.getByRole('button', { name: 'Send test intent', exact: true }).click();
+  await expect(dialog.getByLabel('Display test result')).toContainText('wrong_stage');
+  await expect(dialog).toContainText('Live stage: input');
+  await expect(dialog).toContainText('Live till unchanged');
+  expect(testBody).toMatchObject({ stage: 'welcome', intent: 'consent_ack' });
+  expect(idempotencyKey).toBe(`display-test-${testBody!.actionId}`);
+  expect(checks).toHaveLength(2);
+  expect(checks[1]).toEqual(checks[0]);
+  await dialog.getByRole('button', { name: 'Open Box refusal log', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const refusals = page.getByLabel('Station refusal events');
+  await expect(refusals).toContainText('wrong_stage');
+  await expect(refusals).toContainText('Test');
+  await expect(refusals).toContainText('DISPLAY_UNPAIRED');
+  await expect(refusals).toContainText('stage not recorded');
+  await expect(refusals).toContainText('action not recorded');
+  expect((await refusals.innerText()).includes(hiddenMarker)).toBe(false);
+  await expect(page.getByRole('heading', { name: 'Box log', exact: true })).toBeVisible();
+  await expect(page.getByText('Uploaded box log is separate', { exact: true })).toBeVisible();
+  expect(liveWrites).toBe(0);
+
+  rejectedCallObserved = true;
+  await page.reload();
+  await openSection(page, 'Devices');
+  await chooseBranch(page, CENTRAL_FLORESTA);
+  await screens.getByRole('button', { name: 'Show revoked', exact: true }).click();
+  await expect(row).toContainText('Last seen');
+  await expect(row).toContainText('Last protected call rejected');
+  await expect(row).toContainText('DISPLAY_UNPAIRED');
+  await expect(row.getByRole('button', { name: 'Send test intent', exact: true })).toHaveCount(0);
+});
+
 /**
  * THE CARD TERMINALS — SCRUM-206's Console surface.
  *

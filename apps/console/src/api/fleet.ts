@@ -372,9 +372,43 @@ export interface CredentialRow {
   pairedAt?: string | null;
   pairedByAccountId?: string | null;
   lastSeenAt?: string | null;
+  /** Last observed protected display-call refusal, independently of presence. */
+  lastRejectedAt?: string | null;
+  lastRejectedCode?: 'DISPLAY_UNPAIRED' | null;
   revokedAt?: string | null;
   revokedReason?: string | null;
   scopes?: string[];
+}
+
+export const DISPLAY_TEST_STAGES = ['identify', 'welcome', 'order', 'input', 'payment', 'thankyou'] as const;
+export const DISPLAY_TEST_INTENTS = ['identify', 'skip_identify', 'contact_done', 'set_language', 'consent_ack'] as const;
+export interface DisplayTestIntent {
+  stage: (typeof DISPLAY_TEST_STAGES)[number];
+  intent: (typeof DISPLAY_TEST_INTENTS)[number];
+  actionId: string;
+}
+export interface DisplayTestResult {
+  actionId: string;
+  testStage: DisplayTestIntent['stage'];
+  liveStage: string;
+  sequence: number;
+  accepted: boolean;
+  reason: 'stale' | 'no_lease' | 'wrong_stage' | 'not_permitted' | 'unknown_intent' | null;
+  message: string;
+}
+export interface StationRefusalEvent {
+  id: string;
+  stationId: string;
+  deviceId: string | null;
+  source: string;
+  at: string;
+  stage: string | null;
+  intentType: string | null;
+  outcome: string | null;
+  errorCode: string | null;
+  actionId: string | null;
+  test: boolean;
+  testStage: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -554,6 +588,18 @@ export const fleetApi = {
   displaySnapshot: (stationId: string) =>
     api.get<{ view: 'customer'; document: StationSessionDocument; serverTime: string }>(
       `/stations/${encodeURIComponent(stationId)}/session?view=customer`,
+    ),
+
+  /** Validates a diagnostic copy; it never publishes a visitor answer. */
+  displayTestIntent: (stationId: string, displayId: string, body: DisplayTestIntent) =>
+    api.post<DisplayTestResult>(
+      `/stations/${encodeURIComponent(stationId)}/displays/${encodeURIComponent(displayId)}/test-intent`,
+      body, { idempotencyKey: `display-test-${body.actionId}` },
+    ),
+
+  stationRefusals: (boxId: string, actionId?: string) =>
+    api.get<{ events: StationRefusalEvent[]; truncated: boolean }>(
+      `/boxes/${encodeURIComponent(boxId)}/station-events${qs({ limit: 50, actionId })}`,
     ),
 
   /**

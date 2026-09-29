@@ -1,6 +1,6 @@
 import { createHash, randomInt } from 'node:crypto';
-import { and, eq, gt, isNotNull, isNull, lte } from 'drizzle-orm';
-import { branch, deviceCredential, displayPairingRequest, operator, station, type Db } from '@oto/db';
+import { and, desc, eq, gt, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import { box, branch, deviceCredential, displayPairingRequest, operator, station, stationEvent, type Db } from '@oto/db';
 import { newId, type StationIntent } from '@oto/shared';
 import type { StationSessionDocument } from '@oto/box-agent';
 import { AppError } from '../lib/errors';
@@ -12,6 +12,7 @@ import { withTx, type OpContext } from './tx';
 
 const PAIRING_TTL_MS = 10 * 60 * 1000;
 const CONNECTED_MS = 10_000;
+const REJECTION_OBSERVATION_MS = 60_000;
 export type DisplayScope = 'display:read' | 'display:intents';
 const DISPLAY_SCOPES: DisplayScope[] = ['display:read', 'display:intents'];
 
@@ -68,6 +69,50 @@ export async function authenticateDisplay(
     station: row.station,
     device: { id: row.credential.id, name: row.credential.label ?? 'Customer display' },
   };
+}
+
+/** Observe a real protected-call refusal, never a pairing-status answer or an unknown bearer. */
+export async function observeRejectedDisplayCall(
+  db: Db,
+  tokenHash: string,
+  intentType: 'display.session' | 'display.intents',
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [request] = await tx.select({ credentialId: displayPairingRequest.credentialId })
+      .from(displayPairingRequest).where(eq(displayPairingRequest.tokenHash, tokenHash)).limit(1);
+    if (!request?.credentialId) return;
+    // The credential lock bounds observations across API instances and concurrent polls.
+    const [credential] = await tx.select({
+      id: deviceCredential.id, operatorId: deviceCredential.operatorId,
+      branchId: deviceCredential.branchId, stationId: deviceCredential.stationId,
+    }).from(deviceCredential).where(and(
+      eq(deviceCredential.id, request.credentialId), eq(deviceCredential.kind, 'display'),
+      isNotNull(deviceCredential.revokedAt), isNotNull(deviceCredential.pairedAt),
+    )).limit(1).for('update');
+    if (!credential?.stationId) return;
+    const [target] = await tx.select({ stationId: station.id, boxId: box.id })
+      .from(station).innerJoin(box, and(
+        eq(box.id, station.boxId), eq(box.operatorId, station.operatorId), eq(box.branchId, station.branchId),
+      )).innerJoin(branch, and(eq(branch.id, station.branchId), eq(branch.operatorId, station.operatorId)))
+      .innerJoin(operator, eq(operator.id, station.operatorId)).where(and(
+        eq(station.id, credential.stationId), eq(station.operatorId, credential.operatorId),
+        eq(station.branchId, credential.branchId),
+      )).limit(1);
+    if (!target) return;
+    const now = new Date();
+    const [previous] = await tx.select({ at: stationEvent.receivedAt }).from(stationEvent).where(and(
+      eq(stationEvent.stationId, target.stationId), eq(stationEvent.boxId, target.boxId),
+      eq(stationEvent.kind, 'error'), eq(stationEvent.source, 'display'),
+      eq(stationEvent.outcome, 'refused'), eq(stationEvent.errorCode, 'DISPLAY_UNPAIRED'),
+      sql`${stationEvent.payload}->>'deviceId' = ${credential.id}`,
+    )).orderBy(desc(stationEvent.receivedAt)).limit(1);
+    if (previous && now.getTime() - previous.at.getTime() < REJECTION_OBSERVATION_MS) return;
+    await tx.insert(stationEvent).values({
+      id: newId(), stationId: target.stationId, boxId: target.boxId,
+      kind: 'error', source: 'display', intentType, outcome: 'refused', errorCode: 'DISPLAY_UNPAIRED',
+      payload: { deviceId: credential.id }, occurredAt: now, receivedAt: now,
+    });
+  });
 }
 
 /** One outstanding code per bearer; retrying an unanswered mint rotates that code. */

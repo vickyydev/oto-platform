@@ -22,6 +22,7 @@ import { Field, Select, TextInput } from '@/components/Form';
 import { BoxDrawer } from '@/components/devices/BoxDrawer';
 import { DisplayPairPanel } from '@/components/devices/DisplayPairPanel';
 import { DisplaySnapshotPanel } from '@/components/devices/DisplaySnapshotPanel';
+import { DisplayIntentTestPanel } from '@/components/devices/DisplayDiagnosticsPanel';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
 import { StationDrawer } from '@/components/devices/StationDrawer';
 import { TerminalSimulatorPanel } from '@/components/devices/TerminalSimulatorPanel';
@@ -137,6 +138,11 @@ export function Devices() {
             : grant.scopeType === 'branch' && grant.scopeId === s.branchId),
       ),
   );
+  const boxLogStations = fleet.stations.filter(s => s.branchId === branchId &&
+    fleet.boxes.some(box => box.id === s.boxId) && permissions.some(grant =>
+      grant.permission === 'admin:box:read' && (grant.scopeType === 'operator'
+        ? grant.scopeId === null || grant.scopeId === me?.account.operatorId
+        : grant.scopeType === 'branch' && grant.scopeId === s.branchId)));
 
   return (
     <div className="flex flex-col gap-4">
@@ -274,11 +280,17 @@ export function Devices() {
         stations={fleet.stations.filter((s) => !s.archived)}
         displayStations={displayStations}
         snapshotStations={snapshotStations}
+        boxLogStations={boxLogStations}
         stationName={stationName}
         timezone={timezone}
         canPair={canPair}
         canRevoke={canRevoke}
         onChanged={fleet.reload}
+        onOpenBoxLog={stationId => {
+          const boxId = boxLogStations.find(station => station.id === stationId)?.boxId;
+          const box = fleet.boxes.find(candidate => candidate.id === boxId);
+          if (box) setOpenBox(box);
+        }}
       />
 
       {/**
@@ -791,28 +803,34 @@ function PairedScreens({
   stations,
   displayStations,
   snapshotStations,
+  boxLogStations,
   stationName,
   timezone,
   canPair,
   canRevoke,
   onChanged,
+  onOpenBoxLog,
 }: {
   credentials: CredentialRow[];
   missing: boolean;
   stations: StationRow[];
   displayStations: StationRow[];
   snapshotStations: StationRow[];
+  boxLogStations: StationRow[];
   stationName: (id: string | null | undefined) => string | null;
   timezone?: string | null;
   canPair: boolean;
   canRevoke: boolean;
   onChanged: () => void;
+  onOpenBoxLog: (stationId: string) => void;
 }) {
   const [pairing, setPairing] = useState(false);
   const [pairingDisplay, setPairingDisplay] = useState(false);
   const [showRevoked, setShowRevoked] = useState(false);
   const [snapshotId, setSnapshotId] = useState<string | null>(null);
+  const [testId, setTestId] = useState<string | null>(null);
   const snapshot = credentials.find((credential) => credential.id === snapshotId);
+  const tested = credentials.find(credential => credential.id === testId);
   const shown = credentials.filter((c) => showRevoked || !c.revokedAt);
 
   return (
@@ -869,6 +887,11 @@ function PairedScreens({
                 snapshotStations.some((station) => station.id === credential.stationId)
               }
               onSnapshot={() => setSnapshotId(credential.id)}
+              canTest={credential.kind === 'display' && !!credential.pairedAt && !credential.revokedAt
+                && !credential.pairingOutstanding && displayStations.some(station => station.id === credential.stationId)}
+              onTest={() => setTestId(credential.id)}
+              canBoxLog={credential.kind === 'display' && boxLogStations.some(station => station.id === credential.stationId)}
+              onBoxLog={() => { if (credential.stationId) onOpenBoxLog(credential.stationId); }}
               onChanged={onChanged}
             />
           ))}
@@ -904,6 +927,15 @@ function PairedScreens({
             </Button>
           </Dialog>
         )}
+      {tested?.stationId && !tested.revokedAt && displayStations.some(station => station.id === tested.stationId) && (
+        <Dialog title={`${tested.label ?? 'Display'} test intent`} onClose={() => setTestId(null)}>
+          <DisplayIntentTestPanel key={`${tested.id}:${tested.stationId}`} stationId={tested.stationId} displayId={tested.id}
+            onOpenBoxLog={boxLogStations.some(station => station.id === tested.stationId) ? () => {
+              setTestId(null); onOpenBoxLog(tested.stationId!);
+            } : undefined} />
+          <Button variant="outline" onClick={() => setTestId(null)}>Close</Button>
+        </Dialog>
+      )}
     </Panel>
   );
 }
@@ -916,6 +948,10 @@ function CredentialRowItem({
   canSnapshot,
   onSnapshot,
   onChanged,
+  canTest,
+  onTest,
+  canBoxLog,
+  onBoxLog,
 }: {
   credential: CredentialRow;
   stationLabel: string | null;
@@ -924,6 +960,10 @@ function CredentialRowItem({
   canSnapshot: boolean;
   onSnapshot: () => void;
   onChanged: () => void;
+  canTest: boolean;
+  onTest: () => void;
+  canBoxLog: boolean;
+  onBoxLog: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
@@ -957,6 +997,8 @@ function CredentialRowItem({
             Snapshot
           </Button>
         )}
+        {canTest && <Button variant="outline" size="sm" onClick={onTest}>Send test intent</Button>}
+        {canBoxLog && <Button variant="outline" size="sm" onClick={onBoxLog}>Open Box refusal log</Button>}
         {canRevoke && !credential.revokedAt && (
           <Button
             variant="outline"
@@ -978,11 +1020,14 @@ function CredentialRowItem({
             : `Paired ${formatWhen(credential.pairedAt, timezone)}${credential.lastSeenAt ? `, last seen ${timeAgo(credential.lastSeenAt)}` : ', never seen since'}.`}
       </p>
       {credential.kind === 'display' && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          {credential.lastSeenAt
-            ? `Last seen ${formatWhen(credential.lastSeenAt, timezone)} (${timeAgo(credential.lastSeenAt)}).`
-            : 'Not seen since pairing.'}
-        </p>
+        <div className="mt-1 text-xs text-muted-foreground space-y-1">
+          <p>{credential.lastSeenAt
+              ? `Last seen ${formatWhen(credential.lastSeenAt, timezone)} (${timeAgo(credential.lastSeenAt)}).`
+              : 'Not seen since pairing.'}</p>
+          <p>{credential.lastRejectedAt
+              ? `Last protected call rejected ${formatWhen(credential.lastRejectedAt, timezone)}${credential.lastRejectedCode ? ` · ${credential.lastRejectedCode}` : ''}.`
+              : 'No rejected protected call recorded.'}</p>
+        </div>
       )}
       {failed && <p className="mt-1 text-sm text-destructive">{failed}</p>}
     </li>

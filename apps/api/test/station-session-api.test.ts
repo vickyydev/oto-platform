@@ -7,12 +7,17 @@ import {
   box,
   boxOutbox,
   boxState,
+  branch,
+  deviceCredential,
   idempotencyKey,
   operator,
   paymentAttempt,
+  role,
+  roleAssignment,
   sale,
   session as sessionTable,
   station,
+  stationEvent,
   stationSession,
   ticketPackage,
   type Db,
@@ -35,6 +40,7 @@ import { forcedOfflineStation } from '../src/services/station-offline';
 describe('paired display transport uses the redacted station document (SCRUM-201)', () => {
   let proof: TestContext;
   let staffCookie: string;
+  let managerCookie: string;
   let targetId: string;
   let deviceId: string;
   let authorization: string;
@@ -53,7 +59,7 @@ describe('paired display transport uses the redacted station document (SCRUM-201
 
   beforeAll(async () => {
     proof = await createTestContext();
-    const managerCookie = await signInAs(proof.app, ADMIN.phone, ADMIN.password);
+    managerCookie = await signInAs(proof.app, ADMIN.phone, ADMIN.password);
     staffCookie = await signInAs(proof.app, RECEPTION.phone, RECEPTION.password);
     const [target] = await proof.db.select({ id: station.id }).from(station)
       .where(eq(station.name, 'Reception Till 1')).limit(1);
@@ -118,6 +124,100 @@ describe('paired display transport uses the redacted station document (SCRUM-201
     const status = await proof.app.inject({ method: 'GET', url: `/stations/${targetId}/displays`, headers: { cookie: staffCookie } });
     expect(status.statusCode).toBe(200);
     expect(status.json().displays).toContainEqual({ id: deviceId, name: 'Test display', lastSeenAt: expect.any(String), connected: true });
+  });
+
+  it('records an atomic Console probe once while accepted and refused tests leave the entire live session unchanged', async () => {
+    const published = await staffIntent('session.publish_display', { stage: 'welcome', step: 2,
+      cart: { supported: true, sale: { tier: 'member' } }, prompt: { kind: 'welcome', requestId },
+      member: { id: newId(), nickname: 'Park guest', tier: 'member' } });
+    expect(published.statusCode).toBe(200);
+    sequence = published.json().document.sequence;
+    const [before] = await proof.db.select().from(stationSession).where(eq(stationSession.stationId, targetId));
+    const actionId = newId();
+    const key = `display-probe-${newId()}`;
+    const url = `/stations/${targetId}/displays/${deviceId}/test-intent`;
+    const request = { method: 'POST' as const, url, headers: { cookie: managerCookie, 'idempotency-key': key },
+      payload: { stage: 'welcome', intent: 'consent_ack', actionId } };
+    const first = await proof.app.inject(request);
+    expect(first.statusCode).toBe(200);
+    expect(first.json()).toMatchObject({ actionId, testStage: 'welcome', liveStage: 'welcome',
+      sequence, accepted: false, reason: 'wrong_stage' });
+    const replay = await proof.app.inject(request);
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json()).toEqual(first.json());
+    const events = await proof.db.select().from(stationEvent).where(eq(stationEvent.actionId, actionId));
+    expect(events).toHaveLength(1);
+    const [manager] = await proof.db.select({ id: account.id }).from(account).where(eq(account.phone, ADMIN.phone));
+    expect(events[0]).toMatchObject({ source: 'console', actorAccountId: manager!.id,
+      outcome: 'refused', errorCode: 'wrong_stage', stage: 'welcome',
+      payload: { test: true, deviceId, simulatedSource: 'display', testStage: 'welcome', intent: 'consent_ack' } });
+    expect(Object.keys(events[0]!.payload as Record<string, unknown>).sort())
+      .toEqual(['deviceId', 'intent', 'simulatedSource', 'test', 'testStage']);
+    const accepted = await proof.app.inject({ method: 'POST', url, headers: { cookie: managerCookie },
+      payload: { stage: 'input', intent: 'contact_done', actionId: newId() } });
+    expect(accepted.statusCode).toBe(200);
+    expect(accepted.json()).toMatchObject({ testStage: 'input', liveStage: 'welcome', accepted: true, reason: null });
+    const [after] = await proof.db.select().from(stationSession).where(eq(stationSession.stationId, targetId));
+    expect(after).toEqual(before);
+  });
+
+  it('fences Console probes to the station park, operator, live display and finite request fields', async () => {
+    const payload = { stage: 'welcome', intent: 'consent_ack', actionId: newId() };
+    const probe = (cookie = managerCookie, id = targetId, body: Record<string, unknown> = payload) => proof.app.inject({
+      method: 'POST', url: `/stations/${id}/displays/${deviceId}/test-intent`, headers: { cookie }, payload: body });
+    expect((await probe('')).statusCode).toBe(401);
+    expect((await probe(staffCookie)).statusCode).toBe(403);
+    const [other] = await proof.db.select({ id: station.id }).from(station).where(eq(station.name, 'Booth 1'));
+    expect((await probe(managerCookie, other!.id)).statusCode).toBe(404);
+    expect((await probe(managerCookie, targetId, { ...payload, intent: 'session.reset' })).statusCode).toBe(400);
+    expect((await probe(managerCookie, targetId, { ...payload, payload: { value: true } })).statusCode).toBe(400);
+    const [target] = await proof.db.select().from(station).where(eq(station.id, targetId));
+    const foreignId = newId();
+    await proof.db.insert(operator).values({ id: foreignId, name: 'Display diagnostic other park' });
+    try {
+      await proof.db.update(station).set({ operatorId: foreignId }).where(eq(station.id, targetId));
+      expect((await probe()).statusCode).toBe(404);
+    } finally {
+      await proof.db.update(station).set({ operatorId: target!.operatorId }).where(eq(station.id, targetId));
+    }
+    try {
+      await proof.db.update(deviceCredential).set({ revokedAt: new Date() }).where(eq(deviceCredential.id, deviceId));
+      expect((await probe()).statusCode).toBe(409);
+    } finally {
+      await proof.db.update(deviceCredential).set({ revokedAt: null }).where(eq(deviceCredential.id, deviceId));
+    }
+    expect(await proof.db.select({ id: stationEvent.id }).from(stationEvent).where(eq(stationEvent.actionId, payload.actionId))).toHaveLength(0);
+  });
+
+  it('does not use a pairing grant at another park for a Console probe', async () => {
+    const [target] = await proof.db.select().from(station).where(eq(station.id, targetId));
+    const otherBranchId = newId();
+    await proof.db.insert(branch).values({ id: otherBranchId, operatorId: target!.operatorId, name: 'Diagnostic other park', code: `probe-${newId()}` });
+    const [staff] = await proof.db.select({ id: account.id }).from(account).where(eq(account.phone, RECEPTION.phone));
+    const [managerRole] = await proof.db.select({ id: role.id }).from(role).where(eq(role.name, 'branch_manager'));
+    const assignmentId = newId();
+    await proof.db.insert(roleAssignment).values({ id: assignmentId, accountId: staff!.id, roleId: managerRole!.id,
+      scopeType: 'branch', scopeId: otherBranchId });
+    try {
+      const response = await proof.app.inject({ method: 'POST', url: `/stations/${targetId}/displays/${deviceId}/test-intent`,
+        headers: { cookie: staffCookie }, payload: { stage: 'welcome', intent: 'consent_ack', actionId: newId() } });
+      expect(response.statusCode).toBe(403);
+      expect(response.json().error.code).toBe('OUT_OF_BRANCH_SCOPE');
+    } finally { await proof.db.delete(roleAssignment).where(eq(roleAssignment.id, assignmentId)); }
+  });
+
+  it('refuses an unopened display station without creating its live session', async () => {
+    const [target] = await proof.db.select().from(station).where(eq(station.id, targetId));
+    const unopenedId = newId();
+    await proof.db.insert(station).values({ ...target!, id: unopenedId, name: 'Unopened diagnostic till', codePrefix: null });
+    try {
+      await proof.db.update(deviceCredential).set({ stationId: unopenedId }).where(eq(deviceCredential.id, deviceId));
+      const response = await proof.app.inject({ method: 'POST', url: `/stations/${unopenedId}/displays/${deviceId}/test-intent`,
+        headers: { cookie: managerCookie }, payload: { stage: 'welcome', intent: 'consent_ack', actionId: newId() } });
+      expect(response.statusCode).toBe(409);
+      expect(response.json().error.code).toBe('STATION_SESSION_UNAVAILABLE');
+      expect(await proof.db.select().from(stationSession).where(eq(stationSession.stationId, unopenedId))).toHaveLength(0);
+    } finally { await proof.db.update(deviceCredential).set({ stationId: targetId }).where(eq(deviceCredential.id, deviceId)); }
   });
 });
 

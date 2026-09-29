@@ -430,6 +430,13 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /box/v1/register [secretResponse,credential:box-claim]',
   'POST /box/v1/sync/key [credential:box]',
   'POST /box/v1/sync/push [credential:box]',
+  // Independent display credentials have no staff account replay key. Minting
+  // rotates the pending single-use hash and must never store its secret reply;
+  // expiry is idempotent. Typed answers keep their action/request id and use
+  // box sequence fencing with first-answer-wins (fleet and station tests).
+  'POST /display/pairing [secretResponse,credential:display-pairing]',
+  'POST /display/pairing/expire [credential:display-pairing]',
+  'POST /display/intents [credential:display]',
   'POST /me/staff-token [secretResponse]',
   /**
    * S2-10a — what the card terminal did, reported by the box that drove it.

@@ -71,6 +71,50 @@ function publicPresentation() {
   };
 }
 
+test('Console display probes use the real stage rules without writing or mutating nested live data', async () => {
+  const h = await openManager();
+  try {
+    const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'probe-till', holderKind: 'till', accountId: null });
+    assert.ok(claim.ok);
+    if (!claim.ok) return;
+    const published = await h.manager.applyIntent(STATION_ID, {
+      type: 'session.publish_display', leaseId: claim.lease.leaseId, lastSeenSequence: claim.document.sequence,
+      payload: { ...publicPresentation(), stage: 'welcome', step: 2, prompt: { kind: 'welcome', nested: { label: 'keep' } } },
+    }, { source: 'till' });
+    assert.ok(published.ok);
+    if (!published.ok) return;
+    const document = await h.manager.open(STATION_ID);
+    const before = structuredClone(document);
+    const eventCount = h.events.length;
+    const factCount = h.facts.length;
+    const messages: StationChannelMessage[] = [];
+    h.manager.subscribe(STATION_ID, 'customer', (message) => messages.push(message));
+
+    const refused = h.manager.testDisplayIntent(document, 'welcome', 'consent_ack', MANAGER_ID);
+    assert.equal(refused.accepted, false);
+    assert.equal(refused.reason, 'wrong_stage');
+    assert.equal(h.manager.testDisplayIntent(document, 'input', 'consent_ack', MANAGER_ID).accepted, true);
+    assert.equal(h.manager.testDisplayIntent(document, 'identify', 'identify', MANAGER_ID).accepted, true);
+    assert.equal(h.manager.testDisplayIntent(document, 'input', 'contact_done', MANAGER_ID).accepted, true);
+    assert.equal(h.manager.testDisplayIntent(document, 'payment', 'set_language', MANAGER_ID).accepted, true);
+
+    // A rule may mutate its input as well as return a write. The probe must own every nested reference.
+    h.manager.register('display.identify', { sources: ['display'], requiresLease: false,
+      apply({ document: probe }) {
+        const sale = probe.cart?.sale as { lines: Array<{ name: string }> };
+        sale.lines[0]!.name = 'Changed by diagnostic rule';
+        return { ok: true, write: { prompt: probe.prompt } };
+      },
+    });
+    assert.equal(h.manager.testDisplayIntent(document, 'identify', 'identify', MANAGER_ID).accepted, true);
+    assert.deepEqual(document, before);
+    assert.deepEqual(await h.manager.open(STATION_ID), before);
+    assert.equal(h.events.length, eventCount);
+    assert.equal(h.facts.length, factCount);
+    assert.equal(messages.length, 0);
+  } finally { h.close(); }
+});
+
 test('two screens on one station see the same snapshot and the same sequence', async () => {
   const h = await openManager();
   const till: StationChannelMessage[] = [];

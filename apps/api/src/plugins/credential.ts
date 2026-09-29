@@ -9,7 +9,7 @@ import {
   type BoothDeviceAuth,
 } from '../services/device-credential';
 import type { PermissionConfig } from './permission';
-import { authenticateDisplay, displayBearerHash, displayUnpaired, type DisplayDeviceAuth } from '../services/display';
+import { authenticateDisplay, displayBearerHash, displayUnpaired, observeRejectedDisplayCall, type DisplayDeviceAuth } from '../services/display';
 
 /**
  * `config.credential` was a label; this makes it a guard (S2-04 review, F3).
@@ -91,10 +91,24 @@ export const credentialPlugin = fp(async (app: FastifyInstance) => {
         return;
       }
       if (kind === 'display') {
-        req.displayDevice = await authenticateDisplay(
-          app.db, displayBearerHash(req.headers.authorization),
-          req.routeOptions.config.displayScope ?? 'display:read',
-        );
+        const tokenHash = displayBearerHash(req.headers.authorization);
+        try {
+          req.displayDevice = await authenticateDisplay(
+            app.db, tokenHash, req.routeOptions.config.displayScope ?? 'display:read',
+          );
+        } catch (error) {
+          const intentType = req.method === 'GET' && req.routeOptions.url === '/display/session' ? 'display.session'
+            : req.method === 'POST' && req.routeOptions.url === '/display/intents' ? 'display.intents' : null;
+          if (intentType && error instanceof AppError && error.statusCode === 401 && error.code === 'DISPLAY_UNPAIRED') {
+            try {
+              await observeRejectedDisplayCall(app.db, tokenHash, intentType);
+            } catch {
+              // An observation failure must not replace or expose the authentication refusal.
+              req.log.warn({ code: 'DISPLAY_REJECTION_OBSERVATION_FAILED' }, 'Display rejection observation could not be recorded');
+            }
+          }
+          throw error;
+        }
         return;
       }
       if (kind === 'box') {
