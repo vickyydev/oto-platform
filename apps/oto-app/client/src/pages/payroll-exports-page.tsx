@@ -42,6 +42,27 @@ export default function PayrollExportsPage() {
   const [bankFormat, setBankFormat] = useState("SCB");
   const [journalFormat, setJournalFormat] = useState("CSV");
 
+  const downloadExport = async (kind: string, body: Record<string, string> = {}) => {
+    const generated = await fetch(`/api/payroll/runs/${runId}/export/${kind}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!generated.ok) throw new Error("Failed to generate export");
+    const result = await generated.json();
+    if (typeof result.filePath !== "string" || !/^\/api\/payroll\/exports\/(bank-transfers|journals|sso-filings|pit-filings)\/[^/]+\.csv$/.test(result.filePath)) {
+      throw new Error("Export file was not returned");
+    }
+    const downloaded = await fetch(result.filePath);
+    if (!downloaded.ok) throw new Error("Failed to download export");
+    const url = URL.createObjectURL(await downloaded.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = result.filePath.split("/").pop() || "payroll-export.csv";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  };
+
   const { data: run, isLoading, error } = useQuery<PayrollRun>({
     queryKey: ["/api/payroll/runs", runId],
     queryFn: async () => {
@@ -53,17 +74,7 @@ export default function PayrollExportsPage() {
   });
 
   const bankExportMutation = useMutation({
-    mutationFn: async (format: string) => {
-      const res = await fetch(`/api/payroll/runs/${runId}/exports/bank?format=${format}`);
-      if (!res.ok) throw new Error("Failed to generate bank export");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `bank-transfer-${format.toLowerCase()}-${runId}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
+    mutationFn: (format: string) => downloadExport("bank-transfer", { bankFormat: format }),
     onSuccess: () => {
       toast({ title: "Export generated", description: "Bank transfer file downloaded." });
     },
@@ -73,17 +84,7 @@ export default function PayrollExportsPage() {
   });
 
   const journalExportMutation = useMutation({
-    mutationFn: async (format: string) => {
-      const res = await fetch(`/api/payroll/runs/${runId}/exports/journal?format=${format}`);
-      if (!res.ok) throw new Error("Failed to generate journal export");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `accounting-journal-${format.toLowerCase()}-${runId}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
+    mutationFn: (format: string) => downloadExport("journal", { format }),
     onSuccess: () => {
       toast({ title: "Export generated", description: "Accounting journal file downloaded." });
     },
@@ -93,17 +94,7 @@ export default function PayrollExportsPage() {
   });
 
   const ssoExportMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/payroll/runs/${runId}/exports/sso`);
-      if (!res.ok) throw new Error("Failed to generate SSO export");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `sso-filing-${runId}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
+    mutationFn: () => downloadExport("sso-filing"),
     onSuccess: () => {
       toast({ title: "Export generated", description: "SSO filing report downloaded." });
     },
@@ -113,17 +104,7 @@ export default function PayrollExportsPage() {
   });
 
   const pitExportMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/payroll/runs/${runId}/exports/pit`);
-      if (!res.ok) throw new Error("Failed to generate PIT export");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `pit-filing-${runId}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
+    mutationFn: () => downloadExport("pit-filing"),
     onSuccess: () => {
       toast({ title: "Export generated", description: "PIT filing report downloaded." });
     },

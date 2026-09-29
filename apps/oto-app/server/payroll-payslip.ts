@@ -10,8 +10,7 @@ import {
   operators
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
-import fs from "fs/promises";
-import path from "path";
+import { uploadToObjectStorage } from "./file-storage";
 
 interface PayslipData {
   companyName: string;
@@ -163,11 +162,7 @@ export async function generatePayslipPdf(
 
     const html = generatePayslipHtml(payslipData);
 
-    const pdfDir = path.join(process.cwd(), "pdfs", "payslips");
-    await fs.mkdir(pdfDir, { recursive: true });
-
-    const fileName = `payslip_${employeeId.slice(0, 8)}_${period.startDate}.pdf`;
-    const pdfPath = path.join(pdfDir, fileName);
+    const fileName = `payslip_${runId}_${employeeId}.pdf`;
 
     const browser = await puppeteer.launch({
       headless: true,
@@ -175,19 +170,20 @@ export async function generatePayslipPdf(
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
-
-    await page.pdf({
-      path: pdfPath,
-      format: "A4",
-      margin: { top: "20mm", right: "15mm", bottom: "20mm", left: "15mm" },
-      printBackground: true,
-    });
-
-    await browser.close();
-
-    return { success: true, pdfPath: `/pdfs/payslips/${fileName}` };
+    let pdfBytes: Buffer;
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: "networkidle0" });
+      pdfBytes = Buffer.from(await page.pdf({
+        format: "A4",
+        margin: { top: "20mm", right: "15mm", bottom: "20mm", left: "15mm" },
+        printBackground: true,
+      }));
+    } finally {
+      await browser.close();
+    }
+    await uploadToObjectStorage(pdfBytes, "payroll-payslips", fileName, "application/pdf");
+    return { success: true, pdfPath: `/api/payroll/payslip-files/${fileName}` };
   } catch (error: any) {
     console.error("Error generating payslip PDF:", error);
     return { success: false, error: error.message };

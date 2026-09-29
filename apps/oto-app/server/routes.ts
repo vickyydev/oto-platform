@@ -6,7 +6,7 @@ import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireG
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
 import { uploadFinalizedPdf, uploadSignedPdf, uploadSignedLetterPdf, presignedPdfUrl, streamSignedPdf, isObjectStoragePath } from "./pdf-storage";
 import { fixMulterFilenames } from "./middleware/fixMulterFilenames";
-import { uploadToObjectStorage, getFileFromObjectStorage, deleteFromObjectStorage, getFileRangeFromObjectStorage } from "./file-storage";
+import { uploadToObjectStorage, getFileFromObjectStorage, fileExistsInObjectStorage, deleteFromObjectStorage, getFileRangeFromObjectStorage } from "./file-storage";
 import { getOrCreateFixMediaThumbnail } from "./fix-media-thumbnails";
 import { sendEmail } from "./email";
 
@@ -22836,7 +22836,7 @@ ${context}`;
       const sanitizedFilename = path.basename(filename);
       // Private documents have their own record-scoped routes; this generic
       // file route cannot decide who may read a contract or employee record.
-      if (["contracts", "letters", "beo-pdfs", "employee-documents"].includes(folder)) {
+      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips"].includes(folder)) {
         return res.status(404).json({ message: "File not found" });
       }
       
@@ -23602,6 +23602,7 @@ ${context}`;
   // Helper: Check if user has payroll admin access (global_admin or operator_admin)
   const isPayrollAdmin = (user: any) =>
     user?.role === 'global_admin' || user?.role === 'admin' || user?.role === 'operator_admin';
+  const payrollUuidPattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
   // Helper: Verify payroll period belongs to user's operator
   const verifyPeriodAccess = async (periodId: string, user: any): Promise<boolean> => {
@@ -24527,34 +24528,34 @@ ${context}`;
     }
   });
 
-  // GET /api/payroll/payslips/:filename - Download payslip PDF
-  app.get("/api/payroll/payslips/:filename", requireAuth, async (req, res, next) => {
+  // GET /api/payroll/payslip-files/:filename - Download payslip PDF
+  app.get("/api/payroll/payslip-files/:filename", requireAuth, async (req, res, next) => {
     try {
       const user = req.user as any;
       const filename = req.params.filename;
-      if (!filename.match(/^payslip_[a-z0-9-]+_\d{4}-\d{2}-\d{2}\.pdf$/)) {
+      const match = new RegExp(String.raw`^payslip_(${payrollUuidPattern})_(${payrollUuidPattern})\.pdf$`).exec(filename);
+      if (!match) {
         return res.status(400).json({ message: "Invalid filename format" });
       }
-      const pdfPath = path.join(process.cwd(), "pdfs", "payslips", filename);
-      if (!fs.existsSync(pdfPath)) {
-        return res.status(404).json({ message: "Payslip not found" });
-      }
-      const employeeIdPrefix = filename.split("_")[1];
+      const [, runId, employeeId] = match;
       const isAdmin = isPayrollAdmin(user);
-      let isSelfAccess = false;
-      if (!isAdmin) {
-        const employee = await storage.getEmployeeByUserId(user.id);
-        if (employee && employee.id.startsWith(employeeIdPrefix)) {
-          isSelfAccess = true;
-        }
-      }
-      if (!isAdmin && !isSelfAccess) {
+      const self = isAdmin ? null : await storage.getEmployeeByUserId(user.id);
+      if (isAdmin ? !(await verifyRunAccess(runId, user)) : self?.id !== employeeId) {
         return res.status(403).json({ message: "Access denied" });
       }
+      const summaries = await storage.getPayrollSummariesByEmployee(employeeId);
+      if (!summaries.some(summary => summary.payrollRunId === runId)) {
+        return res.status(404).json({ message: "Payslip not found" });
+      }
+      const file = await getFileFromObjectStorage("payroll-payslips", filename);
+      if (!file) return res.status(404).json({ message: "Payslip not found" });
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-      const fileStream = fs.createReadStream(pdfPath);
-      fileStream.pipe(res);
+      file.stream.on("error", (error) => {
+        if (res.headersSent) res.destroy(error as Error);
+        else next(error);
+      });
+      file.stream.pipe(res);
     } catch (error) {
       next(error);
     }
@@ -24572,18 +24573,13 @@ ${context}`;
       const enrichedSummaries = await Promise.all(summaries.map(async (summary) => {
         const run = await storage.getPayrollRun(summary.payrollRunId);
         const period = run ? await storage.getPayrollPeriod(run.payrollPeriodId) : null;
-        const pdfFileName = period 
-          ? `payslip_${employee.id.slice(0, 8)}_${period.startDate}.pdf`
-          : null;
-        const pdfPath = pdfFileName 
-          ? path.join(process.cwd(), "pdfs", "payslips", pdfFileName)
-          : null;
-        const pdfExists = pdfPath && fs.existsSync(pdfPath);
+        const pdfFileName = period ? `payslip_${summary.payrollRunId}_${employee.id}.pdf` : null;
+        const pdfExists = pdfFileName && await fileExistsInObjectStorage("payroll-payslips", pdfFileName);
         return {
           ...summary,
           periodStart: period?.startDate,
           periodEnd: period?.endDate,
-          pdfDownloadUrl: pdfExists ? `/api/payroll/payslips/${pdfFileName}` : null,
+          pdfDownloadUrl: pdfExists ? `/api/payroll/payslip-files/${pdfFileName}` : null,
         };
       }));
       res.json(enrichedSummaries);
@@ -24686,18 +24682,29 @@ ${context}`;
         return res.status(403).json({ message: "Payroll admin access required" });
       }
       const { type, filename } = req.params;
-      const allowedTypes = ["bank-transfers", "journals", "sso-filings", "pit-filings"];
-      if (!allowedTypes.includes(type)) {
+      const namePattern = ({
+        "bank-transfers": new RegExp(String.raw`^(${payrollUuidPattern})_bank_transfer_\d{4}-\d{2}-\d{2}_(scb|kbank|bbl|generic)\.csv$`),
+        "journals": new RegExp(String.raw`^(${payrollUuidPattern})_journal_\d{4}-\d{2}-\d{2}_(csv|sage|quickbooks)\.csv$`),
+        "sso-filings": new RegExp(String.raw`^(${payrollUuidPattern})_sso_filing_\d{4}-\d{2}-\d{2}\.csv$`),
+        "pit-filings": new RegExp(String.raw`^(${payrollUuidPattern})_pit_filing_\d{4}-\d{2}-\d{2}\.csv$`),
+      } as Record<string, RegExp>)[type];
+      if (!namePattern) {
         return res.status(400).json({ message: "Invalid export type" });
       }
-      const filePath = path.join(process.cwd(), "exports", type, filename);
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ message: "Export file not found" });
+      const runId = namePattern.exec(filename)?.[1];
+      if (!runId) return res.status(400).json({ message: "Invalid export filename" });
+      if (!(await verifyRunAccess(runId, user))) {
+        return res.status(403).json({ message: "Access denied to this run" });
       }
+      const file = await getFileFromObjectStorage("payroll-exports", filename);
+      if (!file) return res.status(404).json({ message: "Export file not found" });
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-      const fileStream = fs.createReadStream(filePath);
-      fileStream.pipe(res);
+      file.stream.on("error", (error) => {
+        if (res.headersSent) res.destroy(error as Error);
+        else next(error);
+      });
+      file.stream.pipe(res);
     } catch (error) {
       next(error);
     }
