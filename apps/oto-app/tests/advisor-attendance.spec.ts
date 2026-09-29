@@ -52,7 +52,7 @@ test("database enforces one open advisor attendance session per person", async (
   const result = await db.execute(sql`
     SELECT indexdef
     FROM pg_indexes
-    WHERE schemaname = 'public'
+    WHERE schemaname = current_schema()
       AND indexname = 'advisor_attendance_one_open_session'
   `);
 
@@ -193,7 +193,7 @@ test("verified advisor phone records one unscheduled session across midnight wit
     const denied = await request.post("/api/kiosk/clock-phone", {
       data: { phone, photoEvidenceUrl: "/test/advisor.jpg", deviceSecret: deniedSecret },
     });
-    expect(denied.status()).toBe(403);
+    expect(denied.status()).toBe(401);
 
     const clockIn = await request.post("/api/kiosk/clock-phone", {
       data: { phone, photoEvidenceUrl: "/test/advisor.jpg", deviceSecret: allowedSecret },

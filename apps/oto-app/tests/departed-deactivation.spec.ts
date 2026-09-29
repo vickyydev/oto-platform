@@ -1,6 +1,8 @@
 // seed: full
 import { test, expect, type Page } from "@playwright/test";
-import { execSync } from "child_process";
+import { eq } from "drizzle-orm";
+import { db } from "../server/db";
+import { employees } from "../shared/schema";
 import { login, createStaffWithLogin, loginAsStaff } from "./helpers";
 
 /**
@@ -9,23 +11,6 @@ import { login, createStaffWithLogin, loginAsStaff } from "./helpers";
  * When an employee's lastWorkingDay passes, their user account should be
  * deactivated so they can no longer log in.
  */
-
-function runSQL(sql: string) {
-  execSync(
-    `kubectl --context docker-desktop exec deploy/postgres -- psql -U oto -d oto_dev -c "${sql.replace(/"/g, '\\"')}"`,
-  );
-}
-
-function queryDB(sql: string): string {
-  return execSync(
-    `kubectl --context docker-desktop exec deploy/postgres -- psql -U oto -d oto_dev -tAc "${sql}"`,
-    { encoding: "utf-8" },
-  ).trim();
-}
-
-function isoDate(d: Date): string {
-  return d.toISOString().split("T")[0];
-}
 
 async function goToEmployeeProfile(page: Page, fullName: string) {
   await page.getByRole("button", { name: "HR" }).click();
@@ -119,12 +104,10 @@ test.describe.serial("departed employee deactivation", () => {
       });
       expect(beforeStatus).toBe(200);
 
-      // Move departure date to yesterday via SQL
+      // Move departure date to yesterday in the isolated app schema.
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      runSQL(
-        `UPDATE employees SET last_working_day = '${isoDate(yesterday)}' WHERE email = '${email}'`,
-      );
+      await db.update(employees).set({ lastWorkingDay: yesterday }).where(eq(employees.email, email));
 
       // Trigger the deactivation job
       const body = await adminPage.evaluate(async () => {
