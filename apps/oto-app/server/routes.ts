@@ -13454,19 +13454,12 @@ OTO Company Limited`,
         }
       }
 
-      // Calculate all week start dates in the range
-      const weekStarts: string[] = [];
-      let current = new Date(fromDate);
-      current.setDate(current.getDate() - current.getDay() + 1); // Go to Monday
-      if (current > fromDate) {
-        current.setDate(current.getDate() - 7);
-      }
-      
-      while (current <= toDate) {
-        const weekStartStr = current.toISOString().split('T')[0];
-        weekStarts.push(weekStartStr);
-        current.setDate(current.getDate() + 7);
-      }
+      // Existing plans can start on Sunday or Monday. Read their stored dates
+      // instead of reconstructing Mondays, which hides otherwise valid shifts.
+      const earliestPlanDate = new Date(fromDate);
+      earliestPlanDate.setUTCDate(earliestPlanDate.getUTCDate() - 6);
+      const earliestPlanStart = earliestPlanDate.toISOString().slice(0, 10);
+      const latestPlanStart = toDate.toISOString().slice(0, 10);
 
       const allRolesData = await db.select().from(roles);
       const roleNameMap = new Map<string, string>();
@@ -13492,7 +13485,14 @@ OTO Company Limited`,
         : [branchId];
       
       for (const rotaBranchId of rotaBranchIds) {
-        for (const weekStart of weekStarts) {
+        const plans = await db.select({ weekStartDate: scheduleWeekPlans.weekStartDate })
+          .from(scheduleWeekPlans)
+          .where(and(
+            eq(scheduleWeekPlans.branchId, rotaBranchId),
+            gte(scheduleWeekPlans.weekStartDate, earliestPlanStart),
+            lte(scheduleWeekPlans.weekStartDate, latestPlanStart),
+          ));
+        for (const { weekStartDate: weekStart } of plans) {
           const weekPlan = await storage.getWeekPlan(rotaBranchId, weekStart);
           if (!weekPlan) continue;
 

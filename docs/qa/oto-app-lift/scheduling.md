@@ -1,0 +1,5 @@
+# SCRUM-193: scheduling and My Shifts
+
+The isolated full-seed scheduling batch initially passed 14/16 existing checks. Both failures were My Shifts returning an empty rota for a linked employee with valid assignments. The seed's stored week plans begin on Sunday, while `/api/rota` had reconstructed only Monday starts from the requested date. The route now reads actual week plans overlapping the date range, then applies its existing branch, employee and date filters. The two failing checks passed on rerun, and the full 16-check batch passed afterward. It covers shift assignment, department eligibility, templates, future weeks, cross-branch My Shifts and linked-user My Shifts. No schema or write path changed.
+
+The OTO App production build passed. Typecheck remains at 578 inherited errors with zero diagnostics on the edited route lines. Scoped ESLint found zero diagnostics on those lines; the large inherited route file still has 383 unrelated diagnostics under this temporary config. Local browser tests used an isolated `otoapp` database. Staging deployment and an authenticated scheduling walkthrough with a named screenshot remain open.
