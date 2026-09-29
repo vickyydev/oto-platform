@@ -4,12 +4,13 @@ import { setSaleOpen } from '@/pwa/openSale';
 import { Discount, ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristband } from '@/types';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
-import { getActiveMerchItems, chargeMerchCredit, getDiscountByCode, getDiscountReasons, recordMerchOrder, getInventoryItem } from '@/mockApi';
+import { getActiveMerchItems, getDiscountByCode, getDiscountReasons, recordMerchOrder, getInventoryItem } from '@/mockApi';
 import { asksForSize, computeMerchLineTotal, isOutOfStock, merchSizes } from '@/lib/merch';
 import { readProductScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
-import { useSaleWriter } from '@/lib/saleWriter';
+import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
+import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
 import { useStation } from '@/station/StationContext';
@@ -34,7 +35,10 @@ import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
 import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { MerchGrid } from '@/components/merch/MerchGrid';
 import { MerchCart } from '@/components/merch/MerchCart';
-import { FnbPayment, FnbPaymentResult, FnbMethod, FnbRemainder } from '@/components/fnb/FnbPayment';
+import { FnbPayment, fnbPaymentResult } from '@/components/fnb/FnbPayment';
+import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { MerchConfirmation } from '@/components/merch/MerchConfirmation';
 import { MerchCustomerDisplay, MerchCustomerStage } from '@/components/merch/MerchCustomerDisplay';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
@@ -48,30 +52,11 @@ type Stage = 'scan' | 'order' | 'payment' | 'confirmation';
 let orderCounter = 1;
 let lineCounter = 1;
 
-/**
- * WHICH TENDER CLOSED THE SALE — the same rule the F&B station follows: the
- * bucket that settled the balance is the one the ledger records, and a sale
- * paid from a band's wallet is named as one because that balance is still this
- * till's own record (S2-14a).
- */
-function tenderMethodOf(payment: FnbPaymentResult): string {
-  if (payment.cash > 0) return 'cash';
-  if (payment.card > 0) return 'card';
-  if (payment.promptpay > 0) return 'promptpay';
-  return 'wallet_credit';
-}
-
-function tenderKindOf(payment: FnbPaymentResult): 'cash' | 'card' | 'qr' | 'other' {
-  if (payment.cash > 0) return 'cash';
-  if (payment.card > 0) return 'card';
-  if (payment.promptpay > 0) return 'qr';
-  return 'other';
-}
-
 export default function MerchStation() {
   const { operator } = useOperator();
   const { branch } = useBranch();
   const { station } = useStation();
+  const { t } = useLanguage();
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
@@ -94,6 +79,8 @@ export default function MerchStation() {
   /** The same writer the till and the F&B station use — see `lib/saleWriter.ts`. */
   const saleWriter = useSaleWriter();
   const [platformSale, setPlatformSale] = useState<ApiSale | null>(null);
+  const completedSaleRef = useRef<string | null>(null);
+  const paymentSnapshotRef = useRef<{ epoch: number; scope: string; prepare: () => Promise<SaleWriteOutcome>; complete: (sale: ApiSale, settlements: readonly PaymentSettlement[]) => void } | null>(null);
   /** Bumped on every new sale, so a late answer cannot land on the next guest. */
   const saleEpochRef = useRef(0);
   /** Bumped when a sale finishes, so the grid re-reads the stock it decremented. */
@@ -108,8 +95,6 @@ export default function MerchStation() {
   }, [saleOnScreen]);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
   const [customerTheme] = useCustomerTheme();
-  const [payMethod, setPayMethod] = useState<FnbMethod | null>(null);
-  const [payRemainder, setPayRemainder] = useState<FnbRemainder>('card');
 
   /**
    * THE SHOP GRID IS THE PLATFORM'S (S2-09b). The merch rows live in the same
@@ -206,6 +191,14 @@ export default function MerchStation() {
       quoted[line.id] === undefined ? line : { ...line, lineTotal: quoted[line.id] },
     );
   }, [lines, sale.quote.lineTotals]);
+  const paymentEpoch = saleEpochRef.current;
+  const paymentScope = JSON.stringify([paymentEpoch, saleIdentity, lines, manualDiscounts, promoCodes]);
+  const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
+  paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
+  const paymentContextCurrent = (): boolean => saleEpochRef.current === paymentEpoch && paymentScopeRef.current.scope === paymentScope;
+  const notePaymentLeftBehind = (saleId: string) => {
+    if (saleId) toast({ title: 'Check the previous sale in History', description: `The payment answer belongs to sale ${saleId}. This station changed, so no local sale was completed.`, variant: 'destructive' });
+  };
 
   // Total qty per merch item across all lines — drives the in-grid badge and the
   // remaining-availability clamp.
@@ -459,6 +452,8 @@ export default function MerchStation() {
     // is ignored rather than drawn onto this guest.
     saleEpochRef.current += 1;
     saleWriter.reset();
+    completedSaleRef.current = null;
+    paymentSnapshotRef.current = null;
     setPlatformSale(null);
     setStage('scan');
     setWristband(null);
@@ -468,16 +463,10 @@ export default function MerchStation() {
     setPromoError('');
     setCompletedOrder(null);
     setNewBalance(null);
-    setPayMethod(null);
-    setPayRemainder('card');
     setSoldEpoch((n) => n + 1); // re-read on-hand stock after the sale's decrement
   };
 
   const handleCheckout = () => {
-    // Wallet credit is one universal pool spendable at both stations.
-    const balance = wristband?.creditBalanceTHB ?? 0;
-    setPayMethod(balance > 0 ? 'credit' : null);
-    setPayRemainder('card');
     setStage('payment');
   };
 
@@ -499,11 +488,12 @@ export default function MerchStation() {
       : (sale.quote.reason ?? 'The platform could not price this sale.');
 
   /** Reaching the payment screen is the Pay press — the till's seam (S2-09a). */
-  const recordSaleOnPlatform = async (epoch: number): Promise<void> => {
+  const recordSaleOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
+    if (saleEpochRef.current !== epoch || !paymentContextCurrent()) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: 'This sale or station changed before it could be saved.', retryable: false };
     const payload = commitPayload();
-    if (!payload) return;
-    const outcome = await saleWriter.commit({ cart: payload, finalise: total === 0 });
-    if (saleEpochRef.current !== epoch && outcome.ok && outcome.written) {
+    if (!payload) return { ok: false, saleId: saleWriter.committed?.id ?? '', message: unwritableReason(), retryable: false };
+    const outcome = await saleWriter.commit({ cart: payload, finalise: false });
+    if ((saleEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
       // The station moved on before the answer landed. The sale IS on the
       // platform and nothing on this screen will mention it again, so it is
       // said out loud rather than dropped.
@@ -513,54 +503,24 @@ export default function MerchStation() {
         variant: 'destructive',
       });
     }
+    return outcome;
   };
 
   useEffect(() => {
     if (stage !== 'payment') return;
-    void recordSaleOnPlatform(saleEpochRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on reaching the payment stage: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
+    void paymentSnapshotRef.current?.prepare();
   }, [stage]);
 
-  const handleConfirmPayment = (payment: FnbPaymentResult) => {
-    void completeSale(payment);
-  };
-
-  const completeSale = async (payment: FnbPaymentResult) => {
-    if (!operator) return;
-
-    const epoch = saleEpochRef.current;
-    const payload = commitPayload();
-    let written: ApiSale | null = null;
-    if (!payload) {
-      saleWriter.declareUnwritten(unwritableReason());
-    } else {
-      const committed = await saleWriter.commit({ cart: payload, finalise: total === 0 });
-      if (saleEpochRef.current !== epoch) return;
-      if (!committed.ok) return; // the failure panel is showing; nothing is finalised
-      if (committed.written) {
-        written = committed.sale;
-        if (written.status !== 'finalised') {
-          const closed = await saleWriter.finalise({
-            method: tenderMethodOf(payment),
-            kind: tenderKindOf(payment),
-            amountSatang: written.totals.grossSatang,
-            tenderedSatang: written.totals.grossSatang,
-            changeSatang: 0,
-          });
-          if (saleEpochRef.current !== epoch) return;
-          if (!closed.ok) return;
-          if (closed.written) written = closed.sale;
-        }
-      }
-    }
+  /** The local stock/receipt record follows the platform's finalised sale once. */
+  const completeSale = (written: ApiSale, settlements: readonly PaymentSettlement[]) => {
+    if (!paymentContextCurrent() || written.stationId !== saleIdentity?.stationId) { notePaymentLeftBehind(written.id); return; }
+    if (!operator || written.status !== 'finalised') return;
+    if (completedSaleRef.current === written.id) return;
+    completedSaleRef.current = written.id;
+    const payment = fnbPaymentResult(settlements);
     setPlatformSale(written);
 
-    let balanceAfter: number | null = null;
-    if (wristband && payment.creditUsed > 0) {
-      balanceAfter = chargeMerchCredit(wristband.id, payment.creditUsed, operator.name);
-    } else if (wristband) {
-      balanceAfter = wristband.creditBalanceTHB ?? 0;
-    }
+    const balanceAfter = wristband?.creditBalanceTHB ?? null;
 
     // The record this till keeps, carrying the figures the guest was shown.
     const record: MerchOrder = {
@@ -570,7 +530,7 @@ export default function MerchStation() {
       wristband: wristband ?? undefined,
       lines: displayLines,
       manualDiscounts,
-      total,
+      total: written.totals.grossSatang / 100,
       payment,
       createdAt: new Date().toISOString(),
       status: 'paid',
@@ -582,22 +542,31 @@ export default function MerchStation() {
     setStage('confirmation');
   };
 
+  if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
+    paymentSnapshotRef.current = { epoch: paymentEpoch, scope: paymentScope, prepare: () => recordSaleOnPlatform(paymentEpoch), complete: completeSale };
+  }
+  const paymentStage = usePaymentStage({
+    scope: paymentScope,
+    isCurrentScope: (scope) => scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === saleEpochRef.current,
+    active: stage === 'payment',
+    totalSatang: Math.round(total * 100),
+    prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordSaleOnPlatform(paymentEpoch),
+    finaliseSale: saleWriter.finalise,
+    onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
+    onLeftBehind: notePaymentLeftBehind,
+  });
+  const backFromPayment = () => {
+    if (!paymentStage.canBack) return;
+    saleEpochRef.current += 1;
+    paymentSnapshotRef.current = null;
+    setStage('order');
+  };
+
   let customerStage: MerchCustomerStage;
   if (stage === 'confirmation') customerStage = 'thankyou';
   else if (stage === 'payment') customerStage = 'payment';
   else if (stage === 'order') customerStage = 'order';
   else customerStage = 'welcome';
-
-  // The amount the customer pays by Thai QR / PromptPay (full sale, or the
-  // remainder after credit spend). null when no QR payment is in progress.
-  const balance = wristband?.creditBalanceTHB ?? 0;
-  const remainderAfterCredit = total - Math.min(balance, total);
-  let promptpayAmount: number | null = null;
-  if (stage === 'payment') {
-    if (payMethod === 'promptpay') promptpayAmount = total;
-    else if (payMethod === 'credit' && remainderAfterCredit > 0 && payRemainder === 'promptpay')
-      promptpayAmount = remainderAfterCredit;
-  }
 
   const staffStation = (
     <div className="h-full w-full flex flex-col bg-background text-foreground overflow-hidden">
@@ -678,19 +647,15 @@ export default function MerchStation() {
               creditBalanceOverride={wristband?.creditBalanceTHB ?? 0}
               pickupCode=""
               creditLabel="Credit"
-              method={payMethod}
-              remainder={payRemainder}
-              onMethodChange={setPayMethod}
-              onRemainderChange={setPayRemainder}
-              onConfirm={handleConfirmPayment}
-              onBack={() => setStage('order')}
+              stage={paymentStage}
+              onBack={backFromPayment}
             />
             <div className="mx-auto w-full max-w-2xl px-6 pb-6">
-              <SaleWriteFailure
+              {saleWriter.state.kind === 'failed' && <SaleWriteFailure
                 state={saleWriter.state}
-                onRetry={() => void recordSaleOnPlatform(saleEpochRef.current)}
-                onDismiss={() => setStage('order')}
-              />
+                onRetry={() => { if (saleWriter.state.kind === 'failed' && saleWriter.state.stage === 'finalise') void paymentStage.retry(); else void paymentSnapshotRef.current?.prepare(); }}
+                onDismiss={backFromPayment}
+              />}
             </div>
           </div>
         )}
@@ -758,7 +723,7 @@ export default function MerchStation() {
         </Button>
       </div>
 
-      <StationHeader active="merch" />
+      <div className="shrink-0" inert={stage === 'payment' && !paymentStage.canBack}><StationHeader active="merch" /></div>
 
       <div className="flex-1 flex min-h-0">
         <div
@@ -768,17 +733,30 @@ export default function MerchStation() {
         </div>
         {showCustomerDisplay && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
-            <MerchCustomerDisplay
+            {stage === 'payment' ? (
+              <div className="relative h-full bg-[image:var(--cd-gradient)] text-foreground flex flex-col items-center justify-center gap-6 px-10 text-center">
+                <div className="absolute top-4 right-4"><LanguageSwitcher variant="dark" /></div>
+                <h2 className="text-4xl font-black">{t('merch.payment.amountToPay')}</h2>
+                {paymentStage.display.online && paymentStage.display.status === 'pending' && (paymentStage.display.qrPayload || paymentStage.display.qrImageUrl) && (
+                  <div className="rounded-3xl bg-white p-6"><PaymentQr payload={paymentStage.display.qrPayload} imageUrl={paymentStage.display.qrImageUrl} className="h-64 w-64" /></div>
+                )}
+                <div className="text-6xl font-black tabular-nums text-primary">฿{paymentStage.display.amountSatang / 100}</div>
+                {paymentStage.display.status === 'pending' && <PaymentExpiry expiresAt={paymentStage.display.expiresAt} />}
+                <p className="text-xl text-foreground/60">
+                  {!paymentStage.display.online ? t('till.payment.reconnect') : paymentStage.display.offline ? t('till.payment.offlineRecorded') : paymentStage.display.status === 'pending' ? t('merch.payment.waiting') : paymentStage.display.status === 'paid' ? t('till.payment.received') : paymentStage.display.status === 'failed' || paymentStage.display.status === 'blocked' ? t('till.payment.checking') : t('merch.payment.confirmWithStaff')}
+                </p>
+              </div>
+            ) : <MerchCustomerDisplay
               stage={customerStage}
               wristband={wristband}
               lines={displayLines}
               manualDiscounts={manualDiscounts}
               total={total}
               taxBreakdown={taxBreakdown}
-              promptpayAmount={promptpayAmount}
+              promptpayAmount={null}
               completedOrder={completedOrder}
               newBalance={newBalance}
-            />
+            />}
           </div>
         )}
       </div>

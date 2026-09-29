@@ -2,6 +2,8 @@ import { Sale, Member, ChargeTarget, ContactChannel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QrCode } from './QrCode';
+import { PaymentExpiry, PaymentQr } from './PaymentQr';
+import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -126,6 +128,7 @@ interface CustomerDisplayProps {
    * staff". Only the ticket till sets it; every other caller keeps the stage.
    */
   nothingToPay?: boolean;
+  payment?: PaymentDisplayState;
 }
 
 function ChargeBanner({ target }: { target: ChargeTarget }) {
@@ -194,9 +197,17 @@ export function CustomerDisplay({
   totals,
   voucherPrize,
   nothingToPay,
+  payment,
 }: CustomerDisplayProps) {
   const { t, lang } = useLanguage();
   const displayName = nickname.trim() || member?.nickname || '';
+  if (stage === 'payment' && payment?.status === 'paid') {
+    return <Shell customerName={displayName}><div className="flex-1 flex flex-col items-center justify-center text-center px-10" data-testid="customer-payment-paid">
+      <BadgeCheck className="w-24 h-24 text-(--cd-success) mb-8" />
+      <h2 className="text-5xl font-black">{t('till.thankyou.title')}</h2>
+      <p className="text-xl mt-4">{t('till.payment.received')}</p>
+    </div></Shell>;
+  }
   if (stage === 'identify') {
     return (
       <Shell>
@@ -638,7 +649,7 @@ export function CustomerDisplay({
         </Shell>
       );
     }
-    if (sale.paymentMethod && paymentMethodKind(sale.paymentMethod) === 'qr') {
+    if (payment?.qrPayload || payment?.qrImageUrl || (sale.paymentMethod && paymentMethodKind(sale.paymentMethod) === 'qr')) {
       return (
         <Shell customerName={displayName}>
           <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
@@ -648,15 +659,17 @@ export function CustomerDisplay({
             </div>
             <h2 className="text-4xl font-black mb-6">{t('till.payment.scanToPay')}</h2>
             <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
-              <QrCode seed={`promptpay-${sale.id}-${sale.total}`} className="w-64 h-64" />
+              {payment ? <PaymentQr payload={payment.online ? payment.qrPayload : null} imageUrl={payment.online ? payment.qrImageUrl : null} className="w-64 h-64" />
+                : <QrCode seed={`promptpay-${sale.id}-${sale.total}`} className="w-64 h-64" />}
             </div>
             <div className="text-6xl font-black text-(--cd-violet) mt-8">
-              {unpriced.length > 0 ? '—' : `฿${sale.total}`}
+              {unpriced.length > 0 ? '—' : `฿${payment ? (payment.amountSatang / 100).toFixed(2) : sale.total}`}
             </div>
+            {payment?.expiresAt && <p className="text-lg mt-3">{t('till.payment.timeLeft')} <PaymentExpiry expiresAt={payment.expiresAt} /></p>}
             <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('till.payment.openBankingApp')}</p>
             <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
               <Loader2 className="w-5 h-5 animate-spin" />
-              {t('till.payment.waitingConfirmation')}
+              {t(payment?.online === false ? 'till.payment.reconnect' : payment?.status === 'blocked' ? 'till.payment.checking' : 'till.payment.waitingConfirmation')}
             </div>
           </div>
         </Shell>

@@ -17,6 +17,10 @@ import {
   type SaleTenderPayload,
 } from '@/api/sales';
 import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
+import { usePaymentStage, type PaymentStageOptions } from '@/lib/usePaymentStage';
+import * as paymentMethods from '@/lib/payments';
+import type { PaymentAttemptRead } from '@/api/payments';
+import type { SaleWriteOutcome } from '@/lib/saleWriter';
 import { CANCELLED_AT_THE_TILL } from '@/lib/tillVoucher';
 
 /**
@@ -47,6 +51,7 @@ const commit = vi.mocked(commitSale);
 const finalise = vi.mocked(finaliseSale);
 const getSale = vi.mocked(salesApi.get);
 const voidSale = vi.mocked(salesApi.voidSale);
+const paymentUnmounts: (() => void)[] = [];
 
 /** A walk-in's cart of `kids` one-hour tickets, as the till sends it. */
 function cart(kids: number): SaleCartPayload {
@@ -117,6 +122,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  paymentUnmounts.splice(0).forEach((unmount) => unmount());
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
@@ -586,6 +592,280 @@ describe('an answer never lands on a till that has moved on', () => {
 });
 
 describe('payment request identities', () => {
+  const qr = { qrPayload: null, qrImageUrl: null, expiresAt: null, expiryTimerMs: null };
+  const attempt = (status: PaymentAttemptView['status'], extra: Partial<PaymentAttemptView> = {}): PaymentAttemptView => ({
+    ...cashAttempt('sale-1'), id: 'electronic-attempt', method: 'card', provider: 'digio',
+    amountSatang: 54_000, status, ...extra,
+  });
+  const read = (value: PaymentAttemptView, balance: number): PaymentAttemptRead => ({
+    ...qr, attempt: value, deviceLabel: null, responseText: null, outstandingSatang: balance,
+  });
+  const outcome = (sale = apiSale(), extra: Partial<Extract<SaleWriteOutcome, { written: true }>> = {}): SaleWriteOutcome => ({
+    ok: true, written: true, saleId: sale.id, sale, replay: false, ...extra,
+  });
+  function mountPayment(extra: Partial<PaymentStageOptions> = {}) {
+    // The writer cases fake only Date. Reconfigure the clock so the online
+    // controller's poll timers are driven by the same deterministic clock.
+    vi.useRealTimers();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-25T04:00:00.000Z'));
+    vi.spyOn(paymentMethods, 'findPaymentMethod').mockImplementation((id) => {
+      const kind = id === 'park-cash' ? 'cash' : id === 'park-card' ? 'card' : id === 'park-qr' ? 'qr' : null;
+      return kind ? { id, kind, label: id, enabled: true, sortOrder: 0 } : undefined;
+    });
+    const prepareSale = vi.fn<PaymentStageOptions['prepareSale']>().mockResolvedValue(outcome());
+    const finaliseSale = vi.fn<PaymentStageOptions['finaliseSale']>()
+      .mockResolvedValue(outcome(apiSale({ status: 'finalised' }), { finalised: true, outstandingSatang: 0 }));
+    const onComplete = vi.fn<PaymentStageOptions['onComplete']>();
+    const start = vi.spyOn(paymentsApi, 'start').mockResolvedValue({ ...qr, route: 'card_terminal',
+      attempt: attempt('sent_to_terminal'), outstandingSatang: 54_000, replayed: false });
+    const reading = vi.spyOn(paymentsApi, 'read').mockResolvedValue(read(attempt('sent_to_terminal'), 54_000));
+    const inquire = vi.spyOn(paymentsApi, 'inquire').mockResolvedValue({ attempt: attempt('awaiting_staff_confirmation') });
+    const confirm = vi.spyOn(paymentsApi, 'confirm').mockResolvedValue({ attempt: attempt('approved') });
+    const manual = vi.spyOn(paymentsApi, 'manual').mockResolvedValue({ attempt: attempt('approved', { provider: 'manual' }), outstandingSatang: 0, replayed: false });
+    const options: PaymentStageOptions = { scope: 'current', isCurrentScope: (scope) => scope === 'current',
+      totalSatang: 54_000, prepareSale, finaliseSale, onComplete, ...extra };
+    const hook = renderHook((props: PaymentStageOptions) => usePaymentStage(props), options);
+    paymentUnmounts.push(hook.unmount);
+    return { ...hook, options, prepareSale, finaliseSale, onComplete, start, reading, inquire, confirm, manual };
+  }
+
+  it('keeps a failed cash part body and gesture, then gives an equal next part a fresh gesture', async () => {
+    const test = mountPayment();
+    test.finaliseSale.mockResolvedValueOnce({ ok: false, saleId: 'sale-1', retryable: true, message: 'Connection interrupted' })
+      .mockResolvedValueOnce(outcome(apiSale(), { finalised: false, outstandingSatang: 27_000, attempt: cashAttempt('sale-1') }));
+    test.result.current.selectMethod('park-cash');
+    test.result.current.setAmountSatang(27_000);
+    test.result.current.setTenderedSatang(30_000);
+    await test.result.current.submit();
+    expect(test.result.current.locked).toBe(true);
+    test.result.current.selectMethod('park-qr');
+    test.result.current.setAmountSatang(1);
+    await test.result.current.retry();
+    expect(test.finaliseSale.mock.calls[0]).toEqual(test.finaliseSale.mock.calls[1]);
+    expect(test.finaliseSale.mock.calls[0]![0]).toEqual({ method: 'park-cash', kind: 'cash', amountSatang: 27_000, tenderedSatang: 30_000, changeSatang: 3_000 });
+    expect(test.result.current.state.outstandingSatang).toBe(27_000);
+    expect(test.onComplete).not.toHaveBeenCalled();
+    test.result.current.selectMethod('park-cash');
+    await test.result.current.submit();
+    expect(test.finaliseSale.mock.calls[2]![1]).not.toBe(test.finaliseSale.mock.calls[1]![1]);
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps partial money open, then closes confirmed QR money with NO_TENDER exactly once', async () => {
+    const test = mountPayment();
+    test.finaliseSale.mockResolvedValueOnce(outcome(apiSale(), { finalised: false, outstandingSatang: 27_000, attempt: cashAttempt('sale-1') }));
+    test.result.current.selectMethod('park-cash');
+    test.result.current.setAmountSatang(27_000);
+    await test.result.current.submit();
+    expect(test.result.current.canBack).toBe(false);
+    expect(test.onComplete).not.toHaveBeenCalled();
+    test.start.mockResolvedValueOnce({ ...qr, route: 'gateway', attempt: attempt('created', { method: 'qr', provider: '2c2p', amountSatang: 27_000 }), outstandingSatang: 27_000, replayed: false });
+    test.reading.mockResolvedValue(read(attempt('approved', { method: 'qr', provider: '2c2p', amountSatang: 27_000 }), 0));
+    test.result.current.selectMethod('park-qr');
+    await test.result.current.submit();
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(test.finaliseSale.mock.calls[1]![0]).toBeUndefined();
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+    expect(test.onComplete.mock.calls[0]![1].map((part) => part.method)).toEqual(['park-cash', 'park-qr']);
+    await test.result.current.retry();
+    await test.result.current.submit();
+    expect(test.finaliseSale).toHaveBeenCalledTimes(2);
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns declines to selection and exposes only supported terminal recovery actions', async () => {
+    const test = mountPayment();
+    test.start.mockResolvedValueOnce({ ...qr, route: 'card_terminal', attempt: attempt('declined'), outstandingSatang: 54_000, replayed: false });
+    test.result.current.selectMethod('park-card');
+    await test.result.current.submit();
+    expect(test.result.current.state.method).toBeNull();
+    expect(test.result.current.locked).toBe(false);
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    expect(test.onComplete).not.toHaveBeenCalled();
+    test.start.mockResolvedValueOnce({ ...qr, route: 'card_terminal', attempt: attempt('awaiting_staff_confirmation', { provider: 'ghl' }), outstandingSatang: 54_000, replayed: false });
+    test.result.current.selectMethod('park-card');
+    await test.result.current.submit();
+    expect(test.result.current.canConfirm).toBe(true);
+    expect(test.result.current.canInquire).toBe(false);
+    await test.result.current.inquire();
+    expect(test.inquire).not.toHaveBeenCalled();
+  });
+
+  it('never offers terminal confirmation for a gateway anomaly or releases it at QR expiry', async () => {
+    const test = mountPayment();
+    const anomaly = attempt('awaiting_staff_confirmation', { provider: '2c2p', method: 'qr' });
+    test.start.mockResolvedValueOnce({ ...qr, expiresAt: new Date(Date.now() - 1).toISOString(), route: 'gateway', attempt: anomaly, outstandingSatang: 54_000, replayed: false });
+    test.reading.mockResolvedValue(read(anomaly, 54_000));
+    test.result.current.selectMethod('park-qr');
+    await test.result.current.submit();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(test.result.current.locked).toBe(true);
+    expect(test.result.current.canConfirm).toBe(false);
+    expect(test.result.current.canInquire).toBe(false);
+    await test.result.current.confirm(true, { note: 'Checked' });
+    await test.result.current.inquire();
+    expect(test.confirm).not.toHaveBeenCalled();
+    expect(test.inquire).not.toHaveBeenCalled();
+  });
+
+  it.each(['park-card', 'park-cash'])('blocks another charge after a pending reservation refuses %s', async (method) => {
+    const test = mountPayment();
+    if (method === 'park-card') test.start.mockRejectedValueOnce(new ApiError(409, 'PAYMENT_IN_FLIGHT', 'Resolve the pending payment first.'));
+    else test.finaliseSale.mockResolvedValueOnce({ ok: false, saleId: 'sale-1', retryable: false, code: 'PAYMENT_IN_FLIGHT', message: 'Resolve the pending payment first.' });
+    test.result.current.selectMethod(method);
+    await test.result.current.submit();
+    expect(test.result.current.locked).toBe(true);
+    expect(test.result.current.canBack).toBe(false);
+    expect(test.result.current.canSubmit).toBe(false);
+    test.result.current.selectMethod('park-qr');
+    await test.result.current.submit();
+    expect(test.result.current.state.method).toBe(method);
+    expect(test.start.mock.calls.length + test.finaliseSale.mock.calls.length).toBe(1);
+  });
+
+  it('retries an uncertain start with the original token, amount, body and gesture', async () => {
+    const test = mountPayment();
+    test.start.mockRejectedValueOnce(new NetworkError(new Error('Connection lost')));
+    test.result.current.selectMethod('park-qr');
+    test.result.current.setAmountSatang(27_000);
+    await test.result.current.submit();
+    test.result.current.setAmountSatang(54_000);
+    test.result.current.selectMethod('park-cash');
+    await test.result.current.retry();
+    expect(test.start.mock.calls[0]).toEqual(test.start.mock.calls[1]);
+    expect(test.start.mock.calls[0]![0]).toMatchObject({ method: 'park-qr', amountSatang: 27_000 });
+  });
+
+  it('freezes the kind at the start gesture rather than the earlier selection or a later retry', async () => {
+    const test = mountPayment();
+    let kind: 'card' | 'qr' = 'card';
+    vi.mocked(paymentMethods.findPaymentMethod).mockImplementation((id) => ({ id, kind, label: 'Park tender', enabled: true, sortOrder: 0 }));
+    test.result.current.selectMethod('park-card');
+    kind = 'qr';
+    test.start.mockRejectedValueOnce(new NetworkError(new Error('Answer lost')))
+      .mockResolvedValueOnce({ ...qr, route: 'gateway', attempt: attempt('approved', { method: 'qr', provider: '2c2p' }), outstandingSatang: 0, replayed: false });
+    await test.result.current.submit();
+    kind = 'card';
+    await test.result.current.retry();
+    expect(test.start.mock.calls[0]![0]).toMatchObject({ method: 'park-card', kind: 'qr', tender: 'qr' });
+    expect(test.start.mock.calls[1]).toEqual(test.start.mock.calls[0]);
+    expect(test.onComplete.mock.calls[0]![1][0]).toMatchObject({ method: 'park-card', kind: 'qr' });
+  });
+
+  it('drops a stale pending poll after a later staff confirmation has completed', async () => {
+    const test = mountPayment();
+    let answer!: (value: PaymentAttemptRead) => void;
+    test.start.mockResolvedValueOnce({ ...qr, route: 'card_terminal', attempt: attempt('awaiting_staff_confirmation'), outstandingSatang: 54_000, replayed: false });
+    test.reading.mockImplementationOnce(() => new Promise((resolve) => { answer = resolve; }))
+      .mockResolvedValue(read(attempt('approved'), 0));
+    test.result.current.selectMethod('park-card');
+    await test.result.current.submit();
+    await vi.advanceTimersByTimeAsync(1500);
+    await test.result.current.confirm(true, { note: 'Checked the terminal slip' });
+    expect(test.result.current.state.phase).toBe('complete');
+    answer(read(attempt('sent_to_terminal'), 54_000));
+    await Promise.resolve(); await Promise.resolve();
+    expect(test.result.current.state.phase).toBe('complete');
+    expect(test.result.current.state.outstandingSatang).toBe(0);
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries only the read after a successful inquiry whose next read failed', async () => {
+    const test = mountPayment();
+    test.start.mockResolvedValueOnce({ ...qr, route: 'card_terminal', attempt: attempt('unknown'), outstandingSatang: 54_000, replayed: false });
+    test.reading.mockRejectedValueOnce(new NetworkError(new Error('Read failed')))
+      .mockResolvedValue(read(attempt('awaiting_staff_confirmation'), 54_000));
+    test.result.current.selectMethod('park-card');
+    await test.result.current.submit();
+    await test.result.current.inquire();
+    await test.result.current.retry();
+    expect(test.start).toHaveBeenCalledTimes(1);
+    expect(test.inquire).toHaveBeenCalledTimes(1);
+    expect(test.reading).toHaveBeenCalledTimes(2);
+    expect(test.result.current.canConfirm).toBe(true);
+  });
+
+  it('does not apply a paid response to a replacement cart or run its completion', async () => {
+    let scope = 'current';
+    const onLeftBehind = vi.fn();
+    const test = mountPayment({ isCurrentScope: (value) => value === scope, onLeftBehind });
+    let answer!: (value: Awaited<ReturnType<typeof paymentsApi.start>>) => void;
+    let startInvoked!: () => void;
+    const invoked = new Promise<void>((resolve) => { startInvoked = resolve; });
+    test.start.mockImplementationOnce(() => new Promise((resolve) => { answer = resolve; startInvoked(); }));
+    test.result.current.selectMethod('park-card');
+    const sending = test.result.current.submit();
+    await invoked;
+    scope = 'replacement';
+    test.rerender({ ...test.options, scope });
+    answer({ ...qr, route: 'card_terminal', attempt: attempt('approved'), outstandingSatang: 0, replayed: false });
+    await sending;
+    expect(test.result.current.state.saleId).toBeNull();
+    expect(test.onComplete).not.toHaveBeenCalled();
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    expect(onLeftBehind).toHaveBeenCalledWith('sale-1');
+  });
+
+  it('records manual approval and TID using the configured token before a zero-tender close', async () => {
+    const test = mountPayment();
+    test.start.mockResolvedValueOnce({ ...qr, route: 'manual', attempt: null, outstandingSatang: 54_000, replayed: false });
+    test.result.current.selectMethod('park-card');
+    await test.result.current.submit();
+    await test.result.current.manual({ approvalCode: 'TOO-LONG-APPROVAL', tid: 'terminal-1' });
+    expect(test.manual).not.toHaveBeenCalled();
+    await test.result.current.manual({ approvalCode: 'APPROVED', tid: 'terminal-1' });
+    expect(test.manual.mock.calls[0]![0]).toMatchObject({ method: 'park-card', amountSatang: 54_000, approvalCode: 'APPROVED', tid: 'terminal-1' });
+    expect(test.finaliseSale.mock.calls[0]![0]).toBeUndefined();
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes a zero sale without creating an attempt and disables new collection while offline', async () => {
+    const sale = apiSale();
+    sale.totals.grossSatang = 0;
+    const test = mountPayment({ totalSatang: 0, prepareSale: vi.fn().mockResolvedValue(outcome(sale)) });
+    await test.result.current.submit();
+    expect(test.start).not.toHaveBeenCalled();
+    expect(test.finaliseSale.mock.calls[0]![0]).toBeUndefined();
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+    test.unmount();
+    vi.stubGlobal('navigator', { onLine: false });
+    const offline = mountPayment();
+    offline.result.current.selectMethod('park-card');
+    await offline.result.current.submit();
+    expect(offline.result.current.canSubmit).toBe(false);
+    expect(offline.prepareSale).not.toHaveBeenCalled();
+  });
+
+  it('preserves the pending-reservation code through the writer outcome', async () => {
+    const writer = mountWriter();
+    await writer.result.current.commit(order(1));
+    finalise.mockRejectedValueOnce(new ApiError(409, 'PAYMENT_IN_FLIGHT', 'Resolve the pending payment first.'));
+    await expect(writer.result.current.finalise(cashPart)).resolves.toMatchObject({ ok: false, code: 'PAYMENT_IN_FLIGHT', retryable: false });
+  });
+
+  it('keeps payment context locked until both independent surfaces release it', async () => {
+    const { setPaymentContextLocked, getPaymentContextLocked, subscribePaymentContextLocked } = await import('@/pwa/openSale');
+    const changed = vi.fn();
+    const unsubscribe = subscribePaymentContextLocked(changed);
+    try {
+      setPaymentContextLocked('test-ticket-payment', true);
+      setPaymentContextLocked('test-food-payment', true);
+      expect(getPaymentContextLocked()).toBe(true);
+      expect(changed).toHaveBeenCalledTimes(1);
+      setPaymentContextLocked('test-ticket-payment', false);
+      expect(getPaymentContextLocked()).toBe(true);
+      expect(changed).toHaveBeenCalledTimes(1);
+      setPaymentContextLocked('test-food-payment', false);
+      expect(getPaymentContextLocked()).toBe(false);
+      expect(changed).toHaveBeenCalledTimes(2);
+    } finally {
+      setPaymentContextLocked('test-ticket-payment', false);
+      setPaymentContextLocked('test-food-payment', false);
+      unsubscribe();
+    }
+  });
+
   it('retries an equal split part under one key and gives its next deliberate part another key', async () => {
     const actual = await vi.importActual<typeof import('@/api/sales')>('@/api/sales');
     const post = vi.spyOn(api, 'post').mockResolvedValue({});

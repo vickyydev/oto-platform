@@ -7,7 +7,12 @@ Resume the remaining Sprint 2 software in the plan's order. The active Jira
 sprint is id 3, named Sprint 2 - Complete build. Parallel work is authorised.
 Write new history and progress comments about OTO Park and the park.
 
-Main is `b02f7e0`; the completed work branch `fix/payment-prerequisites`, based
+Main is `5fb8525`. Exact-source branch CI 36521169654 and main CI 36521266122
+are green; main passed on one failed-job rerun after an existing concurrent
+voucher assertion. No voucher source/test was changed. The single staging
+deployment put API, POS, Console, Launcher and Booth live on `5fb8525`;
+the OTO App remains `c416065`.
+The completed work branch `fix/payment-prerequisites`, based
 on `a4a79d7`, is preserved. The first batch is SCRUM-391, SCRUM-388 and
 SCRUM-382. All three are Deployed, with starting, implementation and landing
 comments. SCRUM-206 remains In Progress.
@@ -66,11 +71,20 @@ keeps successful partial tenders committed, with authoritative remaining money.
 Epoch and sale-identity guards reject stale adoption after cart change, reset
 and unmount. All 38 tests in the existing sale-writer file pass, including API
 body/key contracts, split completion and stale responses. POS typecheck, package
-lint and independent review pass. No till UI has been wired and this branch
-has not deployed. The checkpoint is on the work branch; main and staging stay
-on the previous release while the complete workflow is built.
+lint and independent review pass. Foundation `2f694e1` is now deployed.
+UI work is isolated on `feat/payment-stage-ui` at
+`test-results/payment-ui-worktree`: the shared controller and adapters for the
+till, handheld till, food station and shop are implemented locally, including
+the mobile food-station caller. Pending/partial money locks cart, context and
+navigation controls. Gestures retain original tokens, amounts and keys; late
+responses are fenced, and completion follows a finalised sale. Paid ticket
+orders retry local completion without another charge. Existing writer checks
+pass 53; POS typecheck, package lint
+and production build pass. GHL permits staff confirmation without unsupported
+inquiry. This separate source checkpoint is not deployed; native staging UI
+proof is still pending.
 
-SCRUM-387 is Testing on the work branch. Its changes keep the first transaction's answer,
+SCRUM-387 is Testing on main. Its changes keep the first transaction's answer,
 cache complete inquiry/confirmation envelopes, remove internal drawer routing
 from sale replies and preserve complete print responses. Existing affected
 tests pass (147 in five files); API typecheck and lint pass. Test print/reprint
@@ -80,12 +94,14 @@ first transaction releases response ownership for a successful skipped fallback.
 No new defect ticket.
 
 SCRUM-452 is Testing, the new spin-duration task in sprint 3, linked to SCRUM-198.
-The ten-second default and whole-second Console control (2-20) are implemented on the work branch. A duration is frozen for each spin; it travels through the existing
+The ten-second default and whole-second Console control (2-20) are on main.
+A duration is frozen for each spin; it travels through the existing
 publish flow and cached bundle. Default 10 is omitted from published settings
 to preserve old version/hash bytes. Migration 0028 passed 22 existing DB tests;
 shared 13, wheel 5 and API 44 tests, all touched typechecks/lint pass (84 tests
-total). Separate source commits, then one deployment with SCRUM-387, staging
-proof and a verified CI-packed Pi release. Update the physical Pi before
+total). Source commit `3dd57d4` and SCRUM-387's `233113e`/`5fb8525` deployed
+together; staging proof is running. A verified CI-packed Pi release is on the
+Desktop. Update the physical Pi before
 publishing a non-default duration; cloud deployment alone does not update it.
 
 Continue SCRUM-206 Slice F. Its UI must use the

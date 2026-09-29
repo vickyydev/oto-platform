@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
   FnbOrder,
@@ -11,25 +11,34 @@ import {
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import {
-  getMenuItems,
-  chargeFnbCredit,
   redeemPrepaidItem,
   getDiscountReasons,
   recordFnbOrder,
 } from '@/mockApi';
 import {
-  computeFnbTotals,
   computeLineTotal,
   hasModifiers,
   modifierSignature,
 } from '@/lib/fnb';
 import { dropDiscountsForRemovedLines } from '@/lib/manualDiscount';
 import { dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
+import { useBranch } from '@/branch/BranchContext';
+import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { getDefaultTier } from '@/store/catalogStore';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { buildItemCartPayload, offLedgerOnly, type ApiSale, type ItemCartIdentity } from '@/api/sales';
+import { useItemCartQuote } from '@/lib/cartQuote';
+import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
+import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
+import { setPaymentContextLocked } from '@/pwa/openSale';
+import { PriceSourceNote } from '@/components/till/SaleWriteStatus';
+import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
+import { toast } from '@/hooks/use-toast';
 
 import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
-import { FnbPayment, FnbPaymentResult, FnbMethod, FnbRemainder } from '@/components/fnb/FnbPayment';
+import { FnbPayment, fnbPaymentResult } from '@/components/fnb/FnbPayment';
 import { FnbConfirmation } from '@/components/fnb/FnbConfirmation';
 import { FoodConsentModal } from '@/components/fnb/FoodConsentModal';
 import { PickupCodeModal } from '@/components/fnb/PickupCodeModal';
@@ -44,7 +53,6 @@ import {
   Ban,
   Hash,
   Wallet,
-  QrCode as QrCodeIcon,
   StickyNote,
   CheckCircle2,
   Gift,
@@ -61,9 +69,14 @@ let lineCounter = 100;
 export function MobileOrderStation() {
   const { operator } = useOperator();
   const { station } = useStation();
+  const { branch } = useBranch();
   const { t } = useLanguage();
   const [, navigate] = useLocation();
-  const menuItems = useMemo(() => getMenuItems(), []);
+  const { menuItems } = useCatalogStore();
+  const saleWriter = useSaleWriter();
+  const orderEpochRef = useRef(0);
+  const completedSaleRef = useRef<string | null>(null);
+  const paymentSnapshotRef = useRef<{ epoch: number; scope: string; prepare: () => Promise<SaleWriteOutcome>; complete: (sale: ApiSale, settlements: readonly PaymentSettlement[]) => void } | null>(null);
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
@@ -76,8 +89,6 @@ export function MobileOrderStation() {
   const [pickupCode, setPickupCode] = useState('');
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [showCartSheet, setShowCartSheet] = useState(false);
-  const [payMethod, setPayMethod] = useState<FnbMethod | null>(null);
-  const [payRemainder, setPayRemainder] = useState<FnbRemainder>('card');
   const [handoffMode, setHandoffMode] = useState<HandoffMode>(null);
 
   // Modifier sheet state
@@ -92,11 +103,27 @@ export function MobileOrderStation() {
 
   const lines = cart;
 
-  const fnbTotals = useMemo(
-    () => computeFnbTotals(lines, manualDiscounts),
-    [lines, manualDiscounts],
-  );
-  const { total, manualAmounts } = fnbTotals;
+  const orderIdentity: ItemCartIdentity | null = useMemo(() => {
+    const branchId = apiBranchIdForSlug(branch.id);
+    if (!branchId || !station?.stationId || !operator) return null;
+    return {
+      branchId, stationId: station.stationId, tier: getDefaultTier()?.id ?? 'tourist', channel: 'fnb',
+      pickupCode: pickupCode || null, memberId: null, customerPhone: null, customerNickname: null,
+      accountId: operator.id, accountName: operator.name,
+    };
+  }, [branch.id, station?.stationId, operator, pickupCode]);
+  const orderQuote = useItemCartQuote({ kind: 'fnb', lines, manualDiscounts, identity: orderIdentity, enabled: stage !== 'confirmation' });
+  const { total, manualAmounts } = orderQuote.totals;
+  const displayLines = useMemo(() => lines.map((line) => orderQuote.quote.lineTotals?.[line.id] === undefined
+    ? line : { ...line, lineTotal: orderQuote.quote.lineTotals[line.id] }), [lines, orderQuote.quote.lineTotals]);
+  const paymentEpoch = orderEpochRef.current;
+  const paymentScope = JSON.stringify([paymentEpoch, orderIdentity, lines, manualDiscounts, orderNote]);
+  const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
+  paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
+  const paymentContextCurrent = (): boolean => orderEpochRef.current === paymentEpoch && paymentScopeRef.current.scope === paymentScope;
+  const notePaymentLeftBehind = (saleId: string) => {
+    if (saleId) toast({ title: 'Check the previous order in History', description: `The payment answer belongs to sale ${saleId}. This station changed, so no local order was completed or printed.`, variant: 'destructive' });
+  };
 
   const quantities = useMemo(() => {
     const map: Record<string, number> = {};
@@ -279,6 +306,10 @@ export function MobileOrderStation() {
   };
 
   const resetOrder = () => {
+    orderEpochRef.current += 1;
+    saleWriter.reset();
+    completedSaleRef.current = null;
+    paymentSnapshotRef.current = null;
     setStage('scan');
     setWristband(null);
     setCart([]);
@@ -289,8 +320,6 @@ export function MobileOrderStation() {
     setPickupCode('');
     setShowPickupModal(false);
     setShowCartSheet(false);
-    setPayMethod(null);
-    setPayRemainder('card');
     setHandoffMode(null);
     setShowFoodConsent(false);
     setPendingItem(null);
@@ -302,35 +331,49 @@ export function MobileOrderStation() {
   const handlePickupConfirm = (code: string) => {
     setPickupCode(code);
     setShowPickupModal(false);
-    const balance = wristband?.creditBalanceTHB ?? 0;
-    setPayMethod(balance > 0 ? 'credit' : null);
-    setPayRemainder('card');
     // Show the order to the customer for review before charging
     setHandoffMode('review');
   };
 
   // Customer finished reviewing → proceed to payment step
   const handleReviewDone = () => {
+    if (orderQuote.pending || orderQuote.error?.kind === 'refusal') {
+      toast({ title: 'Recheck this order', description: orderQuote.error?.message ?? 'Wait for the order price before taking payment.', variant: 'destructive' });
+      return;
+    }
     setHandoffMode(null);
     setStage('payment');
   };
 
-  const handleConfirmPayment = (payment: FnbPaymentResult) => {
-    if (!operator) return;
-    // Station must be configured before we can record + dispatch print jobs.
-    // Matches the iPad guard: the order is NOT recorded until station is set.
+  const recordOrderOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
+    const refused = (message: string): SaleWriteOutcome => ({ ok: false, saleId: saleWriter.committed?.id ?? '', message, retryable: false });
     if (!station) {
       promptSetupStation(navigate);
-      return;
+      return refused('Set up this station before taking payment.');
     }
-    let balanceAfter: number | null = null;
-    if (wristband && payment.creditUsed > 0) {
-      balanceAfter = chargeFnbCredit(wristband.id, payment.creditUsed, operator?.name);
-    } else if (wristband) {
-      balanceAfter = wristband.creditBalanceTHB;
+    if (!orderIdentity) return refused('This device is not on a platform station.');
+    const prepaidOnly = offLedgerOnly(lines);
+    if (prepaidOnly) return refused(prepaidOnly);
+    if (orderQuote.pending || orderQuote.error?.kind === 'refusal') return refused(orderQuote.error?.message ?? 'Wait for the order price.');
+    if (orderEpochRef.current !== epoch || !paymentContextCurrent()) return refused('This order or station changed before it could be saved.');
+    const cartPayload = buildItemCartPayload(displayLines, manualDiscounts, orderIdentity, total, {
+      mode: orderQuote.quote.pricingMode, modeReason: orderQuote.quote.pricingModeReason,
+    });
+    const outcome = await saleWriter.commit({ cart: cartPayload, finalise: false });
+    if ((orderEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
+      toast({ title: 'An order was saved for the previous guest', description: `Order ${outcome.sale.receiptNumber ?? outcome.saleId} is recorded; nothing was printed for it. Find it in the sale list.`, variant: 'destructive' });
     }
+    return outcome;
+  };
 
-    // Commit prepaid item redemptions — mirror chargeFnbCredit but for entitlements.
+  const handleConfirmPayment = (written: ApiSale, settlements: readonly PaymentSettlement[]) => {
+    if (!paymentContextCurrent() || written.stationId !== orderIdentity?.stationId) { notePaymentLeftBehind(written.id); return; }
+    if (!operator || !station || written.status !== 'finalised' || completedSaleRef.current === written.id) return;
+    completedSaleRef.current = written.id;
+    const payment = fnbPaymentResult(settlements);
+    const balanceAfter = wristband?.creditBalanceTHB ?? null;
+
+    // Commit prepaid item redemptions only after the sale is finalised.
     if (wristband) {
       for (const line of lines.filter((l) => l.isPrepaid)) {
         redeemPrepaidItem(wristband.id, line.menuItem.id, line.qty);
@@ -342,9 +385,9 @@ export function MobileOrderStation() {
       operatorId: operator.id,
       operatorName: operator.name,
       wristband: wristband ?? undefined,
-      lines,
+      lines: displayLines,
       manualDiscounts,
-      total,
+      total: written.totals.grossSatang / 100,
       pickupCode,
       orderNote: orderNote.trim() || undefined,
       payment,
@@ -361,25 +404,33 @@ export function MobileOrderStation() {
     dispatchPrintJobs(fnbPrintJobs(station, order));
   };
 
-  // When staff picks QR/PromptPay on the payment step, show the QR to the customer
-  const handleMethodChange = (m: FnbMethod) => {
-    setPayMethod(m);
-    if (m === 'promptpay') {
-      setHandoffMode('qr');
-    } else {
-      setHandoffMode(null);
-    }
+  if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
+    paymentSnapshotRef.current = { epoch: paymentEpoch, scope: paymentScope, prepare: () => recordOrderOnPlatform(paymentEpoch), complete: handleConfirmPayment };
+  }
+  const paymentStage = usePaymentStage({
+    scope: paymentScope, isCurrentScope: (scope) => scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
+    active: stage === 'payment', totalSatang: Math.round(total * 100),
+    prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordOrderOnPlatform(paymentEpoch), finaliseSale: saleWriter.finalise,
+    onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
+    onLeftBehind: notePaymentLeftBehind,
+  });
+  const paymentContextLocked = stage === 'payment' && (paymentStage.locked || paymentStage.state.settlements.length > 0);
+  useEffect(() => {
+    setPaymentContextLocked('mobile-fnb', paymentContextLocked);
+    return () => setPaymentContextLocked('mobile-fnb', false);
+  }, [paymentContextLocked]);
+  const backFromPayment = () => {
+    if (!paymentStage.canBack) return;
+    orderEpochRef.current += 1;
+    paymentSnapshotRef.current = null;
+    setHandoffMode(null);
+    setStage('order');
   };
+  const qrAttemptId = paymentStage.display.online && paymentStage.display.status === 'pending'
+    && (paymentStage.display.qrPayload || paymentStage.display.qrImageUrl) ? paymentStage.state.attempt?.id : null;
+  useEffect(() => { if (qrAttemptId) setHandoffMode('qr'); }, [qrAttemptId]);
 
   const balance = wristband?.creditBalanceTHB ?? 0;
-  const creditUsedAmount = Math.min(balance, total);
-  const remainderAfterCredit = total - creditUsedAmount;
-  const promptpayAmount =
-    payMethod === 'promptpay'
-      ? total
-      : payMethod === 'credit' && remainderAfterCredit > 0 && payRemainder === 'promptpay'
-        ? remainderAfterCredit
-        : null;
 
   // ── Customer-facing review content (no allergy info ever) ─────────────────
 
@@ -404,7 +455,7 @@ export function MobileOrderStation() {
       )}
 
       <div className="flex-1 space-y-2 mb-4">
-        {lines.map((line) => (
+        {displayLines.map((line) => (
           <div key={line.id} className="flex items-center justify-between gap-3 py-2 border-b border-white/10">
             <div className="min-w-0 flex-1">
               <span className="font-bold tabular-nums mr-1">{line.qty}×</span>
@@ -443,7 +494,7 @@ export function MobileOrderStation() {
       <div className="text-center mb-6">
         <p className="text-muted-foreground text-sm mb-1">Scan to pay</p>
         <div className="text-4xl font-black tabular-nums text-primary">
-          ฿{promptpayAmount ?? total}
+          ฿{paymentStage.display.amountSatang / 100}
         </div>
         {pickupCode && (
           <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full border border-white/20 bg-white/10 text-sm text-white/70">
@@ -453,15 +504,12 @@ export function MobileOrderStation() {
           </div>
         )}
       </div>
-      {/* QR placeholder — same pattern as MobileTill uses */}
-      <div className="w-56 h-56 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-xl">
-        <div className="flex flex-col items-center gap-2 text-slate-800">
-          <QrCodeIcon className="w-20 h-20" />
-          <span className="text-xs font-bold text-slate-500">Thai QR / PromptPay</span>
-        </div>
-      </div>
+      {qrAttemptId && <div className="rounded-2xl bg-white p-4 mb-6 shadow-xl">
+        <PaymentQr payload={paymentStage.display.qrPayload} imageUrl={paymentStage.display.qrImageUrl} className="h-56 w-56" />
+      </div>}
+      {qrAttemptId && <PaymentExpiry expiresAt={paymentStage.display.expiresAt} />}
       <p className="text-center text-sm text-muted-foreground max-w-xs">
-        Ask the customer to scan this code with their banking app to pay.
+        {!paymentStage.display.online ? t('till.payment.reconnect') : paymentStage.display.status === 'paid' ? t('till.payment.received') : paymentStage.display.status === 'pending' ? t('fnb.payment.waiting') : t('till.payment.checking')}
       </p>
     </div>
   );
@@ -580,7 +628,7 @@ export function MobileOrderStation() {
                         Prepaid credit · {wristband.holderName ?? wristband.customerNickname}
                       </span>
                       <div className="text-sm text-violet-200/80 mt-0.5">
-                        ฿{wristband.creditBalanceTHB} remaining — spends like credit at checkout.
+                        ฿{wristband.creditBalanceTHB} remaining. Credit payments are not available at this station.
                       </div>
                     </div>
                   </div>
@@ -591,6 +639,7 @@ export function MobileOrderStation() {
             {/* Order note bar */}
             <div className="shrink-0 px-4 pt-2 pb-1">
               <OrderNoteBar value={orderNote} onChange={setOrderNote} />
+              <PriceSourceNote quote={orderQuote.quote} pending={orderQuote.pending} />
             </div>
 
             {/* Menu — fills remaining space */}
@@ -604,7 +653,7 @@ export function MobileOrderStation() {
             open={showCartSheet}
             onOpenChange={setShowCartSheet}
             wristband={wristband}
-            lines={lines}
+            lines={displayLines}
             manualDiscounts={manualDiscounts}
             manualAmounts={manualAmounts}
             onChangeQty={handleChangeQty}
@@ -615,7 +664,13 @@ export function MobileOrderStation() {
               setManualDiscounts((prev) => prev.filter((md) => md.id !== id))
             }
             onSwitchTab={resetOrder}
-            onCheckout={() => setShowPickupModal(true)}
+            onCheckout={() => {
+              if (orderQuote.pending || orderQuote.error?.kind === 'refusal') {
+                toast({ title: 'Recheck this order', description: orderQuote.error?.message ?? 'Wait for the order price.', variant: 'destructive' });
+                return;
+              }
+              setShowPickupModal(true);
+            }}
           />
         </>
       )}
@@ -624,20 +679,13 @@ export function MobileOrderStation() {
       {stage === 'payment' && (
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="min-h-full">
+          {qrAttemptId && <Button variant="outline" className="mx-6 mt-4" onClick={() => setHandoffMode('qr')}>{t('handToCustomer.scanQrTitle')}</Button>}
           <FnbPayment
             total={total}
             wristband={wristband}
             pickupCode={pickupCode}
-            method={payMethod}
-            remainder={payRemainder}
-            onMethodChange={handleMethodChange}
-            onRemainderChange={(r) => {
-              setPayRemainder(r);
-              if (r === 'promptpay') setHandoffMode('qr');
-              else setHandoffMode(null);
-            }}
-            onConfirm={handleConfirmPayment}
-            onBack={() => setStage('order')}
+            stage={paymentStage}
+            onBack={backFromPayment}
           />
           </div>
         </div>
@@ -672,12 +720,9 @@ export function MobileOrderStation() {
         <HandToCustomer
           title={t('handToCustomer.scanQrTitle')}
           subtitle={t('handToCustomer.scanQrSubtitle')}
-          handBackLabel={t('handToCustomer.paymentReceivedHandBack')}
+          handBackLabel={t('handToCustomer.handBackDefault')}
           onDone={() => setHandoffMode(null)}
-          onCancel={() => {
-            setPayMethod(null);
-            setHandoffMode(null);
-          }}
+          onCancel={() => setHandoffMode(null)}
         >
           {qrContent}
         </HandToCustomer>
@@ -696,7 +741,7 @@ export function MobileOrderStation() {
         <ManualDiscountModal
           open={showDiscountModal}
           onOpenChange={setShowDiscountModal}
-          subtotal={fnbTotals.subtotal}
+          subtotal={orderQuote.totals.subtotal}
           lines={lines.map((l) => ({
             id: l.id,
             label: `${l.qty}× ${l.menuItem.name}`,

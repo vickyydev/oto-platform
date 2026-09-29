@@ -50,27 +50,43 @@ are saved. Jira attachments 10855-10860 provide native Console/POS screens and
 clearly labelled API test-run cards. The History capture used the native station
 picker and reused the passing checks without repeating financial tests.
 
-Independent Slice F work has started on `feat/payment-stage`, from checkpoint
-`11d216d`. Its shared foundation adds the cloud payment client, keeps partial
+Main now includes the Slice F foundation and current release batch at `5fb8525`.
+Exact-source branch CI 36521169654 and main CI 36521266122 are green. Main passed
+on one failed-job rerun after an existing concurrent voucher assertion; no
+voucher source or test was changed. One staging deployment put API, POS,
+Console, Launcher and Booth live on `5fb8525`; the OTO App remains `c416065`.
+The foundation adds the cloud payment client, keeps partial
 tenders in the writer's committed state, gives deliberate split parts separate
 stable identities, and closes settled payments with explicit `NO_TENDER`.
 Late responses are fenced by sale identity and epoch, including cart changes,
 reset and unmount. All 38 tests in the existing sale-writer file pass, as do
-POS typecheck, package lint and independent review. This branch has not deployed.
-SCRUM-387 is Testing on the work branch: first-transaction response ownership, complete
+POS typecheck, package lint and independent review. The foundation is deployed.
+SCRUM-387 is Testing on main: first-transaction response ownership, complete
 inquiry/confirmation envelopes and public sale/print responses are implemented;
 all 147 tests in five existing files, API typecheck and lint pass. Test print
 and reprint now commit their job, command, audit and complete answer together;
 six failure/retry cases prove rollback and one effect.
-SCRUM-452 is Testing on the work branch: the Lucky Wheel gets a ten-second default and a
+SCRUM-452 is Testing on main: the Lucky Wheel gets a ten-second default and a
 Console draft setting for whole seconds from 2 to 20. Migration 0028 passed
 22 existing database tests and DB typecheck/lint; shared and wheel tests and
 all touched front-end/API typechecks and lint pass. Existing API booth files
 pass 44 tests (84 tests across the spin-duration changes).
-SCRUM-387 is committed as 233113e; both parts will land together in one
-deployment after separate source commits.
+SCRUM-387 is committed as `233113e` with atomic print follow-up `5fb8525`;
+SCRUM-452 is `3dd57d4`. Both parts are live and stay Testing until staging
+proof is reviewed and attached.
 
-The four-screen Slice F workflow remains unbuilt. Its complete offline and separate-display acceptance
+The four-screen Slice F workflow is implemented locally in the isolated
+`feat/payment-stage-ui` checkout under `test-results/payment-ui-worktree`.
+The till, handheld till, food station and shop share one controller; the mobile
+food-station caller is included. Pending/partial money locks cart, context and
+navigation controls. Payment gestures retain their original tokens, amounts
+and keys; late responses are fenced, and completion follows a finalised sale.
+An already-paid ticket order can retry local completion without a new charge.
+The existing writer suite passes 53 checks;
+POS typecheck, package lint and production build pass. The GHL capability guard
+permits staff confirmation without offering unsupported inquiry. This separate
+source checkpoint is not deployed; native staging UI proof is still pending.
+Its complete offline and separate-display acceptance
 also needs the existing SCRUM-269/285 and S2-08 seams. Real 2C2P sandbox
 confirmation still needs credentials; the simulator is available for approved proof.
 
