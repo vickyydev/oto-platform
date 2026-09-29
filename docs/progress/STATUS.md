@@ -1,5 +1,14 @@
 # Current status - read this first when resuming
 
+_Last updated: 2026-09-30, 06:43 Bangkok. Two lanes: this one landed and proved
+S2-11 (SCRUM-208, commit `cc61e716`, 23 staging proofs attached) and is fixing
+the walkthrough's findings in wf_1ac0bade-dbd before re-proof and Deployed;
+SCRUM-256 and 201 are Deployed; 423's remainder is in flight; CI is trimmed and
+green again now the repository is public. The Codex lane lifts the OTO App
+(SCRUM-193/453). Next story here: the offline-selling cluster (SCRUM-269+).
+The newest STOP POINT block in SESSION_HANDOVER.md carries the detail._
+
+
 ## Active OTO App lane - 30 September 2026
 
 SCRUM-193 (S2-17b) is In Progress on `feat/oto-app-lift`, in parallel with the printing lane. SCRUM-261 and SCRUM-262 are Deployed with named staging cards attached. The contract/letter/BEO PDF (`d7e0156c`), employee-document/Excel-preview (`b3af4e52`), payroll-file (`649735bf`), malformed payslip-ID guard (`54a5d714`) and scheduling/My Shifts (`f0f1bf2f`) slices are live on oto-app-staging. Staging health and anonymous access guards passed; positive authenticated module walkthroughs remain open. Locally, payroll's four CSVs and one PDF round-tripped through MinIO, admin API downloads and all four Exports-screen downloads passed, and staff attempts were refused. Organization/access browser checks passed 9/9; the sign-on contract check passed; HR/attendance checks reached 18/18 after updating three pre-lift test assumptions. Scheduling fixed a Sunday-plan read gap and passed 16/16 existing checks. Tasks, checklists and Fix Board passed 22 existing checks after repairing stale test setup. Events, BEO and camps passed six browser checks plus event-color logic and an isolated archived-reconciliation check. The build passed; app typecheck stays at 578 inherited errors with no edited-line diagnostics, and edited-line lint is clear. The scheduled-job audit is blocked on a platform job-run write contract, advisory-lock ownership and Health/Failures visibility; that need is commented on SCRUM-193. Evidence is in `docs/qa/oto-app-lift/`. Only `apps/oto-app/**`, `docs/qa/**`, and this lane's progress blocks are editable here. Needs from the platform lane: S2-17b POS views, job-run integration and CI restore rehearsal.

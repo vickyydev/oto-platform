@@ -1,5 +1,40 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT — 30 September 2026, night — S2-11 landed and proven, its findings in a fix round
+
+Two lanes ran all day under AGENTS.md "Two parallel lanes". This lane (platform):
+**SCRUM-208 (S2-11) is BUILT, LANDED (`cc61e716`) and PROVEN on staging** — the
+story round (platform → box+print ∥ pos → integration gate, all suites green,
+~3,000 tests, the gate's seam test kept as `apps/api/test/sales-printing-box-seam.test.ts`),
+the gate's four findings fixed before landing (virtual box band key, BAND_HMAC_KEY
+in .env.example and set on staging Render — value nowhere recorded, a station
+prefix rule at the station save, minting failure degrades to a note). CI went
+green once the owner made the repository public; the fleet deployed (migration
+0034 ran). The staging walkthrough attached 23 images to SCRUM-208 and CAUGHT
+REAL DEFECTS — the till drops the visit so kids bands print nameless; the food
+station never sends the member so the printed kitchen ticket lacks the allergy
+line (safety-relevant); dishonest food confirmation; reprint attribution lost on
+reload; refunded bands stay active (decision: revoke on whole-sale refund) —
+being fixed NOW in round wf_1ac0bade-dbd (pos on the Opus 4.8 trial, platform,
+console labels; checks on Fable). After it lands: redeploy, re-prove the two
+failed captures (kids band with child+allergy; kitchen ticket allergy),
+correct PLAYTEST_GUIDE.md's mismatched wording (list in the proof report,
+task wuxaj8jr9), then SCRUM-208 → Deployed. Also today: SCRUM-201 closed by
+the other lane; SCRUM-256 Deployed on the green run card; SCRUM-423's parked
+remainder running (wf_460e71f5-d30: undo notes for 0021/0022 WITHOUT touching
+applied SQL, box/booth/shared test hygiene); CI trimmed (`b7fd246d`:
+cancel-in-progress + What-changed gates, conservative fallback); the arrival
+plan written (docs/progress/plans/arrival/PLAN.md, 15 decisions);
+PLAYTEST_GUIDE.md issued; Twilio's new Verify-route variables recorded
+(OPEN_QUESTIONS §3: the auth token in .env is still 13 chars — owner re-pastes;
+the trial API key pair must be removed; TWILIO_VERIFY_SERVICE_SID is now a
+known env var; the verify adapter is a small build after the token works).
+Waiting on the owner (OPEN_QUESTIONS top): the card-refund-after-window
+question; the arrival plan's decisions. NEXT after 208 closes: the
+offline-selling cluster (SCRUM-269 + 270 + 271 + 295), which also closes
+SCRUM-206/205; the other lane continues SCRUM-193 (its voucher-contract
+question answered on the ticket: the module counts as moved, nothing rebuilt).
+
 ## STOP POINT - 30 September 2026 - SCRUM-193 OTO App lane, scheduling checkpoint
 
 This block belongs to the OTO App lane on `feat/oto-app-lift`; the printing lane's stop block is separate. SCRUM-193 remains In Progress. SCRUM-261 and SCRUM-262 are Deployed with named staging cards attached and Jira comments checked. Their kiosk-security source landed at `5bdf2623` and is live on oto-app-staging (`dep-dau21rrncjis73aetds0`). The isolated 12-case kiosk spec, configured-device ceilings, and staging configured-device checks passed; see `docs/qa/oto-app-lift/README.md`.
