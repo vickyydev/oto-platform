@@ -45,7 +45,6 @@ import {
 } from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import {
-  NO_TENDER,
   buildCartPayload,
   claimVerifiedTier,
   promoChargeSatang,
@@ -55,11 +54,11 @@ import {
   type ApiSale,
   type CartIdentity,
   type SaleCartPayload,
-  type SaleTenderPayload,
 } from '@/api/sales';
-import { paymentMethodKind } from '@/lib/payments';
+import { paymentMethodLabel } from '@/lib/payments';
 import { useCartQuote } from '@/lib/cartQuote';
-import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
+import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
+import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { useScannerBurst } from '@/lib/scannerBurst';
 import { vouchersApi } from '@/api/vouchers';
@@ -132,6 +131,13 @@ export default function Till() {
    * reads one set of totals.
    */
   const saleWriter = useSaleWriter();
+  const completedPaymentRef = useRef<string | null>(null);
+  const [completionRetry, setCompletionRetry] = useState<{
+    sale: ApiSale;
+    settlements: readonly PaymentSettlement[];
+    epoch: number;
+    scope: string;
+  } | null>(null);
   /**
    * S2-10b (SCRUM-207) — the Lucky Wheel voucher on this cart: looked up and
    * held by the platform, priced by the quote, used up when the sale is paid
@@ -525,6 +531,7 @@ export default function Till() {
   const resetSale = () => {
     saleEpochRef.current += 1;
     saleWriter.reset();
+    setCompletionRetry(null);
     voucher.reset();
     setVoucherUsed(null);
     setCancelRefusal(null);
@@ -1198,14 +1205,17 @@ export default function Till() {
    */
   const handleCancel = async () => {
     // The money is being recorded: its answer decides what shows next.
-    if (saleWriter.state.kind === 'finalising') return;
+    if (completionRetry || saleWriter.state.kind === 'finalising' || !paymentStage.canBack) return;
     const epoch = saleEpochRef.current;
     setCancelRefusal(null);
     const cancelled = await saleWriter.cancel(CANCELLED_AT_THE_TILL);
     if (saleEpochRef.current !== epoch) return;
     if (!cancelled.ok) {
-      if (cancelled.closed && (pendingPaymentMethod || saleOwesNothing)) {
-        void completeSale(epoch);
+      if (cancelled.closed) {
+        const outcome = await preparePaymentSale(epoch, paymentScope);
+        if (saleEpochRef.current === epoch && outcome.ok && outcome.written) {
+          completeSale(outcome.sale, paymentStage.state.settlements);
+        }
         return;
       }
       setCancelRefusal(cancelled.message);
@@ -2155,15 +2165,7 @@ export default function Till() {
   };
 
   const handleCompletePayment = () => {
-    if (!preflightSale()) return;
-    // A method is chosen for every sale that owes something (L38).
-    if (!pendingPaymentMethod && !saleOwesNothing) return;
-    // NOTHING BELOW THE PLATFORM'S ANSWER RUNS UNTIL IT ANSWERS (S2-09a): no
-    // receipt, no band, no wallet, no confirmation screen. A refusal leaves the
-    // till on this screen with the failure panel and the same sale waiting, so
-    // a second press finishes the sale that was started rather than starting a
-    // second one.
-    void completeSale(saleEpochRef.current);
+    void paymentStage.submit();
   };
 
   /**
@@ -2235,10 +2237,10 @@ export default function Till() {
       : `This cart could not be priced by the platform's engine: ${cart.quote.reason ?? 'unknown reason'}`;
 
   /** A sale finished after this till had moved on to somebody else. */
-  const noteSaleLeftBehind = (sale: ApiSale, saleId: string) => {
+  const noteSaleLeftBehind = (sale: Pick<ApiSale, 'receiptNumber'> | null, saleId: string) => {
     toast({
       title: 'A sale was saved for the previous visitor',
-      description: `This till moved on before it could finish. Sale ${sale.receiptNumber ?? saleId} is recorded and nothing was printed for it — find it in the sale list.`,
+      description: `This till moved on before it could finish. Sale ${sale?.receiptNumber ?? saleId} is recorded and nothing was printed for it — find it in the sale list.`,
       variant: 'destructive',
     });
   };
@@ -2259,16 +2261,30 @@ export default function Till() {
    * — which is what an order that was rung up and not paid for is. Voiding it
    * is S2-11.
    */
-  const recordSaleOnPlatform = async (epoch: number): Promise<void> => {
-    if (!preflightSale()) return;
+  const preparePaymentSale = async (epoch: number, scope: string): Promise<SaleWriteOutcome> => {
+    const refusal = (message: string): SaleWriteOutcome => ({
+      ok: false,
+      saleId: saleWriter.committed?.id ?? '',
+      message,
+      retryable: false,
+    });
+    if (!preflightSale()) return refusal('Finish the order before taking payment.');
     const payload = commitPayload();
-    if (!payload) return; // said on the confirmation screen, not in a toast at the visitor
+    if (!payload) return refusal(unwritableReason());
     const input = writeInput(payload);
-    if (!(await voucherReadyFor(input))) return;
-    if (saleEpochRef.current !== epoch) return;
+    if (!(await voucherReadyFor(input))) return refusal('Resolve the voucher before taking payment.');
+    if (saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) {
+      return refusal('This till has moved on to another order.');
+    }
     const outcome = await saleWriter.commit(input);
-    if (saleEpochRef.current !== epoch) {
-      if (outcome.ok && outcome.written) noteSaleLeftBehind(outcome.sale, outcome.saleId);
+    return outcome;
+  };
+
+  const recordSaleOnPlatform = async (epoch: number): Promise<void> => {
+    const scope = paymentScopeRef.current.scope;
+    const outcome = await preparePaymentSale(epoch, scope);
+    if ((saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) && outcome.ok && outcome.written) {
+      noteSaleLeftBehind(outcome.sale, outcome.saleId);
     }
   };
 
@@ -2280,88 +2296,14 @@ export default function Till() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once on entering the payment screen: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
   }, [step]);
 
-  /**
-   * The money arrived: close the sale, then do everything a finished sale does.
-   *
-   * The commit is asserted again first. It costs no round trip when the cart on
-   * screen is the one already recorded — the writer answers from the sale it
-   * holds — and when the order was corrected on this screen it is what records
-   * the corrected cart instead of finalising the old one.
-   */
-  const completeSale = async (epoch: number) => {
-    if (!tier || (!pendingPaymentMethod && !saleOwesNothing) || !operator || !station) return;
-
-    const payload = commitPayload();
-    if (!payload) {
-      // A voucher is never honoured on a sale the platform does not write: it
-      // is used up only by the platform, in the transaction that closes it. Why
-      // this one cannot be written is said as it is — not as "offline".
-      if (voucher.held) {
-        voucher.refuse(unwritableReason(), voucher.held.code, 'SALE_NOT_WRITABLE');
-        return;
-      }
-      // Nowhere to write it. Finish on the till and SAY SO, rather than show a
-      // confirmation screen that looks like a saved sale.
-      finalizeSale(saleWriter.declareUnwritten(unwritableReason()), quotedPricing(cart.quote));
-      return;
-    }
-
-    const input = writeInput(payload);
-    if (!(await voucherReadyFor(input))) return;
-    if (saleEpochRef.current !== epoch) return;
-    const committed = await saleWriter.commit(input);
-    // The till has moved on — cancelled, or already serving the next visitor.
-    // The sale itself is written and safe; what must not happen is this answer
-    // printing a band for somebody else's child. It must not be silent either:
-    // somebody pressed Cancel while a sale was being saved, and a sale now
-    // exists that nothing on this screen will ever mention again.
-    if (saleEpochRef.current !== epoch) {
-      if (committed.ok && committed.written) noteSaleLeftBehind(committed.sale, committed.saleId);
-      return;
-    }
-    if (!committed.ok) return; // the failure panel is showing; nothing is finalised
-    if (!committed.written) {
-      finalizeSale(committed.saleId, quotedPricing(cart.quote));
-      return;
-    }
-
-    let recorded = committed.sale;
-    if (recorded.status !== 'finalised') {
-      // THE TENDER. One press, one method, and the amount due taken in full —
-      // all this screen knows. S2-10a adds the cash keypad, the card terminal
-      // and the QR result onto this same call. A sale the platform says owes
-      // nothing is closed with no tender (L38): the platform records no payment
-      // for it, and the body names no method this till did not use.
-      const owed = recorded.totals.grossSatang;
-      let tender: SaleTenderPayload;
-      if (owed === 0) {
-        tender = NO_TENDER;
-      } else if (pendingPaymentMethod) {
-        tender = {
-          method: pendingPaymentMethod,
-          kind: paymentMethodKind(pendingPaymentMethod),
-          amountSatang: owed,
-          tenderedSatang: owed,
-          changeSatang: 0,
-        };
-      } else {
-        // The screen said nothing was owed and the platform says otherwise: no
-        // sale is closed without the method it was paid by.
-        toast({
-          title: 'Choose a payment method',
-          description: `The platform says ฿${owed / 100} is owed on this sale.`,
-          variant: 'destructive',
-        });
-        return;
-      }
-      const closed = await saleWriter.finalise(tender);
-      if (saleEpochRef.current !== epoch) {
-        if (closed.ok && closed.written) noteSaleLeftBehind(closed.sale, closed.saleId);
-        return;
-      }
-      if (!closed.ok) return;
-      if (closed.written) recorded = closed.sale;
-    }
+  /** Only a finalised platform sale can issue this order's receipt and bands. */
+  const completeSale = (recorded: ApiSale, settlements: readonly PaymentSettlement[]) => {
+    if (
+      saleEpochRef.current !== paymentEpoch ||
+      paymentScopeRef.current.scope !== paymentScope ||
+      recorded.status !== 'finalised' ||
+      completedPaymentRef.current === recorded.id
+    ) return;
     /**
      * S2-10b — THE VOUCHER IS USED UP. A sale closed under the id the voucher
      * is held for, with its code on the cart, used it: the platform does that
@@ -2370,12 +2312,21 @@ export default function Till() {
      * close when it cannot (`consumeSaleVouchers`). From here it is the
      * confirmation's, and nothing may release it.
      */
-    const held = voucher.current();
-    if (held && recorded.status === 'finalised' && recorded.id === held.saleId) {
-      setVoucherUsed(held);
-      voucher.reset();
+    const methods = [...new Set(settlements.map((part) => part.method))];
+    const method = recorded.totals.grossSatang === 0 ? undefined : methods.length > 1
+      ? methods.map((token) => paymentMethodLabel(token)).join(' + ')
+      : methods[0] ?? pendingPaymentMethod ?? undefined;
+    if (finalizeSale(recorded.id, quotedPricing(cart.quote, recorded), method)) {
+      completedPaymentRef.current = recorded.id;
+      setCompletionRetry(null);
+      const held = voucher.current();
+      if (held && recorded.id === held.saleId) {
+        setVoucherUsed(held);
+        voucher.reset();
+      }
+    } else {
+      setCompletionRetry({ sale: recorded, settlements, epoch: paymentEpoch, scope: paymentScope });
     }
-    finalizeSale(committed.saleId, quotedPricing(cart.quote, recorded));
   };
 
   /**
@@ -2384,20 +2335,11 @@ export default function Till() {
    * says this sale's number was already spent on a different body.
    */
   const handleRetrySaleWrite = () => {
-    const epoch = saleEpochRef.current;
-    // Before a method is chosen there is no tender to record, so a retry is the
-    // record alone. A sale that owes nothing has no method to choose: its retry
-    // closes it again only when closing it is what failed.
-    const closing =
-      pendingPaymentMethod !== null ||
-      (saleOwesNothing &&
-        saleWriter.state.kind === 'failed' &&
-        saleWriter.state.stage === 'finalise');
-    if (!closing) {
-      void recordSaleOnPlatform(epoch);
-      return;
+    if (saleWriter.state.kind === 'failed' && saleWriter.state.stage === 'commit') {
+      void recordSaleOnPlatform(saleEpochRef.current);
+    } else {
+      void paymentStage.retry();
     }
-    void completeSale(epoch);
   };
 
   /**
@@ -2412,11 +2354,11 @@ export default function Till() {
    * charged is what the confirmation screen, the receipt lines and the history
    * detail read (S2-09a).
    */
-  const finalizeSale = (saleId: string, quoted: SaleQuotedPricing) => {
-    if (!tier || !operator || !station) return;
+  const finalizeSale = (saleId: string, quoted: SaleQuotedPricing, paymentMethod?: string): boolean => {
+    if (!tier || !operator || !station) return false;
     // A sale that owed nothing was closed with no method, and its record names
     // none (L38); every other sale was closed by the method chosen.
-    if (!pendingPaymentMethod && !saleOwesNothing) return;
+    if (!paymentMethod && quoted.total !== 0) return false;
     const newSale = buildSale({
       id: saleId,
       operatorId: operator.id,
@@ -2428,7 +2370,7 @@ export default function Till() {
       memberId: member?.id,
       customerPhone,
       customerNickname,
-      paymentMethod: pendingPaymentMethod ?? undefined,
+      paymentMethod,
       quoted,
     });
     recordSale(newSale);
@@ -2490,7 +2432,7 @@ export default function Till() {
           durationHours,
           totalTHB: l.lineTotal,
           // No method for a sale that owed nothing (L38): an empty token, not a tender.
-          paymentMethod: pendingPaymentMethod ?? '',
+          paymentMethod: paymentMethod ?? '',
           nannyId: d.service === 'nanny' ? d.nannyId : undefined,
           foodProvision: d.foodProvision,
         };
@@ -2511,6 +2453,37 @@ export default function Till() {
       bookedScheduledForRef.current = nowISO;
       setPendingCheckInChoices([...byReg.values()]);
     }
+    return true;
+  };
+
+  const paymentEpoch = saleEpochRef.current;
+  const paymentScope = JSON.stringify([paymentEpoch, cartIdentity, lines, discounts, manualDiscounts, voucherCodes]);
+  const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
+  paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
+  const paymentStage = usePaymentStage({
+    scope: paymentScope,
+    isCurrentScope: (scope) => scope === paymentScopeRef.current.scope &&
+      paymentScopeRef.current.epoch === saleEpochRef.current,
+    active: step === 5 && completionRetry === null,
+    totalSatang: toSatang(cart.totals.total),
+    prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
+    finaliseSale: saleWriter.finalise,
+    onComplete: completeSale,
+    onLeftBehind: (saleId) => { if (saleId) noteSaleLeftBehind(null, saleId); },
+  });
+  const paymentDisplay = completionRetry
+    ? { ...paymentStage.display, saleId: completionRetry.sale.id, status: 'paid' as const }
+    : paymentStage.display;
+
+  const handleSelectPaymentMethod = (method: string) => {
+    if (paymentStage.locked) return;
+    setPendingPaymentMethod(method);
+  };
+
+  const retryLocalCompletion = () => {
+    if (!completionRetry || completionRetry.epoch !== saleEpochRef.current ||
+      completionRetry.scope !== paymentScopeRef.current.scope) return;
+    completeSale(completionRetry.sale, completionRetry.settlements);
   };
 
   // Commit a registration's "Check in now" decision: check the children into the
@@ -2580,6 +2553,7 @@ export default function Till() {
   };
 
   const handlePaymentBack = () => {
+    if (completionRetry || !paymentStage.canBack) return;
     setPendingPaymentMethod(null);
     setStep(4);
   };
@@ -2738,26 +2712,36 @@ export default function Till() {
               onBack={() => setStep(3)}
             />
           )}
-          {step === 5 && (
-            <StepPayment
+          {step === 5 && (<>
+            {!completionRetry && <StepPayment
               total={total}
               unpriced={unpricedCartLines(lines).length > 0}
               nothingToPay={saleOwesNothing}
               selectedMethod={pendingPaymentMethod}
-              onSelectMethod={setPendingPaymentMethod}
+              onSelectMethod={handleSelectPaymentMethod}
               onComplete={handleCompletePayment}
               onBack={handlePaymentBack}
+              paymentStage={paymentStage}
               busy={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}
               busyLabel={saleWriter.state.kind === 'finalising' ? 'Recording the payment…' : undefined}
               notice={
-                <SaleWriteFailure
+                saleWriter.state.kind === 'failed' ? <SaleWriteFailure
                   state={saleWriter.state}
                   onRetry={handleRetrySaleWrite}
                   onDismiss={handlePaymentBack}
-                />
+                /> : undefined
               }
-            />
-          )}
+            />}
+            {completionRetry && (
+              <div className="mx-6 mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+                <p className="text-sm">Payment is recorded. Restore this order's staff, station and ticket setup to issue the receipt and bands.</p>
+                <Button className="mt-3" onClick={retryLocalCompletion}
+                  disabled={completionRetry.epoch !== saleEpochRef.current || completionRetry.scope !== paymentScope}>
+                  Complete order
+                </Button>
+              </div>
+            )}
+          </>)}
           {step === 8 && tier && (
             <SavedChildrenReview
               slots={superSlots}
@@ -2804,7 +2788,7 @@ export default function Till() {
 
       {/* RIGHT AREA: ORDER SUMMARY */}
       {step < 6 && (
-        <div className="w-[360px] min-w-0 bg-sidebar flex flex-col p-6">
+        <div className="w-[360px] min-w-0 bg-sidebar flex flex-col p-6" inert={step === 5 && (completionRetry !== null || !paymentStage.canBack)}>
           <OrderSummary
             tier={tier}
             customerName={customerNickname.trim() || member?.nickname || ''}
@@ -2921,12 +2905,12 @@ export default function Till() {
         </div>
       </div>
 
-      <StationHeader active="tickets" />
+      <div className="contents" inert={step === 5 && (completionRetry !== null || !paymentStage.canBack)}>
+        <StationHeader active="tickets" />
 
-      {/* Drop-off overstay alert mirrored onto the till so reception sees overdue
-          / due-soon children without leaving the ticket screen. Tapping jumps to
-          the Drop-Off In Park view filtered to due-only. */}
-      <OverstayBanner onReview={() => navigate('/drop-off?due=1')} className="mx-4 mt-3" />
+        {/* The alert stays visible while collection prevents leaving this order. */}
+        <OverstayBanner onReview={() => navigate('/drop-off?due=1')} className="mx-4 mt-3" />
+      </div>
 
       <div className="flex-1 flex min-h-0">
         <div className={`${showCustomerDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
@@ -2973,6 +2957,7 @@ export default function Till() {
             <CustomerDisplay
               stage={customerStage}
               sale={liveSale}
+              payment={paymentDisplay}
               phone={customerPhone}
               nickname={customerNickname}
               member={member}

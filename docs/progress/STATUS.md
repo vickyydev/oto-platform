@@ -1,6 +1,15 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-29 - replay and spin-duration release verified._
+_Last updated: 2026-09-29 - online till payment UI landing and staging proof._
+
+The current SCRUM-206 round lands the checked online Slice F UI on main.
+The source originally pushed as `cf67d86` has been rebased onto the verified
+release checkpoint, preserving its behavior and rejecting unsafe pasted money
+before the visible amount changes. Mobile food-station confirmation now shows
+the authoritative receipt number. All 53 affected writer checks, POS
+typecheck, package lint and build pass. Current-release CI and native staging
+proof are pending; SCRUM-206 stays In Progress. The previous deployed source
+and evidence below remain authoritative until this round's deployment completes.
 
 OTO Park has completed the physical Lucky Wheel bench test and shared the
 walkthrough. Sprint 2 now resumes in the documented order: SCRUM-391 (QR

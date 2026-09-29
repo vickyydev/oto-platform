@@ -3,7 +3,8 @@ import { breakdownModifiers, describeModifiers } from '@/lib/fnb';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
 import { computeManualDiscount, formatDiscountDetail } from '@/lib/manualDiscount';
-import { QrCode } from '@/components/till/QrCode';
+import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
+import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
@@ -32,7 +33,9 @@ interface FnbCustomerDisplayProps {
   manualDiscounts: ManualDiscount[];
   total: number;
   taxBreakdown: TaxBreakdown;
-  promptpayAmount: number | null;
+  payment?: PaymentDisplayState;
+  /** Legacy party display input; it cannot supply a verified payment QR. */
+  promptpayAmount?: number | null;
   completedOrder: FnbOrder | null;
   newBalance: number | null;
   chargeTarget?: ChargeTarget;
@@ -206,7 +209,7 @@ export function FnbCustomerDisplay({
   manualDiscounts,
   total,
   taxBreakdown,
-  promptpayAmount,
+  payment = { saleId: null, amountSatang: Math.round(total * 100), qrPayload: null, qrImageUrl: null, expiresAt: null, status: 'idle', offline: false, online: globalThis.navigator?.onLine !== false },
   completedOrder,
   newBalance,
   chargeTarget,
@@ -338,11 +341,9 @@ export function FnbCustomerDisplay({
   }
 
   if (stage === 'payment') {
-    const balance = wristband?.creditBalanceTHB ?? 0;
-    const creditUsed = Math.min(balance, total);
-    const remainderDue = total - creditUsed;
+    const amountToPay = payment.amountSatang / 100;
 
-    if (promptpayAmount !== null) {
+    if (payment.online && payment.status === 'pending' && (payment.qrPayload || payment.qrImageUrl)) {
       return (
         <Shell>
           <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
@@ -352,14 +353,10 @@ export function FnbCustomerDisplay({
             </div>
             <h2 className="text-4xl font-black mb-6">{t('fnb.payment.scanToPay')}</h2>
             <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
-              <QrCode seed={`fnb-promptpay-${promptpayAmount}`} className="w-64 h-64" />
+              <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" />
             </div>
-            <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{promptpayAmount}</div>
-            {creditUsed > 0 && (
-              <p className="text-lg text-foreground/60 mt-3">
-                {t('fnb.payment.paidFromCredit', { amount: String(creditUsed) })}
-              </p>
-            )}
+            <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{amountToPay}</div>
+            <PaymentExpiry expiresAt={payment.expiresAt} />
             <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('fnb.payment.openBankingApp')}</p>
             <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -379,25 +376,16 @@ export function FnbCustomerDisplay({
           <p className="text-2xl text-foreground/70 mb-6">{t('fnb.payment.amountToPay')}</p>
 
           <div className="w-full max-w-md space-y-3">
-            {creditUsed > 0 && (
-              <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
-                <span className="flex items-center gap-3 text-xl text-foreground/80">
-                  <Wallet className="w-6 h-6 text-primary" />
-                  {t('fnb.payment.fromCredit')}
-                </span>
-                <span className="text-2xl font-black text-primary tabular-nums">฿{creditUsed}</span>
-              </div>
-            )}
             <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
               <span className="flex items-center gap-3 text-xl text-foreground/80">
                 <Banknote className="w-6 h-6 text-foreground/60" />
-                {creditUsed > 0 ? t('fnb.payment.leftToPay') : t('fnb.payment.toPay')}
+                {t('fnb.payment.toPay')}
               </span>
-              <span className="text-4xl font-black tabular-nums">฿{remainderDue}</span>
+              <span className="text-4xl font-black tabular-nums">฿{amountToPay}</span>
             </div>
           </div>
 
-          <p className="text-xl text-foreground/60 mt-8">{t('fnb.payment.confirmWithStaff')}</p>
+          <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded') : payment.status === 'pending' ? t('fnb.payment.waiting') : payment.status === 'paid' ? t('till.payment.received') : payment.status === 'blocked' || payment.status === 'failed' ? t('till.payment.checking') : t('fnb.payment.confirmWithStaff')}</p>
         </div>
       </Shell>
     );

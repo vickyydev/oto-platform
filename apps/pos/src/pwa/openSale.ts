@@ -50,3 +50,29 @@ export function subscribeSaleOpen(listener: () => void): () => void {
 export function useSaleOpen(): boolean {
   return useSyncExternalStore(subscribeSaleOpen, getSaleOpen, getSaleOpen);
 }
+
+/** Keep shared mobile navigation on the payment's park, station and staff. */
+const paymentSurfaces = new Set<string>();
+const paymentListeners = new Set<() => void>();
+
+export function setPaymentContextLocked(surface: string, locked: boolean): void {
+  const before = paymentSurfaces.size > 0;
+  if (locked) paymentSurfaces.add(surface);
+  else paymentSurfaces.delete(surface);
+  if (before !== (paymentSurfaces.size > 0)) {
+    for (const listener of paymentListeners) listener();
+  }
+}
+
+export function getPaymentContextLocked(): boolean {
+  return paymentSurfaces.size > 0;
+}
+
+export function subscribePaymentContextLocked(listener: () => void): () => void {
+  paymentListeners.add(listener);
+  return () => { paymentListeners.delete(listener); };
+}
+
+export function usePaymentContextLocked(): boolean {
+  return useSyncExternalStore(subscribePaymentContextLocked, getPaymentContextLocked, getPaymentContextLocked);
+}

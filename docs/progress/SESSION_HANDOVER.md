@@ -2,6 +2,17 @@
 
 ## STOP POINT - 29 September 2026 - Sprint 2 payments resumed
 
+Current round: the online SCRUM-206 Slice F UI is landing on main from the
+rebased `cf67d86` checkpoint. The four till screens and mobile food-station
+caller share real collection and guarded recovery. Small source follow-ups
+reject unsafe pasted money before changing the displayed cash/part amount and
+show the authoritative receipt number on mobile food-station confirmation.
+The existing writer file passes 53 checks; POS typecheck, lint and build pass.
+Current-release CI, deployment and native staging proof are pending. Record
+that proof before claiming the online UI WORKS. The full story stays In Progress
+until offline till-to-box transport (269/285) and separate-display acceptance
+(201) are also satisfied. No physical booth changes belong to this round.
+
 OTO Park has finished the physical booth bench test and shared the demo.
 Resume the remaining Sprint 2 software in the plan's order. The active Jira
 sprint is id 3, named Sprint 2 - Complete build. Parallel work is authorised.
@@ -117,8 +128,9 @@ The `.tgz` and `.tgz.sha256` are on the Desktop; the older pair was moved into
 Update the physical Pi using PI_BOOTH.md's Update step before
 publishing a non-default duration; cloud deployment alone does not update it.
 
-Next, land and verify the checked `cf67d86` UI branch for SCRUM-206 Slice F.
-It has green CI but has not deployed; do not mark the story Deployed yet.
+Next, verify the current online UI deployment on staging for SCRUM-206 Slice F.
+The original `cf67d86` branch had green CI; current-release proof is pending.
+Do not mark the story Deployed yet.
 Its UI must use the
 authoritative sale and a distinct stable identity per deliberate split tender;
 an approved electronic attempt must not be charged again through cash-style

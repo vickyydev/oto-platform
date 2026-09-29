@@ -125,7 +125,7 @@ export type SaleWriteOutcome =
       attempt?: PaymentAttemptView | null;
     }
   | { ok: true; written: false; saleId: string; reason: string }
-  | { ok: false; saleId: string; message: string; retryable: boolean };
+  | { ok: false; saleId: string; message: string; retryable: boolean; code?: string };
 
 /** What the till's Cancel did to the sale this cart was rung up as (`cancel`). */
 export type SaleCancelOutcome =
@@ -550,7 +550,7 @@ export function useSaleWriter(): SaleWriter {
           retryable,
         });
       }
-      return { ok: false, saleId: held.id, message, retryable };
+      return { ok: false, saleId: held.id, message, retryable, ...(err instanceof ApiError ? { code: err.code } : {}) };
     }
   }, [isCurrent]);
 

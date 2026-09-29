@@ -34,7 +34,7 @@ import {
   type CheckInPaymentInput,
 } from '@/mockApi';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
-import { paymentMethodKind, paymentMethodLabel } from '@/lib/payments';
+import { paymentMethodLabel } from '@/lib/payments';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { subscribeCatalog } from '@/store/catalogStore';
 
@@ -56,12 +56,15 @@ import {
   promoChargeSatang,
   quotedPricing,
   refusedPromoCodes,
+  toSatang,
   type ApiSale,
   type CartIdentity,
   type SaleCartPayload,
 } from '@/api/sales';
 import { useCartQuote } from '@/lib/cartQuote';
-import { useSaleWriter } from '@/lib/saleWriter';
+import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
+import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
+import { setPaymentContextLocked } from '@/pwa/openSale';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
 import { QuoteFaultNote } from '@/components/fnb/QuoteFaultNote';
@@ -285,7 +288,7 @@ function getHandoffCfg(
     qr: {
       title: t('handToCustomer.qrTitle'),
       subtitle: t('handToCustomer.qrSubtitle'),
-      handBackLabel: t('handToCustomer.paymentConfirmedHandBack'),
+      handBackLabel: t('handToCustomer.handBackDefault'),
     },
   };
 }
@@ -474,6 +477,13 @@ export default function MobileTill() {
    * screen.
    */
   const saleWriter = useSaleWriter();
+  const completedPaymentRef = useRef<string | null>(null);
+  const [completionRetry, setCompletionRetry] = useState<{
+    sale: ApiSale;
+    settlements: readonly PaymentSettlement[];
+    epoch: number;
+    scope: string;
+  } | null>(null);
   const cartIdentity: CartIdentity | null = useMemo(() => {
     const branchId = apiBranchIdForSlug(branch.id);
     if (!branchId || !station?.stationId || !operator || !tier) return null;
@@ -509,9 +519,13 @@ export default function MobileTill() {
     enabled: saleResult === null,
   });
 
+  const saleOwesNothing = lines.length > 0 && cart.totals.total === 0 &&
+    unpricedCartLines(lines).length === 0;
+
   const resetSale = () => {
     saleEpochRef.current += 1;
     saleWriter.reset();
+    setCompletionRetry(null);
     setMStep('tier');
     setHandoffMode(null);
     setTier(null);
@@ -1293,12 +1307,10 @@ export default function MobileTill() {
     setMStep('review');
   };
 
-  /** Intercept payment method selection: QR triggers "show QR to customer" handoff. */
+  /** Keep the configured method token on the local sale and shared payment flow. */
   const handleMobileSelectMethod = (method: string) => {
+    if (paymentStage.locked) return;
     setPendingPaymentMethod(method);
-    if (paymentMethodKind(method) === 'qr') {
-      setHandoffMode('qr');
-    }
   };
 
   /**
@@ -1348,12 +1360,7 @@ export default function MobileTill() {
   };
 
   const handleCompletePayment = () => {
-    if (!preflightSale()) return;
-    if (!pendingPaymentMethod) return;
-    // The sale reaches the platform before a child is checked in, a band is
-    // minted or a receipt is printed (S2-09a). A refusal leaves the till on
-    // this screen with the same sale waiting for Try again.
-    void completeSale(saleEpochRef.current);
+    void paymentStage.submit();
   };
 
   const commitPayload = (): SaleCartPayload | null => {
@@ -1374,30 +1381,44 @@ export default function MobileTill() {
       ? 'This device is not on a platform station, so there is nowhere to write the sale.'
       : `This cart could not be priced by the platform's engine: ${cart.quote.reason ?? 'unknown reason'}`;
 
-  const noteSaleLeftBehind = (sale: ApiSale, saleId: string) => {
+  const noteSaleLeftBehind = (sale: Pick<ApiSale, 'receiptNumber'> | null, saleId: string) => {
     toast({
       title: 'A sale was saved for the previous visitor',
-      description: `This till moved on before it could finish. Sale ${sale.receiptNumber ?? saleId} is recorded and nothing was printed for it — find it in the sale list.`,
+      description: `This till moved on before it could finish. Sale ${sale?.receiptNumber ?? saleId} is recorded and nothing was printed for it — find it in the sale list.`,
       variant: 'destructive',
     });
   };
 
   /**
    * Pay records the sale: reaching the payment screen writes the row in
-   * `tendering`, with no receipt number, because no money has arrived yet. A ฿0
-   * sale has nothing to tender and is closed in the same call. Same seam as the
-   * counter till — see `pages/Till.tsx`.
+   * `tendering`, with no receipt number. A ฿0 sale stays open until the explicit
+   * no-tender close, just like the counter till.
    */
-  const recordSaleOnPlatform = async (epoch: number): Promise<void> => {
-    if (!preflightSale()) return;
+  const preparePaymentSale = async (epoch: number, scope: string): Promise<SaleWriteOutcome> => {
+    const refusal = (message: string): SaleWriteOutcome => ({
+      ok: false,
+      saleId: saleWriter.committed?.id ?? '',
+      message,
+      retryable: false,
+    });
+    if (!preflightSale()) return refusal('Finish the order before taking payment.');
     const payload = commitPayload();
-    if (!payload) return;
+    if (!payload) return refusal(unwritableReason());
+    if (saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) {
+      return refusal('This till has moved on to another order.');
+    }
     const outcome = await saleWriter.commit({
       cart: payload,
-      finalise: cart.quote.satang?.total === 0,
+      finalise: false,
     });
-    if (saleEpochRef.current !== epoch) {
-      if (outcome.ok && outcome.written) noteSaleLeftBehind(outcome.sale, outcome.saleId);
+    return outcome;
+  };
+
+  const recordSaleOnPlatform = async (epoch: number): Promise<void> => {
+    const scope = paymentScopeRef.current.scope;
+    const outcome = await preparePaymentSale(epoch, scope);
+    if ((saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) && outcome.ok && outcome.written) {
+      noteSaleLeftBehind(outcome.sale, outcome.saleId);
     }
   };
 
@@ -1407,58 +1428,32 @@ export default function MobileTill() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once on reaching the payment step: recordSaleOnPlatform is a new function every render, so listing it would call it again on every render
   }, [mStep]);
 
-  /** The money arrived: close the sale, then finish it on this device. */
-  const completeSale = async (epoch: number) => {
-    if (!tier || !pendingPaymentMethod || !operator || !station) return;
-
-    const payload = commitPayload();
-    if (!payload) {
-      finalizeSale(saleWriter.declareUnwritten(unwritableReason()), quotedPricing(cart.quote));
-      return;
+  /** Only confirmed completion can check children in or issue this order's paper. */
+  const completeSale = (recorded: ApiSale, settlements: readonly PaymentSettlement[]) => {
+    if (
+      saleEpochRef.current !== paymentEpoch ||
+      paymentScopeRef.current.scope !== paymentScope ||
+      recorded.status !== 'finalised' ||
+      completedPaymentRef.current === recorded.id
+    ) return;
+    const methods = [...new Set(settlements.map((part) => part.method))];
+    const method = recorded.totals.grossSatang === 0 ? undefined : methods.length > 1
+      ? methods.map((token) => paymentMethodLabel(token)).join(' + ')
+      : methods[0] ?? pendingPaymentMethod ?? undefined;
+    if (finalizeSale(recorded.id, quotedPricing(cart.quote, recorded), saleNumberOf(recorded), method)) {
+      completedPaymentRef.current = recorded.id;
+      setCompletionRetry(null);
+    } else {
+      setCompletionRetry({ sale: recorded, settlements, epoch: paymentEpoch, scope: paymentScope });
     }
-    const committed = await saleWriter.commit({
-      cart: payload,
-      finalise: cart.quote.satang?.total === 0,
-    });
-    // Cancelled, or already on the next visitor. The sale is written and safe,
-    // and saying nothing would leave a sale nobody on this screen mentions
-    // again (the same rule as `Till.tsx`).
-    if (saleEpochRef.current !== epoch) {
-      if (committed.ok && committed.written) noteSaleLeftBehind(committed.sale, committed.saleId);
-      return;
-    }
-    if (!committed.ok) return;
-    if (!committed.written) {
-      finalizeSale(committed.saleId, quotedPricing(cart.quote));
-      return;
-    }
-
-    let recorded = committed.sale;
-    if (recorded.status !== 'finalised') {
-      const closed = await saleWriter.finalise({
-        method: pendingPaymentMethod,
-        kind: paymentMethodKind(pendingPaymentMethod),
-        amountSatang: recorded.totals.grossSatang,
-        tenderedSatang: recorded.totals.grossSatang,
-        changeSatang: 0,
-      });
-      if (saleEpochRef.current !== epoch) {
-        if (closed.ok && closed.written) noteSaleLeftBehind(closed.sale, closed.saleId);
-        return;
-      }
-      if (!closed.ok) return;
-      if (closed.written) recorded = closed.sale;
-    }
-    finalizeSale(committed.saleId, quotedPricing(cart.quote, recorded), saleNumberOf(recorded));
   };
 
   const handleRetrySaleWrite = () => {
-    const epoch = saleEpochRef.current;
-    if (!pendingPaymentMethod) {
-      void recordSaleOnPlatform(epoch);
-      return;
+    if (saleWriter.state.kind === 'failed' && saleWriter.state.stage === 'commit') {
+      void recordSaleOnPlatform(saleEpochRef.current);
+    } else {
+      void paymentStage.retry();
     }
-    void completeSale(epoch);
   };
 
   /**
@@ -1476,8 +1471,9 @@ export default function MobileTill() {
     saleId: string,
     quoted: SaleQuotedPricing,
     number: SaleNumber = { kind: 'unknown' },
-  ) => {
-    if (!tier || !pendingPaymentMethod || !operator || !station) return;
+    paymentMethod?: string,
+  ): boolean => {
+    if (!tier || !operator || !station || (!paymentMethod && quoted.total !== 0)) return false;
 
     const dropOffLines = lines.filter((l) => l.dropOff);
     if (dropOffLines.length > 0) {
@@ -1492,7 +1488,7 @@ export default function MobileTill() {
           serviceFeeTHB: d.serviceFeeTHB,
           durationHours: l.ticketType.hours,
           totalTHB: l.lineTotal,
-          paymentMethod: pendingPaymentMethod,
+          paymentMethod: paymentMethod ?? '',
           nannyId: d.service === 'nanny' ? d.nannyId : undefined,
           foodProvision: d.foodProvision,
         };
@@ -1509,7 +1505,7 @@ export default function MobileTill() {
             'A nanny is no longer available, or a child was already checked in.',
           variant: 'destructive',
         });
-        return;
+        return false;
       }
     }
 
@@ -1524,7 +1520,7 @@ export default function MobileTill() {
       memberId: member?.id,
       customerPhone,
       customerNickname,
-      paymentMethod: pendingPaymentMethod,
+      paymentMethod,
       quoted,
     });
     recordSale(newSale);
@@ -1553,7 +1549,50 @@ export default function MobileTill() {
     setHandoffMode(null);
     setMStep('done');
     dispatchPrintJobs(ticketPrintJobs(station, newSale));
+    return true;
   };
+
+  const paymentEpoch = saleEpochRef.current;
+  const paymentScope = JSON.stringify([paymentEpoch, cartIdentity, lines, discounts, manualDiscounts]);
+  const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
+  paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
+  const paymentStage = usePaymentStage({
+    scope: paymentScope,
+    isCurrentScope: (scope) => scope === paymentScopeRef.current.scope &&
+      paymentScopeRef.current.epoch === saleEpochRef.current,
+    active: mStep === 'payment' && completionRetry === null,
+    totalSatang: toSatang(cart.totals.total),
+    prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
+    finaliseSale: saleWriter.finalise,
+    onComplete: completeSale,
+    onLeftBehind: (saleId) => { if (saleId) noteSaleLeftBehind(null, saleId); },
+  });
+  const paymentDisplay = completionRetry
+    ? { ...paymentStage.display, saleId: completionRetry.sale.id, status: 'paid' as const }
+    : paymentStage.display;
+  const paymentContextLocked = mStep === 'payment' && (paymentStage.locked ||
+    paymentStage.state.settlements.length > 0 || completionRetry !== null);
+  useEffect(() => {
+    setPaymentContextLocked('mobile-till', paymentContextLocked);
+    return () => setPaymentContextLocked('mobile-till', false);
+  }, [paymentContextLocked]);
+  const shownQrAttemptRef = useRef<string | null>(null);
+  const retryLocalCompletion = () => {
+    if (!completionRetry || completionRetry.epoch !== saleEpochRef.current ||
+      completionRetry.scope !== paymentScopeRef.current.scope) return;
+    completeSale(completionRetry.sale, completionRetry.settlements);
+  };
+  useEffect(() => {
+    const attemptId = paymentStage.state.attempt?.id;
+    const hasQr = paymentStage.display.qrPayload || paymentStage.display.qrImageUrl;
+    if (mStep === 'payment' && hasQr && attemptId && shownQrAttemptRef.current !== attemptId) {
+      shownQrAttemptRef.current = attemptId;
+      setHandoffMode('qr');
+    } else if (paymentStage.state.phase === 'ready' && handoffMode === 'qr' && !hasQr) {
+      setHandoffMode(null);
+    }
+  }, [mStep, handoffMode, paymentStage.state.attempt?.id, paymentStage.state.phase,
+    paymentStage.display.qrPayload, paymentStage.display.qrImageUrl]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -1661,7 +1700,7 @@ export default function MobileTill() {
   // Back-nav behaviour per step
   const canGoBack = (
     ['tickets', 'configure', 'dropoff-config', 'supervision', 'review', 'payment'] as MobileStep[]
-  ).includes(mStep);
+  ).includes(mStep) && (mStep !== 'payment' || (!completionRetry && paymentStage.canBack));
 
   const handleBack = () => {
     switch (mStep) {
@@ -1670,7 +1709,11 @@ export default function MobileTill() {
       case 'dropoff-config': handleBackToGrid(); break;
       case 'supervision': setMStep('tickets'); break;
       case 'review': setMStep('tickets'); break;
-      case 'payment': setPendingPaymentMethod(null); setMStep('review'); break;
+      case 'payment':
+        if (completionRetry || !paymentStage.canBack) return;
+        setPendingPaymentMethod(null);
+        setMStep('review');
+        break;
     }
   };
 
@@ -1808,23 +1851,42 @@ export default function MobileTill() {
       case 'payment':
         return (
           <div className="h-full overflow-y-auto p-4">
-            <StepPayment
+            {!completionRetry && <StepPayment
               total={total}
               unpriced={unpricedCartLines(lines).length > 0}
+              nothingToPay={saleOwesNothing}
               selectedMethod={pendingPaymentMethod}
               onSelectMethod={handleMobileSelectMethod}
               onComplete={handleCompletePayment}
-              onBack={() => { setPendingPaymentMethod(null); setMStep('review'); }}
+              onBack={handleBack}
+              paymentStage={paymentStage}
               busy={saleWriter.state.kind === 'writing' || saleWriter.state.kind === 'finalising'}
               busyLabel={saleWriter.state.kind === 'finalising' ? 'Recording the payment…' : undefined}
               notice={
-                <SaleWriteFailure
+                saleWriter.state.kind === 'failed' ? <SaleWriteFailure
                   state={saleWriter.state}
                   onRetry={handleRetrySaleWrite}
-                  onDismiss={() => { setPendingPaymentMethod(null); setMStep('review'); }}
-                />
+                  onDismiss={handleBack}
+                /> : undefined
               }
-            />
+            />}
+            {completionRetry && (
+              <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+                <p className="text-sm">Payment is recorded. Complete check-in before issuing this order's receipt and bands.</p>
+                {(!tier || !operator || !station) && (
+                  <p className="mt-2 text-sm">Restore this order's staff, station and ticket setup to continue.</p>
+                )}
+                <Button className="mt-3 w-full" onClick={retryLocalCompletion}
+                  disabled={completionRetry.epoch !== saleEpochRef.current || completionRetry.scope !== paymentScope}>
+                  Complete check-in
+                </Button>
+              </div>
+            )}
+            {(paymentStage.display.qrPayload || paymentStage.display.qrImageUrl) && (
+              <Button variant="outline" className="mt-4 w-full" onClick={() => setHandoffMode('qr')}>
+                <QrCodeIcon className="mr-2 h-4 w-4" /> Show payment QR
+              </Button>
+            )}
           </div>
         );
 
@@ -1849,6 +1911,7 @@ export default function MobileTill() {
           <CustomerDisplay
             stage="input"
             sale={liveSale}
+            payment={paymentDisplay}
             phone={customerPhone}
             nickname={customerNickname}
             member={member}
@@ -1884,6 +1947,7 @@ export default function MobileTill() {
           <CustomerDisplay
             stage="payment"
             sale={liveSale}
+            payment={paymentDisplay}
             phone={customerPhone}
             nickname={customerNickname}
             member={member}
@@ -1991,7 +2055,7 @@ export default function MobileTill() {
             subtitle={cfg.subtitle}
             handBackLabel={cfg.handBackLabel}
             onDone={() => {
-              // For QR: return to payment step so staff can confirm receipt.
+              // QR hand-back returns to staff; the platform confirms the payment.
               // For consent: return to supervision so staff can tap Continue.
               // For input: advance to review.
               if (handoffMode === 'input') {

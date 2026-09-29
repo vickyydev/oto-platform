@@ -4,6 +4,13 @@
 
 _Current checkpoint: 2026-09-29._
 
+Current round: online SCRUM-206 Slice F is landing on main from the rebased
+`cf67d86` UI checkpoint, with the unsafe cash/part paste follow-up included.
+All 53 affected writer checks and POS typecheck, package lint and build pass.
+Current-release CI, deployment and native staging UI proof are pending.
+SCRUM-206 remains In Progress; offline transport and independent display
+acceptance must also be completed under their existing tickets.
+
 The Lucky Wheel bench test and walkthrough are complete. Sprint 2 resumes
 with SCRUM-391, SCRUM-388 and SCRUM-382 landed on main at `b02f7e0`, then
 SCRUM-206 Slice F. All three prerequisites are Deployed in active sprint id 3.

@@ -9,7 +9,6 @@ import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
 import {
-  chargeFnbCredit,
   redeemPrepaidItem,
   getDiscountByCode,
   getDiscountReasons,
@@ -24,7 +23,8 @@ import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
 import { computeLineTotal, hasModifiers, modifierSignature } from '@/lib/fnb';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
-import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
+import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
+import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { useScannerBurst } from '@/lib/scannerBurst';
 import {
@@ -73,7 +73,7 @@ import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { BenefitScanModal } from '@/components/fnb/BenefitScanModal';
 import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { FnbCart } from '@/components/fnb/FnbCart';
-import { FnbPayment, FnbPaymentResult, FnbMethod, FnbRemainder } from '@/components/fnb/FnbPayment';
+import { FnbPayment, fnbPaymentResult } from '@/components/fnb/FnbPayment';
 import { FnbConfirmation } from '@/components/fnb/FnbConfirmation';
 import { PickupCodeModal } from '@/components/fnb/PickupCodeModal';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
@@ -88,31 +88,6 @@ import { Monitor, AlertTriangle, Ban, Gift } from 'lucide-react';
 const STAFF_BENEFIT_DISCOUNT_ID = 'staff-benefit';
 
 type Stage = 'scan' | 'order' | 'payment' | 'confirmation';
-
-/**
- * WHICH TENDER CLOSED THE ORDER.
- *
- * The prototype's payment screen splits one order into four buckets and the
- * platform's finalise records ONE tender token, so the bucket that settled the
- * balance is the one named. Credit is last rather than first on purpose: the
- * band's wallet is not money the ledger holds (S2-14a), so where a card or cash
- * finished the order that is the honest name for what was taken; an order paid
- * from the band alone is named as the wallet it came from and the panel beside
- * it says the balance is still this till's own record.
- */
-function tenderMethodOf(payment: FnbPaymentResult): string {
-  if (payment.cash > 0) return 'cash';
-  if (payment.card > 0) return 'card';
-  if (payment.promptpay > 0) return 'promptpay';
-  return 'wallet_credit';
-}
-
-function tenderKindOf(payment: FnbPaymentResult): 'cash' | 'card' | 'qr' | 'other' {
-  if (payment.cash > 0) return 'cash';
-  if (payment.card > 0) return 'card';
-  if (payment.promptpay > 0) return 'qr';
-  return 'other';
-}
 
 let orderCounter = 1;
 let lineCounter = 1;
@@ -162,6 +137,8 @@ export default function OrderStation() {
   const saleWriter = useSaleWriter();
   /** The sale the platform holds for the order on the confirmation screen. */
   const [platformSale, setPlatformSale] = useState<ApiSale | null>(null);
+  const completedSaleRef = useRef<string | null>(null);
+  const paymentSnapshotRef = useRef<{ epoch: number; scope: string; prepare: () => Promise<SaleWriteOutcome>; complete: (sale: ApiSale, settlements: readonly PaymentSettlement[]) => void } | null>(null);
   /**
    * S2-10b (SCRUM-207) — a Lucky Wheel voucher on this order: the Kids Pizza
    * the wheel gave away is redeemed here. The same hook and the same rules as
@@ -201,8 +178,6 @@ export default function OrderStation() {
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
   const [customerTheme] = useCustomerTheme();
-  const [payMethod, setPayMethod] = useState<FnbMethod | null>(null);
-  const [payRemainder, setPayRemainder] = useState<FnbRemainder>('card');
 
   // Staff benefit (Task #231): a scanned operator's QR applies their comp/
   // free-items/credit/standing-discount to the current cart, ONLY here at the
@@ -404,6 +379,14 @@ export default function OrderStation() {
       quoted[line.id] === undefined ? line : { ...line, lineTotal: quoted[line.id] },
     );
   }, [lines, order.quote.lineTotals]);
+  const paymentEpoch = orderEpochRef.current;
+  const paymentScope = JSON.stringify([paymentEpoch, orderIdentity, lines, effectiveManualDiscounts, voucherCodes, orderNote, benefitOperator?.id]);
+  const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
+  paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
+  const paymentContextCurrent = (): boolean => orderEpochRef.current === paymentEpoch && paymentScopeRef.current.scope === paymentScope;
+  const notePaymentLeftBehind = (saleId: string) => {
+    if (saleId) toast({ title: 'Check the previous order in History', description: `The payment answer belongs to sale ${saleId}. This station changed, so no local order was completed or printed.`, variant: 'destructive' });
+  };
 
   // Total qty per menu item across all lines — drives the badge in the grid.
   const quantities = useMemo(() => {
@@ -860,6 +843,8 @@ export default function OrderStation() {
     // previous one is ignored rather than drawn onto this guest.
     orderEpochRef.current += 1;
     saleWriter.reset();
+    completedSaleRef.current = null;
+    paymentSnapshotRef.current = null;
     voucher.reset();
     setVoucherUsed(null);
     setCancelRefusal(null);
@@ -877,8 +862,6 @@ export default function OrderStation() {
     setNewBalance(null);
     setPickupCode('');
     setShowPickupModal(false);
-    setPayMethod(null);
-    setPayRemainder('card');
     setShowFoodConsent(false);
     setPendingItem(null);
     setFoodOverride(null);
@@ -948,9 +931,6 @@ export default function OrderStation() {
   const handlePickupConfirm = (code: string) => {
     setPickupCode(code);
     setShowPickupModal(false);
-    const balance = wristband?.creditBalanceTHB ?? 0;
-    setPayMethod(balance > 0 ? 'credit' : null);
-    setPayRemainder('card');
     setStage('payment');
   };
 
@@ -1027,14 +1007,19 @@ export default function OrderStation() {
    * that is what allocates the number. A ฿0 order is written the same way and
    * closed by "Complete Order" (S2-10b), so until then it can still be voided.
    */
-  const recordOrderOnPlatform = async (epoch: number): Promise<void> => {
+  const recordOrderOnPlatform = async (epoch: number): Promise<SaleWriteOutcome> => {
     const payload = commitPayload();
-    if (!payload) return; // said on the confirmation screen, not in a toast at the guest
+    const refused = (message: string): SaleWriteOutcome => ({ ok: false, saleId: saleWriter.committed?.id ?? '', message, retryable: false });
+    if (!station) {
+      promptSetupStation(navigate);
+      return refused('Set up this station before taking payment.');
+    }
+    if (!payload) return refused(unwritableReason());
     const input = writeInput(payload);
-    if (!(await voucherReadyFor(input))) return;
-    if (orderEpochRef.current !== epoch) return;
+    if (!(await voucherReadyFor(input))) return refused('Recheck the voucher before taking payment.');
+    if (orderEpochRef.current !== epoch || !paymentContextCurrent()) return refused('This order or station changed before it could be saved.');
     const outcome = await saleWriter.commit(input);
-    if (orderEpochRef.current !== epoch && outcome.ok && outcome.written) {
+    if ((orderEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
       // This station moved on before the answer landed. The order IS on the
       // platform and nothing on this screen will ever mention it again, so it
       // is said out loud rather than dropped — the same thing the till does
@@ -1045,77 +1030,21 @@ export default function OrderStation() {
         variant: 'destructive',
       });
     }
+    return outcome;
   };
 
   useEffect(() => {
     if (stage !== 'payment') return;
-    void recordOrderOnPlatform(orderEpochRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on reaching the payment stage: recordOrderOnPlatform is a new function every render, so listing it would call it again on every render
+    void paymentSnapshotRef.current?.prepare();
   }, [stage]);
 
-  const handleConfirmPayment = (payment: FnbPaymentResult) => {
-    void completeOrder(payment);
-  };
-
-  /**
-   * The money arrived: close the order on the platform, then do everything a
-   * finished order does on this till.
-   *
-   * The commit is asserted again first — it costs no round trip when the order
-   * on screen is the one already recorded, and it is what records a corrected
-   * order instead of finalising the old one.
-   */
-  const completeOrder = async (payment: FnbPaymentResult) => {
-    if (!operator) return;
-    // Can't print the receipt/pick-up ticket until this iPad is set up.
-    if (!station) {
-      promptSetupStation(navigate);
-      return;
-    }
-
-    const epoch = orderEpochRef.current;
-    const payload = commitPayload();
-    let written: ApiSale | null = null;
-    if (!payload && voucher.held) {
-      // A voucher is never honoured on an order the platform does not write:
-      // it is used up only by the platform, in the transaction that closes it.
-      // Why this one cannot be written is said as it is — not as "offline".
-      voucher.refuse(unwritableReason(), voucher.held.code, 'SALE_NOT_WRITABLE');
-      return;
-    }
-    if (!payload) {
-      saleWriter.declareUnwritten(unwritableReason());
-    } else {
-      const input = writeInput(payload);
-      if (!(await voucherReadyFor(input))) return;
-      if (orderEpochRef.current !== epoch) return;
-      const committed = await saleWriter.commit(input);
-      if (orderEpochRef.current !== epoch) return;
-      if (!committed.ok) return; // the failure panel is showing; nothing is finalised
-      if (committed.written) {
-        written = committed.sale;
-        if (written.status !== 'finalised') {
-          /**
-           * THE TENDER. The prototype's payment screen splits the amount into
-           * credit, cash, card and QR buckets; the platform records the one
-           * that settles the balance. Wallet credit is not a tender the ledger
-           * can take yet (S2-14a), so an order paid from a band's balance is
-           * closed as the remainder's method with the credit named on it —
-           * which is what the panel beside it says in as many words.
-           */
-          const closed = await saleWriter.finalise({
-            method: tenderMethodOf(payment),
-            kind: tenderKindOf(payment),
-            amountSatang: written.totals.grossSatang,
-            tenderedSatang: written.totals.grossSatang,
-            changeSatang: 0,
-          });
-          if (orderEpochRef.current !== epoch) return;
-          if (!closed.ok) return;
-          if (closed.written) written = closed.sale;
-        }
-      }
-    }
+  /** Complete local kitchen/receipt work only after the platform closed this sale. */
+  const completeOrder = (written: ApiSale, settlements: readonly PaymentSettlement[]) => {
+    if (!paymentContextCurrent() || written.stationId !== orderIdentity?.stationId) { notePaymentLeftBehind(written.id); return; }
+    if (!operator || !station || written.status !== 'finalised') return;
+    if (completedSaleRef.current === written.id) return;
+    completedSaleRef.current = written.id;
+    const payment = fnbPaymentResult(settlements);
     setPlatformSale(written);
 
     /**
@@ -1136,14 +1065,9 @@ export default function OrderStation() {
       voucher.reset();
     }
 
-    let balanceAfter: number | null = null;
-    if (wristband && payment.creditUsed > 0) {
-      balanceAfter = chargeFnbCredit(wristband.id, payment.creditUsed, operator?.name);
-    } else if (wristband) {
-      balanceAfter = wristband.creditBalanceTHB;
-    }
+    const balanceAfter = wristband?.creditBalanceTHB ?? null;
 
-    // Commit prepaid item redemptions — mirror chargeFnbCredit but for entitlements.
+    // Commit prepaid item redemptions only after the sale is finalised.
     if (wristband) {
       for (const line of lines.filter((l) => l.isPrepaid)) {
         redeemPrepaidItem(wristband.id, line.menuItem.id, line.qty);
@@ -1189,7 +1113,7 @@ export default function OrderStation() {
       // kitchen, onto the receipt and into the stock count like any F&B line.
       lines: voucherLine ? [...displayLines, voucherLine] : displayLines,
       manualDiscounts: committedDiscounts,
-      total,
+      total: written.totals.grossSatang / 100,
       pickupCode,
       orderNote: orderNote.trim() || undefined,
       payment,
@@ -1207,22 +1131,31 @@ export default function OrderStation() {
     dispatchPrintJobs(fnbPrintJobs(station, record));
   };
 
+  if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
+    paymentSnapshotRef.current = { epoch: paymentEpoch, scope: paymentScope, prepare: () => recordOrderOnPlatform(paymentEpoch), complete: completeOrder };
+  }
+  const paymentStage = usePaymentStage({
+    scope: paymentScope,
+    isCurrentScope: (scope) => scope === paymentScopeRef.current.scope && paymentScopeRef.current.epoch === orderEpochRef.current,
+    active: stage === 'payment',
+    totalSatang: Math.round(total * 100),
+    prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordOrderOnPlatform(paymentEpoch),
+    finaliseSale: saleWriter.finalise,
+    onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
+    onLeftBehind: notePaymentLeftBehind,
+  });
+  const backFromPayment = () => {
+    if (!paymentStage.canBack) return;
+    orderEpochRef.current += 1;
+    paymentSnapshotRef.current = null;
+    setStage('order');
+  };
+
   let customerStage: FnbCustomerStage;
   if (stage === 'confirmation') customerStage = 'thankyou';
   else if (stage === 'payment') customerStage = 'payment';
   else if (stage === 'order') customerStage = 'order';
   else customerStage = 'welcome';
-
-  // The amount the customer must pay by Thai QR / PromptPay (full order, or the
-  // remainder after credit spend). null when no QR payment is in progress.
-  const balance = wristband?.creditBalanceTHB ?? 0;
-  const remainderAfterCredit = total - Math.min(balance, total);
-  let promptpayAmount: number | null = null;
-  if (stage === 'payment') {
-    if (payMethod === 'promptpay') promptpayAmount = total;
-    else if (payMethod === 'credit' && remainderAfterCredit > 0 && payRemainder === 'promptpay')
-      promptpayAmount = remainderAfterCredit;
-  }
 
   const staffStation = (
     <div className="h-full w-full flex flex-col bg-background text-foreground overflow-hidden">
@@ -1346,7 +1279,7 @@ export default function OrderStation() {
                         Prepaid credit · {wristband.holderName ?? wristband.customerNickname}
                       </span>
                       <div className="text-sm text-violet-200/80 mt-0.5">
-                        ฿{wristband.creditBalanceTHB} remaining — spends like credit at checkout.
+                        ฿{wristband.creditBalanceTHB} remaining. Credit payments are not available at this station.
                       </div>
                     </div>
                   </div>
@@ -1484,12 +1417,8 @@ export default function OrderStation() {
               total={total}
               wristband={wristband}
               pickupCode={pickupCode}
-              method={payMethod}
-              remainder={payRemainder}
-              onMethodChange={setPayMethod}
-              onRemainderChange={setPayRemainder}
-              onConfirm={handleConfirmPayment}
-              onBack={() => setStage('order')}
+              stage={paymentStage}
+              onBack={backFromPayment}
             />
             {/*
               What the platform has done with this order, in the same panels the
@@ -1497,11 +1426,11 @@ export default function OrderStation() {
               press. Nothing is drawn while there is nothing to say.
             */}
             <div className="mx-auto w-full max-w-2xl px-6 pb-6">
-              <SaleWriteFailure
+              {saleWriter.state.kind === 'failed' && <SaleWriteFailure
                 state={saleWriter.state}
-                onRetry={() => void recordOrderOnPlatform(orderEpochRef.current)}
-                onDismiss={() => setStage('order')}
-              />
+                onRetry={() => { if (saleWriter.state.kind === 'failed' && saleWriter.state.stage === 'finalise') void paymentStage.retry(); else void paymentSnapshotRef.current?.prepare(); }}
+                onDismiss={backFromPayment}
+              />}
             </div>
           </div>
         )}
@@ -1546,7 +1475,7 @@ export default function OrderStation() {
         </Button>
       </div>
 
-      <StationHeader active="fnb" />
+      <div className="shrink-0" inert={stage === 'payment' && !paymentStage.canBack}><StationHeader active="fnb" /></div>
 
       <div className="flex-1 flex min-h-0">
         <div className={`${showCustomerDisplay ? 'w-1/2 border-r border-foreground/10' : 'w-full'} h-full min-w-0`}>
@@ -1562,7 +1491,7 @@ export default function OrderStation() {
               manualDiscounts={effectiveManualDiscounts}
               total={total}
               taxBreakdown={taxBreakdown}
-              promptpayAmount={promptpayAmount}
+              payment={paymentStage.display}
               completedOrder={completedOrder}
               newBalance={newBalance}
             />

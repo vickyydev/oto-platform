@@ -18,19 +18,28 @@ the printers, card terminals, scanners and gate.
 ## Payment checkpoint - 29 September 2026
 
 SCRUM-391, SCRUM-388 and SCRUM-382 are implemented on
-main at `b02f7e0` and are Testing. The till-facing API now routes QR
+main at `b02f7e0` and are Deployed. The till-facing API now routes QR
 through the station's saved gateway/terminal setting and returns QR/expiry
 metadata. The common writer reserves unresolved amounts under the sale lock;
 new payments using configured disabled or archived methods refuse. Existing
 accepted attempts still settle, and refused offline facts remain replayable in
 quarantine. Seven existing API files pass 196 tests, API typecheck and
 changed-file lint pass, and main CI is green. The release is live on staging.
-Behavioural proof awaits approval for dedicated simulated test records; the
-tickets cannot be marked Deployed from configuration inspection alone.
+All 21 scoped staging behavior checks passed and reviewed evidence is attached
+to the tickets. The replay follow-up SCRUM-387 is also Deployed on `5fb8525`,
+after six complete-response staging checks and 147 affected existing-file tests.
 
-SCRUM-206 Slice F remains unbuilt: the four till screens still need shared cash,
-terminal, gateway and split-payment state. Offline browser-to-box transport
-needs SCRUM-269/285; independent customer-display acceptance needs S2-08.
+SCRUM-206 online Slice F is built and landing from the rebased `cf67d86` UI
+checkpoint. The till, handheld till, food station, shop and mobile food-station
+caller share cash received/change, real QR, terminal/manual and split-payment
+collection. Pending or partial money blocks cart, context and navigation changes;
+uncertain answers retain stable retry identities. Completion follows the
+finalised platform sale, with local ticket-completion retry avoiding a second
+charge. Unsafe pasted money cannot display a value different from the accepted
+state. All 53 affected writer checks, POS typecheck, lint and build pass.
+Current-release CI and native staging proof are pending. Full offline
+browser-to-box transport needs SCRUM-269/285; independent customer-display
+acceptance needs SCRUM-201 (S2-08). The full story stays In Progress.
 Real 2C2P sandbox confirmation remains separate from simulator verification.
 Read the newest STOP POINT in `../progress/SESSION_HANDOVER.md`.
 

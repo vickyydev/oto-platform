@@ -5,6 +5,8 @@ import { Check, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getEnabledPaymentMethods, paymentMethodIcon, paymentMethodKind } from '@/lib/payments';
 import type { PaymentMethodKind } from '@/types';
+import type { PaymentStageController } from '@/lib/usePaymentStage';
+import { PaymentTenderPanel, paymentSubmitLabel } from './PaymentTenderPanel';
 
 interface StepPaymentProps {
   total: number;
@@ -47,6 +49,7 @@ interface StepPaymentProps {
    * unset keep the grid at every total.
    */
   nothingToPay?: boolean;
+  paymentStage?: PaymentStageController;
 }
 
 // Visual accent per method KIND (the tender list itself is configured in Admin).
@@ -84,12 +87,17 @@ const KIND_STYLE: Record<
   },
 };
 
-export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, nothingToPay }: StepPaymentProps) {
+export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete, onBack, notice, busy, busyLabel, unpriced, nothingToPay, paymentStage }: StepPaymentProps) {
   const methods = getEnabledPaymentMethods();
+  if (paymentStage) {
+    selectedMethod = paymentStage.state.method;
+    total = paymentStage.state.outstandingSatang / 100;
+    busy = busy || paymentStage.busy;
+  }
   const isQrPending = !!selectedMethod && paymentMethodKind(selectedMethod) === 'qr';
   // Only a priced ฿0 owes nothing: an unpriced cart's ฿0 stands in for a
   // missing price and keeps Confirm shut.
-  const free = Boolean(nothingToPay) && !unpriced && total === 0;
+  const free = Boolean(paymentStage ? total === 0 : nothingToPay) && !unpriced && total === 0;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
@@ -130,7 +138,8 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
                     'relative flex flex-col items-center justify-center p-6 cursor-pointer transition-all',
                     selected ? style.ring : style.hover
                   )}
-                  onClick={() => onSelectMethod(m.id)}
+                  onClick={() => { if (paymentStage?.locked) return; paymentStage?.selectMethod(m.id); onSelectMethod(m.id); }}
+                  aria-disabled={paymentStage?.locked || busy}
                 >
                   {selected && (
                     <div className={cn('absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-foreground', style.accent)}>
@@ -146,7 +155,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
             })}
           </div>
 
-          {isQrPending && (
+          {isQrPending && !paymentStage && (
             <div className="mt-6 rounded-xl border border-violet-500/30 bg-violet-500/10 p-4 text-sm text-muted-foreground">
               <span className="font-bold text-foreground">QR shown to customer.</span> Confirm once the
               gateway reports the payment as received.
@@ -156,18 +165,19 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
       )}
 
       {notice}
+      {paymentStage && !unpriced && <PaymentTenderPanel stage={paymentStage} showSubmit={false} />}
 
       <div className="mt-auto pt-6 flex items-center justify-between gap-4">
-        <Button variant="outline" size="lg" className="w-32 h-16" onClick={onBack} disabled={busy}>
+        <Button variant="outline" size="lg" className="w-32 h-16" onClick={onBack} disabled={busy || (paymentStage && !paymentStage.canBack)}>
           Back
         </Button>
         <Button
           size="lg"
           className="flex-1 h-16 text-xl font-bold"
-          disabled={(!selectedMethod && !free) || busy || unpriced}
-          onClick={onComplete}
+          disabled={(paymentStage ? !paymentStage.canSubmit : (!selectedMethod && !free)) || busy || unpriced}
+          onClick={paymentStage ? () => { void paymentStage.submit(); } : onComplete}
         >
-          {busy
+          {paymentStage ? paymentSubmitLabel(paymentStage) : busy
             ? (busyLabel ?? 'Saving the sale…')
             : free
               ? 'Complete Sale'
