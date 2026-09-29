@@ -300,7 +300,7 @@ spikes, solo capacity, codes on the box. Waiting on him: SCRUM-443 (branch chip)
   # Atlassian sign-in on first use; the token is cached by mcp-remote.
   [mcp_servers.atlassian]
   command = "npx"
-  args = ["-y", "mcp-remote", "https://mcp.atlassian.com/v1/sse"]
+  args = ["-y", "mcp-remote", "https://mcp.atlassian.com/v2/mcp"]
   startup_timeout_sec = 60
   ```
 
