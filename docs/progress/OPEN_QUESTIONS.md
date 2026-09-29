@@ -1,5 +1,30 @@
 # Open questions for the owner
 
+## Current follow-ups - 29 September 2026
+
+- **GitHub Actions availability.** Main source fe9c683 is checked locally,
+  but CI 36565169997 ran zero steps because account billing/spending prevents
+  jobs starting. Restore Actions availability; no spending setting is changed
+  by development. Meanwhile SCRUM-201 continues independently. Deployment,
+  staging proof and the next CI-packed Pi artifact remain pending.
+- **Retained simulated partial outcome.** The historical run 0d008153 remains
+  unresolved; existing controls cannot retrieve its lost final result. Its
+  eight inventory rows and original payment evidence are retained. A fresh
+  isolated proof will verify the corrected release without replaying SALE or
+  claiming the old payment was reversed. Any later reconciliation proposal
+  must state that this is simulated evidence and preserve the original audit.
+- **SCRUM-269 implementation decisions to resolve before local trading.**
+  The first safe slice is an authenticated box station bridge. Follow the
+  existing Caddy/DNS and device-auth decisions; confirm the concrete LAN origin
+  and permissions contract before wiring it to the POS. Cash trading also
+  needs a complete cache-age/payment-method rule and atomic local action,
+  receipt and outbox writes. Existing offline replay primitives alone do not
+  satisfy these requirements. These are recorded implementation gaps, not a
+  request to reopen the agreed architecture or a blocker for SCRUM-201.
+
+Older questions below retain their original dated evidence.
+
+
 Collected as they arise so building never stops on them. Each one names what
 was decided in the meantime, so nothing is blocked and nothing is silently
 assumed. Answered items move to `OWNER_DIRECTION.md` and leave here.

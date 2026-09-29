@@ -200,3 +200,16 @@ Consolidated in `docs/architecture/PLATFORM_PLAN.md` §14 and
   Replit change freeze; spin eligibility; seeding members from check-in history.
 - Render account and paid plan, a staging domain with DNS access, vendor device
   documents, a Raspberry Pi 5 / iPad on hand before travelling, target date.
+
+
+## 2026-09-29 - continuous Sprint 2 execution and saved checkpoints
+
+Continue independent tasks while deployment or a decision is pending. After
+each substantial task, defect or story step, save its business rules, test
+results, issues and next steps in STATUS and the newest SESSION_HANDOVER stop
+point, commit by explicit file list and push. Update the relevant Jira status
+and progress comment in the same turn. Attach reviewed screenshots and name
+them in the comment when staging proof is available; Deployed still requires
+that evidence. Record questions in OPEN_QUESTIONS.md, continue independent
+work and bring concrete proposals back later. Use parallel workflows for
+independent parts of the same story.

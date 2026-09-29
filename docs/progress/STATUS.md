@@ -2,6 +2,22 @@
 
 _Last updated: 2026-09-29 - combined source on main; staging deployment blocked by Actions billing._
 
+SCRUM-201 is the next active story: a separate display browser paired to the
+ticket till, using the existing box station document. The first complete slice
+covers expiring six-digit pairing, manager claim, display-only credentials,
+redacted snapshots, stage-valid identification/contact/language, revocation
+and independence from staff lock/sign-out. API/DB, box intent rules and Console
+claim controls are proceeding in parallel with the POS route and till bridge.
+The inline harness remains available, including supervision flows that need
+their later display acceptance. No separate-display acceptance is claimed yet.
+
+The 29 September continuation instruction explicitly keeps independent work
+moving while deployment or an owner decision is pending. Checkpoint after each
+substantial part; update Jira status and progress in the same turn as a push;
+attach and name reviewed staging screenshots before Deployed. Pending actions
+and decisions are saved in OPEN_QUESTIONS.md and do not stop unrelated work.
+The Actions billing block and retained simulated partial outcome remain open.
+
 Current staging: SCRUM-206 online Slice F source `0468c38` is LIVE on
 API, POS, Console, Launcher and Booth after green CI 36547262414. OTO App
 remains `c416065`. Six native cases pass: cash/change, handheld split/manual,
