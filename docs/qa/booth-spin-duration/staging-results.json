@@ -1,0 +1,110 @@
+{
+  "ticket": "SCRUM-452",
+  "release": "5fb8525",
+  "capturedAt": "2026-09-29T05:18:32.195Z",
+  "proofCompleted": true,
+  "boxId": "01a0eb99-2089-7b9d-bd44-e0bba9efaba2",
+  "stationId": "01a0eb99-2415-7eb5-94a9-b6102d90066e",
+  "checks": [
+    {
+      "case": "native Console default",
+      "result": "PASS",
+      "seconds": 10,
+      "version": 1
+    },
+    {
+      "case": "save waits for publish",
+      "result": "PASS",
+      "draftSeconds": 12,
+      "runningSeconds": 10,
+      "runningVersion": 1
+    },
+    {
+      "case": "published bundle verified at box",
+      "result": "PASS",
+      "seconds": 12,
+      "version": 2,
+      "bundleSha256": "cf70185a481db7eac9cbed22547785dccd30835f2d142988d0be52e6eb11e41e",
+      "prizesUnchanged": true
+    },
+    {
+      "case": "downloaded native staging booth build",
+      "result": "PASS",
+      "assetFiles": 7,
+      "release": "5fb8525"
+    },
+    {
+      "case": "native 12-second timing and reveal print",
+      "result": "PASS",
+      "seconds": 12,
+      "animationMs": 12015,
+      "revealAfterLandingMs": 914,
+      "printAfterStartMs": 12949,
+      "resultVisibleAtPrint": true,
+      "spinPrintState": "queued",
+      "revealPrintState": "printed",
+      "offline": false
+    },
+    {
+      "case": "offline restored wheel timing and reveal print",
+      "result": "PASS",
+      "seconds": 12,
+      "animationMs": 12006,
+      "revealAfterLandingMs": 956,
+      "printAfterStartMs": 12978,
+      "resultVisibleAtPrint": true,
+      "spinPrintState": "queued",
+      "revealPrintState": "printed",
+      "offline": true
+    },
+    {
+      "case": "offline isolation",
+      "result": "PASS",
+      "cloudRequests": 0,
+      "configRestored": true,
+      "credentialsPersistedToFile": false
+    },
+    {
+      "case": "default duration restored and published",
+      "result": "PASS",
+      "seconds": 10,
+      "savedFormClean": true,
+      "publishedDurationFieldAbsent": true,
+      "boxDurationFieldAbsent": true,
+      "prizesUnchanged": true
+    },
+    {
+      "case": "native 10-second timing and reveal print",
+      "result": "PASS",
+      "seconds": 10,
+      "animationMs": 10002,
+      "revealAfterLandingMs": 954,
+      "printAfterStartMs": 10972,
+      "resultVisibleAtPrint": true,
+      "spinPrintState": "queued",
+      "revealPrintState": "printed",
+      "offline": false
+    }
+  ],
+  "cleanupFailures": [],
+  "diagnostics": [],
+  "nativeBoothBuild": "Downloaded staging assets served by isolated local box",
+  "resumedDefaultOnly": true,
+  "retainedProof": {
+    "capturedAt": "2026-09-29T05:05:40.544Z",
+    "boxId": "01a0eb8c-96fd-7f50-87d7-9c1108cb702e",
+    "stationId": "01a0eb8c-9a93-773b-9c95-5eee17a0f673",
+    "checks": 7,
+    "inventoryArchived": true,
+    "screenshots": [
+      "SCRUM-452-staging-default-10.png",
+      "SCRUM-452-staging-saved-12-draft.png",
+      "SCRUM-452-staging-publish-summary-12.png",
+      "SCRUM-452-staging-reveal-12-spinning.png",
+      "SCRUM-452-staging-reveal-12.png",
+      "SCRUM-452-staging-offline-reveal-12-spinning.png",
+      "SCRUM-452-staging-offline-reveal-12.png"
+    ]
+  },
+  "offlineRestartScope": "New box instance with retained in-memory SQLite and public configuration file"
+}

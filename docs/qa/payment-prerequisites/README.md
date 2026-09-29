@@ -44,6 +44,30 @@ The earlier [read-only inspection](staging-read-only-inspection.json) and
 [gateway screenshot](staging-391-gateway-read-only.png), attachment 10854, are
 configuration evidence only. They preceded the behavioural proof.
 
-SCRUM-206 Slice F remains In Progress: the shared foundation is tested on
-`feat/payment-stage`, but its four screens, complete offline transport and
-independent-display acceptance remain to be finished.
+## Complete response replay - SCRUM-387
+
+SCRUM-387 is Deployed. All six checks WORK on staging release `5fb8525`, with
+no cleanup failures.
+[Main CI 36521266122](https://github.com/vickyydev/oto-platform/actions/runs/36521266122)
+is green. The affected existing API files passed 147 tests; typecheck and lint
+passed. Test print and reprint commit their job, command, audit and complete
+answer together, and nested transactions cannot replace the public response.
+
+The [sanitised replay results](staging-387-replay-results.json) verify inquiry
+after settlement, staff confirmation, cash finalise without internal drawer
+routing, station test print, receipt-template test print and reprint. Each
+original complete envelope replays exactly and produces one effect per action.
+The reviewed [API test-run card](staging-387-complete-envelope-replays.png) is
+Jira attachment 10861. A native screen cannot show these replay internals.
+
+The initial proof printer lacked its required address. Correcting that proof
+configuration required no source change. The cash result was retained and
+rechecked through a read, without repeating its financial transaction. Dedicated
+proof inventory was disabled or archived; audit records remain on staging.
+
+SCRUM-206 Slice F remains In Progress. Its shared foundation is deployed;
+UI source is pushed as `cf67d86` on `feat/payment-stage-ui`. All 53 checks in
+the existing writer suite, POS typecheck, lint and production build pass;
+branch CI 36523891229 is green.
+The UI branch has not deployed and needs native staging proof. Complete offline
+transport and independent-display acceptance remain under their existing tickets.

@@ -7,7 +7,13 @@ Resume the remaining Sprint 2 software in the plan's order. The active Jira
 sprint is id 3, named Sprint 2 - Complete build. Parallel work is authorised.
 Write new history and progress comments about OTO Park and the park.
 
-Main is `b02f7e0`; the completed work branch `fix/payment-prerequisites`, based
+The deployed source on main is `5fb8525`; the documentation checkpoint follows
+it with deployment skipped. Exact-source branch CI 36521169654 and main CI 36521266122
+are green; main passed on one failed-job rerun after an existing concurrent
+voucher assertion. No voucher source/test was changed. The single staging
+deployment put API, POS, Console, Launcher and Booth live on `5fb8525`;
+the OTO App remains `c416065`.
+The completed work branch `fix/payment-prerequisites`, based
 on `a4a79d7`, is preserved. The first batch is SCRUM-391, SCRUM-388 and
 SCRUM-382. All three are Deployed, with starting, implementation and landing
 comments. SCRUM-206 remains In Progress.
@@ -66,29 +72,54 @@ keeps successful partial tenders committed, with authoritative remaining money.
 Epoch and sale-identity guards reject stale adoption after cart change, reset
 and unmount. All 38 tests in the existing sale-writer file pass, including API
 body/key contracts, split completion and stale responses. POS typecheck, package
-lint and independent review pass. No till UI has been wired and this branch
-has not deployed. The checkpoint is on the work branch; main and staging stay
-on the previous release while the complete workflow is built.
+lint and independent review pass. Foundation `2f694e1` is now deployed.
+UI work is isolated on `feat/payment-stage-ui` at
+`test-results/payment-ui-worktree`: the shared controller and adapters for the
+till, handheld till, food station and shop are pushed as `cf67d86`, including the
+mobile food-station caller. Branch CI 36523891229 is green. Existing writer
+checks pass 53; POS typecheck, package lint
+and production build pass. GHL permits staff confirmation without unsupported
+inquiry. This separate source checkpoint is not deployed; native staging UI
+proof is still pending.
 
-SCRUM-387 is Testing on the work branch. Its changes keep the first transaction's answer,
+SCRUM-387 is Deployed on main. Its changes keep the first transaction's answer,
 cache complete inquiry/confirmation envelopes, remove internal drawer routing
 from sale replies and preserve complete print responses. Existing affected
 tests pass (147 in five files); API typecheck and lint pass. Test print/reprint
 commit job, command, audit and complete answer atomically. Six failure/retry
 cases prove zero orphans after failure and one effect after retry; a failed
 first transaction releases response ownership for a successful skipped fallback.
-No new defect ticket.
+All six live staging replay checks passed, with dedicated proof cleanup complete.
+The reviewed API test-run card is attached as 10861 and named in the completion
+comment. Evidence is in docs/qa/payment-prerequisites. No new defect ticket.
 
-SCRUM-452 is Testing, the new spin-duration task in sprint 3, linked to SCRUM-198.
-The ten-second default and whole-second Console control (2-20) are implemented on the work branch. A duration is frozen for each spin; it travels through the existing
+SCRUM-452 is Deployed, the spin-duration task in sprint 3, linked to SCRUM-198.
+The ten-second default and whole-second Console control (2-20) are on main.
+A duration is frozen for each spin; it travels through the existing
 publish flow and cached bundle. Default 10 is omitted from published settings
 to preserve old version/hash bytes. Migration 0028 passed 22 existing DB tests;
 shared 13, wheel 5 and API 44 tests, all touched typechecks/lint pass (84 tests
-total). Separate source commits, then one deployment with SCRUM-387, staging
-proof and a verified CI-packed Pi release. Update the physical Pi before
+total). Source commit `3dd57d4` and SCRUM-387's `233113e`/`5fb8525` deployed
+together. Nine live duration checks passed; the six reviewed screenshots are
+attached as 10862-10867 and named in the completion comment. Native staging
+assets on an isolated local box measured 12,015 ms online, 12,006 ms after an
+offline instance restart and 10,002 ms at default. Each printed with the result
+visible; offline made zero cloud calls. The last two checks used a fresh scope,
+retaining the first seven passing facts and screenshots. Proof inventory was
+archived, and existing booth published versions remain unchanged. Evidence is
+in docs/qa/booth-spin-duration.
+
+Green main CI 36521266122 packed `oto-box-0.1.0-5fb8525.tgz`. After staging was
+live, its downloaded checksum and Desktop copy were verified as
+`f82baa9a6053df514ebfd75a27529aba25b44b33d6ca012aba61b704c61a49f2`.
+The `.tgz` and `.tgz.sha256` are on the Desktop; the older pair was moved into
+`old-oto-box-releases`. No physical Pi installation was performed.
+Update the physical Pi using PI_BOOTH.md's Update step before
 publishing a non-default duration; cloud deployment alone does not update it.
 
-Continue SCRUM-206 Slice F. Its UI must use the
+Next, land and verify the checked `cf67d86` UI branch for SCRUM-206 Slice F.
+It has green CI but has not deployed; do not mark the story Deployed yet.
+Its UI must use the
 authoritative sale and a distinct stable identity per deliberate split tender;
 an approved electronic attempt must not be charged again through cash-style
 finalise. Offline browser-to-box transport is missing (SCRUM-269/285), and the

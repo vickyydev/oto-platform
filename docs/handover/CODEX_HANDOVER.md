@@ -17,12 +17,20 @@ the existing tickets. Read the newest 29 September STOP POINT and STATUS for
 the current release and evidence. The bench instructions in section 4 below
 are historical completed work; their shared contract names remain unchanged.
 
-The current work branch is feat/payment-stage. Slice F has a tested shared
-foundation; its four screens remain unwired. SCRUM-387's response-cache fixes
-and SCRUM-452's ten-second wheel default/Console control are implemented locally
-with 165 passing existing-file tests, for separate commits and one deployment.
-See the live
-checkpoint for tests and the required packaged Pi update.
+The five staging services run main source `5fb8525`, with green main CI
+36521266122. SCRUM-387's complete response/atomic print fixes and SCRUM-452's
+ten-second wheel default/Console control passed 231 affected existing-file
+tests and deployed together. Both tickets are Deployed: six replay and nine
+duration staging checks passed, with reviewed screenshots attached and named.
+The duration evidence uses native staging assets on an isolated local box;
+the physical Pi still needs the packaged release update.
+Slice F's foundation is deployed. Its UI source is pushed as `cf67d86` on
+`feat/payment-stage-ui`, in `test-results/payment-ui-worktree`: the four tills
+and mobile food-station caller share real tender collection. All 53 checks in
+the existing writer suite, POS typecheck, lint and production build pass;
+branch CI 36523891229 is green.
+This UI branch has not deployed and still needs native staging proof. See the
+live checkpoint for evidence and the required packaged Pi update.
 
 ## 1. What this is, in five lines
 

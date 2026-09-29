@@ -581,7 +581,7 @@ the four tills that share the writer.
 
 ### Implementation checkpoint - 29 September 2026
 
-The shared foundation is in progress on `feat/payment-stage`: the cloud payment
+The shared foundation `2f694e1` is deployed on main `5fb8525`: the cloud payment
 client keeps configured tokens and stable gesture identities; the writer
 retains partial payments as committed rather than completed. Each deliberate
 split part has a separate stable action, and the HTTP key includes that action.
@@ -589,11 +589,19 @@ An omitted close tender resolves to explicit `NO_TENDER`; it must never send an
 empty finalise body, which the server treats as cash when money remains.
 Sale identity and epoch guard late responses after cart change, reset or unmount.
 All 38 tests in the existing sale-writer file, POS typecheck, package lint and
-independent review pass. The four UI workflows remain unbuilt and the foundation
-has not deployed.
+independent review pass. UI source is pushed as `cf67d86` on
+`feat/payment-stage-ui` in `test-results/payment-ui-worktree`. The four tills
+and mobile food-station caller share real collection, cash received/change,
+partial balances, manual entry, actual QR and guarded terminal actions.
+Pending/partial money locks cart, context and navigation controls. Late answers
+are fenced; finalised ticket orders can retry local completion without another
+charge. All 53 checks in the existing writer suite, POS typecheck, package lint
+and production build pass. Branch CI 36523891229 is green. The UI branch has
+not deployed and still needs native staging proof.
 
-Before wiring inquiry/confirmation retries, address the public response-envelope
-case recorded under existing SCRUM-387. The till must retain the start route:
+The response-envelope fixes under SCRUM-387 are deployed on the same main
+release and are Deployed after six passing staging checks and the reviewed
+API test-run card attached as 10861. The till retains the start route:
 gateway anomaly states do not permit terminal staff confirmation, and a local
 QR countdown does not establish that no money was taken. Offline transport
 269/285 and the S2-08 independent display remain separate acceptance seams.

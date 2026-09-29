@@ -1,0 +1,132 @@
+{
+  "ticket": "SCRUM-387",
+  "sourceReleaseSha": "5fb8525",
+  "capturedAt": "2026-09-29T05:05:11.224Z",
+  "proofCompleted": true,
+  "resumeMode": true,
+  "preservedCashCapturedAt": "2026-09-29T04:57:58.169Z",
+  "virtualBoxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+  "stationId": "01a0eb8a-ffc9-7ccf-b8cc-75a402d954bc",
+  "deviceIds": [
+    "01a0eb8a-f521-7cb1-8429-1f921ea2bbeb",
+    "01a0eb8a-f6ed-7a0b-ae39-4e48ecdbfa73"
+  ],
+  "terminalAttemptId": "01a0eb8b-2211-7788-84b4-d1459bf439ac",
+  "checks": [
+    {
+      "case": "Cash finalise replay keeps the sale envelope and omits drawerKick",
+      "result": "PASS",
+      "facts": {
+        "saleId": "26b45856-e606-4beb-99dc-37d4922014d6",
+        "envelopeKeys": [
+          "attempt",
+          "finalised",
+          "outstandingSatang",
+          "pickupCode",
+          "redeemedVoucherIds",
+          "replay",
+          "replayed",
+          "sale"
+        ],
+        "fullEnvelopeEqual": true,
+        "replayHeader": true,
+        "drawerKickExposed": false,
+        "paymentAttempts": 1,
+        "drawerCommandCount": 1,
+        "finalised": true,
+        "preservedFromCapturedAt": "2026-09-29T04:57:58.169Z",
+        "sourceReleaseSha": "5fb8525"
+      }
+    },
+    {
+      "case": "Station test-print replay keeps the complete response",
+      "result": "PASS",
+      "facts": {
+        "envelopeKeys": [
+          "actionId",
+          "commandId",
+          "printJob"
+        ],
+        "fullEnvelopeEqual": true,
+        "replayHeader": true,
+        "printJobId": "01a0eb8b-23e1-7d49-bfc7-7a88aa5cf7b0",
+        "commandId": "01a0eb8b-23e8-7847-9807-2b9e6d5b3ebe",
+        "actionId": "d5634066-4d4e-4111-9b7e-be906d9900cc",
+        "commandCount": 1,
+        "printJobCount": 1,
+        "replayAfterPrinted": true
+      }
+    },
+    {
+      "case": "Receipt-template test-print replay keeps the complete response",
+      "result": "PASS",
+      "facts": {
+        "envelopeKeys": [
+          "actionId",
+          "commandId",
+          "printJob"
+        ],
+        "fullEnvelopeEqual": true,
+        "replayHeader": true,
+        "printJobId": "01a0eb8b-3e08-71c7-b804-9b4db6ece2a9",
+        "commandId": "01a0eb8b-3e0f-7a8b-8ab4-c85b12fccc79",
+        "actionId": "dddf5993-6ce0-4c55-b2fd-5d121164b45c",
+        "commandCount": 1,
+        "printJobCount": 1,
+        "replayAfterPrinted": true
+      }
+    },
+    {
+      "case": "Reprint replay keeps the complete response and creates one job",
+      "result": "PASS",
+      "facts": {
+        "envelopeKeys": [
+          "actionId",
+          "commandId",
+          "printJob"
+        ],
+        "fullEnvelopeEqual": true,
+        "replayHeader": true,
+        "printJobId": "01a0eb8b-55ef-7d3b-95f8-8f62cfa09e4c",
+        "commandId": "01a0eb8b-55f5-79ab-92a6-8ecd639b2eba",
+        "actionId": "570e1f19-cbb1-4dab-9217-9f6c7665e26b",
+        "commandCount": 1,
+        "printJobCount": 1,
+        "replayAfterPrinted": true
+      }
+    },
+    {
+      "case": "Keyed inquiry replays its full original envelope after settlement",
+      "result": "PASS",
+      "facts": {
+        "attemptId": "01a0eb8b-2211-7788-84b4-d1459bf439ac",
+        "envelopeKeys": [
+          "attempt"
+        ],
+        "fullEnvelopeEqual": true,
+        "replayHeader": true,
+        "firstStatus": "inquiring",
+        "currentStatus": "approved",
+        "newInquiryCommands": 1
+      }
+    },
+    {
+      "case": "Keyed staff confirmation replays its full envelope without another payment",
+      "result": "PASS",
+      "facts": {
+        "saleId": "0f44cb81-ce3c-4ca3-83a4-680308b4a0aa",
+        "attemptId": "01a0eb8b-2211-7788-84b4-d1459bf439ac",
+        "envelopeKeys": [
+          "attempt"
+        ],
+        "fullEnvelopeEqual": true,
+        "replayHeader": true,
+        "paymentAttempts": 1,
+        "approvedPayments": 1,
+        "saleStatus": "finalised"
+      }
+    }
+  ],
+  "cleanupNotes": [],
+  "screenshot": "staging-387-complete-envelope-replays.png"
+}

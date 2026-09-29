@@ -23,17 +23,26 @@ in docs/qa/payment-prerequisites. Proof configuration was disabled or archived;
 test sales remain in audit history. The three tickets are Deployed.
 Read the newest STOP POINT in `SESSION_HANDOVER.md`.
 
-Slice F foundation work is on `feat/payment-stage` from `11d216d`: shared cloud
+Slice F foundation `2f694e1` is deployed on main `5fb8525`: shared cloud
 payment client, partial-state handling, separate stable tender identities,
 explicit zero-tender closing and stale-response guards. All 38 existing-file
-tests, POS typecheck, package lint and independent review pass. The four screens
-remain unwired and nothing from this branch has
-deployed. The inquiry/confirmation response-envelope follow-up is recorded
-under the existing SCRUM-387 defect, now implemented locally with 81 tests passing.
+tests, POS typecheck, package lint and independent review pass. UI source is
+pushed as `cf67d86` on `feat/payment-stage-ui`, with four till adapters and the
+mobile food-station caller. The existing writer suite passes 53; POS typecheck,
+package lint and production build pass; branch CI 36523891229 is green.
+This branch has not deployed and native staging UI proof is pending. The
+inquiry/confirmation response-envelope and
+atomic print follow-ups are under SCRUM-387, with 147 affected tests passing.
 SCRUM-452 adds a ten-second wheel default and Console control for whole seconds
 from 2 to 20 through the existing publish flow. Its 84 existing-file tests pass;
-touched package typechecks and lint pass. Both parts will land in one deployment
-after separate source commits.
+touched package typechecks and lint pass. Both parts deployed together on
+`5fb8525`, main CI 36521266122 green. Both are Deployed after six replay and
+nine duration checks passed. Reviewed Jira evidence is attached as 10861-10867.
+The duration proof used native staging assets on an isolated local box and
+verified online twelve seconds, offline restored twelve and default ten,
+printing at the visible reveal. Existing booth versions are unchanged.
+The verified Pi release pair is on the Desktop; see
+`docs/qa/booth-spin-duration/README.md` for its checksum and Update requirement.
 
 Slice F also depends on the existing offline transport work (269/285) and
 S2-08 for separate-device display acceptance. Simulator payment evidence and
