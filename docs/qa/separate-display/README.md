@@ -434,3 +434,10 @@ Mailbox retirement first removes old routes and Drizzle fields, while keeping
 physical columns.94 API checks and14 schema-shape checks pass. Only after
 this API is LIVE may forward0033 drop the obsolete columns. The no-reader
 API commit is the earliest compatible rollback after that migration.
+
+0033 release gate: API85d35e0 verified LIVE, removed routes404 and ordinary
+session/station read200. Existing DB tests43/43 and verify-schema pass with
+0033; DB typecheck/lint pass. Exact snapshot delta is the two removed columns
+plus snapshot identity/journal entry. After deployment,85d35e0 is the earliest
+API rollback;88140af and older must not run against0033. Migration deployment
+and final feature verification remain pending at this checkpoint.

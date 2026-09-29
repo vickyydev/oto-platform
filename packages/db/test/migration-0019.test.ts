@@ -42,6 +42,52 @@ let db: { url: string; drop: () => Promise<void> };
 let client: pg.Client;
 
 describe('anonymous display pairing constraints (SCRUM-201)', () => {
+  it('retires the phone mailbox while preserving staff session and station identity', async () => {
+    const legacyColumns = () => client.query<{ column_name: string }>(
+      `select column_name from information_schema.columns where table_schema = 'core'
+       and table_name = 'session' and column_name in ('pending_lookup_phone', 'pending_lookup_at')`,
+    );
+    expect((await legacyColumns()).rows).toEqual([]);
+    await client.query('begin');
+    try {
+      // Rehearse the upgrade with a populated legacy mailbox only in this disposable database.
+      await client.query(`alter table core.session add column pending_lookup_phone text,
+        add column pending_lookup_at timestamptz`);
+      const { rows } = await client.query<{ id: string }>(
+        `with o as (
+           insert into core.operator (id, name) values (gen_random_uuid(), 'Retirement proof') returning id
+         ), b as (
+           insert into core.branch (id, operator_id, name, code)
+           select gen_random_uuid(), id, 'Retirement park', 'RET' from o returning id, operator_id
+         ), a as (
+           insert into core.account (id, operator_id, phone)
+           select gen_random_uuid(), operator_id, '+66800000001' from b returning id
+         ), s as (
+           insert into core.station (id, operator_id, branch_id, name, kind)
+           select gen_random_uuid(), operator_id, id, 'Retirement till', 'till' from b returning id
+         )
+         insert into core.session (id, account_id, token_hash, branch_id, station_id, expires_at,
+           pending_lookup_phone, pending_lookup_at)
+         select gen_random_uuid(), a.id, gen_random_uuid()::text, b.id, s.id, now() + interval '1 day',
+           '+66800000002', now() from a, b, s returning id`,
+      );
+      const read = () => client.query(
+        `select s.id, s.account_id, s.branch_id, s.station_id, s.class, s.expires_at,
+          a.operator_id, t.name as station_name from core.session s
+         join core.account a on a.id = s.account_id join core.station t on t.id = s.station_id
+         where s.id = $1`, [rows[0]!.id],
+      );
+      const before = (await read()).rows;
+      expect(before).toHaveLength(1);
+      const migration = readFileSync(new URL('../migrations/0033_retire_session_lookup.sql', import.meta.url), 'utf8');
+      await client.query(migration);
+      expect((await legacyColumns()).rows).toEqual([]);
+      expect((await read()).rows).toEqual(before);
+    } finally {
+      await client.query('rollback');
+    }
+  });
+
   it('keeps anonymous request tokens and outstanding codes unique and rejects half-claimed rows', async () => {
     const requestId = newId();
     const tokenHash = `fixture-token-${newId()}`;

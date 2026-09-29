@@ -2,32 +2,39 @@
 
 ## Release checkpoint - 29 September 2026 late evening
 
-The display foundation is verified on staging 88140af: nine checks cover
-Console pairing, expiry/reuse, both widths, locked lookup, saved-response
-privacy, recorded refusal, reconnect, sign-out and protected-call revocation.
-Reviewed staging images are Jira10908-10916, named in
-`docs/qa/separate-display/README.md`. SCRUM-285 is Deployed with its reviewed
-staging test card10905. No new ticket has been started.
+The no-reader API85d35e0 is LIVE. Both retired mailbox endpoints return404
+and the ordinary authenticated station read returns200. Forward migration0033
+now removes only the two old session lookup columns. The existing database
+checks pass43/43, schema verification matches the0033 snapshot, and DB
+typecheck/lint pass. The populated-upgrade test preserves account, park,
+station and staff-session identity. Independent snapshot review found no
+unrelated change.0033 is checked and pending the final API deployment.
 
-This checkpoint retires the legacy session phone mailbox routes and ORM
-fields. Physical columns remain for the first rollout. API affected tests94
-and DB schema-shape14 pass, with API/DB typecheck and lint. Deploy this
-no-reader API and verify it LIVE before writing forward migration0033;
-record this revision as the earliest rollback-compatible API after the drop.
-The shop/consent implementation is checked statically and its six existing
-native cases are running; it is deliberately not part of this runtime commit.
+After0033 is applied, the earliest rollback-compatible API is85d35e0 or a
+verified descendant. Never restore88140af or an older API against this schema.
+Physical display credentials, staff sessions and station leases are retained.
 
-Payment follow-up proof found two helper assertion errors, not a failed
-reversal: its fresh simulation has one partial_approval SALE and one approved
-VOID, reversalPending false. Only the known-reversed dedicated fixture may
-be cleaned up; the older retained uncertain payment remains untouched.
-Corrected native follow-ups are being rerun. SCRUM-206 remains In Progress;
-SCRUM-269 local transport remains To Do and blocks full offline acceptance.
+SCRUM-201 remains In Progress. Shop native proof passes; its display layout
+is under visual review. Consent native proof found accepted acknowledgement
+loss on unlock while a fresh quote rotated the prompt. The bounded fix pauses
+typed prompt publication during online quote refresh;92 POS checks pass and
+the focused browser retest is running. Real offline and private policy changes
+still invalidate stale answers. Foundation staging screenshots10908-10916
+are attached; final guest-order/consent staging proof remains.
 
-Finish existing release verification, deploy checked source, update Jira and
-save the final stop point. Do not start another ticket. GitHub CI remains
-blocked before jobs by billing/spending availability; manual Render releases
-are authorised without changing normal deployment settings.
+SCRUM-285 is Deployed with screenshot10905. SCRUM-206 stays In Progress:
+partial reversal plus cash, disabled QR plus cash and zero-value finalisation
+pass native staging checks. A running GHL simulation was stranded when the
+API deployed during its no-response wait. It is retained for safe recovery;
+no second SALE, invented confirmation or cash was sent. The existing payment
+follow-up must fix restart recovery and prove the result before final release.
+The older retained uncertain simulation is untouched. Full offline trading
+still depends on separate To Do SCRUM-269; no new ticket is being started.
+
+The requested break follows completion of current checked work, staging
+verification, Jira comments/statuses and a final saved stop point. Manual
+Render releases are authorised; normal autoDeploy/checksPass remains intact.
+GitHub billing prevents jobs starting and no new CI-packed Pi artifact exists.
 
 ## Previous checkpoint
 

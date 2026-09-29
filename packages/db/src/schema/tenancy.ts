@@ -249,7 +249,6 @@ export const session = core.table(
      * referential integrity can express, and all of which it must do first.
      */
     stationId: uuid('station_id'),
-    // Legacy lookup columns remain in the database until the next release.
     /**
      * What holds this session (S2-01a). 'staff' is a person signed in at a
      * till or on the console; the other classes cover a paired display, a box
