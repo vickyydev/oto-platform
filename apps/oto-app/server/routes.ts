@@ -9774,25 +9774,21 @@ OTO Company Limited`,
 
       const { failReason, confidenceScore, livenessScore, sessionId, deviceSecret } = validationResult.data;
 
-      let kioskDeviceId: string | undefined;
-      let branchId: string | undefined;
-      
-      if (deviceSecret) {
-        const secretHash = crypto.createHash('sha256').update(deviceSecret).digest('hex');
-        const device = await storage.getKioskDeviceBySecret(secretHash);
-        if (device && device.isActive) {
-          kioskDeviceId = device.id;
-          branchId = device.branchId;
-        }
+      const callerIp = req.ip || req.socket.remoteAddress || "unknown";
+      if (!takeKioskAttempt(`face-fail-ip:${callerIp}`, KIOSK_FACE_MAX_PER_ADDRESS, KIOSK_FACE_WINDOW_MS)) {
+        return res.status(429).json({ message: KIOSK_TOO_MANY_MESSAGE });
       }
-
-      if (!branchId) {
+      const device = await resolveKioskDevice(deviceSecret);
+      if (!device) {
         return res.status(400).json({ message: "Device not configured" });
+      }
+      if (!takeKioskAttempt(`face-fail-device:${device.id}`, KIOSK_FACE_MAX_PER_DEVICE, KIOSK_FACE_WINDOW_MS)) {
+        return res.status(429).json({ message: KIOSK_TOO_MANY_MESSAGE });
       }
 
       await storage.createKioskAuthAttempt({
-        branchId,
-        kioskDeviceId,
+        branchId: device.branchId,
+        kioskDeviceId: device.id,
         attemptTime: new Date(),
         method: 'FACE',
         outcome: 'FAIL',
@@ -10106,7 +10102,23 @@ OTO Company Limited`,
   });
 
   // Kiosk - Upload PIN evidence photo (base64)
-  app.post("/api/kiosk/upload-pin-photo", profilePhotoUpload.single("photo"), fixMulterFilenames, async (req, res, next) => {
+  app.post("/api/kiosk/upload-pin-photo", async (req, res, next) => {
+    try {
+      const callerIp = req.ip || req.socket.remoteAddress || "unknown";
+      if (!takeKioskAttempt(`photo-ip:${callerIp}`, 60, KIOSK_FACE_WINDOW_MS)) {
+        return res.status(429).json({ message: KIOSK_TOO_MANY_MESSAGE });
+      }
+      // Check the device before multer accepts a multipart body into memory.
+      const device = await resolveKioskDevice(req.get("x-kiosk-device-secret"));
+      if (!device) return refuseKiosk(res);
+      if (!takeKioskAttempt(`photo-device:${device.id}`, 30, KIOSK_FACE_WINDOW_MS)) {
+        return res.status(429).json({ message: KIOSK_TOO_MANY_MESSAGE });
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  }, profilePhotoUpload.single("photo"), fixMulterFilenames, async (req, res, next) => {
     try {
       let imageBuffer: Buffer;
       let mimeType = "image/jpeg";
@@ -10114,14 +10126,23 @@ OTO Company Limited`,
       if (req.file) {
         imageBuffer = req.file.buffer;
         mimeType = req.file.mimetype;
-      } else if (req.body?.photoData) {
-        const base64Data = req.body.photoData.replace(/^data:image\/\w+;base64,/, '');
-        imageBuffer = Buffer.from(base64Data, 'base64');
+      } else if (typeof req.body?.photoData === "string") {
+        const encoded = /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+={0,2})$/i.exec(req.body.photoData);
+        if (!encoded) return res.status(400).json({ message: "JPEG or PNG photo required" });
+        if (encoded[2].length > Math.ceil(5 * 1024 * 1024 / 3) * 4) {
+          return res.status(413).json({ message: "Photo is too large" });
+        }
+        mimeType = `image/${encoded[1].toLowerCase()}`;
+        imageBuffer = Buffer.from(encoded[2], "base64");
+        if (!imageBuffer.length || imageBuffer.length > 5 * 1024 * 1024) {
+          return res.status(413).json({ message: "Photo is too large" });
+        }
       } else {
         return res.status(400).json({ message: "Photo data required" });
       }
       
-      const filename = `pin_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      const extension = mimeType === "image/png" ? "png" : "jpg";
+      const filename = `pin_${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
       const photoUrl = await uploadToObjectStorage(imageBuffer, "pin-photos", filename, mimeType);
       
       res.json({ success: true, photoUrl });

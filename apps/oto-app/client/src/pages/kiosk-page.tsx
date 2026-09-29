@@ -411,6 +411,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
           formData.append("photo", failedPhotoFile);
           const uploadRes = await fetch("/api/kiosk/upload-pin-photo", {
             method: "POST",
+            headers: { "x-kiosk-device-secret": localStorage.getItem("kiosk_device_secret") || "" },
             body: formData,
           });
           if (uploadRes.ok) {
@@ -424,8 +425,13 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         }
       } else if (failedPhotoData && failedPhotoData.startsWith("data:")) {
         try {
-          const uploadRes = await apiRequest("POST", "/api/kiosk/upload-pin-photo", {
-            photoData: failedPhotoData,
+          const uploadRes = await fetch("/api/kiosk/upload-pin-photo", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-kiosk-device-secret": localStorage.getItem("kiosk_device_secret") || "",
+            },
+            body: JSON.stringify({ photoData: failedPhotoData }),
           });
           const uploadData = await uploadRes.json();
           if (uploadData.success) {

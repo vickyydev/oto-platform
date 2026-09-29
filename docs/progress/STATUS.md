@@ -1,5 +1,9 @@
 # Current status - read this first when resuming
 
+## Active OTO App lane - 30 September 2026
+
+SCRUM-193 (S2-17b) is In Progress on `feat/oto-app-lift`, in parallel with the printing lane. The first kiosk security slice is locally verified: SCRUM-261 and SCRUM-262 are In Progress, and their upload/logging ceilings and device checks passed the existing 12-case kiosk suite plus an isolated valid-device check. The production build passed; typecheck remains at its inherited 583 errors with no increase. Evidence is in `docs/qa/oto-app-lift/README.md`. The slice is not yet pushed or deployed; continue with the staging review before claiming Deployed. Only `apps/oto-app/**`, `docs/qa/**`, and this lane's progress blocks are editable here. Needs from the platform lane: none for this slice.
+
 ## Release checkpoint - 30 September 2026 - break checkpoint saved
 
 The current release checkpoint is complete. Stop here and await the next

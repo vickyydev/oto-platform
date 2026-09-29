@@ -1,5 +1,13 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 30 September 2026 - SCRUM-193 OTO App lane, kiosk security slice
+
+This block belongs to the OTO App lane on `feat/oto-app-lift`; the printing lane's stop block is separate. SCRUM-193 is In Progress with its starting Jira comment. SCRUM-261 and SCRUM-262 are In Progress with starting comments. The first app-owned slice changes `apps/oto-app/server/routes.ts`, `client/src/pages/kiosk-page.tsx` and the existing `tests/kiosk-authz.spec.ts`. It authenticates and throttles photo uploads, sends the device credential from both client upload formats, and throttles failed-face reports before logging.
+
+Local verification: isolated `oto_app_lift_test` database; existing kiosk spec 12/12; disposable valid kiosk photo succeeded, upload request 31 returned 429, failed-face report 121 returned 429 with 120 rows; fixture/image/log rows removed. Production build passed. Typecheck remains at the inherited 583 errors, no increase; changed lines had no scoped ESLint diagnostics. `docs/qa/oto-app-lift/README.md` holds the evidence and staging gate. This slice has not yet been pushed or deployed at the time of this stop block; verify the live SHA and staging screens before marking the two defects Deployed.
+
+Next: land this verified slice onto current main with an explicit file-list commit, push and comment/status update on SCRUM-193/261/262 in that turn. Then deploy oto-app-staging manually if CI is still blocked, capture named staging evidence, close the defect tickets, and continue the OTO App module lift. Do not edit API, POS, Console, shared packages, scripts or migrations here. Needs from the platform lane: none for this slice.
+
 ## STOP POINT - 30 September 2026 - break checkpoint saved
 
 The current release checkpoint is complete. Stop here and await the next

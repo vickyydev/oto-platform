@@ -9,10 +9,13 @@
  * `npx playwright test tests/kiosk-authz.spec.ts`.
  */
 import { test, expect, type APIRequestContext } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 
 const CLOCK_PHONE = "/api/kiosk/clock-phone";
 const CLOCK_PIN = "/api/kiosk/clock-pin";
 const REFRESH = "/api/kiosk/refresh-session";
+const PHOTO = "/api/kiosk/upload-pin-photo";
+const FACE_FAILURE = "/api/kiosk/face-attempt-failed";
 
 // Shaped like a Thai mobile number and belonging to nobody. The point of these
 // tests is that the endpoint does not tell us whether that is true.
@@ -109,5 +112,49 @@ test.describe("SCRUM-243 — a PIN is checked against a named person", () => {
       photoEvidenceUrl: "",
     });
     expect(status).toBe(401);
+  });
+});
+
+test.describe("SCRUM-261 — kiosk photo upload requires a device and a ceiling", () => {
+  test("refuses an anonymous upload before accepting photo data", async ({ request }) => {
+    const { status } = await post(request, PHOTO, {});
+    expect(status).toBe(401);
+  });
+
+  test("refuses an unrecognised device", async ({ request }) => {
+    const response = await request.post(PHOTO, {
+      headers: { "x-kiosk-device-secret": randomUUID() },
+      data: {},
+      failOnStatusCode: false,
+    });
+    expect(response.status()).toBe(401);
+  });
+
+  test("limits repeated attempts from one address", async ({ request }) => {
+    let throttled = false;
+    for (let i = 0; i < 70; i++) {
+      const { status } = await post(request, PHOTO, {});
+      if (status === 429) {
+        throttled = true;
+        break;
+      }
+      expect(status).toBe(401);
+    }
+    expect(throttled).toBe(true);
+  });
+});
+
+test.describe("SCRUM-262 — kiosk failure logging has a ceiling", () => {
+  test("limits repeated failures from one address without writing a log row", async ({ request }) => {
+    let throttled = false;
+    for (let i = 0; i < 130; i++) {
+      const { status } = await post(request, FACE_FAILURE, { failReason: "NO_MATCH" });
+      if (status === 429) {
+        throttled = true;
+        break;
+      }
+      expect(status).toBe(400);
+    }
+    expect(throttled).toBe(true);
   });
 });
