@@ -1,71 +1,70 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-29 - six native cases pass; partial recovery and CI blocked._
+_Last updated: 2026-09-29 - combined source landing; exact-main CI pending._
 
-SCRUM-206 online Slice F is live on main source `0468c38`. CI 36547262414 is
-green; API, POS, Console, Launcher and Booth are confirmed live on that source.
-OTO App remains `c416065`. All 53 affected writer checks, POS typecheck,
-package lint and build pass. Native desktop cash/change, handheld cash/manual
-split, food QR/reconnect, shop approval, decline/cash fallback and timeout/
-inquiry/audited confirmation pass. Six native cases pass in total. Completed
-payments are retained, never repeated to repair a proof observation. Reviewed
-native staging screenshots are attached
-to SCRUM-206 as 10868-10881, including an explicit unresolved-state image.
-The [native report](../qa/payment-stage/README.md) records the scope. The full
-story stays In Progress: SCRUM-269 local till transport and SCRUM-201 separate
-display acceptance are NOT BUILT.
-The partial approval is BROKEN in this live run: its simulated command reports
-partial approval, but the cloud attempt remains pending and no rescue VOID is
-visible. Eight dedicated inventory rows are retained; no second collection or
-no-money confirmation was performed. Resolve the existing attempt before
-continuing this proof. GHL confirmation, QR-disabled and zero-price cases remain
-unverified. No physical booth, bank charge or physical printing is claimed.
+Current staging: SCRUM-206 online Slice F source `0468c38` is LIVE on
+API, POS, Console, Launcher and Booth after green CI 36547262414. OTO App
+remains `c416065`. Six native cases pass: cash/change, handheld split/manual,
+food QR/reconnect, shop approval, decline/cash fallback and timeout/inquiry/
+audited confirmation. Reviewed screenshots are attached to SCRUM-206 as
+10868-10881; the final image records failure evidence. See
+`docs/qa/payment-stage`. No physical booth, bank charge or printing is claimed.
 
-SCRUM-285 is implemented and pushed on `fix/offline-proof` at `d38eb3e`.
-The server refuses cloud trade operations for a station's forced-offline
-virtual box before idempotency replay or payment effects; reporting, setup
-and Go online remain available. All 44 checks in the two affected existing
-API files, API typecheck and full package lint pass. The capability matrix
-records the missing local till transport honestly. The task stays Testing.
-The shared payment-request wording is `edce9bb` on `fix/payment-request-copy`;
-optional inquiry capability is `9a54d58`. Commit `d43a92b` carries the checked
-partial-reversal fix: persisted pending/failed/unvoidable reversals reserve the
-original amount, block sale abandonment and zero-balance close, and keep the
-UI polling until explicit `reversalPending:false`. A missing flag cannot unlock
-a known pending reversal. Existing terminal/cash/sales/writer/shared-payment
-files pass 189 checks (25/26/58/58/22); API/POS/shared typechecks and full package
-lint pass. Isolated check configs map this branch's shared source because its
-dependency junctions point to main; links are unchanged and temporary configs
-removed. No new suite, migration or dependency. These fixes are not deployed.
-The retained staging final outcome still needs deliberate recovery.
+The checked payment follow-ups and SCRUM-285 guard are assembled on the
+latest main checkpoint as five linear source commits: wording `2899439`,
+inquiry capability `4817aa1`, partial reversal `f1b122e`, invoice scope
+`c215757` and forced-offline guard `346bfae`. This checkpoint lands that
+combined source on main; the original work branches remain preserved.
+All **305 affected existing-file checks pass**: API terminal 27, gateway 44,
+cash 26, sales 58, station session 35 and guarded routes 9; POS writer 58,
+shared payments 22 and database migration 26. One local guarded-route suite
+hit a PostgreSQL port collision; its isolated rerun passed all nine checks.
+API/POS/DB/shared typechecks and full package lint, POS production build,
+database schema verification against 0029 and independent combined review pass.
+Temporary verification configs are removed. No new suite or dependency.
 
-Invoice follow-up `875294b` on the same branch corrects the callback collision.
-Staging logged `payment_attempt_invoice_unique` at 10:32:21 UTC; two existing
-terminal regression cases reproduce the pending cloud state with the old
-migrations. Forward migration 0029 keeps gateway invoices globally unique on
-device-less attempts, including the gateway simulator, while hardware invoice
-numbers may repeat across terminals. All five gateway reads exclude device
-attempts. The 97 affected existing checks pass (terminal 27, gateway 44,
-migration 26); API/DB typechecks, full package lint and schema verification
-pass. Independent review passes. No new suite or dependency. No staging
-migration or recovery was performed. After exact-source CI and corrected API
-LIVE, recover the original result and verify one successful VOID before
-releasing the reservation; never re-run SALE. Roll forward after 0029 rather
-than reverting behind the gateway matching filters.
+Shared contract names remain unchanged. Optional `inquirySupported` hides
+unsupported GHL card inquiry; optional `reversalPending` retains the original
+reservation and blocks abandonment/zero-close until explicit false after a
+successful reversal. Forward migration 0029 permits repeated hardware invoice
+numbers, keeps device-less gateway invoices unique and fences all five gateway
+reads from hardware attempts. It does not rewrite payment rows. Roll forward
+after 0029 rather than reverting behind these matching filters.
+The offline guard runs before idempotency and refuses trading only for the
+authenticated station's persisted forced-offline virtual box. Reporting,
+setup, Go online and box callbacks remain available with original permissions.
 
-New branch CI runs (36550625372, 36553644035, 36556014521, 36558144943 and
-36560856529)
-were prevented from starting by GitHub account billing/spending availability.
-No build or test
-step ran. Both branches remain undeployed; do not bypass the CI gate. Restore
-Actions availability, run exact-source CI, land the checked branches, then
-deploy and complete SCRUM-285 staging proof before moving it to Deployed.
+The latest branch CI rerun, 36560856529, still has zero executed steps because
+GitHub billing/spending availability prevents jobs starting. Check the exact
+new main run after pushing. Render's normal checksPass gate stays intact;
+no corrected source or migration is deployed yet. SCRUM-206 remains In Progress
+pending SCRUM-269 local till transport and SCRUM-201 separate display acceptance.
+SCRUM-285 remains Testing until named staging screenshot evidence is attached.
 
-The last green CI-packed `oto-box-0.1.0-0468c38.tgz` and its `.tgz.sha256`
-are on the Desktop, with both downloaded and delivered hashes verified:
+The original simulated partial outcome is still **BROKEN/unresolved**:
+sale `01a0ecb8-f168-7b26-96e4-9ccaabe14cbf`, attempt
+`01a0ecb8-f870-798f-b893-37d9871d4bcd`, run `0d008153` on virtual-1.
+Its command reports partial approval, but the cloud attempt remains pending
+with no rescue VOID. Eight dedicated inventory rows remain retained. Existing
+controls cannot retrieve the lost final result after restart or safely replay
+it. Do not repeat SALE, fabricate a callback, confirm no money or archive these
+records. The logged invoice unique violation and old-migration regressions
+support the corrected callback path; they do not establish recovery of this row.
+
+After corrected source is LIVE, prove fresh partial reversal, GHL confirmation,
+QR-disabled refusal and zero-price checkout in an isolated report using
+`test-results/payment-stage-native-proof.mts`, `--output-dir` and `--only`.
+The helper protects the historical records and original report; completion
+applies only to requested cases. Then run `test-results/offline-guard-proof.mts`
+on independent disposable fixtures, restoring the forced-offline flag afterward.
+These proofs must not change the retained historical failure into a success.
+
+The last green CI-packed Desktop pair is `oto-box-0.1.0-0468c38.tgz`
+and its `.tgz.sha256`, verified SHA-256
 `044edbb9a474a945eadcc91e82598bee86b7b3f472e1630b79dceabcd1fbf1ea`.
-Older release pairs are in `old-oto-box-releases`. No physical Pi installation
-was performed; use PI_BOOTH.md's Update step.
+Older pairs are in `old-oto-box-releases`. No physical Pi installation was
+performed. Download the new exact-source CI artifact only after green CI and
+LIVE staging, verify its checksum and replace the Desktop pair as documented.
 
 The earlier releases below are retained as history.
 

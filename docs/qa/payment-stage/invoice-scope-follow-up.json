@@ -28,8 +28,14 @@
     "databaseChecks": 26,
     "totalChecks": 97,
     "result": "PASS",
-    "typechecks": ["api", "db"],
-    "fullPackageLint": ["api", "db"],
+    "typechecks": [
+      "api",
+      "db"
+    ],
+    "fullPackageLint": [
+      "api",
+      "db"
+    ],
     "schemaVerifiedAgainst": "0029_snapshot.json",
     "independentReview": "PASS",
     "newTestSuite": false,
@@ -47,12 +53,36 @@
     "attemptId": "01a0ecb8-f870-798f-b893-37d9871d4bcd",
     "recovered": false,
     "saleRepeated": false,
-    "inventoryRetained": true
+    "inventoryRetained": true,
+    "currentControlsCanRecoverLostResult": false,
+    "newProofUsesSeparateFixturesAndReport": true
   },
   "rollout": [
-    "Restore Actions availability and require exact-source CI before landing and deployment.",
-    "After corrected API LIVE, recover the original result and verify exactly one successful VOID before releasing the reservation.",
-    "Never re-run SALE to repair a callback.",
+    "Push the checked combined source to main and require exact-main CI before deployment.",
+    "Restore Actions billing/spending availability; preserve Render checksPass gating.",
+    "After corrected source is LIVE, prove four fresh native cases in an isolated report and the offline guard on independent fixtures.",
+    "Retain the original unresolved simulated outcome; never fabricate its callback, repeat SALE or confirm no money.",
     "Roll forward after 0029 rather than reverting behind the gateway matching filters."
-  ]
+  ],
+  "mainSourceTip": "346bfae",
+  "combinedVerification": {
+    "totalChecks": 305,
+    "result": "PASS",
+    "typechecks": [
+      "api",
+      "pos",
+      "db",
+      "shared"
+    ],
+    "fullPackageLint": [
+      "api",
+      "pos",
+      "db",
+      "shared"
+    ],
+    "posBuild": "PASS",
+    "schemaVerification": "PASS",
+    "independentReview": "PASS",
+    "guardedRoutesRerun": "PASS after local PostgreSQL port collision"
+  }
 }

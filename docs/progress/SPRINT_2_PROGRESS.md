@@ -4,40 +4,62 @@
 
 _Current checkpoint: 2026-09-29._
 
-Current online SCRUM-206 Slice F source `0468c38` is live on all five platform
-staging services after green CI 36547262414; OTO App remains `c416065`.
-All 53 affected writer checks and POS typecheck, lint and build pass. Native
-cash/change, handheld split/manual, food QR/reconnect, shop approval,
-decline/cash fallback and timeout/inquiry/audited confirmation pass (six cases).
-Reviewed native screenshots are attached to SCRUM-206 as 10868-10881. The
-partial image records an unresolved state: the simulated partial command
-succeeded, but the cloud attempt stayed pending with no rescue VOID. Eight
-temporary rows remain retained; no repeat collection or no-money confirmation.
-GHL confirmation, QR-disabled and zero-price native proof remain unverified.
-The report is in docs/qa/payment-stage. The full story remains In Progress
-pending SCRUM-269 local till transport and SCRUM-201 separate display.
+Current staging: SCRUM-206 online Slice F source `0468c38` is LIVE on
+API, POS, Console, Launcher and Booth after green CI 36547262414. OTO App
+remains `c416065`. Six native cases pass: cash/change, handheld split/manual,
+food QR/reconnect, shop approval, decline/cash fallback and timeout/inquiry/
+audited confirmation. Reviewed screenshots are attached to SCRUM-206 as
+10868-10881; the final image records failure evidence. See
+`docs/qa/payment-stage`. No physical booth, bank charge or printing is claimed.
 
-SCRUM-285 is pushed on `fix/offline-proof` at `d38eb3e`: cloud trade refuses
-the authenticated station's forced-offline virtual box before idempotency,
-with original permissions, reporting and recovery preserved. All 44 affected
-existing API checks, typecheck and full package lint pass; the honest capability
-matrix is included. It stays Testing, not deployed. The five-language payment
-request wording is `edce9bb` and inquiry capability is `9a54d58` on
-`fix/payment-request-copy`. Commit `d43a92b` adds checked partial-reversal
-reservation, sale abandonment/zero-close refusal and blocked POS polling until
-explicit successful reversal. Existing affected files pass 189 checks, with
-API/POS/shared typechecks and full lint passing. These fixes are not live and
-retain the staged outcome for deliberate recovery. The same branch's invoice
-follow-up `875294b` addresses the callback collision: forward 0029 scopes gateway invoice
-uniqueness to device-less attempts and all five gateway reads exclude hardware
-attempts. Old migrations reproduce the failure; 97 affected existing-file
-checks, API/DB typechecks, full lint, schema verification and independent review
-pass. No staged migration or recovery yet; verify the original outcome and one
-successful VOID after corrected API LIVE, with no new SALE. New branch CI
-jobs, latest 36560856529, were blocked before execution by GitHub account
-billing/spending availability. Keep both source gates intact.
-The current verified CI-packed 0468c38 Pi release pair is on the Desktop;
-its checksum and next steps are in STATUS and the newest STOP POINT.
+The checked payment follow-ups and SCRUM-285 guard are assembled on the
+latest main checkpoint as five linear source commits: wording `2899439`,
+inquiry capability `4817aa1`, partial reversal `f1b122e`, invoice scope
+`c215757` and forced-offline guard `346bfae`. This checkpoint lands that
+combined source on main; the original work branches remain preserved.
+All **305 affected existing-file checks pass**: API terminal 27, gateway 44,
+cash 26, sales 58, station session 35 and guarded routes 9; POS writer 58,
+shared payments 22 and database migration 26. One local guarded-route suite
+hit a PostgreSQL port collision; its isolated rerun passed all nine checks.
+API/POS/DB/shared typechecks and full package lint, POS production build,
+database schema verification against 0029 and independent combined review pass.
+Temporary verification configs are removed. No new suite or dependency.
+
+Shared contract names remain unchanged. Optional `inquirySupported` hides
+unsupported GHL card inquiry; optional `reversalPending` retains the original
+reservation and blocks abandonment/zero-close until explicit false after a
+successful reversal. Forward migration 0029 permits repeated hardware invoice
+numbers, keeps device-less gateway invoices unique and fences all five gateway
+reads from hardware attempts. It does not rewrite payment rows. Roll forward
+after 0029 rather than reverting behind these matching filters.
+The offline guard runs before idempotency and refuses trading only for the
+authenticated station's persisted forced-offline virtual box. Reporting,
+setup, Go online and box callbacks remain available with original permissions.
+
+The latest branch CI rerun, 36560856529, still has zero executed steps because
+GitHub billing/spending availability prevents jobs starting. Check the exact
+new main run after pushing. Render's normal checksPass gate stays intact;
+no corrected source or migration is deployed yet. SCRUM-206 remains In Progress
+pending SCRUM-269 local till transport and SCRUM-201 separate display acceptance.
+SCRUM-285 remains Testing until named staging screenshot evidence is attached.
+
+The original simulated partial outcome is still **BROKEN/unresolved**:
+sale `01a0ecb8-f168-7b26-96e4-9ccaabe14cbf`, attempt
+`01a0ecb8-f870-798f-b893-37d9871d4bcd`, run `0d008153` on virtual-1.
+Its command reports partial approval, but the cloud attempt remains pending
+with no rescue VOID. Eight dedicated inventory rows remain retained. Existing
+controls cannot retrieve the lost final result after restart or safely replay
+it. Do not repeat SALE, fabricate a callback, confirm no money or archive these
+records. The logged invoice unique violation and old-migration regressions
+support the corrected callback path; they do not establish recovery of this row.
+
+After corrected source is LIVE, prove fresh partial reversal, GHL confirmation,
+QR-disabled refusal and zero-price checkout in an isolated report using
+`test-results/payment-stage-native-proof.mts`, `--output-dir` and `--only`.
+The helper protects the historical records and original report; completion
+applies only to requested cases. Then run `test-results/offline-guard-proof.mts`
+on independent disposable fixtures, restoring the forced-offline flag afterward.
+These proofs must not change the retained historical failure into a success.
 
 The earlier releases below are retained as history.
 
