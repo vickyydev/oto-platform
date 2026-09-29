@@ -21,6 +21,7 @@ import { Chip, StatusMark, StatusPill, type Tone } from '@/components/Status';
 import { Field, Select, TextInput } from '@/components/Form';
 import { BoxDrawer } from '@/components/devices/BoxDrawer';
 import { DisplayPairPanel } from '@/components/devices/DisplayPairPanel';
+import { DisplaySnapshotPanel } from '@/components/devices/DisplaySnapshotPanel';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
 import { StationDrawer } from '@/components/devices/StationDrawer';
 import { TerminalSimulatorPanel } from '@/components/devices/TerminalSimulatorPanel';
@@ -124,6 +125,18 @@ export function Devices() {
       ),
   );
   const currentBranchName = branchName(branchId) ?? 'this branch';
+  const snapshotStations = fleet.stations.filter(
+    (s) =>
+      s.branchId === branchId &&
+      s.boxId &&
+      permissions.some(
+        (grant) =>
+          grant.permission === 'admin:station:read' &&
+          (grant.scopeType === 'operator'
+            ? grant.scopeId === null || grant.scopeId === me?.account.operatorId
+            : grant.scopeType === 'branch' && grant.scopeId === s.branchId),
+      ),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -260,6 +273,7 @@ export function Devices() {
         missing={fleet.missing.credentials}
         stations={fleet.stations.filter((s) => !s.archived)}
         displayStations={displayStations}
+        snapshotStations={snapshotStations}
         stationName={stationName}
         timezone={timezone}
         canPair={canPair}
@@ -396,7 +410,7 @@ function useFleet(branchId: string): Fleet {
     const [boxRes, stationRes, credentialRes] = await Promise.allSettled([
       fleetApi.boxes(branchId),
       fleetApi.stations(branchId),
-      fleetApi.credentials(branchId),
+      fleetApi.credentials(branchId, true),
     ]);
 
     const failures: string[] = [];
@@ -776,6 +790,7 @@ function PairedScreens({
   missing,
   stations,
   displayStations,
+  snapshotStations,
   stationName,
   timezone,
   canPair,
@@ -786,6 +801,7 @@ function PairedScreens({
   missing: boolean;
   stations: StationRow[];
   displayStations: StationRow[];
+  snapshotStations: StationRow[];
   stationName: (id: string | null | undefined) => string | null;
   timezone?: string | null;
   canPair: boolean;
@@ -794,7 +810,10 @@ function PairedScreens({
 }) {
   const [pairing, setPairing] = useState(false);
   const [pairingDisplay, setPairingDisplay] = useState(false);
-  const live = credentials.filter((c) => !c.revokedAt);
+  const [showRevoked, setShowRevoked] = useState(false);
+  const [snapshotId, setSnapshotId] = useState<string | null>(null);
+  const snapshot = credentials.find((credential) => credential.id === snapshotId);
+  const shown = credentials.filter((c) => showRevoked || !c.revokedAt);
 
   return (
     <Panel
@@ -803,6 +822,11 @@ function PairedScreens({
       actions={
         !missing ? (
           <div className="flex flex-wrap gap-2">
+            {credentials.some((credential) => credential.revokedAt) && (
+              <Button variant="outline" size="sm" onClick={() => setShowRevoked((value) => !value)}>
+                {showRevoked ? 'Hide revoked' : 'Show revoked'}
+              </Button>
+            )}
             {displayStations.length > 0 && (
               <Button size="sm" className="h-9 gap-2" onClick={() => setPairingDisplay(true)}>
                 <Plus className="w-4 h-4" />
@@ -826,20 +850,25 @@ function PairedScreens({
     >
       {missing ? (
         <RouteUnavailable what="Pairing" />
-      ) : live.length === 0 ? (
+      ) : shown.length === 0 ? (
         <EmptyState
           title="Nothing is paired yet"
           detail="Open the customer display to get its code, then pair it to a station here. Kiosks and booths use Pair a screen."
         />
       ) : (
         <ul className="flex flex-col divide-y">
-          {live.map((credential) => (
+          {shown.map((credential) => (
             <CredentialRowItem
               key={credential.id}
               credential={credential}
               stationLabel={stationName(credential.stationId)}
               timezone={timezone}
               canRevoke={canRevoke}
+              canSnapshot={
+                credential.kind === 'display' &&
+                snapshotStations.some((station) => station.id === credential.stationId)
+              }
+              onSnapshot={() => setSnapshotId(credential.id)}
               onChanged={onChanged}
             />
           ))}
@@ -858,6 +887,23 @@ function PairedScreens({
           />
         </Dialog>
       )}
+      {snapshot?.stationId &&
+        snapshotStations.some((station) => station.id === snapshot.stationId) && (
+          <Dialog
+            title={`${snapshot.label ?? 'Display'} snapshot`}
+            onClose={() => setSnapshotId(null)}
+          >
+            <DisplaySnapshotPanel
+              stationId={snapshot.stationId}
+              stationLabel={stationName(snapshot.stationId) ?? 'this station'}
+              timezone={timezone}
+              revoked={Boolean(snapshot.revokedAt)}
+            />
+            <Button variant="outline" onClick={() => setSnapshotId(null)}>
+              Close
+            </Button>
+          </Dialog>
+        )}
     </Panel>
   );
 }
@@ -867,12 +913,16 @@ function CredentialRowItem({
   stationLabel,
   timezone,
   canRevoke,
+  canSnapshot,
+  onSnapshot,
   onChanged,
 }: {
   credential: CredentialRow;
   stationLabel: string | null;
   timezone?: string | null;
   canRevoke: boolean;
+  canSnapshot: boolean;
+  onSnapshot: () => void;
   onChanged: () => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -895,13 +945,19 @@ function CredentialRowItem({
   return (
     <li className="py-3 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusMark tone={outstanding ? 'idle' : 'ok'} />
+        <StatusMark tone={credential.revokedAt || outstanding ? 'idle' : 'ok'} />
         <span className="text-sm font-semibold min-w-0 break-words">
           {credential.label ?? credentialKindWord(credential.kind)}
         </span>
         <Chip>{credentialKindWord(credential.kind)}</Chip>
+        {credential.revokedAt && <StatusPill tone="idle">Access revoked</StatusPill>}
         {stationLabel && <span className="text-sm text-muted-foreground">on {stationLabel}</span>}
-        {canRevoke && (
+        {canSnapshot && (
+          <Button variant="outline" size="sm" className="ml-auto" onClick={onSnapshot}>
+            Snapshot
+          </Button>
+        )}
+        {canRevoke && !credential.revokedAt && (
           <Button
             variant="outline"
             size="sm"
@@ -915,10 +971,19 @@ function CredentialRowItem({
         )}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        {outstanding
-          ? `Waiting to be paired${credential.pairingCodeExpiresAt ? `; the code expires ${formatWhen(credential.pairingCodeExpiresAt, timezone)}` : ''}.`
-          : `Paired ${formatWhen(credential.pairedAt, timezone)}${credential.lastSeenAt ? `, last seen ${timeAgo(credential.lastSeenAt)}` : ', never seen since'}.`}
+        {credential.revokedAt
+          ? `Revoked ${formatWhen(credential.revokedAt, timezone)}.`
+          : outstanding
+            ? `Waiting to be paired${credential.pairingCodeExpiresAt ? `; the code expires ${formatWhen(credential.pairingCodeExpiresAt, timezone)}` : ''}.`
+            : `Paired ${formatWhen(credential.pairedAt, timezone)}${credential.lastSeenAt ? `, last seen ${timeAgo(credential.lastSeenAt)}` : ', never seen since'}.`}
       </p>
+      {credential.kind === 'display' && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {credential.lastSeenAt
+            ? `Last seen ${formatWhen(credential.lastSeenAt, timezone)} (${timeAgo(credential.lastSeenAt)}).`
+            : 'Not seen since pairing.'}
+        </p>
+      )}
       {failed && <p className="mt-1 text-sm text-destructive">{failed}</p>}
     </li>
   );

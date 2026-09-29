@@ -5,7 +5,7 @@ import { AppError } from '../lib/errors';
 import { displayDeviceOf, displayPairingHashOf } from '../plugins/credential';
 import { holdsGrantAt } from '../services/access-control';
 import {
-  claimDisplay, displayIntent, displayPairingStatus, displaySession,
+  claimDisplay, displayIntent, displayPairingStatus, displaySession, expireDisplayPairing,
   requestDisplayPairing, stationDisplays,
 } from '../services/display';
 import { loadStation } from '../services/fleet';
@@ -27,6 +27,14 @@ export async function displayRoutes(app: App): Promise<void> {
       response: { 200: z.object({ pairingCode: z.string().regex(/^\d{6}$/), expiresAt: z.string() }) },
     },
   }, (req) => requestDisplayPairing(app.db, opCtx(req), displayPairingHashOf(req), req.ip));
+
+  app.post('/display/pairing/expire', {
+    config: { credential: 'display-pairing', rateLimit: { max: 60, timeWindow: 60_000 } },
+    schema: {
+      description: 'Invalidate this unpaired browser\'s current code. Paired devices are revoked by a manager.',
+      body: z.object({}), response: { 200: z.object({ expired: z.literal(true) }) },
+    },
+  }, (req) => expireDisplayPairing(app.db, opCtx(req), displayPairingHashOf(req)));
 
   app.get('/display/pairing', {
     config: { credential: 'display-pairing' },

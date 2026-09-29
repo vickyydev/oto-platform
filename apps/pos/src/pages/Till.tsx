@@ -2651,6 +2651,10 @@ export default function Till() {
   const linkedDisplay = useTicketDisplay(station?.stationId ?? null, {
     stage: customerStage, step, sessionKey: `${saleEpochRef.current}`, tier: tier ?? getDefaultTier().id,
     phone: customerPhone, nickname: customerNickname, contactChannel: customerContactChannel, member,
+    sale: { ...liveSale, id: saleWriter.committed?.id ?? liveSale.id }, totals: cart.totals,
+    rateMode: cart.quote.pricingMode,
+    online: !tillOffline() && cart.quote.source === 'platform' && !cart.pending && !cart.error,
+    payment: paymentDisplay, voucherPrize: voucher.held?.view.prize ?? null, nothingToPay: saleOwesNothing,
   }, answer => {
     if (answer.type === 'identify' && step === 1 && answer.phone !== undefined) {
       setCustomerPhone(answer.phone);

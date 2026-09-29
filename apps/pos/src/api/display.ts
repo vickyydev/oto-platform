@@ -51,6 +51,7 @@ export async function displayRequest<T>(
 export const displayApi = {
   pairing: (bearer: string, signal?: AbortSignal) => displayRequest<DisplayPairing>(bearer, 'GET', '/pairing', undefined, signal),
   start: (bearer: string, signal?: AbortSignal) => displayRequest<{ pairingCode: string; expiresAt: string }>(bearer, 'POST', '/pairing', {}, signal),
+  expire: (bearer: string) => displayRequest<{ expired: true }>(bearer, 'POST', '/pairing/expire', {}),
   session: async (bearer: string, signal?: AbortSignal): Promise<DisplaySession> => {
     const result = await displayRequest<DisplaySession>(bearer, 'GET', '/session', undefined, signal);
     return { ...result, document: StationSessionDocumentSchema.parse(result.document) };

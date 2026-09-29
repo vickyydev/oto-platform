@@ -1,6 +1,6 @@
 # SCRUM-201 separate display checkpoint
 
-29 September 2026. Online ticket identification slice checked; full story remains In Progress. This checkpoint
+29 September 2026. Online ticket identification and order/payment/thank-you checked; full story remains In Progress. This checkpoint
 uses local disposable-database evidence, not staging acceptance.
 
 ## Implemented contract
@@ -73,17 +73,68 @@ a true scope reset and a queued gesture paused before its first write.
 No collection runs merely because staff unlock.
 
 
+## Ticket flow and diagnostics checkpoint
+
+The second slice sends captured line breakdowns, translated labels, quote
+totals/tax/discounts, selected payment-part amount and real QR/expiry metadata.
+The visitor browser never recalculates against its own catalog. Thank-you
+shows bracelet counts and entitlement summaries with redeemable identifiers
+omitted. Invalid or unsupported data shows the safe waiting screen. Staff
+money actions and supervision policy remain on their existing paths.
+
+Shared schemas are applied on publication, cached customer reads, the display
+and Console diagnostics. Scan details use a dedicated common helper so poll
+and stream remain identical without weakening the cart schema. An existing
+scan parity check caught this integration regression; the corrected test passes.
+
+Expire code now invalidates only that pending display request. Repeated expiry
+is harmless; a concurrent successful claim makes expiry refuse without revoking
+the paired device. Lost replies keep pairing paused for same-credential retry.
+Automatic minting hides the old code and fences expiry until mint completion;
+stale polls cannot restore a code after expiry. No code enters logs or audit.
+
+Console Snapshot is explicitly a current customer view, not an archived last
+delivery. It omits payment QR contents and private data. Revoked displays are
+still inspectable and labelled Access revoked; Last seen records authenticated
+activity and does not imply every handler succeeded.
+
+506 existing tests pass: API fleet68 + station37 + scan polling10 + stream5;
+POS scan44 + till voucher40; box station26; Console display controls4; shared272.
+Typecheck and full lint pass for API/POS/Console/box/shared. POS and Console
+builds pass, with existing POS chunk warnings. No new suite or migration.
+
+Nineteen native checks pass against a fresh disposable database using manager,
+staff and visitor browser contexts. The report is ticket-local-results.json.
+It includes the full known-member cash sale, display split-part change before
+payment, final recorded amount, thank-you counts, next visitor reset, expiry
+lost-reply retry, real Console snapshot and revocation, plus the earlier lock,
+language and identification failure cases. Virtual print paths only; no physical
+hardware or bank charge. An empty payment panel was initially asserted visible
+before selecting a method; the proof now checks the visible Amount Due heading.
+
+Reviewed local screenshots attached to SCRUM-201:
+
+- 07-local-ticket-order.png (10888)
+- 08-local-ticket-payment.png (10889)
+- 09-local-ticket-thankyou.png (10890)
+- 11-local-code-expired.png (10891)
+- 12-local-console-snapshot.png (10892)
+- 13-local-console-revoked.png (10893)
+
+All carry LOCAL CHECK. These do not satisfy the staging Deployed gate.
+
 ## Remaining acceptance
 
 The story is NOT BUILT as a whole. Preserve these boundaries in Jira:
 
-1. Publish canonical ticket cart lines, totals, payment and thank-you from
-   the existing live sale, quote and payment controller. Keep money operations
-   on the staff-authorised path. Then integrate F&B/shop displays separately.
+1. Integrate F&B/shop displays separately; ticket online presentation is checked.
+   Keep money operations on the staff-authorised path.
 2. Add typed consent, child-slot edits and completion with authoritative
    policy checks. Supervision steps 7/8 stay inline until that is proven.
-3. Add Console Snapshot, Send test intent, Expire code now and clear revoked/
-   last-rejected diagnostics, with matching Box-log evidence.
+3. Finish Console Send test intent and last-rejected diagnostics with matching
+   Box-log evidence. Current Snapshot/revoked views are checked; unused-code
+   expiry is on the unpaired display setup screen. Archived last-delivery data
+   and a Console expiry action are not claimed.
 4. Remove unused staff-session pending-lookup compatibility only after all
    callers are checked. Applied migrations remain forward-only.
 5. Complete the story's two-browser staging smoke, both layouts, failure
@@ -96,8 +147,8 @@ are not established by this first slice.
 
 ## Release gate
 
-Main has the prior checked payment follow-ups at fe9c683. GitHub Actions run
-36565169997 stopped before any step because billing/spending availability
+Main b052767 has the checked identification slice and prior payment follow-ups.
+GitHub Actions run36570597484 stopped before any step because billing/spending availability
 prevented jobs starting. Render still gates deployment on successful checks;
 no bypass or billing change is made. Restore Actions, verify the exact release
 SHA, then use one normal deployment and run staging proof. The retained

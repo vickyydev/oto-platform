@@ -1,8 +1,7 @@
 import {
-  redactForCustomer,
+  redactScanForCustomer,
   type StationChannelMessage,
   type StationScanMessage,
-  type StationSessionDocument,
   type StationSessionManager,
   type StationView,
 } from '@oto/box-agent';
@@ -184,14 +183,10 @@ export function readStationScans(
  * The channel's rule is `emitScan`'s: the customer display gets `detail` — the
  * handler's own answer, and the one part of a scan that can name a person —
  * through the box's key-stripping, and everything else as it is; a staff screen
- * gets the scan untouched. The package exports that key-stripping only inside
- * `redactForCustomer`, which runs the very same function over a document's
- * `cart`, so the detail is handed in there and read back out. Borrowed rather
- * than copied: a second list of the keys a display may not show is a list that
- * can fall out of step with the first, on the one screen where that matters.
+ * gets the scan untouched. Both paths use the package's scan redaction helper;
+ * a scan detail is not a cart presentation and must not be validated as one.
  */
 function scanForView(scan: StationScanMessage, view: StationView): StationScanMessage {
   if (view !== 'customer') return scan;
-  const { cart } = redactForCustomer({ cart: scan.detail } as unknown as StationSessionDocument);
-  return { ...scan, detail: cart ?? null };
+  return redactScanForCustomer(scan);
 }

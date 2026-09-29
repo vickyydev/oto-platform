@@ -4,42 +4,62 @@
 
 _Current checkpoint: 2026-09-29._
 
-SCRUM-201 is In Progress. The checked online ticket
-identification slice now has real browser proof: expiring six-digit display
-pairing, Console claim, an independent device credential, redacted station
-snapshots, identification/contact/language intents and revocation. Eleven
-local browser checks passed against a disposable database, including all five
-languages, reload, a lost reply while staff are locked, adoption by the same
-visitor on unlock, hidden staff dialogs and sign-out independence. Local
-screenshots are labelled and credentials are masked. These are not staging
-acceptance or evidence of physical/offline operation.
+The SCRUM-201 ticket display checkpoint extends main b052767 with online
+order, payment and thank-you screens, explicit unused-code expiry and Console
+snapshot/revocation diagnostics. Full SCRUM-201 remains In Progress and NOT
+BUILT as a whole. These changes are checked locally, NOT DEPLOYED.
 
-The first slice also enforces one active paired display per station. Forward
-migration 0030 adds pairing-request hashes; 0031 adds the narrow active-display
-index and a count-only duplicate preflight. It preserves historical and
-unredeemed credentials and never chooses a display to revoke. Read-only
-staging metadata showed zero active paired displays in accessible OTO parks.
-The migration also checks operators outside that visibility.
+The visitor display receives the till's calculated rows, quote, tax and
+discount figures. It never loads a second catalog to price the order. Payment
+shows the selected split amount and real QR/expiry metadata when supplied;
+money writes remain staff-authorised. Thank-you shows bracelet and entitlement
+summaries without exposing or inventing redeemable grant codes. Unsupported
+or malformed snapshots fall back safely; supervision steps 7/8 and F&B/shop
+remain inline. Shared StationSessionDocument and StationIntent names stay intact.
 
-Same-session ticket locks retain visitor state while removing staff surfaces
-and pausing privileged work. A true sign-out, station/account change or reload
-resets that in-memory workflow. Payment pause/recovery retains the same attempt and action. Unlock reads the
-authoritative result; an unknown reply requires Retry of the original gesture
-and cannot start a new collection automatically.
-The existing inline harness remains for order/payment/thank-you, supervision,
-F&B and shop. Full SCRUM-201 is NOT BUILT yet. Next is the online ticket
-order/payment projection, followed by supervision intents and Console
-diagnostics; see `docs/qa/separate-display/README.md`.
+Shared public schemas validate both publication and cached customer reads,
+stripping nested private fields. Scan polling and streaming use a separate
+shared redaction helper: the existing parity test caught and now guards the
+mistake of treating scan details as cart data. Explicit code expiry is
+idempotent, retries an uncertain reply on the same credential and cannot
+revoke a paired display. A reviewed mint/expiry race is fenced before starting
+the request. Pairing remains paused until New code is explicitly selected.
 
-Validation: **328 affected existing-file tests pass** (API 130, database 28,
-box station 24, POS scan/display 40, payment writer 64, till voucher 40 and
-Console browser controls 2). Eleven additional native browser checks pass.
-All five touched packages pass typecheck and full lint; POS and Console
-production builds pass. Fresh/repeat migrations and schema verification match
-0031. Independent review found a queued-payment lock race; its final fence
-and existing-file regression now pass. No new suite or dependency.
-Six reviewed local screenshots are attached to SCRUM-201 as 10882-10887 and
-named in the push comment. They do not justify Deployed.
+Console Snapshot reads the current station customer view; it does not claim
+to archive what a disconnected device received. QR contents are omitted.
+Revoked rows show Access revoked and Last seen; no rejected-call time is
+invented. Console Send test intent and rejected-call history remain next.
+
+Validation: 506 existing tests pass: API 120, POS 84, box 26, Console 4 and
+shared 272. All five touched packages pass typecheck and full package lint;
+POS and Console production builds pass with the existing POS chunk warnings.
+Nineteen native browser checks pass on a fresh disposable database, including
+the completed cash sale, split-amount display, new visitor reset, both lost
+reply paths, lock/sign-out independence and Console snapshot/revocation.
+Six reviewed LOCAL CHECK screenshots are attached to SCRUM-201 as 10888-10893
+and listed in docs/qa/separate-display/README.md. They are not staging proof.
+No new suite, dependency or migration was added in this slice.
+
+Deployment remains externally blocked. Predecessor exact-main CI
+[36570597484](https://github.com/vickyydev/oto-platform/actions/runs/36570597484)
+on b052767 ran zero steps: check 109413331138 reports Actions billing/spending
+availability. The normal successful-check deployment gate remains intact.
+Render was rechecked on 29 September evening: API, POS, Console, Launcher
+and Booth are still LIVE at 0468c38; OTO App remains c416065. The next exact
+main run must be checked after this push. No staging migration or new Pi
+artifact is claimed. Pending actions are in OPEN_QUESTIONS.md.
+
+Earlier b052767 identification evidence remains valid: 328 existing checks,
+11 native browser checks and screenshots10882-10887. Migrations0030/0031
+are committed and forward-only; the latter refuses duplicate active paired
+displays rather than choosing one to revoke. Same-session ticket locks retain
+the visitor and payment action while hiding staff surfaces. Full staff-page
+reload recovery and physical LAN/offline display transport remain unproven.
+
+Next: finish Console diagnostic intents and refusal evidence, then typed
+supervision consent/child-slot/completion and independent F&B/shop displays.
+Remove unused compatibility only after checking callers; complete the
+two-browser staging acceptance and named screenshots before Deployed.
 
 The 29 September continuation instruction explicitly keeps independent work
 moving while deployment or an owner decision is pending. Checkpoint after each

@@ -22,7 +22,13 @@ import type {
   StationIdentity,
 } from './store';
 import { silentLog, type AgentLog } from './transport';
-import { stationLeaseLive } from '@oto/shared';
+import {
+  DisplayCartSchema,
+  DisplayMemberSchema,
+  DisplayPaymentSchema,
+  DisplayTotalsSchema,
+  stationLeaseLive,
+} from '@oto/shared';
 
 /**
  * The station session: one document, one writer, full snapshots (S2-05).
@@ -277,15 +283,15 @@ export class StationSessionManager {
    * nothing rehydrates from it.
    *
    * `detail` is the handler's own answer and the one part of the message that
-   * can name a person, so the customer display gets it through the same
-   * key-stripping the document goes through. The fingerprint and the outcome
-   * are safe for any screen: neither opens anything.
+   * can name a person, so the customer display gets it through the scan's
+   * key-stripping. The fingerprint and the outcome are safe for any screen:
+   * neither opens anything.
    */
   emitScan(stationId: string, message: StationScanMessage): void {
     for (const subscriber of this.subscribers) {
       if (subscriber.stationId !== stationId) continue;
       const forView: StationScanMessage =
-        subscriber.view === 'customer' ? { ...message, detail: stripKeys(message.detail) } : message;
+        subscriber.view === 'customer' ? redactScanForCustomer(message) : message;
       try {
         subscriber.send(forView);
       } catch (error) {
@@ -824,16 +830,23 @@ const CUSTOMER_DENIED_KEYS = [
  */
 const CUSTOMER_MEMBER_FIELDS = ['id', 'displayName', 'name', 'nickname', 'tier', 'childCount'];
 
+/** Scan details have their own shape; polling and streaming share this boundary. */
+export function redactScanForCustomer(message: StationScanMessage): StationScanMessage {
+  return { ...message, detail: stripKeys(message.detail) };
+}
+
 export function redactForCustomer(document: StationSessionDocument): StationSessionDocument {
+  const totals = DisplayTotalsSchema.safeParse(document.totals);
+  const payment = DisplayPaymentSchema.safeParse(document.payment);
   return {
     ...document,
     // The till's wizard position means nothing on the display and tells anyone
     // watching how far through a sale the staff member is.
     step: null,
     lease: null,
-    cart: stripKeys(document.cart),
-    totals: stripKeys(document.totals),
-    payment: stripKeys(document.payment),
+    cart: customerDisplayCart(document.cart, document.stage),
+    totals: totals.success ? totals.data : null,
+    payment: payment.success ? payment.data : null,
     prompt: stripKeys(document.prompt),
     member: pickMemberFields(document.member),
   };
@@ -843,11 +856,32 @@ function pickMemberFields(
   member: Record<string, unknown> | null | undefined,
 ): Record<string, unknown> | null {
   if (!member) return null;
+  const presentation = DisplayMemberSchema.safeParse(member);
+  if (presentation.success) return presentation.data;
   const out: Record<string, unknown> = {};
   for (const key of CUSTOMER_MEMBER_FIELDS) {
-    if (key in member) out[key] = deepStrip(member[key]);
+    const value = member[key];
+    if (key === 'childCount') {
+      if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) out[key] = value;
+    } else if (boundedText(value, key === 'id' || key === 'tier' ? 200 : 100, true)) out[key] = value.trim();
   }
   return out;
+}
+
+/** Older identification publishers carry only the tier; no legacy full sale crosses this boundary. */
+function customerDisplayCart(value: unknown, stage: StationSessionStage): Record<string, unknown> | null {
+  if (value === null || value === undefined) return null;
+  const parsed = DisplayCartSchema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  const cart = recordValue(value);
+  const sale = recordValue(cart?.sale);
+  if (!cart || typeof cart.supported !== 'boolean' || sale?.id !== undefined
+    || (cart.supported && !['identify', 'welcome', 'input'].includes(stage))
+    || (sale?.tier !== undefined && !boundedText(sale.tier, 64, true))) return null;
+  return {
+    supported: cart.supported,
+    ...(sale ? { sale: { ...(typeof sale.tier === 'string' ? { tier: sale.tier.trim() } : {}) } } : {}),
+  };
 }
 
 function stripKeys(value: unknown): Record<string, unknown> | null {
@@ -877,8 +911,8 @@ function redactIntentPayload(intent: StationIntent, deviceId?: string): Record<s
 
 // --- The intents the box understands today ----------------------------------
 //
-// Deliberately only identify-and-member: the cart, payment and booth intents
-// belong to the tickets that own those flows, and each registers its own.
+// Display presentation is a public snapshot, never a money-writing intent.
+// The cart, payment and booth commands remain with the flows that own them.
 
 /**
  * The till's own intents — and deliberately NOT `console`.
@@ -1002,12 +1036,22 @@ export const BUILT_IN_INTENTS: Record<string, IntentSpec> = {
           if (document.prompt.answeredAt !== undefined) savedPrompt.answeredAt = document.prompt.answeredAt;
         }
       }
-      const shownCart = recordValue(cart);
-      const shownMember = recordValue(member);
+      const shownCart = customerDisplayCart(cart, stage);
+      const shownMember = DisplayMemberSchema.safeParse(member);
+      const shownTotals = DisplayTotalsSchema.safeParse(totals);
+      const shownPayment = DisplayPaymentSchema.safeParse(payment);
+      if ((cart !== undefined && cart !== null && !shownCart)
+        || (member !== undefined && member !== null && !shownMember.success)
+        || (totals !== undefined && totals !== null && !shownTotals.success)
+        || (payment !== undefined && payment !== null && !shownPayment.success)) {
+        return notPermitted('That public display presentation is not valid.');
+      }
       return ok({ stage, step: typeof step === 'number' ? step : null,
-        cart: shownCart ? Object.fromEntries(['sale', 'voucherPrize', 'nothingToPay', 'supported'].filter((key) => key in shownCart).map((key) => [key, deepStrip(shownCart[key])])) : null,
-        member: shownMember ? Object.fromEntries(['id', 'nickname', 'tier'].filter((key) => key in shownMember).map((key) => [key, deepStrip(shownMember[key])])) : null,
-        totals: stripKeys(totals), payment: stripKeys(payment), prompt: stripKeys(savedPrompt),
+        cart: shownCart,
+        member: shownMember.success ? shownMember.data : null,
+        totals: shownTotals.success ? shownTotals.data : null,
+        payment: shownPayment.success ? shownPayment.data : null,
+        prompt: stripKeys(savedPrompt),
       });
     },
   },

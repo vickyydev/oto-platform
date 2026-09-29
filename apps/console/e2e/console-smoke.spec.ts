@@ -30,7 +30,9 @@ import {
  * on "0" would start failing the moment somebody demonstrates the wheel
  * against the same seed.
  */
-test('Booths: Booth 1 at Central Floresta says how many spins it has had today', async ({ page }) => {
+test('Booths: Booth 1 at Central Floresta says how many spins it has had today', async ({
+  page,
+}) => {
   await signInAndWait(page);
   await openSection(page, 'Booths');
   await chooseBranch(page, CENTRAL_FLORESTA);
@@ -77,7 +79,9 @@ test('Branches: both parks are listed', async ({ page }) => {
  * first and must add nothing — a dialog that closes on Cancel but files the
  * form anyway is the other half of the same button working.
  */
-test('Devices: a box is added by pressing the dialog, and Cancel adds nothing', async ({ page }) => {
+test('Devices: a box is added by pressing the dialog, and Cancel adds nothing', async ({
+  page,
+}) => {
   await signInAndWait(page);
   await openSection(page, 'Devices');
   await chooseBranch(page, CENTRAL_FLORESTA);
@@ -132,7 +136,7 @@ test('Devices: a display code is cleared after refusal and claim, and the paired
   let chosenStationId = '';
   let chosenStationName = '';
 
-  await page.route('**/api/branches/*/credentials', async (route) => {
+  await page.route('**/api/branches/*/credentials*', async (route) => {
     const response = await route.fetch();
     const body = await response.json();
     if (claimed && !revoked) {
@@ -253,6 +257,247 @@ test('Devices: a display pairing grant for another branch does not offer this pa
   await expect(page.getByRole('button', { name: 'Pair a display', exact: true })).toHaveCount(0);
 });
 
+test('Devices: display diagnostics read the customer view and retain revoked status without private fields', async ({
+  page,
+}) => {
+  await signInAndWait(page);
+  const displayId = crypto.randomUUID();
+  const revokedId = crypto.randomUUID();
+  const displayName = 'Diagnostic display 201';
+  const revokedName = 'Revoked diagnostic display';
+  const hiddenMarker = 'Synthetic field that must stay hidden';
+  let stationId = '';
+  let snapshotReads = 0;
+  let customerReadsOnly = true;
+  let includesRevoked = false;
+  await page.route('**/api/branches/*/credentials*', async (route) => {
+    const url = new URL(route.request().url());
+    const branchId = url.pathname.split('/')[3];
+    const response = await route.fetch();
+    const body = await response.json();
+    const stationsResponse = await page.request.get(`/api/branches/${branchId}/stations`);
+    const { stations } = await stationsResponse.json();
+    stationId = stations.find(
+      (station: { id: string; kind: string; boxId: string | null; archived: boolean }) =>
+        station.kind === 'till' && station.boxId && !station.archived,
+    ).id;
+    includesRevoked = url.searchParams.get('includeRevoked') === 'true';
+    const pairedAt = '2026-09-29T09:00:00.000Z';
+    body.credentials.push({
+      id: displayId,
+      kind: 'display',
+      label: displayName,
+      stationId,
+      pairedAt,
+      lastSeenAt: '2026-09-29T09:30:00.000Z',
+      revokedAt: null,
+      pairingOutstanding: false,
+    });
+    if (includesRevoked)
+      body.credentials.push({
+        id: revokedId,
+        kind: 'display',
+        label: revokedName,
+        stationId,
+        pairedAt,
+        lastSeenAt: '2026-09-29T09:20:00.000Z',
+        revokedAt: '2026-09-29T09:35:00.000Z',
+        pairingOutstanding: false,
+      });
+    await route.fulfill({ response, json: body });
+  });
+  await page.route('**/api/stations/*/session?view=customer', async (route) => {
+    snapshotReads += 1;
+    const url = new URL(route.request().url());
+    customerReadsOnly &&=
+      route.request().method() === 'GET' &&
+      url.pathname.endsWith(`/stations/${stationId}/session`) &&
+      url.searchParams.get('view') === 'customer';
+    if (snapshotReads === 3) {
+      await route.fulfill({
+        json: { view: 'staff', document: { stationId, staffNotes: hiddenMarker } },
+      });
+      return;
+    }
+    await route.fulfill({
+      json: {
+        view: 'customer',
+        serverTime: '2026-09-29T09:40:00.000Z',
+        document: {
+          stationId,
+          boxId: crypto.randomUUID(),
+          schemaVersion: 1,
+          sequence: snapshotReads,
+          stage: 'order',
+          language: 'en',
+          updatedAt: '2026-09-29T09:39:00.000Z',
+          lease: { holder: hiddenMarker, leaseId: hiddenMarker },
+          authToken: hiddenMarker,
+          pairingCode: hiddenMarker,
+          cart: {
+            supported: true,
+            nickname: 'Display visitor',
+            nothingToPay: false,
+            voucherPrize: null,
+            sale: {
+              id: 'sale-1',
+              tier: 'tourist',
+              total: 500,
+              lines: [
+                {
+                  id: 'line-1',
+                  name: 'Two-hour ticket',
+                  lineTotal: 500,
+                  breakdown: {
+                    rows: [
+                      {
+                        key: 'adults',
+                        kind: 'adults',
+                        label: 'Adults',
+                        unitPrice: 250,
+                        quantity: 2,
+                        subtotal: 500,
+                      },
+                    ],
+                    priced: true,
+                    lengthChosen: true,
+                  },
+                  allergiesMedical: hiddenMarker,
+                  staffNotes: hiddenMarker,
+                },
+              ],
+              manualDiscounts: [],
+              creditGrants: [],
+              bracelets: { adults: 2, children: 0 },
+            },
+            staffName: hiddenMarker,
+          },
+          member: {
+            id: crypto.randomUUID(),
+            nickname: 'Display visitor',
+            tier: 'tourist',
+            medicalNotes: hiddenMarker,
+          },
+          totals: {
+            total: 500,
+            manualAmounts: {},
+            discountAmount: 0,
+            taxBreakdown: { serviceChargeTotal: 0, categories: [] },
+            staffNote: hiddenMarker,
+          },
+          payment: {
+            saleId: 'sale-1',
+            status: 'pending',
+            amountSatang: 50_000,
+            qrPayload: hiddenMarker,
+            qrImageUrl: null,
+            expiresAt: null,
+            online: true,
+            offline: false,
+            approvalCode: hiddenMarker,
+          },
+          prompt: {
+            kind: 'contact',
+            requestId: 'prompt-1',
+            nickname: 'Display visitor',
+            phone: '',
+            contactChannel: 'whatsapp',
+            answer: {
+              type: 'contact_done',
+              actionId: 'answer-1',
+              phone: '',
+              nickname: 'Display visitor',
+              contactChannel: 'whatsapp',
+              token: hiddenMarker,
+            },
+            consent: hiddenMarker,
+          },
+        },
+      },
+    });
+  });
+  await openSection(page, 'Devices');
+  await chooseBranch(page, CENTRAL_FLORESTA);
+  const screens = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Paired screens', exact: true }) });
+  const row = screens.getByRole('listitem').filter({ hasText: displayName });
+  await expect(row).toContainText('Last seen');
+  await expect(screens.getByRole('listitem').filter({ hasText: revokedName })).toHaveCount(0);
+  await row.getByRole('button', { name: 'Snapshot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: `${displayName} snapshot`, exact: true });
+  const snapshot = dialog.getByLabel('Current customer snapshot');
+  await expect(snapshot).toContainText('Display visitor');
+  await expect(snapshot).toContainText('"unitPrice": 250');
+  await expect(snapshot).toContainText('"qrAvailable": true');
+  expect((await snapshot.innerText()).includes(hiddenMarker)).toBe(false);
+  expect((await snapshot.innerText()).includes('lease')).toBe(false);
+  await expect(dialog).toContainText('Current customer view');
+  await dialog.getByRole('button', { name: 'Refresh snapshot', exact: true }).click();
+  await expect(snapshot).toContainText('"sequence": 2');
+  expect(snapshotReads).toBe(2);
+  expect(customerReadsOnly).toBe(true);
+  await dialog.getByRole('button', { name: 'Refresh snapshot', exact: true }).click();
+  await expect(dialog).toContainText('The customer view could not be read');
+  await expect(snapshot).toHaveCount(0);
+  expect((await dialog.innerText()).includes(hiddenMarker)).toBe(false);
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await screens.getByRole('button', { name: 'Show revoked', exact: true }).click();
+  const revokedRow = screens.getByRole('listitem').filter({ hasText: revokedName });
+  await expect(revokedRow).toContainText('Access revoked');
+  await expect(revokedRow).toContainText('Last seen');
+  await expect(revokedRow.getByRole('button', { name: 'Revoke', exact: true })).toHaveCount(0);
+  expect(includesRevoked).toBe(true);
+});
+
+test('Devices: a station-read grant for another park does not expose a display snapshot', async ({
+  page,
+}) => {
+  await signInAndWait(page);
+  const displayName = 'Restricted diagnostic display';
+  await page.route('**/api/me/permissions', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.permissions = body.permissions.filter(
+      (grant: { permission: string }) => grant.permission !== 'admin:station:read',
+    );
+    body.permissions.push({
+      permission: 'admin:station:read',
+      scopeType: 'branch',
+      scopeId: crypto.randomUUID(),
+    });
+    await route.fulfill({ response, json: body });
+  });
+  await page.route('**/api/branches/*/credentials*', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const branchId = new URL(route.request().url()).pathname.split('/')[3];
+    const stationsResponse = await page.request.get(`/api/branches/${branchId}/stations`);
+    const { stations } = await stationsResponse.json();
+    const station = stations.find(
+      (candidate: { kind: string; boxId: string | null; archived: boolean }) =>
+        candidate.kind === 'till' && candidate.boxId && !candidate.archived,
+    );
+    body.credentials.push({
+      id: crypto.randomUUID(),
+      kind: 'display',
+      label: displayName,
+      stationId: station.id,
+      pairedAt: new Date().toISOString(),
+      lastSeenAt: null,
+      revokedAt: null,
+      pairingOutstanding: false,
+    });
+    await route.fulfill({ response, json: body });
+  });
+  await page.reload();
+  await openSection(page, 'Devices');
+  await chooseBranch(page, CENTRAL_FLORESTA);
+  const row = page.getByRole('listitem').filter({ hasText: displayName });
+  await expect(row).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Snapshot', exact: true })).toHaveCount(0);
+});
+
 /**
  * THE CARD TERMINALS — SCRUM-206's Console surface.
  *
@@ -292,9 +537,9 @@ test('Devices: a simulated card terminal can be told what to do with the next te
 
   // The platform's own answer, not a queue receipt: it either reached the
   // simulator or it did not.
-  await expect(
-    terminals.getByText('EDC 1 will decline the next tender.'),
-  ).toBeVisible({ timeout: 30_000 });
+  await expect(terminals.getByText('EDC 1 will decline the next tender.')).toBeVisible({
+    timeout: 30_000,
+  });
   // And the row says the setting is still standing, because it is chosen
   // before a tender is sent and stays until it is changed.
   await expect(row).toContainText('next: Decline');

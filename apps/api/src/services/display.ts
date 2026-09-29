@@ -140,6 +140,26 @@ export async function displayPairingStatus(db: Db, tokenHash: string) {
   return { status: request.expiresAt.getTime() > Date.now() ? 'pending' as const : 'expired' as const };
 }
 
+/** The unpaired browser can invalidate its own code without revoking a device. */
+export async function expireDisplayPairing(db: Db, ctx: OpContext, tokenHash: string) {
+  return withTx(db, ctx, 'display.pairing_expired', async (tx) => {
+    const [request] = await tx.select().from(displayPairingRequest)
+      .where(eq(displayPairingRequest.tokenHash, tokenHash)).limit(1).for('update');
+    if (request?.credentialId) throw new AppError(409, 'DISPLAY_ALREADY_PAIRED', 'This screen is already paired');
+    if (request?.pairingCodeHash) {
+      const now = new Date();
+      await tx.update(displayPairingRequest).set({ pairingCodeHash: null, expiresAt: now, updatedAt: now })
+        .where(eq(displayPairingRequest.id, request.id));
+      await audit.record(tx, {
+        actorAccountId: null, operatorId: null, branchId: null,
+        action: 'display.pairing_expired', entityType: 'display_pairing_request', entityId: request.id,
+        after: { expired: true }, requestId: ctx.requestId,
+      });
+    }
+    return { expired: true as const };
+  });
+}
+
 /** Code consumption, credential and manager attribution commit together. */
 export async function claimDisplay(
   db: Db,

@@ -157,6 +157,29 @@ describe('a display requests pairing before a manager chooses its station (SCRUM
     expect(expired.json()).toEqual({ status: 'expired' });
   });
 
+  it('expires only the unpaired browser code and requires a manager to revoke a paired device', async () => {
+    const token = bearer();
+    const requested = await mint(token);
+    const expire = (value: string) => proof.app.inject({ method: 'POST', url: '/display/pairing/expire', headers: headers(value), payload: {} });
+    expect((await expire(bearer())).statusCode).toBe(200);
+    expect((await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: headers(token) })).json()).toEqual({ status: 'pending' });
+    expect((await expire(token)).json()).toEqual({ expired: true });
+    expect((await expire(token)).statusCode).toBe(200);
+    expect((await claim(requested.json().pairingCode as string)).statusCode).toBe(409);
+    const [request] = await proof.db.select().from(displayPairingRequest).where(eq(displayPairingRequest.tokenHash, tokenHash(token)));
+    expect(request?.pairingCodeHash).toBeNull();
+    expect(await proof.db.select({ id: auditLog.id }).from(auditLog).where(and(
+      eq(auditLog.action, 'display.pairing_expired'), eq(auditLog.entityId, request!.id),
+    ))).toHaveLength(1);
+    const fresh = await mint(token);
+    expect((await claim(fresh.json().pairingCode as string)).statusCode).toBe(200);
+    const refused = await expire(token);
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error.code).toBe('DISPLAY_ALREADY_PAIRED');
+    expect((await proof.app.inject({ method: 'GET', url: '/display/session', headers: headers(token) })).statusCode).toBe(200);
+    expect((await proof.app.inject({ method: 'POST', url: '/display/pairing/expire', headers: { cookie: managerCookie }, payload: {} })).statusCode).toBe(401);
+  });
+
   it('consumes a code atomically when two manager requests race', async () => {
     const token = bearer();
     const requested = await mint(token);

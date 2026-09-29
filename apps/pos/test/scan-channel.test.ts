@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { settle } from './support/fixtures';
+import { cartQuote, settle } from './support/fixtures';
 import { renderHook, type RenderedHook } from './support/hooks';
 import type { StationSessionDocument } from '@oto/shared';
 import { displayRequest, DisplayError, newDisplayCredential, newerDisplaySession, type DisplaySession } from '@/api/display';
-import { readDisplayAnswer, ticketDisplayPresentation, useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
+import { readDisplayAnswer, readTicketDisplayView, ticketDisplayPresentation, useTicketDisplay, type TicketDisplayState } from '@/lib/displaySession';
+import type { Sale } from '@/types';
 import {
   readProductScan,
   readVoucherScan,
@@ -37,6 +38,19 @@ describe('SCRUM-201 — separate display transport and station presentation', ()
     takeoverCount:0, updatedAt:'2026-09-29T12:00:00.000Z', ...overrides,
   });
   const reply = (data: unknown, status = 200) => ({ ok:status >= 200 && status < 300, status, json:async () => data }) as Response;
+  const sale = (): Sale => ({
+    id:'sale-ticket', operatorId:'private-staff-id', operatorName:'Private staff', tier:'tourist', total:200,
+    lines:[{id:'line-1',tier:'tourist',kids:1,adults:1,socks:0,addOns:[],lineTotal:200,
+      ticketType:{id:'ticket-1',name:'Play ticket',durationLabel:'1 hour',hours:1,
+        prices:{tourist:{weekday:200,weekend:300}},adultRules:{tourist:{kind:'free_adults',freeAdults:1}},
+        translations:{th:{name:'Play in Thai',description:'Private catalog detail'}}}}],
+    manualDiscounts:[],creditGrants:[{id:'private-wallet-id',type:'fnb_credit',label:'Food credit',valueTHB:100}],
+    bracelets:{adults:1,children:1},createdAt:'',status:'paid',refunds:[],
+  });
+  const completeState = (overrides: Partial<TicketDisplayState> = {}) => state({
+    stage:'order',step:3,sale:sale(),totals:cartQuote(200).totals,rateMode:'weekday',online:true,...overrides,
+  });
+  const presented = (input: TicketDisplayState): StationSessionDocument => document(ticketDisplayPresentation(input,'prompt-1'));
 
   it('uses a display bearer without staff cookies or staff lock events', async () => {
     const dispatch = vi.fn();
@@ -75,6 +89,55 @@ describe('SCRUM-201 — separate display transport and station presentation', ()
     expect(JSON.stringify(view)).not.toMatch(/Private child|Private medical|private-phone|savedChildren/);
     expect(ticketDisplayPresentation(state({stage:'payment',step:5}),'prompt-1').cart.supported).toBe(false);
     expect(ticketDisplayPresentation(state({stage:'welcome',step:7}),'prompt-1').prompt).toBeNull();
+  });
+
+  it('carries the captured weekday rows and quote, without staff, child or catalog detail', () => {
+    const view = readTicketDisplayView(presented(completeState({nickname:'Visitor'})));
+    expect(view?.sale.total).toBe(200);
+    expect(view?.totals?.total).toBe(200);
+    expect(view?.lineBreakdowns?.['line-1'].rows).toMatchObject([
+      {kind:'kids',unitPrice:200,quantity:1,subtotal:200}, {kind:'adults',unitPrice:0,quantity:1,subtotal:0},
+    ]);
+    expect(view?.sale.lines[0].ticketType.prices).toEqual({});
+    expect(JSON.stringify(presented(completeState()))).not.toMatch(/Private staff|private-staff|Private catalog|private-wallet|savedChildren/);
+    expect(view?.nickname).toBe('Visitor');
+  });
+
+  it('shows real payment metadata and zero-price presentation, then summary-only entitlements', () => {
+    const payment = {saleId:'sale-ticket',amountSatang:20000,qrPayload:'actual-test-qr',qrImageUrl:null,
+      expiresAt:'2026-09-29T12:10:00.000Z',status:'pending' as const,offline:false,online:true};
+    const view = readTicketDisplayView(presented(completeState({stage:'payment',step:5,payment})));
+    expect(view?.payment).toEqual(payment);
+    const zero = sale(); zero.total = 0; zero.lines = [];
+    expect(readTicketDisplayView(presented(completeState({stage:'payment',step:5,sale:zero,
+      totals:cartQuote(0).totals,payment:{...payment,amountSatang:0,qrPayload:null},nothingToPay:true})))?.nothingToPay).toBe(true);
+    const thanks = presented(completeState({stage:'thankyou',step:6}));
+    expect(thanks.cart?.sale).toMatchObject({creditGrants:[{type:'fnb_credit',label:'Food credit',valueTHB:100}],bracelets:{adults:1,children:1}});
+    expect(JSON.stringify(thanks)).not.toContain('private-wallet-id');
+    expect(readTicketDisplayView(thanks)?.stage).toBe('thankyou');
+  });
+
+  it('uses inline fallback while the canonical quote is unavailable and for supervision', () => {
+    for (const input of [completeState({online:false}),completeState({stage:'order',step:7}),completeState({stage:'input',step:8})]) {
+      expect(ticketDisplayPresentation(input,'prompt-1').cart.supported).toBe(false);
+      expect(readTicketDisplayView(presented(input))).toBeNull();
+    }
+  });
+
+  it('waits safely on malformed optional public fields and never falls back from a broken full sale', () => {
+    const valid = presented(completeState());
+    const invalid: StationSessionDocument[] = [
+      {...valid,cart:{supported:true,sale:'not-an-object'}},
+      {...valid,cart:{...valid.cart,sale:{id:'sale-ticket',tier:'tourist',total:'200'}}},
+      {...valid,totals:{total:NaN}},
+      {...valid,member:{id:'member-1',nickname:{medical:'Private'},tier:'tourist'}},
+      {...valid,payment:{saleId:'sale-ticket',amountSatang:-1}},
+      {...valid,payment:{saleId:'sale-ticket',amountSatang:20000,qrPayload:null,qrImageUrl:'javascript:bad',
+        expiresAt:null,status:'pending',offline:false,online:true}},
+    ];
+    for (const input of invalid) expect(readTicketDisplayView(input)).toBeNull();
+    const unknown = {...valid,cart:{...valid.cart,medical:'Private note'}};
+    expect(JSON.stringify(readTicketDisplayView(unknown))).not.toContain('Private note');
   });
 
   it('refuses a response from an older visitor or a different stage', () => {

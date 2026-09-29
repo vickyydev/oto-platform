@@ -5,7 +5,8 @@ import { displayApi, DisplayError, newDisplayCredential, newerDisplaySession, re
 import { CustomerDisplay } from '@/components/till/CustomerDisplay';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
-import type { ContactChannel, Sale } from '@/types';
+import type { ContactChannel } from '@/types';
+import { readTicketDisplayView } from '@/lib/displaySession';
 
 /** Pairing and station polling deliberately live outside every staff provider. */
 export default function Display() {
@@ -20,6 +21,9 @@ export default function Display() {
   const [contactChannel, setContactChannel] = useState<ContactChannel>('whatsapp');
   const [restart, setRestart] = useState(0);
   const [languageRetry, setLanguageRetry] = useState(0);
+  const [pairingMode, setPairingMode] = useState<'active' | 'expiring' | 'expired' | 'expiry-error'>('active');
+  const expiryOperation = useRef<symbol | null>(null);
+  const pairingMint = useRef<symbol | null>(null);
   const bearerRef = useRef(readDisplayCredential() ?? newDisplayCredential());
   const sessionRef = useRef(session);
   sessionRef.current = session;
@@ -27,23 +31,28 @@ export default function Display() {
   const inFlight = useRef<symbol | null>(null);
   const generation = useRef(0);
 
+  useEffect(() => () => { expiryOperation.current = null; }, []);
+
   useEffect(() => {
     generation.current += 1;
     inFlight.current = null;
     setBusy(false);
+    if (pairingMode !== 'active') return;
+    const startedGeneration = generation.current;
     const controller = new AbortController();
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let hasCode = false;
+    const inactive = () => stopped || generation.current !== startedGeneration;
     const tick = async () => {
       try {
         const bearer = bearerRef.current;
         setPersistent(rememberDisplayCredential(bearer));
         const paired = await displayApi.pairing(bearer, controller.signal);
-        if (stopped) return;
+        if (inactive()) return;
         if (paired.status === 'paired') {
           const current = await displayApi.session(bearer, controller.signal);
-          if (stopped) return;
+          if (inactive()) return;
           setSession(previous => newerDisplaySession(previous, current));
           setPairing(null);
           const answer = current.document.prompt?.answer as { actionId?: string } | undefined;
@@ -57,17 +66,24 @@ export default function Display() {
         } else {
           setSession(null);
           if (!hasCode || paired.status === 'expired') {
-            if (paired.status === 'expired') bearerRef.current = newDisplayCredential();
-            setPersistent(rememberDisplayCredential(bearerRef.current));
-            const code = await displayApi.start(bearerRef.current, controller.signal);
-            if (stopped) return;
-            setPairing(code);
-            hasCode = true;
+            const mint = Symbol();
+            pairingMint.current = mint;
+            setPairing(null);
+            try {
+              if (paired.status === 'expired') bearerRef.current = newDisplayCredential();
+              setPersistent(rememberDisplayCredential(bearerRef.current));
+              const code = await displayApi.start(bearerRef.current, controller.signal);
+              if (inactive()) return;
+              setPairing(code);
+              hasCode = true;
+            } finally {
+              if (pairingMint.current === mint) pairingMint.current = null;
+            }
           }
           setError(null);
         }
       } catch (failure) {
-        if (stopped) return;
+        if (inactive()) return;
         if (failure instanceof DisplayError && (failure.status === 401 || failure.code === 'DISPLAY_ALREADY_PAIRED')) {
           setSession(null);
           setPairing(null);
@@ -76,12 +92,47 @@ export default function Display() {
           if (failure.code !== 'DISPLAY_ALREADY_PAIRED') bearerRef.current = newDisplayCredential();
         } else setError(failure instanceof Error ? failure.message : 'The display could not connect.');
       } finally {
-        if (!stopped) timer = setTimeout(() => { void tick(); }, 2_000);
+        if (!inactive()) timer = setTimeout(() => { void tick(); }, 2_000);
       }
     };
     void tick();
     return () => { stopped = true; generation.current += 1; controller.abort(); clearTimeout(timer); };
-  }, [restart]);
+  }, [restart, pairingMode]);
+
+  const expirePairing = async () => {
+    if (sessionRef.current || expiryOperation.current || pairingMint.current) return;
+    generation.current += 1;
+    const operation = Symbol();
+    expiryOperation.current = operation;
+    const bearer = bearerRef.current;
+    setPairingMode('expiring');
+    setPairing(null);
+    setError(null);
+    try {
+      await displayApi.expire(bearer);
+      if (expiryOperation.current !== operation || bearerRef.current !== bearer) return;
+      setPairingMode('expired');
+    } catch (failure) {
+      if (expiryOperation.current !== operation || bearerRef.current !== bearer) return;
+      if (failure instanceof DisplayError && failure.code === 'DISPLAY_ALREADY_PAIRED') {
+        setPairingMode('active');
+      } else {
+        setPairingMode('expiry-error');
+        setError('Code expiry could not be confirmed. Retry to expire it.');
+      }
+    } finally {
+      if (expiryOperation.current === operation) expiryOperation.current = null;
+    }
+  };
+
+  const newPairing = () => {
+    expiryOperation.current = null;
+    bearerRef.current = newDisplayCredential();
+    setPairing(null);
+    setError(null);
+    setPairingMode('active');
+    setRestart(value => value + 1);
+  };
 
   const requestId = typeof session?.document.prompt?.requestId === 'string' ? session.document.prompt.requestId : '';
   useEffect(() => {
@@ -133,21 +184,13 @@ export default function Display() {
   }, [lang, pairedDeviceId, session?.document.sequence, session?.document.language, languageRetry, send]);
 
   const document = session?.document;
-  const supported = document?.cart?.supported === true && ['identify','welcome','input'].includes(document.stage);
+  const view = document ? readTicketDisplayView(document) : null;
   const answer = document?.prompt?.answer;
-  const emptySale: Sale = {
-    id: 'DISPLAY', operatorId: '', operatorName: '',
-    tier: typeof document?.member?.tier === 'string' ? document.member.tier : 'tourist',
-    lines: [], manualDiscounts: [], total: 0, creditGrants: [], bracelets: { adults: 0, children: 0 },
-    createdAt: '', status: 'paid', refunds: [],
-  };
-  const member = document?.member && typeof document.member.id === 'string' && typeof document.member.nickname === 'string'
-    ? { id: document.member.id, nickname: document.member.nickname, phone: '' } : null;
 
   return <div className="dark h-[100dvh] w-full min-w-0 overflow-hidden bg-background text-foreground flex flex-col" data-testid="separate-display">
     {error && <div role="alert" className="shrink-0 bg-amber-100 px-4 py-3 text-sm text-amber-950 flex items-center justify-between gap-3">
       <span>{error}</span>
-      <Button size="sm" onClick={() => { const intent = pending.current; if (intent) void send(intent.type, intent.payload); else setRestart(value => value + 1); }}>Retry</Button>
+      <Button size="sm" onClick={() => { if (pairingMode === 'expiry-error') { void expirePairing(); return; } const intent = pending.current; if (intent) void send(intent.type, intent.payload); else setRestart(value => value + 1); }}>Retry</Button>
     </div>}
     {!persistent && <p className="shrink-0 px-4 py-2 text-sm">This browser cannot remember the display. Keep this page open or enable site storage.</p>}
     {!session ? <main className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-5">
@@ -157,12 +200,19 @@ export default function Display() {
       {pairing ? <>
         <div className="font-mono text-6xl font-bold tracking-[0.2em]" aria-label="Pairing code" data-testid="display-pairing-code">{pairing.pairingCode}</div>
         <p className="text-sm text-muted-foreground">This code expires at {new Date(pairing.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.</p>
-        <Button variant="outline" onClick={() => { setPairing(null); setRestart(value => value + 1); }}>New code</Button>
-      </> : <Loader2 className="h-8 w-8 animate-spin" aria-label="Connecting" />}
-    </main> : supported && document ? <>
+        <Button variant="outline" onClick={() => { void expirePairing(); }}>Expire code now</Button>
+      </> : pairingMode === 'expired' ? <>
+        <p role="status">This code has expired. Create a new code when you are ready to pair this display.</p>
+        <Button variant="outline" onClick={newPairing}>New code</Button>
+      </> : pairingMode === 'expiry-error' ? <p>Pairing is paused until code expiry is confirmed.</p>
+        : <Loader2 className="h-8 w-8 animate-spin" aria-label={pairingMode === 'expiring' ? 'Expiring code' : 'Connecting'} />}
+    </main> : view && document ? <>
       <div className="sr-only" data-testid="display-station">{session.station.name} · {session.device.name}</div>
       <div className="flex-1 min-h-0" inert={busy || !!answer || !!pending.current}>
-        <CustomerDisplay stage={document.stage} sale={emptySale} phone={phone} nickname={nickname} member={member}
+        <CustomerDisplay stage={view.stage} sale={view.sale} phone={phone}
+          nickname={view.stage === 'identify' || view.stage === 'input' ? nickname : view.nickname} member={view.member}
+          totals={view.totals} payment={view.payment} lineBreakdowns={view.lineBreakdowns}
+          voucherPrize={view.voucherPrize} nothingToPay={view.nothingToPay} showGrantQr={false}
           contactChannel={contactChannel} onPhoneChange={setPhone} onNicknameChange={setNickname} onContactChannelChange={setContactChannel}
           onIdentify={() => { void send('display.identify', { requestId, phone, nickname, contactChannel }); }}
           onSkipIdentify={() => { void send('display.skip_identify', { requestId }); }}

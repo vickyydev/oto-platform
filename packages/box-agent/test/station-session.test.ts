@@ -7,7 +7,7 @@ import {
   type StationLease,
 } from '../src/contract';
 import { StationSessionManager } from '../src/station-session';
-import type { QueuedFact, StationEventWrite } from '../src/store';
+import type { QueuedFact, SessionWrite, StationEventWrite } from '../src/store';
 import { BOX_ID, BRANCH_ID, OPERATOR_ID, openTestStore, plus, STATION_ID } from './_support';
 
 const AT = '2026-09-20T03:00:00.000Z';
@@ -45,6 +45,30 @@ async function openManager(): Promise<Harness> {
     now: () => store.now(),
   });
   return { manager, facts, events, setNow: store.setNow, close: store.close };
+}
+
+function publicPresentation() {
+  return {
+    cart: {
+      supported: true, nickname: 'Nok',
+      sale: {
+        id: 'sale-1', tier: 'member', total: 190,
+        lines: [{ id: 'line-1', name: 'Play', translations: { en: 'Play', th: 'Play TH' }, lineTotal: 200,
+          breakdown: { rows: [{ key: 'kids', kind: 'kids', label: 'Children', unitPrice: 100, quantity: 2, subtotal: 200 }],
+            priced: true, lengthChosen: true } }],
+        manualDiscounts: [{ id: 'discount-1', scope: 'order', type: 'fixed', value: 10 }],
+        creditGrants: [{ type: 'fnb_credit', label: 'Food credit', valueTHB: 20 }],
+        bracelets: { adults: 1, children: 2 },
+      },
+      voucherPrize: null, nothingToPay: false,
+    },
+    member: { id: 'm-1', nickname: 'Nok', tier: 'member' },
+    totals: { manualAmounts: { 'discount-1': 10 }, discountAmount: 10, total: 190,
+      taxBreakdown: { serviceChargeTotal: 0,
+        categories: [{ taxMode: 'inclusive', taxName: 'VAT', tax: 12.43, secondaryTaxMode: 'none', secondaryTax: 0 }] } },
+    payment: { saleId: 'sale-1', amountSatang: 19000, qrPayload: 'test-only-payment-data', qrImageUrl: null,
+      expiresAt: plus(AT, 60_000), status: 'pending', offline: false, online: true },
+  };
 }
 
 test('two screens on one station see the same snapshot and the same sequence', async () => {
@@ -663,8 +687,7 @@ test('typed display answers are matched, timestamped and retained until the till
   const publish = async (stage: 'identify' | 'input' | 'payment', prompt: Record<string, unknown> | null) => {
     const result = await h.manager.applyIntent(STATION_ID, {
       type: 'session.publish_display', leaseId: claim.lease.leaseId, lastSeenSequence: current.sequence,
-      payload: { stage, step: 1, cart: { sale: { lines: [] }, supported: true }, member: null,
-        totals: { total: 0 }, payment: null, prompt },
+      payload: { stage, step: 1, cart: null, member: null, totals: null, payment: null, prompt },
     }, { source: 'till' });
     assert.ok(result.ok);
     current = result.document;
@@ -807,10 +830,20 @@ test('display publication is till-only and recursively removes presentation-priv
   const h = await openManager();
   const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'presentation-till', holderKind: 'till' });
   assert.ok(claim.ok);
-  const payload = { stage: 'order', step: 4, cart: { sale: { lines: [{ name: 'Play', medical_notes: 'private-medical',
-    detail: { 'allergy-alert': 'private-allergy', 'holder name': 'private-holder', memberNotes: 'private-member' } }] },
-    supported: true, unexpected: 'private-extra' }, member: { id: 'm-1', nickname: 'Nok', phone: 'private-phone',
-    tier: { name: 'Member', holder_notes: 'private-tier' } }, totals: { total: 200 }, payment: null, prompt: null };
+  const presentation = publicPresentation();
+  const payload = { stage: 'order', step: 4,
+    cart: { ...presentation.cart, unexpected: 'private-extra', sale: { ...presentation.cart.sale,
+      children: [{ medicalNotes: 'private-medical' }], receipt: { phone: 'private-receipt' },
+      lines: presentation.cart.sale.lines.map(line => ({ ...line, catalog: { holderName: 'private-holder' },
+        translations: { ...line.translations, internal: 'private-translation' },
+        breakdown: { ...line.breakdown, rows: line.breakdown.rows.map(row => ({ ...row, customer: 'private-row' })) } })),
+      creditGrants: presentation.cart.sale.creditGrants.map(grant => ({ ...grant, id: 'private-wallet-code' })),
+    } },
+    member: { ...presentation.member, phone: 'private-phone', children: [{ nickname: 'private-child' }] },
+    totals: { ...presentation.totals, paymentToken: 'private-token', taxBreakdown: { ...presentation.totals.taxBreakdown,
+      categories: presentation.totals.taxBreakdown.categories.map(category => ({ ...category, stationSecret: 'private-station' })) } },
+    payment: { ...presentation.payment, providerResponse: { approvalCode: 'private-approval' }, credentials: 'private-auth' },
+    prompt: null };
   for (const source of ['display', 'kiosk', 'console'] as const) {
     const result = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
       lastSeenSequence: claim.document.sequence, payload }, { source });
@@ -825,6 +858,99 @@ test('display publication is till-only and recursively removes presentation-priv
   assert.equal(snapshot.lease, null);
   assert.equal(snapshot.member?.nickname, 'Nok');
   assert.equal(JSON.stringify(snapshot).includes('private-'), false);
+  assert.deepEqual(snapshot.cart, presentation.cart);
+  assert.deepEqual(snapshot.totals, presentation.totals);
+  assert.equal(snapshot.payment?.amountSatang, 19000);
+  assert.equal(typeof snapshot.payment?.qrPayload, 'string');
+  assert.deepEqual(h.events.at(-1)?.payload, { keys: ['cart', 'member', 'payment', 'prompt', 'stage', 'step', 'totals'] });
+  const payment = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: result.document.sequence, payload: { ...payload, stage: 'payment', step: 6 } }, { source: 'till' });
+  assert.ok(payment.ok);
+  const thanks = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: payment.document.sequence, payload: { ...payload, stage: 'thankyou', step: 9,
+      payment: { ...presentation.payment, status: 'paid', qrPayload: null } } }, { source: 'till' });
+  assert.ok(thanks.ok);
+  assert.equal(thanks.document.payment?.status, 'paid');
+  assert.equal(thanks.document.sequence, result.document.sequence + 2);
+  assert.equal(h.facts.length, 0);
+  h.close();
+});
+
+test('malformed public money and full sales are refused without changing the station', async () => {
+  const h = await openManager();
+  const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'validated-presentation', holderKind: 'till' });
+  assert.ok(claim.ok);
+  const presentation = publicPresentation();
+  const invalidFields = [
+    { payment: { ...presentation.payment, amountSatang: -1 } },
+    { payment: { ...presentation.payment, amountSatang: 1.5 } },
+    { payment: { ...presentation.payment, amountSatang: Number.MAX_SAFE_INTEGER + 1 } },
+    { payment: { ...presentation.payment, status: 'approved' } },
+    { payment: { ...presentation.payment, qrImageUrl: 'javascript:fixture-only' } },
+    { payment: { ...presentation.payment, expiresAt: 'tomorrow' } },
+    { totals: { ...presentation.totals, total: Number.POSITIVE_INFINITY } },
+    { totals: { ...presentation.totals, total: 190.001 } },
+    { totals: { ...presentation.totals, taxBreakdown: { serviceChargeTotal: 0, categories: [{ taxMode: 'other' }] } } },
+    { member: { ...presentation.member, tier: { name: 'Member' } } },
+    { cart: { ...presentation.cart, sale: { ...presentation.cart.sale, total: -1 } } },
+    { cart: { ...presentation.cart, sale: { ...presentation.cart.sale, lines: [{ ...presentation.cart.sale.lines[0],
+      breakdown: { rows: [{ key: 'kids', kind: 'kids', label: 'Children', unitPrice: 100, quantity: 1.5, subtotal: 150 }],
+        priced: true, lengthChosen: true } }] } } },
+    // A malformed full sale must never be accepted as the old tier-only form.
+    { cart: { supported: false, sale: { id: 'sale-1', tier: 'member' } } },
+  ];
+  for (const fields of invalidFields) {
+    const result = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+      lastSeenSequence: claim.document.sequence, payload: { stage: 'payment', ...presentation, ...fields } }, { source: 'till' });
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.refusal, 'not_permitted');
+    assert.equal((await h.manager.open(STATION_ID)).sequence, claim.document.sequence);
+  }
+  const early = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: claim.document.sequence, payload: { stage: 'identify', cart: { supported: true, sale: { tier: 'member' } } } }, { source: 'till' });
+  assert.ok(early.ok);
+  const unsupported = await h.manager.applyIntent(STATION_ID, { type: 'session.publish_display', leaseId: claim.lease.leaseId,
+    lastSeenSequence: early.document.sequence, payload: { stage: 'input', step: 7,
+      cart: { supported: false, sale: { tier: 'member', children: [{ name: 'private-child' }] } } } }, { source: 'till' });
+  assert.ok(unsupported.ok);
+  assert.deepEqual(unsupported.document.cart, { supported: false, sale: { tier: 'member' } });
+  assert.equal(h.facts.length, 0);
+  h.close();
+});
+
+test('customer snapshots whitelist cached presentations and omit malformed legacy money', async () => {
+  const h = await openManager();
+  const claim = await h.manager.claim({ stationId: STATION_ID, holder: 'legacy-presentation', holderKind: 'till' });
+  assert.ok(claim.ok);
+  const presentation = publicPresentation();
+  let write: SessionWrite = { ...presentation, stage: 'payment', step: 6,
+    cart: { ...presentation.cart, sale: { ...presentation.cart.sale, children: [{ name: 'private-child' }] } },
+    totals: { ...presentation.totals, receipt: { phone: 'private-phone' } },
+    payment: { ...presentation.payment, rawProviderReply: 'private-provider' },
+  };
+  h.manager.register('legacy.publish', { sources: ['till'], requiresLease: true, apply: () => ({ ok: true, write }) });
+  const cached = await h.manager.applyIntent(STATION_ID, { type: 'legacy.publish', leaseId: claim.lease.leaseId,
+    lastSeenSequence: claim.document.sequence, payload: {} }, { source: 'till' });
+  assert.ok(cached.ok);
+  assert.equal(JSON.stringify(cached.document).includes('private-'), true, 'staff snapshot remains untouched');
+  const customer = h.manager.snapshotFor(cached.document, 'customer', null).document;
+  assert.equal(JSON.stringify(customer).includes('private-'), false);
+  assert.deepEqual(customer.cart, presentation.cart);
+  assert.deepEqual(customer.totals, presentation.totals);
+  assert.equal(customer.payment?.amountSatang, 19000);
+  write = { stage: 'payment', cart: { supported: true, sale: { id: 'old-sale', lines: [{ name: 'Play' }] } },
+    totals: { total: 200 }, payment: { amountSatang: 0.5, approvalCode: 'private-code' },
+    member: { id: 'm-1', nickname: 'Nok', tier: { name: 'Member', secret: 'private-tier' } } };
+  const malformed = await h.manager.applyIntent(STATION_ID, { type: 'legacy.publish', leaseId: claim.lease.leaseId,
+    lastSeenSequence: cached.document.sequence, payload: {} }, { source: 'till' });
+  assert.ok(malformed.ok);
+  const safe = h.manager.snapshotFor(malformed.document, 'customer', null).document;
+  assert.equal(safe.cart, null);
+  assert.equal(safe.totals, null);
+  assert.equal(safe.payment, null);
+  assert.deepEqual(safe.member, { id: 'm-1', nickname: 'Nok' });
+  assert.equal(safe.lease, null);
+  assert.equal(safe.step, null);
   assert.equal(h.facts.length, 0);
   h.close();
 });

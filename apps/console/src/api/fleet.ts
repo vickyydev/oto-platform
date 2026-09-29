@@ -25,7 +25,7 @@
  * packages/db/src/schema/fleet.ts and edge.ts, so the two cannot drift apart
  * silently.
  */
-import type { DeviceSettings } from '@oto/shared';
+import type { DeviceSettings, StationSessionDocument } from '@oto/shared';
 import { api, ApiError, idemKey, isMissingRoute, qs } from './client';
 
 export { isMissingRoute };
@@ -545,9 +545,15 @@ export const fleetApi = {
       `/boxes/${encodeURIComponent(boxId)}/heartbeats${qs({ limit })}`,
     ),
 
-  credentials: (branchId: string) =>
+  credentials: (branchId: string, includeRevoked = false) =>
     api.get<{ credentials: CredentialRow[] }>(
-      `/branches/${encodeURIComponent(branchId)}/credentials`,
+      `/branches/${encodeURIComponent(branchId)}/credentials${qs({ includeRevoked: includeRevoked || undefined })}`,
+    ),
+
+  /** Read the same customer view the station exposes, without taking its lease. */
+  displaySnapshot: (stationId: string) =>
+    api.get<{ view: 'customer'; document: StationSessionDocument; serverTime: string }>(
+      `/stations/${encodeURIComponent(stationId)}/session?view=customer`,
     ),
 
   /**

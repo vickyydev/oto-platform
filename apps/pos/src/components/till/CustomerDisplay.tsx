@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { QrCode } from './QrCode';
 import { PaymentExpiry, PaymentQr } from './PaymentQr';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
+import type { DisplayLineBreakdown } from '@oto/shared';
 import { PhoneInput } from '@/components/shared/PhoneInput';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -129,6 +130,10 @@ interface CustomerDisplayProps {
    */
   nothingToPay?: boolean;
   payment?: PaymentDisplayState;
+  /** Captured till rows, so a separate display never reads its own catalog. */
+  lineBreakdowns?: Record<string, DisplayLineBreakdown>;
+  /** Summary-only grants have no redeemable code to render. */
+  showGrantQr?: boolean;
 }
 
 function ChargeBanner({ target }: { target: ChargeTarget }) {
@@ -198,6 +203,8 @@ export function CustomerDisplay({
   voucherPrize,
   nothingToPay,
   payment,
+  lineBreakdowns,
+  showGrantQr = true,
 }: CustomerDisplayProps) {
   const { t, lang } = useLanguage();
   const displayName = nickname.trim() || member?.nickname || '';
@@ -322,7 +329,7 @@ export function CustomerDisplay({
      * refuses, read from the same helper: a dash where a figure would be, the
      * reason underneath, and no total while any line is unpriced.
      */
-    const unpriced = unpricedCartLines(sale.lines);
+    const unpriced = lineBreakdowns ? [] : unpricedCartLines(sale.lines);
     /**
      * THE SECOND WAY THIS SCREEN HAS NOTHING TO QUOTE (SCRUM-350).
      *
@@ -341,8 +348,11 @@ export function CustomerDisplay({
      * cannot be totalled. Every figure comes back, from the same arithmetic as
      * before, the moment a length is chosen.
      */
-    const awaitingLength = new Set(unpricedDropOffLines(sale.lines));
-    const unquotable = unpriced.length > 0 || awaitingLength.size > 0;
+    const awaitingLength = new Set(lineBreakdowns
+      ? sale.lines.filter(line => !lineBreakdowns[line.id]?.lengthChosen).map(line => line.id)
+      : unpricedDropOffLines(sale.lines));
+    const unquotable = unpriced.length > 0 || awaitingLength.size > 0
+      || !!lineBreakdowns && sale.lines.some(line => !lineBreakdowns[line.id]?.priced);
     return (
       <Shell customerName={displayName}>
         {chargeTarget && <ChargeBanner target={chargeTarget} />}
@@ -388,7 +398,8 @@ export function CustomerDisplay({
               }
               // This line's own missing prices, if any — the line total is a
               // dash while it has one, and each row that lacks a price says so.
-              const lineUnpriced = unpricedCartLines([line]).length > 0;
+              const captured = lineBreakdowns?.[line.id];
+              const lineUnpriced = captured ? !captured.priced : unpricedCartLines([line]).length > 0;
               // A drop-off child whose play length is not chosen yet: the same
               // dash, for the ฿0 the line carries until it is.
               const lineAwaitingLength = awaitingLength.has(line.id);
@@ -412,7 +423,7 @@ export function CustomerDisplay({
                     </div>
                   </div>
                   <div className="mt-1">
-                    {computeLineBreakdown(line).map((item) => {
+                    {(captured?.rows ?? computeLineBreakdown(line)).map((item) => {
                       const key = breakdownComponentKey(item);
                       const matches = componentDiscounts.filter(
                         (md) => componentKey(md.targetComponent!) === key
@@ -426,7 +437,7 @@ export function CustomerDisplay({
                       // prices on a drop-off child with no length chosen — it
                       // is where "1 × ฿690" was printed — so it dashes for that
                       // too. The line's adults are 0 while it is unconfigured.
-                      const rowUnpriced =
+                      const rowUnpriced = captured ? 'unpriced' in item && item.unpriced === true :
                         item.kind === 'kids'
                           ? lineAwaitingLength || !isTierPriced(line.ticketType, line.tier)
                           : item.key === 'adults'
@@ -628,7 +639,7 @@ export function CustomerDisplay({
      * here because this is where the figure is printed and nothing at this
      * stage checks it — not because a way through is known.
      */
-    const unpriced = unpricedCartLines(sale.lines);
+    const unpriced = lineBreakdowns ? sale.lines.filter(line => !lineBreakdowns[line.id]?.priced) : unpricedCartLines(sale.lines);
     if (nothingToPay && unpriced.length === 0 && sale.total === 0) {
       // Nothing to pay (L38): the prize by its name, in Thai where it has one,
       // and no request for money. The success ink the thank-you stage uses.
@@ -684,7 +695,7 @@ export function CustomerDisplay({
           </div>
           <p className="text-2xl text-foreground/70 mb-2">{t('common.pleasePay')}</p>
           <div className="text-7xl font-black text-primary mb-4">
-            {unpriced.length > 0 ? '—' : `฿${sale.total}`}
+            {unpriced.length > 0 ? '—' : `฿${payment ? (payment.amountSatang / 100).toFixed(2) : sale.total}`}
           </div>
           <p className="text-2xl text-foreground/70">{t('common.toStaff')}</p>
           {sale.paymentMethod && (
@@ -740,7 +751,7 @@ export function CustomerDisplay({
                   key={v.id}
                   className="flex items-center gap-4 bg-foreground/5 rounded-2xl p-4 border border-foreground/10"
                 >
-                  <QrCode seed={v.id} className="w-16 h-16" />
+                  {showGrantQr && <QrCode seed={v.id} className="w-16 h-16" />}
                   <div className="flex-1">
                     <div className="text-foreground/60">{v.label}</div>
                     <div className="text-3xl font-black text-primary">฿{v.valueTHB}</div>
@@ -760,7 +771,7 @@ export function CustomerDisplay({
                   key={v.id}
                   className="flex items-center gap-4 bg-foreground/5 rounded-2xl p-4 border border-foreground/10"
                 >
-                  <QrCode seed={v.id} className="w-16 h-16" />
+                  {showGrantQr && <QrCode seed={v.id} className="w-16 h-16" />}
                   <div className="flex-1">
                     <div className="text-foreground/60">{v.label}</div>
                     <div className="text-2xl font-black">×{v.quantity}</div>
