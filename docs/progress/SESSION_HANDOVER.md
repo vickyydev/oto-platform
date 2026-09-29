@@ -73,7 +73,11 @@ on the previous release while the complete workflow is built.
 SCRUM-387 is Testing on the work branch. Its changes keep the first transaction's answer,
 cache complete inquiry/confirmation envelopes, remove internal drawer routing
 from sale replies and preserve complete print responses. Existing affected
-tests pass (81 in four files); API typecheck and lint pass. No new defect ticket.
+tests pass (147 in five files); API typecheck and lint pass. Test print/reprint
+commit job, command, audit and complete answer atomically. Six failure/retry
+cases prove zero orphans after failure and one effect after retry; a failed
+first transaction releases response ownership for a successful skipped fallback.
+No new defect ticket.
 
 SCRUM-452 is Testing, the new spin-duration task in sprint 3, linked to SCRUM-198.
 The ten-second default and whole-second Console control (2-20) are implemented on the work branch. A duration is frozen for each spin; it travels through the existing

@@ -1742,7 +1742,7 @@ function isBoxLogLevel(value: string | undefined): value is 'info' | 'warn' | 'e
  * queued for a box that was offline all week must not fire when it wakes up.
  */
 export async function queueCommand(
-  db: Db,
+  db: Exec,
   ctx: OpContext,
   actor: { accountId: string; operatorId: string },
   boxRow: typeof box.$inferSelect,

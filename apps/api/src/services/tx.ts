@@ -48,7 +48,7 @@ export interface OpContext {
   idempotency?: IdempotencyClaim;
 }
 
-/** A request's first transaction owns its stored answer, including nested calls. */
+/** A request's first successful transaction owns its answer, including nested calls. */
 const transactionClaims = new WeakSet<IdempotencyClaim>();
 
 /**
@@ -57,7 +57,7 @@ const transactionClaims = new WeakSet<IdempotencyClaim>();
  * audit row together.
  */
 export async function withTx<T>(
-  db: Db,
+  db: Exec,
   ctx: OpContext,
   opName: string,
   fn: (tx: Tx) => Promise<T>,
@@ -97,9 +97,13 @@ export async function withTx<T>(
     ctx.log?.debug({ op: opName, ms: Date.now() - started, reqId: ctx.requestId }, 'op ok');
     return result;
   } catch (err) {
+    // A rolled-back owner has no answer to preserve. A fallback transaction
+    // (for example a skipped print) may store the request's successful answer.
+    if (claim && ownsStoredAnswer && !claim.stored) transactionClaims.delete(claim);
     const ms = Date.now() - started;
     ctx.log?.warn({ op: opName, ms, reqId: ctx.requestId }, 'op failed');
-    // After the rollback, on the pool rather than the dead transaction.
+    // After rollback, use the pool for a standalone operation or the enclosing
+    // transaction for a failed savepoint; never the transaction that rolled back.
     try {
       await audit.record(db, {
         actorAccountId: ctx.actorAccountId ?? null,

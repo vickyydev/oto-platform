@@ -59,7 +59,9 @@ reset and unmount. All 38 tests in the existing sale-writer file pass, as do
 POS typecheck, package lint and independent review. This branch has not deployed.
 SCRUM-387 is Testing on the work branch: first-transaction response ownership, complete
 inquiry/confirmation envelopes and public sale/print responses are implemented;
-all 81 tests in four existing files, API typecheck and lint pass.
+all 147 tests in five existing files, API typecheck and lint pass. Test print
+and reprint now commit their job, command, audit and complete answer together;
+six failure/retry cases prove rollback and one effect.
 SCRUM-452 is Testing on the work branch: the Lucky Wheel gets a ten-second default and a
 Console draft setting for whole seconds from 2 to 20. Migration 0028 passed
 22 existing database tests and DB typecheck/lint; shared and wheel tests and

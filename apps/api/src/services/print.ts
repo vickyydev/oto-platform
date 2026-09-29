@@ -462,8 +462,8 @@ export interface TestPrintResult {
  *
  * The job id is minted here and carried in the command payload, so the outcome
  * the box reports lands on the row the button created. The row is written
- * first and in its own transaction, because a command whose job row does not
- * exist yet is a box reporting against nothing.
+ * before its command, in one transaction with the complete response, so a box
+ * cannot collect a command without its job and a retry cannot print it twice.
  */
 export async function requestTestPrint(
   db: Db,
@@ -472,8 +472,6 @@ export async function requestTestPrint(
   target: TestPrintTarget,
   input: TestPrintInput,
 ): Promise<TestPrintResult> {
-  // The public answer needs both commits; onSend stores that complete envelope.
-  const operationCtx = { ...ctx, idempotency: undefined };
   const role = input.role ?? ROLE_FOR_KIND[input.kind];
   const routed = await routeOnBox(db, target.boxRow.id, role, target.stationId);
   const [template] = await db
@@ -489,7 +487,7 @@ export async function requestTestPrint(
     .limit(1);
 
   const jobId = newId();
-  const created = await withTx(db, operationCtx, 'print_job.test', async (tx) => {
+  return withTx(db, ctx, 'print_job.test', async (tx) => {
     const [row] = await tx
       .insert(printJob)
       .values({
@@ -522,31 +520,29 @@ export async function requestTestPrint(
       after: { kind: input.kind, role, deviceId: routed?.deviceId ?? null, boxId: target.boxRow.id },
       requestId: ctx.requestId,
     });
-    return jobView(row, null);
-  });
+    const command = await queueCommand(tx, ctx, actor, target.boxRow, {
+      kind: 'test_print',
+      payload: {
+        printJobId: jobId,
+        kind: input.kind,
+        role,
+        stationId: routed?.stationId ?? target.stationId ?? null,
+        copies: input.copies ?? 1,
+        /**
+         * `queueCommand` insists a test print names a device on this box, which
+         * is the S2-04 check that stops a command aimed at somebody else's
+         * printer. Where nothing is assigned there is no device to name — and
+         * that case must still produce a job, because "skipped, not printed" is
+         * what the till has to be told. So the device is only named when one was
+         * found, and the unrouted case is answered below rather than queued.
+         */
+        ...(routed ? { deviceId: routed.deviceId } : {}),
+      },
+      actionId: input.actionId,
+    });
 
-  const command = await queueCommand(db, operationCtx, actor, target.boxRow, {
-    kind: 'test_print',
-    payload: {
-      printJobId: jobId,
-      kind: input.kind,
-      role,
-      stationId: routed?.stationId ?? target.stationId ?? null,
-      copies: input.copies ?? 1,
-      /**
-       * `queueCommand` insists a test print names a device on this box, which
-       * is the S2-04 check that stops a command aimed at somebody else's
-       * printer. Where nothing is assigned there is no device to name — and
-       * that case must still produce a job, because "skipped, not printed" is
-       * what the till has to be told. So the device is only named when one was
-       * found, and the unrouted case is answered below rather than queued.
-       */
-      ...(routed ? { deviceId: routed.deviceId } : {}),
-    },
-    actionId: input.actionId,
+    return { printJob: jobView(row, null), commandId: command.commandId, actionId: command.actionId };
   });
-
-  return { printJob: created, commandId: command.commandId, actionId: command.actionId };
 }
 
 /**
@@ -718,11 +714,9 @@ export async function reprintJob(
   reason: string,
   actionId: string,
 ): Promise<TestPrintResult> {
-  // Neither the job row nor the command alone is this route's response.
-  const operationCtx = { ...ctx, idempotency: undefined };
   const jobId = newId();
   const root = reprintRootOf({ id: source.id, reprintOf: source.reprintOf });
-  const created = await withTx(db, operationCtx, 'print_job.reprint', async (tx) => {
+  return withTx(db, ctx, 'print_job.reprint', async (tx) => {
     const [row] = await tx
       .insert(printJob)
       .values({
@@ -757,22 +751,20 @@ export async function reprintJob(
       after: { reprintOf: root, reason, kind: source.kind },
       requestId: ctx.requestId,
     });
-    return jobView(row, null);
+    const command = await queueCommand(tx, ctx, actor, boxRow, {
+      kind: 'test_print',
+      payload: {
+        printJobId: jobId,
+        kind: source.kind,
+        role: source.role,
+        stationId: source.stationId,
+        copies: source.copies,
+        ...(source.deviceId ? { deviceId: source.deviceId } : {}),
+      },
+      actionId,
+    });
+    return { printJob: jobView(row, null), commandId: command.commandId, actionId: command.actionId };
   });
-
-  const command = await queueCommand(db, operationCtx, actor, boxRow, {
-    kind: 'test_print',
-    payload: {
-      printJobId: jobId,
-      kind: source.kind,
-      role: source.role,
-      stationId: source.stationId,
-      copies: source.copies,
-      ...(source.deviceId ? { deviceId: source.deviceId } : {}),
-    },
-    actionId,
-  });
-  return { printJob: created, commandId: command.commandId, actionId: command.actionId };
 }
 
 export async function loadPrintJob(

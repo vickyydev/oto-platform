@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import {
   BOX_COMMAND_KINDS as DB_BOX_COMMAND_KINDS,
   auditLog,
@@ -7,6 +7,7 @@ import {
   boxCommand,
   branch,
   device,
+  idempotencyKey,
   opsRun,
   printJob,
   printTemplate,
@@ -370,6 +371,76 @@ describe('the Print Templates panel (S2-06)', () => {
 // --- The routed test print --------------------------------------------------
 
 describe('a test print, cloud to box to paper (S2-06)', () => {
+  it.each([
+    ['station', 'command'],
+    ['template', 'command'],
+    ['reprint', 'command'],
+    ['station', 'answer'],
+    ['reprint', 'answer'],
+    ['skipped', 'answer'],
+  ] as const)('rolls back the %s print when its %s cannot commit, then safely retries (SCRUM-387)', async (surface, failure) => {
+    const { agent } = await buildAgent();
+    const { till, booth } = await seededIds();
+    let url = `/stations/${till.id}/test-print`;
+    let payload: object = { kind: 'receipt' };
+    if (surface === 'template') {
+      const [template] = await ctx.db.select().from(printTemplate).where(and(
+        eq(printTemplate.branchId, till.branchId), eq(printTemplate.type, 'receipt'),
+      ));
+      url = `/print-templates/${template!.id}/test-print`;
+      payload = { stationId: till.id };
+    } else if (surface === 'skipped') {
+      url = `/stations/${booth.id}/test-print`;
+      payload = { kind: 'kids_wristband' };
+    } else if (surface === 'reprint') {
+      const original = await post(url, payload);
+      expect(original.statusCode, original.body).toBe(200);
+      await agent.runPendingCommands();
+      url = `/print-jobs/${original.json().printJob.id}/reprint`;
+      payload = { reason: 'A copy after the failed request' };
+    }
+
+    const actionId = newId();
+    const key = `print-rollback-${actionId}`;
+    const headers = { 'idempotency-key': key, 'x-oto-action-id': actionId };
+    const table = failure === 'command' ? 'edge.box_command' : 'core.idempotency_key';
+    const event = failure === 'command' ? 'insert' : 'update';
+    const condition = failure === 'command'
+      ? "new.kind = 'test_print'"
+      : "new.status_code = 200 and new.response_body ? 'printJob'";
+    await ctx.db.execute(sql`
+      create or replace function oto_print_write_fail() returns trigger as $fn$
+      begin raise exception 'forced print write failure'; end $fn$ language plpgsql;
+    `);
+    await ctx.db.execute(sql.raw(`
+      create trigger oto_print_write_fail_trg after ${event} on ${table}
+      for each row when (${condition}) execute function oto_print_write_fail();
+    `));
+    try {
+      const failed = await post(url, payload, headers);
+      expect(failed.statusCode).toBe(500);
+      expect(await ctx.db.select().from(printJob).where(eq(printJob.actionId, actionId))).toHaveLength(0);
+      expect(await ctx.db.select().from(boxCommand).where(eq(boxCommand.actionId, actionId))).toHaveLength(0);
+      expect(await ctx.db.select().from(idempotencyKey).where(eq(idempotencyKey.key, key))).toHaveLength(0);
+    } finally {
+      await ctx.db.execute(sql.raw(`drop trigger if exists oto_print_write_fail_trg on ${table};`));
+      await ctx.db.execute(sql`drop function oto_print_write_fail();`);
+    }
+
+    const retried = await post(url, payload, headers);
+    expect(retried.statusCode, retried.body).toBe(200);
+    const replay = await post(url, payload, headers);
+    expect(replay.statusCode, replay.body).toBe(200);
+    expect(replay.headers['x-oto-replay']).toBe('true');
+    expect(replay.json()).toEqual(retried.json());
+    expect(await ctx.db.select().from(printJob).where(eq(printJob.actionId, actionId))).toHaveLength(1);
+    expect(await ctx.db.select().from(boxCommand).where(eq(boxCommand.actionId, actionId)))
+      .toHaveLength(surface === 'skipped' ? 0 : 1);
+    const [stored] = await ctx.db.select().from(idempotencyKey).where(eq(idempotencyKey.key, key));
+    expect(stored!.responseBody).toEqual(retried.json());
+    await agent.runPendingCommands();
+  });
+
   it.each(['station', 'template'] as const)('replays the complete %s test-print answer without another print (SCRUM-387)', async (surface) => {
     const { agent } = await buildAgent();
     const { till } = await seededIds();
@@ -595,7 +666,9 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
 
   it('a job for a role no printer is assigned to is skipped, not failed', async () => {
     const { booth } = await seededIds();
-    const headers = { 'idempotency-key': `skipped-${newId()}` };
+    const actionId = newId();
+    const key = `skipped-${actionId}`;
+    const headers = { 'idempotency-key': key, 'x-oto-action-id': actionId };
     const res = await post(`/stations/${booth.id}/test-print`, { kind: 'kids_wristband' }, headers);
     expect(res.statusCode).toBe(200);
     const job = res.json().printJob as { id: string; status: string; errorCode: string };
@@ -606,6 +679,10 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
     expect(replay.statusCode, replay.body).toBe(200);
     expect(replay.headers['x-oto-replay']).toBe('true');
     expect(replay.json()).toEqual(res.json());
+    expect(await ctx.db.select().from(printJob).where(eq(printJob.actionId, actionId))).toHaveLength(1);
+    expect(await ctx.db.select().from(boxCommand).where(eq(boxCommand.actionId, actionId))).toHaveLength(0);
+    const [stored] = await ctx.db.select().from(idempotencyKey).where(eq(idempotencyKey.key, key));
+    expect(stored!.responseBody).toEqual(res.json());
 
     // Nothing was raised. A station with no band printer is a choice.
     const failures = await ctx.db
