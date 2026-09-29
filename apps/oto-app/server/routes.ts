@@ -334,11 +334,6 @@ async function computeProbationEndDate(
   return endDate;
 }
 
-const uploadDir = "uploads/employee-documents";
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
 // Legacy: local storage fallback for branch logos
 const logoUploadDir = "uploads/branch-logos";
 if (!fs.existsSync(logoUploadDir)) {
@@ -363,21 +358,7 @@ const logoUpload = multer({
 });
 
 const documentUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const employeeId = req.params.employeeId;
-      const dir = path.join(uploadDir, employeeId);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
-      cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB max
   },
@@ -392,22 +373,8 @@ const documentUpload = multer({
 });
 
 // Bulk Excel upload configuration
-const bulkUploadDir = "uploads/bulk-import";
-if (!fs.existsSync(bulkUploadDir)) {
-  fs.mkdirSync(bulkUploadDir, { recursive: true });
-}
-
 const excelUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, bulkUploadDir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
-      cb(null, `bulk-${uniqueSuffix}${ext}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB max for Excel files
   },
@@ -4286,12 +4253,9 @@ export async function registerRoutes(
       const branchNameToId = new Map(allBranches.map(b => [b.name.toLowerCase(), b.id]));
       
       // Parse Excel file
-      const workbook = XLSX.readFile(req.file.path);
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
-      
-      // Delete temp file
-      fs.unlinkSync(req.file.path);
       
       if (rawData.length < 2) {
         return res.status(400).json({ message: "Excel file must have headers and at least one data row" });
@@ -4960,6 +4924,11 @@ export async function registerRoutes(
   // Employee documents routes
   app.get("/api/employees/:employeeId/documents", requireAuth, async (req, res, next) => {
     try {
+      const employee = await storage.getEmployee(req.params.employeeId);
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
+      if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
+        return res.status(403).json({ message: "Access denied to these documents" });
+      }
       const documents = await storage.getEmployeeDocuments(req.params.employeeId);
       res.json(documents);
     } catch (error) {
@@ -4982,20 +4951,34 @@ export async function registerRoutes(
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
+      if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
+        return res.status(403).json({ message: "Access denied to these documents" });
+      }
 
       const note = req.body.note || null;
+      const extension = ({
+        "image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif", "application/pdf": ".pdf",
+      } as Record<string, string>)[req.file.mimetype];
+      const storedName = `${employee.id}-${crypto.randomUUID()}${extension}`;
+      const filePath = await uploadToObjectStorage(req.file.buffer, "employee-documents", storedName, req.file.mimetype);
 
-      const doc = await storage.createEmployeeDocument({
-        employeeId: req.params.employeeId,
-        branchId: employee.branchId,
-        documentType,
-        fileName: req.file.originalname,
-        filePath: req.file.path,
-        mimeType: req.file.mimetype,
-        fileSize: req.file.size,
-        note,
-        uploadedBy: req.user?.id,
-      });
+      let doc;
+      try {
+        doc = await storage.createEmployeeDocument({
+          employeeId: req.params.employeeId,
+          branchId: employee.branchId,
+          documentType,
+          fileName: req.file.originalname,
+          filePath,
+          mimeType: req.file.mimetype,
+          fileSize: req.file.size,
+          note,
+          uploadedBy: req.user?.id,
+        });
+      } catch (error) {
+        await deleteFromObjectStorage("employee-documents", storedName);
+        throw error;
+      }
 
       // Log activity for document upload
       const docTypeLabel = documentType.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
@@ -5020,6 +5003,16 @@ export async function registerRoutes(
 
   app.delete("/api/employees/:employeeId/documents/:docId", requireAuth, requireManager, async (req, res, next) => {
     try {
+      const employee = await storage.getEmployee(req.params.employeeId);
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
+      if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
+        return res.status(403).json({ message: "Access denied to these documents" });
+      }
+      const doc = await storage.getEmployeeDocument(req.params.docId);
+      if (!doc || doc.employeeId !== employee.id) return res.status(404).json({ message: "Document not found" });
+      if (doc.filePath.startsWith("/api/files/employee-documents/")) {
+        await deleteFromObjectStorage("employee-documents", path.basename(doc.filePath));
+      }
       await storage.deleteEmployeeDocument(req.params.docId);
       res.sendStatus(204);
     } catch (error) {
@@ -5030,20 +5023,34 @@ export async function registerRoutes(
   // Serve uploaded document files
   app.get("/api/employees/:employeeId/documents/:docId/file", requireAuth, async (req, res, next) => {
     try {
-      const documents = await storage.getEmployeeDocuments(req.params.employeeId);
-      const doc = documents.find(d => d.id === req.params.docId);
-      
-      if (!doc) {
-        return res.status(404).json({ message: "Document not found" });
+      const employee = await storage.getEmployee(req.params.employeeId);
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
+      if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
+        return res.status(403).json({ message: "Access denied to these documents" });
       }
-      
-      if (!fs.existsSync(doc.filePath)) {
+      const doc = await storage.getEmployeeDocument(req.params.docId);
+      if (!doc || doc.employeeId !== employee.id) return res.status(404).json({ message: "Document not found" });
+      if (doc.filePath.startsWith("/api/files/employee-documents/")) {
+        const file = await getFileFromObjectStorage("employee-documents", path.basename(doc.filePath));
+        if (!file) return res.status(404).json({ message: "File not found" });
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        res.setHeader("Content-Type", doc.mimeType);
+        res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(doc.fileName)}`);
+        file.stream.on("error", (error) => {
+          if (res.headersSent) res.destroy(error as Error);
+          else next(error);
+        });
+        return file.stream.pipe(res);
+      }
+      const legacyRoot = path.resolve(process.cwd(), "uploads", "employee-documents");
+      const legacyPath = path.resolve(doc.filePath);
+      if (!legacyPath.startsWith(`${legacyRoot}${path.sep}`) || !fs.existsSync(legacyPath)) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+      res.setHeader("X-Content-Type-Options", "nosniff");
       res.setHeader("Content-Type", doc.mimeType);
-      res.setHeader("Content-Disposition", `inline; filename="${doc.fileName}"`);
-      res.sendFile(path.resolve(doc.filePath));
+      res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(doc.fileName)}`);
+      res.sendFile(legacyPath);
     } catch (error) {
       next(error);
     }
@@ -22827,9 +22834,9 @@ ${context}`;
     try {
       const { folder, filename } = req.params;
       const sanitizedFilename = path.basename(filename);
-      // These PDFs are served only after their record-level access check has
-      // issued a short-lived object URL; the generic file route has no scope.
-      if (["contracts", "letters", "beo-pdfs"].includes(folder)) {
+      // Private documents have their own record-scoped routes; this generic
+      // file route cannot decide who may read a contract or employee record.
+      if (["contracts", "letters", "beo-pdfs", "employee-documents"].includes(folder)) {
         return res.status(404).json({ message: "File not found" });
       }
       
