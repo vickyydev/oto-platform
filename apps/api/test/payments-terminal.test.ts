@@ -515,6 +515,28 @@ describe('a terminal whose own host did not answer it', () => {
     expect(asked.statusCode).toBe(409);
     expect(asked.json().error.code).toBe('INQUIRY_UNSUPPORTED');
   });
+
+  it('replays the complete inquiry answer without asking the terminal twice (SCRUM-387)', async () => {
+    const { saleId, owed } = await commitSale();
+    const started = await startTender(saleId, { tender: 'qr', method: 'promptpay' });
+    const attemptId = started.json().attempt.id as string;
+    await postResult(attemptId, {
+      stage: 'final', outcome: 'unsupported', requestedSatang: owed, terminalRef: '990387',
+    });
+    expect((await attemptRow(attemptId)).status).toBe('awaiting_staff_confirmation');
+    const before = (await terminalCommands(attemptId)).length;
+    const headers = { cookie, 'idempotency-key': `inquire-${attemptId}` };
+    const request = { method: 'POST' as const, url: `/payments/attempts/${attemptId}/inquire`, headers };
+    const first = await ctx.app.inject(request);
+    expect(first.statusCode, first.body).toBe(200);
+    expect(first.json().attempt.status).toBe('inquiring');
+    const second = await ctx.app.inject(request);
+    expect(second.statusCode, second.body).toBe(200);
+    expect(second.headers['x-oto-replay']).toBe('true');
+    expect(second.json()).toEqual(first.json());
+    expect(await terminalCommands(attemptId)).toHaveLength(before + 1);
+    await agent.runPendingCommands();
+  });
 });
 
 // --- The audited confirmation ------------------------------------------------
@@ -546,13 +568,18 @@ describe('a person reads the terminal’s own screen', () => {
 
   it('writes their account id onto the attempt AND onto the audit row', async () => {
     const { attemptId } = await blockedAttempt();
-    const res = await ctx.app.inject({
+    const request = {
       method: 'POST',
       url: `/payments/attempts/${attemptId}/confirm`,
-      headers: { cookie },
+      headers: { cookie, 'idempotency-key': `confirm-${attemptId}` },
       payload: { took: true, approvalCode: 'R00042', tid: '65703235', last4: '4242' },
-    });
+    } as const;
+    const res = await ctx.app.inject(request);
     expect(res.statusCode, res.body).toBe(200);
+    const replay = await ctx.app.inject(request);
+    expect(replay.statusCode, replay.body).toBe(200);
+    expect(replay.headers['x-oto-replay']).toBe('true');
+    expect(replay.json()).toEqual(res.json());
 
     const row = await attemptRow(attemptId);
     expect(row.status).toBe('approved');

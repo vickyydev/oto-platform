@@ -48,6 +48,9 @@ export interface OpContext {
   idempotency?: IdempotencyClaim;
 }
 
+/** A request's first transaction owns its stored answer, including nested calls. */
+const transactionClaims = new WeakSet<IdempotencyClaim>();
+
 /**
  * `opName` is the audit action vocabulary — `member.create`,
  * `role_assignment.delete` — so one name ties the log line, the span and the
@@ -60,23 +63,26 @@ export async function withTx<T>(
   fn: (tx: Tx) => Promise<T>,
 ): Promise<T> {
   const started = Date.now();
+  const claim = ctx.idempotency;
+  const ownsStoredAnswer = Boolean(claim && !claim.stored && !transactionClaims.has(claim));
+  if (claim) transactionClaims.add(claim);
+  let storedAnswer = false;
   try {
     const result = await db.transaction(async (tx) => {
       const value = await fn(tx);
-      const claim = ctx.idempotency;
       // Only when the operation produced its own response inside the
       // transaction. An operation that reads its response back afterwards
       // (because it needs the committed row) has it stored by the onSend
       // hook instead, and its client-minted id covers the gap between the
       // commit and that write.
-      if (claim && value !== undefined && !carriesSecret(value)) {
+      if (claim && ownsStoredAnswer && value !== undefined && !carriesSecret(value)) {
         await tx
           .update(idempotencyKey)
           .set({ statusCode: 200, responseBody: (value ?? null) as never })
           .where(
             and(eq(idempotencyKey.accountId, claim.accountId), eq(idempotencyKey.key, claim.key)),
           );
-        claim.stored = true;
+        storedAnswer = true;
       }
       /**
        * A value carrying a credential is left unstored and `stored` left
@@ -86,6 +92,8 @@ export async function withTx<T>(
        */
       return value;
     });
+    // A failed commit leaves the claim unstored so onSend can release a 5xx.
+    if (claim && storedAnswer) claim.stored = true;
     ctx.log?.debug({ op: opName, ms: Date.now() - started, reqId: ctx.requestId }, 'op ok');
     return result;
   } catch (err) {

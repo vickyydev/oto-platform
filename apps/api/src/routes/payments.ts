@@ -403,10 +403,9 @@ export async function paymentRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const actor = actorOf(req, 'pos:payment:confirm');
-      const attempt = await withTx(app.db, opCtx(req), 'payment.attempt.inquire', (tx) =>
-        requestInquiry(tx, actor, req.params.id),
-      );
-      return { attempt };
+      return withTx(app.db, opCtx(req), 'payment.attempt.inquire', async (tx) => ({
+        attempt: await requestInquiry(tx, actor, req.params.id),
+      }));
     },
   );
 
@@ -432,8 +431,8 @@ export async function paymentRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const actor = actorOf(req, 'pos:payment:confirm');
-      const attempt = await withTx(app.db, opCtx(req), 'payment.attempt.confirm', (tx) =>
-        confirmAttempt(tx, actor, req.params.id, {
+      return withTx(app.db, opCtx(req), 'payment.attempt.confirm', async (tx) => ({
+        attempt: await confirmAttempt(tx, actor, req.params.id, {
           took: req.body.took,
           approvalCode: req.body.approvalCode ?? null,
           tid: req.body.tid ?? null,
@@ -441,8 +440,7 @@ export async function paymentRoutes(app: App): Promise<void> {
           note: req.body.note ?? null,
           actionId: actionIdOf(req.headers),
         }),
-      );
-      return { attempt };
+      }));
     },
   );
 

@@ -70,7 +70,7 @@ lint and independent review pass. No till UI has been wired and this branch
 has not deployed. The checkpoint is on the work branch; main and staging stay
 on the previous release while the complete workflow is built.
 
-SCRUM-387 is In Progress. Its local changes keep the first transaction's answer,
+SCRUM-387 is Testing on the work branch. Its changes keep the first transaction's answer,
 cache complete inquiry/confirmation envelopes, remove internal drawer routing
 from sale replies and preserve complete print responses. Existing affected
 tests pass (81 in four files); API typecheck and lint pass. No new defect ticket.

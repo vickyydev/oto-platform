@@ -4,6 +4,7 @@ import {
   BOX_COMMAND_KINDS as DB_BOX_COMMAND_KINDS,
   auditLog,
   box,
+  boxCommand,
   branch,
   device,
   opsRun,
@@ -29,6 +30,7 @@ import {
   PRINT_TEMPLATE_TYPES,
   PRINT_TEMPLATE_TYPE_ORDER,
   TEMPLATE_FOR_KIND,
+  newId,
 } from '@oto/shared';
 import {
   createTestContext,
@@ -368,6 +370,28 @@ describe('the Print Templates panel (S2-06)', () => {
 // --- The routed test print --------------------------------------------------
 
 describe('a test print, cloud to box to paper (S2-06)', () => {
+  it.each(['station', 'template'] as const)('replays the complete %s test-print answer without another print (SCRUM-387)', async (surface) => {
+    const { agent } = await buildAgent();
+    const { till } = await seededIds();
+    const [template] = await ctx.db.select().from(printTemplate).where(and(
+      eq(printTemplate.branchId, till.branchId), eq(printTemplate.type, 'receipt'),
+    ));
+    const actionId = newId();
+    const url = surface === 'station' ? `/stations/${till.id}/test-print` : `/print-templates/${template!.id}/test-print`;
+    const payload = surface === 'station' ? { kind: 'receipt' } : { stationId: till.id };
+    const headers = { 'idempotency-key': `print-${actionId}`, 'x-oto-action-id': actionId };
+    const first = await post(url, payload, headers);
+    expect(first.statusCode, first.body).toBe(200);
+    expect(first.json().printJob.status).toBe('queued');
+    const second = await post(url, payload, headers);
+    expect(second.statusCode, second.body).toBe(200);
+    expect(second.headers['x-oto-replay']).toBe('true');
+    expect(second.json()).toEqual(first.json());
+    expect(await ctx.db.select().from(printJob).where(eq(printJob.actionId, actionId))).toHaveLength(1);
+    expect(await ctx.db.select().from(boxCommand).where(eq(boxCommand.actionId, actionId))).toHaveLength(1);
+    await agent.runPendingCommands();
+  });
+
   /**
    * All six, each at the station whose printer actually carries its role.
    *
@@ -571,12 +595,17 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
 
   it('a job for a role no printer is assigned to is skipped, not failed', async () => {
     const { booth } = await seededIds();
-    const res = await post(`/stations/${booth.id}/test-print`, { kind: 'kids_wristband' });
+    const headers = { 'idempotency-key': `skipped-${newId()}` };
+    const res = await post(`/stations/${booth.id}/test-print`, { kind: 'kids_wristband' }, headers);
     expect(res.statusCode).toBe(200);
     const job = res.json().printJob as { id: string; status: string; errorCode: string };
     expect(job.status).toBe('skipped');
     expect(job.errorCode).toBe('NO_DEVICE_FOR_ROLE');
     expect(res.json().commandId).toBe('');
+    const replay = await post(`/stations/${booth.id}/test-print`, { kind: 'kids_wristband' }, headers);
+    expect(replay.statusCode, replay.body).toBe(200);
+    expect(replay.headers['x-oto-replay']).toBe('true');
+    expect(replay.json()).toEqual(res.json());
 
     // Nothing was raised. A station with no band printer is a choice.
     const failures = await ctx.db
@@ -753,10 +782,16 @@ describe('what a failure leaves behind (S2-06)', () => {
     const original = first.json().printJob.id as string;
     await agent.runPendingCommands();
 
-    const res = await post(`/print-jobs/${original}/reprint`, { reason: 'The guest asked for a copy' });
+    const headers = { 'idempotency-key': `reprint-${newId()}` };
+    const res = await post(`/print-jobs/${original}/reprint`, { reason: 'The guest asked for a copy' }, headers);
     expect(res.statusCode, res.body).toBe(200);
     const copy = res.json().printJob as { id: string; reprintOf: string };
     expect(copy.reprintOf).toBe(original);
+    const replay = await post(`/print-jobs/${original}/reprint`, { reason: 'The guest asked for a copy' }, headers);
+    expect(replay.statusCode, replay.body).toBe(200);
+    expect(replay.headers['x-oto-replay']).toBe('true');
+    expect(replay.json()).toEqual(res.json());
+    expect(await ctx.db.select().from(printJob).where(eq(printJob.reprintOf, original))).toHaveLength(1);
     await agent.runPendingCommands();
 
     // A copy of the copy still points at the ORIGINAL, so counting the copies

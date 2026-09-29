@@ -287,7 +287,8 @@ describe('the retry down a dropped connection', () => {
     expect(second.statusCode).toBe(200);
     expect(second.headers['x-oto-replay']).toBe('true');
     // Every field the first answer carried, carried again and unchanged.
-    expect(second.json()).toMatchObject(first.json());
+    expect(second.json()).toEqual(first.json());
+    expect(first.json()).not.toHaveProperty('drawerKick');
     expect(second.json().sale.receiptNumber).toBe(first.json().sale.receiptNumber);
     expect(second.json().attempt.id).toBe(first.json().attempt.id);
     // And not the box command that ran after the sale committed.
@@ -309,6 +310,8 @@ describe('the retry down a dropped connection', () => {
     expect(body.sale?.id).toBe(saleId);
     expect(body.sale?.receiptNumber).toBe(first.json().sale.receiptNumber);
     expect(body.commandId).toBeUndefined();
+    expect(stored!.responseBody).toEqual(first.json());
+    expect(stored!.responseBody).not.toHaveProperty('drawerKick');
   });
 
   it('answers a card press the same way, with no drawer in the picture at all', async () => {
@@ -325,7 +328,7 @@ describe('the retry down a dropped connection', () => {
     const second = await finalise(saleId, press, { 'idempotency-key': key });
     expect(second.statusCode).toBe(200);
     expect(second.headers['x-oto-replay']).toBe('true');
-    expect(second.json()).toMatchObject(first.json());
+    expect(second.json()).toEqual(first.json());
     expect(second.json().sale.receiptNumber).toBe(first.json().sale.receiptNumber);
 
     const [stored] = await ctx.db
@@ -333,6 +336,8 @@ describe('the retry down a dropped connection', () => {
       .from(idempotencyKey)
       .where(eq(idempotencyKey.key, key));
     expect((stored!.responseBody as { sale?: { id?: string } }).sale?.id).toBe(saleId);
+    expect(stored!.responseBody).toEqual(first.json());
+    expect(stored!.responseBody).not.toHaveProperty('drawerKick');
     // Card takes no cash, so there was never a pulse to overwrite the answer.
     expect(await drawerCommands()).toHaveLength(before);
   });

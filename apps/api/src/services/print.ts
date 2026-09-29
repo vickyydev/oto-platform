@@ -472,6 +472,8 @@ export async function requestTestPrint(
   target: TestPrintTarget,
   input: TestPrintInput,
 ): Promise<TestPrintResult> {
+  // The public answer needs both commits; onSend stores that complete envelope.
+  const operationCtx = { ...ctx, idempotency: undefined };
   const role = input.role ?? ROLE_FOR_KIND[input.kind];
   const routed = await routeOnBox(db, target.boxRow.id, role, target.stationId);
   const [template] = await db
@@ -487,7 +489,7 @@ export async function requestTestPrint(
     .limit(1);
 
   const jobId = newId();
-  const created = await withTx(db, ctx, 'print_job.test', async (tx) => {
+  const created = await withTx(db, operationCtx, 'print_job.test', async (tx) => {
     const [row] = await tx
       .insert(printJob)
       .values({
@@ -523,7 +525,7 @@ export async function requestTestPrint(
     return jobView(row, null);
   });
 
-  const command = await queueCommand(db, ctx, actor, target.boxRow, {
+  const command = await queueCommand(db, operationCtx, actor, target.boxRow, {
     kind: 'test_print',
     payload: {
       printJobId: jobId,
@@ -563,7 +565,7 @@ export async function recordSkippedPrint(
 ): Promise<TestPrintResult> {
   const role = input.role ?? ROLE_FOR_KIND[input.kind];
   const jobId = newId();
-  const created = await withTx(db, ctx, 'print_job.skipped', async (tx) => {
+  return withTx(db, ctx, 'print_job.skipped', async (tx) => {
     const now = new Date();
     const [row] = await tx
       .insert(printJob)
@@ -588,9 +590,8 @@ export async function recordSkippedPrint(
       })
       .returning();
     if (!row) throw new AppError(500, 'INTERNAL', 'The print job could not be recorded');
-    return jobView(row, null);
+    return { printJob: jobView(row, null), commandId: '', actionId: input.actionId };
   });
-  return { printJob: created, commandId: '', actionId: input.actionId };
 }
 
 export interface PrintJobResultInput {
@@ -717,9 +718,11 @@ export async function reprintJob(
   reason: string,
   actionId: string,
 ): Promise<TestPrintResult> {
+  // Neither the job row nor the command alone is this route's response.
+  const operationCtx = { ...ctx, idempotency: undefined };
   const jobId = newId();
   const root = reprintRootOf({ id: source.id, reprintOf: source.reprintOf });
-  const created = await withTx(db, ctx, 'print_job.reprint', async (tx) => {
+  const created = await withTx(db, operationCtx, 'print_job.reprint', async (tx) => {
     const [row] = await tx
       .insert(printJob)
       .values({
@@ -757,7 +760,7 @@ export async function reprintJob(
     return jobView(row, null);
   });
 
-  const command = await queueCommand(db, ctx, actor, boxRow, {
+  const command = await queueCommand(db, operationCtx, actor, boxRow, {
     kind: 'test_print',
     payload: {
       printJobId: jobId,

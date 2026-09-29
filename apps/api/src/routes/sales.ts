@@ -6,7 +6,7 @@ import { errors } from '../lib/errors';
 import { PermissionDeniedError } from '../plugins/session';
 import { branchReach } from '../services/access-control';
 import { opCtx, withTx } from '../services/tx';
-import { queueDrawerKick } from '../services/payments/drawer';
+import { queueDrawerKick, type DrawerKick } from '../services/payments/drawer';
 import {
   commitSale,
   finaliseSale,
@@ -454,14 +454,18 @@ export async function saleRoutes(app: App): Promise<void> {
         reference: body.reference,
       };
       const headerActionId = req.headers['x-oto-action-id'];
-      const result = await withTx(app.db, opCtx(req), 'sale.finalise', (tx) =>
-        finaliseSale(tx, actor, req.params.id, {
+      let drawerKick: DrawerKick | null = null;
+      const answer = await withTx(app.db, opCtx(req), 'sale.finalise', async (tx) => {
+        const result = await finaliseSale(tx, actor, req.params.id, {
           tender,
           actionId:
             body.actionId ?? (typeof headerActionId === 'string' ? headerActionId : null) ?? null,
           ...(body.pickupCode ? { pickupCode: body.pickupCode } : {}),
-        }),
-      );
+        });
+        const { drawerKick: kick, ...response } = result;
+        drawerKick = kick;
+        return response;
+      });
       /**
        * S2-10a (O-4) — THE DRAWER, once the money is committed and not before.
        *
@@ -477,11 +481,10 @@ export async function saleRoutes(app: App): Promise<void> {
        * `withoutIdempotencyClaim`): the answer stored under the till's key must
        * stay the finalise's, or the retry replays a command instead of a sale.
        */
-      const { drawerKick, ...answer } = result;
       if (drawerKick) {
         await queueDrawerKick(app.db, opCtx(req), actor, drawerKick);
       }
-      if (result.replay) reply.header('x-oto-replay', 'true');
+      if (answer.replay) reply.header('x-oto-replay', 'true');
       return answer;
     },
   );

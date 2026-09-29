@@ -1,8 +1,9 @@
 import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, idempotencyKey, member } from '@oto/db';
+import { account, auditLog, idempotencyKey, member } from '@oto/db';
 import { newId } from '@oto/shared';
-import { purgeExpiredIdempotencyKeys } from '../src/plugins/idempotency';
+import { purgeExpiredIdempotencyKeys, type IdempotencyClaim } from '../src/plugins/idempotency';
+import { withTx } from '../src/services/tx';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 let ctx: TestContext;
@@ -19,6 +20,27 @@ afterAll(async () => {
 });
 
 describe('SCRUM-15 — idempotency', () => {
+  it.each(['later', 'nested'] as const)('a %s transaction under one claim cannot replace its public answer (SCRUM-387)', async (position) => {
+    const [actor] = await ctx.db.select({ id: account.id }).from(account).where(eq(account.phone, ADMIN.phone));
+    const claim: IdempotencyClaim = { key: `answer-${newId()}`, accountId: actor!.id };
+    await ctx.db.insert(idempotencyKey).values({
+      key: claim.key, accountId: claim.accountId, requestHash: 'scrum-387',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    const operation = { idempotency: claim };
+    const answer = { sale: { id: newId() }, finalised: true };
+    const queueCommand = () => withTx(ctx.db, operation, 'test.command', async () => ({ commandId: newId() }));
+    await withTx(ctx.db, operation, 'test.sale', async () => {
+      if (position === 'nested') await queueCommand();
+      return answer;
+    });
+    if (position === 'later') await queueCommand();
+    const [stored] = await ctx.db.select().from(idempotencyKey).where(eq(idempotencyKey.key, claim.key));
+    expect(stored!.statusCode).toBe(200);
+    expect(stored!.responseBody).toEqual(answer);
+    expect(claim.stored).toBe(true);
+  });
+
   it('replaying the same request with the same key stores one record and identical responses', async () => {
     const payload = { phone: '+66611111222', nickname: 'IdemTest' };
     const headers = { cookie: reception, 'idempotency-key': 'idem-1' };
