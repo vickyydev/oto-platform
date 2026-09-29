@@ -11,6 +11,7 @@ import {
   paymentAttempt,
   sale,
   station,
+  stationDevice,
   ticketPackage,
 } from '@oto/db';
 import {
@@ -155,7 +156,7 @@ afterAll(async () => {
 
 // --- Helpers -----------------------------------------------------------------
 
-async function commitSale(): Promise<{ saleId: string; owed: number }> {
+async function commitSale(atStationId = stationId): Promise<{ saleId: string; owed: number }> {
   const saleId = newId();
   const res = await ctx.app.inject({
     method: 'POST',
@@ -163,7 +164,7 @@ async function commitSale(): Promise<{ saleId: string; owed: number }> {
     headers: { cookie },
     payload: {
       id: saleId,
-      stationId,
+      stationId: atStationId,
       memberId: jamesId,
       lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }],
       finalise: true,
@@ -249,6 +250,87 @@ function tape(deviceId: string) {
 // --- Approved ----------------------------------------------------------------
 
 describe('a card approved on the terminal', () => {
+  it.each(['approved', 'partial'] as const)('keeps the same short invoice from two GHL terminals when the second is %s', async (outcome) => {
+    const devices = [newId(), newId()];
+    const tills = [newId(), newId()];
+    const prefixes = outcome === 'approved' ? ['IA', 'IB'] : ['IC', 'ID'];
+    for (let index = 0; index < devices.length; index += 1) {
+      await ctx.db.insert(device).values({
+        id: devices[index]!, operatorId, branchId, boxId, kind: 'terminal',
+        label: `Invoice collision ${prefixes[index]}`, transport: 'simulated',
+        model: 'NEXGO N5', protocol: 'ghl_linkpos',
+      });
+      await ctx.db.insert(station).values({
+        id: tills[index]!, operatorId, branchId, boxId, kind: 'till',
+        name: `Invoice collision ${prefixes[index]}`, codePrefix: prefixes[index]!,
+      });
+      await ctx.db.insert(stationDevice).values({
+        id: newId(), stationId: tills[index]!, deviceId: devices[index]!, role: 'card_terminal',
+      });
+    }
+    await agent.syncConfig();
+
+    const first = await commitSale(tills[0]!);
+    expect((await setOutcome(devices[0]!, { outcome: 'approved' })).statusCode).toBe(200);
+    const firstStart = await startTender(first.saleId, { actionId: newId() });
+    expect(firstStart.statusCode).toBe(200);
+    const firstAttemptId = firstStart.json().attempt.id as string;
+    expect(await agent.runPendingCommands()).toBeGreaterThanOrEqual(1);
+    const firstAttempt = await attemptRow(firstAttemptId);
+    expect(firstAttempt).toMatchObject({ deviceId: devices[0], provider: 'simulator', status: 'approved', invoiceNo: '000001' });
+    const firstClose = await ctx.app.inject({
+      method: 'POST', url: `/sales/${first.saleId}/finalise`, headers: { cookie },
+      payload: { actionId: newId(), method: 'none', kind: 'other', amountSatang: 0 },
+    });
+    expect(firstClose.statusCode).toBe(200);
+    expect(firstClose.json().finalised).toBe(true);
+    expect(firstClose.json().sale.receiptNumber).toBeTruthy();
+
+    const second = await commitSale(tills[1]!);
+    expect((await setOutcome(devices[1]!, {
+      outcome, ...(outcome === 'partial' ? { approvedSatang: second.owed - 100 } : {}),
+    })).statusCode).toBe(200);
+    const secondStart = await startTender(second.saleId, { actionId: newId() });
+    expect(secondStart.statusCode).toBe(200);
+    const secondAttemptId = secondStart.json().attempt.id as string;
+    expect(await agent.runPendingCommands()).toBeGreaterThanOrEqual(1);
+    const secondAttempt = await attemptRow(secondAttemptId);
+    expect(secondAttempt.deviceId).toBe(devices[1]);
+    expect(secondAttempt.invoiceNo).toBe(firstAttempt.invoiceNo);
+    expect(secondAttempt.invoiceNo).toBe('000001');
+    expect(secondAttempt.status).toBe(outcome === 'approved' ? 'approved' : 'declined');
+
+    if (outcome === 'partial') {
+      expect((await readAttempt(secondAttemptId)).attempt.reversalPending).toBe(true);
+      const commands = await terminalCommands(secondAttemptId);
+      expect(commands.filter((command) => (command.payload as { mode?: string }).mode === 'void')).toHaveLength(1);
+      expect(await agent.runPendingCommands()).toBeGreaterThanOrEqual(1);
+      const reversed = await readAttempt(secondAttemptId);
+      expect(reversed.attempt).toMatchObject({ status: 'declined', reversalPending: false });
+      expect(reversed.outstandingSatang).toBe(second.owed);
+      const afterVoid = await attemptRow(secondAttemptId);
+      expect((afterVoid.payload as { void?: { result?: { mode?: string; outcome?: string } } }).void?.result)
+        .toMatchObject({ mode: 'void', outcome: 'approved' });
+      expect(tape(devices[1]!).filter((event) => event.kind === 'request' && event.detail.transactionType === 'VOID')).toHaveLength(1);
+    }
+
+    const secondClose = await ctx.app.inject({
+      method: 'POST', url: `/sales/${second.saleId}/finalise`, headers: { cookie },
+      payload: { actionId: newId(), ...(outcome === 'partial'
+        ? { method: 'cash', kind: 'cash', amountSatang: second.owed }
+        : { method: 'none', kind: 'other', amountSatang: 0 }) },
+    });
+    expect(secondClose.statusCode).toBe(200);
+    expect(secondClose.json().finalised).toBe(true);
+    expect(secondClose.json().outstandingSatang).toBe(0);
+    expect(secondClose.json().sale.receiptNumber).toBeTruthy();
+    for (const id of devices) {
+      expect(tape(id).filter((event) => event.kind === 'request' && event.detail.transactionType === 'SALE')).toHaveLength(1);
+    }
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, first.saleId))).toHaveLength(1);
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, second.saleId))).toHaveLength(outcome === 'partial' ? 2 : 1);
+  });
+
   it('settles the attempt with the approval code, the TID, the last four and the 12-character reference', async () => {
     const { saleId, owed } = await commitSale();
     expect((await setOutcome(cardDeviceId, { outcome: 'approved' })).statusCode).toBe(200);

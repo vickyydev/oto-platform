@@ -37,14 +37,15 @@ uncertain answers retain stable retry identities. Completion follows the
 finalised platform sale, with local ticket-completion retry avoiding a second
 charge. Unsafe pasted money cannot display a value different from the accepted
 state. All 53 affected writer checks, POS typecheck, lint and build pass.
-Native cash/change, handheld split/manual, food QR/reconnect and shop terminal
-approval/decline pass; recovery and checkout cases remain under verification.
+Six native cases pass: cash/change, handheld split/manual, food QR/reconnect,
+shop terminal approval, decline/cash fallback and timeout/inquiry/audited staff
+confirmation. Partial recovery and the remaining checkout cases are unverified.
 The inquiry follow-up adds optional `PaymentAttemptView.inquirySupported`,
 derived from the attempt's frozen terminal protocol, tender and reference.
 The UI uses it to hide and refuse unsupported inquiry, including simulated GHL
 cards; old API replies keep the provider rule and require a reference. Shared
-contract names are unchanged. Existing affected suites pass 104 checks; API,
-POS and shared typecheck and full package lint pass. This follow-up is pushed
+contract names are unchanged. The inquiry change passed 104 existing-file
+checks, plus API/POS/shared typechecks and full package lint. It is pushed
 separately and is not live: Actions billing/spending availability blocks new
 CI jobs before execution. Device reconfiguration during an attempt can still
 cause a safe server refusal; changing the hardware does not authorise payment.
@@ -56,7 +57,15 @@ terminal/cash/sales/writer/shared-payment files pass 189 checks, and touched
 API/POS/shared typechecks and full lint pass. This follow-up is not live.
 Six native online cases pass; the partial case remains BROKEN in the staging
 run because its final report did not reach the cloud attempt. Its isolated
-inventory is retained. That callback cause remains unresolved; GHL confirmation,
+inventory is retained. The callback collision is corrected on the same branch
+by forward migration 0029: gateway invoice uniqueness covers device-less
+attempts, including the simulator, while hardware invoices may repeat. All
+five gateway reads exclude terminal attempts. Existing terminal/gateway/database
+files pass 97 checks, API/DB typechecks, full lint and schema verification pass.
+The old-migration regressions reproduce the failure. This correction is not
+live and the original outcome has not been recovered; verify one successful
+VOID before releasing its reservation, without a new SALE. Roll forward after
+0029 rather than reverting behind these matching filters. GHL confirmation,
 QR-disabled and zero-price native proof are still pending. Full offline
 browser-to-box transport needs SCRUM-269/285; independent customer-display
 acceptance needs SCRUM-201 (S2-08). The full story stays In Progress.

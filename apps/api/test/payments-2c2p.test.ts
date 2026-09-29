@@ -6,6 +6,7 @@ import {
   auditLog,
   branch,
   boxCommand,
+  device,
   member,
   opsRun,
   paymentAttempt,
@@ -23,10 +24,12 @@ import { buildAlertChannels } from '../src/services/ops';
 import {
   POLL_BATCH,
   gatewayFor,
+  gatewayStatus,
   handleNotification,
   openQrAttempt,
   pendingAttemptsQuery,
   settlePaidAttempt,
+  simulateGatewayEvent,
 } from '../src/services/payments/gateway';
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
@@ -582,6 +585,89 @@ describe('a delivery that should not have arrived', () => {
     expect(res.json().outcome).toBe('unmatched_payment');
     expect(await alertsLike('payments.unmatched:')).not.toHaveLength(0);
     await untouched();
+  });
+
+  it('does not match, poll or simulate a terminal invoice as a gateway payment', async () => {
+    const [terminal] = await ctx.db
+      .select({ id: device.id })
+      .from(device)
+      .where(and(eq(device.operatorId, operatorId), eq(device.kind, 'terminal')))
+      .limit(1);
+    const id = newId();
+    const terminalInvoice = 'TERMINALONLY001';
+    await ctx.db.insert(paymentAttempt).values({
+      id,
+      operatorId,
+      branchId,
+      stationId,
+      deviceId: terminal!.id,
+      businessDate: today(),
+      method: 'qr',
+      provider: 'simulator',
+      status: 'sent_to_terminal',
+      amountSatang: owed,
+      invoiceNo: terminalInvoice,
+    });
+    const res = await post(
+      notification({
+        invoiceNo: terminalInvoice,
+        amount: wire(owed),
+        tranRef: 'TERMINAL-NOT-GATEWAY',
+      }),
+    );
+    expect(res.statusCode).toBe(200);
+    expect(res.json().outcome).toBe('unmatched_payment');
+    expect((await attemptOf(id)).status).toBe('sent_to_terminal');
+    expect(await pendingAttemptsQuery(ctx.db)).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id })]),
+    );
+    expect((await gatewayStatus(ctx.db, ctx.app.env, operatorId)).attempts).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id })]),
+    );
+    await expect(
+      simulateGatewayEvent(ctx.db, ctx.app.env, ctx.app.log, {
+        operatorId,
+        attemptId: id,
+        event: 'paid',
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(
+      await ctx.db
+        .select()
+        .from(paymentNotification)
+        .where(eq(paymentNotification.invoiceNo, terminalInvoice)),
+    ).toHaveLength(0);
+    await untouched();
+  });
+
+  it('settles the gateway attempt when a terminal has the same invoice text', async () => {
+    const [terminal] = await ctx.db
+      .select({ id: device.id })
+      .from(device)
+      .where(and(eq(device.operatorId, operatorId), eq(device.kind, 'terminal')))
+      .limit(1);
+    const id = newId();
+    await ctx.db.insert(paymentAttempt).values({
+      id,
+      operatorId,
+      branchId,
+      stationId,
+      deviceId: terminal!.id,
+      businessDate: today(),
+      method: 'qr',
+      provider: 'simulator',
+      status: 'sent_to_terminal',
+      amountSatang: owed,
+      invoiceNo,
+    });
+    simulator().apply(invoiceNo, 'paid');
+    const res = await post(
+      notification({ invoiceNo, amount: wire(owed), tranRef: 'GATEWAY-NAMESPACE' }),
+    );
+    expect(res.statusCode).toBe(200);
+    expect((await attemptOf(attemptId)).status).toBe('approved');
+    expect((await saleOf(saleId)).status).toBe('finalised');
+    expect((await attemptOf(id)).status).toBe('sent_to_terminal');
   });
 
   /**

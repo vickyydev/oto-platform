@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import type { FastifyBaseLogger } from 'fastify';
 import { paymentAttempt, paymentNotification, sale, station, type Db } from '@oto/db';
@@ -176,7 +176,7 @@ const INVOICE_LOCK_NAMESPACE = 0x070b;
  * exactly the shape `services/jobs.ts` already uses to claim a tick. It is
  * held for one indexed read and released by the commit.
  *
- * The unique index `payment_attempt_invoice_unique` is the net underneath, and
+ * The unique index `payment_attempt_gateway_invoice_unique` is the net underneath, and
  * it is global and permanent because 2C2P's own uniqueness is: a reused number
  * comes back `5005` at the counter with nothing a person can act on.
  */
@@ -197,6 +197,8 @@ async function mintInvoiceNo(
       and(
         eq(paymentAttempt.stationId, input.stationId),
         eq(paymentAttempt.businessDate, input.businessDate),
+        isNull(paymentAttempt.deviceId),
+        inArray(paymentAttempt.provider, ['2c2p', 'simulator']),
         isNotNull(paymentAttempt.invoiceNo),
       ),
     );
@@ -1054,7 +1056,13 @@ export async function handleNotification(
     const [matched] = await db
       .select()
       .from(paymentAttempt)
-      .where(eq(paymentAttempt.invoiceNo, facts.invoiceNo))
+      .where(
+        and(
+          eq(paymentAttempt.invoiceNo, facts.invoiceNo),
+          isNull(paymentAttempt.deviceId),
+          inArray(paymentAttempt.provider, ['2c2p', 'simulator']),
+        ),
+      )
       .limit(1);
     if (!matched) {
       await raiseAlert(
@@ -1414,6 +1422,7 @@ export function pendingAttemptsQuery(db: Db) {
       and(
         eq(paymentAttempt.method, 'qr'),
         inArray(paymentAttempt.provider, ['2c2p', 'simulator']),
+        isNull(paymentAttempt.deviceId),
         inArray(paymentAttempt.status, PENDING_STATUSES),
         isNotNull(paymentAttempt.invoiceNo),
       ),
@@ -1694,6 +1703,8 @@ export async function gatewayStatus(db: Db, env: Env, operatorId: string): Promi
       and(
         eq(paymentAttempt.operatorId, operatorId),
         eq(paymentAttempt.method, 'qr'),
+        isNull(paymentAttempt.deviceId),
+        inArray(paymentAttempt.provider, ['2c2p', 'simulator']),
         inArray(paymentAttempt.status, PENDING_STATUSES),
         isNotNull(paymentAttempt.invoiceNo),
       ),
@@ -1774,7 +1785,12 @@ export async function simulateGatewayEvent(
     .select()
     .from(paymentAttempt)
     .where(
-      and(eq(paymentAttempt.id, input.attemptId), eq(paymentAttempt.operatorId, input.operatorId)),
+      and(
+        eq(paymentAttempt.id, input.attemptId),
+        eq(paymentAttempt.operatorId, input.operatorId),
+        isNull(paymentAttempt.deviceId),
+        inArray(paymentAttempt.provider, ['2c2p', 'simulator']),
+      ),
     )
     .limit(1);
   if (!attempt?.invoiceNo) throw errors.notFound('No such payment attempt');
@@ -1876,4 +1892,3 @@ function shapeOf(body: unknown): string {
   if (Array.isArray(body)) return 'array';
   return typeof body;
 }
-

@@ -1095,11 +1095,13 @@ export const paymentAttempt = pos.table(
      * THE GATEWAY'S KEY, and it is unique for ever rather than per day or per
      * station: 2C2P's own uniqueness is global to the merchant, and a number we
      * reused would be refused at the counter with nothing a person could act
-     * on. Partial because most attempts — every cash and card one — have none.
+     * on. Device-less gateway attempts, including the simulator, share this
+     * namespace. Hardware invoices are local to a terminal; their replay net
+     * is the device/date/terminalRef key below.
      */
-    uniqueIndex('payment_attempt_invoice_unique')
+    uniqueIndex('payment_attempt_gateway_invoice_unique')
       .on(t.invoiceNo)
-      .where(sql`invoice_no is not null`),
+      .where(sql`invoice_no is not null and device_id is null`),
     /**
      * PRESSING PAY TWICE. The net under the tender path, in the same shape as
      * `sale_action_unique`: a retry that reached the database twice writes one

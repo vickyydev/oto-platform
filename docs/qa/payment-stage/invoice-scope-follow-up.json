@@ -1,0 +1,52 @@
+{
+  "ticket": "SCRUM-206",
+  "branch": "fix/payment-request-copy",
+  "liveRelease": "0468c38",
+  "followUpDeployed": false,
+  "stagingLogEvidence": {
+    "service": "oto-api-staging",
+    "at": "2026-09-29T10:32:21.849368448Z",
+    "constraint": "payment_attempt_invoice_unique",
+    "uniqueViolation": true,
+    "exactAttemptNamedInLog": false
+  },
+  "regressionBeforeFix": {
+    "cases": 2,
+    "migrations": "main through 0028",
+    "result": "FAIL",
+    "observed": "Duplicate hardware invoice rejects the callback and leaves the cloud attempt pending."
+  },
+  "verificationAfterFix": {
+    "terminalChecks": 27,
+    "gatewayChecks": 44,
+    "databaseChecks": 26,
+    "totalChecks": 97,
+    "result": "PASS",
+    "typechecks": ["api", "db"],
+    "fullPackageLint": ["api", "db"],
+    "schemaVerifiedAgainst": "0029_snapshot.json",
+    "independentReview": "PASS",
+    "newTestSuite": false,
+    "newDependency": false
+  },
+  "correction": {
+    "migration": "0029_payment_gateway_invoice_scope",
+    "gatewayInvoiceScope": "invoice_no IS NOT NULL AND device_id IS NULL",
+    "gatewayReadFilters": 5,
+    "actionAndTerminalReferenceGuardsPreserved": true,
+    "financialRowsRewritten": false
+  },
+  "retainedStagingOutcome": {
+    "saleId": "01a0ecb8-f168-7b26-96e4-9ccaabe14cbf",
+    "attemptId": "01a0ecb8-f870-798f-b893-37d9871d4bcd",
+    "recovered": false,
+    "saleRepeated": false,
+    "inventoryRetained": true
+  },
+  "rollout": [
+    "Restore Actions availability and require exact-source CI before landing and deployment.",
+    "After corrected API LIVE, recover the original result and verify exactly one successful VOID before releasing the reservation.",
+    "Never re-run SALE to repair a callback.",
+    "Roll forward after 0029 rather than reverting behind the gateway matching filters."
+  ]
+}
