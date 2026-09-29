@@ -93,6 +93,10 @@ test("can create a contract, send signing link, and sign it", async ({ page }) =
 
   // Wait for redirect to contract detail page (success) or error toast
   await expect(page).toHaveURL(/\/contracts\/[a-f0-9-]+$/, { timeout: 15000 });
+  const contractId = page.url().split("/").pop()!;
+  const finalizedPdf = await page.request.get(`/api/contracts/${contractId}/pdf`);
+  expect(finalizedPdf.status()).toBe(200);
+  expect((await finalizedPdf.body()).subarray(0, 4).toString()).toBe("%PDF");
 
   // Get the signing token from the database
   const signingToken = await page.evaluate(async () => {
@@ -130,6 +134,9 @@ test("can create a contract, send signing link, and sign it", async ({ page }) =
 
   // Wait for success — signed contracts show a download button
   await expect(page.getByTestId("button-download-signed-pdf")).toBeVisible({ timeout: 15000 });
+  const signedPdf = await page.request.get(`/api/contracts/${contractId}/signed-pdf`);
+  expect(signedPdf.status()).toBe(200);
+  expect((await signedPdf.body()).subarray(0, 4).toString()).toBe("%PDF");
   await page.screenshot({ path: path.join(imgDir, "contract-signed.png") });
 
   // Navigate back to employee profile and verify onboarding progress

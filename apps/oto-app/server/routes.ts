@@ -3,8 +3,8 @@ import { createServer, type Server } from "http";
 import { storage, resolveFixReportStatusFilter } from "./storage";
 import { setupAuth, requireAuth, hashPassword } from "./auth";
 import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches, canUserAccessBranch, requireDirectoryApiKey, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
-import { generatePdf, generateSignedPdf, generateSignedLetterPdf, getPdfPath, wrapContentInDocument } from "./pdf";
-import { uploadSignedPdf, uploadSignedLetterPdf, streamSignedPdf, isObjectStoragePath } from "./pdf-storage";
+import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
+import { uploadFinalizedPdf, uploadSignedPdf, uploadSignedLetterPdf, presignedPdfUrl, streamSignedPdf, isObjectStoragePath } from "./pdf-storage";
 import { fixMulterFilenames } from "./middleware/fixMulterFilenames";
 import { uploadToObjectStorage, getFileFromObjectStorage, deleteFromObjectStorage, getFileRangeFromObjectStorage } from "./file-storage";
 import { getOrCreateFixMediaThumbnail } from "./fix-media-thumbnails";
@@ -5268,7 +5268,7 @@ export async function registerRoutes(
       
       // Wrap content in full document for true final preview (matches PDF output)
       // Include blank signature section for preview
-      const html = wrapContentInDocument(compiledHtml, branchHeader, { appendSignatureSection: true });
+      const html = await wrapContentInDocument(compiledHtml, branchHeader, { appendSignatureSection: true });
       res.json({ html });
     } catch (error) {
       next(error);
@@ -5583,13 +5583,14 @@ export async function registerRoutes(
         return { contract, templateSnapshotHtml, employeeSnapshot, changedFields, updatedEmployee };
       });
 
-      // Generate PDF outside transaction (filesystem operations are not transactional)
-      const pdfBuffer = await generatePdf(result.templateSnapshotHtml, branch || undefined);
-      const pdfFilename = `contract_${result.contract.id}_v${template.version}.pdf`;
-      const pdfDir = path.join(process.cwd(), "data", "pdfs");
-      await fs.promises.mkdir(pdfDir, { recursive: true });
-      const pdfPath = path.join(pdfDir, pdfFilename);
-      await fs.promises.writeFile(pdfPath, pdfBuffer);
+      // Render and store the PDF after the database transaction succeeds.
+      const pdfHeader = branch && (template.headerShowLogo || template.headerShowAddress) ? {
+        name: template.headerShowAddress ? branch.name : "",
+        address: template.headerShowAddress ? branch.address || "" : "",
+        logoUrl: template.headerShowLogo ? branch.logoUrl ?? undefined : undefined,
+      } : undefined;
+      const pdfBuffer = await generatePdf(result.templateSnapshotHtml, pdfHeader);
+      const pdfPath = await uploadFinalizedPdf(result.contract.id, template.version, pdfBuffer);
 
       // Update contract with PDF path (separate from atomic transaction)
       const finalContract = await storage.updateContract(result.contract.id, { pdfPath });
@@ -5900,14 +5901,26 @@ export async function registerRoutes(
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
-
-      if (!contract.pdfPath || !fs.existsSync(contract.pdfPath)) {
+      const employee = await storage.getEmployee(contract.employeeId);
+      if (!employee || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
+        return res.status(403).json({ message: "Access denied to this contract" });
+      }
+      if (!contract.pdfPath) {
         return res.status(404).json({ message: "PDF not found" });
       }
-
+      if (isObjectStoragePath(contract.pdfPath)) {
+        const url = await presignedPdfUrl(contract.pdfPath, `contract_${contract.id}.pdf`);
+        if (!url) return res.status(404).json({ message: "PDF not found" });
+        res.setHeader("Cache-Control", "private, no-store");
+        return res.redirect(302, url);
+      }
+      const localPath = contract.pdfPath.startsWith("/uploads/")
+        ? path.join(process.cwd(), contract.pdfPath.slice(1))
+        : contract.pdfPath;
+      if (!fs.existsSync(localPath)) return res.status(404).json({ message: "PDF not found" });
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename=contract_${contract.id}.pdf`);
-      fs.createReadStream(contract.pdfPath).pipe(res);
+      fs.createReadStream(localPath).pipe(res);
     } catch (error) {
       next(error);
     }
@@ -6368,8 +6381,7 @@ OTO Company Limited`,
     }
   });
 
-  // Public endpoint to download signed contract PDF (requires valid download token)
-  // Token validation is required - tokens don't expire but must have valid signature
+  // Public endpoint to download signed contract PDF with a short-lived token.
   app.get("/api/contracts/:id/download-signed-pdf", async (req, res, next) => {
     try {
       const { token } = req.query;
@@ -6386,14 +6398,19 @@ OTO Company Limited`,
 
       const [contractId, expiryStr, signature] = parts;
 
-      // Verify signature (tokens are permanent - don't check expiry)
+      const expiry = Number(expiryStr);
+      if (!Number.isSafeInteger(expiry) || expiry <= Date.now()) {
+        return res.status(401).json({ message: "Download token expired" });
+      }
       const payload = `${contractId}:${expiryStr}`;
       const expectedSignature = crypto
         .createHmac("sha256", process.env.SESSION_SECRET || "download-secret")
         .update(payload)
         .digest("hex");
 
-      if (signature !== expectedSignature) {
+      const actual = Buffer.from(signature, "utf8");
+      const expected = Buffer.from(expectedSignature, "utf8");
+      if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
         return res.status(401).json({ message: "Invalid download token" });
       }
 
@@ -6419,20 +6436,12 @@ OTO Company Limited`,
 
       // Try Object Storage first, fall back to local filesystem
       if (isObjectStoragePath(contract.signedPdfPath)) {
-        const { stream, exists, size, contentType } = await streamSignedPdf(contract.signedPdfPath);
-        
-        if (!exists || !stream) {
+        const url = await presignedPdfUrl(contract.signedPdfPath, fileName);
+        if (!url) {
           return res.status(404).json({ message: "PDF file not found in storage" });
         }
-
-        res.setHeader('Content-Type', contentType || 'application/pdf');
-        res.setHeader('Content-Disposition', contentDisposition);
-        if (size) res.setHeader('Content-Length', size);
-        stream.on('error', (err) => {
-          console.error("[PDF Download] Stream error:", err);
-          if (!res.headersSent) res.status(500).json({ message: "Error streaming PDF" });
-        });
-        stream.pipe(res);
+        res.setHeader("Cache-Control", "private, no-store");
+        return res.redirect(302, url);
       } else {
         const pathModule = await import("path");
         const localFilePath = contract.signedPdfPath.startsWith("/uploads") 
@@ -6464,14 +6473,10 @@ OTO Company Limited`,
       }
 
       // Check branch access
-      const user = req.user!;
       const userWithAccess = req.userWithAccess;
       const employee = await storage.getEmployee(contract.employeeId);
-      if (employee && userWithAccess) {
-        const hasAccess = canUserAccessBranch(userWithAccess, employee.branchId);
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Access denied to this contract" });
-        }
+      if (!employee || !userWithAccess || !canUserAccessBranch(userWithAccess, employee.branchId)) {
+        return res.status(403).json({ message: "Access denied to this contract" });
       }
 
       if (contract.signingStatus !== "signed" || !contract.signedPdfPath) {
@@ -6482,18 +6487,12 @@ OTO Company Limited`,
       const contentDispositionAuth = `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`;
 
       if (isObjectStoragePath(contract.signedPdfPath)) {
-        const { stream, exists, size, contentType } = await streamSignedPdf(contract.signedPdfPath);
-        if (!exists || !stream) {
+        const url = await presignedPdfUrl(contract.signedPdfPath, fileName);
+        if (!url) {
           return res.status(404).json({ message: "PDF file not found in storage" });
         }
-        res.setHeader('Content-Type', contentType || 'application/pdf');
-        res.setHeader('Content-Disposition', contentDispositionAuth);
-        if (size) res.setHeader('Content-Length', size);
-        stream.on('error', (err) => {
-          console.error("[PDF Download Auth] Stream error:", err);
-          if (!res.headersSent) res.status(500).json({ message: "Error streaming PDF" });
-        });
-        stream.pipe(res);
+        res.setHeader("Cache-Control", "private, no-store");
+        return res.redirect(302, url);
       } else {
         const pathModule = await import("path");
         const localFilePath = contract.signedPdfPath.startsWith("/uploads") 
@@ -6969,18 +6968,26 @@ OTO Company Limited`,
     }
   });
 
-  // Get signed PDF (public with token or authenticated)
-  app.get("/api/contracts/:id/signed-pdf", async (req, res, next) => {
+  // Legacy signed-PDF link remains available to signed-in staff in scope.
+  app.get("/api/contracts/:id/signed-pdf", requireAuth, async (req, res, next) => {
     try {
       const contract = await storage.getContract(req.params.id);
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
-
+      const employee = await storage.getEmployee(contract.employeeId);
+      if (!employee || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
+        return res.status(403).json({ message: "Access denied to this contract" });
+      }
       if (!contract.signedPdfPath) {
         return res.status(404).json({ message: "Signed PDF not found" });
       }
-
+      if (isObjectStoragePath(contract.signedPdfPath)) {
+        const url = await presignedPdfUrl(contract.signedPdfPath, `signed_contract_${contract.id}.pdf`);
+        if (!url) return res.status(404).json({ message: "Signed PDF not found" });
+        res.setHeader("Cache-Control", "private, no-store");
+        return res.redirect(302, url);
+      }
       const { stream, exists } = await streamSignedPdf(contract.signedPdfPath);
       if (!exists || !stream) {
         return res.status(404).json({ message: "Signed PDF not found" });
@@ -7706,13 +7713,8 @@ OTO Company Limited`,
         return res.status(404).json({ message: "Employee not found" });
       }
 
-      // Check user has access to this employee's branch
-      const user = req.user as any;
-      if (!isGlobalAdmin(user)) {
-        const hasAccess = await canUserAccessBranch(user.id, employee.branchId);
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Access denied to this letter" });
-        }
+      if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
+        return res.status(403).json({ message: "Access denied to this letter" });
       }
 
       if (letter.status !== "signed") {
@@ -7748,21 +7750,15 @@ OTO Company Limited`,
 
       // Try Object Storage first, fall back to local filesystem
       if (isObjectStoragePath(pdfPath)) {
-        const { stream, exists, size, contentType } = await streamSignedPdf(pdfPath);
-        
-        if (!exists || !stream) {
+        const url = await presignedPdfUrl(pdfPath, fileName);
+        if (!url) {
           return res.status(404).json({ message: "PDF file not found in storage" });
         }
-
-        const letterDisposition = `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`;
-        res.setHeader("Content-Type", contentType || "application/pdf");
-        res.setHeader("Content-Disposition", letterDisposition);
-        if (size) res.setHeader("Content-Length", size);
-        stream.pipe(res);
+        res.setHeader("Cache-Control", "private, no-store");
+        return res.redirect(302, url);
       } else {
-        const pathModule = await import("path");
         const localFilePath = pdfPath.startsWith("/uploads") 
-          ? pathModule.join(process.cwd(), pdfPath)
+          ? path.join(process.cwd(), pdfPath.slice(1))
           : pdfPath;
         if (!fs.existsSync(localFilePath)) {
           return res.status(404).json({ message: "PDF file not found" });
@@ -22831,6 +22827,11 @@ ${context}`;
     try {
       const { folder, filename } = req.params;
       const sanitizedFilename = path.basename(filename);
+      // These PDFs are served only after their record-level access check has
+      // issued a short-lived object URL; the generic file route has no scope.
+      if (["contracts", "letters", "beo-pdfs"].includes(folder)) {
+        return res.status(404).json({ message: "File not found" });
+      }
       
       // Check if folder requires authentication
       if (!publicFileFolders.includes(folder)) {

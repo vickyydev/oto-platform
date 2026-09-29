@@ -12,8 +12,9 @@
  *   local   →  /uploads/contracts/signed_contract_<id>.pdf
  */
 
-import { OBJECT_STORAGE } from "./config/env";
+import { OBJECT_STORAGE, STORAGE_ENV_PREFIX } from "./config/env";
 import type { S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
   PutObjectCommand,
   GetObjectCommand,
@@ -39,13 +40,15 @@ function getS3Client(): S3Client {
 }
 
 function s3ContractKey(contractId: string): string {
-  const prefix = process.env.STORAGE_ENV_PREFIX || "local";
-  return `${prefix}/${CONTRACTS_FOLDER}/signed_contract_${contractId}.pdf`;
+  return `${STORAGE_ENV_PREFIX}/${CONTRACTS_FOLDER}/signed_contract_${contractId}.pdf`;
 }
 
 function s3LetterKey(letterId: string): string {
-  const prefix = process.env.STORAGE_ENV_PREFIX || "local";
-  return `${prefix}/${LETTERS_FOLDER}/signed_letter_${letterId}.pdf`;
+  return `${STORAGE_ENV_PREFIX}/${LETTERS_FOLDER}/signed_letter_${letterId}.pdf`;
+}
+
+function finalizedFilename(contractId: string, version: number): string {
+  return `finalized_contract_${contractId}_v${version}.pdf`;
 }
 
 const s3BucketName = s3Bucket;
@@ -69,6 +72,46 @@ function localLetterStoragePath(letterId: string): string {
 }
 
 // ── public API ────────────────────────────────────────────────────────────────
+
+export async function uploadFinalizedPdf(contractId: string, version: number, pdfBuffer: Buffer): Promise<string> {
+  const filename = finalizedFilename(contractId, version);
+  switch (OBJECT_STORAGE) {
+    case "s3": {
+      const bucket = s3BucketName();
+      const key = `${STORAGE_ENV_PREFIX}/${CONTRACTS_FOLDER}/${filename}`;
+      await getS3Client().send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: pdfBuffer, ContentType: "application/pdf" }));
+      return `/${bucket}/${key}`;
+    }
+    case "local": {
+      const p = path.join(process.cwd(), "uploads", CONTRACTS_FOLDER, filename);
+      await fs.promises.mkdir(path.dirname(p), { recursive: true });
+      await fs.promises.writeFile(p, pdfBuffer);
+      return `/uploads/${CONTRACTS_FOLDER}/${filename}`;
+    }
+  }
+}
+
+/** A short-lived browser URL for a private contract or letter object. */
+export async function presignedPdfUrl(storagePath: string, filename: string): Promise<string | null> {
+  if (OBJECT_STORAGE !== "s3") return null;
+  const bucket = s3BucketName();
+  const root = `/${bucket}/${STORAGE_ENV_PREFIX}/`;
+  if (!storagePath.startsWith(root)) return null;
+  const key = storagePath.slice(`/${bucket}/`.length);
+  if (!key.startsWith(`${STORAGE_ENV_PREFIX}/${CONTRACTS_FOLDER}/`) && !key.startsWith(`${STORAGE_ENV_PREFIX}/${LETTERS_FOLDER}/`)) return null;
+  try {
+    await getS3Client().send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+  } catch (error) {
+    const storageError = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+    if (storageError?.name === "NotFound" || storageError?.name === "NoSuchKey" || storageError?.$metadata?.httpStatusCode === 404) return null;
+    throw error;
+  }
+  return getSignedUrl(getS3Client(), new GetObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+  }), { expiresIn: 300 });
+}
 
 export async function uploadSignedPdf(contractId: string, pdfBuffer: Buffer): Promise<string> {
   switch (OBJECT_STORAGE) {

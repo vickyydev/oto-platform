@@ -2,44 +2,46 @@ import puppeteer from "puppeteer";
 import path from "path";
 import fs from "fs";
 import DOMPurify from "isomorphic-dompurify";
+import { Readable } from "stream";
+import { getFileFromObjectStorage } from "./file-storage";
 
-const PDF_DIR = path.join(process.cwd(), "pdfs");
-
-if (!fs.existsSync(PDF_DIR)) {
-  fs.mkdirSync(PDF_DIR, { recursive: true });
-}
-
-// Convert a local file path or relative URL to a base64 data URL for embedding in PDF
-function getLogoAsDataUrl(logoUrl: string | undefined): string | undefined {
+// Resolve a stored branch logo before Chromium renders. Remote object storage
+// is the normal deployment path; the local file is kept for older dev uploads.
+async function getLogoAsDataUrl(logoUrl: string | undefined): Promise<string | undefined> {
   if (!logoUrl) return undefined;
-  
-  // If already a data URL, return as is
   if (logoUrl.startsWith('data:')) return logoUrl;
-  
+
+  const match = /^\/(?:api\/files|uploads)\/branch-logos\/([^/?#]+)$/.exec(logoUrl);
+  if (!match) return undefined;
   try {
-    // Convert relative URL to file path
-    const relativePath = logoUrl.replace(/^\//, '');
-    const filePath = path.join(process.cwd(), relativePath);
-    
-    if (!fs.existsSync(filePath)) {
-      console.error(`Logo file not found: ${filePath}`);
-      return undefined;
+    const filename = decodeURIComponent(match[1]);
+    if (path.basename(filename) !== filename) return undefined;
+    const stored = await getFileFromObjectStorage('branch-logos', filename);
+    if (stored) {
+      const chunks: Buffer[] = [];
+      let size = 0;
+      for await (const chunk of stored.stream as Readable) {
+        const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        size += bytes.length;
+        if (size > 2 * 1024 * 1024) return undefined;
+        chunks.push(bytes);
+      }
+      return `data:${stored.contentType};base64,${Buffer.concat(chunks).toString('base64')}`;
     }
-    
+    const filePath = path.join(process.cwd(), 'uploads', 'branch-logos', filename);
+    if (!fs.existsSync(filePath)) return undefined;
     const buffer = fs.readFileSync(filePath);
+    if (buffer.length > 2 * 1024 * 1024) return undefined;
     const base64 = buffer.toString('base64');
-    
-    // Detect mime type from extension
     const ext = path.extname(filePath).toLowerCase();
     let mimeType = 'image/png';
     if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
     else if (ext === '.gif') mimeType = 'image/gif';
     else if (ext === '.svg') mimeType = 'image/svg+xml';
     else if (ext === '.webp') mimeType = 'image/webp';
-    
     return `data:${mimeType};base64,${base64}`;
   } catch (error) {
-    console.error(`Failed to convert logo to data URL: ${error}`);
+    console.error('Failed to load branch logo for PDF', error);
     return undefined;
   }
 }
@@ -67,11 +69,11 @@ function createBlankSignatureBlockHtml(): string {
   `;
 }
 
-export function wrapContentInDocument(
+export async function wrapContentInDocument(
   content: string, 
   branchHeader?: { name: string; address: string; logoUrl?: string },
   options?: { appendSignatureSection?: boolean }
-): string {
+): Promise<string> {
   if (content.trim().toLowerCase().startsWith('<!doctype')) {
     return DOMPurify.sanitize(content, { WHOLE_DOCUMENT: true });
   }
@@ -82,7 +84,7 @@ export function wrapContentInDocument(
   let headerHtml = '';
   if (branchHeader && (branchHeader.logoUrl || branchHeader.name || branchHeader.address)) {
     // Convert logo URL to data URL for PDF embedding
-    const logoDataUrl = getLogoAsDataUrl(branchHeader.logoUrl);
+    const logoDataUrl = await getLogoAsDataUrl(branchHeader.logoUrl);
     const hasLogo = !!logoDataUrl;
     const hasInfo = !!(branchHeader.name || branchHeader.address);
     
@@ -218,9 +220,9 @@ export function wrapContentInDocument(
 </html>`;
 }
 
-export async function generatePdf(html: string, contractId: string, branchHeader?: { name: string; address: string; logoUrl?: string }): Promise<string> {
+export async function generatePdf(html: string, branchHeader?: { name: string; address: string; logoUrl?: string }): Promise<Buffer> {
   // Include blank signature section for unsigned contracts
-  const wrappedHtml = wrapContentInDocument(html, branchHeader, { appendSignatureSection: true });
+  const wrappedHtml = await wrapContentInDocument(html, branchHeader, { appendSignatureSection: true });
   
   const browser = await puppeteer.launch({
     headless: true,
@@ -232,11 +234,7 @@ export async function generatePdf(html: string, contractId: string, branchHeader
     const page = await browser.newPage();
     await page.setContent(wrappedHtml, { waitUntil: "networkidle0" });
 
-    const pdfFileName = `contract_${contractId}.pdf`;
-    const pdfPath = path.join(PDF_DIR, pdfFileName);
-
-    await page.pdf({
-      path: pdfPath,
+    const pdfBytes = await page.pdf({
       format: "A4",
       margin: {
         top: "20mm",
@@ -247,14 +245,10 @@ export async function generatePdf(html: string, contractId: string, branchHeader
       printBackground: true,
     });
 
-    return pdfPath;
+    return Buffer.from(pdfBytes);
   } finally {
     await browser.close();
   }
-}
-
-export function getPdfPath(contractId: string): string {
-  return path.join(PDF_DIR, `contract_${contractId}.pdf`);
 }
 
 interface SignatureData {
@@ -381,7 +375,7 @@ export async function generateSignedPdf(
     : cleanHtml + signatureBlockHtml;
 
   // Don't append signature section - we already have a filled-in one
-  const wrappedHtml = wrapContentInDocument(contentWithSignature, branchHeader, { appendSignatureSection: false });
+  const wrappedHtml = await wrapContentInDocument(contentWithSignature, branchHeader, { appendSignatureSection: false });
 
   const browser = await puppeteer.launch({
     headless: true,
@@ -408,24 +402,6 @@ export async function generateSignedPdf(
   } finally {
     await browser.close();
   }
-}
-
-export async function generateSignedPdfToFile(
-  html: string,
-  contractId: string,
-  signatureName: string,
-  signedAt: Date,
-  branchHeader?: { name: string; address: string; logoUrl?: string },
-  signatureImage?: string,
-  employerSignatureData?: { name: string; title: string; image: string; date: string }
-): Promise<string> {
-  const pdfBuffer = await generateSignedPdf(html, contractId, signatureName, signedAt, branchHeader, signatureImage, employerSignatureData);
-  
-  const pdfFileName = `signed_contract_${contractId}.pdf`;
-  const pdfPath = path.join(PDF_DIR, pdfFileName);
-  fs.writeFileSync(pdfPath, pdfBuffer);
-  
-  return pdfPath;
 }
 
 // Generate signed letter PDF (resignation, termination, warning letters)
@@ -464,7 +440,7 @@ export async function generateSignedLetterPdf(
     ? cleanHtml.replace("</body>", `${signatureBlockHtml}</body>`)
     : cleanHtml + signatureBlockHtml;
 
-  const wrappedHtml = wrapContentInDocument(contentWithSignature, branchHeader, { appendSignatureSection: false });
+  const wrappedHtml = await wrapContentInDocument(contentWithSignature, branchHeader, { appendSignatureSection: false });
 
   const browser = await puppeteer.launch({
     headless: true,
@@ -844,7 +820,7 @@ export async function generateBeoPdf(data: BeoPdfData): Promise<Buffer> {
     </div>
   ` : '';
 
-  const logoDataUrl = getLogoAsDataUrl(data.branchLogoUrl);
+  const logoDataUrl = await getLogoAsDataUrl(data.branchLogoUrl);
 
   const html = `<!DOCTYPE html>
 <html>

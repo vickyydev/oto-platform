@@ -34,6 +34,9 @@ import {
 import crypto from "crypto";
 import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { generateBeoPdf, type BeoPdfData } from "./pdf";
+import { OBJECT_STORAGE } from "./config/env";
+import { uploadToObjectStorage } from "./file-storage";
+import { s3PresignedGet } from "./storage/s3Storage";
 
 type KitchenMenuBucket = "kids" | "adults";
 type KitchenMenuLine = { source?: string; [key: string]: unknown };
@@ -2412,7 +2415,7 @@ export function registerBeoRoutes(app: Express) {
         partyHostUserName = resolvedUser?.fullName || "";
       }
       if (partyHost?.assignedRoleId) {
-        const [role] = await db.select().from(beoRoles).where(eq(beoRoles.id, partyHost.assignedRoleId));
+        const [role] = await db.select().from(roles).where(eq(roles.id, partyHost.assignedRoleId));
         partyHostRoleName = role?.name || "";
       }
       if (partyHost?.assignedEmployeeId) {
@@ -2431,7 +2434,7 @@ export function registerBeoRoutes(app: Express) {
         entertainmentUserName = resolvedUser?.fullName || "";
       }
       if (entertainment?.assignedRoleId) {
-        const [role] = await db.select().from(beoRoles).where(eq(beoRoles.id, entertainment.assignedRoleId));
+        const [role] = await db.select().from(roles).where(eq(roles.id, entertainment.assignedRoleId));
         entertainmentRoleName = role?.name || "";
       }
 
@@ -2556,6 +2559,13 @@ export function registerBeoRoutes(app: Express) {
       const pdfBuffer = await generateBeoPdf(pdfData);
 
       const filename = `BEO_${event.title.replace(/[^a-zA-Z0-9]/g, '_')}_${event.eventDate}.pdf`;
+      if (OBJECT_STORAGE === "s3") {
+        const objectName = `${eventId}.pdf`;
+        await uploadToObjectStorage(pdfBuffer, "beo-pdfs", objectName, "application/pdf");
+        const url = await s3PresignedGet("beo-pdfs", objectName, 300);
+        res.setHeader("Cache-Control", "private, no-store");
+        return res.redirect(302, url);
+      }
       
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
