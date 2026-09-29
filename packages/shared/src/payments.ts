@@ -119,6 +119,23 @@ export const PAYMENT_ATTEMPT_TERMINAL_STATUSES: readonly PaymentAttemptStatus[] 
   'awaiting_settlement',
 ];
 
+/** A refused partial approval is still charged until its rescue VOID succeeds. */
+export function isPaymentReversalPending(payload: unknown): boolean {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
+  const facts = payload as { void?: unknown; exchange?: unknown };
+  if (!facts.void || typeof facts.void !== 'object' || Array.isArray(facts.void)) return false;
+  const reversal = facts.void as { reason?: unknown; amountSatang?: unknown; result?: unknown };
+  if (reversal.reason !== 'partial_approval') return false;
+  if (reversal.result && typeof reversal.result === 'object' && !Array.isArray(reversal.result)
+    && (reversal.result as { outcome?: unknown }).outcome === 'approved') return false;
+  // Missing approvedSatang is saved as amountSatang: 0 by the terminal path.
+  // Only an explicit zero approval proves there is no money to reverse.
+  if (reversal.amountSatang === 0 && facts.exchange && typeof facts.exchange === 'object'
+    && !Array.isArray(facts.exchange)
+    && (facts.exchange as { approvedSatang?: unknown }).approvedSatang === 0) return false;
+  return true;
+}
+
 /**
  * What a tender DOES, as against what it is called.
  *
@@ -310,6 +327,8 @@ export interface PaymentAttemptView {
   terminalRef: string | null;
   /** Whether the frozen terminal protocol and reference support inquiry. */
   inquirySupported?: boolean;
+  /** A refused partial approval has not yet been successfully reversed. */
+  reversalPending?: boolean;
   tid: string | null;
   approvalCode: string | null;
   last4: string | null;

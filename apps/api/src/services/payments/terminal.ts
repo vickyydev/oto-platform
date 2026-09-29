@@ -1041,8 +1041,10 @@ async function failTerminalAttempt(
 /**
  * An approval for the wrong amount: refuse the sale and hand the money back.
  *
- * The attempt is left `declined` — no money of ours, and the sale is untouched
- * — and the void is queued with a FRESH reference (the counter on the box mints
+ * The refused attempt is left `declined`, and the sale is untouched. That word
+ * does not prove the partial charge was returned: its saved VOID facts keep
+ * the balance reserved until the rescue succeeds. The void uses a FRESH
+ * reference (the counter on the box mints
  * it) keyed on what each vendor keys a void on: the EDC's invoice number plus
  * the card approval code on GHL (p.16), the transaction id on Digio's `A10`.
  * Its own answer comes back on the same route and is recorded on

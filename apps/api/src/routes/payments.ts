@@ -90,6 +90,7 @@ const AttemptSchema = z.object({
   changeSatang: z.number().int().nullable(),
   terminalRef: z.string().nullable(),
   inquirySupported: z.boolean().optional(),
+  reversalPending: z.boolean().optional(),
   tid: z.string().nullable(),
   approvalCode: z.string().nullable(),
   last4: z.string().nullable(),

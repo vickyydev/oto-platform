@@ -6,6 +6,7 @@ import type { SupportedLang } from './types';
 // {{var}} placeholders are substituted by t(key, vars).
 export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'payment.stage.pending': { en: 'Waiting for the payment answer…', zh: '正在等待付款结果…', th: 'กำลังรอผลการชำระเงิน…', ru: 'Ожидание результата оплаты…', fr: 'En attente du résultat du paiement…' },
+  'payment.stage.reversalPending': { en: 'The terminal took part of this payment. Wait for the reversal before choosing another method.', zh: '终端已收取部分款项。请等待冲正完成后再选择其他付款方式。', th: 'เครื่องรับชำระได้หักเงินบางส่วนแล้ว รอให้ยกเลิกรายการสำเร็จก่อนเลือกวิธีชำระอื่น', ru: 'Терминал списал часть суммы. Дождитесь отмены списания, прежде чем выбирать другой способ оплаты.', fr: 'Le terminal a prélevé une partie du paiement. Attendez son annulation avant de choisir un autre moyen de paiement.' },
   'payment.stage.complete': { en: 'Complete Sale', zh: '完成销售', th: 'เสร็จสิ้นการขาย', ru: 'Завершить продажу', fr: 'Terminer la vente' },
   'payment.stage.recordCash': { en: 'Record cash', zh: '记录现金付款', th: 'บันทึกเงินสด', ru: 'Записать оплату наличными', fr: 'Enregistrer les espèces' },
   'payment.stage.startQr': { en: 'Show payment QR', zh: '显示付款二维码', th: 'แสดงคิวอาร์ชำระเงิน', ru: 'Показать QR для оплаты', fr: 'Afficher le QR de paiement' },

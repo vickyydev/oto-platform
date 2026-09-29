@@ -69,7 +69,7 @@ export interface PaymentStageController {
 const emptyQr: PaymentQrMetadata = { qrPayload: null, qrImageUrl: null, expiresAt: null, expiryTimerMs: null };
 const money = (value: number): boolean => Number.isSafeInteger(value) && value >= 0;
 const taken = (attempt: PaymentAttemptView): boolean => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(attempt.status);
-const unresolved = (attempt: PaymentAttemptView | null): boolean => Boolean(attempt && !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(attempt.status));
+const unresolved = (attempt: PaymentAttemptView | null): boolean => Boolean(attempt && (attempt.reversalPending || !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(attempt.status)));
 const supportsInquiry = (attempt: PaymentAttemptView): boolean => attempt.inquirySupported
   ?? (attempt.provider !== 'ghl' && Boolean(attempt.terminalRef));
 const initial = (total: number): PaymentStageState => ({
@@ -166,6 +166,8 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     if (!current(ctx)) { left(ctx, attempt.saleId ?? ctx.saleId ?? ''); return; }
     if (stateRef.current.phase === 'complete') return;
     if (attempt.saleId !== ctx.saleId) throw new Error('The payment answer belongs to another sale.');
+    if (stateRef.current.attempt?.id === attempt.id && stateRef.current.attempt.reversalPending
+      && attempt.reversalPending !== false) attempt = { ...attempt, reversalPending: true };
     if (stateRef.current.attempt?.id === attempt.id && taken(stateRef.current.attempt) && !taken(attempt)) return;
     const metadata = qr ? { ...qr } : stateRef.current.qr;
     if (!metadata.expiresAt && metadata.expiryTimerMs !== null) {
@@ -174,7 +176,9 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     }
     update({ attempt, qr: metadata, error: null, retryable: false,
       ...(outstanding !== null && money(outstanding) ? { outstandingSatang: outstanding } : {}) });
-    if (taken(attempt)) {
+    if (attempt.reversalPending) {
+      update({ phase: 'blocked', error: paymentStageText('reversalPending') });
+    } else if (taken(attempt)) {
       const method = stateRef.current.method ?? attempt.method;
       settlement(attempt, method, stateRef.current.kind ?? 'other');
       if (outstanding === null || !money(outstanding)) {
@@ -373,7 +377,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     return () => { stopped = true; clearTimeout(timer); };
     // The retained attempt owns this loop; render callbacks use current refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [online, options.active, options.scope, state.attempt?.id, state.attempt?.status, state.phase, state.retryable]);
+  }, [online, options.active, options.scope, state.attempt?.id, state.attempt?.status, state.attempt?.reversalPending, state.phase, state.retryable]);
 
   const busy = state.phase === 'busy';
   const locked = busy || unresolved(state.attempt) || state.phase === 'blocked';

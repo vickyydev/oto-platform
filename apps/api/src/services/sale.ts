@@ -36,6 +36,7 @@ import {
   computeTicketCartTotals,
   getRateModeForDate,
   newId,
+  isPaymentReversalPending,
   parseDayStart,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
@@ -3024,6 +3025,16 @@ export async function finaliseSale(
   const [st] = await tx.select().from(station).where(eq(station.id, row.stationId)).limit(1);
 
   let owed = await outstandingOf(tx, row);
+  if (owed <= 0) {
+    const attempts = await tx.select({ payload: paymentAttempt.payload }).from(paymentAttempt)
+      .where(eq(paymentAttempt.saleId, saleId));
+    if (attempts.some((attempt) => isPaymentReversalPending(attempt.payload))) {
+      throw errors.conflict(
+        'PAYMENT_IN_FLIGHT',
+        'A partial payment is still waiting to be reversed. Resolve it before closing this sale.',
+      );
+    }
+  }
   /** S2-10b — the sale's vouchers, as the transaction that moves its money sees them. */
   const voucherScope = {
     saleId,
@@ -3361,6 +3372,7 @@ export async function voidSale(
       id: paymentAttempt.id,
       status: paymentAttempt.status,
       amountSatang: paymentAttempt.amountSatang,
+      payload: paymentAttempt.payload,
     })
     .from(paymentAttempt)
     .where(eq(paymentAttempt.saleId, saleId));
@@ -3375,7 +3387,7 @@ export async function voidSale(
       },
     );
   }
-  const inFlight = attempts.filter((a) => !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status));
+  const inFlight = attempts.filter((a) => !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status) || isPaymentReversalPending(a.payload));
   if (inFlight.length > 0) {
     throw errors.conflict(
       'PAYMENT_IN_FLIGHT',
