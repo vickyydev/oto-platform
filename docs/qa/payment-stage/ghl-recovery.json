@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "environment": "staging",
+  "apiVersion": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+  "saleId": "01a0edf5-de2e-733c-b08f-1b33d4e09928",
+  "attemptId": "01a0edf6-6f88-787a-9dc3-6091c2c2428a",
+  "nativeCashCompletionObserved": false,
+  "nativeConfirmationObserved": false,
+  "historicalPaymentUntouched": true,
+  "archived": [
+    {
+      "type": "station",
+      "id": "01a0edf5-bc37-7af8-acf8-cb36dead36c9"
+    },
+    {
+      "type": "device",
+      "id": "01a0edf5-ba6b-703a-b157-370d08497890"
+    },
+    {
+      "type": "product",
+      "id": "01a0edf5-be51-73fe-8fd5-e14a91edbe32"
+    },
+    {
+      "type": "category",
+      "id": "01a0edf5-027f-7943-b818-a89ff558f174"
+    }
+  ],
+  "fallback": {
+    "status": "awaiting_staff_confirmation",
+    "inquirySupported": false,
+    "originalReservationSatang": 20000,
+    "saleCommands": 1,
+    "automaticSaleReplay": false,
+    "missingResultDiagnostic": true
+  },
+  "confirmation": {
+    "channel": "staff-authorised API",
+    "took": false,
+    "namedStaffAudit": true,
+    "acceptedMoneySatang": 0,
+    "basis": "Known dedicated no-response simulator fixture; no original terminal callback or approval was fabricated."
+  },
+  "saleStatus": "voided",
+  "screenshot": "SCRUM-206-restart-fallback-api-check.png"
+}

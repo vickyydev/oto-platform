@@ -1,0 +1,92 @@
+{
+  "sourceCommit": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+  "environment": "staging",
+  "deployment": "manual Render API, explicitly authorised",
+  "services": [
+    {
+      "name": "oto-api-staging",
+      "url": "https://oto-api-staging.onrender.com",
+      "commit": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+      "deployId": "dep-dau13v97lnhs73f1lkgg",
+      "status": "live",
+      "autoDeploy": "yes",
+      "trigger": "checksPass"
+    },
+    {
+      "name": "oto-pos-staging",
+      "url": "https://oto-pos-staging.onrender.com",
+      "commit": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+      "deployId": "dep-dau15a942hec73del6o0",
+      "status": "live",
+      "autoDeploy": "yes",
+      "trigger": "checksPass"
+    },
+    {
+      "name": "oto-console-staging",
+      "url": "https://oto-console-staging.onrender.com",
+      "commit": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+      "deployId": "dep-dau15au0tbcc73fj6j0g",
+      "status": "live",
+      "autoDeploy": "yes",
+      "trigger": "checksPass"
+    },
+    {
+      "name": "oto-launcher-staging",
+      "url": "https://oto-launcher-staging.onrender.com",
+      "commit": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+      "deployId": "dep-dau15b5g1s2s73b2lbtg",
+      "status": "live",
+      "autoDeploy": "yes",
+      "trigger": "checksPass"
+    },
+    {
+      "name": "oto-booth-staging",
+      "url": "https://oto-booth-staging.onrender.com",
+      "commit": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+      "deployId": "dep-dau15bad0e5s73drtvt0",
+      "status": "live",
+      "autoDeploy": "yes",
+      "trigger": "checksPass"
+    }
+  ],
+  "apiPreDeployCommand": "pnpm db:migrate && pnpm db:platform-sync",
+  "migration": {
+    "number": "0033",
+    "status": "release pre-deploy completed",
+    "earliestCompatibleApiRollback": "85d35e087f770f6138c11425875731c42d797e50",
+    "directDatabaseInspection": false
+  },
+  "ci": {
+    "runId": 36619796693,
+    "checkId": 109581968837,
+    "conclusion": "failure",
+    "stepsRun": 0,
+    "reason": "Account billing or spending availability prevented the job from starting",
+    "newCiPackedPiArtifact": false
+  },
+  "readiness": {
+    "sha": "b31b01b71a3846047a9a7beb3fb273cb4bd02b7d",
+    "status": "passed",
+    "checks": [
+      {
+        "method": "GET",
+        "path": "/me/stations",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "PUT",
+        "path": "/me/session/pending-lookup",
+        "expected": 404,
+        "actual": 404
+      },
+      {
+        "method": "POST",
+        "path": "/me/session/pending-lookup/consume",
+        "expected": 404,
+        "actual": 404
+      }
+    ],
+    "note": "Render live deployment establishes release completion; this probe does not directly inspect database columns."
+  }
+}

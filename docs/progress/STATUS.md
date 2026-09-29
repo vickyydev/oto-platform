@@ -1,6 +1,6 @@
 # Current status - read this first when resuming
 
-## Release checkpoint - 30 September 2026 - ready to deploy
+## Release checkpoint - 30 September 2026 - staging verification
 
 The interrupted work is intact. All six existing native POS flows pass,
 including F&B, shop, saved-child review and guardian acknowledgement. The
@@ -18,13 +18,25 @@ no-response simulation awaits recovery after deployment; its known simulator
 path did not take money. Three other fresh staging payment follow-ups passed
 with reviewed attachments10917-10920.
 
-Source is ready for the final manual Render release. Current API85d35e0 and
-frontends88140af are LIVE. GitHub Actions still cannot start because of billing;
-CI is not green and no newer CI-packed Pi archive exists. Deploy the final API
-first, then POS/Console/Launcher/Booth, and prove the feature on staging.
-After0033 the earliest compatible API rollback is85d35e0, never88140af or older.
+All five platform staging services are LIVE on b31b01b7 after authorised manual
+Render deployment. API pre-deploy migrations completed before frontend release;
+ordinary station access is200 and both retired lookup routes are404. Exact
+versions, deployment IDs and readiness are in the separate-display release
+evidence. Normal automatic deployment settings are unchanged. After0033 the
+earliest compatible API rollback is85d35e0, never88140af or older.
 
-SCRUM-201 is ready for staging testing; SCRUM-285 is already Deployed with
+The newer retained GHL no-response simulation now passes API recovery: full
+reservation, one original SALE and staff review. The known simulator no-money
+outcome was confirmed through the staff API and audited; the unpaid sale was
+voided and four dedicated setup rows archived. This is API proof, not native
+confirmation/cash completion. Fresh native GHL, food/shop display and consent
+staging checks are running on separate owned fixtures. The older uncertain
+partial stays untouched.
+
+CI36619796693 ran zero steps because billing prevented startup. CI is not green
+and no new CI-packed Pi archive exists. Existing Desktop release is unchanged.
+
+SCRUM-201 is Testing; SCRUM-285 is already Deployed with
 attachment10905. SCRUM-206 remains In Progress because separate To Do SCRUM-269
 blocks complete offline trading. Neither current ticket has subtasks. Finish
 only this release checkpoint, attach named staging screenshots, save final
