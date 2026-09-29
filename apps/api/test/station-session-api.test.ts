@@ -1534,7 +1534,6 @@ describe('forced-offline cloud trading is fenced by the selected virtual station
       commitCart(saleId),
       proof.app.inject({ method: 'POST', url: '/payments/attempts', headers: { cookie: staffCookie }, payload: { saleId, tender: 'card' } }),
       proof.app.inject({ method: 'POST', url: `/sales/${saleId}/finalise`, headers: { cookie: staffCookie }, payload: { method: 'cash' } }),
-      proof.app.inject({ method: 'POST', url: '/me/session/pending-lookup/consume', headers: { cookie: staffCookie } }),
     ];
     for (const result of await Promise.all(requests)) {
       expect(result.statusCode).toBe(503);

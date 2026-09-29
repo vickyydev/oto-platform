@@ -413,3 +413,24 @@ and excluded. No new suite, dependency or migration.
 
 F&B reviewed local attachments: 26-local-fnb-order.png (10906) and
 27-local-fnb-completed.png (10907). Both are LOCAL CHECK, not staging proof.
+
+## Staging foundation and safe mailbox retirement
+
+Staging88140af passed nine foundation checks in staging-foundation-results.json.
+The actual native revoke succeeded; its final Console assertion initially
+used the stale loaded row. A fresh Console page confirmed the recorded
+protected-call rejection. The log image was recaptured with its refusal rows
+in view. Dedicated station/member were archived and display credential revoked.
+
+Reviewed staging attachments on SCRUM-201:
+- SCRUM-201-staging-pairing.png10908 and expired-code.png10909.
+- SCRUM-201-staging-console-paired.png10910 and till-child-found.png10911.
+- SCRUM-201-staging-recorded-snapshot.png10912 and intent-refused.png10913.
+- SCRUM-201-staging-box-refusal-log-visible.png10914.
+- SCRUM-201-staging-revoked-call.png10915 and revoked-display.png10916.
+All abbreviated filenames above retain the SCRUM-201-staging- prefix.
+
+Mailbox retirement first removes old routes and Drizzle fields, while keeping
+physical columns.94 API checks and14 schema-shape checks pass. Only after
+this API is LIVE may forward0033 drop the obsolete columns. The no-reader
+API commit is the earliest compatible rollback after that migration.

@@ -392,10 +392,9 @@ describe('locked and temp-password sessions (S2-01a)', () => {
 
     // A requireAuth-only route — no permission involved — must still refuse.
     const staged = await ctx.app.inject({
-      method: 'PUT',
-      url: '/me/session/pending-lookup',
+      method: 'GET',
+      url: '/me/stations',
       headers: { cookie },
-      payload: { phone: '0811111111' },
     });
     expect(staged.statusCode).toBe(423);
     expect(staged.json().error.code).toBe('SESSION_LOCKED');
@@ -411,10 +410,9 @@ describe('locked and temp-password sessions (S2-01a)', () => {
     });
     expect(unlock.statusCode).toBe(200);
     const afterUnlock = await ctx.app.inject({
-      method: 'PUT',
-      url: '/me/session/pending-lookup',
+      method: 'GET',
+      url: '/me/stations',
       headers: { cookie },
-      payload: { phone: '0811111111' },
     });
     expect(afterUnlock.statusCode).toBe(200);
   });
@@ -432,10 +430,9 @@ describe('locked and temp-password sessions (S2-01a)', () => {
     const cookie = await signInAs(ctx.app, phone, 'temp1234abc');
 
     const staged = await ctx.app.inject({
-      method: 'PUT',
-      url: '/me/session/pending-lookup',
+      method: 'GET',
+      url: '/me/stations',
       headers: { cookie },
-      payload: { phone: '0811111111' },
     });
     expect(staged.statusCode).toBe(403);
     expect(staged.json().error.code).toBe('MUST_CHANGE_PASSWORD');
@@ -449,10 +446,9 @@ describe('locked and temp-password sessions (S2-01a)', () => {
     expect(changed.statusCode).toBe(200);
 
     const afterChange = await ctx.app.inject({
-      method: 'PUT',
-      url: '/me/session/pending-lookup',
+      method: 'GET',
+      url: '/me/stations',
       headers: { cookie },
-      payload: { phone: '0811111111' },
     });
     expect(afterChange.statusCode).toBe(200);
   });

@@ -49,7 +49,6 @@ describe('route guards (S2-01b)', () => {
       'PATCH /members/:id',
       'PATCH /members/children/:childId',
       'POST /bookings/:id/redeem',
-      'POST /me/session/pending-lookup/consume',
       'POST /members',
       'POST /members/:id/children',
       'POST /members/:id/tier-verification',
@@ -65,10 +64,13 @@ describe('route guards (S2-01b)', () => {
       'POST /sales/quote',
       'POST /sales/tier-claims',
       'POST /visits',
-      'PUT /me/session/pending-lookup',
     ]);
     expect(ctx.app.routeRegistry.filter((r) => r.config.stationTrading &&
       (r.config.public || r.config.credential || r.url.startsWith('/boxes/')))).toEqual([]);
+  });
+
+  it('retires the staff-session display mailbox after independent display rollout', () => {
+    expect(ctx.app.routeRegistry.some(route => route.url.includes('pending-lookup'))).toBe(false);
   });
 
   it('every registered route declares how it is guarded', () => {

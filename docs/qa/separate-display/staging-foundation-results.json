@@ -1,0 +1,25 @@
+{
+  "ticket": "SCRUM-201",
+  "source": "88140af",
+  "environment": "staging",
+  "run": "9587ab83",
+  "status": "PASS",
+  "checks": [
+    "Expired one-time code is refused",
+    "Console claims the real display code; code reuse is refused and reload keeps pairing",
+    "Both required display widths have no horizontal scroll",
+    "Display lookup while staff are locked resumes the correct dedicated member and child",
+    "Console shows the actual saved display response without private child fields",
+    "Invalid welcome consent is rejected, recorded in the Box refusal log and leaves the till unchanged",
+    "Display reconnects after connection loss without losing its device pairing",
+    "Staff sign-out leaves the independently paired screen authenticated",
+    "Revocation rejected the actual protected call and refreshed Console shows the rejection"
+  ],
+  "cleanup": {
+    "displayRevoked": true,
+    "station": true,
+    "member": true
+  },
+  "proofCorrection": "The final Console assertion used an old loaded row. A fresh page read verifies the recorded rejection after the native revoke; dedicated member/station cleanup already succeeded.",
+  "evidenceCorrection": "Box log recaptured in viewport; revoked-display image renamed from native failure capture after the real revoke succeeded. Only stale Console history caused that assertion failure, and refreshed Console verification passed."
+}

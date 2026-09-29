@@ -177,38 +177,5 @@ export async function meRoutes(app: App): Promise<void> {
     },
   );
 
-  // SCRUM-30 / CLAUDE.md §7.4 — the customer display hands the typed phone to
-  // the till THROUGH THE API: a short-lived pending lookup on the session.
-  app.put(
-    '/session/pending-lookup',
-    { config: { auth: 'session', stationTrading: true }, schema: { description: 'Customer display: stage a membership lookup', body: z.object({ phone: z.string() }) } },
-    async (req) => {
-      const auth = req.requireAuth();
-      await app.db
-        .update(sessionTable)
-        .set({ pendingLookupPhone: req.body.phone, pendingLookupAt: new Date() })
-        .where(eq(sessionTable.id, auth.sessionId));
-      return { ok: true };
-    },
-  );
-
-  app.post(
-    '/session/pending-lookup/consume',
-    { config: { auth: 'session', stationTrading: true }, schema: { description: 'Till: consume the staged lookup (30s TTL)' } },
-    async (req) => {
-      const auth = req.requireAuth();
-      const [row] = await app.db
-        .select()
-        .from(sessionTable)
-        .where(eq(sessionTable.id, auth.sessionId))
-        .limit(1);
-      if (!row?.pendingLookupPhone || !row.pendingLookupAt) return { phone: null };
-      await app.db
-        .update(sessionTable)
-        .set({ pendingLookupPhone: null, pendingLookupAt: null })
-        .where(eq(sessionTable.id, auth.sessionId));
-      const fresh = Date.now() - row.pendingLookupAt.getTime() < 30_000;
-      return { phone: fresh ? row.pendingLookupPhone : null };
-    },
-  );
+  // Membership entry now uses the independently paired station display.
 }

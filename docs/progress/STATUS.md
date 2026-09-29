@@ -1,31 +1,33 @@
 # Current status - read this first when resuming
 
-## Release checkpoint in progress - 29 September 2026 late evening
+## Release checkpoint - 29 September 2026 late evening
 
-The owner requested a release checkpoint and then a break, without starting
-new tickets. Manual Render deployment is explicitly authorised while GitHub
-Actions cannot start because of billing/spending availability. At this check,
-API, POS, Console, Launcher and Booth are LIVE on tested source 88140af.
-The API was deployed first, followed by the four front ends. All normal
-autoDeploy/checksPass settings remain unchanged; OTO App stays c416065.
+The display foundation is verified on staging 88140af: nine checks cover
+Console pairing, expiry/reuse, both widths, locked lookup, saved-response
+privacy, recorded refusal, reconnect, sign-out and protected-call revocation.
+Reviewed staging images are Jira10908-10916, named in
+`docs/qa/separate-display/README.md`. SCRUM-285 is Deployed with its reviewed
+staging test card10905. No new ticket has been started.
 
-Current release work is SCRUM-201 (In Progress), SCRUM-206 (In Progress) and
-SCRUM-285 (Testing). The F&B guest display now passes 223 relevant checks, including native
-quote/lock/language/cash/pickup proof. Shop and typed consent are being
-completed. Shop and typed consent are remaining parts of SCRUM-201, not
-new tickets. Separate local transport SCRUM-269 remains To Do and blocks the
-full offline tender acceptance of SCRUM-206. Existing older parent stories
-191/205/223 and hygiene423 retain their honest status; their untouched To Do
-work is not being started for this checkpoint.
+This checkpoint retires the legacy session phone mailbox routes and ORM
+fields. Physical columns remain for the first rollout. API affected tests94
+and DB schema-shape14 pass, with API/DB typecheck and lint. Deploy this
+no-reader API and verify it LIVE before writing forward migration0033;
+record this revision as the earliest rollback-compatible API after the drop.
+The shop/consent implementation is checked statically and its six existing
+native cases are running; it is deliberately not part of this runtime commit.
 
-Staging proof uses dedicated virtual fixtures and reviewed masked screenshots.
-The historical partial payment and physical booth are untouched. SCRUM-285 passes all 11 staging checks, including the corrected deep replay
-comparison. Its reviewed test-run card is Jira attachment10905; the box is
-restored online and dedicated stations are archived. New Deployed transitions still need named
-staging attachments. GitHub CI and its next packed Pi artifact remain blocked.
+Payment follow-up proof found two helper assertion errors, not a failed
+reversal: its fresh simulation has one partial_approval SALE and one approved
+VOID, reversalPending false. Only the known-reversed dedicated fixture may
+be cleaned up; the older retained uncertain payment remains untouched.
+Corrected native follow-ups are being rerun. SCRUM-206 remains In Progress;
+SCRUM-269 local transport remains To Do and blocks full offline acceptance.
 
-Complete current release verification, save exact commits and Jira evidence,
-then stop and wait for the next instruction. Do not start another ticket.
+Finish existing release verification, deploy checked source, update Jira and
+save the final stop point. Do not start another ticket. GitHub CI remains
+blocked before jobs by billing/spending availability; manual Render releases
+are authorised without changing normal deployment settings.
 
 ## Previous checkpoint
 

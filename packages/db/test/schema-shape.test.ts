@@ -453,8 +453,7 @@ describe('soft deletion (SCRUM-292)', () => {
 const E164_PATTERN = '^\\+[1-9]';
 
 /**
- * Known failure — SCRUM-292's own follow-up, and SCRUM-287 for the session
- * column.
+ * Known failure — SCRUM-292's own follow-up.
  *
  * Normalisation lives only at the route boundary today: every `normalizePhone`
  * call site is in `routes/*` plus two services. No service normalises on the
@@ -462,9 +461,9 @@ const E164_PATTERN = '^\\+[1-9]';
  * job, a box path, or the next route written is one omission away from a
  * member nobody can find by their own number.
  *
- * `core.session.pending_lookup_phone` is the one already known to hold a raw
- * value: the customer display writes what was typed and the till round-trips
- * it through `GET /members/lookup`, which normalises. That is SCRUM-287.
+ * SCRUM-201 retires the session mailbox from the application schema after the
+ * independent display rollout. Its physical columns stay through this release
+ * for the previous API; a later forward migration removes them.
  *
  * A database CHECK is what would make the format a property of the column
  * rather than a habit of the callers.
@@ -472,7 +471,6 @@ const E164_PATTERN = '^\\+[1-9]';
 const UNGUARDED_PHONE = [
   'core.account.phone',
   'core.employee.phone',
-  'core.session.pending_lookup_phone',
   'crm.member.phone',
 ];
 
@@ -486,7 +484,7 @@ describe('phone numbers (SCRUM-292)', () => {
   it('is actually looking at phone columns', () => {
     // `phone_verified_at` is a timestamp and is not one of these, which is why
     // the match is on the whole name rather than on the substring.
-    expect(phoneColumns.length).toBeGreaterThanOrEqual(4);
+    expect(phoneColumns.length).toBeGreaterThanOrEqual(3);
   });
 
   it('every phone column is constrained to E.164 by the database', () => {

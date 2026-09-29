@@ -261,8 +261,6 @@ const NO_DIRECT_WRITE = [
 const UNTRANSACTED = [
   'POST /auth/password-reset/request',
   'POST /auth/setup/start',
-  'POST /me/session/pending-lookup/consume',
-  'PUT /me/session/pending-lookup',
 ];
 
 const opensTransaction = (route: SourceRoute): boolean =>
