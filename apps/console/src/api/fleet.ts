@@ -25,7 +25,7 @@
  * packages/db/src/schema/fleet.ts and edge.ts, so the two cannot drift apart
  * silently.
  */
-import type { DeviceSettings, StationSessionDocument } from '@oto/shared';
+import { DisplaySnapshotResponseSchema, type DeviceSettings } from '@oto/shared';
 import { api, ApiError, idemKey, isMissingRoute, qs } from './client';
 
 export { isMissingRoute };
@@ -584,11 +584,10 @@ export const fleetApi = {
       `/branches/${encodeURIComponent(branchId)}/credentials${qs({ includeRevoked: includeRevoked || undefined })}`,
     ),
 
-  /** Read the same customer view the station exposes, without taking its lease. */
-  displaySnapshot: (stationId: string) =>
-    api.get<{ view: 'customer'; document: StationSessionDocument; serverTime: string }>(
-      `/stations/${encodeURIComponent(stationId)}/session?view=customer`,
-    ),
+  /** Read the recorded response for this credential, never a fresh station view. */
+  displaySnapshot: (credentialId: string) =>
+    api.get<unknown>(`/credentials/${encodeURIComponent(credentialId)}/display-snapshot`)
+      .then((response) => DisplaySnapshotResponseSchema.parse(response)),
 
   /** Validates a diagnostic copy; it never publishes a visitor answer. */
   displayTestIntent: (stationId: string, displayId: string, body: DisplayTestIntent) =>

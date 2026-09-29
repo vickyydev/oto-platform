@@ -225,6 +225,13 @@
       "when": 1790685493048,
       "tag": "0031_active_station_display",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1790692335141,
+      "tag": "0032_display_response_snapshot",
+      "breakpoints": true
     }
   ]
 }

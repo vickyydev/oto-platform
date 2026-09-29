@@ -192,6 +192,46 @@ native sign-out response and avoids racing it with cleanup; it does not
 manually release the lease before the handover assertions. These local images
 do not satisfy the staging/Deployed gate.
 
+## Recorded response Snapshot
+
+Migration 0032 adds core.display_response_snapshot, one row per credential.
+The protected session/intent transport stores a finite diagnostic projection
+and the scoped Console read returns it through DisplaySnapshotResponse.
+QR contents, contact answers and private records are removed before storage
+and read. Pairing/probes/401s never replace history. An empty record stays
+empty. Recording is best effort and does not make display availability depend
+on diagnostics. Its time means response preparation; browser receipt is not
+verified. Current and captured park permissions are checked separately.
+
+Credential/station locks, active park/operator/box checks and a reset epoch
+frozen before document preparation protect attribution. Changed or archived
+targets, revoked credentials and unassigned displays retain historical labels.
+Same-sequence language responses are recorded in their locked preparation order.
+The Console validates target IDs and fences old selection replies. Refresh
+reads only the stored response. It does not obtain current station state.
+
+187 existing checks pass: API 165, shared 6, DB 14 and Console 2. Four package
+typechecks/full lint, Console build and schema verification against 0032 pass.
+Source and migration review passes. No new suite or dependency.
+
+Report: snapshot-local-results.json. Reviewed local attachments:
+
+- 20-local-console-recorded-response.png (10899)
+- 21-local-console-disconnected-history.png (10900)
+- 22-local-console-revoked-response.png (10901)
+
+The regenerated proof passes six checks using real protected API/browser
+traffic and a synthetic public order, without executing a sale/payment.
+It covers disconnection while the till advances, reconnection, revocation
+and identical saved history after API restart. The earlier complete ticket
+run passed 23 checks, but its temporary report/images were cleared by an
+ad-hoc Playwright default output directory. Committed evidence is intact;
+lost temporary payment/offline helpers need rebuilding before post-deploy use.
+All temporary configs must set a dedicated absolute outputDir (and native
+CLI --output). Current ignored runner/evidence: output/snapshot-verification.
+The two existing Console cases also cover unassigned history and wrong-park
+grants. All images are LOCAL CHECK; staging acceptance is pending.
+
 ## Remaining acceptance
 
 The story is NOT BUILT as a whole. Preserve these boundaries in Jira:
@@ -200,10 +240,9 @@ The story is NOT BUILT as a whole. Preserve these boundaries in Jira:
    Keep money operations on the staff-authorised path.
 2. Add typed consent, child-slot edits and completion with authoritative
    policy checks. Supervision steps 7/8 stay inline until that is proven.
-3. Complete the archived last-delivery Snapshot requirement. Current public
-   Snapshot, test intents, Box refusals and observed rejection diagnostics are
-   checked. Unused-code expiry is on the unpaired display setup screen; a
-   separate Console expiry action is not claimed.
+3. Verify recorded-response Snapshot and the other diagnostics on staging.
+   A separate Console expiry action is not claimed; unused-code expiry stays
+   on the unpaired display setup screen.
 4. After the independent-display POS is verified live, remove the legacy
    staff-session pending-lookup routes. Keep the columns through that release,
    then remove them in a later forward migration after old API readers retire.
@@ -241,23 +280,26 @@ Transport acknowledgement does not establish persisted supervision consent,
 registration or check-in. Those effects still require S2-13. Photo format and
 retention decisions belong to that later work and do not block safe handoff.
 
-The archived Snapshot follow-up must be per display credential, not a fresh
-station read. Save only a finite diagnostic projection of protected display
-responses; omit QR contents and all private fields before storage. Pairing,
-Console probes and rejected credentials must not replace that record.
-Recheck credential/park/station/box bindings at capture and at the scoped
-manager read. Retain revoked history without labelling an old station or box
-epoch as the current target. Response preparation needs its own ordering:
-document sequence alone cannot distinguish language responses. The label must
-say last recorded response prepared by OTO Park, with a time; browser receipt
-is not verified. A missing record stays empty rather than substituting current
-state. An additive migration and existing API/database/Console tests belong
-with that implementation, not with this compatibility checkpoint.
+The next bounded implementation is existing-member saved-child review at
+ticket step 8. Reuse stage input and a finite child_review prompt with
+requestId, stable visitorId, declared slots/choices, public name/DOB/age and
+confirmation/save state. display.child_review carries select, confirm, done,
+back, retry or staff_help. Confirm sends one draft, not per-keystroke writes.
+The box must bind visitor/request/slot/choice and refuse generic answers.
+Allow DOB only through that finite prompt projection, never by relaxing the
+generic private-field filter. Recorded diagnostics still keep prompt metadata
+only. The till owns the real PATCH, preserves private saved fields, advances
+only on confirmed success and fences late replies by epoch/member/visitor.
+A prompt revision acknowledges processing and permits the next action on the
+same step. Retry retains the original frozen body/key. New-child entry and
+removal fall back to staff; completed review opens step 7 inline. Prove real
+profile readback, retry/lock/context fences and absence of registration,
+check-in or money calls. Full S2-13 remains separate.
 
 ## Release gate
 
-Main 02813cb has the checked diagnostics, ticket flow and payment follow-ups.
-GitHub Actions run 36576638516 stopped before any step because billing/spending availability
+Main cbce199 includes the checked sign-out handover and earlier display/payment work.
+GitHub Actions run 36581970114 stopped before any step because billing/spending availability
 prevented jobs starting. Render still gates deployment on successful checks;
 no bypass or billing change is made. Restore Actions, verify the exact release
 SHA, then use one normal deployment and run staging proof. The retained

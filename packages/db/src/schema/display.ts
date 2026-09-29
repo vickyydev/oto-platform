@@ -1,7 +1,9 @@
 import { sql } from 'drizzle-orm';
-import { check, index, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { check, index, integer, jsonb, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import type { DisplayDiagnosticDocument } from '@oto/shared';
 import { core, idPk, timestamps } from './helpers';
-import { deviceCredential } from './fleet';
+import { box, deviceCredential, station } from './fleet';
+import { branch, operator } from './tenancy';
 
 /** An anonymous screen has no station until a manager claims its short code. */
 export const displayPairingRequest = core.table(
@@ -27,3 +29,26 @@ export const displayPairingRequest = core.table(
     `),
   ],
 );
+
+/** Last recorded protected response preparation; revocation retains history. */
+export const displayResponseSnapshot = core.table('display_response_snapshot', {
+  credentialId: uuid('credential_id').primaryKey().references(() => deviceCredential.id, { onDelete: 'restrict' }),
+  operatorId: uuid('operator_id').notNull().references(() => operator.id, { onDelete: 'restrict' }),
+  branchId: uuid('branch_id').notNull().references(() => branch.id, { onDelete: 'restrict' }),
+  stationId: uuid('station_id').notNull().references(() => station.id, { onDelete: 'restrict' }),
+  boxId: uuid('box_id').notNull().references(() => box.id, { onDelete: 'restrict' }),
+  journalEpoch: integer('journal_epoch'),
+  preparedAt: timestamp('prepared_at', { withTimezone: true, mode: 'date' }).notNull(),
+  responseKind: text('response_kind').$type<'session' | 'intent'>().notNull(),
+  statusCode: integer('status_code').$type<200 | 403 | 409>().notNull(),
+  document: jsonb('document').$type<DisplayDiagnosticDocument>().notNull(),
+}, (t) => [
+  index('display_response_snapshot_operator_idx').on(t.operatorId),
+  index('display_response_snapshot_branch_idx').on(t.branchId),
+  index('display_response_snapshot_station_idx').on(t.stationId),
+  index('display_response_snapshot_box_idx').on(t.boxId),
+  check('display_response_snapshot_kind_check', sql`${t.responseKind} in ('session', 'intent')`),
+  check('display_response_snapshot_status_check', sql`${t.statusCode} in (200, 403, 409)`),
+  check('display_response_snapshot_epoch_check', sql`${t.journalEpoch} is null or ${t.journalEpoch} > 0`),
+  check('display_response_snapshot_document_check', sql`jsonb_typeof(${t.document}) = 'object'`),
+]);

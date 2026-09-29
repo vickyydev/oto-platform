@@ -126,17 +126,15 @@ export function Devices() {
       ),
   );
   const currentBranchName = branchName(branchId) ?? 'this branch';
+  const canReadUnassignedSnapshots = permissions.some(
+    (grant) =>
+      grant.permission === 'admin:station:read' &&
+      (grant.scopeType === 'operator'
+        ? grant.scopeId === null || grant.scopeId === me?.account.operatorId
+        : grant.scopeType === 'branch' && grant.scopeId === branchId),
+  );
   const snapshotStations = fleet.stations.filter(
-    (s) =>
-      s.branchId === branchId &&
-      s.boxId &&
-      permissions.some(
-        (grant) =>
-          grant.permission === 'admin:station:read' &&
-          (grant.scopeType === 'operator'
-            ? grant.scopeId === null || grant.scopeId === me?.account.operatorId
-            : grant.scopeType === 'branch' && grant.scopeId === s.branchId),
-      ),
+    (s) => s.branchId === branchId && canReadUnassignedSnapshots,
   );
   const boxLogStations = fleet.stations.filter(s => s.branchId === branchId &&
     fleet.boxes.some(box => box.id === s.boxId) && permissions.some(grant =>
@@ -280,6 +278,7 @@ export function Devices() {
         stations={fleet.stations.filter((s) => !s.archived)}
         displayStations={displayStations}
         snapshotStations={snapshotStations}
+        canReadUnassignedSnapshots={canReadUnassignedSnapshots}
         boxLogStations={boxLogStations}
         stationName={stationName}
         timezone={timezone}
@@ -803,6 +802,7 @@ function PairedScreens({
   stations,
   displayStations,
   snapshotStations,
+  canReadUnassignedSnapshots,
   boxLogStations,
   stationName,
   timezone,
@@ -816,6 +816,7 @@ function PairedScreens({
   stations: StationRow[];
   displayStations: StationRow[];
   snapshotStations: StationRow[];
+  canReadUnassignedSnapshots: boolean;
   boxLogStations: StationRow[];
   stationName: (id: string | null | undefined) => string | null;
   timezone?: string | null;
@@ -832,6 +833,11 @@ function PairedScreens({
   const snapshot = credentials.find((credential) => credential.id === snapshotId);
   const tested = credentials.find(credential => credential.id === testId);
   const shown = credentials.filter((c) => showRevoked || !c.revokedAt);
+  const canReadSnapshot = (credential: CredentialRow) => credential.kind === 'display' && (
+    credential.stationId
+      ? snapshotStations.some((station) => station.id === credential.stationId)
+      : canReadUnassignedSnapshots
+  );
 
   return (
     <Panel
@@ -882,10 +888,7 @@ function PairedScreens({
               stationLabel={stationName(credential.stationId)}
               timezone={timezone}
               canRevoke={canRevoke}
-              canSnapshot={
-                credential.kind === 'display' &&
-                snapshotStations.some((station) => station.id === credential.stationId)
-              }
+              canSnapshot={canReadSnapshot(credential)}
               onSnapshot={() => setSnapshotId(credential.id)}
               canTest={credential.kind === 'display' && !!credential.pairedAt && !credential.revokedAt
                 && !credential.pairingOutstanding && displayStations.some(station => station.id === credential.stationId)}
@@ -910,15 +913,16 @@ function PairedScreens({
           />
         </Dialog>
       )}
-      {snapshot?.stationId &&
-        snapshotStations.some((station) => station.id === snapshot.stationId) && (
+      {snapshot && canReadSnapshot(snapshot) && (
           <Dialog
             title={`${snapshot.label ?? 'Display'} snapshot`}
             onClose={() => setSnapshotId(null)}
           >
             <DisplaySnapshotPanel
-              stationId={snapshot.stationId}
-              stationLabel={stationName(snapshot.stationId) ?? 'this station'}
+              key={`${snapshot.id}:${snapshot.stationId ?? 'unassigned'}`}
+              credentialId={snapshot.id}
+              stationId={snapshot.stationId ?? null}
+              stationLabel={stationName(snapshot.stationId) ?? 'the selected station'}
               timezone={timezone}
               revoked={Boolean(snapshot.revokedAt)}
             />

@@ -1,6 +1,6 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { randomBytes } from 'node:crypto';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import {
   account,
   auditLog,
@@ -9,6 +9,7 @@ import {
   boxState,
   branch,
   deviceCredential,
+  displayResponseSnapshot,
   idempotencyKey,
   operator,
   paymentAttempt,
@@ -33,9 +34,10 @@ import {
   type StationLease,
 } from '@oto/box-agent';
 import { newId } from '@oto/shared';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { ADMIN, CHALONG_MANAGER, RECEPTION, SECOND_OPERATOR_ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 import { provisionVirtualBox } from '../src/services/box';
 import { forcedOfflineStation } from '../src/services/station-offline';
+import { managerForStation } from '../src/services/station-session';
 
 describe('paired display transport uses the redacted station document (SCRUM-201)', () => {
   let proof: TestContext;
@@ -218,6 +220,196 @@ describe('paired display transport uses the redacted station document (SCRUM-201
       expect(response.json().error.code).toBe('STATION_SESSION_UNAVAILABLE');
       expect(await proof.db.select().from(stationSession).where(eq(stationSession.stationId, unopenedId))).toHaveLength(0);
     } finally { await proof.db.update(deviceCredential).set({ stationId: targetId }).where(eq(deviceCredential.id, deviceId)); }
+  });
+
+  const diagnosticDisplay = async () => {
+    const [base] = await proof.db.select().from(station).where(eq(station.id, targetId));
+    const id = newId();
+    const [target] = await proof.db.insert(station).values({ id, name: `Recorded display ${id}`, kind: 'till',
+      operatorId: base!.operatorId, branchId: base!.branchId, boxId: base!.boxId }).returning();
+    const authorization = `Bearer ${randomBytes(32).toString('hex')}`;
+    const mint = await proof.app.inject({ method: 'POST', url: '/display/pairing', headers: { authorization }, payload: {} });
+    expect(mint.statusCode).toBe(200);
+    const paired = await proof.app.inject({ method: 'POST', url: `/stations/${id}/displays/claim`,
+      headers: { cookie: managerCookie }, payload: { pairingCode: mint.json().pairingCode, name: 'Recorded screen' } });
+    expect(paired.statusCode).toBe(200);
+    return { target: target!, authorization, id: paired.json().device.id as string };
+  };
+  const diagnosticRead = (at: { authorization: string }) => proof.app.inject({ method: 'GET', url: '/display/session',
+    headers: { authorization: at.authorization } });
+  const savedRead = (id: string, cookie = managerCookie) => proof.app.inject({ method: 'GET',
+    url: `/credentials/${id}/display-snapshot`, headers: { cookie } });
+  const stored = async (id: string) => (await proof.db.select().from(displayResponseSnapshot)
+    .where(eq(displayResponseSnapshot.credentialId, id)))[0];
+
+  it('stays empty until a protected response, then keeps that response until the display calls again across restart', async () => {
+    const at = await diagnosticDisplay();
+    expect((await savedRead(at.id)).json()).toEqual({ snapshot: null, revoked: false, targetChanged: false });
+    await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: { authorization: at.authorization } });
+    await proof.app.inject({ method: 'GET', url: `/stations/${at.target.id}/session`, headers: { cookie: managerCookie } });
+    await proof.app.inject({ method: 'POST', url: `/stations/${at.target.id}/displays/${at.id}/test-intent`,
+      headers: { cookie: managerCookie }, payload: { stage: 'welcome', intent: 'consent_ack', actionId: newId() } });
+    expect((await savedRead(at.id)).json().snapshot).toBeNull();
+    expect((await diagnosticRead(at)).statusCode).toBe(200);
+    const first = await savedRead(at.id);
+    expect(first.headers['cache-control']).toBe('private, no-store');
+    expect(first.json().snapshot).toMatchObject({ stationId: at.target.id, boxId: at.target.boxId,
+      responseKind: 'session', statusCode: 200, document: { stage: 'identify' } });
+    await proof.db.update(stationSession).set({ stage: 'order' }).where(eq(stationSession.stationId, at.target.id));
+    expect((await savedRead(at.id)).json()).toEqual(first.json());
+    await proof.restart();
+    expect((await savedRead(at.id)).json()).toEqual(first.json());
+    expect((await diagnosticRead(at)).statusCode).toBe(200);
+    expect((await savedRead(at.id)).json().snapshot.document.stage).toBe('order');
+  });
+
+  it('omits QR contents and visitor answers before storage and read, and records protected refusal documents', async () => {
+    const at = await diagnosticDisplay();
+    await diagnosticRead(at);
+    const qr = 'Diagnostic QR fixture';
+    await proof.db.update(stationSession).set({ stage: 'input', sequence: 7,
+      member: { id: newId(), nickname: 'Guest', tier: 'member', medicalNotes: 'Private diagnostic marker' },
+      payment: { saleId: newId(), amountSatang: 4200, qrPayload: qr, qrImageUrl: 'https://example.test/qr.png',
+        expiresAt: null, status: 'pending', online: true, offline: false },
+      prompt: { kind: 'contact', requestId: newId(), phone: 'Private diagnostic marker', nickname: 'Guest',
+        contactChannel: 'line', answer: { phone: 'Private diagnostic marker' } },
+    }).where(eq(stationSession.stationId, at.target.id));
+    const response = await diagnosticRead(at);
+    expect(response.statusCode).toBe(200);
+    expect(response.json().document.payment.qrPayload).toBe(qr);
+    const recorded = (await stored(at.id))!;
+    expect(recorded.document.payment).toMatchObject({ hasQrPayload: true, hasQrImage: true, amountSatang: 4200 });
+    expect(recorded.document.prompt).toMatchObject({ kind: 'contact', hasAnswer: true });
+    expect(JSON.stringify(recorded.document)).not.toMatch(/Diagnostic QR fixture|example\.test|Private diagnostic marker|medicalNotes|lease/);
+    // A historical row written by an older implementation is projected again on read.
+    const contaminated = { ...recorded.document, medical: 'Private diagnostic marker',
+      payment: { ...recorded.document.payment, qrPayload: qr }, prompt: { ...recorded.document.prompt, answer: { phone: 'Private diagnostic marker' } } };
+    await proof.db.execute(sql`update ${displayResponseSnapshot} set document = ${JSON.stringify(contaminated)}::jsonb
+      where credential_id = ${at.id}`);
+    expect(JSON.stringify((await savedRead(at.id)).json())).not.toMatch(/Diagnostic QR fixture|Private diagnostic marker/);
+    const refused = await proof.app.inject({ method: 'POST', url: '/display/intents', headers: { authorization: at.authorization },
+      payload: { type: 'session.reset', payload: {}, lastSeenSequence: 7, actionId: newId() } });
+    expect(refused.statusCode).toBe(403);
+    expect((await savedRead(at.id)).json().snapshot).toMatchObject({ responseKind: 'intent', statusCode: 403 });
+    const stale = await proof.app.inject({ method: 'POST', url: '/display/intents', headers: { authorization: at.authorization },
+      // This registered action is valid without a contact prompt/answer; only
+      // its old sequence can refuse it, so the recorded status really is 409.
+      payload: { type: 'display.set_language', payload: { language: 'th' },
+        lastSeenSequence: 0, actionId: newId() } });
+    expect(stale.statusCode).toBe(409);
+    expect((await savedRead(at.id)).json().snapshot).toMatchObject({ responseKind: 'intent', statusCode: 409 });
+    expect(await proof.db.select().from(displayResponseSnapshot).where(eq(displayResponseSnapshot.credentialId, at.id))).toHaveLength(1);
+  });
+
+  it('retains last good history through diagnostic failure, revocation and protected 401s', async () => {
+    const at = await diagnosticDisplay();
+    await diagnosticRead(at);
+    const first = (await savedRead(at.id)).json().snapshot;
+    const transaction = vi.spyOn(proof.db, 'transaction').mockRejectedValueOnce(new Error('Diagnostic write unavailable'));
+    try { expect((await diagnosticRead(at)).statusCode).toBe(200); } finally { transaction.mockRestore(); }
+    expect((await savedRead(at.id)).json().snapshot).toEqual(first);
+    expect((await proof.app.inject({ method: 'POST', url: `/credentials/${at.id}/revoke`,
+      headers: { cookie: managerCookie }, payload: { reason: 'Recorded response proof' } })).statusCode).toBe(200);
+    expect((await diagnosticRead(at)).statusCode).toBe(401);
+    await proof.app.inject({ method: 'GET', url: '/display/pairing', headers: { authorization: at.authorization } });
+    expect((await savedRead(at.id)).json()).toEqual({ snapshot: first, revoked: true, targetChanged: false });
+  });
+
+  it('orders response preparation under the credential lock even when language responses have the same sequence', async () => {
+    const at = await diagnosticDisplay();
+    await diagnosticRead(at);
+    let continueFirst!: () => void;
+    let firstWaiting!: () => void;
+    const gate = new Promise<void>((resolve) => { continueFirst = resolve; });
+    const ready = new Promise<void>((resolve) => { firstWaiting = resolve; });
+    const transact = proof.db.transaction.bind(proof.db);
+    const delayed = vi.spyOn(proof.db, 'transaction').mockImplementationOnce(async (callback, config) => {
+      firstWaiting();
+      await gate;
+      return transact(callback, config);
+    });
+    const language = (value: string) => proof.app.inject({ method: 'POST', url: '/display/intents',
+      headers: { authorization: at.authorization }, payload: { type: 'display.set_language', payload: { language: value },
+        lastSeenSequence: 0, actionId: newId() } });
+    const first = language('ru');
+    try {
+      await ready;
+      const second = await language('fr');
+      expect(second.statusCode).toBe(200);
+      const secondRecord = (await savedRead(at.id)).json().snapshot;
+      expect(secondRecord.document).toMatchObject({ language: 'fr', sequence: 0 });
+      continueFirst();
+      const delayedResponse = await first;
+      expect(delayedResponse.statusCode).toBe(200);
+      const last = (await savedRead(at.id)).json().snapshot;
+      expect(last.document).toMatchObject({ language: 'ru', sequence: 0 });
+      expect(Date.parse(last.preparedAt)).toBeGreaterThanOrEqual(Date.parse(secondRecord.preparedAt));
+    } finally { continueFirst(); delayed.mockRestore(); await first; }
+  });
+
+  it.each(['epoch', 'park', 'box', 'operator'] as const)('does not stamp a prepared old document after a %s change', async (kind) => {
+    const at = await diagnosticDisplay();
+    await diagnosticRead(at);
+    const first = (await stored(at.id))!;
+    const [targetBox] = await proof.db.select().from(box).where(eq(box.id, at.target.boxId!));
+    const { manager } = managerForStation(proof.db, at.target);
+    const open = manager.open.bind(manager);
+    const changedAt = new Date();
+    let liveParkCookie = managerCookie;
+    if (kind === 'park') {
+      const [livePark] = await proof.db.select().from(branch).where(and(
+        eq(branch.operatorId, at.target.operatorId), eq(branch.code, 'robinson-chalong'),
+      ));
+      liveParkCookie = await signInAs(proof.app, ADMIN.phone, ADMIN.password);
+      expect((await proof.app.inject({ method: 'PUT', url: '/me/session/branch', headers: { cookie: liveParkCookie },
+        payload: { branchId: livePark!.id } })).statusCode).toBe(200);
+    }
+    const preparation = vi.spyOn(manager, 'open').mockImplementationOnce(async (id) => {
+      const document = await open(id);
+      if (kind === 'epoch') await proof.db.update(box).set({ currentEpoch: targetBox!.currentEpoch + 1 }).where(eq(box.id, at.target.boxId!));
+      if (kind === 'park') await proof.db.update(branch).set({ archivedAt: changedAt }).where(eq(branch.id, at.target.branchId));
+      if (kind === 'box') await proof.db.update(box).set({ archivedAt: changedAt }).where(eq(box.id, at.target.boxId!));
+      if (kind === 'operator') await proof.db.update(operator).set({ archivedAt: changedAt }).where(eq(operator.id, at.target.operatorId));
+      return document;
+    });
+    try {
+      expect((await diagnosticRead(at)).statusCode).toBe(200);
+      expect(await stored(at.id)).toEqual(first);
+      if (kind === 'park' || kind === 'operator') expect((await savedRead(at.id)).statusCode).toBe(401);
+      if (kind !== 'operator') {
+        // A session seated at a retired park is refused. An administrator
+        // seated at an open park may still read scoped, retained history.
+        const history = await savedRead(at.id, liveParkCookie);
+        expect(history.statusCode).toBe(200);
+        expect(history.json().targetChanged).toBe(true);
+      }
+    } finally {
+      preparation.mockRestore();
+      if (kind === 'epoch') await proof.db.update(box).set({ currentEpoch: targetBox!.currentEpoch }).where(eq(box.id, at.target.boxId!));
+      if (kind === 'park') await proof.db.update(branch).set({ archivedAt: null }).where(eq(branch.id, at.target.branchId));
+      if (kind === 'box') await proof.db.update(box).set({ archivedAt: null }).where(eq(box.id, at.target.boxId!));
+      if (kind === 'operator') await proof.db.update(operator).set({ archivedAt: null }).where(eq(operator.id, at.target.operatorId));
+    }
+  });
+
+  it('requires current and historical park scope and labels retained history after the target moves', async () => {
+    const at = await diagnosticDisplay();
+    await diagnosticRead(at);
+    const first = (await savedRead(at.id)).json().snapshot;
+    const [otherPark] = await proof.db.select().from(branch).where(and(eq(branch.operatorId, at.target.operatorId), eq(branch.code, 'robinson-chalong')));
+    const otherId = newId();
+    await proof.db.insert(station).values({ id: otherId, name: `Moved display ${otherId}`, kind: 'till',
+      operatorId: at.target.operatorId, branchId: otherPark!.id });
+    await proof.db.update(deviceCredential).set({ stationId: otherId, branchId: otherPark!.id }).where(eq(deviceCredential.id, at.id));
+    const moved = await savedRead(at.id);
+    expect(moved.statusCode).toBe(200);
+    expect(moved.json()).toEqual({ snapshot: first, revoked: false, targetChanged: true });
+    const scopedManager = await signInAs(proof.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
+    expect((await savedRead(at.id, scopedManager)).statusCode).toBe(403);
+    expect((await savedRead(at.id, staffCookie)).statusCode).toBe(403);
+    const foreign = await signInAs(proof.app, SECOND_OPERATOR_ADMIN.phone, SECOND_OPERATOR_ADMIN.password);
+    expect((await savedRead(at.id, foreign)).statusCode).toBe(404);
+    expect((await proof.app.inject({ method: 'GET', url: `/credentials/${at.id}/display-snapshot` })).statusCode).toBe(401);
   });
 });
 

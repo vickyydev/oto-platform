@@ -1,8 +1,9 @@
 import { createHash, randomInt } from 'node:crypto';
 import { and, desc, eq, gt, isNotNull, isNull, lte, sql } from 'drizzle-orm';
-import { box, branch, deviceCredential, displayPairingRequest, operator, station, stationEvent, type Db } from '@oto/db';
-import { newId, type StationIntent } from '@oto/shared';
+import { box, boxState, branch, deviceCredential, displayPairingRequest, displayResponseSnapshot, operator, station, stationEvent, type Db } from '@oto/db';
+import { newId, projectDisplayDiagnosticDocument, type DisplaySnapshotResponse, type StationIntent } from '@oto/shared';
 import type { StationSessionDocument } from '@oto/box-agent';
+import type { FastifyBaseLogger } from 'fastify';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
@@ -259,16 +260,117 @@ function customerDocument(document: StationSessionDocument): StationSessionDocum
   return { ...document, lease: null };
 }
 
-export async function displaySession(db: Db, auth: DisplayDeviceAuth) {
+interface SnapshotEpoch { cloud: number; local: number | null }
+
+const snapshotFailure = (log?: FastifyBaseLogger) => log?.warn({ event: 'display.snapshot_capture_failed' },
+  'The last display response could not be recorded');
+
+/** Freeze before reading a document that itself has no box journal epoch. */
+async function snapshotEpoch(db: Db, auth: DisplayDeviceAuth, log?: FastifyBaseLogger): Promise<SnapshotEpoch | null> {
+  try {
+    const [target] = await db.select({ cloud: box.currentEpoch, local: boxState.journalEpoch }).from(box)
+      .leftJoin(boxState, eq(boxState.boxId, box.id))
+      .innerJoin(branch, and(eq(branch.id, box.branchId), eq(branch.operatorId, box.operatorId)))
+      .innerJoin(operator, eq(operator.id, box.operatorId)).where(and(
+        eq(box.id, auth.station.boxId ?? ''), eq(box.operatorId, auth.station.operatorId), eq(box.branchId, auth.station.branchId),
+        isNull(box.archivedAt), isNull(branch.archivedAt), isNull(operator.archivedAt),
+      )).limit(1);
+    return target ?? null;
+  } catch { snapshotFailure(log); return null; }
+}
+
+/**
+ * Serial response preparation, not proof of browser receipt. Station first,
+ * then credential follows pairing's lock order; revoke locks only credential.
+ * A refused credential, changed target/epoch, or absent document never replaces history.
+ */
+async function recordDisplayResponse(db: Db, auth: DisplayDeviceAuth, expectedEpoch: SnapshotEpoch | null,
+  document: StationSessionDocument | null, responseKind: 'session' | 'intent', statusCode: 200 | 403 | 409,
+  log?: FastifyBaseLogger): Promise<void> {
+  if (!expectedEpoch || !document || !auth.station.boxId) return;
+  try {
+    await db.transaction(async (tx) => {
+      const [target] = await tx.select().from(station).where(and(
+        eq(station.id, auth.station.id), eq(station.operatorId, auth.station.operatorId),
+        eq(station.branchId, auth.station.branchId), eq(station.boxId, auth.station.boxId!), isNull(station.archivedAt),
+      )).limit(1).for('share');
+      if (!target) return;
+      const [credential] = await tx.select().from(deviceCredential).where(and(
+        eq(deviceCredential.id, auth.credentialId), eq(deviceCredential.kind, 'display'),
+        eq(deviceCredential.stationId, target.id), eq(deviceCredential.operatorId, target.operatorId),
+        eq(deviceCredential.branchId, target.branchId), isNull(deviceCredential.revokedAt),
+        isNotNull(deviceCredential.secretHash), isNotNull(deviceCredential.pairedAt),
+      )).limit(1).for('update');
+      if (!credential?.scopes.includes(responseKind === 'session' ? 'display:read' : 'display:intents')) return;
+      const [epoch] = await tx.select({ cloud: box.currentEpoch, local: boxState.journalEpoch }).from(box)
+        .leftJoin(boxState, eq(boxState.boxId, box.id))
+        .innerJoin(branch, and(eq(branch.id, box.branchId), eq(branch.operatorId, box.operatorId)))
+        .innerJoin(operator, eq(operator.id, box.operatorId)).where(and(eq(box.id, target.boxId!),
+          eq(box.operatorId, target.operatorId), eq(box.branchId, target.branchId),
+          isNull(box.archivedAt), isNull(branch.archivedAt), isNull(operator.archivedAt))).limit(1);
+      if (!epoch || epoch.cloud !== expectedEpoch.cloud || epoch.local !== expectedEpoch.local
+        || document.stationId !== target.id || document.boxId !== target.boxId) return;
+      // This locked projection and timestamp define the recording order even
+      // for language responses that deliberately keep the same sequence.
+      const projected = projectDisplayDiagnosticDocument(document);
+      if (!projected) throw new Error('Display diagnostic projection is invalid');
+      const recorded = { credentialId: credential.id, operatorId: target.operatorId, branchId: target.branchId,
+        stationId: target.id, boxId: target.boxId!, journalEpoch: epoch.local ?? epoch.cloud,
+        preparedAt: new Date(), responseKind, statusCode, document: projected };
+      await tx.insert(displayResponseSnapshot).values(recorded).onConflictDoUpdate({
+        target: displayResponseSnapshot.credentialId, set: recorded,
+      });
+    });
+  } catch { snapshotFailure(log); }
+}
+
+/** Current and captured park permissions are both required for retained history. */
+export async function readDisplaySnapshot(db: Db, credential: typeof deviceCredential.$inferSelect,
+  authorize: (branchId: string) => Promise<void>): Promise<DisplaySnapshotResponse> {
+  if (credential.kind !== 'display' || !credential.branchId) throw new AppError(404, 'DISPLAY_NOT_FOUND', 'No such display');
+  await authorize(credential.branchId);
+  const [saved] = await db.select().from(displayResponseSnapshot).where(and(
+    eq(displayResponseSnapshot.credentialId, credential.id), eq(displayResponseSnapshot.operatorId, credential.operatorId),
+  )).limit(1);
+  const empty = { snapshot: null, revoked: credential.revokedAt !== null, targetChanged: false };
+  if (!saved) return empty;
+  const [historicalPark] = await db.select({ id: branch.id }).from(branch).where(and(
+    eq(branch.id, saved.branchId), eq(branch.operatorId, credential.operatorId),
+  )).limit(1);
+  if (!historicalPark) return empty;
+  await authorize(saved.branchId);
+  const document = projectDisplayDiagnosticDocument(saved.document);
+  if (!document || document.stationId !== saved.stationId || document.boxId !== saved.boxId) return empty;
+  const [current] = credential.stationId ? await db.select({ stationId: station.id, boxId: box.id,
+    cloud: box.currentEpoch, local: boxState.journalEpoch }).from(station)
+    .leftJoin(box, and(eq(box.id, station.boxId), eq(box.operatorId, station.operatorId), eq(box.branchId, station.branchId), isNull(box.archivedAt)))
+    .innerJoin(branch, and(eq(branch.id, station.branchId), eq(branch.operatorId, station.operatorId), isNull(branch.archivedAt)))
+    .innerJoin(operator, and(eq(operator.id, station.operatorId), isNull(operator.archivedAt)))
+    .leftJoin(boxState, eq(boxState.boxId, box.id)).where(and(eq(station.id, credential.stationId),
+      eq(station.operatorId, credential.operatorId), eq(station.branchId, credential.branchId), isNull(station.archivedAt),
+    )).limit(1) : [];
+  const targetChanged = !current || current.stationId !== saved.stationId || current.boxId !== saved.boxId
+    || credential.branchId !== saved.branchId || current.cloud !== saved.journalEpoch
+    || current.local !== null && current.local !== saved.journalEpoch;
+  return { snapshot: { stationId: saved.stationId, boxId: saved.boxId, journalEpoch: saved.journalEpoch,
+    preparedAt: saved.preparedAt.toISOString(), responseKind: saved.responseKind, statusCode: saved.statusCode, document },
+    revoked: credential.revokedAt !== null, targetChanged };
+}
+
+export async function displaySession(db: Db, auth: DisplayDeviceAuth, log?: FastifyBaseLogger) {
+  const epoch = await snapshotEpoch(db, auth, log);
   const { manager } = managerForStation(db, auth.station);
   const document = await manager.open(auth.station.id);
-  return {
+  const answer = {
     station: stationView(auth.station), device: auth.device,
     document: customerDocument(manager.snapshotFor(document, 'customer', null).document),
   };
+  await recordDisplayResponse(db, auth, epoch, answer.document, 'session', 200, log);
+  return answer;
 }
 
-export async function displayIntent(db: Db, auth: DisplayDeviceAuth, intent: StationIntent) {
+export async function displayIntent(db: Db, auth: DisplayDeviceAuth, intent: StationIntent, log?: FastifyBaseLogger) {
+  const epoch = await snapshotEpoch(db, auth, log);
   const { manager } = managerForStation(db, auth.station);
   const result = await manager.applyIntent(auth.station.id, { ...intent, leaseId: undefined }, {
     source: 'display', deviceId: auth.credentialId,
@@ -277,14 +379,18 @@ export async function displayIntent(db: Db, auth: DisplayDeviceAuth, intent: Sta
     const document = result.document
       ? customerDocument(manager.snapshotFor(result.document, 'customer', null).document)
       : null;
+    const statusCode = result.refusal === 'stale' ? 409 : 403;
+    await recordDisplayResponse(db, auth, epoch, document, 'intent', statusCode, log);
     throw new AppError(
-      result.refusal === 'stale' ? 409 : 403,
+      statusCode,
       result.refusal === 'stale' ? 'STATION_STALE' : 'DISPLAY_INTENT_REFUSED',
       result.message,
       { document, reason: result.refusal },
     );
   }
-  return { document: customerDocument(manager.snapshotFor(result.document, 'customer', null).document) };
+  const answer = { document: customerDocument(manager.snapshotFor(result.document, 'customer', null).document) };
+  await recordDisplayResponse(db, auth, epoch, answer.document, 'intent', 200, log);
+  return answer;
 }
 
 export async function stationDisplays(db: Db, stationId: string, operatorId: string) {

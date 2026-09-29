@@ -1,14 +1,14 @@
 import { z } from 'zod';
-import { StationIntentSchema, StationSessionDocumentSchema } from '@oto/shared';
+import { DisplaySnapshotResponseSchema, StationIntentSchema, StationSessionDocumentSchema } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { displayDeviceOf, displayPairingHashOf } from '../plugins/credential';
 import { holdsGrantAt } from '../services/access-control';
 import {
   claimDisplay, displayIntent, displayPairingStatus, displaySession, expireDisplayPairing,
-  requestDisplayPairing, stationDisplays,
+  readDisplaySnapshot, requestDisplayPairing, stationDisplays,
 } from '../services/display';
-import { loadStation } from '../services/fleet';
+import { loadCredential, loadStation } from '../services/fleet';
 import { opCtx } from '../services/tx';
 
 const IdParams = z.object({ id: z.string().uuid() });
@@ -92,7 +92,7 @@ export async function displayRoutes(app: App): Promise<void> {
     },
   }, (req, reply) => {
     reply.header('cache-control', 'private, no-store');
-    return displaySession(app.db, displayDeviceOf(req));
+    return displaySession(app.db, displayDeviceOf(req), req.log);
   });
 
   app.post('/display/intents', {
@@ -102,5 +102,17 @@ export async function displayRoutes(app: App): Promise<void> {
       body: StationIntentSchema,
       response: { 200: DocumentSchema },
     },
-  }, (req) => displayIntent(app.db, displayDeviceOf(req), req.body));
+  }, (req) => displayIntent(app.db, displayDeviceOf(req), req.body, req.log));
+
+  app.get('/credentials/:id/display-snapshot', {
+    config: { dynamicPermission: true },
+    schema: { description: 'Last recorded protected display response prepared by OTO Park; browser receipt is not verified.',
+      params: IdParams, response: { 200: DisplaySnapshotResponseSchema } },
+  }, async (req, reply) => {
+    const auth = req.requireAuth();
+    const credential = await loadCredential(app.db, auth.operatorId, req.params.id);
+    reply.header('cache-control', 'private, no-store');
+    return readDisplaySnapshot(app.db, credential,
+      async (branchId) => { await req.requirePermission('admin:station:read', { branchId }); });
+  });
 }

@@ -2,8 +2,21 @@
 
 ## Current follow-ups - 29 September 2026
 
-- **GitHub Actions availability.** Main source 02813cb is checked locally,
-  but CI 36576638516 ran zero steps because account billing/spending prevents
+- **Temporary verification files were lost during the Snapshot check.** An
+  ad-hoc Playwright config inherited the repository's default `test-results`
+  output directory; the runner cleared that ignored directory at startup.
+  Committed source, evidence and branch tips remain intact. The new 23-step
+  browser run passed, but its temporary report/images and earlier ignored
+  payment/display helpers were removed. Three ignored worktree directories
+  were also cleared; their branch commits remain available. Recreate those
+  checkouts from their named branches only when needed. Rebuild the payment
+  and offline proof helpers before the post-deploy checks; old command paths
+  in dated notes are no longer runnable. Current Snapshot evidence is being
+  regenerated under `output/snapshot-verification`; every temporary browser
+  config must set a dedicated absolute output directory. This is an execution
+  issue to repair, not a park decision or permission request.
+- **GitHub Actions availability.** Main source cbce199 is checked locally,
+  but CI 36581970114 ran zero steps because account billing/spending prevents
   jobs starting. Restore Actions availability; no spending setting is changed
   by development. Meanwhile SCRUM-201 continues independently. Deployment,
   staging proof and the next CI-packed Pi artifact remain pending.

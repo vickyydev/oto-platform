@@ -63,6 +63,19 @@ const TABLES: Table[] = Object.entries(schema)
 
 const byName = new Map(TABLES.map((t) => [t.name, t]));
 
+it('retains one scoped display response per credential with restrictive history references (SCRUM-201)', () => {
+  const table = byName.get('core.display_response_snapshot')!;
+  expect(table).toBeDefined();
+  expect(table.cfg.columns.find(column => column.name === 'credential_id')?.primary).toBe(true);
+  expect(table.cfg.foreignKeys.map(key => key.reference().columns[0]!.name).sort())
+    .toEqual(['box_id', 'branch_id', 'credential_id', 'operator_id', 'station_id']);
+  expect(table.cfg.foreignKeys.every(key => key.onDelete === 'restrict')).toBe(true);
+  expect(table.cfg.checks.map(check => check.name).sort()).toEqual([
+    'display_response_snapshot_document_check', 'display_response_snapshot_epoch_check',
+    'display_response_snapshot_kind_check', 'display_response_snapshot_status_check',
+  ]);
+});
+
 /** The text of a `sql` fragment — a check's predicate, an index's WHERE. */
 function sqlToText(value: unknown): string {
   if (!(value instanceof SQL)) return '';
@@ -113,6 +126,8 @@ const PLATFORM_OWNED: Record<string, string> = {
   'core.operator': 'The tenant itself. A row here IS an operator.',
   'core.auth_throttle':
     'Keyed on a hashed phone or an IP and written before anybody is identified — at the moment it is written there is no account, so there is no operator to attribute it to.',
+  'core.display_pairing_request':
+    'SCRUM-201: an anonymous screen has no operator or park until a manager claims its short code. Claiming links the request to an operator/park/station-scoped device credential atomically; unclaimed rows have no tenant parent.',
   'core.idempotency_key':
     'Its primary key is (account_id, key) and an account belongs to exactly one operator, so a cross-operator replay is not possible to express. The one exception here that is settled rather than owed.',
   'core.ops_expectation':
