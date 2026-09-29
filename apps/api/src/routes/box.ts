@@ -34,6 +34,7 @@ import {
   registerSyncKey,
 } from '../services/sync';
 import { recordPrintJobResult } from '../services/print';
+import { buildPrintDocument } from '../services/sale-printing';
 import type { OpContext } from '../services/tx';
 
 /**
@@ -230,6 +231,32 @@ export async function boxRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = boxAuth(req);
       return recordPrintJobResult(app.db, boxCtx(req, auth), auth, req.params.id, req.body);
+    },
+  );
+
+  /**
+   * S2-11 — the content of a sale's print job, fetched by the box as it prints.
+   *
+   * A sale's `test_print` command carries `document: 'platform'` and the job
+   * id, and nothing a printout says: the receipt's member, a kids band's
+   * allergy line and its signed code live here, built from the ledger for this
+   * one request, and never in the command history or the job row. Scoped to
+   * the asking box — a job on another box answers 404 — and read-only, so the
+   * box may ask as often as its retries need.
+   */
+  app.get(
+    '/print-jobs/:id/document',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'The document for one of this box’s print jobs — a receipt, a prep ticket, a band or an item voucher — as the renderer’s `{ kind, data }` job. Built from the ledger when asked, so a reprint prints the sale as it stands. 404 for a job on another box, and for a job that has no platform document (a test page).',
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      return buildPrintDocument(app.db, auth, req.params.id);
     },
   );
 

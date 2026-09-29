@@ -7,7 +7,7 @@ import {
 } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
 import { useStation } from '@/station/StationContext';
-import { dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
+import { announceSalePrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import {
@@ -1548,7 +1548,10 @@ export default function MobileTill() {
     setSaleNumber(number);
     setHandoffMode(null);
     setMStep('done');
-    dispatchPrintJobs(ticketPrintJobs(station, newSale));
+    // S2-11 — the platform printed this sale when it closed it; the toast says
+    // what it queued and where. The till's own routing stands in only for a
+    // deployment whose sale read carries no print jobs.
+    void announceSalePrinting(saleId, () => dispatchPrintJobs(ticketPrintJobs(station, newSale)));
     return true;
   };
 

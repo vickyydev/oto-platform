@@ -46,6 +46,7 @@ import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustom
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
+import { announceSalePrinting } from '@/lib/printRouting';
 import { Button } from '@/components/ui/button';
 import { Monitor } from 'lucide-react';
 
@@ -549,6 +550,10 @@ export default function MerchStation() {
     setCompletedOrder(record);
     setNewBalance(balanceAfter);
     setStage('confirmation');
+    // S2-11 — the platform printed the shop receipt when it closed the sale;
+    // the toast says where. This station never routed a receipt of its own,
+    // so a deployment with no print jobs has nothing to stand in for.
+    void announceSalePrinting(written.id, () => undefined);
   };
 
   if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
@@ -608,8 +613,9 @@ export default function MerchStation() {
               {/*
                 WHAT THIS STATION STILL DOES ON ITS OWN. The catalogue, the
                 prices and the sizes a tile asks for are the platform's (sizes
-                since S2-09b); the counts under each tile and the band's balance
-                are not, and each names the ticket that moves it.
+                since S2-09b), and so is the receipt printing (S2-11); the
+                counts under each tile and the band's balance are not, and each
+                names the ticket that moves it.
               */}
               <div className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
                 <span className="font-bold uppercase tracking-wide text-foreground/70">
@@ -617,7 +623,6 @@ export default function MerchStation() {
                 </span>
                 <span>Stock counts and out-of-stock — S2-14b</span>
                 <span>Wallet credit — S2-14a</span>
-                <span>Receipt printing — S2-11</span>
                 {!shopFromPlatform && (
                   <span className="text-amber-300">
                     Catalogue — this deployment has no menu route, so the ported one is shown

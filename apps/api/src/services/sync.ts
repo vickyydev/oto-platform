@@ -3293,7 +3293,19 @@ export type CacheScope = (typeof CACHE_SCOPES)[number];
  * `@oto/box-agent`). An agent that does not make that tick learns the mark only
  * when something administered changes, so the two halves belong in one change.
  */
-export const CACHE_VOLATILE_SCOPES = ['receipt_series'] as const satisfies readonly CacheScope[];
+export const CACHE_VOLATILE_SCOPES = [
+  'receipt_series',
+  /**
+   * S2-11 — since bands are minted inside sale finalisation, every ticket sale
+   * moves this scope exactly as it moves the receipt mark, and for the same
+   * reason it may not move the etag: a selling box would otherwise take a full
+   * 200 after every family through the door. A box learns the day's new bands
+   * on its own tick (`?scopes=receipt_series,bands`), and a band it has not
+   * seen yet still verifies offline — its code is signed and names its row
+   * (`verifyBandCode` in `@oto/shared`).
+   */
+  'bands',
+] as const satisfies readonly CacheScope[];
 
 function isVolatileScope(name: string): boolean {
   return (CACHE_VOLATILE_SCOPES as readonly string[]).includes(name);
@@ -3842,10 +3854,23 @@ export async function cacheBundle(
     }
 
     if (scope === 'bands') {
+      /**
+       * The branch's bands still in play: active, and issued in the last
+       * thirty-six hours. A band admits for one visit, so a gate needs today's
+       * — and yesterday evening's, for a box whose clock is behind — not every
+       * band the park ever printed, which is the diary the bookings scope also
+       * declines to send.
+       */
       const rows = await db
         .select()
         .from(band)
-        .where(and(eq(band.branchId, branchId), eq(band.status, 'active')))
+        .where(
+          and(
+            eq(band.branchId, branchId),
+            eq(band.status, 'active'),
+            sql`${band.createdAt} >= now() - interval '36 hours'`,
+          ),
+        )
         .orderBy(asc(band.id))
         .limit(limit);
       put('bands', rows, {

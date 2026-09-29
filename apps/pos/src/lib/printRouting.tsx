@@ -4,6 +4,8 @@ import { stationDevice } from '@/station/fleet';
 import { buildPrepTickets } from '@/lib/fnb';
 import { toast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { getSale, type ApiSalePrintJob } from '@/api/history';
+import { platformPrintOutcome } from '@/lib/salePrinting';
 
 // SEAM: in production these dispatch to the local print agent keyed by the
 // selected device id; the agent holds the real printer addresses. This layer
@@ -300,6 +302,77 @@ export function dispatchPrintJobs(jobs: PrintJob[]) {
       ),
     });
   }
+}
+
+/**
+ * THE PLATFORM'S PAPER, TOASTED THE WAY THE TILL ALWAYS TOASTED ITS OWN —
+ * S2-11 (SCRUM-208).
+ *
+ * A closed sale's receipt, bands and prep tickets, and a copy History asks
+ * for, are print jobs the platform queues for the station's box. This says
+ * what they were in the same two toasts `dispatchPrintJobs` shows for the
+ * till's own routing: what went to which printer, and — without blocking
+ * anything — what was not printed and why.
+ */
+export function dispatchPlatformPrinting(
+  jobs: readonly ApiSalePrintJob[],
+  notes: readonly string[] = [],
+): void {
+  const { sent, notPrinted } = platformPrintOutcome(jobs, notes);
+  if (sent.length > 0) {
+    toast({
+      title: 'Sending to printers',
+      description: (
+        <div className="mt-1 space-y-1">
+          {sent.map((j, i) => (
+            <div key={i} className="flex items-center justify-between gap-6 text-sm">
+              <span className="text-muted-foreground">{j.label}</span>
+              <span className="font-semibold">→ {j.device}</span>
+            </div>
+          ))}
+        </div>
+      ),
+    });
+  }
+  if (notPrinted.length > 0) {
+    toast({
+      title: 'Some items not printed',
+      description: (
+        <div className="mt-1 space-y-1">
+          {notPrinted.map((note, i) => (
+            <div key={i} className="text-sm text-muted-foreground">
+              {note}
+            </div>
+          ))}
+        </div>
+      ),
+    });
+  }
+}
+
+/**
+ * Say what a sale that has just closed put on paper, read back from the sale
+ * itself: every route that closes a sale — cash at the till, a card on the
+ * terminal, a QR the gateway settled — printed in the same transaction, and
+ * the sale's read carries the jobs whichever route it was.
+ *
+ * `fallback` is the till's own simulated routing, for a deployment older than
+ * S2-11 whose sale read carries no print jobs at all. A read that fails says
+ * nothing: the sale is closed and its paper is the platform's, and a toast
+ * guessed at here would be the one thing on screen that is not true.
+ */
+export async function announceSalePrinting(saleId: string, fallback: () => void): Promise<void> {
+  let jobs: ApiSalePrintJob[] | undefined;
+  try {
+    jobs = (await getSale(saleId)).printJobs;
+  } catch {
+    return;
+  }
+  if (!jobs) {
+    fallback();
+    return;
+  }
+  dispatchPlatformPrinting(jobs.filter((job) => job.reprintOf === null));
 }
 
 export interface EventBraceletPrintParams {

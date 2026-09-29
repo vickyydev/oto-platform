@@ -11,6 +11,8 @@ import {
 } from '../src/index';
 import type { BoothVoucherData, LayoutItem, PrintTemplate } from '../src/index';
 import { FIXTURES, PROFILES, TEMPLATES } from './fixtures';
+import { decodeQrMatrix } from './qr-reader';
+import { decodeCode128Modules } from './code128-reader';
 
 const escpos576 = PROFILES.escpos576!;
 const escpos512 = PROFILES.escpos512!;
@@ -169,6 +171,83 @@ describe('a band never carries the logo or the header', () => {
     expect(text).not.toContain('oto');
     // Footer text is editable for a band but the prototype never draws it.
     expect(text).not.toContain('Thank you');
+  });
+});
+
+describe('the signed band code (S2-11)', () => {
+  /**
+   * The worked example `@oto/shared` pins in `test/band-code.test.ts`: band id
+   * 0192f3a4-5b6c-7d8e-9fa0-b1c2d3e4f506 at station T1, signed with the key
+   * `example-band-key-not-secret`. Written out rather than minted here, because
+   * this package owns no key and depends on nothing that has one.
+   */
+  const SIGNED = 'T1229E98P2DRXHTB6MKV5J2D4DQD2.AJRVQ9V6FDME';
+  const SHORT = 'T1-D4DQD2';
+  /** The longest code there can be — a six-character station prefix. Shape only: the template checks no signature. */
+  const LONGEST = 'HKTC01229E98P2DRXHTB6MKV5J2D4DQD2.AJRVQ9V6FDME';
+
+  const kid = {
+    holderName: 'Mali',
+    duration: '2 Hours · valid until 16:32',
+    allergy: 'Peanuts',
+    bandCode: SIGNED,
+    shortCode: SHORT,
+  };
+
+  function qrOf(job: ReturnType<typeof renderJob>) {
+    const item = job.layout.items.find((i) => i.k === 'qr');
+    return item && item.k === 'qr' ? item : undefined;
+  }
+
+  function barcodeOf(job: ReturnType<typeof renderJob>) {
+    const item = job.layout.items.find((i) => i.k === 'barcode');
+    return item && item.k === 'barcode' ? item : undefined;
+  }
+
+  // The full signed code is the QR; the short line under it is the only other
+  // place the band says who it is, and it carries no signature.
+  for (const profile of ['tspl400', 'tspl200'] as const) {
+    it(`prints the whole signed code as a QR that reads back exactly, on the ${profile} stock`, () => {
+      const job = renderJob({ kind: 'kids_wristband', data: kid }, { device: PROFILES[profile]!, templates: TEMPLATES });
+      const qr = qrOf(job);
+      expect(qr, 'the band has no QR').toBeDefined();
+      expect(decodeQrMatrix(qr!.matrix)).toBe(SIGNED);
+      // Not shrunk to fit: 4 dots a module is what a gate scanner is sized for.
+      expect(qr!.moduleDots).toBe(4);
+      expect(qr!.x + qr!.matrix.size * qr!.moduleDots).toBeLessThanOrEqual(PROFILES[profile]!.widthDots);
+      expect(job.overflow).toEqual([]);
+      // The short code, in words, under the QR — never the signed code.
+      const text = textOf(job);
+      expect(text).toContain(SHORT);
+      expect(text.join('\n')).not.toContain(SIGNED);
+      const shortLine = job.layout.items.find((i) => i.k === 'text' && i.text === SHORT)!;
+      expect(shortLine.k === 'text' ? shortLine.baselineY : 0).toBeGreaterThan(qr!.y + qr!.matrix.size * qr!.moduleDots);
+    });
+  }
+
+  it('adds the short code as a Code 128 on a band wide enough for two dots a bar, and reads back', () => {
+    const job = renderJob({ kind: 'kids_wristband', data: kid }, { device: tspl400, templates: TEMPLATES });
+    const bar = barcodeOf(job);
+    expect(bar, 'the 50 mm band has no Code 128').toBeDefined();
+    expect(bar!.moduleDots).toBeGreaterThanOrEqual(2);
+    expect(decodeCode128Modules(bar!.modules)).toBe(SHORT);
+  });
+
+  it('prints the short code as text alone on the 25 mm band, where a one-dot bar would not read', () => {
+    const job = renderJob({ kind: 'kids_wristband', data: kid }, { device: PROFILES.tspl200!, templates: TEMPLATES });
+    expect(barcodeOf(job)).toBeUndefined();
+    expect(textOf(job)).toContain(SHORT);
+  });
+
+  it('fits the longest code there can be — a six-character station prefix — on the 25 mm band', () => {
+    const job = renderJob(
+      { kind: 'adult_wristband', data: { bandCode: LONGEST, shortCode: 'HKTC01-D4DQD2' } },
+      { device: PROFILES.tspl200!, templates: TEMPLATES },
+    );
+    const qr = qrOf(job);
+    expect(decodeQrMatrix(qr!.matrix)).toBe(LONGEST);
+    expect(qr!.moduleDots).toBe(4);
+    expect(job.overflow).toEqual([]);
   });
 });
 

@@ -21,6 +21,8 @@ const productionEnv = (overrides: Partial<Env> = {}): Env =>
     OPS_TEST_CONTROLS: false,
     SEED_PROFILE: 'production',
     SMS_ADAPTER: 'twilio',
+    // S2-11: a live park signs its bands with a key of its own.
+    BAND_HMAC_KEY: 'a-real-band-key-of-sufficient-length',
     ...overrides,
   }) as Env;
 
@@ -70,6 +72,15 @@ describe('production boot guard (S2-01b)', () => {
     expect(() => assertProductionSafe(productionEnv({ MINIO_SECRET_KEY: 'otosecret123' }))).toThrow(
       /MINIO_SECRET_KEY/,
     );
+  });
+
+  it('refuses a production with no band key, or with the development one (S2-11)', () => {
+    expect(() => assertProductionSafe(productionEnv({ BAND_HMAC_KEY: '' }))).toThrow(/BAND_HMAC_KEY is not set/);
+    expect(() =>
+      assertProductionSafe(productionEnv({ BAND_HMAC_KEY: 'oto-local-development-band-key' })),
+    ).toThrow(/BAND_HMAC_KEY is the development key/);
+    // Staging may run without one: the sale finalises and says no band was issued.
+    expect(() => assertProductionSafe(stagingEnv({ BAND_HMAC_KEY: '' }))).not.toThrow();
   });
 
   it('refuses a session cookie that would travel in the clear', () => {

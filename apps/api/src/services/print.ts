@@ -303,8 +303,8 @@ export async function resolveTestPrintTarget(
  * actually reach — so the two can differ for as long as a job waits, which is
  * exactly the window in which somebody unplugs a printer.
  */
-async function routeOnBox(
-  db: Db,
+export async function routeOnBox(
+  db: Exec,
   boxId: string,
   role: string,
   stationId: string | null,
@@ -760,6 +760,15 @@ export async function reprintJob(
         stationId: source.stationId,
         copies: source.copies,
         ...(source.deviceId ? { deviceId: source.deviceId } : {}),
+        /**
+         * S2-11 — a copy of a sale's printout (a receipt, a band, a prep
+         * ticket) is printed from the platform's document for the NEW job,
+         * built from the ledger as it stands, exactly as the original was.
+         * A test page has no document and the box prints its own sample.
+         */
+        ...(source.subjectType && source.subjectType !== 'station'
+          ? { document: 'platform', subjectType: source.subjectType, reprintOf: root }
+          : {}),
       },
       actionId,
     });
@@ -782,7 +791,7 @@ export async function loadPrintJob(
 }
 
 /** Which editable template a printout reads, where there is one. */
-function templateTypeFor(kind: PrintKind): PrintTemplateType | null {
+export function templateTypeFor(kind: PrintKind): PrintTemplateType | null {
   switch (kind) {
     case 'receipt':
     case 'kitchen_ticket':

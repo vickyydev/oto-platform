@@ -21,7 +21,7 @@ import {
   modifierSignature,
 } from '@/lib/fnb';
 import { dropDiscountsForRemovedLines } from '@/lib/manualDiscount';
-import { dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
+import { announceSalePrinting, dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
 import { useBranch } from '@/branch/BranchContext';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { getDefaultTier } from '@/store/catalogStore';
@@ -404,7 +404,9 @@ export function MobileOrderStation() {
     setNewBalance(balanceAfter);
     setHandoffMode(null);
     setStage('confirmation');
-    dispatchPrintJobs(fnbPrintJobs(station, order));
+    // S2-11 — the platform printed the receipt and the prep tickets when it
+    // closed the order; the toast says what it queued and where.
+    void announceSalePrinting(written.id, () => dispatchPrintJobs(fnbPrintJobs(station, order)));
   };
 
   if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {

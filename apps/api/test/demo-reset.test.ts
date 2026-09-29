@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, band, member, operator, ticketPackage, visit } from '@oto/db';
+import { auditLog, band, member, operator, station, ticketPackage, visit } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
   ADMIN,
@@ -51,11 +51,39 @@ async function makeMess(): Promise<{ memberId: string; visitId: string }> {
   });
   expect(visitRes.statusCode).toBe(200);
 
-  // No route mints a band yet (S2-04), so the row is written directly — the
-  // reset has to clear the tables the rest of the sprint fills, not only the
-  // ones with an endpoint today.
+  // A band off the printer the way the till gets one since S2-11: a ticket
+  // sale for the visit, finalised in cash, which mints its bands.
   const [op] = await ctx.db.select().from(operator).where(eq(operator.name, 'OTO'));
-  await ctx.db.insert(band).values({ id: newId(), operatorId: op!.id, code: 'BAND-TEST-1' });
+  const [till] = await ctx.db
+    .select()
+    .from(station)
+    .where(and(eq(station.operatorId, op!.id), eq(station.codePrefix, 'T1')));
+  const [pkg] = await ctx.db
+    .select()
+    .from(ticketPackage)
+    .where(and(eq(ticketPackage.branchId, till!.branchId), eq(ticketPackage.name, '2 Hours Play')));
+  const saleId = newId();
+  const rung = await ctx.app.inject({
+    method: 'POST',
+    url: '/sales',
+    headers: { cookie: receptionCookie },
+    payload: {
+      id: saleId,
+      stationId: till!.id,
+      memberId: mali.json().member.id,
+      visitId: visitRes.json().id,
+      lines: [{ id: newId(), packageId: pkg!.id, kids: 1, adults: 1 }],
+    },
+  });
+  expect(rung.statusCode, rung.body).toBe(200);
+  const paid = await ctx.app.inject({
+    method: 'POST',
+    url: `/sales/${saleId}/finalise`,
+    headers: { cookie: receptionCookie },
+    payload: {},
+  });
+  expect(paid.statusCode, paid.body).toBe(200);
+  expect(await ctx.db.select().from(band).where(eq(band.saleId, saleId))).toHaveLength(2);
 
   return { memberId: created.json().member.id as string, visitId: visitRes.json().id as string };
 }

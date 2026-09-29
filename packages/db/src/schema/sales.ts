@@ -19,7 +19,8 @@ import { account, branch, operator } from './tenancy';
 import { box, device, station } from './fleet';
 import { child, member, visit } from './members';
 import { branchHoliday, product, ticketPackage } from './catalog';
-import { band, booking } from './future';
+import { booking } from './future';
+import type { RefundAllocationEntry, RefundLineEntry, RefundMode } from '@oto/shared';
 
 // --- The sales ledger (schema `pos`) ---------------------------------------
 //
@@ -1252,5 +1253,217 @@ export const paymentNotification = pos.table(
       'payment_notification_key_check',
       sql`${t.tranRef} is not null or ${t.paymentId} is not null`,
     ),
+  ],
+);
+
+// --- Bands and refunds (S2-11) ------------------------------------------------
+
+/**
+ * `kid` or `adult` — which printer, which template, whether an allergy line
+ * can print on it. The prototype's `sale.bracelets.children` / `.adults`.
+ */
+export const BAND_KINDS = ['kid', 'adult'] as const;
+export type BandKind = (typeof BAND_KINDS)[number];
+
+/**
+ * A band is a credential, and its status is the credential's, not the paper's.
+ *
+ *   active    admits at the gate.
+ *   replaced  a NEW band (new id, new code) took over from this one — a lost
+ *             band re-issued. Not what a reprint does: a reprint is the same
+ *             band, the same code, on fresh paper (`band_event` `reprinted`).
+ *   revoked   stopped on purpose; the gate refuses it.
+ */
+export const BAND_STATUSES = ['active', 'replaced', 'revoked'] as const;
+export type BandStatus = (typeof BAND_STATUSES)[number];
+
+/**
+ * What can happen to a band, as `band_event.kind` records it. `minted` and
+ * `reprinted` are written by S2-11; `scanned` by the box's band handler;
+ * `replaced` and `revoked` by the tickets that re-issue and stop bands.
+ */
+export const BAND_EVENT_KINDS = ['minted', 'reprinted', 'replaced', 'revoked', 'scanned'] as const;
+export type BandEventKind = (typeof BAND_EVENT_KINDS)[number];
+
+/**
+ * THE WRISTBAND A VISITOR WEARS, and the signed code printed on it (S2-11).
+ *
+ * Replaces the Sprint 1 placeholder that sat in `future.ts` with a bare `code`
+ * and a jsonb. What a band IS now: one person admitted on one sale, named by
+ * a code the box can verify with no network (`mintBandCode` in `@oto/shared`).
+ *
+ * **The id is the code.** The band's UUIDv7 id is the ULID inside its code, so
+ * a verified scan names this row without a lookup, and a reprint — same row,
+ * same id — prints the same code. `band_code_unique` is therefore a net under
+ * a property the arithmetic already has, not the thing that provides it.
+ *
+ * **Minted by the platform inside sale finalisation for now.** The format is
+ * the box's already (station-prefixed, HMAC-signed), and minting moves to the
+ * box with offline selling (SCRUM-269); the row does not change when it does.
+ *
+ * `printed_job_id` is the print job that put this band on paper most
+ * recently. NO FOREIGN KEY, for the reason `print_job.reprint_of` has none: a
+ * print job is swept after ninety days and a band is not, so the pointer has
+ * to outlive what it points at.
+ *
+ * Statused, not archived: a band is never hidden, only stopped.
+ */
+export const band = pos.table(
+  'band',
+  {
+    /** UUIDv7 — and the ULID inside the band's code. */
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    /** The sale that paid for this person's admission. */
+    saleId: uuid('sale_id')
+      .notNull()
+      .references(() => sale.id, { onDelete: 'restrict' }),
+    /** The ticket unit it was issued against — the kids row or the adults row. */
+    saleLineId: uuid('sale_line_id').references((): AnyPgColumn => saleLine.id, {
+      onDelete: 'restrict',
+    }),
+    memberId: uuid('member_id').references(() => member.id, { onDelete: 'restrict' }),
+    /** The child it was issued to, when the visit named one. Kids bands only. */
+    childId: uuid('child_id').references(() => child.id, { onDelete: 'restrict' }),
+    kind: text('kind').$type<BandKind>().notNull(),
+    /** The signed code, as `normaliseBandCode` stores it. A gate credential. */
+    code: text('code').notNull(),
+    status: text('status').$type<BandStatus>().notNull().default('active'),
+    /** The most recent print job for this band. No foreign key — see above. */
+    printedJobId: uuid('printed_job_id'),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('band_code_unique').on(t.code),
+    index('band_operator_idx').on(t.operatorId),
+    index('band_branch_idx').on(t.branchId),
+    index('band_sale_idx').on(t.saleId),
+    index('band_sale_line_idx').on(t.saleLineId),
+    index('band_member_idx').on(t.memberId),
+    index('band_child_idx').on(t.childId),
+    /** The box's `bands` scope: a branch's active bands. */
+    index('band_branch_status_idx').on(t.branchId, t.status),
+    check('band_kind_check', sql`${t.kind} in ('kid','adult')`),
+    check('band_status_check', sql`${t.status} in ('active','replaced','revoked')`),
+    /** An adult band names no child; the allergy line is the kids band's alone. */
+    check('band_child_kind_check', sql`${t.childId} is null or ${t.kind} = 'kid'`),
+  ],
+);
+
+/**
+ * What happened to a band, append-only (S2-11).
+ *
+ * The shape `booking_redemption` and `core.audit_log` use: a `created_at` and
+ * no `updated_at`, because an event happened or it did not. `detail` carries
+ * the facts of the event — the print job a reprint made and the one it
+ * replaced, the reason — and NEVER the band's code, which is a credential
+ * (`scanning.ts` in `@oto/shared` says why a code does not go into a log).
+ */
+export const bandEvent = pos.table(
+  'band_event',
+  {
+    id: idPk(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => band.id, { onDelete: 'restrict' }),
+    kind: text('kind').$type<BandEventKind>().notNull(),
+    stationId: uuid('station_id').references(() => station.id, { onDelete: 'restrict' }),
+    boxId: uuid('box_id').references(() => box.id, { onDelete: 'restrict' }),
+    detail: jsonb('detail').$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('band_event_band_idx').on(t.bandId, t.createdAt),
+    index('band_event_station_idx').on(t.stationId),
+    index('band_event_box_idx').on(t.boxId),
+    check(
+      'band_event_kind_check',
+      sql`${t.kind} in ('minted','reprinted','replaced','revoked','scanned')`,
+    ),
+  ],
+);
+
+/**
+ * ONE REFUND of a finalised sale (S2-11) — the prototype's `Refund`, kept.
+ *
+ * **Its own number, from its own series.** `receipt_series` already has the
+ * `refund` kind for exactly this: a credit note never consumes a sale's
+ * number, and the refund series is per station like the sale's, allocated
+ * under the same row lock (`allocateReceipt`). The number is `<prefix>-R-<seq>`.
+ *
+ * **Who asked and who approved are two columns** even when they are the same
+ * person today: approval is `pos:refund:approve`, a manager's, and "reception
+ * asked, the manager approved" is the shape the next approval step writes
+ * without a migration.
+ *
+ * **`lines` and `tender_allocation` are jsonb, and frozen.** `lines` is what
+ * the refund covered (`RefundLineEntry` in `@oto/shared`) with whether each
+ * returns to stock — applied by S2-14b. `tender_allocation` is how the money
+ * went back (`RefundAllocationEntry`): which attempt, which route — wallet,
+ * cash, a terminal void, the gateway — and where each slice stands. A slice
+ * waiting on a terminal's or the gateway's answer is the one thing that moves
+ * after the row is written, which is why the row has an `updated_at`.
+ *
+ * Append-only otherwise: a refund is never archived or edited. A wrong refund
+ * is corrected by a sale, not by rewriting this row.
+ */
+export const refund = pos.table(
+  'refund',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    saleId: uuid('sale_id')
+      .notNull()
+      .references(() => sale.id, { onDelete: 'restrict' }),
+    /** The station whose refund series numbered it — where it was made. */
+    stationId: uuid('station_id')
+      .notNull()
+      .references(() => station.id, { onDelete: 'restrict' }),
+    /** e.g. `T1-R-000003`, from `receipt_series` kind `refund`. */
+    number: text('number').notNull(),
+    amountSatang: bigint('amount_satang', { mode: 'number' }).notNull(),
+    mode: text('mode').$type<RefundMode>().notNull(),
+    /** Required, as a void's is: a refund with no reason is what the report exists to stop. */
+    reason: text('reason').notNull(),
+    note: text('note'),
+    approvedByAccountId: uuid('approved_by_account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    createdByAccountId: uuid('created_by_account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    lines: jsonb('lines').$type<RefundLineEntry[]>().notNull().default([]),
+    tenderAllocation: jsonb('tender_allocation')
+      .$type<RefundAllocationEntry[]>()
+      .notNull()
+      .default([]),
+    /** `x-oto-action-id`: one press of Refund, however many HTTP attempts it took. */
+    actionId: text('action_id'),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('refund_number_unique').on(t.branchId, t.number),
+    uniqueIndex('refund_action_unique')
+      .on(t.operatorId, t.actionId)
+      .where(sql`action_id is not null`),
+    index('refund_operator_idx').on(t.operatorId),
+    index('refund_sale_idx').on(t.saleId),
+    index('refund_station_idx').on(t.stationId),
+    index('refund_branch_created_idx').on(t.branchId, t.createdAt),
+    index('refund_approved_by_idx').on(t.approvedByAccountId),
+    index('refund_created_by_idx').on(t.createdByAccountId),
+    check('refund_amount_check', sql`${t.amountSatang} > 0`),
+    check('refund_mode_check', sql`${t.mode} in ('whole','items','custom')`),
+    check('refund_reason_check', sql`length(trim(${t.reason})) > 0`),
   ],
 );

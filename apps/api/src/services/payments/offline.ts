@@ -489,6 +489,9 @@ export async function replayOfflineSale(
   // each difference from the park's definition handed back (rule 1's note).
   const committed = await commitSale(tx, actor, input, scope.occurredAt, {
     promoPricing: 'as_recorded',
+    // S2-11: the box printed this sale's paper at the counter, when it was
+    // taken. A replay printing it again hours later would be a second receipt.
+    printing: 'skip',
   });
   const promoDifferences = committed.promoDifferences ?? [];
 
@@ -801,7 +804,8 @@ async function close(
       tx,
       actorFor(scope),
       saleId,
-      { actionId: scope.actionId },
+      // Printed where it was taken; see the commit above.
+      { actionId: scope.actionId, printing: 'skip' },
       scope.occurredAt,
     );
     finalised = result.finalised;

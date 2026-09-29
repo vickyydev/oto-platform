@@ -4,16 +4,24 @@ import {
   businessDateToday,
   calendarDateIn,
   listSales,
+  lookupSales,
+  mergeLookup,
+  parseHistorySearch,
   saleCountLabel,
+  spentOf,
   toTxn,
+  type ApiSale,
   type HistoryTxn,
 } from '@/api/history';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
 import { useBranch } from '@/branch/BranchContext';
+import { explainLookup, useSearchLookup } from '@/lib/historyLookup';
 import { TransactionCard } from '@/components/history/TransactionCard';
 import { MemberActivity } from '@/components/history/MemberActivity';
+import { ClientActivity } from '@/components/history/ClientActivity';
+import { Input } from '@/components/ui/input';
 import { SaleDetail } from '@/components/history/SaleDetail';
 import { LEDGER_ONLY_NOTICE } from '@/components/history/ledgerNotice';
 import { Button } from '@/components/ui/button';
@@ -28,6 +36,7 @@ import {
   ReceiptText,
   Info,
   Calendar,
+  AlertCircle,
 } from 'lucide-react';
 
 /**
@@ -49,21 +58,24 @@ import {
  * nothing, because a page that invents transactions when the platform is
  * unreachable is how a shift ends up counted twice.
  *
- * WHAT IS GONE FROM THIS SCREEN, and why it is not a regression:
- *   - The bracelet scan found a sale by band code. The ledger carries no band
- *     codes yet (they are minted in S2-11 / SCRUM-208), so the button is
- *     disabled with that reason instead of searching sample data.
- *   - Refund, reprint and add-time were mock mutations on mock rows. They are
- *     disabled in `SaleDetail` with the same one sentence — `LEDGER_ONLY_NOTICE`
- *     — that the counter shows, so the two screens cannot drift apart.
+ * WHAT S2-11 (SCRUM-208) BROUGHT BACK, as on the counter's page:
+ *   - The bracelet scan finds a sale by its band (`GET /sales/lookup?band=`),
+ *     and the search box asks the same of a band code or a phone typed into it.
+ *   - Refund and reprint work in `SaleDetail`, the one component both screens
+ *     open a sale in. Add time stays disabled, with the same one sentence —
+ *     `LEDGER_ONLY_NOTICE` — that the counter shows, so the two screens cannot
+ *     drift apart.
  *   - "Yesterday / This week / All time" chips became one date control: the
  *     ledger read answers ONE trading day, and a chip that silently showed a
  *     different span than it named would be the same lie in a smaller place.
  */
 
 type TabKey = 'all' | TxnKind;
-/** The list is the default; "phone" looks up a member, "member" shows their orders. */
-type View = 'list' | 'phone' | 'member';
+/**
+ * The list is the default; "scan" takes a bracelet code, "band" shows its
+ * orders; "phone" looks up a member, "member" shows their orders.
+ */
+type View = 'list' | 'scan' | 'band' | 'phone' | 'member';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -124,6 +136,16 @@ export function MobileHistory() {
   const [memberActivity, setMemberActivity] = useState<MemberActivityData | null>(null);
   const [memberError, setMemberError] = useState<string | null>(null);
 
+  // S2-11 — the bracelet scan, as on the counter's page.
+  const [scanInput, setScanInput] = useState('');
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [bandResult, setBandResult] = useState<{
+    code: string;
+    label: string;
+    sales: HistoryTxn[];
+  } | null>(null);
+  const [bandError, setBandError] = useState<string | null>(null);
+
   // The day the park is on, from the branch's own clock and 05:00 boundary —
   // not the browser's calendar, which between midnight and five belongs to
   // tomorrow while the till is still ringing up today.
@@ -167,34 +189,82 @@ export function MobileHistory() {
    * day's list is read again so its row stops saying "Unpaid", and a member's
    * orders on screen mark that sale voided in place.
    */
+  const patchEverywhere = useCallback(
+    (saleId: string, patch: (t: HistoryTxn) => HistoryTxn) => {
+      const swap = (t: HistoryTxn) => (t.id === saleId ? patch(t) : t);
+      setMemberActivity((current) =>
+        current
+          ? { ...current, transactions: current.transactions.map((t) => swap(t as HistoryTxn)) }
+          : current,
+      );
+      setBandResult((current) => (current ? { ...current, sales: current.sales.map(swap) } : current));
+    },
+    [],
+  );
+
   const onVoided = useCallback(
     (saleId: string) => {
       setReread((n) => n + 1);
-      setMemberActivity((current) =>
-        current
-          ? {
-              ...current,
-              transactions: current.transactions.map((t) =>
-                t.id === saleId
-                  ? toTxn(
-                      { ...(t as HistoryTxn).ledger, status: 'voided' },
-                      { id: branch.id, name: branch.name },
-                    )
-                  : t,
-              ),
-            }
-          : current,
+      patchEverywhere(saleId, (t) =>
+        toTxn({ ...t.ledger, status: 'voided' }, { id: branch.id, name: branch.name }),
       );
     },
-    [branch.id, branch.name],
+    [branch.id, branch.name, patchEverywhere],
+  );
+
+  /** A sale refunded on its page (S2-11): every row showing it takes the refunded totals. */
+  const onRefunded = useCallback(
+    (saleId: string, refunded: ApiSale) => {
+      setReread((n) => n + 1);
+      patchEverywhere(saleId, (t) =>
+        toTxn(
+          { ...t.ledger, status: refunded.status, totals: refunded.totals },
+          { id: branch.id, name: branch.name },
+        ),
+      );
+    },
+    [branch.id, branch.name, patchEverywhere],
   );
 
   const backToList = () => {
     setPhoneInput('');
     setMemberActivity(null);
     setMemberError(null);
+    setScanInput('');
+    setScanError(null);
+    setBandResult(null);
+    setBandError(null);
     setView('list');
   };
+
+  /** The bracelet scan (S2-11): the platform finds the band and its sale. */
+  const submitScan = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      const search = parseHistorySearch(scanInput);
+      if (search.kind !== 'band') {
+        setScanError(
+          'That is not a bracelet code. Scan the QR on the band, or type the short code printed under it — for example T1-7KMQ4X.',
+        );
+        return;
+      }
+      setScanError(null);
+      setView('band');
+      setBandResult(null);
+      setBandError(null);
+      try {
+        const found = await lookupSales(branchApiId, { band: search.code });
+        setBandResult({
+          code: search.code,
+          label: search.label,
+          sales: found.sales.map((t) => ({ ...t, branchId: branch.id, branchName: branch.name })),
+        });
+      } catch (err) {
+        setBandError(explainLookup(err, 'band'));
+      }
+    },
+    [scanInput, branchApiId, branch.id, branch.name],
+  );
 
   /**
    * A member's orders, from the ledger: the phone finds the member, and the
@@ -227,26 +297,27 @@ export function MobileHistory() {
           });
           return;
         }
-        const sales = await listSales(branchApiId, { memberId: member.id });
+        // S2-11 — every sale of theirs on any day, through the phone lookup; a
+        // deployment without it still answers by the member's id.
+        const sales = await lookupSales(branchApiId, { phone: member.phone })
+          .then((found) => found.sales)
+          .catch((err: unknown) => {
+            if (isMissingRoute(err)) return listSales(branchApiId, { memberId: member.id });
+            throw err;
+          });
         const withBranch = sales.map((t) => ({
           ...t,
           branchId: branch.id,
           branchName: branch.name,
         }));
-        // What this member actually paid: an order rung up and never tendered,
-        // or one that was voided, is not spend.
-        const spent = withBranch
-          .filter((t) => t.badge !== 'unpaid' && t.badge !== 'voided')
-          .reduce(
-            (sum, t) => sum + (t.ledger.totals.grossSatang - t.ledger.totals.refundedSatang) / 100,
-            0,
-          );
         setMemberActivity({
           member: apiMemberToMember(member),
           phone: member.phone,
           bandCodes: [],
           transactions: withBranch,
-          totalSpent: Math.round(spent * 100) / 100,
+          // What this member actually paid, net of refunds: an order rung up
+          // and never tendered, or one that was voided, is not spend.
+          totalSpent: spentOf(withBranch),
           orderCount: withBranch.length,
           branchVisits: withBranch.length
             ? [{ branchId: branch.id, branchName: branch.name, count: withBranch.length }]
@@ -259,14 +330,19 @@ export function MobileHistory() {
     [phoneInput, branchApiId, branch.id, branch.name],
   );
 
+  /** The search box asking the platform, when what it holds is a band code or a phone (S2-11). */
+  const lookup = useSearchLookup(query, branchApiId, reread);
+
   const q = query.trim().toLowerCase();
   // Universal search across receipt number, customer name/phone, operator and
-  // amount — combined with the active tab filter.
+  // amount — combined with the active tab filter — plus, for a band code or a
+  // phone, what the platform found for it on any day.
   const filtered = useMemo(() => {
     const all = txns ?? [];
-    const byTab = tab === 'all' ? all : all.filter((t) => t.kind === tab);
+    const onTab = (t: HistoryTxn) => tab === 'all' || t.kind === tab;
+    const byTab = all.filter(onTab);
     if (!q) return byTab;
-    return byTab.filter(
+    const local = byTab.filter(
       (t) =>
         t.reference.toLowerCase().includes(q) ||
         (t.customerLabel?.toLowerCase().includes(q) ?? false) ||
@@ -274,7 +350,8 @@ export function MobileHistory() {
         t.operatorName.toLowerCase().includes(q) ||
         String(t.total).includes(q),
     );
-  }, [txns, tab, q]);
+    return mergeLookup(local, lookup.sales ? lookup.sales.filter(onTab) : null);
+  }, [txns, tab, q, lookup.sales]);
 
   /** The mobile surfaces' own header bar — one back control, one title. */
   const header = (title: string) => (
@@ -301,8 +378,103 @@ export function MobileHistory() {
           timeZone={timeZone}
           onBack={() => setSelected(null)}
           onVoided={onVoided}
+          onRefunded={onRefunded}
           layout="stacked"
         />
+      </div>
+    );
+  }
+
+  // ── Bracelet scan (S2-11) ───────────────────────────────────────────────────
+
+  if (view === 'scan') {
+    return (
+      <div className="flex flex-col h-full">
+        {header('Scan bracelet')}
+        <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="w-full max-w-sm">
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-primary/20 text-primary flex items-center justify-center mb-4">
+                <ScanLine className="w-8 h-8" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Bracelet lookup</h2>
+              <p className="text-muted-foreground mt-2 text-sm">
+                Scan or type a bracelet code to see everything bought on it.
+              </p>
+            </div>
+            <form onSubmit={submitScan} className="flex flex-col gap-3">
+              <Input
+                autoFocus
+                value={scanInput}
+                onChange={(e) => {
+                  setScanInput(e.target.value);
+                  if (scanError) setScanError(null);
+                }}
+                placeholder="e.g. T1-7KMQ4X"
+                aria-label="Bracelet code"
+                className="h-14 text-xl font-mono"
+              />
+              <Button
+                type="submit"
+                size="lg"
+                className="h-14 text-base gap-2"
+                disabled={!scanInput.trim()}
+              >
+                Find
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+              {scanError && (
+                <div className="flex items-start gap-2 text-destructive text-sm" role="alert">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{scanError}</span>
+                </div>
+              )}
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── One bracelet's orders — wrapped as the member view is, for the same reasons ──
+
+  if (view === 'band') {
+    const holder = bandResult?.sales.find((t) => t.ledger.member)?.ledger.member ?? null;
+    return (
+      <div className="flex flex-col h-full">
+        {header(bandResult ? `Bracelet ${bandResult.label}` : 'Bracelet')}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">
+          {bandError ? (
+            <div className="h-full flex items-center justify-center text-center text-muted-foreground px-2">
+              {bandError}
+            </div>
+          ) : !bandResult ? (
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              Looking this bracelet up…
+            </div>
+          ) : (
+            <div className="[&_.shrink-0.mb-4]:hidden h-full">
+              <ClientActivity
+                code={bandResult.label}
+                activity={{
+                  wristband: null,
+                  member: null,
+                  transactions: bandResult.sales,
+                  totalSpent: spentOf(bandResult.sales),
+                  orderCount: bandResult.sales.length,
+                }}
+                holderName={holder ? holder.nickname || holder.name || holder.phone : 'Walk-in'}
+                memberLine={holder ? { nickname: holder.nickname, phone: holder.phone } : null}
+                creditLabel="Wallet credit arrives with S2-14a"
+                spentLabel={`Total spent (${branch.name})`}
+                onOpenTxn={(t) => setSelected(t as HistoryTxn)}
+                onBack={backToList}
+                badgeFor={(t) => (t as HistoryTxn).badge}
+                timeZone={timeZone}
+              />
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -373,7 +545,7 @@ export function MobileHistory() {
                 onOpenTxn={(t) => setSelected(t as HistoryTxn)}
                 onBack={backToList}
                 spentLabel={`Total spent (${branch.name})`}
-                bandsLabel="Bracelet codes arrive with SCRUM-208"
+                bandsLabel="Open an order to see its bracelet codes"
                 badgeFor={(t) => (t as HistoryTxn).badge}
                 timeZone={timeZone}
               />
@@ -398,7 +570,7 @@ export function MobileHistory() {
             aria-label="Search transactions"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Receipt, name, operator, amount…"
+            placeholder="Receipt, name, bracelet, phone, amount…"
             className="w-full h-10 pl-9 pr-9 rounded-xl bg-muted/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
           {query && (
@@ -429,9 +601,8 @@ export function MobileHistory() {
         <div className="flex gap-2">
           <button
             type="button"
-            disabled
-            title={LEDGER_ONLY_NOTICE}
-            className="flex-1 flex items-center justify-center gap-2 h-9 rounded-xl border border-border text-xs font-semibold text-muted-foreground opacity-50"
+            onClick={() => setView('scan')}
+            className="flex-1 flex items-center justify-center gap-2 h-9 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-colors"
           >
             <ScanLine className="w-4 h-4" />
             Scan bracelet
@@ -464,14 +635,25 @@ export function MobileHistory() {
           ))}
         </div>
 
-        {/* What this read covers. A full page says it is a page, not a day. */}
-        {txns && (
-          <div className="text-xs text-muted-foreground">
-            {saleCountLabel(txns.length)} recorded at {branch.name}
+        {/* What this read covers. A full page says it is a page, not a day. A
+            band code or a phone in the search box says what the platform found. */}
+        {lookup.search.kind !== 'text' ? (
+          <div className="text-xs text-muted-foreground" data-testid="search-lookup">
+            {lookup.error
+              ? lookup.error
+              : lookup.pending
+                ? `Looking up ${lookup.search.kind === 'band' ? `bracelet ${lookup.search.label}` : 'this phone number'}…`
+                : `${lookup.search.kind === 'band' ? `Bracelet ${lookup.search.label}` : 'This phone number'}: ${saleCountLabel(lookup.sales?.length ?? 0)} on the platform, any day`}
           </div>
+        ) : (
+          txns && (
+            <div className="text-xs text-muted-foreground">
+              {saleCountLabel(txns.length)} recorded at {branch.name}
+            </div>
+          )
         )}
 
-        {/* The one notice: what this page cannot do yet, and the ticket. */}
+        {/* The one notice: what this page cannot do yet. */}
         <div className="rounded-lg border border-dashed p-2.5 text-[11px] leading-snug text-muted-foreground flex items-start gap-2">
           <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
           <span>{LEDGER_ONLY_NOTICE}</span>

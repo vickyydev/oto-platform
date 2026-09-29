@@ -3,12 +3,14 @@ import {
   attendee,
   auditLog,
   band,
+  bandEvent,
   booking,
   child,
   member,
   memberTierVerification,
   paymentAttempt,
   paymentNotification,
+  refund,
   sale,
   saleDiscount,
   saleLine,
@@ -85,6 +87,8 @@ const FACT_ENTITY_TYPES = [
   'payment_notification',
   'wallet',
   'band',
+  // S2-11: a refund is a fact of the sale it refunds, and goes with it.
+  'refund',
   'stock_level',
 ];
 
@@ -108,10 +112,15 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
     .where(ne(member.createdVia, SEEDED_MEMBER_CREATED_VIA));
   const doomedIds = doomedMembers.map((m) => m.id);
 
-  counts.visit_child = (
-    await tx.delete(visitChild).returning({ visitId: visitChild.visitId })
-  ).length;
-  counts.visit = (await tx.delete(visit).returning({ id: visit.id })).length;
+  /**
+   * S2-11: a band points at its sale and at the ticket unit it was issued
+   * against, and a band's events at the band, all ON DELETE RESTRICT — so the
+   * events go, then the bands, before the lines and the sale they hang off. A
+   * refund points at its sale the same way.
+   */
+  counts.band_event = (await tx.delete(bandEvent).returning({ id: bandEvent.id })).length;
+  counts.band = (await tx.delete(band).returning({ id: band.id })).length;
+  counts.refund = (await tx.delete(refund).returning({ id: refund.id })).length;
 
   counts.sale_line = (await tx.delete(saleLine).returning({ id: saleLine.id })).length;
   // S2-09a: a sale's discounts are rows of their own now, and they point at
@@ -169,6 +178,16 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
     })
     .where(or(isNotNull(voucher.saleId), isNotNull(voucher.heldSaleId)));
   counts.sale = (await tx.delete(sale).returning({ id: sale.id })).length;
+  /**
+   * The visits go AFTER the sales, because a sale names the visit it was rung
+   * up for (`pos.sale.visit_id`, ON DELETE RESTRICT). They went first until
+   * S2-11, which was only safe while no test rang a sale for a visit — the
+   * first day of play that did would have made the whole reset fail.
+   */
+  counts.visit_child = (
+    await tx.delete(visitChild).returning({ visitId: visitChild.visitId })
+  ).length;
+  counts.visit = (await tx.delete(visit).returning({ id: visit.id })).length;
   counts.sale_tier_claim = (
     await tx.delete(saleTierClaim).returning({ id: saleTierClaim.id })
   ).length;
@@ -179,7 +198,6 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
   counts.wallet = (await tx.delete(wallet).returning({ id: wallet.id })).length;
 
-  counts.band = (await tx.delete(band).returning({ id: band.id })).length;
   // The stocked things and where they live are catalogue; the COUNT is what a
   // day of play moves, so only the levels go.
   counts.stock_level = (await tx.delete(stockLevel).returning({ id: stockLevel.id })).length;

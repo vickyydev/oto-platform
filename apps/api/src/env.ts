@@ -484,6 +484,35 @@ const EnvSchema = z.object({
   PGW_MAINT_PRIVATE_KEY: z.string().default(''),
   /** 2C2P's RSA public key, PEM. Encrypts our JWE and verifies their JWS. */
   PGW_MAINT_2C2P_PUBLIC_KEY: z.string().default(''),
+  /**
+   * The key every band code is signed with (S2-11) — HMAC-SHA256, see
+   * `mintBandCode` in `@oto/shared`. **Secret**: anybody holding it can print
+   * a band the gate admits. At least sixteen bytes; a long random string
+   * (`openssl rand -base64 32`).
+   *
+   * Empty on a developer's machine uses a fixed development key
+   * (`resolveBandKey`), so a fresh checkout prints bands. Empty on staging
+   * means no band is minted — the sale still finalises and its receipt still
+   * prints, and the finalise answer says the bands were not issued. Empty on
+   * production refuses to boot: a park whose tills cannot issue a band is a
+   * park whose gate lets nobody in.
+   *
+   * It is not generated at boot for the reason `STAFF_TOKEN_PRIVATE_KEY`
+   * is not: a key minted per instance would stop every band printed before
+   * the next deploy from verifying.
+   */
+  BAND_HMAC_KEY: z
+    .string()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (!value) return;
+      if (new TextEncoder().encode(value).length < 16) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'BAND_HMAC_KEY: at least 16 bytes',
+        });
+      }
+    }),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -492,7 +521,21 @@ export type Env = z.infer<typeof EnvSchema>;
 const DEV_DEFAULTS = {
   minioAccessKey: 'oto',
   minioSecretKey: 'otosecret123',
+  /** Signs bands on a developer's machine and in the test suite. Never a deployment's. */
+  bandHmacKey: 'oto-local-development-band-key',
 } as const;
+
+/**
+ * The key bands are signed with here, or null when this deployment cannot
+ * mint one (S2-11). See `BAND_HMAC_KEY` for why each case is what it is.
+ */
+export function resolveBandKey(env: Env): string | null {
+  if (env.BAND_HMAC_KEY) return env.BAND_HMAC_KEY;
+  return env.DEPLOY_ENV === 'local' ? DEV_BAND_HMAC_KEY : null;
+}
+
+/** Exported so a test can mint the code a local deployment would. */
+export const DEV_BAND_HMAC_KEY = DEV_DEFAULTS.bandHmacKey;
 
 export interface GatewaySelection {
   provider: '2c2p' | 'simulator';
@@ -635,6 +678,16 @@ export function assertProductionSafe(env: Env): void {
      * explicitly, and choosing 2C2P with nothing to be 2C2P with. The
      * variables are named, never their values.
      */
+    /**
+     * S2-11 — a live park with no band key issues no bands, and a guest with
+     * no band does not get through the gate. The development key is refused
+     * for the same reason as the storage defaults: it is in this repository.
+     */
+    if (!env.BAND_HMAC_KEY) {
+      problems.push('BAND_HMAC_KEY is not set — no till could issue a band a gate would admit');
+    } else if (env.BAND_HMAC_KEY === DEV_DEFAULTS.bandHmacKey) {
+      problems.push('BAND_HMAC_KEY is the development key');
+    }
     const gateway = resolveGatewayProvider(env);
     if (gateway.provider === 'simulator') {
       problems.push(

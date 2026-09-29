@@ -28,5 +28,7 @@ export * from './device-settings';
 export * from './scanning';
 export * from './booth';
 export * from './booth-code';
+export * from './band-code';
+export * from './refund';
 export * from './payments';
 export * from './simulator';

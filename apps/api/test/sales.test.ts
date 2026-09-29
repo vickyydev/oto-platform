@@ -1976,6 +1976,10 @@ describe('the seam between this and the till', () => {
       '/sales/{id}/finalise',
       // S2-10b — the till's cancel of a sale that took no money.
       '/sales/{id}/void',
+      // S2-11 — History's band and phone search, a refund, and a reprint.
+      '/sales/lookup',
+      '/sales/{id}/refunds',
+      '/sales/{id}/reprints',
       '/sales/{id}',
       // SCRUM-307 — the document check that prices a walk-in's cart.
       '/sales/tier-claims',
@@ -2018,8 +2022,13 @@ describe('the seam between this and the till', () => {
       'DELETE /sales/:id/vouchers/:voucherId dynamic no-target',
       'GET /sales dynamic no-target',
       'GET /sales/:id pos:sale:read no-target',
+      // S2-11 — the lookup is dynamic for the list's reason; a refund and a
+      // reprint check their branch on the sale row, as finalise does.
+      'GET /sales/lookup dynamic no-target',
       'POST /sales pos:sale:create body.branchId',
       'POST /sales/:id/finalise pos:sale:update no-target',
+      'POST /sales/:id/refunds pos:refund:create no-target',
+      'POST /sales/:id/reprints pos:print:reprint no-target',
       'POST /sales/:id/void pos:sale:void no-target',
       'POST /sales/:id/vouchers dynamic no-target',
       'POST /sales/quote pos:sale:create body.branchId',

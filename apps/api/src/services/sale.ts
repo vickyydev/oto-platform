@@ -42,6 +42,8 @@ import {
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   PRICING_ENGINE_VERSION,
   priceCartLine,
+  refundStatusOf,
+  refundableSatang,
   resolveRate,
   SERVICE_FEE_ROW_KEY,
   type CartAddOn,
@@ -91,6 +93,9 @@ import {
   type TierClaimRefusal,
 } from './sale-tier';
 import type { Exec, Tx } from './tx';
+import { bandsOfSale } from './bands';
+import { refundsOfSale } from './refund-slices';
+import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import {
   assertSaleVouchersHeld,
   auditVoidReleases,
@@ -2146,6 +2151,11 @@ async function accountNamesOf(
   return (accountId) => (accountId ? (names.get(accountId) ?? null) : null);
 }
 
+/** A sale row as every answer shows it, for a service outside this file (S2-11 refunds). */
+export async function saleViewOf(db: Exec, row: typeof sale.$inferSelect): Promise<SaleView> {
+  return viewOf(row, await voidedByNameOf(db, row));
+}
+
 /** `SaleView.voidedByName` for one sale: null, and no query, on a sale never voided. */
 async function voidedByNameOf(db: Exec, row: typeof sale.$inferSelect): Promise<string | null> {
   return (await accountNamesOf(db, [row.voidedByAccountId]))(row.voidedByAccountId);
@@ -2161,9 +2171,11 @@ async function voidedByNameOf(db: Exec, row: typeof sale.$inferSelect): Promise<
  * does. The row is locked FOR UPDATE so two tills on one station cannot take
  * the same number; `sale_receipt_unique` is the net underneath that.
  */
-async function allocateReceipt(
+export async function allocateReceipt(
   tx: Tx,
   scope: { operatorId: string; branchId: string; stationId: string; series: string },
+  /** S2-11 — `refund` numbers a credit note from its own series; `sale` is the default. */
+  kind: 'sale' | 'refund' = 'sale',
 ): Promise<{ series: string; seq: number; number: string }> {
   const existing = await tx
     .select()
@@ -2172,7 +2184,7 @@ async function allocateReceipt(
       and(
         eq(receiptSeries.stationId, scope.stationId),
         eq(receiptSeries.series, scope.series),
-        eq(receiptSeries.kind, 'sale'),
+        eq(receiptSeries.kind, kind),
       ),
     )
     .for('update')
@@ -2188,7 +2200,7 @@ async function allocateReceipt(
         branchId: scope.branchId,
         stationId: scope.stationId,
         series: scope.series,
-        kind: 'sale',
+        kind,
       })
       .onConflictDoNothing()
       .returning();
@@ -2202,7 +2214,7 @@ async function allocateReceipt(
           and(
             eq(receiptSeries.stationId, scope.stationId),
             eq(receiptSeries.series, scope.series),
-            eq(receiptSeries.kind, 'sale'),
+            eq(receiptSeries.kind, kind),
           ),
         )
         .for('update')
@@ -2385,11 +2397,21 @@ export interface CommitResult {
    * today. Never set on a till's own commit, so the route's answer is unchanged.
    */
   promoDifferences?: PromoDifference[];
+  /**
+   * S2-11 — what closing it put on paper: the print jobs, the bands, and the
+   * "not printed" notes. Null when this call did not close the sale.
+   */
+  printing?: SalePrintingResult | null;
 }
 
 /** How a commit prices its promo codes. Only the offline replay sets it. */
 export interface CommitSaleOptions {
   promoPricing?: PromoPricing;
+  /**
+   * S2-11 — `skip` for a sale whose paper was already printed where it was
+   * taken: an offline replay. Everything else routes its printing.
+   */
+  printing?: 'route' | 'skip';
 }
 
 /**
@@ -2852,7 +2874,19 @@ export async function commitSale(
 
   const [written] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
   if (!written) throw new Error('the sale was not written');
+  /** S2-11 — a ฿0 close prints like any other: a receipt, and a comp admission's bands. */
+  const printing =
+    finalising && options.printing !== 'skip'
+      ? await routeSalePrinting(tx, written, {
+          actorAccountId: actor.accountId,
+          operatorId: actor.operatorId,
+          actionId: input.actionId ?? null,
+          requestId: actor.requestId,
+          now,
+        })
+      : null;
   return {
+    printing,
     replay: false,
     replayed: false,
     finalised: finalising,
@@ -2901,6 +2935,11 @@ export interface FinaliseSaleInput {
    * the trap the station's code prefix already taught this file.
    */
   pickupCode?: string;
+  /**
+   * S2-11 — `skip` for a sale whose paper was already printed where it was
+   * taken (the offline replay). Everything else routes its printing.
+   */
+  printing?: 'route' | 'skip';
 }
 
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
@@ -2935,6 +2974,13 @@ export interface FinaliseResult {
   drawerKick: DrawerKick | null;
   /** S2-10b — the vouchers this call used up, by id. Empty unless it closed a sale carrying one. */
   redeemedVoucherIds: string[];
+  /**
+   * S2-11 — what closing it put on paper: the print jobs (queued, or skipped
+   * for want of a printer), the bands it issued, and the non-blocking notes
+   * the till shows ("Kitchen ticket not printed — …"). Null when this call did
+   * not close the sale. Printing never fails a sale: a failure is `failed`.
+   */
+  printing: SalePrintingResult | null;
 }
 
 /**
@@ -3005,6 +3051,8 @@ export async function finaliseSale(
       // connection must not open it again with a queue in front of it.
       drawerKick: null,
       redeemedVoucherIds: [],
+      // Printed on the first answer too; a retry does not print it twice.
+      printing: null,
     };
   }
   if (row.status === 'voided' || row.status === 'refunded') {
@@ -3221,6 +3269,7 @@ export async function finaliseSale(
       sale: viewOf(row, await voidedByNameOf(tx, row)),
       drawerKick,
       redeemedVoucherIds: [],
+      printing: null,
     };
   }
 
@@ -3286,6 +3335,23 @@ export async function finaliseSale(
     },
   });
 
+  /**
+   * S2-11 — THE PAPER, inside this transaction and after the number: the
+   * receipt, the bands and the prep tickets become rows and box commands that
+   * commit with the sale. Under a savepoint that never throws, so a printing
+   * problem is a note on this answer and never a sale that did not close.
+   */
+  const printing =
+    input.printing === 'skip'
+      ? null
+      : await routeSalePrinting(tx, after, {
+          actorAccountId: actor.accountId,
+          operatorId: actor.operatorId,
+          actionId: input.actionId ?? null,
+          requestId: actor.requestId,
+          now,
+        });
+
   return {
     replay: replayedTender,
     replayed: replayedTender,
@@ -3296,6 +3362,7 @@ export async function finaliseSale(
     sale: viewOf(after, await voidedByNameOf(tx, after)),
     drawerKick,
     redeemedVoucherIds: consumed,
+    printing,
   };
 }
 
@@ -3510,6 +3577,10 @@ export interface SaleListFilters {
   branchIds?: string[];
   stationId?: string;
   memberId?: string;
+  /** S2-11 — History's band and phone lookups: exactly these sales. */
+  saleIds?: string[];
+  /** S2-11 — every sale of any of these members (a phone can name more than one). */
+  memberIds?: string[];
   status?: SaleStatus;
   from?: string;
   to?: string;
@@ -3542,6 +3613,9 @@ export interface SaleListItem extends SaleReadView {
   revenueCategories: string[];
 }
 
+/** An id no row has, for an `in` over an empty list — Postgres refuses `in ()`. */
+const NO_SALE = '00000000-0000-0000-0000-000000000000';
+
 export async function listSales(
   db: Exec,
   operatorId: string,
@@ -3552,6 +3626,10 @@ export async function listSales(
   if (filters.branchIds) where.push(inArray(sale.branchId, filters.branchIds));
   if (filters.stationId) where.push(eq(sale.stationId, filters.stationId));
   if (filters.memberId) where.push(eq(sale.memberId, filters.memberId));
+  if (filters.saleIds) where.push(inArray(sale.id, filters.saleIds.length ? filters.saleIds : [NO_SALE]));
+  if (filters.memberIds) {
+    where.push(inArray(sale.memberId, filters.memberIds.length ? filters.memberIds : [NO_SALE]));
+  }
   if (filters.status) where.push(eq(sale.status, filters.status));
   if (filters.from) where.push(gte(sale.businessDate, filters.from));
   if (filters.to) where.push(lte(sale.businessDate, filters.to));
@@ -3688,6 +3766,23 @@ export async function getSaleDetail(
       ...viewOf(row, voidedByName),
       tierClaim: claims.get(row.id) ?? null,
     } satisfies SaleReadView,
+    /**
+     * S2-11 — the History detail's right-hand column: where the refunds leave
+     * it (`paid → partially_refunded → refunded`, the prototype's
+     * `statusForRefunds`, derived from the running total — the ledger status
+     * stays `finalised` until the whole sale is refunded), what is still
+     * refundable, every refund with its number, approver and tender slices,
+     * every print job with its reprints marked by `reprintOf`, and the bands
+     * by their short codes.
+     */
+    refundStatus: refundStatusOf(row.grossSatang, row.refundedSatang),
+    refundableSatang:
+      row.status === 'finalised' || row.status === 'refunded'
+        ? refundableSatang(row.grossSatang, row.refundedSatang)
+        : 0,
+    refunds: await refundsOfSale(db, saleId),
+    printJobs: await printJobsOfSale(db, saleId),
+    bands: await bandsOfSale(db, saleId),
     /** S2-09b — the code the guest holds, from the F&B lines that carry it. */
     pickupCode: recordedPickupCode(lines.filter((line) => line.kind === 'fnb_item')),
     attempts,

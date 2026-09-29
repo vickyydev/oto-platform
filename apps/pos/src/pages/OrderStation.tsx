@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { Discount, FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, Operator, SelectedModifier, Wristband } from '@/types';
 import { useStation } from '@/station/StationContext';
-import { dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
+import { announceSalePrinting, dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
 import { setSaleOpen } from '@/pwa/openSale';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
@@ -1145,7 +1145,11 @@ export default function OrderStation() {
     setCompletedOrder(record);
     setNewBalance(balanceAfter);
     setStage('confirmation');
-    dispatchPrintJobs(fnbPrintJobs(station, record));
+    // S2-11 — the platform printed the receipt and one prep ticket per station
+    // when it closed the order; the toast says what it queued and where. The
+    // till's own routing is only the stand-in for a deployment whose sale read
+    // carries no print jobs.
+    void announceSalePrinting(written.id, () => dispatchPrintJobs(fnbPrintJobs(station, record)));
   };
 
   if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
@@ -1318,10 +1322,11 @@ export default function OrderStation() {
               )}
 
               {/*
-                WHAT THIS STATION STILL DOES ON ITS OWN. The menu, the prices
-                and the order are the platform's from here on; three things on
-                this screen are not, and each names the ticket that moves it
-                rather than looking like part of the ledger.
+                WHAT THIS STATION STILL DOES ON ITS OWN. The menu, the prices,
+                the order and — since S2-11 — the kitchen, bar and receipt
+                printing are the platform's; two things on this screen are not,
+                and each names the ticket that moves it rather than looking like
+                part of the ledger.
               */}
               <div className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
                 <span className="font-bold uppercase tracking-wide text-foreground/70">
@@ -1329,7 +1334,6 @@ export default function OrderStation() {
                 </span>
                 <span>Stock counts and out-of-stock — S2-14b</span>
                 <span>Wallet credit and prepaid items — S2-14a</span>
-                <span>Kitchen, bar and receipt printing — S2-11</span>
                 {!menuFromPlatform && (
                   <span className="text-amber-300">
                     Menu — this deployment has no menu route, so the ported catalogue is shown

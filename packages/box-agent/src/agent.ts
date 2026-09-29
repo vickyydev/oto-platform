@@ -23,7 +23,7 @@ import {
 } from './outbox';
 import { createRefusalBackOff } from './reregister';
 import { generateSyncKeyPair, publicKeyFor, uuidv7 } from './signing';
-import { ScanRouter, type ScanInput } from './scan';
+import { BAND_CODE_HANDLER, ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
 import { StationSessionManager } from './station-session';
 import {
@@ -54,9 +54,14 @@ import {
 } from './protocol';
 import { httpTransport, silentLog, type AgentFetch, type AgentLog } from './transport';
 import {
+  PLATFORM_DOCUMENT,
+  PrinterError,
   createPrinting,
+  printDocumentPath,
+  readPlatformPrintDocument,
   testPrintJob,
   type ChannelFactory,
+  type PlatformPrintDocument,
   type PrintingController,
   type PrintJobOutcome,
 } from './printing/index';
@@ -106,7 +111,9 @@ import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@o
  * cache and the agent writes every bundle it adopts to it and reads it back
  * at start. The virtual box passes none: its cloud is the process it runs in.
  *
- * Nothing secret is in a bundle — signing keys ride it as PUBLIC halves only.
+ * Signing keys ride a bundle as PUBLIC halves only. The one secret in it is
+ * the band key (S2-11, `BoxConfigBundle.bandKey`), which is why a Pi writes
+ * the bundle with its credential's own permissions and nothing logs it.
  */
 export interface BoxConfigCache {
   read(): Promise<BoxConfigBundle | null>;
@@ -269,6 +276,20 @@ export interface BoxAgentOptions {
      * send a void rather than guessing.
      */
     voidPassword?: string | null;
+  };
+  /**
+   * Band codes (S2-11).
+   *
+   * The scanner checks a band's signature on the box, with no network, against
+   * the park's band key (`verifyBandCode` in `@oto/shared`). The key reaches a
+   * box in its config bundle (`BoxConfigBundle.bandKey`); a host that holds it
+   * already passes it here instead, and this wins — the virtual box inside the
+   * api, which reads `BAND_HMAC_KEY` from its own environment. Asked on every
+   * scan, so a key that arrives with the next config pull is used from the
+   * scan after it.
+   */
+  bands?: {
+    key?: () => string | Uint8Array | null;
   };
   /**
    * The Lucky Wheel (S2-07a).
@@ -1614,6 +1635,39 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   }
 
   /**
+   * The band key this box checks band codes against (S2-11), or null when it
+   * has none yet: the host's own when it passes one, else the config bundle's.
+   * A function, asked per scan, so a key that arrives with a config pull is in
+   * use from the next scan and a box restored from its cached bundle has it
+   * before the cloud has answered anything.
+   */
+  function bandKeyNow(): string | Uint8Array | null {
+    const own = options.bands?.key?.() ?? null;
+    if (own) return own;
+    return bundle?.bandKey || null;
+  }
+
+  /**
+   * One of a sale's printouts, as the platform built it for this job id
+   * (S2-11). Asked once, when the command runs; from then on the job is the
+   * queue's, which holds it — on disk where the queue is durable — until paper
+   * comes out, so a printer out of paper costs no second fetch.
+   */
+  async function fetchPlatformDocument(jobId: string): Promise<PlatformPrintDocument> {
+    let answer: { status: number; body: unknown };
+    try {
+      answer = await request<unknown>(printDocumentPath(jobId), { method: 'GET' });
+    } catch (err) {
+      throw new PrinterError(
+        'DOCUMENT_UNAVAILABLE',
+        `The platform could not be reached for this print job's content: ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err },
+      );
+    }
+    return readPlatformPrintDocument(answer.status, answer.body);
+  }
+
+  /**
    * Tell the cloud how a print job ended.
    *
    * Its own endpoint rather than the command result, because the two answer
@@ -1894,6 +1948,12 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       publish: (stationId, message) => sessions?.emitScan(stationId, message),
       now: () => new Date(clock()),
       log,
+      /**
+       * S2-11 — a band's signature is checked here, on the box, with no
+       * network: against the host's key when it holds one, else the one the
+       * config bundle brought. Read per scan (`bandKeyNow`).
+       */
+      bandKey: bandKeyNow,
     });
 
     /**
@@ -3185,7 +3245,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
             errorMessage: 'This agent was built without its print pipeline',
           };
         }
-        const kind = (typeof payload.kind === 'string' ? payload.kind : 'test_page') as PrintKind;
+        let kind = (typeof payload.kind === 'string' ? payload.kind : 'test_page') as PrintKind;
         const stationId = typeof payload.stationId === 'string' ? payload.stationId : null;
         const role = typeof payload.role === 'string' ? payload.role : null;
         /**
@@ -3196,15 +3256,57 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
          * cloud will not recognise, which is honest and harmless.
          */
         const jobId = typeof payload.printJobId === 'string' ? payload.printJobId : command.id;
+        /**
+         * A sale's printout (S2-11): the content is the platform's, fetched by
+         * job id now, and never carried on the command. Anything else is a
+         * test print of fixture content.
+         */
+        const fromPlatform = payload.document === PLATFORM_DOCUMENT && typeof payload.printJobId === 'string';
         let job;
+        let template: { templateId: string | null; templateVersion: number | null } = {
+          templateId: null,
+          templateVersion: null,
+        };
         try {
-          job = await testPrintJob(kind);
+          if (fromPlatform) {
+            const document = await fetchPlatformDocument(jobId);
+            job = document.job;
+            kind = document.kind;
+            template = { templateId: document.templateId, templateVersion: document.templateVersion };
+          } else {
+            job = await testPrintJob(kind);
+          }
         } catch (err) {
-          return {
-            state: 'failed',
-            errorCode: 'RENDER_FAILED',
-            errorMessage: err instanceof Error ? err.message : String(err),
-          };
+          const errorCode = err instanceof PrinterError ? err.code : 'RENDER_FAILED';
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          if (fromPlatform) {
+            /**
+             * Said on the JOB's row as well as the command's: a sale's job
+             * stays `queued` on the platform until the box reports it, and
+             * the till's printer indicator counts queued jobs. Nothing
+             * reached a printer, so it is `failed` rather than left waiting
+             * for a retry that has nothing to retry with — a person reprints
+             * from History, which mints a new job.
+             */
+            await reportPrintJob({
+              id: jobId,
+              status: 'failed',
+              attempts: 0,
+              deviceId: null,
+              role,
+              stationId,
+              errorCode,
+              errorMessage,
+              overflow: [],
+              elapsedMs: null,
+            }).catch((reportErr: unknown) =>
+              note('warn', 'a print job that could not be fetched could not be reported either', {
+                jobId,
+                err: String(reportErr),
+              }),
+            );
+          }
+          return { state: 'failed', errorCode, errorMessage };
         }
         const outcome = await printing.submit({
           id: jobId,
@@ -3214,6 +3316,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           role,
           actionId: command.actionId,
           copies: typeof payload.copies === 'number' ? payload.copies : 1,
+          ...template,
         });
         /**
          * The COMMAND succeeded whenever the box understood it and routed it.
@@ -3460,9 +3563,20 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
               codeKind: outcome.kind,
               outcome: outcome.outcome,
               handler: outcome.handler,
+              // Short and non-leaking, as on the tape: why a code was refused —
+              // a band whose signature does not check out, say (S2-11).
+              errorCode: outcome.errorCode,
               // The fingerprint, never the code: this result is stored on the
               // command row and rendered in the Console's history.
               codeFingerprint: outcome.codeFingerprint,
+              // A band's identity, which the Console's scanner panel shows as
+              // the band the code decoded to. Only ever the band handler's
+              // summary — its id and short code, which open nothing — and
+              // never another handler's `detail`, which can carry a voucher
+              // code or name a member.
+              ...(outcome.handler === BAND_CODE_HANDLER && outcome.detail?.band
+                ? { band: outcome.detail.band }
+                : {}),
               handlers: scanner.registered(),
             },
           };

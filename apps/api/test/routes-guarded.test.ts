@@ -59,6 +59,9 @@ describe('route guards (S2-01b)', () => {
       'POST /print-jobs/:id/reprint',
       'POST /sales',
       'POST /sales/:id/finalise',
+      // S2-11: a refund and a reprint are online-only, like the sale they correct.
+      'POST /sales/:id/refunds',
+      'POST /sales/:id/reprints',
       'POST /sales/:id/void',
       'POST /sales/:id/vouchers',
       'POST /sales/quote',
@@ -198,6 +201,10 @@ describe('route guards (S2-01b)', () => {
       // somebody has to edit deliberately.
       'GET /box/v1/cache [box]',
       'GET /box/v1/config [box]',
+      // S2-11: the content of a sale's print job, fetched as the box prints it,
+      // so no printout's member, allergy line or band code is ever stored in a
+      // command.
+      'GET /box/v1/print-jobs/:id/document [box]',
       'GET /box/v1/sync/pull [box]',
       // SCRUM-223: a booth box asks whether a phone and password typed at one
       // of ITS booths may sign in there. The password is the body; the box is
@@ -239,7 +246,7 @@ describe('route guards (S2-01b)', () => {
     const boxUrls = ctx.app.routeRegistry.filter(
       (r) => r.url.startsWith('/box/') && r.method !== 'HEAD' && r.method !== 'OPTIONS',
     );
-    expect(boxUrls.length).toBe(11);
+    expect(boxUrls.length).toBe(12);
 
     const bodies: Record<string, unknown> = {
       'POST:/box/v1/register': { claimCode: undefined, agentVersion: '0.1.0' },

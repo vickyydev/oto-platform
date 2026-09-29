@@ -340,6 +340,23 @@ function assertStationCodePrefix(kind: StationKind, codePrefix: string | null): 
       field: 'codePrefix',
     });
   }
+  /**
+   * Every other station's prefix starts the band codes it prints (S2-11).
+   * `mintBandCode` refuses anything outside one to six capital letters or
+   * digits, and a prefix saved past this check would not fail the save — it
+   * would fail every ticket sale at that station, rolling its printing back.
+   * The booth rule above is the stricter subset, so a booth never reaches
+   * this. Stations saved before the rule keep working until edited, exactly
+   * as the booth handles its own older rows.
+   */
+  if (kind !== 'booth' && codePrefix !== null && !/^[0-9A-Z]{1,6}$/.test(codePrefix)) {
+    throw new AppError(
+      400,
+      'STATION_CODE_PREFIX_INVALID',
+      'One to six capital letters or digits — the prefix starts every band code this station prints',
+      { field: 'codePrefix' },
+    );
+  }
 }
 
 /**

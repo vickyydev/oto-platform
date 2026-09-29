@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
 import { useStation } from '@/station/StationContext';
-import { braceletPrintJobs, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
+import { announceSalePrinting, braceletPrintJobs, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
@@ -2465,11 +2465,17 @@ export default function Till() {
     const nonDropOffKids = lines
       .filter((l) => !l.dropOff)
       .reduce((s, l) => s + l.kids, 0);
-    dispatchPrintJobs(
-      ticketPrintJobs(station, {
-        ...newSale,
-        bracelets: { children: nonDropOffKids, adults: newSale.bracelets.adults },
-      }),
+    // S2-11 — the platform printed this sale when it closed it (the receipt,
+    // the signed bands, the item vouchers); the toast says what it queued and
+    // where. The till's own routing is only the stand-in for a deployment
+    // whose sale read carries no print jobs.
+    void announceSalePrinting(saleId, () =>
+      dispatchPrintJobs(
+        ticketPrintJobs(station, {
+          ...newSale,
+          bracelets: { children: nonDropOffKids, adults: newSale.bracelets.adults },
+        }),
+      ),
     );
 
     // If the sale carries drop-off / nanny children, present the post-payment

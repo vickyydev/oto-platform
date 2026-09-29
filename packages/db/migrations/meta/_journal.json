@@ -239,6 +239,13 @@
       "when": 1790692336141,
       "tag": "0033_retire_session_lookup",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790692337141,
+      "tag": "0034_bands_refunds",
+      "breakpoints": true
     }
   ]
 }

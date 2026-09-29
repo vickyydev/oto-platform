@@ -17,7 +17,8 @@ import {
 } from 'fastify-type-provider-zod';
 import { randomUUID } from 'node:crypto';
 import type { Db } from '@oto/db';
-import type { Env } from './env';
+import { resolveBandKey, type Env } from './env';
+import { configureBandKey } from './services/bands';
 import { buildErrorReporter, type ErrorReporter } from './lib/error-reporting';
 import { buildLogger } from './lib/logger';
 import { AppError } from './lib/errors';
@@ -156,6 +157,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
 
   app.decorate('db', opts.db);
   app.decorate('env', opts.env);
+  // S2-11: the key every band this deployment issues is signed with. Every
+  // door a sale finalises through reads it from here (`services/bands.ts`).
+  configureBandKey(resolveBandKey(opts.env));
   app.decorate('reporter', buildErrorReporter(opts.env.SENTRY_DSN || undefined, log));
   app.decorate('fileStorage', opts.fileStorage ?? null);
   app.decorate(

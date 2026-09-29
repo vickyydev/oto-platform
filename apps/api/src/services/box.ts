@@ -39,6 +39,7 @@ import { boxStoreFor } from '../lib/box-store';
 import { AppError } from '../lib/errors';
 import { usableSigningKeys } from '../lib/signing-keys';
 import { audit } from './audit';
+import { currentBandKey } from './bands';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
 import { registerProductBarcodeHandler } from './scanning-product';
@@ -1669,6 +1670,13 @@ export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent
      * set in the Console. A Raspberry Pi passes the same function.
      */
     booth: { verifySecret: (hash, secret) => verifyArgon2(hash, secret) },
+    /**
+     * How this box checks band codes (S2-11). The key lives in this process
+     * (`configureBandKey` at boot), so the virtual box reads it directly; a
+     * Raspberry Pi till would need the key provisioned, which is recorded as
+     * S2-24 work. Without this line every band scan answers "cannot check".
+     */
+    bands: { key: currentBandKey },
   });
   try {
     await agent.start();

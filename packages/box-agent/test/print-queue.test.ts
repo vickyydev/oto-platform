@@ -1,17 +1,30 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import type { PrintJob } from '@oto/print';
-import type { BoxConfigBundle } from '../src/protocol';
+import { renderPreviewPng, type PrintJob } from '@oto/print';
+import type { BoxCommandHandout, BoxConfigBundle } from '../src/protocol';
 import type { PrintJobRecord } from '../src/store';
 import type { ChannelFactory } from '../src/printing/channel';
 import {
   createPrintSubsystem,
+  profileFor,
   type PrintJobOutcome,
   type PrintRequest,
   type PrintSubsystem,
 } from '../src/printing/queue';
-import { BOX_ID, STATION_ID, openTestStore, plus, type TestStore } from './_support';
+import {
+  BOX_ID,
+  STATION_ID,
+  TILL_KIDS_BAND_PRINTER,
+  TILL_KITCHEN_PRINTER,
+  TILL_RECEIPT_PRINTER,
+  fakeBoxCloud,
+  openTestAgent,
+  openTestStore,
+  plus,
+  tillBundle,
+  type TestStore,
+} from './_support';
 
 /**
  * One job id is one slip (SCRUM-223).
@@ -343,5 +356,224 @@ test('a retry set before the clock was corrected back is due now; one inside the
   assert.equal(printer.slips(), 1);
   assert.deepEqual(printing.pending(), []);
   assert.deepEqual(await box.store.loadPendingPrintJobs(BOX_ID), [], 'and nothing is left on the card');
+  box.close();
+});
+
+// --- A sale's printouts, from the platform (S2-11) ----------------------------
+//
+// A finalised sale writes one `print_job` per printout and one `test_print`
+// command per job, carrying `document: 'platform'` and the job id — and nothing
+// a printout says. The box fetches the content by job id as it prints and
+// sends it through the same templates, queue and simulators as a test page.
+// The documents below are shaped exactly as the platform's
+// `GET /box/v1/print-jobs/:id/document` answers them (`sale-printing.ts` in
+// the api), extra receipt fields included.
+
+const RECEIPT_JOB = '018f0000-0000-7000-8000-000000000a01';
+const KIDS_BAND_JOB = '018f0000-0000-7000-8000-000000000a02';
+const KITCHEN_JOB = '018f0000-0000-7000-8000-000000000a03';
+const MISSING_JOB = '018f0000-0000-7000-8000-000000000a04';
+
+/** The platform's worked example band code (`@oto/shared`'s pinned test). */
+const SIGNED_BAND = 'T1229E98P2DRXHTB6MKV5J2D4DQD2.AJRVQ9V6FDME';
+
+function platformDocument(jobId: string, role: string, job: PrintJob) {
+  return {
+    status: 200,
+    body: {
+      printJobId: jobId,
+      kind: job.kind,
+      role,
+      stationId: STATION_ID,
+      templateId: null,
+      templateVersion: null,
+      reprintOf: null,
+      job,
+    },
+  };
+}
+
+const SALE_RECEIPT: PrintJob = {
+  kind: 'receipt',
+  data: {
+    title: 'Receipt',
+    taxInvoiceLines: ['ใบกำกับภาษีอย่างย่อ', 'ABBREVIATED TAX INVOICE', 'OTO · HKT Central', 'VAT included'],
+    receiptNumber: 'T1-000042',
+    dateTime: '2026-09-30 14:32',
+    staffName: 'Nok',
+    memberNickname: 'Mali',
+    lines: [{ qty: 1, name: '2 Hours Play — 2 kids, 1 adult', price: '฿1,090' }],
+    subtotal: '฿1,090',
+    vat: '฿71.31',
+    total: '฿1,090',
+    tenders: [
+      { label: 'Cash', amount: '฿1,090' },
+      { label: 'Cash tendered', amount: '฿1,100' },
+      { label: 'Change', amount: '฿10' },
+    ],
+    bandCodes: ['T1-D4DQD2'],
+    creditGrants: ['2× Grip Socks to collect'],
+    // The two fields the platform adds beyond `ReceiptData`. The template does
+    // not draw them; they must not stop the receipt printing either.
+    taxRows: [{ label: 'VAT included', amount: '฿71.31', kind: 'tax_included' }],
+    copy: false,
+  } as PrintJob['data'] & Record<string, unknown>,
+} as PrintJob;
+
+const KIDS_BAND: PrintJob = {
+  kind: 'kids_wristband',
+  data: {
+    holderName: 'Mali',
+    duration: '2 Hours · valid until 16:32',
+    allergy: 'Peanuts',
+    bandCode: SIGNED_BAND,
+    shortCode: 'T1-D4DQD2',
+  },
+};
+
+const KITCHEN_TICKET: PrintJob = {
+  kind: 'kitchen_ticket',
+  data: {
+    title: 'Kitchen',
+    orderRef: '42',
+    time: '14:32',
+    holderName: 'Mali',
+    allergiesMedical: 'Mali: Peanuts',
+    lines: [{ qty: 1, name: 'Hot dog', note: 'no onions' }],
+    orderNote: 'Birthday table',
+  },
+};
+
+/** The command the platform writes for one of a sale's jobs (`writeJob` in `sale-printing.ts`). */
+function saleCommand(jobId: string, kind: string, role: string, deviceId: string): BoxCommandHandout {
+  return {
+    id: `cmd-${jobId.slice(-4)}`,
+    kind: 'test_print',
+    payload: {
+      printJobId: jobId,
+      kind,
+      role,
+      stationId: STATION_ID,
+      deviceId,
+      copies: 1,
+      document: 'platform',
+      subjectType: kind === 'receipt' || kind === 'kitchen_ticket' ? 'sale' : 'band',
+    },
+    actionId: 'sale-finalise-0001',
+    attempts: 1,
+    expiresAt: null,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function deviceIn(bundle: BoxConfigBundle, deviceId: string) {
+  return bundle.stations.flatMap((s) => s.devices).find((d) => d.id === deviceId)!;
+}
+
+test('a sale’s receipt, kids band and kitchen ticket print from the platform’s documents, dot for dot', async () => {
+  const bundle = tillBundle();
+  const cloud = fakeBoxCloud(bundle);
+  cloud.documents.set(RECEIPT_JOB, platformDocument(RECEIPT_JOB, 'receipt', SALE_RECEIPT));
+  cloud.documents.set(KIDS_BAND_JOB, platformDocument(KIDS_BAND_JOB, 'kids_band', KIDS_BAND));
+  cloud.documents.set(KITCHEN_JOB, platformDocument(KITCHEN_JOB, 'kitchen', KITCHEN_TICKET));
+  cloud.commands.push(
+    saleCommand(RECEIPT_JOB, 'receipt', 'receipt', TILL_RECEIPT_PRINTER),
+    saleCommand(KIDS_BAND_JOB, 'kids_wristband', 'kids_band', TILL_KIDS_BAND_PRINTER),
+    saleCommand(KITCHEN_JOB, 'kitchen_ticket', 'kitchen', TILL_KITCHEN_PRINTER),
+  );
+  const box = await openTestAgent(cloud);
+  const printing = box.agent.printing()!;
+
+  assert.equal(await box.agent.runPendingCommands(), 3);
+  assert.deepEqual(cloud.documentsAsked, [RECEIPT_JOB, KIDS_BAND_JOB, KITCHEN_JOB], 'each fetched once, by job id');
+  assert.deepEqual(
+    cloud.printResults.map((r) => [r.jobId, r.body.status]),
+    [
+      [RECEIPT_JOB, 'printed'],
+      [KIDS_BAND_JOB, 'printed'],
+      [KITCHEN_JOB, 'printed'],
+    ],
+  );
+  assert.deepEqual(
+    cloud.commandResults.map((r) => [r.body.state, r.body.result?.kind, r.body.result?.status]),
+    [
+      ['succeeded', 'receipt', 'printed'],
+      ['succeeded', 'kids_wristband', 'printed'],
+      ['succeeded', 'kitchen_ticket', 'printed'],
+    ],
+  );
+
+  // What each simulator burned is exactly what the renderer draws for the
+  // platform's document on that device — the Thai tax-invoice line, the
+  // band's QR and short code, the allergy line and all.
+  for (const [deviceId, job] of [
+    [TILL_RECEIPT_PRINTER, SALE_RECEIPT],
+    [TILL_KIDS_BAND_PRINTER, KIDS_BAND],
+    [TILL_KITCHEN_PRINTER, KITCHEN_TICKET],
+  ] as const) {
+    const printouts = printing.printouts(deviceId);
+    assert.equal(printouts.length, 1, `one printout on ${deviceId}`);
+    assert.equal(printouts[0]!.truncated, false);
+    const expected = renderPreviewPng(job, { device: profileFor(deviceIn(bundle, deviceId)), templates: [] });
+    assert.deepEqual(printouts[0]!.preview, expected, `${job.kind} is the platform's document, rendered`);
+  }
+  // Nothing a printout says rode the command history.
+  assert.equal(JSON.stringify(cloud.commandResults).includes(SIGNED_BAND), false);
+  assert.equal(JSON.stringify(cloud.printResults).includes('Peanuts'), false);
+  box.close();
+});
+
+test('a job whose content the platform will not hand over prints nothing, and says so on the job and the command', async () => {
+  const cloud = fakeBoxCloud(tillBundle());
+  // One the platform has no such job for (404), one answered with something
+  // that is not a printout.
+  cloud.documents.set(RECEIPT_JOB, { status: 200, body: { printJobId: RECEIPT_JOB, job: { kind: 'poster', data: {} } } });
+  cloud.commands.push(
+    saleCommand(MISSING_JOB, 'receipt', 'receipt', TILL_RECEIPT_PRINTER),
+    saleCommand(RECEIPT_JOB, 'receipt', 'receipt', TILL_RECEIPT_PRINTER),
+  );
+  const box = await openTestAgent(cloud);
+
+  assert.equal(await box.agent.runPendingCommands(), 2);
+  for (const [i, jobId] of [MISSING_JOB, RECEIPT_JOB].entries()) {
+    const command = cloud.commandResults[i]!.body;
+    assert.equal(command.state, 'failed');
+    assert.equal(command.errorCode, 'DOCUMENT_UNAVAILABLE');
+    // The job's own row is told too, so the till's printer light does not
+    // count it as queued for ever; History's reprint mints a new job.
+    const job = cloud.printResults.find((r) => r.jobId === jobId)!.body;
+    assert.equal(job.status, 'failed');
+    assert.equal(job.errorCode, 'DOCUMENT_UNAVAILABLE');
+    assert.equal(job.attempts, 0);
+  }
+  assert.match(String(cloud.commandResults[0]!.body.errorMessage), /PRINT_JOB_NOT_FOUND/);
+  assert.equal(box.agent.printing()!.printouts(TILL_RECEIPT_PRINTER).length, 0);
+  box.close();
+});
+
+test('a receipt waiting on an empty roll keeps its document, and prints once paper is back — fetched once', async () => {
+  const cloud = fakeBoxCloud(tillBundle());
+  cloud.documents.set(RECEIPT_JOB, platformDocument(RECEIPT_JOB, 'receipt', SALE_RECEIPT));
+  cloud.commands.push(saleCommand(RECEIPT_JOB, 'receipt', 'receipt', TILL_RECEIPT_PRINTER));
+  const box = await openTestAgent(cloud);
+  const printing = box.agent.printing()!;
+  assert.equal(printing.setFault(TILL_RECEIPT_PRINTER, 'paper_out'), true);
+
+  assert.equal(await box.agent.runPendingCommands(), 1);
+  // The command worked — the box understood it and queued it — and the job
+  // says it is waiting on paper. The sale closed long before either.
+  assert.equal(cloud.commandResults[0]!.body.state, 'succeeded');
+  assert.equal(cloud.commandResults[0]!.body.result?.status, 'queued');
+  assert.equal(cloud.printResults.at(-1)!.body.status, 'queued');
+  assert.equal(cloud.printResults.at(-1)!.body.errorCode, 'PRINTER_PAPER_OUT');
+  assert.equal(printing.printouts(TILL_RECEIPT_PRINTER).length, 0);
+
+  // A roll goes in; the heartbeat's tick tries the queue again.
+  printing.clearFaults(TILL_RECEIPT_PRINTER);
+  const outcomes = await printing.jobs.tick();
+  assert.deepEqual(outcomes.map((o) => [o.id, o.status]), [[RECEIPT_JOB, 'printed']]);
+  assert.equal(printing.printouts(TILL_RECEIPT_PRINTER).length, 1);
+  assert.equal(cloud.printResults.at(-1)!.body.status, 'printed');
+  assert.deepEqual(cloud.documentsAsked, [RECEIPT_JOB], 'the queue held the document; nothing was fetched twice');
   box.close();
 });

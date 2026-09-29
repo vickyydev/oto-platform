@@ -9,7 +9,8 @@ import { computeTotals } from '@/lib/sale';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { getPrintTemplate } from '@/mockApi';
 import { paymentMethodLabel } from '@/lib/payments';
-import { salesApi } from '@/api/sales';
+import { bandsByCartLine, getSale, type ApiSaleBand, type ApiSaleLine } from '@/api/history';
+import { platformId } from '@/lib/cartWire';
 import { QrCode } from './QrCode';
 
 /**
@@ -38,40 +39,51 @@ export type SaleNumber =
 const PLATFORM_SALE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * The sale's number, from the caller where the caller knows it and from the
- * platform where it does not.
+ * What the platform issued for this sale: its number and — S2-11 (SCRUM-208) —
+ * the bands it minted, by short code, with the lines that place each band on
+ * its bracelet row.
  *
- * The ask is one GET on a screen where nothing is waiting on it — the receipt
- * and the bands have already printed — and it is skipped entirely for a sale
- * that was never offered to the platform. A refusal or a dead connection
- * leaves the screen without a number rather than with a wrong one.
+ * The number comes from the caller where the caller knows it and from the
+ * platform where it does not. The ask is one GET on a screen where nothing is
+ * waiting on it — the receipt and the bands have already been queued — and it
+ * is skipped entirely for a sale that was never offered to the platform. A
+ * refusal or a dead connection leaves the screen without a number and without
+ * codes rather than with wrong ones.
  */
-export function useSaleNumber(saleId: string, given?: SaleNumber): SaleNumber {
-  const [asked, setAsked] = useState<SaleNumber>({ kind: 'unknown' });
+export interface SaleIssue {
+  number: SaleNumber;
+  /** Null until the platform has answered, or when it answered with no bands field at all. */
+  bands: ApiSaleBand[] | null;
+  lines: Pick<ApiSaleLine, 'id' | 'cartLineId'>[];
+}
+
+export function useSaleIssue(saleId: string, given?: SaleNumber): SaleIssue {
+  const [asked, setAsked] = useState<SaleIssue>({ number: { kind: 'unknown' }, bands: null, lines: [] });
 
   useEffect(() => {
-    if (given || !PLATFORM_SALE_ID.test(saleId)) return;
+    if (!PLATFORM_SALE_ID.test(saleId)) return;
     let live = true;
-    setAsked({ kind: 'unknown' });
-    void salesApi
-      .get(saleId)
-      .then(({ sale }) => {
+    setAsked({ number: { kind: 'unknown' }, bands: null, lines: [] });
+    void getSale(saleId)
+      .then((detail) => {
         if (!live) return;
-        setAsked(
-          sale.receiptNumber
-            ? { kind: 'receipt', number: sale.receiptNumber }
+        setAsked({
+          number: detail.sale.receiptNumber
+            ? { kind: 'receipt', number: detail.sale.receiptNumber }
             : { kind: 'recorded' },
-        );
+          bands: detail.bands ?? null,
+          lines: detail.lines ?? [],
+        });
       })
       .catch(() => {
-        // Nothing to say about the number, which is what `unknown` means.
+        // Nothing to say about the number or the codes, which is what `unknown` means.
       });
     return () => {
       live = false;
     };
-  }, [saleId, given]);
+  }, [saleId]);
 
-  return given ?? asked;
+  return given ? { ...asked, number: given } : asked;
 }
 
 /** How the sale is named on screen, or null when this screen cannot name it. */
@@ -94,6 +106,25 @@ interface StepConfirmationProps {
    * Lucky Wheel voucher it used up (`components/till/RedeemVoucher`).
    */
   note?: ReactNode;
+}
+
+/**
+ * The short codes the platform printed on these bands (`T1-7KMQ4X`), each with
+ * the child it was issued to — what staff read out when a band does not print.
+ * Never the signed code: that is the gate credential and no read carries it.
+ */
+function BandCodes({ bands }: { bands: readonly ApiSaleBand[] }) {
+  if (bands.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-sm" data-testid="band-codes">
+      {bands.map((band) => (
+        <span key={band.id} className="whitespace-nowrap">
+          <span className="font-mono font-semibold text-foreground">{band.shortCode ?? 'No code'}</span>
+          {band.childName && <span className="text-muted-foreground"> {band.childName}</span>}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function CreditGrantRow({ voucher: grant, index }: { voucher: CreditGrant; index: number }) {
@@ -126,23 +157,34 @@ function CreditGrantRow({ voucher: grant, index }: { voucher: CreditGrant; index
 }
 
 export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConfirmationProps) {
-  const resolvedNumber = useSaleNumber(sale.id, saleNumber);
-  const numberLabel = saleNumberLabel(resolvedNumber);
+  const issue = useSaleIssue(sale.id, saleNumber);
+  const numberLabel = saleNumberLabel(issue.number);
+  // S2-11 — the codes the platform minted, on the rows they belong to, so a
+  // band that fails to print can be read out and reprinted from History. The
+  // platform files a band under the cart line id it was SENT, which is the
+  // till's own id translated at the wire (`platformId`, lib/cartWire.ts).
+  const issued = issue.bands ? bandsByCartLine(issue.bands, issue.lines) : null;
+  const bandsOnRow = (lineId: string, kind: 'child' | 'adult'): ApiSaleBand[] =>
+    issued?.byRow.get(`${platformId(lineId)}:${kind === 'child' ? 'kid' : 'adult'}`) ?? [];
   // Drop-off / nanny children's bands are issued through the door check-in choice
   // (now or later at check-in), never the standard sale print — so exclude their
   // lines from the "Bracelets to Print" panel.
   const braceletRows = sale.lines.filter((line) => !line.dropOff).flatMap((line) => {
-    const rows: { id: string; kind: 'child' | 'adult'; count: number; duration: string; ticket: string }[] = [];
+    const rows: { id: string; lineId: string; kind: 'child' | 'adult'; count: number; duration: string; ticket: string }[] = [];
     if (line.kids > 0) {
-      rows.push({ id: `${line.id}-c`, kind: 'child', count: line.kids, duration: line.ticketType.durationLabel, ticket: line.ticketType.name });
+      rows.push({ id: `${line.id}-c`, lineId: line.id, kind: 'child', count: line.kids, duration: line.ticketType.durationLabel, ticket: line.ticketType.name });
     }
     if (line.adults > 0) {
-      rows.push({ id: `${line.id}-a`, kind: 'adult', count: line.adults, duration: line.ticketType.durationLabel, ticket: line.ticketType.name });
+      rows.push({ id: `${line.id}-a`, lineId: line.id, kind: 'adult', count: line.adults, duration: line.ticketType.durationLabel, ticket: line.ticketType.name });
     }
     return rows;
   });
 
   const totalBracelets = braceletRows.reduce((sum, row) => sum + row.count, 0);
+  // Every issued band shows somewhere: a code no row claims — its line was not
+  // one of these rows, or could not be placed — is listed under them.
+  const onRows = new Set(braceletRows.flatMap((row) => bandsOnRow(row.lineId, row.kind).map((b) => b.id)));
+  const leftover = (issue.bands ?? []).filter((b) => b.status !== 'revoked' && !onRows.has(b.id));
   // The sale's own figures, not a second computation of them (S2-09a): what is
   // read out here is what the platform charged. A sale with no quoted figures —
   // seeded history, a deployment with no ledger — still totals the old way.
@@ -219,6 +261,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConf
                     <div className="text-sm text-muted-foreground truncate">
                       {row.duration} • {row.ticket}
                     </div>
+                    <BandCodes bands={bandsOnRow(row.lineId, row.kind)} />
                   </div>
                   <div
                     className={cn(
@@ -230,6 +273,17 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConf
                   </div>
                 </div>
               ))}
+              {leftover.length > 0 && (
+                <div className="bg-background border rounded-xl p-4 shrink-0">
+                  <div className="text-sm font-semibold text-muted-foreground">Band codes</div>
+                  <BandCodes bands={leftover} />
+                </div>
+              )}
+              {issue.bands !== null && issue.bands.length === 0 && totalBracelets > 0 && (
+                <p className="text-sm text-muted-foreground px-1">
+                  No band codes came back for this sale. Reprint its bands from History to issue them.
+                </p>
+              )}
             </div>
           </ScrollArea>
         </Card>

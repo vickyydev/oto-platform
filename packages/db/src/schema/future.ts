@@ -21,6 +21,9 @@ import { member } from './members';
 // `stock_item` — while they are still empty, which is the only cheap moment
 // to do it.
 //
+// `band` left too, with S2-11: the real table — a signed code, the sale it
+// was paid on, its events — lives beside the ledger in `sales.ts`.
+//
 // `sale`, `sale_line` and `payment_attempt` have left this file: S2-09a
 // (SCRUM-203) replaced the first two with the real ledger and they now live,
 // with the discount rows and the receipt series, in `sales.ts`. The payment
@@ -156,26 +159,6 @@ export const walletEntry = pos.table(
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => [index('wallet_entry_wallet_idx').on(t.walletId)],
-);
-
-/** The wristband a visitor wears (Sprint 1 `wristband`). */
-export const band = pos.table(
-  'band',
-  {
-    id: idPk(),
-    operatorId: uuid('operator_id').notNull().references(() => operator.id),
-    branchId: uuid('branch_id').references(() => branch.id),
-    code: text('code').notNull(),
-    kind: text('kind').notNull().default('kid'),
-    status: text('status').notNull().default('inactive'),
-    payload: jsonb('payload'),
-    ...timestamps,
-  },
-  (t) => [
-    index('band_branch_idx').on(t.branchId),
-    index('band_code_idx').on(t.code),
-    index('band_operator_idx').on(t.operatorId),
-  ],
 );
 
 /** A stocked thing (Sprint 1 `item`) — renamed away from the bare word. */
