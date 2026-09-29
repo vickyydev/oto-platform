@@ -29,15 +29,26 @@ All 21 scoped staging behavior checks passed and reviewed evidence is attached
 to the tickets. The replay follow-up SCRUM-387 is also Deployed on `5fb8525`,
 after six complete-response staging checks and 147 affected existing-file tests.
 
-SCRUM-206 online Slice F is built and landing from the rebased `cf67d86` UI
-checkpoint. The till, handheld till, food station, shop and mobile food-station
+SCRUM-206 online Slice F source `0468c38` is live after green CI 36547262414.
+The till, handheld till, food station, shop and mobile food-station
 caller share cash received/change, real QR, terminal/manual and split-payment
 collection. Pending or partial money blocks cart, context and navigation changes;
 uncertain answers retain stable retry identities. Completion follows the
 finalised platform sale, with local ticket-completion retry avoiding a second
 charge. Unsafe pasted money cannot display a value different from the accepted
 state. All 53 affected writer checks, POS typecheck, lint and build pass.
-Current-release CI and native staging proof are pending. Full offline
+Native cash/change, handheld split/manual, food QR/reconnect and shop terminal
+approval/decline pass; recovery and checkout cases remain under verification.
+The inquiry follow-up adds optional `PaymentAttemptView.inquirySupported`,
+derived from the attempt's frozen terminal protocol, tender and reference.
+The UI uses it to hide and refuse unsupported inquiry, including simulated GHL
+cards; old API replies keep the provider rule and require a reference. Shared
+contract names are unchanged. Existing affected suites pass 104 checks; API,
+POS and shared typecheck and full package lint pass. This follow-up is pushed
+separately and is not live: Actions billing/spending availability blocks new
+CI jobs before execution. Device reconfiguration during an attempt can still
+cause a safe server refusal; changing the hardware does not authorise payment.
+Full offline
 browser-to-box transport needs SCRUM-269/285; independent customer-display
 acceptance needs SCRUM-201 (S2-08). The full story stays In Progress.
 Real 2C2P sandbox confirmation remains separate from simulator verification.

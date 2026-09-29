@@ -2,41 +2,59 @@
 
 ## STOP POINT - 29 September 2026 - Sprint 2 payments resumed
 
-Current checkpoint: online UI `0468c38` is live on the five staging services
-with green main CI 36547262414. Native cash/change and handheld cash/manual-card
-split pass; reviewed cash screenshots are Jira attachments 10868-10869. The
-remaining native cases are in progress. Preserve paid cases; inspect and resolve
-the exact failed proof sale before collecting again. The unused gateway QR
-attempt was officially expired, read back with zero money and voided; six
-temporary inventory rows were archived before its fresh proof retry.
+Current release: SCRUM-206 online Slice F source `0468c38` is live on API,
+POS, Console, Launcher and Booth, after green CI 36547262414. OTO App remains
+`c416065`. The four till screens and mobile food-station caller share real
+collection and guarded recovery. Unsafe pasted money is rejected before the
+visible amount changes; mobile food-station confirmation shows the real
+receipt number. Existing writer checks pass 53; POS typecheck, lint and build
+pass. Native cash/change, handheld cash/manual split and food QR/reconnect
+pass. Seven remaining native terminal/checkout cases are underway. Retain
+completed payment evidence; do not charge again after an observation failure.
+Cash screenshots are Jira attachments 10868-10869. The full story remains
+In Progress because local till transport (SCRUM-269) and separate display
+acceptance (SCRUM-201) are NOT BUILT. No physical booth was changed.
 
-SCRUM-285 `d38eb3e` is checked/pushed on `fix/offline-proof`: 26 cloud trading
-routes refuse the selected virtual box's deliberate offline flag before
-idempotency. All 44 existing station/route tests, API typecheck and full API lint
-pass. Architecture section 17 records current capabilities and NOT BUILT local
-till transport. The small wording follow-up on `fix/payment-request-copy`
-uses "Payment requested" in all five languages without changing the status
-contract; POS typecheck/lint pass. Both follow-ups await green CI and deployment.
+SCRUM-285 source `d38eb3e` is pushed on `fix/offline-proof`, based on 0468c38.
+It guards cloud trading before idempotency when the authenticated station's
+virtual box has the persisted forced-offline flag. Original row-specific
+permissions stay in force. Reporting/setup/Go online are available. All 44
+existing station-session and guarded-route checks, API typecheck and full
+package lint pass. Architecture section 17 records actual capabilities.
+The task stays Testing; it has not landed or deployed. The ignored ready
+proof helper is `test-results/offline-guard-proof.mts`; run it only after
+the guard source is live and after this native online round is finished.
 
-GitHub branch CI 36550625372 did not start because of account billing/spending
-availability. No source check failed. Restore Actions, retry the checked source
-CI, then land the branches without including unrelated root dirt and deploy.
-Do not interrupt native payment proof with a deployment or offline toggle.
-SCRUM-285 stays Testing; full 206 stays In Progress until 269 and 201 acceptance.
-Desktop release pair is `oto-box-0.1.0-0468c38.tgz` plus `.tgz.sha256`, verified
-as `044edbb9a474a945eadcc91e82598bee86b7b3f472e1630b79dceabcd1fbf1ea`;
-the older pair was archived. No physical Pi update. Earlier notes below are history.
+SCRUM-206 wording follow-up `edce9bb` is on `fix/payment-request-copy`:
+the shared API status key is unchanged; five languages say Payment requested
+for gateway and terminal routes. The branch additionally carries optional
+`PaymentAttemptView.inquirySupported`, using frozen protocol/tender/reference,
+and both POS inquiry guards. Simulated GHL card inquiry is hidden/refused;
+old API replies need a reference and retain the provider fallback. Existing
+terminal/writer/shared-payment suites pass 104 checks (25/57/22), and API/POS/
+shared typechecks and full package lint pass. Worktree typechecks explicitly
+map its own shared source because dependency junctions point to main; temporary
+configs were removed and dependency links unchanged. No new suite/dependency.
+Neither follow-up is live. A device protocol edited mid-attempt can still
+cause a safe server refusal; no money bypass. The native GHL confirmation
+case is deferred until this source deploys. Five other native cases pass.
 
-Current round: the online SCRUM-206 Slice F UI is landing on main from the
-rebased `cf67d86` checkpoint. The four till screens and mobile food-station
-caller share real collection and guarded recovery. Small source follow-ups
-reject unsafe pasted money before changing the displayed cash/part amount and
-show the authoritative receipt number on mobile food-station confirmation.
-The existing writer file passes 53 checks; POS typecheck, lint and build pass.
-Current-release CI, deployment and native staging proof are pending. Record
-that proof before claiming the online UI WORKS. The full story stays In Progress
-until offline till-to-box transport (269/285) and separate-display acceptance
-(201) are also satisfied. No physical booth changes belong to this round.
+GitHub Actions blocked both branch runs 36550625372 and 36553644035 before
+any step because account billing/spending availability prevents jobs starting.
+The availability question is pending; do not bypass CI or claim a source-test
+failure. Continue independent online native proof, then restore Actions,
+run exact-source CI, rebase/land the checked branches onto the latest main
+checkpoint, deploy and record SCRUM-285 staging screenshots before Deployed.
+Worktrees: `test-results/offline-guard-worktree` and
+`test-results/payment-ui-worktree`. Preserve newer main progress documents
+when rebasing. Both source branches are pushed and clean.
+
+Green CI 36547262414 packed the Desktop pair
+`oto-box-0.1.0-0468c38.tgz` and `.tgz.sha256`, verified SHA-256
+`044edbb9a474a945eadcc91e82598bee86b7b3f472e1630b79dceabcd1fbf1ea`.
+Older pairs are in `old-oto-box-releases`. No physical Pi update was performed.
+
+The earlier release narrative below is retained as history.
 
 OTO Park has finished the physical booth bench test and shared the demo.
 Resume the remaining Sprint 2 software in the plan's order. The active Jira

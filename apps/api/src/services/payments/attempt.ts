@@ -70,6 +70,8 @@ export type AttemptRow = typeof paymentAttempt.$inferSelect;
  * are not here (`PaymentAttemptView` in `@oto/shared` says why).
  */
 export function attemptView(row: AttemptRow): PaymentAttemptView {
+  const payload = (row.payload ?? {}) as { protocol?: string; tender?: string };
+  const tender = payload.tender ?? 'card';
   return {
     id: row.id,
     saleId: row.saleId,
@@ -80,6 +82,8 @@ export function attemptView(row: AttemptRow): PaymentAttemptView {
     tenderedSatang: row.tenderedSatang,
     changeSatang: row.changeSatang,
     terminalRef: row.terminalRef,
+    inquirySupported: Boolean(row.deviceId && row.terminalRef && (payload.protocol === 'digio_tlv'
+      || (payload.protocol === 'ghl_linkpos' && (tender === 'qr' || tender === 'wallet')))),
     tid: row.tid,
     approvalCode: row.approvalCode,
     last4: row.last4,
