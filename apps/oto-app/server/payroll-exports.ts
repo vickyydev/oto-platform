@@ -9,8 +9,7 @@ import {
   operators
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
-import fs from "fs/promises";
-import path from "path";
+import { uploadToObjectStorage } from "./file-storage";
 
 interface BankTransferRow {
   employeeName: string;
@@ -36,6 +35,9 @@ export async function generateBankTransferFile(
   bankFormat: "SCB" | "KBANK" | "BBL" | "GENERIC" = "GENERIC"
 ): Promise<{ success: boolean; filePath?: string; error?: string; totalAmount?: number; rowCount?: number }> {
   try {
+    if (!["SCB", "KBANK", "BBL", "GENERIC"].includes(bankFormat)) {
+      return { success: false, error: "Invalid bank format" };
+    }
     const [run] = await db
       .select()
       .from(payrollRuns)
@@ -96,11 +98,7 @@ export async function generateBankTransferFile(
       totalAmount += netPay;
     }
 
-    const exportDir = path.join(process.cwd(), "exports", "bank-transfers");
-    await fs.mkdir(exportDir, { recursive: true });
-
-    const fileName = `bank_transfer_${period.startDate}_${bankFormat.toLowerCase()}.csv`;
-    const filePath = path.join(exportDir, fileName);
+    const fileName = `${runId}_bank_transfer_${period.startDate}_${bankFormat.toLowerCase()}.csv`;
 
     let csvContent = "";
 
@@ -118,11 +116,11 @@ export async function generateBankTransferFile(
         csvContent = generateGenericFormat(transferRows);
     }
 
-    await fs.writeFile(filePath, csvContent, "utf-8");
+    await uploadToObjectStorage(Buffer.from(csvContent, "utf-8"), "payroll-exports", fileName, "text/csv");
 
     return { 
       success: true, 
-      filePath: `/exports/bank-transfers/${fileName}`,
+      filePath: `/api/payroll/exports/bank-transfers/${fileName}`,
       totalAmount,
       rowCount: transferRows.length,
     };
@@ -169,6 +167,9 @@ export async function generateAccountingJournal(
   format: "CSV" | "SAGE" | "QUICKBOOKS" = "CSV"
 ): Promise<{ success: boolean; filePath?: string; error?: string; entryCount?: number }> {
   try {
+    if (!["CSV", "SAGE", "QUICKBOOKS"].includes(format)) {
+      return { success: false, error: "Invalid journal format" };
+    }
     const [run] = await db
       .select()
       .from(payrollRuns)
@@ -334,11 +335,7 @@ export async function generateAccountingJournal(
       });
     }
 
-    const exportDir = path.join(process.cwd(), "exports", "journals");
-    await fs.mkdir(exportDir, { recursive: true });
-
-    const fileName = `journal_${period.startDate}_${format.toLowerCase()}.csv`;
-    const filePath = path.join(exportDir, fileName);
+    const fileName = `${runId}_journal_${period.startDate}_${format.toLowerCase()}.csv`;
 
     let csvContent = "";
 
@@ -353,11 +350,11 @@ export async function generateAccountingJournal(
         csvContent = generateJournalCsvFormat(journalEntries);
     }
 
-    await fs.writeFile(filePath, csvContent, "utf-8");
+    await uploadToObjectStorage(Buffer.from(csvContent, "utf-8"), "payroll-exports", fileName, "text/csv");
 
     return { 
       success: true, 
-      filePath: `/exports/journals/${fileName}`,
+      filePath: `/api/payroll/exports/journals/${fileName}`,
       entryCount: journalEntries.length,
     };
   } catch (error: any) {
@@ -462,17 +459,12 @@ export async function generateSsoFilingReport(
       totalContributions += total;
     }
 
-    const exportDir = path.join(process.cwd(), "exports", "sso-filings");
-    await fs.mkdir(exportDir, { recursive: true });
-
-    const fileName = `sso_filing_${period.startDate}.csv`;
-    const filePath = path.join(exportDir, fileName);
-
-    await fs.writeFile(filePath, rows.join("\n"), "utf-8");
+    const fileName = `${runId}_sso_filing_${period.startDate}.csv`;
+    await uploadToObjectStorage(Buffer.from(rows.join("\n"), "utf-8"), "payroll-exports", fileName, "text/csv");
 
     return { 
       success: true, 
-      filePath: `/exports/sso-filings/${fileName}`,
+      filePath: `/api/payroll/exports/sso-filings/${fileName}`,
       employeeCount: employeeIds.length,
       totalContributions,
     };
@@ -540,17 +532,12 @@ export async function generatePitFilingReport(
       totalTax += taxAmount;
     }
 
-    const exportDir = path.join(process.cwd(), "exports", "pit-filings");
-    await fs.mkdir(exportDir, { recursive: true });
-
-    const fileName = `pit_filing_${period.startDate}.csv`;
-    const filePath = path.join(exportDir, fileName);
-
-    await fs.writeFile(filePath, rows.join("\n"), "utf-8");
+    const fileName = `${runId}_pit_filing_${period.startDate}.csv`;
+    await uploadToObjectStorage(Buffer.from(rows.join("\n"), "utf-8"), "payroll-exports", fileName, "text/csv");
 
     return { 
       success: true, 
-      filePath: `/exports/pit-filings/${fileName}`,
+      filePath: `/api/payroll/exports/pit-filings/${fileName}`,
       employeeCount: lineItems.length,
       totalTax,
     };

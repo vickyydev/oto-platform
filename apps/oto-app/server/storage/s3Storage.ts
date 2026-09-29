@@ -73,6 +73,17 @@ export async function s3Get(
   }
 }
 
+export async function s3Exists(folder: string, filename: string): Promise<boolean> {
+  try {
+    await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: objectKey(folder, filename) }));
+    return true;
+  } catch (error) {
+    const storageError = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+    if (storageError.name === "NotFound" || storageError.name === "NoSuchKey" || storageError.$metadata?.httpStatusCode === 404) return false;
+    throw error;
+  }
+}
+
 export interface RangeFileResult {
   stream: NodeJS.ReadableStream;
   contentType: string;

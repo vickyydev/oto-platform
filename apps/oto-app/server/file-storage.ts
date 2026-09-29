@@ -28,7 +28,7 @@
  */
 
 import { OBJECT_STORAGE } from "./config/env";
-import { s3Upload, s3Get, s3Delete, s3GetRange, type RangeFileResult } from "./storage/s3Storage";
+import { s3Upload, s3Get, s3Exists, s3Delete, s3GetRange, type RangeFileResult } from "./storage/s3Storage";
 import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
@@ -138,6 +138,13 @@ export async function getFileFromObjectStorage(
   switch (OBJECT_STORAGE) {
     case "s3":     return s3Get(folder, filename);
     case "local":  return localGet(folder, filename);
+  }
+}
+
+export async function fileExistsInObjectStorage(folder: string, filename: string): Promise<boolean> {
+  switch (OBJECT_STORAGE) {
+    case "s3": return s3Exists(folder, filename);
+    case "local": return fs.existsSync(localPath(folder, filename));
   }
 }
 
