@@ -1,40 +1,38 @@
 # Handover - where this is, and what to do next
 
-## STOP POINT - 29 September 2026 late evening - checked column retirement
+## STOP POINT - 29 September 2026 late evening - terminal restart recovery
 
-The no-reader API85d35e0 is LIVE. Both retired mailbox endpoints return404
-and the ordinary authenticated station read returns200. Forward migration0033
-now removes only the two old session lookup columns. The existing database
-checks pass43/43, schema verification matches the0033 snapshot, and DB
-typecheck/lint pass. The populated-upgrade test preserves account, park,
-station and staff-session identity. Independent snapshot review found no
-unrelated change.0033 is checked and pending the final API deployment.
+Current API85d35e0 is LIVE; POS/Console/Launcher/Booth remain88140af.
+Manual Render release is authorised while Actions cannot start because of
+billing/spending availability. Normal deployment settings remain unchanged.
+No new ticket is being started; finish this release checkpoint, then wait.
 
-After0033 is applied, the earliest rollback-compatible API is85d35e0 or a
-verified descendant. Never restore88140af or an older API against this schema.
-Physical display credentials, staff sessions and station leases are retained.
+SCRUM-206 restart recovery is checked:31 existing terminal tests, API typecheck
+and full lint pass. A missing result after the exchange timeout plus delivery
+grace moves only the scoped running SALE to inquiry or staff confirmation.
+It keeps the full reservation, never requeues SALE, records the diagnostic,
+and accepts a genuine late result only while unresolved. The command stays
+running for its genuine acknowledgement. Concurrent readers produce one audit.
+The old uncertain partial remains untouched. The newer GHL simulation stranded
+by the deployment is retained for post-deploy recovery through authorised APIs;
+no second charge or invented result has been sent.
 
-SCRUM-201 remains In Progress. Shop native proof passes; its display layout
-is under visual review. Consent native proof found accepted acknowledgement
-loss on unlock while a fresh quote rotated the prompt. The bounded fix pauses
-typed prompt publication during online quote refresh;92 POS checks pass and
-the focused browser retest is running. Real offline and private policy changes
-still invalidate stale answers. Foundation staging screenshots10908-10916
-are attached; final guest-order/consent staging proof remains.
+Native staging checks already pass for automatic partial reversal followed by
+cash, disabled QR before any attempt followed by cash, and zero-value sale
+without a tender. Reviewed screenshots10917-10920 are attached to SCRUM-206.
+The ticket remains In Progress; separate To Do SCRUM-269 blocks full offline
+trading. No new ticket or independent offline-transport work is being started.
 
-SCRUM-285 is Deployed with screenshot10905. SCRUM-206 stays In Progress:
-partial reversal plus cash, disabled QR plus cash and zero-value finalisation
-pass native staging checks. A running GHL simulation was stranded when the
-API deployed during its no-response wait. It is retained for safe recovery;
-no second SALE, invented confirmation or cash was sent. The existing payment
-follow-up must fix restart recovery and prove the result before final release.
-The older retained uncertain simulation is untouched. Full offline trading
-still depends on separate To Do SCRUM-269; no new ticket is being started.
-
-The requested break follows completion of current checked work, staging
-verification, Jira comments/statuses and a final saved stop point. Manual
-Render releases are authorised; normal autoDeploy/checksPass remains intact.
-GitHub billing prevents jobs starting and no new CI-packed Pi artifact exists.
+SCRUM-201 shop and consent native cases now pass individually. The consent
+unlock defect is fixed by pausing typed publication during online quote refresh,
+with92 POS checks passing; actual offline still invalidates stale answers.
+Final combined browser proof and shop visual review precede feature commit and
+staging verification.0033 is already checked:43 DB cases, schema verification,
+typecheck/lint pass; migration awaits final deployment. After0033, API rollback
+must remain at85d35e0 or a verified descendant; never88140af or older.
+Foundation staging screenshots10908-10916 are attached. SCRUM-285 is Deployed
+with its11-check staging card10905. CI is not green and no new CI Pi artifact
+exists. Save final exact versions, evidence and guidelines before the break.
 
 ## STOP POINT - 29 September 2026 evening - saved-child display review
 

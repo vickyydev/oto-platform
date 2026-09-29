@@ -1,0 +1,124 @@
+{
+  "ticket": "SCRUM-206",
+  "environment": "staging",
+  "source": "88140af",
+  "run": "0a68bb73",
+  "selected": [
+    "fnb-qr-disabled",
+    "shop-zero"
+  ],
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "fnb-qr-disabled",
+      "status": "PASS",
+      "stationId": "01a0edfa-ed22-7a43-8ca9-5557e6c92458",
+      "saleId": "01a0edfb-14b0-77c7-8d7d-914515532010",
+      "ledger": {
+        "status": "finalised",
+        "attempts": [
+          {
+            "id": "01a0edfb-2184-78d8-a972-3699521b33ca",
+            "method": "cash",
+            "status": "approved",
+            "amountSatang": 20000,
+            "tenderedSatang": 20000,
+            "changeSatang": 0,
+            "reversalPending": null,
+            "inquirySupported": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "shop-zero",
+      "status": "PASS",
+      "stationId": "01a0edfb-2cef-7acc-b90b-d6e093552711",
+      "saleId": "01a0edfb-5224-7db5-aa9d-5e0774864807",
+      "ledger": {
+        "status": "finalised",
+        "attempts": []
+      }
+    }
+  ],
+  "checks": [
+    "fnb-qr-disabled: dedicated virtual station is online",
+    "fnb-qr-disabled: native picker retains the dedicated online station",
+    "fnb-qr-disabled: native cart has canonical quote",
+    "fnb-qr-disabled: native payment screen records only its dedicated unpaid sale",
+    "fnb-qr-disabled: native disabled routing refuses QR before creating an attempt",
+    "fnb-qr-disabled: full unchanged balance settles once as cash",
+    "fnb-qr-disabled: native cash request preserves configured method token",
+    "shop-zero: dedicated virtual station is online",
+    "shop-zero: native picker retains the dedicated online station",
+    "shop-zero: native cart has canonical quote",
+    "shop-zero: native payment screen records only its dedicated unpaid sale",
+    "shop-zero: zero sale offers no tender choice",
+    "shop-zero: native explicit no-tender close creates no payment attempt"
+  ],
+  "screenshots": [
+    "SCRUM-206-fnb-qr-disabled-refused.png",
+    "SCRUM-206-fnb-qr-disabled-completed.png",
+    "SCRUM-206-shop-zero-completed.png"
+  ],
+  "cleanup": [
+    {
+      "case": "fnb-qr-disabled",
+      "type": "station",
+      "id": "01a0edfa-ed22-7a43-8ca9-5557e6c92458",
+      "archived": true
+    },
+    {
+      "case": "fnb-qr-disabled",
+      "type": "product",
+      "id": "01a0edfa-eeec-7779-9988-23e17979805f",
+      "archived": true
+    },
+    {
+      "case": "shop-zero",
+      "type": "station",
+      "id": "01a0edfb-2cef-7acc-b90b-d6e093552711",
+      "archived": true
+    },
+    {
+      "case": "shop-zero",
+      "type": "product",
+      "id": "01a0edfb-305b-74f8-8e31-17d6cccc5896",
+      "archived": true
+    },
+    {
+      "type": "category",
+      "id": "01a0edfa-e94a-776c-8384-d664d0fd5c01",
+      "archived": true
+    }
+  ],
+  "retained": [],
+  "historicalPaymentUntouched": true,
+  "fixtures": [
+    {
+      "case": "fnb-qr-disabled",
+      "stationId": "01a0edfa-ed22-7a43-8ca9-5557e6c92458",
+      "deviceId": null,
+      "productId": "01a0edfa-eeec-7779-9988-23e17979805f",
+      "saleId": "01a0edfb-14b0-77c7-8d7d-914515532010",
+      "attemptIds": [],
+      "passed": true
+    },
+    {
+      "case": "shop-zero",
+      "stationId": "01a0edfb-2cef-7acc-b90b-d6e093552711",
+      "deviceId": null,
+      "productId": "01a0edfb-305b-74f8-8e31-17d6cccc5896",
+      "saleId": "01a0edfb-5224-7db5-aa9d-5e0774864807",
+      "attemptIds": [],
+      "passed": true
+    }
+  ],
+  "completedSelectedCases": true,
+  "cleanupComplete": true,
+  "deployment": {
+    "pos": "88140af",
+    "apiAtReadback": "85d35e0",
+    "paymentSourceUnchanged": true
+  }
+}

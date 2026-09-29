@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import {
   box,
   boxCommand,
@@ -19,6 +19,7 @@ import {
 } from '@oto/shared';
 import {
   roleForTender,
+  TERMINAL_TIMEOUTS,
   terminalProtocolOf,
   type TerminalOutcomeKind,
   type TerminalProtocol,
@@ -163,6 +164,7 @@ const IN_FLIGHT: readonly PaymentAttemptStatus[] = [
   'sent_to_terminal',
   'unknown',
   'inquiring',
+  'awaiting_staff_confirmation',
 ];
 
 /**
@@ -300,6 +302,46 @@ export async function readAttempt(
       typeof payload.exchange?.responseText === 'string' ? payload.exchange.responseText : null,
     outstandingSatang,
   };
+}
+
+/** A restarted box may lose a running exchange; it must never receive another SALE. */
+export async function recoverMissingTerminalResult(
+  tx: Tx,
+  ctx: OpContext,
+  operatorId: string,
+  id: string,
+): Promise<void> {
+  const [current] = await tx.select().from(paymentAttempt)
+    .where(and(eq(paymentAttempt.id, id), eq(paymentAttempt.operatorId, operatorId)))
+    .for('update').limit(1);
+  if (!current?.deviceId || !['created', 'sent_to_terminal'].includes(current.status)) return;
+  const [terminal] = await tx.select().from(device)
+    .where(and(eq(device.id, current.deviceId), eq(device.operatorId, operatorId))).limit(1);
+  if (!terminal?.boxId) return;
+  const [command] = await tx.select().from(boxCommand).where(and(
+    eq(boxCommand.boxId, terminal.boxId), eq(boxCommand.kind, 'terminal_sale'), eq(boxCommand.state, 'running'),
+    sql`${boxCommand.payload}->>'attemptId' = ${id}`,
+    sql`${boxCommand.payload}->>'deviceId' = ${current.deviceId}`,
+    sql`${boxCommand.payload}->>'mode' = 'sale'`,
+  )).for('update').limit(1);
+  // Allow the normal two-minute exchange and thirty seconds for delivery.
+  if (!command?.claimedAt || Date.now() - command.claimedAt.getTime() < TERMINAL_TIMEOUTS.customerInteractionMs + 30_000) return;
+  const payload = (current.payload ?? {}) as AttemptPayload;
+  const protocol = terminalProtocolOf(payload.protocol);
+  const canAsk = protocol && canInquire(protocol, payload.tender ?? 'card') && Boolean(current.terminalRef);
+  const status = canAsk ? 'unknown' : 'awaiting_staff_confirmation';
+  await stampAttempt(tx, id, { status });
+  await tx.update(boxCommand).set({
+    errorCode: 'TERMINAL_RESULT_MISSING',
+    errorMessage: 'The terminal result did not arrive. Check the terminal before confirming the payment.',
+  }).where(and(eq(boxCommand.id, command.id), eq(boxCommand.state, 'running')));
+  await audit.record(tx, {
+    actorAccountId: ctx.actorAccountId ?? null, operatorId, branchId: current.branchId,
+    action: 'payment.attempt.result_missing', entityType: 'payment_attempt', entityId: id,
+    actionId: current.actionId, requestId: ctx.requestId,
+    before: { status: current.status },
+    after: { status, commandId: command.id, saleId: current.saleId, amountSatang: current.amountSatang },
+  });
 }
 
 // --- Writing what only this file can write -----------------------------------

@@ -247,6 +247,25 @@ function tape(deviceId: string) {
   return agent.terminal()?.events(deviceId, 200) ?? [];
 }
 
+async function abandonedSale(tender: 'card' | 'qr' = 'card') {
+  const committed = await commitSale();
+  const started = await startTender(committed.saleId, tender === 'qr' ? { tender, method: 'promptpay' } : {});
+  expect(started.statusCode).toBe(200);
+  const attemptId = started.json().attempt.id as string;
+  const [command] = await terminalCommands(attemptId);
+  expect(Boolean(command)).toBe(true);
+  // Claim through the real box route, then model the persisted state after a stopped process.
+  for (let tries = 0; tries < 10; tries += 1) {
+    const claim = await ctx.app.inject({ method: 'POST', url: '/box/v1/commands/poll',
+      headers: { authorization: `Bearer ${boxCredential}` }, payload: { max: 10, kinds: ['terminal_sale'] } });
+    expect(claim.statusCode).toBe(200);
+    if (claim.json().commands.some((item: { id: string }) => item.id === command!.id)) break;
+  }
+  const [claimed] = await terminalCommands(attemptId);
+  expect(claimed!.state).toBe('running');
+  return { ...committed, attemptId, command: claimed! };
+}
+
 // --- Approved ----------------------------------------------------------------
 
 describe('a card approved on the terminal', () => {
@@ -1064,5 +1083,85 @@ describe('QR routing alongside the card terminal (SCRUM-391)', () => {
     } finally {
       await ctx.db.update(station).set({ paymentRouting: before!.paymentRouting }).where(eq(station.id, stationId));
     }
+  });
+});
+
+describe('a terminal SALE whose process stopped before its result arrived', () => {
+  it('waits through the exchange budget, then recovers once without releasing money or issuing another SALE', async () => {
+    const pending = await abandonedSale();
+    expect((await readAttempt(pending.attemptId)).attempt.status).toBe('sent_to_terminal');
+    await ctx.db.update(boxCommand).set({ claimedAt: new Date(Date.now() - 160_000) })
+      .where(eq(boxCommand.id, pending.command.id));
+    const unauthenticated = await ctx.app.inject({ method: 'GET', url: `/payments/attempts/${pending.attemptId}` });
+    expect(unauthenticated.statusCode).toBe(401);
+    expect((await attemptRow(pending.attemptId)).status).toBe('sent_to_terminal');
+    const missing = await ctx.app.inject({ method: 'GET', url: `/payments/attempts/${newId()}`, headers: { cookie } });
+    expect(missing.statusCode).toBe(404);
+    const views = await Promise.all([readAttempt(pending.attemptId), readAttempt(pending.attemptId)]);
+    for (const view of views) {
+      expect(view.attempt).toMatchObject({ status: 'awaiting_staff_confirmation', inquirySupported: false });
+      expect(view.outstandingSatang).toBe(pending.owed);
+    }
+    const commands = await terminalCommands(pending.attemptId);
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toMatchObject({ state: 'running', attempts: 1, result: null, errorCode: 'TERMINAL_RESULT_MISSING' });
+    const audits = await ctx.db.select().from(auditLog).where(and(
+      eq(auditLog.entityId, pending.attemptId), eq(auditLog.action, 'payment.attempt.result_missing'),
+    ));
+    expect(audits).toHaveLength(1);
+    const cash = await ctx.app.inject({ method: 'POST', url: `/sales/${pending.saleId}/finalise`, headers: { cookie },
+      payload: { method: 'cash', kind: 'cash', actionId: newId() } });
+    expect(cash.statusCode).toBe(409);
+    expect(cash.json().error.code).toBe('PAYMENT_IN_FLIGHT');
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, pending.saleId))).toHaveLength(1);
+  });
+
+  it('offers inquiry only when the frozen dialect has a real reference', async () => {
+    const pending = await abandonedSale('qr');
+    await ctx.db.update(boxCommand).set({ claimedAt: new Date(Date.now() - 160_000) })
+      .where(eq(boxCommand.id, pending.command.id));
+    await ctx.db.update(paymentAttempt).set({ terminalRef: '885206' }).where(eq(paymentAttempt.id, pending.attemptId));
+    const view = await readAttempt(pending.attemptId);
+    expect(view.attempt).toMatchObject({ status: 'unknown', inquirySupported: true });
+    expect(view.outstandingSatang).toBe(pending.owed);
+    expect(await terminalCommands(pending.attemptId)).toHaveLength(1);
+  });
+
+  it('adopts a genuine late approval, including a concurrent recovery read, without collecting twice', async () => {
+    const pending = await abandonedSale();
+    await ctx.db.update(boxCommand).set({ claimedAt: new Date(Date.now() - 160_000) })
+      .where(eq(boxCommand.id, pending.command.id));
+    await readAttempt(pending.attemptId);
+    const body = { stage: 'final', outcome: 'approved', approvedSatang: pending.owed, requestedSatang: pending.owed,
+      terminalRef: '260101880001', protocol: 'ghl_linkpos', deviceId: cardDeviceId };
+    const [, reported] = await Promise.all([readAttempt(pending.attemptId), postResult(pending.attemptId, body, pending.command.actionId ?? undefined)]);
+    expect(reported.statusCode).toBe(200);
+    expect(reported.json().replayed).toBe(false);
+    const view = await readAttempt(pending.attemptId);
+    expect(view.attempt.status).toBe('approved');
+    expect(view.outstandingSatang).toBe(0);
+    const repeated = await postResult(pending.attemptId, body, pending.command.actionId ?? undefined);
+    expect(repeated.statusCode).toBe(200);
+    expect(repeated.json().replayed).toBe(true);
+    const acknowledged = await ctx.app.inject({ method: 'POST', url: `/box/v1/commands/${pending.command.id}/result`,
+      headers: { authorization: `Bearer ${boxCredential}` }, payload: { state: 'succeeded', result: { outcome: 'approved' } } });
+    expect(acknowledged.statusCode).toBe(200);
+    expect((await terminalCommands(pending.attemptId))[0]).toMatchObject({ state: 'succeeded', errorCode: null });
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, pending.saleId))).toHaveLength(1);
+  });
+
+  it('leaves an unresolved partial reversal reserved and does not substitute missing-result recovery', async () => {
+    const pending = await abandonedSale();
+    const reported = await postResult(pending.attemptId, { stage: 'final', outcome: 'partial_approval',
+      requestedSatang: pending.owed, approvedSatang: pending.owed - 100, protocol: 'ghl_linkpos',
+      deviceId: cardDeviceId, terminalRef: '260101880002', invoiceNo: '885207', tranRef: '885207' });
+    expect(reported.statusCode).toBe(200);
+    await ctx.db.update(boxCommand).set({ claimedAt: new Date(Date.now() - 160_000) })
+      .where(eq(boxCommand.id, pending.command.id));
+    const view = await readAttempt(pending.attemptId);
+    expect(view.attempt.reversalPending).toBe(true);
+    expect((await terminalCommands(pending.attemptId)).find(item => item.id === pending.command.id)?.errorCode).toBeNull();
+    expect(await ctx.db.select().from(auditLog).where(and(eq(auditLog.entityId, pending.attemptId),
+      eq(auditLog.action, 'payment.attempt.result_missing')))).toHaveLength(0);
   });
 });

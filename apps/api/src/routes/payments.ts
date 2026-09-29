@@ -21,6 +21,7 @@ import {
   loadAttempt,
   loadAttemptForBox,
   readAttempt,
+  recoverMissingTerminalResult,
   recordManualTender,
   recordTerminalProgress,
   recordTerminalResult,
@@ -291,6 +292,7 @@ export async function paymentRoutes(app: App): Promise<void> {
       // row outside the caller's operator is "not found" before either.
       const row = await loadAttempt(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('pos:payment:read', { branchId: row.branchId });
+      await app.db.transaction((tx) => recoverMissingTerminalResult(tx, opCtx(req), auth.operatorId, row.id));
       return readAttempt(app.db, auth.operatorId, row.id);
     },
   );

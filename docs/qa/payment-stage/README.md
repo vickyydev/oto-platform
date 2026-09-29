@@ -121,3 +121,34 @@ Green CI packed `oto-box-0.1.0-0468c38.tgz`. The archive and its `.tgz.sha256`
 are on the Desktop; both downloaded and delivered hashes were verified:
 `044edbb9a474a945eadcc91e82598bee86b7b3f472e1630b79dceabcd1fbf1ea`.
 Older pairs are in `old-oto-box-releases`. No physical Pi update was performed.
+
+## Release checkpoint follow-ups - 29 September late evening
+
+Three fresh native follow-ups pass on POS88140af/API85d35e0 (unchanged payment
+source across the API rollout). Automatic partial approval reversal precedes
+one cash collection. Disabled F&B QR produces409QR_DISABLED_FOR_STATION before
+an attempt, then cash completes. Zero-value shop finalises without a tender.
+Reviewed staging attachments10917-10920 respectively:
+SCRUM-206-shop-partial-refused-completed.png,
+SCRUM-206-fnb-qr-disabled-refused.png,
+SCRUM-206-fnb-qr-disabled-completed.png,
+SCRUM-206-shop-zero-completed.png.
+The disabled-QR public wording still said checking in that version; the current
+display slice directs refused submissions to staff instead. Completed dedicated
+fixtures were archived; native receipts remain as staging audit records.
+
+Initial partial verification had two helper errors: public attempts deliberately
+omit deviceId, and the canonical outcome is partial_approval. The actual one SALE
+and one approved VOID were verified. That known-reversed unpaid proof was voided
+and its four owned setup rows archived, without replaying SALE.
+
+The rollout interrupted a new GHL no-response simulation. Its exact retained
+sale01a0edf5-de2e-733c-b08f-1b33d4e09928 and
+attempt01a0edf6-6f88-787a-9dc3-6091c2c2428a need post-deploy recovery. This differs
+from the older retained uncertain partial, which stays untouched. Recovery source
+passes31 existing terminal tests and API typecheck/lint. It preserves reservation,
+never resends SALE, records missing-result diagnostic after150seconds, and offers
+inquiry only when frozen protocol/reference allow it; otherwise staff confirmation.
+A genuine late response can settle an unresolved attempt; duplicates cannot
+settle twice. Commands remain running until their actual acknowledgement.
+This current206 fix is checked, not yet deployed or staging-proven.
