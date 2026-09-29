@@ -595,7 +595,7 @@ describe('payment request identities', () => {
   const qr = { qrPayload: null, qrImageUrl: null, expiresAt: null, expiryTimerMs: null };
   const attempt = (status: PaymentAttemptView['status'], extra: Partial<PaymentAttemptView> = {}): PaymentAttemptView => ({
     ...cashAttempt('sale-1'), id: 'electronic-attempt', method: 'card', provider: 'digio',
-    amountSatang: 54_000, status, ...extra,
+    amountSatang: 54_000, terminalRef: '990206', status, ...extra,
   });
   const read = (value: PaymentAttemptView, balance: number): PaymentAttemptRead => ({
     ...qr, attempt: value, deviceLabel: null, responseText: null, outstandingSatang: balance,
@@ -706,6 +706,35 @@ describe('payment request identities', () => {
     await test.result.current.confirm(true, { note: 'Checked' });
     await test.result.current.inquire();
     expect(test.confirm).not.toHaveBeenCalled();
+    expect(test.inquire).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { provider: 'simulator' as const, method: 'card' as const, inquirySupported: false },
+    { provider: 'simulator' as const, method: 'card' as const, inquirySupported: true },
+    { provider: 'ghl' as const, method: 'qr' as const, inquirySupported: true },
+  ])('uses explicit inquiry capability for $provider ($inquirySupported)', async ({ provider, method, inquirySupported }) => {
+    const test = mountPayment();
+    test.start.mockResolvedValueOnce({ ...qr, route: 'card_terminal',
+      attempt: attempt('awaiting_staff_confirmation', { provider, method, inquirySupported }), outstandingSatang: 54_000, replayed: false });
+    test.result.current.selectMethod(method === 'card' ? 'park-card' : 'park-qr');
+    await test.result.current.submit();
+    expect(test.result.current.canConfirm).toBe(true);
+    expect(test.result.current.canInquire).toBe(inquirySupported);
+    await test.result.current.inquire();
+    expect(test.inquire).toHaveBeenCalledTimes(inquirySupported ? 1 : 0);
+    expect(test.onComplete).not.toHaveBeenCalled();
+  });
+
+  it('refuses legacy terminal inquiry without a reference', async () => {
+    const test = mountPayment();
+    test.start.mockResolvedValueOnce({ ...qr, route: 'card_terminal',
+      attempt: attempt('awaiting_staff_confirmation', { terminalRef: null }), outstandingSatang: 54_000, replayed: false });
+    test.result.current.selectMethod('park-card');
+    await test.result.current.submit();
+    expect(test.result.current.canConfirm).toBe(true);
+    expect(test.result.current.canInquire).toBe(false);
+    await test.result.current.inquire();
     expect(test.inquire).not.toHaveBeenCalled();
   });
 

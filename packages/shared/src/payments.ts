@@ -308,6 +308,8 @@ export interface PaymentAttemptView {
   changeSatang: number | null;
   /** The terminal's own reference — 12-char `pos_ref_no` (GHL) or 6-digit (Digio). */
   terminalRef: string | null;
+  /** Whether the frozen terminal protocol and reference support inquiry. */
+  inquirySupported?: boolean;
   tid: string | null;
   approvalCode: string | null;
   last4: string | null;

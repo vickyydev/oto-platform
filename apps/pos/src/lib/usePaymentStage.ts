@@ -70,6 +70,8 @@ const emptyQr: PaymentQrMetadata = { qrPayload: null, qrImageUrl: null, expiresA
 const money = (value: number): boolean => Number.isSafeInteger(value) && value >= 0;
 const taken = (attempt: PaymentAttemptView): boolean => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(attempt.status);
 const unresolved = (attempt: PaymentAttemptView | null): boolean => Boolean(attempt && !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(attempt.status));
+const supportsInquiry = (attempt: PaymentAttemptView): boolean => attempt.inquirySupported
+  ?? (attempt.provider !== 'ghl' && Boolean(attempt.terminalRef));
 const initial = (total: number): PaymentStageState => ({
   phase: 'ready', saleId: null, method: null, kind: null, outstandingSatang: total, amountSatang: total,
   tenderedSatang: total, attempt: null, route: null, qr: emptyQr, error: null, retryable: false, settlements: [],
@@ -304,12 +306,12 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     const ctx = context();
     return attempt ? perform(() => refresh(ctx, attempt.id), ctx) : Promise.resolve();
   };
-  const canInquire = state.route === 'card_terminal' && Boolean(state.attempt && state.attempt.provider !== 'ghl'
+  const canInquire = state.route === 'card_terminal' && Boolean(state.attempt && supportsInquiry(state.attempt)
     && ['unknown', 'awaiting_staff_confirmation'].includes(state.attempt.status));
   const canConfirm = state.route === 'card_terminal' && state.attempt?.status === 'awaiting_staff_confirmation';
   const inquire = (): Promise<void> => {
     if (!onlineRef.current || stateRef.current.route !== 'card_terminal' || !stateRef.current.attempt
-      || stateRef.current.attempt.provider === 'ghl'
+      || !supportsInquiry(stateRef.current.attempt)
       || !['unknown', 'awaiting_staff_confirmation'].includes(stateRef.current.attempt.status)) return Promise.resolve();
     const ctx = context();
     const attemptId = stateRef.current.attempt.id;

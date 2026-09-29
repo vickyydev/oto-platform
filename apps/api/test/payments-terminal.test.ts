@@ -211,7 +211,7 @@ async function readAttempt(id: string) {
   });
   expect(res.statusCode, res.body).toBe(200);
   return res.json() as {
-    attempt: { status: string; approvalCode: string | null; last4: string | null; tid: string | null };
+    attempt: { status: string; provider: string; inquirySupported: boolean; approvalCode: string | null; last4: string | null; tid: string | null };
     qrPayload: string | null;
     deviceLabel: string | null;
     responseText: string | null;
@@ -458,6 +458,7 @@ describe('a terminal whose own host did not answer it', () => {
 
     const started = await startTender(saleId, { tender: 'qr', method: 'promptpay' });
     expect(started.statusCode, started.body).toBe(200);
+    expect(started.json().attempt).toMatchObject({ provider: 'simulator', inquirySupported: false });
     const attemptId = (started.json() as { attempt: { id: string } }).attempt.id;
     await agent.runPendingCommands();
 
@@ -465,6 +466,7 @@ describe('a terminal whose own host did not answer it', () => {
     // NOT declined. Whether the money moved is unknown, and the inquiry rule
     // has already been queued in the same transaction that said so.
     expect(blocked.status).toBe('inquiring');
+    expect((await readAttempt(attemptId)).attempt).toMatchObject({ provider: 'simulator', inquirySupported: true });
     const inquiry = (blocked.payload as { inquiry?: { actionId?: string } }).inquiry;
     expect(inquiry?.actionId).toBeTruthy();
     const queued = await terminalCommands(attemptId);
@@ -490,6 +492,7 @@ describe('a terminal whose own host did not answer it', () => {
     await setOutcome(cardDeviceId, { outcome: 'approved' });
     const started = await startTender(saleId);
     const attemptId = (started.json() as { attempt: { id: string } }).attempt.id;
+    expect(started.json().attempt).toMatchObject({ provider: 'simulator', inquirySupported: false });
 
     const reported = await postResult(attemptId, {
       stage: 'final',
@@ -499,12 +502,21 @@ describe('a terminal whose own host did not answer it', () => {
       responseText: 'the terminal gave no final answer inside the customer-interaction budget',
     });
     expect(reported.statusCode, reported.body).toBe(200);
+    expect(reported.json().attempt).toMatchObject({ provider: 'simulator', inquirySupported: false });
 
     const row = await attemptRow(attemptId);
     expect(row.status).toBe('awaiting_staff_confirmation');
     expect((row.payload as { inquiry?: unknown }).inquiry).toBeUndefined();
     const queued = await terminalCommands(attemptId);
     expect(queued.every((cmd) => (cmd.payload as { mode?: string }).mode !== 'inquire')).toBe(true);
+
+    // Capability follows the attempt's frozen dialect, even if the device is edited later.
+    await ctx.db.update(device).set({ protocol: 'digio_tlv' }).where(eq(device.id, cardDeviceId));
+    try {
+      expect((await readAttempt(attemptId)).attempt.inquirySupported).toBe(false);
+    } finally {
+      await ctx.db.update(device).set({ protocol: 'ghl_linkpos' }).where(eq(device.id, cardDeviceId));
+    }
 
     // And asking for one by hand is refused by name rather than pretending.
     const asked = await ctx.app.inject({
