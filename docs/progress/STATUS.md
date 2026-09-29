@@ -1,16 +1,25 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-29 - online payment release live; native proof underway._
+_Last updated: 2026-09-29 - six native cases pass; partial recovery and CI blocked._
 
 SCRUM-206 online Slice F is live on main source `0468c38`. CI 36547262414 is
 green; API, POS, Console, Launcher and Booth are confirmed live on that source.
 OTO App remains `c416065`. All 53 affected writer checks, POS typecheck,
 package lint and build pass. Native desktop cash/change, handheld cash/manual
-split and food QR/reconnect pass. The remaining seven native terminal and
-checkout cases are underway. Completed payments are retained, never repeated
-to repair a proof observation. Reviewed cash staging screenshots are attached
-to SCRUM-206 as 10868-10869. The full story stays In Progress: SCRUM-269 local
-till transport and SCRUM-201 separate display acceptance are NOT BUILT.
+split, food QR/reconnect, shop approval, decline/cash fallback and timeout/
+inquiry/audited confirmation pass. Six native cases pass in total. Completed
+payments are retained, never repeated to repair a proof observation. Reviewed
+native staging screenshots are attached
+to SCRUM-206 as 10868-10881, including an explicit unresolved-state image.
+The [native report](../qa/payment-stage/README.md) records the scope. The full
+story stays In Progress: SCRUM-269 local till transport and SCRUM-201 separate
+display acceptance are NOT BUILT.
+The partial approval is BROKEN in this live run: its simulated command reports
+partial approval, but the cloud attempt remains pending and no rescue VOID is
+visible. Eight dedicated inventory rows are retained; no second collection or
+no-money confirmation was performed. Resolve the existing attempt before
+continuing this proof. GHL confirmation, QR-disabled and zero-price cases remain
+unverified. No physical booth, bank charge or physical printing is claimed.
 
 SCRUM-285 is implemented and pushed on `fix/offline-proof` at `d38eb3e`.
 The server refuses cloud trade operations for a station's forced-offline
@@ -18,11 +27,21 @@ virtual box before idempotency replay or payment effects; reporting, setup
 and Go online remain available. All 44 checks in the two affected existing
 API files, API typecheck and full package lint pass. The capability matrix
 records the missing local till transport honestly. The task stays Testing.
-The shared payment-request wording follow-up is pushed separately on
-`fix/payment-request-copy` at `edce9bb`; POS typecheck and lint pass.
+The shared payment-request wording is `edce9bb` on `fix/payment-request-copy`;
+optional inquiry capability is `9a54d58`. Branch HEAD `d43a92b` carries the checked
+partial-reversal fix: persisted pending/failed/unvoidable reversals reserve the
+original amount, block sale abandonment and zero-balance close, and keep the
+UI polling until explicit `reversalPending:false`. A missing flag cannot unlock
+a known pending reversal. Existing terminal/cash/sales/writer/shared-payment
+files pass 189 checks (25/26/58/58/22); API/POS/shared typechecks and full package
+lint pass. Isolated check configs map this branch's shared source because its
+dependency junctions point to main; links are unchanged and temporary configs
+removed. No new suite, migration or dependency. These fixes are not deployed.
+The separate staging final-callback problem remains unresolved.
 
-Both new branch CI runs (36550625372 and 36553644035) were prevented from
-starting by GitHub account billing/spending availability. No build or test
+New branch CI runs (36550625372, 36553644035, 36556014521 and 36558144943)
+were prevented from starting by GitHub account billing/spending availability.
+No build or test
 step ran. Both branches remain undeployed; do not bypass the CI gate. Restore
 Actions availability, run exact-source CI, land the checked branches, then
 deploy and complete SCRUM-285 staging proof before moving it to Deployed.

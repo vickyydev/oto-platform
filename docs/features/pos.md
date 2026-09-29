@@ -29,15 +29,36 @@ All 21 scoped staging behavior checks passed and reviewed evidence is attached
 to the tickets. The replay follow-up SCRUM-387 is also Deployed on `5fb8525`,
 after six complete-response staging checks and 147 affected existing-file tests.
 
-SCRUM-206 online Slice F is built and landing from the rebased `cf67d86` UI
-checkpoint. The till, handheld till, food station, shop and mobile food-station
+SCRUM-206 online Slice F source `0468c38` is live after green CI 36547262414.
+The till, handheld till, food station, shop and mobile food-station
 caller share cash received/change, real QR, terminal/manual and split-payment
 collection. Pending or partial money blocks cart, context and navigation changes;
 uncertain answers retain stable retry identities. Completion follows the
 finalised platform sale, with local ticket-completion retry avoiding a second
 charge. Unsafe pasted money cannot display a value different from the accepted
 state. All 53 affected writer checks, POS typecheck, lint and build pass.
-Current-release CI and native staging proof are pending. Full offline
+Six native cases pass: cash/change, handheld split/manual, food QR/reconnect,
+shop terminal approval, decline/cash fallback and timeout/inquiry/audited staff
+confirmation. Partial recovery and the remaining checkout cases are unverified.
+The inquiry follow-up adds optional `PaymentAttemptView.inquirySupported`,
+derived from the attempt's frozen terminal protocol, tender and reference.
+The UI uses it to hide and refuse unsupported inquiry, including simulated GHL
+cards; old API replies keep the provider rule and require a reference. Shared
+contract names are unchanged. The inquiry change passed 104 existing-file
+checks, plus API/POS/shared typechecks and full package lint. It is pushed
+separately and is not live: Actions billing/spending availability blocks new
+CI jobs before execution. Device reconfiguration during an attempt can still
+cause a safe server refusal; changing the hardware does not authorise payment.
+The checked partial-reversal follow-up reserves the original amount while its
+saved reversal is pending, failed or unvoidable. Sale void and zero-balance
+close refuse, and the UI keeps polling until explicit `reversalPending:false`;
+an omitted flag cannot release a known pending reversal. Existing affected
+terminal/cash/sales/writer/shared-payment files pass 189 checks, and touched
+API/POS/shared typechecks and full lint pass. This follow-up is not live.
+Six native online cases pass; the partial case remains BROKEN in the staging
+run because its final report did not reach the cloud attempt. Its isolated
+inventory is retained. That callback cause remains unresolved; GHL confirmation,
+QR-disabled and zero-price native proof are still pending. Full offline
 browser-to-box transport needs SCRUM-269/285; independent customer-display
 acceptance needs SCRUM-201 (S2-08). The full story stays In Progress.
 Real 2C2P sandbox confirmation remains separate from simulator verification.

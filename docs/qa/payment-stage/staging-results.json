@@ -1,0 +1,186 @@
+{
+  "ticket": "SCRUM-206",
+  "release": "0468c38",
+  "capturedAt": "2026-09-29T10:42:57.580Z",
+  "proofCompleted": false,
+  "checks": [
+    {
+      "case": "desktop-cash",
+      "result": "PASS",
+      "facts": {
+        "stationId": "01a0ec8f-9553-7e6c-be31-b40cfc259fc9",
+        "saleId": "01a0ec8f-b7b2-7a2f-af7a-aa777e216ea5",
+        "surface": "ticket till",
+        "grossSatang": 20000,
+        "amountSatang": 20000,
+        "tenderedSatang": 25000,
+        "changeSatang": 5000,
+        "paymentAttempts": 1,
+        "blankAndOverflowRefused": true,
+        "nativeReceiptReviewed": true,
+        "screenshots": [
+          "SCRUM-206-native-desktop-cash-change.png",
+          "SCRUM-206-native-desktop-cash-completed.png"
+        ],
+        "recoveredReadOnly": true,
+        "financialActionRepeated": false,
+        "configuredTokenEvidence": "initial native request observation unavailable; source-reviewed"
+      }
+    },
+    {
+      "case": "mobile-split-manual",
+      "result": "PASS",
+      "facts": {
+        "stationId": "01a0ec98-b3a4-7b87-98ab-ca72bb60f1c0",
+        "saleId": "01a0ec98-dd33-75b8-aa54-01307ffd1179",
+        "grossSatang": 20000,
+        "surface": "handheld till",
+        "firstSatang": 10000,
+        "secondSatang": 10000,
+        "paymentAttempts": 2,
+        "distinctTenderActions": true,
+        "partialMoneyLocksContext": true,
+        "manualRoute": true
+      }
+    },
+    {
+      "case": "fnb-qr",
+      "result": "PASS",
+      "facts": {
+        "stationId": "01a0eca7-5884-7e75-b71d-8ff8ea0308e3",
+        "saleId": "01a0eca7-7cb9-76df-bf76-81199eeaa092",
+        "grossSatang": 12000,
+        "surface": "food station",
+        "route": "gateway",
+        "qrPayloadMatches": true,
+        "countdownAdvances": true,
+        "qrRenderMs": 498,
+        "paidCompletionMs": 2827,
+        "paymentAttempts": 1,
+        "interruptedConnectionRetainsAttempt": true,
+        "terminalConfirmationAbsent": true
+      }
+    },
+    {
+      "case": "shop-approved",
+      "result": "PASS",
+      "facts": {
+        "stationId": "01a0ecae-0e30-7a3d-bef7-961be8ff3559",
+        "saleId": "01a0ecae-e71a-7682-8d03-4820ace3c441",
+        "grossSatang": 35000,
+        "surface": "shop",
+        "paymentAttempts": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "case": "shop-declined",
+      "result": "PASS",
+      "facts": {
+        "stationId": "01a0ecaf-1307-73fa-816c-6eaa414d2e20",
+        "saleId": "01a0ecaf-cedc-7a15-8f9d-bf9b3a26e5b2",
+        "grossSatang": 35000,
+        "surface": "shop",
+        "terminalStatus": "declined",
+        "balanceAfterRefusalSatang": 35000,
+        "cashCollectedSatang": 35000,
+        "paymentAttempts": 2,
+        "partialApprovalVoided": false
+      }
+    },
+    {
+      "case": "shop-inquiry-confirm",
+      "result": "PASS",
+      "facts": {
+        "stationId": "01a0ecb6-13b5-7d32-96b6-9805bc2bbacb",
+        "saleId": "01a0ecb6-4149-7258-b714-e55799c0ba9b",
+        "grossSatang": 35000,
+        "surface": "shop",
+        "provider": "simulator",
+        "protocol": "digio_tlv",
+        "nativeInquiry": true,
+        "auditedNativeConfirmation": true,
+        "pendingMoneyLocksContext": true,
+        "paymentAttempts": 1
+      }
+    }
+  ],
+  "unresolved": [
+    {
+      "case": "shop-partial-refused",
+      "saleId": "01a0ecb8-f168-7b26-96e4-9ccaabe14cbf",
+      "observed": {
+        "attemptStatus": "sent_to_terminal",
+        "terminalCommandOutcome": "partial_approval",
+        "rescueVoidCommands": 0
+      },
+      "screenshot": "SCRUM-206-native-shop-partial-refused-failure.png",
+      "inventoryRetained": true,
+      "financialActionRepeated": false
+    }
+  ],
+  "recoveries": [
+    {
+      "case": "desktop-cash",
+      "saleId": "01a0ec8f-b7b2-7a2f-af7a-aa777e216ea5",
+      "status": "finalised",
+      "readOnly": true,
+      "noNewCollection": true,
+      "nativeCompletionClaimed": null
+    },
+    {
+      "case": "mobile-split-manual",
+      "saleId": null,
+      "status": "no-sale observation corrected",
+      "readOnly": false,
+      "noNewCollection": true,
+      "nativeCompletionClaimed": null
+    },
+    {
+      "case": "fnb-qr",
+      "saleId": "01a0ec99-2495-7e07-b231-bff5e5999473",
+      "status": "voided",
+      "readOnly": false,
+      "noNewCollection": true,
+      "nativeCompletionClaimed": null
+    },
+    {
+      "case": "fnb-qr",
+      "saleId": "01a0eca1-9fd8-72ef-962b-58f93a299a0d",
+      "status": "voided",
+      "readOnly": false,
+      "noNewCollection": true,
+      "nativeCompletionClaimed": null
+    },
+    {
+      "case": "shop-approved",
+      "saleId": "01a0eca8-7cb6-7143-ab54-72a6a53d7775",
+      "status": "finalised",
+      "readOnly": false,
+      "noNewCollection": true,
+      "nativeCompletionClaimed": false
+    },
+    {
+      "case": "shop-inquiry-confirm",
+      "saleId": "01a0ecb0-ba12-7f15-b3ef-22c31bfa30b5",
+      "status": "voided",
+      "readOnly": false,
+      "noNewCollection": true,
+      "nativeCompletionClaimed": null
+    }
+  ],
+  "deferred": [
+    "shop-ghl-confirm: inquiry capability fix is not deployed",
+    "fnb-qr-disabled: after unresolved partial recovery",
+    "shop-zero: after unresolved partial recovery"
+  ],
+  "retainedDisposableInventoryCount": 8,
+  "cleanupNotes": [
+    "Dedicated simulated partial approval remains unresolved; scoped inventory retained. No second collection or no-money confirmation."
+  ],
+  "limitations": [
+    "Native online payment stage only; offline box sale transport remains separate.",
+    "Customer displays are native same-page preview or handheld handoff; independent physical display transport is not asserted.",
+    "Existing payment methods and physical stations are never edited; all inventory mutations are disposable setup."
+  ]
+}

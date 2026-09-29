@@ -8,12 +8,29 @@ POS, Console, Launcher and Booth, after green CI 36547262414. OTO App remains
 collection and guarded recovery. Unsafe pasted money is rejected before the
 visible amount changes; mobile food-station confirmation shows the real
 receipt number. Existing writer checks pass 53; POS typecheck, lint and build
-pass. Native cash/change, handheld cash/manual split and food QR/reconnect
-pass. Seven remaining native terminal/checkout cases are underway. Retain
-completed payment evidence; do not charge again after an observation failure.
-Cash screenshots are Jira attachments 10868-10869. The full story remains
+pass. Six native cases pass: cash/change, handheld cash/manual split, food QR/
+reconnect, shop approval, decline/cash fallback and timeout/inquiry/audited
+confirmation. Retain completed payment evidence; do not charge again after
+an observation failure.
+Reviewed native screenshots are Jira attachments 10868-10881; the final one
+documents unresolved partial approval, not success. See docs/qa/payment-stage
+for the report, reviewed PNGs and attachment map. The full story remains
 In Progress because local till transport (SCRUM-269) and separate display
 acceptance (SCRUM-201) are NOT BUILT. No physical booth was changed.
+
+Live partial-approval recovery is BROKEN in this run. Dedicated sale
+`01a0ecb8-f168-7b26-96e4-9ccaabe14cbf`, attempt
+`01a0ecb8-f870-798f-b893-37d9871d4bcd`: its GHL simulated command reports
+partial_approval, but the cloud row stays sent_to_terminal and no rescue VOID
+appears. The scoped proof process was stopped before cleanup could confirm
+no money falsely. Eight temporary rows on virtual-1, run `0d008153`, remain
+retained. Do not archive them, collect again or declare no money taken. Inspect
+and recover that existing simulated outcome first. The collected virtual box
+log contains a generic terminal-outcome refusal warning without exposed status;
+it does not establish the exact callback cause. Progress callbacks do not
+write status/payload, so they cannot explain a persisted downgrade. Native GHL
+confirmation, saved QR-disabled refusal and zero-price checkout remain pending.
+The ignored report prevents blind continuation with unresolved inventory.
 
 SCRUM-285 source `d38eb3e` is pushed on `fix/offline-proof`, based on 0468c38.
 It guards cloud trading before idempotency when the authenticated station's
@@ -27,15 +44,29 @@ the guard source is live and after this native online round is finished.
 
 Small SCRUM-206 wording follow-up `edce9bb` is on `fix/payment-request-copy`:
 the shared API status key is unchanged; five languages say Payment requested
-for gateway and terminal routes. POS typecheck and lint pass. It is not live.
+for gateway and terminal routes. `9a54d58` adds optional inquirySupported and
+both POS guards for simulated GHL card inquiry, with older API compatibility.
+Branch HEAD `d43a92b` carries the checked partial-reversal reservation follow-up:
+shared persisted-fact helper, optional reversalPending, common collection
+reservation, sale void/zero-close refusal and blocked POS polling. Successful
+VOID emits explicit false; an omitted flag cannot release known pending money.
+Existing terminal/cash/sales/writer/shared-payment files pass 189 checks
+(25/26/58/58/22). API/POS/shared typechecks and full package lint pass; the
+independent money review passes. Check configs explicitly mapped this branch's
+shared source because dependency junctions point to main; no dependency link
+changed, temporary configs removed. No new suite/migration/dependency. Neither
+fix is live, and it does not claim to solve the separate staged callback refusal.
 
-GitHub Actions blocked both branch runs 36550625372 and 36553644035 before
-any step because account billing/spending availability prevents jobs starting.
+GitHub Actions blocked branch runs 36550625372, 36553644035, 36556014521 and
+36558144943 before any step because account billing/spending availability
+prevents jobs starting.
 The availability question is pending; do not bypass CI or claim a source-test
 failure. Continue independent online native proof, then restore Actions,
 run exact-source CI, rebase/land the checked branches onto the latest main
 checkpoint, deploy and record SCRUM-285 staging screenshots before Deployed.
-Worktrees: `test-results/offline-guard-worktree` and
+After the existing partial outcome is understood, complete its missing source
+fix if needed and finish the three unverified native cases. Only then begin
+new unrelated Sprint 2 work. Worktrees: `test-results/offline-guard-worktree` and
 `test-results/payment-ui-worktree`. Preserve newer main progress documents
 when rebasing. Both source branches are pushed and clean.
 
