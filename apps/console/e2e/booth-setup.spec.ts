@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Request } from '@playwright/test';
 import { CENTRAL_FLORESTA, chooseBranch, openSection, signInAndWait } from './console';
 
 /**
@@ -15,16 +15,60 @@ import { CENTRAL_FLORESTA, chooseBranch, openSection, signInAndWait } from './co
  * on the page.
  */
 
-/** Booth 1 at Central Floresta, open on the Booths page. */
+/**
+ * The reads of a booth's draft (`GET /booths/:id/draft`) the page has sent and
+ * not yet had answered. Counted from before the Booths page opens, so no read
+ * it sends is missed.
+ */
+function draftReads(page: Page): { outstanding: () => number } {
+  const out = new Set<Request>();
+  page.on('request', (r) => {
+    if (r.method() === 'GET' && /\/booths\/[^/?]+\/draft(?:\?|$)/.test(r.url())) out.add(r);
+  });
+  const answered = (r: Request) => void out.delete(r);
+  page.on('requestfinished', answered);
+  page.on('requestfailed', answered);
+  return { outstanding: () => out.size };
+}
+
+/**
+ * Booth 1 at Central Floresta, open on the Booths page, with the last draft
+ * read the page sent answered — so what the forms show is what they will keep.
+ *
+ * WHY IT WAITS FOR THE READS (SCRUM-256). The settings form holds an edit, and
+ * every read of the booth that lands replaces it with the API's values
+ * (`BoothSettingsPanel`: "a fresh read of the booth replaces what is on
+ * screen"). The session-length case typed its 10 hours while a second read
+ * was still out; about one run in nine that read landed between the typing
+ * and the press, put the field back to empty, and Save — enabled only while
+ * the form differs from the draft — stayed disabled until the click gave up at
+ * the 15 s action timeout. Holding that read until the hours are typed gives
+ * the same "locator.click: Timeout 15000ms exceeded … element is not enabled"
+ * every run.
+ *
+ * The second read was this helper's own doing, when the booth list had come
+ * back before the branch was chosen. Playwright's `selectOption` dispatches a
+ * change event even for the option already chosen, which a person's browser
+ * never does, and the Booths page answers a branch change by dropping the
+ * selected booth while the draft it had read stays on screen. So the "Booth
+ * staff" heading was already there, and pressing Booth 1 selected it again and
+ * sent another read. The branch is now chosen only when it is not the one
+ * shown, and the helper returns only once no draft read is out and the booth
+ * on screen is Booth 1 — which holds whichever order the reads come back in.
+ */
 async function openBooth1(page: Page): Promise<void> {
+  const drafts = draftReads(page);
   await openSection(page, 'Booths');
-  await chooseBranch(page, CENTRAL_FLORESTA);
+  const shown = await page
+    .getByLabel('Branch')
+    .evaluate((el) => (el as HTMLSelectElement).selectedOptions[0]?.label ?? '');
+  if (shown !== CENTRAL_FLORESTA) await chooseBranch(page, CENTRAL_FLORESTA);
   const booth = page.getByRole('button', { name: /Booth 1/ });
   await expect(booth).toBeVisible({ timeout: 30_000 });
   await booth.click();
-  await expect(page.getByRole('heading', { name: 'Booth staff', exact: true })).toBeVisible({
-    timeout: 30_000,
-  });
+  await expect(page.getByText(/^Booth 1 · Prefix:/)).toBeVisible({ timeout: 30_000 });
+  await expect.poll(drafts.outstanding, { timeout: 30_000 }).toBe(0);
+  await expect(page.getByRole('heading', { name: 'Booth staff', exact: true })).toBeVisible();
 }
 
 test('Voucher types: a 50 THB off type is created, Kids Pizza is linked and worded with no expiry, and a type is archived', async ({
@@ -231,16 +275,18 @@ test('Booths: the staff session length is saved as 10 hours, is in the review be
     .locator('section')
     .filter({ has: page.getByRole('heading', { name: 'Booth settings', exact: true }) });
   const length = settings.getByLabel('Staff session length');
+  const save = settings.getByRole('button', { name: 'Save settings', exact: true });
   await expect(length).toHaveValue('');
   // More than a day is refused before it is sent.
   await length.fill('25');
-  await expect(settings.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled();
+  await expect(save).toBeDisabled();
   await length.fill('10');
-  await settings.getByRole('button', { name: 'Save settings', exact: true }).click();
+  // Save opens when the form differs from the draft and is valid — with no
+  // read left to land (openBooth1), the 10 typed above is what it compares.
+  await expect(save).toBeEnabled();
+  await save.click();
   // The booth is read again after the save: the value on screen is the API's.
-  await expect(settings.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled({
-    timeout: 30_000,
-  });
+  await expect(save).toBeDisabled({ timeout: 30_000 });
   await expect(length).toHaveValue('10');
 
   // Until the publish the box still grants the published twelve hours, and the

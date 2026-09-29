@@ -1,0 +1,13 @@
+{
+  // The unit tests and their runner config (SCRUM-256), as the till has them.
+  // `tsconfig.json` covers `src/` and the e2e project covers `e2e/`; vitest
+  // strips types without checking them, so without this a test could assert
+  // on a shape the booth's modules no longer have and still pass.
+  // `pnpm typecheck` runs all three.
+  "extends": "./tsconfig.json",
+  "include": ["test/**/*.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "tsBuildInfoFile": ".test.tsbuildinfo"
+  }
+}

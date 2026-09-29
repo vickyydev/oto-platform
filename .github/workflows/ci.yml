@@ -61,6 +61,13 @@ jobs:
           pnpm db:migrate
       - name: Seed
         run: pnpm db:seed
+      # The Console's unit tests (SCRUM-256): the booth's odds and money
+      # arithmetic, what blocks a publish, and the voucher-type form. A step of
+      # their own so a red one is named in the run's summary. Through turbo, so
+      # the Test step below replays this result from the cache rather than
+      # running the suite a second time.
+      - name: Console tests
+        run: pnpm test --filter=@oto/console
       - name: Test
         run: pnpm test
       - name: Build
