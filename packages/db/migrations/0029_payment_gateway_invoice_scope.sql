@@ -1,0 +1,2 @@
+DROP INDEX "pos"."payment_attempt_invoice_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "payment_attempt_gateway_invoice_unique" ON "pos"."payment_attempt" USING btree ("invoice_no") WHERE invoice_no is not null and device_id is null;

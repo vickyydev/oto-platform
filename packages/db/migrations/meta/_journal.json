@@ -204,6 +204,13 @@
       "when": 1790653493211,
       "tag": "0028_booth_spin_duration",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1790680195995,
+      "tag": "0029_payment_gateway_invoice_scope",
+      "breakpoints": true
     }
   ]
 }

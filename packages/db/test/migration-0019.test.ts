@@ -130,15 +130,85 @@ describe('what the database refuses', () => {
     );
   }
 
-  it('PLANT — a second attempt on one invoice number', async () => {
+  async function terminals(at: { operatorId: string; branchId: string }): Promise<[string, string]> {
+    const { rows } = await client.query<{ id: string }>(
+      `with b as (
+         insert into core.box (id, operator_id, branch_id, name, slot)
+         values (gen_random_uuid(), $1, $2, 'Plant box', 'plant-terminals') returning id
+       )
+       insert into core.device (id, operator_id, branch_id, box_id, kind, label, transport)
+       select gen_random_uuid(), $1, $2, b.id, 'terminal', labels.label, 'simulated'
+         from b cross join (values ('Terminal 1'), ('Terminal 2')) as labels(label)
+       returning id`,
+      [at.operatorId, at.branchId],
+    );
+    return [rows[0]!.id, rows[1]!.id];
+  }
+
+  it.each(['2c2p', 'simulator'])('PLANT — a second gateway %s attempt on one invoice number', async (provider) => {
     // 2C2P refuses a reused invoice number (`5005`, `9015`), so the reuse has
     // to be impossible on our side rather than discovered at the counter. The
-    // index is unique FOR EVER, not per day and not per station.
+    // gateway index is unique FOR EVER, not per day, station or operator. The
+    // gateway simulator observes the same namespace as the real gateway.
     const at = await tenancy();
-    await insertAttempt(at, { invoice_no: 'T01260920000147', method: 'qr', provider: '2c2p' });
+    const other = await tenancy();
+    const invoiceNo = provider === '2c2p' ? 'T01260920000147' : 'T01260920000151';
+    await insertAttempt(at, { invoice_no: invoiceNo, method: 'qr', provider });
     await expect(
-      insertAttempt(at, { invoice_no: 'T01260920000147', method: 'qr', provider: '2c2p' }),
-    ).rejects.toThrow(/payment_attempt_invoice_unique/);
+      insertAttempt(other, {
+        invoice_no: invoiceNo,
+        method: 'qr',
+        provider,
+        business_date: '2026-09-21',
+      }),
+    ).rejects.toThrow(/payment_attempt_gateway_invoice_unique/);
+  });
+
+  it('allows terminal-local invoices to repeat across devices and coexist with a gateway invoice', async () => {
+    const at = await tenancy();
+    const [one, two] = await terminals(at);
+    for (const [provider, deviceId, terminalRef] of [
+      ['ghl', one, '000001'],
+      ['ghl', two, '000001'],
+      ['digio', one, '000002'],
+      ['simulator', two, '000002'],
+    ] as const) {
+      await expect(
+        insertAttempt(at, {
+          invoice_no: '000001',
+          method: 'card',
+          provider,
+          device_id: deviceId,
+          terminal_ref: terminalRef,
+        }),
+      ).resolves.toBeUndefined();
+    }
+    await expect(
+      insertAttempt(at, { invoice_no: '000001', method: 'qr', provider: '2c2p' }),
+    ).resolves.toBeUndefined();
+    await expect(
+      insertAttempt(at, { invoice_no: '000001', method: 'qr', provider: 'simulator' }),
+    ).rejects.toThrow(/payment_attempt_gateway_invoice_unique/);
+  });
+
+  it('retains device/date/terminalRef replay safety without making terminal invoices unique', async () => {
+    const at = await tenancy();
+    const [deviceId] = await terminals(at);
+    const attempt = {
+      invoice_no: '000002',
+      method: 'card',
+      provider: 'ghl',
+      device_id: deviceId,
+      terminal_ref: '000001',
+    };
+    await insertAttempt(at, attempt);
+    await expect(insertAttempt(at, attempt)).rejects.toThrow(/payment_attempt_terminal_ref_unique/);
+    await expect(
+      insertAttempt(at, { ...attempt, terminal_ref: '000002' }),
+    ).resolves.toBeUndefined();
+    await expect(
+      insertAttempt(at, { ...attempt, business_date: '2026-09-21' }),
+    ).resolves.toBeUndefined();
   });
 
   it('PLANT — a status word from the gateway s vocabulary that is not in ours', async () => {
