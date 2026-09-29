@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   box,
   boxCommand,
@@ -304,7 +304,7 @@ export async function readAttempt(
   };
 }
 
-/** A restarted box may lose a running exchange; it must never receive another SALE. */
+/** A stopped exchange or failed command without a final result must never replay SALE. */
 export async function recoverMissingTerminalResult(
   tx: Tx,
   ctx: OpContext,
@@ -319,28 +319,34 @@ export async function recoverMissingTerminalResult(
     .where(and(eq(device.id, current.deviceId), eq(device.operatorId, operatorId))).limit(1);
   if (!terminal?.boxId) return;
   const [command] = await tx.select().from(boxCommand).where(and(
-    eq(boxCommand.boxId, terminal.boxId), eq(boxCommand.kind, 'terminal_sale'), eq(boxCommand.state, 'running'),
+    eq(boxCommand.boxId, terminal.boxId), eq(boxCommand.kind, 'terminal_sale'),
+    inArray(boxCommand.state, ['running', 'failed']), isNull(boxCommand.result),
     sql`${boxCommand.payload}->>'attemptId' = ${id}`,
     sql`${boxCommand.payload}->>'deviceId' = ${current.deviceId}`,
     sql`${boxCommand.payload}->>'mode' = 'sale'`,
   )).for('update').limit(1);
-  // Allow the normal two-minute exchange and thirty seconds for delivery.
-  if (!command?.claimedAt || Date.now() - command.claimedAt.getTime() < TERMINAL_TIMEOUTS.customerInteractionMs + 30_000) return;
+  if (!command) return;
+  // A still-running exchange gets its full budget; a failed command already ended.
+  if (command.state === 'running' && (!command.claimedAt
+    || Date.now() - command.claimedAt.getTime() < TERMINAL_TIMEOUTS.customerInteractionMs + 30_000)) return;
   const payload = (current.payload ?? {}) as AttemptPayload;
   const protocol = terminalProtocolOf(payload.protocol);
   const canAsk = protocol && canInquire(protocol, payload.tender ?? 'card') && Boolean(current.terminalRef);
   const status = canAsk ? 'unknown' : 'awaiting_staff_confirmation';
   await stampAttempt(tx, id, { status });
-  await tx.update(boxCommand).set({
-    errorCode: 'TERMINAL_RESULT_MISSING',
-    errorMessage: 'The terminal result did not arrive. Check the terminal before confirming the payment.',
-  }).where(and(eq(boxCommand.id, command.id), eq(boxCommand.state, 'running')));
+  if (command.state === 'running') {
+    await tx.update(boxCommand).set({
+      errorCode: 'TERMINAL_RESULT_MISSING',
+      errorMessage: 'The terminal result did not arrive. Check the terminal before confirming the payment.',
+    }).where(and(eq(boxCommand.id, command.id), eq(boxCommand.state, 'running')));
+  }
   await audit.record(tx, {
     actorAccountId: ctx.actorAccountId ?? null, operatorId, branchId: current.branchId,
     action: 'payment.attempt.result_missing', entityType: 'payment_attempt', entityId: id,
     actionId: current.actionId, requestId: ctx.requestId,
     before: { status: current.status },
-    after: { status, commandId: command.id, saleId: current.saleId, amountSatang: current.amountSatang },
+    after: { status, commandId: command.id, commandState: command.state,
+      saleId: current.saleId, amountSatang: current.amountSatang },
   });
 }
 

@@ -152,3 +152,11 @@ inquiry only when frozen protocol/reference allow it; otherwise staff confirmati
 A genuine late response can settle an unresolved attempt; duplicates cannot
 settle twice. Commands remain running until their actual acknowledgement.
 This current206 fix is checked, not yet deployed or staging-proven.
+
+An additional interrupted-command case is now checked: an already-failed
+terminal command without a final result enters the same reserved review path.
+Its original failure diagnostic is preserved. Card requires staff review;
+supported QR inquiry still requires the captured terminal reference. Two
+existing-suite cases prove concurrent reads produce one audit, cash stays
+blocked, and no second attempt or SALE is created. All33 terminal tests,
+API typecheck and full lint pass. This follow-up still awaits deployment.

@@ -1087,6 +1087,36 @@ describe('QR routing alongside the card terminal (SCRUM-391)', () => {
 });
 
 describe('a terminal SALE whose process stopped before its result arrived', () => {
+  it.each(['card', 'qr'] as const)('keeps a failed %s command without a final result reserved for review', async (tender) => {
+    const pending = await abandonedSale(tender);
+    if (tender === 'qr') await ctx.db.update(paymentAttempt).set({ terminalRef: '885209' })
+      .where(eq(paymentAttempt.id, pending.attemptId));
+    const failed = await ctx.app.inject({ method: 'POST', url: `/box/v1/commands/${pending.command.id}/result`,
+      headers: { authorization: `Bearer ${boxCredential}` }, payload: { state: 'failed',
+        errorCode: 'TERMINAL_UNREACHABLE', errorMessage: 'The simulated terminal closed before reporting a final result.' } });
+    expect(failed.statusCode).toBe(200);
+    const views = await Promise.all([readAttempt(pending.attemptId), readAttempt(pending.attemptId)]);
+    const expected = tender === 'qr' ? 'unknown' : 'awaiting_staff_confirmation';
+    for (const view of views) {
+      expect(view.attempt.status).toBe(expected);
+      expect(view.attempt.inquirySupported).toBe(tender === 'qr');
+      expect(view.outstandingSatang).toBe(pending.owed);
+    }
+    const commands = await terminalCommands(pending.attemptId);
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toMatchObject({ state: 'failed', attempts: 1, result: null, errorCode: 'TERMINAL_UNREACHABLE' });
+    const audits = await ctx.db.select().from(auditLog).where(and(
+      eq(auditLog.entityId, pending.attemptId), eq(auditLog.action, 'payment.attempt.result_missing'),
+    ));
+    expect(audits).toHaveLength(1);
+    expect((audits[0]!.after as { commandState: string }).commandState).toBe('failed');
+    const cash = await ctx.app.inject({ method: 'POST', url: `/sales/${pending.saleId}/finalise`, headers: { cookie },
+      payload: { method: 'cash', kind: 'cash', actionId: newId() } });
+    expect(cash.statusCode).toBe(409);
+    expect(cash.json().error.code).toBe('PAYMENT_IN_FLIGHT');
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, pending.saleId))).toHaveLength(1);
+  });
+
   it('waits through the exchange budget, then recovers once without releasing money or issuing another SALE', async () => {
     const pending = await abandonedSale();
     expect((await readAttempt(pending.attemptId)).attempt.status).toBe('sent_to_terminal');
