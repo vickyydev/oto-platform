@@ -28,7 +28,7 @@ and Go online remain available. All 44 checks in the two affected existing
 API files, API typecheck and full package lint pass. The capability matrix
 records the missing local till transport honestly. The task stays Testing.
 The shared payment-request wording is `edce9bb` on `fix/payment-request-copy`;
-optional inquiry capability is `9a54d58`. Branch HEAD `d43a92b` carries the checked
+optional inquiry capability is `9a54d58`. Commit `d43a92b` carries the checked
 partial-reversal fix: persisted pending/failed/unvoidable reversals reserve the
 original amount, block sale abandonment and zero-balance close, and keep the
 UI polling until explicit `reversalPending:false`. A missing flag cannot unlock
@@ -37,9 +37,24 @@ files pass 189 checks (25/26/58/58/22); API/POS/shared typechecks and full packa
 lint pass. Isolated check configs map this branch's shared source because its
 dependency junctions point to main; links are unchanged and temporary configs
 removed. No new suite, migration or dependency. These fixes are not deployed.
-The separate staging final-callback problem remains unresolved.
+The retained staging final outcome still needs deliberate recovery.
 
-New branch CI runs (36550625372, 36553644035, 36556014521 and 36558144943)
+Invoice follow-up `875294b` on the same branch corrects the callback collision.
+Staging logged `payment_attempt_invoice_unique` at 10:32:21 UTC; two existing
+terminal regression cases reproduce the pending cloud state with the old
+migrations. Forward migration 0029 keeps gateway invoices globally unique on
+device-less attempts, including the gateway simulator, while hardware invoice
+numbers may repeat across terminals. All five gateway reads exclude device
+attempts. The 97 affected existing checks pass (terminal 27, gateway 44,
+migration 26); API/DB typechecks, full package lint and schema verification
+pass. Independent review passes. No new suite or dependency. No staging
+migration or recovery was performed. After exact-source CI and corrected API
+LIVE, recover the original result and verify one successful VOID before
+releasing the reservation; never re-run SALE. Roll forward after 0029 rather
+than reverting behind the gateway matching filters.
+
+New branch CI runs (36550625372, 36553644035, 36556014521, 36558144943 and
+36560856529)
 were prevented from starting by GitHub account billing/spending availability.
 No build or test
 step ran. Both branches remain undeployed; do not bypass the CI gate. Restore

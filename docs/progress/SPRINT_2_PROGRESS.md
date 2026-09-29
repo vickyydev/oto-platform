@@ -23,12 +23,18 @@ with original permissions, reporting and recovery preserved. All 44 affected
 existing API checks, typecheck and full package lint pass; the honest capability
 matrix is included. It stays Testing, not deployed. The five-language payment
 request wording is `edce9bb` and inquiry capability is `9a54d58` on
-`fix/payment-request-copy`. Branch HEAD `d43a92b` adds checked partial-reversal
+`fix/payment-request-copy`. Commit `d43a92b` adds checked partial-reversal
 reservation, sale abandonment/zero-close refusal and blocked POS polling until
 explicit successful reversal. Existing affected files pass 189 checks, with
 API/POS/shared typechecks and full lint passing. These fixes are not live and
-do not claim to resolve the separate staged callback problem. New branch CI
-jobs, latest 36558144943, were blocked before execution by GitHub account
+retain the staged outcome for deliberate recovery. The same branch's invoice
+follow-up `875294b` addresses the callback collision: forward 0029 scopes gateway invoice
+uniqueness to device-less attempts and all five gateway reads exclude hardware
+attempts. Old migrations reproduce the failure; 97 affected existing-file
+checks, API/DB typechecks, full lint, schema verification and independent review
+pass. No staged migration or recovery yet; verify the original outcome and one
+successful VOID after corrected API LIVE, with no new SALE. New branch CI
+jobs, latest 36560856529, were blocked before execution by GitHub account
 billing/spending availability. Keep both source gates intact.
 The current verified CI-packed 0468c38 Pi release pair is on the Desktop;
 its checksum and next steps are in STATUS and the newest STOP POINT.

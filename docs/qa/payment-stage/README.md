@@ -69,8 +69,11 @@ retains a sent_to_terminal attempt and no rescue VOID appears. The scoped
 process was stopped before generic cleanup could declare no money incorrectly.
 Eight dedicated rows from run `0d008153` remain retained. No second collection,
 refund or no-money confirmation was performed. The virtual box log contains
-a generic outcome-refusal warning without exposed HTTP status, so the exact
-callback cause remains unresolved. Do not repeat collection or archive its
+a generic outcome-refusal warning without exposed HTTP status. Later scoped
+staging logs show an invoice unique-constraint failure at the failed run's
+timestamp, and old-migration regressions reproduce the pending cloud state.
+The checked correction is described below; retained recovery is not complete.
+Do not repeat collection or archive its
 inventory until that outcome is recovered. QR-disabled and zero-price native
 cases also remain unverified.
 
@@ -82,9 +85,23 @@ money. Existing terminal/cash/sales/writer/shared-payment files pass **189
 checks** (25/26/58/58/22), with API/POS/shared typechecks and full package lint
 passing. No new suite, migration or dependency. This fixes the reservation gap
 after an accepted partial report; it does not claim to fix the separate live
-callback problem. Branch HEAD is `d43a92b`; neither this nor the inquiry/wording
-follow-up is deployed. Latest CI 36558144943 did not start a step because of
-GitHub billing/spending availability.
+callback problem. Neither this nor the inquiry/wording follow-up is deployed.
+
+Branch HEAD `875294b` adds the invoice-scope correction. Forward migration 0029
+keeps gateway invoices globally unique for device-less attempts, including
+gateway simulation, while different hardware terminals may repeat their short
+invoice numbers. Five gateway queries exclude device-bound attempts. The
+[follow-up report](invoice-scope-follow-up.json) records 97 passing checks in
+the existing terminal, gateway and migration files, plus API/DB typechecks,
+full package lint, schema verification and independent review. The same two
+terminal cases fail against the old migrations; the corrected path proves one
+successful partial rescue VOID without repeating SALE. No new suite or dependency.
+Latest CI 36560856529 did not start a step because of GitHub billing/spending
+availability. No migration was applied to staging. After corrected API LIVE,
+recover the retained original report and verify one successful VOID before
+releasing its reservation. Deployment alone cannot redeliver the already
+acknowledged command. Roll forward after 0029 rather than reverting behind
+the gateway matching filters.
 
 SCRUM-285's forced-offline cloud guard is checked on branch `fix/offline-proof`
 at `d38eb3e` (44 existing API checks, typecheck and full package lint pass).

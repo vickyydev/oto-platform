@@ -27,7 +27,7 @@ no money falsely. Eight temporary rows on virtual-1, run `0d008153`, remain
 retained. Do not archive them, collect again or declare no money taken. Inspect
 and recover that existing simulated outcome first. The collected virtual box
 log contains a generic terminal-outcome refusal warning without exposed status;
-it does not establish the exact callback cause. Progress callbacks do not
+it alone does not establish the callback cause. Progress callbacks do not
 write status/payload, so they cannot explain a persisted downgrade. Native GHL
 confirmation, saved QR-disabled refusal and zero-price checkout remain pending.
 The ignored report prevents blind continuation with unresolved inventory.
@@ -46,7 +46,7 @@ Small SCRUM-206 wording follow-up `edce9bb` is on `fix/payment-request-copy`:
 the shared API status key is unchanged; five languages say Payment requested
 for gateway and terminal routes. `9a54d58` adds optional inquirySupported and
 both POS guards for simulated GHL card inquiry, with older API compatibility.
-Branch HEAD `d43a92b` carries the checked partial-reversal reservation follow-up:
+Commit `d43a92b` carries the checked partial-reversal reservation follow-up:
 shared persisted-fact helper, optional reversalPending, common collection
 reservation, sale void/zero-close refusal and blocked POS polling. Successful
 VOID emits explicit false; an omitted flag cannot release known pending money.
@@ -55,17 +55,37 @@ Existing terminal/cash/sales/writer/shared-payment files pass 189 checks
 independent money review passes. Check configs explicitly mapped this branch's
 shared source because dependency junctions point to main; no dependency link
 changed, temporary configs removed. No new suite/migration/dependency. Neither
-fix is live, and it does not claim to solve the separate staged callback refusal.
+fix is live. The retained outcome still needs deliberate recovery.
 
-GitHub Actions blocked branch runs 36550625372, 36553644035, 36556014521 and
-36558144943 before any step because account billing/spending availability
+Callback investigation found a staging unique-constraint violation at
+10:32:21 UTC on `payment_attempt_invoice_unique`. Existing terminal regressions
+reproduce the same pending-cloud state with the old migrations: two GHL
+terminals each issue the same short invoice. Branch HEAD `875294b` includes
+forward 0029, a gateway-only invoice index (device_id IS NULL), and five
+gateway read filters that preserve real and simulated gateway identity.
+All 97 affected existing-file checks pass (27 terminal, 44 gateway, 26 database),
+API/DB typechecks, full lint and schema verification pass. Independent review
+passes. Tests explicitly used this branch's DB/shared source and migrations;
+temporary check configs are removed. No new suite or dependency.
+No staging migration or retained-result recovery was performed. The box
+acknowledged the original command even though the callback was rejected, so
+deployment alone will not redeliver it. Corrected API LIVE, original outcome
+acknowledged, exactly one successful VOID and explicit reservation release
+are the recovery gates. Do not re-run SALE or confirm no money. Roll forward
+after 0029; do not revert behind the gateway matching filters. The migration
+only relaxes invoice scope and does not rewrite payment rows.
+
+GitHub Actions blocked branch runs 36550625372, 36553644035, 36556014521,
+36558144943 and 36560856529 before any step because billing/spending availability
 prevents jobs starting.
 The availability question is pending; do not bypass CI or claim a source-test
 failure. Continue independent online native proof, then restore Actions,
 run exact-source CI, rebase/land the checked branches onto the latest main
 checkpoint, deploy and record SCRUM-285 staging screenshots before Deployed.
-After the existing partial outcome is understood, complete its missing source
-fix if needed and finish the three unverified native cases. Only then begin
+After the corrected API is live, recover the retained original terminal outcome
+and verify one successful VOID, then finish the three unverified native cases.
+If the original result cannot be obtained, keep it unresolved and reconcile
+the simulator explicitly; never fabricate a terminal report. Only then begin
 new unrelated Sprint 2 work. Worktrees: `test-results/offline-guard-worktree` and
 `test-results/payment-ui-worktree`. Preserve newer main progress documents
 when rebasing. Both source branches are pushed and clean.

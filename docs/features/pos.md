@@ -56,8 +56,16 @@ an omitted flag cannot release a known pending reversal. Existing affected
 terminal/cash/sales/writer/shared-payment files pass 189 checks, and touched
 API/POS/shared typechecks and full lint pass. This follow-up is not live.
 Six native online cases pass; the partial case remains BROKEN in the staging
-run because its final report did not reach the cloud attempt. Its isolated
-inventory is retained. That callback cause remains unresolved; GHL confirmation,
+run because the cloud did not record its final report. Its isolated
+inventory is retained. The callback collision is corrected on the same branch
+by forward migration 0029: gateway invoice uniqueness covers device-less
+attempts, including the simulator, while hardware invoices may repeat. All
+five gateway reads exclude terminal attempts. Existing terminal/gateway/database
+files pass 97 checks, API/DB typechecks, full lint and schema verification pass.
+The old-migration regressions reproduce the failure. This correction is not
+live and the original outcome has not been recovered; verify one successful
+VOID before releasing its reservation, without a new SALE. Roll forward after
+0029 rather than reverting behind these matching filters. GHL confirmation,
 QR-disabled and zero-price native proof are still pending. Full offline
 browser-to-box transport needs SCRUM-269/285; independent customer-display
 acceptance needs SCRUM-201 (S2-08). The full story stays In Progress.
