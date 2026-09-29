@@ -400,6 +400,13 @@ const EnvSchema = z.object({
   TWILIO_API_KEY_SECRET: z.string().optional().or(z.literal('')),
   TWILIO_AUTH_TOKEN: z.string().optional().or(z.literal('')),
   TWILIO_FROM: z.string().optional().or(z.literal('')),
+  /**
+   * A Twilio Verify service ("VA…") — the Thai-delivery route (OPEN_QUESTIONS
+   * §2): Verify generates, sends and checks the code through Twilio's
+   * pre-registered senders. Declared so the variable has one home; nothing
+   * reads it until the twilio_verify adapter exists.
+   */
+  TWILIO_VERIFY_SERVICE_SID: z.string().optional().or(z.literal('')),
   SENTRY_DSN: z.string().optional().or(z.literal('')),
 
   /**
