@@ -1,0 +1,5 @@
+# SCRUM-193: OTO App environment inventory
+
+The app-owned `.env.example` lists 41 variable names without credential values. It covers the central `otoapp` database, private object storage, session and kiosk secrets, launcher hand-off, optional integrations, and build metadata. A static check found no duplicate keys and no missing names among the required boot and integration entries. The example defaults to local development and keeps legacy login off; deployment-specific values must be provided outside the repository.
+
+A read-only Render service-level variable-name check found the database, object storage and platform sign-on keys listed for oto-app-staging. Xero, OpenAI, Twilio and SMTP keys were not listed at that service level. This check did not read or record any values and does not rule out inherited environment-group values. No positive Xero sandbox, AI, SMS or email exchange was performed. S2-17b requires a Xero sandbox walkthrough once effective sandbox configuration is available. Real Twilio/LINE sending and Xero production are excluded from this lift.
