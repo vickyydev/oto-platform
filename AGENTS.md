@@ -48,17 +48,20 @@ colleague, not a generator.
   deployed that you did not see built, tested or deployed. Three answers only to "is X
   built?": WORKS / BROKEN / NOT BUILT, read from the code and from staging.
 
-## Current direction (30 September 2026)
+## Current direction (30 September 2026, evening — the owner approved the next phase)
 
-Complete the existing release checkpoint, then stop and await the next instruction.
-Do not select another ticket or revive the historical bench branch. Bench round 1
-and the physical Lucky Wheel demo are complete. Current checkpoint scope is
-SCRUM-201, the already-started SCRUM-206 follow-ups, and SCRUM-285 verification.
-Read STATUS and the newest STOP POINT for exact deployed versions and acceptance.
-SCRUM-206 must remain open while separate To Do SCRUM-269 prevents offline trading;
-do not start that dependency as part of the break checkpoint.
+SCRUM-201 is closed. The main story now under way is **SCRUM-208 (S2-11): sale
+printing and signed bands, the History tab with refunds, voids and reprints** —
+the sprint plan's section S2-11 is the brief, and CP3 (the park's play-test)
+follows it. After S2-11: the offline-selling cluster (SCRUM-269 with 270, 271,
+295), which is also what lets SCRUM-206/205 close; then S2-12 → S2-15 per the
+plan's order. Work SCRUM-208 under the one ticket with a progress comment per
+part; its two deliberate scope notes are recorded on the ticket (bands are
+minted on the platform at finalise for now, box-verifiable by format, and move
+to the box with SCRUM-269; box-side offline minting is not this ticket).
 
-Use existing affected tests, package typecheck and lint; no new test suites.
+Use existing affected tests, package typecheck and lint; follow the repo's
+existing test patterns for new endpoints and services, no new frameworks.
 Manual Render deployment is authorised while Actions cannot start because of
 billing. Deploy the verified API before matching frontends; keep normal automatic
 deployment settings. After migration 0033, never roll API back before 85d35e0.
