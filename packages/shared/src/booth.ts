@@ -89,6 +89,19 @@ export const BoothConfigPrizeSchema = z.object({
 });
 export type BoothConfigPrize = z.infer<typeof BoothConfigPrizeSchema>;
 
+export const BOOTH_SPIN_DURATION_DEFAULT_SECONDS = 10;
+export const BOOTH_SPIN_DURATION_MIN_SECONDS = 2;
+export const BOOTH_SPIN_DURATION_MAX_SECONDS = 20;
+
+/** Older published wheels omit the duration and run for ten seconds. */
+export function boothSpinDurationSeconds(settings: { spinDurationSeconds?: number }): number {
+  const configured = settings.spinDurationSeconds;
+  return typeof configured === 'number' && Number.isInteger(configured) &&
+    configured >= BOOTH_SPIN_DURATION_MIN_SECONDS && configured <= BOOTH_SPIN_DURATION_MAX_SECONDS
+    ? configured
+    : BOOTH_SPIN_DURATION_DEFAULT_SECONDS;
+}
+
 export const BoothConfigSettingsSchema = z.object({
   eligibility: z.enum(BOOTH_ELIGIBILITY_MODES),
   /**
@@ -133,6 +146,9 @@ export const BoothConfigSettingsSchema = z.object({
    * field in would hand the box a document nobody published.
    */
   staffSessionMinutes: z.number().int().positive().nullable().optional(),
+  /** Optional so parsing an older bundle never inserts a field into its hashed document. */
+  spinDurationSeconds: z.number().int()
+    .min(BOOTH_SPIN_DURATION_MIN_SECONDS).max(BOOTH_SPIN_DURATION_MAX_SECONDS).optional(),
 });
 export type BoothConfigSettings = z.infer<typeof BoothConfigSettingsSchema>;
 

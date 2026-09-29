@@ -75,9 +75,8 @@ cache complete inquiry/confirmation envelopes, remove internal drawer routing
 from sale replies and preserve complete print responses. Existing affected
 tests pass (81 in four files); API typecheck and lint pass. No new defect ticket.
 
-SCRUM-452 is the new spin-duration task in sprint 3, linked to SCRUM-198.
-The ten-second default and whole-second Console control (2-20) are implemented
-locally. A duration is frozen for each spin; it travels through the existing
+SCRUM-452 is Testing, the new spin-duration task in sprint 3, linked to SCRUM-198.
+The ten-second default and whole-second Console control (2-20) are implemented on the work branch. A duration is frozen for each spin; it travels through the existing
 publish flow and cached bundle. Default 10 is omitted from published settings
 to preserve old version/hash bytes. Migration 0028 passed 22 existing DB tests;
 shared 13, wheel 5 and API 44 tests, all touched typechecks/lint pass (84 tests

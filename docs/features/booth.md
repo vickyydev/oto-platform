@@ -96,6 +96,22 @@ video, signed vs random codes — the specification's addendum is newer and wins
 - **Launcher tile:** none for staff at the booth (the box boots into the game).
   Management reaches booth settings and reports through the Console.
 
+## Spin duration - SCRUM-452
+
+The Lucky Wheel defaults to ten seconds. Console → Booths → the booth →
+Booth settings → **Spin duration (seconds)** accepts whole seconds from 2 to
+20. Save settings, then Review and publish; the published summary shows the
+duration currently running separately from the draft. The box caches the
+published setting for offline play. A running spin keeps its original duration;
+the next spin takes the new setting. Printing still starts at the result reveal.
+
+The shared setting is `spinDurationSeconds`. An absent field means 10 seconds;
+the default is omitted from new bundles to preserve historical version/hash
+bytes. Forward migration 0028 adds the draft column and bounds check. Existing
+prizes and their chances are unchanged. Update the Pi to this release before
+publishing a non-default duration: cloud deployment does not replace the kiosk
+assets installed on the Pi.
+
 ## Environment variables
 The current game's names, for reference: `DATABASE_URL`, `PORT`, `BASE_PATH`,
 `SPIN_WIN_REDEEM_KEY`, `RADAR_INGEST_KEY`, `RADAR_INGEST_URL`, `STAFF_PIN`,

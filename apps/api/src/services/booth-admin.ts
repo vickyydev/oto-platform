@@ -20,6 +20,7 @@ import {
 import {
   BOOTH_BUNDLE_SCHEMA_VERSION,
   BOOTH_CODE_PREFIX_LENGTH,
+  BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
   businessDate,
   newId,
   parseDayStart,
@@ -127,6 +128,7 @@ const SETTINGS_DEFAULTS = {
   dailySpinCap: null as number | null,
   /** Null is the box's own twelve hours (`BOOTH_STAFF_SESSION_DEFAULT_MINUTES`). */
   staffSessionMinutes: null as number | null,
+  spinDurationSeconds: BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
 };
 
 export interface BoothDraft {
@@ -196,6 +198,7 @@ async function loadDraft(exec: Exec, row: BoothStationRow): Promise<BoothDraft> 
       dailySpinCap: settingsRow?.dailySpinCap ?? SETTINGS_DEFAULTS.dailySpinCap,
       staffSessionMinutes:
         settingsRow?.staffSessionMinutes ?? SETTINGS_DEFAULTS.staffSessionMinutes,
+      spinDurationSeconds: settingsRow?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
       updatedAt: settingsRow?.updatedAt ?? null,
     },
     layout,
@@ -271,6 +274,10 @@ function bundleFrom(draft: BoothDraft): Record<string, unknown> | null {
       eligibility: draft.settings.eligibility,
       buttonKey: draft.settings.buttonKey,
       dailySpinCap: draft.settings.dailySpinCap,
+      // The default is implicit so untouched historical wheels keep their hash.
+      ...(draft.settings.spinDurationSeconds !== BOOTH_SPIN_DURATION_DEFAULT_SECONDS
+        ? { spinDurationSeconds: draft.settings.spinDurationSeconds }
+        : {}),
       /**
        * Only when the administrator set one (SCRUM-400). Absent is the box's
        * own twelve hours, and absent rather than null keeps the hash of every
@@ -555,6 +562,7 @@ export interface BoothDraftView {
     dailySpinCap: number | null;
     /** Minutes a staff sign-in lasts; null is the box's own twelve hours. */
     staffSessionMinutes: number | null;
+    spinDurationSeconds: number;
   };
   prizes: Array<{
     id: string;
@@ -631,6 +639,7 @@ export async function boothDraft(db: Db, row: BoothStationRow): Promise<BoothDra
       eligibility: draft.settings.eligibility,
       dailySpinCap: draft.settings.dailySpinCap,
       staffSessionMinutes: draft.settings.staffSessionMinutes,
+      spinDurationSeconds: draft.settings.spinDurationSeconds,
     },
     prizes: draft.prizes.map((p) => {
       const definition = p.voucherDefinitionId ? draft.definitions.get(p.voucherDefinitionId) : undefined;
@@ -941,6 +950,7 @@ export interface BoothSettingsPatch {
   dailySpinCap?: number | null;
   /** Minutes, at most one trading day; null goes back to the box's twelve hours. */
   staffSessionMinutes?: number | null;
+  spinDurationSeconds?: number;
 }
 
 /**
@@ -977,6 +987,8 @@ export async function updateBoothSettings(
         patch.staffSessionMinutes !== undefined
           ? patch.staffSessionMinutes
           : (before?.staffSessionMinutes ?? null),
+      spinDurationSeconds:
+        patch.spinDurationSeconds ?? before?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
     };
 
     if (before) {
@@ -1007,6 +1019,7 @@ export async function updateBoothSettings(
             eligibility: before.eligibility,
             dailySpinCap: before.dailySpinCap,
             staffSessionMinutes: before.staffSessionMinutes,
+            spinDurationSeconds: before.spinDurationSeconds,
           }
         : null,
       after: next,

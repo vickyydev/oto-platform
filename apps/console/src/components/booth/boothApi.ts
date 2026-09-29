@@ -135,6 +135,8 @@ export interface BoothSettingsDraft {
   buttonKey: string;
   eligibility: BoothEligibilityMode;
   dailySpinCap: number | null;
+  /** Optional when reading an older deployment; absent means ten seconds. */
+  spinDurationSeconds?: number;
   /**
    * How long a staff sign-in at this booth lasts, in minutes (SCRUM-400).
    * Null is the box's own twelve hours. Optional on the read because a

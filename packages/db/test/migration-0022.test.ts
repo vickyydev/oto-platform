@@ -217,3 +217,43 @@ describe('the migration, run twice', () => {
     }
   }, 180_000);
 });
+
+describe('booth.booth_settings - spin duration (0028)', () => {
+  it('defaults a new booth to ten whole seconds', async () => {
+    const { stationId } = await tenancy();
+    expect(await one<number>(
+      'select spin_duration_seconds from booth.booth_settings where station_id = $1',
+      [stationId],
+    )).toBe(10);
+    const { rows } = await client.query(
+      `select data_type, is_nullable, column_default from information_schema.columns
+       where table_schema = 'booth' and table_name = 'booth_settings'
+         and column_name = 'spin_duration_seconds'`,
+    );
+    expect(rows).toEqual([{ data_type: 'integer', is_nullable: 'NO', column_default: '10' }]);
+  });
+
+  it('accepts the supported bounds and refuses durations outside them', async () => {
+    const { stationId } = await tenancy();
+    for (const seconds of [2, 10, 20]) {
+      await client.query(
+        'update booth.booth_settings set spin_duration_seconds = $2 where station_id = $1',
+        [stationId, seconds],
+      );
+      expect(await one<number>(
+        'select spin_duration_seconds from booth.booth_settings where station_id = $1',
+        [stationId],
+      )).toBe(seconds);
+    }
+    for (const seconds of [0, 1, 21]) {
+      await expect(client.query(
+        'update booth.booth_settings set spin_duration_seconds = $2 where station_id = $1',
+        [stationId, seconds],
+      )).rejects.toThrow(/booth_settings_spin_duration_seconds_check/);
+    }
+    await expect(client.query(
+      'update booth.booth_settings set spin_duration_seconds = null where station_id = $1',
+      [stationId],
+    )).rejects.toThrow(/not-null constraint/);
+  });
+});

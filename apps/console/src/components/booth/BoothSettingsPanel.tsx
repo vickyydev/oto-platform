@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { Keyboard } from 'lucide-react';
 import {
   BOOTH_ELIGIBILITY_MODES,
+  BOOTH_SPIN_DURATION_MIN_SECONDS,
+  BOOTH_SPIN_DURATION_MAX_SECONDS,
+  boothSpinDurationSeconds,
   BOOTH_STAFF_SESSION_DEFAULT_MINUTES,
   BOOTH_STAFF_SESSION_MAX_MINUTES,
   type BoothEligibilityMode,
@@ -87,6 +90,7 @@ export function BoothSettingsPanel({
     settings.eligibility !== draft.settings.eligibility ||
     settings.buttonKey !== draft.settings.buttonKey ||
     settings.dailySpinCap !== draft.settings.dailySpinCap ||
+    settings.spinDurationSeconds !== boothSpinDurationSeconds(draft.settings) ||
     (settings.staffSessionMinutes ?? null) !== (draft.settings.staffSessionMinutes ?? null);
 
   /**
@@ -95,6 +99,9 @@ export function BoothSettingsPanel({
    * box's ceiling of a day, which the API refuses past as well.
    */
   const sessionMinutes = settings.staffSessionMinutes ?? null;
+  const spinDuration = settings.spinDurationSeconds;
+  const spinDurationValid = typeof spinDuration === 'number' && Number.isInteger(spinDuration) &&
+    spinDuration >= BOOTH_SPIN_DURATION_MIN_SECONDS && spinDuration <= BOOTH_SPIN_DURATION_MAX_SECONDS;
   const sessionValid =
     sessionMinutes === null ||
     (Number.isInteger(sessionMinutes) &&
@@ -151,6 +158,19 @@ export function BoothSettingsPanel({
             min={1}
             placeholder="no cap"
             onChange={(dailySpinCap) => setSettings({ ...settings, dailySpinCap })}
+          />
+        </Field>
+
+        <Field
+          label="Spin duration (seconds)"
+          hint={spinDurationValid
+            ? 'Whole seconds from 2 to 20. Reaches the booth with the next published version.'
+            : <span style={{ color: 'hsl(var(--status-down))' }}>Choose a whole number from 2 to 20.</span>}
+        >
+          <NumberInput
+            value={spinDuration ?? null}
+            min={BOOTH_SPIN_DURATION_MIN_SECONDS}
+            onChange={(seconds) => setSettings({ ...settings, spinDurationSeconds: seconds ?? undefined })}
           />
         </Field>
 
@@ -237,7 +257,7 @@ export function BoothSettingsPanel({
       <div className="mt-4 flex flex-wrap gap-2 items-center">
         <Button
           onClick={() => onSave(settings)}
-          disabled={!dirty || !sessionValid || saving || unavailable || readOnly}
+          disabled={!dirty || !sessionValid || !spinDurationValid || saving || unavailable || readOnly}
         >
           {saving ? 'Saving…' : 'Save settings'}
         </Button>
@@ -265,6 +285,7 @@ function edit(settings: BoothSettingsDraft): BoothSettingsEdit {
     buttonKey: settings.buttonKey,
     eligibility: settings.eligibility,
     dailySpinCap: settings.dailySpinCap,
+    spinDurationSeconds: boothSpinDurationSeconds(settings),
     staffSessionMinutes: settings.staffSessionMinutes ?? null,
   };
 }

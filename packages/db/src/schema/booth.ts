@@ -201,6 +201,8 @@ export const boothSettings = booth.table(
      * yesterday's sign-in into tomorrow's first spins.
      */
     staffSessionMinutes: integer('staff_session_minutes'),
+    /** Whole seconds, published with the wheel and held for each running spin. */
+    spinDurationSeconds: integer('spin_duration_seconds').notNull().default(10),
     ...timestamps,
   },
   (t) => [
@@ -216,6 +218,10 @@ export const boothSettings = booth.table(
       sql`${t.dailySpinCap} is null or ${t.dailySpinCap} > 0`,
     ),
     check('booth_settings_button_key_check', sql`${t.buttonKey} <> 'Enter'`),
+    check(
+      'booth_settings_spin_duration_seconds_check',
+      sql`${t.spinDurationSeconds} >= 2 and ${t.spinDurationSeconds} <= 20`,
+    ),
     check(
       'booth_settings_staff_session_minutes_check',
       sql`${t.staffSessionMinutes} is null or (${t.staffSessionMinutes} > 0 and ${t.staffSessionMinutes} <= 1440)`,

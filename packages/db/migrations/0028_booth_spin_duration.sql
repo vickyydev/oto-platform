@@ -1,0 +1,2 @@
+ALTER TABLE "booth"."booth_settings" ADD COLUMN "spin_duration_seconds" integer DEFAULT 10 NOT NULL;--> statement-breakpoint
+ALTER TABLE "booth"."booth_settings" ADD CONSTRAINT "booth_settings_spin_duration_seconds_check" CHECK ("booth"."booth_settings"."spin_duration_seconds" >= 2 and "booth"."booth_settings"."spin_duration_seconds" <= 20);

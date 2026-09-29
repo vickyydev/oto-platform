@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { TriangleAlert } from 'lucide-react';
+import { boothSpinDurationSeconds } from '@oto/shared';
 import { Panel, ErrorNote, RouteUnavailable } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
 import { Field, TextInput } from '@/components/Form';
@@ -47,6 +48,8 @@ export function PublishPanel({
   const [note, setNote] = useState('');
   const plan = buildPublishPlan(draft);
   const blocked = plan.blockers.length > 0;
+  const publishedSettings = (draft.publishedBundle as
+    { settings?: { spinDurationSeconds?: number } } | null | undefined)?.settings;
 
   return (
     <Panel
@@ -68,6 +71,12 @@ export function PublishPanel({
       )}
 
       {error && <ErrorNote message={error} />}
+
+      {draft.published && (
+        <p className="mt-3 text-sm">
+          Published spin duration: {boothSpinDurationSeconds(publishedSettings ?? {})} seconds.
+        </p>
+      )}
 
       {lastPublished && (
         <p
@@ -150,6 +159,7 @@ export function PublishPanel({
                   {plan.summary.costPerSpin} a spin · {plan.summary.costPerHundred} per 100 spins
                 </Row>
                 <Row label="Staff sign-in">{sessionText(draft.settings.staffSessionMinutes ?? null)}</Row>
+                <Row label="Spin duration">{boothSpinDurationSeconds(draft.settings)} seconds</Row>
                 <Row label="Slip wording">{wordingText(draft)}</Row>
                 {draft.lastEditedAt && (
                   <Row label="Last edited">{formatWhen(draft.lastEditedAt, timezone)}</Row>

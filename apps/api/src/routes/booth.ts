@@ -2,7 +2,11 @@ import { z } from 'zod';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { BOOTH_ACTION_HEADER, BOOTH_IDEMPOTENCY_HEADER } from '@oto/box-agent';
 import { BOOTH_ELIGIBILITY_MODES } from '@oto/db';
-import { BOOTH_STAFF_SESSION_MAX_MINUTES } from '@oto/shared';
+import {
+  BOOTH_SPIN_DURATION_MIN_SECONDS,
+  BOOTH_SPIN_DURATION_MAX_SECONDS,
+  BOOTH_STAFF_SESSION_MAX_MINUTES,
+} from '@oto/shared';
 import type { App } from '../app';
 import { boothDeviceOf } from '../plugins/credential';
 import { boothConsoleStatus, boothHeaders, callBooth, loadBoothStation } from '../services/booth';
@@ -461,6 +465,8 @@ export async function boothRoutes(app: App): Promise<void> {
         .optional(),
       eligibility: z.enum(BOOTH_ELIGIBILITY_MODES).optional(),
       dailySpinCap: z.number().int().positive().nullable().optional(),
+      spinDurationSeconds: z.number().int()
+        .min(BOOTH_SPIN_DURATION_MIN_SECONDS).max(BOOTH_SPIN_DURATION_MAX_SECONDS).optional(),
       /**
        * How long a sign-in at the booth lasts, in minutes (SCRUM-400). Null is
        * the box's own twelve hours and publishes nothing; the ceiling is the
@@ -530,7 +536,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Change the booth itself: its wheel design, the key the red button sends, spin eligibility, the daily spin cap and how long a staff sign-in lasts (`staffSessionMinutes`, at most 1440; null is the box’s twelve hours). Saved to the draft — no booth sees any of it until a publish. Eligibility `band` and `phone` can be SAVED and cannot be published until there is a booth inside the park.',
+          'Change the booth itself: its wheel design, button key, spin eligibility, daily spin cap, spin duration (`spinDurationSeconds`, whole seconds from 2 to 20), and staff sign-in length (`staffSessionMinutes`, at most 1440; null is twelve hours). Saved to the draft until published. Eligibility `band` and `phone` can be saved and cannot be published until there is a booth inside the park.',
         params: BoothIdParams,
         body: SettingsBody,
       },

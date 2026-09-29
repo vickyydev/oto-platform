@@ -136,7 +136,7 @@ afterAll(async () => {
 });
 
 async function draft(): Promise<{
-  settings: { staffSessionMinutes: number | null };
+  settings: { staffSessionMinutes: number | null; spinDurationSeconds: number };
   bundle: {
     settings: Record<string, unknown>;
     voucherDefinitions?: Array<Record<string, unknown>>;
@@ -232,6 +232,8 @@ describe('a booth nobody has set up publishes what it always did (SCRUM-400)', (
     const d = await draft();
     expect(d.settings.staffSessionMinutes).toBeNull();
     expect('staffSessionMinutes' in d.bundle.settings).toBe(false);
+    expect(d.settings.spinDurationSeconds).toBe(10);
+    expect('spinDurationSeconds' in d.bundle.settings).toBe(false);
     expect('voucherDefinitions' in d.bundle).toBe(false);
     expect(d.changed, 'the seeded wheel should still match version 1 byte for byte').toBe(false);
   });
@@ -458,5 +460,56 @@ describe('when the slip’s words reach paper (SCRUM-400)', () => {
     const pulled = await spinForSlip();
     expect(pulled.prizeId).toBe(hundredId);
     expect(pulled.terms[0]).toBe(unworded);
+  });
+});
+
+describe('the spin duration, from saved draft to published booth (SCRUM-452)', () => {
+  it('refuses invalid seconds without changing the draft', async () => {
+    for (const seconds of [1, 21, 12.5, null, '12']) {
+      const res = await settings({ spinDurationSeconds: seconds });
+      expect(res.statusCode, res.body).toBe(400);
+    }
+    expect((await draft()).settings.spinDurationSeconds).toBe(10);
+  });
+
+  it('saves and audits twelve seconds, and delivers it only after publish without moving prizes', async () => {
+    const originalPrizes = booth.config()!.bundle.prizes;
+    const oldVersion = booth.config()!.version;
+    const saved = await settings({ spinDurationSeconds: 12 });
+    expect(saved.statusCode, saved.body).toBe(200);
+    expect(saved.json().settings.spinDurationSeconds).toBe(12);
+    const pending = await draft();
+    expect(pending.bundle.settings.spinDurationSeconds).toBe(12);
+    expect(pending.publishedBundle!.settings.spinDurationSeconds).toBeUndefined();
+    expect(pending.changed).toBe(true);
+    await agent.syncCache();
+    expect(booth.config()!.version).toBe(oldVersion);
+
+    const [entry] = await db.select({ before: auditLog.before, after: auditLog.after }).from(auditLog)
+      .where(and(eq(auditLog.action, 'booth_settings.update'), eq(auditLog.entityId, boothId)))
+      .orderBy(desc(auditLog.createdAt)).limit(1);
+    expect(entry!.before).toMatchObject({ spinDurationSeconds: 10 });
+    expect(entry!.after).toMatchObject({ spinDurationSeconds: 12 });
+
+    expect(await publishNow('Spin duration: twelve seconds')).toBe(oldVersion + 1);
+    await agent.syncCache();
+    expect(booth.config()!.bundle.settings.spinDurationSeconds).toBe(12);
+    expect(booth.config()!.bundle.prizes).toEqual(originalPrizes);
+  });
+
+  it('accepts both whole-second bounds and publishes the ten-second default as an omitted field', async () => {
+    const originalPrizes = booth.config()!.bundle.prizes;
+    for (const seconds of [2, 20, 10]) {
+      const res = await settings({ spinDurationSeconds: seconds });
+      expect(res.statusCode, res.body).toBe(200);
+      expect(res.json().settings.spinDurationSeconds).toBe(seconds);
+    }
+    const pending = await draft();
+    expect('spinDurationSeconds' in pending.bundle.settings).toBe(false);
+    await publishNow('Spin duration: ten-second default');
+    await agent.syncCache();
+    expect(booth.config()!.bundle.settings.spinDurationSeconds).toBeUndefined();
+    expect(booth.config()!.bundle.prizes).toEqual(originalPrizes);
+    expect((await draft()).changed).toBe(false);
   });
 });

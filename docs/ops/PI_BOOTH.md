@@ -75,6 +75,8 @@ After the first install, **reboot once** (`sudo reboot`): the desktop logs in by
 
 **Until the booth's first publish the television has no wheel to show.** While the box is online it says "This booth is being set up — please ask our staff", with a note for staff under it, "No wheel published for this booth yet", that says to publish it in Console → Booths. With no internet it says "Booth not set up, connect to internet". The wheel appears by itself within about two minutes of the publish.
 
+**Spin duration:** Booth settings → **Spin duration (seconds)** defaults to 10 and accepts whole seconds from 2 to 20. Save settings, then Review and publish. The box keeps the published duration for offline play; a change takes effect on the next spin. Install the new Pi release using section 7's Update step before publishing a non-default duration. A cloud deployment alone does not replace the Pi's wheel screen.
+
 ## 6. At the booth
 
 - The Pi boots straight into the wheel. The television is up within seconds of the box starting, with or without internet — even when the line is up but the cloud does not answer: the box plays the wheel it holds, gives up on any call to the cloud that has not begun to answer within 15 seconds, and keeps trying in the background.

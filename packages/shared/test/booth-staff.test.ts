@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   BOOTH_SIGN_IN_REFUSALS,
+  BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
+  BOOTH_SPIN_DURATION_MIN_SECONDS,
+  BOOTH_SPIN_DURATION_MAX_SECONDS,
   BOOTH_STAFF_SESSION_DEFAULT_MINUTES,
   BOOTH_STAFF_SESSION_MAX_MINUTES,
   BOOTH_STAFF_VERIFY_ERRORS,
@@ -9,6 +12,7 @@ import {
   boothStaffCode,
   boothStaffLabel,
   boothStaffSessionMinutes,
+  boothSpinDurationSeconds,
 } from '../src/booth';
 import { ROLE_BUNDLES } from '../src/permissions';
 
@@ -24,6 +28,38 @@ const bundle = {
   layout: { id: '018f1d2c-0000-7000-8000-00000000fa00', name: 'Classic', version: 1, design: {}, assetManifest: {} },
   prizes: [],
 };
+
+describe('the published spin duration', () => {
+  it('leaves a historical bundle unchanged and resolves its absent duration as ten seconds', () => {
+    const parsed = BoothConfigBundleSchema.parse(bundle);
+    expect(parsed).toEqual(bundle);
+    expect(JSON.stringify(parsed)).toBe(JSON.stringify(bundle));
+    expect(parsed.settings.spinDurationSeconds).toBeUndefined();
+    expect(boothSpinDurationSeconds(parsed.settings)).toBe(10);
+    expect(BOOTH_SPIN_DURATION_DEFAULT_SECONDS).toBe(10);
+  });
+
+  it('retains configured whole seconds, including both bounds', () => {
+    expect(BOOTH_SPIN_DURATION_MIN_SECONDS).toBe(2);
+    expect(BOOTH_SPIN_DURATION_MAX_SECONDS).toBe(20);
+    for (const seconds of [2, 12, 20]) {
+      const parsed = BoothConfigBundleSchema.parse({
+        ...bundle, settings: { ...bundle.settings, spinDurationSeconds: seconds },
+      });
+      expect(boothSpinDurationSeconds(parsed.settings)).toBe(seconds);
+      expect(parsed.settings.spinDurationSeconds).toBe(seconds);
+    }
+  });
+
+  it('refuses a duration outside the range or a fraction and safely falls back at runtime', () => {
+    for (const bad of [0, 1, 21, 12.5, NaN]) {
+      expect(BoothConfigBundleSchema.safeParse({
+        ...bundle, settings: { ...bundle.settings, spinDurationSeconds: bad },
+      }).success).toBe(false);
+      expect(boothSpinDurationSeconds({ spinDurationSeconds: bad })).toBe(10);
+    }
+  });
+});
 
 describe('the booth session length (staffSessionMinutes)', () => {
   it('a bundle published before the field existed still parses, and runs on the default', () => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { BoothConfigBundle, SpinResponse } from '@oto/shared';
+import { boothSpinDurationSeconds, type BoothConfigBundle, type SpinResponse } from '@oto/shared';
 import { booth, boothCredential } from './booth/client';
 import { BoothCallError, type BoothStatus } from './booth/contract';
 import { readAssetManifest, readColor, readDesign, type WheelDesign } from './booth/design';
@@ -909,6 +909,7 @@ export default function App() {
             targetIndex={targetIndex}
             onSpinEnd={onSpinEnd}
             isSpinning={isSpinning}
+            spinDurationSeconds={boothSpinDurationSeconds(config?.bundle.settings ?? {})}
           />
         </div>
 

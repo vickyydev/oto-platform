@@ -60,12 +60,13 @@ POS typecheck, package lint and independent review. This branch has not deployed
 SCRUM-387 is Testing on the work branch: first-transaction response ownership, complete
 inquiry/confirmation envelopes and public sale/print responses are implemented;
 all 81 tests in four existing files, API typecheck and lint pass.
-SCRUM-452 is In Progress: the Lucky Wheel gets a ten-second default and a
+SCRUM-452 is Testing on the work branch: the Lucky Wheel gets a ten-second default and a
 Console draft setting for whole seconds from 2 to 20. Migration 0028 passed
 22 existing database tests and DB typecheck/lint; shared and wheel tests and
 all touched front-end/API typechecks and lint pass. Existing API booth files
 pass 44 tests (84 tests across the spin-duration changes).
-Both parts will land together in one deployment after separate commits.
+SCRUM-387 is committed as 233113e; both parts will land together in one
+deployment after separate source commits.
 
 The four-screen Slice F workflow remains unbuilt. Its complete offline and separate-display acceptance
 also needs the existing SCRUM-269/285 and S2-08 seams. Real 2C2P sandbox

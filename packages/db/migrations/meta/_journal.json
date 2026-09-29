@@ -197,6 +197,13 @@
       "when": 1790589009478,
       "tag": "0027_booth_pin_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790653493211,
+      "tag": "0028_booth_spin_duration",
+      "breakpoints": true
     }
   ]
 }

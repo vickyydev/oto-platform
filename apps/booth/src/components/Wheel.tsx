@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { boothSpinDurationSeconds } from '@oto/shared';
 import { playSfx } from '../sound';
 
 /**
@@ -25,9 +26,9 @@ interface Props {
   /** Fired when the animation finishes. The caller already knows what was won. */
   onSpinEnd?: () => void;
   isSpinning: boolean;
+  spinDurationSeconds?: number;
 }
 
-const SPIN_DURATION_S = 5.2;
 const FULL_SPINS = 6;
 
 // Must match the CSS transition timing function used for the spin below — the
@@ -62,11 +63,15 @@ function bezierProgress(x: number): number {
  * always fires, so the flow always advances to the result even if the
  * transition never runs.
  */
-export function Wheel({ slices, targetIndex, onSpinEnd, isSpinning }: Props) {
+export function Wheel({ slices, targetIndex, onSpinEnd, isSpinning, spinDurationSeconds }: Props) {
   const wheelRef = useRef<HTMLDivElement | null>(null);
   const pointerRef = useRef<HTMLDivElement | null>(null);
   const flashRef = useRef<HTMLDivElement | null>(null);
   const rotationRef = useRef(0);
+  const durationRef = useRef(boothSpinDurationSeconds({ spinDurationSeconds }));
+  useEffect(() => {
+    durationRef.current = boothSpinDurationSeconds({ spinDurationSeconds });
+  });
 
   // Keep the latest callback in a ref so the spin effect never re-runs mid-spin.
   const onSpinEndRef = useRef(onSpinEnd);
@@ -122,6 +127,8 @@ export function Wheel({ slices, targetIndex, onSpinEnd, isSpinning }: Props) {
     if (targetIndex === null || !isSpinning) return;
     const spinSlices = slicesRef.current;
     if (spinSlices.length === 0) return;
+    // One snapshot drives the animation, ticks and landing timer for this spin.
+    const durationSeconds = durationRef.current;
     const slice = 360 / spinSlices.length;
 
     // The pointer is at 12 o'clock. Slice i is centred at i*slice + slice/2
@@ -155,7 +162,7 @@ export function Wheel({ slices, targetIndex, onSpinEnd, isSpinning }: Props) {
       el.style.transform = 'rotate(' + current + 'deg) translateZ(0)';
       void el.getBoundingClientRect();
       el.style.transition =
-        'transform ' + SPIN_DURATION_S + 's cubic-bezier(' + BEZ.join(', ') + ')';
+        'transform ' + durationSeconds + 's cubic-bezier(' + BEZ.join(', ') + ')';
       el.style.transform = 'rotate(' + final + 'deg) translateZ(0)';
     }
 
@@ -182,8 +189,8 @@ export function Wheel({ slices, targetIndex, onSpinEnd, isSpinning }: Props) {
         if (bezierProgress(mid) < frac) lo = mid;
         else hi = mid;
       }
-      const tMs = ((lo + hi) / 2) * SPIN_DURATION_S * 1000;
-      if (tMs < 40 || tMs > SPIN_DURATION_S * 1000 - 60) continue;
+      const tMs = ((lo + hi) / 2) * durationSeconds * 1000;
+      if (tMs < 40 || tMs > durationSeconds * 1000 - 60) continue;
       if (tMs - lastTickMs < MIN_TICK_GAP_MS) continue;
       lastTickMs = tMs;
       tickTimers.push(
@@ -224,7 +231,7 @@ export function Wheel({ slices, targetIndex, onSpinEnd, isSpinning }: Props) {
       }
       playSfx('win');
       onSpinEndRef.current?.();
-    }, SPIN_DURATION_S * 1000);
+    }, durationSeconds * 1000);
 
     return () => {
       window.clearTimeout(endTimer);
