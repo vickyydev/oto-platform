@@ -2,6 +2,23 @@
 
 ## STOP POINT - 29 September 2026 - Sprint 2 payments resumed
 
+Current checkpoint: online UI source `0468c38` is live on the five staging
+services and main CI 36547262414 is green. Native UI acceptance is in progress;
+setup and selector fixes so far have caused no financial sale or payment.
+SCRUM-206 stays In Progress, with offline till transport (269) and separate
+display (201) still required for the full story. Do not repeat a completed
+money case while repairing proof setup; retain and inspect its sale first.
+
+SCRUM-285 source is checked on `fix/offline-proof`. The authenticated selected
+station's persisted virtual-box offline flag refuses 26 cloud trading routes
+before HTTP idempotency can claim or replay a key. Reporting/admin/reconnect
+remain reachable, and original dynamic receipt/voucher branch checks remain.
+All 44 existing station/route checks, API typecheck and full API lint pass.
+Architecture section 17 has the current offline capability matrix; full till
+transport is NOT BUILT. Branch CI and staging proof are next. Finish the native
+206 proof before landing this branch, so API deployment and virtual-box
+offline toggles cannot interrupt a pending proof payment.
+
 Current round: the online SCRUM-206 Slice F UI is landing on main from the
 rebased `cf67d86` checkpoint. The four till screens and mobile food-station
 caller share real collection and guarded recovery. Small source follow-ups

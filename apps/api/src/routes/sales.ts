@@ -347,7 +347,7 @@ export async function saleRoutes(app: App): Promise<void> {
   app.post(
     '/quote',
     {
-      config: { permission: 'pos:sale:create', target: { branchId: 'body.branchId' } },
+      config: { permission: 'pos:sale:create', target: { branchId: 'body.branchId' }, stationTrading: true },
       schema: {
         description:
           'Price a ticket cart with the platform engine — the one answer to what this costs',
@@ -364,7 +364,7 @@ export async function saleRoutes(app: App): Promise<void> {
   app.post(
     '/',
     {
-      config: { permission: 'pos:sale:create', target: { branchId: 'body.branchId' } },
+      config: { permission: 'pos:sale:create', target: { branchId: 'body.branchId' }, stationTrading: true },
       schema: {
         description:
           'Record a ticket sale. It is written unfinalised and with no receipt number; ' +
@@ -429,7 +429,7 @@ export async function saleRoutes(app: App): Promise<void> {
   app.post(
     '/:id/finalise',
     {
-      config: { permission: 'pos:sale:update' },
+      config: { permission: 'pos:sale:update', stationTrading: true },
       schema: {
         description:
           'Take the tender and close the sale: record the payment attempt, allocate the ' +
@@ -498,7 +498,7 @@ export async function saleRoutes(app: App): Promise<void> {
   app.post(
     '/:id/void',
     {
-      config: { permission: 'pos:sale:void' },
+      config: { permission: 'pos:sale:void', stationTrading: true },
       schema: {
         description:
           'Void a sale that was rung up and took no money — the till’s cancel. The sale is ' +

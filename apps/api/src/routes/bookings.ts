@@ -189,7 +189,7 @@ export async function bookingRoutes(app: App): Promise<void> {
   app.post(
     '/:id/redeem',
     {
-      config: { permission: 'pos:booking:redeem' },
+      config: { permission: 'pos:booking:redeem', stationTrading: true },
       schema: {
         description: 'Redeem an online booking at the counter — once',
         params: z.object({ id: z.string().uuid() }),

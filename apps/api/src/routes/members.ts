@@ -166,7 +166,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.get(
     '/lookup',
     {
-      config: { permission: 'pos:member:read' },
+      config: { permission: 'pos:member:read', stationTrading: true },
       schema: {
         description: 'Look up a member by phone, with children and tier verification',
         querystring: z.object({ phone: z.string() }),
@@ -244,7 +244,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.delete(
     '/:id',
     {
-      config: { permission: 'pos:member:update' },
+      config: { permission: 'pos:member:update', stationTrading: true },
       schema: { description: 'Archive a member', params: z.object({ id: z.string().uuid() }) },
     },
     async (req) => {
@@ -303,7 +303,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.post(
     '/',
     {
-      config: { permission: 'pos:member:create' },
+      config: { permission: 'pos:member:create', stationTrading: true },
       schema: {
         description: 'Create a member (phone + name only)',
         body: z.object({
@@ -387,7 +387,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.patch(
     '/:id',
     {
-      config: { permission: 'pos:member:update' },
+      config: { permission: 'pos:member:update', stationTrading: true },
       schema: {
         description: 'Enrich a member',
         params: z.object({ id: z.string().uuid() }),
@@ -457,7 +457,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.post(
     '/:id/tier-verification',
     {
-      config: { permission: 'pos:member:update' },
+      config: { permission: 'pos:member:update', stationTrading: true },
       schema: {
         description: 'Record a checked tier proof document (verifier stamped from the session)',
         params: z.object({ id: z.string().uuid() }),
@@ -571,7 +571,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.delete(
     '/:id/tier-verification',
     {
-      config: { permission: 'pos:member:tier_downgrade' },
+      config: { permission: 'pos:member:tier_downgrade', stationTrading: true },
       schema: {
         description:
           "End a member's verified tier: back to the operator's baseline, with the reason filed",
@@ -679,7 +679,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.post(
     '/:id/children',
     {
-      config: { permission: 'pos:child:create' },
+      config: { permission: 'pos:child:create', stationTrading: true },
       schema: {
         description: 'Add a child to a member',
         params: z.object({ id: z.string().uuid() }),
@@ -742,7 +742,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.patch(
     '/children/:childId',
     {
-      config: { permission: 'pos:child:update' },
+      config: { permission: 'pos:child:update', stationTrading: true },
       schema: {
         description: 'Update a child (allergies etc.) — audited',
         params: z.object({ childId: z.string().uuid() }),
@@ -834,7 +834,7 @@ export async function memberRoutes(app: App): Promise<void> {
   app.delete(
     '/children/:childId',
     {
-      config: { permission: 'pos:child:update' },
+      config: { permission: 'pos:child:update', stationTrading: true },
       schema: {
         description:
           "Remove a child from the member's saved list — archived, audited, and idempotent",

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { and, desc, eq } from 'drizzle-orm';
 import {
   account,
@@ -6,8 +6,14 @@ import {
   box,
   boxOutbox,
   boxState,
+  idempotencyKey,
+  operator,
+  paymentAttempt,
+  sale,
+  session as sessionTable,
   station,
   stationSession,
+  ticketPackage,
   type Db,
 } from '@oto/db';
 import {
@@ -20,8 +26,10 @@ import {
   type PgPoolLike,
   type StationLease,
 } from '@oto/box-agent';
+import { newId } from '@oto/shared';
 import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 import { provisionVirtualBox } from '../src/services/box';
+import { forcedOfflineStation } from '../src/services/station-offline';
 
 /**
  * S2-05 — the station session document, reached the way a screen reaches it.
@@ -1010,5 +1018,266 @@ describe('the virtual box keeps its queue across a restart (S2-05)', () => {
     expect(rows.every((r) => r.state === 'acked')).toBe(true);
     fresh.stop();
     agent.stop();
+  });
+});
+
+describe('forced-offline cloud trading is fenced by the selected virtual station (SCRUM-285)', () => {
+  let proof: TestContext;
+  let proofAgent: BoxAgent;
+  let staffCookie: string;
+  let consoleCookie: string;
+  let otherCookie: string;
+  let staffId: string;
+  let proofStationId: string;
+  let proofBoxId: string;
+  let otherStationId: string;
+  let otherBoxId: string;
+  let proofOperatorId: string;
+  let proofBranchId: string;
+  let packageId: string;
+
+  const lookupUrl = '/members/lookup?phone=offline-proof-invalid';
+
+  async function offline(value: boolean): Promise<void> {
+    await proof.db.insert(boxState).values({ boxId: proofBoxId, offline: value })
+      .onConflictDoUpdate({ target: boxState.boxId, set: { offline: value } });
+  }
+
+  async function commitCart(id: string, cookie = staffCookie, at = proofStationId) {
+    return proof.app.inject({
+      method: 'POST', url: '/sales', headers: { cookie },
+      payload: {
+        id, stationId: at, finalise: false,
+        lines: [{ id: newId(), packageId, kids: 1, adults: 1 }],
+      },
+    });
+  }
+
+  beforeAll(async () => {
+    proof = await createTestContext({ env: { OPS_TEST_CONTROLS: 'true' } });
+    staffCookie = await signInAs(proof.app, RECEPTION.phone, RECEPTION.password);
+    consoleCookie = await signInAs(proof.app, ADMIN.phone, ADMIN.password);
+    otherCookie = await signInAs(proof.app, RECEPTION.phone, RECEPTION.password);
+    const [staff] = await proof.db.select({ id: account.id }).from(account)
+      .where(eq(account.phone, RECEPTION.phone));
+    staffId = staff!.id;
+    const [seat] = await proof.db.select({ branchId: sessionTable.branchId }).from(sessionTable)
+      .where(eq(sessionTable.accountId, staffId));
+    proofBranchId = seat!.branchId!;
+    const tills = await proof.db.select().from(station)
+      .where(and(eq(station.branchId, proofBranchId), eq(station.kind, 'till')));
+    const till = tills.find((row) => row.name === 'Reception Till 1')!;
+    proofStationId = till.id;
+    proofBoxId = till.boxId!;
+    proofOperatorId = till.operatorId;
+    proofAgent = createBoxAgent({
+      apiBaseUrl: 'http://offline-proof.test',
+      hostname: 'offline-proof',
+      credentials: memoryCredentialStore(),
+      claimCode: async () => (await provisionVirtualBox(proof.db, proof.app.log))?.claimCode ?? null,
+      store: new SqlBoxStore({ driver: postgresBoxDriver((proof.db as unknown as { $client: PgPoolLike }).$client) }),
+      fetch: async (url, init) => {
+        const response = await proof.app.inject({
+          method: init.method as 'GET', url: url.replace(/^https?:\/\/[^/]+/, ''),
+          headers: init.headers, payload: init.body,
+        });
+        return {
+          status: response.statusCode,
+          json: async () => response.body ? JSON.parse(response.body) : null,
+          text: async () => response.body,
+          header: (name) => {
+            const value = response.headers[name.toLowerCase()];
+            return typeof value === 'string' ? value : null;
+          },
+        };
+      },
+    });
+    await proofAgent.ensureRegistered();
+    await proofAgent.syncConfig();
+    expect(proofAgent.state.boxId).toBe(proofBoxId);
+    const [freshBox] = await proof.db.insert(box).values({
+      id: newId(),
+      operatorId: proofOperatorId, branchId: proofBranchId,
+      name: 'Offline proof second box', slot: 'offline-proof-second', role: 'virtual',
+    }).returning();
+    otherBoxId = freshBox!.id;
+    const [freshTill] = await proof.db.insert(station).values({
+      id: newId(),
+      operatorId: proofOperatorId, branchId: proofBranchId, boxId: otherBoxId,
+      name: 'Offline proof second till', codePrefix: 'F9', accessScope: 'all_staff',
+    }).returning();
+    otherStationId = freshTill!.id;
+    for (const [cookie, stationId] of [[staffCookie, proofStationId], [otherCookie, otherStationId]]) {
+      const picked = await proof.app.inject({
+        method: 'PUT', url: '/me/session/station', headers: { cookie: cookie! },
+        payload: { stationId },
+      });
+      expect(picked.statusCode).toBe(200);
+    }
+    const packages = await proof.db.select().from(ticketPackage)
+      .where(eq(ticketPackage.branchId, proofBranchId));
+    packageId = packages.find((row) => row.name === '2 Hours Play')!.id;
+  }, 180_000);
+
+  beforeEach(async () => {
+    proof.app.env.OPS_TEST_CONTROLS = true;
+    await offline(false);
+    await proof.db.update(box).set({ role: 'virtual', status: 'online', operatorId: proofOperatorId })
+      .where(eq(box.id, proofBoxId));
+    await proof.db.update(station).set({ operatorId: proofOperatorId }).where(eq(station.id, proofStationId));
+    await proof.db.update(sessionTable).set({ lockedAt: null }).where(eq(sessionTable.accountId, staffId));
+  });
+
+  afterEach(async () => {
+    await offline(false);
+    proof.app.env.OPS_TEST_CONTROLS = true;
+    await proof.db.update(box).set({ role: 'virtual', operatorId: proofOperatorId }).where(eq(box.id, proofBoxId));
+    await proof.db.update(station).set({ operatorId: proofOperatorId }).where(eq(station.id, proofStationId));
+    await proof.db.update(sessionTable).set({ lockedAt: null }).where(eq(sessionTable.accountId, staffId));
+  });
+
+  afterAll(async () => {
+    proofAgent?.stop();
+    await proof.close();
+  });
+
+  it('refuses operational lookup and sale/payment writes without recording money or a sale', async () => {
+    const beforeSales = await proof.db.select({ id: sale.id }).from(sale);
+    const beforeAttempts = await proof.db.select({ id: paymentAttempt.id }).from(paymentAttempt);
+    await offline(true);
+    const saleId = newId();
+    const requests = [
+      proof.app.inject({ method: 'GET', url: lookupUrl, headers: { cookie: staffCookie } }),
+      proof.app.inject({ method: 'GET', url: '/vouchers/lookup?code=offline-proof-invalid', headers: { cookie: staffCookie } }),
+      commitCart(saleId),
+      proof.app.inject({ method: 'POST', url: '/payments/attempts', headers: { cookie: staffCookie }, payload: { saleId, tender: 'card' } }),
+      proof.app.inject({ method: 'POST', url: `/sales/${saleId}/finalise`, headers: { cookie: staffCookie }, payload: { method: 'cash' } }),
+      proof.app.inject({ method: 'POST', url: '/me/session/pending-lookup/consume', headers: { cookie: staffCookie } }),
+    ];
+    for (const result of await Promise.all(requests)) {
+      expect(result.statusCode).toBe(503);
+      expect(result.json().error.code).toBe('STATION_FORCED_OFFLINE');
+    }
+    expect(await proof.db.select({ id: sale.id }).from(sale)).toHaveLength(beforeSales.length);
+    expect(await proof.db.select({ id: paymentAttempt.id }).from(paymentAttempt)).toHaveLength(beforeAttempts.length);
+  });
+
+  it('does not claim a blocked gesture, then safely replays its paid answer after reconnect', async () => {
+    const saleId = newId();
+    const committed = await commitCart(saleId);
+    expect(committed.statusCode).toBe(200);
+    const owed = committed.json().outstandingSatang as number;
+    const key = newId();
+    const pay = () => proof.app.inject({
+      method: 'POST', url: `/sales/${saleId}/finalise`,
+      headers: { cookie: staffCookie, 'idempotency-key': key },
+      payload: { method: 'cash', kind: 'cash', amountSatang: owed, tenderedSatang: owed, actionId: key },
+    });
+    const stored = () => proof.db.select().from(idempotencyKey)
+      .where(and(eq(idempotencyKey.accountId, staffId), eq(idempotencyKey.key, key)));
+    await offline(true);
+    expect((await pay()).statusCode).toBe(503);
+    expect(await stored()).toHaveLength(0);
+    expect(await proof.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(0);
+
+    await offline(false);
+    const paid = await pay();
+    expect(paid.statusCode).toBe(200);
+    expect(paid.json().finalised).toBe(true);
+    expect(await stored()).toHaveLength(1);
+    await offline(true);
+    const refusedReplay = await pay();
+    expect(refusedReplay.statusCode).toBe(503);
+    expect(refusedReplay.headers['x-oto-replay']).toBeUndefined();
+    expect(await stored()).toHaveLength(1);
+    await offline(false);
+    const replay = await pay();
+    expect(replay.statusCode).toBe(200);
+    expect(replay.headers['x-oto-replay']).toBe('true');
+    expect(replay.json()).toEqual(paid.json());
+    expect(await proof.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toHaveLength(1);
+  });
+
+  it('keeps anonymous, locked and missing-permission refusals ahead of the test refusal', async () => {
+    await offline(true);
+    expect((await proof.app.inject({ method: 'GET', url: lookupUrl })).statusCode).toBe(401);
+    const forbidden = await proof.app.inject({
+      method: 'DELETE', url: `/members/${newId()}/tier-verification`, headers: { cookie: staffCookie },
+      payload: { reason: 'Offline proof permission probe' },
+    });
+    expect(forbidden.statusCode).toBe(403);
+    expect(forbidden.json().error.code).toBe('FORBIDDEN');
+    await proof.db.update(sessionTable).set({ lockedAt: new Date() }).where(eq(sessionTable.accountId, staffId));
+    const locked = await proof.app.inject({ method: 'GET', url: lookupUrl, headers: { cookie: staffCookie } });
+    expect(locked.statusCode).toBe(423);
+    expect(locked.json().error.code).toBe('SESSION_LOCKED');
+  });
+
+  it('leaves unbound Console administration, reporting and recovery available', async () => {
+    const saleId = newId();
+    expect((await commitCart(saleId)).statusCode).toBe(200);
+    const paid = await proof.app.inject({
+      method: 'POST', url: `/sales/${saleId}/finalise`, headers: { cookie: staffCookie }, payload: { method: 'cash' },
+    });
+    expect(paid.statusCode).toBe(200);
+    const [attempt] = await proof.db.select({ id: paymentAttempt.id }).from(paymentAttempt)
+      .where(eq(paymentAttempt.saleId, saleId));
+    await proofAgent.setOffline(true, { reason: 'console' });
+    for (const [url, cookie] of [
+      [lookupUrl, consoleCookie],
+      [`/sales/${saleId}`, staffCookie],
+      [`/payments/attempts/${attempt!.id}`, staffCookie],
+      [`/boxes/${proofBoxId}/commands`, consoleCookie],
+      ['/me/station/link', staffCookie],
+    ]) {
+      expect((await proof.app.inject({ method: 'GET', url: url!, headers: { cookie: cookie! } })).statusCode, url).toBe(200);
+    }
+    const command = await proof.app.inject({
+      method: 'POST', url: `/boxes/${proofBoxId}/commands`, headers: { cookie: consoleCookie }, payload: { kind: 'go_online' },
+    });
+    expect(command.statusCode).toBe(200);
+    const consoleSale = await commitCart(newId(), consoleCookie);
+    expect(consoleSale.statusCode).toBe(200);
+    await proofAgent.runPendingCommands();
+    expect(proofAgent.state.offline).toBe(false);
+    expect((await proof.app.inject({ method: 'GET', url: lookupUrl, headers: { cookie: staffCookie } })).statusCode).toBe(200);
+  });
+
+  it('uses the authenticated selection rather than a caller-supplied station or another box', async () => {
+    await offline(true);
+    const forged = await proof.app.inject({
+      method: 'GET', url: lookupUrl, headers: { cookie: staffCookie, 'x-oto-station-id': otherStationId },
+    });
+    expect(forged.statusCode).toBe(503);
+    expect((await commitCart(newId(), staffCookie, otherStationId)).statusCode).toBe(503);
+    expect((await proof.app.inject({ method: 'GET', url: lookupUrl, headers: { cookie: otherCookie } })).statusCode).toBe(200);
+    expect((await commitCart(newId(), otherCookie, otherStationId)).statusCode).toBe(200);
+  });
+
+  it('does not mistake watchdog silence or a physical Pi for the virtual forced-offline toggle', async () => {
+    await proof.db.update(box).set({ status: 'offline' }).where(eq(box.id, proofBoxId));
+    expect((await proof.app.inject({ method: 'GET', url: lookupUrl, headers: { cookie: staffCookie } })).statusCode).toBe(200);
+    await offline(true);
+    await proof.db.update(box).set({ role: 'counter' }).where(eq(box.id, proofBoxId));
+    expect((await proof.app.inject({ method: 'GET', url: lookupUrl, headers: { cookie: staffCookie } })).statusCode).toBe(200);
+  });
+
+  it('does not apply test behaviour when test controls are disabled', async () => {
+    await offline(true);
+    proof.app.env.OPS_TEST_CONTROLS = false;
+    expect((await proof.app.inject({ method: 'GET', url: lookupUrl, headers: { cookie: staffCookie } })).statusCode).toBe(200);
+  });
+
+  it('fences both selected station and joined box to the authenticated operator', async () => {
+    await offline(true);
+    const auth = { operatorId: proofOperatorId, stationId: proofStationId };
+    expect(await forcedOfflineStation(proof.db, auth)).toEqual({ stationId: proofStationId, boxId: proofBoxId });
+    const [foreign] = await proof.db.insert(operator).values({ id: newId(), name: 'Offline proof other park' }).returning({ id: operator.id });
+    expect(await forcedOfflineStation(proof.db, { ...auth, operatorId: foreign!.id })).toBeNull();
+    await proof.db.update(box).set({ operatorId: foreign!.id }).where(eq(box.id, proofBoxId));
+    expect(await forcedOfflineStation(proof.db, auth)).toBeNull();
+    await proof.db.update(box).set({ operatorId: proofOperatorId }).where(eq(box.id, proofBoxId));
+    await proof.db.update(station).set({ operatorId: foreign!.id }).where(eq(station.id, proofStationId));
+    expect(await forcedOfflineStation(proof.db, auth)).toBeNull();
   });
 });

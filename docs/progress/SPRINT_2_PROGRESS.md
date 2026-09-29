@@ -4,6 +4,15 @@
 
 _Current checkpoint: 2026-09-29._
 
+Online UI source `0468c38` is live on the five staging services; main CI
+36547262414 is green. Native payment screen proof is in progress. Full
+SCRUM-206 stays In Progress pending local till transport and separate display.
+SCRUM-285 is checked on `fix/offline-proof`: 26 cloud trading routes are fenced
+by the selected station's persisted virtual test state, before idempotency.
+All 44 existing station/route tests, API typecheck and full API lint pass.
+The current capability matrix is in Architecture section 17. No new suite,
+migration or dependency. Branch CI, main landing and staging evidence pending.
+
 Current round: online SCRUM-206 Slice F is landing on main from the rebased
 `cf67d86` UI checkpoint, with the unsafe cash/part paste follow-up included.
 All 53 affected writer checks and POS typecheck, package lint and build pass.

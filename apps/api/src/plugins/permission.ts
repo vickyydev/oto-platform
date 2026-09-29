@@ -77,6 +77,8 @@ export interface PermissionConfig {
    * key whose answer is never written.
    */
   secretResponse?: true;
+  /** Cloud trading calls that a station's forced-offline test must refuse. */
+  stationTrading?: true;
 }
 
 declare module 'fastify' {
@@ -98,6 +100,19 @@ function readPath(req: FastifyRequest, path: TargetPath): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
+/** Also used before the forced-offline refusal, ahead of idempotency. */
+export async function requireRoutePermission(
+  req: FastifyRequest,
+  config: PermissionConfig,
+): Promise<void> {
+  if (!config.permission) return;
+  const target: Record<string, string | undefined> = {};
+  for (const [key, path] of Object.entries(config.target ?? {})) {
+    target[key] = readPath(req, path as TargetPath);
+  }
+  await req.requirePermission(config.permission, target);
+}
+
 export const permissionPlugin = fp(async (app: FastifyInstance) => {
   app.decorate('routeRegistry', [] as FastifyInstance['routeRegistry']);
 
@@ -109,13 +124,7 @@ export const permissionPlugin = fp(async (app: FastifyInstance) => {
     }
     if (!config.permission) return;
 
-    const guard = async (req: FastifyRequest) => {
-      const target: Record<string, string | undefined> = {};
-      for (const [key, path] of Object.entries(config.target ?? {})) {
-        target[key] = readPath(req, path as TargetPath);
-      }
-      await req.requirePermission(config.permission!, target);
-    };
+    const guard = (req: FastifyRequest) => requireRoutePermission(req, config);
 
     const existing = route.preHandler;
     route.preHandler = existing

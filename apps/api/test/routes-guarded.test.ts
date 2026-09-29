@@ -34,6 +34,43 @@ afterAll(async () => {
 const NOT_OURS = new Set(['/*']);
 
 describe('route guards (S2-01b)', () => {
+  it('pins the cloud trading surface refused by a selected forced-offline station', () => {
+    const trading = ctx.app.routeRegistry
+      .filter((r) => r.config.stationTrading && r.method !== 'HEAD' && r.method !== 'OPTIONS')
+      .map((r) => `${r.method} ${r.url.replace(/\/$/, '')}`)
+      .sort();
+    expect(trading).toEqual([
+      'DELETE /members/:id',
+      'DELETE /members/:id/tier-verification',
+      'DELETE /members/children/:childId',
+      'DELETE /sales/:id/vouchers/:voucherId',
+      'GET /members/lookup',
+      'GET /vouchers/lookup',
+      'PATCH /members/:id',
+      'PATCH /members/children/:childId',
+      'POST /bookings/:id/redeem',
+      'POST /me/session/pending-lookup/consume',
+      'POST /members',
+      'POST /members/:id/children',
+      'POST /members/:id/tier-verification',
+      'POST /payments/attempts',
+      'POST /payments/attempts/:id/confirm',
+      'POST /payments/attempts/:id/inquire',
+      'POST /payments/manual',
+      'POST /print-jobs/:id/reprint',
+      'POST /sales',
+      'POST /sales/:id/finalise',
+      'POST /sales/:id/void',
+      'POST /sales/:id/vouchers',
+      'POST /sales/quote',
+      'POST /sales/tier-claims',
+      'POST /visits',
+      'PUT /me/session/pending-lookup',
+    ]);
+    expect(ctx.app.routeRegistry.filter((r) => r.config.stationTrading &&
+      (r.config.public || r.config.credential || r.url.startsWith('/boxes/')))).toEqual([]);
+  });
+
   it('every registered route declares how it is guarded', () => {
     const routes = ctx.app.routeRegistry.filter(
       (r) => !NOT_OURS.has(r.url) && r.method !== 'HEAD' && r.method !== 'OPTIONS',

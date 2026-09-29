@@ -1,6 +1,22 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-09-29 - online till payment UI landing and staging proof._
+_Last updated: 2026-09-29 - online payment proof and forced-offline guard._
+
+Online payment UI source `0468c38` is live on API, POS, Console, Launcher and
+Booth; main CI 36547262414 is green. Native screen acceptance is still being
+checked on disposable simulator stations. Setup/selector retries have not
+taken money or created a financial sale. Do not mark SCRUM-206 Deployed: the
+full offline till transport (269) and separate display acceptance (201) remain.
+
+SCRUM-285 is checked on `fix/offline-proof`: 26 trading routes refuse with
+`503 STATION_FORCED_OFFLINE` for the authenticated station's deliberate virtual
+box test state, before claiming or replaying an idempotency key. Reporting,
+administration and reconnect controls remain available. Original dynamic
+receipt/voucher branch permissions are preserved. All 44 checks in the two
+existing station/route suites, API typecheck and full API lint pass. No new
+suite, migration or dependency. Architecture section 17 records what works
+and the local till flows that are not built. Branch CI, main landing,
+deployment and named staging screenshots are still pending.
 
 The current SCRUM-206 round lands the checked online Slice F UI on main.
 The source originally pushed as `cf67d86` has been rebased onto the verified

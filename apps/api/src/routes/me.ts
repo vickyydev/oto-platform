@@ -181,7 +181,7 @@ export async function meRoutes(app: App): Promise<void> {
   // the till THROUGH THE API: a short-lived pending lookup on the session.
   app.put(
     '/session/pending-lookup',
-    { config: { auth: 'session' }, schema: { description: 'Customer display: stage a membership lookup', body: z.object({ phone: z.string() }) } },
+    { config: { auth: 'session', stationTrading: true }, schema: { description: 'Customer display: stage a membership lookup', body: z.object({ phone: z.string() }) } },
     async (req) => {
       const auth = req.requireAuth();
       await app.db
@@ -194,7 +194,7 @@ export async function meRoutes(app: App): Promise<void> {
 
   app.post(
     '/session/pending-lookup/consume',
-    { config: { auth: 'session' }, schema: { description: 'Till: consume the staged lookup (30s TTL)' } },
+    { config: { auth: 'session', stationTrading: true }, schema: { description: 'Till: consume the staged lookup (30s TTL)' } },
     async (req) => {
       const auth = req.requireAuth();
       const [row] = await app.db
