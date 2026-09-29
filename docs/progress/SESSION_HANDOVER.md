@@ -9,7 +9,7 @@ Write new history and progress comments about OTO Park and the park.
 
 Main is `b02f7e0`; the completed work branch `fix/payment-prerequisites`, based
 on `a4a79d7`, is preserved. The first batch is SCRUM-391, SCRUM-388 and
-SCRUM-382. All three are Testing, with starting, implementation and landing
+SCRUM-382. All three are Deployed, with starting, implementation and landing
 comments. SCRUM-206 remains In Progress.
 SCRUM-388 adds one common sale-locked reservation check in
 `services/payments/attempt.ts`. Every writer reserves pending money before
@@ -45,17 +45,15 @@ No new suite, migration or dependency. Branch CI 36485272336 and main CI
 36486990526 are green. One deployment put API, POS, Console, Launcher and Booth
 live on b02f7e0; the OTO App remains c416065.
 
-Read-only staging inspection confirms the in-process box and gateway simulator.
-The report and native Console screenshot are in docs/qa/payment-prerequisites;
-staging-391-gateway-read-only.png is attached to SCRUM-391 as 10854.
-The disposable behavioural proof in test-results/payment-prerequisites-proof.mts
-was blocked before execution by automatic approval review: creation and archival
-of shared staging test configuration and financial records needs explicit
-approval. No proof records were created. Approval was requested for a dedicated
-simulated station, terminal and methods, with test sales retained in the audit
-history. Keep the three tickets Testing until approved proof passes; do not
-label read-only configuration evidence as payment verification. The physical
-booth and global tender methods remain unchanged.
+The resumed instruction authorised scoped staging proof. All 21 behaviour
+checks passed: routing, missing-callback recovery, disabled/archived tender
+refusal, existing outcome settlement and pending balance reservation. Dedicated
+proof methods were disabled and its station/terminal archived; test sales remain
+in audit history. Six reviewed screenshots and the sanitised report are in
+docs/qa/payment-prerequisites, attached to Jira as 10855-10860. Native Console
+routing and paid POS History are separate from clearly labelled API test-run
+cards. The final capture used the native station picker, reusing the 21 checks
+without repeating financial records. The three tickets are Deployed.
 
 Each push needs a ticket status change and progress comment. Deployed still
 requires a named staging screenshot.
@@ -72,9 +70,20 @@ lint and independent review pass. No till UI has been wired and this branch
 has not deployed. The checkpoint is on the work branch; main and staging stay
 on the previous release while the complete workflow is built.
 
-SCRUM-387 carries the newly confirmed inquiry/confirmation cache-envelope case
-as a follow-up comment. Fix those responses and their existing-suite replay
-checks before using reliable UI retries. No new defect ticket was created.
+SCRUM-387 is In Progress. Its local changes keep the first transaction's answer,
+cache complete inquiry/confirmation envelopes, remove internal drawer routing
+from sale replies and preserve complete print responses. Existing affected
+tests pass (81 in four files); API typecheck and lint pass. No new defect ticket.
+
+SCRUM-452 is the new spin-duration task in sprint 3, linked to SCRUM-198.
+The ten-second default and whole-second Console control (2-20) are implemented
+locally. A duration is frozen for each spin; it travels through the existing
+publish flow and cached bundle. Default 10 is omitted from published settings
+to preserve old version/hash bytes. Migration 0028 passed 22 existing DB tests;
+shared 13, wheel 5 and API 44 tests, all touched typechecks/lint pass (84 tests
+total). Separate source commits, then one deployment with SCRUM-387, staging
+proof and a verified CI-packed Pi release. Update the physical Pi before
+publishing a non-default duration; cloud deployment alone does not update it.
 
 Continue SCRUM-206 Slice F. Its UI must use the
 authoritative sale and a distinct stable identity per deliberate split tender;

@@ -10,13 +10,19 @@ STOP POINT block of `docs/progress/SESSION_HANDOVER.md` before acting.
 OTO Park has completed the Lucky Wheel physical bench test and shared the demo.
 The active instruction is now to resume the remaining Sprint 2 software.
 SCRUM-391, SCRUM-388 and SCRUM-382 are implemented on main at b02f7e0 and are
-Testing. Main CI is green and the release is live on staging. Behavioural
-proof awaits explicit approval for dedicated simulated test records after
-automatic approval review blocked execution. The next story is
+Deployed. Main CI is green and all 21 staging behaviour checks passed, with
+named screenshots attached. The next story is
 SCRUM-206 Slice F; its offline and separate-display dependencies remain under
 the existing tickets. Read the newest 29 September STOP POINT and STATUS for
 the current release and evidence. The bench instructions in section 4 below
 are historical completed work; their shared contract names remain unchanged.
+
+The current work branch is feat/payment-stage. Slice F has a tested shared
+foundation; its four screens remain unwired. SCRUM-387's response-cache fixes
+and SCRUM-452's ten-second wheel default/Console control are implemented locally
+with 165 passing existing-file tests, for separate commits and one deployment.
+See the live
+checkpoint for tests and the required packaged Pi update.
 
 ## 1. What this is, in five lines
 

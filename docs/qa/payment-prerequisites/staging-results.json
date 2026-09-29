@@ -1,0 +1,279 @@
+{
+  "sourceReleaseSha": "b02f7e0",
+  "capturedAt": "2026-09-29T03:44:47.579Z",
+  "proofCompleted": true,
+  "virtualBoxId": "01a0be8c-89a0-74fa-9495-fb4a4acb65bc",
+  "stationId": "01a0eb40-40d2-72de-9870-4626b8857cc5",
+  "terminalId": "01a0eb40-3f0a-7946-900f-5cf46c9320ba",
+  "checks": [
+    {
+      "ticket": "SCRUM-391",
+      "case": "Saved gateway route and durable QR metadata",
+      "result": "PASS",
+      "facts": {
+        "route": "gateway",
+        "saleId": "b1642065-46dd-4e90-8fbd-6968be665d95",
+        "attemptId": "01a0eb40-613d-7997-9426-dd8480cfae26",
+        "amountSatang": 104000,
+        "qrPayloadPresent": true,
+        "qrImagePresent": false,
+        "expiryPresent": true,
+        "expiryTimerMs": 1199985,
+        "readMetadataMatches": true
+      }
+    },
+    {
+      "ticket": "SCRUM-391",
+      "case": "Signed gateway notification closes the sale",
+      "result": "PASS",
+      "facts": {
+        "attemptId": "01a0eb40-613d-7997-9426-dd8480cfae26",
+        "status": "approved",
+        "outstandingSatang": 0,
+        "saleStatus": "finalised",
+        "webhookOutcome": "settled"
+      }
+    },
+    {
+      "ticket": "SCRUM-391",
+      "case": "Inquiry recovers a payment with no callback",
+      "result": "PASS",
+      "facts": {
+        "attemptId": "01a0eb40-7c6c-7bdd-919b-d0a1f8f00f3e",
+        "webhookSent": false,
+        "status": "approved",
+        "outstandingSatang": 0,
+        "elapsedMs": 8009
+      }
+    },
+    {
+      "ticket": "SCRUM-391",
+      "case": "QR disabled at the station creates no attempt",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "QR_DISABLED_FOR_STATION",
+        "attemptsBefore": 0,
+        "attemptsAfter": 0,
+        "saleId": "4cb032ff-5727-40ad-a726-b061cf46ae6a"
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "disabled cash tender is refused",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_METHOD_UNAVAILABLE",
+        "attemptsBefore": 0,
+        "attemptsAfter": 0,
+        "saleId": "fa682dc6-0ca8-462b-a674-1669c9c89f48"
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "disabled card tender is refused",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_METHOD_UNAVAILABLE",
+        "attemptsBefore": 0,
+        "attemptsAfter": 0,
+        "saleId": "56f903af-9382-4080-ac37-498413742241"
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "disabled manual card is refused",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_METHOD_UNAVAILABLE",
+        "attemptsBefore": 0,
+        "attemptsAfter": 0,
+        "saleId": "56f903af-9382-4080-ac37-498413742241"
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "disabled qr tender is refused",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_METHOD_UNAVAILABLE",
+        "attemptsBefore": 0,
+        "attemptsAfter": 0,
+        "saleId": "0576edc1-10ea-4f10-8a2e-6a637754076f"
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "archived cash tender is refused",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_METHOD_UNAVAILABLE",
+        "attemptsBefore": 0,
+        "attemptsAfter": 0,
+        "saleId": "91baf07a-0b83-4f60-b043-8aa1b954a653"
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "archived card tender is refused",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_METHOD_UNAVAILABLE",
+        "attemptsBefore": 0,
+        "attemptsAfter": 0,
+        "saleId": "2f65c44c-3906-46be-9974-df537706b777"
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "archived manual card is refused",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_METHOD_UNAVAILABLE",
+        "attemptsBefore": 0,
+        "attemptsAfter": 0,
+        "saleId": "2f65c44c-3906-46be-9974-df537706b777"
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "archived qr tender is refused",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_METHOD_UNAVAILABLE",
+        "attemptsBefore": 0,
+        "attemptsAfter": 0,
+        "saleId": "6b74f647-caab-41a6-afad-bcc44280610e"
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "A live replacement tender takes precedence over its archived history",
+      "result": "PASS",
+      "facts": {
+        "saleId": "3db9721e-cfa7-439d-87a0-973c42d3c796",
+        "sameCodeRecreated": true,
+        "finalised": true,
+        "outstandingSatang": 0,
+        "attempts": 1
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "An existing QR payment still settles after its method is disabled",
+      "result": "PASS",
+      "facts": {
+        "attemptId": "01a0eb41-198c-7d98-ac16-0acfc9fb8e92",
+        "status": "approved",
+        "outstandingSatang": 0
+      }
+    },
+    {
+      "ticket": "SCRUM-388",
+      "case": "Pending terminal request replays without a second attempt",
+      "result": "PASS",
+      "facts": {
+        "saleId": "a6610237-f9a4-4eca-bcba-6a8221133c21",
+        "attemptId": "01a0eb41-2478-7d3f-a172-671a92f03bdb",
+        "grossSatang": 104000,
+        "reservedSatang": 103000,
+        "availableSatang": 1000,
+        "replayed": true,
+        "attempts": 1
+      }
+    },
+    {
+      "ticket": "SCRUM-388",
+      "case": "A distinct terminal request cannot reuse the reserved balance",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_IN_FLIGHT",
+        "attemptsBefore": 1,
+        "attemptsAfter": 1,
+        "saleId": "a6610237-f9a4-4eca-bcba-6a8221133c21"
+      }
+    },
+    {
+      "ticket": "SCRUM-388",
+      "case": "Cash cannot reuse the reserved balance",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_IN_FLIGHT",
+        "attemptsBefore": 1,
+        "attemptsAfter": 1,
+        "saleId": "a6610237-f9a4-4eca-bcba-6a8221133c21"
+      }
+    },
+    {
+      "ticket": "SCRUM-388",
+      "case": "Manual card cannot reuse the reserved balance",
+      "result": "PASS",
+      "facts": {
+        "httpStatus": 409,
+        "errorCode": "PAYMENT_IN_FLIGHT",
+        "attemptsBefore": 1,
+        "attemptsAfter": 1,
+        "saleId": "a6610237-f9a4-4eca-bcba-6a8221133c21"
+      }
+    },
+    {
+      "ticket": "SCRUM-388",
+      "case": "Only the unreserved split balance can be paid",
+      "result": "PASS",
+      "facts": {
+        "amountSatang": 1000,
+        "outstandingSatang": 103000,
+        "finalised": false,
+        "attempts": 2
+      }
+    },
+    {
+      "ticket": "SCRUM-382",
+      "case": "An existing terminal outcome is accepted after its method is disabled",
+      "result": "PASS",
+      "facts": {
+        "attemptId": "01a0eb41-2478-7d3f-a172-671a92f03bdb",
+        "confirmationState": "awaiting_staff_confirmation",
+        "status": "approved",
+        "outstandingSatang": 0,
+        "finalised": true
+      }
+    },
+    {
+      "ticket": "SCRUM-388",
+      "case": "The settled split closes without collecting the money twice",
+      "result": "PASS",
+      "facts": {
+        "saleId": "a6610237-f9a4-4eca-bcba-6a8221133c21",
+        "outstandingSatang": 0,
+        "finalised": true,
+        "attempts": 2
+      }
+    }
+  ],
+  "cleanupNotes": [],
+  "evidenceCapturedAt": "2026-09-29T03:51:04.214Z",
+  "nativeHistory": {
+    "saleId": "b1642065-46dd-4e90-8fbd-6968be665d95",
+    "businessDate": "2026-09-29",
+    "sessionStationId": "01a0bbdc-8cd7-7208-8e05-84eaf2963a9a"
+  },
+  "evidenceFiles": [
+    "staging-391-gateway-routing.png",
+    "staging-391-station-routing.png",
+    "staging-391-pos-history.png",
+    "staging-391-api-routing-proof.png",
+    "staging-388-reserved-balance.png",
+    "staging-382-unavailable-tenders.png"
+  ]
+}

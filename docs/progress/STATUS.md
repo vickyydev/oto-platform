@@ -34,20 +34,21 @@ after the durable attempt commits. The existing gateway and terminal files pass
 
 The three separate commits are reservation `e333994`, method availability
 `c0aefae`, and routing `b02f7e0`.
-All three tickets are Testing in active sprint id 3, Sprint 2. Seven existing
+All three tickets are Deployed in active sprint id 3, Sprint 2. Seven existing
 API files pass 196 tests; API typecheck, changed-file lint and independent review
 pass. No new suite, migration or dependency.
 
 [Main CI 36486990526](https://github.com/vickyydev/oto-platform/actions/runs/36486990526)
 and the final branch run 36485272336 are green. One deployment put API, POS,
 Console, Launcher and Booth live on `b02f7e0`; the OTO App remains on `c416065`.
-Read-only staging inspection confirms the in-process box and gateway simulator.
-Its [report and Console screenshot](../qa/payment-prerequisites/README.md) are
-saved; the screenshot is attached to SCRUM-391 as 10854.
-The behavioural proof has not run: automatic approval review rejected creation
-and archival of shared staging test records. Explicit approval was requested
-for a dedicated simulated station, terminal, methods and test sales. Keep the
-three tickets Testing until that proof passes and named screenshots are attached.
+All 21 staging behaviour checks passed after the resumed instruction authorised
+the scoped proof. Saved QR routing, callback-free recovery, unavailable tender
+refusal and pending money reservation work. The dedicated proof configuration
+was disabled or archived; test sales remain in audit history. Six reviewed
+screenshots and the sanitised [report](../qa/payment-prerequisites/README.md)
+are saved. Jira attachments 10855-10860 provide native Console/POS screens and
+clearly labelled API test-run cards. The History capture used the native station
+picker and reused the passing checks without repeating financial tests.
 
 Independent Slice F work has started on `feat/payment-stage`, from checkpoint
 `11d216d`. Its shared foundation adds the cloud payment client, keeps partial
@@ -56,8 +57,15 @@ stable identities, and closes settled payments with explicit `NO_TENDER`.
 Late responses are fenced by sale identity and epoch, including cart changes,
 reset and unmount. All 38 tests in the existing sale-writer file pass, as do
 POS typecheck, package lint and independent review. This branch has not deployed.
-The existing SCRUM-387 now carries an inquiry/confirmation response-cache
-follow-up: complete public envelopes must be cached before safe UI retries.
+SCRUM-387 is In Progress: first-transaction response ownership, complete
+inquiry/confirmation envelopes and public sale/print responses are implemented
+locally; all 81 tests in four existing files, API typecheck and lint pass.
+SCRUM-452 is In Progress: the Lucky Wheel gets a ten-second default and a
+Console draft setting for whole seconds from 2 to 20. Migration 0028 passed
+22 existing database tests and DB typecheck/lint; shared and wheel tests and
+all touched front-end/API typechecks and lint pass. Existing API booth files
+pass 44 tests (84 tests across the spin-duration changes).
+Both parts will land together in one deployment after separate commits.
 
 The four-screen Slice F workflow remains unbuilt. Its complete offline and separate-display acceptance
 also needs the existing SCRUM-269/285 and S2-08 seams. Real 2C2P sandbox

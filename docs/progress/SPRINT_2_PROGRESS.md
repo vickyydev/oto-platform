@@ -6,7 +6,7 @@ _Current checkpoint: 2026-09-29._
 
 The Lucky Wheel bench test and walkthrough are complete. Sprint 2 resumes
 with SCRUM-391, SCRUM-388 and SCRUM-382 landed on main at `b02f7e0`, then
-SCRUM-206 Slice F. All three prerequisites are Testing in active sprint id 3.
+SCRUM-206 Slice F. All three prerequisites are Deployed in active sprint id 3.
 The common writer reserves unresolved money; unavailable configured methods
 refuse, with offline facts retained for correction and Replay; the till-facing
 QR route honours the station's saved setting and returns QR/expiry metadata.
@@ -16,10 +16,11 @@ commits are e333994 and c0aefae; routing is b02f7e0. Main CI 36486990526 and
 branch CI 36485272336 are green. API, POS, Console, Launcher and Booth are live
 on b02f7e0 after one deployment; the OTO App remains c416065.
 
-Read-only inspection confirms the staging simulators. Behavioural proof awaits
-explicit approval to create and archive dedicated simulated test records after
-automatic approval review blocked it before execution. The tickets remain
-Testing until proof passes and named staging screenshots are attached.
+All 21 staging behaviour checks passed after the resumed instruction authorised
+the scoped proof. Six reviewed screenshots are attached as 10855-10860; the
+native Console/POS captures and labelled API cards are saved with the report
+in docs/qa/payment-prerequisites. Proof configuration was disabled or archived;
+test sales remain in audit history. The three tickets are Deployed.
 Read the newest STOP POINT in `SESSION_HANDOVER.md`.
 
 Slice F foundation work is on `feat/payment-stage` from `11d216d`: shared cloud
@@ -28,7 +29,11 @@ explicit zero-tender closing and stale-response guards. All 38 existing-file
 tests, POS typecheck, package lint and independent review pass. The four screens
 remain unwired and nothing from this branch has
 deployed. The inquiry/confirmation response-envelope follow-up is recorded
-under the existing SCRUM-387 defect.
+under the existing SCRUM-387 defect, now implemented locally with 81 tests passing.
+SCRUM-452 adds a ten-second wheel default and Console control for whole seconds
+from 2 to 20 through the existing publish flow. Its 84 existing-file tests pass;
+touched package typechecks and lint pass. Both parts will land in one deployment
+after separate source commits.
 
 Slice F also depends on the existing offline transport work (269/285) and
 S2-08 for separate-device display acceptance. Simulator payment evidence and
