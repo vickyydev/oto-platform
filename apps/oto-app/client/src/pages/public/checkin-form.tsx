@@ -198,6 +198,10 @@ export default function PublicCheckinForm() {
         return;
       }
       const compressed = await compressImage(file);
+      if (compressed.size > 10 * 1024 * 1024) {
+        toast({ title: "File too large", description: "Please select a photo that compresses under 10MB", variant: "destructive" });
+        return;
+      }
       setPhotoFile(compressed);
       setPhotoPreview(URL.createObjectURL(compressed));
     }
