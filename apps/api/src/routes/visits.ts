@@ -30,7 +30,7 @@ export async function visitRoutes(app: App): Promise<void> {
        * the fallback to the session's branch is the right answer and the
        * re-check is what proves it.
        */
-      config: { permission: 'pos:visit:create', target: { branchId: 'body.branchId' } },
+      config: { permission: 'pos:visit:create', target: { branchId: 'body.branchId' }, stationTrading: true },
       schema: {
         description: 'Create a draft visit with confirmed children',
         body: z.object({

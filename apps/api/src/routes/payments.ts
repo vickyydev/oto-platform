@@ -204,7 +204,7 @@ export async function paymentRoutes(app: App): Promise<void> {
   app.post(
     '/attempts',
     {
-      config: { permission: 'pos:payment:capture' },
+      config: { permission: 'pos:payment:capture', stationTrading: true },
       schema: {
         description:
           'Take a tender using the station’s saved routing: a terminal, the QR gateway, or ' +
@@ -393,7 +393,7 @@ export async function paymentRoutes(app: App): Promise<void> {
   app.post(
     '/attempts/:id/inquire',
     {
-      config: { permission: 'pos:payment:confirm' },
+      config: { permission: 'pos:payment:confirm', stationTrading: true },
       schema: {
         description:
           'Ask the terminal again what happened to a tender it never answered about. Refused on a ' +
@@ -414,7 +414,7 @@ export async function paymentRoutes(app: App): Promise<void> {
   app.post(
     '/attempts/:id/confirm',
     {
-      config: { permission: 'pos:payment:confirm' },
+      config: { permission: 'pos:payment:confirm', stationTrading: true },
       schema: {
         description:
           'A person reads the terminal’s own screen and says whether the money was taken. Written ' +
@@ -451,7 +451,7 @@ export async function paymentRoutes(app: App): Promise<void> {
   app.post(
     '/manual',
     {
-      config: { permission: 'pos:payment:capture' },
+      config: { permission: 'pos:payment:capture', stationTrading: true },
       schema: {
         description:
           'Record a card tender taken on a terminal the platform cannot reach: the approval code ' +

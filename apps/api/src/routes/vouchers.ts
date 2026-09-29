@@ -212,7 +212,7 @@ export async function voucherRoutes(app: App): Promise<void> {
   app.get(
     '/vouchers/lookup',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, stationTrading: true },
       schema: {
         description:
           'What a scanned or typed voucher code is and what it is worth here, or why it cannot be ' +
@@ -230,7 +230,7 @@ export async function voucherRoutes(app: App): Promise<void> {
   app.post(
     '/sales/:id/vouchers',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, stationTrading: true },
       schema: {
         description:
           'Hold a voucher for the sale this till is ringing up (the till’s own sale id, usually ' +
@@ -255,7 +255,7 @@ export async function voucherRoutes(app: App): Promise<void> {
   app.delete(
     '/sales/:id/vouchers/:voucherId',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, stationTrading: true },
       schema: {
         description:
           'Take a voucher off a cart that has not been rung up yet. Answers released: false when ' +

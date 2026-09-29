@@ -53,6 +53,7 @@ import { PermissionDeniedError, sessionPlugin } from './plugins/session';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { rateLimitPlugin } from './plugins/rate-limit';
 import { permissionPlugin } from './plugins/permission';
+import { stationOfflinePlugin } from './plugins/station-offline';
 import { credentialPlugin } from './plugins/credential';
 import { telemetryPlugin } from './plugins/telemetry';
 import { pgErrorOf, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
@@ -329,6 +330,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // Registered after the permission plugin so both see every route below: one
   // installs the session guard a route declares, the other the box credential.
   await app.register(credentialPlugin);
+  // Refuse cloud trading before claiming or replaying an HTTP idempotency key.
+  await app.register(stationOfflinePlugin);
   await app.register(idempotencyPlugin);
 
   /**

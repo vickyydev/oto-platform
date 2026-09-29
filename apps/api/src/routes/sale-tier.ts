@@ -66,7 +66,7 @@ export async function saleTierRoutes(app: App): Promise<void> {
        * permission with an empty target says yes to whatever branch the
        * request turns out to be for.
        */
-      config: { permission: 'pos:member:update', target: { branchId: 'body.branchId' } },
+      config: { permission: 'pos:member:update', target: { branchId: 'body.branchId' }, stationTrading: true },
       schema: {
         description:
           'Record a checked tier proof for a visitor who is not a member yet, so the ' +

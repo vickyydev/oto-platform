@@ -393,7 +393,7 @@ export async function printRoutes(app: App): Promise<void> {
   app.post(
     '/print-jobs/:id/reprint',
     {
-      config: { dynamicPermission: true },
+      config: { dynamicPermission: true, stationTrading: true },
       schema: {
         description:
           'Ask for the same printout again. A new job pointing at the original, with a reason.',
