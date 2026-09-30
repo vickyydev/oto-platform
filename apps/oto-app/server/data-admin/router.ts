@@ -26,7 +26,6 @@ import casualWorkerAdmin from "./models/casualWorker";
 import employeeTimeOffAdmin from "./models/employeeTimeOff";
 import scheduleWeekPlanAdmin from "./models/scheduleWeekPlan";
 import shiftGroupAdmin from "./models/shiftGroup";
-import sessionAdmin from "./models/session";
 import payrollLineItemAdmin from "./models/payrollLineItem";
 import payrollEmployeeSummaryAdmin from "./models/payrollEmployeeSummary";
 import accessPolicyAdmin from "./models/accessPolicy";
@@ -39,7 +38,6 @@ import scheduleShiftRowRoleAdmin from "./models/scheduleShiftRowRole";
 import scheduleShiftBreakAdmin from "./models/scheduleShiftBreak";
 import payrollPeriodAdmin from "./models/payrollPeriod";
 import payrollDayReconciliationAdmin from "./models/payrollDayReconciliation";
-import xeroTokenAdmin from "./models/xeroToken";
 import templateAssignmentAdmin from "./models/templateAssignment";
 import staffCostAllocationAdmin from "./models/staffCostAllocation";
 import contractInstanceAdmin from "./models/contractInstance";
@@ -74,7 +72,6 @@ import offboardingChecklistAdmin from "./models/offboardingChecklist";
 import kioskSessionAdmin from "./models/kioskSession";
 import kioskAuthAttemptAdmin from "./models/kioskAuthAttempt";
 import authRateLimitAdmin from "./models/authRateLimit";
-import authResetTokenAdmin from "./models/authResetToken";
 import roleDepartmentMapAdmin from "./models/roleDepartmentMap";
 import roleBranchAssignmentAdmin from "./models/roleBranchAssignment";
 import coverageRuleAdmin from "./models/coverageRule";
@@ -99,10 +96,10 @@ import cashDailyAdmin from "./models/cashDaily";
   roleAdmin, fileAdmin, templateAdmin, settingAdmin, payslipAdmin, shiftAdmin, userBranchAccessAdmin,
   timeEventAdmin, employeeRoleAdmin, publicHolidayAdmin, scheduleShiftRowAdmin, scheduleAssignmentAdmin,
   dutyBlockAdmin, casualWorkerAdmin, employeeTimeOffAdmin, scheduleWeekPlanAdmin, shiftGroupAdmin,
-  sessionAdmin, payrollLineItemAdmin, payrollEmployeeSummaryAdmin, accessPolicyAdmin, employeePresenceAdmin,
+  payrollLineItemAdmin, payrollEmployeeSummaryAdmin, accessPolicyAdmin, employeePresenceAdmin,
   payrollRunAdmin, kioskDeviceAdmin, branchEventAdmin, departmentBranchAssignmentAdmin,
   scheduleShiftRowRoleAdmin, scheduleShiftBreakAdmin, payrollPeriodAdmin, payrollDayReconciliationAdmin,
-  xeroTokenAdmin, templateAssignmentAdmin, staffCostAllocationAdmin, contractInstanceAdmin,
+  templateAssignmentAdmin, staffCostAllocationAdmin, contractInstanceAdmin,
   activityLogAdmin, attentionItemAdmin, enrollmentSessionAdmin, timeEntryAdmin, timekeepingIssueAdmin,
   authOtpEventAdmin, shiftRequiredRoleAdmin, leavePolicyAdmin, scheduleTemplateAdmin,
   scheduleTemplateRowAdmin, scheduleTemplateRowRoleAdmin, scheduleAuditLogAdmin, payrollExceptionAdmin,
@@ -110,7 +107,7 @@ import cashDailyAdmin from "./models/cashDaily";
   dutyTypeAdmin, userModuleOverrideAdmin, kioskCodeAdmin, employeeChangeAdmin, policyDocumentAdmin,
   employeeDocumentAdmin, employeeOffboardingAdmin, employeeLetterAdmin, assetCatalogAdmin,
   employeeAssetAdmin, offboardingChecklistAdmin, kioskSessionAdmin, kioskAuthAttemptAdmin,
-  authRateLimitAdmin, authResetTokenAdmin, roleDepartmentMapAdmin, roleBranchAssignmentAdmin,
+  authRateLimitAdmin, roleDepartmentMapAdmin, roleBranchAssignmentAdmin,
   coverageRuleAdmin, sickLeavePolicyAdmin, scheduleTemplateAssignmentAdmin, scheduleTemplateTimeOffAdmin,
   employeePayrollProfileAdmin, timeAdjustmentAdmin, payrollExceptionApprovalAdmin, payrollPolicySettingsAdmin,
   accessViewLogAdmin, xeroSyncRunAdmin, xeroTrackingCategoryAdmin, xeroTrackingOptionAdmin,
@@ -118,6 +115,13 @@ import cashDailyAdmin from "./models/cashDaily";
 ].forEach(register);
 
 const router = Router();
+
+function withoutUserPassword(admin: unknown, row: Record<string, unknown>): Record<string, unknown> {
+  if (admin !== userAdmin) return row;
+  const { password, ...safeRow } = row;
+  void password;
+  return safeRow;
+}
 
 // ─── GET /api/data-admin/models ──────────────────────────────────────────────
 // Returns metadata + record count for every registered model.
@@ -183,7 +187,7 @@ router.get("/:model", async (req: Request, res: Response) => {
     const result = await admin.getList({ page, pageSize, search, filters, orderBy });
     const allAdmins = getAdminMap();
     const enriched = await admin.enrichRows(result.rows, allAdmins);
-    res.json({ ...result, rows: enriched });
+    res.json({ ...result, rows: enriched.map(row => withoutUserPassword(admin, row)) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -197,7 +201,7 @@ router.post("/:model", async (req: Request, res: Response) => {
 
   try {
     const row = await admin.create(req.body);
-    res.status(201).json(row);
+    res.status(201).json(withoutUserPassword(admin, row));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
@@ -222,7 +226,7 @@ router.get("/:model/:id", async (req: Request, res: Response) => {
       ),
     ];
     const [enriched] = await admin.enrichRows([row], allAdmins, allFields);
-    res.json(enriched);
+    res.json(withoutUserPassword(admin, enriched));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -237,7 +241,7 @@ router.put("/:model/:id", async (req: Request, res: Response) => {
   try {
     const row = await admin.update(req.params.id, req.body);
     if (!row) return res.status(404).json({ error: "Record not found" });
-    res.json(row);
+    res.json(withoutUserPassword(admin, row));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
