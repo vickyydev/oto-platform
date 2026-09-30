@@ -11,16 +11,26 @@ one handed to you) already saved on the Mac.
 
 The Wi-Fi typed into Imager is just a saved connection; add the park's beside it.
 
-1. Plug the Pi into the TV, keyboard receiver in, power on.
-2. On the Pi's own desktop: click the network icon (top right) → the park's Wi-Fi →
-   type its password. Done. Or in the Pi's terminal:
+The wheel auto-opens over the desktop — you do not need the desktop. The Pi keeps text
+consoles behind the picture, and the game cannot swallow the switch:
+
+1. Plug the Pi into the TV, keyboard receiver in, power on. Let the wheel appear.
+2. Press **Ctrl+Alt+F2**: a black console replaces the wheel. Log in (`oto`, your
+   password) and run:
 
    ```
    sudo nmcli device wifi connect "PARK-WIFI-NAME" password "PARK-WIFI-PASSWORD"
+   hostname -I
    ```
 
-3. Find the Pi's address for SSH: hover the network icon, or run `hostname -I`.
+   Note the first address `hostname -I` prints.
+3. Press **Ctrl+Alt+F1** to get the wheel back (F7 on some setups).
 4. From the Mac (same Wi-Fi): `ssh oto@<that address>`.
+
+If you really want the desktop itself: in the F2 console, `sudo systemctl stop
+oto-kiosk` shows it (network icon top right), and `sudo systemctl start oto-kiosk`
+brings the wheel back. The box keeps selling nothing meanwhile — stopping the kiosk
+only hides the picture, it does not stop the box.
 
 No screen handy? Make your phone's hotspot with the SAME name and password as the home
 Wi-Fi the card was imaged with: the Pi joins it by itself, SSH in over the hotspot, add
