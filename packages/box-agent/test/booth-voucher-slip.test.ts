@@ -39,6 +39,7 @@ function entry(settings: Partial<Settings> = {}, version = 1): BoothCacheEntry {
     version,
     bundleHash: String(version).repeat(64),
     allowedStaff: [ACCOUNT_ID],
+    dutyRoster: null,
     voucherDefinitions: [
       { id: DEFINITION_ID, expiryDays: 14, termsEn: 'Cannot be combined with other offers.', termsTh: null },
     ] as BoothCacheEntry['voucherDefinitions'],
