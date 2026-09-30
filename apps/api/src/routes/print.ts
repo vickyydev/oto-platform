@@ -172,7 +172,7 @@ export async function printRoutes(app: App): Promise<void> {
         description: 'Draw this template’s sample the way the printer would, and answer with the PNG',
         params: IdParams,
         body: PrintTemplateUpdateSchema.extend({
-          /** Which till to lay it out for; omitted, the branch’s first box decides. */
+          /** Which till to lay it out for; omitted, it is drawn at the kind’s own paper. */
           stationId: z.string().uuid().nullable().optional(),
           /**
            * Which scenario to fill it with (SCRUM-472): `standard` — the
@@ -213,6 +213,11 @@ export async function printRoutes(app: App): Promise<void> {
    * once when the editor opens rather than riding every preview's headers.
    * `pos:print:read`, as the preview: a printer's label is what the till's own
    * header already shows under that permission.
+   *
+   * The printer is the STATION's, for the role this template's printout takes
+   * (SCRUM-476): never another station's printer that carries the role on the
+   * same box. Without a station, or at a station whose routing has nothing
+   * for the role, `printer` is null and `note` says so in words.
    */
   app.get(
     '/print-templates/:id/test-print-target',
@@ -222,7 +227,7 @@ export async function printRoutes(app: App): Promise<void> {
         description: 'Which printer this template’s Test print would reach from this station',
         params: IdParams,
         querystring: z.object({
-          /** The station asking; omitted, the branch’s first box decides, as a test print does. */
+          /** The station asking. Omitted, no printer is named: a test print is a station’s. */
           stationId: z.string().uuid().optional(),
         }),
         response: {
@@ -256,7 +261,7 @@ export async function printRoutes(app: App): Promise<void> {
         params: IdParams,
         body: z
           .object({
-            /** Which till to print at. Omitted, the branch’s first box decides. */
+            /** Which station to print at. Omitted, the print is refused (409 STATION_REQUIRED). */
             stationId: z.string().uuid().nullable().optional(),
             copies: z.number().int().min(1).max(3).optional(),
           })

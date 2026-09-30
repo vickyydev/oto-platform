@@ -248,19 +248,31 @@ function jobView(row: typeof printJob.$inferSelect, deviceLabel: string | null):
 }
 
 export interface TestPrintTarget {
-  /** The station whose printers to route through; null uses any on the box. */
-  stationId: string | null;
+  /** The station whose printers the job routes through. Always one: see below. */
+  stationId: string;
   boxRow: typeof box.$inferSelect;
   branchId: string;
 }
 
 /**
- * Find the box that should print this, from a branch and an optional station.
+ * Find the box that should print this, from a branch and the station asking.
  *
  * A branch can have several boxes and a printout has to land on one of them.
  * Naming a station settles it, because a station belongs to exactly one box —
  * which is why the Print Templates panel asks which till to test on rather
  * than picking one and hoping the person was standing at it.
+ *
+ * **A station is required** (SCRUM-476). This used to fall back, with no
+ * station, to "the branch's first box by slot, and any printer on it that
+ * carries the role". A printer's role is a fact about a STATION — Booth 1's
+ * `receipt` role is its voucher printer, Reception Till 1's is the receipt
+ * printer beside the till — so a printer chosen by role alone is some
+ * station's printer, and not necessarily the one anybody is standing at. On
+ * staging the booth's Pi box sorts first by slot (`booth-1` < `virtual-1`),
+ * its only receipt-role device is the booth's voucher printer, and a receipt
+ * template's Test print asked without a station was labelled "to Booth
+ * Voucher Printer" at the till. There is no right printer for a kind without
+ * a station, so the answer is to ask for one rather than to guess.
  *
  * **The station has to be at the branch asked about** (SCRUM-472). Every
  * caller checks its permission against that branch — the template's, or the
@@ -275,44 +287,35 @@ export async function resolveTestPrintTarget(
   operatorId: string,
   input: { branchId: string; stationId?: string | null },
 ): Promise<TestPrintTarget> {
-  if (input.stationId) {
-    const [row] = await db
-      .select()
-      .from(station)
-      .where(
-        and(
-          eq(station.id, input.stationId),
-          eq(station.operatorId, operatorId),
-          eq(station.branchId, input.branchId),
-        ),
-      )
-      .limit(1);
-    if (!row) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station at this branch');
-    if (!row.boxId) {
-      throw new AppError(
-        409,
-        'STATION_HAS_NO_BOX',
-        `${row.name} is not attached to a box, so nothing on it can print`,
-      );
-    }
-    const [boxRow] = await db.select().from(box).where(eq(box.id, row.boxId)).limit(1);
-    if (!boxRow) throw new AppError(404, 'BOX_NOT_FOUND', 'No such box');
-    return { stationId: row.id, boxRow, branchId: row.branchId };
-  }
-  const [boxRow] = await db
-    .select()
-    .from(box)
-    .where(and(eq(box.branchId, input.branchId), isNull(box.archivedAt)))
-    .orderBy(asc(box.slot))
-    .limit(1);
-  if (!boxRow) {
+  if (!input.stationId) {
     throw new AppError(
       409,
-      'BRANCH_HAS_NO_BOX',
-      'This branch has no box, so there is nothing here that can print',
+      'STATION_REQUIRED',
+      'Pick a station first: a test print goes to that station’s printer',
     );
   }
-  return { stationId: null, boxRow, branchId: input.branchId };
+  const [row] = await db
+    .select()
+    .from(station)
+    .where(
+      and(
+        eq(station.id, input.stationId),
+        eq(station.operatorId, operatorId),
+        eq(station.branchId, input.branchId),
+      ),
+    )
+    .limit(1);
+  if (!row) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station at this branch');
+  if (!row.boxId) {
+    throw new AppError(
+      409,
+      'STATION_HAS_NO_BOX',
+      `${row.name} is not attached to a box, so nothing on it can print`,
+    );
+  }
+  const [boxRow] = await db.select().from(box).where(eq(box.id, row.boxId)).limit(1);
+  if (!boxRow) throw new AppError(404, 'BOX_NOT_FOUND', 'No such box');
+  return { stationId: row.id, boxRow, branchId: row.branchId };
 }
 
 /**
@@ -398,13 +401,16 @@ function sampleKindFor(type: PrintTemplateType): PrintKind {
   return kind;
 }
 
-/** A printer role in the words the editor shows beside its Test print button. */
-const ROLE_WORDS: Record<string, string> = {
-  receipt: 'receipt',
-  kitchen: 'kitchen',
-  bar: 'bar',
-  kids_band: 'kids band',
-  adult_band: 'adult band',
+/**
+ * What a printer role takes, in the words the editor shows beside its Test
+ * print button: "No printer takes receipts at this station".
+ */
+const ROLE_TAKES: Record<string, string> = {
+  receipt: 'receipts',
+  kitchen: 'kitchen tickets',
+  bar: 'bar tickets',
+  kids_band: 'kids bands',
+  adult_band: 'adult bands',
 };
 
 /**
@@ -451,15 +457,21 @@ export async function templatePrinter(
       routed = deviceRow ?? null;
     }
     if (!routed) {
-      unrouted = `No ${ROLE_WORDS[role] ?? role} printer is assigned${
-        target.stationId ? ' to this station' : ' on this box'
-      }`;
+      /**
+       * The station's own routing has nothing for this role (SCRUM-476). Only
+       * that station's assignments were looked at — never another station's
+       * printer that happens to carry the role on the same box — so "no
+       * printer takes receipts here" is the whole truth, and the editor
+       * disables the button on it.
+       */
+      unrouted = `No printer takes ${ROLE_TAKES[role] ?? role} at this station`;
     }
   } catch (err) {
-    // No box on the branch, or a station that is not attached to one. That
-    // stops a test print and it must not stop a preview: nothing here touches
-    // a box, and somebody configuring a template before the hardware arrives
-    // is the ordinary case rather than the odd one.
+    // No station named, a station that is not attached to a box, or one that
+    // is not at this branch. That stops a test print and it must not stop a
+    // preview: nothing here touches a box, and somebody configuring a
+    // template before the hardware arrives is the ordinary case rather than
+    // the odd one. The preview falls back to the kind's own paper.
     if (!(err instanceof AppError)) throw err;
     unrouted = err.message;
   }
@@ -641,7 +653,7 @@ export async function requestTestPrint(
         operatorId: actor.operatorId,
         branchId: target.branchId,
         boxId: target.boxRow.id,
-        stationId: routed?.stationId ?? target.stationId ?? null,
+        stationId: routed?.stationId ?? target.stationId,
         deviceId: routed?.deviceId ?? null,
         role,
         kind: input.kind,
@@ -650,7 +662,7 @@ export async function requestTestPrint(
         copies: input.copies ?? 1,
         status: 'queued',
         subjectType: 'station',
-        subjectId: routed?.stationId ?? target.stationId ?? target.boxRow.id,
+        subjectId: routed?.stationId ?? target.stationId,
         requestedByAccountId: actor.accountId,
         actionId: input.actionId,
       })
@@ -702,7 +714,7 @@ export async function requestTestPrint(
         printJobId: jobId,
         kind: input.kind,
         role,
-        stationId: routed?.stationId ?? target.stationId ?? null,
+        stationId: routed?.stationId ?? target.stationId,
         copies: input.copies ?? 1,
         /**
          * `queueCommand` insists a test print names a device on this box, which
@@ -753,9 +765,11 @@ export async function recordSkippedPrint(
         copies: input.copies ?? 1,
         status: 'skipped',
         errorCode: 'NO_DEVICE_FOR_ROLE',
-        errorMessage: `No ${role} printer is assigned${target.stationId ? ' to this station' : ' on this box'}`,
+        // The box's own words for the same skip (`printing/queue.ts`), so the
+        // till reads one sentence whichever side answered.
+        errorMessage: `No ${role} printer is assigned to this station`,
         subjectType: 'station',
-        subjectId: target.stationId ?? target.boxRow.id,
+        subjectId: target.stationId,
         requestedByAccountId: actor.accountId,
         actionId: input.actionId,
         finishedAt: now,

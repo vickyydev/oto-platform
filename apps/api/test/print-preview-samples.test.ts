@@ -237,7 +237,7 @@ describe('where the editor’s Test print will come out (SCRUM-472)', () => {
     expect(res.statusCode, res.body).toBe(200);
     const target = res.json() as { printer: unknown; note: string | null; widthDots: number };
     expect(target.printer).toBeNull();
-    expect(target.note).toBe('No kids band printer is assigned to this station');
+    expect(target.note).toBe('No printer takes kids bands at this station');
     // Still a width: the preview falls back to the defaults for the kind.
     expect(target.widthDots).toBeGreaterThan(0);
   });
