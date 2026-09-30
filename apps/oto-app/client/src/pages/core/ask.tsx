@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import DOMPurify from "isomorphic-dompurify";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,6 @@ import {
   X,
   ListChecks,
   Zap,
-  Wrench,
   File,
   ImageIcon,
   Video
@@ -129,8 +129,9 @@ export default function AskOtoPage() {
   });
 
   const { data: articles, isLoading: articlesLoading } = useQuery<KbArticle[]>({
-    queryKey: ["/api/knowledge-base", { status: "published" }],
-    enabled: showBrowse,
+    queryKey: ["/api/knowledge-base", "published"],
+    queryFn: async () => (await apiRequest("GET", "/api/knowledge-base?status=published")).json(),
+    enabled: showBrowse && !!user,
   });
 
   const { data: articleDetail } = useQuery<KbArticle>({
@@ -529,7 +530,7 @@ export default function AskOtoPage() {
             {articleDetail ? (
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none p-4"
-                dangerouslySetInnerHTML={{ __html: articleDetail.content }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(articleDetail.content || "") }}
               />
             ) : (
               <div className="flex justify-center py-8">

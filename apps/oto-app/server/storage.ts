@@ -10703,7 +10703,7 @@ export class DatabaseStorage implements IStorage {
                                 if (article.branchScope === "ALL") return true;
 
                                 // BRANCHES-scoped articles require intersection with user's branches
-                                if (article.branchScope === "BRANCHES") {
+                                if (article.branchScope === "SELECTED") {
                                         if (!article.branchIds || article.branchIds.length === 0)
                                                 return false;
                                         return article.branchIds.some((bid) =>
