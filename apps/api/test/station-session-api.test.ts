@@ -1107,6 +1107,44 @@ describe('what the till’s banner reads (S2-05)', () => {
       outbox.mockRestore();
     }
   });
+
+  it('ages the oldest queued event from a real outbox row rather than crashing on it (SCRUM-475)', async () => {
+    // `min(created_at)` is an aggregate, not a column, so nothing decoded it:
+    // the `pg` session hands `timestamptz` back as text, and the age arithmetic
+    // reached it with `.getTime()` — 142 times in a day on staging, each one a
+    // 500 (or, once guarded, a false "box offline") for a till whose only fault
+    // was having something queued. One queued row, through the real route: the
+    // depth is one and the age is the row's, in seconds.
+    const queuedAt = new Date(Date.now() - 90_000);
+    const eventId = newId();
+    await ctx.db.insert(boxOutbox).values({
+      eventId,
+      boxId,
+      journalEpoch: 1,
+      boxSeq: 9_000_000 + Math.floor(Math.random() * 1_000_000),
+      type: 'member.created',
+      occurredAt: queuedAt,
+      payload: {},
+      payloadHash: 'b'.repeat(64),
+      sig: 'test',
+      state: 'queued',
+      // Not due, so nothing that sends could take the row while the route reads it.
+      nextAttemptAt: new Date(Date.now() + 60_000),
+      createdAt: queuedAt,
+    });
+    try {
+      const res = await call('GET', '/me/station/link', { cookie: receptionCookie });
+      expect(res.statusCode).toBe(200);
+      expect(res.body.outboxDepth).toBe(1);
+      const age = res.body.oldestUnackedSeconds as number;
+      expect(typeof age).toBe('number');
+      expect(age).toBeGreaterThanOrEqual(89);
+      expect(age).toBeLessThan(120);
+      expect(res.body.syncStale).toBe(age > syncService.syncSettings().staleAfterS);
+    } finally {
+      await ctx.db.delete(boxOutbox).where(eq(boxOutbox.eventId, eventId));
+    }
+  });
 });
 
 /**

@@ -2443,17 +2443,19 @@ async function boxSyncStates(
     sql`, `,
   );
 
+  // A raw statement's `min(created_at)` arrives as `pg`'s text, not a Date
+  // (SCRUM-475); the reader below wraps it in `new Date()` for that reason.
   const outbox = await probe(
     async () =>
       (
-        await db.execute<{ box_id: string; depth: string; oldest: Date | null }>(
+        await db.execute<{ box_id: string; depth: string; oldest: string | Date | null }>(
           sql`select box_id, count(*)::text as depth, min(created_at) as oldest
                 from edge.box_outbox
                where state in ('queued','sending') and box_id in (${ids})
                group by box_id`,
         )
       ).rows,
-    [] as Array<{ box_id: string; depth: string; oldest: Date | null }>,
+    [] as Array<{ box_id: string; depth: string; oldest: string | Date | null }>,
   );
   for (const row of outbox) {
     const state = out.get(row.box_id);
@@ -2753,8 +2755,10 @@ export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePag
       kind: newestOf<string>(opsRun.kind),
       name: newestOf<string>(opsRun.name),
       count: sql<number>`count(*)::int`,
-      firstSeenAt: sql<Date>`min(${opsRun.startedAt})`,
-      lastSeenAt: sql<Date>`max(${opsRun.startedAt})`,
+      // Aggregates are not decoded on their own: `pg` returns them as text
+      // (SCRUM-475), so each borrows the column's decoder to be the Date it claims.
+      firstSeenAt: sql`min(${opsRun.startedAt})`.mapWith(opsRun.startedAt),
+      lastSeenAt: sql`max(${opsRun.startedAt})`.mapWith(opsRun.startedAt),
       errorCode: newestOf<string>(opsRun.errorCode),
       errorMessage: newestOf<string>(opsRun.errorMessage),
       lastRunId: newestOf<string>(opsRun.id),

@@ -1,5 +1,5 @@
 import { createHash, createPublicKey, verify as verifyDetached, type KeyObject } from 'node:crypto';
-import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql, type SQL } from 'drizzle-orm';
 import {
   account,
   employee,
@@ -4718,11 +4718,17 @@ export async function boxOutboxState(
   exec: Exec,
   boxId: string,
 ): Promise<{ depth: number; oldestCreatedAt: Date | null }> {
+  /**
+   * An aggregate is not a column, so nothing decodes it on its own: the `pg`
+   * session Drizzle sets up hands `timestamptz` back as its wire text, and a
+   * `min()` merely TYPED as a Date reached both readers' `.getTime()` as a
+   * string (SCRUM-475 — every station-link poll with anything queued). Mapped
+   * through the column's own decoder it is the same Date every `created_at`
+   * row arrives as; an empty queue's `null` passes the decoder untouched.
+   */
+  const oldest: SQL<Date | null> = sql`min(${boxOutbox.createdAt})`.mapWith(boxOutbox.createdAt);
   const [row] = await exec
-    .select({
-      depth: sql<number>`count(*)::int`,
-      oldest: sql<Date | null>`min(${boxOutbox.createdAt})`,
-    })
+    .select({ depth: sql<number>`count(*)::int`, oldest })
     .from(boxOutbox)
     .where(and(eq(boxOutbox.boxId, boxId), sql`${boxOutbox.state} in ('queued','sending')`));
   return { depth: row?.depth ?? 0, oldestCreatedAt: row?.oldest ?? null };

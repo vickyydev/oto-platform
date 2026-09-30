@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, desc, eq } from 'drizzle-orm';
-import { auditLog, box, boxCommand, boxHeartbeat, device, opsRun, station } from '@oto/db';
+import { auditLog, box, boxCommand, boxHeartbeat, boxOutbox, device, opsRun, station } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
   boxCredential,
@@ -550,6 +550,42 @@ describe('a box whose store cannot be used (SCRUM-445)', () => {
     const recovered = await healthOf(boxId);
     expect(recovered.conditions).not.toContain(`box.needs_service:${boxId}`);
     expect(recovered.detail ?? '').not.toContain('needs service');
+  });
+
+  it('ages a queued row the box could not vouch for from its own store, through the real route (SCRUM-475)', async () => {
+    // The virtual box's store IS `edge.box_outbox`, so a heartbeat that reports
+    // a depth with no age — exactly what `reportingStoreFault` sends — has its
+    // age read from the row here. `min(created_at)` came back from `pg` as text
+    // and the arithmetic reached it with `.getTime()`: the TypeError that took
+    // `/me/station/link` down on staging, on the heartbeat instead.
+    const { boxId, credential } = await registerSeededBox();
+    const queuedAt = new Date(Date.now() - 120_000);
+    const eventId = newId();
+    await ctx.db.insert(boxOutbox).values({
+      eventId,
+      boxId,
+      journalEpoch: 1,
+      boxSeq: 9_000_000 + Math.floor(Math.random() * 1_000_000),
+      type: 'member.created',
+      occurredAt: queuedAt,
+      payload: {},
+      payloadHash: 'c'.repeat(64),
+      sig: 'test',
+      state: 'queued',
+      nextAttemptAt: new Date(Date.now() + 60_000),
+      createdAt: queuedAt,
+    });
+    try {
+      const { statusCode } = await heartbeat(credential, { outboxDepth: 1, oldestUnackedS: null });
+      expect(statusCode).toBe(200);
+      const [row] = await ctx.db.select().from(box).where(eq(box.id, boxId)).limit(1);
+      const status = row!.lastStatus as { outboxDepth: number; oldestUnackedAgeS: number | null };
+      expect(status.outboxDepth).toBe(1);
+      expect(status.oldestUnackedAgeS).toBeGreaterThanOrEqual(119);
+      expect(status.oldestUnackedAgeS).toBeLessThan(150);
+    } finally {
+      await ctx.db.delete(boxOutbox).where(eq(boxOutbox.eventId, eventId));
+    }
   });
 });
 
