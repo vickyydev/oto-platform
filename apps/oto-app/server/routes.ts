@@ -16221,6 +16221,12 @@ OTO Company Limited`,
       .from(coreEventsTable).where(and(eq(coreEventsTable.id, id), eq(coreEventsTable.eventType, "camp"))).limit(1);
     return event || null;
   };
+  const accessibleCampEventIds = (user: UserWithBranchAccess, tenantId: string) =>
+    db.select({ id: coreEventsTable.id }).from(coreEventsTable).where(and(
+      eq(coreEventsTable.tenantId, tenantId),
+      user.hasAllBranchesAccess ? undefined : user.allowedBranchIds.length
+        ? inArray(coreEventsTable.branchId, user.allowedBranchIds) : sql`false`,
+    ));
   const campPreviewUrl = (registration: { id: string; eventId: string; tenantId: string; [key: string]: any }, field: CampPhotoField, eventBranchId: string | null) => {
     const url = registration[field];
     if (typeof url !== "string" || !campPhotoPath(url)) return null;
@@ -17092,6 +17098,7 @@ OTO Company Limited`,
           .set(profileSyncPayload)
           .where(and(
             eq(campRegistrations.tenantId, tenantId),
+            inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId)),
             eq(campRegistrations.emergencyContactNumber, matchPhone),
             sql`lower(trim(${campRegistrations.childFullName})) = ${matchName}`,
             ne(campRegistrations.id, regId),
@@ -17152,7 +17159,9 @@ OTO Company Limited`,
   // Search existing children across all camps (excludes one-time profiles)
   app.get("/api/admin/camp-children/search", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = user.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const { q } = req.query as { q?: string };
       if (!q || q.trim().length < 2) {
         return res.json([]);
@@ -17179,6 +17188,7 @@ OTO Company Limited`,
         .from(campRegistrations)
         .where(and(
           eq(campRegistrations.tenantId, tenantId),
+          inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId)),
           sql`${campRegistrations.isOneTime} = false`,
           or(
             sql`lower(${campRegistrations.childFullName}) like ${term}`,
@@ -17207,7 +17217,9 @@ OTO Company Limited`,
   // GET /api/admin/children — deduplicated list of all children across all camps
   app.get("/api/admin/children", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = user.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const { search, page, limit: limitParam } = req.query as { search?: string; page?: string; limit?: string };
       const pageNum = Math.max(1, parseInt(page || "1", 10));
       const pageSize = Math.min(100, Math.max(1, parseInt(limitParam || "50", 10)));
@@ -17215,6 +17227,7 @@ OTO Company Limited`,
       // Build where conditions
       const conditions: any[] = [
         eq(campRegistrations.tenantId, tenantId),
+        inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId)),
         sql`${campRegistrations.isOneTime} = false`,
       ];
 
@@ -17274,7 +17287,9 @@ OTO Company Limited`,
   // GET /api/admin/children/duplicates — scan for likely duplicate child profiles
   app.get("/api/admin/children/duplicates", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = user.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
 
       // Fetch all non-one-time registrations; we'll deduplicate in JS
       const rows = await db
@@ -17296,6 +17311,7 @@ OTO Company Limited`,
         .from(campRegistrations)
         .where(and(
           eq(campRegistrations.tenantId, tenantId),
+          inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId)),
           sql`${campRegistrations.isOneTime} = false`,
         ))
         .orderBy(desc(campRegistrations.updatedAt));
@@ -17365,7 +17381,9 @@ OTO Company Limited`,
   // GET /api/admin/children/:id/history — camp history for a child (by representative registration id)
   app.get("/api/admin/children/:id/history", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = user.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const { id } = req.params;
 
       // Look up the representative registration to get dedup key
@@ -17375,7 +17393,8 @@ OTO Company Limited`,
           emergencyContactNumber: campRegistrations.emergencyContactNumber,
         })
         .from(campRegistrations)
-        .where(and(eq(campRegistrations.id, id), eq(campRegistrations.tenantId, tenantId)));
+        .where(and(eq(campRegistrations.id, id), eq(campRegistrations.tenantId, tenantId),
+          inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId))));
 
       if (!rep) return res.status(404).json({ message: "Child not found" });
 
@@ -17395,6 +17414,7 @@ OTO Company Limited`,
         .from(campRegistrations)
         .where(and(
           eq(campRegistrations.tenantId, tenantId),
+          inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId)),
           eq(campRegistrations.emergencyContactNumber, matchPhone),
           sql`lower(trim(${campRegistrations.childFullName})) = ${matchName}`,
         ))
@@ -17417,6 +17437,7 @@ OTO Company Limited`,
           .where(and(
             eq(coreEventsTable.tenantId, tenantId),
             inArray(coreEventsTable.id, eventIds),
+            inArray(coreEventsTable.id, accessibleCampEventIds(user, tenantId)),
           ));
       }
 
@@ -17435,7 +17456,9 @@ OTO Company Limited`,
   // POST /api/admin/children/merge — merge two child profiles into one
   app.post("/api/admin/children/merge", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = user.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const userId = (req.user as any)?.id;
 
       const bodySchema = z.object({
@@ -17465,7 +17488,8 @@ OTO Company Limited`,
           emergencyContactNumber: campRegistrations.emergencyContactNumber,
         })
         .from(campRegistrations)
-        .where(and(eq(campRegistrations.id, primaryId), eq(campRegistrations.tenantId, tenantId)));
+        .where(and(eq(campRegistrations.id, primaryId), eq(campRegistrations.tenantId, tenantId),
+          inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId))));
 
       const [secondary] = await db
         .select({
@@ -17476,7 +17500,8 @@ OTO Company Limited`,
           authorizedPickupPersons: campRegistrations.authorizedPickupPersons,
         })
         .from(campRegistrations)
-        .where(and(eq(campRegistrations.id, secondaryId), eq(campRegistrations.tenantId, tenantId)));
+        .where(and(eq(campRegistrations.id, secondaryId), eq(campRegistrations.tenantId, tenantId),
+          inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId))));
 
       if (!primary) return res.status(404).json({ message: "Primary child not found" });
       if (!secondary) return res.status(404).json({ message: "Secondary child not found" });
@@ -17515,6 +17540,7 @@ OTO Company Limited`,
         })
         .where(and(
           eq(campRegistrations.tenantId, tenantId),
+          inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId)),
           eq(campRegistrations.emergencyContactNumber, secPhone),
           sql`lower(trim(${campRegistrations.childFullName})) = ${secName}`,
         ));
@@ -17528,6 +17554,7 @@ OTO Company Limited`,
           .set({ authorizedPickupPersons: mergedPickup || null, updatedAt: now })
           .where(and(
             eq(campRegistrations.tenantId, tenantId),
+            inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId)),
             eq(campRegistrations.emergencyContactNumber, primPhone),
             sql`lower(trim(${campRegistrations.childFullName})) = ${primName}`,
           ));
@@ -17632,6 +17659,7 @@ OTO Company Limited`,
         .set(updatePayload)
         .where(and(
           eq(campRegistrations.tenantId, tenantId),
+          inArray(campRegistrations.eventId, accessibleCampEventIds(user, tenantId)),
           eq(campRegistrations.emergencyContactNumber, matchPhone),
           sql`lower(trim(${campRegistrations.childFullName})) = ${matchName}`,
         ));

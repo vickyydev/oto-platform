@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../server/db";
-import { tenants, branches, kioskDevices, kioskSessions, DEFAULT_TENANT_SLUG } from "../shared/schema";
+import { tenants, branches, kioskDevices, kioskSessions, users, userBranchAccess, activityLog, DEFAULT_TENANT_SLUG } from "../shared/schema";
 import { coreEvents, campRegistrations, campAttendance, serviceCheckins } from "../server/db/coreSchema";
-import { createHash } from "crypto";
+import { createHash, randomBytes, scryptSync } from "crypto";
 import { deleteFromObjectStorage, uploadToObjectStorage } from "../server/file-storage";
 
 const SESSION_PEPPER = process.env.SESSION_PEPPER || "default-session-pepper-change-in-production";
@@ -165,6 +165,109 @@ test("camp photos attach only to their event and open through scoped or signed r
     await db.delete(coreEvents).where(eq(coreEvents.id, sourceCamp.id));
     await db.delete(coreEvents).where(eq(coreEvents.id, otherCamp.id));
     await db.delete(branches).where(eq(branches.id, otherBranch.id));
+  }
+});
+
+test("camp child photos and profile sync stay within manager tenant and branches", async ({ request }) => {
+  const suffix = randomBytes(5).toString("hex");
+  const password = randomBytes(18).toString("base64url");
+  const salt = randomBytes(16).toString("hex");
+  const passwordHash = `${scryptSync(password, salt, 64).toString("hex")}.${salt}`;
+  const today = bangkokToday();
+  const [tenant] = await db.select().from(tenants).where(eq(tenants.slug, DEFAULT_TENANT_SLUG)).limit(1);
+  const [sourceBranch] = await db.select().from(branches).where(eq(branches.tenantId, tenant.id)).limit(1);
+  const [otherBranch] = await db.insert(branches).values({ tenantId: tenant.id, name: `Camp scope other ${suffix}`, address: "Test only" }).returning();
+  const [foreignTenant] = await db.insert(tenants).values({ name: `Camp scope tenant ${suffix}`, slug: `camp-scope-${suffix}` }).returning();
+  const [foreignBranch] = await db.insert(branches).values({ tenantId: foreignTenant.id, name: `Camp scope foreign ${suffix}`, address: "Test only" }).returning();
+  const [sourceCamp, otherCamp, foreignCamp] = await db.insert(coreEvents).values([
+    { tenantId: tenant.id, branchId: sourceBranch.id, eventType: "camp", title: `Scope source ${suffix}` },
+    { tenantId: tenant.id, branchId: otherBranch.id, eventType: "camp", title: `Scope other ${suffix}` },
+    { tenantId: foreignTenant.id, branchId: foreignBranch.id, eventType: "camp", title: `Scope foreign ${suffix}` },
+  ].map(event => ({ ...event, eventDate: today, campEndDate: today, startTime: "09:00", endTime: "15:00", status: "confirmed", isArchived: false })) as any).returning();
+  const photoA = `/api/files/camp-photos-private/scope-a-${suffix}.png`;
+  const photoB = `/api/files/camp-photos-private/scope-b-${suffix}.png`;
+  const sameChild = { childFullName: `Scope Child ${suffix}`, emergencyContactNumber: `scope-phone-${suffix}` };
+  const [sourceChild, siblingChild, otherChild, foreignChild] = await db.insert(campRegistrations).values([
+    { tenantId: tenant.id, eventId: sourceCamp.id, ...sameChild, childPhotoUrl: photoA },
+    { tenantId: tenant.id, eventId: otherCamp.id, ...sameChild, childPhotoUrl: photoB },
+    { tenantId: tenant.id, eventId: otherCamp.id, childFullName: `Other Child ${suffix}`, emergencyContactNumber: `other-phone-${suffix}`, childPhotoUrl: photoB },
+    { tenantId: foreignTenant.id, eventId: foreignCamp.id, childFullName: `Foreign Child ${suffix}`, emergencyContactNumber: `foreign-phone-${suffix}`, childPhotoUrl: photoB },
+  ].map(row => ({ ...row, dateOfBirth: "2018-01-01", parentGuardianName: "Scope Parent", attendanceDays: [today], agreedCampRules: true, agreedChildHealthy: true, parentSignature: "Scope Parent", signatureDate: today })) as any).returning();
+  const [branchManager, allBranchManager, foreignManager] = await db.insert(users).values([
+    { email: `camp-branch-${suffix}@example.test`, password: passwordHash, fullName: "Camp Branch Manager", role: "manager", mustChangePassword: false },
+    { email: `camp-all-${suffix}@example.test`, password: passwordHash, fullName: "Camp All Branch Manager", role: "manager", mustChangePassword: false },
+    { email: `camp-foreign-${suffix}@example.test`, password: passwordHash, fullName: "Camp Foreign Manager", role: "manager", mustChangePassword: false },
+  ]).returning();
+  await db.insert(userBranchAccess).values([
+    { tenantId: tenant.id, userId: branchManager.id, branchId: sourceBranch.id, accessScope: "selected_branches" },
+    { tenantId: tenant.id, userId: allBranchManager.id, branchId: null, accessScope: "all_branches" },
+    { tenantId: foreignTenant.id, userId: foreignManager.id, branchId: foreignBranch.id, accessScope: "selected_branches" },
+  ]);
+  const login = async (email: string) => {
+    const response = await request.post("/api/login", {
+      headers: { "x-forwarded-proto": "https" }, data: { identifier: email, password },
+    });
+    expect(response.status()).toBe(200);
+    const cookie = response.headersArray().find(header => header.name.toLowerCase() === "set-cookie")?.value?.split(";")[0];
+    expect(cookie).toBeTruthy();
+    expect(cookie?.split("=")[0]).toBe("connect.sid");
+    expect((await request.get("/api/user", { headers: { Cookie: cookie! } })).status()).toBe(200);
+    return { Cookie: cookie! };
+  };
+  try {
+    const branchHeaders = await login(branchManager.email);
+    const branchList = await request.get(`/api/admin/children?search=${suffix}`, { headers: branchHeaders });
+    expect(branchList.status()).toBe(200);
+    expect((await branchList.json()).children.map((row: any) => row.id)).toEqual([sourceChild.id]);
+    const hiddenSearch = await request.get(`/api/admin/camp-children/search?q=${suffix}`, { headers: branchHeaders });
+    expect(hiddenSearch.status()).toBe(200);
+    expect((await hiddenSearch.json()).map((row: any) => row.id)).not.toContain(otherChild.id);
+    const history = await request.get(`/api/admin/children/${sourceChild.id}/history`, { headers: branchHeaders });
+    expect(history.status()).toBe(200);
+    expect((await history.json()).history.map((row: any) => row.id)).toEqual([sourceChild.id]);
+
+    const eventEdit = await request.patch(`/api/events/${sourceCamp.id}/camp-registrations/${sourceChild.id}`, {
+      headers: branchHeaders, data: { childPhotoUrl: null },
+    });
+    expect(eventEdit.status()).toBe(200);
+    expect((await db.select({ childPhotoUrl: campRegistrations.childPhotoUrl }).from(campRegistrations).where(eq(campRegistrations.id, siblingChild.id)))[0].childPhotoUrl).toBe(photoB);
+    await db.update(campRegistrations).set({ childPhotoUrl: photoA }).where(eq(campRegistrations.id, sourceChild.id));
+    const globalEdit = await request.patch(`/api/admin/children/${sourceChild.id}`, {
+      headers: branchHeaders, data: { childPhotoUrl: null },
+    });
+    expect(globalEdit.status()).toBe(200);
+    expect((await db.select({ childPhotoUrl: campRegistrations.childPhotoUrl }).from(campRegistrations).where(eq(campRegistrations.id, siblingChild.id)))[0].childPhotoUrl).toBe(photoB);
+    expect((await request.post("/api/admin/children/merge", {
+      headers: branchHeaders, data: { primaryId: sourceChild.id, secondaryId: otherChild.id },
+    })).status()).toBe(404);
+    const foreignHeaders = await login(foreignManager.email);
+    const foreignList = await request.get(`/api/admin/children?search=${suffix}`, { headers: foreignHeaders });
+    expect(foreignList.status()).toBe(200);
+    expect((await foreignList.json()).children.map((row: any) => row.id)).toEqual([foreignChild.id]);
+    expect((await request.post("/api/admin/children/merge", {
+      headers: foreignHeaders, data: { primaryId: sourceChild.id, secondaryId: otherChild.id },
+    })).status()).toBe(404);
+    const allHeaders = await login(allBranchManager.email);
+    const allList = await request.get(`/api/admin/children?search=${suffix}`, { headers: allHeaders });
+    expect(allList.status()).toBe(200);
+    expect((await allList.json()).children.map((row: any) => row.id)).toContain(otherChild.id);
+    await db.update(campRegistrations).set({ childPhotoUrl: photoA }).where(eq(campRegistrations.id, sourceChild.id));
+    const permittedMerge = await request.post("/api/admin/children/merge", {
+      headers: allHeaders, data: { primaryId: sourceChild.id, secondaryId: otherChild.id },
+    });
+    expect(permittedMerge.status()).toBe(200);
+    const [merged] = await db.select({ childPhotoUrl: campRegistrations.childPhotoUrl })
+      .from(campRegistrations).where(eq(campRegistrations.id, otherChild.id));
+    expect(merged.childPhotoUrl).toBe(photoA);
+  } finally {
+    await db.delete(activityLog).where(inArray(activityLog.createdBy, [branchManager.id, allBranchManager.id, foreignManager.id]));
+    await db.delete(userBranchAccess).where(inArray(userBranchAccess.userId, [branchManager.id, allBranchManager.id, foreignManager.id]));
+    await db.delete(users).where(inArray(users.id, [branchManager.id, allBranchManager.id, foreignManager.id]));
+    await db.delete(campAttendance).where(inArray(campAttendance.campRegistrationId, [sourceChild.id, siblingChild.id, otherChild.id, foreignChild.id]));
+    await db.delete(campRegistrations).where(inArray(campRegistrations.id, [sourceChild.id, siblingChild.id, otherChild.id, foreignChild.id]));
+    await db.delete(coreEvents).where(inArray(coreEvents.id, [sourceCamp.id, otherCamp.id, foreignCamp.id]));
+    await db.delete(branches).where(inArray(branches.id, [otherBranch.id, foreignBranch.id]));
+    await db.delete(tenants).where(eq(tenants.id, foreignTenant.id));
   }
 });
 
