@@ -786,6 +786,16 @@ export async function seed(db: Db = getDb()): Promise<void> {
     .update(s.productCategory)
     .set({ code: 'FB' })
     .where(and(eq(s.productCategory.id, catId), isNull(s.productCategory.code)));
+  // The menu the park actually runs (SCRUM-232): the prototype's twenty items
+  // in their categories and sub-categories, the modifier library, the add-ons
+  // and the launch discount codes — find-or-create on code, so a re-seed
+  // changes nothing a manager has since edited. It is the source of truth for
+  // Ice Cream Cone (`FB-ICECREAM`, ฿50), so it is seeded BEFORE the tax-target
+  // fallback below: the two used to seed the item twice, at ฿50 and ฿60.
+  await seedMenu(db, { operatorId, branchId });
+  // A product the tax-override resolver can point at. Found by name so the
+  // menu's own Ice Cream Cone counts — this must not mint a second row — and,
+  // if the menu somehow seeded none, created at the menu's price, not another.
   const [productRow] = await db
     .select({ id: s.product.id })
     .from(s.product)
@@ -798,15 +808,9 @@ export async function seed(db: Db = getDb()): Promise<void> {
       branchId,
       categoryId: catId,
       name: 'Ice Cream Cone',
-      priceSatang: b(60),
+      priceSatang: b(50),
     });
   }
-  // The menu the park actually runs (SCRUM-232): the prototype's twenty items
-  // in their categories and sub-categories, the modifier library, the add-ons
-  // and the launch discount codes — find-or-create on code, so a re-seed
-  // changes nothing a manager has since edited. Written by the menu slice and
-  // hooked here afterwards, because this file was another slice's that night.
-  await seedMenu(db, { operatorId, branchId });
 
   // --- The fleet (S2-04, S2-05) ----------------------------------------------
   //

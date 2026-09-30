@@ -49,6 +49,7 @@ import {
   VoucherUsedNote,
   voucherIsGift,
 } from '@/components/till/RedeemVoucher';
+import { type ApiSalePrintJob } from '@/api/history';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
@@ -140,6 +141,13 @@ export default function OrderStation() {
   const saleWriter = useSaleWriter();
   /** The sale the platform holds for the order on the confirmation screen. */
   const [platformSale, setPlatformSale] = useState<ApiSale | null>(null);
+  /**
+   * SCRUM-208 — the platform's own print jobs for the closed order, so the
+   * confirmation names only the prep stations it actually printed. Null until
+   * they land, and on a deployment whose sale read carries none — the
+   * confirmation then falls back to what the order built.
+   */
+  const [platformPrintJobs, setPlatformPrintJobs] = useState<ApiSalePrintJob[] | null>(null);
   const completedSaleRef = useRef<string | null>(null);
   const paymentSnapshotRef = useRef<{ epoch: number; scope: string; prepare: () => Promise<SaleWriteOutcome>; complete: (sale: ApiSale, settlements: readonly PaymentSettlement[]) => void } | null>(null);
   /**
@@ -274,13 +282,16 @@ export default function OrderStation() {
       tier: getDefaultTier()?.id ?? 'tourist',
       channel: 'fnb',
       pickupCode: pickupCode || null,
-      memberId: null,
+      // SCRUM-208 — name the band's member to the platform where the tab has
+      // one, so the prep ticket carries the member's children's allergy line.
+      // A guest order or a walk-in band names none; nothing is looked up here.
+      memberId: wristband?.memberId ?? null,
       customerPhone: null,
       customerNickname: null,
       accountId: operator.id,
       accountName: operator.name,
     };
-  }, [branch.id, station?.stationId, operator, pickupCode]);
+  }, [branch.id, station?.stationId, operator, pickupCode, wristband]);
 
   /**
    * THE PRICE THE PLATFORM QUOTES FOR THIS ORDER. Every figure the order panel,
@@ -863,6 +874,7 @@ export default function OrderStation() {
     setVoucherUsed(null);
     setCancelRefusal(null);
     setPlatformSale(null);
+    setPlatformPrintJobs(null);
     setStage('scan');
     setWristband(null);
     setCart([]);
@@ -1148,8 +1160,13 @@ export default function OrderStation() {
     // S2-11 — the platform printed the receipt and one prep ticket per station
     // when it closed the order; the toast says what it queued and where. The
     // till's own routing is only the stand-in for a deployment whose sale read
-    // carries no print jobs.
-    void announceSalePrinting(written.id, () => dispatchPrintJobs(fnbPrintJobs(station, record)));
+    // carries no print jobs. SCRUM-208 — the jobs it queued are kept so the
+    // confirmation names only the prep stations that actually printed.
+    void announceSalePrinting(written.id, () => dispatchPrintJobs(fnbPrintJobs(station, record))).then(
+      (jobs) => {
+        if (jobs && completedSaleRef.current === written.id) setPlatformPrintJobs(jobs);
+      },
+    );
   };
 
   if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
@@ -1480,6 +1497,7 @@ export default function OrderStation() {
               newBalance={newBalance}
               onNewOrder={resetOrder}
               receiptNumber={platformSale?.receiptNumber ?? null}
+              platformPrintJobs={platformPrintJobs}
               flowLayout
               note={voucherUsed ? <VoucherUsedNote held={voucherUsed} /> : undefined}
             />

@@ -1128,6 +1128,14 @@ export interface Wristband {
    * resolves to the exact same wristband — no separate balance, no double-spend.
    */
   qrCode?: string;
+  /**
+   * SCRUM-208 — the platform member this band belongs to, where the band was
+   * issued to one. Carried so an F&B order taken against the band can name its
+   * member to the platform, which then prints the member's children's allergy
+   * line on the kitchen/bar ticket (`orderChildren` in the platform's
+   * sale-printing). Absent on a walk-in band, which names no member.
+   */
+  memberId?: string;
   customerNickname: string;
   /**
    * F&B credit wallet — PREPAID STORED VALUE loaded at ticket sale time.

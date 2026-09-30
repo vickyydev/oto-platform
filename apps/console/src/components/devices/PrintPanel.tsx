@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState, Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
 import { StatusPill, type Tone } from '@/components/Status';
 import type { BoxDeviceList } from '@/lib/deviceList';
+import { isDrawerPulse } from '@/lib/fleetWords';
 
 /**
  * What came out of the machine, and what is still waiting to (S2-06).
@@ -112,6 +113,12 @@ export function PrintPanel({
   /** Why the last read of the queue failed. Null when the last read worked. */
   const [jobsFailed, setJobsFailed] = useState<string | null>(null);
   const [printouts, setPrintouts] = useState<Printout[] | null>(null);
+  /**
+   * What the simulator noted about those printouts, read from the same
+   * response. It is what tells a five-byte session with nothing drawn apart
+   * from paper: the cash-drawer pulse (`isDrawerPulse`).
+   */
+  const [events, setEvents] = useState<SimulatorEvent[]>([]);
   const [missing, setMissing] = useState(false);
   /** The box's previews live on the box; this one is not here. */
   const [elsewhere, setElsewhere] = useState(false);
@@ -149,8 +156,9 @@ export function PrintPanel({
       return;
     }
     try {
-      const { printouts: rows } = await printApi.printouts(selected);
+      const { printouts: rows, events: noted } = await printApi.printouts(selected);
       setPrintouts(rows);
+      setEvents(noted);
       setElsewhere(false);
       setPreviewsFailed(null);
     } catch (err) {
@@ -326,38 +334,56 @@ export function PrintPanel({
               {printouts
                 .slice()
                 .reverse()
-                .map((printout) => (
-                  <li key={printout.seq} className="shrink-0">
-                    <div className="rounded-lg border bg-white p-1">
-                      <img
-                        /* `previewUrl` is written from the API's root, and
+                .map((printout) =>
+                  isDrawerPulse(printout, events) ? (
+                    /* Not paper: the ESC p a cash sale sends down the receipt
+                       printer's socket to open the drawer. Nothing was drawn
+                       and nothing was cut, so shown as a picture it was a
+                       broken image over a red "cut off mid-job" — a working
+                       drawer read as a failed printout. */
+                    <li key={printout.seq} className="shrink-0">
+                      <div className="rounded-lg border bg-white p-1">
+                        <div className="w-[220px] py-5 text-center text-xs font-semibold text-muted-foreground">
+                          Cash drawer pulse
+                        </div>
+                      </div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        #{printout.seq} · not paper · {printout.jobBytes.toLocaleString()} bytes
+                      </div>
+                    </li>
+                  ) : (
+                    <li key={printout.seq} className="shrink-0">
+                      <div className="rounded-lg border bg-white p-1">
+                        <img
+                          /* `previewUrl` is written from the API's root, and
                            this browser can only reach the API through the
                            `/api` prefix the proxy and the static rewrite
                            forward. Unprefixed it asks the Console's own origin
                            and the panel shows a broken image. */
-                        src={apiUrl(printout.previewUrl)}
-                        alt={`Printout ${printout.seq}, ${printout.widthDots} by ${printout.heightDots} dots`}
-                        /* The image is 1 bit per pixel at 203 dpi; scaling it
+                          src={apiUrl(printout.previewUrl)}
+                          alt={`Printout ${printout.seq}, ${printout.widthDots} by ${printout.heightDots} dots`}
+                          /* The image is 1 bit per pixel at 203 dpi; scaling it
                            down smoothly turns a crisp receipt into grey mush,
                            so it is shown at a readable width with the browser
                            told not to interpolate. */
-                        className="block w-[220px] h-auto [image-rendering:pixelated]"
-                      />
-                    </div>
-                    <div className="mt-1 text-[11px] text-muted-foreground">
-                      #{printout.seq} · {printout.widthDots}×{printout.heightDots} dots ·{' '}
-                      {printout.jobBytes.toLocaleString()} bytes
-                      {printout.truncated && (
-                        <span className="text-destructive"> · cut off mid-job</span>
-                      )}
-                    </div>
-                    {printout.setup && printout.setup.length > 0 && (
-                      <div className="mt-0.5 text-[11px] text-muted-foreground font-mono break-words max-w-[220px]">
-                        {printout.setup.slice(0, 3).join(' · ')}
+                          className="block w-[220px] h-auto [image-rendering:pixelated]"
+                        />
                       </div>
-                    )}
-                  </li>
-                ))}
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        #{printout.seq} · {printout.widthDots}×{printout.heightDots} dots ·{' '}
+                        {printout.jobBytes.toLocaleString()} bytes
+                        {printout.truncated && (
+                          <span className="text-destructive"> · cut off mid-job</span>
+                        )}
+                      </div>
+                      {printout.setup && printout.setup.length > 0 && (
+                        <div className="mt-0.5 text-[11px] text-muted-foreground font-mono break-words max-w-[220px]">
+                          {printout.setup.slice(0, 3).join(' · ')}
+                        </div>
+                      )}
+                    </li>
+                  ),
+                )}
             </ul>
           )}
         </>

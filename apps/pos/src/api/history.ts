@@ -299,6 +299,13 @@ export interface ApiSalePrintJob {
   /** The ORIGINAL job this is a copy of. Null on a first print. */
   reprintOf: string | null;
   reprintReason: string | null;
+  /**
+   * SCRUM-208 — who asked for this printout, filled for reprints (the account
+   * that pressed Reprint), null otherwise. Read back with the sale, so a
+   * reprint's attribution survives a reload rather than living only in the
+   * screen state of the till that made it.
+   */
+  requestedByName: string | null;
   errorCode: string | null;
   errorMessage: string | null;
   queuedAt: string;

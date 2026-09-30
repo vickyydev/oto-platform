@@ -282,6 +282,14 @@ export interface SaleCommitBody {
    * refused as a mismatch — the one moment a retry has to work.
    */
   occurredAt: string;
+  /**
+   * SCRUM-208 — THE VISIT THIS SALE FOLLOWS, when it followed a membership
+   * check that opened one. The platform stores it on the sale and band minting
+   * names each child's band from the visit's children (allergies included);
+   * without it the kids' bands print with no name. A walk-in sale, or one with
+   * no membership check, sends nothing.
+   */
+  visitId?: string | null;
   note?: string | null;
   /**
    * WHETHER THIS COMMIT ALSO CLOSES THE SALE.
@@ -1544,6 +1552,8 @@ export interface CommitSaleArgs {
   actionId: string;
   cart: SaleCartPayload;
   occurredAt: string;
+  /** SCRUM-208 — the visit this sale follows, so band minting names the children. See `SaleCommitBody.visitId`. */
+  visitId?: string | null;
   note?: string | null;
   /** Close it in the same call — a ฿0 sale, where the caller wants that. See `SaleCommitBody.finalise`. */
   finalise: boolean;
@@ -1567,6 +1577,10 @@ export async function commitSale(args: CommitSaleArgs): Promise<SaleCommitResult
     actionId: args.actionId,
     cart: args.cart,
     occurredAt: args.occurredAt,
+    // Omitted rather than sent as null on a walk-in: "sends nothing" when there
+    // is no visit, and the route declares it optional (`CommitBody` in
+    // apps/api/src/routes/sales.ts).
+    ...(args.visitId ? { visitId: args.visitId } : {}),
     note: args.note ?? null,
     finalise: args.finalise,
   };

@@ -2522,6 +2522,12 @@ export async function commitSale(
   if (input.visitId) {
     const [v] = await tx.select().from(visit).where(eq(visit.id, input.visitId)).limit(1);
     if (!v || v.operatorId !== actor.operatorId) throw errors.notFound('Visit not found');
+    // The visit names the children this sale's bands will carry, so it has to
+    // be one of this branch's: a visit rung up at another park is not this
+    // sale's to claim, and is refused rather than stored on the wrong branch.
+    if (v.branchId !== priced.scope.branchId) {
+      throw errors.badRequest('That visit belongs to another branch');
+    }
   }
 
   // An action id that already produced a sale at this station is one tap, not

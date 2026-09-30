@@ -90,3 +90,41 @@ export function platformPrintOutcome(
     notPrinted: [...new Set(notPrinted)],
   };
 }
+
+export type PrepStation = 'kitchen' | 'bar';
+
+/**
+ * WHICH PREP STATIONS A SALE ACTUALLY PUT ON PAPER — SCRUM-208.
+ *
+ * Read from the sale's own print jobs (not copies), and only where the job was
+ * queued or printed — never one the platform skipped for want of a printer or
+ * that failed at it. This is what the F&B confirmation names and shows a card
+ * for, so it says what the platform did rather than what the order would have
+ * sent: an order whose bar ticket was skipped shows no bar card and does not
+ * claim the bar.
+ */
+export function prepStationsPrinted(jobs: readonly ApiSalePrintJob[]): PrepStation[] {
+  const out: PrepStation[] = [];
+  for (const job of jobs) {
+    if (job.reprintOf !== null) continue;
+    if (job.status !== 'printed' && job.status !== 'queued') continue;
+    if (job.kind === 'kitchen_ticket' && !out.includes('kitchen')) out.push('kitchen');
+    else if (job.kind === 'bar_ticket' && !out.includes('bar')) out.push('bar');
+  }
+  return out;
+}
+
+/**
+ * WHETHER THE PLATFORM REPORTED A CREDIT-VOUCHER PRINTOUT for this sale —
+ * SCRUM-208. A ticket sale's F&B credit and item grants print as
+ * `credit_voucher` / `item_voucher` jobs, and nothing prints them until the
+ * wallets ticket (S2-14a). The payment-done screen's "Credit Grants to Print"
+ * block is shown only when the sale's own print jobs (not copies) carry one, so
+ * it never promises paper that no printer produces yet.
+ */
+export function reportsCreditVoucher(jobs: readonly ApiSalePrintJob[]): boolean {
+  return jobs.some(
+    (job) =>
+      job.reprintOf === null && (job.kind === 'credit_voucher' || job.kind === 'item_voucher'),
+  );
+}

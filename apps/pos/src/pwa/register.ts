@@ -65,20 +65,16 @@ export function getServiceWorkerState(): ServiceWorkerState {
 // ---------------------------------------------------------------------------
 
 /**
- * Where a service-worker failure is sent (S2-06).
+ * Where a service-worker failure goes (S2-06).
  *
- * NOTE FOR WHOEVER BUILDS THE API SIDE: as of this commit no route answers
- * this path — `apps/api/src/app.ts` registers nothing under `/telemetry`. The
- * POS is the caller and the ticket names the path, so the call is here and
- * written to give up quietly the first time the deployment answers 404 rather
- * than to retry a route that does not exist. The body it sends is the shape
- * below, and nothing else.
+ * There is NO client-telemetry route to send it to. The api answers 404 on
+ * `/api/telemetry/client` — `apps/api/src/app.ts` registers nothing under
+ * `/telemetry`; its telemetry plugin is request-timing middleware, not a route
+ * — and every load that hit a worker failure was making that dead POST. So the
+ * failure is written to the console, where a developer at the till can see it,
+ * and no request leaves for a route that does not exist. When the api grows one,
+ * this is the single place that would send to it.
  */
-const TELEMETRY_PATH = '/api/telemetry/client';
-
-/** Set once this deployment has answered 404: there is no point asking again. */
-let telemetryAbsent = false;
-
 type FailureEvent =
   /** `navigator.serviceWorker.register()` rejected. */
   | 'register_failed'
@@ -88,33 +84,14 @@ type FailureEvent =
   | 'update_check_failed';
 
 function reportFailure(event: FailureEvent, err: unknown): void {
-  if (telemetryAbsent) return;
-  const body = JSON.stringify({
-    kind: 'service_worker',
-    event,
-    message: err instanceof Error ? err.message : String(err ?? ''),
+  const message = err instanceof Error ? err.message : String(err ?? '');
+  // A worker that failed to install leaves the till with no offline shell, so
+  // it is worth a line — but only in the console, since there is no route to
+  // POST it to. No phone number can reach this message (a worker error string),
+  // so the telemetry redactor has nothing to strip.
+  console.warn(`[service-worker] ${event}${message ? `: ${message}` : ''}`, {
     buildId: state.buildId,
-    at: new Date().toISOString(),
   });
-  // Deliberately a bare `fetch` and not `api.post`: that wrapper turns a 401
-  // into an `oto:unauthorized` event, and a telemetry call is not a reason to
-  // send somebody back to the lock screen. `keepalive` so a report made as the
-  // tab closes still leaves.
-  void fetch(TELEMETRY_PATH, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'content-type': 'application/json' },
-    body,
-    keepalive: true,
-  })
-    .then((res) => {
-      if (res.status === 404) telemetryAbsent = true;
-    })
-    .catch(() => {
-      // Offline, which is the most likely moment for a worker to misbehave.
-      // The report is lost; the alternative is a queue of client errors held
-      // on the device, which is a worse thing to own than a lost log line.
-    });
 }
 
 // ---------------------------------------------------------------------------

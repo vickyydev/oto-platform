@@ -23,7 +23,7 @@ import {
   type RefundItemOption,
 } from '@/api/history';
 import { DiscountLabel, refundSliceWords, voucherLabelParts } from '@/components/history/SaleDetail';
-import { platformPrintOutcome } from '@/lib/salePrinting';
+import { platformPrintOutcome, prepStationsPrinted, reportsCreditVoucher } from '@/lib/salePrinting';
 import {
   REFUND_REQUESTS_KEY,
   clearRefundRequests,
@@ -231,6 +231,7 @@ const job = (overrides: Partial<ApiSalePrintJob> & Pick<ApiSalePrintJob, 'id' | 
   subjectId: 'sale-1',
   reprintOf: null,
   reprintReason: null,
+  requestedByName: null,
   errorCode: null,
   errorMessage: null,
   queuedAt: '2026-09-30T07:00:00.000Z',
@@ -468,6 +469,43 @@ describe('platformPrintOutcome — the platform’s print jobs in the till’s t
     ]);
     const failed = job({ id: 'j2', kind: 'receipt', status: 'failed', errorMessage: 'Paper out' });
     expect(platformPrintOutcome([failed]).notPrinted).toEqual(['Receipt not printed — Paper out']);
+  });
+});
+
+describe('prepStationsPrinted — which prep stations the sale actually put on paper (SCRUM-208)', () => {
+  it('names only a station whose ticket was queued or printed, not one skipped or failed', () => {
+    expect(
+      prepStationsPrinted([
+        job({ id: 'j1', kind: 'kitchen_ticket', status: 'printed' }),
+        job({ id: 'j2', kind: 'bar_ticket', status: 'skipped' }),
+        job({ id: 'j3', kind: 'receipt', status: 'queued' }),
+      ]),
+    ).toEqual(['kitchen']);
+    expect(
+      prepStationsPrinted([
+        job({ id: 'j1', kind: 'kitchen_ticket', status: 'queued' }),
+        job({ id: 'j2', kind: 'bar_ticket', status: 'printed' }),
+      ]),
+    ).toEqual(['kitchen', 'bar']);
+    // A failed bar ticket, and a copy of a kitchen ticket, name no station.
+    expect(
+      prepStationsPrinted([
+        job({ id: 'j1', kind: 'bar_ticket', status: 'failed' }),
+        job({ id: 'j2', kind: 'kitchen_ticket', status: 'printed', reprintOf: 'j0' }),
+      ]),
+    ).toEqual([]);
+  });
+});
+
+describe('reportsCreditVoucher — whether the platform printed a credit voucher (SCRUM-208)', () => {
+  it('is true only for a first-print credit or item voucher, not a copy or another kind', () => {
+    expect(reportsCreditVoucher([job({ id: 'j1', kind: 'credit_voucher', status: 'queued' })])).toBe(true);
+    expect(reportsCreditVoucher([job({ id: 'j1', kind: 'item_voucher', status: 'printed' })])).toBe(true);
+    expect(reportsCreditVoucher([job({ id: 'j1', kind: 'receipt', status: 'printed' })])).toBe(false);
+    expect(
+      reportsCreditVoucher([job({ id: 'j1', kind: 'credit_voucher', status: 'printed', reprintOf: 'j0' })]),
+    ).toBe(false);
+    expect(reportsCreditVoucher([])).toBe(false);
   });
 });
 

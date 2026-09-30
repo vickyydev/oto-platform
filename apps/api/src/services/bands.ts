@@ -306,6 +306,41 @@ export async function recordBandReprint(
   });
 }
 
+/**
+ * Revoke a sale's active bands when a refund takes it fully refunded (S2-11).
+ * The status becomes `revoked` and a `revoked` band_event names the refund; the
+ * band's id and code stay, so the paper still in a guest's hand is a credential
+ * the gate refuses tomorrow. A band already replaced or revoked is left as it
+ * is. Called inside the refund's own transaction; returns the ids revoked, for
+ * the refund's audit row. A partial refund does not call this.
+ */
+export async function revokeSaleBands(
+  tx: Tx,
+  saleId: string,
+  input: { refundId: string; reason: string; stationId: string | null; accountId: string },
+): Promise<string[]> {
+  const rows = await tx
+    .select()
+    .from(band)
+    .where(and(eq(band.saleId, saleId), eq(band.status, 'active')));
+  if (rows.length === 0) return [];
+  const now = new Date();
+  for (const row of rows) {
+    await tx.update(band).set({ status: 'revoked', updatedAt: now }).where(eq(band.id, row.id));
+    await tx.insert(bandEvent).values({
+      id: newId(),
+      bandId: row.id,
+      kind: 'revoked',
+      stationId: input.stationId,
+      boxId: null,
+      // The refund that killed it, and why. Never the code — it is a credential.
+      detail: { refundId: input.refundId, reason: input.reason, accountId: input.accountId },
+      createdAt: now,
+    });
+  }
+  return rows.map((r) => r.id);
+}
+
 /** The bands of several sales, for a lookup: which sale each belongs to. */
 export async function saleIdsOfBands(db: Exec, bandIds: readonly string[]): Promise<string[]> {
   if (bandIds.length === 0) return [];

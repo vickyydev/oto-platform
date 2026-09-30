@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   auditLog,
@@ -16,6 +16,7 @@ import {
   sale,
   station,
   ticketPackage,
+  visit,
 } from '@oto/db';
 import { createBoxAgent, memoryCredentialStore, type AgentFetch } from '@oto/box-agent';
 import {
@@ -430,6 +431,41 @@ describe('refunds — manager approval, the clamp, the status walk, the allocati
     expect(twice.json().error.code).toBe('REFUND_LINE_ALREADY_REFUNDED');
   });
 
+  it('revokes the sale’s bands when a refund empties it, and leaves them on a partial', async () => {
+    const visitId = await visitFor(maliId, maliChildren.map((c) => c.id));
+    const { saleId } = await ticketSale({ kids: 2, adults: 1, memberId: maliId, visitId });
+    const bandIds = (await ctx.db.select().from(band).where(eq(band.saleId, saleId))).map((b) => b.id);
+    expect(bandIds).toHaveLength(3);
+
+    // A partial refund leaves the party's bands alone — some of them are still inside.
+    const partial = await refundAs(manager, saleId, { mode: 'custom', amountSatang: 5_000, reason: 'Slide closed' });
+    expect(partial.statusCode, partial.body).toBe(200);
+    const midway = await ctx.db.select().from(band).where(eq(band.saleId, saleId));
+    expect(midway.every((b) => b.status === 'active')).toBe(true);
+
+    // Refunding the rest empties the sale, and its bands die with it.
+    const rest = await refundAs(manager, saleId, { mode: 'whole', reason: 'Guest unwell' });
+    expect(rest.statusCode, rest.body).toBe(200);
+    expect(rest.json().refundStatus).toBe('refunded');
+    const refundId = rest.json().refund.id as string;
+
+    const revoked = await ctx.db.select().from(band).where(eq(band.saleId, saleId));
+    expect(revoked.every((b) => b.status === 'revoked')).toBe(true);
+    // Each band carries a `revoked` event naming the refund, in the refund's own transaction.
+    const events = await ctx.db.select().from(bandEvent).where(inArray(bandEvent.bandId, bandIds));
+    const revokedEvents = events.filter((e) => e.kind === 'revoked');
+    expect(revokedEvents).toHaveLength(3);
+    expect(revokedEvents.every((e) => (e.detail as { refundId?: string }).refundId === refundId)).toBe(true);
+    // The refund's audit names what it killed; the partial's names nothing.
+    const audits = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.entityId, saleId), eq(auditLog.action, 'sale.refund')));
+    const revokedLists = audits.map((a) => (a.after as { revokedBandIds?: string[] }).revokedBandIds ?? []);
+    expect(revokedLists.some((ids) => [...ids].sort().join() === [...bandIds].sort().join())).toBe(true);
+    expect(revokedLists.some((ids) => ids.length === 0)).toBe(true);
+  });
+
   it('voids a whole card tender on its terminal, and falls back to cash when the terminal refuses', async () => {
     for (const outcome of ['approved', 'declined'] as const) {
       const { saleId, owed } = await commit({
@@ -566,6 +602,27 @@ describe('reprints from History', () => {
     expect(jobs.filter((j) => j.reprintOf === original.id)).toHaveLength(2);
   });
 
+  it('names on the sale detail who asked for a reprint', async () => {
+    const { saleId } = await ticketSale({ kids: 1, adults: 1 });
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/sales/${saleId}/reprints`,
+      headers: { cookie: reception },
+      payload: { kind: 'receipt' },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const copyId = res.json().jobs[0].id as string;
+    const jobs = (await detail(saleId)).printJobs as {
+      id: string;
+      reprintOf: string | null;
+      requestedByName: string | null;
+    }[];
+    const copy = jobs.find((j) => j.id === copyId)!;
+    // A reprint carries the account that asked for it, resolved to a display name.
+    expect(copy.reprintOf).not.toBeNull();
+    expect(copy.requestedByName).toBe('Som (Reception)');
+  });
+
   it('reprints a band group keeping each band’s id and code, and marks the old print replaced', async () => {
     const { saleId, done } = await ticketSale({ kids: 2, adults: 1 });
     const before = await ctx.db.select().from(band).where(and(eq(band.saleId, saleId), eq(band.kind, 'kid')));
@@ -635,5 +692,37 @@ describe('History finds a sale by band code and by phone', () => {
       headers: { cookie: chalongManager },
     });
     expect(elsewhere.statusCode).toBe(403);
+  });
+});
+
+// --- The sale stores its visit (SCRUM-208 contract) -----------------------------
+
+describe('a sale carries its membership visit', () => {
+  it('refuses a visit rung up at another park, before anything is written', async () => {
+    const [chalong] = await ctx.db.select().from(branch).where(eq(branch.code, 'robinson-chalong'));
+    const foreignVisitId = newId();
+    await ctx.db.insert(visit).values({
+      id: foreignVisitId,
+      operatorId,
+      branchId: chalong!.id,
+      visitDate: today(),
+      status: 'draft',
+    });
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales',
+      headers: { cookie: reception },
+      payload: {
+        id: newId(),
+        stationId,
+        memberId: jamesId,
+        visitId: foreignVisitId,
+        lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }],
+      },
+    });
+    expect(res.statusCode, res.body).toBe(400);
+    expect(res.json().error.message).toContain('another branch');
+    // Nothing was written under that visit.
+    expect(await ctx.db.select().from(sale).where(eq(sale.visitId, foreignVisitId))).toHaveLength(0);
   });
 });

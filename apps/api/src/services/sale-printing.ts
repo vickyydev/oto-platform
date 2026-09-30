@@ -141,13 +141,23 @@ export interface SalePrintJobView {
   /** The ORIGINAL job this is a copy of, flattened (`reprintRootOf`). Null on a first print. */
   reprintOf: string | null;
   reprintReason: string | null;
+  /**
+   * Who asked for this printout, as a display name. A reprint carries the
+   * account that requested it; a first print queued by the sale itself carries
+   * none, so this is null there.
+   */
+  requestedByName: string | null;
   errorCode: string | null;
   errorMessage: string | null;
   queuedAt: string;
   finishedAt: string | null;
 }
 
-function jobViewOf(row: PrintJobRow, deviceLabel: string | null = null): SalePrintJobView {
+function jobViewOf(
+  row: PrintJobRow,
+  deviceLabel: string | null = null,
+  requestedByName: string | null = null,
+): SalePrintJobView {
   return {
     id: row.id,
     kind: row.kind,
@@ -160,6 +170,7 @@ function jobViewOf(row: PrintJobRow, deviceLabel: string | null = null): SalePri
     subjectId: row.subjectId,
     reprintOf: row.reprintOf,
     reprintReason: row.reprintReason,
+    requestedByName,
     errorCode: row.errorCode,
     errorMessage: row.errorMessage,
     queuedAt: row.queuedAt.toISOString(),
@@ -668,7 +679,30 @@ export async function printJobsOfSale(db: Exec, saleId: string): Promise<SalePri
     .leftJoin(device, eq(device.id, printJob.deviceId))
     .where(or(...subjects))
     .orderBy(desc(printJob.queuedAt));
-  return rows.map((r) => jobViewOf(r.job, r.deviceLabel));
+  // Attribution: reprints carry the account that asked for them. Resolve those
+  // to display names in one lookup rather than per row.
+  const requesterIds = [
+    ...new Set(rows.map((r) => r.job.requestedByAccountId).filter((id): id is string => !!id)),
+  ];
+  const names = new Map<string, string>();
+  if (requesterIds.length) {
+    const staff = await db
+      .select({ id: account.id, name: employee.name, nickname: employee.nickname })
+      .from(account)
+      .leftJoin(employee, eq(employee.id, account.employeeId))
+      .where(inArray(account.id, requesterIds));
+    for (const s of staff) {
+      const label = s.nickname ?? s.name;
+      if (label) names.set(s.id, label);
+    }
+  }
+  return rows.map((r) =>
+    jobViewOf(
+      r.job,
+      r.deviceLabel,
+      r.job.requestedByAccountId ? names.get(r.job.requestedByAccountId) ?? null : null,
+    ),
+  );
 }
 
 // --- The document the box prints ------------------------------------------------

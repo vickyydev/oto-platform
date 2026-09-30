@@ -34,6 +34,7 @@ import type { BoxDeviceList } from '@/lib/deviceList';
 import {
   boxRoleWord,
   boxStatusWord,
+  commandLabel,
   commandWord,
   deviceKindWord,
   deviceRoleWord,
@@ -1206,7 +1207,9 @@ function CommandHistory({
             <li key={command.id} className="py-2.5 first:pt-0 last:pb-0">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 <StatusPill tone={toneForCommandState(command.state)}>{command.state}</StatusPill>
-                <span className="text-sm font-semibold">{commandWord(command.kind)}</span>
+                {/* By what it printed, not only by its kind: a sale's receipt
+                    rides the test_print command too (`commandLabel`). */}
+                <span className="text-sm font-semibold">{commandLabel(command)}</span>
                 <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
                   {timeAgo(command.createdAt)}
                 </span>

@@ -360,19 +360,30 @@ export function dispatchPlatformPrinting(
  * S2-11 whose sale read carries no print jobs at all. A read that fails says
  * nothing: the sale is closed and its paper is the platform's, and a toast
  * guessed at here would be the one thing on screen that is not true.
+ *
+ * Returns the sale's own print jobs (its first prints, not copies) so a caller
+ * can say what actually went to paper — the F&B confirmation reads them to name
+ * only the prep stations the platform printed (SCRUM-208). Null when the
+ * platform's jobs could not be had: an older deployment that fell back to the
+ * till's routing, or a read that failed.
  */
-export async function announceSalePrinting(saleId: string, fallback: () => void): Promise<void> {
+export async function announceSalePrinting(
+  saleId: string,
+  fallback: () => void,
+): Promise<ApiSalePrintJob[] | null> {
   let jobs: ApiSalePrintJob[] | undefined;
   try {
     jobs = (await getSale(saleId)).printJobs;
   } catch {
-    return;
+    return null;
   }
   if (!jobs) {
     fallback();
-    return;
+    return null;
   }
-  dispatchPlatformPrinting(jobs.filter((job) => job.reprintOf === null));
+  const firstPrints = jobs.filter((job) => job.reprintOf === null);
+  dispatchPlatformPrinting(firstPrints);
+  return firstPrints;
 }
 
 export interface EventBraceletPrintParams {

@@ -18,6 +18,7 @@ import { roleForTender, type TerminalTender } from '@oto/box-agent';
 import type { QrPayment } from '@oto/payments-2c2p';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
+import { revokeSaleBands } from './bands';
 import { queueTerminalCommand } from './payments/terminal';
 import { accountNames, refundViewOf, settleRefundSlice, type RefundView } from './refund-slices';
 import { allocateReceipt, saleViewOf, type SaleView } from './sale';
@@ -347,6 +348,19 @@ export async function refundSale(
     .returning();
   if (!after) throw new Error('the sale was not updated');
 
+  // A refund that empties the sale kills its bands: the admission it paid for
+  // is gone, so the bands go with it in the same transaction. A partial refund
+  // leaves them — some of the party is still inside. The gate does not exist
+  // yet, so this is bookkeeping today and the gate's refusal tomorrow.
+  const revokedBandIds = full
+    ? await revokeSaleBands(tx, saleId, {
+        refundId,
+        reason,
+        stationId: actor.stationId,
+        accountId: actor.accountId,
+      })
+    : [];
+
   await audit.record(tx, {
     actorAccountId: actor.accountId,
     operatorId: actor.operatorId,
@@ -373,6 +387,7 @@ export async function refundSale(
       reason,
       approvedByAccountId: actor.accountId,
       slices: slices.map((s) => ({ attemptId: s.attemptId, route: s.route, amountSatang: s.amountSatang, status: s.status })),
+      revokedBandIds,
     },
   });
 

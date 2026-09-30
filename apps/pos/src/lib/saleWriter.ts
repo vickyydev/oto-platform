@@ -101,6 +101,13 @@ export interface SaleWriteInput {
   finalise: boolean;
   note?: string | null;
   /**
+   * SCRUM-208 — THE VISIT THIS SALE FOLLOWS. Set when the cart followed a
+   * membership check that opened a visit, so the commit carries it and band
+   * minting names the children (`SaleCommitBody.visitId`). Part of what makes
+   * two carts different sales: a changed visit takes a fresh sale id.
+   */
+  visitId?: string | null;
+  /**
    * S2-10b — THE SALE ID A VOUCHER IS ALREADY HELD FOR. A voucher is held for
    * a cart by the id the till minted for it, before Pay, and the commit that
    * uses it up must carry the same one. So a NEW cart takes this id rather
@@ -204,7 +211,7 @@ function messageOf(err: unknown): string {
  * signature decides, not what decides it.
  */
 function signatureOf(input: SaleWriteInput): string {
-  return JSON.stringify([input.cart, input.finalise, input.note ?? null]);
+  return JSON.stringify([input.cart, input.finalise, input.note ?? null, input.visitId ?? null]);
 }
 
 interface SaleAttempt {
@@ -378,6 +385,7 @@ export function useSaleWriter(): SaleWriter {
           actionId: ids.actionId,
           cart: input.cart,
           occurredAt: ids.occurredAt,
+          visitId: input.visitId ?? null,
           note: input.note ?? null,
           finalise: input.finalise,
         });

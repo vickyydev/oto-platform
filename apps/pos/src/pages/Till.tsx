@@ -201,6 +201,14 @@ export default function Till() {
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
 
   const [member, setMember] = useState<Member | null>(null);
+  /**
+   * SCRUM-208 — the visit the membership check opened for this cart. Confirming
+   * children in `VisitChildrenModal` creates a draft visit; its id rides with
+   * the sale so band minting names each child (allergies included). Null on a
+   * walk-in or before the check, in which case the sale carries no visit. Reset
+   * with the sale and cleared whenever the till looks up a different visitor.
+   */
+  const [confirmedVisitId, setConfirmedVisitId] = useState<string | null>(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyTier, setVerifyTier] = useState<CustomerTier | null>(null);
   // A verification taken before the customer gave their details; saved to a
@@ -566,6 +574,7 @@ export default function Till() {
     setPendingPaymentMethod(null);
     setPendingCheckInChoices(null);
     setMember(null);
+    setConfirmedVisitId(null);
     setShowVerifyModal(false);
     setVerifyTier(null);
     setPendingVerification(null);
@@ -597,6 +606,9 @@ export default function Till() {
         const found = phone ? (await membersApi.lookup(phone)).member : null;
         if (saleEpochRef.current !== epoch) return;
         const mapped = found ? apiMemberToMember(found) : null;
+        // A new lookup is a new (or no) visit: the last check's visit must not
+        // ride onto this visitor's sale.
+        setConfirmedVisitId(null);
         setMember(mapped);
         if (mapped) {
           setTier(resolveAutoTier(mapped));
@@ -623,6 +635,7 @@ export default function Till() {
   // Walk-in: no membership, default to Tourist.
   const handleSkipIdentify = () => {
     setMember(null);
+    setConfirmedVisitId(null);
     setStep(2);
   };
 
@@ -2288,6 +2301,9 @@ export default function Till() {
   const writeInput = (payload: SaleCartPayload): SaleWriteInput => ({
     cart: payload,
     finalise: false,
+    // SCRUM-208 — the membership check's visit rides with the sale so band
+    // minting names the children; a walk-in cart carries none.
+    ...(confirmedVisitId ? { visitId: confirmedVisitId } : {}),
     ...(voucher.held ? { preferSaleId: voucher.held.saleId } : {}),
   });
 
@@ -3384,8 +3400,11 @@ export default function Till() {
         open={showVisitChildren}
         member={member}
         onClose={() => setShowVisitChildren(false)}
-        onConfirmed={(children) => {
+        onConfirmed={(children, visitId) => {
           setMember((m) => (m ? { ...m, savedChildren: children } : m));
+          // SCRUM-208 — keep the visit so the sale carries it and the kids'
+          // bands are named from its children.
+          setConfirmedVisitId(visitId);
         }}
       />
 

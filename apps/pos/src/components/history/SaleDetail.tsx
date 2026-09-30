@@ -534,9 +534,9 @@ function RefundHistory({ refunds, fmt }: { refunds: readonly ApiRefund[]; fmt: (
 /**
  * The prototype's "Reprint history" card, from the platform's print jobs: a
  * reprint is a job whose `reprintOf` names the job it copies. What, when,
- * where it went and how it ended; who, where this screen made it — the job
- * read carries no name, so a copy made elsewhere shows none rather than a
- * guess.
+ * where it went and how it ended; and who asked for it — the platform's own
+ * `requestedByName` where the read carries it (SCRUM-208), the name this screen
+ * just made a copy under until then, and nothing where neither has one.
  */
 function ReprintHistory({
   jobs,
@@ -572,7 +572,10 @@ function ReprintHistory({
           const band = job.subjectType === 'band' && job.subjectId ? bandOf.get(job.subjectId) : undefined;
           const what = `${PRINT_KIND_LABEL[job.kind]}${band ? ` ${bandLabel(band)}` : ''}`;
           const state = status(job);
-          const who = madeBy[job.id];
+          // SCRUM-208 — the platform's own attribution first, so "by Som"
+          // survives a reload; the name this screen just made a copy under is
+          // the fallback until the read carries it, and nothing where neither has one.
+          const who = job.requestedByName ?? madeBy[job.id];
           return (
             <div key={job.id} className="text-sm border-l-2 border-primary/40 pl-3">
               <div className="flex items-center justify-between gap-2">
@@ -697,7 +700,7 @@ export function SaleDetail({
   const [reprintOpen, setReprintOpen] = useState(false);
   const [reprintBusy, setReprintBusy] = useState(false);
   const [flash, setFlash] = useState<{ text: string; tone: 'ok' | 'bad' } | null>(null);
-  /** Who made each reprint made on this screen — the job read carries no name. */
+  /** Who made each reprint on this screen — the fallback until the read carries `requestedByName` (SCRUM-208). */
   const [madeBy, setMadeBy] = useState<Record<string, string>>({});
   const [requests, setRequests] = useState<RefundRequestNote[]>([]);
   /** The station's box is working without the cloud (`/me/station/link`), or a press found it so. */

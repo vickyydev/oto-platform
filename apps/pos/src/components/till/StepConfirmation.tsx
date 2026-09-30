@@ -9,7 +9,8 @@ import { computeTotals } from '@/lib/sale';
 import { summarizeTax, roundTHB } from '@/lib/tax';
 import { getPrintTemplate } from '@/mockApi';
 import { paymentMethodLabel } from '@/lib/payments';
-import { bandsByCartLine, getSale, type ApiSaleBand, type ApiSaleLine } from '@/api/history';
+import { bandsByCartLine, getSale, type ApiSaleBand, type ApiSaleLine, type ApiSalePrintJob } from '@/api/history';
+import { reportsCreditVoucher } from '@/lib/salePrinting';
 import { platformId } from '@/lib/cartWire';
 import { QrCode } from './QrCode';
 
@@ -55,15 +56,21 @@ export interface SaleIssue {
   /** Null until the platform has answered, or when it answered with no bands field at all. */
   bands: ApiSaleBand[] | null;
   lines: Pick<ApiSaleLine, 'id' | 'cartLineId'>[];
+  /**
+   * SCRUM-208 — the sale's print jobs, so the "Credit Grants to Print" block is
+   * shown only when the platform reported a credit-voucher printout. Null until
+   * the read lands (or when it carries none).
+   */
+  printJobs: ApiSalePrintJob[] | null;
 }
 
 export function useSaleIssue(saleId: string, given?: SaleNumber): SaleIssue {
-  const [asked, setAsked] = useState<SaleIssue>({ number: { kind: 'unknown' }, bands: null, lines: [] });
+  const [asked, setAsked] = useState<SaleIssue>({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null });
 
   useEffect(() => {
     if (!PLATFORM_SALE_ID.test(saleId)) return;
     let live = true;
-    setAsked({ number: { kind: 'unknown' }, bands: null, lines: [] });
+    setAsked({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null });
     void getSale(saleId)
       .then((detail) => {
         if (!live) return;
@@ -73,6 +80,7 @@ export function useSaleIssue(saleId: string, given?: SaleNumber): SaleIssue {
             : { kind: 'recorded' },
           bands: detail.bands ?? null,
           lines: detail.lines ?? [],
+          printJobs: detail.printJobs ?? null,
         });
       })
       .catch(() => {
@@ -197,6 +205,14 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConf
   const receiptTpl = getPrintTemplate('receipt');
   const showTaxBreakdown = receiptTpl ? !!receiptTpl.fields.taxServiceBreakdown : true;
   const showCreditInfo = receiptTpl ? !!receiptTpl.fields.voucherInfo : true;
+  /**
+   * SCRUM-208 — the "Credit Grants to Print" block is shown only once the
+   * platform reports a credit-voucher printout for this sale. Nothing prints
+   * F&B credit or item grants until the wallets ticket (S2-14a), so until then
+   * the block promised paper no printer produced; it stays hidden until the
+   * read carries such a job.
+   */
+  const platformPrintsCredit = reportsCreditVoucher(issue.printJobs ?? []);
 
   return (
     <div className="flex flex-col h-full animate-in zoom-in-95 duration-500">
@@ -228,7 +244,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConf
         )}
       </div>
 
-      <div className="flex-1 grid grid-cols-2 gap-6 overflow-hidden">
+      <div className={cn('flex-1 grid gap-6 overflow-hidden', platformPrintsCredit ? 'grid-cols-2' : 'grid-cols-1')}>
         <Card className="p-6 flex flex-col bg-card/50 overflow-hidden">
           <div className="flex items-center justify-between mb-4 border-b pb-4">
             <div className="flex items-center gap-3">
@@ -288,34 +304,36 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConf
           </ScrollArea>
         </Card>
 
-        <Card className="p-6 flex flex-col bg-card/50 overflow-hidden">
-          <div className="flex items-center justify-between mb-4 border-b pb-4">
-            <div className="flex items-center gap-3">
-              <UtensilsCrossed className="w-6 h-6 text-primary" />
-              <h3 className="text-2xl font-bold">Credit Grants to Print</h3>
-            </div>
-            <span className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-              {sale.creditGrants.length} total
-            </span>
-          </div>
-          {!showCreditInfo ? (
-            <div className="flex-1 flex items-center justify-center text-center text-muted-foreground px-4">
-              Credit details hidden by the receipt template.
-            </div>
-          ) : sale.creditGrants.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-center text-muted-foreground px-4">
-              No credit grants for this order.
-            </div>
-          ) : (
-            <ScrollArea className="flex-1 -mx-2 px-2">
-              <div className="space-y-3">
-                {sale.creditGrants.map((v, i) => (
-                  <CreditGrantRow key={v.id} voucher={v} index={i} />
-                ))}
+        {platformPrintsCredit && (
+          <Card className="p-6 flex flex-col bg-card/50 overflow-hidden">
+            <div className="flex items-center justify-between mb-4 border-b pb-4">
+              <div className="flex items-center gap-3">
+                <UtensilsCrossed className="w-6 h-6 text-primary" />
+                <h3 className="text-2xl font-bold">Credit Grants to Print</h3>
               </div>
-            </ScrollArea>
-          )}
-        </Card>
+              <span className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                {sale.creditGrants.length} total
+              </span>
+            </div>
+            {!showCreditInfo ? (
+              <div className="flex-1 flex items-center justify-center text-center text-muted-foreground px-4">
+                Credit details hidden by the receipt template.
+              </div>
+            ) : sale.creditGrants.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center text-center text-muted-foreground px-4">
+                No credit grants for this order.
+              </div>
+            ) : (
+              <ScrollArea className="flex-1 -mx-2 px-2">
+                <div className="space-y-3">
+                  {sale.creditGrants.map((v, i) => (
+                    <CreditGrantRow key={v.id} voucher={v} index={i} />
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </Card>
+        )}
       </div>
 
       <div className="mt-6">
