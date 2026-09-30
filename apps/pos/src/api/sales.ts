@@ -37,6 +37,8 @@ import {
 } from '@/lib/cartWire';
 import { todayRateMode, type RateMode } from '@/lib/pricingMode';
 import { api, ApiError, idemKey, isMissingRoute } from './client';
+import { bridgeApi } from './bridge';
+import { viaLane } from '@/lib/lane';
 import type { VoucherEffect } from './vouchers';
 
 /**
@@ -624,7 +626,23 @@ export interface ApiTierClaim {
 }
 
 export const salesApi = {
-  quote: (body: SaleCartPayload) => api.post<{ quote: ApiSaleQuote }>('/sales/quote', body),
+  /**
+   * On the box lane (offline plan Round 3, OD-1) the cart is priced by the box
+   * from its cached catalogue, with the one satang engine, and answered in the
+   * platform's own quote shape.
+   */
+  quote: (body: SaleCartPayload) =>
+    viaLane(
+      () => api.post<{ quote: ApiSaleQuote }>('/sales/quote', body),
+      async (stationId) => {
+        const answer = await bridgeApi.intent<{ quote: ApiSaleQuote }>(
+          stationId,
+          'cart.quote',
+          body as unknown as Record<string, unknown>,
+        );
+        return { quote: answer.result!.quote };
+      },
+    ),
   /**
    * SCRUM-307 — record the document staff just checked for a visitor who has
    * given no details yet, so the cart that follows is priced at the rate it

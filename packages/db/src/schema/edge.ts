@@ -570,3 +570,67 @@ export const boxCache = edge.table(
     index('box_cache_operator_idx').on(t.operatorId),
   ],
 );
+
+/**
+ * What a counter box recorded while it could not reach the platform
+ * (plan `offline/PLAN.md` §2.3, Round 3).
+ *
+ * A member signed up, a child added or corrected, a visit confirmed — each is a
+ * fact in the outbox, and each is ALSO a row here, written in the same store
+ * transaction, so the next lookup at this counter finds the family it just
+ * signed up. Lookup reads the `members` scope of `box_cache` with this laid
+ * over it; once the fact is acknowledged and a later pull brings the
+ * platform's own copy of the record, the row here has done its job and is
+ * pruned.
+ *
+ * `kind` is one of three, and the record is built from the fact's own
+ * payload, so what a counter shows offline is what the platform will be told. `phone` is
+ * the member's number in E.164, set on a `member` row only, and is what a
+ * lookup by phone reads; `member_id` names the guardian on a `child` or
+ * `visit` row, and has no foreign key because the member it names may exist
+ * only on this box until the next sync.
+ *
+ * Born with `operator_id`, as `box_cache` beside it was: the writer already
+ * knows the operator, and a table added later with no tenancy column is the
+ * debt `schema-shape.test.ts` lists for the older edge tables.
+ */
+export const BOX_OVERLAY_KINDS = ['member', 'child', 'visit'] as const;
+export type BoxOverlayKind = (typeof BOX_OVERLAY_KINDS)[number];
+
+export const boxOverlay = edge.table(
+  'box_overlay',
+  {
+    boxId: uuid('box_id')
+      .notNull()
+      .references(() => box.id, { onDelete: 'restrict' }),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    kind: text('kind').$type<BoxOverlayKind>().notNull(),
+    /** The till-minted id of the member, child or visit. */
+    entityId: uuid('entity_id').notNull(),
+    /** The guardian, on a child or visit row; the member itself on a member row. */
+    memberId: uuid('member_id'),
+    /** E.164, on a member row only: what a lookup by phone reads. */
+    phone: text('phone'),
+    /**
+     * `{ record, eventId }`: the entity as this counter now knows it, and the
+     * outbox event that last changed it — what a prune asks the outbox about
+     * before letting the cache speak for the record again.
+     */
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.boxId, t.kind, t.entityId] }),
+    index('box_overlay_operator_idx').on(t.operatorId),
+    index('box_overlay_phone_idx').on(t.boxId, t.phone),
+    index('box_overlay_member_idx').on(t.boxId, t.memberId),
+    check('box_overlay_kind_check', sql`${t.kind} in ('member','child','visit')`),
+    check(
+      'box_overlay_phone_check',
+      sql`${t.phone} is null or ${t.phone} ~ '^\\+[1-9][0-9]{6,14}$'`,
+    ),
+  ],
+);

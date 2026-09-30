@@ -4,6 +4,17 @@ import { newId as newRecordId } from '@oto/shared';
 import { PERMISSIONS, type Permission } from '@oto/shared/permissions';
 import type { StationCapability } from '@/types';
 import { api, idemKey } from './client';
+import { bridgeApi } from './bridge';
+import { viaLane } from '@/lib/lane';
+
+/**
+ * A record write on the box lane (offline plan Round 3): the bridge intent
+ * with the till's own id, answered in the shape the platform route answers.
+ */
+async function onBox<R>(stationId: string, type: string, payload: Record<string, unknown>): Promise<R> {
+  const answer = await bridgeApi.intent<R>(stationId, type, payload, { actionId: `${type}:${newRecordId()}` });
+  return answer.result as R;
+}
 
 // --- auth / me -------------------------------------------------------------
 export interface MeResponse {
@@ -123,9 +134,20 @@ export interface ApiTierVerificationRecord {
   verifiedAt: string;
 }
 
+/**
+ * The member, child and visit calls the till makes at the counter go through
+ * the lane arbiter (`lib/lane.ts`, OD-1): the platform while it answers, the
+ * box when the link is down or the station is forced offline. The ids are
+ * minted here once, before either is asked, so a record begun on one lane and
+ * finished on the other is the same record (OD-12).
+ */
 export const membersApi = {
   lookup: (phone: string) =>
-    api.get<{ member: ApiMember | null }>(`/members/lookup?phone=${encodeURIComponent(phone)}`),
+    viaLane(
+      () => api.get<{ member: ApiMember | null }>(`/members/lookup?phone=${encodeURIComponent(phone)}`),
+      async (stationId) =>
+        (await bridgeApi.lookup(stationId, phone)) as unknown as { member: ApiMember | null },
+    ),
   list: (q?: string) =>
     api.get<{ members: ApiMember[] }>(`/members${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   archive: (id: string) => api.delete<{ ok: true }>(`/members/${id}`),
@@ -136,24 +158,57 @@ export const membersApi = {
    * that already exists instead of creating a second one — belt to the
    * Idempotency-Key's braces, and the one that survives a client restart.
    */
-  create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' | 'line' }) =>
-    api.post<{ member: ApiMember }>('/members', { id: newRecordId(), ...body }, { idempotencyKey: idemKey() }),
+  create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' | 'line' }) => {
+    const id = newRecordId();
+    return viaLane(
+      () => api.post<{ member: ApiMember }>('/members', { id, ...body }, { idempotencyKey: idemKey() }),
+      (stationId) => onBox<{ member: ApiMember }>(stationId, 'member.create', { memberId: id, ...body }),
+    );
+  },
   update: (id: string, patch: Record<string, unknown>) =>
-    api.patch<{ member: ApiMember }>(`/members/${id}`, patch),
+    viaLane(
+      () => api.patch<{ member: ApiMember }>(`/members/${id}`, patch),
+      (stationId) => onBox<{ member: ApiMember }>(stationId, 'member.update', { memberId: id, ...patch }),
+    ),
   /**
    * The till mints the child's id too (SCRUM-270, OD-12), for the reason given
    * on `create`: sending the same id again answers with the child that exists.
    */
-  addChild: (memberId: string, body: Record<string, unknown>) =>
-    api.post<{ child: ApiChild }>(
-      `/members/${memberId}/children`,
-      { id: newRecordId(), ...body },
-      { idempotencyKey: idemKey() },
-    ),
+  addChild: (memberId: string, body: Record<string, unknown>) => {
+    const id = newRecordId();
+    return viaLane(
+      () =>
+        api.post<{ child: ApiChild }>(
+          `/members/${memberId}/children`,
+          { id, ...body },
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.create', { childId: id, memberId, ...body }),
+    );
+  },
   updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
-    api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch, { idempotencyKey, signal }),
+    viaLane(
+      () => api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch, { idempotencyKey, signal }),
+      (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, ...patch }),
+    ),
+  /**
+   * A tier checked on a document (OD-11): on the box lane it becomes a
+   * `member.tier_changed` fact under the same permission as online.
+   */
   verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt: string; note?: string }) =>
-    api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, { idempotencyKey: idemKey() }),
+    viaLane(
+      () =>
+        api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
+          idempotencyKey: idemKey(),
+        }),
+      (stationId) =>
+        onBox<{ member: ApiMember }>(stationId, 'member.tier_change', {
+          direction: 'upgrade',
+          memberId,
+          verificationId: newRecordId(),
+          ...body,
+        }),
+    ),
   /**
    * End a verified tier (SCRUM-241): the member goes back to the operator's
    * baseline rate and the typed reason is filed with the revocation.
@@ -164,21 +219,42 @@ export const membersApi = {
    * session gets a 403 with that message and the screens ask a manager.
    */
   revokeTierVerification: (memberId: string, body: { reason: string }) =>
-    api.delete<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
-      idempotencyKey: idemKey(),
-    }),
+    viaLane(
+      () =>
+        api.delete<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
+          idempotencyKey: idemKey(),
+        }),
+      (stationId) =>
+        onBox<{ member: ApiMember }>(stationId, 'member.tier_change', {
+          direction: 'downgrade',
+          memberId,
+          verificationId: newRecordId(),
+          reason: body.reason,
+        }),
+    ),
   tierVerifications: () =>
     api.get<{ verifications: ApiTierVerificationRecord[] }>('/members/tier-verifications'),
 };
 
 export const visitsApi = {
-  /** Client-minted id, for the reason given on membersApi.create. */
-  create: (body: { memberId?: string | null; childIds: string[] }) =>
-    api.post<{ id: string; visitDate: string; status: string }>(
-      '/visits',
-      { id: newRecordId(), ...body },
-      { idempotencyKey: idemKey() },
-    ),
+  /** Client-minted id, for the reason given on membersApi.create; either lane. */
+  create: (body: { memberId?: string | null; childIds: string[] }) => {
+    const id = newRecordId();
+    return viaLane(
+      () =>
+        api.post<{ id: string; visitDate: string; status: string }>(
+          '/visits',
+          { id, ...body },
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) =>
+        onBox<{ id: string; visitDate: string; status: string }>(stationId, 'visit.create', {
+          visitId: id,
+          memberId: body.memberId ?? null,
+          childIds: body.childIds,
+        }),
+    );
+  },
 };
 
 // --- branches / catalog -----------------------------------------------------

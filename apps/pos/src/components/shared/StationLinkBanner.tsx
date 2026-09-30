@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { CloudOff, CloudUpload, ServerOff, WifiOff } from 'lucide-react';
 import { ApiError, isMissingRoute } from '@/api/client';
+import { bridgeApi } from '@/api/bridge';
+import type { BridgeStatus } from '@oto/shared';
 import { linkState, stationLinkApi, type LinkState, type StationLink } from '@/station/link';
 import { heardFrom } from '@/components/station/boxState';
 import { useStation } from '@/station/StationContext';
@@ -32,9 +34,47 @@ export function StationLinkBanner() {
   const { station, fleetAvailable } = useStation();
   const reading = useStationLink(fleetAvailable && station !== null);
   const state = linkState({ link: reading.link, reachable: reading.reachable });
+  const prices = useBoxPrices(state === 'box_alone' ? (station?.stationId ?? null) : null);
 
   if (state === 'fine' || state === 'unknown') return null;
-  return <Banner state={state} link={reading.link} silentForSeconds={reading.silentForSeconds} />;
+  return (
+    <Banner
+      state={state}
+      link={reading.link}
+      silentForSeconds={reading.silentForSeconds}
+      prices={prices}
+    />
+  );
+}
+
+/**
+ * How old the prices on the box are, while the till is working from it
+ * (offline plan OD-5): read from the box itself through the station bridge,
+ * because the platform is exactly what is not answering. Null until the box
+ * has answered, or when there is no box to ask.
+ */
+function useBoxPrices(stationId: string | null): BridgeStatus['catalogue'] | null {
+  const [prices, setPrices] = useState<BridgeStatus['catalogue'] | null>(null);
+  useEffect(() => {
+    setPrices(null);
+    if (!stationId) return;
+    let stopped = false;
+    const read = () => {
+      void bridgeApi
+        .status(stationId)
+        .then((status) => {
+          if (!stopped) setPrices(status.catalogue);
+        })
+        .catch(() => undefined);
+    };
+    read();
+    const timer = window.setInterval(read, 60_000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [stationId]);
+  return prices;
 }
 
 // ---------------------------------------------------------------------------
@@ -176,13 +216,15 @@ function Banner({
   state,
   link,
   silentForSeconds,
+  prices,
 }: {
   state: Exclude<LinkState, 'fine' | 'unknown'>;
   link: StationLink | null;
   silentForSeconds: number | null;
+  prices: BridgeStatus['catalogue'] | null;
 }) {
   const [open, setOpen] = useState(false);
-  const words = wordingFor(state, link, silentForSeconds);
+  const words = wordingFor(state, link, silentForSeconds, prices);
 
   return (
     <div className={`shrink-0 border-b ${TONES[words.tone]}`}>
@@ -255,7 +297,16 @@ function wordingFor(
   state: Exclude<LinkState, 'fine' | 'unknown'>,
   link: StationLink | null,
   silentForSeconds: number | null,
+  prices: BridgeStatus['catalogue'] | null = null,
 ): Wording {
+  // OD-5: prices sell normally for a day after the box last took them, then
+  // with this line, and past a week the box stops selling at all.
+  const pricesLine =
+    prices?.state === 'stale' && prices.ageSeconds !== null
+      ? `prices last updated ${heardFrom(prices.ageSeconds)}`
+      : prices?.state === 'refused'
+        ? 'prices over a week old'
+        : '';
   const boxName = link?.boxName ?? 'the box at this counter';
   const waiting = queued(link);
   const waitingLine =
@@ -304,15 +355,18 @@ function wordingFor(
         tone: 'watch',
         icon: <CloudOff className="w-4 h-4" />,
         headline: 'Working from the box alone — no internet',
-        detail: [waitingLine, link?.offlineReason ?? ''].filter(Boolean).join(' · '),
+        detail: [waitingLine, pricesLine, link?.offlineReason ?? ''].filter(Boolean).join(' · '),
         works: [
-          'Selling. The box is holding this sale, not the cloud, and nothing is lost.',
+          'Finding members, signing a family up, confirming the children, and pricing the order — the box answers, and nothing is lost.',
           'Printing: the printers are plugged into the box, so receipts and bands are unaffected.',
           `Members, prices and today’s bookings, from the copy ${cacheAge(link)}.`,
         ],
         broken: [
+          'Taking payment. Keep the order and take payment when the connection is back.',
+          ...(prices?.state === 'refused'
+            ? ['Pricing: the prices on this box are over a week old. Connect it to the internet once to refresh them.']
+            : []),
           'Finding anybody who registered at another till, or online, since that copy was taken. Enter them again here — the two are merged when the box syncs.',
-          'Card and QR payments that go through the payment gateway; those need the internet.',
           'Anything rung up here showing in the Console or in a report until the box is back.',
         ],
         next:

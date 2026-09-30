@@ -383,6 +383,18 @@ test('with offline sign-in on, somebody the box has seen this month gets in by p
   assert.equal(ok.ok && ok.claims, null);
 });
 
+test('a revoked token is never a way into the thirty-day sign-in (offline plan OD-6)', async () => {
+  const guard = auth(
+    { allowOfflineSignIn: true },
+    snapshot({ deny: { revokedAccountIds: [], revokedTokenIds: [claims().jti] } }),
+  );
+  const refused = await guard.unlock({ token: token(), password: 'correct-horse', accountId: ACCOUNT });
+  assert.equal(refused.ok === false && refused.refusal, STAFF_TOKEN_REFUSALS.REVOKED);
+  // With no token at all the same person is still the sign-in path's to judge.
+  const fresh = await guard.unlock({ password: 'correct-horse', accountId: ACCOUNT });
+  assert.equal(fresh.ok && fresh.method, 'offline_sign_in');
+});
+
 test('and somebody the box has not seen for thirty-one days does not', async () => {
   const old = new Date(NOW.getTime() - 31 * 24 * 3600 * 1000).toISOString();
   const guard = auth(

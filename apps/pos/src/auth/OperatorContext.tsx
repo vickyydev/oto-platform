@@ -13,8 +13,10 @@ import { getOperatorThemePref } from '@/mockApi';
 import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS } from '@/auth/timings';
 import { useStaffTheme, useCustomerTheme } from '@/lib/themePref';
 import { authApi } from '@/api/platform';
-import { ApiError, NetworkError } from '@/api/client';
+import { ApiError } from '@/api/client';
+import { bridgeApi } from '@/api/bridge';
 import { forgetStaffToken, readStaffToken, staffTokenLive } from '@/auth/staffToken';
+import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure } from '@/lib/lane';
 import { loadCatalogFromApi } from '@/api/catalogBridge';
 import { takeTicketDisplayLeaseForSignOut } from '@/lib/displaySession';
 
@@ -208,6 +210,9 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
      * request below ever reaches anybody.
      */
     forgetStaffToken();
+    // The box session ends with the shift (offline plan Round 3).
+    const station = laneStation();
+    if (station) void bridgeApi.lock(station);
     if (!pendingSignOut.current) {
       const ending = displayLease.then((stationLeaseId) => authApi.signOut(stationLeaseId)).then(() => undefined).catch(() => {
         // Session may already be gone (expiry, deactivation) — signed out either way.
@@ -228,6 +233,10 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     clearTimers();
     setWarningActive(false);
     setLocked(true);
+    // A box session ends at lock (offline plan §2.2): the next unlock proves
+    // the password again, at whichever door answers.
+    const station = laneStation();
+    if (station) void bridgeApi.lock(station);
     void authApi.lock().catch(() => {
       // Offline or already locked: the screen is locked regardless, and the
       // unlock below re-verifies against the server when it answers again.
@@ -312,15 +321,19 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
   );
 
   /**
-   * Unlock, with the box as the fallback (S2-06).
+   * Unlock, with the box as the fallback (S2-06; the station bridge since
+   * offline plan Round 3).
    *
    * The platform is asked first, because its answer is the true one: it checks
    * the password against the account as it stands this second. Only when
    * NOTHING answered — a `NetworkError`, which is the client's word for a
    * request that never reached a server, as distinct from one that was refused
-   * — does the till turn to the box it is standing on, which verifies the
-   * shift token and the password against the copy it took while it still had
-   * the internet.
+   * — or the platform said the station is forced offline, does the till turn
+   * to the box it is standing on, through the station bridge
+   * (`POST /box/v1/station/:id/unlock`), which verifies the shift token and
+   * the password against the copy it took while it still had the internet.
+   * A till already on the box lane goes to the box first. The cloud's
+   * `/auth/unlock-offline` is asked only by a till with no station to reach.
    *
    * The order matters and is not interchangeable. Asking the box first would
    * mean an account deactivated this morning could still unlock a till that
@@ -328,35 +341,42 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
    * decision. A refusal from the platform is therefore final and is never
    * retried against the cache.
    *
-   * **What this does NOT do today.** On the current deployment both doors are
-   * the same address — the virtual box lives inside the api — so a browser
-   * that cannot reach the api cannot reach the fallback either, and this path
-   * runs for real only when the box is a Pi on the counter's own network. What
-   * it settles now is the order, the refusal that is never retried, and the
-   * fact that an unlock decided by a cache is recorded as one. The offline
-   * decision itself is proved by `apps/api/test/scanning-staff-token.test.ts`,
-   * which changes the cloud's copy of the password and shows the box's answer
-   * standing.
+   * **Where this runs today.** On staging the box is virtual and its bridge
+   * is the api's own mount, so the box path runs when the Console forces the
+   * station offline (`apps/api/test/offline-capability.test.ts`). A browser
+   * that cannot reach the api at all reaches its box only when the box is a
+   * Pi on the counter's own network — the bench step of plan §4, round 5.
    */
   const unlock = useCallback(async (password: string): Promise<void> => {
+    const held = readStaffToken();
+    const token = staffTokenLive(held) ? (held?.token ?? null) : null;
+    const station = laneStation();
+    const throughBox = async (stationId: string): Promise<void> => {
+      const answer = await bridgeApi.unlock(stationId, {
+        password,
+        ...(token ? { token } : {}),
+        ...(operator?.id ? { accountId: operator.id } : {}),
+      });
+      setOfflineUnlock({ method: answer.method, cacheAgeSeconds: answer.cacheAgeSeconds });
+      setLocked(false);
+    };
+    if (station && currentLane() === 'box') return throughBox(station);
     try {
       await authApi.unlock(password);
       setOfflineUnlock(null);
       setLocked(false);
       return;
     } catch (err) {
-      if (!(err instanceof NetworkError)) throw err;
+      if (!isBoxLaneTrigger(err)) throw err;
+      noteLaneFailure(err);
     }
-    const held = readStaffToken();
-    const answer = await authApi.unlockOffline(
-      staffTokenLive(held) ? (held?.token ?? null) : null,
-      password,
-    );
+    if (station) return throughBox(station);
+    const answer = await authApi.unlockOffline(token, password);
     // What the banner says afterwards: this unlock was allowed by a copy of
     // the staff list of a known age, not by the platform.
     setOfflineUnlock({ method: answer.authMethod, cacheAgeSeconds: answer.cacheAgeSeconds });
     setLocked(false);
-  }, []);
+  }, [operator?.id]);
 
   // (Re)arm the inactivity countdown. Called on login and on every interaction.
   const armTimers = useCallback(() => {

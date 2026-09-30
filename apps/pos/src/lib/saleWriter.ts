@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { newId, type PaymentAttemptView } from '@oto/shared';
 import { ApiError, NetworkError } from '@/api/client';
+import { paymentRefusalMessage } from './lane';
 import {
   commitSale,
   finaliseSale,
@@ -197,6 +198,11 @@ function replayedSaleId(err: unknown): string | null {
 }
 
 function messageOf(err: unknown): string {
+  // Offline plan Round 3: money on the box lane is round 4's. A payment that
+  // met a dropped link or a station forced offline says so in the counter's
+  // words, and the lane arbiter moves the till to its box for everything else.
+  const offline = paymentRefusalMessage(err);
+  if (offline) return offline;
   if (err instanceof ApiError || err instanceof NetworkError) return err.message;
   if (err instanceof Error) return err.message;
   return 'The sale could not be saved.';

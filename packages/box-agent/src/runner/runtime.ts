@@ -77,6 +77,7 @@ import {
   type KioskState,
 } from './kiosk-server';
 import { applyPrinterOverride } from './printer-override';
+import { createBridgeServer, type BridgeServer } from './bridge-server';
 
 /** A failure the person running the box can act on, worded for them. */
 export class RunnerError extends Error {
@@ -602,6 +603,12 @@ export interface RunnerOptions {
   cacheRefreshIntervalMs?: number;
   /** How long a slip waits before the printer is tried again (30 s unless a test says). */
   printRetryDelayMs?: number;
+  /**
+   * The station bridge for a counter box (offline plan §2.2, Round 3): a
+   * second loopback listener that Caddy publishes on the counter's LAN.
+   * Absent, the box serves no bridge — a booth box needs none.
+   */
+  bridge?: { port?: number; origins: readonly string[] } | null;
 }
 
 /** A store the box could not use, while it needs service (SCRUM-403). */
@@ -838,6 +845,22 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
     port = address.port;
     log.info({ module: 'runner', port }, `the booth page is served at http://127.0.0.1:${port}/`);
   }
+
+  /**
+   * The station bridge (offline plan §2.2), for a counter box that names the
+   * POS origins its tills are served from. It answers from whichever agent is
+   * running now, and says the box is starting until there is one.
+   */
+  const bridgeServer: BridgeServer | null =
+    options.bridge && options.bridge.origins.length > 0
+      ? createBridgeServer({
+          agent: () => (fault ? null : agent),
+          origins: options.bridge.origins,
+          ...(options.bridge.port !== undefined ? { port: options.bridge.port } : {}),
+          log,
+        })
+      : null;
+  if (bridgeServer && options.listen !== false) await bridgeServer.listen();
 
   const verifySecret =
     options.verifySecret === undefined ? await loadArgon2Verifier(log) : options.verifySecret;
@@ -1183,6 +1206,7 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
     retryTimer = null;
     agent?.stop();
     if (options.listen !== false) await kiosk.close();
+    if (bridgeServer && options.listen !== false) await bridgeServer.close();
     try {
       db?.close();
     } catch {

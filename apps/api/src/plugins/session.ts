@@ -161,6 +161,16 @@ const SESSION_STATE_EXEMPT = new Set([
    * somebody, being reachable here is exactly what it needs to be.
    */
   'POST:/auth/badge',
+  /**
+   * The station bridge's unlock (offline plan Round 3, OD-2), for the reason
+   * the two unlocks above are here: a locked session is exactly who it is
+   * for. Its lock, which only ever takes access away. And its status read,
+   * which is how a locked till learns whether to unlock through the platform
+   * or through its box; it carries no personal data and changes nothing.
+   */
+  'POST:/box/v1/station/:stationId/unlock',
+  'POST:/box/v1/station/:stationId/lock',
+  'GET:/box/v1/station/:stationId/status',
   'POST:/auth/change-password',
   'GET:/me',
   'GET:/me/permissions',

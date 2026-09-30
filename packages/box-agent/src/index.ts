@@ -52,3 +52,11 @@ export * from './booth-draw';
 export * from './booth';
 export * from './booth-http';
 export * from './agent';
+/**
+ * The station bridge and what it prices with (offline plan Round 3): the
+ * counter's surface to its box, mounted by the api for a virtual box and by a
+ * Pi's runner on loopback. `offline-pricing` carries no I/O, so the api's
+ * parity test prices one cart both ways through it.
+ */
+export * from './offline-pricing';
+export * from './station-bridge';

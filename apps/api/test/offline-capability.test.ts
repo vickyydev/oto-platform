@@ -1,21 +1,37 @@
+import { generateKeyPairSync } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import type { BoxAgent } from '@oto/box-agent';
 import {
   account,
   box,
   boxState,
+  child,
+  member,
   paymentAttempt,
+  product,
   refund,
   sale,
   session as sessionTable,
   station,
   ticketPackage,
+  visit,
   voucherRedemption,
 } from '@oto/db';
 import { newId } from '@oto/shared';
-import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  RECEPTION,
+  boxBySlot,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
+import { attachInProcessBox, detachInProcessBox } from '../src/services/box';
+import { linkedAgent, type CuttableLink } from './box-link';
 
 /**
  * SCRUM-295 — THE OFFLINE CAPABILITY LIST, ONE CASE PER ROW.
@@ -29,7 +45,8 @@ import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext }
  *   - a WORKS row is a pending case naming the round that builds it (plan §4,
  *     rounds 3 and 4). It becomes an assertion in that round, driven through
  *     the box, and until then no row can claim "works offline" through a path
- *     that does not exist;
+ *     that does not exist. Round 3's rows are asserted below, through the
+ *     station bridge, with the station forced offline;
  *   - the check-in row belongs to S2-13 and is named, not claimed.
  *
  * THE LIST AND THE DOCUMENT ARE ONE LIST. The first case reads §17's table
@@ -54,17 +71,17 @@ interface Capability {
 
 /** Plan §2.8, in its order, word for word in the first two columns. */
 const CAPABILITIES: Capability[] = [
-  { operation: 'Unlock a locked till', offline: 'Works', pending: 'round 3: bridge unlock and the box session' },
-  { operation: 'Fresh sign-in', offline: 'Works, bounded', pending: 'round 3: the fresh-sign-in rule (OD-6)' },
-  { operation: 'Find a member by phone', offline: 'Works', pending: 'round 3: the members cache and the offline overlay' },
+  { operation: 'Unlock a locked till', offline: 'Works' },
+  { operation: 'Fresh sign-in', offline: 'Works, bounded' },
+  { operation: 'Find a member by phone', offline: 'Works' },
+  { operation: 'Create a member; add or edit a child; confirm who is visiting', offline: 'Works' },
+  { operation: 'Ticket, F&B and shop pricing', offline: 'Works, bounded' },
+  { operation: 'Promo code', offline: 'Works' },
   {
-    operation: 'Create a member; add or edit a child; confirm who is visiting',
+    operation: 'Manual discount, ฿0 comp, tier change',
     offline: 'Works',
-    pending: 'round 3: the member, child and visit producers (named before saving since round 1)',
+    pending: 'round 4: the ฿0 replay (the cached permissions and the tier-change fact landed in round 3)',
   },
-  { operation: 'Ticket, F&B and shop pricing', offline: 'Works, bounded', pending: 'round 3: the priced cart on the bridge (OD-5)' },
-  { operation: 'Promo code', offline: 'Works', pending: 'round 3: the till’s copy, filed as applied (SCRUM-401)' },
-  { operation: 'Manual discount, ฿0 comp, tier change', offline: 'Works', pending: 'rounds 3 and 4: cached permissions and the ฿0 replay (OD-11)' },
   { operation: 'Cash', offline: 'Works', pending: 'round 4: SaleQueue.record, drawer after disk' },
   { operation: 'Card on the terminal', offline: 'Works', pending: 'round 4: the box’s terminal adapter (OD-3)' },
   { operation: 'PAX (Digio) QR', offline: 'Works, flagged', pending: 'round 4: awaiting_settlement' },
@@ -75,7 +92,7 @@ const CAPABILITIES: Capability[] = [
   { operation: 'Refund, void', offline: 'Refused; a "refund requested" note queues' },
   { operation: 'Receipt and bands for an offline sale', offline: 'Works', pending: 'round 4: the shared print composer and the box’s queue' },
   { operation: 'Reprint', offline: 'Works for today\'s sales on this box', pending: 'round 4: the box’s print log' },
-  { operation: 'Customer display', offline: 'Works', pending: 'round 3: displaySession on the bridge (OD-10)' },
+  { operation: 'Customer display', offline: 'Works' },
   { operation: 'History, Today, reports', offline: 'Refused politely' },
   { operation: 'Child check-in and release', offline: 'Rides this bridge in S2-13', pending: 'S2-13, not this cluster' },
 ];
@@ -288,5 +305,258 @@ describe('what is refused offline is refused in the platform’s own words', () 
       .filter((r) => r.url.startsWith('/box/') && /sale|report|today|history/i.test(r.url))
       .map((r) => `${r.method} ${r.url}`);
     expect(boxServed).toEqual([]);
+  });
+});
+
+/**
+ * ROUND 3'S ROWS, THROUGH THE BOX (plan §4, SCRUM-269).
+ *
+ * The same station forced offline as the refusals above, so the platform's own
+ * trading routes answer `503 STATION_FORCED_OFFLINE` — and the till's lane
+ * arbiter moves to the station bridge, which answers from the box's copies.
+ * The box is the virtual box's agent (`createBoxAgent`), running in this
+ * process as it does on staging, with its link to the platform cut.
+ */
+describe('what works offline works through the box (plan §4, Round 3)', () => {
+  let ctx: TestContext;
+  let cookie: string;
+  let adminCookie: string;
+  let tillId: string;
+  let branchId: string;
+  let token: { token: string; jti: string };
+  let accountId: string;
+  let agent: BoxAgent;
+  const link: CuttableLink = { cut: false };
+  const keys = generateKeyPairSync('ed25519');
+
+  const call = async (
+    method: 'GET' | 'POST' | 'PUT',
+    url: string,
+    as: string | null,
+    payload?: unknown,
+    headers: Record<string, string> = {},
+  ): Promise<{ statusCode: number; body: Record<string, unknown> }> => {
+    const res = await ctx.app.inject({
+      method,
+      url,
+      headers: { ...(as ? { cookie: as } : {}), ...headers },
+      ...(payload === undefined ? {} : { payload: payload as never }),
+    });
+    return { statusCode: res.statusCode, body: res.body ? JSON.parse(res.body) : {} };
+  };
+  const bridge = (rest: string) => `/box/v1/station/${tillId}/${rest}`;
+  const intent = (type: string, payload: Record<string, unknown>) => ({
+    type,
+    lastSeenSequence: 0,
+    payload,
+    actionId: `cap-${newId()}`,
+  });
+  /** The station forced offline, and the box's link to the platform cut with it. */
+  const goOffline = async (): Promise<void> => {
+    await agent.setOffline(true, { reason: 'capability list, round 3' });
+    link.cut = true;
+  };
+  const goOnline = async (): Promise<void> => {
+    link.cut = false;
+    await agent.setOffline(false);
+  };
+
+  beforeAll(async () => {
+    ctx = await createTestContext({
+      env: {
+        OPS_TEST_CONTROLS: 'true',
+        STAFF_TOKEN_PRIVATE_KEY: keys.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
+      },
+    });
+    cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const box1 = await boxBySlot(ctx.db, 'virtual-1');
+    const [till] = await ctx.db
+      .select()
+      .from(station)
+      .where(and(eq(station.boxId, box1.id), eq(station.name, 'Reception Till 1')));
+    tillId = till!.id;
+    branchId = till!.branchId;
+    const picked = await call('PUT', '/me/session/station', cookie, { stationId: tillId });
+    expect(picked.statusCode).toBe(200);
+    token = picked.body.staffToken as { token: string; jti: string };
+    const [staff] = await ctx.db
+      .select({ id: account.id })
+      .from(account)
+      .where(eq(account.phone, RECEPTION.phone));
+    accountId = staff!.id;
+    agent = linkedAgent(ctx, box1.id, 'capability-box', link);
+    expect(await agent.ensureRegistered()).toBe(true);
+    await agent.syncConfig();
+    await agent.syncCache();
+    attachInProcessBox(agent);
+    await goOffline();
+  }, 180_000);
+
+  afterAll(async () => {
+    agent?.stop();
+    if (agent) detachInProcessBox(agent);
+    await ctx.close();
+    await teardownAll();
+  });
+
+  it(`Unlock a locked till — ${byOperation('Unlock a locked till').offline.toLowerCase()}: token and password against the box's copy`, async () => {
+    expect((await call('POST', '/auth/lock', cookie)).statusCode).toBe(200);
+    const res = await call('POST', bridge('unlock'), cookie, {
+      token: token.token,
+      password: RECEPTION.password,
+    });
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.method).toBe('offline_token');
+    expect((await call('GET', '/me', cookie)).body.sessionLocked).toBe(false);
+  });
+
+  it(`Fresh sign-in — ${byOperation('Fresh sign-in').offline.toLowerCase()}: seen here in 30 days, with a deny-list under 72 hours`, async () => {
+    const opened = await agent.bridge()!.unlock(tillId, { password: RECEPTION.password, accountId });
+    expect(opened.response).toMatchObject({ method: 'offline_sign_in', offlineFresh: true });
+  });
+
+  it(`Find a member by phone — ${byOperation('Find a member by phone').offline.toLowerCase()}: from the members cache`, async () => {
+    const refused = await call('GET', '/members/lookup?phone=0811111111', cookie);
+    expect(refused.statusCode).toBe(503);
+    const res = await call('GET', bridge('members/lookup?phone=0811111111'), cookie);
+    expect(res.statusCode).toBe(200);
+    const found = res.body.member as { phone: string; children: unknown[]; source: string };
+    expect(found.phone).toBe('+66811111111');
+    expect(found.children.length).toBeGreaterThan(0);
+    expect(found.source).toBe('cache');
+  });
+
+  it('Create a member; add or edit a child; confirm who is visiting — works offline, and reaches the platform once', async () => {
+    const memberId = newId();
+    const childId = newId();
+    const visitId = newId();
+    const phone = '+66899991234';
+    const steps: Array<[string, Record<string, unknown>]> = [
+      ['member.create', { memberId, phone, nickname: 'Offline family' }],
+      ['child.create', { childId, memberId, name: 'Pim', ageYears: 5 }],
+      ['child.update', { childId, allergies: 'Shellfish' }],
+      ['visit.create', { visitId, memberId, childIds: [childId] }],
+    ];
+    for (const [type, payload] of steps) {
+      const res = await call('POST', bridge('intents'), cookie, intent(type, payload));
+      expect(res.statusCode, `${type}: ${JSON.stringify(res.body)}`).toBe(200);
+    }
+    expect(await ctx.db.select().from(member).where(eq(member.id, memberId))).toEqual([]);
+    await goOnline();
+    await agent.outbox()!.flush();
+    const [kept] = await ctx.db.select().from(member).where(eq(member.id, memberId));
+    expect(kept?.phone).toBe(phone);
+    const [kid] = await ctx.db.select().from(child).where(eq(child.id, childId));
+    expect(kid?.allergies).toBe('Shellfish');
+    expect(await ctx.db.select().from(visit).where(eq(visit.id, visitId))).toHaveLength(1);
+    await goOffline();
+  });
+
+  it(`Ticket, F&B and shop pricing — ${byOperation('Ticket, F&B and shop pricing').offline.toLowerCase()}: the box's figure is the platform's`, async () => {
+    const [pkg] = await ctx.db
+      .select({ id: ticketPackage.id })
+      .from(ticketPackage)
+      .where(and(eq(ticketPackage.branchId, branchId), eq(ticketPackage.name, '2 Hours Play')));
+    // A menu item with no required question, and a shop item in one size.
+    const food = await ctx.db.execute<{ id: string }>(sql`
+      select p.id from pos.product p
+       where p.kind = 'menu' and p.active and p.archived_at is null
+         and (p.branch_id is null or p.branch_id = ${branchId})
+         and not exists (select 1 from pos.modifier_group g
+                          where g.product_id = p.id and g.required and g.archived_at is null)
+         and not exists (select 1 from pos.product_modifier_group l
+                          join pos.modifier_group g on g.id = l.modifier_group_id
+                          where l.product_id = p.id and g.required and g.archived_at is null)
+       order by p.name limit 1`);
+    const [shop] = await ctx.db
+      .select({ id: product.id })
+      .from(product)
+      .where(
+        and(
+          eq(product.kind, 'merch'),
+          eq(product.active, true),
+          sql`jsonb_array_length(${product.variants}) < 2`,
+          sql`${product.archivedAt} is null`,
+          sql`(${product.branchId} is null or ${product.branchId} = ${branchId})`,
+        ),
+      )
+      .limit(1);
+    const foodId = food.rows[0]?.id;
+    const cart = {
+      lines: [{ id: newId(), packageId: pkg!.id, kids: 2, adults: 1 }],
+      items: [
+        ...(foodId ? [{ id: newId(), productId: foodId, quantity: 2 }] : []),
+        ...(shop ? [{ id: newId(), productId: shop.id, quantity: 1 }] : []),
+      ],
+    };
+    expect(cart.items.length, 'the seed carries a menu item and a shop item to price').toBe(2);
+    // The platform's figure, asked while it is up.
+    await goOnline();
+    const online = await call('POST', '/sales/quote', cookie, { stationId: tillId, ...cart });
+    expect(online.statusCode, JSON.stringify(online.body)).toBe(200);
+    await goOffline();
+    expect((await call('POST', '/sales/quote', cookie, { stationId: tillId, ...cart })).statusCode).toBe(503);
+    const offline = await call('POST', bridge('intents'), cookie, intent('cart.quote', cart));
+    expect(offline.statusCode, JSON.stringify(offline.body)).toBe(200);
+    const boxQuote = (
+      offline.body.result as { quote: { totals: unknown; lineTotals: unknown; catalogueState: string } }
+    ).quote;
+    const platformQuote = online.body.quote as { totals: unknown; lineTotals: unknown };
+    expect(boxQuote.totals).toEqual(platformQuote.totals);
+    expect(boxQuote.lineTotals).toEqual(platformQuote.lineTotals);
+    expect(boxQuote.catalogueState).toBe('fresh');
+  });
+
+  it(`Promo code — ${byOperation('Promo code').offline.toLowerCase()}: the till's copy is applied on the box`, async () => {
+    const [pkg] = await ctx.db
+      .select({ id: ticketPackage.id })
+      .from(ticketPackage)
+      .where(and(eq(ticketPackage.branchId, branchId), eq(ticketPackage.name, '2 Hours Play')));
+    const res = await call(
+      'POST',
+      bridge('intents'),
+      cookie,
+      intent('cart.quote', {
+        lines: [{ id: newId(), packageId: pkg!.id, kids: 1, adults: 0 }],
+        promos: [{ code: 'TILLCOPY10', label: 'Ten per cent', type: 'percent', value: 10 }],
+      }),
+    );
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+    const quote = (
+      res.body.result as { quote: { appliedPromos: Array<{ code: string; amountSatang: number }> } }
+    ).quote;
+    expect(quote.appliedPromos).toEqual([expect.objectContaining({ code: 'TILLCOPY10' })]);
+    expect(quote.appliedPromos[0]!.amountSatang).toBeGreaterThan(0);
+  });
+
+  it(`Customer display — ${byOperation('Customer display').offline.toLowerCase()}: it follows the box with its own credential`, async () => {
+    const bearer = 'cd'.repeat(32);
+    await goOnline();
+    const minted = await call('POST', '/display/pairing', null, {}, { authorization: `Bearer ${bearer}` });
+    expect(minted.statusCode).toBe(200);
+    const claimed = await call(
+      'POST',
+      `/stations/${tillId}/displays/claim`,
+      adminCookie,
+      { pairingCode: minted.body.pairingCode, name: 'Capability display' },
+      { 'idempotency-key': newId() },
+    );
+    expect(claimed.statusCode, JSON.stringify(claimed.body)).toBe(200);
+    await agent.syncCache();
+    await goOffline();
+    const read = await call('GET', bridge('display/session'), null, undefined, {
+      authorization: `Bearer ${bearer}`,
+    });
+    expect(read.statusCode, JSON.stringify(read.body)).toBe(200);
+    expect((read.body.document as { stationId: string }).stationId).toBe(tillId);
+    // On a Pi the box holds only the credential's hash, from its station_config.
+    expect((await agent.bridge()!.displayCaller(tillId, bearer))?.kind).toBe('display');
+  });
+
+  it('and paying on the box lane refuses politely: round 4 builds it', async () => {
+    const res = await call('POST', bridge('intents'), cookie, intent('sale.finalise', {}));
+    expect(res.statusCode).toBe(409);
+    expect(res.body.error).toMatchObject({ code: 'BOX_LANE_PAYMENT_UNAVAILABLE' });
   });
 });

@@ -22,7 +22,8 @@ import {
   type Outbox,
 } from './outbox';
 import { createRefusalBackOff } from './reregister';
-import { generateSyncKeyPair, publicKeyFor, uuidv7 } from './signing';
+import { generateSyncKeyPair, publicKeyFor, sealEnvelope, uuidv7 } from './signing';
+import { StationBridge, type StationBridgeOptions } from './station-bridge';
 import { BAND_CODE_HANDLER, ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
 import { StationSessionManager } from './station-session';
@@ -31,6 +32,7 @@ import {
   type BoxStore,
   type CachedBundle,
   type ClockStamp,
+  type EnvelopeSealer,
   type StationIdentity,
 } from './store';
 import {
@@ -292,6 +294,20 @@ export interface BoxAgentOptions {
     key?: () => string | Uint8Array | null;
   };
   /**
+   * The station bridge (offline plan §2.2, Round 3): how a till and a customer
+   * display reach this box with no internet. Built whenever the box has a
+   * store; whether anything calls it is the host's choice — the api mounts it
+   * for a virtual box, a Pi serves it on loopback behind Caddy.
+   */
+  bridge?: {
+    /**
+     * argon2id verification for the till's password at unlock. Defaults to the
+     * booth's `verifySecret`, which both the api and a Pi already pass.
+     */
+    verifyPassword?: (hash: string, password: string) => Promise<boolean>;
+    options?: StationBridgeOptions;
+  };
+  /**
    * The Lucky Wheel (S2-07a).
    *
    * Built whenever this box has a store, because whether it is a BOOTH is a
@@ -480,6 +496,20 @@ export interface BoxAgent {
    * money it cannot account for.
    */
   sales(): SaleQueue | null;
+  /**
+   * The station bridge over this box's own sessions, cache and outbox, or null
+   * on a box with no store (offline plan Round 3).
+   */
+  bridge(): StationBridge | null;
+  /**
+   * Seals facts with this box's signing key, or null before registration.
+   *
+   * For a host that runs its OWN station bridge over this box's store — the
+   * api's mount for a virtual box, whose station documents are served by the
+   * api's session manager rather than this agent's — so the facts it produces
+   * are signed by the box, exactly as the agent's own would be.
+   */
+  sealer(): EnvelopeSealer | null;
 }
 
 /**
@@ -922,6 +952,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let sessions: StationSessionManager | null = null;
   let scanner: ScanRouter | null = null;
   let booth: Booth | null = null;
+  let bridge: StationBridge | null = null;
   /**
    * The `staff` cache scope, as the booth's sign-in reads it.
    *
@@ -1957,6 +1988,49 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     });
 
     /**
+     * The station bridge (offline plan Round 3). Every answer it gives is read
+     * from what this box holds — its sessions, its cache, its outbox — so it
+     * works exactly as well with the link down as up, which is the point.
+     */
+    const verifyPassword =
+      options.bridge?.verifyPassword ?? options.booth?.verifySecret ?? (async () => false);
+    bridge = new StationBridge(
+      {
+        boxId,
+        store,
+        sessions,
+        station: (stationId) => {
+          const station = bundle?.stations.find((s) => s.id === stationId);
+          const branch = bundle?.branch;
+          const operatorId = branch?.operatorId ?? state.operatorId;
+          if (!station || !branch || !operatorId) return null;
+          return { id: station.id, name: station.name, kind: station.kind, branchId: branch.id, operatorId };
+        },
+        branch: () => {
+          const branch = bundle?.branch;
+          const operatorId = branch?.operatorId ?? state.operatorId;
+          if (!branch || !operatorId) return null;
+          return {
+            id: branch.id,
+            operatorId,
+            timezone: branch.timezone,
+            businessDayStart: branch.businessDayStart,
+          };
+        },
+        signingKeys: () => bundle?.signingKeys ?? [],
+        link: () => ({ up: state.linkUp, offline: state.offline }),
+        sealer: () => {
+          const key = syncPrivateKeyPem;
+          return key ? (draft) => sealEnvelope(draft, boxId, key) : null;
+        },
+        verifyPassword,
+        now: () => new Date(clock()),
+        log,
+      },
+      options.bridge?.options,
+    );
+
+    /**
      * The Lucky Wheel (S2-07a).
      *
      * Constructed with the store, the box's signing key and a port to the
@@ -2490,6 +2564,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       recordCacheFault('unreadable', `status ${status}`);
       return [];
     }
+    await completeTruncatedScopes(body);
     const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
     const applied: string[] = [];
     const appliedAt = new Date(clock()).toISOString();
@@ -2558,6 +2633,16 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      */
     if (applied.includes('staff')) await refreshBoothStaff(boxId);
     /**
+     * The overlay's end (offline plan §2.3): a record this counter wrote
+     * offline, whose fact the platform has since accepted, is now in the
+     * members copy that just landed — the cache speaks for it again.
+     */
+    if (applied.includes('members')) {
+      await bridge?.pruneOverlay().catch((err: unknown) => {
+        note('warn', 'the offline overlay could not be pruned after a pull', { err: String(err) });
+      });
+    }
+    /**
      * A staff pull reaches the booth too (SCRUM-223): its `refresh` is where a
      * session whose holder has since been deactivated is ended, and that
      * check reads the staff list refreshed on the line above.
@@ -2583,6 +2668,52 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       cursorSeq: body.cursorSeq,
     });
     return applied;
+  }
+
+  /**
+   * The rest of a scope the cloud cut off at its page limit (offline plan §2.3).
+   *
+   * A truncated scope is never applied — half a member list is a counter that
+   * cannot find the families who fell off the end of it — and before this a
+   * park with more members than one page held NO members offline at all. So a
+   * scope cut short that carries a cursor is read on to its end, page by page,
+   * with `?scopes=<scope>&cursor=`, and only a scope read whole leaves the
+   * truncated list. A page that fails leaves it there, and the scope is
+   * skipped as before: the last complete copy stands.
+   */
+  async function completeTruncatedScopes(body: {
+    schemaVersion: number;
+    scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+    truncated: string[];
+  }): Promise<void> {
+    const MAX_PAGES = 200;
+    for (const scope of [...(body.truncated ?? [])]) {
+      const held = body.scopes?.[scope];
+      if (!held?.nextCursor) continue;
+      const items = [...held.items];
+      let cursor: string | null = held.nextCursor;
+      let complete = false;
+      for (let page = 0; page < MAX_PAGES && cursor; page += 1) {
+        type Page = {
+          scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+          truncated: string[];
+        };
+        const next: { status: number; body: Page | null } | null = await request<Page>(
+          `/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=${encodeURIComponent(scope)}&cursor=${encodeURIComponent(cursor)}`,
+          { method: 'GET' },
+        ).catch(() => null);
+        const part: { items: unknown[]; nextCursor: string | null } | undefined =
+          next?.status === 200 ? next.body?.scopes?.[scope] : undefined;
+        if (!part) break;
+        items.push(...part.items);
+        const cut: boolean = next?.body?.truncated?.includes(scope) ?? false;
+        cursor = cut ? part.nextCursor : null;
+        if (!cut) complete = true;
+      }
+      if (!complete) continue;
+      body.scopes[scope] = { items, nextCursor: null };
+      body.truncated = body.truncated.filter((name) => name !== scope);
+    }
   }
 
   /**
@@ -3941,6 +4072,12 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     terminal: () => terminals,
     booth: () => booth,
     sales: saleQueue,
+    bridge: () => bridge,
+    sealer: () => {
+      const key = syncPrivateKeyPem;
+      const id = state.boxId;
+      return key && id ? (draft) => sealEnvelope(draft, id, key) : null;
+    },
     pauseHeartbeats(paused) {
       state.heartbeatsPaused = paused;
       note('info', paused ? 'heartbeats stopped by a test control' : 'heartbeats resumed');

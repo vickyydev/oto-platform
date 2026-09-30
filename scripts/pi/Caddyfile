@@ -1,0 +1,51 @@
+# The station bridge, published on the counter's LAN (offline plan §2.2,
+# Round 3; SCRUM-269).
+#
+# A till is a web page served from the POS's public origin. With the mall's
+# internet down it still has to reach its box, so the box answers on the
+# counter's own network under a name with a real certificate — an iPad will
+# not call a private address over plain HTTP from an HTTPS page. The agent
+# listens on loopback only (127.0.0.1:8471, `runner/bridge-server.ts`) and
+# Caddy is the one thing that publishes it; the kiosk server on 8780 is not
+# published and stays loopback-only.
+#
+# The certificate is issued by DNS-01, so nothing on the internet has to reach
+# the box to prove it owns the name (OWNER_DIRECTION: "Caddy DNS-01 on the
+# box"). That needs a Caddy build with the zone's DNS provider module and an
+# API token for that zone — on-site and credential steps, not development
+# (plan §2.2): the zone records, the token, the router's local DNS entry that
+# points the name at this box's LAN address, and the iPad's one-time
+# local-network permission.
+#
+# Installed to /etc/caddy/Caddyfile with the three values below filled in:
+#   OTO_BRIDGE_HOST    this box's name, e.g. till-1.hkt-central.box.<zone>
+#   OTO_DNS_PROVIDER   the Caddy DNS module for the zone, e.g. cloudflare
+#   OTO_DNS_API_TOKEN  that provider's token, from /etc/caddy/env (never here)
+#
+# The agent is told which POS origins may call it with OTO_BOX_BRIDGE_ORIGINS
+# in /etc/oto-box/config; Caddy passes the browser's Origin through untouched
+# so the agent is the one that checks it, and answers CORS and the Private
+# Network Access preflight itself.
+
+{
+	# The box talks to nothing on the internet to renew: DNS-01 only.
+	email {$OTO_ACME_EMAIL:ops@invalid}
+}
+
+{$OTO_BRIDGE_HOST} {
+	tls {
+		dns {$OTO_DNS_PROVIDER} {$OTO_DNS_API_TOKEN}
+	}
+
+	# Only the bridge's own paths; everything else on this name is refused.
+	@bridge path /box/v1/station/*
+	handle @bridge {
+		reverse_proxy 127.0.0.1:8471 {
+			# A channel is a server-sent event stream: never buffered.
+			flush_interval -1
+		}
+	}
+	handle {
+		respond "Not found" 404
+	}
+}

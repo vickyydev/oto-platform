@@ -232,6 +232,21 @@ const NO_DIRECT_WRITE = [
    * and scan-simulate routes above it.
    */
   'POST /payments/terminal-simulator',
+  /**
+   * Offline plan Round 3 — the station bridge's virtual-box mount. Every one of
+   * these crosses into the box: a lease and an intent are the box's session
+   * manager, a member, child or visit record is a fact sealed into the box's
+   * own outbox with its overlay row in ONE store transaction
+   * (`@oto/box-agent` `station-bridge.ts`, `produce`), and ending a box
+   * session forgets a hash held in memory. The unlock beside them does write
+   * here — the platform session's lock and its audit row — and does it in
+   * `withTx`, so it is not on this list.
+   */
+  'POST /box/v1/station/:stationId/intents',
+  'POST /box/v1/station/:stationId/lease',
+  'POST /box/v1/station/:stationId/lease/release',
+  'POST /box/v1/station/:stationId/lease/renew',
+  'POST /box/v1/station/:stationId/lock',
   'POST /sales/quote',
   'POST /stations/:id/button',
   'POST /stations/:id/intents',
@@ -428,6 +443,15 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /box/v1/register [secretResponse,credential:box-claim]',
   'POST /box/v1/sync/key [credential:box]',
   'POST /box/v1/sync/push [credential:box]',
+  /**
+   * Offline plan Round 3 — the station bridge. The unlock's answer IS a
+   * credential (the box session), and a retried unlock is a second attempt
+   * that counts as one, exactly as a second `POST /auth/unlock` does. A
+   * display's intent through the bridge is the display's own credential and
+   * fencing, as `POST /display/intents` is.
+   */
+  'POST /box/v1/station/:stationId/display/intents [credential:display]',
+  'POST /box/v1/station/:stationId/unlock [secretResponse]',
   // Independent display credentials have no staff account replay key. Minting
   // rotates the pending single-use hash and must never store its secret reply;
   // expiry is idempotent. Typed answers keep their action/request id and use

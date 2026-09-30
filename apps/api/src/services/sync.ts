@@ -14,10 +14,21 @@ import {
   branchTaxConfig,
   child,
   device,
+  deviceCredential,
+  discountDefinition,
   member,
+  memberAlias,
+  memberTierVerification,
+  modifierGroup,
+  modifierOption,
+  paymentMethod,
   product,
   productCategory,
+  productModifierGroup,
   receiptSeries,
+  role,
+  roleAssignment,
+  rolePermission,
   station,
   stationDevice,
   syncAnomaly,
@@ -39,6 +50,13 @@ import {
   type SyncQuarantineStatus,
 } from '@oto/db';
 import {
+  OFFLINE_POLICY,
+  OfflineChildCreatedSchema,
+  OfflineChildUpdatedSchema,
+  OfflineMemberCreatedSchema,
+  OfflineMemberTierChangedSchema,
+  OfflineMemberUpdatedSchema,
+  OfflineVisitCreatedSchema,
   SYNC_EVENT_SCHEMA_VERSION,
   SyncEventEnvelopeSchema,
   boothStaffCode,
@@ -87,6 +105,8 @@ import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
 import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
+import { TIER_REVOKED_EVIDENCE_TYPE } from './member-tier';
+import { grantCovers, type EffectivePermission } from './permissions';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 /**
  * What a box's cache is for (SCRUM-412). `./box` imports from this file too, so
@@ -700,50 +720,18 @@ class RefuseEvent extends Error {
 //   - what the cloud now owns is published to `sync_change`, so the OTHER box
 //     at the branch learns about it without anybody thinking to tell it.
 
-const MemberCreatedSchema = z.object({
-  memberId: z.string().uuid(),
-  phone: z.string().min(4).max(32),
-  nickname: z.string().min(1).max(120),
-  name: z.string().max(200).nullish(),
-  preferredChannel: z.enum(['whatsapp', 'telegram', 'line']).nullish(),
-  createdVia: z.enum(['pos', 'booking', 'import']).default('pos'),
-});
-
-const MemberUpdatedSchema = z.object({
-  memberId: z.string().uuid(),
-  nickname: z.string().min(1).max(120).optional(),
-  name: z.string().max(200).nullish(),
-  email: z.string().email().max(200).nullish(),
-  notes: z.string().max(2_000).nullish(),
-  preferredChannel: z.enum(['whatsapp', 'telegram', 'line']).nullish(),
-});
-
-const ChildFields = {
-  name: z.string().min(1).max(120),
-  dateOfBirth: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullish(),
-  ageYears: z.number().int().min(0).max(17).nullish(),
-  allergies: z.string().max(1_000).nullish(),
-  medicalNotes: z.string().max(1_000).nullish(),
-  medicalAlert: z.boolean().optional(),
-  dietary: z.string().max(1_000).nullish(),
-  foodRestrictions: z.string().max(1_000).nullish(),
-  notes: z.string().max(1_000).nullish(),
-};
-
-const ChildCreatedSchema = z.object({
-  childId: z.string().uuid(),
-  memberId: z.string().uuid(),
-  ...ChildFields,
-});
-
-const ChildUpdatedSchema = z.object({
-  childId: z.string().uuid(),
-  ...ChildFields,
-  name: ChildFields.name.optional(),
-});
+/**
+ * The member, child and visit payloads are declared ONCE, in `@oto/shared`
+ * (`station-bridge.ts`), because since offline plan Round 3 a counter box
+ * PRODUCES them (`@oto/box-agent` `station-bridge.ts`) and this file applies
+ * them: two copies would be two descriptions of one wire. Each carries an
+ * optional `offlineFresh`, stamped by the box on a fact made under a fresh
+ * offline sign-in (OD-6) and written onto the audit row here.
+ */
+const MemberCreatedSchema = OfflineMemberCreatedSchema;
+const MemberUpdatedSchema = OfflineMemberUpdatedSchema;
+const ChildCreatedSchema = OfflineChildCreatedSchema;
+const ChildUpdatedSchema = OfflineChildUpdatedSchema;
 
 /**
  * A takeover, as the box queues it. Every field is what the audit row shows:
@@ -759,13 +747,30 @@ const StationTakeoverSchema = z.object({
   takeoverCount: z.number().int().min(0).optional(),
 });
 
-const VisitCreatedSchema = z.object({
-  visitId: z.string().uuid(),
-  memberId: z.string().uuid().nullish(),
-  visitDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  childIds: z.array(z.string().uuid()).max(20).default([]),
-  status: z.enum(['draft', 'active', 'closed']).default('draft'),
-});
+const VisitCreatedSchema = OfflineVisitCreatedSchema;
+
+/**
+ * THE ALIAS RULE (offline plan §2.6, OD-7).
+ *
+ * A member merged at sync keeps its id as an alias of the survivor
+ * (`crm.member_alias`, written by `member.created` below), so every later fact
+ * the second counter queued under that id — a child, a visit, a sale, an edit —
+ * lands on the survivor instead of waiting in quarantine for a member that was
+ * never written. An id that is not an alias is its own answer.
+ */
+async function survivingMemberId(tx: Exec, operatorId: string, memberId: string): Promise<string> {
+  const [alias] = await tx
+    .select({ memberId: memberAlias.memberId })
+    .from(memberAlias)
+    .where(and(eq(memberAlias.aliasMemberId, memberId), eq(memberAlias.operatorId, operatorId)))
+    .limit(1);
+  return alias?.memberId ?? memberId;
+}
+
+/** What the audit row says about a fact made under a fresh offline sign-in (OD-6). */
+function freshMark(payload: { offlineFresh?: boolean }): { offlineFresh?: true } {
+  return payload.offlineFresh ? { offlineFresh: true } : {};
+}
 
 /** The member row a box's cache needs, and nothing a box has no use for. */
 function memberChange(row: typeof member.$inferSelect, extra?: Record<string, unknown>): unknown {
@@ -776,6 +781,8 @@ function memberChange(row: typeof member.$inferSelect, extra?: Record<string, un
     name: row.name,
     tierCode: row.tierCode,
     preferredChannel: row.preferredChannel,
+    /** OD-7: children from two counters are waiting for staff to confirm them. */
+    childrenReviewSince: row.childrenReviewSince?.toISOString() ?? null,
     ...extra,
   };
 }
@@ -911,11 +918,26 @@ const HANDLERS: Record<string, EventHandler> = {
           entityType: 'member',
           entityId: byPhone.id,
           before: { memberId: payload.memberId },
-          after: { mergedIntoMemberId: byPhone.id, boxId: scope.auth.boxId },
+          after: { mergedIntoMemberId: byPhone.id, boxId: scope.auth.boxId, ...freshMark(payload) },
           requestId: null,
           actionId: event.envelope.actionId ?? null,
           sourceEventId: event.envelope.eventId,
         });
+
+        /**
+         * The discarded id keeps working (OD-7): the children, visits and
+         * sales the second counter recorded under it land on the survivor.
+         * Idempotent, because an id is merged once, into one survivor.
+         */
+        await tx
+          .insert(memberAlias)
+          .values({
+            aliasMemberId: payload.memberId,
+            operatorId,
+            memberId: byPhone.id,
+            sourceEventId: event.envelope.eventId,
+          })
+          .onConflictDoNothing();
 
         return {
           entityType: 'member',
@@ -962,7 +984,7 @@ const HANDLERS: Record<string, EventHandler> = {
         action: 'member.create',
         entityType: 'member',
         entityId: created!.id,
-        after: { nickname: created!.nickname, createdVia: created!.createdVia },
+        after: { nickname: created!.nickname, createdVia: created!.createdVia, ...freshMark(payload) },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
@@ -986,12 +1008,12 @@ const HANDLERS: Record<string, EventHandler> = {
   'member.updated': {
     schema: MemberUpdatedSchema,
     async apply(tx, scope, event, payload: z.infer<typeof MemberUpdatedSchema>) {
+      // An edit made under a merged id is an edit of the survivor (OD-7).
+      const memberId = await survivingMemberId(tx, scope.auth.operatorId, payload.memberId);
       const [before] = await tx
         .select()
         .from(member)
-        .where(
-          and(eq(member.id, payload.memberId), eq(member.operatorId, scope.auth.operatorId)),
-        )
+        .where(and(eq(member.id, memberId), eq(member.operatorId, scope.auth.operatorId)))
         .limit(1);
       if (!before) {
         // The box is ahead of us: it edited a member whose creation has not
@@ -1010,7 +1032,7 @@ const HANDLERS: Record<string, EventHandler> = {
       const [after] = await tx
         .update(member)
         .set(patch)
-        .where(eq(member.id, payload.memberId))
+        .where(eq(member.id, memberId))
         .returning();
 
       await audit.record(tx, {
@@ -1019,9 +1041,9 @@ const HANDLERS: Record<string, EventHandler> = {
         branchId: scope.auth.branchId,
         action: 'member.update',
         entityType: 'member',
-        entityId: payload.memberId,
+        entityId: memberId,
         before,
-        after,
+        after: { ...after, ...freshMark(payload) },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
@@ -1029,14 +1051,134 @@ const HANDLERS: Record<string, EventHandler> = {
 
       return {
         entityType: 'member',
-        entityId: payload.memberId,
+        entityId: memberId,
         changes: [
           {
             scope: 'members',
             entityType: 'member',
-            entityId: payload.memberId,
+            entityId: memberId,
             payload: memberChange(after!),
           },
+        ],
+      };
+    },
+  },
+
+  /**
+   * A tier changed at a counter with no internet (offline plan OD-11).
+   *
+   * An upgrade on a checked document, or a downgrade by somebody holding
+   * `pos:member:tier_downgrade` — the permission was checked on the box from
+   * its cached copy, as it is checked online by the route. The evidence and
+   * the tier move together here exactly as `POST /members/:id/tier-verification`
+   * and `revokeTierVerification` move them: a member never holds a discounted
+   * tier with no document behind it. The verification row's id is the box's,
+   * so a fact that arrives twice files one row.
+   */
+  'member.tier_changed': {
+    schema: OfflineMemberTierChangedSchema,
+    async apply(tx, scope, event, payload: z.infer<typeof OfflineMemberTierChangedSchema>) {
+      const operatorId = scope.auth.operatorId;
+      const memberId = await survivingMemberId(tx, operatorId, payload.memberId);
+      const [existing] = await tx
+        .select({ id: memberTierVerification.id })
+        .from(memberTierVerification)
+        .where(eq(memberTierVerification.id, payload.verificationId))
+        .limit(1);
+      if (existing) return { entityType: 'member_tier_verification', entityId: existing.id };
+
+      const [m] = await tx
+        .select()
+        .from(member)
+        .where(and(eq(member.id, memberId), eq(member.operatorId, operatorId)))
+        .for('update')
+        .limit(1);
+      if (!m) {
+        throw new RefuseEvent('apply_failed', 'SYNC_MEMBER_ABSENT', 'No such member here yet');
+      }
+      const actorAccountId = event.envelope.actorAccountId ?? null;
+
+      let toTier: string;
+      let evidence: { type: string; expiresAt: Date | null; note: string | null };
+      let action: 'member.tier_verify' | 'member.tier_revoke';
+      if (payload.direction === 'upgrade') {
+        const [target] = await tx
+          .select({ code: tier.code })
+          .from(tier)
+          .where(and(eq(tier.operatorId, operatorId), eq(tier.code, payload.toTier)))
+          .limit(1);
+        if (!target) {
+          throw new RefuseEvent('poison', 'SYNC_TIER_UNKNOWN', `Unknown tier "${payload.toTier}"`);
+        }
+        toTier = target.code;
+        evidence = {
+          type: payload.evidenceType,
+          expiresAt: new Date(`${payload.evidenceExpiresAt}T00:00:00Z`),
+          note: payload.note ?? null,
+        };
+        action = 'member.tier_verify';
+      } else {
+        const [baseline] = await tx
+          .select({ code: tier.code })
+          .from(tier)
+          .where(and(eq(tier.operatorId, operatorId), eq(tier.isDefault, true), isNull(tier.archivedAt)))
+          .limit(1);
+        if (!baseline) {
+          throw new RefuseEvent(
+            'apply_failed',
+            'SYNC_TIER_NO_BASELINE',
+            'This operator has no baseline tier configured, so there is no rate to put this member back on',
+          );
+        }
+        // Already at the baseline: the counter's decision stands and there is
+        // nothing to take back, so nothing is written.
+        if (m.tierCode === baseline.code) return { entityType: 'member', entityId: m.id };
+        toTier = baseline.code;
+        evidence = { type: TIER_REVOKED_EVIDENCE_TYPE, expiresAt: null, note: payload.reason };
+        action = 'member.tier_revoke';
+      }
+
+      await tx.insert(memberTierVerification).values({
+        id: payload.verificationId,
+        memberId: m.id,
+        fromTier: m.tierCode,
+        toTier,
+        evidenceType: evidence.type,
+        evidenceExpiresAt: evidence.expiresAt,
+        verifiedByAccountId: actorAccountId,
+        branchId: scope.auth.branchId,
+        note: evidence.note,
+      });
+      const [after] = await tx
+        .update(member)
+        .set({ tierCode: toTier })
+        .where(eq(member.id, m.id))
+        .returning();
+      await audit.record(tx, {
+        actorAccountId,
+        operatorId,
+        branchId: scope.auth.branchId,
+        action,
+        entityType: 'member_tier_verification',
+        entityId: payload.verificationId,
+        before: { tierCode: m.tierCode },
+        after: {
+          memberId: m.id,
+          toTier,
+          evidenceType: evidence.type,
+          ...(payload.direction === 'upgrade' ? { evidenceExpiresAt: payload.evidenceExpiresAt } : { reason: payload.reason }),
+          boxId: scope.auth.boxId,
+          ...freshMark(payload),
+        },
+        requestId: null,
+        actionId: event.envelope.actionId ?? null,
+        sourceEventId: event.envelope.eventId,
+      });
+      return {
+        entityType: 'member_tier_verification',
+        entityId: payload.verificationId,
+        changes: [
+          { scope: 'members', entityType: 'member', entityId: m.id, payload: memberChange(after!) },
         ],
       };
     },
@@ -1045,14 +1187,15 @@ const HANDLERS: Record<string, EventHandler> = {
   'child.created': {
     schema: ChildCreatedSchema,
     async apply(tx, scope, event, payload: z.infer<typeof ChildCreatedSchema>) {
+      // A child recorded under a merged id belongs to the survivor (OD-7).
+      const memberId = await survivingMemberId(tx, scope.auth.operatorId, payload.memberId);
+      const viaAlias = memberId !== payload.memberId;
       // The guardian proves the tenancy: a child is only reachable through a
       // member of this box's own operator, exactly as on the HTTP route.
       const [guardian] = await tx
-        .select({ id: member.id })
+        .select({ id: member.id, childrenReviewSince: member.childrenReviewSince })
         .from(member)
-        .where(
-          and(eq(member.id, payload.memberId), eq(member.operatorId, scope.auth.operatorId)),
-        )
+        .where(and(eq(member.id, memberId), eq(member.operatorId, scope.auth.operatorId)))
         .limit(1);
       if (!guardian) {
         throw new RefuseEvent('apply_failed', 'SYNC_MEMBER_ABSENT', 'No such member here yet');
@@ -1064,11 +1207,34 @@ const HANDLERS: Record<string, EventHandler> = {
         .limit(1);
       if (existing) return { entityType: 'child', entityId: existing.id };
 
+      /**
+       * Children are never merged automatically (OD-7). A child arriving
+       * through an alias onto a survivor that already has children is kept as
+       * its own record, and the member is flagged for staff to confirm who is
+       * who at the next visit — so no allergy note disappears into a guess.
+       */
+      let flagged: typeof member.$inferSelect | null = null;
+      if (viaAlias && !guardian.childrenReviewSince) {
+        const [sibling] = await tx
+          .select({ id: child.id })
+          .from(child)
+          .where(and(eq(child.memberId, memberId), isNull(child.archivedAt)))
+          .limit(1);
+        if (sibling) {
+          const [marked] = await tx
+            .update(member)
+            .set({ childrenReviewSince: event.occurredAt })
+            .where(eq(member.id, memberId))
+            .returning();
+          flagged = marked ?? null;
+        }
+      }
+
       const [created] = await tx
         .insert(child)
         .values({
           id: payload.childId,
-          memberId: payload.memberId,
+          memberId,
           name: payload.name.trim(),
           dateOfBirth: payload.dateOfBirth ?? null,
           ageYears: payload.ageYears ?? null,
@@ -1091,7 +1257,13 @@ const HANDLERS: Record<string, EventHandler> = {
         entityId: created!.id,
         // Not the allergy text: an audit row is read on a Console page, and
         // what changed is enough to answer "who added this child and when".
-        after: { memberId: payload.memberId, medicalAlert: created!.medicalAlert },
+        after: {
+          memberId,
+          medicalAlert: created!.medicalAlert,
+          ...(viaAlias ? { recordedUnderMemberId: payload.memberId } : {}),
+          ...(flagged ? { childrenReviewFlagged: true } : {}),
+          ...freshMark(payload),
+        },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
@@ -1107,6 +1279,16 @@ const HANDLERS: Record<string, EventHandler> = {
             entityId: created!.id,
             payload: childChange(created!),
           },
+          ...(flagged
+            ? [
+                {
+                  scope: 'members' as const,
+                  entityType: 'member',
+                  entityId: flagged.id,
+                  payload: memberChange(flagged),
+                },
+              ]
+            : []),
         ],
       };
     },
@@ -1159,7 +1341,7 @@ const HANDLERS: Record<string, EventHandler> = {
         entityType: 'child',
         entityId: payload.childId,
         before,
-        after,
+        after: { ...after, ...freshMark(payload) },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
@@ -1185,6 +1367,14 @@ const HANDLERS: Record<string, EventHandler> = {
     async apply(tx, scope, event, payload: z.infer<typeof VisitCreatedSchema>) {
       const [existing] = await tx.select().from(visit).where(eq(visit.id, payload.visitId)).limit(1);
       if (existing) return { entityType: 'visit', entityId: existing.id };
+
+      // A visit recorded under a merged id is the survivor's (OD-7).
+      if (payload.memberId) {
+        payload = {
+          ...payload,
+          memberId: await survivingMemberId(tx, scope.auth.operatorId, payload.memberId),
+        };
+      }
 
       if (payload.memberId) {
         const [guardian] = await tx
@@ -1279,11 +1469,37 @@ const HANDLERS: Record<string, EventHandler> = {
         action: 'visit.create',
         entityType: 'visit',
         entityId: payload.visitId,
-        after: { memberId: payload.memberId ?? null, children: payload.childIds.length },
+        after: {
+          memberId: payload.memberId ?? null,
+          children: payload.childIds.length,
+          ...freshMark(payload),
+        },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
       });
+
+      /**
+       * Staff confirmed who is visiting, which is the confirmation OD-7's flag
+       * was waiting for: a merged family's children have been looked at by a
+       * person. Cleared, and the member republished so every box stops asking.
+       */
+      if (payload.memberId && payload.childIds.length > 0) {
+        const [cleared] = await tx
+          .update(member)
+          .set({ childrenReviewSince: null })
+          .where(and(eq(member.id, payload.memberId), sql`${member.childrenReviewSince} is not null`))
+          .returning();
+        if (cleared) {
+          return {
+            entityType: 'visit',
+            entityId: payload.visitId,
+            changes: [
+              { scope: 'members', entityType: 'member', entityId: cleared.id, payload: memberChange(cleared) },
+            ],
+          };
+        }
+      }
 
       return { entityType: 'visit', entityId: payload.visitId };
     },
@@ -1359,7 +1575,17 @@ const HANDLERS: Record<string, EventHandler> = {
     schema: OfflineSalePayloadSchema,
     async apply(tx, scope, event, payload: z.infer<typeof OfflineSalePayloadSchema>) {
       const replay = replayScope(scope, event);
-      const outcome = await replayOfflineSale(tx, replay, payload);
+      // A sale rung up under a merged member's id is the survivor's (OD-7).
+      const memberId = payload.cart.memberId
+        ? await survivingMemberId(tx, scope.auth.operatorId, payload.cart.memberId)
+        : null;
+      const outcome = await replayOfflineSale(
+        tx,
+        replay,
+        memberId && memberId !== payload.cart.memberId
+          ? { ...payload, cart: { ...payload.cart, memberId } }
+          : payload,
+      );
       // SCRUM-401 — a promo code filed at the value the till applied, where the
       // park's definition says otherwise today: flagged, never refused, because
       // the money was taken. On the pool, as every alert a handler raises, and
@@ -3507,10 +3733,22 @@ export async function cacheBundle(
         .from(productCategory)
         .where(eq(productCategory.operatorId, operatorId))
         .orderBy(asc(productCategory.name));
+      /**
+       * This branch's items AND the operator-wide ones (branch null), which is
+       * what the platform's own cart reads (`loadCatalogue` in `sale.ts`) and
+       * what the menu shows. A box holding only the branch's rows could not
+       * price an operator-wide item a till put on the order (offline plan §2.3).
+       */
       const products = await db
         .select()
         .from(product)
-        .where(and(eq(product.branchId, branchId), isNull(product.archivedAt)))
+        .where(
+          and(
+            eq(product.operatorId, operatorId),
+            or(isNull(product.branchId), eq(product.branchId, branchId)),
+            isNull(product.archivedAt),
+          ),
+        )
         .orderBy(asc(product.name));
       const tiers = await db
         .select()
@@ -3531,11 +3769,112 @@ export async function cacheBundle(
         .select()
         .from(taxOverride)
         .where(eq(taxOverride.branchId, branchId));
+      /**
+       * What a local quote lacks without them (offline plan §2.3, Round 3):
+       * the modifier groups and options an item offers and the library groups
+       * it links, the tenders the park takes, the promotion definitions, and
+       * the branch's receipt header. Each is read with the same scope the
+       * platform's own cart reads it with (`resolveItemLines`, `readMenu`).
+       */
+      const productIds = products.map((p) => p.id);
+      const modifierGroups = await db
+        .select()
+        .from(modifierGroup)
+        .where(and(eq(modifierGroup.operatorId, operatorId), isNull(modifierGroup.archivedAt)))
+        .orderBy(asc(modifierGroup.sortOrder), asc(modifierGroup.name));
+      const modifierOptions = modifierGroups.length
+        ? await db
+            .select()
+            .from(modifierOption)
+            .where(
+              and(
+                inArray(
+                  modifierOption.modifierGroupId,
+                  modifierGroups.map((g) => g.id),
+                ),
+                isNull(modifierOption.archivedAt),
+              ),
+            )
+            .orderBy(asc(modifierOption.sortOrder), asc(modifierOption.name))
+        : [];
+      const modifierLinks = productIds.length
+        ? await db
+            .select({
+              productId: productModifierGroup.productId,
+              modifierGroupId: productModifierGroup.modifierGroupId,
+              sortOrder: productModifierGroup.sortOrder,
+            })
+            .from(productModifierGroup)
+            .where(
+              and(
+                eq(productModifierGroup.operatorId, operatorId),
+                inArray(productModifierGroup.productId, productIds),
+              ),
+            )
+            .orderBy(asc(productModifierGroup.productId), asc(productModifierGroup.sortOrder))
+        : [];
+      const paymentMethods = await db
+        .select({
+          code: paymentMethod.code,
+          label: paymentMethod.label,
+          kind: paymentMethod.kind,
+          enabled: paymentMethod.enabled,
+          sortOrder: paymentMethod.sortOrder,
+        })
+        .from(paymentMethod)
+        .where(and(eq(paymentMethod.operatorId, operatorId), isNull(paymentMethod.archivedAt)))
+        .orderBy(asc(paymentMethod.sortOrder), asc(paymentMethod.code));
+      const promotions = await db
+        .select({
+          id: discountDefinition.id,
+          branchId: discountDefinition.branchId,
+          code: discountDefinition.code,
+          label: discountDefinition.label,
+          kind: discountDefinition.kind,
+          valueBp: discountDefinition.valueBp,
+          valueSatang: discountDefinition.valueSatang,
+          freeProductId: discountDefinition.freeProductId,
+          target: discountDefinition.target,
+          validFrom: discountDefinition.validFrom,
+          validUntil: discountDefinition.validUntil,
+          stackable: discountDefinition.stackable,
+          active: discountDefinition.active,
+        })
+        .from(discountDefinition)
+        .where(
+          and(
+            eq(discountDefinition.operatorId, operatorId),
+            or(isNull(discountDefinition.branchId), eq(discountDefinition.branchId, branchId)),
+            isNull(discountDefinition.archivedAt),
+          ),
+        )
+        .orderBy(asc(discountDefinition.code));
+      const [header] = await db
+        .select({ name: branch.name, address: branch.address, country: branch.country })
+        .from(branch)
+        .where(eq(branch.id, branchId))
+        .limit(1);
+      const item = {
+        packages,
+        categories,
+        products,
+        tiers,
+        holidays,
+        taxConfig: taxConfig ?? null,
+        overrides,
+        modifierGroups,
+        modifierOptions,
+        modifierLinks,
+        paymentMethods,
+        promotions,
+        receiptHeader: header ?? null,
+      };
       // One item, because the catalogue is applied as a unit: half a price list
-      // is worse than none.
-      put('catalogue', [
-        { packages, categories, products, tiers, holidays, taxConfig: taxConfig ?? null, overrides },
-      ]);
+      // is worse than none. It carries a version of its OWN (OD-8): the bundle's
+      // is hashed over every administered scope together, and a sale priced
+      // offline has to name the price list it was priced from, not the staff
+      // list beside it.
+      put('catalogue', [{ ...item, version: sha256Hex(JSON.stringify(item)).slice(0, 16) }]);
       continue;
     }
 
@@ -3573,10 +3912,34 @@ export async function cacheBundle(
         list.push(childChange(c));
         byMember.set(c.memberId, list);
       }
+      /**
+       * The ids merged into each member (OD-7), so a counter that signed a
+       * family up under one of them files what it records next under the
+       * survivor, and shows the children it recorded offline under it.
+       */
+      const aliases = rows.length
+        ? await db
+            .select({ aliasMemberId: memberAlias.aliasMemberId, memberId: memberAlias.memberId })
+            .from(memberAlias)
+            .where(
+              and(
+                eq(memberAlias.operatorId, operatorId),
+                inArray(
+                  memberAlias.memberId,
+                  rows.map((m) => m.id),
+                ),
+              ),
+            )
+        : [];
+      const aliasesOf = new Map<string, string[]>();
+      for (const a of aliases) {
+        aliasesOf.set(a.memberId, [...(aliasesOf.get(a.memberId) ?? []), a.aliasMemberId]);
+      }
       put(
         'members',
         rows.map((m) => ({
           ...(memberChange(m) as Record<string, unknown>),
+          aliasIds: aliasesOf.get(m.id) ?? [],
           children: byMember.get(m.id) ?? [],
         })),
         { rowsRead: rows.length, cursorOf: (last) => (last as { id: string }).id },
@@ -3753,6 +4116,12 @@ export async function cacheBundle(
       const onBooth = new Map(
         boothPeople.map((p) => [p.accountId, p.nickname ?? p.name ?? null] as const),
       );
+      const permissionsAt = await staffPermissionsAtBranch(
+        db,
+        operatorId,
+        branchId,
+        rows.map((a) => a.id),
+      );
       put(
         'staff',
         rows.map((a) => ({
@@ -3770,6 +4139,14 @@ export async function cacheBundle(
           /** Null for anybody not on a booth of this box. See above. */
           displayName: onBooth.get(a.id) ?? null,
           staffCode: onBooth.has(a.id) ? boothStaffCode(a.id) : null,
+          /**
+           * What this account may do at THIS branch (offline plan §2.3, OD-11):
+           * the permission strings its grants cover here, resolved exactly as
+           * the platform's guard resolves them. A counter with no internet
+           * decides a discount, a tier change or a member create from this and
+           * nothing else. It is a list of verbs, not a role or a name.
+           */
+          permissions: permissionsAt.get(a.id) ?? [],
         })),
         // One row per person, so the rows read ARE the items — but the count
         // that decides "cut short" is the one the LIMIT applied to.
@@ -3902,6 +4279,35 @@ export async function cacheBundle(
               ),
             )
         : [];
+      /**
+       * The paired customer displays, as the HASH of each one's credential
+       * (offline plan §2.3, OD-10). A display reaches its box through the
+       * bridge with the bearer it was paired under, and the box compares
+       * hashes: the credential itself is never on the box, so a stolen card
+       * yields none. Revoked and unpaired credentials are left out.
+       */
+      const displays = stations.length
+        ? await db
+            .select({
+              id: deviceCredential.id,
+              stationId: deviceCredential.stationId,
+              secretHash: deviceCredential.secretHash,
+            })
+            .from(deviceCredential)
+            .where(
+              and(
+                eq(deviceCredential.operatorId, operatorId),
+                eq(deviceCredential.kind, 'display'),
+                inArray(
+                  deviceCredential.stationId,
+                  stations.map((s) => s.id),
+                ),
+                isNull(deviceCredential.revokedAt),
+                sql`${deviceCredential.pairedAt} is not null`,
+                sql`${deviceCredential.secretHash} is not null`,
+              ),
+            )
+        : [];
       put(
         'station_config',
         stations.map((s) => ({
@@ -3916,6 +4322,16 @@ export async function cacheBundle(
           devices: assignments
             .filter((a) => a.stationId === s.id)
             .map((a) => ({ id: a.device.id, role: a.role, kind: a.device.kind })),
+          displays: displays
+            .filter((d) => d.stationId === s.id)
+            .map((d) => ({ id: d.id, credentialHash: d.secretHash })),
+          /**
+           * How stale this counter's copies may grow (OD-5, OD-6). The plan's
+           * defaults until the owner's two catalogue numbers have a Console
+           * setting to live in; delivered here so the box and the till read
+           * one value.
+           */
+          offlinePolicy: OFFLINE_POLICY,
         })),
       );
       continue;
@@ -4046,6 +4462,46 @@ export async function cacheBundle(
     scopes,
     truncated,
   };
+}
+
+/**
+ * Every permission each account holds at one branch, as the platform's guard
+ * would resolve it there (`hasPermission` with the branch as the target).
+ *
+ * One query for the whole staff page rather than one per person, and the
+ * covering rule is the guard's own (`grantCovers`), so the box and the
+ * platform cannot disagree about what somebody may do at this counter.
+ */
+async function staffPermissionsAtBranch(
+  db: Db,
+  operatorId: string,
+  branchId: string,
+  accountIds: readonly string[],
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (accountIds.length === 0) return out;
+  const grants = await db
+    .select({
+      accountId: roleAssignment.accountId,
+      permission: rolePermission.permission,
+      scopeType: roleAssignment.scopeType,
+      scopeId: roleAssignment.scopeId,
+      roleName: role.name,
+    })
+    .from(roleAssignment)
+    .innerJoin(role, eq(roleAssignment.roleId, role.id))
+    .innerJoin(rolePermission, eq(rolePermission.roleId, role.id))
+    .where(inArray(roleAssignment.accountId, [...accountIds]));
+  const target = { operatorId, branchId };
+  const held = new Map<string, Set<string>>();
+  for (const grant of grants) {
+    if (!grantCovers(grant as EffectivePermission, target)) continue;
+    const set = held.get(grant.accountId) ?? new Set<string>();
+    set.add(grant.permission);
+    held.set(grant.accountId, set);
+  }
+  for (const [accountId, set] of held) out.set(accountId, [...set].sort());
+  return out;
 }
 
 /**

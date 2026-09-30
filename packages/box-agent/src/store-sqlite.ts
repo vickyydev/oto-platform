@@ -259,6 +259,27 @@ create table if not exists box_runtime (
   updated_at text not null,
   primary key (box_id, runtime_key)
 );
+
+-- What a counter recorded while it could not reach the platform (offline plan
+-- Round 3): members, children and visits, each written in the same
+-- transaction as the fact that carries it up, so the next lookup at this
+-- counter finds the family it just signed up. Pruned once a cache pull brings
+-- the platform's own copy. The platform database's twin is migration 0035.
+create table if not exists box_overlay (
+  box_id text not null,
+  kind text not null,
+  entity_id text not null,
+  member_id text,
+  phone text,
+  payload text not null,
+  created_at text not null,
+  updated_at text not null,
+  primary key (box_id, kind, entity_id),
+  check (kind in ('member', 'child', 'visit'))
+);
+
+create index if not exists box_overlay_phone_idx on box_overlay (box_id, phone);
+create index if not exists box_overlay_member_idx on box_overlay (box_id, member_id);
 `;
 
 /** Create the tables if they are absent and set the durability pragmas. */

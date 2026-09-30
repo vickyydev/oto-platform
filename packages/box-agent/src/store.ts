@@ -405,6 +405,12 @@ export interface BoxStoreFeatures {
   printJobs: boolean;
   /** `box_counter`, `box_staff_session`, `box_throttle`, `box_runtime`. */
   boothRuntime: boolean;
+  /**
+   * `box_overlay`: the members, children and visits a counter recorded offline
+   * (offline plan Round 3). Without it a counter box refuses those writes by
+   * name rather than queue a fact its own lookup could not find again.
+   */
+  overlay: boolean;
 }
 
 /**
@@ -685,6 +691,62 @@ export interface BoxStore extends PrintJobStore {
    */
   readRuntimeValue(boxId: string, key: string): Promise<string | null>;
   writeRuntimeValue(boxId: string, key: string, value: string, now?: string): Promise<void>;
+
+  // --- The offline overlay (offline plan Round 3) -----------------------------
+
+  /**
+   * Record, or replace, what this counter now knows about one member, child or
+   * visit it wrote offline. Written in the same transaction as the fact that
+   * carries it to the platform (`atomically`), so a lookup and the outbox
+   * cannot disagree about whether it happened.
+   */
+  putOverlay(boxId: string, write: OverlayWrite, now?: string): Promise<void>;
+  readOverlay(boxId: string, kind: BoxOverlayKind, entityId: string): Promise<OverlayRecord | null>;
+  /** Rows of one kind, by the phone a member row carries or the guardian a child or visit row names. */
+  listOverlay(
+    boxId: string,
+    where: { kind: BoxOverlayKind; phone?: string; memberIds?: readonly string[] },
+  ): Promise<OverlayRecord[]>;
+  /** Every row this box holds, oldest first: what a prune after a pull walks. */
+  allOverlay(boxId: string): Promise<OverlayRecord[]>;
+  deleteOverlay(
+    boxId: string,
+    keys: ReadonlyArray<{ kind: BoxOverlayKind; entityId: string }>,
+  ): Promise<number>;
+  /**
+   * Where these events stand in the outbox: queued, sending, acked (and
+   * when), quarantined. An id the outbox no longer holds is absent from the
+   * answer. What an overlay prune asks before it lets the cache speak for a
+   * record again.
+   */
+  outboxStates(
+    boxId: string,
+    eventIds: readonly string[],
+  ): Promise<Map<string, { state: OutboxState; ackedAt: string | null }>>;
+}
+
+// --- The offline overlay ------------------------------------------------------
+
+export const BOX_OVERLAY_KINDS = ['member', 'child', 'visit'] as const;
+export type BoxOverlayKind = (typeof BOX_OVERLAY_KINDS)[number];
+
+/** What a producer writes. `record` is the entity as this counter now knows it. */
+export interface OverlayWrite {
+  kind: BoxOverlayKind;
+  entityId: string;
+  /** The guardian on a child or visit; the member itself on a member row. */
+  memberId: string | null;
+  /** E.164 on a member row, null otherwise. */
+  phone: string | null;
+  record: Record<string, unknown>;
+  /** The fact that last changed it, so a prune can ask whether the platform has it. */
+  eventId: string | null;
+}
+
+export interface OverlayRecord extends OverlayWrite {
+  boxId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // --- Migrate on read --------------------------------------------------------

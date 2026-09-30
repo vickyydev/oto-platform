@@ -246,6 +246,20 @@
       "when": 1790692337141,
       "tag": "0034_bands_refunds",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1790742572408,
+      "tag": "0035_edge_box_overlay",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1790742587888,
+      "tag": "0036_member_alias",
+      "breakpoints": true
     }
   ]
 }

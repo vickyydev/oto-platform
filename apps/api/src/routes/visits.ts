@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { branch, child, member, visit, visitChild } from '@oto/db';
 import { branchToday } from '@oto/shared';
 import type { App } from '../app';
@@ -139,6 +139,18 @@ export async function visitRoutes(app: App): Promise<void> {
             .update(child)
             .set({ lastConfirmedAt: now })
             .where(inArray(child.id, req.body.childIds));
+          /**
+           * Offline plan OD-7: a family signed up at two counters while both
+           * were offline is merged with both sets of children kept, and the
+           * member flagged for staff to confirm who is who. This is that
+           * confirmation, so the flag is cleared with it.
+           */
+          if (req.body.memberId) {
+            await tx
+              .update(member)
+              .set({ childrenReviewSince: null })
+              .where(and(eq(member.id, req.body.memberId), isNotNull(member.childrenReviewSince)));
+          }
         }
         await audit.record(tx, {
           actorAccountId: auth.accountId,

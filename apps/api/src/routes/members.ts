@@ -159,6 +159,12 @@ async function memberWithChildren(app: App, memberId: string, operatorId: string
         }
       : null,
     children: children.map(serializeChild),
+    /**
+     * Offline plan OD-7: set when a merge put children recorded at two
+     * counters on this member, so the till asks staff to confirm them at this
+     * visit. Null on every other member.
+     */
+    childrenReviewSince: m.childrenReviewSince?.toISOString() ?? null,
   };
 }
 

@@ -7,6 +7,7 @@ import {
   booking,
   child,
   member,
+  memberAlias,
   memberTierVerification,
   paymentAttempt,
   paymentNotification,
@@ -213,6 +214,19 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   counts.child = doomedIds.length
     ? (
         await tx.delete(child).where(inArray(child.memberId, doomedIds)).returning({ id: child.id })
+      ).length
+    : 0;
+  /**
+   * Offline plan Round 3: an id merged into a member at sync is kept as an
+   * alias of it (`crm.member_alias`, ON DELETE RESTRICT), so the aliases of a
+   * member the session created go before the member does.
+   */
+  counts.member_alias = doomedIds.length
+    ? (
+        await tx
+          .delete(memberAlias)
+          .where(inArray(memberAlias.memberId, doomedIds))
+          .returning({ id: memberAlias.aliasMemberId })
       ).length
     : 0;
   counts.member = doomedIds.length

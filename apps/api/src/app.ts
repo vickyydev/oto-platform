@@ -46,6 +46,7 @@ import { opsRoutes } from './routes/ops';
 import { boxRoutes } from './routes/box';
 import { fleetRoutes } from './routes/fleet';
 import { stationSessionRoutes } from './routes/stations';
+import { stationBridgeRoutes } from './routes/station-bridge';
 import { printRoutes } from './routes/print';
 import { scanningRoutes } from './routes/scanning';
 import { staffTokenRoutes } from './routes/staff-token';
@@ -437,6 +438,15 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // its own schedule, so the one surface that has to stay compatible with a
   // machine nobody can reach says so in its path (S2-04).
   await app.register(boxRoutes, { prefix: '/box/v1' });
+  /**
+   * The station bridge for a virtual box (offline plan §2.2, Round 3): the
+   * same `/box/v1/station/:stationId/*` contract a Pi serves on the counter's
+   * LAN, here behind the platform session. Declared in full, beside the box's
+   * own surface whose version prefix it shares, and deliberately outside the
+   * `stationTrading` guard: it is the box's surface, so it keeps working with
+   * the station forced offline.
+   */
+  await app.register(stationBridgeRoutes);
   await app.register((await import('./routes/box-booth-staff')).boxBoothStaffRoutes);
   await app.register(publicRoutes);
 

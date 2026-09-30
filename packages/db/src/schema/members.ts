@@ -73,6 +73,13 @@ export const member = crm.table(
     preferredChannel: text('preferred_channel').$type<ContactChannel>(),
     notes: text('notes'),
     createdVia: text('created_via').$type<MemberCreatedVia>().notNull().default('pos'),
+    /**
+     * Set when a merge put children recorded at two counters on this member
+     * (plan `offline/PLAN.md` OD-7): the children are never merged
+     * automatically, so staff confirm who is who at the next visit and no
+     * allergy note disappears. Cleared by the next visit that confirms them.
+     */
+    childrenReviewSince: timestamp('children_review_since', { withTimezone: true, mode: 'date' }),
     ...timestamps,
     ...archivedAt,
   },
@@ -85,6 +92,41 @@ export const member = crm.table(
       sql`${t.preferredChannel} is null or ${t.preferredChannel} in ('whatsapp','telegram','line','instagram')`,
     ),
     check('member_created_via_check', sql`${t.createdVia} in ('pos','booking','import')`),
+  ],
+);
+
+/**
+ * A member id that was merged into another (plan `offline/PLAN.md` §2.6, OD-7).
+ *
+ * The same phone typed at two counters while both were offline makes two
+ * members with two till-minted ids. At sync the first to arrive survives and
+ * the second is recorded as a merge (`member.created` in `services/sync.ts`).
+ * Its id does not disappear with it: the child, visit and sale facts that
+ * second counter queued afterwards all name it. This row is what lets them
+ * land on the survivor instead of waiting in quarantine for a member that will
+ * never exist.
+ *
+ * `alias_member_id` is the discarded id and the primary key: an id is merged
+ * once, into one survivor. It has no foreign key because the member it names
+ * was never written. `source_event_id` is the `member.created` event that was
+ * merged, which is also on the `member.merge` audit row.
+ */
+export const memberAlias = crm.table(
+  'member_alias',
+  {
+    aliasMemberId: uuid('alias_member_id').primaryKey(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => member.id, { onDelete: 'restrict' }),
+    sourceEventId: uuid('source_event_id'),
+    ...timestamps,
+  },
+  (t) => [
+    index('member_alias_member_idx').on(t.memberId),
+    index('member_alias_operator_idx').on(t.operatorId),
   ],
 );
 

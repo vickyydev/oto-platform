@@ -189,9 +189,16 @@ describe('route guards (S2-01b)', () => {
    * mistaken for an open endpoint, and an open endpoint cannot be smuggled in
    * as a box route: both lists have to be edited on purpose.
    */
+  /**
+   * The station bridge's mount (offline plan Round 3) shares the box's version
+   * prefix — it is the contract a Pi serves at the same path — but its caller
+   * is a till or a display, not a box, so it is pinned on its own below.
+   */
+  const isBridge = (url: string): boolean => url.startsWith('/box/v1/station/');
+
   it('the box surface is only what it should be, and is credential-guarded', async () => {
     const boxRoutes = ctx.app.routeRegistry
-      .filter((r) => r.url.startsWith('/box/') && r.method !== 'HEAD')
+      .filter((r) => r.url.startsWith('/box/') && !isBridge(r.url) && r.method !== 'HEAD')
       .map((r) => `${r.method} ${r.url} [${r.config.credential}]`)
       .sort();
     expect(boxRoutes).toEqual([
@@ -244,7 +251,11 @@ describe('route guards (S2-01b)', () => {
    */
   it('every box route refuses a caller with no credential', async () => {
     const boxUrls = ctx.app.routeRegistry.filter(
-      (r) => r.url.startsWith('/box/') && r.method !== 'HEAD' && r.method !== 'OPTIONS',
+      (r) =>
+        r.url.startsWith('/box/') &&
+        !isBridge(r.url) &&
+        r.method !== 'HEAD' &&
+        r.method !== 'OPTIONS',
     );
     expect(boxUrls.length).toBe(12);
 
@@ -279,6 +290,53 @@ describe('route guards (S2-01b)', () => {
         ['BOX_UNAUTHORIZED', 'BOX_CLAIM_INVALID'],
         `${route.method} ${route.url}`,
       ).toContain(res.json().error.code);
+    }
+  });
+
+  /**
+   * THE STATION BRIDGE ON THE API (offline plan §2.2, Round 3): the platform
+   * session for a till standing at the station (OD-2), a paired display's own
+   * credential for the customer display (OD-10), and nothing for anybody else.
+   * Deliberately NOT `stationTrading`: it is the box's surface and keeps
+   * answering with the station forced offline — `offline-capability.test.ts`
+   * is where that is proved.
+   */
+  it('the station bridge is only what it should be, and refuses a caller with neither credential', async () => {
+    const bridge = ctx.app.routeRegistry
+      .filter((r) => isBridge(r.url) && r.method !== 'HEAD' && r.method !== 'OPTIONS')
+      .map((r) => `${r.method} ${r.url} [${r.config.credential ?? (r.config.dynamicPermission ? 'session' : '?')}]`)
+      .sort();
+    expect(bridge).toEqual([
+      'GET /box/v1/station/:stationId/channel [session]',
+      'GET /box/v1/station/:stationId/display/session [display]',
+      'GET /box/v1/station/:stationId/members/lookup [session]',
+      'GET /box/v1/station/:stationId/session [session]',
+      'GET /box/v1/station/:stationId/status [session]',
+      'POST /box/v1/station/:stationId/display/intents [display]',
+      'POST /box/v1/station/:stationId/intents [session]',
+      'POST /box/v1/station/:stationId/lease [session]',
+      'POST /box/v1/station/:stationId/lease/release [session]',
+      'POST /box/v1/station/:stationId/lease/renew [session]',
+      'POST /box/v1/station/:stationId/lock [session]',
+      'POST /box/v1/station/:stationId/unlock [session]',
+    ]);
+    expect(
+      ctx.app.routeRegistry.filter((r) => isBridge(r.url) && r.config.stationTrading),
+    ).toEqual([]);
+    const station = '00000000-0000-7000-8000-000000000000';
+    for (const route of ctx.app.routeRegistry.filter(
+      (r) => isBridge(r.url) && r.method !== 'HEAD' && r.method !== 'OPTIONS',
+    )) {
+      const res = await ctx.app.inject({
+        method: route.method as 'GET' | 'POST',
+        url: `${route.url.replace(':stationId', station)}${route.url.endsWith('lookup') ? '?phone=1' : ''}`,
+        ...(route.method === 'GET' ? {} : { payload: {} as never }),
+      });
+      expect([400, 401], `${route.method} ${route.url}`).toContain(res.statusCode);
+      if (res.statusCode === 400) {
+        // A body schema checked before the session: still nothing done.
+        expect(res.json().error.code, `${route.method} ${route.url}`).toBe('VALIDATION');
+      }
     }
   });
 

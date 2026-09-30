@@ -1559,9 +1559,14 @@ describe('the cache bundle', () => {
     const [first] = bundle.scopes.members!.items as Array<Record<string, unknown>>;
     expect(first).toBeTruthy();
     // What a till reads at the identify step, and no more. The staff notes,
-    // the email and the tier evidence stay in the cloud.
+    // the email and the tier evidence stay in the cloud. `aliasIds` and
+    // `childrenReviewSince` were added on purpose (offline plan Round 3, OD-7):
+    // the ids merged into this member, so a counter files what it records under
+    // the survivor, and the flag that asks staff to confirm the children.
     expect(Object.keys(first!).sort()).toEqual([
+      'aliasIds',
       'children',
+      'childrenReviewSince',
       'id',
       'name',
       'nickname',
@@ -1809,7 +1814,10 @@ describe('the cache bundle', () => {
      * shopping mall, which is why the list is pinned and has to be edited on
      * purpose. `displayName` and `staffCode` were added on purpose (SCRUM-223):
      * a booth prints "Staff: Nok (S-7KMQ)" with no internet. Both are null for
-     * anybody not on a booth of the box being served.
+     * anybody not on a booth of the box being served. `permissions` was added
+     * on purpose (offline plan Round 3, OD-11): what the account may do at
+     * this branch, as permission strings, so a counter with no internet
+     * decides a member create or a discount the way the platform would.
      */
     expect(Object.keys(staff[0]!).sort()).toEqual([
       'accountId',
@@ -1817,6 +1825,7 @@ describe('the cache bundle', () => {
       'lastTokenAt',
       'mustChangePassword',
       'passwordHash',
+      'permissions',
       'pinExpiresAt',
       'pinHash',
       'staffCode',
