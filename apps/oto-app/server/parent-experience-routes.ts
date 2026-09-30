@@ -11,13 +11,12 @@ import {
   parentMessageLogs,
   coreEvents,
   beoLocations,
-  insertParentPortalTokenSchema,
-  insertGuestInviteTokenSchema,
   insertInvitationDesignSchema,
   insertRsvpEntrySchema,
   insertParentMessageLogSchema,
 } from "./db/coreSchema";
 import { branches } from "@shared/schema";
+import { canUserAccessBranch } from "./auth-middleware";
 import { generateSecureToken, INVITATION_TEMPLATES, formatDateForLanguage, formatTimeForLanguage, type ParentExperienceLanguage } from "../shared/localization";
 import puppeteer from "puppeteer";
 import { getFileFromObjectStorage, uploadToObjectStorage } from "./file-storage";
@@ -65,11 +64,13 @@ const photoUpload = multer({
   },
 });
 
-async function verifyEventTenant(eventId: string, tenantId: string): Promise<boolean> {
+async function verifyEventAccess(req: Request, eventId: string): Promise<boolean> {
+  const user = req.userWithAccess;
+  if (!user?.tenantId) return false;
   const event = await db.query.coreEvents.findFirst({
-    where: and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, tenantId)),
+    where: and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, user.tenantId)),
   });
-  return !!event;
+  return !!event && canUserAccessBranch(user, event.branchId);
 }
 
 async function getEventByToken(tokenValue: string, tokenType: "parent" | "guest"): Promise<{
@@ -103,7 +104,7 @@ router.post("/api/events/:eventId/parent-portal-token", async (req: Request, res
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const existing = await db.query.parentPortalTokens.findFirst({
@@ -134,7 +135,7 @@ router.get("/api/events/:eventId/parent-portal-token", async (req: Request, res:
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const token = await db.query.parentPortalTokens.findFirst({
@@ -163,7 +164,7 @@ router.delete("/api/parent-portal-tokens/:tokenId", async (req: Request, res: Re
       return res.status(404).json({ error: "Token not found" });
     }
     
-    const isValid = await verifyEventTenant(tokenRecord.eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, tokenRecord.eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     await db.update(parentPortalTokens)
@@ -183,7 +184,7 @@ router.post("/api/events/:eventId/guest-invite-token", async (req: Request, res:
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const existing = await db.query.guestInviteTokens.findFirst({
@@ -214,7 +215,7 @@ router.get("/api/events/:eventId/guest-invite-token", async (req: Request, res: 
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const token = await db.query.guestInviteTokens.findFirst({
@@ -234,7 +235,7 @@ router.get("/api/events/:eventId/invitation-design", async (req: Request, res: R
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const design = await db.query.invitationDesigns.findFirst({
@@ -254,7 +255,7 @@ router.post("/api/events/:eventId/invitation-design", async (req: Request, res: 
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const validatedData = insertInvitationDesignSchema.parse({ ...req.body, eventId });
@@ -286,7 +287,7 @@ router.get("/api/events/:eventId/rsvp-entries", async (req: Request, res: Respon
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const entries = await db.query.rsvpEntries.findMany({
@@ -307,7 +308,7 @@ router.get("/api/events/:eventId/rsvp-summary", async (req: Request, res: Respon
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const entries = await db.query.rsvpEntries.findMany({
@@ -336,7 +337,7 @@ router.post("/api/events/:eventId/message-logs", async (req: Request, res: Respo
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const validatedData = insertParentMessageLogSchema.parse({
@@ -359,7 +360,7 @@ router.get("/api/events/:eventId/message-logs", async (req: Request, res: Respon
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     
     const { eventId } = req.params;
-    const isValid = await verifyEventTenant(eventId, user.tenantId);
+    const isValid = await verifyEventAccess(req, eventId);
     if (!isValid) return res.status(403).json({ error: "Access denied" });
     
     const logs = await db.query.parentMessageLogs.findMany({

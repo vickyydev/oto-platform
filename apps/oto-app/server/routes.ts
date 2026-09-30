@@ -120,7 +120,7 @@ import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db } from "./db";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -2881,17 +2881,15 @@ export async function registerRoutes(
   // Get employee onboarding status (derived from actual data)
   app.get("/api/employees/:id/onboarding-status", requireAuth, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.id);
+      const user = req.userWithAccess;
+      const employee = await storage.getEmployeeInTenant(req.params.id, user?.tenantId ?? "");
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      
-      // Check branch access
-      const userWithAccess = req.userWithAccess;
-      if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        if (!employee.branchId || !userWithAccess.allowedBranchIds.includes(employee.branchId)) {
-          return res.status(403).json({ message: "Access denied to this employee" });
-        }
+      if (!user || (user.role === "staff"
+        ? employee.userId !== user.id
+        : !canUserAccessBranch(user, employee.branchId))) {
+        return res.status(403).json({ message: "Access denied to this employee" });
       }
 
       // Get related data to compute onboarding status
@@ -5707,10 +5705,14 @@ export async function registerRoutes(
   app.post("/api/contracts/finalize", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { employeeId, templateId, mergeDataJson, createdBy, generateSigningLink, language } = req.body;
-
-      const employee = await storage.getEmployee(employeeId);
+      const user = await legacyHrUser(req, res);
+      if (!user) return;
+      const employee = await storage.getEmployeeInTenant(employeeId, user.tenantId!);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
+      }
+      if (!canUserAccessBranch(user, employee.branchId)) {
+        return res.status(403).json({ message: "Employee access denied" });
       }
 
       const template = await storage.getTemplate(templateId);
@@ -5816,7 +5818,11 @@ export async function registerRoutes(
       }
 
       // Get the latest published policy to attach to this contract
-      const latestPolicy = await storage.getLatestPublishedPolicy();
+      const latestPolicy = (await storage.getPolicyDocuments()).find(policy =>
+        policy.status === "published" && (
+          (policy.isCompanyWide && !policy.branchId) ||
+          (!!employee.branchId && policy.branchId === employee.branchId)
+        )) || null;
 
       // Finalize the contract (no PDF generated - PDF is created when employee signs)
       const finalizedContract = await storage.updateContract(contract.id, {
@@ -6877,11 +6883,51 @@ OTO Company Limited`,
     }
   });
 
+  // These legacy tables have no tenant column. Until they do, only the default
+  // tenant can use their shared rows.
+  const legacyHrUser = async (req: Request, res: Response): Promise<UserWithBranchAccess | null> => {
+    const user = req.userWithAccess;
+    if (!user?.tenantId) {
+      res.status(403).json({ message: "Tenant access required" });
+      return null;
+    }
+    const [defaultTenant] = await db.select({ id: tenants.id }).from(tenants)
+      .where(eq(tenants.slug, DEFAULT_TENANT_SLUG)).limit(1);
+    if (user.tenantId !== defaultTenant?.id) {
+      res.status(503).json({ message: "This module is unavailable for this tenant" });
+      return null;
+    }
+    return user;
+  };
+
+  const canAccessPolicy = async (
+    user: UserWithBranchAccess,
+    policy: { isCompanyWide: boolean; branchId: string | null },
+  ): Promise<boolean> => {
+    if (policy.isCompanyWide && !policy.branchId) return true;
+    if (!policy.branchId || !canUserAccessBranch(user, policy.branchId)) return false;
+    const [branch] = await db.select({ id: branches.id }).from(branches)
+      .where(and(eq(branches.id, policy.branchId), eq(branches.tenantId, user.tenantId!))).limit(1);
+    return !!branch;
+  };
+
+  const policyInput = z.object({
+    title: z.string().min(1).optional(),
+    contentHtml: z.string().nullable().optional(),
+    pdfFileUrl: z.string().nullable().optional(),
+    isCompanyWide: z.boolean().optional(),
+    branchId: z.string().nullable().optional(),
+  }).strict();
+
   // Policy document routes
   app.get("/api/policies", requireAuth, async (req, res, next) => {
     try {
+      const user = await legacyHrUser(req, res);
+      if (!user) return;
       const policies = await storage.getPolicyDocuments();
-      res.json(policies);
+      const visible = await Promise.all(policies.map(async policy =>
+        await canAccessPolicy(user, policy) ? policy : null));
+      res.json(visible.filter(policy => policy !== null));
     } catch (error) {
       next(error);
     }
@@ -6889,7 +6935,16 @@ OTO Company Limited`,
 
   app.get("/api/policies/latest-published", requireAuth, async (req, res, next) => {
     try {
-      const policy = await storage.getLatestPublishedPolicy();
+      const user = await legacyHrUser(req, res);
+      if (!user) return;
+      const policies = await storage.getPolicyDocuments();
+      let policy = null;
+      for (const item of policies) {
+        if (item.status === "published" && await canAccessPolicy(user, item)) {
+          policy = item;
+          break;
+        }
+      }
       res.json(policy || null);
     } catch (error) {
       next(error);
@@ -6898,8 +6953,10 @@ OTO Company Limited`,
 
   app.get("/api/policies/:id", requireAuth, async (req, res, next) => {
     try {
+      const user = await legacyHrUser(req, res);
+      if (!user) return;
       const policy = await storage.getPolicyDocument(req.params.id);
-      if (!policy) {
+      if (!policy || !await canAccessPolicy(user, policy)) {
         return res.status(404).json({ message: "Policy not found" });
       }
       res.json(policy);
@@ -6910,11 +6967,24 @@ OTO Company Limited`,
 
   app.post("/api/policies", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const userId = (req.user as any)?.id;
-      const tenantId = await resolveTenantId(req.user?.tenantId);
+      const user = await legacyHrUser(req, res);
+      if (!user) return;
+      const parsed = policyInput.safeParse(req.body);
+      if (!parsed.success || !parsed.data.title) {
+        return res.status(400).json({ message: "Valid policy title and content are required" });
+      }
+      const isCompanyWide = parsed.data.isCompanyWide ?? true;
+      const branchId = isCompanyWide ? null : parsed.data.branchId ?? null;
+      if (isCompanyWide ? !user.hasAllBranchesAccess
+        : !await canAccessPolicy(user, { isCompanyWide, branchId })) {
+        return res.status(403).json({ message: "Policy branch access denied" });
+      }
+      const userId = user.id;
       const policy = await storage.createPolicyDocument({
-        ...req.body,
-        tenantId,
+        ...parsed.data,
+        title: parsed.data.title,
+        isCompanyWide,
+        branchId,
         createdBy: userId,
         updatedBy: userId,
       });
@@ -6937,9 +7007,26 @@ OTO Company Limited`,
 
   app.patch("/api/policies/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const userId = (req.user as any)?.id;
+      const user = await legacyHrUser(req, res);
+      if (!user) return;
+      const existing = await storage.getPolicyDocument(req.params.id);
+      if (!existing || !await canAccessPolicy(user, existing)) {
+        return res.status(404).json({ message: "Policy not found" });
+      }
+      const parsed = policyInput.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid policy update" });
+      const isCompanyWide = parsed.data.isCompanyWide ?? existing.isCompanyWide;
+      const branchId = isCompanyWide ? null : parsed.data.branchId === undefined
+        ? existing.branchId : parsed.data.branchId;
+      if (isCompanyWide ? !user.hasAllBranchesAccess
+        : !await canAccessPolicy(user, { isCompanyWide, branchId })) {
+        return res.status(403).json({ message: "Policy branch access denied" });
+      }
+      const userId = user.id;
       const policy = await storage.updatePolicyDocument(req.params.id, {
-        ...req.body,
+        ...parsed.data,
+        isCompanyWide,
+        branchId,
         updatedBy: userId,
       });
       res.json(policy);
@@ -6950,7 +7037,16 @@ OTO Company Limited`,
 
   app.post("/api/policies/:id/publish", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const userId = (req.user as any)?.id;
+      const user = await legacyHrUser(req, res);
+      if (!user) return;
+      const existing = await storage.getPolicyDocument(req.params.id);
+      if (!existing || !await canAccessPolicy(user, existing)) {
+        return res.status(404).json({ message: "Policy not found" });
+      }
+      if (existing.isCompanyWide && !user.hasAllBranchesAccess) {
+        return res.status(403).json({ message: "Policy branch access denied" });
+      }
+      const userId = user.id;
       const policy = await storage.publishPolicyDocument(req.params.id, userId);
       
       // Log activity
@@ -6971,7 +7067,16 @@ OTO Company Limited`,
 
   app.post("/api/policies/:id/archive", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const userId = (req.user as any)?.id;
+      const user = await legacyHrUser(req, res);
+      if (!user) return;
+      const existing = await storage.getPolicyDocument(req.params.id);
+      if (!existing || !await canAccessPolicy(user, existing)) {
+        return res.status(404).json({ message: "Policy not found" });
+      }
+      if (existing.isCompanyWide && !user.hasAllBranchesAccess) {
+        return res.status(403).json({ message: "Policy branch access denied" });
+      }
+      const userId = user.id;
       const policy = await storage.archivePolicyDocument(req.params.id, userId);
       
       // Log activity
@@ -7833,6 +7938,7 @@ OTO Company Limited`,
   // Asset catalog endpoints
   app.get("/api/assets/catalog", requireAuth, async (req, res, next) => {
     try {
+      if (!await legacyHrUser(req, res)) return;
       const catalog = await storage.getAssetCatalog();
       res.json(catalog);
     } catch (error) {
@@ -7842,6 +7948,7 @@ OTO Company Limited`,
 
   app.post("/api/assets/catalog", requireAuth, requireAdmin, async (req, res, next) => {
     try {
+      if (!await legacyHrUser(req, res)) return;
       const catalogSchema = z.object({
         name: z.string().min(1),
         category: z.enum(["equipment", "uniform", "access", "technology", "vehicle", "other"]).optional(),
@@ -7867,6 +7974,14 @@ OTO Company Limited`,
   app.get("/api/employees/:employeeId/assets", requireAuth, async (req, res, next) => {
     try {
       const { employeeId } = req.params;
+      const user = req.userWithAccess;
+      const employee = await storage.getEmployeeInTenant(employeeId, user?.tenantId ?? "");
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
+      if (!user || (user.role === "staff"
+        ? employee.userId !== user.id
+        : !canUserAccessBranch(user, employee.branchId))) {
+        return res.status(403).json({ message: "Employee access denied" });
+      }
       const assets = await storage.getEmployeeAssets(employeeId);
       res.json(assets);
     } catch (error) {
@@ -7878,6 +7993,12 @@ OTO Company Limited`,
     try {
       const { employeeId } = req.params;
       const userId = (req.user as any).id;
+      const user = req.userWithAccess;
+      const employee = await storage.getEmployeeInTenant(employeeId, user?.tenantId ?? "");
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
+      if (!user || !canUserAccessBranch(user, employee.branchId)) {
+        return res.status(403).json({ message: "Employee access denied" });
+      }
 
       const assetSchema = z.object({
         assetNameSnapshot: z.string().min(1),
@@ -7898,9 +8019,12 @@ OTO Company Limited`,
       }
       const data = validationResult.data;
 
-      const employee = await storage.getEmployee(employeeId);
-      if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+      if (data.catalogAssetId) {
+        if (!await legacyHrUser(req, res)) return;
+        const catalogItem = await storage.getAssetCatalogItem(data.catalogAssetId);
+        if (!catalogItem?.isActive) {
+          return res.status(404).json({ message: "Catalog item not found" });
+        }
       }
 
       const asset = await storage.createEmployeeAsset({
@@ -7938,6 +8062,12 @@ OTO Company Limited`,
       const asset = await storage.getEmployeeAsset(assetId);
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
+      }
+      const user = req.userWithAccess;
+      const employee = await storage.getEmployeeInTenant(asset.employeeId, user?.tenantId ?? "");
+      if (!employee) return res.status(404).json({ message: "Asset not found" });
+      if (!user || !canUserAccessBranch(user, employee.branchId)) {
+        return res.status(403).json({ message: "Asset access denied" });
       }
 
       const updateSchema = z.object({
@@ -7984,6 +8114,12 @@ OTO Company Limited`,
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
       }
+      const user = req.userWithAccess;
+      const employee = await storage.getEmployeeInTenant(asset.employeeId, user?.tenantId ?? "");
+      if (!employee) return res.status(404).json({ message: "Asset not found" });
+      if (!user || !canUserAccessBranch(user, employee.branchId)) {
+        return res.status(403).json({ message: "Asset access denied" });
+      }
 
       if (asset.returnedAt) {
         return res.status(400).json({ message: "Asset already returned" });
@@ -8006,8 +8142,6 @@ OTO Company Limited`,
         userId, 
         validationResult.data.returnNotes
       );
-
-      const employee = await storage.getEmployee(asset.employeeId);
 
       await storage.logActivity({
         branchId: asset.branchId || undefined,
@@ -8065,8 +8199,30 @@ OTO Company Limited`,
   app.get("/api/assets/unreturned/count", requireAuth, async (req, res, next) => {
     try {
       const branchId = req.query.branchId as string | undefined;
-      const count = await storage.getUnreturnedAssetsCount(branchId);
-      res.json({ count });
+      const user = req.userWithAccess;
+      if (!user?.tenantId) return res.status(403).json({ message: "Asset access denied" });
+      const conditions = [
+        eq(employees.tenantId, user.tenantId),
+        eq(employeeAssets.returnRequired, true),
+        isNull(employeeAssets.returnedAt),
+      ];
+      if (branchId) {
+        const [branch] = await db.select({ id: branches.id }).from(branches)
+          .where(and(eq(branches.id, branchId), eq(branches.tenantId, user.tenantId))).limit(1);
+        if (!branch) return res.status(404).json({ message: "Branch not found" });
+        if (!canUserAccessBranch(user, branchId)) {
+          return res.status(403).json({ message: "Branch access denied" });
+        }
+        conditions.push(eq(employees.branchId, branchId));
+      } else if (!user.hasAllBranchesAccess) {
+        conditions.push(user.allowedBranchIds.length
+          ? inArray(employees.branchId, user.allowedBranchIds)
+          : sql`false`);
+      }
+      const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(employeeAssets)
+        .innerJoin(employees, eq(employeeAssets.employeeId, employees.id))
+        .where(and(...conditions));
+      res.json({ count: result?.count || 0 });
     } catch (error) {
       next(error);
     }
@@ -11963,42 +12119,63 @@ OTO Company Limited`,
   // EMPLOYEE TIME OFF
   // ============================================
 
+  const nextCalendarDate = (date: string): string => {
+    const next = new Date(`${date}T00:00:00.000Z`);
+    next.setUTCDate(next.getUTCDate() + 1);
+    return next.toISOString().slice(0, 10);
+  };
+  const dateOnlyUtc = (date: string): Date => new Date(`${date}T00:00:00.000Z`);
+
   // Get time off records (branch-scoped, all authenticated users with branch access)
   // Staff can view time-off for all employees on their branch (schedule visibility)
   app.get("/api/time-off", requireAuth, async (req, res, next) => {
     try {
-      const user = req.user as UserWithBranchAccess;
+      const user = req.userWithAccess;
+      if (!user?.tenantId) return res.status(403).json({ message: "Tenant access required" });
       const { branchId, employeeId, startDate, endDate } = req.query;
       // Support both dateFrom/dateTo and startDate/endDate
       const dateFrom = req.query.dateFrom || startDate;
       const dateTo = req.query.dateTo || endDate;
-
-      // Check branch access if specified
-      const isGlobalAdmin = user?.role === "global_admin" || user?.role === "admin";
-      if (branchId && user && !isGlobalAdmin && !user.hasAllBranchesAccess) {
-        // Get user's accessible branches from branchIds array or via employee link
-        let userBranchIds = user.branchIds || [];
-        
-        // If branchIds is empty, try to get branch from linked employee
-        if (userBranchIds.length === 0 && user.email) {
-          const allEmployees = await storage.getEmployees();
-          const linkedEmployee = allEmployees.find(emp => emp.email === user.email);
-          if (linkedEmployee) {
-            userBranchIds = [linkedEmployee.branchId];
-          }
+      const conditions = [eq(employeeTimeOff.tenantId, user.tenantId)];
+      let timezone = "Asia/Bangkok";
+      if (typeof branchId === "string" && branchId) {
+        const branch = await storage.getBranch(branchId);
+        if (!branch || branch.tenantId !== user.tenantId) {
+          return res.status(404).json({ message: "Branch not found" });
         }
-        
-        if (!userBranchIds.includes(branchId as string)) {
+        if (!canUserAccessBranch(user, branchId)) {
           return res.status(403).json({ message: "Access denied to this branch" });
         }
+        timezone = branch.timezone;
+        conditions.push(eq(employeeTimeOff.branchId, branchId));
+      } else if (!user.hasAllBranchesAccess) {
+        conditions.push(user.allowedBranchIds.length
+          ? inArray(employeeTimeOff.branchId, user.allowedBranchIds)
+          : sql`false`);
       }
-
-      const records = await storage.getEmployeeTimeOff({
-        branchId: branchId as string | undefined,
-        employeeId: employeeId as string | undefined,
-        dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
-        dateTo: dateTo ? new Date(dateTo as string) : undefined,
-      });
+      if (typeof employeeId === "string" && employeeId) {
+        const employee = await storage.getEmployeeInTenant(employeeId, user.tenantId);
+        if (!employee) return res.status(404).json({ message: "Employee not found" });
+        if (!canUserAccessBranch(user, employee.branchId)) {
+          return res.status(403).json({ message: "Employee access denied" });
+        }
+        conditions.push(eq(employeeTimeOff.employeeId, employeeId));
+      }
+      for (const [queryDate, column, comparison] of [
+        [dateFrom, employeeTimeOff.endDate, "from"],
+        [dateTo, employeeTimeOff.startDate, "to"],
+      ] as const) {
+        if (!queryDate) continue;
+        if (typeof queryDate !== "string" || Number.isNaN(new Date(queryDate).getTime())) {
+          return res.status(400).json({ message: "Invalid date filter" });
+        }
+        const calendarDate = getLocalDateString(new Date(queryDate), timezone);
+        conditions.push(comparison === "from"
+          ? sql`${column}::date >= ${calendarDate}::date`
+          : sql`${column}::date <= ${calendarDate}::date`);
+      }
+      const records = await db.select().from(employeeTimeOff)
+        .where(and(...conditions)).orderBy(desc(employeeTimeOff.startDate));
 
       res.json(records);
     } catch (error) {
@@ -12009,13 +12186,15 @@ OTO Company Limited`,
   // Get my own time off records (any authenticated user)
   app.get("/api/my-time-off", requireAuth, async (req, res, next) => {
     try {
-      const user = req.user!;
+      const user = req.userWithAccess;
+      if (!user?.tenantId) return res.status(403).json({ message: "Tenant access required" });
       const { dateFrom, dateTo } = req.query;
       
       // Find the employee record for the current user. Employees may be linked
       // either by user_id or by matching email.
-      const allEmployees = await storage.getEmployees();
-      const currentUserEmployee = allEmployees.find(emp => emp.userId === user.id || emp.email === user.email);
+      const matchingEmployees = await db.select().from(employees)
+        .where(and(eq(employees.tenantId, user.tenantId), or(eq(employees.userId, user.id), eq(employees.email, user.email))));
+      const currentUserEmployee = matchingEmployees.find(emp => emp.userId === user.id) || matchingEmployees[0];
       
       if (!currentUserEmployee) {
         return res.status(404).json({ message: "Employee record not found for current user" });
@@ -12046,11 +12225,11 @@ OTO Company Limited`,
       const user = req.userWithAccess;
       
       // Check if employee exists and verify branch access
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await storage.getEmployeeInTenant(employeeId, user?.tenantId ?? "");
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      if (employee.branchId && user && !user.hasAllBranchesAccess && !user.allowedBranchIds.includes(employee.branchId)) {
+      if (!user || !canUserAccessBranch(user, employee.branchId)) {
         return res.status(403).json({ message: "Access denied to this employee's branch" });
       }
 
@@ -12090,16 +12269,14 @@ OTO Company Limited`,
 
       const { branchId, employeeId, timeOffType, startDate, endDate, notes, approved } = validationResult.data;
 
-      console.log("[TimeOff] Creating time off:", { branchId, employeeId, timeOffType, userHasAll: user.hasAllBranchesAccess, userBranches: user.allowedBranchIds });
-
       // Check branch access - global_admin and admin have all access
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
       if (!isGlobalAdmin && !user.hasAllBranchesAccess && !user.allowedBranchIds.includes(branchId)) {
         return res.status(403).json({ message: "Access denied to this branch" });
       }
 
-      // Verify employee exists
-      const employee = await storage.getEmployee(employeeId);
+      // Verify employee belongs to the signed-in tenant.
+      const employee = await storage.getEmployeeInTenant(employeeId, user.tenantId ?? "");
       if (!employee) {
         return res.status(400).json({ message: "Employee not found" });
       }
@@ -12118,19 +12295,23 @@ OTO Company Limited`,
 
       // Get tenantId from branch
       const branch = await storage.getBranch(branchId);
-      if (!branch) {
+      if (!branch || branch.tenantId !== user.tenantId) {
         return res.status(404).json({ message: "Branch not found" });
       }
 
       // Check if employee has any shifts or existing time-off on the requested dates
       // For date range, check each day
-      const startDateStr = format(startDate, "yyyy-MM-dd");
-      const endDateStr = format(endDate, "yyyy-MM-dd");
-      let currentDate = new Date(startDate);
-      const endDateCheck = new Date(endDate);
-      
-      while (currentDate <= endDateCheck) {
-        const dateStr = format(currentDate, "yyyy-MM-dd");
+      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+        return res.status(400).json({ message: "Invalid time-off date" });
+      }
+      const timezone = branch.timezone || "Asia/Bangkok";
+      const startDateStr = getLocalDateString(startDate, timezone);
+      const endDateStr = getLocalDateString(endDate, timezone);
+      if (startDateStr > endDateStr) {
+        return res.status(400).json({ message: "End date must not precede start date" });
+      }
+
+      for (let dateStr = startDateStr; dateStr <= endDateStr; dateStr = nextCalendarDate(dateStr)) {
         
         // For transferred employees, block time-off on or after transfer effective date
         if (transferEffectiveDate && dateStr >= transferEffectiveDate) {
@@ -12151,7 +12332,6 @@ OTO Company Limited`,
             message: `Cannot add time-off: employee already has time-off on ${dateStr}.` 
           });
         }
-        currentDate.setDate(currentDate.getDate() + 1);
       }
 
       const { isHalfDay, halfDayPeriod } = validationResult.data;
@@ -12160,8 +12340,8 @@ OTO Company Limited`,
         employeeId,
         branchId,
         type: timeOffType,
-        startDate,
-        endDate,
+        startDate: dateOnlyUtc(startDateStr),
+        endDate: dateOnlyUtc(endDateStr),
         isHalfDay: isHalfDay || false,
         halfDayPeriod: isHalfDay ? (halfDayPeriod || null) : null,
         note: notes || null,
@@ -12170,9 +12350,6 @@ OTO Company Limited`,
 
       // If this is SICK leave and approved, unassign affected schedule assignments
       if (timeOffType === "SICK" && approved) {
-        const startDateStr = format(startDate, "yyyy-MM-dd");
-        const endDateStr = format(endDate, "yyyy-MM-dd");
-        
         // Remove schedule assignments for the new Planday-style scheduling
         const removedAssignments = await storage.deleteAssignmentsByEmployeeAndDateRange(
           employeeId,
@@ -12206,14 +12383,14 @@ OTO Company Limited`,
         try {
           const affectedShifts = await storage.getShifts({
             branchId,
-            dateFrom: startDate,
-            dateTo: endDate,
+            dateFrom: dateOnlyUtc(startDateStr),
+            dateTo: dateOnlyUtc(endDateStr),
             employeeId,
           });
           for (const shift of affectedShifts) {
             await storage.unassignShiftEmployee(shift.id, true);
           }
-        } catch (e) {
+        } catch {
           // Old shift model may not exist, ignore errors
         }
       }
@@ -12231,13 +12408,17 @@ OTO Company Limited`,
       const user = req.userWithAccess!;
 
       const existing = await storage.getTimeOffRecord(id);
-      if (!existing) {
+      if (!existing || existing.tenantId !== user.tenantId) {
         return res.status(404).json({ message: "Time off record not found" });
       }
 
       // Check branch access
-      if (!user.hasAllBranchesAccess && !user.allowedBranchIds.includes(existing.branchId)) {
+      if (!canUserAccessBranch(user, existing.branchId)) {
         return res.status(403).json({ message: "Access denied to this branch" });
+      }
+      const branch = await storage.getBranch(existing.branchId);
+      if (!branch || branch.tenantId !== user.tenantId) {
+        return res.status(404).json({ message: "Branch not found" });
       }
 
       const timeOffSchema = z.object({
@@ -12252,8 +12433,13 @@ OTO Company Limited`,
       if (!validationResult.success) {
         return res.status(400).json({ message: "Validation failed", errors: validationResult.error.errors });
       }
+      if (validationResult.data.approved !== undefined) {
+        return res.status(503).json({ message: "Time-off approval is unavailable until approval tracking is enabled" });
+      }
 
-      const updateData: any = { ...validationResult.data };
+      const updateData: { type?: typeof validationResult.data.timeOffType; note?: string | null; startDate?: Date; endDate?: Date } = {};
+      if (validationResult.data.timeOffType !== undefined) updateData.type = validationResult.data.timeOffType;
+      if (validationResult.data.notes !== undefined) updateData.note = validationResult.data.notes;
 
       // If dates are changing, check for shift conflicts on new dates
       const newStartDate = validationResult.data.startDate;
@@ -12262,12 +12448,17 @@ OTO Company Limited`,
       if (newStartDate || newEndDate) {
         const checkStartDate = newStartDate || existing.startDate;
         const checkEndDate = newEndDate || existing.endDate;
-        
-        let currentDate = new Date(checkStartDate);
-        const endDateCheck = new Date(checkEndDate);
-        
-        while (currentDate <= endDateCheck) {
-          const dateStr = format(currentDate, "yyyy-MM-dd");
+        if (Number.isNaN(checkStartDate.getTime()) || Number.isNaN(checkEndDate.getTime())) {
+          return res.status(400).json({ message: "Invalid time-off date" });
+        }
+        const timezone = branch.timezone || "Asia/Bangkok";
+        const startDateStr = getLocalDateString(checkStartDate, timezone);
+        const endDateStr = getLocalDateString(checkEndDate, timezone);
+        if (startDateStr > endDateStr) {
+          return res.status(400).json({ message: "End date must not precede start date" });
+        }
+
+        for (let dateStr = startDateStr; dateStr <= endDateStr; dateStr = nextCalendarDate(dateStr)) {
           const hasShift = await storage.hasEmployeeShiftOnDate(existing.employeeId, dateStr);
           if (hasShift) {
             return res.status(409).json({ 
@@ -12281,34 +12472,12 @@ OTO Company Limited`,
               message: `Cannot move time-off: employee already has time-off on ${dateStr}.` 
             });
           }
-          currentDate.setDate(currentDate.getDate() + 1);
         }
-      }
-
-      // Track approval change for sick leave logic
-      const wasApproved = existing.approved;
-      const isNowApproved = validationResult.data.approved;
-
-      if (isNowApproved && !wasApproved) {
-        updateData.approvedBy = user.id;
-        updateData.approvedAt = new Date();
+        if (newStartDate) updateData.startDate = dateOnlyUtc(startDateStr);
+        if (newEndDate) updateData.endDate = dateOnlyUtc(endDateStr);
       }
 
       const record = await storage.updateEmployeeTimeOff(id, updateData);
-
-      // If SICK leave just got approved, unassign affected shifts
-      if (record.timeOffType === "SICK" && isNowApproved && !wasApproved) {
-        const affectedShifts = await storage.getShifts({
-          branchId: record.branchId,
-          dateFrom: record.startDate,
-          dateTo: record.endDate,
-          employeeId: record.employeeId,
-        });
-
-        for (const shift of affectedShifts) {
-          await storage.unassignShiftEmployee(shift.id, true);
-        }
-      }
 
       res.json(record);
     } catch (error) {
@@ -12323,12 +12492,12 @@ OTO Company Limited`,
       const user = req.userWithAccess!;
 
       const existing = await storage.getTimeOffRecord(id);
-      if (!existing) {
+      if (!existing || existing.tenantId !== user.tenantId) {
         return res.status(404).json({ message: "Time off record not found" });
       }
 
       // Check branch access
-      if (!user.hasAllBranchesAccess && !user.allowedBranchIds.includes(existing.branchId)) {
+      if (!canUserAccessBranch(user, existing.branchId)) {
         return res.status(403).json({ message: "Access denied to this branch" });
       }
 
@@ -15624,17 +15793,25 @@ OTO Company Limited`,
 
   app.get("/api/events/activities/recent", requireAuth, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
-      const user = req.user as UserWithBranchAccess;
+      const user = req.userWithAccess;
+      const tenantId = user?.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Event access denied" });
       const branchId = req.query.branchId as string | undefined;
       const limitNum = Math.min(parseInt(req.query.limit as string) || 30, 100);
 
-      const conditions: any[] = [eq(coreEventsTable.tenantId, tenantId)];
+      const conditions = [eq(coreEventsTable.tenantId, tenantId)];
 
       if (branchId && branchId !== "all") {
+        const [branch] = await db.select({ id: branches.id }).from(branches)
+          .where(and(eq(branches.id, branchId), eq(branches.tenantId, tenantId))).limit(1);
+        if (!branch || !canUserAccessBranch(user, branchId)) {
+          return res.status(404).json({ message: "Branch not found" });
+        }
         conditions.push(eq(coreEventsTable.branchId, branchId));
-      } else if (!user.hasAllBranchesAccess && user.allowedBranchIds?.length) {
-        conditions.push(inArray(coreEventsTable.branchId, user.allowedBranchIds));
+      } else if (!user.hasAllBranchesAccess) {
+        conditions.push(user.allowedBranchIds.length
+          ? inArray(coreEventsTable.branchId, user.allowedBranchIds)
+          : sql`false`);
       }
 
       const result = await db

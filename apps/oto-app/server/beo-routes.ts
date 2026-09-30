@@ -1,6 +1,6 @@
 import { Express } from "express";
 import { requireAuth } from "./auth";
-import { requireManager, requireRole } from "./auth-middleware";
+import { canUserAccessBranch, requireManager } from "./auth-middleware";
 import { db } from "./db";
 import { 
   beoLocations, insertBeoLocationSchema,
@@ -30,6 +30,7 @@ import {
   employees,
   tasks,
   type BeoEventWithDetails,
+  type UserWithBranchAccess,
 } from "@shared/schema";
 import crypto from "crypto";
 import { eq, and, asc, desc, sql, inArray } from "drizzle-orm";
@@ -334,11 +335,13 @@ async function generateTimelineFromBeo(eventId: string): Promise<void> {
 }
 
 export function registerBeoRoutes(app: Express) {
-  // Helper to verify event belongs to tenant
-  async function verifyEventTenant(eventId: string, tenantId: string): Promise<boolean> {
-    const [event] = await db.select().from(coreEvents)
-      .where(and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, tenantId)));
-    return !!event;
+  // Event data is available only within the signed-in tenant and allowed branches.
+  async function verifyEventAccess(eventId: string, user: UserWithBranchAccess | undefined): Promise<boolean> {
+    if (!user?.tenantId) return false;
+    const [event] = await db.select({ branchId: coreEvents.branchId }).from(coreEvents)
+      .where(and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, user.tenantId)))
+      .limit(1);
+    return !!event && canUserAccessBranch(user, event.branchId);
   }
 
   // ---
@@ -608,7 +611,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -626,7 +629,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -647,12 +650,12 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, id } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
       const [updated] = await db.update(beoSetupItems)
-        .set({ ...req.body, updatedAt: new Date() })
+        .set({ ...req.body, eventId, updatedAt: new Date() })
         .where(and(eq(beoSetupItems.id, id), eq(beoSetupItems.eventId, eventId)))
         .returning();
       if (!updated) return res.status(404).json({ error: "Setup item not found" });
@@ -667,7 +670,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, id } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -688,7 +691,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -706,7 +709,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -727,12 +730,12 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, id } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
       const [updated] = await db.update(beoEntertainmentItems)
-        .set({ ...req.body, updatedAt: new Date() })
+        .set({ ...req.body, eventId, updatedAt: new Date() })
         .where(and(eq(beoEntertainmentItems.id, id), eq(beoEntertainmentItems.eventId, eventId)))
         .returning();
       if (!updated) return res.status(404).json({ error: "Entertainment item not found" });
@@ -747,7 +750,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, id } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -771,7 +774,9 @@ export function registerBeoRoutes(app: Express) {
       const [event] = await db.select().from(coreEvents)
         .where(and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, user.tenantId)));
       
-      if (!event) return res.status(404).json({ error: "Event not found" });
+      if (!event || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, event.branchId)) {
+        return res.status(404).json({ error: "Event not found" });
+      }
       
       const [partyHost] = await db.select().from(beoPartyHostAssignments)
         .where(eq(beoPartyHostAssignments.eventId, eventId));
@@ -922,7 +927,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -939,7 +944,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -948,7 +953,7 @@ export function registerBeoRoutes(app: Express) {
       
       if (existing) {
         const [updated] = await db.update(beoPartyHostAssignments)
-          .set({ ...req.body, updatedAt: new Date() })
+          .set({ ...req.body, eventId, updatedAt: new Date() })
           .where(eq(beoPartyHostAssignments.eventId, eventId))
           .returning();
         return res.json(updated);
@@ -968,7 +973,7 @@ export function registerBeoRoutes(app: Express) {
       const { eventId } = req.params;
       const { resolvedUserId } = req.body;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -993,7 +998,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1010,7 +1015,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1019,7 +1024,7 @@ export function registerBeoRoutes(app: Express) {
       
       if (existing) {
         const [updated] = await db.update(beoEntertainmentAssignments)
-          .set({ ...req.body, updatedAt: new Date() })
+          .set({ ...req.body, eventId, updatedAt: new Date() })
           .where(eq(beoEntertainmentAssignments.eventId, eventId))
           .returning();
         return res.json(updated);
@@ -1042,7 +1047,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1059,7 +1064,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1068,7 +1073,7 @@ export function registerBeoRoutes(app: Express) {
       
       if (existing) {
         const [updated] = await db.update(beoSetupPlans)
-          .set({ ...req.body, updatedAt: new Date() })
+          .set({ ...req.body, eventId, updatedAt: new Date() })
           .where(eq(beoSetupPlans.eventId, eventId))
           .returning();
         return res.json(updated);
@@ -1088,7 +1093,7 @@ export function registerBeoRoutes(app: Express) {
       const { eventId } = req.params;
       const { resolvedUserId } = req.body;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1113,7 +1118,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1130,7 +1135,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1154,7 +1159,7 @@ export function registerBeoRoutes(app: Express) {
             preserveSubmittedItems,
           );
           const [updated] = await tx.update(beoKitchenPlans)
-            .set({ ...updates, menus, simplifiedMenus, updatedAt: new Date() })
+            .set({ ...updates, eventId, menus, simplifiedMenus, updatedAt: new Date() })
             .where(eq(beoKitchenPlans.eventId, eventId))
             .returning();
           return { status: 200, kitchenPlan: updated };
@@ -1176,7 +1181,7 @@ export function registerBeoRoutes(app: Express) {
       const { eventId } = req.params;
       const { resolvedUserId } = req.body;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1201,7 +1206,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1218,7 +1223,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1227,7 +1232,7 @@ export function registerBeoRoutes(app: Express) {
       
       if (existing) {
         const [updated] = await db.update(beoEventBilling)
-          .set({ ...req.body, updatedAt: new Date() })
+          .set({ ...req.body, eventId, updatedAt: new Date() })
           .where(eq(beoEventBilling.eventId, eventId))
           .returning();
         return res.json(updated);
@@ -1250,7 +1255,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1268,7 +1273,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1285,13 +1290,13 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, id } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
       const [updated] = await db.update(beoTimelineItems)
-        .set({ ...req.body, updatedAt: new Date() })
-        .where(eq(beoTimelineItems.id, id))
+        .set({ ...req.body, eventId, updatedAt: new Date() })
+        .where(and(eq(beoTimelineItems.id, id), eq(beoTimelineItems.eventId, eventId)))
         .returning();
       if (!updated) return res.status(404).json({ error: "Timeline item not found" });
       res.json(updated);
@@ -1305,13 +1310,13 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, id } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
       const [updated] = await db.update(beoTimelineItems)
-        .set({ ...req.body, updatedAt: new Date() })
-        .where(eq(beoTimelineItems.id, id))
+        .set({ ...req.body, eventId, updatedAt: new Date() })
+        .where(and(eq(beoTimelineItems.id, id), eq(beoTimelineItems.eventId, eventId)))
         .returning();
       if (!updated) return res.status(404).json({ error: "Timeline item not found" });
       res.json(updated);
@@ -1325,7 +1330,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, id } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1361,7 +1366,9 @@ export function registerBeoRoutes(app: Express) {
 
       const [event] = await db.select().from(coreEvents)
         .where(and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, user.tenantId)));
-      if (!event) return res.status(404).json({ error: "Event not found" });
+      if (!event || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, event.branchId)) {
+        return res.status(404).json({ error: "Event not found" });
+      }
 
       await db.update(coreEvents)
         .set({ suppressedTimelineSources: [], updatedAt: new Date() })
@@ -1383,7 +1390,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, id } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -1416,7 +1423,9 @@ export function registerBeoRoutes(app: Express) {
       const [event] = await db.select().from(coreEvents)
         .where(and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, user.tenantId)));
       
-      if (!event) return res.status(404).json({ error: "Event not found" });
+      if (!event || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, event.branchId)) {
+        return res.status(404).json({ error: "Event not found" });
+      }
       
       await generateTimelineFromBeo(eventId);
       const timeline = await db.select().from(beoTimelineItems)
@@ -1456,8 +1465,11 @@ export function registerBeoRoutes(app: Express) {
       const [existingEvent] = await db.select().from(coreEvents)
         .where(and(eq(coreEvents.id, eventId), eq(coreEvents.tenantId, user.tenantId)));
       
-      if (!existingEvent) {
+      if (!existingEvent || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, existingEvent.branchId)) {
         return res.status(404).json({ error: "Event not found" });
+      }
+      if (eventUpdates && ("tenantId" in eventUpdates || "branchId" in eventUpdates)) {
+        return res.status(400).json({ error: "Event tenant and branch cannot be changed from BEO" });
       }
       
       // Validate times: endTime must be after startTime
@@ -1859,7 +1871,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -1878,7 +1890,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -1912,7 +1924,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, itemId } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -1944,7 +1956,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, itemId } = req.params;
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -1972,7 +1984,7 @@ export function registerBeoRoutes(app: Express) {
       const { eventId } = req.params;
       const { templateIds } = req.body as { templateIds: string[] };
       
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
       
@@ -2025,7 +2037,7 @@ export function registerBeoRoutes(app: Express) {
       const { eventId } = req.params;
       const { mode } = req.body as { mode?: "merge" | "replace" };
 
-      if (!await verifyEventTenant(eventId, user.tenantId)) {
+      if (!await verifyEventAccess(eventId, req.userWithAccess)) {
         return res.status(403).json({ error: "Access denied" });
       }
 
@@ -2335,7 +2347,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId } = req.params;
       
-      if (!(await verifyEventTenant(eventId, user.tenantId))) {
+      if (!(await verifyEventAccess(eventId, req.userWithAccess))) {
         return res.status(404).json({ error: "Event not found" });
       }
       
@@ -2648,7 +2660,7 @@ export function registerBeoRoutes(app: Express) {
     try {
       const user = req.user!;
       const { eventId } = req.params;
-      const ok = await verifyEventTenant(eventId, user.tenantId);
+      const ok = await verifyEventAccess(eventId, req.userWithAccess);
       if (!ok) return res.status(404).json({ error: "Event not found" });
       const [sel] = await db.select().from(beoSetMenuSelections)
         .where(eq(beoSetMenuSelections.eventId, eventId));
@@ -2664,7 +2676,7 @@ export function registerBeoRoutes(app: Express) {
       const user = req.user!;
       const { eventId, templateId } = req.body;
       if (!eventId || !templateId) return res.status(400).json({ error: "eventId and templateId are required" });
-      const ok = await verifyEventTenant(eventId, user.tenantId);
+      const ok = await verifyEventAccess(eventId, req.userWithAccess);
       if (!ok) return res.status(404).json({ error: "Event not found" });
       const [tmpl] = await db.select().from(beoSetMenuTemplates)
         .where(and(eq(beoSetMenuTemplates.id, templateId), eq(beoSetMenuTemplates.tenantId, user.tenantId)));
@@ -2713,7 +2725,7 @@ export function registerBeoRoutes(app: Express) {
     try {
       const user = req.user!;
       const { eventId } = req.params;
-      const ok = await verifyEventTenant(eventId, user.tenantId);
+      const ok = await verifyEventAccess(eventId, req.userWithAccess);
       if (!ok) return res.status(404).json({ error: "Event not found" });
 
       const token = crypto.randomBytes(24).toString("hex");
