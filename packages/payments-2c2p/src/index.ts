@@ -19,6 +19,9 @@
  *                   crypto envelope (JWE RSA-OAEP + A256GCM / JWS PS256).
  *   simulator.ts    the same shapes with nothing on the other end, so CI, a
  *                   demo and a fresh checkout never need the sandbox.
+ *   redirect.ts     the booking site's browser return (§2.8 step 5): a
+ *                   `paymentResponse` verified and read as a DISPLAY HINT,
+ *                   never as a payment state (S2-12).
  *   emvco.ts        the simulator's locally generated, deliberately unpayable
  *                   EMVCo payload.
  *
@@ -31,7 +34,13 @@ export * from './envelope';
 export * from './resp-codes';
 export * from './emvco';
 export { TwoC2PQrPayment, factsOf, type TwoC2PDeps } from './twoc2p';
-export { SimulatorQrPayment, type SimulatorDeps, type SimulatorEvent } from './simulator';
+export {
+  SimulatorQrPayment,
+  type SimulatedHostedPage,
+  type SimulatorDeps,
+  type SimulatorEvent,
+} from './simulator';
+export { readFrontendReturn, signFrontendReturn, type FrontendReturnHint } from './redirect';
 export {
   MaintenanceClient,
   signJws,

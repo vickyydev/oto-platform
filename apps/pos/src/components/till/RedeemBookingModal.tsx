@@ -65,6 +65,8 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
   const [foundBooking, setFoundBooking] = useState<Booking | null>(null);
   const [foundPlatform, setFoundPlatform] = useState<PlatformBooking | null>(null);
   const [unmapped, setUnmapped] = useState<UnmappedLine[]>([]);
+  // S2-12 — why nothing can be issued against the booking found (not paid), or null.
+  const [notPaid, setNotPaid] = useState<string | null>(null);
   const [redemption, setRedemption] = useState<PlatformRedemption | null>(null);
   const [waiting, setWaiting] = useState<PlatformBooking[]>([]);
   const [waitingState, setWaitingState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
@@ -90,6 +92,7 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
     setFoundPlatform(p);
     setFoundBooking(mapped.booking);
     setUnmapped(mapped.unmapped);
+    setNotPaid(mapped.notPaidReason);
     setRedemption(p.redemption);
     setStage(p.redemption ? 'already_redeemed' : 'summary');
   }, []);
@@ -103,6 +106,7 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
     setFoundBooking(null);
     setFoundPlatform(null);
     setUnmapped([]);
+    setNotPaid(null);
     setRedemption(null);
     setLookingUp(false);
     setTimeout(() => inputRef.current?.focus(), 80);
@@ -167,7 +171,7 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
   }
 
   async function handleConfirm() {
-    if (!foundBooking || !foundPlatform || confirming) return;
+    if (!foundBooking || !foundPlatform || confirming || notPaid) return;
     setConfirming(true);
     setError(null);
     try {
@@ -201,6 +205,14 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
   const regularAdults = foundBooking
     ? foundBooking.lines.reduce((s, l) => (l.dropOff ? s : s + l.adults), 0)
     : 0;
+  // S2-12 — the socks and extras paid for online, summed by name across lines,
+  // so reception hands them over with the wristbands.
+  const paidExtras = foundBooking
+    ? [...foundBooking.lines
+        .flatMap((l) => l.addOns)
+        .reduce((byName, a) => byName.set(a.name, (byName.get(a.name) ?? 0) + a.quantity), new Map<string, number>())
+        .entries()]
+    : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -353,7 +365,7 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
                   </div>
                 )}
                 <div className="text-right font-semibold text-foreground">
-                  ฿{foundBooking.total.toLocaleString()} paid
+                  ฿{foundBooking.total.toLocaleString()} {notPaid ? 'not paid' : 'paid'}
                 </div>
               </div>
             </div>
@@ -370,6 +382,9 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
                 {foundBooking.willIssue.creditTotalTHB > 0 && (
                   <li>• ฿{foundBooking.willIssue.creditTotalTHB.toLocaleString()} credit</li>
                 )}
+                {paidExtras.map(([name, quantity]) => (
+                  <li key={name}>• {quantity} × {name}</li>
+                ))}
                 {dropOffChildren.length > 0 && (
                   <li>• Drop-off check-in for {dropOffChildren.join(', ')}</li>
                 )}
@@ -408,6 +423,13 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
               </div>
             )}
 
+            {notPaid && (
+              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                {notPaid}
+              </div>
+            )}
+
             {error && (
               <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -422,7 +444,7 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
               <Button
                 className="flex-1 h-12"
                 onClick={() => void handleConfirm()}
-                disabled={confirming || foundBooking.lines.length === 0}
+                disabled={confirming || foundBooking.lines.length === 0 || notPaid !== null}
               >
                 {confirming ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

@@ -1,8 +1,14 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import type { FastifyBaseLogger } from 'fastify';
 import { paymentAttempt, paymentNotification, sale, station, type Db } from '@oto/db';
-import { buildInvoiceNo, newId, type PaymentAttemptStatus, type PaymentAttemptView } from '@oto/shared';
+import {
+  WEB_INVOICE_STATION_CODE,
+  buildInvoiceNo,
+  newId,
+  type PaymentAttemptStatus,
+  type PaymentAttemptView,
+} from '@oto/shared';
 import {
   GATEWAY_STATE_TO_ATTEMPT_STATUS,
   JwtSignatureError,
@@ -15,9 +21,14 @@ import {
   isAmountMismatch,
   isDuplicateInvoice,
   payloadOf,
+  readFrontendReturn,
+  signFrontendReturn,
   signJwt,
   verifyJwt,
+  type CreateHostedPaymentResult,
   type CreateQrResult,
+  type FrontendReturnHint,
+  type SimulatedHostedPage,
   type GatewayConfig,
   type QrPayment,
   type QrPaymentFacts,
@@ -28,6 +39,14 @@ import { errors } from '../../lib/errors';
 import { audit } from '../audit';
 import { raiseAlert, recordRun, resolveAlert } from '../ops';
 import { finaliseSale, type ActorContext } from '../sale';
+import {
+  afterBookingPaid,
+  bookingForAttempt,
+  closeBookingUnpaid,
+  confirmBookingPaid,
+  expireOverdueBookings,
+  type BookingPaidOutcome,
+} from '../booking-payment';
 import { assertSaleVouchersHeld } from '../vouchers';
 import {
   attemptView,
@@ -170,11 +189,10 @@ const INVOICE_LOCK_NAMESPACE = 0x070b;
  * AN ADVISORY LOCK, NOT A COUNTER TABLE. `edge.box_counter` mints
  * (device, day) values atomically and Slice C1 uses it for terminal
  * references — but its primary key starts with a BOX, and a station need not
- * have one (a till on the mall wifi, the booking site's `WEB` station later).
- * A transaction-scoped advisory lock on (station, business date) serialises
- * the read-and-mint with no migration, no new table and no store change, in
- * exactly the shape `services/jobs.ts` already uses to claim a tick. It is
- * held for one indexed read and released by the commit.
+ * have one (a till on the mall wifi, the booking site's `WEB` segment). A
+ * transaction-scoped advisory lock serialises the read-and-mint with no
+ * migration, no new table and no store change, in exactly the shape
+ * `services/jobs.ts` already uses to claim a tick. It is released by the commit.
  *
  * The unique index `payment_attempt_gateway_invoice_unique` is the net underneath, and
  * it is global and permanent because 2C2P's own uniqueness is: a reused number
@@ -184,10 +202,53 @@ async function mintInvoiceNo(
   tx: Tx,
   input: { stationId: string; stationCode: string; businessDate: string; prefix: string },
 ): Promise<string> {
-  const key = createHash('sha256')
-    .update(`${input.stationId}|${input.businessDate}`)
-    .digest()
-    .readInt32BE(0);
+  return nextInvoiceNo(tx, {
+    prefix: input.prefix,
+    stationCode: input.stationCode,
+    businessDate: input.businessDate,
+  });
+}
+
+/**
+ * THE COUNTER IS THE INVOICE STEM'S, NOT THE STATION'S (S2-12 gate, finding 2).
+ *
+ * The namespace 2C2P enforces is the invoice number itself, so the counter is
+ * kept on what the number starts with — prefix, three-character station
+ * segment, trading day — and read across EVERY attempt that shares it, not
+ * across one station's or one channel's. Two writers can share a stem: the
+ * booking site and a till saved with the code `WEB` before that code was
+ * reserved (`services/fleet.ts`), and two stations whose codes encode alike
+ * (`T1` and `T01`, or `T1` at two parks). Counted per station or per channel,
+ * each would mint `…000001` on its own counter, and whichever came second would
+ * hit the unique index all day. Counted per stem, they take turns.
+ *
+ * The lock is the stem's for the same reason: the writers that can collide are
+ * exactly the ones that queue on it. The rows read are the unique index's own
+ * (`device_id is null`), of the stem's exact length, and the sequence is the
+ * last six characters.
+ *
+ * READ BY A RANGE, NOT BY `LIKE` (SCRUM-209 fix round 2). The database's
+ * collation is `en_US.utf8`, and under a non-C collation a btree cannot answer
+ * `invoice_no LIKE 'stem%'`: the count ran as a scan of every invoice ever
+ * minted, under this lock, on every till QR and every booking checkout. The
+ * stem's numbers are exactly `stem000000`..`stem999999` (same length, same
+ * stem, six digits), so that closed range is what the unique index
+ * `payment_attempt_gateway_invoice_unique` is asked for, as an Index Cond. The
+ * upper bound is the last number, not "the stem with its last character
+ * incremented": a stem ending in `9` would make that end in `:`, which
+ * `en_US` ignores at the first level of comparison, and the range would stop
+ * matching the very rows it is for. The byte-exact prefix and length checks
+ * stay as a recheck on the few rows the index returns, because `en_US` orders
+ * case-blind at its first level and the range alone is not byte-exact; the
+ * answer is the one the `LIKE` gave.
+ */
+async function nextInvoiceNo(
+  tx: Tx,
+  input: { prefix: string; stationCode: string; businessDate: string },
+): Promise<string> {
+  // `buildInvoiceNo` with sequence 1, less its six digits, is the day's stem.
+  const stem = buildInvoiceNo({ ...input, seq: 1 }).slice(0, -6);
+  const key = createHash('sha256').update(`invoice|${stem}`).digest().readInt32BE(0);
   await tx.execute(sql`select pg_advisory_xact_lock(${INVOICE_LOCK_NAMESPACE}::int4, ${key}::int4)`);
 
   const rows = await tx
@@ -195,30 +256,198 @@ async function mintInvoiceNo(
     .from(paymentAttempt)
     .where(
       and(
-        eq(paymentAttempt.stationId, input.stationId),
-        eq(paymentAttempt.businessDate, input.businessDate),
         isNull(paymentAttempt.deviceId),
-        inArray(paymentAttempt.provider, ['2c2p', 'simulator']),
         isNotNull(paymentAttempt.invoiceNo),
+        // What the unique index answers: the stem's own numbers, first to last.
+        gte(paymentAttempt.invoiceNo, `${stem}000000`),
+        lte(paymentAttempt.invoiceNo, `${stem}999999`),
+        // The byte-exact recheck on what it returned (equality under a
+        // deterministic collation is byte equality).
+        sql`left(${paymentAttempt.invoiceNo}, ${stem.length}::int) = ${stem}::text`,
+        sql`length(${paymentAttempt.invoiceNo}) = ${stem.length + 6}`,
       ),
     );
-
-  /**
-   * The sequence is read off the LAST SIX CHARACTERS rather than by stripping
-   * a known prefix: `PGW_INVOICE_PREFIX` can change between deploys, and the
-   * six digits are in the same place whatever came before them.
-   */
   let highest = 0;
   for (const row of rows) {
     const seq = Number((row.invoiceNo ?? '').slice(-6));
     if (Number.isInteger(seq) && seq > highest) highest = seq;
   }
-  return buildInvoiceNo({
+  return buildInvoiceNo({ ...input, seq: highest + 1 });
+}
+
+/**
+ * THE `WEB` SEGMENT (`PAYMENT_GATEWAY.md` §3.10; S2-12, OD-A10).
+ *
+ * A booking paid on the booking site has no counter in its path, so its
+ * invoice number carries `WEB` where a till's carries its station code, in the
+ * same format and the same global namespace (`payment_attempt_gateway_invoice_unique`).
+ * The date is the day it was PAID — the trading day 2C2P settles it on — not
+ * the day of the visit. No station may take the code (`WEB_INVOICE_STATION_CODE`).
+ */
+export const WEB_INVOICE_SEGMENT = WEB_INVOICE_STATION_CODE;
+
+/**
+ * The next `WEB` invoice number for one trading day, across every branch.
+ *
+ * The station-less twin of `mintInvoiceNo`, on the same per-stem counter:
+ * 2C2P's uniqueness is the MERCHANT's, every branch that takes bookings online
+ * shares the one `WEB` segment, and a till still carrying the code from before
+ * it was reserved shares it too — so all of them count, and queue, together.
+ */
+export async function mintWebInvoiceNo(
+  tx: Tx,
+  input: { businessDate: string; prefix: string },
+): Promise<string> {
+  return nextInvoiceNo(tx, {
     prefix: input.prefix,
-    stationCode: input.stationCode,
+    stationCode: WEB_INVOICE_SEGMENT,
     businessDate: input.businessDate,
-    seq: highest + 1,
   });
+}
+
+/** The provider word an attempt minted here is recorded under. */
+export function gatewayProviderOf(env: Env): '2c2p' | 'simulator' {
+  return gatewayFor(env).selection.provider === '2c2p' ? '2c2p' : 'simulator';
+}
+
+export interface HostedPaymentRequest {
+  /** The attempt already written and committed — act 1 is the caller's. */
+  attempt: AttemptRow;
+  description: string;
+  /** 2C2P channel codes the page may offer. */
+  channels: readonly string[];
+  /** Where the browser comes back to. A display hint arrives there, never proof. */
+  frontendReturnUrl: string;
+  locale?: string;
+  /** The booking's hold, so the page and the hold run out together. */
+  expiryMinutes: number;
+  actionId?: string | null;
+}
+
+export interface HostedPaymentOpened {
+  webPaymentUrl: string;
+  expiresAt: Date;
+}
+
+/**
+ * ACTS 2 AND 3 OF A STATION-LESS CHECKOUT: ask the gateway for the hosted
+ * page, and write what it said onto the attempt.
+ *
+ * The same shape as `openQrAttempt` and for the same reasons: the attempt row
+ * is committed BEFORE the gateway is asked (a retry finds it rather than
+ * minting a second invoice), the network call runs outside every transaction,
+ * and a refusal or an unreachable gateway closes the attempt `declined` so it
+ * is never mistaken for one still waiting. Nothing here writes money — the
+ * attempt reaches `approved` only through `settlePaidAttempt`.
+ */
+export async function requestHostedPayment(
+  db: Db,
+  env: Env,
+  log: FastifyBaseLogger,
+  ctx: OpContext,
+  input: HostedPaymentRequest,
+): Promise<HostedPaymentOpened> {
+  const { qr } = gatewayFor(env, log);
+  const { attempt } = input;
+  const operationCtx = { ...ctx, idempotency: undefined };
+  const startedAt = new Date();
+  let opened: CreateHostedPaymentResult;
+  try {
+    opened = await qr.createHostedPayment({
+      attemptId: attempt.id,
+      invoiceNo: attempt.invoiceNo!,
+      amountSatang: attempt.amountSatang,
+      description: input.description,
+      expiryMinutes: input.expiryMinutes,
+      paymentChannels: input.channels,
+      frontendReturnUrl: input.frontendReturnUrl,
+      locale: input.locale,
+      userDefined: { stationCode: WEB_INVOICE_SEGMENT, businessDate: attempt.businessDate },
+    });
+    await recordRun(db, {
+      kind: 'adapter',
+      name: 'adapter:2c2p.hosted_payment',
+      outcome: opened.webPaymentUrl ? 'ok' : 'failed',
+      startedAt,
+      actionId: input.actionId ?? null,
+      operatorId: attempt.operatorId,
+      branchId: attempt.branchId,
+      detail: { invoiceNo: attempt.invoiceNo, respCode: opened.respCode, state: opened.state },
+    });
+  } catch (err) {
+    await recordRun(db, {
+      kind: 'adapter',
+      name: 'adapter:2c2p.hosted_payment',
+      outcome: 'failed',
+      startedAt,
+      error: err,
+      actionId: input.actionId ?? null,
+      operatorId: attempt.operatorId,
+      branchId: attempt.branchId,
+      detail: { invoiceNo: attempt.invoiceNo },
+    });
+    await withTx(db, operationCtx, 'payment.hosted.failed', async (tx) => {
+      await failAttempt(tx, attempt.id, {
+        status: 'declined',
+        payload: mergePayload(attempt.payload, { gatewayError: (err as Error).name }),
+      });
+      await closeBookingUnpaid(tx, {
+        attemptId: attempt.id,
+        status: 'cancelled',
+        reason: 'gateway_unreachable',
+        requestId: ctx.requestId ?? null,
+      });
+    });
+    throw errors.badRequest('The payment page could not be opened. Please try again in a moment.');
+  }
+
+  if (!opened.webPaymentUrl) {
+    await withTx(db, operationCtx, 'payment.hosted.failed', async (tx) => {
+      await failAttempt(tx, attempt.id, {
+        status: 'declined',
+        payload: mergePayload(attempt.payload, { respCode: opened.respCode, state: opened.state }),
+      });
+      await closeBookingUnpaid(tx, {
+        attemptId: attempt.id,
+        status: 'cancelled',
+        reason: `gateway_refused_${opened.respCode || 'unknown'}`,
+        requestId: ctx.requestId ?? null,
+      });
+    });
+    if (isDuplicateInvoice(opened.respCode)) {
+      await raiseAlert(
+        db,
+        {
+          key: `payments.invoice_reuse:${attempt.branchId}`,
+          category: 'payments.invoice_reuse',
+          severity: 'critical',
+          subject: 'Gateway invoice number reused',
+          summary: `The gateway refused invoice ${attempt.invoiceNo} as one it has already seen (${opened.respCode}).`,
+          detail: { invoiceNo: attempt.invoiceNo, respCode: opened.respCode },
+          operatorId: attempt.operatorId,
+          branchId: attempt.branchId,
+        },
+        { flapWindowSeconds: env.ALERT_FLAP_WINDOW_S },
+      );
+    }
+    throw errors.badRequest(`The payment page would not open for this booking (${opened.respCode})`);
+  }
+
+  const webPaymentUrl = opened.webPaymentUrl;
+  const shown = await withTx(db, operationCtx, 'payment.hosted.shown', async (tx) =>
+    showAttempt(tx, attempt.id, {
+      expiresAt: opened.expiresAt,
+      payload: mergePayload(attempt.payload, { respCode: opened.respCode, webPaymentUrl }),
+    }),
+  );
+  if (!shown) {
+    // Closed while the page was being opened: nobody is sent to pay it.
+    throw errors.conflict(
+      'BOOKING_PAYMENT_CLOSED',
+      'The payment page took too long to open and this payment was closed. Please make the booking again.',
+    );
+  }
+  return { webPaymentUrl, expiresAt: opened.expiresAt };
 }
 
 export interface OpenQrAttemptInput {
@@ -500,8 +729,7 @@ export async function openQrAttempt(
 
   // Act 3.
   const shown = await withTx(db, operationCtx, 'payment.qr.shown', async (tx) =>
-    advanceAttempt(tx, opened.id, {
-      status: 'sent_to_terminal',
+    showAttempt(tx, opened.id, {
       qrPayload: minted.qrPayload,
       expiresAt: minted.expiresAt,
       tranRef: minted.providerRef,
@@ -511,6 +739,13 @@ export async function openQrAttempt(
       }),
     }),
   );
+  if (!shown) {
+    // Closed while the QR was being minted: a QR for it is never displayed.
+    throw errors.conflict(
+      'PAYMENT_ATTEMPT_CLOSED',
+      'The QR took too long to open and this payment was closed. Press QR again.',
+    );
+  }
 
   return {
     attempt: attemptView(shown),
@@ -553,18 +788,60 @@ async function advanceAttempt(
 ): Promise<AttemptRow> {
   const [row] = await tx
     .update(paymentAttempt)
-    .set({
-      status: input.status,
-      ...(input.qrPayload === undefined ? {} : { qrPayload: input.qrPayload }),
-      ...(input.expiresAt === undefined ? {} : { expiresAt: input.expiresAt }),
-      ...(input.tranRef === undefined ? {} : { tranRef: input.tranRef }),
-      ...(input.paymentId === undefined ? {} : { paymentId: input.paymentId }),
-      ...(input.payload === undefined ? {} : { payload: input.payload as never }),
-    })
+    .set(advanceSet(input))
     .where(eq(paymentAttempt.id, attemptId))
     .returning();
   if (!row) throw new Error('the payment attempt was not advanced');
   return row;
+}
+
+function advanceSet(input: {
+  status: PaymentAttemptStatus;
+  qrPayload?: string | null;
+  expiresAt?: Date | null;
+  tranRef?: string | null;
+  paymentId?: string | null;
+  payload?: Record<string, unknown> | null;
+}) {
+  return {
+    status: input.status,
+    ...(input.qrPayload === undefined ? {} : { qrPayload: input.qrPayload }),
+    ...(input.expiresAt === undefined ? {} : { expiresAt: input.expiresAt }),
+    ...(input.tranRef === undefined ? {} : { tranRef: input.tranRef }),
+    ...(input.paymentId === undefined ? {} : { paymentId: input.paymentId }),
+    ...(input.payload === undefined ? {} : { payload: input.payload as never }),
+  };
+}
+
+/**
+ * ACT 3 — `created` to `sent_to_terminal`, and ONLY from `created` (S2-12 gate,
+ * finding 3).
+ *
+ * Between act 1 and act 3 the attempt is committed and the gateway call is in
+ * flight, so anything else may have moved it meanwhile. The inquiry poller
+ * closing one it asked about did exactly that (it now waits `OPENING_GRACE_MS`
+ * before asking about a `created` attempt), and an unconditional write here
+ * then put the closed attempt back on a display and sent a family to pay a
+ * booking that had already been cancelled.
+ * A payment that is over stays over: null means the attempt is no longer
+ * `created`, and the caller shows nothing.
+ */
+async function showAttempt(
+  tx: Tx,
+  attemptId: string,
+  input: {
+    qrPayload?: string | null;
+    expiresAt?: Date | null;
+    tranRef?: string | null;
+    payload?: Record<string, unknown> | null;
+  },
+): Promise<AttemptRow | null> {
+  const [row] = await tx
+    .update(paymentAttempt)
+    .set(advanceSet({ ...input, status: 'sent_to_terminal' }))
+    .where(and(eq(paymentAttempt.id, attemptId), eq(paymentAttempt.status, 'created')))
+    .returning();
+  return row ?? null;
 }
 
 /**
@@ -603,6 +880,8 @@ export interface SettleOutcome {
   /** Whether this settlement also closed the sale and numbered its receipt. */
   finalisedSale: boolean;
   outstandingSatang: number | null;
+  /** S2-12 — the booking this attempt paid for, when it paid for one. */
+  booking?: { id: string; confirmed: boolean; late: boolean } | null;
 }
 
 /**
@@ -627,6 +906,34 @@ export async function settlePaidAttempt(
   log: FastifyBaseLogger,
   input: { attempt: AttemptRow; facts: QrPaymentFacts; source: SettleSource; requestId?: string },
 ): Promise<SettleOutcome> {
+  const outcome = await settleWithin(db, env, log, input);
+  /**
+   * S2-12 — what follows a booking's confirmation runs AFTER the commit: the
+   * family's message and, for a late payment, the alert (OD-A11). Neither may
+   * undo the payment by failing.
+   */
+  if (outcome.bookingPaid) {
+    try {
+      await afterBookingPaid(db, env, log, outcome.bookingPaid);
+    } catch (err) {
+      log.error({ err, bookingId: outcome.bookingPaid.bookingId }, 'after a booking was paid');
+    }
+  }
+  const { bookingPaid, ...settled } = outcome;
+  return {
+    ...settled,
+    booking: bookingPaid
+      ? { id: bookingPaid.bookingId, confirmed: bookingPaid.confirmed, late: bookingPaid.late }
+      : settled.booking ?? null,
+  };
+}
+
+async function settleWithin(
+  db: Db,
+  env: Env,
+  log: FastifyBaseLogger,
+  input: { attempt: AttemptRow; facts: QrPaymentFacts; source: SettleSource; requestId?: string },
+): Promise<SettleOutcome & { bookingPaid?: BookingPaidOutcome | null }> {
   const { attempt, facts } = input;
 
   /**
@@ -762,13 +1069,27 @@ export async function settlePaidAttempt(
     });
 
     if (!settled.saleId) {
-      // A QR minted before the cart was committed. The money is recorded; the
-      // sale attaches to it when it is committed (Slice F's flow).
+      /**
+       * S2-12 — A BOOKING'S PAYMENT. The station-less attempt the booking site
+       * opened settles here like any other, and the booking it pays for is
+       * marked paid and its QR signed IN THIS TRANSACTION: the money and the
+       * booking's state commit together or not at all. This is the only road
+       * to a paid booking, and it is reached only on inquiry-agreed facts.
+       */
+      const bookingPaid = await confirmBookingPaid(tx, env, {
+        attemptId: settled.id,
+        source: input.source,
+        requestId: input.requestId ?? null,
+        gatewayLate: facts.state === 'late_paid',
+      });
+      // Otherwise a QR minted before the cart was committed. The money is
+      // recorded; the sale attaches to it when it is committed (Slice F's flow).
       return {
         outcome: 'settled' as const,
         attemptId: settled.id,
         finalisedSale: false,
         outstandingSatang: null,
+        bookingPaid,
       };
     }
 
@@ -1195,7 +1516,15 @@ async function actOn(
     return 'amount_mismatch';
   }
 
-  if (facts.state === 'late_paid') {
+  /**
+   * S2-12, OD-A11 — A BOOKING PAID LATE IS STILL PAID. A till's late QR waits
+   * for a person because the sale was probably settled another way; a
+   * booking has no other way to be paid and no capacity to protect, so the
+   * money confirms it — through the same inquiry as any payment — and the
+   * alert asks a person to look.
+   */
+  const paysABooking = attempt.stationId === null && (await bookingForAttempt(db, attempt.id)) !== null;
+  if (facts.state === 'late_paid' && !paysABooking) {
     await flagForAPerson(db, env, attempt, {
       reason: 'late_payment',
       subject: 'A QR was paid after it expired',
@@ -1206,7 +1535,7 @@ async function actOn(
     return 'late_paid';
   }
 
-  if (facts.state !== 'paid') {
+  if (facts.state !== 'paid' && facts.state !== 'late_paid') {
     await applyNonPaidState(db, attempt, facts);
     return 'not_paid';
   }
@@ -1283,7 +1612,8 @@ async function actOn(
     return 'inquiry_disagreed';
   }
 
-  if (truth.state !== 'paid') {
+  const truthPaid = truth.state === 'paid' || (paysABooking && truth.state === 'late_paid');
+  if (!truthPaid) {
     await raiseAlert(
       db,
       {
@@ -1316,11 +1646,88 @@ async function actOn(
   return 'settled';
 }
 
+/**
+ * A DECLINE ON A HOSTED PAGE THAT IS STILL OPEN IS NOT THE END OF IT
+ * (S2-12, SCRUM-209 fix round 2).
+ *
+ * A till's QR that failed is over: the guest is at the counter and pays
+ * another way. A booking's hosted page is different. Whether 2C2P lets the
+ * guest try again inside the same Payment Token (another card, another go at
+ * the bank app) is something the sandbox has not shown us yet
+ * (`PAYMENT_GATEWAY.md:492-515`). Closing the attempt on the first decline
+ * took it off the poller's list, so a successful retry would have rested on
+ * the webhook alone, and would then have been filed as "paid after it
+ * expired" against a booking that had been cancelled under the family.
+ *
+ * So while the page's own expiry has not passed, a failed payment
+ * (`cancelled`, or `not_found` about a page that is open) is RECORDED, on the
+ * attempt's payload and in the audit trail, and the attempt stays
+ * `sent_to_terminal`: still on the poller's list, still settled exactly once
+ * by a later paid notification or inquiry. The booking is not touched; its
+ * hold ends it, or the poller closes the attempt once the page has run out,
+ * through the close path below as before. `expired` and `duplicate_invoice`
+ * (our own number, refused) end it at once.
+ */
+function holdsForARetry(live: AttemptRow, facts: QrPaymentFacts, now: Date): boolean {
+  return (
+    live.stationId === null &&
+    live.status === 'sent_to_terminal' &&
+    (facts.state === 'cancelled' || facts.state === 'not_found') &&
+    live.expiresAt !== null &&
+    now.getTime() <= live.expiresAt.getTime()
+  );
+}
+
+/** The decline, written down once: the poller asking again about the same one adds nothing. */
+async function recordHostedDecline(
+  tx: Tx,
+  live: AttemptRow,
+  facts: QrPaymentFacts,
+  now: Date,
+): Promise<void> {
+  const payload = (live.payload ?? {}) as {
+    declines?: unknown;
+    lastDecline?: { respCode?: unknown; tranRef?: unknown };
+  };
+  const tranRef = facts.tranRef ?? null;
+  if (payload.lastDecline?.respCode === facts.respCode && payload.lastDecline?.tranRef === tranRef) {
+    return;
+  }
+  const declines = (typeof payload.declines === 'number' ? payload.declines : 0) + 1;
+  await tx
+    .update(paymentAttempt)
+    .set({
+      payload: mergePayload(live.payload, {
+        declines,
+        lastDecline: { respCode: facts.respCode, state: facts.state, tranRef, at: now.toISOString() },
+      }) as never,
+    })
+    .where(eq(paymentAttempt.id, live.id));
+  await audit.record(tx, {
+    actorAccountId: null,
+    operatorId: live.operatorId,
+    branchId: live.branchId,
+    action: 'payment.hosted.declined',
+    entityType: 'payment_attempt',
+    entityId: live.id,
+    actionId: live.actionId,
+    before: { status: live.status },
+    after: {
+      status: live.status,
+      respCode: facts.respCode,
+      state: facts.state,
+      declines,
+      pageExpiresAt: live.expiresAt?.toISOString() ?? null,
+    },
+  });
+}
+
 /** Expired, cancelled, not found — the states that end an attempt without money. */
 async function applyNonPaidState(
   db: Db,
   attempt: AttemptRow,
   facts: QrPaymentFacts,
+  now: Date = new Date(),
 ): Promise<void> {
   /**
    * `9999` SAYS NOTHING ABOUT THE PAYMENT. It is 2C2P reporting that ITS
@@ -1346,6 +1753,10 @@ async function applyNonPaidState(
       .for('update')
       .limit(1);
     if (!live || live.status === 'approved' || live.status === 'awaiting_settlement') return;
+    if (holdsForARetry(live, facts, now)) {
+      await recordHostedDecline(tx, live, facts, now);
+      return;
+    }
     await failAttempt(tx, attempt.id, {
       status,
       payload: mergePayload(live.payload, {
@@ -1366,6 +1777,19 @@ async function applyNonPaidState(
       before: { status: live.status },
       after: { status, respCode: facts.respCode, state: facts.state },
     });
+    /**
+     * S2-12 — a booking's payment that ended without money ends the booking's
+     * wait with it: `expired` when the clock ran out, `cancelled` when the
+     * page's payment failed and the page has since run out (a failure while it
+     * is still open is held above). Unpaid either way, and refused at the till.
+     */
+    if (attempt.stationId === null) {
+      await closeBookingUnpaid(tx, {
+        attemptId: attempt.id,
+        status: facts.state === 'expired' ? 'expired' : 'cancelled',
+        reason: `gateway_${facts.state}`,
+      });
+    }
   });
 }
 
@@ -1373,6 +1797,45 @@ async function applyNonPaidState(
 
 /** The statuses a QR attempt can still be waiting in. */
 const PENDING_STATUSES: PaymentAttemptStatus[] = ['created', 'sent_to_terminal', 'inquiring'];
+
+/**
+ * HOW LONG A `created` ATTEMPT IS LEFT ALONE (S2-12 gate, finding 3).
+ *
+ * `created` means act 1 is committed and the gateway call that shows the QR or
+ * opens the hosted page is IN FLIGHT. Asked about then, 2C2P has not heard of
+ * the invoice yet and says `2002`, and closing the attempt on that answer
+ * cancels a booking whose family is about to be sent to pay it. So the poller
+ * does not ask until the opening call has had time to finish or fail: the
+ * adapter's request timeout is ten seconds and the QR's opening is two calls,
+ * so a minute is well past either. An attempt still `created` after that is
+ * one whose opener died between the acts, and the inquiry decides it as before.
+ * `showAttempt` is the other half: act 3 moves only an attempt still `created`.
+ */
+export const OPENING_GRACE_MS = 60_000;
+
+/** Whether the tick leaves this attempt alone because its opening call may still be running. */
+export function isStillOpening(
+  attempt: Pick<AttemptRow, 'status' | 'createdAt'>,
+  now: Date,
+): boolean {
+  return attempt.status === 'created' && now.getTime() - attempt.createdAt.getTime() < OPENING_GRACE_MS;
+}
+
+/**
+ * `2002` ABOUT A HOSTED PAGE THAT IS STILL OPEN IS NOT AN ANSWER (S2-12 gate).
+ *
+ * A booking's payment page is a Payment Token and nothing more until the guest
+ * submits a payment on it, and whether 2C2P's inquiry knows the invoice before
+ * then is not something the sandbox has shown us yet
+ * (`PAYMENT_GATEWAY.md:492-515`). Read as "never reached 2C2P", it would cancel
+ * every booking whose family is still on the page. A token that genuinely never
+ * landed was already closed by `requestHostedPayment` (the family was never
+ * sent anywhere), so while the page's own expiry has not passed this keeps
+ * asking, and once it has, the page ran out unpaid — `expired`, on the clock.
+ */
+function isShownHostedPage(attempt: AttemptRow): boolean {
+  return attempt.stationId === null && attempt.status === 'sent_to_terminal';
+}
 
 export interface PollSummary extends Record<string, unknown> {
   examined: number;
@@ -1420,7 +1883,9 @@ export function pendingAttemptsQuery(db: Db) {
     .from(paymentAttempt)
     .where(
       and(
-        eq(paymentAttempt.method, 'qr'),
+        // A till's gateway tender is a QR; a booking's (station-less, S2-12)
+        // may be a card on the hosted page, and the poller is its safety net too.
+        or(eq(paymentAttempt.method, 'qr'), isNull(paymentAttempt.stationId)),
         inArray(paymentAttempt.provider, ['2c2p', 'simulator']),
         isNull(paymentAttempt.deviceId),
         inArray(paymentAttempt.status, PENDING_STATUSES),
@@ -1444,6 +1909,7 @@ export async function pollPendingAttempts(
 
   for (const attempt of rows) {
     summary.examined += 1;
+    if (isStillOpening(attempt, now)) continue;
     if (!isInquiryDue(attempt, now, env)) continue;
     summary.inquired += 1;
     const startedAt = new Date();
@@ -1476,7 +1942,12 @@ export async function pollPendingAttempts(
       continue;
     }
 
-    if (facts.state === 'paid') {
+    // S2-12, OD-A11: a booking paid late is still paid (see `actOn`).
+    const bookingLate =
+      facts.state === 'late_paid' &&
+      attempt.stationId === null &&
+      (await bookingForAttempt(db, attempt.id)) !== null;
+    if (facts.state === 'paid' || bookingLate) {
       // The poller's own answer IS the inquiry, so it settles directly rather
       // than inquiring a second time about the call it just made.
       const settled = await settlePaidAttempt(db, env, log, { attempt, facts, source: 'inquiry' });
@@ -1497,8 +1968,17 @@ export async function pollPendingAttempts(
       });
       continue;
     }
+    if (facts.state === 'not_found' && isShownHostedPage(attempt)) {
+      const pageOpen =
+        attempt.expiresAt !== null &&
+        now.getTime() <= attempt.expiresAt.getTime() &&
+        !isExhausted(attempt, now, env);
+      if (pageOpen) continue;
+      await applyNonPaidState(db, attempt, { ...facts, state: 'expired' }, now);
+      continue;
+    }
     if (QR_TERMINAL_STATES.includes(facts.state)) {
-      await applyNonPaidState(db, attempt, facts);
+      await applyNonPaidState(db, attempt, facts, now);
     } else if (isExhausted(attempt, now, env)) {
       /**
        * Polling stops at `PGW_INQUIRY_MAX_MIN` and the attempt is CANCELLED
@@ -1506,7 +1986,7 @@ export async function pollPendingAttempts(
        * about again is not "waiting", and leaving it in a pending status would
        * keep it on the Failures page as a live condition every day.
        */
-      await applyNonPaidState(db, attempt, { ...facts, state: 'expired' });
+      await applyNonPaidState(db, attempt, { ...facts, state: 'expired' }, now);
     }
   }
   return summary;
@@ -1556,6 +2036,8 @@ export interface PendingSummary extends Record<string, unknown> {
   branches: number;
   opened: number;
   cleared: number;
+  /** S2-12, OD-A11 — unpaid bookings whose hold ran out on this sweep. */
+  bookingsExpired: number;
 }
 
 /**
@@ -1573,12 +2055,30 @@ export interface PendingSummary extends Record<string, unknown> {
  * is "no sale with an unknown outcome is left silent", and a tender that never
  * came back from a terminal is the same failure as one that never came back
  * from a gateway.
+ *
+ * IT COUNTS THE TILLS' TENDERS, AND ONLY THOSE (SCRUM-209 fix round 2). Every
+ * sale carries a station (`pos.sale.station_id` is not null), so every till
+ * tender does; the one attempt with none is the booking site's hosted page
+ * (`WEB`). `PAYMENT_PENDING_MIN` is that page's expiry and its booking's hold
+ * as well, so a checkout the family walked away from sat here from the end of
+ * its hold until the poller closed it a minute later: an alert on Health about
+ * a counter's tender that nobody at a counter could act on. An abandoned
+ * checkout is not a stuck tender. Its booking expires through the hold below,
+ * and the poller closes its attempt.
  */
 export async function flagPendingPayments(
   db: Db,
   env: Env,
   now: Date = new Date(),
+  log?: FastifyBaseLogger,
 ): Promise<PendingSummary> {
+  /**
+   * S2-12, OD-A11 — THE BOOKING HOLD ENDS HERE. The same sweep that tells
+   * somebody about a tender with no outcome ends every unpaid booking whose
+   * hold (`PAYMENT_PENDING_MIN`) has run out. A payment that still arrives
+   * confirms it late, with an alert.
+   */
+  const bookingsExpired = await expireOverdueBookings(db, log, now);
   const cutoff = new Date(now.getTime() - env.PAYMENT_PENDING_MIN * 60_000);
   const rows = await db
     .select({
@@ -1594,6 +2094,7 @@ export async function flagPendingPayments(
       and(
         inArray(paymentAttempt.status, ['sent_to_terminal', 'unknown', 'inquiring']),
         sql`${paymentAttempt.createdAt} < ${cutoff}`,
+        isNotNull(paymentAttempt.stationId),
       ),
     )
     .limit(500);
@@ -1615,6 +2116,7 @@ export async function flagPendingPayments(
     branches: byBranch.size,
     opened: 0,
     cleared: 0,
+    bookingsExpired,
   };
 
   for (const [branchId, bucket] of byBranch) {
@@ -1702,7 +2204,7 @@ export async function gatewayStatus(db: Db, env: Env, operatorId: string): Promi
     .where(
       and(
         eq(paymentAttempt.operatorId, operatorId),
-        eq(paymentAttempt.method, 'qr'),
+        or(eq(paymentAttempt.method, 'qr'), isNull(paymentAttempt.stationId)),
         isNull(paymentAttempt.deviceId),
         inArray(paymentAttempt.provider, ['2c2p', 'simulator']),
         inArray(paymentAttempt.status, PENDING_STATUSES),
@@ -1876,6 +2378,156 @@ export function verificationSecret(env: Env): string {
 /** The merchant id the webhook compares against, simulator included. */
 export function expectedMerchantId(env: Env): string {
   return env.PGW_MERCHANT_ID || (resolveGatewayProvider(env).provider === 'simulator' ? SIMULATED_MERCHANT_ID : '');
+}
+
+// --- The booking site's hosted page, simulated (S2-12) -------------------------
+
+/** A station-less gateway attempt — the only kind the booking site opens. */
+async function hostedAttemptById(db: Db, attemptId: string): Promise<AttemptRow | null> {
+  const [row] = await db
+    .select()
+    .from(paymentAttempt)
+    .where(
+      and(
+        eq(paymentAttempt.id, attemptId),
+        isNull(paymentAttempt.deviceId),
+        isNull(paymentAttempt.stationId),
+        inArray(paymentAttempt.provider, ['2c2p', 'simulator']),
+        isNotNull(paymentAttempt.invoiceNo),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * What the simulator's pay / fail page shows, or null.
+ *
+ * Null — and the route answers 404 — on a deployment running the real
+ * gateway, for an attempt that is not a booking's, and for a page this process
+ * no longer remembers. The page exists only while no `PGW_*` credentials are
+ * set, which `assertProductionSafe` already refuses on a live park.
+ */
+export async function simulatorHostedPage(
+  db: Db,
+  env: Env,
+  attemptId: string,
+): Promise<SimulatedHostedPage | null> {
+  const sim = simulatorOf(env);
+  if (!sim) return null;
+  const attempt = await hostedAttemptById(db, attemptId);
+  if (!attempt?.invoiceNo) return null;
+  return sim.hostedPage(attempt.invoiceNo);
+}
+
+export interface HostedPress {
+  /** Where the page sends the browser, with `paymentResponse` in a form POST. */
+  frontendReturnUrl: string;
+  paymentResponse: string;
+  /** What the real webhook made of the notification this press sent. */
+  webhookOutcome: NotificationOutcome;
+}
+
+/**
+ * ONE PRESS OF "PAY" OR "FAIL" ON THE SIMULATED HOSTED PAGE.
+ *
+ * Exactly what `simulateGatewayEvent` does for the Console's buttons, for the
+ * guest's: the simulated gateway's record moves, a notification SIGNED WITH THE
+ * CONFIGURED SECRET goes through the real webhook handler — signature, merchant,
+ * idempotency key, amount, inquiry, settlement — and only that can make the
+ * booking paid. The browser is then sent back through the real return route
+ * with a signed `paymentResponse`, which that route reads as a hint and nothing
+ * more.
+ */
+export async function pressSimulatorHostedPage(
+  db: Db,
+  env: Env,
+  log: FastifyBaseLogger,
+  input: {
+    attemptId: string;
+    action: 'pay' | 'fail';
+    /** Only send the browser back — the page has already moved. */
+    pressesNothing?: boolean;
+    sourceIp?: string | null;
+    requestId?: string;
+  },
+): Promise<HostedPress | null> {
+  const sim = simulatorOf(env);
+  if (!sim) return null;
+  const attempt = await hostedAttemptById(db, input.attemptId);
+  if (!attempt?.invoiceNo) return null;
+  const page = sim.hostedPage(attempt.invoiceNo);
+  if (!page) return null;
+
+  const secret = simulatorSecret(env);
+  let webhookOutcome: NotificationOutcome = 'not_paid';
+  // A page that has already moved (paid, failed, run out) takes no second press;
+  // it only sends the browser back again.
+  if (page.state === 'pending' && !input.pressesNothing) {
+    const facts = sim.apply(attempt.invoiceNo, input.action === 'pay' ? 'paid' : 'decline');
+    if (!facts) return null;
+    const claims = {
+      ...facts.raw,
+      merchantID: env.PGW_MERCHANT_ID || SIMULATED_MERCHANT_ID,
+      invoiceNo: attempt.invoiceNo,
+    };
+    ({ outcome: webhookOutcome } = await handleNotification(db, env, log, {
+      body: { payload: signJwt(claims, secret) },
+      sourceIp: input.sourceIp ?? null,
+      headers: { 'x-oto-simulated': 'true' },
+      requestId: input.requestId,
+      pathTokenOk: true,
+    }));
+  }
+  const now = sim.hostedPage(attempt.invoiceNo) ?? page;
+  const completed = now.state === 'paid';
+  return {
+    frontendReturnUrl: now.frontendReturnUrl,
+    paymentResponse: signFrontendReturn(
+      {
+        invoiceNo: attempt.invoiceNo,
+        channelCode: now.channels[0] ?? null,
+        // 2C2P's own words on the browser's way back: "completed, please do
+        // payment inquiry", or the page's failure. Never "paid".
+        respCode: completed ? '2000' : now.state === 'expired' ? '9020' : '0003',
+        respDesc: completed
+          ? 'Transaction is completed, please do payment inquiry request for full payment information.'
+          : 'Transaction is cancelled',
+        locale: now.locale,
+      },
+      secret,
+    ),
+    webhookOutcome,
+  };
+}
+
+/**
+ * THE BROWSER'S RETURN, read as a hint — or null when it is not signed with
+ * this deployment's merchant key (a forged return), which the caller answers
+ * exactly as it answers a missing one.
+ */
+export function readBookingReturn(env: Env, paymentResponse: string): FrontendReturnHint | null {
+  try {
+    return readFrontendReturn(paymentResponse, verificationSecret(env));
+  } catch {
+    return null;
+  }
+}
+
+/** The attempt a hint names, read only — to send the browser to the right booking. */
+export async function hostedAttemptByInvoice(db: Db, invoiceNo: string): Promise<AttemptRow | null> {
+  const [row] = await db
+    .select()
+    .from(paymentAttempt)
+    .where(
+      and(
+        eq(paymentAttempt.invoiceNo, invoiceNo),
+        isNull(paymentAttempt.deviceId),
+        isNull(paymentAttempt.stationId),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
 }
 
 // --- Small readers ------------------------------------------------------------

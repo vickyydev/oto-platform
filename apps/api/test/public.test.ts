@@ -103,7 +103,7 @@ describe('public catalogue exposure (SCRUM-252)', () => {
 
   it('answers exactly the branch, tier, rate-mode and holiday fields', async () => {
     const body = await catalog();
-    expect(keys(body)).toEqual(['branch', 'holidays', 'packages', 'rateMode', 'tiers']);
+    expect(keys(body)).toEqual(['addOns', 'branch', 'holidays', 'packages', 'rateMode', 'taxConfig', 'tiers']);
     expect(keys(body.branch)).toEqual(['businessDayStart', 'code', 'name', 'timezone']);
     for (const tier of body.tiers) {
       // `id` here is the tier CODE, not the row's uuid.
@@ -119,6 +119,19 @@ describe('public catalogue exposure (SCRUM-252)', () => {
       'mode',
       'reason',
     ]);
+  });
+
+  it('answers exactly the extra fields the site prices with, and the tax configuration (S2-12)', async () => {
+    const body = await catalog();
+    expect(body.addOns.length).toBeGreaterThan(0);
+    for (const addOn of body.addOns) {
+      expect(keys(addOn), `add-on ${addOn.name}`).toEqual(
+        ['id', 'name', 'priceSatang', 'priceWeekendSatang', 'taxCategory', 'translations'].sort(),
+      );
+    }
+    // The seeded extras keep the ids the site's own rules read them by.
+    expect(body.addOns.map((a: { id: string }) => a.id)).toContain('a-socks');
+    expect(keys(body.taxConfig)).toEqual(['categoryRules', 'discountPlacement', 'rates']);
   });
 
   it('carries no internal column anywhere in the answer', async () => {

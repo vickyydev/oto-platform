@@ -179,8 +179,17 @@ function liveServerAnswer(): RateModeResult | null {
    * would have computed weekend correctly, so the TTL alone made that case
    * worse rather than better. The answer already carried its own date and
    * nothing compared it.
+   *
+   * What makes an answer stale is its day being BEHIND this device's trading
+   * day, and only that (SCRUM-209 fix round 2). An answer dated AHEAD of it is
+   * the platform's clock saying the day has already moved on where this
+   * device's has not (a device a few minutes slow across 05:00, or a date the
+   * platform decided on its own clock), and the platform is the one the
+   * booking is quoted by: overruling it with this device's calendar is how the
+   * booking site came to show one day's rate while the platform quoted
+   * another's. ISO dates compare as strings.
    */
-  if (serverAnswer.date !== branchTradingDate()) return null;
+  if (serverAnswer.date < branchTradingDate()) return null;
   return serverAnswer.answer;
 }
 
@@ -227,13 +236,42 @@ export function getRateModeForDate(date: Date | string): RateModeResult {
 }
 
 /**
- * The active rate mode for today (the till always sells "now").
+ * THE DAY BEING PRICED, WHEN IT IS NOT TODAY (S2-12, SCRUM-209 fix round 2).
  *
- * The platform's answer wins while it is live, because it is decided on a
- * clock the park controls; otherwise today is read off this device's clock on
- * the branch's calendar.
+ * The till always sells now. The booking site sells for the visit date the
+ * family chose on its date step, and the platform quotes the booking at that
+ * date's rate (`createPublicBooking`), so every price the site shows has to be
+ * that date's too: the ticket cards, the add-on toggles, each line and the
+ * total all read their mode through `todayRateMode`, and this is what points
+ * it at the chosen day. Null (the default, and what the till always has) means
+ * today. `/book` sets it when a date is chosen and clears it when it unmounts.
+ */
+let pricingDate: string | null = null;
+
+export function setPricingDate(date: string | null): void {
+  pricingDate = date && isIsoDate(date) ? date : null;
+}
+
+export function getPricingDate(): string | null {
+  return pricingDate;
+}
+
+/**
+ * The active rate mode for the day being sold: today at the till, the chosen
+ * visit date on the booking site (`setPricingDate`).
+ *
+ * The platform's answer wins while it is live and is about that day, because
+ * it is decided on a clock the park controls; a chosen date is otherwise
+ * resolved from the catalogue's own holiday ranges by the same rule the
+ * platform uses; and today is otherwise read off this device's clock on the
+ * branch's calendar.
  */
 export function todayRateMode(): RateModeResult {
+  if (pricingDate) {
+    const live = liveServerAnswer();
+    if (live && serverAnswer?.date === pricingDate) return live;
+    return getRateModeForDate(pricingDate);
+  }
   return liveServerAnswer() ?? getRateModeForDate(branchTradingDate());
 }
 

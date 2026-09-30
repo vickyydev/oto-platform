@@ -1,6 +1,7 @@
 import {
   Activity,
   Building2,
+  CalendarCheck,
   FerrisWheel,
   HeartPulse,
   Plug,
@@ -84,6 +85,16 @@ export const consoleNav: ConsoleNavGroup[] = [
         // `admin:branch:update` and is checked on the button, so a manager who
         // may see their own park gets the page rather than a locked door.
         permission: 'admin:branch:read',
+      },
+      {
+        id: 'bookings',
+        label: 'Bookings',
+        icon: CalendarCheck,
+        description:
+          'Online bookings in every state, and the payment behind each — paid only when the payment gateway confirms the money.',
+        // The counter's own read, at the park's own scope: the list names the
+        // same families the redeem screen does (S2-12).
+        permission: 'pos:booking:read',
       },
       {
         id: 'booths',

@@ -211,6 +211,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     if (!WRITE_METHODS.has(req.method)) return;
     const origin = req.headers.origin;
     if (!origin) return;
+    // S2-12: the gateway's hosted page posting the guest's browser back. The
+    // route is public, writes nothing, and is declared so (`crossSiteReturn`).
+    if ((req.routeOptions?.config as { crossSiteReturn?: true } | undefined)?.crossSiteReturn) return;
     if (allowedOrigins.has(origin.replace(/\/$/, ''))) return;
     const host = req.headers.host;
     if (host && origin.replace(/\/$/, '').endsWith(`://${host}`)) return;

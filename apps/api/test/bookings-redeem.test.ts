@@ -32,6 +32,8 @@ import {
   type TestContext,
 } from './helpers';
 import { cacheBundle, pullChanges } from '../src/services/sync';
+import { openBookingCheckout } from '../src/services/booking-checkout';
+import { pressSimulatorHostedPage } from '../src/services/payments/gateway';
 import type { BoxAuth } from '../src/services/box';
 
 /**
@@ -148,7 +150,15 @@ interface BookingView {
 
 const listed = (res: Res): BookingView[] => (res.body.bookings ?? []) as BookingView[];
 
-/** Make a booking the way a customer does: the public route, priced server-side. */
+/**
+ * Make a booking the way a customer does: the public route, priced
+ * server-side — and PAID the way a customer pays since S2-12 (SCRUM-209): the
+ * booking's checkout opens a gateway attempt, and "Pay" on the simulated
+ * hosted page sends a signed notification through the real webhook, whose
+ * inquiry-confirmed settlement is the only thing that makes a booking paid.
+ * Driven through the services rather than HTTP so the open routes' per-address
+ * budgets are left to the one route this file is about.
+ */
 async function bookOnline(opts: {
   phone?: string;
   kids: number;
@@ -165,7 +175,17 @@ async function bookOnline(opts: {
     },
   });
   expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
-  return res.body as unknown as { id: string; reference: string; totalSatang: number };
+  const made = res.body as unknown as { id: string; reference: string; totalSatang: number };
+  const checkout = await openBookingCheckout(ctx.db, ctx.app.env, ctx.app.log, {}, {
+    bookingId: made.id,
+    method: 'promptpay',
+  });
+  const pressed = await pressSimulatorHostedPage(ctx.db, ctx.app.env, ctx.app.log, {
+    attemptId: checkout.attemptId,
+    action: 'pay',
+  });
+  expect(pressed?.webhookOutcome).toBe('settled');
+  return made;
 }
 
 let planted = 0;
@@ -364,6 +384,7 @@ describe('SCRUM-234 — the till reads the booking the booking site wrote', () =
     );
     expect(Object.keys(found.lines[0]!).sort()).toEqual(
       [
+        'addOns',
         'adultUnitSatang',
         'adults',
         'adultsFree',
@@ -372,6 +393,10 @@ describe('SCRUM-234 — the till reads the booking the booking site wrote', () =
         'lineTotalSatang',
         'name',
         'packageId',
+        // S2-12: what the family paid for online beside admission, so the
+        // counter hands it over.
+        'socks',
+        'socksUnitSatang',
       ].sort(),
     );
 

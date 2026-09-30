@@ -3,7 +3,7 @@ import { AddOn, CartLine, CustomerTier, TicketType } from '@/types';
 import { getTicketTypes, getAddOns, checkNannyAvailability } from '@/mockApi';
 import { tierLabel, isDefaultTier } from '@/lib/membership';
 import { computeLineTotal, computeLineBreakdown, priceForTier, type LineBreakdownKind } from '@/lib/pricing';
-import { resolveRateToday } from '@/lib/pricingMode';
+import { resolveRateToday, todayRateMode } from '@/lib/pricingMode';
 import { dropOffServiceFee, type DropOffPricing as ResolvedDropOffPricing } from '@/lib/dropoff';
 import { resolveRequirement } from '@/lib/supervision';
 import { parseAge, slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate';
@@ -12,7 +12,7 @@ import { TicketCard } from '@/components/till/TicketCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { StepRow, AddOnToggles } from '@/components/book/BookExtras';
+import { StepRow, AddOnToggles, VisitDateRow } from '@/components/book/BookExtras';
 import { EventPassSection, type PassSelection } from '@/components/book/BookEventPasses';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
@@ -76,6 +76,14 @@ interface BookTicketsProps {
   ) => void;
   onRemoveLine: (id: string) => void;
   onContinue: () => void;
+  /**
+   * The visit date (S2-12 fix round 2): every price on this step is that
+   * day's, and changing it re-prices the basket (`Book.tsx`).
+   */
+  visitDate: string;
+  minVisitDate: string;
+  maxVisitDate: string;
+  onVisitDateChange: (date: string) => void;
 }
 
 interface Draft {
@@ -132,10 +140,33 @@ export function BookTickets({
   onUpdateLine,
   onRemoveLine,
   onContinue,
+  visitDate,
+  minVisitDate,
+  maxVisitDate,
+  onVisitDateChange,
 }: BookTicketsProps) {
   const { t, lang } = useLanguage();
   const tickets = useMemo(() => getTicketTypes(), []);
   const allAddOns = useMemo(() => getAddOns(), []);
+
+  // The rate the chosen day is priced at, in words, under the date.
+  const rate = todayRateMode();
+  const visitDateRow = (
+    <VisitDateRow
+      label={t('book.tickets.visitDate')}
+      description={
+        rate.overrideName
+          ? t('book.tickets.visitDateHoliday', { name: rate.overrideName })
+          : rate.mode === 'weekend'
+            ? t('book.tickets.visitDateWeekend')
+            : t('book.tickets.visitDateWeekday')
+      }
+      value={visitDate}
+      min={minVisitDate}
+      max={maxVisitDate}
+      onChange={onVisitDateChange}
+    />
+  );
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [picking, setPicking] = useState(false);
@@ -208,6 +239,7 @@ export function BookTickets({
         </p>
 
         <div className="mt-6 space-y-3">
+          {visitDateRow}
           <StepRow
             icon={Baby}
             label={t('book.tickets.kids')}
@@ -314,7 +346,9 @@ export function BookTickets({
       <h2 className="text-3xl font-black leading-tight">{t('book.tickets.yourBooking')}</h2>
       {tierBadge}
 
-      <div className="space-y-3 mt-5">
+      <div className="mt-5">{visitDateRow}</div>
+
+      <div className="space-y-3 mt-3">
         {lines.map((line) => {
           const lineSlots = superSlots.filter((s) => s.sourceLineId === line.id);
           return (

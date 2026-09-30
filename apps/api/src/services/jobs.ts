@@ -470,9 +470,9 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
      */
     {
       name: 'job:payments.pending',
-      description: 'Flags payment attempts with no outcome on the Failures page, and clears the flag when they are answered',
+      description: 'Flags payment attempts with no outcome on the Failures page, clears the flag when they are answered, and ends unpaid booking holds that have run out',
       intervalSeconds: 60,
-      run: async ({ db, env, now }) => ({ detail: await flagPendingPayments(db, env, now) }),
+      run: async ({ db, env, log, now }) => ({ detail: await flagPendingPayments(db, env, now, log) }),
     },
   ];
 }

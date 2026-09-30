@@ -1,17 +1,52 @@
+import { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 import { Booking } from '@/types';
-import { QrCode } from '@/components/till/QrCode';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Baby, User, Wallet, ScanLine, HeartHandshake, Clock, AlertTriangle, Ticket } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { formatVisitDate } from '@/lib/visitDate';
 
 interface BookConfirmationProps {
   booking: Booking;
   name: string;
+  /**
+   * The booking QR the park SIGNED when the payment gateway confirmed the
+   * money (S2-12, `@oto/shared` `booking-qr.ts`) — what reception scans and a
+   * box verifies with no network. Null only where the platform could not sign
+   * one; the reference below is then what reception types.
+   */
+  qr: string | null;
+  /** The day booked, as the platform holds it (S2-12 fix round 2 — the date step). */
+  visitDate?: string | null;
+  /**
+   * Reception has already redeemed it. The page can be reopened from its
+   * return link, and once the booking has been used the platform stops
+   * handing out its QR (`publicBookingStatus`).
+   */
+  redeemed?: boolean;
   onStartOver: () => void;
 }
 
-export function BookConfirmation({ booking, name, onStartOver }: BookConfirmationProps) {
-  const { t } = useLanguage();
+export function BookConfirmation({ booking, name, qr, visitDate, redeemed, onStartOver }: BookConfirmationProps) {
+  const { t, lang } = useLanguage();
+  // A REAL encoded QR of the signed code, drawn here in the browser — the
+  // stylised pattern `lib/qr.ts` drew could not be scanned by anything.
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  useEffect(() => {
+    let active = true;
+    setQrDataUrl('');
+    if (!qr) return;
+    QRCode.toDataURL(qr, { margin: 1, width: 448, errorCorrectionLevel: 'M' })
+      .then((url) => {
+        if (active) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (active) setQrDataUrl('');
+      });
+    return () => {
+      active = false;
+    };
+  }, [qr]);
   const { childBracelets, adultBracelets, creditTotalTHB } = booking.willIssue;
   const dropOffChildren = booking.lines.filter((l) => l.dropOff).map((l) => l.dropOff!);
   const hasNanny = dropOffChildren.some((d) => d.service === 'nanny');
@@ -29,15 +64,27 @@ export function BookConfirmation({ booking, name, onStartOver }: BookConfirmatio
         <p className="text-slate-500 mt-2">
           {t('book.confirmation.paidSeeYou', { total: String(booking.total) })}
         </p>
+        {visitDate && (
+          <p className="text-slate-700 font-semibold mt-1">
+            {t('book.confirmation.visitOn', { date: formatVisitDate(visitDate, lang) })}
+          </p>
+        )}
       </div>
 
       <div className="mt-7 bg-white border border-slate-200 rounded-3xl p-6 flex flex-col items-center">
-        <QrCode seed={`booking-${booking.reference}`} className="w-56 h-56" />
+        {qrDataUrl ? (
+          <img src={qrDataUrl} alt="Booking QR code" className="w-56 h-56" width={448} height={448} />
+        ) : (
+          <div className="w-56 h-56 rounded-2xl bg-slate-100" aria-hidden />
+        )}
         <div className="mt-4 text-center">
           <div className="text-xs uppercase tracking-widest text-slate-400">
             {t('book.confirmation.bookingRef')}
           </div>
           <div className="text-2xl font-black tracking-wider mt-1">{booking.reference}</div>
+          {redeemed && (
+            <div className="text-sm text-slate-500 mt-2">{t('book.confirmation.redeemedNote')}</div>
+          )}
         </div>
       </div>
 

@@ -267,6 +267,13 @@
       "when": 1790749714455,
       "tag": "0037_sync_anomaly_offline_kinds",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1790777507522,
+      "tag": "0038_booking_checkout",
+      "breakpoints": true
     }
   ]
 }

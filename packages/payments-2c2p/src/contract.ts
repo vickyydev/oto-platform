@@ -199,12 +199,65 @@ export interface RefundResult {
 }
 
 /**
- * The seam. Four methods, and the sale service only ever calls the first two.
+ * THE BOOKING SITE'S CHECKOUT — the Redirect API (`PAYMENT_GATEWAY.md` §2.8,
+ * §3.10; S2-12, SCRUM-209).
+ *
+ * A Payment Token restricted to the channels the booking page offers, and the
+ * address of the page the guest pays on. Nothing here says the booking was
+ * paid, and nothing that comes back through the browser ever will: the
+ * backend notification plus a Payment Inquiry is the only road to "paid", on
+ * the same `invoiceNo` and through the same code as a till's QR.
+ */
+export interface CreateHostedPaymentInput {
+  /** Our attempt id, carried through `userDefined1` and `idempotencyID`. */
+  attemptId: string;
+  /** OUR number — the `WEB` segment in place of a station's (§3.10). */
+  invoiceNo: string;
+  amountSatang: number;
+  /** What the guest is paying for (C 250). */
+  description: string;
+  /** How long the page may take money. The booking's own hold, so the two expire together. */
+  expiryMinutes: number;
+  /**
+   * The 2C2P channel codes the page may offer — `CC` for a card, `PPQR` for
+   * PromptPay. Never empty: an unrestricted page would offer every channel the
+   * merchant has, including ones the park has never reconciled.
+   */
+  paymentChannels: readonly string[];
+  /**
+   * Where the guest's BROWSER comes back to — a "checking your payment" page.
+   * What arrives there is a display hint and is never proof of anything.
+   */
+  frontendReturnUrl: string;
+  /** The hosted page's language: `en` or `th`. */
+  locale?: string;
+  /** `userDefined2`..`5`. Ours, echoed back. Never a guest's name or phone. */
+  userDefined?: Record<string, string | undefined>;
+}
+
+export interface CreateHostedPaymentResult {
+  /**
+   * The page the browser is sent to: 2C2P's `webPaymentUrl`, or the
+   * simulator's pay / fail page. Null when the token call was refused.
+   */
+  webPaymentUrl: string | null;
+  expiresAt: Date;
+  /** `pending` when the page is open; anything else is a refusal. */
+  state: QrState;
+  respCode: string;
+  respDesc: string | null;
+}
+
+/**
+ * The seam. Five methods; the sale service only ever calls `createQr` and
+ * `inquire`, and the booking site calls `createHostedPayment` and `inquire`.
  */
 export interface QrPayment {
   /** Which implementation this is, for the startup line and the Integrations card. */
   readonly provider: 'simulator' | '2c2p';
   createQr(input: CreateQrInput): Promise<CreateQrResult>;
+  /** The booking site's Redirect API: a Payment Token and the hosted page's address. */
+  createHostedPayment(input: CreateHostedPaymentInput): Promise<CreateHostedPaymentResult>;
   /**
    * THE TRUTH, as against the notification, which is only a trigger
    * (`PAYMENT_GATEWAY.md:668-670`). Called by the poller, and called again by

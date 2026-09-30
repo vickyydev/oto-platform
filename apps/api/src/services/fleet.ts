@@ -29,6 +29,8 @@ import {
 import {
   SIMULATOR_ACTIONS_WITH_SECRETS,
   SimulatorActionSchema,
+  WEB_INVOICE_STATION_CODE,
+  invoiceStationSegment,
   newId,
   STATION_SESSION_STAGES,
   type DeviceSettings,
@@ -360,6 +362,27 @@ function assertStationCodePrefix(kind: StationKind, codePrefix: string | null): 
       400,
       'STATION_CODE_PREFIX_INVALID',
       'One to six capital letters or digits — the prefix starts every band code this station prints',
+      { field: 'codePrefix' },
+    );
+  }
+  /**
+   * S2-12 — `WEB` is the booking site's. A till's prefix is also the station
+   * segment of its gateway invoice numbers, and the booking site's online
+   * payments carry `WEB` in that place (`WEB_INVOICE_STATION_CODE`). A till
+   * coded `WEB` would number the same invoices, so the code is refused here,
+   * in every spelling that encodes to it. A station saved with it before this
+   * rule shares the booking site's counter (`services/payments/gateway.ts`)
+   * rather than colliding with it, until it is edited.
+   */
+  if (
+    kind !== 'booth' &&
+    codePrefix !== null &&
+    invoiceStationSegment(codePrefix) === WEB_INVOICE_STATION_CODE
+  ) {
+    throw new AppError(
+      400,
+      'STATION_CODE_PREFIX_RESERVED',
+      'WEB is reserved for the booking site’s online payments — pick another prefix for this station',
       { field: 'codePrefix' },
     );
   }

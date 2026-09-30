@@ -35,6 +35,15 @@ export interface PermissionConfig {
    * rate limits instead.
    */
   public?: true;
+  /**
+   * S2-12 — a public route ANOTHER SITE sends the browser to with a form POST:
+   * the payment gateway's hosted page returning the guest to
+   * `/public/bookings/return`. The Origin check on writes (`app.ts`) lets it
+   * through, because the POST comes from the gateway's page by design and
+   * because such a route writes nothing — `route-write-conformance.test.ts`
+   * holds it on the no-write list, so a write added to it fails there.
+   */
+  crossSiteReturn?: true;
   /** A signed-in caller is enough; no permission applies (e.g. `/me`). */
   auth?: 'session';
   /**

@@ -245,6 +245,32 @@ function encodeStationCode(raw: string): string {
   return clean.padStart(3, '0');
 }
 
+/**
+ * THE BOOKING SITE'S SEGMENT (S2-12, OD-A10).
+ *
+ * A booking paid online has no counter in its path, so its invoice number
+ * carries `WEB` where a till's carries its station code. The namespace is one
+ * and global (`payment_attempt_gateway_invoice_unique`), so no station may
+ * encode to these three characters: a till coded `WEB` would count the same
+ * invoice numbers on a counter of its own, and whichever of the two minted
+ * second would be refused all day. `services/fleet.ts` refuses the prefix.
+ */
+export const WEB_INVOICE_STATION_CODE = 'WEB';
+
+/**
+ * The three characters a station code takes in an invoice number, or null for
+ * a code that cannot number an invoice at all. Two different codes can take
+ * the same three (`T1` and `T01` are both `T01`), which is why a counter is
+ * kept per invoice stem rather than per station.
+ */
+export function invoiceStationSegment(raw: string): string | null {
+  try {
+    return encodeStationCode(raw);
+  } catch {
+    return null;
+  }
+}
+
 /** Build one gateway invoice number. Throws rather than minting one that cannot be honoured. */
 export function buildInvoiceNo({ prefix, stationCode, businessDate, seq }: InvoiceNoParts): string {
   const cleanPrefix = (prefix ?? '').toUpperCase().replace(ALNUM_ONLY, '');

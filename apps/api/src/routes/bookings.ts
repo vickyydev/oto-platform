@@ -20,6 +20,7 @@ import {
   stationAtBranch,
   viewBookings,
 } from '../services/bookings';
+import { BOOKING_LEDGER_MAX, bookingLedger } from '../services/booking-checkout';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -133,6 +134,48 @@ export async function bookingRoutes(app: App): Promise<void> {
         limit: req.query.limit,
       });
       return { bookings: await viewBookings(app.db, rows) };
+    },
+  );
+
+  /**
+   * THE CONSOLE'S BOOKINGS LIST (S2-12, SCRUM-209 round 1).
+   *
+   * Every booking at one branch whatever its state — waiting for payment,
+   * paid, redeemed, expired, failed — newest first, with the payment behind
+   * each: the `WEB` invoice, the attempt's status and the day the money was
+   * taken. The counter's waiting list above answers "who is arriving"; this
+   * answers "what happened to the money", which is the back office's question.
+   *
+   * Same permission as the counter's read, at the same branch: it names the
+   * same families.
+   */
+  app.get(
+    '/ledger',
+    {
+      config: { permission: 'pos:booking:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description: "One branch's bookings in every state, with the payment behind each — the Console's bookings list",
+        querystring: z.object({
+          branchId: z.string().uuid().optional(),
+          status: z.enum(BOOKING_STATUSES).optional(),
+          from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          limit: z.coerce.number().int().min(1).max(BOOKING_LEDGER_MAX).default(50),
+          offset: z.coerce.number().int().min(0).max(100_000).default(0),
+        }),
+      },
+    },
+    async (req) => {
+      const { auth, branch: br } = await actingBranch(req, req.query.branchId);
+      return bookingLedger(app.db, {
+        operatorId: auth.operatorId,
+        branchId: br.id,
+        status: req.query.status,
+        from: req.query.from,
+        to: req.query.to,
+        limit: req.query.limit,
+        offset: req.query.offset,
+      });
     },
   );
 

@@ -3,6 +3,8 @@ import { buildSimulatedEmvcoPayload } from './emvco';
 import { RESP_CODE_PAID, RESP_CODE_QR_SHOWN } from './resp-codes';
 import type {
   CancelResult,
+  CreateHostedPaymentInput,
+  CreateHostedPaymentResult,
   CreateQrInput,
   CreateQrResult,
   QrPayment,
@@ -60,12 +62,41 @@ interface SimulatedPayment {
   paidAmountSatang: number | null;
   /** `V` moves it here; `R` needs it to have been settled first. */
   settled: boolean;
+  /** The channel the notification and the inquiry name — `PPQR` for a till's QR. */
+  channelCode: string;
+  /** Set for the booking site's hosted page (S2-12): what the pay / fail page shows. */
+  hosted: {
+    attemptId: string;
+    description: string;
+    channels: string[];
+    frontendReturnUrl: string;
+    locale: string | null;
+  } | null;
+}
+
+/** What the simulator's pay / fail page shows about one hosted payment. */
+export interface SimulatedHostedPage {
+  attemptId: string;
+  invoiceNo: string;
+  amountSatang: number;
+  description: string;
+  channels: string[];
+  state: QrState;
+  expiresAt: Date;
+  /** Where the page sends the browser afterwards — the booking site's return. */
+  frontendReturnUrl: string;
+  locale: string | null;
 }
 
 export interface SimulatorDeps {
   now?: () => Date;
   /** Injected so a test can assert an exact reference; random in every other use. */
   reference?: () => string;
+  /**
+   * Where the simulated hosted page lives (S2-12). The api serves it, so the
+   * api says where; the default is its route, relative to the api's root.
+   */
+  hostedPageUrl?: (attemptId: string, invoiceNo: string) => string;
 }
 
 /** What the Console's five buttons ask the simulator to pretend next. */
@@ -77,10 +108,13 @@ export class SimulatorQrPayment implements QrPayment {
   private readonly payments = new Map<string, SimulatedPayment>();
   private readonly now: () => Date;
   private readonly reference: () => string;
+  private readonly hostedPageUrl: (attemptId: string, invoiceNo: string) => string;
 
   constructor(deps: SimulatorDeps = {}) {
     this.now = deps.now ?? (() => new Date());
     this.reference = deps.reference ?? (() => randomBytes(9).toString('hex').toUpperCase());
+    this.hostedPageUrl =
+      deps.hostedPageUrl ?? ((attemptId) => `/webhooks/2c2p/hosted/${encodeURIComponent(attemptId)}`);
   }
 
   createQr(input: CreateQrInput): Promise<CreateQrResult> {
@@ -98,6 +132,8 @@ export class SimulatorQrPayment implements QrPayment {
       paidAt: null,
       paidAmountSatang: null,
       settled: false,
+      channelCode: 'PPQR',
+      hosted: null,
     };
     this.payments.set(input.invoiceNo, record);
     return Promise.resolve({
@@ -115,6 +151,67 @@ export class SimulatorQrPayment implements QrPayment {
     });
   }
 
+  /**
+   * THE BOOKING SITE'S CHECKOUT, SIMULATED (S2-12).
+   *
+   * The same promise as 2C2P's Payment Token: an invoice the gateway now knows,
+   * pending, and the address of a page where a guest could pay it. Here the
+   * page is the api's pay / fail page, which drives `apply` and then the REAL
+   * webhook — so a simulated booking is paid by exactly the path a real one is.
+   */
+  createHostedPayment(input: CreateHostedPaymentInput): Promise<CreateHostedPaymentResult> {
+    if (input.paymentChannels.length === 0) {
+      return Promise.reject(new Error('a hosted payment page has to be restricted to at least one channel'));
+    }
+    const expiresAt = new Date(this.now().getTime() + input.expiryMinutes * 60_000);
+    const record: SimulatedPayment = {
+      invoiceNo: input.invoiceNo,
+      amountSatang: input.amountSatang,
+      state: 'pending',
+      respCode: '0001',
+      tranRef: `SIM${this.reference()}`,
+      paymentId: `sim_${this.reference().slice(0, 12).toLowerCase()}`,
+      expiresAt,
+      paidAt: null,
+      paidAmountSatang: null,
+      settled: false,
+      channelCode: input.paymentChannels[0]!,
+      hosted: {
+        attemptId: input.attemptId,
+        description: input.description,
+        channels: [...input.paymentChannels],
+        frontendReturnUrl: input.frontendReturnUrl,
+        locale: input.locale ?? null,
+      },
+    };
+    this.payments.set(input.invoiceNo, record);
+    return Promise.resolve({
+      webPaymentUrl: this.hostedPageUrl(input.attemptId, input.invoiceNo),
+      expiresAt,
+      state: 'pending',
+      respCode: '0000',
+      respDesc: 'Success',
+    });
+  }
+
+  /** What the pay / fail page shows, or null when this process never opened it. */
+  hostedPage(invoiceNo: string): SimulatedHostedPage | null {
+    const record = this.payments.get(invoiceNo);
+    if (!record?.hosted) return null;
+    this.expireByClock(record);
+    return {
+      attemptId: record.hosted.attemptId,
+      invoiceNo: record.invoiceNo,
+      amountSatang: record.amountSatang,
+      description: record.hosted.description,
+      channels: [...record.hosted.channels],
+      state: record.state,
+      expiresAt: record.expiresAt,
+      frontendReturnUrl: record.hosted.frontendReturnUrl,
+      locale: record.hosted.locale,
+    };
+  }
+
   inquire({ invoiceNo }: { invoiceNo: string }): Promise<QrPaymentFacts> {
     const record = this.payments.get(invoiceNo);
     if (!record) {
@@ -125,11 +222,16 @@ export class SimulatorQrPayment implements QrPayment {
     // The clock expires a QR nobody pressed a button about, exactly as the
     // gateway's would — otherwise "expire" would only ever be a demo control
     // and the real expiry path would never run.
-    if (record.state === 'qr_shown' && this.now() >= record.expiresAt) {
+    this.expireByClock(record);
+    return Promise.resolve(this.factsOf(record, invoiceNo, record.respCode, describe(record.state)));
+  }
+
+  /** A QR or a hosted page nobody acted on runs out, as the gateway's would. */
+  private expireByClock(record: SimulatedPayment): void {
+    if ((record.state === 'qr_shown' || record.state === 'pending') && this.now() >= record.expiresAt) {
       record.state = 'expired';
       record.respCode = '9020';
     }
-    return Promise.resolve(this.factsOf(record, invoiceNo, record.respCode, describe(record.state)));
   }
 
   cancel({ invoiceNo }: { invoiceNo: string }): Promise<CancelResult> {
@@ -275,7 +377,7 @@ export class SimulatorQrPayment implements QrPayment {
             currencyCode: 'THB',
             tranRef: record.tranRef,
             paymentID: record.paymentId,
-            channelCode: 'PPQR',
+            channelCode: record.channelCode,
             agentCode: 'SIM',
           }
         : {}),
@@ -290,7 +392,7 @@ export class SimulatorQrPayment implements QrPayment {
       tranRef: record?.tranRef ?? null,
       paymentId: record?.paymentId ?? null,
       approvalCode: null,
-      channelCode: record ? 'PPQR' : null,
+      channelCode: record ? record.channelCode : null,
       agentCode: record ? 'SIM' : null,
       transactionDateTime: record?.paidAt ? stampOf(record.paidAt) : null,
       raw,
@@ -304,6 +406,8 @@ function describe(state: QrState): string {
       return 'Successful';
     case 'qr_shown':
       return 'Pending for user scan QR.';
+    case 'pending':
+      return 'Transaction is pending';
     case 'expired':
       return 'Payment Expired';
     case 'cancelled':

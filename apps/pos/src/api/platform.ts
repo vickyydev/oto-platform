@@ -2,7 +2,7 @@
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
 import { newId as newRecordId } from '@oto/shared';
 import { PERMISSIONS, type Permission } from '@oto/shared/permissions';
-import type { StationCapability } from '@/types';
+import type { AddOn, StationCapability, TaxableCategory, TaxConfig } from '@/types';
 import { api, idemKey } from './client';
 import { bridgeApi } from './bridge';
 import { viaLane } from '@/lib/lane';
@@ -506,6 +506,25 @@ export interface PublicCatalog {
   packages: ApiTicketPackage[];
   rateMode: { date: string; mode: 'weekday' | 'weekend'; reason: string; overrideName?: string };
   holidays: Array<{ name: string; startsOn: string; endsOn: string }>;
+  /**
+   * S2-12 — the extras on sale online and the branch's tax configuration, so
+   * the total this site shows is built from the numbers the platform prices the
+   * booking with. Optional: an API that predates them leaves the site's own.
+   */
+  addOns?: PublicAddOn[];
+  taxConfig?: TaxConfig | null;
+}
+
+/** One extra on sale online, as the platform prices it. Money in satang. */
+export interface PublicAddOn {
+  /** What a booking line sends back: a seeded extra's prototype id (`a-socks`), or the product's id. */
+  id: string;
+  name: string;
+  priceSatang: number;
+  /** Null when the weekend price is the weekday price. */
+  priceWeekendSatang: number | null;
+  taxCategory: TaxableCategory | null;
+  translations: AddOn['translations'] | null;
 }
 
 export const publicApi = {
@@ -524,16 +543,30 @@ export const publicApi = {
     >(
       `/public/member-tier?phone=${encodeURIComponent(phone)}&branch=${encodeURIComponent(branchCode)}`,
     ),
+  /**
+   * S2-12 — the booking is written PENDING; it is paid only when the payment
+   * gateway confirms the money to the platform, never by anything this page
+   * does. `displayedTotalSatang` is what the page showed: the platform refuses
+   * (`BOOKING_TOTAL_CHANGED`) rather than charge a different figure.
+   */
   createBooking: (body: {
+    id?: string;
     branchCode: string;
     phone?: string;
     parentName: string;
     tier: string;
     visitDate?: string;
-    lines: Array<{ packageId: string; kids: number; adults: number }>;
+    lines: Array<{
+      packageId: string;
+      kids: number;
+      adults: number;
+      socks?: number;
+      addOns?: Array<{ id: string; quantity: number }>;
+    }>;
     contactChannel?: 'whatsapp' | 'telegram' | 'line';
     locale?: string;
     clientSnapshot?: unknown;
+    displayedTotalSatang?: number;
   }) =>
     api.post<{
       id: string;
@@ -542,8 +575,51 @@ export const publicApi = {
       rateMode: 'weekday' | 'weekend';
       totalSatang: number;
       lines: unknown[];
+      status: string;
+      expiresAt: string | null;
     }>('/public/bookings', body, { idempotencyKey: idemKey() }),
+  /**
+   * The booking's one payment: the page to send the browser to. A
+   * `redirectUrl` starting with `/` is the platform's own (the simulator's pay /
+   * fail page) and is reached through `/api` — see `paymentPageHref`.
+   */
+  checkoutBooking: (bookingId: string, method: 'card' | 'promptpay', locale?: string) =>
+    api.post<{
+      bookingId: string;
+      attemptId: string;
+      redirectUrl: string;
+      expiresAt: string;
+      provider: '2c2p' | 'simulator';
+    }>(`/public/bookings/${encodeURIComponent(bookingId)}/checkout`, { method, locale }),
+  /** What the waiting page polls: the booking's state, and its signed QR once paid. */
+  bookingStatus: (bookingId: string) =>
+    api.get<PublicBookingStatus>(`/public/bookings/${encodeURIComponent(bookingId)}/status`),
 };
+
+export interface PublicBookingStatus {
+  id: string;
+  reference: string;
+  /** `pending` until the gateway confirms; `paid`; `redeemed`; `expired`; `cancelled`. */
+  status: string;
+  visitDate: string;
+  totalSatang: number;
+  rateMode: 'weekday' | 'weekend';
+  kidsCount: number;
+  adultsCount: number;
+  paidAt: string | null;
+  expiresAt: string | null;
+  /** The QR the park signed — present only once the booking is paid. */
+  qr: string | null;
+}
+
+/**
+ * Where the browser goes for the payment page. The payment partner's page is
+ * an absolute address; the simulator's is the platform's own path, which this
+ * site reaches through the same `/api` prefix every call here uses.
+ */
+export function paymentPageHref(redirectUrl: string): string {
+  return redirectUrl.startsWith('/') ? `/api${redirectUrl}` : redirectUrl;
+}
 
 // --- admin: accounts / roles / operators ------------------------------------
 export const adminApi = {

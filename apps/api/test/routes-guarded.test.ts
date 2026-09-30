@@ -105,9 +105,24 @@ describe('route guards (S2-01b)', () => {
     // Anything added here is a deliberate decision, made visible in a diff.
     expect(open).toEqual([
       'GET /health',
+      /**
+       * S2-12 (SCRUM-209) — the booking site's waiting page, polling one
+       * booking by its own id. It answers the booking's state and, once the
+       * gateway has confirmed the money, its signed QR — no name, no phone, no
+       * child.
+       */
+      'GET /public/bookings/:id/status',
+      /** The same browser return as the POST below, reached by a GET. Writes nothing. */
+      'GET /public/bookings/return',
       'GET /public/branches/:code/catalog',
       'GET /public/member-tier',
       'GET /ready',
+      /**
+       * S2-12 — the SIMULATED hosted payment page, the guest's stand-in for
+       * 2C2P's own public page. 404 on any deployment with the real gateway,
+       * which is every live park (`assertProductionSafe`).
+       */
+      'GET /webhooks/2c2p/hosted/:attemptId',
       // S2-02: the app's origin has no session yet — that is the point. The
       // token is the credential, fenced by its signature, its one-minute life
       // and its single-use jti.
@@ -133,6 +148,20 @@ describe('route guards (S2-01b)', () => {
       // failure. Same shape as `POST /box/v1/register`.
       'POST /booth/pair',
       'POST /public/bookings',
+      /**
+       * S2-12 — the booking's ONE payment: an attempt on the `WEB` invoice
+       * segment and the hosted page's address. It pays nothing; a booking is
+       * paid only by the webhook below plus an inquiry, or by the poller.
+       */
+      'POST /public/bookings/:id/checkout',
+      /**
+       * S2-12 — the hosted page sending the guest's browser back. Verified,
+       * read as a display hint, and it WRITES NOTHING — the invariant of the
+       * round, held by `route-write-conformance.test.ts`'s no-write list.
+       */
+      'POST /public/bookings/return',
+      /** S2-12 — a press of pay / fail on the simulated hosted page. Simulator only. */
+      'POST /webhooks/2c2p/hosted/:attemptId',
       /**
        * S2-10a — what the payment gateway posts to us.
        *

@@ -2,11 +2,15 @@ import { z } from 'zod';
 import { GATEWAY_EVENTS } from '@oto/shared';
 import type { App } from '../app';
 import { ipLimited } from '../plugins/rate-limit';
+import { formatTHB } from '@oto/shared';
 import {
   gatewayStatus,
   handleNotification,
+  pressSimulatorHostedPage,
   simulateGatewayEvent,
+  simulatorHostedPage,
 } from '../services/payments/gateway';
+import { errors } from '../lib/errors';
 
 /**
  * WHAT THE PAYMENT GATEWAY POSTS TO US, and the panel that pretends to be it
@@ -208,7 +212,134 @@ export function webhookRoutes(app: App): Promise<void> {
     },
   );
 
+  // --- The booking site's hosted page, simulated (S2-12) --------------------
+
+  /**
+   * WHAT THE GUEST SEES INSTEAD OF 2C2P'S PAGE, while this deployment has no
+   * `PGW_*` credentials (the plan's "simulator page with pay / fail").
+   *
+   * Public, because the guest on the booking site has no session — exactly as
+   * 2C2P's own page is public. It is addressed by the attempt's id, and it
+   * answers 404 on a deployment configured for the real gateway, for an
+   * attempt that is not a booking's, and for a page this process has forgotten.
+   * `assertProductionSafe` refuses the simulator on a live park, so on a live
+   * park this route answers 404 to everything.
+   *
+   * "Pay" does not mark anything paid. It makes the simulated gateway's record
+   * say paid and sends a SIGNED notification through the real webhook handler
+   * — signature, merchant, idempotency key, amount, inquiry, settlement — and
+   * only that settlement can make the booking paid. The browser is then sent
+   * back through `/public/bookings/return` exactly as 2C2P's page would send it.
+   */
+  app.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'string', bodyLimit: 16_384 },
+    (_req, body, done) => {
+      try {
+        done(null, Object.fromEntries(new URLSearchParams(String(body))));
+      } catch (err) {
+        done(err as Error, undefined);
+      }
+    },
+  );
+
+  app.get(
+    '/2c2p/hosted/:attemptId',
+    {
+      config: { public: true, ...ipLimited },
+      schema: {
+        description:
+          "The simulated gateway's hosted payment page for a booking: pay or fail. Only while no PGW_* credentials are set; 404 otherwise.",
+        params: z.object({ attemptId: z.string().uuid() }),
+      },
+    },
+    async (req, reply) => {
+      const page = await simulatorHostedPage(app.db, app.env, req.params.attemptId);
+      if (!page) throw errors.notFound('No such payment page');
+      const open = page.state === 'pending';
+      const body = `
+        <p class="muted">Simulated payment page — no real money moves. The real one is 2C2P's.</p>
+        <h1>${escapeHtml(formatTHB(page.amountSatang))}</h1>
+        <p>${escapeHtml(page.description)}</p>
+        <p class="muted">Invoice ${escapeHtml(page.invoiceNo)} · ${escapeHtml(page.channels.join(', '))}</p>
+        ${
+          open
+            ? `<form method="post"><input type="hidden" name="action" value="pay"><button class="pay" type="submit">Pay</button></form>
+               <form method="post"><input type="hidden" name="action" value="fail"><button class="fail" type="submit">Fail</button></form>`
+            : `<p>This payment is ${escapeHtml(page.state)}.</p>
+               <form method="post"><input type="hidden" name="action" value="return"><button type="submit">Back to the booking</button></form>`
+        }`;
+      return sendHtml(reply, 'Payment — simulator', body);
+    },
+  );
+
+  app.post(
+    '/2c2p/hosted/:attemptId',
+    {
+      config: { public: true, rateLimit: { max: 30, timeWindow: 60_000 } },
+      schema: {
+        description:
+          "A press on the simulated hosted page. Pay or fail moves the simulated gateway's record and sends a SIGNED notification through the real webhook handler; the browser then goes back through /public/bookings/return. Only while no PGW_* credentials are set.",
+        params: z.object({ attemptId: z.string().uuid() }),
+        body: z.object({ action: z.enum(['pay', 'fail', 'return']) }).passthrough(),
+      },
+    },
+    async (req, reply) => {
+      const pressed = await pressSimulatorHostedPage(app.db, app.env, req.log, {
+        attemptId: req.params.attemptId,
+        action: req.body.action === 'pay' ? 'pay' : 'fail',
+        // `return` presses nothing: a page that has already moved only sends the browser back.
+        pressesNothing: req.body.action === 'return',
+        sourceIp: req.ip,
+        requestId: req.id,
+      });
+      if (!pressed) throw errors.notFound('No such payment page');
+      const body = `
+        <p>Returning to the booking…</p>
+        <form method="post" action="${escapeHtml(pressed.frontendReturnUrl)}">
+          <input type="hidden" name="paymentResponse" value="${escapeHtml(pressed.paymentResponse)}">
+          <noscript><button type="submit">Continue</button></noscript>
+        </form>
+        <script>document.forms[0].submit();</script>`;
+      return sendHtml(reply, 'Returning…', body);
+    },
+  );
+
   return Promise.resolve();
+}
+
+/** The whole page, and a policy that lets it run its one inline script and nothing else. */
+function sendHtml(
+  reply: { header: (k: string, v: string) => unknown; type: (t: string) => unknown; send: (b: string) => unknown },
+  title: string,
+  body: string,
+): unknown {
+  reply.header(
+    'content-security-policy',
+    "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+  );
+  reply.header('cache-control', 'no-store');
+  reply.type('text/html; charset=utf-8');
+  return reply.send(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 28rem; margin: 3rem auto; padding: 0 1rem; color: #0f172a; }
+  h1 { font-size: 2.5rem; margin: 0.5rem 0; }
+  .muted { color: #64748b; font-size: 0.875rem; }
+  form { margin: 0.75rem 0; }
+  button { width: 100%; padding: 1rem; font-size: 1.125rem; border-radius: 0.75rem; border: 1px solid #cbd5e1; background: #fff; }
+  button.pay { background: #0ea5e9; color: #fff; border-color: #0ea5e9; }
+</style></head><body>${body}</body></html>`);
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function headerOf(value: string | string[] | undefined): string | undefined {

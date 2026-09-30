@@ -221,6 +221,18 @@ const NO_DIRECT_WRITE = [
   // is transacted.
   'POST /branches/:branchId/menu/import/preview',
   'POST /print-templates/:id/preview.png',
+  // SCRUM-471: the booth voucher slip's live preview draws a sample and saves nothing.
+  /**
+   * S2-12 (SCRUM-209) — THE INVARIANT OF ARRIVAL ROUND 1, measured.
+   *
+   * The payment gateway's hosted page sends the guest's browser back here with
+   * a signed `paymentResponse`. It is verified and read as a display hint, and
+   * the browser is redirected to the booking site's waiting page — and that is
+   * all: a booking is paid only by the backend notification plus an inquiry,
+   * or by the poller. A write reached from this handler fails the re-measure
+   * below, which is the point of listing it.
+   */
+  'POST /public/bookings/return',
   /**
    * S2-10a — what a SIMULATED card terminal will do with the next tender.
    *
@@ -518,6 +530,22 @@ const OPEN_WITHOUT_A_KEY = [
   'POST /auth/sign-out',
   'POST /booth/pair',
   'POST /public/bookings',
+  /**
+   *   - **one attempt per booking** — `POST /public/bookings/:id/checkout`
+   *     (S2-12). The booking's row is locked and it links to ONE gateway
+   *     attempt, so a second press finds that attempt and is answered with
+   *     the same page; a new invoice is never minted for a booking that
+   *     already has one.
+   *   - **it writes nothing** — `POST /public/bookings/return`, the hosted
+   *     page's browser return (on the no-write list above).
+   *   - **the notification's own key** — `POST /webhooks/2c2p/hosted/:attemptId`,
+   *     the simulated page's press: it moves the simulator's in-memory record
+   *     and sends a signed notification through the webhook below, whose
+   *     unique indexes make a second press of the same payment a duplicate.
+   */
+  'POST /public/bookings/:id/checkout',
+  'POST /public/bookings/return',
+  'POST /webhooks/2c2p/hosted/:attemptId',
   /**
    *   - **the delivery is its own unique key** — `POST /webhooks/2c2p/payment`
    *     (S2-10a). The caller is 2C2P's server and has no account, so the

@@ -5,6 +5,7 @@ import {
   band,
   bandEvent,
   booking,
+  bookingRedemption,
   child,
   member,
   memberAlias,
@@ -138,6 +139,19 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   counts.payment_notification = (
     await tx.delete(paymentNotification).returning({ id: paymentNotification.id })
   ).length;
+  /**
+   * S2-12: a booking names the one gateway attempt it is paid through
+   * (`booking.payment_attempt_id`, ON DELETE RESTRICT), while the attempts go
+   * here and the bookings further down — after the sales, which name a booking
+   * of their own (`pos.sale.booking_id`). That is a cycle of restricting keys,
+   * so one edge is cut first, as with the tier claims below: the bookings
+   * forget their attempts, then the attempts go. Without it, the first booking
+   * of a session that reached the payment page made the whole reset fail.
+   */
+  await tx
+    .update(booking)
+    .set({ paymentAttemptId: null })
+    .where(isNotNull(booking.paymentAttemptId));
   counts.payment_attempt = (
     await tx.delete(paymentAttempt).returning({ id: paymentAttempt.id })
   ).length;
@@ -194,6 +208,15 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   ).length;
 
   counts.attendee = (await tx.delete(attendee).returning({ id: attendee.id })).length;
+  /**
+   * A booking claimed at a counter has its claim row (`booking_redemption`,
+   * ON DELETE RESTRICT on the booking). It is a fact of the day's play like the
+   * booking itself, and it goes first — or a single redeemed booking made the
+   * whole reset fail.
+   */
+  counts.booking_redemption = (
+    await tx.delete(bookingRedemption).returning({ id: bookingRedemption.id })
+  ).length;
   counts.booking = (await tx.delete(booking).returning({ id: booking.id })).length;
 
   counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;

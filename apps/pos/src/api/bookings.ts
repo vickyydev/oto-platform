@@ -1,6 +1,6 @@
 import type { Booking, CartLine, SelectedAddOn } from '@/types';
 import { getTicketTypes } from '@/store/catalogStore';
-import { toBaht } from '@/lib/cartWire';
+import { SOCKS_ADDON_ID, SOCKS_LABEL, toBaht } from '@/lib/cartWire';
 import { api, ApiError, idemKey } from './client';
 
 /**
@@ -38,7 +38,22 @@ export interface PlatformBookingLine {
   kidUnitSatang: number;
   adultsFree: number;
   adultUnitSatang: number;
+  /**
+   * S2-12 — the socks and extras paid for online, at the prices paid. Optional
+   * because a deployment whose API predates them does not send them.
+   */
+  socks?: number;
+  socksUnitSatang?: number;
+  addOns?: PlatformBookingAddOn[];
   lineTotalSatang: number;
+}
+
+/** One extra on a booking line, as the platform priced and stored it. */
+export interface PlatformBookingAddOn {
+  productId: string;
+  name: string;
+  unitSatang: number;
+  quantity: number;
 }
 
 /** Where and by whom a redemption happened — what the counter has to show on a second scan. */
@@ -191,17 +206,66 @@ export interface UnmappedLine {
 export interface MappedBooking {
   booking: Booking;
   unmapped: UnmappedLine[];
+  /**
+   * S2-12 — whether the platform says the money arrived. A booking found by
+   * its reference can be one still waiting for payment, or one whose payment
+   * failed or ran out; the counter must not read it as paid.
+   */
+  paid: boolean;
+  /** Why nothing can be issued against it, in words for reception. Null when paid. */
+  notPaidReason: string | null;
+}
+
+/** The platform's booking status, as reception reads it. */
+function notPaidReasonFor(p: PlatformBooking): string | null {
+  if (p.status === 'paid' || p.status === 'redeemed' || p.redemption) return null;
+  if (p.status === 'pending') {
+    return `Booking ${p.reference} is not paid yet — the family has not finished paying online. Nothing can be issued against it.`;
+  }
+  if (p.status === 'expired') {
+    return `Booking ${p.reference} was never paid — its hold ran out. Nothing can be issued against it; the family can buy tickets here.`;
+  }
+  if (p.status === 'cancelled') {
+    return `Booking ${p.reference} was not paid — its online payment did not go through. Nothing can be issued against it; the family can buy tickets here.`;
+  }
+  return `Booking ${p.reference} is ${p.status}, not paid. Nothing can be issued against it.`;
+}
+
+/**
+ * The extras a booking line paid for, as the till's add-on shape, at the price
+ * they were PAID at. The prototype's separate socks count, where a line has
+ * one, becomes the Regular Socks extra it always was on the till.
+ */
+function paidAddOns(line: PlatformBookingLine): SelectedAddOn[] {
+  const addOns: SelectedAddOn[] = (line.addOns ?? []).map((a) => ({
+    id: a.productId,
+    name: a.name,
+    price: toBaht(a.unitSatang),
+    quantity: a.quantity,
+  }));
+  if ((line.socks ?? 0) > 0) {
+    addOns.push({
+      id: SOCKS_ADDON_ID,
+      name: SOCKS_LABEL,
+      price: toBaht(line.socksUnitSatang ?? 0),
+      quantity: line.socks ?? 0,
+    });
+  }
+  return addOns;
 }
 
 /**
  * Rebuild the till's `Booking` from the platform row.
  *
- * WHAT IT CANNOT KNOW, and so does not invent: add-ons, socks, drop-off children,
- * event passes and promo codes are not columns on `pos.booking` and are not
- * priced by `POST /public/bookings` — the booking site records them in its own
- * memory only (`pages/Book.tsx`). They stay empty here, so the summary shows
- * admissions and the money the platform actually took. Drop-off and passes on a
- * booking are S2-13 and S2-20.
+ * Socks and extras ARE carried (S2-12): the platform prices them on the booking
+ * and the family paid for them, so they are on the lines at the prices paid and
+ * reception is told to hand them over.
+ *
+ * WHAT IT CANNOT KNOW, and so does not invent: drop-off children, event passes
+ * and promo codes are not priced by `POST /public/bookings` — the booking site
+ * does not send them. They stay empty here, so the summary shows what the
+ * platform actually took money for. Drop-off and passes on a booking are S2-13
+ * and S2-20.
  *
  * `willIssue.creditTotalTHB` is 0 for the same reason: the credit a ticket grants
  * is a catalogue rule the sale applies at redemption (`lib/sale.ts`), and stating
@@ -211,7 +275,6 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
   const catalogue = getTicketTypes();
   const lines: CartLine[] = [];
   const unmapped: UnmappedLine[] = [];
-  const noAddOns: SelectedAddOn[] = [];
 
   for (const line of p.lines) {
     const ticketType = catalogue.find((t) => t.id === line.packageId);
@@ -231,7 +294,7 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
       kids: line.kids,
       adults: line.adults,
       socks: 0,
-      addOns: noAddOns,
+      addOns: paidAddOns(line),
       lineTotal: toBaht(line.lineTotalSatang),
     });
   }
@@ -252,10 +315,14 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
       paymentMethod: p.paymentMethod ?? '',
       willIssue: { childBracelets, adultBracelets, creditTotalTHB: 0 },
       createdAt: p.createdAt,
-      status: p.redemption ? 'redeemed' : 'paid',
+      // The till's `Booking` knows two states; a booking that is not paid is
+      // told apart by `paid` below, never shown as paid.
+      status: p.redemption || p.status === 'redeemed' ? 'redeemed' : 'paid',
       redeemedAt: p.redemption?.at,
       issuedWristbandCodes: p.redemption?.bandCodes,
     },
     unmapped,
+    paid: notPaidReasonFor(p) === null,
+    notPaidReason: notPaidReasonFor(p),
   };
 }
