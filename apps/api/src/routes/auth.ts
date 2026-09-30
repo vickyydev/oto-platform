@@ -378,6 +378,9 @@ export async function authRoutes(app: App): Promise<void> {
         'setup',
         req.body.code,
         app.env.CODE_MAX_ATTEMPTS,
+        // SCRUM-455 — with twilio_verify the guess is put to Twilio, not to a
+        // stored hash. Harmless on console/twilio: they carry no checker.
+        { sms: app.sms, phone },
       );
       await withTx(
         app.db,
@@ -486,6 +489,9 @@ export async function authRoutes(app: App): Promise<void> {
         'password_reset',
         req.body.code,
         app.env.CODE_MAX_ATTEMPTS,
+        // SCRUM-455 — with twilio_verify the guess is put to Twilio, not to a
+        // stored hash. Harmless on console/twilio: they carry no checker.
+        { sms: app.sms, phone },
       );
       await withTx(
         app.db,

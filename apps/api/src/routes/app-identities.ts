@@ -235,7 +235,9 @@ export async function appIdentityRoutes(app: App): Promise<void> {
             phone: phone!,
             status: 'invited',
           });
-          pending = await mintCode(tx, accountId, phone!, 'setup');
+          // `app.sms` so a twilio_verify anchor stores the marker (SCRUM-455);
+          // `deliverCode` below starts the Verify challenge after the commit.
+          pending = await mintCode(tx, accountId, phone!, 'setup', app.sms);
         }
 
         /**

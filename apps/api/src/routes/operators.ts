@@ -135,7 +135,9 @@ export async function operatorRoutes(app: App): Promise<void> {
           scopeType: 'operator',
           scopeId: req.params.id,
         });
-        pending = await mintCode(tx, accountId, phone, 'setup');
+        // `app.sms` so a twilio_verify anchor stores the marker (SCRUM-455);
+        // `deliverCode` below starts the Verify challenge after the commit.
+        pending = await mintCode(tx, accountId, phone, 'setup', app.sms);
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: req.params.id,

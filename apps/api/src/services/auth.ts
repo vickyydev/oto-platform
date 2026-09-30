@@ -173,7 +173,9 @@ export type CodePurpose = 'setup' | 'password_reset';
  *
  * `message` holds the code in the clear. It travels from `mintCode` to the
  * SMS adapter and nowhere else: never a log line, never a response body,
- * never an audit row, never the stored idempotent response.
+ * never an audit row, never the stored idempotent response. It is empty when
+ * the adapter owns the code (twilio_verify, SCRUM-455): there is no local code,
+ * and `dispatchCode` starts a Verify challenge from `phone` instead of sending.
  */
 export interface PendingCode {
   accountId: string;
@@ -209,25 +211,65 @@ const UNDELIVERED: Record<CodePurpose, string> = {
  * third-party call and, past the timeout, lost the whole account to a
  * rollback with the SMS already on its way to the phone.
  */
+/**
+ * The `code_hash` an audit-anchor row carries when the adapter owns the code
+ * (twilio_verify, SCRUM-455). There is no local code to hash — Twilio generated
+ * it, sent it, and will check it — so the row stores this marker instead. The
+ * row exists purely as the anchor: "a code is outstanding", the expiry window
+ * and the resend throttle all read it, and it is what `consumeCode` spends to
+ * keep a Verify code single-use. The marker is deliberately neither 64 hex
+ * characters (the legacy sha256 shape) nor a `$argon2id$…` encoded hash, so
+ * `codeMatches` can mistake it for neither and no guess can ever verify against
+ * it — with this adapter the guess goes to Twilio, never to this row.
+ */
+const EXTERNAL_CODE_MARKER = 'twilio_verify:code-held-by-provider';
+
 export async function mintCode(
   db: Exec,
   accountId: string,
   phone: string,
   purpose: CodePurpose,
+  /**
+   * The active adapter. When it checks codes itself (twilio_verify) no local
+   * code is minted: the row stores `EXTERNAL_CODE_MARKER`, and delivery starts
+   * a Verify challenge rather than sending a composed message (`dispatchCode`).
+   * Absent (console, twilio) the six-digit code is minted and hashed as before.
+   */
+  sms?: SmsSender,
 ): Promise<PendingCode> {
-  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  const external = Boolean(sms?.checksCodes);
+  const code = external ? '' : String(randomInt(0, 1_000_000)).padStart(6, '0');
   await db.insert(verificationCode).values({
     id: newId(),
     accountId,
     purpose,
     // Argon2id with a per-code salt (SCRUM-347). `code_hash` is `text`, so the
-    // ~97-character encoded hash needs no schema change.
-    codeHash: await hash(code),
+    // ~97-character encoded hash — or the marker (SCRUM-455) — needs no schema
+    // change.
+    codeHash: external ? EXTERNAL_CODE_MARKER : await hash(code),
     expiresAt: new Date(Date.now() + CODE_TTL_MS),
   });
   // A newly issued code gets a fresh guess budget.
   await throttleClear(db, [`code:${accountId}:${purpose}`]);
-  return { accountId, phone, purpose, message: codeMessage(purpose, code) };
+  // No local code to carry when Twilio owns it: `message` stays empty and
+  // `dispatchCode` starts a Verify challenge from `phone` instead of sending it.
+  return { accountId, phone, purpose, message: external ? '' : codeMessage(purpose, code) };
+}
+
+/**
+ * Put an outstanding code on its way, in the shape the active adapter needs
+ * (SCRUM-455). An adapter that owns the code (twilio_verify) is asked to START
+ * a Verify challenge — Twilio composes and sends the message — while every
+ * other adapter is handed the composed message to SEND. Throws whatever the
+ * adapter throws, so `deliverCode` and `issueCode` keep the failure handling
+ * they had.
+ */
+async function dispatchCode(sms: SmsSender, pending: PendingCode): Promise<void> {
+  if (sms.checksCodes) {
+    await sms.checksCodes.start(pending.phone);
+    return;
+  }
+  await sms.send(pending.phone, pending.message);
 }
 
 export interface CodeDelivery {
@@ -253,7 +295,7 @@ export async function deliverCode(
   log: FastifyBaseLogger,
 ): Promise<CodeDelivery> {
   try {
-    await sms.send(pending.phone, pending.message);
+    await dispatchCode(sms, pending);
     return { codeSent: true };
   } catch (err) {
     // The adapter has already logged the provider's side against a phone
@@ -289,8 +331,12 @@ export async function issueCode(
   phone: string,
   purpose: CodePurpose,
 ): Promise<void> {
-  const pending = await mintCode(db, accountId, phone, purpose);
-  await sms.send(pending.phone, pending.message);
+  // `sms` is passed to `mintCode` so a twilio_verify anchor row stores the
+  // marker rather than a real code; `dispatchCode` then starts the Verify
+  // challenge instead of sending. Both throw on failure — deliberate here, so
+  // the person who pressed "Send code" is told when it is not coming.
+  const pending = await mintCode(db, accountId, phone, purpose, sms);
+  await dispatchCode(sms, pending);
 }
 
 /** A code that has been checked and not yet spent. Carries no secret. */
@@ -333,13 +379,23 @@ export async function verifyCode(
   purpose: CodePurpose,
   code: string,
   maxAttempts = 5,
+  /**
+   * The active adapter and the phone the code went to, supplied by the two
+   * `/complete` routes (SCRUM-455). When the adapter checks codes itself
+   * (twilio_verify) the guess is put to Twilio instead of compared against a
+   * stored hash, and the local row is only the anchor `consumeCode` will spend.
+   * Absent — and on the console and twilio adapters — the local hash comparison
+   * runs exactly as before.
+   */
+  external?: { sms: SmsSender; phone: string },
 ): Promise<VerifiedCode> {
   const attemptKey = `code:${accountId}:${purpose}`;
   /**
-   * SCRUM-347 — the guess is verified against the rows, not looked up by its
-   * hash. A salted hash is not a key, so the account's own unconsumed codes are
-   * read and each is checked; newest first, so a live code is found before a
-   * stale one and the argon2 work stops at the match.
+   * The account's own unconsumed codes, newest first. On the local path each is
+   * checked in turn (SCRUM-347 — a salted hash is not a key, so the row is
+   * verified against, not looked up by, the guess); on the Verify path the
+   * newest is the anchor an `approved` verdict spends. Bounded by
+   * `CODE_CANDIDATES` either way.
    */
   const candidates = await db
     .select()
@@ -353,16 +409,17 @@ export async function verifyCode(
     )
     .orderBy(desc(verificationCode.createdAt), desc(verificationCode.id))
     .limit(CODE_CANDIDATES);
-  let row: (typeof candidates)[number] | undefined;
-  for (const candidate of candidates) {
-    if (await codeMatches(candidate.codeHash, code)) {
-      row = candidate;
-      break;
-    }
-  }
-  if (!row) {
-    // The window matches the code's own lifetime: a fresh code starts a
-    // fresh budget of guesses, it does not inherit the old one's.
+
+  /**
+   * A wrong guess, counted the same way for a local no-match and a Verify
+   * `denied`. The window matches the code's own lifetime, so a fresh code
+   * starts a fresh budget rather than inheriting the old one's; once the budget
+   * is gone every outstanding code is invalidated, so an attacker has to go
+   * back through the per-phone rate limit for another. Returns the refusal to
+   * throw — as `codeRefusalForUnknownPhone` does — so the caller's `throw`
+   * narrows the row type.
+   */
+  const countWrongGuess = async (): Promise<AppError> => {
     const { current } = await bumpWindow(db, attemptKey, CODE_TTL_MS);
     if (current >= maxAttempts) {
       await db
@@ -375,10 +432,61 @@ export async function verifyCode(
             isNull(verificationCode.consumedAt),
           ),
         );
-      throw errors.badRequest('Too many wrong codes — request a new one');
+      return errors.badRequest('Too many wrong codes — request a new one');
     }
-    throw errors.badRequest('Invalid code');
+    return errors.badRequest('Invalid code');
+  };
+
+  if (external?.sms.checksCodes) {
+    const checker = external.sms.checksCodes;
+    /**
+     * SCRUM-455 — Twilio owns the code, so a guess goes to Twilio, not to a
+     * stored hash: the rows here hold only the marker (`EXTERNAL_CODE_MARKER`).
+     *
+     * THE LOCAL ANCHOR IS CONSULTED FIRST, before Twilio, and that ordering is
+     * what keeps this path from re-opening the directory SCRUM-251 closed. With
+     * no outstanding anchor — an unknown or already-completed account — or one
+     * past its own expiry, the guess is refused the way a local no-match is:
+     * "Invalid code", a counted guess, and NO call to Twilio. Only a live anchor
+     * reaches `checkCode`.
+     *
+     * The reason the order matters is that a 404 from Verify (the session timed
+     * out, a `start` failed, or the code was already approved) is a verdict
+     * Twilio hands back for FREE and distinguishably. Consulted before the
+     * anchor, an invited phone whose Verify session has gone would get a
+     * costless, differently-worded answer ("Code expired") from an unknown one
+     * ("Invalid code") — exactly the enumeration and the free, unbounded guess
+     * SCRUM-251 exists to prevent, and here indefinitely, because the anchor's
+     * own expiry was never consulted.
+     *
+     * With a live anchor, only `approved` lets the code through, spending that
+     * anchor for `consumeCode` exactly as a matched local row would. Both other
+     * verdicts are a wrong-or-gone code counted as one guess: `denied` plainly,
+     * and `expired` too — with a live anchor a 404 is still reachable for the
+     * ten minutes after a failed `start`, so honouring it would leave that guess
+     * free and distinguishable again. The honest-but-late user then sees
+     * "Invalid code" rather than "Code expired", which is the price of having no
+     * local hash to prove the late code was right.
+     *
+     * Single use holds regardless: `consumeCode` spends the anchor in the
+     * caller's transaction, so a replay finds `candidates` empty and is refused
+     * here — before Twilio is even asked.
+     */
+    const anchor = candidates[0];
+    if (!anchor || anchor.expiresAt < new Date()) throw await countWrongGuess();
+    const verdict = await checker.checkCode(external.phone, code);
+    if (verdict === 'approved') return { id: anchor.id, attemptKey };
+    throw await countWrongGuess();
   }
+
+  let row: (typeof candidates)[number] | undefined;
+  for (const candidate of candidates) {
+    if (await codeMatches(candidate.codeHash, code)) {
+      row = candidate;
+      break;
+    }
+  }
+  if (!row) throw await countWrongGuess();
   if (row.expiresAt < new Date()) throw errors.badRequest('Code expired — request a new one');
   return { id: row.id, attemptKey };
 }

@@ -403,8 +403,9 @@ const EnvSchema = z.object({
   /**
    * A Twilio Verify service ("VA…") — the Thai-delivery route (OPEN_QUESTIONS
    * §2): Verify generates, sends and checks the code through Twilio's
-   * pre-registered senders. Declared so the variable has one home; nothing
-   * reads it until the twilio_verify adapter exists.
+   * pre-registered senders. Read by the twilio_verify adapter (SCRUM-455),
+   * which `buildSmsSender` refuses to construct without it; ignored by every
+   * other adapter.
    */
   TWILIO_VERIFY_SERVICE_SID: z.string().optional().or(z.literal('')),
   SENTRY_DSN: z.string().optional().or(z.literal('')),

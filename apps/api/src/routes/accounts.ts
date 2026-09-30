@@ -225,7 +225,9 @@ export async function accountRoutes(app: App): Promise<void> {
             scopeId: r.scopeId,
           });
         }
-        pending = await mintCode(tx, id, phone, 'setup');
+        // `app.sms` so a twilio_verify anchor stores the marker (SCRUM-455);
+        // `deliverCode` below starts the Verify challenge after the commit.
+        pending = await mintCode(tx, id, phone, 'setup', app.sms);
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,

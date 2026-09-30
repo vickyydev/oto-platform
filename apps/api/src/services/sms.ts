@@ -8,7 +8,7 @@ import { phoneHash } from '../lib/scrub';
  *
  * A verification code is the only way a member of staff finishes setting up
  * an account or recovers a password, so "the SMS did not go out" is a person
- * locked out of the till, not a line in a log. Two adapters exist, chosen by
+ * locked out of the till, not a line in a log. Three adapters exist, chosen by
  * SMS_ADAPTER:
  *  - "console": writes the message to the api log. This is genuinely how a
  *    code is delivered on a developer's machine, and it is a configuration
@@ -26,6 +26,14 @@ import { phoneHash } from '../lib/scrub';
  *        can do.
  *    The key wins when both are present. Either way the URL path names the
  *    ACCOUNT, so TWILIO_ACCOUNT_SID is required in both shapes.
+ *  - "twilio_verify" (SCRUM-455): Twilio's Verify API. Twilio GENERATES, SENDS
+ *    and CHECKS the code through its own pre-registered senders — the route
+ *    that reaches Thai phones without this platform registering a sender of its
+ *    own. Needs TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and a Verify service
+ *    TWILIO_VERIFY_SERVICE_SID ("VA…"). Because the code lives at Twilio and
+ *    never here, this adapter declares the `checksCodes` capability: the auth
+ *    service asks it to START and to CHECK a verification instead of minting,
+ *    storing and comparing a code of its own.
  *
  * A misconfigured adapter now fails at construction — which is boot — rather
  * than at the first person who needs a code. Until S2-01c both the
@@ -34,8 +42,38 @@ import { phoneHash } from '../lib/scrub';
  * the code is written into a hosted log stream, and the only signal is one
  * warning line.
  */
+/**
+ * The verdict Twilio Verify gives a typed code (SCRUM-455). `approved` lets it
+ * through; `denied` is a wrong code, a guess to be counted like any other;
+ * `expired` is no live verification — the code timed out, ran out of attempts,
+ * or was already approved, since Twilio closes an approved verification itself.
+ */
+export type CodeVerdict = 'approved' | 'denied' | 'expired';
+
+/**
+ * The capability an adapter declares when Twilio — not this platform — owns the
+ * code from end to end (twilio_verify, SCRUM-455). Verify GENERATES, SENDS and
+ * CHECKS the code, so there is no local secret to mint, store or compare:
+ * `start` opens a verification and `checkCode` puts a typed guess to it. The
+ * auth service consults this in place of the local hash path wherever it is
+ * present.
+ */
+export interface CodeChecker {
+  /** Open a verification — Twilio composes and sends the code to the phone. */
+  start(phone: string): Promise<void>;
+  /** Put a typed code to Twilio and map its answer to a verdict. */
+  checkCode(phone: string, code: string): Promise<CodeVerdict>;
+}
+
 export interface SmsSender {
   send(phone: string, message: string): Promise<void>;
+  /**
+   * Present only on an adapter that owns the code itself (twilio_verify). When
+   * it is set the auth service never mints, stores or compares a code — it asks
+   * this to start and to check the verification instead. Absent on `console`
+   * and `twilio`, which deliver a code this platform minted.
+   */
+  checksCodes?: CodeChecker;
 }
 
 export interface SmsConfig {
@@ -45,9 +83,11 @@ export interface SmsConfig {
   twilioApiKeySid?: string;
   twilioApiKeySecret?: string;
   twilioFrom?: string;
+  /** The Twilio Verify service ("VA…") the twilio_verify adapter checks against. */
+  twilioVerifyServiceSid?: string;
 }
 
-export const SMS_ADAPTERS = ['console', 'twilio'] as const;
+export const SMS_ADAPTERS = ['console', 'twilio', 'twilio_verify'] as const;
 
 /**
  * The recipient is never logged in the clear (S2-01a) — only a stable hash,
@@ -206,6 +246,144 @@ function twilioSender(
   };
 }
 
+/**
+ * Twilio Verify (twilio_verify, SCRUM-455). Twilio owns the whole code: it
+ * generates it, sends it through a pre-registered sender, and answers whether a
+ * typed one is right. So this adapter carries no `From` and composes no
+ * message; it declares `checksCodes` and the auth service drives it through
+ * that capability instead of `send`.
+ *
+ * The HTTP is the send path's, deliberately: HTTP Basic with the account SID
+ * and auth token, the same ten-second deadline, the same three attempts with
+ * the same backoff, the same rule that a rejected connection or a 429/5xx is
+ * retried while our own timeout is not, and the same `AppError` surfaced on
+ * failure. Verify's own two calls sit on top of that shared `post` — a start
+ * and a check — each classifying the final response for itself.
+ */
+function twilioVerifySender(
+  accountSid: string,
+  authToken: string,
+  verifyServiceSid: string,
+  log: Logger,
+): SmsSender {
+  const auth = 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+  const base = `https://verify.twilio.com/v2/Services/${verifyServiceSid}`;
+
+  /**
+   * One POST under the send path's retry/timeout/backoff policy, returning the
+   * final Response — 2xx or not, body still open — for the caller to classify,
+   * or throwing `deliveryFailed` when the connection never answered or our own
+   * deadline expired. Never logs `err` (undici hangs the request, and the
+   * request carries the recipient) nor the body (Verify's JSON quotes the
+   * recipient); only the phone hash and the status.
+   */
+  async function post(path: string, params: URLSearchParams, to: string): Promise<Response> {
+    for (let attempt = 1; attempt <= TWILIO_ATTEMPTS; attempt++) {
+      const last = attempt === TWILIO_ATTEMPTS;
+      let res: Response;
+      try {
+        res = await fetch(`${base}/${path}`, {
+          method: 'POST',
+          headers: { authorization: auth, 'content-type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          signal: AbortSignal.timeout(TWILIO_TIMEOUT_MS),
+        });
+      } catch (err) {
+        // Our deadline says nothing about what Twilio did with the request, so
+        // it is not retried — the send path's reasoning, and here a retried
+        // start would text a second code.
+        if (isTimeout(err)) {
+          log.error({ sms: { to, attempt } }, `Twilio Verify (${path}) to ${to} timed out`);
+          throw deliveryFailed();
+        }
+        log.warn({ sms: { to, attempt } }, `Twilio Verify (${path}) to ${to} did not complete`);
+        if (last) throw deliveryFailed();
+        await sleep(retryDelay(attempt, null));
+        continue;
+      }
+      const retryable = res.status === 429 || res.status >= 500;
+      if (!retryable || last) return res; // the caller reads or cancels the body
+      const retryAfter = res.headers.get('retry-after');
+      await res.body?.cancel().catch(() => undefined);
+      log.warn(
+        { sms: { to, status: res.status, attempt } },
+        `Twilio Verify (${path}) to ${to} failed; retrying`,
+      );
+      await sleep(retryDelay(attempt, retryAfter));
+    }
+    // Unreachable: the last attempt always returns or throws above.
+    throw deliveryFailed();
+  }
+
+  return {
+    /**
+     * Verify composes and sends the message itself, so there is no message to
+     * hand this adapter: the two code paths route to `checksCodes` instead.
+     * Reaching `send` means a caller bypassed that capability — a programming
+     * error, so it fails loudly rather than silently delivering nothing.
+     */
+    async send() {
+      throw new Error(
+        'twilio_verify has no send(): Twilio composes and sends the code itself. ' +
+          'Start and check it through the checksCodes capability instead.',
+      );
+    },
+    checksCodes: {
+      // POST /Verifications — Twilio generates the code and sends it by SMS.
+      async start(phone) {
+        const to = phoneHash(phone);
+        const params = new URLSearchParams({ To: phone, Channel: 'sms' });
+        const res = await post('Verifications', params, to);
+        await res.body?.cancel().catch(() => undefined);
+        if (!res.ok) {
+          // The status is the whole of what is kept — never Verify's error
+          // text, which quotes the number. A 401 is our credentials and a 404
+          // is the Verify service SID; neither improves by being asked again.
+          log.error({ sms: { to, status: res.status } }, `Twilio Verify start to ${to} failed`);
+          throw deliveryFailed(res.status);
+        }
+        log.info({ sms: { to } }, `Verification started for ${to} via Twilio Verify`);
+      },
+      // POST /VerificationCheck — Twilio answers whether the typed code is right.
+      async checkCode(phone, code) {
+        const to = phoneHash(phone);
+        const params = new URLSearchParams({ To: phone, Code: code });
+        const res = await post('VerificationCheck', params, to);
+        /**
+         * A 404 is not a transport failure but a verdict: there is no pending
+         * verification for this number. It timed out, ran out of attempts, or
+         * was already approved — Twilio closes an approved verification itself,
+         * so the SECOND check of a code that just passed lands here, which is
+         * one half of what keeps a Verify code single-use (the consumed anchor
+         * row in the auth service is the other).
+         */
+        if (res.status === 404) {
+          await res.body?.cancel().catch(() => undefined);
+          return 'expired';
+        }
+        if (!res.ok) {
+          await res.body?.cancel().catch(() => undefined);
+          log.error({ sms: { to, status: res.status } }, `Twilio Verify check for ${to} failed`);
+          throw deliveryFailed(res.status);
+        }
+        /**
+         * The body quotes the recipient, so only `status` is read out of it and
+         * nothing is logged. `approved` is the one answer that lets a code
+         * through; `pending` is a wrong code and anything else is treated as
+         * one — a `denied` the auth service counts as a guess.
+         */
+        let status: string | undefined;
+        try {
+          status = ((await res.json()) as { status?: string }).status;
+        } catch {
+          status = undefined;
+        }
+        return status === 'approved' ? 'approved' : 'denied';
+      },
+    },
+  };
+}
+
 /** Twilio's two SID kinds, each with the prefix that identifies it. */
 const SID_SHAPES = {
   TWILIO_ACCOUNT_SID: { prefix: 'AC', kind: 'an account SID' },
@@ -232,6 +410,18 @@ function wrongSidShape(name: (typeof SID_NAMES)[number], value: string): string 
       ? `, and this value is ${SID_SHAPES[actually].kind}, which belongs in ${actually}`
       : '')
   );
+}
+
+/**
+ * A Verify service SID is "VA" + 32 hex (SCRUM-455). The likely paste errors
+ * are the account SID ("AC"), an API key SID ("SK") or the Messaging Service
+ * SID ("MG") in this slot, each of which Twilio answers with a 404 at the first
+ * person who needs a code — days after the deploy, reading as "the SMS did not
+ * go out". Two characters are cheap to check here instead.
+ */
+function wrongVerifyShape(value: string): string | null {
+  if (value.startsWith('VA')) return null;
+  return 'TWILIO_VERIFY_SERVICE_SID does not hold a Verify service SID — those begin "VA"';
 }
 
 export function buildSmsSender(cfg: SmsConfig, log: Logger): SmsSender {
@@ -302,6 +492,46 @@ export function buildSmsSender(cfg: SmsConfig, log: Logger): SmsSender {
       }
 
       return twilioSender(accountSid, basic, from, log);
+    }
+    case 'twilio_verify': {
+      const {
+        twilioAccountSid: accountSid,
+        twilioAuthToken: token,
+        twilioVerifyServiceSid: serviceSid,
+      } = cfg;
+
+      // A value present but of the wrong kind is a more specific diagnosis than
+      // one absent, so it is reported first — the same order the twilio case
+      // uses. Verify authenticates as the account (SID + auth token); an API
+      // key is not a shape here.
+      const wrong = [
+        accountSid ? wrongSidShape('TWILIO_ACCOUNT_SID', accountSid) : null,
+        serviceSid ? wrongVerifyShape(serviceSid) : null,
+      ].filter((problem): problem is string => problem !== null);
+      if (wrong.length) {
+        throw new Error(
+          `SMS_ADAPTER=twilio_verify but a Twilio credential is the wrong kind: ${wrong.join('; ')}. ` +
+            'Twilio would answer this with a 401 or a 404 at the first person who needs a code, which ' +
+            'is days later and looks like a delivery problem rather than a configuration one.',
+        );
+      }
+
+      const missing = [
+        // Names the account in the URL path, exactly as the twilio case does.
+        accountSid ? null : 'TWILIO_ACCOUNT_SID',
+        token ? null : 'TWILIO_AUTH_TOKEN',
+        // The Verify service that generates, sends and checks the code.
+        serviceSid ? null : 'TWILIO_VERIFY_SERVICE_SID',
+      ].filter((name): name is string => name !== null);
+      if (missing.length) {
+        throw new Error(
+          `SMS_ADAPTER=twilio_verify but ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not set. ` +
+            'Set them, or set SMS_ADAPTER=console on a local machine; there is no fallback, because a ' +
+            'fallback writes verification codes to the log and delivers none of them.',
+        );
+      }
+
+      return twilioVerifySender(accountSid!, token!, serviceSid!, log);
     }
     case 'console':
       // Allowed here, refused by assertProductionSafe on any deployment.

@@ -172,6 +172,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
         twilioApiKeySid: opts.env.TWILIO_API_KEY_SID || undefined,
         twilioApiKeySecret: opts.env.TWILIO_API_KEY_SECRET || undefined,
         twilioFrom: opts.env.TWILIO_FROM || undefined,
+        twilioVerifyServiceSid: opts.env.TWILIO_VERIFY_SERVICE_SID || undefined,
       },
       log,
     ),

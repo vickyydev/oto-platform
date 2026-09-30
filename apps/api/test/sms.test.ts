@@ -328,3 +328,214 @@ describe('the Twilio sender', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
+
+/**
+ * SCRUM-455 — the twilio_verify adapter. Twilio owns the code end to end, so
+ * this adapter carries no `From`, composes no message and declares the
+ * `checksCodes` capability instead of a usable `send`. It authenticates as the
+ * account (SID + auth token) and every request names the Verify service in its
+ * path. No test here makes a real network call.
+ */
+const verifyConfig = {
+  adapter: 'twilio_verify',
+  twilioAccountSid: 'ACtest',
+  twilioAuthToken: 'authtoken-value',
+  twilioVerifyServiceSid: 'VAtest',
+};
+
+/** A Verify response with a JSON body — what Twilio answers a check with. */
+const jsonResponse = (status: number, body: Record<string, unknown>): Response =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+
+describe('choosing the twilio_verify adapter (SCRUM-455)', () => {
+  it('names every missing credential instead of falling back', () => {
+    const { log } = captureLog();
+    expect(() => buildSmsSender({ adapter: 'twilio_verify' }, log)).toThrow(
+      /TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID/,
+    );
+  });
+
+  it('names the account SID when only it is missing', () => {
+    const { log } = captureLog();
+    expect(() =>
+      buildSmsSender({ ...verifyConfig, twilioAccountSid: undefined }, log),
+    ).toThrow(/TWILIO_ACCOUNT_SID is not set/);
+  });
+
+  it('names the auth token when only it is missing', () => {
+    const { log } = captureLog();
+    expect(() =>
+      buildSmsSender({ ...verifyConfig, twilioAuthToken: undefined }, log),
+    ).toThrow(/TWILIO_AUTH_TOKEN is not set/);
+  });
+
+  it('names the Verify service SID when only it is missing', () => {
+    const { log } = captureLog();
+    expect(() =>
+      buildSmsSender({ ...verifyConfig, twilioVerifyServiceSid: undefined }, log),
+    ).toThrow(/TWILIO_VERIFY_SERVICE_SID is not set/);
+  });
+
+  it('refuses a key SID pasted into the account variable', () => {
+    const { log } = captureLog();
+    const build = (): unknown =>
+      buildSmsSender({ ...verifyConfig, twilioAccountSid: 'SKtest' }, log);
+    expect(build).toThrow(/TWILIO_ACCOUNT_SID does not hold an account SID/);
+  });
+
+  it('refuses anything but a Verify SID in the Verify variable', () => {
+    const { log } = captureLog();
+    // The Messaging Service SID next door in the console is the likely paste.
+    const build = (): unknown =>
+      buildSmsSender({ ...verifyConfig, twilioVerifyServiceSid: 'MGtest' }, log);
+    expect(build).toThrow(/TWILIO_VERIFY_SERVICE_SID does not hold a Verify service SID/);
+    expect(build).toThrow(/begin "VA"/);
+  });
+
+  it('builds when all three are set', () => {
+    const { log } = captureLog();
+    expect(() => buildSmsSender(verifyConfig, log)).not.toThrow();
+  });
+
+  it('has a checksCodes capability, and a send() that refuses to be used', async () => {
+    const { log } = captureLog();
+    const sender = buildSmsSender(verifyConfig, log);
+    expect(sender.checksCodes).toBeTruthy();
+    // Verify composes the message; reaching send() means a caller bypassed the
+    // capability, so it fails loudly rather than delivering nothing.
+    await expect(sender.send(PHONE, MESSAGE)).rejects.toThrow(/no send\(\)/);
+  });
+});
+
+describe('the Twilio Verify sender (SCRUM-455)', () => {
+  it('starts a verification: To, Channel=sms, account auth, service in the path', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(201, { status: 'pending' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { log, lines } = captureLog();
+
+    await buildSmsSender(verifyConfig, log).checksCodes!.start(PHONE);
+
+    expect(fetchMock.mock.calls[0]![0]).toContain(
+      '/v2/Services/VAtest/Verifications',
+    );
+    const sent = new URLSearchParams(fetchMock.mock.calls[0]![1].body as string);
+    expect(sent.get('To')).toBe(PHONE);
+    expect(sent.get('Channel')).toBe('sms');
+    expect(basicPair(fetchMock)).toBe('ACtest:authtoken-value');
+    expectNoLeak(lines);
+  });
+
+  it('checks a code against VerificationCheck with To and Code', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { status: 'approved' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { log } = captureLog();
+
+    const verdict = await buildSmsSender(verifyConfig, log).checksCodes!.checkCode(
+      PHONE,
+      '123456',
+    );
+
+    expect(fetchMock.mock.calls[0]![0]).toContain(
+      '/v2/Services/VAtest/VerificationCheck',
+    );
+    const sent = new URLSearchParams(fetchMock.mock.calls[0]![1].body as string);
+    expect(sent.get('To')).toBe(PHONE);
+    expect(sent.get('Code')).toBe('123456');
+    expect(verdict).toBe('approved');
+  });
+
+  it('maps status=approved → approved', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { status: 'approved' })));
+    const { log } = captureLog();
+    expect(await buildSmsSender(verifyConfig, log).checksCodes!.checkCode(PHONE, '123456')).toBe(
+      'approved',
+    );
+  });
+
+  it('maps status=pending (a wrong code) → denied', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { status: 'pending' })));
+    const { log } = captureLog();
+    expect(await buildSmsSender(verifyConfig, log).checksCodes!.checkCode(PHONE, '000000')).toBe(
+      'denied',
+    );
+  });
+
+  it('maps a 404 (no live verification) → expired', async () => {
+    // Twilio 404s a VerificationCheck when the verification has timed out, run
+    // out of attempts, or was already approved and closed.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(404, { code: 20404 })));
+    const { log } = captureLog();
+    expect(await buildSmsSender(verifyConfig, log).checksCodes!.checkCode(PHONE, '123456')).toBe(
+      'expired',
+    );
+  });
+
+  it('reads only status from the check body — the recipient in it never leaks', async () => {
+    // The real VerificationCheck body quotes `to`; the adapter must parse
+    // status out of it without ever logging the body.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(200, { status: 'approved', to: PHONE })),
+    );
+    const { log, lines } = captureLog();
+
+    const verdict = await buildSmsSender(verifyConfig, log).checksCodes!.checkCode(PHONE, '123456');
+
+    expect(verdict).toBe('approved');
+    expectNoLeak(lines);
+  });
+
+  it('surfaces a 401 on the check as an error a route can answer with', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(401, { code: 20003 })));
+    const { log } = captureLog();
+
+    const err = await buildSmsSender(verifyConfig, log)
+      .checksCodes!.checkCode(PHONE, '123456')
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(AppError);
+    expect((err as AppError).code).toBe('SMS_DELIVERY_FAILED');
+  });
+
+  it('surfaces a failed start as an error, and logs neither number nor code', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response(401)));
+    const { log, lines } = captureLog();
+
+    const err = await buildSmsSender(verifyConfig, log)
+      .checksCodes!.start(PHONE)
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(AppError);
+    expect((err as AppError).code).toBe('SMS_DELIVERY_FAILED');
+    expectNoLeak(lines);
+  });
+
+  it('retries a 500 on start and succeeds on the second attempt', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(response(500))
+      .mockResolvedValueOnce(jsonResponse(201, { status: 'pending' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { log } = captureLog();
+
+    await buildSmsSender(verifyConfig, log).checksCodes!.start(PHONE);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry a start our own deadline aborted', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(timeoutError());
+    vi.stubGlobal('fetch', fetchMock);
+    const { log } = captureLog();
+
+    await expect(
+      buildSmsSender(verifyConfig, log).checksCodes!.start(PHONE),
+    ).rejects.toBeInstanceOf(AppError);
+    // A timeout says nothing about what Twilio did, so a retried start could
+    // send a second code — exactly as the SMS send path reasons.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

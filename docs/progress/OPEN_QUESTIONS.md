@@ -157,7 +157,24 @@ path currently dead-ends on the POS station picker — build item B1 fixes it.
 **Needed:** the numbers to verify, a prepaid balance on the account, and a
 decision on the production route.
 
-## 3. `TWILIO_AUTH_TOKEN` in `.env` — **still the truncated value on 2026-09-30**
+## 3. ~~`TWILIO_AUTH_TOKEN` in `.env`~~ — **resolved 2026-09-30, night: the account is live**
+
+The owner replaced the whole Twilio block in `.env` with the three new lines —
+account SID, a real 32-character auth token, and the Verify service — and
+removed the old trial API key pair and sender in the same edit. Validated
+directly against Twilio without sending anything: the account answers
+**active, type Full** (the trial limits are gone), the balance is funded, and
+the Verify service ("OTO App", 6-digit codes, SMS-capable) answers under the
+token. The route question 2 raised is thereby settled: **Twilio Verify** is the
+production route. The `twilio_verify` adapter is BUILT (SCRUM-455): Verify generates, sends and
+checks the code; the platform keeps a marker row as the audit anchor so the
+outstanding-code window, resend throttles, guess counting and single use all
+hold, and the check's enumeration catch is closed — a phone whose Verify
+session is gone answers guess for guess like a phone with nothing outstanding.
+Every environment stays on the console adapter until the owner says which one
+switches (`SMS_ADAPTER=twilio_verify` plus the three Twilio variables on that
+service). An earlier note here read the file before the owner's newest save
+and wrongly called the token still truncated.
 
 **2026-09-30, evening:** the owner obtained the real account credentials and a
 **Twilio Verify service** — exactly the route question 2's write-up recommended
