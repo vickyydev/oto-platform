@@ -20,19 +20,47 @@ import {
 import { branches } from "@shared/schema";
 import { generateSecureToken, INVITATION_TEMPLATES, formatDateForLanguage, formatTimeForLanguage, type ParentExperienceLanguage } from "../shared/localization";
 import puppeteer from "puppeteer";
-import { uploadToObjectStorage } from "./file-storage";
+import { getFileFromObjectStorage, uploadToObjectStorage } from "./file-storage";
 import multer from "multer";
+import { Readable } from "node:stream";
 
 const router = Router();
+const invitationPhotoTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+function escapeInvitationHtml(value: string): string {
+  return value.replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[char]!);
+}
+
+async function invitationPhotoDataUri(photoUrl: string | null): Promise<string> {
+  const filename = /^\/api\/files\/invitations\/([a-zA-Z0-9._-]+\.(?:jpe?g|png|webp))$/.exec(photoUrl || "")?.[1];
+  if (!filename) return "";
+  const file = await getFileFromObjectStorage("invitations", filename);
+  if (!file || !invitationPhotoTypes.has(file.contentType)) return "";
+  const stream = file.stream as Readable;
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of stream) {
+    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += bytes.length;
+    if (size > 5 * 1024 * 1024) {
+      stream.destroy();
+      return "";
+    }
+    chunks.push(bytes);
+  }
+  return `data:${file.contentType};base64,${Buffer.concat(chunks).toString("base64")}`;
+}
 
 const photoUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
+    if (invitationPhotoTypes.has(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files are allowed"));
+      cb(new Error("Only JPEG, PNG or WebP images are allowed"));
     }
   },
 });
@@ -470,36 +498,34 @@ router.post("/api/public/guest-invite/:token/rsvp", async (req: Request, res: Re
       return res.status(404).json({ error: "Invalid or expired invitation link" });
     }
     
-    const { guestIdentifier } = req.body;
-    
-    const validatedData = insertRsvpEntrySchema.parse({
+    const parsed = insertRsvpEntrySchema.safeParse({
       ...req.body,
       eventId: event.id,
       source: "guest_link",
     });
-    
-    let rsvp;
-    if (guestIdentifier) {
-      const existing = await db.query.rsvpEntries.findFirst({
-        where: and(
+    if (!parsed.success) return res.status(400).json({ error: "Invalid RSVP details" });
+    const guestIdentifier = parsed.data.guestIdentifier?.trim() || null;
+    const validatedData = { ...parsed.data, guestIdentifier };
+
+    const rsvp = await db.transaction(async tx => {
+      if (guestIdentifier) {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`${event.id}:${guestIdentifier}`}))`);
+        const [existing] = await tx.select().from(rsvpEntries).where(and(
           eq(rsvpEntries.eventId, event.id),
           eq(rsvpEntries.guestIdentifier, guestIdentifier),
           eq(rsvpEntries.isDeleted, false)
-        ),
-        orderBy: desc(rsvpEntries.createdAt),
-      });
-      
-      if (existing) {
-        [rsvp] = await db.update(rsvpEntries)
-          .set({ ...validatedData, updatedAt: new Date() })
-          .where(eq(rsvpEntries.id, existing.id))
-          .returning();
+        )).orderBy(desc(rsvpEntries.createdAt)).limit(1);
+        if (existing) {
+          const [updated] = await tx.update(rsvpEntries)
+            .set({ ...validatedData, updatedAt: new Date() })
+            .where(eq(rsvpEntries.id, existing.id))
+            .returning();
+          return updated;
+        }
       }
-    }
-    
-    if (!rsvp) {
-      [rsvp] = await db.insert(rsvpEntries).values(validatedData).returning();
-    }
+      const [created] = await tx.insert(rsvpEntries).values(validatedData).returning();
+      return created;
+    });
     
     res.json(rsvp);
   } catch (error) {
@@ -599,7 +625,7 @@ router.post("/api/public/parent-portal/:token/upload-photo", photoUpload.single(
       return res.status(400).json({ error: "No photo file provided" });
     }
     
-    const ext = req.file.originalname.split(".").pop() || "jpg";
+    const ext = req.file.mimetype === "image/png" ? "png" : req.file.mimetype === "image/webp" ? "webp" : "jpg";
     const fileName = `child-photo-${event.id}-${Date.now()}.${ext}`;
     
     const photoUrl = await uploadToObjectStorage(
@@ -702,7 +728,10 @@ router.post("/api/public/parent-portal/:token/generate-invitation", async (req: 
     };
 
     // Read OTO shape assets as base64 data URIs for Puppeteer rendering
-    const assetsDir = path.join(process.cwd(), "client/public/oto-assets");
+    const builtAssetsDir = path.join(process.cwd(), "dist/public/oto-assets");
+    const assetsDir = fs.existsSync(builtAssetsDir)
+      ? builtAssetsDir
+      : path.join(process.cwd(), "client/public/oto-assets");
     const readAsDataUri = (file: string, mime: string) => {
       try {
         const buf = fs.readFileSync(path.join(assetsDir, file));
@@ -717,12 +746,14 @@ router.post("/api/public/parent-portal/:token/generate-invitation", async (req: 
     const imgGreen  = readAsDataUri("shape-green.png",  "image/png");
     const imgOrange = readAsDataUri("shape-orange.png", "image/png");
     const imgDragon = readAsDataUri("dragon-2.jpg",     "image/jpeg");
+    const photoDataUri = await invitationPhotoDataUri(design.photoUrl);
 
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
@@ -885,26 +916,26 @@ router.post("/api/public/parent-portal/:token/generate-invitation", async (req: 
 
           <div class="photo-outer">
             <div class="photo-inner">
-              ${design.photoUrl
-                ? `<img src="${design.photoUrl}" alt="${design.childName}" />`
+              ${photoDataUri
+                ? `<img src="${photoDataUri}" alt="${escapeInvitationHtml(design.childName)}" />`
                 : (imgOrange ? `<img src="${imgOrange}" alt="" style="width:100%;height:100%;object-fit:contain;padding:24px;opacity:0.75;" />` : "")
               }
             </div>
           </div>
 
-          <div class="birthday-line">${birthdayLine}</div>
+          <div class="birthday-line">${escapeInvitationHtml(birthdayLine)}</div>
 
           <div class="details-box">
             <div class="detail-row">
               <div class="dot-icon icon-date"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="8" x2="8" y1="14" y2="18"/><line x1="12" x2="12" y1="14" y2="18"/><line x1="16" x2="16" y1="14" y2="18"/></svg></div>
-              <span>${formattedDate}</span>
+              <span>${escapeInvitationHtml(formattedDate)}</span>
             </div>
             <div class="detail-row">
               <div class="dot-icon icon-time"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16.5 12"/></svg></div>
-              <span>${formattedTime}</span>
+              <span>${escapeInvitationHtml(formattedTime)}</span>
             </div>
             ${design.locationName
-              ? `<div class="detail-row"><div class="dot-icon icon-loc"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div><span>${design.locationName}</span></div>`
+              ? `<div class="detail-row"><div class="dot-icon icon-loc"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div><span>${escapeInvitationHtml(design.locationName)}</span></div>`
               : ""}
           </div>
           <div class="footer-text">OTO BIRTHDAY EXPERIENCE</div>
@@ -919,16 +950,20 @@ router.post("/api/public/parent-portal/:token/generate-invitation", async (req: 
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium",
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 800, height: 800 });
-    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    
-    const screenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 90 });
-    await browser.close();
+    let screenshotBuffer: Buffer;
+    try {
+      const page = await browser.newPage();
+      await page.setJavaScriptEnabled(false);
+      await page.setViewport({ width: 800, height: 800 });
+      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      screenshotBuffer = Buffer.from(await page.screenshot({ type: 'jpeg', quality: 90 }));
+    } finally {
+      await browser.close();
+    }
     
     const fileName = `invitation-${event.id}-${Date.now()}.jpg`;
     const imageUrl = await uploadToObjectStorage(
-      Buffer.from(screenshotBuffer),
+      screenshotBuffer,
       'invitations',
       fileName,
       'image/jpeg'
