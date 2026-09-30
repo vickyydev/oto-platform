@@ -13,10 +13,10 @@ For each Testing module, record one real staging write or action and resulting s
 | Users and permissions | Testing | [Local access checks](oto-app-lift/org-hr-verification.md) passed; create/change access on staging and prove a lower-role refusal. |
 | Organization: branches, departments, operators | Testing | A launcher-signed second-tenant administrator created branches, saw only its own, and received 404 for foreign reads/writes; [real staging branches capture](oto-app-lift/scrum-193-staging-foreign-branches.png). Department and operator writes and lower-role refusal remain. |
 | HR employees | Testing | [Local HR checks](oto-app-lift/org-hr-verification.md); create/edit an employee on staging and verify a denied branch read. |
-| Contracts and e-sign | Testing | [PDF and scoped-storage checks](oto-app-lift/contracts-pdfs.md) passed locally; sign on staging, open the stored PDF through scoped access, deny another session. |
+| Contracts and e-sign | Testing | A fresh staged contract was signed at 820x1180, the [success screen](oto-app-lift/scrum-193-staging-contract-signed.png) and [signed PDF](oto-app-lift/scrum-193-staging-contract-pdf.png) agreed on the park date, and anonymous/altered signed access was refused; template and employee/branch role scope remain. |
 | Contract templates | Testing | [Existing local browser checks](oto-app-lift/contracts-pdfs.md); save a template and generate its result on staging. |
 | Policies | Testing | Entry screen only in the [local route scan](oto-app-lift/module-entry-smoke.md); publish/read and deny an unauthorized edit on staging. |
-| Letters and e-sign | Testing | [PDF storage check](oto-app-lift/contracts-pdfs.md) passed locally; sign a letter and open its scoped PDF on staging. |
+| Letters and e-sign | Testing | A fresh staged letter was signed at 820x1180, the [success screen](oto-app-lift/scrum-193-staging-letter-signed.png) and [signed PDF](oto-app-lift/scrum-193-staging-letter-pdf.png) agreed on the park date; authenticated signed-object bytes loaded and anonymous access failed. Wider letter role/branch flow remains. |
 | Employee documents | Testing | [Upload/download/delete check](oto-app-lift/employee-documents.md) passed locally; round-trip a document on staging and deny another employee path. |
 | Assets | Testing | Present in the lifted app; create/assign/return an asset on staging and verify role/branch limits. |
 | Offboarding | Testing | [Local departed-account check](oto-app-lift/org-hr-verification.md); execute an offboarding action on staging and verify resulting access. |
@@ -28,8 +28,8 @@ For each Testing module, record one real staging write or action and resulting s
 | Timekeeping | Testing | [Local HR checks](oto-app-lift/org-hr-verification.md) and [PIN-evidence review](oto-app-lift/files.md); record/review a shift on staging and deny another branch. |
 | Scheduling | Testing | [Existing 16-check batch](oto-app-lift/scheduling.md) passed locally; publish a rota and verify My Shifts on staging. |
 | Leave and holidays | Testing | Present in the lifted app; submit/approve leave and verify a holiday conflict and denied role on staging. |
-| Tasks and ops board | Testing | [Existing local batch](oto-app-lift/tasks-checklists.md) passed; create/complete a task and check assignee/branch visibility on staging. |
-| Checklists and media | Testing | [Existing local batch](oto-app-lift/tasks-checklists.md); complete an item with media on staging and deny an unrelated record read. |
+| Tasks and ops board | BROKEN | A [staged task](oto-app-lift/tasks-checklists-ops-tablet-2026-10-01.png) was created and completed, with anonymous detail refused and cleanup verified. Multiple task read/write paths still use the default tenant; repair and second-tenant/branch proof remain. |
+| Checklists and media | Testing | A staged [checklist run](oto-app-lift/tasks-checklists-run-tablet-2026-10-01.png) was completed with a synthetic image retrieved byte-for-byte; anonymous detail was refused and cleanup verified. Restricted-role/tenant proof and wider checklist states remain. |
 | Announcements | Testing | Present in the lifted app; publish/read an announcement and verify audience/branch filtering on staging. |
 | In-app notifications | Testing | A staged task notified a second signed-in user; the unread count changed from one to zero after mark-read (SCRUM-464 Deployed). Cross-tenant notification isolation remains for the parent walkthrough. |
 | Attention engine | Testing | [Local route entry](oto-app-lift/module-entry-smoke.md); trigger an attention item and verify its assignee/result on staging; job ownership is an open platform gate. |
@@ -37,7 +37,7 @@ For each Testing module, record one real staging write or action and resulting s
 | Supplier portal | Testing | A staged branch token opened its own Fix report and an unrelated branch token was refused (SCRUM-457 Deployed). Stage a supplier comment and close action for the parent walkthrough. |
 | **Park, events and check-in** | | |
 | Events core | Testing | [Existing local event checks](oto-app-lift/events-camps.md); create/edit an event on staging, verify branch scope and POS view once supplied. |
-| BEO | Testing | [Local PDF render](oto-app-lift/contracts-pdfs.md); create a BEO and open its stored, scoped PDF on staging. |
+| BEO | BROKEN | A staging [signed BEO PDF](oto-app-lift/scrum-193-staging-beo-pdf.png) rendered from private object bytes with the corrected park date and anonymous access failed. A local restricted-manager probe found same-tenant other-branch BEO setup accessible; helper-level scope repair and staging refusal proof remain. |
 | Packages and menus | Testing | [Existing local set-menu check](oto-app-lift/events-camps.md); save a package/menu and verify the BEO result on staging. |
 | Camps and children | Testing | A launcher-signed second tenant created a camp and child, updated attendance, and removed the registration while a default-tenant administrator received 404; [before](oto-app-lift/scrum-193-staging-foreign-camp-before-delete.png), [child row](oto-app-lift/scrum-193-staging-foreign-camp-child-row.png), [after](oto-app-lift/scrum-193-staging-foreign-camp-after-delete.png). Wider camp/children workflows remain. |
 | Parent portal and RSVP | Testing | SCRUM-456's live staging invitation rendered packaged artwork and escaped hostile editable markup; its local concurrent RSVP probe passed. Complete a public staging RSVP and invalid-link result. |
