@@ -12268,6 +12268,9 @@ OTO Company Limited`,
       }
 
       const { branchId, employeeId, timeOffType, startDate, endDate, notes, approved } = validationResult.data;
+      if (approved) {
+        return res.status(503).json({ message: "Time-off approval is unavailable until approval tracking is enabled" });
+      }
 
       // Check branch access - global_admin and admin have all access
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
@@ -12347,53 +12350,6 @@ OTO Company Limited`,
         note: notes || null,
         createdBy: user.id,
       });
-
-      // If this is SICK leave and approved, unassign affected schedule assignments
-      if (timeOffType === "SICK" && approved) {
-        // Remove schedule assignments for the new Planday-style scheduling
-        const removedAssignments = await storage.deleteAssignmentsByEmployeeAndDateRange(
-          employeeId,
-          startDateStr,
-          endDateStr
-        );
-
-        // Create SHIFT_NEEDS_COVERAGE attention items for each removed assignment
-        for (const assignment of removedAssignments) {
-          const shiftRow = await storage.getShiftRow(assignment.shiftRowId);
-          if (shiftRow) {
-            const shiftDate = new Date(assignment.shiftDate);
-            const hoursUntilShift = (shiftDate.getTime() - Date.now()) / (1000 * 60 * 60);
-            const severity = hoursUntilShift < 24 ? "high" : hoursUntilShift < 72 ? "medium" : "low";
-            
-            await storage.createAttentionItem({
-              branchId,
-              employeeId,
-              type: "SHIFT_NEEDS_COVERAGE",
-              severity,
-              title: `Shift needs coverage: ${shiftRow.startTime.slice(0,5)}-${shiftRow.endTime.slice(0,5)} on ${format(shiftDate, "MMM d")}`,
-              description: `${employee.fullName} called in sick. Shift at ${shiftRow.department?.name || "Unknown dept"} needs coverage.`,
-              dueDate: shiftDate,
-              ruleKey: "SICK_LEAVE_COVERAGE",
-              entityKey: `${assignment.shiftRowId}_${assignment.shiftDate}`,
-            });
-          }
-        }
-
-        // Also handle old shift model if it still exists
-        try {
-          const affectedShifts = await storage.getShifts({
-            branchId,
-            dateFrom: dateOnlyUtc(startDateStr),
-            dateTo: dateOnlyUtc(endDateStr),
-            employeeId,
-          });
-          for (const shift of affectedShifts) {
-            await storage.unassignShiftEmployee(shift.id, true);
-          }
-        } catch {
-          // Old shift model may not exist, ignore errors
-        }
-      }
 
       res.status(201).json(record);
     } catch (error) {
