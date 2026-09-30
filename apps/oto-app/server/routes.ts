@@ -1134,10 +1134,17 @@ export async function registerRoutes(
   // My Account - Sync Profile Photo (save captured photo from camera)
   app.post("/api/my-account/profile-photo", requireAuth, profilePhotoUpload.single("photo"), fixMulterFilenames, async (req, res, next) => {
     try {
-      const user = req.user as any;
+      const user = req.user as UserWithBranchAccess;
 
       if (!req.file) {
         return res.status(400).json({ message: "Photo file is required" });
+      }
+
+      const linkedEmpId = user.linkedEmployeeId;
+      const linkedEmployee = linkedEmpId ? await storage.getEmployee(linkedEmpId) : null;
+      if (linkedEmpId && (!linkedEmployee || linkedEmployee.userId !== user.id ||
+          linkedEmployee.tenantId !== await resolveTenantId(user.tenantId))) {
+        return res.status(403).json({ message: "Linked employee access denied" });
       }
 
       const ext = req.file.originalname.split(".").pop() || "jpg";
@@ -1154,26 +1161,22 @@ export async function registerRoutes(
         .set({ profilePhotoPath, updatedAt: new Date() })
         .where(eq(users.id, user.id));
 
-      const linkedEmpId = user.linkedEmployeeId;
-      if (linkedEmpId) {
-        const employee = await storage.getEmployee(linkedEmpId);
-        if (employee) {
-          await storage.updateEmployee(linkedEmpId, {
-            profilePhotoPath,
-            profilePhotoCapturedAt: new Date(),
-            profilePhotoSource: 'MANUAL_UPLOAD',
-          });
-          
-          await storage.logActivity({
-            branchId: employee.branchId || undefined,
-            employeeId: employee.id,
-            activityType: "profile_photo_set",
-            summaryText: `Profile photo synced via My Account for ${getEmployeeDisplayName(employee)}`,
-            createdBy: user.id,
-          });
-          
-          console.log(`[MyAccount] Profile photo synced for employee ${linkedEmpId}: ${profilePhotoPath}`);
-        }
+      if (linkedEmployee) {
+        await storage.updateEmployee(linkedEmployee.id, {
+          profilePhotoPath,
+          profilePhotoCapturedAt: new Date(),
+          profilePhotoSource: 'MANUAL_UPLOAD',
+        });
+
+        await storage.logActivity({
+          branchId: linkedEmployee.branchId || undefined,
+          employeeId: linkedEmployee.id,
+          activityType: "profile_photo_set",
+          summaryText: `Profile photo synced via My Account for ${getEmployeeDisplayName(linkedEmployee)}`,
+          createdBy: user.id,
+        });
+
+        console.log(`[MyAccount] Profile photo synced for employee ${linkedEmpId}: ${profilePhotoPath}`);
       } else {
         console.log(`[MyAccount] Profile photo saved for user ${user.id} (no linked employee): ${profilePhotoPath}`);
       }
@@ -1479,7 +1482,7 @@ export async function registerRoutes(
   // Legacy public paths only; private uploads use their record-scoped routes.
   app.use("/uploads", (req, res, _next) => {
     const match = /^\/([a-z0-9-]+)\/([a-zA-Z0-9._-]+)$/.exec(req.path);
-    const publicFolders = new Set(["branch-logos", "profile-photos", "dropoff-photos", "dropoff-signatures", "invitations"]);
+    const publicFolders = new Set(["branch-logos", "dropoff-photos", "dropoff-signatures", "invitations"]);
     if (!match || !publicFolders.has(match[1]) || match[2] === "." || match[2] === "..") {
       return res.status(404).json({ message: "File not found" });
     }
@@ -2995,21 +2998,11 @@ export async function registerRoutes(
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      
-      // Check branch access
-      const userWithAccess = req.userWithAccess;
-      const user = req.user as any;
-      
-      // Staff can only view their own photo (via linked employee record)
-      if (user.role === "staff") {
-        const linkedEmp = await db.select({ id: employees.id }).from(employees).where(eq(employees.userId, user.id)).limit(1);
-        if (!linkedEmp.length || linkedEmp[0].id !== employee.id) {
-          return res.status(403).json({ message: "Access denied" });
-        }
-      } else if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        if (!employee.branchId || !userWithAccess.allowedBranchIds.includes(employee.branchId)) {
-          return res.status(403).json({ message: "Access denied to this employee" });
-        }
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      if (employee.tenantId !== tenantId) return res.status(404).json({ message: "Employee not found" });
+      if (!canUserAccessBranch(user, employee.branchId) || (user.role === "staff" && employee.userId !== user.id)) {
+        return res.status(403).json({ message: "Access denied to this employee" });
       }
       
       if (!employee.profilePhotoPath) {
@@ -3023,7 +3016,8 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Profile photo file not found" });
       }
       res.setHeader("Content-Type", photoFile.contentType);
-      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
       photoFile.stream.pipe(res);
       return;
     } catch (error) {
@@ -3039,12 +3033,11 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Employee not found" });
       }
       
-      // Check branch access
-      const userWithAccess = req.userWithAccess;
-      if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        if (!employee.branchId || !userWithAccess.allowedBranchIds.includes(employee.branchId)) {
-          return res.status(403).json({ message: "Access denied to this employee" });
-        }
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      if (employee.tenantId !== tenantId) return res.status(404).json({ message: "Employee not found" });
+      if (!canUserAccessBranch(user, employee.branchId)) {
+        return res.status(403).json({ message: "Access denied to this employee" });
       }
       
       if (!req.file) {
@@ -3061,7 +3054,6 @@ export async function registerRoutes(
       );
       
       // Update employee
-      const user = req.user as any;
       const updatedEmployee = await storage.updateEmployee(req.params.id, {
         profilePhotoPath,
         profilePhotoCapturedAt: new Date(),
@@ -3087,28 +3079,47 @@ export async function registerRoutes(
     }
   });
 
-  // Serve profile photos by filename (public route for new path format)
-  app.get("/api/profile-photos/:filename", async (req, res, next) => {
+  // Resolve filename URLs through the same employee or own-account scope.
+  const serveProfilePhotoByFilename = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { filename } = req.params;
-      
-      // Validate filename format to prevent directory traversal
-      if (!filename || !/^profile_[\w-]+_\d+\.jpe?g$/.test(filename)) {
-        return res.status(400).json({ message: "Invalid filename format" });
-      }
-      
-      const photoFile = await getFileFromObjectStorage("profile-photos", filename);
-      if (!photoFile) {
+      if (!/^[a-zA-Z0-9._-]+$/.test(filename) || filename === "." || filename === "..") {
         return res.status(404).json({ message: "Profile photo not found" });
       }
-      res.setHeader("Content-Type", photoFile.contentType);
-      res.setHeader("Cache-Control", "public, max-age=86400");
-      photoFile.stream.pipe(res);
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const paths = [
+        `/api/files/profile-photos/${filename}`,
+        `/api/profile-photos/${filename}`,
+        `/profile-photos/${filename}`,
+      ];
+      const [[ownPhoto], employeePhotos] = await Promise.all([
+        db.select({ id: users.id }).from(users)
+          .where(and(eq(users.id, user.id), inArray(users.profilePhotoPath, paths))).limit(1),
+        db.select({ id: employees.id, branchId: employees.branchId, userId: employees.userId })
+          .from(employees).where(and(eq(employees.tenantId, tenantId), inArray(employees.profilePhotoPath, paths))),
+      ]);
+      const allowedEmployee = employeePhotos.some(employee =>
+        canUserAccessBranch(user, employee.branchId) && (user.role !== "staff" || employee.userId === user.id));
+      if (!ownPhoto && !allowedEmployee) return res.status(404).json({ message: "Profile photo not found" });
+      const photoFile = await getFileFromObjectStorage("profile-photos", filename);
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (photoFile) {
+        res.setHeader("Content-Type", photoFile.contentType);
+        photoFile.stream.pipe(res);
+      } else {
+        const legacyPath = path.join(process.cwd(), "uploads", "profile-photos", filename);
+        if (!fs.existsSync(legacyPath)) return res.status(404).json({ message: "Profile photo not found" });
+        res.sendFile(legacyPath);
+      }
       return;
     } catch (error) {
       next(error);
     }
-  });
+  };
+  app.get("/api/profile-photos/:filename", requireAuth, serveProfilePhotoByFilename);
+  app.get("/api/files/profile-photos/:filename", requireAuth, serveProfilePhotoByFilename);
 
   // Schema for employee creation with optional login setup
   const createEmployeeWithLoginSchema = insertEmployeeSchema.extend({
@@ -22926,7 +22937,7 @@ ${context}`;
   // GENERAL FILE SERVING FROM OBJECT STORAGE
   // ============================================
   // Public folders that don't require authentication
-  const publicFileFolders = ["branch-logos", "dropoff-photos", "dropoff-signatures", "profile-photos", "invitations"];
+  const publicFileFolders = ["branch-logos", "dropoff-photos", "dropoff-signatures", "invitations"];
   
   // Serve any file type from object storage with legacy fallback
   // Some folders are public, others require authentication
