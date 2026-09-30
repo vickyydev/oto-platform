@@ -15876,20 +15876,32 @@ OTO Company Limited`,
   // STUDIO EVENTS (Birthday Parties, etc.)
   // ============================================
 
+  const visibleStudioEvent = async (req: Request, id: string) => {
+    const user = req.userWithAccess;
+    if (!user?.tenantId) return null;
+    const event = await storage.getStudioEvent(id);
+    return event && event.tenantId === user.tenantId && canUserAccessBranch(user, event.branchId)
+      ? event : null;
+  };
+
   // Get studio events with optional filtering
   // GET /api/admin/events?range=upcoming|today|past|all&includeArchived=true
   app.get("/api/admin/events", requireAuth, async (req, res, next) => {
     try {
       const { range, branchId, includeArchived } = req.query;
-      const tenantId = await getDefaultTenantId();
+      const user = req.userWithAccess;
+      if (!user?.tenantId) return res.status(403).json({ message: "Event access denied" });
+      if (branchId && (typeof branchId !== "string" || !canUserAccessBranch(user, branchId))) {
+        return res.status(403).json({ message: "Access denied to this branch" });
+      }
       console.log("[Events] GET /api/admin/events called:", { range, branchId, includeArchived, userId: req.user?.id });
       
-      const events = await storage.getStudioEvents({
-        tenantId,
+      const events = (await storage.getStudioEvents({
+        tenantId: user.tenantId,
         branchId: branchId as string,
         range: range as "upcoming" | "today" | "past" | "all",
         includeArchived: includeArchived === "true",
-      });
+      })).filter(event => canUserAccessBranch(user, event.branchId));
       console.log("[Events] Found", events.length, "events for range:", range);
       
       // Fetch party host assignments for events
@@ -16056,7 +16068,7 @@ OTO Company Limited`,
   app.get("/api/admin/events/:id", requireAuth, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const event = await storage.getStudioEvent(id);
+      const event = await visibleStudioEvent(req, id);
       
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
@@ -16071,8 +16083,8 @@ OTO Company Limited`,
   // Create a studio event
   app.post("/api/admin/events", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
-      const user = req.user as UserWithBranchAccess;
+      const user = req.userWithAccess;
+      if (!user?.tenantId) return res.status(403).json({ message: "Event access denied" });
       
       // Get user's first branch as default if not provided
       let branchId = req.body.branchId;
@@ -16083,6 +16095,12 @@ OTO Company Limited`,
       if (!branchId) {
         return res.status(400).json({ message: "branchId is required" });
       }
+      if (!canUserAccessBranch(user, branchId)) {
+        return res.status(403).json({ message: "Access denied to this branch" });
+      }
+      const [branch] = await db.select({ id: branches.id }).from(branches)
+        .where(and(eq(branches.id, branchId), eq(branches.tenantId, user.tenantId))).limit(1);
+      if (!branch) return res.status(404).json({ message: "Branch not found" });
       
       if (req.body.eventType === "studio_event" && req.body.color !== undefined && !isOtherEventColor(req.body.color)) {
         return res.status(400).json({ message: "Other Event color must be selected from the available calendar colors" });
@@ -16090,7 +16108,7 @@ OTO Company Limited`,
       const eventData = {
         ...req.body,
         ...(req.body.eventType === "workshop" ? { color: null } : {}),
-        tenantId,
+        tenantId: user.tenantId,
         branchId,
         createdByUserId: user.id,
         updatedByUserId: user.id,
@@ -16107,12 +16125,19 @@ OTO Company Limited`,
   app.patch("/api/admin/events/:id", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const user = req.user as UserWithBranchAccess;
+      const user = req.userWithAccess;
       
-      const existingEvent = await storage.getStudioEvent(id);
+      const existingEvent = await visibleStudioEvent(req, id);
       if (!existingEvent) {
         return res.status(404).json({ message: "Event not found" });
       }
+      const branchId = req.body.branchId ?? existingEvent.branchId;
+      if (!user || !canUserAccessBranch(user, branchId)) {
+        return res.status(403).json({ message: "Access denied to this branch" });
+      }
+      const [branch] = await db.select({ id: branches.id }).from(branches)
+        .where(and(eq(branches.id, branchId), eq(branches.tenantId, existingEvent.tenantId))).limit(1);
+      if (!branch) return res.status(404).json({ message: "Branch not found" });
       
       const effectiveEventType = req.body.eventType ?? existingEvent.eventType;
       const isSavedLegacyColor = isHexCalendarColor(req.body.color)
@@ -16129,6 +16154,8 @@ OTO Company Limited`,
       const eventData = {
         ...req.body,
         ...(req.body.eventType === "workshop" ? { color: null } : {}),
+        tenantId: existingEvent.tenantId,
+        branchId,
         updatedByUserId: user.id,
       };
       
@@ -16146,7 +16173,7 @@ OTO Company Limited`,
       const { archived } = req.body;
       const user = req.user as UserWithBranchAccess;
       
-      const existingEvent = await storage.getStudioEvent(id);
+      const existingEvent = await visibleStudioEvent(req, id);
       if (!existingEvent) {
         return res.status(404).json({ message: "Event not found" });
       }
@@ -16167,7 +16194,7 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       
-      const existingEvent = await storage.getStudioEvent(id);
+      const existingEvent = await visibleStudioEvent(req, id);
       if (!existingEvent) {
         return res.status(404).json({ message: "Event not found" });
       }
