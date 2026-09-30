@@ -22,7 +22,7 @@ const POS_URL = import.meta.env.VITE_POS_URL?.trim();
  * around them changes now. They still get the old title block and the old
  * centred column, pixel for pixel.
  */
-const PHASE_TWO = new Set(['booths', 'bookings']);
+const PHASE_TWO = new Set(['booths']);
 
 /**
  * The console shell, as the approved design draws it (SCRUM-474,
