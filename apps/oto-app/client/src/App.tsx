@@ -303,6 +303,10 @@ type UserRole = "global_admin" | "operator_admin" | "admin" | "manager" | "staff
 
 function userHasAccess(userRole: string | undefined, requiredRoles: UserRole[]): boolean {
   if (!userRole) return false;
+  // The data editor is backed by a global-admin-only API, unlike ordinary admin pages.
+  if (requiredRoles.length === 1 && requiredRoles[0] === "global_admin") {
+    return userRole === "global_admin" || userRole === "admin";
+  }
   
   // Global admin and legacy admin have access to everything
   if (userRole === "global_admin" || userRole === "admin") {
@@ -689,12 +693,12 @@ function Router() {
       <ProtectedRoute path="/analytics" component={() => <HRProtectedLayout component={AnalyticsPage} />} requiredRole="admin" />
 
       {/* Data Admin routes */}
-      <ProtectedRoute path="/data" component={() => <Suspense fallback={<PageLoader />}><DataAdminIndexPage /></Suspense>} requiredRole="admin" />
-      <ProtectedRoute path="/data/schema" component={() => <Suspense fallback={<PageLoader />}><DataAdminSchemaPage /></Suspense>} requiredRole="admin" />
-      <ProtectedRoute path="/data/:model/new" component={() => <Suspense fallback={<PageLoader />}><DataAdminFormPage /></Suspense>} requiredRole="admin" />
-      <ProtectedRoute path="/data/:model/:id/edit" component={() => <Suspense fallback={<PageLoader />}><DataAdminFormPage /></Suspense>} requiredRole="admin" />
-      <ProtectedRoute path="/data/:model/:id" component={() => <Suspense fallback={<PageLoader />}><DataAdminDetailPage /></Suspense>} requiredRole="admin" />
-      <ProtectedRoute path="/data/:model" component={() => <Suspense fallback={<PageLoader />}><DataAdminListPage /></Suspense>} requiredRole="admin" />
+      <ProtectedRoute path="/data" component={() => <Suspense fallback={<PageLoader />}><DataAdminIndexPage /></Suspense>} requiredRole="global_admin" />
+      <ProtectedRoute path="/data/schema" component={() => <Suspense fallback={<PageLoader />}><DataAdminSchemaPage /></Suspense>} requiredRole="global_admin" />
+      <ProtectedRoute path="/data/:model/new" component={() => <Suspense fallback={<PageLoader />}><DataAdminFormPage /></Suspense>} requiredRole="global_admin" />
+      <ProtectedRoute path="/data/:model/:id/edit" component={() => <Suspense fallback={<PageLoader />}><DataAdminFormPage /></Suspense>} requiredRole="global_admin" />
+      <ProtectedRoute path="/data/:model/:id" component={() => <Suspense fallback={<PageLoader />}><DataAdminDetailPage /></Suspense>} requiredRole="global_admin" />
+      <ProtectedRoute path="/data/:model" component={() => <Suspense fallback={<PageLoader />}><DataAdminListPage /></Suspense>} requiredRole="global_admin" />
 
       <Route component={NotFound} />
     </Switch>
