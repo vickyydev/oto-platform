@@ -10,8 +10,8 @@ import {
   users,
 } from "../shared/schema";
 import { login } from "./helpers";
+import { deleteFromObjectStorage } from "../server/file-storage";
 
-const COMPLETION_PHOTO_URL = "/api/fix-media/completion-photo-test.png";
 const PNG_BYTES = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
   "base64",
@@ -91,17 +91,10 @@ test("Fix create offers separate camera and gallery inputs", async ({ page }) =>
 
 test("completion photo is appended and appears in the report gallery", async ({ page }) => {
   const report = await seedFixReport(`Fix completion photo ${Date.now()}`);
+  let uploadedFilename: string | undefined;
 
   try {
     await login(page);
-    await page.route("**/api/fix-reports/upload", async (route) => {
-      expect(route.request().method()).toBe("POST");
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ urls: [COMPLETION_PHOTO_URL] }),
-      });
-    });
 
     await openCompletionSheet(page, report.id);
     await page.getByTestId("input-completion-gallery").setInputFiles({
@@ -117,9 +110,12 @@ test("completion photo is appended and appears in the report gallery", async ({ 
     );
     await page.getByTestId("button-confirm-complete").click();
     const patchRequest = await patchRequestPromise;
+    const claimUrl = patchRequest.postDataJSON().appendMedia[0] as string;
+    uploadedFilename = /^\/api\/files\/fix-media\/([a-zA-Z0-9._-]+)\?claim=/.exec(claimUrl)?.[1];
+    expect(uploadedFilename).toBeTruthy();
     expect(patchRequest.postDataJSON()).toEqual({
       status: "done",
-      appendMedia: [COMPLETION_PHOTO_URL],
+      appendMedia: [claimUrl],
     });
 
     await expect(page.getByTestId("dialog-completion-photos")).toBeHidden();
@@ -131,10 +127,11 @@ test("completion photo is appended and appears in the report gallery", async ({ 
     expect(stored.status).toBe("done");
     expect(stored.media).toEqual([
       "/api/fix-media/original-photo-test.png",
-      COMPLETION_PHOTO_URL,
+      `/api/files/fix-media/${uploadedFilename}`,
     ]);
   } finally {
     await db.delete(fixReports).where(eq(fixReports.id, report.id));
+    if (uploadedFilename) await deleteFromObjectStorage("fix-media", uploadedFilename);
   }
 });
 

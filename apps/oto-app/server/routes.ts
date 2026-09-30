@@ -1476,10 +1476,16 @@ export async function registerRoutes(
     }
   });
 
-  // Serve general upload files (photos, signatures, etc.)
-  app.use("/uploads", (req, res, next) => {
-    const filePath = path.join(process.cwd(), "uploads", req.path);
+  // Legacy public paths only; private uploads use their record-scoped routes.
+  app.use("/uploads", (req, res, _next) => {
+    const match = /^\/([a-z0-9-]+)\/([a-zA-Z0-9._-]+)$/.exec(req.path);
+    const publicFolders = new Set(["branch-logos", "profile-photos", "dropoff-photos", "dropoff-signatures", "invitations"]);
+    if (!match || !publicFolders.has(match[1]) || match[2] === "." || match[2] === "..") {
+      return res.status(404).json({ message: "File not found" });
+    }
+    const filePath = path.join(process.cwd(), "uploads", match[1], match[2]);
     if (fs.existsSync(filePath)) {
+      res.setHeader("X-Content-Type-Options", "nosniff");
       res.sendFile(filePath);
     } else {
       res.status(404).json({ message: "File not found" });
@@ -22230,6 +22236,50 @@ ${context}`;
     return emailAdvRow?.deptId === fixDeptId;
   };
 
+  const authorizedFixReport = async (req: Request, id: string) => {
+    const report = await storage.getFixReport(id);
+    if (!report) return { status: 404 as const, message: "Fix report not found" };
+    const user = req.user as UserWithBranchAccess;
+    const tenantId = await resolveTenantId(user.tenantId);
+    if (report.tenantId !== tenantId) {
+      return { status: 404 as const, message: "Fix report not found" };
+    }
+    if (!canUserAccessBranch(user, report.branchId)) {
+      return { status: 403 as const, message: "Access denied to this Fix report branch" };
+    }
+    const isManagerOrAdmin = user.hasAllBranchesAccess || ['manager', 'admin', 'operator_admin', 'global_admin'].includes(user.role || '');
+    if (report.reportedBy !== user.id && !isManagerOrAdmin && !(await isUserFixDeptMember(user.id))) {
+      return { status: 403 as const, message: "Access denied to this Fix report" };
+    }
+    return { report };
+  };
+
+  // A report may only claim media uploaded by its author in this tenant.
+  // The claim is short-lived and is stripped before the URL is stored.
+  const fixMediaClaim = (url: string, tenantId: string, userId: string, expiresAt: number) => {
+    const secret = process.env.SESSION_SECRET;
+    if (!secret) throw new Error("SESSION_SECRET is required for Fix media uploads");
+    return crypto.createHmac("sha256", secret)
+      .update(`${url}:${tenantId}:${userId}:${expiresAt}`)
+      .digest("hex");
+  };
+
+  const verifyFixMediaClaims = (urls: unknown, tenantId: string, userId: string): string[] | null => {
+    if (!Array.isArray(urls) || urls.length > 10 || urls.some(url => typeof url !== "string")) return null;
+    const canonical: string[] = [];
+    for (const supplied of urls as string[]) {
+      const match = /^(\/api\/files\/fix-media\/[a-zA-Z0-9._-]+)\?claim=(\d{13})\.([a-f0-9]{64})$/.exec(supplied);
+      if (!match) return null;
+      const [, url, expiry, signature] = match;
+      const expiresAt = Number(expiry);
+      if (expiresAt < Date.now() || expiresAt > Date.now() + 30 * 60_000) return null;
+      const expected = Buffer.from(fixMediaClaim(url, tenantId, userId, expiresAt), "hex");
+      if (!crypto.timingSafeEqual(Buffer.from(signature, "hex"), expected)) return null;
+      canonical.push(url);
+    }
+    return new Set(canonical).size === canonical.length ? canonical : null;
+  };
+
   // List fix reports for current branch
   app.get("/api/fix-reports", requireAuth, async (req, res, next) => {
     try {
@@ -22463,11 +22513,9 @@ ${context}`;
   // Get single fix report
   app.get("/api/fix-reports/:id", requireAuth, async (req, res, next) => {
     try {
-      const report = await storage.getFixReport(req.params.id);
-      if (!report) {
-        return res.status(404).json({ message: "Fix report not found" });
-      }
-      res.json(report);
+      const access = await authorizedFixReport(req, req.params.id);
+      if (!access.report) return res.status(access.status).json({ message: access.message });
+      res.json(access.report);
     } catch (error) {
       next(error);
     }
@@ -22583,6 +22631,8 @@ ${context}`;
         return res.status(400).json({ message: parsed.error.errors[0]?.message || "Validation failed" });
       }
       const { media, note, tags, priority, sourceChecklistRunItemId } = parsed.data;
+      const verifiedMedia = verifyFixMediaClaims(media, tenantId, user.id);
+      if (!verifiedMedia) return res.status(400).json({ message: "Upload the Fix media before submitting the report" });
       let { title, location, locationId, branchId } = parsed.data;
       let checklistContext: Awaited<ReturnType<typeof getAuthorizedChecklistFixContext>> | null = null;
       if (sourceChecklistRunItemId) {
@@ -22621,7 +22671,7 @@ ${context}`;
         branchId,
         reportedBy: user.id,
         reportedByName: user.fullName || user.email,
-        media: media,
+        media: verifiedMedia,
         title: title.trim(),
         note: note || null,
         location: locationName,
@@ -22642,6 +22692,8 @@ ${context}`;
   // Update fix report status
   app.patch("/api/fix-reports/:id", requireAuth, async (req, res, next) => {
     try {
+      const access = await authorizedFixReport(req, req.params.id);
+      if (!access.report) return res.status(access.status).json({ message: access.message });
       const { status, note } = req.body;
       
       const updates: Record<string, any> = {};
@@ -22658,18 +22710,21 @@ ${context}`;
   // Upload fix report media (photos/videos) to object storage
   app.post("/api/fix-reports/upload", requireAuth, fixMediaUpload.array("media", 10), fixMulterFilenames, async (req, res, next) => {
     try {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       const files = req.files as Express.Multer.File[];
       if (!files || files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
       }
 
       const urls: string[] = [];
+      const expiresAt = Date.now() + 30 * 60_000;
       for (const file of files) {
         const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const ext = path.extname(file.originalname);
         const filename = `fix_${uniqueSuffix}${ext}`;
         const url = await uploadToObjectStorage(file.buffer, "fix-media", filename, file.mimetype);
-        urls.push(url);
+        urls.push(`${url}?claim=${expiresAt}.${fixMediaClaim(url, tenantId, user.id, expiresAt)}`);
       }
       res.json({ urls });
     } catch (error) {
@@ -22677,10 +22732,28 @@ ${context}`;
     }
   });
 
-  // Serve fix media files from object storage
-  app.get("/api/files/fix-media/:filename", requireAuth, async (req, res, next) => {
+  // Serve Fix media only after checking the owning report.
+  const serveFixMedia = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { filename } = req.params;
+      if (!/^[a-zA-Z0-9._-]+$/.test(filename) || filename === "." || filename === "..") {
+        return res.status(404).json({ message: "Media not found" });
+      }
+      const tenantId = await resolveTenantId((req.user as UserWithBranchAccess).tenantId);
+      const currentUrl = `/api/files/fix-media/${filename}`;
+      const legacyUrl = `/fix-media/${filename}`;
+      const [owner] = await db.select({ id: fixReports.id }).from(fixReports).where(and(
+        eq(fixReports.tenantId, tenantId),
+        or(
+          sql`${fixReports.media} @> ${JSON.stringify([currentUrl])}::jsonb`,
+          sql`${fixReports.media} @> ${JSON.stringify([legacyUrl])}::jsonb`,
+        ),
+      )).limit(1);
+      if (!owner) return res.status(404).json({ message: "Media not found" });
+      const access = await authorizedFixReport(req, owner.id);
+      if (!access.report) return res.status(access.status).json({ message: access.message });
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
       const ext = path.extname(filename).toLowerCase();
       const isVideo = [".mp4", ".mov", ".webm", ".m4v"].includes(ext);
 
@@ -22692,7 +22765,6 @@ ${context}`;
         const thumbBuffer = await getOrCreateFixMediaThumbnail(filename, isVideo, localFallbackPath);
         if (thumbBuffer) {
           res.setHeader("Content-Type", "image/jpeg");
-          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
           res.send(thumbBuffer);
           return;
         }
@@ -22705,7 +22777,6 @@ ${context}`;
       if (file) {
         res.setHeader("Content-Type", file.contentType);
         res.setHeader("Accept-Ranges", "bytes");
-        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         if (file.isPartial) {
           res.status(206);
           res.setHeader("Content-Range", `bytes ${file.start}-${file.end}/${file.totalSize}`);
@@ -22726,10 +22797,9 @@ ${context}`;
     } catch (error) {
       next(error);
     }
-  });
-
-  // Legacy: Serve fix media files from local filesystem
-  app.use("/fix-media", requireAuth, express.static(fixMediaDir));
+  };
+  app.get("/api/files/fix-media/:filename", requireAuth, serveFixMedia);
+  app.get("/fix-media/:filename", requireAuth, serveFixMedia);
 
   // ============================================================================
   // Checker Fail Photos Upload (for checklist checker mode)
@@ -22868,7 +22938,7 @@ ${context}`;
       }
       // Private documents have their own record-scoped routes; this generic
       // file route cannot decide who may read a contract or employee record.
-      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips"].includes(folder)) {
+      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs"].includes(folder)) {
         return res.status(404).json({ message: "File not found" });
       }
       
@@ -22918,28 +22988,11 @@ ${context}`;
   // Get fix report with full details (location, comments, department members)
   app.get("/api/fix-reports/:id/details", requireAuth, async (req, res, next) => {
     try {
+      const access = await authorizedFixReport(req, req.params.id);
+      if (!access.report) return res.status(access.status).json({ message: access.message });
       const result = await storage.getFixReportWithDetails(req.params.id);
       if (!result) {
         return res.status(404).json({ message: "Fix report not found" });
-      }
-
-      const user = req.user as UserWithBranchAccess;
-      const tenantId = await resolveTenantId(user.tenantId);
-      if (result.report.tenantId !== tenantId) {
-        return res.status(404).json({ message: "Fix report not found" });
-      }
-      if (!canUserAccessBranch(user, result.report.branchId)) {
-        return res.status(403).json({ message: "Access denied to this Fix report branch" });
-      }
-      const isReporter = result.report.reportedBy === user.id;
-      const isManagerOrAdmin = user.hasAllBranchesAccess || ['manager', 'admin', 'operator_admin', 'global_admin'].includes(user.role || '');
-
-      // Allow access if: user is reporter OR manager/admin OR Fix Dept member
-      if (!isReporter && !isManagerOrAdmin) {
-        const deptMember = await isUserFixDeptMember(user.id);
-        if (!deptMember) {
-          return res.status(403).json({ message: "Access denied: reporter, manager/admin, or Fix Department membership required" });
-        }
       }
 
       // Enrich comments with author names
@@ -23004,10 +23057,8 @@ ${context}`;
   // Get comments for a fix report
   app.get("/api/fix-reports/:id/comments", requireAuth, async (req, res, next) => {
     try {
-      const report = await storage.getFixReport(req.params.id);
-      if (!report) {
-        return res.status(404).json({ message: "Fix report not found" });
-      }
+      const access = await authorizedFixReport(req, req.params.id);
+      if (!access.report) return res.status(access.status).json({ message: access.message });
 
       const comments = await storage.getFixComments(req.params.id);
       res.json(comments);
@@ -23020,20 +23071,8 @@ ${context}`;
   app.post("/api/fix-reports/:id/comments", requireAuth, async (req, res, next) => {
     try {
       const user = req.user as UserWithBranchAccess;
-      const report = await storage.getFixReport(req.params.id);
-      if (!report) {
-        return res.status(404).json({ message: "Fix report not found" });
-      }
-
-      // Allow access if: user is reporter OR manager/admin OR Fix Dept member
-      const isReporter = report.reportedBy === user.id;
-      const isManagerOrAdmin = user.hasAllBranchesAccess || ['manager', 'admin', 'operator_admin', 'global_admin'].includes(user.role || '');
-      if (!isReporter && !isManagerOrAdmin) {
-        const deptMember = await isUserFixDeptMember(user.id);
-        if (!deptMember) {
-          return res.status(403).json({ message: "Access denied: reporter, manager/admin, or Fix Department membership required" });
-        }
-      }
+      const access = await authorizedFixReport(req, req.params.id);
+      if (!access.report) return res.status(access.status).json({ message: access.message });
 
       const { message } = req.body;
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -23057,10 +23096,9 @@ ${context}`;
   app.patch("/api/fix-reports/:id/close", requireAuth, async (req, res, next) => {
     try {
       const user = req.user as UserWithBranchAccess;
-      const report = await storage.getFixReport(req.params.id);
-      if (!report) {
-        return res.status(404).json({ message: "Fix report not found" });
-      }
+      const access = await authorizedFixReport(req, req.params.id);
+      if (!access.report) return res.status(access.status).json({ message: access.message });
+      const report = access.report;
 
       // Check if user has manager/admin access
       if (!user.hasAllBranchesAccess && user.role !== 'manager' && user.role !== 'admin') {
@@ -23093,10 +23131,9 @@ ${context}`;
   app.patch("/api/fix-reports/:id/update", requireAuth, async (req, res, next) => {
     try {
       const user = req.user as UserWithBranchAccess;
-      const report = await storage.getFixReport(req.params.id);
-      if (!report) {
-        return res.status(404).json({ message: "Fix report not found" });
-      }
+      const access = await authorizedFixReport(req, req.params.id);
+      if (!access.report) return res.status(access.status).json({ message: access.message });
+      const report = access.report;
 
       const isManagerOrAdmin = user.hasAllBranchesAccess || ['manager', 'admin', 'operator_admin', 'global_admin'].includes(user.role || '');
 
@@ -23119,8 +23156,10 @@ ${context}`;
 
       // Append completion photos to existing media array (capped at 10 total)
       if (Array.isArray(appendMedia) && appendMedia.length > 0) {
+        const verifiedMedia = verifyFixMediaClaims(appendMedia, report.tenantId, user.id);
+        if (!verifiedMedia) return res.status(400).json({ message: "Upload the Fix media before updating the report" });
         const existingMedia: string[] = Array.isArray(report.media) ? (report.media as string[]) : [];
-        const combined = [...existingMedia, ...appendMedia];
+        const combined = [...existingMedia, ...verifiedMedia];
         updates.media = combined.slice(0, 10) as any;
       }
 

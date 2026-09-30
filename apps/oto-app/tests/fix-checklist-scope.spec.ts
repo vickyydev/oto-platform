@@ -18,6 +18,12 @@ import {
   fixReports,
 } from "../server/db/coreSchema";
 import { login, testId } from "./helpers";
+import { deleteFromObjectStorage } from "../server/file-storage";
+
+const PNG_BYTES = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64",
+);
 
 test("checklist-linked Fix reports use the user's tenant and effective branch access", async ({ browser }) => {
   const suffix = testId();
@@ -105,6 +111,7 @@ test("checklist-linked Fix reports use the user's tenant and effective branch ac
   let templateId: string | undefined;
   let runId: string | undefined;
   let reportId: string | undefined;
+  let uploadedFilename: string | undefined;
 
   try {
     await login(managerPage, { email: managerEmail, password } as any);
@@ -138,9 +145,17 @@ test("checklist-linked Fix reports use the user's tenant and effective branch ac
     const sourceResponse = await advisorPage.request.get(`/api/fix-reports/checklist-source/${runItem.id}`);
     expect(sourceResponse.status()).toBe(200);
 
+    const uploadResponse = await advisorPage.request.post("/api/fix-reports/upload", {
+      multipart: { media: { name: `test-${suffix}.png`, mimeType: "image/png", buffer: PNG_BYTES } },
+    });
+    expect(uploadResponse.status()).toBe(200);
+    const { urls } = await uploadResponse.json();
+    uploadedFilename = /^\/api\/files\/fix-media\/([a-zA-Z0-9._-]+)\?claim=/.exec(urls[0])?.[1];
+    expect(uploadedFilename).toBeTruthy();
+
     const reportResponse = await advisorPage.request.post("/api/fix-reports", {
       data: {
-        media: [`/api/files/fix-media/test-${suffix}.jpg`],
+        media: urls,
         title: "Server replaces this title",
         branchId: staleBranch.id,
         sourceChecklistRunItemId: runItem.id,
@@ -171,6 +186,7 @@ test("checklist-linked Fix reports use the user's tenant and effective branch ac
     await managerContext.close();
     await advisorContext.close();
     if (reportId) await db.delete(fixReports).where(eq(fixReports.id, reportId));
+    if (uploadedFilename) await deleteFromObjectStorage("fix-media", uploadedFilename);
     if (runId) {
       await db.delete(checklistRunItems).where(eq(checklistRunItems.runId, runId));
       await db.delete(checklistRuns).where(eq(checklistRuns.id, runId));

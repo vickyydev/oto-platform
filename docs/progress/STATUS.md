@@ -50,6 +50,8 @@ On 30 September, the documented administrator signed in through the suite launch
 
 Closure execution resumed: docs/qa/oto-app-lift/closure-plan.md records the remaining module actions, access checks, platform seams and final UI pass. An isolated local oto_app_lift_acceptance_0930 database was migrated and sample-populated; a synthetic admin and the existing Fix checklist-scope test passed 1/1. The full seed cannot start because fixtures/users.json is absent, so use surgical fixtures. Source review still finds POS views, the OTO App job-run contract, CI restore rehearsal, tenant-safe settings and tenant-bearing Directory API missing. Next app-owned slice is SCRUM-465 Fix report/media access.
 
+SCRUM-465 Fix access is locally verified and awaiting a source land and staging deploy. Report reads/writes and current/legacy media now enforce owning-report tenant, branch and reader access; thumbnails are private, direct thumbnail and legacy private-upload paths are closed, and new uploads carry a short-lived user/tenant claim before a report may attach them. Five affected existing Fix browser checks passed against an isolated app database; a disposable cross-tenant/branch probe also passed forged-media refusal and cache checks. Build passed, typecheck remains at 542 inherited errors with none in changed code/tests, and edited-line lint has no error. Public drop-off shares and the broader generic-folder review remain before the files ticket can be Deployed. See `docs/qa/oto-app-lift/files.md`.
+
 ## Release checkpoint - 30 September 2026 - break checkpoint saved
 
 The current release checkpoint is complete. Stop here and await the next
