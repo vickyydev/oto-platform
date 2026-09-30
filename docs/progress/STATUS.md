@@ -1,15 +1,15 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-10-01, evening Bangkok. M2 is complete: the offline cluster's
-five rounds plus the polish are landed and proven on staging (SCRUM-269, 270, 271,
-295, 206 and story 205 all Deployed — the park sells cash and card with the
-internet down, and every sale lands exactly once after reconnect). The booth
-dashboard (SCRUM-468) and the Twilio Verify adapter (SCRUM-455, adapters still on
-console until the owner flips one) are Deployed. The Testing queue is cleared:
-ten OTO App tickets closed on staging evidence, with only SCRUM-461 left waiting
-on the owner's AI key; the staff-refusal proofs rode a provisioned non-admin user,
-and the provisioning gap they exposed is SCRUM-469. Next build: arrival, SCRUM-209 / S2-12, from
-`docs/progress/plans/arrival/PLAN.md`. The newest STOP POINT block in
+_Last updated: 2026-10-01, night Bangkok. S2-12 round 1 (the online checkout,
+SCRUM-209) is landed and CI-green on main — paid only on the gateway's word,
+signed QR, visit-date step, Console bookings page, migration 0038 — with the
+staging walkthrough screenshots the only step before its round is called done.
+The booth trio is owner-approved: the voucher slip (SCRUM-471, landed, green)
+and the template editor with the box command-ordering fix (SCRUM-472, landed)
+are on main, and the duty sync (SCRUM-473) is building. The console redesign
+(SCRUM-474) is approved from the design canvas; phase 1 passed its gate and
+lands after 472's green. SCRUM-461 and 470 are Deployed. Landing order is
+strict: migrations 38→39→40 share the journal. The newest STOP POINT block in
 SESSION_HANDOVER.md carries the detail._
 
 

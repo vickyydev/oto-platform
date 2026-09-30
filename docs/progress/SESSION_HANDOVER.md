@@ -1,5 +1,64 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT — 1 October 2026, night — the arrival checkout landed; the booth trio built; the console learns its design
+
+**S2-12 round 1 (SCRUM-209) is landed and CI-green, not yet Deployed.** The
+checkout landed as `3eb6530e` plus the date-window follow-up `76fabbd0` after
+three adversarial gate passes: a booking is created pending with a chosen visit
+date (a new step on /book per CLAUDE.md §7; the window is enforced on the
+server after the gate proved past-dated bookings could be minted), and becomes
+paid ONLY on the gateway's verified notification or the inquiry. The signed QR,
+the Console bookings page and migration 0038 ride the landing. The gate's other
+catches — the trading-day pricing mismatch at small hours, abandoned checkouts
+raising the till's pending alert, declines closing a live payment page, the
+full-scan invoice counter — are fixed with their reproductions kept as tests.
+CI went green on a RERUN: the concurrency rule had cancelled the original run
+and a staff-app push's green had skipped the platform suite by path gate — a
+green run must be one that actually ran the workspace jobs. **Deployed waits on
+the staging walkthrough screenshots; that drive launches when today's landing
+queue settles.** Then round 2, the gate box, per
+`docs/progress/plans/arrival/PLAN.md` (rounds 3–5 follow: till redemption,
+occupancy, offline redemption + closing audit).
+
+**The booth trio (owner-approved with the plan's defaults):** SCRUM-471, the
+per-booth voucher slip, landed `e6caf97c`, CI green — byte-identical by default
+across 48 renders, migration 0039, the Voucher slip card with live preview.
+SCRUM-472, the template editor redesign, landed `94bea99e` (CI running at this
+writing) — grouped controls, eye toggles, save bar, attached test print, and
+underneath it a real platform fix: the box command queue's claiming query
+returned rows in effectively random order; ordering is now guaranteed.
+SCRUM-473, the duty sync, is BUILDING (workflow `wf_8596be2e-fee`, relaunched
+with a read-the-tree-first preamble after a session cut killed the first
+builder before it saved anything). Landing order is strict because migrations
+38→39→40 share the journal.
+
+**The console redesign (SCRUM-474) is owner-approved from the design canvas**
+(12 artboards, claude.ai/artifact/CkikCVjnknyNEnBvZK9Jny: the booth page, the
+grouped sidebar shell, and every console page on one twelve-column sheet).
+Phase 1 — the shell plus eight non-booth pages, tokens only, behaviour
+untouched, failed reads now honest — passed its gate (resumed from journal
+after the same session cut) and lands right after 472's green. Phase 2 (Booths
+and Bookings pages) starts once 473 lands.
+
+**Also today:** SCRUM-461 Deployed — the staff app's AI features switched to
+the Anthropic API (`f2548609`) on the owner's key, proven by a staff-scoped
+Ask OTO answer citing its article and the other branch's article staying out;
+an env change needs a redeploy to reach a running service (memory + ticket).
+SCRUM-470 Deployed (panel deep link, true-scale preview). SCRUM-469 opened
+(branch-scoped app provisioning is API-only; staging setup codes fail).
+Booth plan landed: `docs/progress/plans/booth/TEMPLATES_AND_DUTY_PLAN.md`.
+
+**The Codex lane** is finishing its tickets and is staging-testing with
+screenshots (the owner's report); it landed camp-scoping fixes through the day
+and the temp-index landings absorbed every push without conflict.
+
+**Resume from here:** read the landing queue's state with `gh run list`; the
+proof drive for 209/471/472 (plus a 474 progress capture) targets the newest
+landed sha; 473's report decides its landing (journal 40 follows 39);
+`docs/progress/plans/arrival/PLAN.md` round 2 is the next build after the
+drives. Waiting on the owner: Xero, the card-refund default, pricing rulings,
+SCRUM-467 park observations.
+
 ## STOP POINT — 1 October 2026, evening — M2 complete: offline selling Deployed; booth dashboard live; Testing queue swept
 
 **The offline cluster and the payments story are closed.** Round 5 proved it on
