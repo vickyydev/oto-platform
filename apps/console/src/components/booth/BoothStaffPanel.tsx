@@ -7,18 +7,13 @@ import {
   type SystemRole,
 } from '@oto/shared';
 import { staffCandidates, type BranchStaffMember } from '@/api/fleet';
-import {
-  EmptyState,
-  ErrorNote,
-  Loading,
-  Panel,
-  RouteUnavailable,
-  Unreadable,
-} from '@/components/Panel';
+import { ErrorNote, Loading, RouteUnavailable, Unreadable } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
 import { Field, Select, TextInput } from '@/components/Form';
 import { CONTROL } from '@/components/Filters';
-import { StatusPill } from '@/components/Status';
+import { StatusChip } from '@/components/redesign/chips';
+import { CardShell, StripedList } from '@/components/redesign/layout';
+import { EmptyNote } from '@/components/redesign/StatTile';
 import { cn } from '@/lib/utils';
 import type { BoothPinInput, BoothPinResult, BoothStaffRow } from './boothApi';
 import type { Read } from './readState';
@@ -27,6 +22,9 @@ import type { Read } from './readState';
  * Staff assigned to the booth, with person-wide PIN management.
  * Typed PINs are cleared after saving; generated PINs are displayed once.
  * Only hashes and expiry reach the box, where offline sign-in is checked.
+ *
+ * On the page's card language (SCRUM-474): the people as striped rows, the
+ * forms beneath the row or the list they belong to, the words unchanged.
  */
 export function BoothStaffPanel({
   branchId,
@@ -40,6 +38,8 @@ export function BoothStaffPanel({
   onSetPin,
   onClearPin,
   onRetry,
+  id,
+  className,
 }: {
   /** The booth's branch: whose staff the picker offers. */
   branchId: string;
@@ -61,6 +61,8 @@ export function BoothStaffPanel({
   onSetPin: (accountId: string, input: BoothPinInput) => Promise<BoothPinResult | null>;
   onClearPin: (accountId: string) => void;
   onRetry: () => void;
+  id?: string;
+  className?: string;
 }) {
   const [candidates, setCandidates] = useState<BranchStaffMember[] | null>(null);
   const [candidatesFailed, setCandidatesFailed] = useState<string | null>(null);
@@ -163,24 +165,30 @@ export function BoothStaffPanel({
       : `lasts ${runningHours} hours (${nextHours} hours for sign-ins after the next publish)`;
 
   return (
-    <Panel
+    <CardShell
+      id={id}
+      className={className}
+      icon={KeyRound}
       title="Booth staff"
-      description="Who may sign in at this booth, and whether each has a booth PIN. Changes reach the booth at the box's next pull — no publish needed."
+      note="who may sign in at this booth, and whether each has a booth PIN — changes reach the booth at the box's next pull, no publish needed"
+      footer={
+        <p>
+          Staff on this list can also sign in at the booth with their own phone and password, when
+          their role allows it (<code className="font-mono">booth:staff:sign_in</code>):{' '}
+          {roles.join(', ')}. A role the park created itself allows it only if it carries that
+          permission. Either way a sign-in {lasts} — set under Booth settings — and does not end
+          when nobody presses anything.
+        </p>
+      }
     >
       {error && <ErrorNote message={error} />}
       {notice && (
-        <p
-          className="mb-3 rounded-xl border px-3.5 py-2.5 text-sm"
-          style={{
-            borderColor: 'hsl(var(--status-ok) / 0.4)',
-            backgroundColor: 'hsl(var(--status-ok) / 0.07)',
-          }}
-        >
+        <p className="rounded-[14px] border border-status-ok/30 bg-status-ok/12 px-3.5 py-2.5 text-sm">
           {notice}
         </p>
       )}
       {readOnly && (
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Changing who works this booth needs{' '}
           <code className="font-mono text-xs">admin:booth:staff_assign</code>.
         </p>
@@ -196,26 +204,28 @@ export function BoothStaffPanel({
       ) : staff.state === 'unread' ? (
         <Loading what="booth staff" />
       ) : staff.value.length === 0 ? (
-        <EmptyState
+        <EmptyNote
+          className="py-3"
+          icon={KeyRound}
           title="Nobody may sign in at this booth"
           detail="The wheel still plays; every spin is recorded with nobody signed in. Add the people who work the booth below."
         />
       ) : (
-        <ul className="flex flex-col divide-y" aria-label="Booth staff">
+        <StripedList label="Booth staff">
           {staff.value.map((member) => {
             const name = nameOf(member.accountId);
             const known = byId.has(member.accountId);
             return (
-              <li key={member.accountId} className="py-3 flex flex-col gap-2">
+              <li key={member.accountId} className="flex flex-col gap-2 px-3 py-3">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="font-semibold">{name}</span>
+                  <span className="text-[13.5px] font-semibold">{name}</span>
                   <code className="font-mono text-xs text-muted-foreground">
                     {boothStaffCode(member.accountId)}
                   </code>
                   {member.hasPin ? (
-                    <StatusPill tone="ok">PIN set</StatusPill>
+                    <StatusChip tone="ok">PIN set</StatusChip>
                   ) : (
-                    <StatusPill tone="idle">no PIN</StatusPill>
+                    <StatusChip tone="idle">no PIN</StatusChip>
                   )}
                   {member.hasPin && member.pinExpiresAt && (
                     <span className="text-xs text-muted-foreground">
@@ -235,6 +245,7 @@ export function BoothStaffPanel({
                         <Button
                           variant="outline"
                           size="sm"
+                          className="rounded-full bg-card px-3.5"
                           disabled={busy}
                           onClick={() => {
                             setNotice(null);
@@ -253,6 +264,7 @@ export function BoothStaffPanel({
                         <Button
                           variant="outline"
                           size="sm"
+                          className="rounded-full bg-card px-3.5"
                           disabled={busy}
                           onClick={() => {
                             closePin();
@@ -269,6 +281,7 @@ export function BoothStaffPanel({
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="rounded-full px-3.5"
                             disabled={busy}
                             onClick={() =>
                               setConfirm({ accountId: member.accountId, what: 'withdraw' })
@@ -280,6 +293,7 @@ export function BoothStaffPanel({
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="rounded-full px-3.5"
                           disabled={busy}
                           onClick={() =>
                             setConfirm({ accountId: member.accountId, what: 'remove' })
@@ -292,7 +306,7 @@ export function BoothStaffPanel({
                 </div>
 
                 {confirm?.accountId === member.accountId && (
-                  <div className="flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2 rounded-[14px] border border-border bg-card px-3 py-2">
                     <span className="text-sm">
                       {confirm.what === 'remove'
                         ? `Take ${name} off this booth? Their PIN stays theirs for any other booth they work.`
@@ -301,6 +315,7 @@ export function BoothStaffPanel({
                     <Button
                       variant="destructive"
                       size="sm"
+                      className="rounded-full px-3.5"
                       disabled={busy}
                       onClick={() => {
                         setConfirm(null);
@@ -311,7 +326,12 @@ export function BoothStaffPanel({
                     >
                       {confirm.what === 'remove' ? 'Remove' : 'Remove PIN'}
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setConfirm(null)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-full px-3.5"
+                      onClick={() => setConfirm(null)}
+                    >
                       Keep
                     </Button>
                   </div>
@@ -319,7 +339,7 @@ export function BoothStaffPanel({
 
                 {pinFor === member.accountId && (
                   <form
-                    className="grid gap-3 rounded-xl border p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+                    className="grid gap-3 rounded-[14px] border border-border bg-card p-3 @lg:grid-cols-[1fr_1fr_auto] @lg:items-end"
                     onSubmit={(e) => {
                       e.preventDefault();
                       void submitPin(member.accountId);
@@ -331,9 +351,7 @@ export function BoothStaffPanel({
                           label={member.hasPin ? 'New PIN' : 'PIN'}
                           hint={
                             pin !== '' && !pinValid ? (
-                              <span style={{ color: 'hsl(var(--status-down))' }}>
-                                Exactly five digits.
-                              </span>
+                              <span className="text-status-down">Exactly five digits.</span>
                             ) : (
                               'Exactly five digits, including any leading zero.'
                             )
@@ -350,9 +368,7 @@ export function BoothStaffPanel({
                           label="PIN again"
                           hint={
                             again !== '' && !pinsMatch ? (
-                              <span style={{ color: 'hsl(var(--status-down))' }}>
-                                The two PINs are not the same.
-                              </span>
+                              <span className="text-status-down">The two PINs are not the same.</span>
                             ) : (
                               'Never shown again once saved.'
                             )
@@ -381,23 +397,30 @@ export function BoothStaffPanel({
                       <Button
                         type="submit"
                         size="sm"
+                        className="rounded-full px-3.5 font-bold"
                         disabled={busy || (!generate && (!pinValid || !pinsMatch))}
                       >
                         {generate ? 'Generate PIN' : 'Save PIN'}
                       </Button>
-                      <Button type="button" variant="ghost" size="sm" onClick={closePin}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full px-3.5"
+                        onClick={closePin}
+                      >
                         Cancel
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground sm:col-span-3">
+                    <p className="text-xs text-muted-foreground @lg:col-span-3">
                       This replaces the person's PIN at every booth. A generated PIN is shown once:
                       write it down before closing.
                     </p>
                   </form>
                 )}
                 {generated?.accountId === member.accountId && (
-                  <div className="rounded-xl border p-3 flex flex-wrap items-center gap-3">
-                    <span>
+                  <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-border bg-card p-3">
+                    <span className="text-sm">
                       Generated PIN:{' '}
                       <strong className="font-mono tracking-widest">{generated.pin}</strong>. Shown
                       once — write it down.
@@ -405,6 +428,7 @@ export function BoothStaffPanel({
                     <Button
                       variant="outline"
                       size="sm"
+                      className="rounded-full px-3.5"
                       onClick={() =>
                         void navigator.clipboard
                           .writeText(generated.pin)
@@ -414,7 +438,12 @@ export function BoothStaffPanel({
                     >
                       Copy PIN
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setGenerated(null)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-full px-3.5"
+                      onClick={() => setGenerated(null)}
+                    >
                       Done
                     </Button>
                   </div>
@@ -422,16 +451,16 @@ export function BoothStaffPanel({
               </li>
             );
           })}
-        </ul>
+        </StripedList>
       )}
 
       {!readOnly && staff.state !== 'absent' && (
-        <div className="mt-4 rounded-xl border p-3 flex flex-col gap-3">
+        <div className="flex flex-col gap-3 rounded-[14px] border border-border p-3">
           <p className="text-sm font-semibold">Add somebody to this booth</p>
           {candidatesFailed && (
             <ErrorNote message={`The staff list could not be read: ${candidatesFailed}`} />
           )}
-          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <div className="grid gap-3 @lg:grid-cols-[1fr_1fr_auto] @lg:items-end">
             <Field label="Search">
               <TextInput
                 value={query}
@@ -456,6 +485,7 @@ export function BoothStaffPanel({
             </Field>
             <Button
               size="sm"
+              className="rounded-full px-4 font-bold"
               disabled={busy || adding === '' || onList.has(adding)}
               onClick={() => {
                 setNotice(null);
@@ -473,15 +503,7 @@ export function BoothStaffPanel({
           </p>
         </div>
       )}
-
-      <p className="mt-4 text-xs text-muted-foreground">
-        Staff on this list can also sign in at the booth with their own phone and password, when
-        their role allows it (<code className="font-mono">booth:staff:sign_in</code>):{' '}
-        {roles.join(', ')}. A role the park created itself allows it only if it carries that
-        permission. Either way a sign-in {lasts} — set under Booth settings — and does not end when
-        nobody presses anything.
-      </p>
-    </Panel>
+    </CardShell>
   );
 }
 

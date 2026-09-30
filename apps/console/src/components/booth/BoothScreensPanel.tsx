@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { MonitorSmartphone, Unplug } from 'lucide-react';
-import { EmptyState, ErrorNote, Panel, RouteUnavailable, Unreadable } from '@/components/Panel';
+import { ErrorNote, RouteUnavailable, Unreadable } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
-import { StatusPill } from '@/components/Status';
+import { StatusChip } from '@/components/redesign/chips';
+import { CardShell, StripedList } from '@/components/redesign/layout';
+import { EmptyNote } from '@/components/redesign/StatTile';
 import { formatWhen, timeAgo } from '@/lib/time';
 import type { BoothScreenRow, BoothStatus, MintedPairingCode } from './boothApi';
 import type { Read } from './readState';
@@ -82,6 +84,8 @@ export function BoothScreensPanel({
   onUnpair,
   onRetry,
   onDismissCode,
+  id,
+  className,
 }: {
   /** Where this booth's box runs (`boothBoxPlace`): whether pairing applies to it. */
   place: BoothBoxPlace;
@@ -97,14 +101,19 @@ export function BoothScreensPanel({
   onUnpair: (screen: BoothScreenRow) => void;
   onRetry: () => void;
   onDismissCode: () => void;
+  id?: string;
+  className?: string;
 }) {
   /** Pairing is offered unless the status says this booth cannot use it. */
   const pairable = place === 'here' || place === 'unknown';
   const listed = screens.state === 'read' || screens.state === 'stale' ? screens.value : [];
   return (
-    <Panel
+    <CardShell
+      id={id}
+      className={className}
+      icon={MonitorSmartphone}
       title="Screens"
-      description={
+      note={
         place === 'own_box'
           ? 'This booth runs on its own box; its television needs no pairing.'
           : place === 'no_box'
@@ -113,7 +122,13 @@ export function BoothScreensPanel({
       }
       actions={
         readOnly || !pairable ? undefined : (
-          <Button variant="outline" size="sm" onClick={onMint} disabled={busy}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full px-3.5"
+            onClick={onMint}
+            disabled={busy}
+          >
             <MonitorSmartphone className="w-4 h-4" />
             {busy ? 'Minting…' : 'Pair a screen'}
           </Button>
@@ -125,14 +140,14 @@ export function BoothScreensPanel({
       {minted && <PairingCode minted={minted} timezone={timezone} onDismiss={onDismissCode} />}
 
       {readOnly && (pairable || listed.length > 0) && (
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Pairing and unpairing screens needs{' '}
           <code className="font-mono text-xs">admin:booth:manage</code>.
         </p>
       )}
 
       {!pairable && listed.some((screen) => screen.revokedAt === null) && (
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {place === 'own_box'
             ? 'A screen paired to this booth here is not used while the booth runs on its own box. Unpair any still listed as paired.'
             : 'A screen paired to this booth here does nothing while the booth has no box. Unpair any that are not wanted.'}
@@ -148,41 +163,47 @@ export function BoothScreensPanel({
         <Unreadable what="This booth’s screens" message={screens.error} onRetry={onRetry} />
       ) : screens.value.length === 0 ? (
         place === 'own_box' ? (
-          <EmptyState
+          <EmptyNote
+            className="py-3"
             title="Nothing to pair"
             detail="The box serves the booth’s television itself, so there is no code to type there."
           />
         ) : place === 'no_box' ? (
-          <EmptyState
+          <EmptyNote
+            className="py-3"
             title="Nothing to pair yet"
             detail="Give the booth a box on Devices. A booth on its own box, such as a Raspberry Pi, needs no pairing; one on the platform’s virtual box has its screen paired here."
           />
         ) : place === 'here' ? (
-          <EmptyState
+          <EmptyNote
+            className="py-3"
+            icon={MonitorSmartphone}
             title="No screen is paired to this booth"
             detail="Until one is, the television shows “ask our staff” and the booth surface refuses every press — which is the point: an unpaired screen cannot mint a voucher."
           />
         ) : (
-          <EmptyState
+          <EmptyNote
+            className="py-3"
+            icon={MonitorSmartphone}
             title="No screen is paired to this booth"
             detail="A booth on the platform’s virtual box needs one: until then its television asks for staff and refuses every press. A booth on its own box, such as a Raspberry Pi, needs none."
           />
         )
       ) : (
-        <ul className="flex flex-col divide-y">
+        <StripedList label="Screens">
           {screens.value.map((screen) => (
-            <li key={screen.id} className="py-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="font-semibold">{screen.label ?? 'unnamed screen'}</span>
+            <li key={screen.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-3">
+              <span className="text-[13.5px] font-semibold">{screen.label ?? 'unnamed screen'}</span>
 
               {screen.revokedAt !== null ? (
-                <StatusPill tone="idle">unpaired</StatusPill>
+                <StatusChip tone="idle">unpaired</StatusChip>
               ) : screen.pairingOutstanding ? (
-                <StatusPill tone="warn">code outstanding</StatusPill>
+                <StatusChip tone="warn">code outstanding</StatusChip>
               ) : (
-                <StatusPill tone="ok">paired</StatusPill>
+                <StatusChip tone="ok">paired</StatusChip>
               )}
 
-              <span className="text-sm text-muted-foreground">
+              <span className="text-[12.5px] text-muted-foreground">
                 {screen.revokedAt !== null
                   ? `unpaired ${formatWhen(screen.revokedAt, timezone)}${
                       screen.revokedReason ? ` — ${screen.revokedReason}` : ''
@@ -212,7 +233,7 @@ export function BoothScreensPanel({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="ml-auto"
+                  className="ml-auto rounded-full bg-card px-3.5"
                   disabled={busy}
                   onClick={() => onUnpair(screen)}
                 >
@@ -222,9 +243,9 @@ export function BoothScreensPanel({
               )}
             </li>
           ))}
-        </ul>
+        </StripedList>
       )}
-    </Panel>
+    </CardShell>
   );
 }
 
@@ -251,18 +272,18 @@ function PairingCode({
   const [revealed, setRevealed] = useState(true);
   const code = minted.pairingCode;
   return (
-    <div className="mb-4 rounded-xl border-2 border-dashed px-4 py-3">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+    <div className="rounded-[14px] border-[1.5px] border-dashed border-foreground/20 px-4 py-3">
+      <p className="text-[11.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground/80">
         Type this into the booth television
       </p>
       <div className="mt-1 flex flex-wrap items-center gap-3">
         <code className="font-mono text-2xl font-bold tabular-nums tracking-[0.3em]">
           {revealed ? `${code.slice(0, 3)} ${code.slice(3)}` : '••• •••'}
         </code>
-        <Button variant="outline" size="sm" onClick={() => setRevealed((v) => !v)}>
+        <Button variant="outline" size="sm" className="rounded-full px-3.5" onClick={() => setRevealed((v) => !v)}>
           {revealed ? 'Hide' : 'Show'}
         </Button>
-        <Button variant="outline" size="sm" onClick={onDismiss}>
+        <Button variant="outline" size="sm" className="rounded-full px-3.5" onClick={onDismiss}>
           Done
         </Button>
       </div>

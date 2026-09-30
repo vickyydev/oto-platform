@@ -18,11 +18,12 @@ const POS_URL = import.meta.env.VITE_POS_URL?.trim();
 
 /**
  * The pages that keep their previous layout for one more round (SCRUM-474
- * phase 2): their own rounds are landing on them, so only the navigation
- * around them changes now. They still get the old title block and the old
- * centred column, pixel for pixel.
+ * phase 2): a page whose own round is landing on it changes only the
+ * navigation around it now, and still gets the old title block and the old
+ * centred column, pixel for pixel. Empty since phase 2b put Booths on the
+ * sheet; a page that lands mid-round goes back in here for its round.
  */
-const PHASE_TWO = new Set(['booths']);
+const PHASE_TWO = new Set<string>();
 
 /**
  * The console shell, as the approved design draws it (SCRUM-474,

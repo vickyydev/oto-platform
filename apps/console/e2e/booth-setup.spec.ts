@@ -429,7 +429,7 @@ test.describe.serial('The Pi booth, set up in the Console', () => {
 
     const prizes = page
       .locator('section')
-      .filter({ has: page.getByRole('heading', { name: 'Prizes and odds', exact: true }) });
+      .filter({ has: page.getByRole('heading', { name: 'The wheel', exact: true }) });
     await expect(prizes).toBeVisible({ timeout: 30_000 });
     const addPrize = async (name: string, chance: string, onTheWheel: boolean) => {
       await prizes.getByRole('button', { name: 'Add prize', exact: true }).click();
@@ -478,16 +478,16 @@ test.describe.serial('The Pi booth, set up in the Console', () => {
     await chooseBranch(page, CENTRAL_FLORESTA);
     await page.getByRole('button', { name: new RegExp(BOOTH) }).click();
 
-    // Beside the printer it names, the live panel says where templates are edited.
+    // Beside the printer it names, The box card says where templates are edited.
     const live = page
       .locator('section')
-      .filter({ has: page.getByRole('heading', { name: 'What this booth is running', exact: true }) });
+      .filter({ has: page.getByRole('heading', { name: 'The box', exact: true }) });
     await expect(live).toContainText('Receipt and slip templates', { timeout: 30_000 });
     await expect(live).toContainText('Operations › Print Templates');
 
     const prizes = page
       .locator('section')
-      .filter({ has: page.getByRole('heading', { name: 'Prizes and odds', exact: true }) });
+      .filter({ has: page.getByRole('heading', { name: 'The wheel', exact: true }) });
     const edit = prizes.getByRole('button', { name: 'Edit Mystery Box', exact: true });
     await expect(edit).toBeVisible({ timeout: 30_000 });
 
@@ -533,7 +533,7 @@ test('Booths: the prize editor’s pointer to the slip’s words opens its vouch
 
   const prizes = page
     .locator('section')
-    .filter({ has: page.getByRole('heading', { name: 'Prizes and odds', exact: true }) });
+    .filter({ has: page.getByRole('heading', { name: 'The wheel', exact: true }) });
   await prizes.getByRole('button', { name: 'Edit 100 THB Voucher', exact: true }).click();
   const editor = page.getByRole('dialog', { name: '100 THB Voucher' });
   await expect(editor).toContainText('are set on the voucher type, not on the prize');

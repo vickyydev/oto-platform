@@ -29,6 +29,10 @@ import {
  * particular count: a seeded booth has had no spins, and a case that insisted
  * on "0" would start failing the moment somebody demonstrates the wheel
  * against the same seed.
+ *
+ * On the approved sheet (SCRUM-474) the reading is the first of the four
+ * tiles across the top of the booth's page — the count large, the trading day
+ * under it — and the box's own report is the card called "The box".
  */
 test('Booths: Booth 1 at Central Floresta says how many spins it has had today', async ({
   page,
@@ -41,14 +45,17 @@ test('Booths: Booth 1 at Central Floresta says how many spins it has had today',
   await expect(booth).toBeVisible({ timeout: 30_000 });
   await booth.click();
 
-  await expect(page.getByRole('heading', { name: 'What this booth is running' })).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'The box', exact: true })).toBeVisible({
     timeout: 30_000,
   });
   // Case-insensitive: the label is upper-cased by CSS, not in the markup.
-  const spinsToday = page.getByText(/^spins today \(\d{4}-\d{2}-\d{2}\)$/i);
+  const spinsToday = page.getByText(/^spins today$/i);
   await expect(spinsToday).toBeVisible();
-  // The figure beside the label: a count, or "n of cap" where the booth has one.
-  await expect(spinsToday.locator('xpath=following-sibling::dd[1]')).toHaveText(/\d+( of \d+)?/);
+  // The figure under the label: a count, or "n of cap" where the booth has one —
+  // and the trading day it counts, which is the box's answer and not a dash.
+  const tile = spinsToday.locator('xpath=..');
+  await expect(tile).toContainText(/\d+( of \d+)?/, { timeout: 30_000 });
+  await expect(tile).toContainText(/\d{4}-\d{2}-\d{2}/);
 });
 
 /**

@@ -1,21 +1,15 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ExternalLink, FileText, Plus, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Disc3, FerrisWheel, History, Plus, RefreshCw } from 'lucide-react';
+import type { BoothSpins } from '@/api/vouchers';
 import { useSession } from '@/auth/SessionContext';
 import { directoryApi, type BranchRow } from '@/api/platform';
-import {
-  EmptyState,
-  ErrorNote,
-  Fact,
-  Loading,
-  Panel,
-  RouteUnavailable,
-  StaleNote,
-  Unreadable,
-} from '@/components/Panel';
+import { ErrorNote, Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
-import { CheckRow, Field, Select } from '@/components/Form';
-import { StatusMark, StatusPill, toneForHealth } from '@/components/Status';
-import { toneForPaper, toneForReachability } from '@/lib/fleetWords';
+import { CheckRow } from '@/components/Form';
+import { StatusMark } from '@/components/Status';
+import { BarChip, FilterChip, SelectChip, Tag } from '@/components/redesign/chips';
+import { CardShell, PageGrid, Rail, StripedList } from '@/components/redesign/layout';
+import { EmptyNote, StatTile } from '@/components/redesign/StatTile';
 import { formatWhen, timeAgo } from '@/lib/time';
 import {
   boothApi,
@@ -34,6 +28,8 @@ import {
   type PrizeInput,
   type VoucherDefinitionRow,
 } from '@/components/booth/boothApi';
+import { BoothBoxCard } from '@/components/booth/BoothBoxCard';
+import { BoothCommandBar } from '@/components/booth/BoothCommandBar';
 import { BoothScreensPanel, boothBoxPlace } from '@/components/booth/BoothScreensPanel';
 import {
   BoothSettingsEditor,
@@ -43,12 +39,13 @@ import {
 import { BoothSpinsPanel } from '@/components/booth/BoothSpinsPanel';
 import { BoothSetupChecklist } from '@/components/booth/BoothSetupChecklist';
 import { BoothStaffPanel } from '@/components/booth/BoothStaffPanel';
+import { boothSetupSteps } from '@/components/booth/boothState';
 import { PrizeEditor } from '@/components/booth/PrizeEditor';
 import { ArchivedPrizes, PrizeTable } from '@/components/booth/PrizeTable';
 import { PublishPanel } from '@/components/booth/PublishPanel';
 import { TodayStaffPanel } from '@/components/booth/TodayStaffPanel';
-import { VoucherSlipPanel } from '@/components/booth/VoucherSlipPanel';
-import { WheelPreview } from '@/components/booth/WheelPreview';
+import { VoucherSlipEditor, VoucherSlipPanel } from '@/components/booth/VoucherSlipPanel';
+import { WheelPreview, prizeInks } from '@/components/booth/WheelPreview';
 import {
   readAbsent,
   readFailed,
@@ -68,21 +65,10 @@ import {
  * the gap between them is closed by a publish and then by the box pulling it.
  * Editing a weight changes nothing in the mall; publishing writes the version
  * the booth will run once its box has pulled it, without anybody at the booth
- * being asked. So the panels are ordered the way the decision is made — what
+ * being asked. So the cards are ordered the way the decision is made — what
  * is out there now, what the draft is, what the odds come to, what publishing
  * commits to — and the word "save" is never used for something that reaches a
  * television.
- *
- * **Which is why "Wheel version" compares two numbers rather than showing
- * one.** `GET /booths/:id/status` answers with both the published version and
- * the version the box reports running, and the Fact goes amber and names both
- * whenever they differ. A page that showed only what had been published would
- * let a manager believe a wheel had changed in a shopping centre when it had
- * not — and on this build that is the ordinary case rather than a rare one,
- * because nothing on a running box re-pulls the cache the wheel arrives in
- * (`@oto/box-agent` calls `syncCache()` at boot and from no timer). Until
- * that is fixed, the booth adopts a publish when its agent next restarts, and
- * this reading is what says whether it has.
  *
  * **What each reading is worth travels with it** (`readState.ts`). A booth
  * whose draft has not come back and a booth with no prizes are not drawn the
@@ -94,27 +80,33 @@ import {
  * one's Publish carries a hash that has moved. That is why every write here
  * re-reads rather than patching what is on screen.
  *
- * **Laid out as a dashboard (SCRUM-468).** It used to be one long column of
- * dense panels, and the owner, at the park, could not find his way round it.
- * The panels and every word on them are the same; what changed is where they
- * sit. The setup checklist heads the page with the booth's name and where its
- * wheel stands, the live reading follows it, and the rest is grouped under
- * five titles — prizes, the wheel and its publish, staff and screens,
- * settings, activity — two panels abreast where they are narrow enough. The
- * settings form opens in a drawer from a summary, as the prize editor always
- * has, so no form stacks inline on the page.
+ * **Laid out on the approved sheet (SCRUM-474, Main.dc.html).** The command
+ * bar is the booth's: its name, that it is a Lucky Wheel, whether it is set
+ * up, whether its box is online and which wheel is published. The booths at
+ * the branch are the chip row under it. Then the twelve-column sheet: four
+ * tiles for today, a wide column for the wheel and what runs it — the prizes,
+ * the publish, who may sign in, the day's spins, the versions — and a rail
+ * for the day and the box: today's staff, the voucher slip, the box's own
+ * report, the wheel as the television draws it, the settings, the screens.
+ * Every card is the height of what it holds and no taller: the two columns
+ * end where their last card ends, and nothing is stretched to meet an edge.
+ * The forms — a prize, the settings, the slip — open in drawers, so no form
+ * stacks inline on the sheet.
  */
 /**
- * Which panel a write belongs to, so its refusal is drawn where the button was
- * pressed rather than in whichever panel happens to hold an error slot.
+ * Which card a write belongs to, so its refusal is drawn where the button was
+ * pressed rather than in whichever card happens to hold an error slot.
  * `archived` is the Restore under "Show archived prizes", below the prize
  * table — its refusal is drawn beside the list, not above a table's height of
  * rows.
  */
 type WriteSite = 'prizes' | 'archived' | 'settings' | 'slip' | 'publish' | 'screens' | 'staff';
 
-/** The till's origin, whose back office holds the Print Templates panel (`env.d.ts`). */
-const POS_URL = import.meta.env.VITE_POS_URL?.trim();
+/** Today's spins as the Spins card read them, and whether every one is on screen. */
+interface TodaySpins {
+  spins: BoothSpins;
+  whole: boolean;
+}
 
 export function Booths() {
   const { me, has } = useSession();
@@ -125,7 +117,8 @@ export function Booths() {
 
   const [branches, setBranches] = useState<BranchRow[] | null>(null);
   const [branchId, setBranchId] = useState(me?.branch?.id ?? '');
-  const timezone = branches?.find((b) => b.id === branchId)?.timezone ?? me?.branch?.timezone;
+  const branch = branches?.find((b) => b.id === branchId);
+  const timezone = branch?.timezone ?? me?.branch?.timezone;
   const [booths, setBooths] = useState<Read<BoothListRow[]>>(() => unread<BoothListRow[]>([]));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Read<BoothDraft | null>>(() =>
@@ -148,14 +141,28 @@ export function Booths() {
    *
    * Held here and nowhere else: the API returns it once and stores only a
    * hash, so this is the only copy in existence and it lasts exactly as long
-   * as the panel is on screen. Cleared when the booth selection changes, so a
+   * as the card is on screen. Cleared when the booth selection changes, so a
    * code for one booth can never be read beside another booth's name.
    */
   const [mintedCode, setMintedCode] = useState<MintedPairingCode | null>(null);
+  /**
+   * Today's spins, handed up by the Spins card from its own read: the day's
+   * totals for the tiles, and — while every spin of the day is on screen —
+   * each prize's wins for the wheel. Dropped with the booth selection.
+   */
+  const [today, setToday] = useState<TodaySpins | null>(null);
 
   const [editing, setEditing] = useState<BoothPrizeDraft | null>(null);
   /** The settings drawer (SCRUM-468): the form lives there, the summary on the page. */
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /** The voucher slip's drawer (SCRUM-471, on the sheet since SCRUM-474): likewise. */
+  const [slipOpen, setSlipOpen] = useState(false);
+  /**
+   * Whether the setup checklist is on the sheet. Null is "as the booth
+   * stands": open while a step is still to do, folded into the bar's chip
+   * once every step is done. The chip toggles it either way.
+   */
+  const [setupOpen, setSetupOpen] = useState<boolean | null>(null);
   /**
    * "Show archived prizes" (SCRUM-468), the voucher types' `showArchived`.
    * Mirrored in a ref so every read of the draft — a write's re-read
@@ -167,12 +174,12 @@ export function Booths() {
   const showArchivedRef = useRef(false);
   const [busy, setBusy] = useState(false);
   /**
-   * The last refusal, and WHICH panel's button earned it.
+   * The last refusal, and WHICH card's button earned it.
    *
    * A publish refused for a stale hash is the message that decides whether
    * somebody presses again, and it used to be drawn in the prize table —
    * measured at 1,769 pixels above the Publish button that caused it, which on
-   * any real screen is off it. Each panel is handed only its own failure, so
+   * any real screen is off it. Each card is handed only its own failure, so
    * the answer appears where the person is looking.
    */
   const [writeError, setWriteError] = useState<{ where: WriteSite; message: string } | null>(null);
@@ -324,6 +331,9 @@ export function Booths() {
     // A code is for one booth. Selecting another must not leave six digits on
     // screen under a different booth's name.
     setMintedCode(null);
+    // Nor another booth's day on this one's tiles, nor its checklist's fold.
+    setToday(null);
+    setSetupOpen(null);
   }, [selectedId, loadBooth]);
 
   /**
@@ -349,13 +359,13 @@ export function Booths() {
   };
 
   /**
-   * The staff panel's writes (SCRUM-400), apart from `run` on purpose.
+   * The staff card's writes (SCRUM-400), apart from `run` on purpose.
    *
    * `run` reads any 404 as "this deployment has no such route" and closes
    * every form on the page. A 404 from the staff routes is nearly always the
    * other thing — a colleague took the person off the booth, or withdrew the
-   * PIN, a moment before this press — so it is said in the staff panel, and
-   * the list is read again either way so the panel shows what is now true.
+   * PIN, a moment before this press — so it is said in the staff card, and
+   * the list is read again either way so the card shows what is now true.
    */
   const runStaff = async (write: () => Promise<unknown>): Promise<boolean> => {
     if (!selectedId) return false;
@@ -374,23 +384,89 @@ export function Booths() {
   };
 
   const selected = draft.value;
+  const selectedRow = booths.value.find((b) => b.id === selectedId) ?? null;
+  /** The name on the bar: the draft's once read, the list's meanwhile. */
+  const boothName = selected?.booth.name ?? selectedRow?.name ?? null;
+
+  /**
+   * The setup steps, ticked from the readings in hand (`boothSetupSteps`),
+   * and whether they are all done — which is what folds the checklist into
+   * the bar's chip. Nothing until a draft is on screen: a checklist over a
+   * booth whose draft has not come back would tick nothing and say "0 of 6"
+   * about a booth that may be fully set up.
+   */
+  const steps = selected
+    ? boothSetupSteps(
+        draft.state === 'read' ? draft.value : null,
+        status.state === 'read' ? status.value : null,
+        staff.state === 'read' ? staff.value : null,
+      )
+    : null;
+  const stepsDone = steps ? steps.filter((s) => s.done).length : 0;
+  const setupComplete = steps !== null && stepsDone === steps.length;
+  const showSetup = steps !== null && (setupOpen ?? !setupComplete);
+
+  /** Each prize's colour on the page: the wheel's, the table's, the spins' dots. */
+  const inks = useMemo(() => prizeInks(selected?.prizes ?? []), [selected]);
+  /** Wins today by prize, counted from the day's spins while every one is on screen. */
+  const wonToday = useMemo(() => (today && today.whole ? winsByPrize(today.spins) : null), [today]);
 
   if (booths.state === 'absent') {
     return (
-      <RouteUnavailable
-        what="Booths"
-        detail="This deployment does not serve the booth admin routes yet — SCRUM-200. The page is built and fills in as soon as they are deployed here."
-      />
+      <>
+        <BoothCommandBar title={null} place={branch?.name} />
+        <RouteUnavailable
+          what="Booths"
+          detail="This deployment does not serve the booth admin routes yet — SCRUM-200. The page is built and fills in as soon as they are deployed here."
+        />
+      </>
     );
   }
 
+  const refresh = () => {
+    void loadBooths(branchId);
+    if (selectedId) void loadBooth(selectedId);
+  };
+
   return (
-    <div className="flex flex-col gap-4">
-      {branches && branches.length > 1 && (
-        <Panel>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="Branch">
-              <Select
+    <>
+      <BoothCommandBar
+        title={boothName}
+        place={branch?.name ?? me?.branch?.name}
+        badges={
+          boothName ? (
+            <>
+              <Tag variant="mint">Lucky Wheel</Tag>
+              {steps && (
+                <button
+                  type="button"
+                  onClick={() => setSetupOpen(!showSetup)}
+                  aria-expanded={showSetup}
+                  aria-controls="booth-setup"
+                  title={showSetup ? 'Hide the setup steps' : 'Show the setup steps'}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-[5px] text-[12.5px] font-semibold text-foreground transition-colors hover:bg-foreground/5"
+                >
+                  {setupComplete ? (
+                    <Check className="w-3.5 h-3.5 text-status-ok" strokeWidth={3} aria-hidden="true" />
+                  ) : (
+                    <StatusMark tone="warn" className="w-2.5 h-2.5" />
+                  )}
+                  {setupComplete ? 'Setup complete' : `Setup ${stepsDone} of ${steps.length} done`}
+                </button>
+              )}
+            </>
+          ) : undefined
+        }
+        actions={
+          <>
+            {selectedId && <BoxChip status={status} boothId={selectedId} />}
+            {selected && <WheelChip draft={selected} />}
+            {branches && branches.length > 1 && (
+              // Sized by its longest option (SCRUM-435), so a park's full
+              // name is never cut to "…Chal…".
+              <SelectChip
+                label="Branch"
+                showLabel
                 value={branchId}
                 onChange={(next) => {
                   setBranchId(next);
@@ -398,147 +474,134 @@ export function Booths() {
                 }}
                 options={branches.map((b) => ({ value: b.id, label: b.name }))}
               />
-            </Field>
-          </div>
-        </Panel>
-      )}
-
-      <Panel
-        title="Booths"
-        description="Every Lucky Wheel at this branch, and the version each one is on."
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void loadBooths(branchId)}
-            disabled={booths.refreshing}
-          >
-            <RefreshCw className={booths.refreshing ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
-            Refresh
-          </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 rounded-full px-3.5"
+              onClick={refresh}
+              disabled={booths.refreshing}
+            >
+              <RefreshCw className={booths.refreshing ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
+              Refresh
+            </Button>
+          </>
         }
-      >
-        {booths.state === 'stale' && booths.readAt !== null && (
-          <StaleNote
-            readAt={booths.readAt}
-            message={booths.error}
-            onRetry={() => void loadBooths(branchId)}
-          />
-        )}
-        {booths.state === 'failed' ? (
-          <Unreadable
-            what="The booth list"
-            message={booths.error}
-            onRetry={() => void loadBooths(branchId)}
-          />
-        ) : booths.state === 'unread' ? (
-          <Loading what="booths" />
-        ) : booths.value.length === 0 ? (
-          <EmptyState
+      />
+
+      {/*
+        The booths at this branch, and which one the sheet is about. A chip
+        row like the views on Devices: a booth's own facts are on the sheet
+        once it is chosen, so the chip carries its name, the version published
+        for it and a mark when something on it needs a look — the list route
+        answers with the last version PUBLISHED, never with what any box is
+        running, which is The box's reading, one booth at a time.
+      */}
+      {booths.state === 'stale' && booths.readAt !== null && (
+        <StaleNote readAt={booths.readAt} message={booths.error} onRetry={refresh} />
+      )}
+      {booths.state === 'failed' ? (
+        <Unreadable what="The booth list" message={booths.error} onRetry={refresh} />
+      ) : booths.state === 'unread' ? (
+        <Loading what="booths" />
+      ) : booths.value.length === 0 ? (
+        <CardShell>
+          <EmptyNote
+            icon={FerrisWheel}
             title="No booths at this branch"
             detail="A booth is a station of kind “booth” on a box. Add one on Devices and it appears here."
           />
-        ) : (
-          <ul className="flex flex-col divide-y">
-            {booths.value.map((booth) => (
-              <li key={booth.id}>
-                <button
-                  type="button"
+        </CardShell>
+      ) : (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h2 className="m-0 text-[11.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground/80">
+            Booths
+          </h2>
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Booth">
+            {booths.value.map((booth) => {
+              const attention = [
+                booth.boxId === null ? 'no box' : null,
+                booth.eligibility !== 'none'
+                  ? `eligibility ${booth.eligibility} — publishing will refuse it`
+                  : null,
+              ].filter((part): part is string => part !== null);
+              const facts = `${booth.layoutName ?? 'no design'} · ${booth.activePrizes} prize${
+                booth.activePrizes === 1 ? '' : 's'
+              } on the wheel`;
+              return (
+                <FilterChip
+                  key={booth.id}
+                  active={booth.id === selectedId}
                   onClick={() => setSelectedId(booth.id)}
-                  className={`w-full text-left py-3 px-1 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg hover-elevate ${
-                    booth.id === selectedId ? 'bg-muted/60' : ''
-                  }`}
+                  title={attention.length > 0 ? `${facts} · ${attention.join(' · ')}` : facts}
                 >
-                  <span className="font-semibold">{booth.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {booth.layoutName ?? 'no design'} · {booth.activePrizes} prize
-                    {booth.activePrizes === 1 ? '' : 's'} on the wheel
+                  {attention.length > 0 && <StatusMark tone="warn" className="w-2.5 h-2.5" />}
+                  {booth.name}
+                  <span className="font-normal opacity-70">
+                    · {booth.publishedVersion === null ? 'never published' : `v${booth.publishedVersion}`}
                   </span>
-                  {booth.eligibility !== 'none' && (
-                    <StatusPill tone="warn">eligibility {booth.eligibility}</StatusPill>
-                  )}
-                  {booth.boxId === null && <StatusPill tone="idle">no box</StatusPill>}
-                  {/*
-                    "published", said rather than left off. The list route
-                    answers with the last version PUBLISHED for each booth and
-                    has no reading of what any of their boxes is actually
-                    running — that costs a heartbeat per booth and is what
-                    `GET /booths/:id/status` is for, one booth at a time. A
-                    bare "version 6" here would be read as the wheel in the
-                    mall, which it frequently is not.
-                  */}
-                  <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                    {booth.publishedVersion === null
-                      ? 'never published'
-                      : `version ${booth.publishedVersion} published`}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-
-      {/*
-        The head of the booth (SCRUM-468): its name, where its wheel stands,
-        and the setup checklist, whose steps jump to the sections below. The
-        live reading follows at once — what the booth is RUNNING comes before
-        anything somebody is editing.
-      */}
-      {selected && <BoothSetupChecklist draft={draft} status={status} staff={staff} />}
-      {selectedId && (
-        <div id="booth-printer" className="scroll-mt-24">
-          <LiveStatus
-            status={status}
-            timezone={timezone}
-            onRetry={() => void loadBooth(selectedId)}
-          />
+                </FilterChip>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {draft.state === 'absent' ? (
-        <RouteUnavailable
-          what="The booth’s prize list and settings"
-          detail="The draft route is not deployed here yet — SCRUM-200. What the booth is running is shown above, from the route that does ship."
-        />
-      ) : draft.state === 'failed' ? (
-        <Unreadable
-          what="This booth’s draft"
-          message={draft.error}
-          onRetry={() => selectedId && void loadBooth(selectedId)}
-        />
-      ) : selected === null ? (
-        draft.refreshing ? (
-          <Loading what="this booth’s draft" />
-        ) : null
-      ) : (
-        <>
-          {draft.state === 'stale' && draft.readAt !== null && (
-            <StaleNote
-              readAt={draft.readAt}
-              message={draft.error}
-              onRetry={() => selectedId && void loadBooth(selectedId)}
-            />
-          )}
+      {selected && !canManage && (
+        <p className="rounded-[14px] border border-dashed border-foreground/20 px-4 py-3 text-sm text-muted-foreground">
+          You can read this booth but not change it. Editing prizes needs{' '}
+          <code className="font-mono text-xs">admin:booth:manage</code>; publishing needs{' '}
+          <code className="font-mono text-xs">admin:booth:publish</code>.
+        </p>
+      )}
 
-          {!canManage && (
-            <p className="rounded-xl border border-dashed px-4 py-3 text-sm text-muted-foreground">
-              You can read this booth but not change it. Editing prizes needs{' '}
-              <code className="font-mono text-xs">admin:booth:manage</code>; publishing needs{' '}
-              <code className="font-mono text-xs">admin:booth:publish</code>.
-            </p>
-          )}
+      {selectedId && (
+        <PageGrid>
+          {steps && showSetup && <BoothSetupChecklist id="booth-setup" steps={steps} />}
 
-          <Group title="Prizes">
-            <div id="booth-prizes" className="scroll-mt-24">
-              <Panel
-                title="Prizes and odds"
-                description="What the wheel gives away, what each one costs, and whether the odds add up."
+          <TodayBand status={status} boothId={selectedId} today={today} />
+
+          {draft.state === 'absent' ? (
+            <CardShell span={8}>
+              <RouteUnavailable
+                what="The booth’s prize list and settings"
+                detail="The draft route is not deployed here yet — SCRUM-200. What the booth is running is shown beside this, from the route that does ship."
+              />
+            </CardShell>
+          ) : draft.state === 'failed' ? (
+            <CardShell span={8}>
+              <Unreadable
+                what="This booth’s draft"
+                message={draft.error}
+                onRetry={() => void loadBooth(selectedId)}
+              />
+            </CardShell>
+          ) : selected === null ? (
+            <CardShell span={8}>
+              <Loading what="this booth’s draft" />
+            </CardShell>
+          ) : (
+            <Rail span={8}>
+              {draft.state === 'stale' && draft.readAt !== null && (
+                <StaleNote
+                  readAt={draft.readAt}
+                  message={draft.error}
+                  onRetry={() => void loadBooth(selectedId)}
+                />
+              )}
+
+              <CardShell
+                id="booth-prizes"
+                className="scroll-mt-24"
+                icon={FerrisWheel}
+                title="The wheel"
+                note={wheelNote(selected)}
                 actions={
                   canManage ? (
                     <Button
                       size="sm"
                       variant="outline"
+                      className="rounded-full border-primary px-3.5 font-bold text-primary-ink"
                       onClick={() => setEditing(blankPrize(selected))}
                     >
                       <Plus className="w-4 h-4" />
@@ -546,10 +609,33 @@ export function Booths() {
                     </Button>
                   ) : undefined
                 }
+                footer={
+                  <>
+                    {/*
+                      The archived slices (SCRUM-468), behind a quiet tick the
+                      way Voucher types keeps its archived rows: off by
+                      default, so the table reads as the wheel it is.
+                    */}
+                    <CheckRow
+                      checked={showArchived}
+                      onChange={toggleArchived}
+                      label="Show archived prizes"
+                      detail="Archived prizes are off the wheel and out of every total here; every spin that won one still names it."
+                    />
+                    <span>
+                      Switched-off prizes never appear on the wheel ·{' '}
+                      {selected.published
+                        ? `v${selected.published.version} published ${formatWhen(selected.published.publishedAt, timezone)}`
+                        : 'never published'}
+                    </span>
+                  </>
+                }
               >
                 {errorAt('prizes') && <ErrorNote message={errorAt('prizes')!} />}
                 {selected.prizes.length === 0 ? (
-                  <EmptyState
+                  <EmptyNote
+                    className="py-3"
+                    icon={FerrisWheel}
                     title="No prizes on this booth"
                     detail="A wheel with nothing on it refuses every press. Add the first prize to start."
                   />
@@ -558,26 +644,16 @@ export function Booths() {
                     prizes={selected.prizes}
                     spinsToday={status.state === 'read' ? (status.value?.today.spins ?? null) : null}
                     cappedToday={status.value?.today.dailyCapsReached ?? []}
+                    wonToday={wonToday}
                     onEdit={(p) => setEditing(p)}
-                    disabled={!canManage || busy}
+                    readOnly={!canManage}
+                    busy={busy}
                   />
                 )}
-                {/*
-                  The archived slices (SCRUM-468), behind a quiet tick the way
-                  Voucher types keeps its archived rows: off by default, so
-                  the table reads as the wheel it is.
-                */}
-                <div className="mt-3 border-t pt-2 flex flex-col gap-2">
-                  <CheckRow
-                    checked={showArchived}
-                    onChange={toggleArchived}
-                    label="Show archived prizes"
-                    detail="Archived prizes are off the wheel and out of every total here; every spin that won one still names it."
-                  />
-                  {showArchived &&
-                    (errorAt('archived') ? <ErrorNote message={errorAt('archived')!} /> : null)}
-                  {showArchived &&
-                    (selected.archivedPrizes !== undefined ? (
+                {showArchived && (
+                  <div className="flex flex-col gap-2 border-t border-card-border pt-3">
+                    {errorAt('archived') && <ErrorNote message={errorAt('archived')!} />}
+                    {selected.archivedPrizes !== undefined ? (
                       <ArchivedPrizes
                         prizes={selected.archivedPrizes}
                         definitions={definitions}
@@ -594,78 +670,54 @@ export function Booths() {
                       <p className="py-2 text-sm text-muted-foreground">
                         This deployment does not list archived prizes yet.
                       </p>
-                    ))}
-                </div>
-              </Panel>
-            </div>
-          </Group>
-
-          <Group title="Wheel and publish">
-            <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
-              <Panel
-                title="Wheel preview"
-                description="Slice order and colours, as the television draws them."
-              >
-                <WheelPreview prizes={selected.prizes} />
-              </Panel>
-              <div id="booth-publish" className="scroll-mt-24 min-w-0">
-                {canPublish ? (
-                  <PublishPanel
-                    draft={selected}
-                    publishing={busy}
-                    unavailable={writeUnavailable}
-                    error={errorAt('publish')}
-                    lastPublished={lastPublished}
-                    timezone={timezone}
-                    onPublish={(note, expectedBundleHash) =>
-                      void run('publish', async () => {
-                        const answer = await boothApi.publish(selected.booth.id, {
-                          note: note.trim() === '' ? null : note.trim(),
-                          // Sent only when the draft had one: the API treats it
-                          // as "refuse if this is not still the draft", and an
-                          // absent hash is a booth with no publishable bundle,
-                          // not a licence to overwrite.
-                          ...(expectedBundleHash ? { expectedBundleHash } : {}),
-                        });
-                        setLastPublished({ version: answer.version.version });
-                        await loadBooths(branchId);
-                      })
-                    }
-                  />
-                ) : (
-                  <Panel
-                    title="Publish"
-                    description="Freezes the draft as a new version the booths pick up."
-                  >
-                    <p className="text-sm text-muted-foreground">
-                      Publishing needs <code className="font-mono text-xs">admin:booth:publish</code>. A
-                      manager can grant it from the Login Users panel.
-                    </p>
-                  </Panel>
+                    )}
+                  </div>
                 )}
-              </div>
-            </div>
-          </Group>
+              </CardShell>
 
-          <Group title="Staff and screens">
-            {/*
-              Today's staff (SCRUM-473): the day's roster from the OTO App's
-              rota and the one label every voucher prints. It reads and writes
-              its own routes; the standing list below is who may ever sign in.
-            */}
-            <div id="booth-today-staff" className="scroll-mt-24">
-              <TodayStaffPanel
-                key={'duty-' + selected.booth.id}
-                boothId={selected.booth.id}
-                branchId={selected.booth.branchId}
-                timezone={timezone}
-                readOnly={!canAssignStaff}
-              />
-            </div>
+              {canPublish ? (
+                <PublishPanel
+                  id="booth-publish"
+                  className="scroll-mt-24"
+                  draft={selected}
+                  publishing={busy}
+                  unavailable={writeUnavailable}
+                  error={errorAt('publish')}
+                  lastPublished={lastPublished}
+                  timezone={timezone}
+                  onPublish={(note, expectedBundleHash) =>
+                    void run('publish', async () => {
+                      const answer = await boothApi.publish(selected.booth.id, {
+                        note: note.trim() === '' ? null : note.trim(),
+                        // Sent only when the draft had one: the API treats it
+                        // as "refuse if this is not still the draft", and an
+                        // absent hash is a booth with no publishable bundle,
+                        // not a licence to overwrite.
+                        ...(expectedBundleHash ? { expectedBundleHash } : {}),
+                      });
+                      setLastPublished({ version: answer.version.version });
+                      await loadBooths(branchId);
+                    })
+                  }
+                />
+              ) : (
+                <CardShell
+                  id="booth-publish"
+                  className="scroll-mt-24"
+                  title="Publish"
+                  note="freezes the draft as a new version the booths pick up"
+                >
+                  <p className="text-sm text-muted-foreground">
+                    Publishing needs <code className="font-mono text-xs">admin:booth:publish</code>. A
+                    manager can grant it from the Login Users panel.
+                  </p>
+                </CardShell>
+              )}
 
-            <div id="booth-staff" className="scroll-mt-24">
               <BoothStaffPanel
-                // The PIN form holds digits for one booth; another booth is another panel.
+                id="booth-staff"
+                className="scroll-mt-24"
+                // The PIN form holds digits for one booth; another booth is another card.
                 key={selected.booth.id}
                 branchId={selected.booth.branchId}
                 staff={staff}
@@ -696,48 +748,120 @@ export function Booths() {
                     boothApi.clearPin(selected.booth.id, accountId, 'withdrawn from the Console'),
                   )
                 }
-                onRetry={() => selectedId && void loadBooth(selectedId)}
+                onRetry={() => void loadBooth(selectedId)}
               />
-            </div>
 
-            <BoothScreensPanel
-              // Whether this booth is paired at all: only one on the platform's
-              // virtual box is. A booth on its own box, the Pi, needs no pairing.
-              place={boothBoxPlace(status, selected.booth.id)}
-              screens={screens}
-              minted={mintedCode}
-              busy={busy}
-              readOnly={!canManage}
-              error={errorAt('screens')}
+              <BoothSpinsPanel
+                key={'spins-' + selected.booth.id}
+                id={selected.booth.id}
+                timezone={timezone}
+                inks={inks}
+                onToday={(spins, whole) => setToday({ spins, whole })}
+              />
+
+              <VersionHistory
+                versions={versions}
+                timezone={timezone}
+                onRetry={() => void loadBooth(selectedId)}
+              />
+
+              {/*
+                The televisions that press this wheel, at the foot of the
+                column about the wheel — and where the column's height meets
+                the rail's, so the sheet ends on one line rather than two.
+              */}
+              <BoothScreensPanel
+                // Whether this booth is paired at all: only one on the platform's
+                // virtual box is. A booth on its own box, the Pi, needs no pairing.
+                place={boothBoxPlace(status, selected.booth.id)}
+                screens={screens}
+                minted={mintedCode}
+                busy={busy}
+                readOnly={!canManage}
+                error={errorAt('screens')}
+                timezone={timezone}
+                onMint={() =>
+                  void run('screens', async () => {
+                    // The answer is the only copy of the code there will ever be,
+                    // so it is put on screen before anything else can throw.
+                    setMintedCode(
+                      await boothApi.mintPairingCode(selected.booth.id, 'Booth television'),
+                    );
+                  })
+                }
+                onUnpair={(screen) =>
+                  void run('screens', async () => {
+                    await boothApi.unpairScreen(
+                      selected.booth.id,
+                      screen.id,
+                      'unpaired from the Console',
+                    );
+                    setMintedCode(null);
+                  })
+                }
+                onRetry={() => void loadBooth(selectedId)}
+                onDismissCode={() => setMintedCode(null)}
+              />
+            </Rail>
+          )}
+
+          {/*
+            The rail. A third of the sheet from twelve columns up, and the
+            whole width of it below, where a third would be a strip.
+          */}
+          <Rail span={4} className="@2xl:col-span-6">
+            {selected && (
+              <>
+                {/*
+                  Today's staff (SCRUM-473): the day's roster from the OTO App's
+                  rota and the one label every voucher prints. It reads and
+                  writes its own routes; Booth staff is who may ever sign in.
+                */}
+                <TodayStaffPanel
+                  id="booth-today-staff"
+                  className="scroll-mt-24"
+                  key={'duty-' + selected.booth.id}
+                  boothId={selected.booth.id}
+                  branchId={selected.booth.branchId}
+                  timezone={timezone}
+                  readOnly={!canAssignStaff}
+                />
+
+                <VoucherSlipPanel
+                  id="booth-voucher-slip"
+                  className="scroll-mt-24"
+                  draft={selected}
+                  readOnly={!canManage}
+                  onOpen={() => {
+                    setWriteError((held) => (held?.where === 'slip' ? null : held));
+                    setSlipOpen(true);
+                  }}
+                />
+              </>
+            )}
+
+            <BoothBoxCard
+              id="booth-printer"
+              className="scroll-mt-24"
+              status={status}
+              boothId={selectedId}
               timezone={timezone}
-              onMint={() =>
-                void run('screens', async () => {
-                  // The answer is the only copy of the code there will ever be,
-                  // so it is put on screen before anything else can throw.
-                  setMintedCode(
-                    await boothApi.mintPairingCode(selected.booth.id, 'Booth television'),
-                  );
-                })
-              }
-              onUnpair={(screen) =>
-                void run('screens', async () => {
-                  await boothApi.unpairScreen(
-                    selected.booth.id,
-                    screen.id,
-                    'unpaired from the Console',
-                  );
-                  setMintedCode(null);
-                })
-              }
-              onRetry={() => selectedId && void loadBooth(selectedId)}
-              onDismissCode={() => setMintedCode(null)}
+              onRetry={() => void loadBooth(selectedId)}
             />
-          </Group>
 
-          <Group title="Settings">
-            <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
-              <div id="booth-settings" className="scroll-mt-24 min-w-0">
+            {selected && (
+              <>
+                <CardShell
+                  icon={Disc3}
+                  title="Wheel preview"
+                  note="slice order and colours, as the television draws them"
+                >
+                  <WheelPreview prizes={selected.prizes} />
+                </CardShell>
+
                 <BoothSettingsPanel
+                  id="booth-settings"
+                  className="scroll-mt-24"
                   draft={selected}
                   readOnly={!canManage}
                   onEdit={() => {
@@ -745,57 +869,10 @@ export function Booths() {
                     setSettingsOpen(true);
                   }}
                 />
-              </div>
-              <div id="booth-station" className="scroll-mt-24 min-w-0">
-                <Panel
-                  title="Booth station"
-                  description="The station and its voucher prefix, set under Devices."
-                >
-                  <p className="text-sm">
-                    {selected.booth.name} · Prefix: {selected.booth.codePrefix ?? 'Not set'}
-                  </p>
-                  <a className="underline text-sm" href="/devices">
-                    Open Devices to set the station or printer
-                  </a>
-                </Panel>
-              </div>
-            </div>
-            {/*
-              The booth's own voucher slip (SCRUM-471), full width because it
-              is a form and the paper side by side. Saved through the settings
-              route like the rest of this group, and printed only after a
-              publish, which the card says.
-            */}
-            <div id="booth-voucher-slip" className="scroll-mt-24 min-w-0">
-              <VoucherSlipPanel
-                // One booth's slip is not another's: a different booth is a
-                // different form, seeded from its own draft.
-                key={selected.booth.id}
-                draft={selected}
-                readOnly={!canManage}
-                saving={busy}
-                error={errorAt('slip')}
-                onSave={(slip) =>
-                  void run('slip', () => boothApi.saveSettings(selected.booth.id, slip))
-                }
-              />
-            </div>
-          </Group>
-
-          <Group title="Activity">
-            <BoothSpinsPanel
-              key={'spins-' + selected.booth.id}
-              id={selected.booth.id}
-              timezone={timezone}
-            />
-
-            <VersionHistory
-              versions={versions}
-              timezone={timezone}
-              onRetry={() => selectedId && void loadBooth(selectedId)}
-            />
-          </Group>
-        </>
+              </>
+            )}
+          </Rail>
+        </PageGrid>
       )}
 
       {editing && selected && (
@@ -848,188 +925,174 @@ export function Booths() {
           }
         />
       )}
-    </div>
-  );
-}
 
-/**
- * A titled group of panels on the booth page (SCRUM-468) — the small
- * uppercase label the console's sidebar uses for its own groups, so a manager
- * scanning the page reads five sections rather than eleven panels.
- */
-function Group({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-4 pt-2">
-      <h2 className="px-1 text-[11px] font-semibold uppercase tracking-widest text-foreground/45">
-        {title}
-      </h2>
-      {children}
-    </div>
-  );
-}
-
-/**
- * What the booth is actually doing, as against what somebody is editing.
- *
- * Every reading here is the cloud's copy of what the box last REPORTED, which
- * is why the heartbeat's age sits beside it: a booth that went offline at
- * lunchtime shows lunchtime's answers. `runningVersion` null is "the box has
- * not said", not "the box is running nothing".
- */
-function LiveStatus({
-  status,
-  timezone,
-  onRetry,
-}: {
-  status: Read<BoothStatus | null>;
-  timezone?: string | null;
-  onRetry: () => void;
-}) {
-  if (status.state === 'absent') return <RouteUnavailable what="This booth’s live status" />;
-  if (status.state === 'failed') {
-    return <Unreadable what="This booth’s live status" message={status.error} onRetry={onRetry} />;
-  }
-  const s = status.value;
-  if (!s) return status.refreshing ? <Loading what="the booth’s status" /> : null;
-
-  const behind =
-    s.config.runningVersion !== null &&
-    s.config.publishedVersion !== null &&
-    s.config.runningVersion < s.config.publishedVersion;
-
-  return (
-    <Panel
-      title="What this booth is running"
-      description="From the box’s last heartbeat and the rows it has synced — nothing on this panel asks the booth anything."
-    >
-      {status.state === 'stale' && status.readAt !== null && (
-        <StaleNote readAt={status.readAt} message={status.error} onRetry={onRetry} />
+      {slipOpen && selected && (
+        <VoucherSlipEditor
+          // One booth's slip is not another's: a different booth is a
+          // different form, seeded from its own draft.
+          key={selected.booth.id}
+          draft={selected}
+          readOnly={!canManage}
+          saving={busy}
+          error={errorAt('slip')}
+          onClose={() => setSlipOpen(false)}
+          onSave={(slip) =>
+            void run('slip', async () => {
+              await boothApi.saveSettings(selected.booth.id, slip);
+              setSlipOpen(false);
+            })
+          }
+        />
       )}
-      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Fact label="Box">
-          <span className="inline-flex items-center gap-1.5">
-            <StatusMark tone={toneForHealth(s.box.online ? 'ok' : 'down')} />
-            {s.box.online ? 'online' : 'not reporting'}
-            {s.box.lastHeartbeatAt && (
-              <span className="text-muted-foreground">· {timeAgo(s.box.lastHeartbeatAt)}</span>
-            )}
-          </span>
-        </Fact>
-        <Fact label="Wheel version">
-          {s.config.runningVersion === null ? (
-            <span className="text-muted-foreground">not reported</span>
-          ) : behind ? (
-            <span style={{ color: 'hsl(var(--status-warn))' }}>
-              running {s.config.runningVersion}, {s.config.publishedVersion} published
-            </span>
-          ) : (
-            `running ${s.config.runningVersion}`
-          )}
-        </Fact>
-        <Fact label="Printer">
-          {s.printer === null ? (
-            <span className="text-muted-foreground">no printer on this booth</span>
-          ) : (
-            <span className="flex flex-wrap items-center gap-1.5">
-              <StatusPill tone={toneForReachability(s.printer.reachability)}>
-                {s.printer.reachability}
-              </StatusPill>
-              <StatusPill tone={toneForPaper(s.printer.paperStatus)}>
-                paper {s.printer.paperStatus}
-              </StatusPill>
-            </span>
-          )}
-          <TemplatesLink />
-        </Fact>
-        <Fact label={`Spins today (${s.today.businessDate})`}>
-          {/*
-            Against the cap when there is one (SCRUM-257): "38 of 40" is the
-            reading a manager acts on, and a bare 38 is not. The booth refuses
-            the button once the two meet, so the number is highlighted as it is
-            reached rather than after — a booth that has stopped playing is
-            something somebody wants to know without doing the arithmetic.
-          */}
-          {s.today.spinCap === null ? s.today.spins : `${s.today.spins} of ${s.today.spinCap}`}
-          {s.today.spinCap !== null && s.today.spins >= s.today.spinCap && (
-            <span style={{ color: 'hsl(var(--status-warn))' }}> · no more spins today</span>
-          )}
-          {s.today.unattributed > 0 && (
-            <span style={{ color: 'hsl(var(--status-warn))' }}>
-                · {s.today.unattributed} with nobody signed in
-            </span>
-          )}
-        </Fact>
-      </dl>
-      {/*
-        The label above stays "Spins today", and this says which day that is.
-        The count is filed by TRADING day, which starts at the branch's day
-        start rather than at midnight, while a slip prints the calendar date it
-        was won on — so between midnight and the day start the two disagree,
-        and a manager reading one against the other needs to know why.
-      */}
-      <p className="mt-3 text-xs text-muted-foreground">
-        Today means the trading day ({s.today.businessDate}), which starts at the branch’s day
-        start, not at midnight: after midnight the count and the date stay on the day before until
-        then, while a slip is dated with the calendar day it was won.
-      </p>
-      {s.lastSpinAt && (
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          Last spin {formatWhen(s.lastSpinAt, timezone)}.
-        </p>
-      )}
-    </Panel>
-  );
-}
-
-/**
- * Where a printout's layout is changed, beside the printer that prints it
- * (SCRUM-468) — the owner looked for it on this page, at the park, and nothing
- * here led to it.
- *
- * The receipt and slip templates are the till's back office's Print
- * Templates panel (`apps/pos`, Operations › Print Templates). The back office
- * gives each panel an address (`/admin?panel=…`, SCRUM-470), so this lands on
- * that panel directly — and still does for a person who is signed out there:
- * the sign-in wall renders in place and keeps the query string. It does not
- * open with this booth's printer chosen: a template is the branch's, not a
- * device's, and the panel is the list of them. With no till origin configured
- * (`VITE_POS_URL`) the words stay and the link does not — a dead address is
- * worse than a sentence.
- *
- * The booth's own voucher slip has no template there: its logo, header and
- * footer lines, Staff row and terms are this booth's, set on this page under
- * Voucher slip (SCRUM-471), and its prize words are its voucher type's, which
- * the prize editor links to. That is why the link names the panel and not a
- * template: the booth's slip is in none of them.
- */
-function TemplatesLink() {
-  const label = (
-    <>
-      <FileText className="w-3.5 h-3.5 shrink-0" />
-      Receipt and slip templates
     </>
   );
-  return (
-    <span className="mt-2 flex flex-col gap-0.5 text-xs font-normal">
-      {POS_URL ? (
-        <a
-          href={`${POS_URL}/admin?panel=templates`}
-          className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-4"
-        >
-          {label}
-          <ExternalLink className="w-3 h-3 shrink-0 opacity-60" />
-        </a>
-      ) : (
-        <span className="inline-flex items-center gap-1.5 font-semibold">{label}</span>
-      )}
-      <span className="text-muted-foreground">
-        {POS_URL
-          ? 'Opens the till’s back office on its Print Templates screen (Operations › Print Templates). '
-          : 'In the till’s back office, under Operations › Print Templates. '}
-        The booth’s own voucher slip is set below, under Voucher slip.
-      </span>
-    </span>
+}
+
+// ---------------------------------------------------------------------------
+
+/**
+ * The bar's word on the box: online and how long since it was heard from,
+ * silent and how long ago it last was, or no box at all. Nothing until the
+ * status has been read for THIS booth — the page keeps the last booth's
+ * status while the next one's is read, and a chip is a claim.
+ */
+function BoxChip({ status, boothId }: { status: Read<BoothStatus | null>; boothId: string }) {
+  const s = status.value;
+  if (!s || s.booth.id !== boothId || (status.state !== 'read' && status.state !== 'stale')) {
+    return null;
+  }
+  if (s.box.id === null) return <BarChip tone="idle">No box yet</BarChip>;
+  const seen = s.box.lastHeartbeatAt ? timeAgo(s.box.lastHeartbeatAt) : null;
+  return s.box.online ? (
+    <BarChip tone="ok">Box online{seen ? ` · seen ${seen}` : ''}</BarChip>
+  ) : (
+    <BarChip tone="down">
+      Box not reporting{seen ? ` · last seen ${seen}` : ' · never reported'}
+    </BarChip>
   );
+}
+
+/**
+ * The bar's word on the wheel: which version is published and whether the
+ * draft still matches it. "Published" is what the cloud holds, never what a
+ * box is running — that is The box's "Wheel" line, from the box's own report.
+ */
+function WheelChip({ draft }: { draft: BoothDraft }) {
+  if (!draft.published) return <BarChip tone="warn">Wheel never published</BarChip>;
+  return (
+    <BarChip tone={draft.changed ? 'warn' : 'ok'}>
+      Wheel v{draft.published.version} published ·{' '}
+      {draft.changed ? 'draft has unpublished changes' : 'draft matches'}
+    </BarChip>
+  );
+}
+
+/** The wheel card's line: how many prizes, and whether their odds add up. */
+function wheelNote(draft: BoothDraft): string {
+  const active = draft.prizes.filter((p) => p.active);
+  const totalBp = active.reduce((sum, p) => sum + p.weightBp, 0);
+  const count = `${draft.prizes.length} prize${draft.prizes.length === 1 ? '' : 's'}`;
+  if (active.length === 0) return `${count} · nothing switched on`;
+  return `${count} · odds ${totalBp === 10_000 ? 'add to 100%' : `add to ${Number((totalBp / 100).toFixed(2))}%`}`;
+}
+
+/**
+ * The four tiles across the top of the sheet: today at this booth, from the
+ * box's report (`GET /booths/:id/status`) and from the day's spins as the
+ * Spins card read them. A tile whose reading has not come back shows a dash
+ * and says so — never a zero.
+ */
+function TodayBand({
+  status,
+  boothId,
+  today,
+}: {
+  status: Read<BoothStatus | null>;
+  boothId: string;
+  today: TodaySpins | null;
+}) {
+  const s =
+    status.value && status.value.booth.id === boothId && (status.state === 'read' || status.state === 'stale')
+      ? status.value
+      : null;
+  const summary = today?.spins.summary ?? null;
+  const capReached = s !== null && s.today.spinCap !== null && s.today.spins >= s.today.spinCap;
+  /** The share of today's spins with somebody signed in, once there are any. */
+  const attribution =
+    s && s.today.spins > 0
+      ? {
+          percent: Math.round(((s.today.spins - s.today.unattributed) / s.today.spins) * 100),
+          unattributed: s.today.unattributed,
+        }
+      : null;
+
+  return (
+    <>
+      <StatTile
+        span={3}
+        label="Spins today"
+        value={
+          s === null
+            ? '—'
+            : s.today.spinCap === null
+              ? s.today.spins
+              : `${s.today.spins} of ${s.today.spinCap}`
+        }
+        tone={capReached ? 'warn' : undefined}
+        detail={
+          s === null
+            ? 'waiting for the box’s report'
+            : capReached
+              ? 'cap reached — no more spins today'
+              : `trading day ${s.today.businessDate}`
+        }
+      />
+      <StatTile
+        span={3}
+        label="Vouchers printed"
+        value={summary ? summary.printed : '—'}
+        detail={
+          summary && today
+            ? `from ${summary.spins} spin${summary.spins === 1 ? '' : 's'} on ${today.spins.businessDate}`
+            : 'from today’s spins, once read'
+        }
+      />
+      <StatTile
+        span={3}
+        label="Redeemed today"
+        value={summary ? summary.redeemed : '—'}
+        detail={
+          summary
+            ? `of ${summary.printed} printed, taken at the till`
+            : 'from today’s spins, once read'
+        }
+      />
+      <StatTile
+        span={3}
+        label="Attribution"
+        value={attribution === null ? '—' : `${attribution.percent}%`}
+        tone={attribution === null ? undefined : attribution.unattributed > 0 ? 'warn' : 'ok'}
+        detail={
+          s === null
+            ? 'waiting for the box’s report'
+            : attribution === null
+              ? 'no spins yet today'
+              : attribution.unattributed > 0
+                ? `${attribution.unattributed} with nobody signed in`
+                : 'every spin has a name against it'
+        }
+      />
+    </>
+  );
+}
+
+/** Wins by prize id over one day's spins — only meaningful when the rows are the whole day. */
+function winsByPrize(spins: BoothSpins): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const spin of spins.spins) {
+    if (spin.prize) counts.set(spin.prize.id, (counts.get(spin.prize.id) ?? 0) + 1);
+  }
+  return counts;
 }
 
 function VersionHistory({
@@ -1042,9 +1105,10 @@ function VersionHistory({
   onRetry: () => void;
 }) {
   return (
-    <Panel
+    <CardShell
+      icon={History}
       title="Version history"
-      description="Every wheel this booth has run. A version is frozen — the spins that happened under it still point at it, so what the odds were on a given day cannot be changed by tonight’s publish."
+      note="every wheel this booth has run — a version is frozen, so what the odds were on a given day cannot be changed by tonight’s publish"
     >
       {versions.state === 'absent' ? (
         <RouteUnavailable what="Version history" detail="Not deployed here yet — SCRUM-200." />
@@ -1053,31 +1117,33 @@ function VersionHistory({
       ) : versions.state === 'unread' ? (
         <Loading what="versions" />
       ) : versions.value.length === 0 ? (
-        <EmptyState
+        <EmptyNote
+          className="py-3"
+          icon={History}
           title="Nothing published yet"
           detail="This booth has never been given a wheel."
         />
       ) : (
-        <ul className="flex flex-col divide-y">
+        <StripedList label="Versions">
           {versions.value.map((v) => (
-            <li key={v.id} className="py-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <li key={v.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2.5 text-[13.5px]">
               <span className="font-semibold tabular-nums">v{v.version}</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-[12.5px] text-muted-foreground">
                 {formatWhen(v.publishedAt, timezone)}
               </span>
               {v.note ? (
-                <span className="text-sm break-words">“{v.note}”</span>
+                <span className="min-w-0 break-words">“{v.note}”</span>
               ) : (
-                <span className="text-sm text-muted-foreground">no note</span>
+                <span className="text-[12.5px] text-muted-foreground">no note</span>
               )}
               <span className="ml-auto font-mono text-[11px] text-muted-foreground">
                 {v.bundleHash.slice(0, 8)}
               </span>
             </li>
           ))}
-        </ul>
+        </StripedList>
       )}
-    </Panel>
+    </CardShell>
   );
 }
 
