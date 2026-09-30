@@ -412,6 +412,7 @@ export default function OpsPage() {
   });
 
   const isManagerOrAbove = user?.role && ['admin', 'global_admin', 'operator_admin', 'manager'].includes(user.role);
+  const canAnnounceToEveryone = user?.role === "admin" || user?.role === "global_admin" || !!user?.hasAllBranchesAccess;
 
   const activityParams = new URLSearchParams();
   if (selectedBranchId) activityParams.append("branchId", selectedBranchId);
@@ -549,7 +550,8 @@ export default function OpsPage() {
       setAnnouncementForm({
         title: "", body: "", priority: "info",
         startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        branchIds: [], departmentIds: [], showToEveryone: true,
+        branchIds: canAnnounceToEveryone ? [] : user?.allowedBranchIds?.slice(0, 1) || [],
+        departmentIds: [], showToEveryone: canAnnounceToEveryone,
       });
       toast({ title: editingAnnouncementId ? "Announcement updated" : "Announcement created" });
     },
@@ -923,6 +925,11 @@ export default function OpsPage() {
       }
       setShowCreateTaskDialog(true);
     } else if (activeTab === "announcements") {
+      setAnnouncementForm(f => ({
+        ...f,
+        showToEveryone: canAnnounceToEveryone,
+        branchIds: canAnnounceToEveryone ? [] : user?.allowedBranchIds?.slice(0, 1) || [],
+      }));
       setShowCreateAnnouncement(true);
     } else {
       setShowCreateChecklistDialog(true);
@@ -1659,7 +1666,8 @@ export default function OpsPage() {
           setAnnouncementForm({
             title: "", body: "", priority: "info",
             startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            branchIds: [], departmentIds: [], showToEveryone: true,
+            branchIds: canAnnounceToEveryone ? [] : user?.allowedBranchIds?.slice(0, 1) || [],
+            departmentIds: [], showToEveryone: canAnnounceToEveryone,
           });
         }
       }}>
@@ -1747,6 +1755,7 @@ export default function OpsPage() {
                 <Switch
                   checked={announcementForm.showToEveryone}
                   onCheckedChange={(checked) => setAnnouncementForm(f => ({ ...f, showToEveryone: checked }))}
+                  disabled={!canAnnounceToEveryone}
                   data-testid="switch-announcement-everyone"
                 />
                 <Label>Show to everyone</Label>

@@ -1,17 +1,35 @@
 import { Router, Request, Response } from "express";
 import { db } from "../db";
 import { announcements } from "../db/coreSchema";
-import { tenants, users, employees } from "../../shared/schema";
-import { eq, and, desc, lte, gte, or, sql } from "drizzle-orm";
+import { users, employees, branches, departments, type UserWithBranchAccess } from "../../shared/schema";
+import { eq, and, desc, lte, gte, inArray } from "drizzle-orm";
 import { requireAuth } from "../auth";
+import { requireManager } from "../auth-middleware";
 import { z } from "zod";
 
 const router = Router();
 
-async function getDefaultTenantId(): Promise<string> {
-  const [tenant] = await db.select({ id: tenants.id }).from(tenants).limit(1);
-  if (!tenant) throw new Error("No tenant found");
-  return tenant.id;
+function canManage(user: UserWithBranchAccess, announcement: { showToEveryone: boolean; branchIds: string[] | null }): boolean {
+  return user.hasAllBranchesAccess || (!announcement.showToEveryone && !!announcement.branchIds?.length
+    && announcement.branchIds.every(id => user.allowedBranchIds.includes(id)));
+}
+
+async function validAudience(user: UserWithBranchAccess, audience: { showToEveryone: boolean; branchIds: string[] | null; departmentIds: string[] | null }): Promise<boolean> {
+  if (!canManage(user, audience)) return false;
+  const branchIds = [...new Set(audience.branchIds || [])];
+  const departmentIds = [...new Set(audience.departmentIds || [])];
+  if (!audience.showToEveryone && branchIds.length === 0 && departmentIds.length === 0) return false;
+  if (branchIds.length) {
+    const found = await db.select({ id: branches.id }).from(branches)
+      .where(and(eq(branches.tenantId, user.tenantId!), inArray(branches.id, branchIds)));
+    if (found.length !== branchIds.length) return false;
+  }
+  if (departmentIds.length) {
+    const found = await db.select({ id: departments.id }).from(departments)
+      .where(and(eq(departments.tenantId, user.tenantId!), inArray(departments.id, departmentIds)));
+    if (found.length !== departmentIds.length) return false;
+  }
+  return true;
 }
 
 const createAnnouncementSchema = z.object({
@@ -25,9 +43,11 @@ const createAnnouncementSchema = z.object({
   showToEveryone: z.boolean().default(true),
 });
 
-router.get("/", requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const user = req.userWithAccess!;
+    if (!user.tenantId) return res.status(403).json({ message: "Tenant access required" });
+    const tenantId = user.tenantId;
     const result = await db
       .select({
         id: announcements.id,
@@ -50,7 +70,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       .orderBy(desc(announcements.createdAt));
 
     const enriched = [];
-    for (const a of result) {
+    for (const a of result.filter(a => canManage(user, a))) {
       let creatorDisplay = a.creatorName || "Unknown";
       if (a.createdBy) {
         const emp = await db
@@ -74,8 +94,9 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
 
 router.get("/active", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
-    const user = req.user as any;
+    const user = req.userWithAccess;
+    if (!user?.tenantId) return res.status(403).json({ message: "Tenant access required" });
+    const tenantId = user.tenantId;
     const now = new Date();
     const bangkokDateStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(now);
     const [year, month, day] = bangkokDateStr.split('-').map(Number);
@@ -92,25 +113,28 @@ router.get("/active", requireAuth, async (req: Request, res: Response) => {
       ))
       .orderBy(desc(announcements.createdAt));
 
-    const branchId = req.query.branchId as string | undefined;
-    const userDepartmentId = user.departmentId || null;
+    const branchId = typeof req.query.branchId === "string" ? req.query.branchId : undefined;
+    if (branchId) {
+      const [branch] = await db.select({ id: branches.id }).from(branches)
+        .where(and(eq(branches.id, branchId), eq(branches.tenantId, tenantId))).limit(1);
+      if (!branch) return res.status(404).json({ message: "Branch not found" });
+      if (!user.hasAllBranchesAccess && !user.allowedBranchIds.includes(branchId)) {
+        return res.status(403).json({ message: "Branch access denied" });
+      }
+    }
+    const [employee] = await db.select({ departmentId: employees.primaryDepartmentId })
+      .from(employees)
+      .where(and(eq(employees.userId, user.id), eq(employees.tenantId, tenantId), eq(employees.status, "active")))
+      .limit(1);
+    const userDepartmentId = employee?.departmentId || null;
 
     const filtered = result.filter(a => {
       if (a.showToEveryone) return true;
 
-      let branchMatch = true;
-      if (a.branchIds && a.branchIds.length > 0 && branchId) {
-        branchMatch = a.branchIds.includes(branchId);
-      } else if (a.branchIds && a.branchIds.length > 0 && !branchId) {
-        branchMatch = true;
-      }
-
-      let deptMatch = true;
-      if (a.departmentIds && a.departmentIds.length > 0 && userDepartmentId) {
-        deptMatch = a.departmentIds.includes(userDepartmentId);
-      } else if (a.departmentIds && a.departmentIds.length > 0 && !userDepartmentId) {
-        deptMatch = true;
-      }
+      const branchMatch = !a.branchIds?.length || (branchId
+        ? a.branchIds.includes(branchId)
+        : user.hasAllBranchesAccess || a.branchIds.some(id => user.allowedBranchIds.includes(id)));
+      const deptMatch = !a.departmentIds?.length || (!!userDepartmentId && a.departmentIds.includes(userDepartmentId));
 
       return branchMatch && deptMatch;
     });
@@ -122,11 +146,15 @@ router.get("/active", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
-    const user = req.user as any;
+    const user = req.userWithAccess!;
+    if (!user.tenantId) return res.status(403).json({ message: "Tenant access required" });
+    const tenantId = user.tenantId;
     const data = createAnnouncementSchema.parse(req.body);
+    if (!await validAudience(user, { showToEveryone: data.showToEveryone, branchIds: data.branchIds || null, departmentIds: data.departmentIds || null })) {
+      return res.status(403).json({ message: "Announcement audience is outside your branches" });
+    }
 
     const [created] = await db
       .insert(announcements)
@@ -137,8 +165,8 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
         priority: data.priority,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
-        branchIds: data.branchIds || null,
-        departmentIds: data.departmentIds || null,
+        branchIds: data.showToEveryone ? null : data.branchIds || null,
+        departmentIds: data.showToEveryone ? null : data.departmentIds || null,
         showToEveryone: data.showToEveryone,
         createdBy: user.id,
       })
@@ -154,10 +182,15 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:id", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const user = req.userWithAccess!;
+    if (!user.tenantId) return res.status(403).json({ message: "Tenant access required" });
+    const tenantId = user.tenantId;
     const { id } = req.params;
+    const [current] = await db.select().from(announcements)
+      .where(and(eq(announcements.id, id), eq(announcements.tenantId, tenantId))).limit(1);
+    if (!current || !canManage(user, current)) return res.status(404).json({ message: "Not found" });
     const updates: any = {};
 
     if (req.body.title !== undefined) updates.title = req.body.title;
@@ -169,7 +202,17 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
     if (req.body.departmentIds !== undefined) updates.departmentIds = req.body.departmentIds;
     if (req.body.showToEveryone !== undefined) updates.showToEveryone = req.body.showToEveryone;
     if (req.body.isActive !== undefined) updates.isActive = req.body.isActive;
+    if (updates.showToEveryone === true) {
+      updates.branchIds = null;
+      updates.departmentIds = null;
+    }
     updates.updatedAt = new Date();
+
+    if (!await validAudience(user, {
+      showToEveryone: updates.showToEveryone ?? current.showToEveryone,
+      branchIds: updates.branchIds === undefined ? current.branchIds : updates.branchIds,
+      departmentIds: updates.departmentIds === undefined ? current.departmentIds : updates.departmentIds,
+    })) return res.status(403).json({ message: "Announcement audience is outside your branches" });
 
     const [updated] = await db
       .update(announcements)
@@ -185,10 +228,15 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const user = req.userWithAccess!;
+    if (!user.tenantId) return res.status(403).json({ message: "Tenant access required" });
+    const tenantId = user.tenantId;
     const { id } = req.params;
+    const [current] = await db.select().from(announcements)
+      .where(and(eq(announcements.id, id), eq(announcements.tenantId, tenantId))).limit(1);
+    if (!current || !canManage(user, current)) return res.status(404).json({ message: "Not found" });
 
     const [deleted] = await db
       .delete(announcements)
