@@ -773,9 +773,24 @@ router.get("/api/core/nannies/available", requireAuthOrKiosk, async (req: Reques
       ));
     const unavailableNannyIds = new Set(unavailableNannies.map(u => u.employeeId));
 
+    const currentTime = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now);
+    const currentReservations = await db.select({
+      nannyEmployeeId: nannyReservations.nannyEmployeeId,
+      startTime: nannyReservations.startTime,
+      endTime: nannyReservations.endTime,
+    }).from(nannyReservations).where(and(
+      eq(nannyReservations.tenantId, tenantId),
+      eq(nannyReservations.reservationDate, today),
+      inArray(nannyReservations.status, ["reserved", "active"]),
+      inArray(nannyReservations.nannyEmployeeId, clockedInEmployeeIds)
+    ));
+    const reservedNannyIds = new Set(currentReservations
+      .filter(reservation => reservation.startTime <= currentTime && currentTime < reservation.endTime)
+      .map(reservation => reservation.nannyEmployeeId));
+
     // Filter out assigned AND unavailable nannies
     const availableEmployeeIds = clockedInEmployeeIds.filter(id => 
-      !assignedNannyIds.has(id) && !unavailableNannyIds.has(id)
+      !assignedNannyIds.has(id) && !unavailableNannyIds.has(id) && !reservedNannyIds.has(id)
     );
 
     if (availableEmployeeIds.length === 0) {
@@ -813,7 +828,7 @@ router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, requireCh
     const userId = (req.user as any)?.id;
     const tenantId = await getDefaultTenantId();
 
-    if (!nannyEmployeeId) {
+    if (typeof nannyEmployeeId !== "string" || !nannyEmployeeId) {
       return res.status(400).json({ message: "nannyEmployeeId is required" });
     }
 
@@ -825,23 +840,103 @@ router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, requireCh
       return res.status(404).json({ message: "Check-in not found" });
     }
 
+    if (checkin[0].serviceType !== "nanny" || !["registered", "in_park"].includes(checkin[0].status)) {
+      return res.status(409).json({ message: "Only active nanny check-ins can be assigned" });
+    }
+    if (checkin[0].nannyEmployeeId) {
+      return res.status(409).json({ message: "A nanny is already assigned" });
+    }
+
     const nanny = await db.select().from(employees)
-      .where(eq(employees.id, nannyEmployeeId))
+      .where(and(eq(employees.id, nannyEmployeeId), eq(employees.tenantId, tenantId)))
       .limit(1);
 
     if (!nanny.length) {
       return res.status(404).json({ message: "Nanny not found" });
     }
+    if (nanny[0].employmentState !== "ACTIVE") {
+      return res.status(409).json({ message: "Nanny is not an active employee" });
+    }
 
-    const [updated] = await db.update(serviceCheckins)
-      .set({
+    const nannyRoles = await db.select({ id: roles.id }).from(roles).where(and(
+      eq(roles.tenantId, tenantId),
+      or(ilike(roles.name, "%nanny%"), ilike(roles.name, "%caretaker%"))
+    ));
+    const roleIds = nannyRoles.map(role => role.id);
+    if (roleIds.length === 0) {
+      return res.status(409).json({ message: "Employee does not have a nanny role" });
+    }
+    const assignedRoles = await db.select({ roleId: employeeRoles.roleId }).from(employeeRoles).where(and(
+      eq(employeeRoles.employeeId, nannyEmployeeId), inArray(employeeRoles.roleId, roleIds)
+    ));
+    if (assignedRoles.length === 0) {
+      return res.status(409).json({ message: "Employee does not have a nanny role" });
+    }
+
+    const now = new Date();
+    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(now);
+    const dayStart = new Date(`${today}T00:00:00+07:00`);
+    const [presence] = await db.select().from(employeePresence).where(and(
+      eq(employeePresence.employeeId, nannyEmployeeId),
+      eq(employeePresence.tenantId, tenantId),
+      eq(employeePresence.isClockedIn, true),
+      eq(employeePresence.currentWorkBranchId, checkin[0].branchId),
+      gte(employeePresence.lastInAt, dayStart)
+    ));
+    if (!presence) {
+      return res.status(409).json({ message: "Nanny is not on duty at this branch" });
+    }
+    const unavailable = await db.select({ id: employeeRoleAvailability.id }).from(employeeRoleAvailability).where(and(
+      eq(employeeRoleAvailability.tenantId, tenantId),
+      eq(employeeRoleAvailability.employeeId, nannyEmployeeId),
+      eq(employeeRoleAvailability.unavailableDate, today),
+      inArray(employeeRoleAvailability.roleId, assignedRoles.map(role => role.roleId))
+    )).limit(1);
+    if (unavailable.length > 0) {
+      return res.status(409).json({ message: "Nanny is unavailable today" });
+    }
+    const currentTime = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now);
+    const updated = await db.transaction(async tx => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`${nannyEmployeeId}:${today}`}))`);
+      const activeAssignments = await tx.select({ id: serviceCheckins.id, requestedEndAt: serviceCheckins.requestedEndAt })
+        .from(serviceCheckins).where(and(
+          eq(serviceCheckins.tenantId, tenantId),
+          eq(serviceCheckins.nannyEmployeeId, nannyEmployeeId),
+          eq(serviceCheckins.serviceType, "nanny"),
+          eq(serviceCheckins.status, "in_park")
+        ));
+      if (activeAssignments.some(assignment => assignment.id !== id && (!assignment.requestedEndAt || assignment.requestedEndAt > now))) {
+        return null;
+      }
+      const reservations = await tx.select({
+        serviceCheckinId: nannyReservations.serviceCheckinId,
+        startTime: nannyReservations.startTime,
+        endTime: nannyReservations.endTime,
+      }).from(nannyReservations).where(and(
+        eq(nannyReservations.tenantId, tenantId),
+        eq(nannyReservations.nannyEmployeeId, nannyEmployeeId),
+        eq(nannyReservations.reservationDate, today),
+        inArray(nannyReservations.status, ["reserved", "active"])
+      ));
+      if (reservations.some(reservation => reservation.serviceCheckinId !== id &&
+          reservation.startTime <= currentTime && currentTime < reservation.endTime)) {
+        return null;
+      }
+      const [assigned] = await tx.update(serviceCheckins).set({
         nannyEmployeeId,
         nannyAssigned: getEmployeeDisplayName(nanny[0]),
         nannyAssignedByUserId: userId,
-        nannyAssignedAt: new Date(),
-      })
-      .where(eq(serviceCheckins.id, id))
-      .returning();
+        nannyAssignedAt: now,
+      }).where(and(
+        eq(serviceCheckins.id, id),
+        eq(serviceCheckins.tenantId, tenantId),
+        eq(serviceCheckins.serviceType, "nanny"),
+        inArray(serviceCheckins.status, ["registered", "in_park"]),
+        sql`${serviceCheckins.nannyEmployeeId} IS NULL`
+      )).returning();
+      return assigned || null;
+    });
+    if (!updated) return res.status(409).json({ message: "Nanny or check-in is no longer available" });
 
     res.json(updated);
   } catch (error: any) {
@@ -870,10 +965,20 @@ router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, requireChecki
       return res.status(404).json({ message: "Check-in not found" });
     }
 
+    const minutes = durationHours === undefined ? null : Number(durationHours) * 60;
+    if (minutes !== null && (!Number.isInteger(minutes) || minutes < 30 || minutes > 480)) {
+      return res.status(400).json({ message: "Duration must be between 30 and 480 minutes" });
+    }
+    if (startTime && (typeof startTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime))) {
+      return res.status(400).json({ message: "Invalid start time" });
+    }
+    if (serviceType === "nanny" && minutes !== null && checkin.nannyEmployeeId && !startTime) {
+      return res.status(400).json({ message: "Start time is required for a nanny reservation" });
+    }
+
     const updates: Record<string, any> = { serviceType };
     
-    if (serviceType === "nanny" && durationHours) {
-      const minutes = parseInt(durationHours) * 60;
+    if (serviceType === "nanny" && minutes !== null) {
       updates.requestedDurationMinutes = minutes;
 
       // If child is already in park, recalculate end time based on actual check-in time
@@ -881,33 +986,23 @@ router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, requireChecki
         const checkInTime = new Date(checkin.checkedInAt);
         const newEndAt = new Date(checkInTime.getTime() + minutes * 60 * 1000);
         updates.requestedEndAt = newEndAt;
-        
-        // Also update linked nanny reservation if exists
-        if (checkin.nannyEmployeeId) {
-          const startTimeStr = `${String(checkInTime.getHours()).padStart(2, "0")}:${String(checkInTime.getMinutes()).padStart(2, "0")}`;
-          const endTimeStr = `${String(newEndAt.getHours()).padStart(2, "0")}:${String(newEndAt.getMinutes()).padStart(2, "0")}`;
-          
-          await db.update(nannyReservations)
-            .set({ 
-              startTime: startTimeStr,
-              endTime: endTimeStr,
-              durationMinutes: minutes,
-            })
-            .where(and(
-              eq(nannyReservations.serviceCheckinId, id),
-              inArray(nannyReservations.status, ["reserved", "active"])
-            ));
-        }
       }
 
       // If start time is provided and nanny is assigned, create/update reservation
       if (startTime && checkin.nannyEmployeeId) {
-        const targetDate = new Date().toISOString().split("T")[0];
+        const targetDate = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(checkin.checkedInAt || new Date());
         
         // Calculate end time
         const [startHour, startMinute] = startTime.split(":").map(Number);
         const startTotalMinutes = startHour * 60 + startMinute;
         const endTotalMinutes = startTotalMinutes + minutes;
+        const actualStartTime = checkin.status === "in_park" && checkin.checkedInAt
+          ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(checkin.checkedInAt)
+          : startTime;
+        const [actualStartHour, actualStartMinute] = actualStartTime.split(":").map(Number);
+        const effectiveStart = actualStartHour * 60 + actualStartMinute;
+        const effectiveEnd = effectiveStart + minutes;
+        if (effectiveEnd > 1440) return res.status(400).json({ message: "Reservation must end on the same day" });
         const endHour = Math.floor(endTotalMinutes / 60);
         const endMinute = endTotalMinutes % 60;
         const endTime = `${String(endHour).padStart(2, "0")}:${String(endMinute).padStart(2, "0")}`;
@@ -920,39 +1015,7 @@ router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, requireChecki
           updates.requestedEndAt = newEndAt;
         } else if (checkin.status === "in_park") {
           // Fallback: use reservation end time if no check-in time
-          const today = new Date();
-          const newEndAt = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, endMinute, 0);
-          updates.requestedEndAt = newEndAt;
-        }
-
-        // Check for existing reservations for this check-in and cancel them
-        await db.update(nannyReservations)
-          .set({ status: "cancelled", cancelledAt: new Date(), cancellationReason: "Replaced by new reservation" })
-          .where(and(
-            eq(nannyReservations.serviceCheckinId, id),
-            inArray(nannyReservations.status, ["reserved", "active"])
-          ));
-
-        // Check for conflicts with other reservations
-        const existingReservations = await db.select()
-          .from(nannyReservations)
-          .where(and(
-            eq(nannyReservations.nannyEmployeeId, checkin.nannyEmployeeId),
-            eq(nannyReservations.reservationDate, targetDate),
-            inArray(nannyReservations.status, ["reserved", "active"])
-          ));
-
-        for (const existing of existingReservations) {
-          const [existStartH, existStartM] = existing.startTime.split(":").map(Number);
-          const [existEndH, existEndM] = existing.endTime.split(":").map(Number);
-          const existStart = existStartH * 60 + existStartM;
-          const existEnd = existEndH * 60 + existEndM;
-          
-          if ((startTotalMinutes < existEnd && endTotalMinutes > existStart)) {
-            return res.status(409).json({ 
-              message: `Nanny is already reserved from ${existing.startTime} to ${existing.endTime}` 
-            });
-          }
+          updates.requestedEndAt = new Date(new Date(`${targetDate}T${startTime}:00+07:00`).getTime() + minutes * 60000);
         }
 
         // Get nanny name
@@ -960,65 +1023,106 @@ router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, requireChecki
           .where(eq(employees.id, checkin.nannyEmployeeId));
 
         // For in_park children, use actual check-in time for reservation start
-        let reservationStartTime = startTime;
+        const reservationStartTime = actualStartTime;
         let reservationEndTime = endTime;
         if (checkin.status === "in_park" && checkin.checkedInAt) {
-          const checkInTime = new Date(checkin.checkedInAt);
-          const newEndAt = new Date(checkInTime.getTime() + minutes * 60 * 1000);
-          reservationStartTime = `${String(checkInTime.getHours()).padStart(2, "0")}:${String(checkInTime.getMinutes()).padStart(2, "0")}`;
-          reservationEndTime = `${String(newEndAt.getHours()).padStart(2, "0")}:${String(newEndAt.getMinutes()).padStart(2, "0")}`;
+          reservationEndTime = `${String(Math.floor(effectiveEnd / 60)).padStart(2, "0")}:${String(effectiveEnd % 60).padStart(2, "0")}`;
         }
 
-        // Create new reservation
-        await db.insert(nannyReservations).values({
-          tenantId,
-          branchId: checkin.branchId,
-          nannyEmployeeId: checkin.nannyEmployeeId,
-          nannyFullName: nanny ? getEmployeeDisplayName(nanny) : (checkin.nannyAssigned || ""),
-          serviceCheckinId: id,
-          childFullName: checkin.childFullName,
-          parentFullName: checkin.parentFullName,
-          reservationDate: targetDate,
-          startTime: reservationStartTime,
-          endTime: reservationEndTime,
-          durationMinutes: minutes,
-          status: checkin.status === "in_park" ? "active" : "reserved",
-          activatedAt: checkin.status === "in_park" ? new Date() : null,
-          notes: null,
-          reservedByUserId: user?.id || null,
+        const replacement = await db.transaction(async tx => {
+          await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`${checkin.nannyEmployeeId}:${targetDate}`}))`);
+          const activeAssignments = await tx.select({
+            id: serviceCheckins.id,
+            checkedInAt: serviceCheckins.checkedInAt,
+            requestedEndAt: serviceCheckins.requestedEndAt,
+          }).from(serviceCheckins).where(and(
+            eq(serviceCheckins.tenantId, tenantId),
+            eq(serviceCheckins.nannyEmployeeId, checkin.nannyEmployeeId!),
+            eq(serviceCheckins.serviceType, "nanny"),
+            eq(serviceCheckins.status, "in_park")
+          ));
+          const bookingStart = new Date(`${targetDate}T${reservationStartTime}:00+07:00`).getTime();
+          const bookingEnd = bookingStart + minutes * 60000;
+          if (activeAssignments.some(assignment => assignment.id !== id &&
+              bookingStart < (assignment.requestedEndAt?.getTime() ?? Number.POSITIVE_INFINITY) &&
+              bookingEnd > (assignment.checkedInAt?.getTime() ?? Date.now()))) return null;
+          const existingReservations = await tx.select().from(nannyReservations).where(and(
+            eq(nannyReservations.tenantId, tenantId),
+            eq(nannyReservations.nannyEmployeeId, checkin.nannyEmployeeId!),
+            eq(nannyReservations.reservationDate, targetDate),
+            inArray(nannyReservations.status, ["reserved", "active"])
+          ));
+          const conflict = existingReservations.some(existing => {
+            if (existing.serviceCheckinId === id) return false;
+            const [existStartH, existStartM] = existing.startTime.split(":").map(Number);
+            const [existEndH, existEndM] = existing.endTime.split(":").map(Number);
+            return effectiveStart < existEndH * 60 + existEndM && effectiveEnd > existStartH * 60 + existStartM;
+          });
+          if (conflict) return null;
+
+          await tx.update(nannyReservations)
+            .set({ status: "cancelled", cancelledAt: new Date(), cancellationReason: "Replaced by new reservation" })
+            .where(and(
+              eq(nannyReservations.serviceCheckinId, id),
+              inArray(nannyReservations.status, ["reserved", "active"])
+            ));
+          await tx.insert(nannyReservations).values({
+            tenantId,
+            branchId: checkin.branchId,
+            nannyEmployeeId: checkin.nannyEmployeeId!,
+            nannyFullName: nanny ? getEmployeeDisplayName(nanny) : (checkin.nannyAssigned || ""),
+            serviceCheckinId: id,
+            childFullName: checkin.childFullName,
+            parentFullName: checkin.parentFullName,
+            reservationDate: targetDate,
+            startTime: reservationStartTime,
+            endTime: reservationEndTime,
+            durationMinutes: minutes,
+            status: checkin.status === "in_park" ? "active" : "reserved",
+            activatedAt: checkin.status === "in_park" ? new Date() : null,
+            notes: null,
+            reservedByUserId: user?.id || null,
+          });
+          const [updatedCheckin] = await tx.update(serviceCheckins).set(updates)
+            .where(and(eq(serviceCheckins.id, id), eq(serviceCheckins.tenantId, tenantId)))
+            .returning();
+          return updatedCheckin;
         });
+        if (!replacement) return res.status(409).json({ message: "Nanny is already reserved for this time" });
+        return res.json(replacement);
       }
     } else if (serviceType === "dropoff") {
       updates.nannyEmployeeId = null;
       updates.nannyAssigned = null;
 
-      if (durationHours) {
-        const minutes = parseInt(durationHours) * 60;
+      if (minutes !== null) {
         updates.requestedDurationMinutes = minutes;
 
         if (checkin.status === "in_park" && checkin.checkedInAt) {
           const checkInTime = new Date(checkin.checkedInAt);
           updates.requestedEndAt = new Date(checkInTime.getTime() + minutes * 60 * 1000);
         } else if (startTime) {
-          const [startHour, startMinute] = startTime.split(":").map(Number);
-          const endTotalMinutes = startHour * 60 + startMinute + minutes;
-          const endHour = Math.floor(endTotalMinutes / 60);
-          const endMinute = endTotalMinutes % 60;
-          const today = new Date();
-          updates.requestedEndAt = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, endMinute, 0);
+          const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(new Date());
+          updates.requestedEndAt = new Date(new Date(`${today}T${startTime}:00+07:00`).getTime() + minutes * 60000);
         }
       } else {
         updates.requestedDurationMinutes = null;
         updates.requestedEndAt = null;
       }
 
-      // Cancel any nanny reservations for this check-in
-      await db.update(nannyReservations)
-        .set({ status: "cancelled", cancelledAt: new Date(), cancellationReason: "Service changed to dropoff" })
-        .where(and(
-          eq(nannyReservations.serviceCheckinId, id),
-          inArray(nannyReservations.status, ["reserved", "active"])
-        ));
+      const updated = await db.transaction(async tx => {
+        await tx.update(nannyReservations)
+          .set({ status: "cancelled", cancelledAt: new Date(), cancellationReason: "Service changed to dropoff" })
+          .where(and(
+            eq(nannyReservations.serviceCheckinId, id),
+            inArray(nannyReservations.status, ["reserved", "active"])
+          ));
+        const [changed] = await tx.update(serviceCheckins).set(updates)
+          .where(and(eq(serviceCheckins.id, id), eq(serviceCheckins.tenantId, tenantId)))
+          .returning();
+        return changed;
+      });
+      return res.json(updated);
     }
 
     const [updated] = await db.update(serviceCheckins)
@@ -1414,8 +1518,11 @@ router.post("/api/core/nanny-reservations", requireAuthOrKiosk, async (req: Requ
       reservationDate
     } = req.body;
 
-    if (!branchId || !nannyEmployeeId || !startTime || !durationMinutes) {
+    if (typeof branchId !== "string" || typeof nannyEmployeeId !== "string" || !branchId || !nannyEmployeeId || !startTime || !durationMinutes) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+    if (serviceCheckinId && !z.string().uuid().safeParse(serviceCheckinId).success) {
+      return res.status(400).json({ message: "Invalid check-in ID" });
     }
 
     let userId: string | null = null;
@@ -1449,57 +1556,107 @@ router.post("/api/core/nanny-reservations", requireAuthOrKiosk, async (req: Requ
     }
 
     // Validate required fields format
-    if (typeof startTime !== "string" || !/^\d{2}:\d{2}$/.test(startTime)) {
+    if (typeof startTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)) {
       return res.status(400).json({ message: "Invalid startTime format (HH:MM required)" });
     }
-    if (typeof durationMinutes !== "number" || durationMinutes < 30 || durationMinutes > 480) {
+    if (!Number.isInteger(durationMinutes) || durationMinutes < 30 || durationMinutes > 480) {
       return res.status(400).json({ message: "Duration must be between 30 and 480 minutes" });
     }
 
     // Get nanny info
     const [nanny] = await db.select()
       .from(employees)
-      .where(eq(employees.id, nannyEmployeeId));
+      .where(and(eq(employees.id, nannyEmployeeId), eq(employees.tenantId, tenantId)));
 
     if (!nanny) {
       return res.status(404).json({ message: "Nanny not found" });
+    }
+    if (nanny.employmentState !== "ACTIVE") {
+      return res.status(409).json({ message: "Nanny is not an active employee" });
+    }
+
+    const nannyRoles = await db.select({ id: roles.id }).from(roles).where(and(
+      eq(roles.tenantId, tenantId),
+      or(ilike(roles.name, "%nanny%"), ilike(roles.name, "%caretaker%"))
+    ));
+    const roleIds = nannyRoles.map(role => role.id);
+    const assignedRoles = roleIds.length > 0
+      ? await db.select({ roleId: employeeRoles.roleId }).from(employeeRoles).where(and(
+          eq(employeeRoles.employeeId, nannyEmployeeId), inArray(employeeRoles.roleId, roleIds)
+        ))
+      : [];
+    if (assignedRoles.length === 0) {
+      return res.status(409).json({ message: "Employee does not have a nanny role" });
     }
 
     // Calculate end time
     const [startHour, startMinute] = startTime.split(":").map(Number);
     const startTotalMinutes = startHour * 60 + startMinute;
     const endTotalMinutes = startTotalMinutes + durationMinutes;
+    if (endTotalMinutes > 1440) {
+      return res.status(400).json({ message: "Reservation must end on the same day" });
+    }
     const endHour = Math.floor(endTotalMinutes / 60);
     const endMinute = endTotalMinutes % 60;
     const endTime = `${String(endHour).padStart(2, "0")}:${String(endMinute).padStart(2, "0")}`;
 
-    const targetDate = reservationDate || new Date().toISOString().split("T")[0];
+    const targetDate = reservationDate || new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(new Date());
+    if (typeof targetDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate) ||
+        Number.isNaN(Date.parse(`${targetDate}T00:00:00Z`)) ||
+        new Date(`${targetDate}T00:00:00Z`).toISOString().slice(0, 10) !== targetDate) {
+      return res.status(400).json({ message: "Invalid reservation date" });
+    }
+    if (serviceCheckinId) {
+      const [linkedCheckin] = await db.select().from(serviceCheckins).where(and(
+        eq(serviceCheckins.id, serviceCheckinId), eq(serviceCheckins.tenantId, tenantId)
+      ));
+      if (!linkedCheckin) return res.status(404).json({ message: "Check-in not found" });
+      if (linkedCheckin.branchId !== branchId) return res.status(403).json({ message: "Check-in belongs to another branch" });
+      if (linkedCheckin.serviceType !== "nanny" || !["registered", "in_park"].includes(linkedCheckin.status) ||
+          (linkedCheckin.nannyEmployeeId && linkedCheckin.nannyEmployeeId !== nannyEmployeeId)) {
+        return res.status(409).json({ message: "Check-in is not eligible for this nanny reservation" });
+      }
+    }
+    const unavailable = await db.select({ id: employeeRoleAvailability.id }).from(employeeRoleAvailability).where(and(
+      eq(employeeRoleAvailability.tenantId, tenantId),
+      eq(employeeRoleAvailability.employeeId, nannyEmployeeId),
+      eq(employeeRoleAvailability.unavailableDate, targetDate),
+      inArray(employeeRoleAvailability.roleId, assignedRoles.map(role => role.roleId))
+    )).limit(1);
+    if (unavailable.length > 0) {
+      return res.status(409).json({ message: "Nanny is unavailable on this date" });
+    }
 
-    // Check for conflicts
-    const existingReservations = await db.select()
-      .from(nannyReservations)
-      .where(and(
+    const reservation = await db.transaction(async tx => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`${nannyEmployeeId}:${targetDate}`}))`);
+      const activeAssignments = await tx.select({
+        id: serviceCheckins.id,
+        checkedInAt: serviceCheckins.checkedInAt,
+        requestedEndAt: serviceCheckins.requestedEndAt,
+      }).from(serviceCheckins).where(and(
+        eq(serviceCheckins.tenantId, tenantId),
+        eq(serviceCheckins.nannyEmployeeId, nannyEmployeeId),
+        eq(serviceCheckins.serviceType, "nanny"),
+        eq(serviceCheckins.status, "in_park")
+      ));
+      const bookingStart = new Date(`${targetDate}T${startTime}:00+07:00`);
+      const bookingEnd = new Date(bookingStart.getTime() + durationMinutes * 60000);
+      if (activeAssignments.some(assignment => assignment.id !== serviceCheckinId &&
+          bookingStart.getTime() < (assignment.requestedEndAt?.getTime() ?? Number.POSITIVE_INFINITY) &&
+          bookingEnd.getTime() > (assignment.checkedInAt?.getTime() ?? Date.now()))) return null;
+      const existingReservations = await tx.select().from(nannyReservations).where(and(
+        eq(nannyReservations.tenantId, tenantId),
         eq(nannyReservations.nannyEmployeeId, nannyEmployeeId),
         eq(nannyReservations.reservationDate, targetDate),
         inArray(nannyReservations.status, ["reserved", "active"])
       ));
-
-    // Check time overlap
-    for (const existing of existingReservations) {
-      const [existStartH, existStartM] = existing.startTime.split(":").map(Number);
-      const [existEndH, existEndM] = existing.endTime.split(":").map(Number);
-      const existStart = existStartH * 60 + existStartM;
-      const existEnd = existEndH * 60 + existEndM;
-      
-      if ((startTotalMinutes < existEnd && endTotalMinutes > existStart)) {
-        return res.status(409).json({ 
-          message: `Nanny is already reserved from ${existing.startTime} to ${existing.endTime}` 
-        });
-      }
-    }
-
-    const [reservation] = await db.insert(nannyReservations)
-      .values({
+      const overlap = existingReservations.some(existing => {
+        const [existStartH, existStartM] = existing.startTime.split(":").map(Number);
+        const [existEndH, existEndM] = existing.endTime.split(":").map(Number);
+        return startTotalMinutes < existEndH * 60 + existEndM && endTotalMinutes > existStartH * 60 + existStartM;
+      });
+      if (overlap) return null;
+      const [created] = await tx.insert(nannyReservations).values({
         tenantId,
         branchId,
         nannyEmployeeId,
@@ -1516,6 +1673,9 @@ router.post("/api/core/nanny-reservations", requireAuthOrKiosk, async (req: Requ
         notes: notes || null,
       })
       .returning();
+      return created;
+    });
+    if (!reservation) return res.status(409).json({ message: "Nanny is already reserved for this time" });
 
     res.status(201).json(reservation);
   } catch (error: any) {
@@ -1529,10 +1689,14 @@ router.patch("/api/core/nanny-reservations/:id", requireAuthOrKiosk, async (req:
   try {
     const { id } = req.params;
     const { status, cancellationReason } = req.body;
+    if (!z.enum(["active", "completed", "cancelled"]).safeParse(status).success) {
+      return res.status(400).json({ message: "Invalid reservation status" });
+    }
+    const tenantId = await getDefaultTenantId();
 
     // Fetch reservation first to check branch access
     const [existing] = await db.select().from(nannyReservations)
-      .where(eq(nannyReservations.id, id));
+      .where(and(eq(nannyReservations.id, id), eq(nannyReservations.tenantId, tenantId)));
     
     if (!existing) {
       return res.status(404).json({ message: "Reservation not found" });
@@ -1558,6 +1722,52 @@ router.patch("/api/core/nanny-reservations/:id", requireAuthOrKiosk, async (req:
       }
     }
 
+    if (status === existing.status) return res.json(existing);
+    if (["completed", "cancelled"].includes(existing.status) ||
+        (existing.status === "reserved" && status === "completed")) {
+      return res.status(409).json({ message: "Reservation cannot move to this status" });
+    }
+    if (status === "active") {
+      const now = new Date();
+      const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Bangkok" }).format(now);
+      if (existing.reservationDate !== today) {
+        return res.status(409).json({ message: "Reservation is not for today" });
+      }
+      const dayStart = new Date(`${today}T00:00:00+07:00`);
+      const [presence] = await db.select().from(employeePresence).where(and(
+        eq(employeePresence.employeeId, existing.nannyEmployeeId),
+        eq(employeePresence.tenantId, tenantId),
+        eq(employeePresence.isClockedIn, true),
+        eq(employeePresence.currentWorkBranchId, existing.branchId),
+        gte(employeePresence.lastInAt, dayStart)
+      ));
+      if (!presence) return res.status(409).json({ message: "Nanny is not on duty at this branch" });
+      const [nanny] = await db.select({ employmentState: employees.employmentState }).from(employees).where(and(
+        eq(employees.id, existing.nannyEmployeeId), eq(employees.tenantId, tenantId)
+      ));
+      if (!nanny || nanny.employmentState !== "ACTIVE") {
+        return res.status(409).json({ message: "Nanny is not an active employee" });
+      }
+      const nannyRoles = await db.select({ id: roles.id }).from(roles).where(and(
+        eq(roles.tenantId, tenantId),
+        or(ilike(roles.name, "%nanny%"), ilike(roles.name, "%caretaker%"))
+      ));
+      const roleIds = nannyRoles.map(role => role.id);
+      const assignedRoles = roleIds.length > 0
+        ? await db.select({ roleId: employeeRoles.roleId }).from(employeeRoles).where(and(
+            eq(employeeRoles.employeeId, existing.nannyEmployeeId), inArray(employeeRoles.roleId, roleIds)
+          ))
+        : [];
+      if (assignedRoles.length === 0) return res.status(409).json({ message: "Employee does not have a nanny role" });
+      const unavailable = await db.select({ id: employeeRoleAvailability.id }).from(employeeRoleAvailability).where(and(
+        eq(employeeRoleAvailability.tenantId, tenantId),
+        eq(employeeRoleAvailability.employeeId, existing.nannyEmployeeId),
+        eq(employeeRoleAvailability.unavailableDate, today),
+        inArray(employeeRoleAvailability.roleId, assignedRoles.map(role => role.roleId))
+      )).limit(1);
+      if (unavailable.length > 0) return res.status(409).json({ message: "Nanny is unavailable today" });
+    }
+
     const updates: Record<string, any> = { status };
     
     if (status === "active") {
@@ -1573,9 +1783,10 @@ router.patch("/api/core/nanny-reservations/:id", requireAuthOrKiosk, async (req:
 
     const [updated] = await db.update(nannyReservations)
       .set(updates)
-      .where(eq(nannyReservations.id, id))
+      .where(and(eq(nannyReservations.id, id), eq(nannyReservations.tenantId, tenantId), eq(nannyReservations.status, existing.status)))
       .returning();
 
+    if (!updated) return res.status(409).json({ message: "Reservation changed while updating" });
     res.json(updated);
   } catch (error: any) {
     console.error("[Checkin] PATCH /api/core/nanny-reservations/:id error:", error);
