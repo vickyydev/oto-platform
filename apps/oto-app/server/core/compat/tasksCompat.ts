@@ -14,7 +14,7 @@ import {
   taskActivities,
   taskAssignments,
 } from "../../db/coreSchema";
-import { tenants, branches, users, departments, roles, employees, accessPolicies, people, files, DEFAULT_TENANT_SLUG } from "../../../shared/schema";
+import { branches, users, employees, people, files } from "../../../shared/schema";
 import { STORAGE_ENV_PREFIX } from "../../config/env";
 import { format, parseISO, startOfDay, endOfDay, addDays, isToday } from "date-fns";
 
@@ -30,14 +30,45 @@ import {
 
 const router = Router();
 
-async function getDefaultTenantId(): Promise<string> {
-  const result = await db
-    .select({ id: tenants.id })
-    .from(tenants)
-    .where(eq(tenants.slug, DEFAULT_TENANT_SLUG))
-    .limit(1);
-  if (!result.length) throw new Error(`Default tenant ${DEFAULT_TENANT_SLUG} not found`);
-  return result[0].id;
+router.use((req, res, next) => {
+  if (req.user && !req.userWithAccess?.tenantId) {
+    return res.status(403).json({ message: "Tenant access denied" });
+  }
+  next();
+});
+
+function getSignedInTenantId(req: Request): string {
+  return req.userWithAccess!.tenantId!;
+}
+
+async function canAccessTenantBranch(req: Request, tenantId: string, branchId: string | null): Promise<boolean> {
+  if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, branchId)) return false;
+  if (!branchId) return true;
+  const [branch] = await db.select({ id: branches.id }).from(branches)
+    .where(and(eq(branches.id, branchId), eq(branches.tenantId, tenantId))).limit(1);
+  return !!branch;
+}
+
+async function canAccessTask(req: Request, tenantId: string, taskId: string): Promise<boolean> {
+  const [task] = await db.select().from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId))).limit(1);
+  if (!task || !req.userWithAccess || !req.user) return false;
+  if (task.branchId) return canAccessTenantBranch(req, tenantId, task.branchId);
+  if (["global_admin", "operator_admin", "admin", "manager"].includes(req.userWithAccess.role)) return true;
+  if (task.createdBy === req.user.id) return true;
+  const actor = await getActorContext(req.user.id);
+  const assignments = await db.select().from(taskAssignments)
+    .where(and(eq(taskAssignments.taskId, taskId), eq(taskAssignments.tenantId, tenantId)));
+  return isTaskMine(task, actor, assignments);
+}
+
+async function filterAccessibleTasks<T extends { id: string; branchId: string | null }>(req: Request, tenantId: string, rows: T[]): Promise<T[]> {
+  const access = req.userWithAccess;
+  if (!access) return [];
+  const allowed = await Promise.all(rows.map(row => row.branchId
+    ? canUserAccessBranch(access, row.branchId)
+    : canAccessTask(req, tenantId, row.id)));
+  return rows.filter((_, index) => allowed[index]);
 }
 
 interface AssigneeInfo {
@@ -309,7 +340,7 @@ function parseDateTime(dateStr: string, timeStr: string): Date {
 
 router.get("/tasks/grouped", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const now = new Date();
     const todayStart = startOfDay(now);
     const todayEnd = endOfDay(now);
@@ -351,7 +382,7 @@ router.get("/tasks/grouped", requireAuth, async (req: Request, res: Response) =>
     const completedToday: any[] = [];
     const overdue: any[] = [];
 
-    for (const row of allTasks) {
+    for (const row of await filterAccessibleTasks(req, tenantId, allTasks)) {
       const formatted = formatTaskForUI(row, {
         assignedUserName: row.assignedUserName || undefined,
         assignedRoleName: row.assignedRoleName || undefined,
@@ -395,7 +426,7 @@ router.get("/tasks/grouped", requireAuth, async (req: Request, res: Response) =>
 
 router.get("/tasks/today", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const now = new Date();
     
     // Calculate today's boundaries in Bangkok timezone
@@ -421,7 +452,11 @@ router.get("/tasks/today", requireAuth, async (req: Request, res: Response) => {
 
     const actor = userId ? await getActorContext(userId) : null;
 
-    const branchFilter = branchId ? sql`AND t.branch_id = ${branchId}` : sql``;
+    if (branchId && branchId !== "all" && !await canAccessTenantBranch(req, tenantId, branchId)) {
+      return res.status(403).json({ message: "Branch access denied" });
+    }
+
+    const branchFilter = branchId && branchId !== "all" ? sql`AND t.branch_id = ${branchId}` : sql``;
     
     const rawResult = await db.execute(sql`
       SELECT t.*, 
@@ -443,7 +478,9 @@ router.get("/tasks/today", requireAuth, async (req: Request, res: Response) => {
       ORDER BY t.due_at ASC
     `);
     
-    const rows = Array.isArray(rawResult) ? rawResult : (rawResult as any).rows || [];
+    let rows = Array.isArray(rawResult) ? rawResult : (rawResult as { rows?: unknown[] }).rows || [];
+    rows = rows.filter((row: { branch_id: string | null }) => row.branch_id === null ||
+      (req.userWithAccess && canUserAccessBranch(req.userWithAccess, row.branch_id)));
 
     const formatted = rows.map((row: any) => {
       const camelRow = {
@@ -518,7 +555,7 @@ router.get("/tasks/today", requireAuth, async (req: Request, res: Response) => {
 router.get("/tasks/:taskId", requireAuth, async (req: Request, res: Response) => {
   try {
     const { taskId } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
 
     const taskCols3 = getTableColumns(tasks);
     const [taskRow] = await db
@@ -548,6 +585,9 @@ router.get("/tasks/:taskId", requireAuth, async (req: Request, res: Response) =>
       .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId)));
 
     if (!taskRow) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    if (!await canAccessTask(req, tenantId, taskId)) {
       return res.status(404).json({ message: "Task not found" });
     }
 
@@ -631,7 +671,7 @@ router.post("/tasks/:taskId/complete", requireAuth, async (req: Request, res: Re
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!await canAccessTask(req, tenantId, taskId)) {
       return res.status(404).json({ message: "Task not found" });
     }
 
@@ -691,7 +731,7 @@ router.post("/tasks/:taskId/complete", requireAuth, async (req: Request, res: Re
 
 router.get("/admin/tasks", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const dateStr = req.query.date as string;
     
     let dateStart: Date | undefined;
@@ -717,7 +757,7 @@ router.get("/admin/tasks", requireAuth, async (req: Request, res: Response) => {
       .orderBy(tasks.dueAt);
 
     const result = await query;
-    res.json(result.map(formatTaskForUI));
+    res.json((await filterAccessibleTasks(req, tenantId, result)).map(task => formatTaskForUI(task)));
   } catch (error: any) {
     console.error("[TasksCompat] GET /admin/tasks error:", error);
     res.status(500).json({ message: error.message });
@@ -727,7 +767,7 @@ router.get("/admin/tasks", requireAuth, async (req: Request, res: Response) => {
 router.get("/admin/tasks/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
 
     const [task] = await db
       .select()
@@ -735,6 +775,9 @@ router.get("/admin/tasks/:id", requireAuth, async (req: Request, res: Response) 
       .where(and(eq(tasks.id, id), eq(tasks.tenantId, tenantId)));
 
     if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    if (!await canAccessTask(req, tenantId, id)) {
       return res.status(404).json({ message: "Task not found" });
     }
 
@@ -780,7 +823,7 @@ router.post("/admin/tasks", requireAuth, async (req: Request, res: Response) => 
     const tenantId = req.userWithAccess?.tenantId;
     if (!tenantId) return res.status(403).json({ message: "Task access denied" });
     if (body.referencePhotoUrl) return res.status(400).json({ message: "Add the reference photo after creating the task" });
-    if (body.branchId && !canUserAccessBranch(req.userWithAccess!, body.branchId)) {
+    if (!await canAccessTenantBranch(req, tenantId, body.branchId || null)) {
       return res.status(403).json({ message: "Branch access denied" });
     }
     const userId = (req.user as any)?.id;
@@ -824,10 +867,10 @@ router.patch("/admin/tasks/:id", requireAuth, async (req: Request, res: Response
     if (!tenantId) return res.status(403).json({ message: "Task access denied" });
     const [existing] = await db.select({ branchId: tasks.branchId, referencePhotoUrl: tasks.referencePhotoUrl })
       .from(tasks).where(and(eq(tasks.id, id), eq(tasks.tenantId, tenantId))).limit(1);
-    if (!existing || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, existing.branchId)) {
+    if (!existing || !await canAccessTask(req, tenantId, id)) {
       return res.status(404).json({ message: "Task not found" });
     }
-    if (body.branchId && !canUserAccessBranch(req.userWithAccess, body.branchId)) {
+    if (body.branchId !== undefined && !await canAccessTenantBranch(req, tenantId, body.branchId || null)) {
       return res.status(403).json({ message: "Branch access denied" });
     }
     if (body.referencePhotoUrl && body.referencePhotoUrl !== existing.referencePhotoUrl &&
@@ -873,7 +916,10 @@ router.patch("/admin/tasks/:id", requireAuth, async (req: Request, res: Response
 router.delete("/admin/tasks/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
+    if (!await canAccessTask(req, tenantId, id)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
     const [deleted] = await db
       .delete(tasks)
@@ -905,7 +951,7 @@ router.put("/admin/tasks/:id/questions", requireAuth, async (req: Request, res: 
   try {
     const { id } = req.params;
     const body = questionsSchema.parse(req.body);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
 
     const [task] = await db
       .select()
@@ -913,6 +959,9 @@ router.put("/admin/tasks/:id/questions", requireAuth, async (req: Request, res: 
       .where(and(eq(tasks.id, id), eq(tasks.tenantId, tenantId)));
 
     if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    if (!await canAccessTask(req, tenantId, id)) {
       return res.status(404).json({ message: "Task not found" });
     }
 
@@ -1061,7 +1110,7 @@ router.post("/upload/photos", requireAuth, photoUpload.array("photos", 10), asyn
     if (!tenantId) return res.status(403).json({ message: "Task access denied" });
     const [task] = await db.select({ branchId: tasks.branchId }).from(tasks)
       .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId))).limit(1);
-    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!task || !await canAccessTask(req, tenantId, taskId)) {
       return res.status(404).json({ message: "Task not found" });
     }
     const files = req.files as Express.Multer.File[];
@@ -1094,9 +1143,9 @@ import { userBranchAccess } from "../../../shared/schema";
 router.get("/core/branches", requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
 
-    if (user.role === "admin") {
+    if (req.userWithAccess?.hasAllBranchesAccess) {
       const allBranches = await db
         .select({
           id: branches.id,
@@ -1147,7 +1196,7 @@ router.get("/core/branches", requireAuth, async (req: Request, res: Response) =>
 router.get("/core/tasks", requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const branchId = req.query.branchId as string | undefined;
     const status = req.query.status as string | undefined;
     const myOnly = req.query.myOnly === "true";
@@ -1160,6 +1209,10 @@ router.get("/core/tasks", requireAuth, async (req: Request, res: Response) => {
     const isAdminOrManager = ['global_admin', 'operator_admin', 'admin', 'manager'].includes(userRole || '');
 
     const actor = user?.id ? await getActorContext(user.id) : null;
+
+    if (branchId && branchId !== "all" && !await canAccessTenantBranch(req, tenantId, branchId)) {
+      return res.status(403).json({ message: "Branch access denied" });
+    }
 
     const conditions: any[] = [
       eq(tasks.tenantId, tenantId),
@@ -1205,7 +1258,7 @@ router.get("/core/tasks", requireAuth, async (req: Request, res: Response) => {
       directEmps.forEach(e => directEmpsMap.set(e.id, { nickname: e.nickname, fullName: e.fullName }));
     }
 
-    let result = taskRows.map(row => {
+    const result = (await filterAccessibleTasks(req, tenantId, taskRows)).map(row => {
       const directEmp = row.assignedEmployeeId ? directEmpsMap.get(row.assignedEmployeeId) : null;
       const directName = directEmp?.nickname || directEmp?.fullName || null;
       const userLinkedName = row.assignedEmployeeNickname || row.assignedUserFullName || null;
@@ -1261,8 +1314,11 @@ const coreCreateTaskSchema = z.object({
 router.post("/core/tasks", requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const body = coreCreateTaskSchema.parse(req.body);
+    if (!await canAccessTenantBranch(req, tenantId, body.branchId || null)) {
+      return res.status(403).json({ message: "Branch access denied" });
+    }
 
     // Parse dueAt as Bangkok time if provided without timezone
     let parsedDueAt: Date | null = null;
@@ -1340,7 +1396,7 @@ router.post("/core/tasks/:id/complete", requireAuth, async (req: Request, res: R
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!await canAccessTask(req, tenantId, id)) {
       return res.status(404).json({ message: "Task not found" });
     }
 
@@ -1409,10 +1465,21 @@ router.post("/core/tasks/:id/complete", requireAuth, async (req: Request, res: R
   }
 });
 
+router.use("/core/tasks/:id/comments", requireAuth, async (req, res, next) => {
+  try {
+    if (!await canAccessTask(req, getSignedInTenantId(req), req.params.id)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/core/tasks/:id/comments", requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const tenantId = user.tenantId || await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const taskId = req.params.id;
 
     const comments = await db
@@ -1454,7 +1521,7 @@ router.get("/core/tasks/:id/comments", requireAuth, async (req: Request, res: Re
 router.post("/core/tasks/:id/comments", requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const tenantId = user.tenantId || await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const taskId = req.params.id;
 
     const schema = z.object({ body: z.string().min(1).max(2000) });

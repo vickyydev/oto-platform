@@ -10,7 +10,7 @@ import { STORAGE_ENV_PREFIX } from "../config/env";
 import { uploadToObjectStorage, fileExistsInObjectStorage, deleteFromObjectStorage } from "../file-storage";
 import { presignedUploadUrl } from "../storage/presignedUpload";
 import { fixMulterFilenames } from "../middleware/fixMulterFilenames";
-import { tenants, users, files, employees, accessPolicies, people, branches, operators, employeeRoles as employeeRolesTable, DEFAULT_TENANT_SLUG } from "../../shared/schema";
+import { users, files, employees, accessPolicies, people, branches, operators, userBranchAccess, employeeRoles as employeeRolesTable } from "../../shared/schema";
 import {
   getTaskStakeholderUserIds,
   createTaskStatusNotification,
@@ -43,14 +43,36 @@ const attachmentUpload = multer({
 
 const router = Router();
 
-async function getDefaultTenantId(): Promise<string> {
-  const result = await db
-    .select({ id: tenants.id })
-    .from(tenants)
-    .where(eq(tenants.slug, DEFAULT_TENANT_SLUG))
-    .limit(1);
-  if (!result.length) throw new Error(`Default tenant ${DEFAULT_TENANT_SLUG} not found`);
-  return result[0].id;
+router.use((req, res, next) => {
+  if (req.user && !req.userWithAccess?.tenantId) {
+    return res.status(403).json({ message: "Tenant access denied" });
+  }
+  next();
+});
+
+function getSignedInTenantId(req: Request): string {
+  return req.userWithAccess!.tenantId!;
+}
+
+async function canAccessTenantBranch(req: Request, tenantId: string, branchId: string | null): Promise<boolean> {
+  if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, branchId)) return false;
+  if (!branchId) return true;
+  const [branch] = await db.select({ id: branches.id }).from(branches)
+    .where(and(eq(branches.id, branchId), eq(branches.tenantId, tenantId))).limit(1);
+  return !!branch;
+}
+
+async function canAccessTask(req: Request, tenantId: string, taskId: string): Promise<boolean> {
+  const [task] = await db.select().from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId))).limit(1);
+  if (!task || !req.userWithAccess || !req.user) return false;
+  if (task.branchId) return canAccessTenantBranch(req, tenantId, task.branchId);
+  if (["global_admin", "operator_admin", "admin", "manager"].includes(req.userWithAccess.role)) return true;
+  if (task.createdBy === req.user.id) return true;
+  const assignments = await db.select().from(taskAssignments)
+    .where(and(eq(taskAssignments.taskId, taskId), eq(taskAssignments.tenantId, tenantId)));
+  const linkedEmployee = await getLinkedEmployeeContext(req.user.id);
+  return isTaskVisibleToEmployee({ ...task, assignments }, linkedEmployee, req.user.id);
 }
 
 function getUserAllowedBranchIds(req: Request): string[] | null {
@@ -321,7 +343,7 @@ function applyTaskScopeFilter(
 
 router.get("/assignable-users", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const [tenantOperator] = await db
       .select({ id: operators.id })
       .from(operators)
@@ -342,6 +364,7 @@ router.get("/assignable-users", requireAuth, async (req: Request, res: Response)
       })
       .from(users)
       .where(and(
+        sql`EXISTS (SELECT 1 FROM ${userBranchAccess} uba WHERE uba.user_id = ${users.id} AND uba.tenant_id = ${tenantId})`,
         operatorId ? or(eq(users.operatorId, operatorId), isNull(users.operatorId)) : undefined,
         inArray(users.role, ['global_admin', 'operator_admin', 'admin', 'manager']),
         eq(users.isActive, true)
@@ -366,13 +389,13 @@ router.get("/assignable-users", requireAuth, async (req: Request, res: Response)
 router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = listQuerySchema.parse(req.query);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const allowedBranches = getUserAllowedBranchIds(req);
 
     const conditions: any[] = [eq(tasks.tenantId, tenantId)];
 
     if (query.branchId) {
-      if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, query.branchId)) {
+      if (!await canAccessTenantBranch(req, tenantId, query.branchId)) {
         return res.status(403).json({ message: "Access denied to this branch" });
       }
       // Include tasks for the requested branch AND global tasks (branchId IS NULL)
@@ -541,7 +564,7 @@ const taskQuestionSchema = z.object({
 
 router.get("/scheduled", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const allowedBranches = getUserAllowedBranchIds(req);
 
     const conditions: any[] = [
@@ -637,7 +660,7 @@ router.get("/scheduled", requireAuth, async (req: Request, res: Response) => {
 
 router.delete("/scheduled/:id", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const { id } = req.params;
 
     const [task] = await db
@@ -650,7 +673,7 @@ router.delete("/scheduled/:id", requireAuth, async (req: Request, res: Response)
       return res.status(404).json({ message: "Scheduled task not found" });
     }
 
-    if (task.branchId && req.userWithAccess && !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!await canAccessTask(req, tenantId, id)) {
       return res.status(403).json({ message: "Access denied to this branch" });
     }
 
@@ -713,7 +736,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
     }
 
     for (const bid of targetBranchIds) {
-      if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, bid)) {
+      if (!await canAccessTenantBranch(req, tenantId, bid)) {
         return res.status(403).json({ message: `Access denied to branch ${bid}` });
       }
     }
@@ -872,7 +895,7 @@ const multiDayQuerySchema = z.object({
 router.get("/multi-day", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = multiDayQuerySchema.parse(req.query);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const allowedBranches = getUserAllowedBranchIds(req);
     const tab = query.tab || "active";
     
@@ -884,7 +907,7 @@ router.get("/multi-day", requireAuth, async (req: Request, res: Response) => {
     const conditions: any[] = [eq(tasks.tenantId, tenantId)];
 
     if (query.branchId) {
-      if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, query.branchId)) {
+      if (!await canAccessTenantBranch(req, tenantId, query.branchId)) {
         return res.status(403).json({ message: "Access denied to this branch" });
       }
       // Include tasks for the requested branch AND global tasks (branchId IS NULL)
@@ -1010,14 +1033,14 @@ const activityQuerySchema = z.object({
 router.get("/activities/recent", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = activityQuerySchema.parse(req.query);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const allowedBranches = getUserAllowedBranchIds(req);
     const limitNum = Math.min(parseInt(query.limit || "30", 10), 100);
 
     const conditions: any[] = [eq(taskActivities.tenantId, tenantId)];
 
     if (query.branchId && query.branchId !== "all") {
-      if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, query.branchId)) {
+      if (!await canAccessTenantBranch(req, tenantId, query.branchId)) {
         return res.status(403).json({ message: "Access denied to this branch" });
       }
       conditions.push(eq(taskActivities.branchId, query.branchId));
@@ -1082,7 +1105,7 @@ router.get("/:id/attachments", requireAuth, async (req: Request, res: Response) 
     if (!tenantId) return res.status(403).json({ message: "Task access denied" });
     const [task] = await db.select({ branchId: tasks.branchId }).from(tasks)
       .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId))).limit(1);
-    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!task || !await canAccessTask(req, tenantId, taskId)) {
       return res.status(404).json({ message: "Task not found" });
     }
 
@@ -1127,7 +1150,7 @@ router.post("/:id/attachments", requireAuth, attachmentUpload.array("files", 10)
     if (!tenantId) return res.status(403).json({ message: "Task access denied" });
     const [task] = await db.select({ branchId: tasks.branchId, title: tasks.title }).from(tasks)
       .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId))).limit(1);
-    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!task || !await canAccessTask(req, tenantId, taskId)) {
       return res.status(404).json({ message: "Task not found" });
     }
 
@@ -1202,7 +1225,7 @@ router.delete("/:id/attachments/:attachmentId", requireAuth, async (req: Request
     if (!tenantId) return res.status(403).json({ message: "Task access denied" });
     const [task] = await db.select({ branchId: tasks.branchId }).from(tasks)
       .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId))).limit(1);
-    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!task || !await canAccessTask(req, tenantId, taskId)) {
       return res.status(404).json({ message: "Task not found" });
     }
 
@@ -1246,9 +1269,20 @@ router.delete("/:id/attachments/:attachmentId", requireAuth, async (req: Request
   }
 });
 
+router.use("/:id/checklist", requireAuth, async (req, res, next) => {
+  try {
+    if (!await canAccessTask(req, getSignedInTenantId(req), req.params.id)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/:id/checklist", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const taskId = req.params.id;
 
     const items = await db
@@ -1269,7 +1303,7 @@ router.get("/:id/checklist", requireAuth, async (req: Request, res: Response) =>
 
 router.post("/:id/checklist", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const taskId = req.params.id;
     const { title } = req.body;
 
@@ -1329,7 +1363,7 @@ router.post("/:id/checklist", requireAuth, async (req: Request, res: Response) =
 
 router.patch("/:id/checklist/:itemId", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const taskId = req.params.id;
     const { itemId } = req.params;
     const userId = (req.user as any)?.id;
@@ -1346,7 +1380,8 @@ router.patch("/:id/checklist/:itemId", requireAuth, async (req: Request, res: Re
       .set(updates)
       .where(and(
         eq(taskChecklistItems.id, itemId),
-        eq(taskChecklistItems.tenantId, tenantId)
+        eq(taskChecklistItems.tenantId, tenantId),
+        eq(taskChecklistItems.taskId, taskId)
       ))
       .returning();
 
@@ -1389,7 +1424,7 @@ router.patch("/:id/checklist/:itemId", requireAuth, async (req: Request, res: Re
 
 router.put("/:id/checklist/reorder", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const taskId = req.params.id;
     const { orderedIds } = req.body;
 
@@ -1419,17 +1454,18 @@ router.put("/:id/checklist/reorder", requireAuth, async (req: Request, res: Resp
 
 router.delete("/:id/checklist/:itemId", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const taskId = req.params.id;
     const { itemId } = req.params;
     const userId = (req.user as any)?.id;
 
     const [existing] = await db.select({ title: taskChecklistItems.title }).from(taskChecklistItems)
-      .where(and(eq(taskChecklistItems.id, itemId), eq(taskChecklistItems.tenantId, tenantId)));
+      .where(and(eq(taskChecklistItems.id, itemId), eq(taskChecklistItems.tenantId, tenantId), eq(taskChecklistItems.taskId, taskId)));
 
     await db.delete(taskChecklistItems).where(and(
       eq(taskChecklistItems.id, itemId),
-      eq(taskChecklistItems.tenantId, tenantId)
+      eq(taskChecklistItems.tenantId, tenantId),
+      eq(taskChecklistItems.taskId, taskId)
     ));
 
     const [taskInfo] = await db.select({ branchId: tasks.branchId, title: tasks.title }).from(tasks).where(eq(tasks.id, taskId));
@@ -1465,9 +1501,20 @@ router.delete("/:id/checklist/:itemId", requireAuth, async (req: Request, res: R
   }
 });
 
+router.use("/:id/activities", requireAuth, async (req, res, next) => {
+  try {
+    if (!await canAccessTask(req, getSignedInTenantId(req), req.params.id)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/:id/activities", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const taskId = req.params.id;
 
     const result = await db
@@ -1527,7 +1574,7 @@ router.get("/:id/activities", requireAuth, async (req: Request, res: Response) =
 
 router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const [task] = await db
       .select({
         id: tasks.id,
@@ -1594,7 +1641,7 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!await canAccessTask(req, tenantId, req.params.id)) {
       return res.status(403).json({ message: "Access denied to this branch" });
     }
 
@@ -1701,7 +1748,7 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, existing.branchId)) {
+    if (!await canAccessTask(req, tenantId, req.params.id)) {
       return res.status(403).json({ message: "Access denied to this branch" });
     }
 
@@ -2074,7 +2121,7 @@ router.post("/:id/complete", requireAuth, async (req: Request, res: Response) =>
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!await canAccessTask(req, tenantId, req.params.id)) {
       return res.status(403).json({ message: "Access denied to this branch" });
     }
 
@@ -2200,7 +2247,7 @@ router.post("/files/upload-url", requireAuth, async (req: Request, res: Response
     if (!tenantId) return res.status(403).json({ message: "Task access denied" });
     const [task] = await db.select({ branchId: tasks.branchId }).from(tasks)
       .where(and(eq(tasks.id, body.taskId), eq(tasks.tenantId, tenantId))).limit(1);
-    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+    if (!task || !await canAccessTask(req, tenantId, body.taskId)) {
       return res.status(404).json({ message: "Task not found" });
     }
     const safeFilename = body.originalFilename.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
@@ -2261,7 +2308,7 @@ router.patch("/:id/progress", requireAuth, async (req: Request, res: Response) =
   try {
     const { id } = req.params;
     const body = updateProgressSchema.parse(req.body);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
 
     const [task] = await db
       .select()
@@ -2272,7 +2319,7 @@ router.patch("/:id/progress", requireAuth, async (req: Request, res: Response) =
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (task.branchId && (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId))) {
+    if (!await canAccessTask(req, tenantId, id)) {
       return res.status(403).json({ message: "Access denied to this branch" });
     }
 
@@ -2324,7 +2371,7 @@ router.post("/:id/block", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const body = blockTaskSchema.parse(req.body);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
 
     const [task] = await db
       .select()
@@ -2335,7 +2382,7 @@ router.post("/:id/block", requireAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (task.branchId && (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId))) {
+    if (!await canAccessTask(req, tenantId, id)) {
       return res.status(403).json({ message: "Access denied to this branch" });
     }
 
@@ -2374,7 +2421,7 @@ router.post("/:id/block", requireAuth, async (req: Request, res: Response) => {
 router.post("/:id/unblock", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
 
     const [task] = await db
       .select()
@@ -2385,7 +2432,7 @@ router.post("/:id/unblock", requireAuth, async (req: Request, res: Response) => 
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (task.branchId && (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId))) {
+    if (!await canAccessTask(req, tenantId, id)) {
       return res.status(403).json({ message: "Access denied to this branch" });
     }
 
@@ -2425,7 +2472,7 @@ router.post("/:id/unblock", requireAuth, async (req: Request, res: Response) => 
 // ============================================
 router.post("/:id/rollback/:activityId", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getSignedInTenantId(req);
     const { id, activityId } = req.params;
 
     const [existing] = await db
@@ -2434,11 +2481,14 @@ router.post("/:id/rollback/:activityId", requireAuth, async (req: Request, res: 
       .where(and(eq(tasks.id, id), eq(tasks.tenantId, tenantId)));
 
     if (!existing) return res.status(404).json({ message: "Task not found" });
+    if (!await canAccessTask(req, tenantId, id)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
     const [activity] = await db
       .select()
       .from(taskActivities)
-      .where(and(eq(taskActivities.id, activityId), eq(taskActivities.taskId, id)));
+      .where(and(eq(taskActivities.id, activityId), eq(taskActivities.taskId, id), eq(taskActivities.tenantId, tenantId)));
 
     if (!activity) return res.status(404).json({ message: "Activity not found" });
 
