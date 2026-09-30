@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useBranchContext } from "@/hooks/use-branch-context";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, Trash2, ArrowLeft, Building2, Clock, Briefcase, UserX } from "lucide-react";
-import { format, parseISO, isAfter, isBefore, isWithinInterval } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { Branch, Department, Role } from "@shared/schema";
 
 type CasualWorker = {
@@ -63,34 +63,17 @@ const initialFormData: FormData = {
 };
 
 function getStatusDisplay(worker: CasualWorker): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
-  const today = new Date();
-  const start = parseISO(worker.startDate);
-  const end = parseISO(worker.endDate);
-
-  if (worker.status === "inactive") {
-    return { label: "Inactive", variant: "secondary" };
-  }
-
-  if (isAfter(today, end)) {
-    return { label: "Expired", variant: "secondary" };
-  }
-
-  if (isBefore(today, start)) {
-    return { label: "Upcoming", variant: "outline" };
-  }
-
-  if (isWithinInterval(today, { start, end })) {
-    return { label: "Active", variant: "default" };
-  }
-
-  return { label: worker.status, variant: "secondary" };
+  const today = format(new Date(), "yyyy-MM-dd");
+  if (worker.status === "inactive") return { label: "Inactive", variant: "secondary" };
+  if (worker.status === "expired" || today > worker.endDate) return { label: "Expired", variant: "secondary" };
+  if (today < worker.startDate) return { label: "Upcoming", variant: "outline" };
+  return { label: "Active", variant: "default" };
 }
 
 export default function CasualWorkersPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { selectedBranchId, isAllBranches, selectedBranchName } = useBranchContext();
-  const [, setLocation] = useLocation();
+  const { selectedBranchId, isAllBranches, activeBranchName } = useBranchContext();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingWorker, setEditingWorker] = useState<CasualWorker | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -124,7 +107,7 @@ export default function CasualWorkersPage() {
     mutationFn: async (data: FormData) => {
       return apiRequest("POST", "/api/casual-workers", {
         ...data,
-        dailyRate: parseInt(data.dailyRate, 10),
+        dailyRate: Number(data.dailyRate),
       });
     },
     onSuccess: () => {
@@ -142,7 +125,7 @@ export default function CasualWorkersPage() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<FormData> }) => {
       const payload: Record<string, unknown> = { ...data };
       if (data.dailyRate) {
-        payload.dailyRate = parseInt(data.dailyRate, 10);
+        payload.dailyRate = Number(data.dailyRate);
       }
       return apiRequest("PATCH", `/api/casual-workers/${id}`, payload);
     },
@@ -185,17 +168,13 @@ export default function CasualWorkersPage() {
 
   const filteredWorkers = casualWorkers?.filter(w => {
     if (!isAllBranches && w.branchId !== selectedBranchId) return false;
+    const today = format(new Date(), "yyyy-MM-dd");
     if (statusFilter === "active") {
-      const today = new Date();
-      const start = parseISO(w.startDate);
-      const end = parseISO(w.endDate);
-      return w.status === "active" && isWithinInterval(today, { start, end });
+      return w.status === "active" && w.startDate <= today && today <= w.endDate;
     }
     if (statusFilter === "inactive") return w.status === "inactive";
     if (statusFilter === "expired") {
-      const today = new Date();
-      const end = parseISO(w.endDate);
-      return isAfter(today, end);
+      return w.status === "expired" || today > w.endDate;
     }
     return true;
   }) || [];
@@ -233,7 +212,7 @@ export default function CasualWorkersPage() {
 
   const isFormValid = formData.fullName && formData.nickname && formData.branchId && 
     formData.departmentId && formData.roleId && formData.startDate && 
-    formData.endDate && formData.dailyRate && parseInt(formData.dailyRate, 10) > 0 &&
+    formData.endDate && formData.dailyRate && Number.isInteger(Number(formData.dailyRate)) && Number(formData.dailyRate) > 0 &&
     new Date(formData.endDate) >= new Date(formData.startDate);
 
   return (
@@ -272,7 +251,7 @@ export default function CasualWorkersPage() {
         </Select>
         <span className="text-sm text-muted-foreground">
           {filteredWorkers.length} casual worker{filteredWorkers.length !== 1 ? "s" : ""}
-          {!isAllBranches && ` in ${selectedBranchName}`}
+          {!isAllBranches && ` in ${activeBranchName}`}
         </span>
       </div>
 
@@ -550,6 +529,7 @@ export default function CasualWorkersPage() {
                 onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
                 placeholder="500"
                 min="1"
+                step="1"
                 data-testid="input-daily-rate"
               />
             </div>
