@@ -37,6 +37,8 @@ SCRUM-462 is Testing under SCRUM-193. Casual-worker APIs now require manager acc
 
 SCRUM-463 is Testing under SCRUM-193. The app-owned vault slice at `a8f5aa8a` binds vault reads and writes to the signed-in tenant, validates branch references, seals new and changed credentials, removes the generic data-admin bypass and makes reveal an audited server action; ordinary detail/write responses exclude the credential. Legacy unsealed rows reseal on first audited reveal. Production build passed, typecheck stays at 542 inherited errors with no vault-area diagnostic, scoped lint is clear, and a disposable crypto probe passed. No existing vault test file exists. Commit `b39d0ed5` is live on oto-app-staging (`dep-dau7p67avr4c7381v260`); health 200, anonymous vault list/detail/reveal and data admin 401. Signed-in proof and named screenshots remain. See `docs/qa/oto-app-lift/vault.md`.
 
+SCRUM-464 is In Progress under SCRUM-193. Existing in-app task notifications now scope list, unread count and read actions to both recipient and the active tenant; an absent tenant fails closed, an out-of-scope mark-read returns 404 and pagination is bounded. This does not add S2-17c delivery statuses. Source `6f564c64` passed production build, app typecheck remains at 542 inherited errors with no notification-area diagnostic, and scoped lint is clear; no existing notification test file exists. Staging deployment and signed-in two-tenant proof/screenshot remain. See `docs/qa/oto-app-lift/notifications.md`.
+
 ## Release checkpoint - 30 September 2026 - break checkpoint saved
 
 The current release checkpoint is complete. Stop here and await the next
