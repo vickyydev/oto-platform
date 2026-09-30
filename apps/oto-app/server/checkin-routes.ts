@@ -111,13 +111,11 @@ const router = Router();
 
 const PRIVATE_DROPOFF_PHOTOS = "dropoff-photos-private";
 const PRIVATE_DROPOFF_SIGNATURES = "dropoff-signatures-private";
-const PHOTO_SHARE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
-
-function photoShareSignature(checkinId: string, photoUrl: string, expires: number): string {
+function photoShareSignature(checkinId: string, photoUrl: string, expires?: number): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret) throw new Error("SESSION_SECRET is required for photo sharing");
   return crypto.createHmac("sha256", secret)
-    .update(`dropoff-photo:${checkinId}:${photoUrl}:${expires}`)
+    .update(`dropoff-photo:${checkinId}:${photoUrl}:${expires ?? "permanent"}`)
     .digest("hex");
 }
 
@@ -125,17 +123,17 @@ function sharedCheckinPhotoUrl(checkin: typeof serviceCheckins.$inferSelect): st
   const photoUrl = checkin.photoUrl;
   if (!photoUrl) return null;
   if (!photoUrl.startsWith(`/api/files/${PRIVATE_DROPOFF_PHOTOS}/`)) return photoUrl;
-  const expires = Date.now() + PHOTO_SHARE_LIFETIME_MS;
-  const signature = photoShareSignature(checkin.id, photoUrl, expires);
-  return `/api/public/dropoff-photo/${checkin.id}?expires=${expires}&sig=${signature}`;
+  const signature = photoShareSignature(checkin.id, photoUrl);
+  return `/api/public/dropoff-photo/${checkin.id}?sig=${signature}`;
 }
 
 router.get("/api/public/dropoff-photo/:id", async (req: Request, res: Response) => {
   const expiresRaw = req.query.expires;
   const signature = req.query.sig;
-  const expires = typeof expiresRaw === "string" ? Number(expiresRaw) : NaN;
-  if (!Number.isSafeInteger(expires) || expires <= Date.now() ||
-      expires > Date.now() + PHOTO_SHARE_LIFETIME_MS + 60_000 ||
+  // Accept previously issued timestamped links indefinitely as well. The
+  // timestamp remains covered by the signature, so callers cannot alter it.
+  const legacyExpires = typeof expiresRaw === "string" ? Number(expiresRaw) : null;
+  if ((expiresRaw !== undefined && (legacyExpires === null || !Number.isSafeInteger(legacyExpires) || legacyExpires <= 0)) ||
       typeof signature !== "string" || !/^[a-f0-9]{64}$/.test(signature)) {
     return res.status(404).json({ message: "Photo link unavailable" });
   }
@@ -144,7 +142,7 @@ router.get("/api/public/dropoff-photo/:id", async (req: Request, res: Response) 
       .from(serviceCheckins).where(eq(serviceCheckins.id, req.params.id)).limit(1);
     const filename = /^\/api\/files\/dropoff-photos-private\/([a-zA-Z0-9._-]+)$/.exec(checkin?.photoUrl || "")?.[1];
     if (!checkin?.photoUrl || !filename) return res.status(404).json({ message: "Photo link unavailable" });
-    const expected = photoShareSignature(checkin.id, checkin.photoUrl, expires);
+    const expected = photoShareSignature(checkin.id, checkin.photoUrl, legacyExpires ?? undefined);
     if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
       return res.status(404).json({ message: "Photo link unavailable" });
     }
@@ -197,6 +195,48 @@ router.get("/api/files/dropoff-signatures/:filename", requireAuthOrKiosk,
   (req, res) => serveDropoffSignature(req, res, "dropoff-signatures"));
 router.get("/api/files/dropoff-signatures-private/:filename", requireAuthOrKiosk,
   (req, res) => serveDropoffSignature(req, res, PRIVATE_DROPOFF_SIGNATURES));
+
+// Checkout photos share a storage folder with checklist evidence. Only a photo
+// attached to a check-in in this tenant and branch may be read here; a miss
+// falls through to the checklist evidence handler registered later.
+async function serveCheckoutPhoto(req: Request, res: Response, next: NextFunction) {
+  const filename = req.params.filename;
+  if (!/^[a-zA-Z0-9._-]+$/.test(filename) || filename === "." || filename === "..") {
+    return res.status(404).json({ message: "Photo not found" });
+  }
+  const tenantId = req.kioskSession?.tenantId ?? (req.user as UserWithBranchAccess | undefined)?.tenantId;
+  if (!tenantId) return res.status(403).json({ message: "Access denied" });
+  const paths = [`/api/files/checkin-photos/${filename}`, `/uploads/checkin-photos/${filename}`];
+  try {
+    const [serviceRows, dropoffRows] = await Promise.all([
+      db.select({ branchId: serviceCheckins.branchId }).from(serviceCheckins)
+        .where(and(eq(serviceCheckins.tenantId, tenantId), inArray(serviceCheckins.outPhotoUrl, paths))).limit(1),
+      db.select({ branchId: dropoffCheckins.branchId }).from(dropoffCheckins)
+        .where(and(eq(dropoffCheckins.tenantId, tenantId), inArray(dropoffCheckins.outPhotoUrl, paths))).limit(1),
+    ]);
+    const branchId = serviceRows[0]?.branchId ?? dropoffRows[0]?.branchId;
+    if (!branchId) return next();
+    if (!await canAccessCheckinBranch(req, branchId)) {
+      return res.status(404).json({ message: "Photo not found" });
+    }
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    const photo = await getFileFromObjectStorage("checkin-photos", filename);
+    if (photo) {
+      res.setHeader("Content-Type", photo.contentType);
+      photo.stream.pipe(res);
+      return;
+    }
+    const localPath = path.join(process.cwd(), "uploads", "checkin-photos", filename);
+    if (fs.existsSync(localPath)) return res.sendFile(localPath);
+    return res.status(404).json({ message: "Photo not found" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+router.get("/api/files/checkin-photos/:filename", requireAuthOrKiosk, serveCheckoutPhoto);
+router.get("/uploads/checkin-photos/:filename", requireAuthOrKiosk, serveCheckoutPhoto);
 
 const publicCheckinSchema = z.object({
   branchId: z.string(),
@@ -662,18 +702,29 @@ router.post("/api/core/checkins/:id/checkout", requireAuthOrKiosk, requireChecki
 
     // Save pickup photo if provided (max 5MB base64) - upload to object storage
     let outPhotoUrl: string | undefined;
-    if (outPhotoData && outPhotoData.startsWith("data:image")) {
+    if (outPhotoData !== undefined && outPhotoData !== null && outPhotoData !== "") {
+      const match = typeof outPhotoData === "string"
+        ? /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(outPhotoData)
+        : null;
+      if (!match) return res.status(400).json({ message: "Invalid checkout photo" });
       // Validate size (5MB limit for base64 string ~ 6.6MB)
       if (outPhotoData.length > 7 * 1024 * 1024) {
         return res.status(400).json({ message: "Photo too large (max 5MB)" });
       }
-      
-      const base64Data = outPhotoData.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, "base64");
-      const fileName = `checkout_${id}_${Date.now()}.jpg`;
+      const buffer = Buffer.from(match[2], "base64");
+      if (!buffer.length || buffer.length > 5 * 1024 * 1024) {
+        return res.status(400).json({ message: "Photo too large (max 5MB)" });
+      }
+      const isJpeg = match[1] === "jpeg" && buffer.length >= 3 && buffer.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]));
+      const isPng = match[1] === "png" && buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+      const isWebp = match[1] === "webp" && buffer.length >= 12 && buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP";
+      if (!isJpeg && !isPng && !isWebp) return res.status(400).json({ message: "Invalid checkout photo" });
+      const mimeType = `image/${match[1]}`;
+      const extension = match[1] === "jpeg" ? "jpg" : match[1];
+      const fileName = `checkout_${id}_${Date.now()}.${extension}`;
       
       // Upload to object storage (permanent cloud storage)
-      outPhotoUrl = await uploadToObjectStorage(buffer, "checkin-photos", fileName, "image/jpeg");
+      outPhotoUrl = await uploadToObjectStorage(buffer, "checkin-photos", fileName, mimeType);
     }
 
     // Update the check-in to checked_out

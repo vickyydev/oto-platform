@@ -54,7 +54,7 @@ For each Testing module, record one real staging write or action and resulting s
 | Vault | Testing | [Local seal/reveal and scope probe](oto-app-lift/vault.md), zero-row staging capture; save/reveal an item with audit evidence and deny wrong role/branch. Do not capture credential content. |
 | Directory API | BROKEN | Existing routes lack tenant-bearing identity; [contract review](oto-app-lift/directory-settings.md). Platform contract first, then same-tenant results and cross-tenant refusal. |
 | Data Admin | Testing | The credential-model exclusion is **WORKS** with three named staging screenshots and API checks, [SCRUM-466 evidence](oto-app-lift/data-admin.md); operator-admin denial and wider registry review remain. |
-| General files and private media | Testing | [Object-path, Fix, profile, check-in and KB slices](oto-app-lift/files.md) have local/staging checks. Finish PIN, checklist/checker, checkout, task and camp media ownership; prove authorized and denied staging reads with named images. Existing raw check-in photo links must remain valid indefinitely. |
+| General files and private media | Testing | [Object-path, Fix, profile, check-in and KB slices](oto-app-lift/files.md) have local/staging checks. PIN, checklist/checker, checkout and task ownership are locally verified; finish camp media and prove authorized and denied staging reads with named images. Existing raw and new signed check-in photo links remain valid indefinitely. |
 | Settings | BROKEN | Global key storage is not tenant-safe; [contract review](oto-app-lift/directory-settings.md). Additive platform migration and legacy-key cutover first, then separate-tenant reads/writes. |
 
 ## Cross-module release gates

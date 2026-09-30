@@ -1,48 +1,48 @@
 import { Router, Request, Response } from "express";
 import { db } from "../db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "../auth";
+import { canUserAccessBranch } from "../auth-middleware";
 import { STORAGE_ENV_PREFIX } from "../config/env";
 import { presignedUploadUrl } from "../storage/presignedUpload";
-import { tenants, files, DEFAULT_TENANT_SLUG } from "../../shared/schema";
+import { files } from "../../shared/schema";
+import { tasks } from "../db/coreSchema";
 
 const router = Router();
 
-async function getDefaultTenantId(): Promise<string> {
-  const result = await db
-    .select({ id: tenants.id })
-    .from(tenants)
-    .where(eq(tenants.slug, DEFAULT_TENANT_SLUG))
-    .limit(1);
-  if (!result.length) throw new Error(`Default tenant ${DEFAULT_TENANT_SLUG} not found`);
-  return result[0].id;
-}
-
 const uploadUrlSchema = z.object({
+  taskId: z.string().uuid(),
   originalFilename: z.string().min(1),
-  mimeType: z.string().min(1),
-  sizeBytes: z.number().int().positive(),
+  mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/heic"]),
+  sizeBytes: z.number().int().positive().max(10 * 1024 * 1024),
 });
 
 router.post("/upload-url", requireAuth, async (req: Request, res: Response) => {
   try {
     const body = uploadUrlSchema.parse(req.body);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ message: "Task access denied" });
+    const [task] = await db.select({ branchId: tasks.branchId }).from(tasks)
+      .where(and(eq(tasks.id, body.taskId), eq(tasks.tenantId, tenantId))).limit(1);
+    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    const safeFilename = body.originalFilename.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
 
     const [file] = await db
       .insert(files)
       .values({
         tenantId,
-        source: "core_task_evidence",
-        originalFilename: body.originalFilename,
+        source: `core_task_evidence:${body.taskId}`,
+        originalFilename: safeFilename,
         storageKey: "",
         mimeType: body.mimeType,
         sizeBytes: body.sizeBytes,
       })
       .returning();
 
-    const storageKey = `${STORAGE_ENV_PREFIX}/tenants/${tenantId}/core/tasks/evidence/${file.id}/${body.originalFilename}`;
+    const storageKey = `${STORAGE_ENV_PREFIX}/tenants/${tenantId}/core/tasks/${body.taskId}/evidence/${file.id}/${safeFilename}`;
 
     await db.update(files).set({ storageKey }).where(eq(files.id, file.id));
 

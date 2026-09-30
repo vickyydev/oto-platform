@@ -437,22 +437,24 @@ function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDetailSheet
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !task) return;
 
     setUploadingPhoto(true);
     try {
       const res = await apiRequest("POST", "/api/core/files/upload-url", {
+        taskId: task.id,
         originalFilename: file.name,
         mimeType: file.type,
         sizeBytes: file.size,
       });
       const { uploadUrl, fileId } = await res.json();
 
-      await fetch(uploadUrl, {
+      const uploadResponse = await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type },
         body: file,
       });
+      if (!uploadResponse.ok) throw new Error("Photo upload failed");
 
       setUploadedFileIds((prev) => [...prev, fileId]);
       toast({ title: "Success", description: "Photo uploaded" });

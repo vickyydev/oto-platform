@@ -1,5 +1,7 @@
 // seed: full
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import { randomBytes, scrypt } from "node:crypto";
+import { promisify } from "node:util";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../server/db";
 import {
@@ -17,8 +19,25 @@ import {
   checklistTemplates,
   fixReports,
 } from "../server/db/coreSchema";
-import { login, testId } from "./helpers";
-import { deleteFromObjectStorage } from "../server/file-storage";
+import { deleteFromObjectStorage, uploadToObjectStorage } from "../server/file-storage";
+
+const testId = () => Math.random().toString(36).slice(2, 8);
+const scryptAsync = promisify(scrypt);
+async function hashTestPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = await scryptAsync(password, salt, 64) as Buffer;
+  return `${hash.toString("hex")}.${salt}`;
+}
+async function login(page: Page, email: string, password: string) {
+  await page.goto("/");
+  const toggle = page.getByTestId("button-toggle-login-mode");
+  await toggle.waitFor({ state: "visible" });
+  if ((await toggle.innerText()).includes("email")) await toggle.click();
+  await page.getByTestId("input-login-email").fill(email);
+  await page.getByTestId("input-login-password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL("**/today**");
+}
 
 const PNG_BYTES = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -28,11 +47,7 @@ const PNG_BYTES = Buffer.from(
 test("checklist-linked Fix reports use the user's tenant and effective branch access", async ({ browser }) => {
   const suffix = testId();
   const password = "Password123!";
-  const [seedAdmin] = await db.select({ password: users.password })
-    .from(users)
-    .where(eq(users.email, "admin@example.com"))
-    .limit(1);
-  const passwordHash = seedAdmin.password;
+  const passwordHash = await hashTestPassword(password);
   const managerEmail = `fix-manager-${suffix}@example.test`;
   const advisorEmail = `fix-advisor-${suffix}@example.test`;
 
@@ -112,9 +127,12 @@ test("checklist-linked Fix reports use the user's tenant and effective branch ac
   let runId: string | undefined;
   let reportId: string | undefined;
   let uploadedFilename: string | undefined;
+  let otherRunId: string | undefined;
+  let staleRunId: string | undefined;
+  const checklistFiles: Array<{ folder: string; filename: string }> = [];
 
   try {
-    await login(managerPage, { email: managerEmail, password } as any);
+    await login(managerPage, managerEmail, password);
     const templateResponse = await managerPage.request.post("/api/checklists/templates", {
       data: {
         name: `Fix-linked tenant checklist ${suffix}`,
@@ -141,7 +159,62 @@ test("checklist-linked Fix reports use the user's tenant and effective branch ac
     const managerRun = await managerRunResponse.json();
     const runItem = managerRun.items[0];
 
-    await login(advisorPage, { email: advisorEmail, password } as any);
+    const evidenceUpload = await managerPage.request.post("/api/checklist-evidence/upload", {
+      multipart: { itemId: runItem.id, photo: { name: "evidence.png", mimeType: "image/png", buffer: PNG_BYTES } },
+    });
+    expect(evidenceUpload.status()).toBe(200);
+    const evidence = await evidenceUpload.json();
+    checklistFiles.push({ folder: "checkin-photos", filename: evidence.canonicalUrl.split("/").pop()! });
+    expect((await managerPage.request.patch(`/api/checklist-run-items/${runItem.id}`, {
+      data: { photoEvidenceUrls: [evidence.canonicalUrl] },
+    })).status()).toBe(400);
+
+    const [otherRun] = await db.insert(checklistRuns).values({
+      tenantId: tenant.id, templateId, branchId: sourceBranch.id,
+    }).returning();
+    otherRunId = otherRun.id;
+    const [otherItem] = await db.insert(checklistRunItems).values({
+      tenantId: tenant.id, runId: otherRun.id, templateItemId: runItem.templateItemId,
+    }).returning();
+    expect((await managerPage.request.patch(`/api/checklist-run-items/${otherItem.id}`, {
+      data: { photoEvidenceUrls: [evidence.url] },
+    })).status()).toBe(400);
+    expect((await managerPage.request.patch(`/api/checklist-run-items/${runItem.id}`, {
+      data: { photoEvidenceUrls: [evidence.url] },
+    })).status()).toBe(200);
+    const evidenceRead = await managerPage.request.get(evidence.canonicalUrl);
+    expect(evidenceRead.status()).toBe(200);
+    expect(evidenceRead.headers()["cache-control"]).toBe("private, no-store");
+    expect((await advisorPage.request.get(evidence.canonicalUrl)).status()).toBe(401);
+    expect((await managerPage.request.get(evidence.canonicalUrl.replace("/api/files/", "/uploads/"))).status()).toBe(200);
+
+    const checkerUpload = await managerPage.request.post("/api/checker-photos/upload", {
+      multipart: { itemId: runItem.id, photo: { name: "checker.png", mimeType: "image/png", buffer: PNG_BYTES } },
+    });
+    expect(checkerUpload.status()).toBe(200);
+    const checker = await checkerUpload.json();
+    checklistFiles.push({ folder: "checker-photos", filename: checker.canonicalUrl.split("/").pop()! });
+    expect((await managerPage.request.patch(`/api/checklist-run-items/${runItem.id}`, {
+      data: { failPhotoUrl: checker.url },
+    })).status()).toBe(200);
+    expect((await managerPage.request.get(checker.canonicalUrl)).status()).toBe(200);
+    expect((await managerPage.request.get(checker.canonicalUrl.replace("/api/files/", "/uploads/"))).status()).toBe(200);
+    expect((await managerPage.request.post("/api/checker-photos/upload", {
+      multipart: { itemId: runItem.id, photo: { name: "unsafe.svg", mimeType: "image/svg+xml", buffer: Buffer.from("<svg/>") } },
+    })).status()).toBe(400);
+
+    const [staleRun] = await db.insert(checklistRuns).values({
+      tenantId: tenant.id, templateId, branchId: staleBranch.id,
+    }).returning();
+    staleRunId = staleRun.id;
+    const staleUrl = await uploadToObjectStorage(PNG_BYTES, "checkin-photos", `stale-${suffix}.png`, "image/png");
+    checklistFiles.push({ folder: "checkin-photos", filename: `stale-${suffix}.png` });
+    await db.insert(checklistRunItems).values({
+      tenantId: tenant.id, runId: staleRun.id, templateItemId: runItem.templateItemId, photoEvidenceUrls: [staleUrl],
+    });
+    expect((await managerPage.request.get(staleUrl)).status()).toBe(404);
+
+    await login(advisorPage, advisorEmail, password);
     const sourceResponse = await advisorPage.request.get(`/api/fix-reports/checklist-source/${runItem.id}`);
     expect(sourceResponse.status()).toBe(200);
 
@@ -183,10 +256,16 @@ test("checklist-linked Fix reports use the user's tenant and effective branch ac
     const detailsResponse = await advisorPage.request.get(`/api/fix-reports/${reportId}/details`);
     expect(detailsResponse.status()).toBe(200);
   } finally {
-    await managerContext.close();
-    await advisorContext.close();
+    await managerContext.close().catch(() => undefined);
+    await advisorContext.close().catch(() => undefined);
     if (reportId) await db.delete(fixReports).where(eq(fixReports.id, reportId));
     if (uploadedFilename) await deleteFromObjectStorage("fix-media", uploadedFilename);
+    for (const file of checklistFiles) await deleteFromObjectStorage(file.folder, file.filename);
+    for (const extraRunId of [otherRunId, staleRunId]) {
+      if (!extraRunId) continue;
+      await db.delete(checklistRunItems).where(eq(checklistRunItems.runId, extraRunId));
+      await db.delete(checklistRuns).where(eq(checklistRuns.id, extraRunId));
+    }
     if (runId) {
       await db.delete(checklistRunItems).where(eq(checklistRunItems.runId, runId));
       await db.delete(checklistRuns).where(eq(checklistRuns.id, runId));

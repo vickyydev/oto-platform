@@ -6,7 +6,7 @@ import { z } from "zod";
 import { requireAuth } from "../auth";
 import { canUserAccessBranch } from "../auth-middleware";
 import { STORAGE_ENV_PREFIX } from "../config/env";
-import { uploadToObjectStorage } from "../file-storage";
+import { uploadToObjectStorage, fileExistsInObjectStorage } from "../file-storage";
 import { presignedUploadUrl } from "../storage/presignedUpload";
 import { fixMulterFilenames } from "../middleware/fixMulterFilenames";
 import { tenants, users, files, employees, accessPolicies, people, branches, operators, employeeRoles as employeeRolesTable, DEFAULT_TENANT_SLUG } from "../../shared/schema";
@@ -699,7 +699,9 @@ const createTaskSchema = z.object({
 router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const body = createTaskSchema.parse(req.body);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ message: "Task access denied" });
+    if (body.referencePhotoUrl) return res.status(400).json({ message: "Add the reference photo after creating the task" });
 
     const targetBranchIds: string[] = body.branchIds && body.branchIds.length > 0
       ? body.branchIds
@@ -1653,7 +1655,8 @@ const updateTaskSchema = z.object({
 router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const body = updateTaskSchema.parse(req.body);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ message: "Task access denied" });
 
     const [existing] = await db
       .select()
@@ -1731,7 +1734,15 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
     if (body.description !== undefined) updateData.description = body.description;
     if (body.requiresPhotoEvidence !== undefined) updateData.requiresPhotoEvidence = body.requiresPhotoEvidence;
     if (body.requiresResponses !== undefined) updateData.requiresResponses = body.requiresResponses;
-    if (body.referencePhotoUrl !== undefined) updateData.referencePhotoUrl = body.referencePhotoUrl;
+    if (body.referencePhotoUrl !== undefined) {
+      if (body.referencePhotoUrl && body.referencePhotoUrl !== existing.referencePhotoUrl) {
+        const filename = taskPhotoUrl(existing.id, body.referencePhotoUrl);
+        if (!filename || !await fileExistsInObjectStorage("task-photos", filename)) {
+          return res.status(400).json({ message: "Reference photo does not belong to this task" });
+        }
+      }
+      updateData.referencePhotoUrl = body.referencePhotoUrl;
+    }
     if (body.taskLevel !== undefined) updateData.taskLevel = body.taskLevel;
     if (body.escalated !== undefined) {
       updateData.escalated = body.escalated;
@@ -2005,14 +2016,20 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
 const completeTaskSchema = z.object({
   note: z.string().optional().nullable(),
   responses: z.record(z.unknown()).optional().nullable(),
-  photoFileIds: z.array(z.string()).optional(),
+  photoFileIds: z.array(z.string().uuid()).optional(),
   photoUrls: z.array(z.string()).optional(),
 });
+
+const taskPhotoUrl = (taskId: string, url: string): string | null => {
+  const match = /^\/api\/files\/task-photos\/([a-zA-Z0-9._-]+)$/.exec(url);
+  return match?.[1]?.startsWith(`task_${taskId}_`) ? match[1] : null;
+};
 
 router.post("/:id/complete", requireAuth, async (req: Request, res: Response) => {
   try {
     const body = completeTaskSchema.parse(req.body);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ message: "Task access denied" });
 
     const [task] = await db
       .select()
@@ -2028,13 +2045,24 @@ router.post("/:id/complete", requireAuth, async (req: Request, res: Response) =>
       return res.status(403).json({ message: "Access denied to this branch" });
     }
 
+    if (body.photoFileIds?.length && body.photoUrls?.length) {
+      return res.status(400).json({ message: "Choose one photo evidence format" });
+    }
+
     let photoUrls: string[] = [];
 
     if (body.photoFileIds && body.photoFileIds.length > 0) {
+      if (new Set(body.photoFileIds).size !== body.photoFileIds.length) {
+        return res.status(400).json({ message: "Duplicate photo evidence" });
+      }
       const fileRecords = await db
         .select({ storageKey: files.storageKey })
         .from(files)
-        .where(and(eq(files.tenantId, tenantId), inArray(files.id, body.photoFileIds)));
+        .where(and(eq(files.tenantId, tenantId), eq(files.source, `core_task_evidence:${task.id}`), inArray(files.id, body.photoFileIds)));
+      if (fileRecords.length !== body.photoFileIds.length || fileRecords.some(f =>
+        !f.storageKey.startsWith(`${STORAGE_ENV_PREFIX}/tenants/${tenantId}/core/tasks/${task.id}/evidence/`))) {
+        return res.status(400).json({ message: "Photo evidence does not belong to this task" });
+      }
       photoUrls = fileRecords.map((f) => f.storageKey);
     }
 
@@ -2044,22 +2072,29 @@ router.post("/:id/complete", requireAuth, async (req: Request, res: Response) =>
         if (dataUrl.startsWith("data:")) {
           try {
             const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-            if (matches) {
+            if (matches && ["image/jpeg", "image/png", "image/webp", "image/heic"].includes(matches[1])) {
               const mimeType = matches[1];
               const base64Data = matches[2];
               const buffer = Buffer.from(base64Data, "base64");
-              const ext = mimeType.includes("png") ? "png" : mimeType.includes("gif") ? "gif" : "jpg";
+              if (buffer.length === 0 || buffer.length > 10 * 1024 * 1024) {
+                return res.status(400).json({ message: "Photo evidence exceeds the 10 MB limit" });
+              }
+              const ext = mimeType.includes("png") ? "png" : mimeType.includes("webp") ? "webp" : mimeType.includes("heic") ? "heic" : "jpg";
               const filename = `task_${task.id}_${Date.now()}_${i}.${ext}`;
               const url = await uploadToObjectStorage(buffer, "task-photos", filename, mimeType);
               if (url) {
                 photoUrls.push(url);
               }
+            } else {
+              return res.status(400).json({ message: "Invalid photo evidence" });
             }
           } catch (uploadErr) {
             console.error("[Core Tasks] Photo upload error:", uploadErr);
           }
-        } else {
+        } else if (taskPhotoUrl(task.id, dataUrl) && await fileExistsInObjectStorage("task-photos", taskPhotoUrl(task.id, dataUrl)!)) {
           photoUrls.push(dataUrl);
+        } else {
+          return res.status(400).json({ message: "Photo evidence does not belong to this task" });
         }
       }
     }
@@ -2119,29 +2154,37 @@ router.post("/:id/complete", requireAuth, async (req: Request, res: Response) =>
 });
 
 const uploadUrlSchema = z.object({
+  taskId: z.string().uuid(),
   originalFilename: z.string().min(1),
-  mimeType: z.string().min(1),
-  sizeBytes: z.number().int().positive(),
+  mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/heic"]),
+  sizeBytes: z.number().int().positive().max(10 * 1024 * 1024),
 });
 
 router.post("/files/upload-url", requireAuth, async (req: Request, res: Response) => {
   try {
     const body = uploadUrlSchema.parse(req.body);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ message: "Task access denied" });
+    const [task] = await db.select({ branchId: tasks.branchId }).from(tasks)
+      .where(and(eq(tasks.id, body.taskId), eq(tasks.tenantId, tenantId))).limit(1);
+    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    const safeFilename = body.originalFilename.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
 
     const [file] = await db
       .insert(files)
       .values({
         tenantId,
-        source: "core_task_evidence",
-        originalFilename: body.originalFilename,
+        source: `core_task_evidence:${body.taskId}`,
+        originalFilename: safeFilename,
         storageKey: "",
         mimeType: body.mimeType,
         sizeBytes: body.sizeBytes,
       })
       .returning();
 
-    const storageKey = `${STORAGE_ENV_PREFIX}/tenants/${tenantId}/core/tasks/evidence/${file.id}/${body.originalFilename}`;
+    const storageKey = `${STORAGE_ENV_PREFIX}/tenants/${tenantId}/core/tasks/${body.taskId}/evidence/${file.id}/${safeFilename}`;
 
     await db.update(files).set({ storageKey }).where(eq(files.id, file.id));
 

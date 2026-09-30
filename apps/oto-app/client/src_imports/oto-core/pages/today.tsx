@@ -177,6 +177,7 @@ export default function TodayPage() {
     let uploadedUrls: string[] = [];
     if (photoFiles.length > 0) {
       const formData = new FormData();
+      formData.append('taskId', selectedTask.id);
       photoFiles.forEach(f => formData.append('photos', f));
       try {
         const uploadRes = await fetch('/api/upload/photos', { 
@@ -184,6 +185,7 @@ export default function TodayPage() {
           body: formData,
           credentials: 'include'
         });
+        if (!uploadRes.ok) throw new Error('Photo upload failed');
         const uploadData = await uploadRes.json();
         uploadedUrls = uploadData.urls || [];
       } catch {

@@ -833,6 +833,7 @@ export async function registerRoutes(
   // Tasks Compatibility API (for transplanted Core/Studio pages)
   const tasksCompat = await import("./core/compat/tasksCompat");
   app.use("/api", tasksCompat.default);
+  app.get("/uploads/task-photos/:filename", requireAuth, tasksCompat.serveTaskPhoto);
 
   // Studio Task Templates API
   const studioTasksCompat = await import("./core/compat/studioTasksCompat");
@@ -1482,7 +1483,7 @@ export async function registerRoutes(
   // Legacy public paths only; private uploads use their record-scoped routes.
   app.use("/uploads", (req, res, next) => {
     const match = /^\/([a-z0-9-]+)\/([a-zA-Z0-9._-]+)$/.exec(req.path);
-    if (match?.[1] === "pin-photos") return next();
+    if (["pin-photos", "checkin-photos", "checker-photos", "task-photos"].includes(match?.[1] || "")) return next();
     const publicFolders = new Set(["branch-logos", "dropoff-photos", "invitations"]);
     if (!match || !publicFolders.has(match[1]) || match[2] === "." || match[2] === "..") {
       return res.status(404).json({ message: "File not found" });
@@ -20550,6 +20551,44 @@ OTO Company Limited`,
     }
   });
 
+  const CHECKLIST_PHOTO_CLAIM_MS = 30 * 60_000;
+  const checklistPhotoUrl = (folder: "checkin-photos" | "checker-photos", filename: string) =>
+    `/api/files/${folder}/${filename}`;
+  const checklistPhotoClaim = (url: string, itemId: string, tenantId: string, userId: string, expiresAt: number) => {
+    const secret = process.env.SESSION_SECRET;
+    if (!secret) throw new Error("SESSION_SECRET is required for checklist photo uploads");
+    return crypto.createHmac("sha256", secret)
+      .update(`${url}:${itemId}:${tenantId}:${userId}:${expiresAt}`)
+      .digest("hex");
+  };
+  const verifyChecklistPhotoClaim = (
+    supplied: string, folder: "checkin-photos" | "checker-photos", itemId: string, tenantId: string, userId: string,
+  ): string | null => {
+    const match = /^\/api\/files\/(checkin-photos|checker-photos)\/([a-zA-Z0-9._-]+)\?claim=(\d{13})\.([a-f0-9]{64})$/.exec(supplied);
+    if (!match || match[1] !== folder || match[2] === "." || match[2] === "..") return null;
+    const [, , filename, expiry, signature] = match;
+    const expiresAt = Number(expiry);
+    if (expiresAt < Date.now() || expiresAt > Date.now() + CHECKLIST_PHOTO_CLAIM_MS) return null;
+    const url = checklistPhotoUrl(folder, filename);
+    const expected = Buffer.from(checklistPhotoClaim(url, itemId, tenantId, userId, expiresAt), "hex");
+    return crypto.timingSafeEqual(Buffer.from(signature, "hex"), expected) ? url : null;
+  };
+  const getAccessibleChecklistPhotoItem = async (user: UserWithBranchAccess, itemId: string) => {
+    const tenantId = await resolveTenantId(user.tenantId);
+    const [item] = await db.select({
+      id: checklistRunItems.id,
+      branchId: checklistRuns.branchId,
+      status: checklistRuns.status,
+      photoEvidenceUrls: checklistRunItems.photoEvidenceUrls,
+      failPhotoUrl: checklistRunItems.failPhotoUrl,
+    })
+      .from(checklistRunItems)
+      .innerJoin(checklistRuns, eq(checklistRunItems.runId, checklistRuns.id))
+      .where(and(eq(checklistRunItems.id, itemId), eq(checklistRunItems.tenantId, tenantId), eq(checklistRuns.tenantId, tenantId)))
+      .limit(1);
+    return item && canUserAccessBranch(user, item.branchId) ? { item, tenantId } : null;
+  };
+
   // Update a checklist run item
   app.patch("/api/checklist-run-items/:itemId", requireAuth, async (req, res, next) => {
     try {
@@ -20557,22 +20596,11 @@ OTO Company Limited`,
       const { completed, note, completedAt, photoEvidenceUrls, resultStatus, failNote, failPhotoUrl } = req.body;
       const user = req.user as UserWithBranchAccess;
       const tenantId = await resolveTenantId(user.tenantId);
-      const [authorizedItem] = await db.select({
-        id: checklistRunItems.id,
-        runId: checklistRunItems.runId,
-        branchId: checklistRuns.branchId,
-        status: checklistRuns.status,
-      })
-        .from(checklistRunItems)
-        .innerJoin(checklistRuns, eq(checklistRunItems.runId, checklistRuns.id))
-        .where(and(eq(checklistRunItems.id, itemId), eq(checklistRunItems.tenantId, tenantId), eq(checklistRuns.tenantId, tenantId)))
-        .limit(1);
-      if (!authorizedItem) {
+      const access = await getAccessibleChecklistPhotoItem(user, itemId);
+      if (!access) {
         return res.status(404).json({ message: "Checklist item not found" });
       }
-      if (!canUserAccessBranch(user, authorizedItem.branchId)) {
-        return res.status(403).json({ message: "Access denied to this checklist item" });
-      }
+      const authorizedItem = access.item;
       if (authorizedItem.status === "completed" || authorizedItem.status === "missed") {
         return res.status(409).json({ message: "This checklist run is read-only" });
       }
@@ -20595,7 +20623,17 @@ OTO Company Limited`,
       }
       
       if (photoEvidenceUrls !== undefined) {
-        updates.photoEvidenceUrls = photoEvidenceUrls;
+        if (!Array.isArray(photoEvidenceUrls) || photoEvidenceUrls.length > 20 || photoEvidenceUrls.some((url: unknown) => typeof url !== "string")) {
+          return res.status(400).json({ message: "Invalid checklist photo evidence" });
+        }
+        const existing = new Set(authorizedItem.photoEvidenceUrls || []);
+        const canonical = photoEvidenceUrls.map((url: string) => existing.has(url)
+          ? url
+          : verifyChecklistPhotoClaim(url, "checkin-photos", itemId, tenantId, user.id));
+        if (canonical.some((url: string | null) => !url) || new Set(canonical).size !== canonical.length) {
+          return res.status(400).json({ message: "Invalid checklist photo evidence" });
+        }
+        updates.photoEvidenceUrls = canonical;
       }
       
       // Checker-specific fields
@@ -20613,8 +20651,19 @@ OTO Company Limited`,
       }
       
       if (failPhotoUrl !== undefined) {
-        updates.failPhotoUrl = failPhotoUrl;
+        if (failPhotoUrl === null || failPhotoUrl === "") {
+          updates.failPhotoUrl = null;
+        } else if (typeof failPhotoUrl === "string") {
+          const canonical = failPhotoUrl === authorizedItem.failPhotoUrl
+            ? failPhotoUrl
+            : verifyChecklistPhotoClaim(failPhotoUrl, "checker-photos", itemId, tenantId, user.id);
+          if (!canonical) return res.status(400).json({ message: "Invalid checker photo evidence" });
+          updates.failPhotoUrl = canonical;
+        } else {
+          return res.status(400).json({ message: "Invalid checker photo evidence" });
+        }
       }
+      if (resultStatus === "pass") updates.failPhotoUrl = null;
       
       await db.update(checklistRunItems)
         .set(updates)
@@ -22889,57 +22938,94 @@ ${context}`;
     storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   });
+  const checklistPhotoTypes: Record<string, string> = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+  };
+  const validChecklistPhoto = (file: Express.Multer.File) => {
+    const bytes = file.buffer;
+    if (file.mimetype === "image/jpeg") return bytes.length >= 3 && bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]));
+    if (file.mimetype === "image/png") return bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    if (file.mimetype === "image/webp") return bytes.length >= 12 && bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP";
+    return false;
+  };
+  const uploadChecklistPhoto = (folder: "checkin-photos" | "checker-photos") =>
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const user = req.user as UserWithBranchAccess;
+        const itemId = req.body?.itemId;
+        if (typeof itemId !== "string") return res.status(400).json({ message: "Checklist item is required" });
+        const access = await getAccessibleChecklistPhotoItem(user, itemId);
+        if (!access) return res.status(404).json({ message: "Checklist item not found" });
+        if (access.item.status === "completed" || access.item.status === "missed") {
+          return res.status(409).json({ message: "This checklist run is read-only" });
+        }
+        const file = req.file;
+        if (!file || !checklistPhotoTypes[file.mimetype] || !validChecklistPhoto(file)) {
+          return res.status(400).json({ message: "A JPEG, PNG or WebP photo is required" });
+        }
+        const filename = `${folder === "checkin-photos" ? "evidence" : "checker"}_${crypto.randomUUID()}${checklistPhotoTypes[file.mimetype]}`;
+        const url = await uploadToObjectStorage(file.buffer, folder, filename, file.mimetype);
+        const expiresAt = Date.now() + CHECKLIST_PHOTO_CLAIM_MS;
+        res.json({ url: `${url}?claim=${expiresAt}.${checklistPhotoClaim(url, itemId, access.tenantId, user.id, expiresAt)}`, canonicalUrl: url });
+      } catch (error) {
+        next(error);
+      }
+    };
 
   // Checklist evidence photo upload (for regular checklist items requiring photo evidence)
-  app.post("/api/checklist-evidence/upload", requireAuth, checkerPhotoUpload.single("photo"), async (req, res, next) => {
-    try {
-      const file = req.file;
-      if (!file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const ext = path.extname(file.originalname) || ".jpg";
-      const filename = `evidence_${uniqueSuffix}${ext}`;
-      const url = await uploadToObjectStorage(file.buffer, "checkin-photos", filename, file.mimetype);
-      res.json({ url });
-    } catch (error) {
-      console.error("Error uploading checklist evidence photo:", error);
-      next(error);
-    }
-  });
+  app.post("/api/checklist-evidence/upload", requireAuth, checkerPhotoUpload.single("photo"), uploadChecklistPhoto("checkin-photos"));
 
-  app.post("/api/checker-photos/upload", requireAuth, checkerPhotoUpload.single("photo"), async (req, res, next) => {
-    try {
-      const file = req.file;
-      if (!file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const ext = path.extname(file.originalname) || ".jpg";
-      const filename = `checker_${uniqueSuffix}${ext}`;
-      const url = await uploadToObjectStorage(file.buffer, "checker-photos", filename, file.mimetype);
-      res.json({ url });
-    } catch (error) {
-      console.error("Error uploading checker photo:", error);
-      next(error);
-    }
-  });
+  app.post("/api/checker-photos/upload", requireAuth, checkerPhotoUpload.single("photo"), uploadChecklistPhoto("checker-photos"));
 
-  // Serve checker photos from object storage
-  app.get("/api/files/checker-photos/:filename", requireAuth, async (req, res, next) => {
+  const serveChecklistPhoto = (folder: "checkin-photos" | "checker-photos") => async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { filename } = req.params;
-      const file = await getFileFromObjectStorage("checker-photos", filename);
+      if (!/^[a-zA-Z0-9._-]+$/.test(filename) || filename === "." || filename === "..") {
+        return res.status(404).json({ message: "Photo not found" });
+      }
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      if (!user.hasAllBranchesAccess && user.allowedBranchIds.length === 0) {
+        return res.status(404).json({ message: "Photo not found" });
+      }
+      const candidates = [checklistPhotoUrl(folder, filename), `/uploads/${folder}/${filename}`, `/${folder}/${filename}`];
+      const [owner] = await db.select({ branchId: checklistRuns.branchId })
+        .from(checklistRunItems)
+        .innerJoin(checklistRuns, eq(checklistRunItems.runId, checklistRuns.id))
+        .where(and(
+          eq(checklistRunItems.tenantId, tenantId),
+          eq(checklistRuns.tenantId, tenantId),
+          user.hasAllBranchesAccess ? undefined : inArray(checklistRuns.branchId, user.allowedBranchIds),
+          or(
+            inArray(checklistRunItems.photoUrl, candidates),
+            inArray(checklistRunItems.failPhotoUrl, candidates),
+            ...candidates.map(candidate => sql<boolean>`${checklistRunItems.photoEvidenceUrls} @> ${JSON.stringify([candidate])}::jsonb`),
+          ),
+        ))
+        .limit(1);
+      if (!owner || !canUserAccessBranch(user, owner.branchId)) return res.status(404).json({ message: "Photo not found" });
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      const file = await getFileFromObjectStorage(folder, filename);
       if (file) {
         res.setHeader("Content-Type", file.contentType);
         file.stream.pipe(res);
         return;
       }
-      res.status(404).json({ message: "File not found" });
+      for (const localPath of [path.join(process.cwd(), folder, filename), path.join(process.cwd(), "uploads", folder, filename)]) {
+        if (fs.existsSync(localPath)) return res.sendFile(localPath);
+      }
+      res.status(404).json({ message: "Photo not found" });
     } catch (error) {
       next(error);
     }
-  });
+  };
+  app.get("/api/files/checkin-photos/:filename", requireAuth, serveChecklistPhoto("checkin-photos"));
+  app.get("/uploads/checkin-photos/:filename", requireAuth, serveChecklistPhoto("checkin-photos"));
+  app.get("/api/files/checker-photos/:filename", requireAuth, serveChecklistPhoto("checker-photos"));
+  app.get("/uploads/checker-photos/:filename", requireAuth, serveChecklistPhoto("checker-photos"));
 
 
   // ============================================
@@ -23019,7 +23105,7 @@ ${context}`;
       }
       // Private documents have their own record-scoped routes; this generic
       // file route cannot decide who may read a contract or employee record.
-      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private", "knowledge-files", "test-uploads", "pin-photos"].includes(folder)) {
+      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private", "knowledge-files", "test-uploads", "pin-photos", "checkin-photos", "checker-photos", "task-photos"].includes(folder)) {
         return res.status(404).json({ message: "File not found" });
       }
       

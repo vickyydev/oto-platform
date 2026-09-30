@@ -86,27 +86,20 @@ export default function StudioTasksPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: TaskFormValues) => {
-      let referencePhotoUrl: string | undefined;
-      
+      const res = await apiRequest("POST", "/api/admin/tasks", data);
+      const task = await res.json();
       if (referencePhotoFile) {
         const formData = new FormData();
+        formData.append('taskId', task.id);
         formData.append('photos', referencePhotoFile);
-        const uploadRes = await fetch('/api/upload/photos', { 
-          method: 'POST', 
-          body: formData,
-          credentials: 'include'
+        const uploadRes = await fetch('/api/upload/photos', {
+          method: 'POST', body: formData, credentials: 'include'
         });
+        if (!uploadRes.ok) throw new Error('Task created, but reference photo upload failed');
         const uploadData = await uploadRes.json();
-        if (uploadData.urls && uploadData.urls.length > 0) {
-          referencePhotoUrl = uploadData.urls[0];
-        }
+        if (!uploadData.urls?.[0]) throw new Error('Task created, but reference photo upload failed');
+        await apiRequest("PATCH", `/api/admin/tasks/${task.id}`, { referencePhotoUrl: uploadData.urls[0] });
       }
-      
-      const res = await apiRequest("POST", "/api/admin/tasks", {
-        ...data,
-        referencePhotoUrl,
-      });
-      const task = await res.json();
       
       if (data.requiresResponses && questions.length > 0) {
         await apiRequest("PUT", `/api/admin/tasks/${task.id}/questions`, {
@@ -130,14 +123,28 @@ export default function StudioTasksPage() {
       setReferencePhotoFile(null);
       setReferencePhotoPreview(null);
     },
-    onError: () => {
-      toast({ title: "Failed to create task", variant: "destructive" });
+    onError: (error: Error) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/tasks", { date: selectedDate }] });
+      toast({ title: error.message.startsWith('Task created,') ? error.message : "Failed to create task", variant: "destructive" });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<TaskFormValues> }) => {
-      const res = await apiRequest("PATCH", `/api/admin/tasks/${id}`, data);
+      let referencePhotoUrl: string | undefined;
+      if (referencePhotoFile) {
+        const formData = new FormData();
+        formData.append('taskId', id);
+        formData.append('photos', referencePhotoFile);
+        const uploadRes = await fetch('/api/upload/photos', {
+          method: 'POST', body: formData, credentials: 'include'
+        });
+        if (!uploadRes.ok) throw new Error('Reference photo upload failed');
+        const uploadData = await uploadRes.json();
+        referencePhotoUrl = uploadData.urls?.[0];
+        if (!referencePhotoUrl) throw new Error('Reference photo upload failed');
+      }
+      const res = await apiRequest("PATCH", `/api/admin/tasks/${id}`, { ...data, ...(referencePhotoUrl ? { referencePhotoUrl } : {}) });
       const task = await res.json();
       
       if (data.requiresResponses && questions.length > 0) {

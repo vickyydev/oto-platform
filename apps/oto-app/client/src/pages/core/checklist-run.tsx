@@ -430,6 +430,7 @@ export default function ChecklistRunPage() {
     try {
       const formData = new FormData();
       formData.append("photo", file);
+      formData.append("itemId", itemId);
       
       const response = await fetch("/api/checker-photos/upload", {
         method: "POST",
@@ -438,18 +439,20 @@ export default function ChecklistRunPage() {
       });
       
       if (!response.ok) throw new Error("Failed to upload photo");
-      const { url } = await response.json();
+      const { url, canonicalUrl } = await response.json();
       
       setFailPhotos(prev => ({
         ...prev,
         [itemId]: url,
       }));
       
-      // Auto-save the fail photo
-      updateItemMutation.mutate({
+      // The short-lived upload claim is only for this save; display the
+      // persisted URL afterwards so another edit can safely keep the photo.
+      await updateItemMutation.mutateAsync({
         itemId,
         updates: { failPhotoUrl: url },
       });
+      setFailPhotos(prev => ({ ...prev, [itemId]: canonicalUrl }));
       
       toast({ title: "Issue photo uploaded" });
     } catch (error) {
@@ -470,6 +473,7 @@ export default function ChecklistRunPage() {
       const uploadedUrls = await Promise.all(files.map(async (file) => {
         const formData = new FormData();
         formData.append("photo", file);
+        formData.append("itemId", itemId);
         const response = await fetch("/api/checklist-evidence/upload", {
           method: "POST",
           credentials: "include",
@@ -479,11 +483,11 @@ export default function ChecklistRunPage() {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || "Failed to upload photo");
         }
-        const { url } = await response.json();
-        return url as string;
+        const { url, canonicalUrl } = await response.json();
+        return { url: url as string, canonicalUrl: canonicalUrl as string };
       }));
       const currentPhotos = itemPhotosRef.current[itemId] || [];
-      const nextPhotos = [...currentPhotos, ...uploadedUrls];
+      const nextPhotos = [...currentPhotos, ...uploadedUrls.map(photo => photo.url)];
       itemPhotosRef.current = { ...itemPhotosRef.current, [itemId]: nextPhotos };
       setItemPhotos((previous) => ({ ...previous, [itemId]: nextPhotos }));
       const save = (photoSaveQueues.current[itemId] || Promise.resolve())
@@ -491,6 +495,9 @@ export default function ChecklistRunPage() {
         .then(() => updateItemMutation.mutateAsync({ itemId, updates: { photoEvidenceUrls: nextPhotos } }));
       photoSaveQueues.current[itemId] = save;
       await save;
+      const savedPhotos = [...currentPhotos, ...uploadedUrls.map(photo => photo.canonicalUrl)];
+      itemPhotosRef.current = { ...itemPhotosRef.current, [itemId]: savedPhotos };
+      setItemPhotos((previous) => ({ ...previous, [itemId]: savedPhotos }));
       toast({ title: uploadedUrls.length === 1 ? "Photo added" : `${uploadedUrls.length} photos added` });
     } catch (error) {
       toast({
