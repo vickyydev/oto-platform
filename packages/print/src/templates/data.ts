@@ -180,7 +180,29 @@ export interface BoothVoucherData {
   reprintNote?: string | null;
   /** Formatted by the caller. Null when the voucher never expires. */
   expiresAt: string | null;
+  /**
+   * The booth's own last line (SCRUM-471, `voucher_footer_text` on the
+   * booth's settings, published with the wheel). Empty prints nothing.
+   */
   footerLine: string;
+  /**
+   * The booth's voucher slip choices (SCRUM-471): Console → Booths → Voucher
+   * slip, published with the wheel and resolved on the box
+   * (`boothVoucherSlip` in `@oto/shared`).
+   *
+   * **Optional, like `reprintNote`, and absent is today's slip**: a job
+   * stored before these fields existed — a voucher remembered for reprint on a
+   * box that has since updated — prints exactly as its first copy did. So
+   * absent `showLogo`, `showStaff` and `showTerms` each mean true, and an
+   * absent or empty `headerLine` prints no line.
+   */
+  showLogo?: boolean;
+  /** A line of its own under the venue line — never in its place. */
+  headerLine?: string | null;
+  /** The Staff row; off, the row is left out rather than reading "unattributed". */
+  showStaff?: boolean;
+  /** The voucher type's terms at the foot of the slip. */
+  showTerms?: boolean;
 }
 
 export interface TestPageData {

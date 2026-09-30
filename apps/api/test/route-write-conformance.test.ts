@@ -222,6 +222,7 @@ const NO_DIRECT_WRITE = [
   'POST /branches/:branchId/menu/import/preview',
   'POST /print-templates/:id/preview.png',
   // SCRUM-471: the booth voucher slip's live preview draws a sample and saves nothing.
+  'POST /booths/:id/voucher-preview.png',
   /**
    * S2-12 (SCRUM-209) — THE INVARIANT OF ARRIVAL ROUND 1, measured.
    *

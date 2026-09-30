@@ -6,6 +6,8 @@ import {
   BOOTH_SPIN_DURATION_MIN_SECONDS,
   BOOTH_SPIN_DURATION_MAX_SECONDS,
   BOOTH_STAFF_SESSION_MAX_MINUTES,
+  BOOTH_VOUCHER_FOOTER_MAX_CHARS,
+  BOOTH_VOUCHER_HEADER_MAX_CHARS,
 } from '@oto/shared';
 import type { App } from '../app';
 import { boothDeviceOf } from '../plugins/credential';
@@ -36,6 +38,7 @@ import {
   loadBoothPrizeIncludingArchived,
   publishBoothConfig,
   removeBoothStaff,
+  renderBoothVoucherPreview,
   reorderBoothPrizes,
   restoreBoothPrize,
   setBoothPin,
@@ -446,6 +449,27 @@ export async function boothRoutes(app: App): Promise<void> {
     voucherDefinitionId: z.string().uuid().nullable().optional(),
   });
 
+  /**
+   * The booth's voucher slip (SCRUM-471): the print templates' own limits for
+   * the two lines (`PrintTemplateUpdateSchema` in `@oto/shared`), refused here
+   * and backed by the columns' CHECKs. Blank text is saved as null.
+   */
+  const VoucherSlipFields = {
+    voucherShowLogo: z.boolean().optional(),
+    voucherHeaderText: z
+      .string()
+      .max(BOOTH_VOUCHER_HEADER_MAX_CHARS, `A header line is at most ${BOOTH_VOUCHER_HEADER_MAX_CHARS} characters`)
+      .nullable()
+      .optional(),
+    voucherFooterText: z
+      .string()
+      .max(BOOTH_VOUCHER_FOOTER_MAX_CHARS, `A footer line is at most ${BOOTH_VOUCHER_FOOTER_MAX_CHARS} characters`)
+      .nullable()
+      .optional(),
+    voucherShowStaff: z.boolean().optional(),
+    voucherShowTerms: z.boolean().optional(),
+  };
+
   const SettingsBody = z
     .object({
       layoutId: z.string().uuid().nullable().optional(),
@@ -481,6 +505,7 @@ export async function boothRoutes(app: App): Promise<void> {
         .max(BOOTH_STAFF_SESSION_MAX_MINUTES, 'A booth sign-in lasts at most 24 hours')
         .nullable()
         .optional(),
+      ...VoucherSlipFields,
     })
     .refine((body) => Object.keys(body).length > 0, { message: 'Nothing to change' });
 
@@ -538,7 +563,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Change the booth itself: its wheel design, button key, spin eligibility, daily spin cap, spin duration (`spinDurationSeconds`, whole seconds from 2 to 20), and staff sign-in length (`staffSessionMinutes`, at most 1440; null is twelve hours). Saved to the draft until published. Eligibility `band` and `phone` can be saved and cannot be published until there is a booth inside the park.',
+          'Change the booth itself: its wheel design, button key, spin eligibility, daily spin cap, spin duration (`spinDurationSeconds`, whole seconds from 2 to 20), staff sign-in length (`staffSessionMinutes`, at most 1440; null is twelve hours), and its voucher slip (`voucherShowLogo`, `voucherHeaderText` up to 200 characters, `voucherFooterText` up to 400, `voucherShowStaff`, `voucherShowTerms`; blank text is saved as no line). Saved to the draft until published — the slip changes reach the booth only with a publish. Eligibility `band` and `phone` can be saved and cannot be published until there is a booth inside the park.',
         params: BoothIdParams,
         body: SettingsBody,
       },
@@ -554,6 +579,41 @@ export async function boothRoutes(app: App): Promise<void> {
         row,
         req.body,
       );
+    },
+  );
+
+  /**
+   * The picture the Console's "Voucher slip" card shows while somebody edits
+   * (SCRUM-471).
+   *
+   * POST, and it changes nothing — the same shape as the print templates'
+   * `POST /print-templates/:id/preview.png`: the draft on the screen is a
+   * request body, and a preview of unsaved work is the whole point. What
+   * comes back is a SAMPLE slip — a placeholder prize, code, branch and member
+   * of staff — carrying only the booth's five choices from the request, so it
+   * is guarded with `admin:booth:read`, like the draft it previews.
+   */
+  app.post(
+    '/booths/:id/voucher-preview.png',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Draw a sample voucher slip for this booth the way its 80 mm printer would, from the draft slip choices in the body (any left out take the saved value), and answer with the PNG. The prize, code, branch and staff on it are placeholders; nothing is saved.',
+        params: BoothIdParams,
+        body: z.object(VoucherSlipFields),
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:read', { branchId: row.branchId });
+      const preview = await renderBoothVoucherPreview(app.db, row, req.body);
+      return reply
+        .header('content-type', 'image/png')
+        .header('x-oto-preview-width-dots', String(preview.widthDots))
+        .header('cache-control', 'private, no-store')
+        .send(Buffer.from(preview.png));
     },
   );
 

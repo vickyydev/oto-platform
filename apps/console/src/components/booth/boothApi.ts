@@ -25,7 +25,7 @@
  * console that type-errored on a new one would be a console that cannot be
  * told about a new way to be wrong.
  */
-import { api, ApiError, idemKey, isMissingRoute } from '@/api/client';
+import { api, apiUrl, ApiError, idemKey, isMissingRoute } from '@/api/client';
 import type { BoothEligibilityMode } from '@oto/shared';
 
 export { isMissingRoute, ApiError };
@@ -152,6 +152,32 @@ export interface BoothSettingsDraft {
    * deployment older than the column does not send it.
    */
   staffSessionMinutes?: number | null;
+  /**
+   * The booth's voucher slip (SCRUM-471): show the logo, a header line under
+   * the venue line, a footer line, show the Staff row, show the terms. All
+   * optional on the read because a deployment older than migration 0039 does
+   * not send them — which the Voucher slip card says rather than guessing.
+   */
+  voucherShowLogo?: boolean;
+  voucherHeaderText?: string | null;
+  voucherFooterText?: string | null;
+  voucherShowStaff?: boolean;
+  voucherShowTerms?: boolean;
+}
+
+/** The five slip fields, as the settings route and the preview route take them. */
+export interface VoucherSlipInput {
+  voucherShowLogo: boolean;
+  voucherHeaderText: string | null;
+  voucherFooterText: string | null;
+  voucherShowStaff: boolean;
+  voucherShowTerms: boolean;
+}
+
+/** A drawn sample slip: the PNG, and its width in printer dots. */
+export interface VoucherSlipPicture {
+  blob: Blob;
+  widthDots: number;
 }
 
 /** What the API will refuse a publish for, with the field to put it against. */
@@ -482,6 +508,40 @@ export const boothApi = {
 
   saveSettings: (id: string, settings: Partial<Omit<BoothSettingsDraft, 'layoutName'>>) =>
     api.patch<unknown>(`${at(id)}/settings`, settings, { idempotencyKey: idemKey() }),
+
+  /**
+   * Draw a sample voucher slip from DRAFT slip choices (SCRUM-471) — the same
+   * renderer as the paper, at the booth printer's 80 mm width. It saves
+   * nothing, so it carries no idempotency key, like the till's template
+   * preview. A PNG rather than JSON, so it is fetched here rather than through
+   * the JSON client; a refusal still comes back as the platform's error.
+   */
+  voucherPreview: async (
+    id: string,
+    slip: Partial<VoucherSlipInput>,
+    signal?: AbortSignal,
+  ): Promise<VoucherSlipPicture> => {
+    const res = await fetch(apiUrl(`${at(id)}/voucher-preview.png`), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(slip),
+      signal,
+    });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as {
+        error?: { code?: string; message?: string; details?: unknown };
+      } | null;
+      throw new ApiError(
+        res.status,
+        body?.error?.code ?? 'UNKNOWN',
+        body?.error?.message ?? res.statusText,
+        body?.error?.details,
+      );
+    }
+    const widthDots = Number(res.headers.get('x-oto-preview-width-dots'));
+    return { blob: await res.blob(), widthDots: Number.isFinite(widthDots) && widthDots > 0 ? widthDots : 576 };
+  },
 
   createPrize: (id: string, prize: PrizeInput) =>
     api.post<BoothPrizeDraft>(`${at(id)}/prizes`, prize, { idempotencyKey: idemKey() }),

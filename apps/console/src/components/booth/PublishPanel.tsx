@@ -9,6 +9,7 @@ import { formatWhen } from '@/lib/time';
 import type { BoothDraft } from './boothApi';
 import { buildPublishPlan } from './publishPlan';
 import { formatBp } from './odds';
+import { slipSummary } from './voucherSlip';
 
 /**
  * The last screen before a wheel in a shopping centre changes.
@@ -161,6 +162,9 @@ export function PublishPanel({
                 <Row label="Staff sign-in">{sessionText(draft.settings.staffSessionMinutes ?? null)}</Row>
                 <Row label="Spin duration">{boothSpinDurationSeconds(draft.settings)} seconds</Row>
                 <Row label="Slip wording">{wordingText(draft)}</Row>
+                {slipSummary(draft.settings) !== null && (
+                  <Row label="Voucher slip">{slipSummary(draft.settings)}</Row>
+                )}
                 {draft.lastEditedAt && (
                   <Row label="Last edited">{formatWhen(draft.lastEditedAt, timezone)}</Row>
                 )}

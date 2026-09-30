@@ -21,10 +21,14 @@ import {
   BOOTH_BUNDLE_SCHEMA_VERSION,
   BOOTH_CODE_PREFIX_LENGTH,
   BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
+  BOOTH_VOUCHER_SLIP_DEFAULTS,
+  boothVoucherSlipBundleFields,
+  boothVoucherText,
   businessDate,
   newId,
   parseDayStart,
 } from '@oto/shared';
+import { escposProfile, renderPreviewPng } from '@oto/print';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { atBranch } from '../lib/staff-scope';
@@ -129,6 +133,12 @@ const SETTINGS_DEFAULTS = {
   /** Null is the box's own twelve hours (`BOOTH_STAFF_SESSION_DEFAULT_MINUTES`). */
   staffSessionMinutes: null as number | null,
   spinDurationSeconds: BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
+  /** The voucher slip (SCRUM-471): today's slip, the column defaults of migration 0039. */
+  voucherShowLogo: BOOTH_VOUCHER_SLIP_DEFAULTS.showLogo,
+  voucherHeaderText: BOOTH_VOUCHER_SLIP_DEFAULTS.headerText as string | null,
+  voucherFooterText: BOOTH_VOUCHER_SLIP_DEFAULTS.footerText as string | null,
+  voucherShowStaff: BOOTH_VOUCHER_SLIP_DEFAULTS.showStaff,
+  voucherShowTerms: BOOTH_VOUCHER_SLIP_DEFAULTS.showTerms,
 };
 
 export interface BoothDraft {
@@ -199,6 +209,11 @@ async function loadDraft(exec: Exec, row: BoothStationRow): Promise<BoothDraft> 
       staffSessionMinutes:
         settingsRow?.staffSessionMinutes ?? SETTINGS_DEFAULTS.staffSessionMinutes,
       spinDurationSeconds: settingsRow?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
+      voucherShowLogo: settingsRow?.voucherShowLogo ?? SETTINGS_DEFAULTS.voucherShowLogo,
+      voucherHeaderText: settingsRow?.voucherHeaderText ?? SETTINGS_DEFAULTS.voucherHeaderText,
+      voucherFooterText: settingsRow?.voucherFooterText ?? SETTINGS_DEFAULTS.voucherFooterText,
+      voucherShowStaff: settingsRow?.voucherShowStaff ?? SETTINGS_DEFAULTS.voucherShowStaff,
+      voucherShowTerms: settingsRow?.voucherShowTerms ?? SETTINGS_DEFAULTS.voucherShowTerms,
       updatedAt: settingsRow?.updatedAt ?? null,
     },
     layout,
@@ -286,6 +301,18 @@ function bundleFrom(draft: BoothDraft): Record<string, unknown> | null {
       ...(draft.settings.staffSessionMinutes !== null
         ? { staffSessionMinutes: draft.settings.staffSessionMinutes }
         : {}),
+      /**
+       * The voucher slip (SCRUM-471), each field only when it differs from
+       * its default — the same rule, for the same hash, as the two above. The
+       * box reads them back with `boothVoucherSlip`.
+       */
+      ...boothVoucherSlipBundleFields({
+        showLogo: draft.settings.voucherShowLogo,
+        headerText: draft.settings.voucherHeaderText,
+        footerText: draft.settings.voucherFooterText,
+        showStaff: draft.settings.voucherShowStaff,
+        showTerms: draft.settings.voucherShowTerms,
+      }),
     },
     layout: {
       id: layout.id,
@@ -588,7 +615,7 @@ export interface BoothDraftView {
     /** Minutes a staff sign-in lasts; null is the box's own twelve hours. */
     staffSessionMinutes: number | null;
     spinDurationSeconds: number;
-  };
+  } & BoothVoucherSlipSettings;
   prizes: BoothPrizeView[];
   /**
    * The slices archived off this booth, most recently archived first — only
@@ -717,6 +744,11 @@ export async function boothDraft(
       dailySpinCap: draft.settings.dailySpinCap,
       staffSessionMinutes: draft.settings.staffSessionMinutes,
       spinDurationSeconds: draft.settings.spinDurationSeconds,
+      voucherShowLogo: draft.settings.voucherShowLogo,
+      voucherHeaderText: draft.settings.voucherHeaderText,
+      voucherFooterText: draft.settings.voucherFooterText,
+      voucherShowStaff: draft.settings.voucherShowStaff,
+      voucherShowTerms: draft.settings.voucherShowTerms,
     },
     prizes: draft.prizes.map((p) => prizeView(p, draft.definitions)),
     ...(opts.includeArchived
@@ -1012,6 +1044,27 @@ export interface BoothSettingsPatch {
   /** Minutes, at most one trading day; null goes back to the box's twelve hours. */
   staffSessionMinutes?: number | null;
   spinDurationSeconds?: number;
+  /** The voucher slip (SCRUM-471). Blank text is stored as null — "no line". */
+  voucherShowLogo?: boolean;
+  voucherHeaderText?: string | null;
+  voucherFooterText?: string | null;
+  voucherShowStaff?: boolean;
+  voucherShowTerms?: boolean;
+}
+
+/**
+ * The five voucher slip choices, as `booth.booth_settings` stores them and the
+ * draft reads them (SCRUM-471). Named exactly as their columns, like the rest
+ * of the settings.
+ */
+export interface BoothVoucherSlipSettings {
+  voucherShowLogo: boolean;
+  /** A line under the venue line; null prints none. */
+  voucherHeaderText: string | null;
+  /** The slip's last line; null prints none. */
+  voucherFooterText: string | null;
+  voucherShowStaff: boolean;
+  voucherShowTerms: boolean;
 }
 
 /**
@@ -1032,25 +1085,24 @@ export async function updateBoothSettings(
   if (patch.layoutId) await requireLayout(db, actor.operatorId, patch.layoutId);
 
   return withTx(db, ctx, 'booth_settings.update', async (tx) => {
-    const [before] = await tx
-      .select()
-      .from(boothSettings)
-      .where(eq(boothSettings.stationId, row.stationId))
-      .limit(1);
-
-    const next = {
-      layoutId: patch.layoutId !== undefined ? patch.layoutId : (before?.layoutId ?? null),
-      buttonKey: patch.buttonKey ?? before?.buttonKey ?? SETTINGS_DEFAULTS.buttonKey,
-      eligibility: patch.eligibility ?? before?.eligibility ?? SETTINGS_DEFAULTS.eligibility,
-      dailySpinCap:
-        patch.dailySpinCap !== undefined ? patch.dailySpinCap : (before?.dailySpinCap ?? null),
-      staffSessionMinutes:
-        patch.staffSessionMinutes !== undefined
-          ? patch.staffSessionMinutes
-          : (before?.staffSessionMinutes ?? null),
-      spinDurationSeconds:
-        patch.spinDurationSeconds ?? before?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
-    };
+    /**
+     * The row is read FOR UPDATE because the write below rewrites every
+     * column from `before` plus the patch. The booth page has two forms on
+     * this one row (the settings drawer and the Voucher slip card), and two
+     * people saving at once must each land on top of the other's committed
+     * change, not on the row as it was when both started (SCRUM-471 gate).
+     */
+    const lockedRow = async () =>
+      (
+        await tx
+          .select()
+          .from(boothSettings)
+          .where(eq(boothSettings.stationId, row.stationId))
+          .for('update')
+          .limit(1)
+      )[0];
+    let before = await lockedRow();
+    let next = mergedSettings(before, patch);
 
     if (before) {
       await tx
@@ -1058,12 +1110,26 @@ export async function updateBoothSettings(
         .set({ ...next, updatedAt: new Date() })
         .where(eq(boothSettings.stationId, row.stationId));
     } else {
-      await tx.insert(boothSettings).values({
-        stationId: row.stationId,
-        operatorId: row.operatorId,
-        branchId: row.branchId,
-        ...next,
-      });
+      const inserted = await tx
+        .insert(boothSettings)
+        .values({
+          stationId: row.stationId,
+          operatorId: row.operatorId,
+          branchId: row.branchId,
+          ...next,
+        })
+        .onConflictDoNothing({ target: boothSettings.stationId })
+        .returning({ stationId: boothSettings.stationId });
+      if (inserted.length === 0) {
+        // A colleague's first save wrote the row between the read and this
+        // insert: theirs is now `before`, and this patch lands on top of it.
+        before = await lockedRow();
+        next = mergedSettings(before, patch);
+        await tx
+          .update(boothSettings)
+          .set({ ...next, updatedAt: new Date() })
+          .where(eq(boothSettings.stationId, row.stationId));
+      }
     }
 
     await audit.record(tx, {
@@ -1081,6 +1147,11 @@ export async function updateBoothSettings(
             dailySpinCap: before.dailySpinCap,
             staffSessionMinutes: before.staffSessionMinutes,
             spinDurationSeconds: before.spinDurationSeconds,
+            voucherShowLogo: before.voucherShowLogo,
+            voucherHeaderText: before.voucherHeaderText,
+            voucherFooterText: before.voucherFooterText,
+            voucherShowStaff: before.voucherShowStaff,
+            voucherShowTerms: before.voucherShowTerms,
           }
         : null,
       after: next,
@@ -1092,6 +1163,134 @@ export async function updateBoothSettings(
       : [];
     return { settings: { ...next, layoutName: layout?.name ?? null } };
   });
+}
+
+/**
+ * The row a settings PATCH writes: the stored row (or the defaults, before
+ * there is one) with the patch's fields on top. A field the patch leaves out
+ * keeps its stored value, so the settings drawer and the Voucher slip card
+ * never overwrite each other's fields.
+ */
+function mergedSettings(
+  before: typeof boothSettings.$inferSelect | undefined,
+  patch: BoothSettingsPatch,
+) {
+  return {
+    layoutId: patch.layoutId !== undefined ? patch.layoutId : (before?.layoutId ?? null),
+    buttonKey: patch.buttonKey ?? before?.buttonKey ?? SETTINGS_DEFAULTS.buttonKey,
+    eligibility: patch.eligibility ?? before?.eligibility ?? SETTINGS_DEFAULTS.eligibility,
+    dailySpinCap:
+      patch.dailySpinCap !== undefined ? patch.dailySpinCap : (before?.dailySpinCap ?? null),
+    staffSessionMinutes:
+      patch.staffSessionMinutes !== undefined
+        ? patch.staffSessionMinutes
+        : (before?.staffSessionMinutes ?? null),
+    spinDurationSeconds:
+      patch.spinDurationSeconds ?? before?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
+    voucherShowLogo:
+      patch.voucherShowLogo ?? before?.voucherShowLogo ?? SETTINGS_DEFAULTS.voucherShowLogo,
+    // Trimmed, and blank is null: "no line" has one spelling in the column,
+    // which is what keeps an emptied field out of the published bundle.
+    voucherHeaderText:
+      patch.voucherHeaderText !== undefined
+        ? boothVoucherText(patch.voucherHeaderText)
+        : (before?.voucherHeaderText ?? null),
+    voucherFooterText:
+      patch.voucherFooterText !== undefined
+        ? boothVoucherText(patch.voucherFooterText)
+        : (before?.voucherFooterText ?? null),
+    voucherShowStaff:
+      patch.voucherShowStaff ?? before?.voucherShowStaff ?? SETTINGS_DEFAULTS.voucherShowStaff,
+    voucherShowTerms:
+      patch.voucherShowTerms ?? before?.voucherShowTerms ?? SETTINGS_DEFAULTS.voucherShowTerms,
+  };
+}
+
+// --- The voucher slip's live preview (SCRUM-471) ----------------------------
+
+/**
+ * The 80 mm head the preview is laid out for: 576 dots, the width every booth
+ * voucher is drawn against today (`packages/print/src/templates/booth.ts`
+ * explains why that number is an assumption). A preview of a booth whose
+ * printer turns out to be 512 dots is the one thing this cannot show, and the
+ * fixture beside the template is where that comparison lives.
+ */
+const BOOTH_VOUCHER_PREVIEW_DEVICE = escposProfile({
+  id: 'booth-voucher-preview',
+  label: 'Sample',
+  model: '80 mm receipt printer',
+  widthDots: 576,
+});
+
+/**
+ * The sample the preview prints: every word visibly a placeholder, and none
+ * of it read from anything real — no prize, no code, no member of staff, no
+ * branch. What the preview is FOR is the booth's five choices, and those are
+ * the only thing on it that comes from the request.
+ */
+const BOOTH_VOUCHER_PREVIEW_SAMPLE = {
+  venueLine: 'Your branch name prints here',
+  prizeLine: 'SAMPLE PRIZE',
+  prizeLineThai: 'รางวัลตัวอย่าง',
+  redemptionLine: 'Show this QR at OTO Reception to claim: Sample prize.',
+  terms: ['Sample terms — the voucher type’s own terms print here.'],
+  voucherCode: 'SAMPLECODE',
+  issuedAt: '01 Jan 2026 12:00',
+  booth: 'Sample branch · Sample booth',
+  staff: 'Staff name (S-0000)',
+  expiresAt: '15 Jan 2026',
+  reprintNote: null,
+} as const;
+
+/** The draft a preview is drawn from: any of the five, the saved value for the rest. */
+export type BoothVoucherPreviewDraft = Partial<BoothVoucherSlipSettings>;
+
+/**
+ * Draw this booth's voucher slip as the printer would, from DRAFT values the
+ * Console has not saved yet, and answer with the PNG.
+ *
+ * Rendered by the same `@oto/print` renderer the box uses, at the same 80 mm
+ * width, so "the preview looks right" and "the paper looks right" are the
+ * same statement. It writes nothing and reads only this booth's saved slip,
+ * for whatever the draft leaves out.
+ */
+export async function renderBoothVoucherPreview(
+  db: Db,
+  row: BoothStationRow,
+  draft: BoothVoucherPreviewDraft,
+): Promise<{ png: Uint8Array; widthDots: number }> {
+  const [saved] = await db
+    .select({
+      voucherShowLogo: boothSettings.voucherShowLogo,
+      voucherHeaderText: boothSettings.voucherHeaderText,
+      voucherFooterText: boothSettings.voucherFooterText,
+      voucherShowStaff: boothSettings.voucherShowStaff,
+      voucherShowTerms: boothSettings.voucherShowTerms,
+    })
+    .from(boothSettings)
+    .where(eq(boothSettings.stationId, row.stationId))
+    .limit(1);
+  const pick = <K extends keyof BoothVoucherSlipSettings>(key: K): BoothVoucherSlipSettings[K] =>
+    draft[key] !== undefined
+      ? (draft[key] as BoothVoucherSlipSettings[K])
+      : (saved?.[key] ?? SETTINGS_DEFAULTS[key]);
+
+  const png = renderPreviewPng(
+    {
+      kind: 'booth_voucher',
+      data: {
+        ...BOOTH_VOUCHER_PREVIEW_SAMPLE,
+        terms: [...BOOTH_VOUCHER_PREVIEW_SAMPLE.terms],
+        showLogo: pick('voucherShowLogo'),
+        headerLine: boothVoucherText(pick('voucherHeaderText')),
+        footerLine: boothVoucherText(pick('voucherFooterText')) ?? '',
+        showStaff: pick('voucherShowStaff'),
+        showTerms: pick('voucherShowTerms'),
+      },
+    },
+    { device: BOOTH_VOUCHER_PREVIEW_DEVICE },
+  );
+  return { png, widthDots: BOOTH_VOUCHER_PREVIEW_DEVICE.widthDots };
 }
 
 async function requireLayout(exec: Exec, operatorId: string, layoutId: string): Promise<LayoutRow> {

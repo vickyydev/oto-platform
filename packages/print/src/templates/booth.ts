@@ -65,7 +65,7 @@
 
 import type { Block, DeviceProfile, PrintDocument } from '../document';
 import type { BoothVoucherData } from './data';
-import { SIZE, divider, logoBlock, small, smallBold, space, text } from './common';
+import { SIZE, body, divider, logoBlock, small, smallBold, space, text } from './common';
 
 export interface BoothVoucherInput {
   data: BoothVoucherData;
@@ -89,16 +89,29 @@ const FACT_LABEL_DOTS = 90;
 const QR_MODULE_DOTS = 8;
 
 export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDocument {
-  const blocks: Block[] = [
-    // The park's mark. Unconditional, unlike every other printout's logo:
-    // `TEMPLATE_FOR_KIND.booth_voucher` is undefined (`templates/model.ts`), so
-    // there is no `showLogo` toggle to read and nothing at the booth that could
-    // set one. A voucher redeemed at a counter in a different building is the
-    // last printout that should be able to come out unbranded.
-    logoBlock(),
-    space(4),
-    text(data.venueLine, { sizeDots: SIZE.body, weight: 'bold' }, 'center'),
-  ];
+  /**
+   * The booth's own choices (SCRUM-471), each absent on a job stored before
+   * they existed and each defaulting to the slip every booth printed before —
+   * so a booth nobody has customised lays down the same dots it always did.
+   */
+  const showLogo = data.showLogo ?? true;
+  const showStaff = data.showStaff ?? true;
+  const showTerms = data.showTerms ?? true;
+  const headerLine = data.headerLine?.trim() ?? '';
+
+  const blocks: Block[] = [];
+  // The park's mark. Still not a print template's to switch off —
+  // `TEMPLATE_FOR_KIND.booth_voucher` is undefined (`templates/model.ts`) — but
+  // the booth's own settings may (SCRUM-471): a booth whose paper comes
+  // pre-printed with the park's mark has no use for a second one.
+  if (showLogo) blocks.push(logoBlock(), space(4));
+  blocks.push(text(data.venueLine, { sizeDots: SIZE.body, weight: 'bold' }, 'center'));
+
+  // The booth's header line sits UNDER the venue line and never in its place:
+  // the venue line is how reception in another building knows whose slip it is.
+  if (headerLine !== '') {
+    blocks.push(text(headerLine, body, 'center'));
+  }
 
   // A copy staff asked for says so at the top, where reception looks first:
   // two slips with one code is only a puzzle if nothing says which is which.
@@ -136,9 +149,11 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
   blocks.push(divider());
   blocks.push(fact('Issued', data.issuedAt));
   blocks.push(fact('Booth', data.booth));
-  // Both rows always print. An absent row and a row reading "nobody" are the
-  // same slip to whoever is holding it, so the template says which.
-  blocks.push(fact('Staff', data.staff ?? 'unattributed'));
+  // An absent row and a row reading "nobody" are the same slip to whoever is
+  // holding it, so the Staff row prints "unattributed" rather than going
+  // missing — unless the booth has chosen to leave the row off altogether
+  // (SCRUM-471), which is then the same on every slip it prints.
+  if (showStaff) blocks.push(fact('Staff', data.staff ?? 'unattributed'));
   blocks.push(fact('Expires', data.expiresAt ?? 'No expiry'));
 
   blocks.push(divider());
@@ -148,12 +163,17 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
    * line each, English then Thai — "Cannot be combined with other offers." —
    * so what the park promised about this prize is the last thing printed.
    * They used to sit under the redemption sentence while the footer line
-   * stayed blank on every booth, because no template can set it.
+   * stayed blank on every booth, because no template could set it.
+   *
+   * The booth may leave them off (SCRUM-471). "Single use" above is not a
+   * term of the prize but how the code works at reception, so it stays.
    */
-  for (const line of data.terms) {
-    blocks.push(text(line, small, 'center'));
+  if (showTerms) {
+    for (const line of data.terms) {
+      blocks.push(text(line, small, 'center'));
+    }
   }
-  // A footer a branch template may add one day; nothing prints for an empty one.
+  // The booth's own footer (SCRUM-471); nothing prints for an empty one.
   if (data.footerLine.trim() !== '') {
     blocks.push(text(data.footerLine, small, 'center'));
   }

@@ -928,7 +928,11 @@ export interface BoothCacheItem {
   /**
    * `{ schemaVersion, settings, layout, prizes }`, plus `voucherDefinitions`
    * when a type the prizes use had a title or an instruction at the publish
-   * (SCRUM-400), exactly as published.
+   * (SCRUM-400), exactly as published. `settings` carries the booth's voucher
+   * slip choices (`voucherShowLogo`, `voucherHeaderText`, `voucherFooterText`,
+   * `voucherShowStaff`, `voucherShowTerms`, SCRUM-471) only where they differ
+   * from today's slip; the box resolves them with `boothVoucherSlip` in
+   * `@oto/shared`, and this passes them through untouched with the rest.
    */
   bundle: unknown;
   /**

@@ -46,6 +46,7 @@ import {
   addDaysToIsoDate,
   boothStaffLabel,
   boothStaffSessionMinutes,
+  boothVoucherSlip,
   isoDateInTz,
   mintBoothCode,
   businessDate as businessDateFor,
@@ -265,7 +266,18 @@ export interface BoothOptions {
     phone: string;
     password: string;
   }) => Promise<BoothAccountVerdict>;
-  /** The branch's print templates, for the voucher's footer line. */
+  /**
+   * **Read by nothing, and kept only so the agent's wiring still compiles.**
+   *
+   * It used to feed the voucher's footer from a `booth_voucher` print
+   * template, a type `pos.print_template` has never allowed, so the footer was
+   * always empty. The booth's own settings carry the footer now, in the
+   * published wheel (SCRUM-471, `voucherFooterText` → `boothVoucherSlip` in
+   * `@oto/shared`). Remove it together with the agent's `printTemplates`
+   * argument to `createBooth`.
+   *
+   * @deprecated The voucher slip comes from the published wheel.
+   */
   printTemplates?: () => readonly { type: string; footerText?: string | null }[];
   /**
    * The draw's randomness (D3). `randomInt` from `node:crypto` by default —
@@ -2247,6 +2259,18 @@ export function createBooth(options: BoothOptions): BoothModule {
       applied?.voucherDefinitions.find(
         (candidate) => candidate.id === detail.prize.voucherDefinitionId,
       );
+    /**
+     * The booth's own slip (SCRUM-471): logo, header line, footer line, Staff
+     * row and terms, as the running version published them — so, like the
+     * words above, a change reaches paper at the booth's next publish. A
+     * bundle published before the fields existed carries none of them and
+     * resolves to the slip every booth printed before.
+     *
+     * Written into the job in full rather than left for the renderer to
+     * default, so a reprint — which prints the remembered job — is the same
+     * slip as its first copy even after the booth's next publish.
+     */
+    const slip = boothVoucherSlip(applied?.bundle.settings ?? {});
     const job: RenderPrintJob = {
       kind: 'booth_voucher',
       data: {
@@ -2281,7 +2305,11 @@ export function createBooth(options: BoothOptions): BoothModule {
           detail.expiresAt === null
             ? null
             : formatStamp(new Date(detail.expiresAt), branch.timezone, { time: false }),
-        footerLine: voucherFooter(),
+        footerLine: slip.footerText ?? '',
+        showLogo: slip.showLogo,
+        headerLine: slip.headerText,
+        showStaff: slip.showStaff,
+        showTerms: slip.showTerms,
       },
     };
     const nowIso = new Date(detail.issuedAtMs).toISOString();
@@ -2481,12 +2509,6 @@ export function createBooth(options: BoothOptions): BoothModule {
       if (reprintsInFlight.get(inFlightKey) === answer) reprintsInFlight.delete(inFlightKey);
     });
     return answer;
-  }
-
-  /** The `booth_voucher` template's footer, or an empty line when none is set. */
-  function voucherFooter(): string {
-    const template = (options.printTemplates?.() ?? []).find((t) => t.type === 'booth_voucher');
-    return template?.footerText ?? '';
   }
 
   /**

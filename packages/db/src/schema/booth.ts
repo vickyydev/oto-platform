@@ -203,6 +203,33 @@ export const boothSettings = booth.table(
     staffSessionMinutes: integer('staff_session_minutes'),
     /** Whole seconds, published with the wheel and held for each running spin. */
     spinDurationSeconds: integer('spin_duration_seconds').notNull().default(10),
+    /**
+     * The voucher slip this booth prints (SCRUM-471, migration 0039): five
+     * choices an administrator makes in Console → Booths → Voucher slip, and
+     * they reach the box only in the published wheel, as
+     * `settings.voucher*` (`boothVoucherSlip` in `@oto/shared` reads them).
+     *
+     * **Every default is today's slip, exactly.** The logo, the Staff row and
+     * the terms print; no header line, no footer line. A booth nobody has
+     * touched therefore publishes the same bundle — and the same hash — it did
+     * before these columns existed, because the publisher writes a field into
+     * the bundle only when it differs from its default, and the box prints the
+     * same bytes. The two texts are nullable rather than empty strings so that
+     * "not set" has one spelling; the CHECKs are the print template editor's
+     * own limits (`PrintTemplateUpdateSchema` in `@oto/shared`), a backstop
+     * under the settings route's validation.
+     *
+     * The header prints as a line of its own under the venue line and never
+     * replaces it: the venue line is how reception knows which park the slip
+     * belongs to. The footer is the slip's `footerLine`, which used to be read
+     * from a `booth_voucher` print template the schema never allowed — always
+     * empty — and is now this column.
+     */
+    voucherShowLogo: boolean('voucher_show_logo').notNull().default(true),
+    voucherHeaderText: text('voucher_header_text'),
+    voucherFooterText: text('voucher_footer_text'),
+    voucherShowStaff: boolean('voucher_show_staff').notNull().default(true),
+    voucherShowTerms: boolean('voucher_show_terms').notNull().default(true),
     ...timestamps,
   },
   (t) => [
@@ -225,6 +252,14 @@ export const boothSettings = booth.table(
     check(
       'booth_settings_staff_session_minutes_check',
       sql`${t.staffSessionMinutes} is null or (${t.staffSessionMinutes} > 0 and ${t.staffSessionMinutes} <= 1440)`,
+    ),
+    check(
+      'booth_settings_voucher_header_text_check',
+      sql`${t.voucherHeaderText} is null or char_length(${t.voucherHeaderText}) <= 200`,
+    ),
+    check(
+      'booth_settings_voucher_footer_text_check',
+      sql`${t.voucherFooterText} is null or char_length(${t.voucherFooterText}) <= 400`,
     ),
   ],
 );

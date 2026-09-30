@@ -46,6 +46,7 @@ import { BoothStaffPanel } from '@/components/booth/BoothStaffPanel';
 import { PrizeEditor } from '@/components/booth/PrizeEditor';
 import { ArchivedPrizes, PrizeTable } from '@/components/booth/PrizeTable';
 import { PublishPanel } from '@/components/booth/PublishPanel';
+import { VoucherSlipPanel } from '@/components/booth/VoucherSlipPanel';
 import { WheelPreview } from '@/components/booth/WheelPreview';
 import {
   readAbsent,
@@ -109,7 +110,7 @@ import {
  * table — its refusal is drawn beside the list, not above a table's height of
  * rows.
  */
-type WriteSite = 'prizes' | 'archived' | 'settings' | 'publish' | 'screens' | 'staff';
+type WriteSite = 'prizes' | 'archived' | 'settings' | 'slip' | 'publish' | 'screens' | 'staff';
 
 /** The till's origin, whose back office holds the Print Templates panel (`env.d.ts`). */
 const POS_URL = import.meta.env.VITE_POS_URL?.trim();
@@ -743,6 +744,26 @@ export function Booths() {
                 </Panel>
               </div>
             </div>
+            {/*
+              The booth's own voucher slip (SCRUM-471), full width because it
+              is a form and the paper side by side. Saved through the settings
+              route like the rest of this group, and printed only after a
+              publish, which the card says.
+            */}
+            <div id="booth-voucher-slip" className="scroll-mt-24 min-w-0">
+              <VoucherSlipPanel
+                // One booth's slip is not another's: a different booth is a
+                // different form, seeded from its own draft.
+                key={selected.booth.id}
+                draft={selected}
+                readOnly={!canManage}
+                saving={busy}
+                error={errorAt('slip')}
+                onSave={(slip) =>
+                  void run('slip', () => boothApi.saveSettings(selected.booth.id, slip))
+                }
+              />
+            </div>
           </Group>
 
           <Group title="Activity">
@@ -959,10 +980,11 @@ function LiveStatus({
  * (`VITE_POS_URL`) the words stay and the link does not — a dead address is
  * worse than a sentence.
  *
- * The booth's own voucher slip is laid out by the platform and has no
- * template there; its words are its voucher type's, which the prize editor
- * links to. That is why the link names the panel and not a template: the
- * slip's words are in none of them.
+ * The booth's own voucher slip has no template there: its logo, header and
+ * footer lines, Staff row and terms are this booth's, set on this page under
+ * Voucher slip (SCRUM-471), and its prize words are its voucher type's, which
+ * the prize editor links to. That is why the link names the panel and not a
+ * template: the booth's slip is in none of them.
  */
 function TemplatesLink() {
   const label = (
@@ -988,7 +1010,7 @@ function TemplatesLink() {
         {POS_URL
           ? 'Opens the till’s back office on its Print Templates screen (Operations › Print Templates). '
           : 'In the till’s back office, under Operations › Print Templates. '}
-        The booth’s voucher slip takes its words from its voucher type.
+        The booth’s own voucher slip is set below, under Voucher slip.
       </span>
     </span>
   );

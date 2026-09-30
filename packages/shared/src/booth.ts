@@ -149,8 +149,111 @@ export const BoothConfigSettingsSchema = z.object({
   /** Optional so parsing an older bundle never inserts a field into its hashed document. */
   spinDurationSeconds: z.number().int()
     .min(BOOTH_SPIN_DURATION_MIN_SECONDS).max(BOOTH_SPIN_DURATION_MAX_SECONDS).optional(),
+  /**
+   * The voucher slip this booth prints (SCRUM-471): Console → Booths →
+   * Voucher slip, stored on `booth.booth_settings.voucher_*`.
+   *
+   * **Each is optional, and present only when it differs from its default**
+   * (`BOOTH_VOUCHER_SLIP_DEFAULTS`), for the reason `staffSessionMinutes`
+   * gives: a bundle is hashed as stored, so a booth nobody has customised
+   * publishes the document — and the hash — it always did, and a box reading
+   * a bundle without them prints the slip it always printed. Read them through
+   * `boothVoucherSlip`, never directly.
+   *
+   * The texts carry no length limit here, on purpose: the settings route and
+   * the column's CHECK hold the limits, and a box refusing a whole wheel over
+   * a footer a newer cloud allowed to be longer would take the booth off the
+   * air for a line of small print. The renderer wraps what it is given.
+   */
+  voucherShowLogo: z.boolean().optional(),
+  voucherHeaderText: z.string().nullable().optional(),
+  voucherFooterText: z.string().nullable().optional(),
+  voucherShowStaff: z.boolean().optional(),
+  voucherShowTerms: z.boolean().optional(),
 });
 export type BoothConfigSettings = z.infer<typeof BoothConfigSettingsSchema>;
+
+/** The longest header line a booth's voucher takes — the print templates' own limit. */
+export const BOOTH_VOUCHER_HEADER_MAX_CHARS = 200;
+/** The longest footer line a booth's voucher takes — the print templates' own limit. */
+export const BOOTH_VOUCHER_FOOTER_MAX_CHARS = 400;
+
+/** What a booth's voucher slip shows, resolved: every field present. */
+export interface BoothVoucherSlip {
+  showLogo: boolean;
+  /** A line of its own under the venue line; null prints none. */
+  headerText: string | null;
+  /** The slip's last line; null prints none. */
+  footerText: string | null;
+  showStaff: boolean;
+  showTerms: boolean;
+}
+
+/**
+ * The slip every booth printed before SCRUM-471, and still prints until an
+ * administrator changes it: the logo, the Staff row and the terms, and no
+ * header or footer line. Also the column defaults of migration 0039.
+ */
+export const BOOTH_VOUCHER_SLIP_DEFAULTS: Readonly<BoothVoucherSlip> = Object.freeze({
+  showLogo: true,
+  headerText: null,
+  footerText: null,
+  showStaff: true,
+  showTerms: true,
+});
+
+/** A text as the slip stores it: trimmed, and "nothing" spelled null. */
+export function boothVoucherText(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+/**
+ * The slip a booth running these settings prints: each field as published, or
+ * its default when the bundle does not carry it — which is every bundle
+ * published before SCRUM-471 and every booth nobody has customised.
+ */
+export function boothVoucherSlip(settings: {
+  voucherShowLogo?: boolean;
+  voucherHeaderText?: string | null;
+  voucherFooterText?: string | null;
+  voucherShowStaff?: boolean;
+  voucherShowTerms?: boolean;
+}): BoothVoucherSlip {
+  const flag = (value: unknown, fallback: boolean): boolean =>
+    typeof value === 'boolean' ? value : fallback;
+  return {
+    showLogo: flag(settings.voucherShowLogo, BOOTH_VOUCHER_SLIP_DEFAULTS.showLogo),
+    headerText: boothVoucherText(settings.voucherHeaderText),
+    footerText: boothVoucherText(settings.voucherFooterText),
+    showStaff: flag(settings.voucherShowStaff, BOOTH_VOUCHER_SLIP_DEFAULTS.showStaff),
+    showTerms: flag(settings.voucherShowTerms, BOOTH_VOUCHER_SLIP_DEFAULTS.showTerms),
+  };
+}
+
+/**
+ * The slip fields a publish writes into `settings`: only those that differ
+ * from their defaults, so an untouched booth's bundle — and its hash — are
+ * what they were before the fields existed. The inverse of `boothVoucherSlip`.
+ */
+export function boothVoucherSlipBundleFields(slip: BoothVoucherSlip): {
+  voucherShowLogo?: boolean;
+  voucherHeaderText?: string;
+  voucherFooterText?: string;
+  voucherShowStaff?: boolean;
+  voucherShowTerms?: boolean;
+} {
+  const header = boothVoucherText(slip.headerText);
+  const footer = boothVoucherText(slip.footerText);
+  return {
+    ...(slip.showLogo !== BOOTH_VOUCHER_SLIP_DEFAULTS.showLogo ? { voucherShowLogo: slip.showLogo } : {}),
+    ...(header !== null ? { voucherHeaderText: header } : {}),
+    ...(footer !== null ? { voucherFooterText: footer } : {}),
+    ...(slip.showStaff !== BOOTH_VOUCHER_SLIP_DEFAULTS.showStaff ? { voucherShowStaff: slip.showStaff } : {}),
+    ...(slip.showTerms !== BOOTH_VOUCHER_SLIP_DEFAULTS.showTerms ? { voucherShowTerms: slip.showTerms } : {}),
+  };
+}
 
 /**
  * The session length a box uses when the published wheel names none: twelve
